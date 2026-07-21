@@ -15,22 +15,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public interface ITypeHandle
 {
     TargetPointer Address { get; }
-    bool IsNull { get; }
-
-    /// <summary>Sentinel handle representing the absence of a type.</summary>
-    static ITypeHandle Null => NullTypeHandle.Instance;
-}
-
-/// <summary>
-/// Singleton ITypeHandle representing the absence of a type. Exposed only through
-/// <see cref="ITypeHandle.Null"/>; the concrete type is an implementation detail.
-/// </summary>
-internal sealed class NullTypeHandle : ITypeHandle
-{
-    public static readonly NullTypeHandle Instance = new();
-    private NullTypeHandle() { }
-    public TargetPointer Address => TargetPointer.Null;
-    public bool IsNull => true;
 }
 
 public enum CorElementType
@@ -260,14 +244,13 @@ public interface IRuntimeTypeSystem : IContract
     // return true if the ITypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     bool IsArray(ITypeHandle typeHandle, out uint rank) => throw new NotImplementedException();
     ITypeHandle GetTypeParam(ITypeHandle typeHandle) => throw new NotImplementedException();
-    ITypeHandle GetConstructedType(ITypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle> typeArguments, SignatureCallingConvention callConv = SignatureCallingConvention.Default) => throw new NotImplementedException();
+    ITypeHandle? GetConstructedType(ITypeHandle? typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle?> typeArguments, SignatureCallingConvention callConv = SignatureCallingConvention.Default) => throw new NotImplementedException();
     ITypeHandle GetPrimitiveType(CorElementType typeCode) => throw new NotImplementedException();
     bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
     bool IsFunctionPointer(ITypeHandle typeHandle, out ReadOnlySpan<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv) => throw new NotImplementedException();
     bool IsPointer(ITypeHandle typeHandle) => throw new NotImplementedException();
     bool IsTypeDesc(ITypeHandle typeHandle) => throw new NotImplementedException();
     TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef) => throw new NotImplementedException();
-    // Returns ITypeHandle.Null if the handle is not a class, struct, or generic variable.
     #endregion ITypeHandle inspection APIs
 
     #region MethodDesc inspection APIs
@@ -347,7 +330,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsFieldDescRVA(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     CorElementType GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef) => throw new NotImplementedException();
-    ITypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer) => throw new NotImplementedException();
+    ITypeHandle? GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     bool TryGetFieldDescNext(TargetPointer fieldDescPointer, out TargetPointer nextFieldDesc) => throw new NotImplementedException();
     TargetPointer GetFieldDescByName(ITypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
     TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true) => throw new NotImplementedException();

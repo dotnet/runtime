@@ -23,7 +23,7 @@ Target.TypeInfo GetTypeInfo(string fullyQualifiedName);
 
 // Return true and populate `typeHandle` with the ITypeHandle for the runtime type,
 // or false if the type cannot be resolved.
-bool TryGetTypeHandle(string fullyQualifiedName, out ITypeHandle typeHandle);
+bool TryGetTypeHandle(string fullyQualifiedName, out ITypeHandle? typeHandle);
 ITypeHandle GetTypeHandle(string fullyQualifiedName);
 
 // Return true and populate `address` with the address of the named static field,
@@ -96,7 +96,7 @@ bool TryResolveType(string managedFqName, out ITypeHandle th, out MetadataReader
     return true;
 }
 
-bool TryGetTypeHandle(string fqn, out ITypeHandle th)
+bool TryGetTypeHandle(string fqn, out ITypeHandle? th)
 {
     return TryResolveType(fqn, out th, out _, out _);
 }

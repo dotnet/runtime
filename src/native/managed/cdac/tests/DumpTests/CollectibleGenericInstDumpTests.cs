@@ -34,7 +34,7 @@ public class CollectibleGenericInstDumpTests : DumpTestBase
         // Find the List<CollectibleArg> instance rooted by the debuggee. It is the
         // single-argument generic instantiation whose loader module differs from its
         // definition module — the signature of a type argument from a collectible ALC.
-        ITypeHandle constructed = ITypeHandle.Null;
+        ITypeHandle? constructed = null;
         foreach (HandleData handle in gc.GetHandles([HandleType.Strong]))
         {
             TargetPointer objAddr = Target.ReadPointer(handle.Handle);
@@ -51,7 +51,7 @@ public class CollectibleGenericInstDumpTests : DumpTestBase
             }
         }
 
-        Assert.NotEqual(TargetPointer.Null, constructed.Address);
+        Assert.NotNull(constructed);
 
         // Confirm the collectible scenario: the constructed type's loader module is the
         // collectible argument's module, distinct from its (CoreLib) definition module.
@@ -66,12 +66,13 @@ public class CollectibleGenericInstDumpTests : DumpTestBase
 
         // Reconstruct the instantiation. This must search the collectible argument's
         // loader module — searching the definition's module (CoreLib) returns null.
-        ITypeHandle resolved = rts.GetConstructedType(
+        ITypeHandle? resolved = rts.GetConstructedType(
             listDefinition,
             CorElementType.GenericInst,
             0,
             [typeArgument]);
 
+        Assert.NotNull(resolved);
         Assert.Equal(constructed.Address, resolved.Address);
     }
 }

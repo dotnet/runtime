@@ -89,7 +89,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private readonly struct TypeKey : IEquatable<TypeKey>
     {
-        public TypeKey(ITypeHandle typeHandle, CorElementType elementType, int rank, ImmutableArray<ITypeHandle> typeArgs, SignatureCallingConvention callConv = SignatureCallingConvention.Default)
+        public TypeKey(ITypeHandle? typeHandle, CorElementType elementType, int rank, ImmutableArray<ITypeHandle?> typeArgs, SignatureCallingConvention callConv = SignatureCallingConvention.Default)
         {
             TypeHandle = typeHandle;
             ElementType = elementType;
@@ -97,10 +97,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             TypeArgs = typeArgs;
             CallConv = callConv;
         }
-        public ITypeHandle TypeHandle { get; }
+        public ITypeHandle? TypeHandle { get; }
         public CorElementType ElementType { get; }
         public int Rank { get; }
-        public ImmutableArray<ITypeHandle> TypeArgs { get; }
+        public ImmutableArray<ITypeHandle?> TypeArgs { get; }
         public SignatureCallingConvention CallConv { get; }
 
         public bool Equals(TypeKey other)
@@ -119,10 +119,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         public override int GetHashCode()
         {
-            int hash = HashCode.Combine(RuntimeHelpers.GetHashCode(TypeHandle), (int)ElementType, Rank, (int)CallConv);
-            foreach (ITypeHandle th in TypeArgs)
+            int typeHandleHash = TypeHandle is null ? 0 : RuntimeHelpers.GetHashCode(TypeHandle);
+            int hash = HashCode.Combine(typeHandleHash, (int)ElementType, Rank, (int)CallConv);
+            foreach (ITypeHandle? th in TypeArgs)
             {
-                hash = HashCode.Combine(hash, RuntimeHelpers.GetHashCode(th));
+                hash = HashCode.Combine(hash, th is null ? 0 : RuntimeHelpers.GetHashCode(th));
             }
             return hash;
         }
@@ -721,9 +722,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                     elementSize = 8;
                     return true;
                 case CorElementType.ValueType:
-                    current = ((IRuntimeTypeSystem)this).GetFieldDescApproxTypeHandle(firstField);
-                    if (current.IsNull)
+                    ITypeHandle? next = ((IRuntimeTypeSystem)this).GetFieldDescApproxTypeHandle(firstField);
+                    if (next is null)
                         return false;
+                    current = next;
                     continue;
                 default:
                     return false;
@@ -1255,7 +1257,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return current;
     }
 
-    private bool GenericInstantiationMatch(ITypeHandle genericType, ITypeHandle potentialMatch, ImmutableArray<ITypeHandle> typeArguments)
+    private bool GenericInstantiationMatch(ITypeHandle genericType, ITypeHandle potentialMatch, ImmutableArray<ITypeHandle?> typeArguments)
     {
         ReadOnlySpan<ITypeHandle> instantiation = GetInstantiation(potentialMatch);
         if (instantiation.Length != typeArguments.Length)
@@ -1269,7 +1271,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         for (int i = 0; i < instantiation.Length; i++)
         {
-            if (!(instantiation[i].Address == typeArguments[i].Address))
+            if (typeArguments[i] is not ITypeHandle typeArgument || instantiation[i].Address != typeArgument.Address)
                 return false;
         }
         return true;
@@ -1285,7 +1287,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     }
 
-    private bool FnPtrMatch(ITypeHandle candidate, ImmutableArray<ITypeHandle> retAndArgTypes, SignatureCallingConvention callConv)
+    private bool FnPtrMatch(ITypeHandle candidate, ImmutableArray<ITypeHandle?> retAndArgTypes, SignatureCallingConvention callConv)
     {
         if (!IsFunctionPointer(candidate, out ReadOnlySpan<ITypeHandle> candidateRetAndArgs, out SignatureCallingConvention candidateCallConv))
             return false;
@@ -1295,7 +1297,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return false;
         for (int i = 0; i < candidateRetAndArgs.Length; i++)
         {
-            if (candidateRetAndArgs[i].Address != retAndArgTypes[i].Address)
+            if (retAndArgTypes[i] is not ITypeHandle retOrArgType || candidateRetAndArgs[i].Address != retOrArgType.Address)
                 return false;
         }
         return true;
@@ -1316,10 +1318,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (auxData.Flags & (uint)MethodTableAuxiliaryFlags.IsNotFullyLoaded) == 0; // IsUnloaded
     }
 
-    ITypeHandle IRuntimeTypeSystem.GetConstructedType(ITypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle> typeArguments, SignatureCallingConvention callConv)
+    ITypeHandle? IRuntimeTypeSystem.GetConstructedType(ITypeHandle? typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle?> typeArguments, SignatureCallingConvention callConv)
     {
-        if (typeHandle.IsNull && corElementType != CorElementType.FnPtr)
-            return ITypeHandle.Null;
+        if (typeHandle is null && corElementType != CorElementType.FnPtr)
+            return null;
+        foreach (ITypeHandle? typeArgument in typeArguments)
+        {
+            if (typeArgument is null)
+                return null;
+        }
         if (_typeHandles.TryGetValue(new TypeKey(typeHandle, corElementType, rank, typeArguments, callConv), out ITypeHandle? existing) && existing is not null)
             return existing;
         ILoader loaderContract = _target.Contracts.Loader;
@@ -1327,9 +1334,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (corElementType == CorElementType.FnPtr)
             loaderModule = ComputeLoaderModule(TargetPointer.Null, typeArguments);
         else if (corElementType == CorElementType.GenericInst)
-            loaderModule = ComputeLoaderModule(GetModule(typeHandle), typeArguments);
+            loaderModule = ComputeLoaderModule(GetModule(typeHandle!), typeArguments);
         else
-            loaderModule = GetLoaderModule(typeHandle);
+            loaderModule = GetLoaderModule(typeHandle!);
 
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
         ITypeHandle potentialMatch;
@@ -1338,7 +1345,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             potentialMatch = GetTypeHandle(ptr);
             if (corElementType == CorElementType.GenericInst)
             {
-                if (GenericInstantiationMatch(typeHandle, potentialMatch, typeArguments) && IsLoaded(potentialMatch))
+                if (GenericInstantiationMatch(typeHandle!, potentialMatch, typeArguments) && IsLoaded(potentialMatch))
                 {
                     _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
                     return potentialMatch;
@@ -1352,17 +1359,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                     return potentialMatch;
                 }
             }
-            else if (ArrayPtrMatch(typeHandle, corElementType, rank, potentialMatch) && IsLoaded(potentialMatch))
+            else if (ArrayPtrMatch(typeHandle!, corElementType, rank, potentialMatch) && IsLoaded(potentialMatch))
             {
                 _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
                 return potentialMatch;
             }
         }
-        return ITypeHandle.Null;
+        return null;
     }
 
     // See https://github.com/dotnet/runtime/blob/e1979b72ccb5f916649f1d9949ef663254790c25/src/coreclr/vm/clsload.cpp#L78
-    private TargetPointer ComputeLoaderModule(TargetPointer definitionModule, ImmutableArray<ITypeHandle> inst)
+    private TargetPointer ComputeLoaderModule(TargetPointer definitionModule, ImmutableArray<ITypeHandle?> inst)
     {
         ILoader loaderContract = _target.Contracts.Loader;
         TargetPointer latestLoaderModule = TargetPointer.Null;
@@ -1377,8 +1384,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         bool anyCollectible = false;
-        foreach (ITypeHandle arg in inst)
+        foreach (ITypeHandle? nullableArg in inst)
         {
+            ITypeHandle arg = nullableArg!;
             if (arg.Address == TargetPointer.Null)
                 continue;
 
@@ -2355,22 +2363,22 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return offset;
     }
 
-    ITypeHandle IRuntimeTypeSystem.GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer)
+    ITypeHandle? IRuntimeTypeSystem.GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer)
     {
         try
         {
             TargetPointer enclosingMT = ((IRuntimeTypeSystem)this).GetMTOfEnclosingClass(fieldDescPointer);
             if (enclosingMT == TargetPointer.Null)
-                return ITypeHandle.Null;
+                return null;
             ITypeHandle enclosingType = GetTypeHandle(enclosingMT);
             TargetPointer modulePtr = GetModule(enclosingType);
             if (modulePtr == TargetPointer.Null)
-                return ITypeHandle.Null;
+                return null;
 
             ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
             MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
             if (mdReader is null)
-                return ITypeHandle.Null;
+                return null;
 
             uint memberDef = ((IRuntimeTypeSystem)this).GetFieldDescMemberDef(fieldDescPointer);
             FieldDefinitionHandle fieldDefHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)memberDef);
@@ -2380,7 +2388,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
         catch
         {
-            return ITypeHandle.Null;
+            return null;
         }
     }
 

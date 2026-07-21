@@ -76,7 +76,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         // (e.g. Span<T> for a Span<int> arg). Used by the encoder when the
         // constructed ITypeHandle is null (uncached) to fall back to
         // attributes of the open type (IsByRefLike, etc.).
-        public ITypeHandle OpenGenericType { get; init; }
+        public ITypeHandle? OpenGenericType { get; init; }
     }
 
     private ArgumentLayout GetArgumentLayout(MethodDescHandle methodDesc)
@@ -84,7 +84,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
 
-        MethodSignature<ITypeHandle> methodSig = DecodeMethodSignature(rts, methodDesc);
+        MethodSignature<ITypeHandle?> methodSig = DecodeMethodSignature(rts, methodDesc);
 
         // Re-decode the same signature with a wrapper provider to learn each
         // parameter's outermost element type (Byref / Ptr / SzArray / Array)
@@ -218,7 +218,9 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 }
                 else
                 {
-                    elemType = rts.GetSignatureCorElementType(methodSig.ParameterTypes[argIndex]);
+                    elemType = methodSig.ParameterTypes[argIndex] is ITypeHandle parameterType
+                        ? rts.GetSignatureCorElementType(parameterType)
+                        : default;
                 }
 
                 if (argOffset == TransitionBlock.StructInRegsOffset)
@@ -256,10 +258,9 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 bool isByRefLikeStruct = false;
                 if (elemType == CdacCorElementType.ValueType && !passedByRef)
                 {
-                    ITypeHandle probe = methodSig.ParameterTypes[argIndex];
-                    if (probe.Address == TargetPointer.Null)
-                        probe = paramInfo[argIndex].OpenGenericType;
-                    if (probe.Address != TargetPointer.Null)
+                    ITypeHandle? probe = methodSig.ParameterTypes[argIndex];
+                    probe ??= paramInfo[argIndex].OpenGenericType;
+                    if (probe is not null)
                     {
                         try { isByRefLikeStruct = rts.IsByRefLike(probe); }
                         catch { /* leave false on partial-state failures */ }
@@ -287,7 +288,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         return new ArgumentLayout(arguments, cbStackPop);
     }
 
-    private MethodSignature<ITypeHandle> DecodeMethodSignature(
+    private MethodSignature<ITypeHandle?> DecodeMethodSignature(
         IRuntimeTypeSystem rts, MethodDescHandle methodDesc)
     {
         TargetPointer methodTablePtr = rts.GetMethodTable(methodDesc);
@@ -305,7 +306,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         // NotSupportedException for whichever side it wasn't parameterized on.
         MethodSigContext context = new(methodDesc, typeHandle);
         MethodAndTypeContextProvider provider = new(_target, moduleHandle, rts);
-        RuntimeSignatureDecoder<ITypeHandle, MethodSigContext> decoder = new(
+        RuntimeSignatureDecoder<ITypeHandle?, MethodSigContext> decoder = new(
             provider, _target, mdReader, context);
 
         if (!rts.TryGetMethodSignature(methodDesc, out ReadOnlySpan<byte> methodSig))
@@ -420,7 +421,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
     // hasn't cached the constructed-type instantiation.
     private readonly struct TrackedType
     {
-        public ITypeHandle Underlying { get; init; }
+        public ITypeHandle? Underlying { get; init; }
         public bool IsByRef { get; init; }
         // The outermost ELEMENT_TYPE_* wrapper applied to this signature.
         // The enum's zero value (default) means "no constructed-type wrapper;
@@ -430,7 +431,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         // GetConstructedType collapsed it. Lets the encoder inspect
         // attributes (IsByRefLike, etc.) even when the constructed
         // ITypeHandle isn't cached.
-        public ITypeHandle OpenGeneric { get; init; }
+        public ITypeHandle? OpenGeneric { get; init; }
     }
 
     // ISignatureTypeProvider wrapper that records the outermost
@@ -456,7 +457,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         // know to fall back to GetSignatureCorElementType on Underlying. The
         // constructed-type overrides (ByRef/Ptr/SzArray/Array) set
         // OutermostKind explicitly.
-        private static TrackedType Wrap(ITypeHandle th)
+        private static TrackedType Wrap(ITypeHandle? th)
             => new() { Underlying = th };
 
         public TrackedType GetByReferenceType(TrackedType elementType)
@@ -480,17 +481,17 @@ internal sealed class CallingConvention_1 : ICallingConvention
 
         public TrackedType GetGenericInstantiation(TrackedType genericType, ImmutableArray<TrackedType> typeArguments)
         {
-            ImmutableArray<ITypeHandle>.Builder builder = ImmutableArray.CreateBuilder<ITypeHandle>(typeArguments.Length);
+            ImmutableArray<ITypeHandle?>.Builder builder = ImmutableArray.CreateBuilder<ITypeHandle?>(typeArguments.Length);
             for (int i = 0; i < typeArguments.Length; i++)
                 builder.Add(typeArguments[i].Underlying);
-            ITypeHandle constructed = _inner.GetGenericInstantiation(genericType.Underlying, builder.ToImmutable());
+            ITypeHandle? constructed = _inner.GetGenericInstantiation(genericType.Underlying, builder.ToImmutable());
 
             // GetConstructedType returns null when the runtime hasn't cached
             // this exact instantiation. Recover the would-be top-level kind
             // (Class / ValueType / ...) from the open generic type so the
             // encoder still sees the right token (REF for class, etc.).
             CdacCorElementType kind = default;
-            if (constructed.Address == TargetPointer.Null && genericType.Underlying.Address != TargetPointer.Null)
+            if (constructed is null && genericType.Underlying is not null)
             {
                 try { kind = _rts.GetSignatureCorElementType(genericType.Underlying); }
                 catch { /* leave default */ }
@@ -563,7 +564,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
     // methods without making the base virtual.
     internal sealed class MethodAndTypeContextProvider
         : SignatureTypeProvider<MethodSigContext>,
-          IRuntimeSignatureTypeProvider<ITypeHandle, MethodSigContext>
+          IRuntimeSignatureTypeProvider<ITypeHandle?, MethodSigContext>
     {
         private readonly IRuntimeTypeSystem _rts;
 
@@ -573,10 +574,10 @@ internal sealed class CallingConvention_1 : ICallingConvention
             _rts = rts;
         }
 
-        public new ITypeHandle GetGenericMethodParameter(MethodSigContext context, int index)
+        public new ITypeHandle? GetGenericMethodParameter(MethodSigContext context, int index)
             => _rts.GetGenericMethodInstantiation(context.Method)[index];
 
-        public new ITypeHandle GetGenericTypeParameter(MethodSigContext context, int index)
+        public new ITypeHandle? GetGenericTypeParameter(MethodSigContext context, int index)
             => _rts.GetInstantiation(context.OwningType)[index];
     }
 
@@ -702,17 +703,16 @@ internal sealed class CallingConvention_1 : ICallingConvention
                                 // The byref/ptr distinction is preserved at the
                                 // FieldDesc level regardless of which T closes
                                 // the type.
-                                ITypeHandle probe = arg.TypeHandle;
-                                if (probe.Address == TargetPointer.Null)
-                                    probe = arg.OpenGenericType;
-                                if (probe.Address != TargetPointer.Null)
+                                ITypeHandle? probe = arg.TypeHandle;
+                                probe ??= arg.OpenGenericType;
+                                if (probe is not null)
                                 {
                                     EmitByRefLikeInterior(rts, probe, arg.Offset, tokens);
                                 }
                                 emitted = true;
                             }
 
-                            if (rts.ContainsGCPointers(arg.TypeHandle))
+                            if (arg.TypeHandle is ITypeHandle typeHandle && rts.ContainsGCPointers(typeHandle))
                             {
                                 // By-value struct with embedded GC pointers: emit one
                                 // Ref token per pointer slot inside the struct. Mirrors
@@ -722,7 +722,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
                                 // pointer); subtract pointerSize to translate to the
                                 // unboxed in-frame layout.
                                 int structFieldStart = arg.Offset - pointerSize;
-                                foreach ((uint seriesOffset, uint seriesSize) in rts.GetGCDescSeries(arg.TypeHandle))
+                                foreach ((uint seriesOffset, uint seriesSize) in rts.GetGCDescSeries(typeHandle))
                                 {
                                     int seriesBase = structFieldStart + (int)seriesOffset;
                                     for (int subOff = 0; subOff < (int)seriesSize; subOff += pointerSize)
@@ -910,8 +910,8 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 // Nested value-type field. Recurse only if the field's own
                 // MethodTable is ByRefLike (matches runtime Find(FieldDesc*)
                 // in ByRefPointerOffsetsReporter).
-                ITypeHandle nested = rts.GetFieldDescApproxTypeHandle(fdPtr);
-                if (nested.Address == TargetPointer.Null)
+                ITypeHandle? nested = rts.GetFieldDescApproxTypeHandle(fdPtr);
+                if (nested is null)
                     continue;
                 bool nestedByRefLike;
                 try { nestedByRefLike = rts.IsByRefLike(nested); }

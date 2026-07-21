@@ -308,12 +308,15 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
             }
         }
 
-        private static void AddType(Target target, StringBuilder stringBuilder, ITypeHandle typeHandle)
+        private static void AddType(Target target, StringBuilder stringBuilder, ITypeHandle? typeHandle)
         {
             IRuntimeTypeSystem runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
 
-            if (typeHandle.IsNull)
+            if (typeHandle is null)
+            {
                 stringBuilder.Append("**UNKNOWN TYPE**");
+                return;
+            }
             CorElementType corElementType = runtimeTypeSystem.GetSignatureCorElementType(typeHandle);
             if (corElementType == CorElementType.ValueType && runtimeTypeSystem.HasTypeParam(typeHandle))
             {

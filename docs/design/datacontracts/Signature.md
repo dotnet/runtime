@@ -16,7 +16,7 @@ These tags are used in signatures generated internally by the runtime that are n
 ## APIs of contract
 
 ```csharp
-ITypeHandle DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, ITypeHandle ctx);
+ITypeHandle? DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, ITypeHandle? ctx);
 
 // Returns the address of the first argument of a vararg call relative to the cookie pointer location.
 TargetPointer GetVarArgArgsBase(TargetPointer vaSigCookieAddr);
@@ -66,12 +66,12 @@ TType GetInternalModifiedType(TargetPointer typeHandlePointer, TType unmodifiedT
 The contract's provider resolves these pointers through `RuntimeTypeSystem.GetTypeHandle`. Standard ECMA-335 element types resolve through `RuntimeTypeSystem.GetPrimitiveType` and `RuntimeTypeSystem.GetConstructedType`. Generic type parameters (`VAR`) and generic method parameters (`MVAR`) resolve via `RuntimeTypeSystem.GetInstantiation` and `RuntimeTypeSystem.GetGenericMethodInstantiation` respectively, using an `ITypeHandle` (for generic types) or `MethodDescHandle` (for generic methods) generic context. `GetTypeFromDefinition` and `GetTypeFromReference` resolve tokens via the module's `TypeDefToMethodTableMap` / `TypeRefToMethodTableMap`; cross-module references and `GetTypeFromSpecification` are not currently implemented.
 
 ```csharp
-ITypeHandle ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, ITypeHandle ctx)
+ITypeHandle? ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, ITypeHandle? ctx)
 {
-    SignatureTypeProvider<ITypeHandle> provider = new(_target, moduleHandle);
+    SignatureTypeProvider<ITypeHandle?> provider = new(_target, moduleHandle);
     MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
     BlobReader blobReader = mdReader.GetBlobReader(blobHandle);
-    RuntimeSignatureDecoder<ITypeHandle, ITypeHandle> decoder = new(provider, _target, mdReader, ctx);
+    RuntimeSignatureDecoder<ITypeHandle?, ITypeHandle?> decoder = new(provider, _target, mdReader, ctx);
     return decoder.DecodeFieldSignature(ref blobReader);
 }
 ```

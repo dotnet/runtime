@@ -88,8 +88,8 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
 
         // Build the expected canonicalized handle from the exact type. Mirrors the rules
         // applied by TypeDataWalk on the cDAC side.
-        ITypeHandle expectedApproxTh = ApproxTopLevel(dbi, rts, canonTh, expectedTh);
-        if (expectedApproxTh.IsNull)
+        ITypeHandle? expectedApproxTh = ApproxTopLevel(dbi, rts, canonTh, expectedTh);
+        if (expectedApproxTh is null)
             return; // If the approximation rules collapse this type to null, skip the round-trip assertion.
 
         // Build the flat DebuggerIPCE_TypeArgData[] tree (preorder DFS) the right side would
@@ -193,7 +193,7 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
     // ApproxTypeArg. Array / Ptr / Byref preserve the outer shape; the inner type goes through
     // ApproxTypeArg. Anything else collapses to the primitive type for its element type
     // (e.g. System.Object, System.String, primitives).
-    private ITypeHandle ApproxTopLevel(DacDbiImpl dbi, IRuntimeTypeSystem rts, ITypeHandle canonTh, ITypeHandle th)
+    private ITypeHandle? ApproxTopLevel(DacDbiImpl dbi, IRuntimeTypeSystem rts, ITypeHandle canonTh, ITypeHandle th)
     {
         CorElementType et = GetElementType(rts, th);
         switch (et)
@@ -201,16 +201,20 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
             case CorElementType.Array:
             case CorElementType.SzArray:
                 {
-                    ITypeHandle elem = ApproxTypeArg(dbi, rts, canonTh, rts.GetTypeParam(th));
+                    ITypeHandle? elem = ApproxTypeArg(dbi, rts, canonTh, rts.GetTypeParam(th));
+                    if (elem is null)
+                        return null;
                     rts.IsArray(th, out uint rank);
-                    return rts.GetConstructedType(elem, et, (int)rank, ImmutableArray<ITypeHandle>.Empty);
+                    return rts.GetConstructedType(elem, et, (int)rank, ImmutableArray<ITypeHandle?>.Empty);
                 }
 
             case CorElementType.Ptr:
             case CorElementType.Byref:
                 {
-                    ITypeHandle referent = ApproxTypeArg(dbi, rts, canonTh, rts.GetTypeParam(th));
-                    return rts.GetConstructedType(referent, et, 0, ImmutableArray<ITypeHandle>.Empty);
+                    ITypeHandle? referent = ApproxTypeArg(dbi, rts, canonTh, rts.GetTypeParam(th));
+                    if (referent is null)
+                        return null;
+                    return rts.GetConstructedType(referent, et, 0, ImmutableArray<ITypeHandle?>.Empty);
                 }
 
             case CorElementType.Class:
@@ -225,15 +229,17 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
     // Arg context: Class collapses to __Canon (its children skipped); ValueType is recursively
     // approximated; Ptr preserves shape; obj-ref primitives (Class/Object/String/SzArray/Array)
     // collapse to __Canon; primitives map to their primitive ITypeHandle.
-    private ITypeHandle ApproxTypeArg(DacDbiImpl dbi, IRuntimeTypeSystem rts, ITypeHandle canonTh, ITypeHandle th)
+    private ITypeHandle? ApproxTypeArg(DacDbiImpl dbi, IRuntimeTypeSystem rts, ITypeHandle canonTh, ITypeHandle th)
     {
         CorElementType et = GetElementType(rts, th);
         switch (et)
         {
             case CorElementType.Ptr:
                 {
-                    ITypeHandle referent = ApproxTypeArg(dbi, rts, canonTh, rts.GetTypeParam(th));
-                    return rts.GetConstructedType(referent, et, 0, ImmutableArray<ITypeHandle>.Empty);
+                    ITypeHandle? referent = ApproxTypeArg(dbi, rts, canonTh, rts.GetTypeParam(th));
+                    if (referent is null)
+                        return null;
+                    return rts.GetConstructedType(referent, et, 0, ImmutableArray<ITypeHandle?>.Empty);
                 }
 
             case CorElementType.Class:
@@ -255,7 +261,7 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
     // Non-generic types return early — the production walker takes the
     // <c>nTypeArgs == 0</c> branch and returns the typeDef directly, which equals the type's
     // own MT for a non-generic type.
-    private ITypeHandle InstantiationApprox(DacDbiImpl dbi, IRuntimeTypeSystem rts, ITypeHandle canonTh, ITypeHandle th)
+    private ITypeHandle? InstantiationApprox(DacDbiImpl dbi, IRuntimeTypeSystem rts, ITypeHandle canonTh, ITypeHandle th)
     {
         // Mirror DacDbiImpl.FillClassTypeInfo: upcast continuation-without-metadata types to
         // their parent before resolving module / typeDef token. Otherwise the synthesized token
@@ -280,16 +286,16 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
         ulong vmAssembly = loader.GetAssembly(moduleHandle).Value;
         uint metadataToken = rts.GetTypeDefToken(th);
 
-        ITypeHandle typeDef = dbi.TryLookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
-        if (typeDef.IsNull)
-            return ITypeHandle.Null;
+        ITypeHandle? typeDef = dbi.TryLookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
+        if (typeDef is null)
+            return null;
 
-        ImmutableArray<ITypeHandle>.Builder builder = ImmutableArray.CreateBuilder<ITypeHandle>(inst.Length);
+        ImmutableArray<ITypeHandle?>.Builder builder = ImmutableArray.CreateBuilder<ITypeHandle?>(inst.Length);
         for (int i = 0; i < inst.Length; i++)
         {
-            ITypeHandle approxArg = ApproxTypeArg(dbi, rts, canonTh, inst[i]);
-            if (approxArg.IsNull)
-                return ITypeHandle.Null;
+            ITypeHandle? approxArg = ApproxTypeArg(dbi, rts, canonTh, inst[i]);
+            if (approxArg is null)
+                return null;
             builder.Add(approxArg);
         }
 
@@ -298,9 +304,9 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
 
     // Same element-type mapping DacDbiImpl uses (System.String -> E_T_STRING, System.Object ->
     // E_T_OBJECT, else GetSignatureCorElementType).
-    private static CorElementType GetElementType(IRuntimeTypeSystem rts, ITypeHandle th)
+    private static CorElementType GetElementType(IRuntimeTypeSystem rts, ITypeHandle? th)
     {
-        if (th.IsNull)
+        if (th is null)
             return CorElementType.Void;
         if (rts.IsString(th))
             return CorElementType.String;

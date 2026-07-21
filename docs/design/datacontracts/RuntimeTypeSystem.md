@@ -12,13 +12,10 @@ Given a `TargetPointer` address, the `RuntimeTypeSystem` contract provides an `I
 ``` csharp
 // An opaque canonical identity for a runtime type. Handles are produced and
 // interned by RuntimeTypeSystem; consumers must not fabricate implementations.
+// A null reference represents the absence of a type.
 interface ITypeHandle
 {
     TargetPointer Address { get; }
-    bool IsNull { get; }
-
-    // Sentinel handle representing the absence of a type (Address == 0).
-    static ITypeHandle Null { get; }
 }
 
 // An internal real target-backed handle (a MethodTable* or TypeDesc* address).
@@ -145,7 +142,7 @@ partial interface IRuntimeTypeSystem : IContract
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     bool IsArray(ITypeHandle typeHandle, out uint rank);
     ITypeHandle GetTypeParam(ITypeHandle typeHandle);
-    ITypeHandle GetConstructedType(ITypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle> typeArguments, SignatureCallingConvention callConv = SignatureCallingConvention.Default);
+    ITypeHandle? GetConstructedType(ITypeHandle? typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle?> typeArguments, SignatureCallingConvention callConv = SignatureCallingConvention.Default);
     ITypeHandle GetPrimitiveType(CorElementType typeCode);
     bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token);
     bool IsFunctionPointer(ITypeHandle typeHandle, out ReadOnlySpan<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv);
@@ -322,7 +319,7 @@ bool IsFieldDescStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescRVA(TargetPointer fieldDescPointer);
 CorElementType GetFieldDescType(TargetPointer fieldDescPointer);
 uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef);
-ITypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer);
+ITypeHandle? GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer);
 bool TryGetFieldDescNext(TargetPointer fieldDescPointer, out TargetPointer nextFieldDesc);
 TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true);
 TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true);
@@ -1204,15 +1201,15 @@ Contracts used:
         return (flags & (uint)MethodTableAuxiliaryFlags.IsNotFullyLoaded) == 0;
     }
 
-    ITypeHandle GetConstructedType(ITypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle> typeArguments, SignatureCallingConvention callConv)
+    ITypeHandle? GetConstructedType(ITypeHandle? typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle?> typeArguments, SignatureCallingConvention callConv)
     {
         // For function pointers the type handle arg is unused - type information is provided in the type arguments.
-        if (corElementType != CorElementType.FnPtr && typeHandle.Address == TargetPointer.Null)
-            return ITypeHandle.Null;
+        if (corElementType != CorElementType.FnPtr && typeHandle is null)
+            return null;
         ILoader loaderContract = _target.Contracts.Loader;
         TargetPointer loaderModule = // see [link](https://github.com/dotnet/runtime/blob/e1979b72ccb5f916649f1d9949ef663254790c25/src/coreclr/vm/clsload.cpp#L78)
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
-        ITypeHandle potentialMatch = ITypeHandle.Null;
+        ITypeHandle? potentialMatch = null;
         foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
         {
             potentialMatch = GetTypeHandle(ptr);
@@ -1235,7 +1232,7 @@ Contracts used:
                 return potentialMatch;
             }
         }
-        return ITypeHandle.Null;
+        return null;
     }
 
     public ITypeHandle GetPrimitiveType(CorElementType typeCode)
@@ -2353,12 +2350,12 @@ TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, Ta
     // The unboxValueTypes parameter behaves the same as in GetFieldDescStaticAddress.
 }
 
-ITypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer)
+ITypeHandle? GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer)
 {
     // Resolve enclosing MT -> Module -> MetadataReader, decode the field's
     // signature using the SignatureDecoder contract with a SignatureTypeProvider
     // bound to the enclosing class as generic context, and return the resulting
-    // TypeHandle. Returns TypeHandle.Null if any link in the chain is unavailable
+    // TypeHandle. Returns null if any link in the chain is unavailable
     // (e.g. uncached constructed instantiation).
 }
 
@@ -2369,7 +2366,7 @@ bool TryGetFieldDescNext(TargetPointer fieldDescPointer, out TargetPointer nextF
     // MethodTable) and, if `fieldDescPointer` is the last FieldDesc in that type's list, report that
     // there is no next FieldDesc by returning false.
     TargetPointer enclosingMT = GetMTOfEnclosingClass(fieldDescPointer);
-    TypeHandle typeHandle = GetTypeHandle(enclosingMT);
+    ITypeHandle typeHandle = GetTypeHandle(enclosingMT);
     // The field list holds the type's own instance fields (total instance fields minus the parent's)
     // followed by its static fields; see GetFieldDescList.
     TargetPointer lastFieldDesc = /* address of the final FieldDesc in typeHandle's list */;

@@ -67,7 +67,7 @@ public struct TypeNameBuilder
         IRuntimeTypeSystem runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
         ILoader loader = target.Contracts.Loader;
         string methodName;
-        ITypeHandle th = ITypeHandle.Null;
+        ITypeHandle? th = null;
 
         bool isNoMetadataMethod = runtimeTypeSystem.IsNoMetadataMethod(method, out methodName);
         if (isNoMetadataMethod)
@@ -122,7 +122,7 @@ public struct TypeNameBuilder
             uint rowId = EcmaMetadataUtils.GetRowId(runtimeTypeSystem.GetMethodToken(method));
             if (rowId != 0)
             {
-                Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(runtimeTypeSystem.GetModule(th));
+                Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(runtimeTypeSystem.GetModule(th!));
                 MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(module)!;
                 MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)rowId));
                 stringBuilder.Append(reader.GetString(methodDef.Name));
@@ -143,7 +143,7 @@ public struct TypeNameBuilder
             MetadataReader? reader = target.Contracts.EcmaMetadata.GetMetadata(methodModule);
 
             ReadOnlySpan<ITypeHandle> typeInstantiationSigFormat = default;
-            if (!th.IsNull)
+            if (th is not null)
             {
                 typeInstantiationSigFormat = runtimeTypeSystem.GetInstantiation(th);
                 if (typeInstantiationSigFormat.Length == 0 && runtimeTypeSystem.IsArray(th, out _))
@@ -184,22 +184,22 @@ public struct TypeNameBuilder
         } while (true);
     }
 
-    public static void AppendType(Target target, StringBuilder stringBuilder, ITypeHandle typeHandle, TypeNameFormat format)
+    public static void AppendType(Target target, StringBuilder stringBuilder, ITypeHandle? typeHandle, TypeNameFormat format)
     {
         AppendType(target, stringBuilder, typeHandle, default, format);
     }
 
-    public static void AppendType(Target target, StringBuilder stringBuilder, ITypeHandle typeHandle, ReadOnlySpan<ITypeHandle> typeInstantiation, TypeNameFormat format)
+    public static void AppendType(Target target, StringBuilder stringBuilder, ITypeHandle? typeHandle, ReadOnlySpan<ITypeHandle> typeInstantiation, TypeNameFormat format)
     {
         TypeNameBuilder builder = new(stringBuilder, target, format);
         AppendTypeCore(ref builder, typeHandle, typeInstantiation, format);
     }
 
-    private static void AppendTypeCore(ref TypeNameBuilder tnb, ITypeHandle typeHandle, ReadOnlySpan<ITypeHandle> instantiation, TypeNameFormat format)
+    private static void AppendTypeCore(ref TypeNameBuilder tnb, ITypeHandle? typeHandle, ReadOnlySpan<ITypeHandle> instantiation, TypeNameFormat format)
     {
         bool toString = format.HasFlag(TypeNameFormat.FormatNamespace) && !format.HasFlag(TypeNameFormat.FormatFullInst) && !format.HasFlag(TypeNameFormat.FormatAssembly);
 
-        if (typeHandle.IsNull)
+        if (typeHandle is null)
         {
             tnb.AddName("(null)");
         }

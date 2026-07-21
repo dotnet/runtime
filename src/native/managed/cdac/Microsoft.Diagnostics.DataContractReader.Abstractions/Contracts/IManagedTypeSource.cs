@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -16,7 +17,7 @@ public interface IManagedTypeSource : IContract
     bool TryGetTypeInfo(string fullyQualifiedName, out Target.TypeInfo info) => throw new NotImplementedException();
     Target.TypeInfo GetTypeInfo(string fullyQualifiedName) => throw new NotImplementedException();
 
-    bool TryGetTypeHandle(string fullyQualifiedName, out ITypeHandle typeHandle) => throw new NotImplementedException();
+    bool TryGetTypeHandle(string fullyQualifiedName, [NotNullWhen(true)] out ITypeHandle? typeHandle) => throw new NotImplementedException();
     ITypeHandle GetTypeHandle(string fullyQualifiedName) => throw new NotImplementedException();
 
     bool TryGetStaticFieldAddress(string fullyQualifiedName, string fieldName, out TargetPointer address) => throw new NotImplementedException();

@@ -18,7 +18,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// </summary>
 internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
 {
-    private readonly CdacITypeHandle _typeHandle;
+    private readonly CdacITypeHandle? _typeHandle;
     private readonly Target _target;
 
     // Outermost ELEMENT_TYPE_* wrapper (PTR / BYREF / SZARRAY / ARRAY / etc.)
@@ -31,12 +31,12 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
     // "no override; ask Rts".
     private readonly CdacCorElementType _kindOverride;
 
-    public CdacTypeHandle(CdacITypeHandle typeHandle, Target target)
+    public CdacTypeHandle(CdacITypeHandle? typeHandle, Target target)
         : this(typeHandle, target, kindOverride: default)
     {
     }
 
-    public CdacTypeHandle(CdacITypeHandle typeHandle, Target target, CdacCorElementType kindOverride)
+    public CdacTypeHandle(CdacITypeHandle? typeHandle, Target target, CdacCorElementType kindOverride)
     {
         _typeHandle = typeHandle;
         _target = target;
@@ -48,13 +48,13 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
     public int PointerSize => _target.PointerSize;
     public RuntimeInfoArchitecture Arch => _target.Contracts.RuntimeInfo.GetTargetArchitecture();
 
-    public bool IsNull() => _typeHandle.IsNull && _kindOverride == default;
+    public bool IsNull() => _typeHandle is null && _kindOverride == default;
 
-    public bool IsValueType() => !_typeHandle.IsNull && Rts.IsValueType(_typeHandle);
+    public bool IsValueType() => _typeHandle is not null && Rts.IsValueType(_typeHandle);
 
     public bool IsPointerType()
         => _kindOverride == CdacCorElementType.Ptr
-           || (!_typeHandle.IsNull && Rts.IsPointer(_typeHandle));
+           || (_typeHandle is not null && Rts.IsPointer(_typeHandle));
 
     public bool HasIndeterminateSize() => false;
 
@@ -73,7 +73,7 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
             return PointerSize;
         }
 
-        if (_typeHandle.IsNull)
+        if (_typeHandle is null)
             return 0;
 
         // GetBaseSize returns the full object size including object header and padding.
@@ -89,7 +89,7 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
         if (_kindOverride != default)
             return MapCorElementType(_kindOverride);
 
-        if (_typeHandle.IsNull)
+        if (_typeHandle is null)
             return (SharedCorElementType)0;
 
         // Mirror the runtime's MetaSig::PeekArgNormalized -- for value types
@@ -108,16 +108,16 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
 
     public bool RequiresAlign8()
     {
-        return !_typeHandle.IsNull && Rts.RequiresAlign8(_typeHandle);
+        return _typeHandle is not null && Rts.RequiresAlign8(_typeHandle);
     }
 
     public bool IsHomogeneousAggregate()
-        => !_typeHandle.IsNull && Rts.TryGetHFAElementSize(_typeHandle, out _);
+        => _typeHandle is not null && Rts.TryGetHFAElementSize(_typeHandle, out _);
 
     public int GetHomogeneousAggregateElementSize()
     {
         Debug.Assert(IsHomogeneousAggregate());
-        return Rts.TryGetHFAElementSize(_typeHandle, out int size) ? size : 0;
+        return Rts.TryGetHFAElementSize(_typeHandle!, out int size) ? size : 0;
     }
 
     public void GetSystemVAmd64PassStructInRegisterDescriptor(out SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR descriptor)
@@ -125,7 +125,7 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
         descriptor = default;
         descriptor.passedInRegisters = false;
 
-        if (_typeHandle.IsNull)
+        if (_typeHandle is null)
             return;
 
         // Read the runtime-cached classification from the type system; mirrors
@@ -175,7 +175,7 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
         // Only meaningful on x86 -- this controls whether a value-type arg
         // can be passed in a register. Outside x86 (where structs always go
         // through other paths) we return false so callers ignore us.
-        if (Arch != RuntimeInfoArchitecture.X86 || _typeHandle.IsNull || !Rts.IsValueType(_typeHandle))
+        if (Arch != RuntimeInfoArchitecture.X86 || _typeHandle is null || !Rts.IsValueType(_typeHandle))
             return false;
 
         // Must be exactly pointer-size (4 bytes on x86).
@@ -219,8 +219,8 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
                 // pointer-sized struct, we are too. Resolve the field's
                 // ITypeHandle via the field's metadata signature and
                 // re-run IsTrivialPointerSizedStruct on it.
-                CdacITypeHandle nested = Rts.GetFieldDescApproxTypeHandle(singleFieldType.Value);
-                if (nested.IsNull)
+                CdacITypeHandle? nested = Rts.GetFieldDescApproxTypeHandle(singleFieldType.Value);
+                if (nested is null)
                     return false;
                 return new CdacTypeHandle(nested, _target).IsTrivialPointerSizedStruct();
 

@@ -15,5 +15,4 @@ internal sealed class TargetTypeHandle : ITypeHandle
     }
 
     public TargetPointer Address { get; }
-    public bool IsNull => Address == TargetPointer.Null;
 }

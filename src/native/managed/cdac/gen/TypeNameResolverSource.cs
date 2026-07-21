@@ -30,7 +30,7 @@ internal static class TypeNameResolver
     {
         foreach (string name in names)
         {
-            if (target.Contracts.ManagedTypeSource.TryGetTypeHandle(name, out ITypeHandle th))
+            if (target.Contracts.ManagedTypeSource.TryGetTypeHandle(name, out ITypeHandle? th))
                 return th;
         }
         throw new InvalidOperationException(

@@ -1073,7 +1073,7 @@ public sealed unsafe partial class SOSDacImpl
             MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)!;
             FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
 
-            ITypeHandle foundTypeHandle = rtsContract.GetFieldDescApproxTypeHandle(fieldDescTargetPtr);
+            ITypeHandle? foundTypeHandle = rtsContract.GetFieldDescApproxTypeHandle(fieldDescTargetPtr);
             try
             {
                 // get the MT of the type
@@ -1081,7 +1081,7 @@ public sealed unsafe partial class SOSDacImpl
                 // that we can return to SOS for pretty-printing.
                 // In the future we may want to return an ITypeHandle instead of a MethodTable, and modify SOS to do more complete pretty-printing.
                 // DAC equivalent: src/coreclr/vm/typehandle.inl TypeHandle::GetMethodTable
-                if (foundTypeHandle.IsNull)
+                if (foundTypeHandle is null)
                     // if we can't find the MT (e.g in a minidump)
                     data->MTOfType = 0;
                 else if (rtsContract.IsFunctionPointer(foundTypeHandle, out _, out _) || rtsContract.IsPointer(foundTypeHandle))

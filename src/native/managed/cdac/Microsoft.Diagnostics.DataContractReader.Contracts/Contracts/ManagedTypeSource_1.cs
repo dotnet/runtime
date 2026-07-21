@@ -14,7 +14,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 {
     private readonly Target _target;
     private readonly Dictionary<string, Target.TypeInfo?> _typeInfoCache = new();
-    private readonly Dictionary<string, ITypeHandle> _typeHandleCache = new();
+    private readonly Dictionary<string, ITypeHandle?> _typeHandleCache = new();
     private readonly Dictionary<(string Fqn, string FieldName), TargetPointer> _fieldDescCache = new();
     private bool _inSearch;
 
@@ -87,24 +87,24 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 
     public ITypeHandle GetTypeHandle(string fullyQualifiedName)
     {
-        if (!TryGetTypeHandle(fullyQualifiedName, out ITypeHandle typeHandle))
+        if (!TryGetTypeHandle(fullyQualifiedName, out ITypeHandle? typeHandle))
             throw new InvalidOperationException($"Managed type '{fullyQualifiedName}' is not resolvable through {nameof(ManagedTypeSource_1)}.");
 
         return typeHandle;
     }
 
-    public bool TryGetTypeHandle(string fullyQualifiedName, out ITypeHandle typeHandle)
+    public bool TryGetTypeHandle(string fullyQualifiedName, [NotNullWhen(true)] out ITypeHandle? typeHandle)
     {
         if (_typeHandleCache.TryGetValue(fullyQualifiedName, out ITypeHandle? cached))
         {
             typeHandle = cached;
-            return !typeHandle.IsNull;
+            return typeHandle is not null;
         }
 
         if (!TryResolveType(fullyQualifiedName, out typeHandle, out _, out _))
         {
-            typeHandle = ITypeHandle.Null;
-            _typeHandleCache[fullyQualifiedName] = ITypeHandle.Null;
+            typeHandle = null;
+            _typeHandleCache[fullyQualifiedName] = null;
             return false;
         }
 
@@ -190,7 +190,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         if (_fieldDescCache.TryGetValue(key, out fieldDescAddr))
             return fieldDescAddr != TargetPointer.Null;
 
-        if (!TryResolveType(fullyQualifiedName, out ITypeHandle th, out _, out _))
+        if (!TryResolveType(fullyQualifiedName, out ITypeHandle? th, out _, out _))
         {
             fieldDescAddr = TargetPointer.Null;
             _fieldDescCache[key] = TargetPointer.Null;
@@ -206,7 +206,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
     {
         info = default;
 
-        if (!TryResolveType(managedFqName, out ITypeHandle th, out MetadataReader? mdReader, out TypeDefinition typeDef))
+        if (!TryResolveType(managedFqName, out ITypeHandle? th, out MetadataReader? mdReader, out TypeDefinition typeDef))
             return false;
 
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
@@ -254,9 +254,9 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         return true;
     }
 
-    private bool TryResolveType(string managedFqName, out ITypeHandle th, [NotNullWhen(true)] out MetadataReader? mdReader, out TypeDefinition typeDef)
+    private bool TryResolveType(string managedFqName, [NotNullWhen(true)] out ITypeHandle? th, [NotNullWhen(true)] out MetadataReader? mdReader, out TypeDefinition typeDef)
     {
-        th = ITypeHandle.Null;
+        th = null;
         typeDef = default;
 
         ILoader loader = _target.Contracts.Loader;
