@@ -13,6 +13,7 @@ namespace System.Net.Test.Common
         public const string DigestAuthWebServer = "http://apacheweb.linux.contoso.com/auth/digest/";
 
         public const string FtpServer = "apacheweb.linux.contoso.com";
+        public const string FtpBasePath = "/ftp/";
 
         public static bool Enabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_RUNTIME_ENTERPRISETESTS_ENABLED"));
         // Following credentials are used only in docker scenario, it is not leaking any secrets.

@@ -4,7 +4,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="FtpWebRequestAuthenticationTest.cs" />
+    <Compile Include="FtpWebRequestStreamDisposalTest.cs" />
 
     <Compile Include="$(CommonTestPath)System\Net\EnterpriseTests\EnterpriseTestConfiguration.cs"
              Link="Common\System\Net\EnterpriseTests\EnterpriseTestConfiguration.cs" />

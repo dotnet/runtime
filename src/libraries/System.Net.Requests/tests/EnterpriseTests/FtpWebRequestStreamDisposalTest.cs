@@ -45,7 +45,7 @@ namespace System.Net.Tests
             SslPolicyErrors sslPolicyErrors) => true;
 
         private static string GetFtpUrl(string fileName) =>
-            $"ftp://{EnterpriseTestConfiguration.FtpServer}/ftp/{fileName}";
+            $"ftp://{EnterpriseTestConfiguration.FtpServer}{EnterpriseTestConfiguration.FtpBasePath}{fileName}";
 
         [ConditionalTheory(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
         [InlineData(false)]
