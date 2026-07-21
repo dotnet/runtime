@@ -776,8 +776,6 @@ void EEStartupHelper()
         IfFailGoLog(EnsureRtlFunctions());
 #endif // !TARGET_UNIX
 
-        UnwindInfoTable::Initialize();
-
         // Fire the runtime information ETW event
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
 

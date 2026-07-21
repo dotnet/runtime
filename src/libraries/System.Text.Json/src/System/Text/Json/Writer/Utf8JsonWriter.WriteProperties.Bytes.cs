@@ -148,7 +148,7 @@ namespace System.Text.Json
 
             WriteBase64ByOptions(escapedPropertyName.Slice(0, written), bytes);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<char>.Shared.Return(propertyArray);
             }
@@ -171,7 +171,7 @@ namespace System.Text.Json
 
             WriteBase64ByOptions(escapedPropertyName.Slice(0, written), bytes);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(propertyArray);
             }

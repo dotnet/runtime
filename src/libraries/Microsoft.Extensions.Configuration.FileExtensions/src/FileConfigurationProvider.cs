@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Text;
-using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
 
@@ -33,10 +33,21 @@ namespace Microsoft.Extensions.Configuration
             {
                 _changeTokenRegistration = ChangeToken.OnChange(
                     () => Source.FileProvider.Watch(Source.Path!),
-                    () =>
+                    async () =>
                     {
-                        Thread.Sleep(Source.ReloadDelay);
-                        Load(reload: true);
+                        await Task.Delay(Source.ReloadDelay).ConfigureAwait(false);
+                        try
+                        {
+                            Load(reload: true);
+                        }
+                        catch
+                        {
+                            // Load already surfaces reload failures through the
+                            // FileConfigurationSource.OnLoadException callback. Any exception that
+                            // escapes here is usually swallowed by OnChange or by the FileProvider,
+                            // so swallow it here instead, to make it clear this is the intended behavior
+                            // and to make it more consistent.
+                        }
                     });
             }
         }

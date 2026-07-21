@@ -52,14 +52,16 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
     assert(block != nullptr);
     assert(tree != nullptr);
 
-    int budget = 64;
+    // TryGetRange walks the SSA use-def chain up to three times per query (range computation, the overflow check,
+    // and a monotonicity-driven re-walk in Widen that recovers loop lower bounds), all sharing this budget.
+    int budget = 256;
 #ifdef DEBUG
     // JIT stress: always take the slow, SSA-based range walk (with a larger budget) to maximize
     // coverage of TryGetRange and shake out correctness issues in the range computation.
     if (comp->compStressCompile(Compiler::STRESS_GET_RANGE, 50))
     {
-        fast   = false;
-        budget = 512;
+        fast = false;
+        budget *= 16;
     }
 #endif
 
@@ -344,6 +346,8 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
                 case NI_AVX_MoveMask:
                 case NI_AVX2_MoveMask:
                 case NI_AVX512_MoveMask:
+#elif defined(TARGET_WASM)
+                case NI_PackedSimd_Bitmask:
 #endif
                 case NI_Vector_ExtractMostSignificantBits:
                 {
@@ -407,6 +411,26 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
                 {
                     // The actual range is [0..32] or [0..64]
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToInt8:
+                {
+                    return {SymbolicIntegerValue::ByteMin, SymbolicIntegerValue::ByteMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToInt16:
+                {
+                    return {SymbolicIntegerValue::ShortMin, SymbolicIntegerValue::ShortMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToUInt8:
+                {
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UByteMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToUInt16:
+                {
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UShortMax};
                 }
 
                 case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
@@ -2190,6 +2214,18 @@ void Compiler::optAssertionGen(GenTree* tree)
             {
                 assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, /*equals*/ false);
             }
+            else if (tree->OperIs(GT_IND) && tree->TypeIs(TYP_INT) &&
+                     IntegralRange::ForNode(tree, this).IsNonNegative())
+            {
+                // Create "IND >= 0" assertion for int indirections that are known to be non-negative.
+                // Mainly, this is for unpromoted Span.Length indirections.
+                ValueNum vn = optConservativeNormalVN(tree);
+                if (vn != ValueNumStore::NoVN)
+                {
+                    assertionInfo = optAddAssertion(
+                        AssertionDsc::CreateConstantBound(this, VNF_GE, vn, vnStore->VNZeroForType(TYP_INT)));
+                }
+            }
             break;
 
         case GT_INTRINSIC:
@@ -3635,6 +3671,14 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
         {
             lvaSetVarDoNotEnregister(copyLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
         }
+    }
+
+    // Do not propagate promoted locals if they are not DNER.
+    // This would require DNER'ing for many cases where the consumer
+    // does not support whole-local uses, such as GT_FIELD_LIST.
+    if (tree->OperIs(GT_LCL_VAR) && varTypeIsSIMD(tree) && copyVarDsc->lvPromoted && !copyVarDsc->lvDoNotEnregister)
+    {
+        return nullptr;
     }
 
     tree->SetLclNum(copyLclNum);

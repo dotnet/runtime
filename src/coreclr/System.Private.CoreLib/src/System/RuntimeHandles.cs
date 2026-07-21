@@ -1291,6 +1291,16 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeMethodHandleInternal GetMethodFromCanonical(RuntimeMethodHandleInternal method, RuntimeType declaringType);
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetNativeCode")]
+        private static partial IntPtr GetNativeCode(RuntimeMethodHandleInternal method);
+
+        internal static IntPtr GetNativeCodeInternal(IRuntimeMethodInfo method)
+        {
+            IntPtr value = GetNativeCode(IRuntimeMethodInfo.GetValue(method));
+            GC.KeepAlive(method);
+            return value;
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsGenericMethodDefinition(RuntimeMethodHandleInternal method);
 
