@@ -10282,6 +10282,7 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
+#ifndef TARGET_WASM
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *dac_cast<PTR_SIZE_T>((TADDR)m_ContextPointers.regname);
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -10299,6 +10300,11 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = m_Context.regname;
     ENUM_FP_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
+#else // TARGET_WASM
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = m_Context.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#endif // !TARGET_WASM
 
     SetIP(pRD->pCurrentContext, ::GetIP(&m_Context));
     SetSP(pRD->pCurrentContext, ::GetSP(&m_Context));
@@ -10310,6 +10316,22 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 }
 
 #ifndef DACCESS_COMPILE
+
+void SoftwareExceptionFrame::SetContext(T_CONTEXT *pContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context = *pContext;
+
+#ifndef TARGET_WASM
+#define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = &m_Context.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#endif // !TARGET_WASM
+
+    m_ReturnAddress = ::GetIP(&m_Context);
+}
+
 #ifdef TARGET_X86
 
 void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
@@ -10708,7 +10730,6 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 }
 
 #elif defined(TARGET_WASM)
-TADDR GetWasmFramePointerFromStackPointer(TADDR sp);
 void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
 {
     LIMITED_METHOD_CONTRACT;
@@ -10720,8 +10741,9 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     if (pTransitionBlock != nullptr)
     {
         m_Context.InterpreterSP = pTransitionBlock->m_StackPointer;
-        m_Context.InterpreterFP = GetWasmFramePointerFromStackPointer(m_Context.InterpreterSP);
         m_Context.InterpreterIP = GetWasmVirtualIPFromStackPointer(pTransitionBlock->m_StackPointer);
+        _ASSERTE(m_Context.InterpreterIP != 0); // We should only ever reach here with a valid VirtualIP
+        m_Context.InterpreterFP = GetWasmFramePointerFromStackPointer(m_Context.InterpreterSP, (PCODE)m_Context.InterpreterIP);
         m_ReturnAddress = m_Context.InterpreterIP;
         m_Context.InterpreterWalkFramePointer = 0;
     }

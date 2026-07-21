@@ -15,7 +15,7 @@ namespace Internal.Runtime
     {
         public const uint Signature = 0x00525452; // 'RTR'
 
-        public const ushort CurrentMajorVersion = 24;
+        public const ushort CurrentMajorVersion = 25;
         public const ushort CurrentMinorVersion = 0;
     }
 #if READYTORUN
@@ -102,6 +102,8 @@ namespace Internal.Runtime
         // 211 is unused - it was used by LoopHijackFlag
         ImportAddressTables = 212,
         ModuleInitializerList = 213,
+        GvmDispatchCellInfoRegion = 214,
+        GvmDispatchCellRegion = 215,
 
         // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
         ReadonlyBlobRegionStart = 300,

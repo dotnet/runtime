@@ -100,6 +100,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_op_Inequality,
     NI_System_Type_GetTypeFromHandle,
     NI_System_Type_GetGenericTypeDefinition,
+    NI_System_Activator_CreateInstance_T,
     NI_System_Array_Clone,
     NI_System_Array_GetLength,
     NI_System_Array_GetLowerBound,
@@ -123,6 +124,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier,
@@ -172,8 +174,11 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_Threading_Tasks_ValueTask_FromResult,
     NI_System_Threading_Tasks_ValueTask_get_CompletedTask,
+    NI_System_Threading_Tasks_ValueTask__ctor,
+    NI_System_Threading_Tasks_ValueTask_AsTask,
 
     NI_System_Threading_Tasks_ValueTask_1__ctor,
+    NI_System_Threading_Tasks_ValueTask_1_AsTask,
 
     // These two are special marker IDs so that we still get the inlining profitability boost
     NI_System_Numerics_Intrinsic,
@@ -265,6 +270,10 @@ enum NamedIntrinsic : unsigned short
     NI_PRIMITIVE_PopCount,
     NI_PRIMITIVE_RotateLeft,
     NI_PRIMITIVE_RotateRight,
+    NI_PRIMITIVE_SaturateToInt8,
+    NI_PRIMITIVE_SaturateToInt16,
+    NI_PRIMITIVE_SaturateToUInt8,
+    NI_PRIMITIVE_SaturateToUInt16,
     NI_PRIMITIVE_TrailingZeroCount,
 
     NI_PRIMITIVE_END,

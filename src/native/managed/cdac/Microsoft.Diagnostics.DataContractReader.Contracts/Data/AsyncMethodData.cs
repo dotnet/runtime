@@ -7,4 +7,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class AsyncMethodData : IData<AsyncMethodData>
 {
     [Field] public uint Flags { get; }
+    [Field] public Signature Signature { get; }
 }

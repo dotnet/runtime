@@ -799,14 +799,14 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public bool TryReadGlobal<T>(string name, [NotNullWhen(true)] out T? value, out string? type) where T : struct, INumber<T>
     {
         value = null;
-        type = null;
-        if (!_globals.TryGetValue(name, out GlobalValue global) || global.NumericValue is null)
-        {
-            // Not found or does not contain a numeric value
+        if (!TryGetNumericGlobal(name, out ulong globalValue, out type))
             return false;
-        }
-        type = global.Type;
-        value = T.CreateChecked(global.NumericValue.Value);
+
+        Debug.Assert(
+            TargetTypeHelpers.IsCompatiblePrimitiveType<T>(type),
+            $"Type mismatch reading global '{name}': declared as '{type}', reading as {typeof(T).Name}");
+
+        value = T.CreateChecked(globalValue);
         return true;
     }
 
@@ -827,10 +827,14 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public bool TryReadGlobalPointer(string name, [NotNullWhen(true)] out TargetPointer? value, out string? type)
     {
         value = null;
-        if (!TryReadGlobal(name, out ulong? innerValue, out type))
+        if (!TryGetNumericGlobal(name, out ulong globalValue, out type))
             return false;
 
-        value = new TargetPointer(innerValue.Value);
+        Debug.Assert(
+            TargetTypeHelpers.IsCompatiblePointerType(type),
+            $"Type mismatch reading global '{name}': declared as '{type}', expected pointer");
+
+        value = new TargetPointer(globalValue);
         return true;
     }
 
@@ -870,6 +874,18 @@ public sealed unsafe class ContractDescriptorTarget : Target
         }
         type = global.Type;
         value = global.StringValue;
+        return true;
+    }
+
+    private bool TryGetNumericGlobal(string name, out ulong value, out string? type)
+    {
+        value = default;
+        type = null;
+        if (!_globals.TryGetValue(name, out GlobalValue global) || global.NumericValue is null)
+            return false;
+
+        value = global.NumericValue.Value;
+        type = global.Type;
         return true;
     }
 
