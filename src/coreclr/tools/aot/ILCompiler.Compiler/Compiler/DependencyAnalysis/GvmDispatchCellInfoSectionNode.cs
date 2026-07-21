@@ -50,7 +50,6 @@ namespace ILCompiler.DependencyAnalysis
             var entries = new VertexArray(section);
             section.Place(entries);
 
-            int entryIndex = 0;
             for (int firstCell = 0; firstCell < cells.Count;)
             {
                 MethodDesc targetMethod = cells[firstCell].TargetMethod;
@@ -63,14 +62,16 @@ namespace ILCompiler.DependencyAnalysis
 
                 int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, GetMethodForMetadata(targetMethod, out bool isAsyncVariant));
 
-                entries.Set(entryIndex++, writer.GetTuple(
-                    writer.GetUnsignedConstant(checked((uint)nextCell)),
+                Vertex entry = writer.GetTuple(
                     writer.GetUnsignedConstant(owningTypeIndex),
                     writer.GetTuple(
                         writer.GetUnsignedConstant(instantiationIndex),
                         writer.GetTuple(
                             writer.GetUnsignedConstant(checked((uint)(token & MetadataManager.MetadataOffsetMask))),
-                            writer.GetUnsignedConstant(isAsyncVariant ? 1u : 0u)))));
+                            writer.GetUnsignedConstant(isAsyncVariant ? 1u : 0u))));
+
+                for (int cell = firstCell; cell < nextCell; cell += DispatchCellNode.MaxCellInfoLookupDistance)
+                    entries.Set(cell, entry);
 
                 firstCell = nextCell;
             }

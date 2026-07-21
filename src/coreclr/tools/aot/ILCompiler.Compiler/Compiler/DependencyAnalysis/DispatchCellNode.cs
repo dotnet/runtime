@@ -14,6 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class DispatchCellNode : SortableDependencyNode, ISymbolDefinitionNode
     {
         private const int InvalidOffset = -1;
+        internal const int MaxCellInfoLookupDistance = 100;
 
         private readonly MethodDesc _targetMethod;
         private readonly ISortableSymbolNode _callSiteIdentifier;

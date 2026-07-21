@@ -50,7 +50,6 @@ namespace ILCompiler.DependencyAnalysis
             var entries = new VertexArray(section);
             section.Place(entries);
 
-            int entryIndex = 0;
             for (int firstCell = 0; firstCell < cells.Count;)
             {
                 MethodDesc targetMethod = cells[firstCell].TargetMethod;
@@ -60,10 +59,12 @@ namespace ILCompiler.DependencyAnalysis
 
                 uint interfaceTypeIndex = _externalReferences.GetIndex(GetInterfaceTypeNode(factory, targetMethod));
                 int targetSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
-                entries.Set(entryIndex++, writer.GetTuple(
-                    writer.GetUnsignedConstant(checked((uint)nextCell)),
+                Vertex entry = writer.GetTuple(
                     writer.GetUnsignedConstant(interfaceTypeIndex),
-                    writer.GetUnsignedConstant(checked((uint)targetSlot))));
+                    writer.GetUnsignedConstant(checked((uint)targetSlot)));
+
+                for (int cell = firstCell; cell < nextCell; cell += DispatchCellNode.MaxCellInfoLookupDistance)
+                    entries.Set(cell, entry);
 
                 firstCell = nextCell;
             }

@@ -61,7 +61,6 @@ namespace Internal.Runtime
                 typeManager,
                 ReadyToRunSectionType.InterfaceDispatchCellInfoRegion,
                 checked((uint)cellIndex),
-                cellCount,
                 out ExternalReferencesTable externalReferences);
 
             uint interfaceTypeIndex = parser.GetUnsigned();
@@ -79,7 +78,6 @@ namespace Internal.Runtime
                 typeManager,
                 ReadyToRunSectionType.GvmDispatchCellInfoRegion,
                 checked((uint)cellIndex),
-                cellCount,
                 out ExternalReferencesTable externalReferences);
 
             uint owningTypeIndex = parser.GetUnsigned();
@@ -103,7 +101,6 @@ namespace Internal.Runtime
             TypeManagerHandle typeManager,
             ReadyToRunSectionType section,
             uint cellIndex,
-            uint cellCount,
             out ExternalReferencesTable externalReferences)
         {
             byte* pInfo = (byte*)RuntimeImports.RhGetModuleSection(typeManager, section, out int length);
@@ -113,30 +110,15 @@ namespace Internal.Runtime
 
             NativeReader reader = new NativeReader(pInfo, checked((uint)length));
             NativeArray entries = new NativeArray(new NativeParser(reader, 0));
-            uint entryCount = entries.GetCount();
 
-            uint low = 0;
-            uint high = entryCount;
-            while (low < high)
+            NativeParser parser;
+            while (!entries.TryGetAt(cellIndex, out parser))
             {
-                uint middle = low + ((high - low) >> 1);
-                bool found = entries.TryGetAt(middle, out NativeParser parser);
-                Debug.Assert(found);
-
-                if (parser.GetUnsigned() <= cellIndex)
-                    low = middle + 1;
-                else
-                    high = middle;
+                Debug.Assert(cellIndex > 0);
+                cellIndex--;
             }
 
-            Debug.Assert(low < entryCount);
-            bool resultFound = entries.TryGetAt(low, out NativeParser result);
-            Debug.Assert(resultFound);
-
-            uint endCellIndex = result.GetUnsigned();
-            Debug.Assert(endCellIndex > cellIndex && endCellIndex <= cellCount);
-
-            return result;
+            return parser;
         }
     }
 }
