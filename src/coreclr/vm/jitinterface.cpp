@@ -12587,8 +12587,26 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "AddKey",
        "Copy",
        "get_Current"
-
-
+       "GetByteCount",
+       "GetByteCountCommon",
+       "GetByteCountFast",
+       "IndexOfValueType",
+       "GetCharCountFast",
+       "GetCharsCommon",
+       "GetCharsFast",
+       "GetBytes",
+       "GetBytesFast",
+       "CtorOpened",
+       "ChkCastClass",
+       "get_Length",
+       "GetBytesCommon",
+       "IsNullToken",
+       "Empty",
+       "CtorClosed",
+       "get_Item",
+       "GetFastModMultiplier",
+       "IndexOfValueType",
+       "SetDefaultFallbacks"
     };
 
     struct JitInclusionEntry
