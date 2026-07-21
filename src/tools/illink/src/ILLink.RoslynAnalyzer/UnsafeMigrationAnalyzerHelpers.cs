@@ -7,7 +7,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ILLink.RoslynAnalyzer
@@ -18,35 +17,6 @@ namespace ILLink.RoslynAnalyzer
     /// </summary>
     internal static class UnsafeMigrationAnalyzerHelpers
     {
-        // The analyzer builds against a Roslyn version that predates SyntaxKind.SafeKeyword.
-        private static readonly SyntaxKind s_safeKeyword = SyntaxFacts.GetContextualKeywordKind("safe");
-
-        internal static SyntaxTokenList GetModifiers(SyntaxNode declaration) =>
-            declaration switch
-            {
-                MemberDeclarationSyntax member => member.Modifiers,
-                LocalFunctionStatementSyntax localFunction => localFunction.Modifiers,
-                AccessorDeclarationSyntax accessor => accessor.Modifiers,
-                _ => default,
-            };
-
-        internal static bool HasModifier(SyntaxNode declaration, SyntaxKind modifier) =>
-            GetModifiers(declaration).Any(modifier);
-
-        internal static bool HasSafeModifier(SyntaxNode declaration) =>
-            s_safeKeyword != SyntaxKind.None && GetModifiers(declaration).Any(s_safeKeyword);
-
-        internal static SyntaxToken GetModifier(SyntaxNode declaration, SyntaxKind modifier)
-        {
-            foreach (SyntaxToken token in GetModifiers(declaration))
-            {
-                if (token.IsKind(modifier))
-                    return token;
-            }
-
-            return default;
-        }
-
         /// <summary>
         /// Gets source declarations for a symbol, normalizing field-like variable declarators to their shared declaration.
         /// </summary>

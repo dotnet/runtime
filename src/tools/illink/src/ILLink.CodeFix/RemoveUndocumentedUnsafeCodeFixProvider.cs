@@ -52,7 +52,7 @@ namespace ILLink.CodeFix
                 diagnostic.Location.SourceSpan,
                 getInnermostNodeForTie: true);
             if (UnsafeModifierCodeFixHelpers.FindDeclaration(targetNode) is not { } declaration
-                || !UnsafeMigrationAnalyzerHelpers.HasModifier(declaration, SyntaxKind.UnsafeKeyword))
+                || !UnsafeMigrationSyntaxHelpers.HasModifier(declaration, SyntaxKind.UnsafeKeyword))
             {
                 return;
             }

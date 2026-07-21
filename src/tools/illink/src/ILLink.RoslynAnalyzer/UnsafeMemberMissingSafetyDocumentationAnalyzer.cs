@@ -71,7 +71,7 @@ namespace ILLink.RoslynAnalyzer
 
             foreach (SyntaxNode declaration in UnsafeMigrationAnalyzerHelpers.GetDeclarations(symbol, cancellationToken))
             {
-                SyntaxToken unsafeModifier = UnsafeMigrationAnalyzerHelpers.GetModifier(
+                SyntaxToken unsafeModifier = UnsafeMigrationSyntaxHelpers.GetModifier(
                     declaration,
                     SyntaxKind.UnsafeKeyword);
                 if (unsafeModifier == default

@@ -74,8 +74,8 @@ namespace ILLink.RoslynAnalyzer
             foreach (SyntaxNode declaration in UnsafeMigrationAnalyzerHelpers.GetDeclarations(symbol, cancellationToken))
             {
                 // safe is an explicit audited contract on the limited declaration kinds where Roslyn permits it.
-                if (UnsafeMigrationAnalyzerHelpers.HasModifier(declaration, SyntaxKind.UnsafeKeyword)
-                    || UnsafeMigrationAnalyzerHelpers.HasSafeModifier(declaration)
+                if (UnsafeMigrationSyntaxHelpers.HasModifier(declaration, SyntaxKind.UnsafeKeyword)
+                    || UnsafeMigrationSyntaxHelpers.HasSafeModifier(declaration)
                     || UnsafeMigrationAnalyzerHelpers.HasSafetyDocumentation(declaration, symbol, cancellationToken))
                 {
                     continue;

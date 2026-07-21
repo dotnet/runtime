@@ -39,8 +39,8 @@ namespace ILLink.CodeFix
                 getInnermostNodeForTie: true);
             if (FindDeclaration(targetNode) is not { } declaration
                 || !isSupportedDeclaration(declaration)
-                || UnsafeMigrationAnalyzerHelpers.HasModifier(declaration, SyntaxKind.UnsafeKeyword)
-                || UnsafeMigrationAnalyzerHelpers.HasSafeModifier(declaration))
+                || UnsafeMigrationSyntaxHelpers.HasModifier(declaration, SyntaxKind.UnsafeKeyword)
+                || UnsafeMigrationSyntaxHelpers.HasSafeModifier(declaration))
             {
                 return;
             }
@@ -76,7 +76,7 @@ namespace ILLink.CodeFix
             CancellationToken cancellationToken)
         {
             var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
-            SyntaxTokenList modifiers = UnsafeMigrationAnalyzerHelpers.GetModifiers(declaration);
+            SyntaxTokenList modifiers = UnsafeMigrationSyntaxHelpers.GetModifiers(declaration);
             if (declaration is AccessorDeclarationSyntax accessor)
             {
                 editor.ReplaceNode(accessor, AddUnsafeModifier(accessor));
@@ -105,7 +105,7 @@ namespace ILLink.CodeFix
             CancellationToken cancellationToken)
         {
             var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
-            SyntaxTokenList modifiers = UnsafeMigrationAnalyzerHelpers.GetModifiers(declaration);
+            SyntaxTokenList modifiers = UnsafeMigrationSyntaxHelpers.GetModifiers(declaration);
             if (declaration is AccessorDeclarationSyntax accessor)
             {
                 editor.ReplaceNode(accessor, RemoveUnsafeModifier(accessor));
