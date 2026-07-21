@@ -4443,13 +4443,11 @@ is_open_method (MonoMethod *method)
 }
 
 static void
-record_gshared_instance (MonoAotCompile *acfg, MonoMethod *gshared_method, MonoMethod *instance, gboolean gsharedvt)
+record_gshared_instance_in_hash (GHashTable *instances_hash, MonoMethod *gshared_method, MonoMethod *instance, gboolean gsharedvt)
 {
 	if (is_open_method (instance) || (!gsharedvt && mono_method_is_generic_sharable_full (instance, TRUE, FALSE, FALSE)))
 		return;
 
-	gboolean use_dedup_tables = gsharedvt && (acfg->dedup_phase == DEDUP_COLLECT || acfg->dedup_phase == DEDUP_EMIT);
-	GHashTable *instances_hash = use_dedup_tables ? dedup_gshared_instances : acfg->gshared_instances;
 	GPtrArray *instances = (GPtrArray *)g_hash_table_lookup (instances_hash, gshared_method);
 	if (!instances) {
 		instances = g_ptr_array_new ();
@@ -4457,6 +4455,14 @@ record_gshared_instance (MonoAotCompile *acfg, MonoMethod *gshared_method, MonoM
 	}
 	if (!g_ptr_array_find (instances, instance, NULL))
 		g_ptr_array_add (instances, instance);
+}
+
+static void
+record_gshared_instance (MonoAotCompile *acfg, MonoMethod *gshared_method, MonoMethod *instance, gboolean gsharedvt)
+{
+	gboolean use_dedup_tables = gsharedvt && (acfg->dedup_phase == DEDUP_COLLECT || acfg->dedup_phase == DEDUP_EMIT);
+	GHashTable *instances_hash = use_dedup_tables ? dedup_gshared_instances : acfg->gshared_instances;
+	record_gshared_instance_in_hash (instances_hash, gshared_method, instance, gsharedvt);
 }
 
 static void
@@ -4513,8 +4519,10 @@ add_extra_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean prefer
 		record_gshared_instance (acfg, method, orig, FALSE);
 	} else if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && prefer_gshared && prefer_gsharedvt_method (acfg, method) && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
 		/* Use the gsharedvt version */
+		MonoMethod *orig = method;
 		method = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
 		mono_error_assert_ok (error);
+		record_gshared_instance (acfg, method, orig, TRUE);
 	}
 
 	if (collect_dedup_method (acfg, method))
@@ -9449,7 +9457,7 @@ record_gsharedvt_method_dependencies (MonoAotCompile *acfg, MonoMethod *method,
 		if (already_recorded)
 			continue;
 
-		MonoRuntimeGenericContextInfoTemplate *recorded_entry = acfg->dedup_phase == DEDUP_COLLECT ?
+		MonoRuntimeGenericContextInfoTemplate *recorded_entry = use_dedup_tables ?
 			g_new (MonoRuntimeGenericContextInfoTemplate, 1) :
 			(MonoRuntimeGenericContextInfoTemplate *)mono_mempool_alloc (acfg->mempool, sizeof (MonoRuntimeGenericContextInfoTemplate));
 		*recorded_entry = *entry;
@@ -9482,8 +9490,8 @@ add_gsharedvt_method_dependencies_range (MonoAotCompile *acfg, MonoMethod *insta
 }
 
 static void
-add_gsharedvt_method_instances (MonoAotCompile *acfg, GHashTable *instances_hash, GHashTable *classes_hash,
-								MonoMethod *method, GHashTable *processed_class_counts)
+add_gsharedvt_method_instances (GHashTable *instances_hash, GHashTable *classes_hash, MonoMethod *method,
+								GHashTable *processed_class_counts)
 {
 	MonoClass *gshared_container = mono_class_is_ginst (method->klass) ?
 		mono_class_get_generic_class (method->klass)->container_class : method->klass;
@@ -9509,7 +9517,7 @@ add_gsharedvt_method_instances (MonoAotCompile *acfg, GHashTable *instances_hash
 			continue;
 		}
 		if (gshared_method == method)
-			record_gshared_instance (acfg, method, instance, TRUE);
+			record_gshared_instance_in_hash (instances_hash, method, instance, TRUE);
 	}
 
 	g_hash_table_insert (processed_class_counts, method, GUINT_TO_POINTER (classes->len));
@@ -9520,7 +9528,7 @@ add_gsharedvt_method_dependencies (MonoAotCompile *acfg, GHashTable *instances_h
 								   MonoMethod *method, GPtrArray *dependencies, GHashTable *processed_class_counts,
 								   GHashTable *processed_dependency_counts, GHashTable *processed_instance_counts, int depth)
 {
-	add_gsharedvt_method_instances (acfg, instances_hash, classes_hash, method, processed_class_counts);
+	add_gsharedvt_method_instances (instances_hash, classes_hash, method, processed_class_counts);
 
 	GPtrArray *instances = (GPtrArray *)g_hash_table_lookup (instances_hash, method);
 	if (!instances)
