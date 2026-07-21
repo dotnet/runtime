@@ -120,21 +120,23 @@ When presenting the final review (whether as a PR comment or as output to the us
 ```
 ## Holistic Review
 
-**Motivation**: <1-2 sentences on whether the PR is justified and the problem is real, when this adds non-obvious context>
+<For a routine LGTM review with no non-obvious evidence to record, emit only `✅ LGTM — <one concise sentence>`; add at most two closely related sentences when needed. Do not add top-level fields or Detailed Findings.>
 
-**Approach**: <1-2 sentences on whether the fix/change takes the right approach, when this adds non-obvious context>
+<Otherwise, include only the applicable fields below.>
 
-**Summary**: <❌ Needs Changes / ⚠️ Needs Human Review / 💡 Suggestions / ✅ LGTM / ❌ Reject>. <2-3 sentence summary of the overall verdict and key points, when it adds non-obvious context. If "Needs Human Review," explicitly state which findings are uncertain and what a human reviewer should focus on.>
+**Motivation**: <one sentence on why the PR is justified, only when it adds non-obvious context>
 
----
+**Approach**: <one sentence on whether the change takes the right approach, only when it adds non-obvious context>
+
+**Summary**: <❌ Needs Changes / ⚠️ Needs Human Review / 💡 Suggestions / ✅ LGTM / ❌ Reject>. <one concise sentence naming the outcome and required action or non-obvious evidence.>
 
 ### Detailed Findings
 
 #### ✅/⚠️/💡/❌ <Category Name> — <Brief description>
 
-<Explanation with specifics. Reference code, line numbers, interleavings, etc.>
+<One concise paragraph with specific evidence and, for ⚠️/💡/❌ findings, the requested action.>
 
-(Repeat for each finding category. Group related findings under a single heading.)
+<Include only findings that add non-obvious evidence or actionable feedback. Group related findings under a single heading.>
 
 <!-- AI disclosure note: place any AI-generated content disclosure below this line. -->
 <!-- Example: > [!NOTE] This review was created by GitHub Copilot. -->
@@ -144,22 +146,31 @@ When presenting the final review (whether as a PR comment or as output to the us
 
 - Begin the review body with `## Holistic Review`. Include `**Motivation**:`,
   `**Approach**:`, and `**Summary**:` only when each adds non-obvious assessment beyond
-  the PR title, description, and code changes; omit any field that would merely restate
-  the obvious. When present, keep those fields in that order. Do not add a
-  `### Holistic Assessment` subheading, substitute a `Verdict` field, or rename those
-  fields.
+  the PR title, description, and code changes. For a routine LGTM review with no
+  non-obvious evidence to record, emit only `✅ LGTM — <one concise sentence>` after
+  the heading, adding at most two closely related sentences when needed; omit the
+  fields and Detailed Findings. Otherwise, omit any field that would merely restate the
+  obvious, and keep present fields in that order. Do not add a `### Holistic Assessment`
+  subheading, substitute a `Verdict` field, or rename those fields.
+- Treat each assertion as a budgeted claim: a routine LGTM review is one to three
+  sentences; a review with findings has a one-sentence Summary and one concise paragraph
+  per finding. Do not repeat a verdict, rationale, or requested action between a
+  top-level field, a detailed finding, and an inline comment.
 - **Detailed Findings** uses emoji-prefixed category headers:
-  - ✅ for things that are correct / look good (use to confirm important aspects were verified)
+  - ✅ only for independently useful, non-obvious evidence that is worth recording
   - ⚠️ for warnings or impactful suggestions (should fix, or follow-up)
   - 💡 for minor suggestions or observations (nice-to-have)
   - ❌ for errors (must fix before merge)
+- Do not use a finding merely to list unaffected components, declare that no public API
+  changed, or restate the PR diff. Omit routine "no concerns" assurances.
 - **Cross-cutting analysis** should be included when relevant: check whether related code (sibling types, callers, other platforms) is affected by the same issue or needs a similar fix.
-- **Test quality** should be assessed as its own finding when tests are part of the PR.
+- Assess test quality whenever tests are part of the PR, but report it as its own finding
+  only when that adds non-obvious evidence or actionable feedback.
 - When included, **Summary** gives a clear verdict: `❌ Needs Changes`, `⚠️ Needs Human
   Review`, `💡 Suggestions`, `✅ LGTM`, or `❌ Reject`. Use `✅ LGTM` only when confident
-  and no suggestions remain. When Summary is omitted, make the verdict clear through the
-  detailed findings. When uncertain, use `⚠️ Needs Human Review` and explain what a human
-  should focus on.
+  and no suggestions remain. When the optional fields are omitted for a routine LGTM,
+  use the concise `✅ LGTM` form above. When uncertain, use `⚠️ Needs Human Review` and
+  explain what a human should focus on.
 - Keep the review concise but thorough. Every claim should be backed by evidence from the code.
 
 ### Verdict Consistency Rules

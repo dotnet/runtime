@@ -404,13 +404,18 @@ the complexity is poorly encapsulated or duplicative, or the demonstrated benefi
 justify the maintenance burden. When the tradeoff remains unresolved, use `⚠️ Needs Human Review`
 and state the specific decision a maintainer should make.
 
-Use the review skill's top-level body structure. After `## Holistic Review`, include
-`**Motivation**:`, `**Approach**:`, and `**Summary**:` only when each adds non-obvious assessment
-beyond the PR title, description, and code changes; omit Motivation and/or Summary when they would
-merely restate the obvious. When present, keep those fields in that order. Then emit
-`### Detailed Findings`. Do not duplicate findings or assessments across the optional top-level
-fields, detailed findings, or inline comments. Use only `✅`, `⚠️`, `💡`, and `❌` as
-review-content status emojis.
+Use the review skill's top-level body structure. For a routine LGTM review with no non-obvious
+evidence to record, emit only `✅ LGTM — <one concise sentence>` after `## Holistic Review`, adding
+at most two closely related sentences when needed; omit the top-level fields and
+`### Detailed Findings`. Otherwise, include `**Motivation**:`, `**Approach**:`, and `**Summary**:`
+only when each adds non-obvious assessment beyond the PR title, description, and code changes.
+Omit any field that merely restates the obvious, keeping present fields in that order. Do not
+duplicate a verdict, rationale, or requested action across top-level fields, detailed findings, or
+inline comments. Treat each assertion as a budgeted claim: use a one-sentence Summary and one
+concise paragraph per finding. Do not add findings merely to list unaffected components, say that
+no public API changed, or restate the PR diff. Use `✅` only for independently useful, non-obvious
+evidence; otherwise, omit positive findings. Use only `✅`, `⚠️`, `💡`, and `❌` as review-content
+status emojis.
 
 For an incremental review, compare the complete current assessment with the most recent previous
 review. The assessment is unchanged only when its emitted top-level fields, findings, and action
