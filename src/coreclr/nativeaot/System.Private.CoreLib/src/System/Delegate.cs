@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -139,12 +138,12 @@ namespace System
         }
 
         // This function is known to the compiler.
-        private void InitializeClosedInstanceWithGVMResolution(object firstParameter, RuntimeMethodHandle tokenOfGenericVirtualMethod)
+        private void InitializeClosedInstanceWithGVMResolution(object firstParameter, IntPtr dispatchCell)
         {
             if (firstParameter is null)
                 throw new NullReferenceException();
 
-            IntPtr functionResolution = TypeLoaderExports.GVMLookupForSlot(firstParameter, tokenOfGenericVirtualMethod);
+            IntPtr functionResolution = RuntimeImports.RhpResolveInterfaceMethod(firstParameter, dispatchCell);
 
             if (functionResolution == IntPtr.Zero)
             {
@@ -354,12 +353,6 @@ namespace System
                 // Closed instance delegates place a value in _target, and we've ruled out all other types of delegates
                 return _target;
             }
-        }
-
-        internal object GetTargetForSingleCastInstanceDelegate()
-        {
-            Debug.Assert(HasSingleTarget && Target == _target && _target != null);
-            return _target;
         }
 
         // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed.
@@ -694,7 +687,7 @@ namespace System
             return new Delegate[] { this };
         }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null)
                 return false;
@@ -749,7 +742,7 @@ namespace System
             return object.ReferenceEquals(_target, d._target);
         }
 
-        public override int GetHashCode()
+        public sealed override int GetHashCode()
         {
             if (_helperObject is Wrapper[] invocationList)
             {
@@ -778,7 +771,7 @@ namespace System
             return hash;
         }
 
-        public bool HasSingleTarget => _helperObject is not Wrapper[];
+        public partial bool HasSingleTarget => _helperObject is not Wrapper[];
 
         // Used by delegate invocation list enumerator
         internal Delegate? TryGetAt(int index)

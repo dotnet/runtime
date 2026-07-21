@@ -1306,15 +1306,17 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 bool           profileInconsistent = false;
                 for (unsigned i = 0; i < targetCnt; i++)
                 {
-                    FlowEdge* const edge          = uniqueSuccs[i];
-                    weight_t const  oldEdgeWeight = edge->getLikelyWeight();
+                    FlowEdge* const edge = uniqueSuccs[i];
                     edge->setLikelihood(newLikelihood * edge->getDupCount());
-                    weight_t const newEdgeWeight = edge->getLikelyWeight();
 
                     if (afterDefaultCondBlock->hasProfileWeight())
                     {
+                        // Recompute the target's weight from its incoming edges rather than adjusting
+                        // it incrementally: the earlier default-peel scaled afterDefaultCondBlock's
+                        // weight but left the switch targets' weights stale, so an incremental update
+                        // would accumulate on top of a stale value (see #130785).
                         BasicBlock* const targetBlock = edge->getDestinationBlock();
-                        targetBlock->increaseBBProfileWeight(newEdgeWeight - oldEdgeWeight);
+                        targetBlock->setBBProfileWeight(targetBlock->computeIncomingWeight());
                         profileInconsistent |= (targetBlock->NumSucc() > 0);
                     }
                 }
@@ -4856,6 +4858,11 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                                             GenCondition* cond,
                                             bool          allowMultipleFlagsChecks)
 {
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+    // These architectures have no status/flag register.
+    return false;
+#else
+
     JITDUMP("Lowering condition:\n");
     DISPTREERANGE(BlockRange(), condition);
     JITDUMP("\n");
@@ -4886,9 +4893,6 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
         }
 #endif
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
-        // TODO-Cleanup: this ifdef look suspect, we should never get here on architectures without a status register,
-        // i. e. the right thing is to ifdef the whole function.
         // TODO-Cleanup: introduce a "has CPU flags" target define.
         if (!allowMultipleFlagsChecks)
         {
@@ -4899,7 +4903,6 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                 return false;
             }
         }
-#endif
 
         relop->gtType = TYP_VOID;
         relop->gtFlags |= GTF_SET_FLAGS;
@@ -4975,6 +4978,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
     }
 
     return false;
+#endif
 }
 
 //----------------------------------------------------------------------------------------------

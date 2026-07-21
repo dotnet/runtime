@@ -1584,8 +1584,10 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
     {
-        // Scratch registers cannot be reported for non-leaf frames
-        _ASSERTE(flags & ActiveStackFrame);
+        // Scratch registers cannot be reported for non-leaf frames.
+        // DECODE_NO_VALIDATION is used by the gcinfodumper for display purposes,
+        // which intentionally reports scratch registers at all offsets including safe points.
+        _ASSERTE((flags & ActiveStackFrame) || (m_Flags & DECODE_NO_VALIDATION));
     }
 
     LOG((LF_GCROOTS, LL_INFO1000, /* Part Two */
@@ -1692,8 +1694,10 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
     {
-        // Scratch registers cannot be reported for non-leaf frames
-        _ASSERTE(flags & ActiveStackFrame);
+        // Scratch registers cannot be reported for non-leaf frames.
+        // DECODE_NO_VALIDATION is used by the gcinfodumper for display purposes,
+        // which intentionally reports scratch registers at all offsets including safe points.
+        _ASSERTE((flags & ActiveStackFrame) || (m_Flags & DECODE_NO_VALIDATION));
     }
 
     LOG((LF_GCROOTS, LL_INFO1000, /* Part Two */
@@ -1795,8 +1799,10 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
     {
-        // Scratch registers cannot be reported for non-leaf frames
-        _ASSERTE(flags & ActiveStackFrame);
+        // Scratch registers cannot be reported for non-leaf frames.
+        // DECODE_NO_VALIDATION is used by the gcinfodumper for display purposes,
+        // which intentionally reports scratch registers at all offsets including safe points.
+        _ASSERTE((flags & ActiveStackFrame) || (m_Flags & DECODE_NO_VALIDATION));
     }
 
     LOG((LF_GCROOTS, LL_INFO1000, /* Part Two */
@@ -1935,8 +1941,10 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
     {
-        // Scratch registers cannot be reported for non-leaf frames
-        _ASSERTE(flags & ActiveStackFrame);
+        // Scratch registers cannot be reported for non-leaf frames.
+        // DECODE_NO_VALIDATION is used by the gcinfodumper for display purposes,
+        // which intentionally reports scratch registers at all offsets including safe points.
+        _ASSERTE((flags & ActiveStackFrame) || (m_Flags & DECODE_NO_VALIDATION));
     }
 
     LOG((LF_GCROOTS, LL_INFO1000, /* Part Two */
@@ -2059,8 +2067,10 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportRe
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
     {
-        // Scratch registers cannot be reported for non-leaf frames
-        _ASSERTE(flags & ActiveStackFrame);
+        // Scratch registers cannot be reported for non-leaf frames.
+        // DECODE_NO_VALIDATION is used by the gcinfodumper for display purposes,
+        // which intentionally reports scratch registers at all offsets including safe points.
+        _ASSERTE((flags & ActiveStackFrame) || (m_Flags & DECODE_NO_VALIDATION));
     }
 
     LOG((LF_GCROOTS, LL_INFO1000, /* Part Two */

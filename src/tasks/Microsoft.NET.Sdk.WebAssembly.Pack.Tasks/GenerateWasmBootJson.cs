@@ -83,6 +83,8 @@ public class GenerateWasmBootJson : Task
 
     public bool IsMultiThreaded { get; set; }
 
+    public string? UseMonoRuntime { get; set; }
+
     public bool FingerprintAssets { get; set; }
 
     public string ApplicationEnvironment { get; set; }
@@ -98,8 +100,6 @@ public class GenerateWasmBootJson : Task
     public bool LogExitCode { get; set; }
 
     public bool AsyncFlushOnExit { get; set; }
-
-    public bool ForwardConsole { get; set; }
 
     public override bool Execute()
     {
@@ -119,7 +119,8 @@ public class GenerateWasmBootJson : Task
 
     private void WriteBootConfig(string entryAssemblyName)
     {
-        var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion);
+        bool isMonoRuntime = string.IsNullOrEmpty(UseMonoRuntime) || string.Equals(UseMonoRuntime, "true", StringComparison.OrdinalIgnoreCase);
+        var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion, isMonoRuntime);
 
         var result = new BootJsonData
         {
@@ -137,7 +138,6 @@ public class GenerateWasmBootJson : Task
             if (AppendElementOnExit) result.appendElementOnExit = true;
             if (LogExitCode) result.logExitCode = true;
             if (AsyncFlushOnExit) result.asyncFlushOnExit = true;
-            if (ForwardConsole) result.forwardConsole = true;
         }
 
         if (IsTargeting80OrLater())
