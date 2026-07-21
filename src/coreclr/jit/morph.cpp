@@ -10570,23 +10570,27 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
             GenTreeIntCon*       offsetNode  = op2->AsIntCon();
             ssize_t              consVal     = offsetNode->IconValue();
 
-            // Note: the emitter does not expect out-of-bounds access for LCL_ADDR.
-            if (FitsIn<uint16_t>(consVal) && IsValidLclAddr(lclAddrNode->GetLclNum(), (uint32_t)consVal))
+            // Note: the emitter does not expect out-of-bounds access for LCL_ADDR. Validate the
+            // resulting offset rather than just the addend, so repeated folds cannot accumulate an
+            // offset the emitter is unable to encode. Both operands are bounded to [0, UINT16_MAX],
+            // so the addition below cannot overflow.
+            if (FitsIn<uint16_t>(consVal))
             {
-                ClrSafeInt<uint16_t> newOffset =
-                    ClrSafeInt<uint16_t>(lclAddrNode->GetLclOffs()) + ClrSafeInt<uint16_t>(consVal);
-                assert(!newOffset.IsOverflow());
+                unsigned newOffset = lclAddrNode->GetLclOffs() + static_cast<unsigned>(consVal);
 
-                lclAddrNode->SetOper(GT_LCL_ADDR);
-                lclAddrNode->AsLclFld()->SetLclOffs(newOffset.Value());
-                assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
+                if (FitsIn<uint16_t>(newOffset) && IsValidLclAddr(lclAddrNode->GetLclNum(), newOffset))
+                {
+                    lclAddrNode->SetOper(GT_LCL_ADDR);
+                    lclAddrNode->AsLclFld()->SetLclOffs(static_cast<uint16_t>(newOffset));
+                    assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
 
-                lclAddrNode->SetVNsFromNode(add);
+                    lclAddrNode->SetVNsFromNode(add);
 
-                DEBUG_DESTROY_NODE(offsetNode);
-                DEBUG_DESTROY_NODE(add);
+                    DEBUG_DESTROY_NODE(offsetNode);
+                    DEBUG_DESTROY_NODE(add);
 
-                return lclAddrNode;
+                    return lclAddrNode;
+                }
             }
         }
 
