@@ -72,7 +72,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int DacSetTargetConsistencyChecks(Interop.BOOL fEnableAsserts)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.DacSetTargetConsistencyChecks(fEnableAsserts) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null
+            ? _legacy.DacSetTargetConsistencyChecks(fEnableAsserts)
+            : HResults.S_OK;
 
     public int IsLeftSideInitialized(Interop.BOOL* pResult)
     {
@@ -4459,21 +4461,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                 TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(new TargetPointer(obj));
-                TypeHandle th = rts.GetTypeHandle(mt);
-                TargetPointer canonMT = rts.GetCanonicalMethodTable(th);
 
-                if (mt == canonMT)
-                {
-                    isValid = Interop.BOOL.TRUE;
-                }
-                else if (!rts.IsCanonicalMethodTable(th) || rts.IsContinuationWithoutMetadata(th))
-                {
-                    TargetPointer cls = rts.GetClassPointer(th);
-                    TypeHandle canonTh = rts.GetTypeHandle(canonMT);
-                    TargetPointer canonCls = rts.GetClassPointer(canonTh);
-                    if (canonCls == cls)
-                        isValid = Interop.BOOL.TRUE;
-                }
+                // GetTypeHandle validation performs the MethodTable -> EEClass -> MethodTable
+                // round-trip check (the port of MethodTable::ValidateWithPossibleAV), so a
+                // successfully resolved type handle means the object's MethodTable is self-consistent.
+                rts.GetTypeHandle(mt);
+                isValid = Interop.BOOL.TRUE;
             }
             catch (System.Exception)
             {

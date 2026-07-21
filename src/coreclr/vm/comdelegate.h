@@ -58,9 +58,10 @@ public:
     // Get the cpu stub for a delegate invoke.
     static Stub* GetInvokeMethodStub(EEImplMethodDesc* pMD);
 
-    static MethodDesc * __fastcall GetMethodDesc(OBJECTREF obj);
-    static MethodDesc* GetMethodDescForOpenVirtualDelegate(OBJECTREF orDelegate);
-    static BOOL IsTrueMulticastDelegate(OBJECTREF delegate);
+    static MethodDesc* GetMethodDesc(OBJECTREF obj);
+    static MethodDesc* GetMethodDescForOpenVirtualDelegate(DELEGATEREF delegate);
+
+    static BOOL HasSingleTarget(DELEGATEREF delegate);
 
     // Throw if the method violates any usage restrictions
     // for UnmanagedCallersOnlyAttribute.
@@ -112,10 +113,9 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d
 extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
     MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags);
 
-extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack retMethodInfo);
+extern "C" void QCALLTYPE Delegate_CreateMethodInfo(MethodDesc* methodDesc, QCall::ObjectHandleOnStack retMethodInfo);
 
-extern "C" BOOL QCALLTYPE Delegate_InternalEqualMethodHandles(QCall::ObjectHandleOnStack left, QCall::ObjectHandleOnStack right);
-
+extern "C" MethodDesc* QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnStack instance);
 
 void DistributeEvent(OBJECTREF *pDelegate,
                      OBJECTREF *pDomain);
