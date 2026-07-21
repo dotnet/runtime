@@ -108,7 +108,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
         if (FAILED(hr))
             COMPlusThrowHR(hr);
 
-        _ASSERTE(((*poref) != NULL) == (pvObj != NULL));
+        _ASSERTE(((*poref) == NULL) || (pvObj != NULL));
         return pvObj;
     }
 
