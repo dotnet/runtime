@@ -35,7 +35,7 @@ internal enum CorElementType
 }
 ```
 
-An `ITypeHandle` is the cDAC representation of runtime type information. Consumers obtain
+An `ITypeHandle` is the representation of runtime type information. Consumers obtain
 canonical handles from `RuntimeTypeSystem.GetTypeHandle` using the target address of a
 runtime `TypeHandle` or `MethodTable`.
 
