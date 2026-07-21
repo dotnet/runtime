@@ -298,15 +298,27 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             // start: find the type.
             ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_address);
-            MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+            MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)
+                ?? throw new InvalidOperationException("Module has no metadata.");
 
             EnumMethodDefinitions emd = new(reader, flags, (nuint)handleLocal);
             emd.Start(fullName);
             *handle = (ulong)((IEnum<uint>)emd).GetHandle();
+            // Legacy handle ownership transferred to emd.
+            handleLocal = default;
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
+        }
+        finally
+        {
+            // The legacy enumeration is started before the cDAC work. If that work fails,
+            // the caller receives a null handle and cannot end the legacy enumeration.
+            if (_legacyModule is not null && handleLocal != default)
+            {
+                _legacyModule.EndEnumMethodDefinitionsByName(handleLocal);
+            }
         }
 
 #if DEBUG

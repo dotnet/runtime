@@ -534,7 +534,8 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             return null;
         }
 
-        mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
+        mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)
+            ?? throw new InvalidOperationException("Module has no metadata.");
         StandaloneSignatureHandle localSigHandle = MetadataTokens.StandaloneSignatureHandle(localToken);
         BlobHandle localSigBlob = mdReader.GetStandaloneSignature(localSigHandle).Signature;
         return mdReader.GetBlobReader(localSigBlob);
@@ -787,7 +788,8 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         {
             // For TypeRefs, try to resolve in the same module's TypeDef table.
             TypeReference typeRef = reader.GetTypeReference(handle);
-            MetadataReader moduleReader = _target.Contracts.EcmaMetadata.GetMetadata(_moduleHandle)!;
+            MetadataReader moduleReader = _target.Contracts.EcmaMetadata.GetMetadata(_moduleHandle)
+                ?? throw new InvalidOperationException("Module has no metadata.");
             foreach (TypeDefinitionHandle tdh in moduleReader.TypeDefinitions)
             {
                 TypeDefinition td = moduleReader.GetTypeDefinition(tdh);

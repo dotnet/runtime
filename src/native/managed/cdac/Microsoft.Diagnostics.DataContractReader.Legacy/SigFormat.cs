@@ -180,7 +180,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                         uint typeDefToken = runtimeTypeSystem.GetTypeDefToken(th);
                         TargetPointer modulePointer = target.Contracts.RuntimeTypeSystem.GetModule(th);
                         Contracts.ModuleHandle module = target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePointer);
-                        MetadataReader internalTypeMetadata = target.Contracts.EcmaMetadata.GetMetadata(module)!;
+                        MetadataReader internalTypeMetadata = target.Contracts.EcmaMetadata.GetMetadata(module)
+                            ?? throw new InvalidOperationException("Module has no metadata.");
 
                         TypeDefinition internalTypeDef = internalTypeMetadata.GetTypeDefinition((TypeDefinitionHandle)MetadataTokens.Handle((int)typeDefToken));
                         _namespace = internalTypeMetadata.GetString(internalTypeDef.Namespace);
@@ -346,7 +347,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                     uint typeDefToken = runtimeTypeSystem.GetTypeDefToken(typeHandle);
                     TargetPointer modulePointer = target.Contracts.RuntimeTypeSystem.GetModule(typeHandle);
                     Contracts.ModuleHandle module = target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePointer);
-                    MetadataReader metadata = target.Contracts.EcmaMetadata.GetMetadata(module)!;
+                    MetadataReader metadata = target.Contracts.EcmaMetadata.GetMetadata(module)
+                        ?? throw new InvalidOperationException("Module has no metadata.");
                     TypeDefinition typeDef = metadata.GetTypeDefinition((TypeDefinitionHandle)MetadataTokens.Handle((int)typeDefToken));
                     string _namespace = metadata.GetString(typeDef.Namespace);
                     string name = metadata.GetString(typeDef.Name);
@@ -391,7 +393,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                 case CorElementType.Var:
                     runtimeTypeSystem.IsGenericVariable(typeHandle, out TargetPointer genericVariableModulePointer, out uint typeVarToken);
                     Contracts.ModuleHandle genericVariableModule = target.Contracts.Loader.GetModuleHandleFromModulePtr(genericVariableModulePointer);
-                    MetadataReader generatedVariableMetadata = target.Contracts.EcmaMetadata.GetMetadata(genericVariableModule)!;
+                    MetadataReader generatedVariableMetadata = target.Contracts.EcmaMetadata.GetMetadata(genericVariableModule)
+                        ?? throw new InvalidOperationException("Module has no metadata.");
                     GenericParameter genericVariable = generatedVariableMetadata.GetGenericParameter((GenericParameterHandle)MetadataTokens.Handle((int)typeVarToken));
                     stringBuilder.Append(generatedVariableMetadata.GetString(genericVariable.Name));
                     return;
