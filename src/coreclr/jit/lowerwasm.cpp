@@ -1355,11 +1355,11 @@ GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
     //   upperBnd  = *  CNS_VEC      simd   byte    <0x10, 0x10, ...>
     //                   /--* originalMask simd
     //                   +--*  upperBnd simd
-    //   upperMask = *  HWINRINSIC   simd    byte    PackedSimd.Subtract
+    //   upperMask = *  HWINTRINSIC   simd    byte    PackedSimd.Subtract
     //                   /--*  op2 simd
     //                   +--*  upperMask simd
     //   tmp2      = *  HWINTRINSIC   simd   byte    PackedSimd.Swizzle
-    //                   /--*  tmp1 simd 
+    //                   /--*  tmp1 simd
     //                   +--*  tmp2 simd
     //   res       =  *  HWINTRINSIC   simd   byte    PackedSimd.Or
 
