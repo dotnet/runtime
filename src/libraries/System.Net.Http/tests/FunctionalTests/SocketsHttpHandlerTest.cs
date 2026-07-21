@@ -1446,12 +1446,15 @@ namespace System.Net.Http.Functional.Tests
                 using HttpResponseMessage response = await client.GetAsync(url);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 Assert.Equal("data", await response.Content.ReadAsStringAsync());
-            }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                "HTTP/1.1 200 OK\r\n" +
-                "Connection: close\r\n" +
-                "Transfer-Encoding: chunked\r\n" +
-                "\r\n" +
-                chunkedBody));
+            }, async server =>
+            {
+                await server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                    "HTTP/1.1 200 OK\r\n" +
+                    "Connection: close\r\n" +
+                    "Transfer-Encoding: chunked\r\n" +
+                    "\r\n" +
+                    chunkedBody);
+            });
         }
 
         [Theory]
@@ -1467,10 +1470,14 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async url =>
             {
                 using HttpClient client = CreateHttpClient();
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
+                HttpRequestException exception = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
+                Assert.Equal(HttpRequestError.InvalidResponse, exception.HttpRequestError);
+
+                HttpIOException innerException = Assert.IsType<HttpIOException>(exception.InnerException);
+                Assert.Equal(HttpRequestError.InvalidResponse, innerException.HttpRequestError);
             }, async server =>
             {
-                try
+                await IgnoreExceptions(async () =>
                 {
                     await server.AcceptConnectionSendCustomResponseAndCloseAsync(
                         "HTTP/1.1 200 OK\r\n" +
@@ -1478,8 +1485,7 @@ namespace System.Net.Http.Functional.Tests
                         "Transfer-Encoding: chunked\r\n" +
                         "\r\n" +
                         chunkedBody);
-                }
-                catch { }
+                });
             });
         }
     }

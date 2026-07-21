@@ -1594,7 +1594,7 @@ namespace System.Net.Http
             // requires that each line be terminated by a CRLF. Interpreting a lone LF as a line
             // terminator, or allowing a bare CR within the line, is not permitted here.
             int index = buffer.IndexOfAny((byte)'\r', (byte)'\n');
-            if (index < 0)
+            if ((uint)index >= (uint)buffer.Length)
             {
                 // We haven't found a CR or LF yet, so we don't have a complete line.
                 if (buffer.Length < MaxChunkBytesAllowed)
@@ -1612,7 +1612,7 @@ namespace System.Net.Http
             {
                 // We found a CR. It must be immediately followed by an LF.
                 int lineFeedIndex = index + 1;
-                if (lineFeedIndex < buffer.Length)
+                if ((uint)lineFeedIndex < (uint)buffer.Length)
                 {
                     if (buffer[lineFeedIndex] != '\n')
                     {
