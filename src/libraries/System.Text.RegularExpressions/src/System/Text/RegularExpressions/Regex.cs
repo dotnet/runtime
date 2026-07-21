@@ -82,6 +82,26 @@ namespace System.Text.RegularExpressions
         /// Initializes a new instance of the <see cref="Regex" /> class for the specified regular expression.
         /// </summary>
         /// <param name="pattern">The regular expression pattern to match.</param>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The `pattern` parameter consists of regular expression language elements that symbolically describe the string to match.
+        /// For more information about regular expressions, see [Regular Expression Language - Quick Reference](https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-language-quick-reference).
+        ///
+        /// Calling the <xref:System.Text.RegularExpressions.Regex.%23ctor(System.String)> constructor is equivalent to calling the
+        /// <xref:System.Text.RegularExpressions.Regex.%23ctor(System.String,System.Text.RegularExpressions.RegexOptions)> constructor with a value of
+        /// <xref:System.Text.RegularExpressions.RegexOptions.None> for the `options` argument.
+        ///
+        /// A <xref:System.Text.RegularExpressions.Regex> object is immutable, which means that it can be used only for the match pattern you define when you create it.
+        /// However, it can be used any number of times without being recompiled.
+        ///
+        /// This constructor creates a case-sensitive regular expression. For a case-insensitive match, use the
+        /// <xref:System.Text.RegularExpressions.Regex.%23ctor(System.String,System.Text.RegularExpressions.RegexOptions)?displayProperty=nameWithType> constructor.
+        ///
+        /// ## Examples
+        ///
+        /// The following example uses this constructor to create a regular expression that matches words beginning with the letters "a" or "t".
+        ///
+        /// [!code-csharp[](../../../../tests/FunctionalTests/Regex.Examples.cs#RegexCtorString)]
+        /// ]]></format></remarks>
         /// <exception cref="ArgumentException">A regular expression parsing error occurred.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="pattern" /> is <see langword="null" />.</exception>
         public Regex([StringSyntax(StringSyntaxAttribute.Regex)] string pattern) :
@@ -95,6 +115,19 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="pattern">The regular expression pattern to match.</param>
         /// <param name="options">A bitwise combination of the enumeration values that modify the regular expression.</param>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The `pattern` parameter consists of regular expression language elements that symbolically describe the string to match.
+        /// For more information about regular expressions, see [Regular Expression Language - Quick Reference](https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-language-quick-reference).
+        ///
+        /// A <xref:System.Text.RegularExpressions.Regex> object is immutable, which means that it can be used only for the match parameters you define when you create it.
+        /// However, it can be used any number of times without being recompiled.
+        ///
+        /// ## Examples
+        ///
+        /// The following example uses this constructor to create a case-insensitive regular expression that matches words beginning with the letters "a" or "t".
+        ///
+        /// [!code-csharp[](../../../../tests/FunctionalTests/Regex.Examples.cs#RegexCtorStringOptions)]
+        /// ]]></format></remarks>
         /// <exception cref="ArgumentException">A regular expression parsing error occurred.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="pattern" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentOutOfRangeException">
@@ -115,6 +148,39 @@ namespace System.Text.RegularExpressions
         /// <param name="matchTimeout">
         /// A time-out interval, or <see cref="InfiniteMatchTimeout" /> to indicate that the method should not time out.
         /// </param>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// The `pattern` parameter consists of regular expression language elements that symbolically describe the string to match.
+        /// For more information about regular expressions, see [Regular Expression Language - Quick Reference](https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-language-quick-reference).
+        ///
+        /// A <xref:System.Text.RegularExpressions.Regex> object is immutable, which means that it can be used only for the match pattern you define when you create it.
+        /// However, it can be used any number of times without being recompiled.
+        ///
+        /// The `matchTimeout` parameter specifies how long a pattern-matching method should try to find a match before it times out.
+        /// If no match is found in that time interval, the pattern-matching method throws a <xref:System.Text.RegularExpressions.RegexMatchTimeoutException>.
+        /// The instance pattern-matching methods that observe the `matchTimeout` interval include:
+        ///
+        /// - <xref:System.Text.RegularExpressions.Regex.IsMatch*>
+        /// - <xref:System.Text.RegularExpressions.Regex.Match*>
+        /// - <xref:System.Text.RegularExpressions.Regex.Matches*>
+        /// - <xref:System.Text.RegularExpressions.Regex.Replace*>
+        /// - <xref:System.Text.RegularExpressions.Regex.Split*>
+        /// - <xref:System.Text.RegularExpressions.Match.NextMatch*?displayProperty=nameWithType>
+        ///
+        /// Setting a time-out interval can help prevent regular expressions that rely on excessive backtracking from appearing to stop responding
+        /// when they process input that contains near matches. For more information, see
+        /// [Best practices for regular expressions in .NET](https://learn.microsoft.com/dotnet/standard/base-types/best-practices-regex) and
+        /// [Backtracking in regular expressions](https://learn.microsoft.com/dotnet/standard/base-types/backtracking-in-regular-expressions).
+        /// When choosing a time-out interval, consider the following factors:
+        ///
+        /// - The length and complexity of the regular expression pattern.
+        /// - The expected machine load.
+        ///
+        /// ## Examples
+        ///
+        /// The following example creates a <xref:System.Text.RegularExpressions.Regex> object with a very short initial time-out and retries with a larger one if a timeout occurs.
+        ///
+        /// [!code-csharp[](../../../../tests/FunctionalTests/Regex.Examples.cs#RegexCtorStringOptionsMatchTimeout)]
+        /// ]]></format></remarks>
         /// <exception cref="ArgumentException">A regular expression parsing error occurred.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="pattern" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentOutOfRangeException">
