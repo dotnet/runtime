@@ -9,7 +9,9 @@
 // pressure (x86, FullOpts). GenIntCastDesc reloaded the spill temp as the small
 // signed type, which asserted (and would have emitted a 1-byte movzx that drops
 // the sign bits the temp actually holds) instead of reloading the full 4-byte
-// actual type. Compiling M3 exercises the shape (in the switch's case 4).
+// actual type. Compiling M3 exercises the shape (in the switch's case 4), but the
+// exact spill under register pressure is codegen-layout dependent, so this is
+// best-effort coverage rather than a guaranteed reproduction of the original assert.
 
 namespace Runtime_124508;
 
