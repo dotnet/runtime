@@ -1306,15 +1306,17 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 bool           profileInconsistent = false;
                 for (unsigned i = 0; i < targetCnt; i++)
                 {
-                    FlowEdge* const edge          = uniqueSuccs[i];
-                    weight_t const  oldEdgeWeight = edge->getLikelyWeight();
+                    FlowEdge* const edge = uniqueSuccs[i];
                     edge->setLikelihood(newLikelihood * edge->getDupCount());
-                    weight_t const newEdgeWeight = edge->getLikelyWeight();
 
                     if (afterDefaultCondBlock->hasProfileWeight())
                     {
+                        // Recompute the target's weight from its incoming edges rather than adjusting
+                        // it incrementally: the earlier default-peel scaled afterDefaultCondBlock's
+                        // weight but left the switch targets' weights stale, so an incremental update
+                        // would accumulate on top of a stale value (see #130785).
                         BasicBlock* const targetBlock = edge->getDestinationBlock();
-                        targetBlock->increaseBBProfileWeight(newEdgeWeight - oldEdgeWeight);
+                        targetBlock->setBBProfileWeight(targetBlock->computeIncomingWeight());
                         profileInconsistent |= (targetBlock->NumSucc() > 0);
                     }
                 }
@@ -4884,6 +4886,11 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                                             GenCondition* cond,
                                             bool          allowMultipleFlagsChecks)
 {
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+    // These architectures have no status/flag register.
+    return false;
+#else
+
     JITDUMP("Lowering condition:\n");
     DISPTREERANGE(BlockRange(), condition);
     JITDUMP("\n");
@@ -4914,9 +4921,6 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
         }
 #endif
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
-        // TODO-Cleanup: this ifdef look suspect, we should never get here on architectures without a status register,
-        // i. e. the right thing is to ifdef the whole function.
         // TODO-Cleanup: introduce a "has CPU flags" target define.
         if (!allowMultipleFlagsChecks)
         {
@@ -4927,7 +4931,6 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                 return false;
             }
         }
-#endif
 
         relop->gtType = TYP_VOID;
         relop->gtFlags |= GTF_SET_FLAGS;
@@ -5003,6 +5006,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
     }
 
     return false;
+#endif
 }
 
 //----------------------------------------------------------------------------------------------
@@ -5717,8 +5721,17 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         {
             assert(src->IsIntegralConst(0) && "expected an INIT_VAL for non-zero init.");
 
+            bool retypeZeroToRegType = false;
 #ifdef FEATURE_SIMD
-            if (varTypeIsSIMD(lclRegType))
+            // A SIMD struct is zero-initialized from a properly-typed SIMD zero.
+            retypeZeroToRegType = varTypeIsSIMD(lclRegType);
+#endif // FEATURE_SIMD
+#ifdef TARGET_WASM
+            // A Wasm struct is zero-initialized from a properly-typed zero.
+            retypeZeroToRegType |= (lclRegType != src->TypeGet());
+#endif // TARGET_WASM
+
+            if (retypeZeroToRegType)
             {
                 GenTree* zeroCon = m_compiler->gtNewZeroConNode(lclRegType);
 
@@ -5728,7 +5741,6 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                 src             = zeroCon;
                 lclStore->gtOp1 = src;
             }
-#endif // FEATURE_SIMD
 
             convertToStoreObj = false;
         }
@@ -10465,21 +10477,24 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
 #if !defined(JIT32_GCENCODER)
     if (doCpObj && isNotHeap)
     {
-        // No write barriers are needed if the destination is known to be outside of the GC heap.
-        // If the layout contains a byref, then we know it must live on the stack.
-        doCpObj = false;
 #if !defined(TARGET_WASM)
+        // No write barriers are needed for a stack destination, but only take this shortcut when the
+        // copy is small enough to be unrolled into a single non-interruptible region. Otherwise it is
+        // lowered to CORINFO_HELP_MEMCPY (Memmove), a GC-safe point that could observe torn GC pointers
+        // in the partially-written, GC-reported destination; larger copies stay on the CpObj path.
         if (size <= unrollLimit)
         {
-            // If the size is small enough to unroll then we need to mark the block as non-interruptible
-            // to actually allow unrolling. The generated code does not report GC references loaded in the
-            // temporary register(s) used for copying. This is not supported for the JIT32_GCENCODER, so
-            // on that target we keep doCpObj=true above and stay on the GC-aware CpObj path; the lowering
-            // heuristics in TryDecomposeBlockStoreAsIndirs then choose between per-slot decomposition and
-            // the bulk write-barrier helper.
+            doCpObj = false;
+
+            // Mark the block non-interruptible so it can be unrolled: the copy does not report the GC
+            // references held in its temporary register(s).
             blkNode->gtBlkOpGcUnsafe = true;
         }
-#endif
+#else  // TARGET_WASM
+       // WASM lowers this to a single `memory.copy` opcode (not a GC-safe point), so it is safe for
+       // any size.
+        doCpObj = false;
+#endif // TARGET_WASM
     }
 #endif // !JIT32_GCENCODER
 
@@ -10599,7 +10614,13 @@ void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
         return;
     }
 
-    if (blkNode->IsZeroingGcPointersOnHeap())
+    // Zeroing a GC-pointer struct must not use the CORINFO_HELP_MEMSET/MEMZERO helper: it is a
+    // GC-safe point that could observe a torn GC pointer in the partially-written, GC-reported
+    // destination. Use the atomic pointer-sized loop for both stack and heap destinations.
+    const bool isZeroingGcPointers =
+        blkNode->OperIs(GT_STORE_BLK) && src->IsIntegralConst(0) && blkNode->ContainsReferences();
+
+    if (isZeroingGcPointers)
     {
         blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
 #if FEATURE_HAS_ZERO_REG
@@ -13152,19 +13173,30 @@ void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
 
 #if defined(FEATURE_HW_INTRINSICS)
 //----------------------------------------------------------------------------------------------
-// Lowering::InsertNewSimdCreateScalarUnsafeNode: Inserts a new simd CreateScalarUnsafe node
+// Lowering::InsertNewSimdCreateScalarUnsafeNode: Inserts a new simd CreateScalarUnsafe node,
+//    eliding it where it is a pure reinterpret
 //
 //  Arguments:
 //    simdType        - The return type of SIMD node being created
 //    op1             - The value of the lowest element of the simd value
-//    simdBaseJitType - the base JIT type of SIMD type of the intrinsic
+//    simdBaseType    - the base type of the SIMD type of the intrinsic
 //    simdSize        - the size of the SIMD type of the intrinsic
 //
 // Returns:
-//    The inserted CreateScalarUnsafe node
+//    The node the consuming intrinsic should use as its operand. This is the newly created and
+//    lowered CreateScalarUnsafe node, or - where CreateScalarUnsafe is a pure reinterpret - the
+//    bare scalar op1 itself.
 //
 // Remarks:
-//    If the created node is a vector constant, op1 will be removed from the block range
+//    On targets where a floating-point scalar already occupies the lowest element of a SIMD
+//    register (with the upper elements undefined, matching the "Unsafe" contract), a non-constant
+//    floating-point CreateScalarUnsafe is a no-op reinterpret. In that case the bare scalar is
+//    returned and the consuming intrinsic reads it directly, avoiding a redundant node.
+//
+//    Integral scalars still require a real movd/movq (or ins/dup) to move the value into a SIMD
+//    register, and a constant is materialized so it can fold to a vector constant, so those cases
+//    create, lower, and return a real CreateScalarUnsafe node. If that node is a vector constant,
+//    op1 is removed from the block range.
 //
 GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types simdType,
                                                        GenTree*  op1,
@@ -13173,6 +13205,13 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types simdType,
 {
     assert(varTypeIsSIMD(simdType));
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    if (varTypeIsFloating(simdBaseType) && !op1->IsCnsFltOrDbl())
+    {
+        return op1;
+    }
+#endif // TARGET_XARCH || TARGET_ARM64
+
     GenTree* result = m_compiler->gtNewSimdCreateScalarUnsafeNode(simdType, op1, simdBaseType, simdSize);
     BlockRange().InsertAfter(op1, result);
 
@@ -13180,6 +13219,8 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types simdType,
     {
         BlockRange().Remove(op1);
     }
+
+    LowerNode(result);
     return result;
 }
 

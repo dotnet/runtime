@@ -205,7 +205,7 @@ internal readonly struct Thread_1 : IThread
         TargetPointer idDispenser = _target.ReadPointer(idDispenserPtr);
         Data.IdDispenser idDispenserObj = _target.ProcessedData.GetOrAdd<Data.IdDispenser>(idDispenser);
         TargetPointer threadPtr = TargetPointer.Null;
-        if (id < idDispenserObj.HighestId)
+        if (id <= idDispenserObj.HighestId)
             threadPtr = _target.ReadPointer(idDispenserObj.IdToThread + (ulong)(id * _target.PointerSize));
         return threadPtr;
     }
@@ -296,45 +296,5 @@ internal readonly struct Thread_1 : IThread
     {
         var (_, exceptionInfo, exceptionTrackerAddr) = GetThreadExceptionInfo(threadPointer);
         return GetActiveExceptionPseudoHandle(exceptionInfo, exceptionTrackerAddr);
-    }
-
-    byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
-    {
-        TargetPointer readFrom;
-        var (thread, exceptionInfo, _) = GetThreadExceptionInfo(threadPointer);
-        if (exceptionInfo == null)
-            return Array.Empty<byte>();
-        TargetPointer thrownObject = exceptionInfo.ThrownObject;
-        if (thrownObject != TargetPointer.Null)
-        {
-            Data.Exception exception = _target.ProcessedData.GetOrAdd<Data.Exception>(thrownObject);
-            if (exception.WatsonBuckets != TargetPointer.Null)
-            {
-                readFrom = _target.Contracts.Object.GetArrayData(exception.WatsonBuckets, out _, out _, out _);
-            }
-            else
-            {
-                readFrom = thread.UEWatsonBucketTrackerBuckets ?? TargetPointer.Null;
-                if (readFrom == TargetPointer.Null)
-                {
-                    readFrom = exceptionInfo.ExceptionWatsonBucketTrackerBuckets ?? TargetPointer.Null;
-                }
-                else
-                {
-                    return Array.Empty<byte>();
-                }
-            }
-        }
-        else
-        {
-            readFrom = thread.UEWatsonBucketTrackerBuckets ?? TargetPointer.Null;
-        }
-
-        if (readFrom == TargetPointer.Null)
-            return Array.Empty<byte>();
-
-        byte[] rval = new byte[_target.ReadGlobal<uint>(Constants.Globals.SizeOfGenericModeBlock)];
-        _target.ReadBuffer(readFrom, rval);
-        return rval;
     }
 }

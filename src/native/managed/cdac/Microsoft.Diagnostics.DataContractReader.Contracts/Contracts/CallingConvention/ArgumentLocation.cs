@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Internal.JitInterface;
+
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct ArgumentLocation
@@ -29,4 +31,12 @@ internal readonly struct ArgumentLocation
     // the open generic MethodTable (e.g. Span<T> for a Span<int> arg) so
     // encoders can inspect type structure as a fallback.
     public TypeHandle OpenGenericType { get; init; }
+
+    // SystemV-AMD64 struct passed in registers. Offset is the StructInRegsOffset
+    // sentinel; the encoder consumes SysVEightByteDescriptor + SysVIdxGenReg.
+    public bool IsStructPassedInRegs { get; init; }
+    public SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR SysVEightByteDescriptor { get; init; }
+    // Index of the first general-purpose argument register assigned to this
+    // struct (0 = RDI, 1 = RSI, ...).
+    public int SysVIdxGenReg { get; init; }
 }

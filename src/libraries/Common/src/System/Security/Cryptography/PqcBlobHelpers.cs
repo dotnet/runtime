@@ -184,7 +184,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> data,
             EncodeBlobFunc<TResult> callback)
         {
-            int blobHeaderSize = Unsafe.SizeOf<BCRYPT_PQDSA_KEY_BLOB>();
+            int blobHeaderSize = sizeof(BCRYPT_PQDSA_KEY_BLOB);
             int parameterSetLengthWithNullTerminator = checked(sizeof(char) * (parameterSet.Length + 1));
 
             int blobSize = checked(blobHeaderSize +
@@ -247,7 +247,7 @@ namespace System.Security.Cryptography
             magic = blob.Magic;
             int parameterSetLength = blob.cbParameterSet - 2; // Null terminator char, '\0'
             int keyLength = blob.cbKey;
-            index += Unsafe.SizeOf<BCRYPT_PQDSA_KEY_BLOB>();
+            index += sizeof(BCRYPT_PQDSA_KEY_BLOB);
 
             parameterSet = MemoryMarshal.Cast<byte, char>(blobBytes.Slice(index, parameterSetLength));
             index += blob.cbParameterSet;

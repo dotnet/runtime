@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "lower.h"
+#include "compiler.h"
 
 void Lowering::SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason))
 {
@@ -163,10 +164,14 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 //
 GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
-    if ((node->gtFlags & GTF_IND_NONFAULTING) == 0)
+    if (((node->gtFlags & GTF_IND_NONFAULTING) == 0) ||
+        (node->TypeIs(TYP_SIMD12) && !node->Addr()->OperIs(GT_LCL_ADDR)))
     {
         // We need to be able to null check the address, and that requires multiple uses of the address operand.
-        SetMultiplyUsed(node->Addr() DEBUGARG("LowerStoreIndir faulting Addr"));
+        // SIMD12 stores also re-materialize the address for the trailing lane store, so force it there as well -
+        // unless the address is a re-materializable LCL_ADDR (the local-to-stack store rewrite), which codegen
+        // re-emits directly.
+        SetMultiplyUsed(node->Addr() DEBUGARG("LowerStoreIndir Addr (null check or simd12 lane store)"));
     }
 
     ContainCheckStoreIndir(node);
@@ -458,9 +463,11 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         return;
     }
 
-    if (indirNode->OperIs(GT_IND) && ((indirNode->gtFlags & GTF_IND_NONFAULTING) == 0))
+    if (indirNode->OperIs(GT_IND) &&
+        (((indirNode->gtFlags & GTF_IND_NONFAULTING) == 0) || indirNode->TypeIs(TYP_SIMD12)))
     {
-        SetMultiplyUsed(indirNode->Addr() DEBUGARG("ContainCheckIndir faulting load Addr"));
+        // SIMD12 loads re-materialize the address for the trailing lane load, so force it there regardless.
+        SetMultiplyUsed(indirNode->Addr() DEBUGARG("ContainCheckIndir load Addr (null check or simd12 lane load)"));
     }
 
     // TODO-WASM-CQ: contain suitable LEAs here. Take note of the fact that for this to be correct we must prove the
@@ -827,6 +834,13 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic      intrinsic = node->GetHWIntrinsicId();
     HWIntrinsicCategory category  = HWIntrinsicInfo::lookupCategory(intrinsic);
+    bool                hasImmOp  = HWIntrinsicInfo::HasImmediateOperand(intrinsic);
+    GenTree*            addr      = nullptr;
+
+    if (node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr))
+    {
+        SetMultiplyUsed(addr DEBUGARG("LowerHWIntrinsic memory address (null check)"));
+    }
 
     switch (intrinsic)
     {
@@ -841,6 +855,14 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicCreate(node);
         }
 
+        case NI_Vector_CreateScalarUnsafe:
+        {
+            // CreateScalarUnsafe leaves the upper elements undefined, so we can broadcast the value
+            // across every lane. This maps directly to a single splat instruction.
+            node->ChangeHWIntrinsicId(NI_PackedSimd_Splat);
+            return LowerNode(node);
+        }
+
         case NI_Vector_op_Equality:
         {
             assert(category == HW_Category_Helper);
@@ -853,12 +875,212 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicCmpOp(node, GT_NE);
         }
 
+        case NI_PackedSimd_CompareLessThan:
+        case NI_PackedSimd_CompareLessThanOrEqual:
+        case NI_PackedSimd_CompareGreaterThan:
+        case NI_PackedSimd_CompareGreaterThanOrEqual:
+        {
+            if (node->GetSimdBaseType() == TYP_ULONG)
+            {
+                return LowerHWIntrinsicCompareUnsignedLong(node);
+            }
+            break;
+        }
+
+        case NI_Vector_GetElement:
+        {
+            // GetElement(vector, index) maps directly to ExtractScalar(vector, imm).
+            node->ChangeHWIntrinsicId(NI_PackedSimd_ExtractScalar);
+            return LowerHWIntrinsicWithImm(node);
+        }
+
+        case NI_Vector_ToScalar:
+        {
+            // ToScalar(vector) is GetElement(vector, 0), i.e. ExtractScalar(vector, 0).
+            GenTree* idx = m_compiler->gtNewIconNode(0);
+            BlockRange().InsertBefore(node, idx);
+            LowerNode(idx);
+
+            node->ResetHWIntrinsicId(NI_PackedSimd_ExtractScalar, m_compiler, node->Op(1), idx);
+            return LowerHWIntrinsicWithImm(node);
+        }
+
+        case NI_Vector_WithElement:
+        {
+            // WithElement(vector, index, value) maps directly to ReplaceScalar(vector, imm, value).
+            node->ChangeHWIntrinsicId(NI_PackedSimd_ReplaceScalar);
+            return LowerHWIntrinsicWithImm(node);
+        }
+
+        case NI_PackedSimd_ExtractScalar:
+        case NI_PackedSimd_ReplaceScalar:
+        case NI_PackedSimd_LoadScalarAndInsert:
+        case NI_PackedSimd_StoreSelectedScalar:
+        {
+            assert(hasImmOp);
+            return LowerHWIntrinsicWithImm(node);
+        }
+
+        case NI_PackedSimd_LoadScalarAndSplatVector128:
+        case NI_PackedSimd_LoadScalarVector128:
+        case NI_PackedSimd_LoadWideningVector128:
+        {
+            // These intrinsics don't require an immediate operand
+            assert(!hasImmOp);
+            break;
+        }
+
+        case NI_PackedSimd_Swizzle:
+        {
+            assert(category == HW_Category_SIMD);
+            LowerHWIntrinsicSwizzle(node);
+            return node->gtNext;
+        }
+
         default:
         {
             assert(category == HW_Category_SIMD);
             break;
         }
     }
+
+    ContainCheckHWIntrinsic(node);
+    return node->gtNext;
+}
+
+// --------------------------------------------------------
+// LowerHWIntrinsicWithImm: Lower a hardware intrinsic node with an immediate operand, and determine if
+// it needs a jump table fallback.
+//
+// Arguments:
+//    node - The hardware intrinsic node.
+//
+// Notes:
+//  If the immediate operand is constant, it should be marked as contained.
+//  If not, we mark the operands as multiply used so they'll be allocated wasm locals (needed for the
+//  jump table which uses nested blocks).
+GenTree* Lowering::LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node)
+{
+    GenTree* immOp = node->GetImmOp();
+    if (!immOp->IsCnsIntOrI())
+    {
+        // This node has a non-constant immediate operand, so it will need a jump table
+        // to cover all the possible immediate values. On Wasm this involves introducing nested blocks,
+        // which requires us to set the operands as "multiply used" so regalloc assigns them locals.
+        for (size_t i = 1; i <= node->GetOperandCount(); i++)
+        {
+            GenTree* op = node->Op(i);
+            SetMultiplyUsed(op DEBUGARG("Non-constant imm op needs jump table fallback"));
+        }
+    }
+
+    ContainCheckHWIntrinsic(node);
+    return node->gtNext;
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerHWIntrinsicSwizzle: Rewrite a constant-mask PackedSimd Swizzle into an i8x16.shuffle.
+//
+// Wasm's i8x16.swizzle takes a runtime byte-index mask, whereas i8x16.shuffle encodes the 16
+// lane selectors as an immediate. When the mask is a compile-time constant with no out-of-range
+// lanes, emitting i8x16.shuffle lets the underlying wasm engine pattern-match the known
+// permutation into an optimal native sequence instead of a generic table lookup.
+//
+// i8x16.shuffle selects from two vectors (lanes 0-15 from the first, 16-31 from the second), so
+// for a single-source swizzle we feed the source vector as both operands. On the wasm value
+// stack that requires the source twice, so it is marked multiply-used (materialized into a local)
+// and the codegen side emits the extra local.get. Out-of-range masks are left as a swizzle, whose
+// native "index >= 16 -> 0" behavior i8x16.shuffle cannot reproduce without a zero operand.
+//
+// Arguments:
+//    node - The PackedSimd Swizzle node.
+//
+void Lowering::LowerHWIntrinsicSwizzle(GenTreeHWIntrinsic* node)
+{
+    assert(node->GetHWIntrinsicId() == NI_PackedSimd_Swizzle);
+
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
+
+    if (op2->IsCnsVec())
+    {
+        const simd_t& mask       = op2->AsVecCon()->gtSimdVal;
+        bool          allInRange = true;
+
+        for (int i = 0; i < 16; i++)
+        {
+            if (mask.u8[i] >= 16)
+            {
+                allInRange = false;
+                break;
+            }
+        }
+
+        if (allInRange)
+        {
+            // The mask becomes the i8x16.shuffle immediate; the source is consumed as both
+            // shuffle operands, so it must be available twice on the value stack.
+            MakeSrcContained(node, op2);
+            SetMultiplyUsed(op1 DEBUGARG("i8x16.shuffle reuses the source as both operands"));
+        }
+    }
+
+    ContainCheckHWIntrinsic(node);
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerHWIntrinsicCompareUnsignedLong: Rewrite a PackedSimd ordered ulong compare into a
+// signed compare on sign-bit-flipped operands.
+//
+// Wasm SIMD does not provide unsigned i64x2 relative comparison opcodes. We apply the
+// rewrite of
+//     cmp_u(a, b)  ==  cmp_s(a VECTOR_XOR signbit_vec, b VECTOR_XOR signbit_vec)
+//
+// Arguments:
+//    node - The PackedSimd ordered compare with SimdBaseType TYP_ULONG.
+//
+// Return Value:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerHWIntrinsicCompareUnsignedLong(GenTreeHWIntrinsic* node)
+{
+    assert(node->GetSimdBaseType() == TYP_ULONG);
+    assert(node->GetSimdSize() == 16);
+
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
+
+    // Create two independent 2-element constant vectors, with each element set to the sign bit for i64.
+    GenTreeVecCon* signMaskA    = m_compiler->gtNewVconNode(TYP_SIMD16);
+    signMaskA->gtSimdVal.u64[0] = 0x8000000000000000ULL;
+    signMaskA->gtSimdVal.u64[1] = 0x8000000000000000ULL;
+
+    GenTreeVecCon* signMaskB    = m_compiler->gtNewVconNode(TYP_SIMD16);
+    signMaskB->gtSimdVal.u64[0] = 0x8000000000000000ULL;
+    signMaskB->gtSimdVal.u64[1] = 0x8000000000000000ULL;
+
+    GenTreeHWIntrinsic* xorA =
+        m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, signMaskA, NI_PackedSimd_Xor, TYP_LONG, 16);
+
+    GenTreeHWIntrinsic* xorB =
+        m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, signMaskB, NI_PackedSimd_Xor, TYP_LONG, 16);
+
+    // The original LIR execution order is:  ... op1 ... op2 ... node ...
+    // After rewrite we need:                ... op1 ... signMaskA xorA op2 ... signMaskB xorB node ...
+    BlockRange().InsertAfter(op1, signMaskA, xorA);
+    BlockRange().InsertAfter(op2, signMaskB, xorB);
+
+    LowerNode(signMaskA);
+    LowerNode(signMaskB);
+
+    LowerNode(xorA);
+    LowerNode(xorB);
+
+    node->Op(1) = xorA;
+    node->Op(2) = xorB;
+    node->SetSimdBaseType(TYP_LONG);
+
+    ContainCheckHWIntrinsic(node);
     return node->gtNext;
 }
 
@@ -1050,7 +1272,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     //   ...
 
     GenTree* tmp1 = InsertNewSimdCreateScalarUnsafeNode(simdType, node->Op(1), simdBaseType, simdSize);
-    LowerNode(tmp1);
 
     // We will be constructing the following parts:
     //   ...
@@ -1103,5 +1324,13 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    // TODO-WASM: implement containment for hardware intrinsics, currently a no-op
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+    if (HWIntrinsicInfo::HasImmediateOperand(intrinsicId))
+    {
+        GenTree* immOp = node->GetImmOp();
+        if (immOp->IsCnsIntOrI())
+        {
+            MakeSrcContained(node, immOp);
+        }
+    }
 }

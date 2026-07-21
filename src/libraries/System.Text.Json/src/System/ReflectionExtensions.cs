@@ -104,17 +104,59 @@ namespace System.Text.Json.Reflection
 #if NET
             return ctorInfo.Invoke(BindingFlags.DoNotWrapExceptions, null, parameters, null);
 #else
-            object? result = null;
             try
             {
-                result = ctorInfo.Invoke(parameters);
+                return ctorInfo.Invoke(parameters);
             }
-            catch (TargetInvocationException ex)
+            catch (TargetInvocationException ex) when (ex.InnerException is not null)
             {
                 ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                throw; // unreachable
             }
+#endif
+        }
 
-            return result;
+        /// <summary>
+        /// Invokes <paramref name="methodInfo"/> without wrapping any exception thrown by the
+        /// target method in a <see cref="TargetInvocationException"/>. This matches the behavior of
+        /// the Reflection.Emit-based accessor, which emits direct calls into user code.
+        /// </summary>
+        public static object? InvokeNoWrapExceptions(this MethodInfo methodInfo, object? obj, object?[]? parameters)
+        {
+#if NET
+            return methodInfo.Invoke(obj, BindingFlags.DoNotWrapExceptions, binder: null, parameters, culture: null);
+#else
+            try
+            {
+                return methodInfo.Invoke(obj, parameters);
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is not null)
+            {
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                throw; // unreachable
+            }
+#endif
+        }
+
+        /// <summary>
+        /// Invokes <paramref name="constructorInfo"/> without wrapping any exception thrown by the
+        /// constructor in a <see cref="TargetInvocationException"/>. This matches the behavior of
+        /// the Reflection.Emit-based accessor, which emits direct calls into user code.
+        /// </summary>
+        public static object InvokeNoWrapExceptions(this ConstructorInfo constructorInfo, object?[]? parameters)
+        {
+#if NET
+            return constructorInfo.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters, culture: null);
+#else
+            try
+            {
+                return constructorInfo.Invoke(parameters);
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is not null)
+            {
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                throw; // unreachable
+            }
 #endif
         }
 
@@ -318,6 +360,318 @@ namespace System.Text.Json.Reflection
             }
 
             return pattern == target;
+        }
+
+        // The following is a line-by-line port of the Roslyn C# compiler's own accessibility comparison — the
+        // logic it runs to report the "inconsistent accessibility" diagnostics (CS0050/CS0060 and friends). An
+        // inferred closed-hierarchy derived type is kept only when it is at least as visible as the base it is
+        // registered under; otherwise there are call sites that can reference the base but not the derived type.
+        // Rather than invent an accessibility metric (which would risk drifting from the language as new
+        // modifiers are added), we reproduce the compiler's algorithm verbatim, using its terminology, so it
+        // tracks C# accessibility as it evolves. The reflection resolver has no Roslyn Compilation, so the
+        // algorithm is reproduced here over System.Type; gen/Helpers/RoslynExtensions.cs mirrors it over ISymbol.
+        //
+        // Ported from dotnet/roslyn @ 121e7dc868d26be12b9c3fb52b7b9d2ae41a1ac2:
+        //   IsAtLeastAsVisibleAs / FindTypeLessVisibleThan / IsAsRestrictive:
+        //     https://github.com/dotnet/roslyn/blob/121e7dc868d26be12b9c3fb52b7b9d2ae41a1ac2/src/Compilers/CSharp/Portable/Symbols/TypeSymbolExtensions.cs#L1048
+        //   IsAccessibleViaInheritance:
+        //     https://github.com/dotnet/roslyn/blob/121e7dc868d26be12b9c3fb52b7b9d2ae41a1ac2/src/Compilers/CSharp/Portable/Symbols/SymbolExtensions.cs#L48
+        //   HasInternalAccessTo:
+        //     https://github.com/dotnet/roslyn/blob/121e7dc868d26be12b9c3fb52b7b9d2ae41a1ac2/src/Compilers/CSharp/Portable/Binder/Semantics/AccessCheck.cs#L676
+
+        /// <summary>
+        /// Determines whether <paramref name="type"/> is at least as visible as <paramref name="sym"/>. Port of
+        /// Roslyn's <c>TypeSymbolExtensions.IsAtLeastAsVisibleAs</c>; because a closed hierarchy relates two
+        /// named types, the compound-type traversal (<c>FindTypeLessVisibleThan</c>/<c>Symbol.VisitType</c>)
+        /// reduces to the single <c>IsAsRestrictive</c> check.
+        /// </summary>
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        public static bool IsAtLeastAsVisibleAs(this Type type, Type sym)
+        {
+            return IsAsRestrictive(type, sym);
+
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            static bool IsAsRestrictive(Type s1, Type sym2)
+            {
+                Accessibility acc1 = GetDeclaredAccessibility(s1);
+
+                if (acc1 == Accessibility.Public)
+                {
+                    return true;
+                }
+
+                for (Type? s2 = sym2; s2 is not null; s2 = s2.DeclaringType)
+                {
+                    Accessibility acc2 = GetDeclaredAccessibility(s2);
+
+                    switch (acc1)
+                    {
+                        case Accessibility.Internal:
+                            // If s2 is private or internal, and is in an assembly that gives s1's assembly internal
+                            // access, then this is at least as restrictive as s1's internal.
+                            if (acc2 is Accessibility.Private or Accessibility.Internal or Accessibility.ProtectedAndInternal &&
+                                HasInternalAccessTo(s2.Assembly, s1.Assembly))
+                            {
+                                return true;
+                            }
+
+                            break;
+
+                        case Accessibility.ProtectedAndInternal:
+                            // Since s1 is private protected, s2 must be more restrictive than both internal and
+                            // protected. Do the "internal" test first (as above); if it passes, fall through to the
+                            // "protected" test.
+                            if (acc2 is Accessibility.Private or Accessibility.Internal or Accessibility.ProtectedAndInternal &&
+                                HasInternalAccessTo(s2.Assembly, s1.Assembly))
+                            {
+                                goto case Accessibility.Protected;
+                            }
+
+                            break;
+
+                        case Accessibility.Protected:
+                        {
+                            Type? parent1 = s1.DeclaringType;
+
+                            if (parent1 is null)
+                            {
+                                // not helpful
+                            }
+                            else if (acc2 == Accessibility.Private)
+                            {
+                                // if s2 is private and within s1's parent or within a subclass of s1's parent,
+                                // then this is at least as restrictive as s1's protected.
+                                for (Type? parent2 = s2.DeclaringType; parent2 is not null; parent2 = parent2.DeclaringType)
+                                {
+                                    if (IsAccessibleViaInheritance(parent1, parent2))
+                                    {
+                                        return true;
+                                    }
+                                }
+                            }
+                            else if (acc2 is Accessibility.Protected or Accessibility.ProtectedAndInternal)
+                            {
+                                // if s2 is protected, and its parent is a subclass of (or the same as) s1's
+                                // parent, then this is at least as restrictive as s1's protected.
+                                Type? parent2 = s2.DeclaringType;
+                                if (parent2 is not null && IsAccessibleViaInheritance(parent1, parent2))
+                                {
+                                    return true;
+                                }
+                            }
+
+                            break;
+                        }
+
+                        case Accessibility.ProtectedOrInternal:
+                        {
+                            Type? parent1 = s1.DeclaringType;
+
+                            if (parent1 is null)
+                            {
+                                break;
+                            }
+
+                            switch (acc2)
+                            {
+                                case Accessibility.Private:
+                                    // if s2 is private and within a subclass of s1's parent, or within the same
+                                    // assembly as s1, then this is at least as restrictive as s1's protected internal.
+                                    if (HasInternalAccessTo(s2.Assembly, s1.Assembly))
+                                    {
+                                        return true;
+                                    }
+
+                                    for (Type? parent2 = s2.DeclaringType; parent2 is not null; parent2 = parent2.DeclaringType)
+                                    {
+                                        if (IsAccessibleViaInheritance(parent1, parent2))
+                                        {
+                                            return true;
+                                        }
+                                    }
+
+                                    break;
+
+                                case Accessibility.Internal:
+                                    // If s2 is in an assembly that gives s1's assembly internal access, then this
+                                    // is more restrictive than s1's protected internal.
+                                    if (HasInternalAccessTo(s2.Assembly, s1.Assembly))
+                                    {
+                                        return true;
+                                    }
+
+                                    break;
+
+                                case Accessibility.Protected:
+                                    // if s2 is protected, and its parent is a subclass of (or the same as) s1's
+                                    // parent, then this is at least as restrictive as s1's protected internal.
+                                    if (s2.DeclaringType is Type protectedParent2 && IsAccessibleViaInheritance(parent1, protectedParent2))
+                                    {
+                                        return true;
+                                    }
+
+                                    break;
+
+                                case Accessibility.ProtectedAndInternal:
+                                    // if s2 is private protected, and its parent is a subclass of (or the same as)
+                                    // s1's parent, or it is in the same assembly as s1, then this is at least as
+                                    // restrictive as s1's protected internal.
+                                    if (HasInternalAccessTo(s2.Assembly, s1.Assembly) ||
+                                        (s2.DeclaringType is Type privateProtectedParent2 && IsAccessibleViaInheritance(parent1, privateProtectedParent2)))
+                                    {
+                                        return true;
+                                    }
+
+                                    break;
+
+                                case Accessibility.ProtectedOrInternal:
+                                    // if s2 is protected internal, and its parent is a subclass of (or the same as)
+                                    // s1's parent, and it is in the same assembly as s1, then this is at least as
+                                    // restrictive as s1's protected internal.
+                                    if (HasInternalAccessTo(s2.Assembly, s1.Assembly) &&
+                                        s2.DeclaringType is Type protectedOrInternalParent2 && IsAccessibleViaInheritance(parent1, protectedOrInternalParent2))
+                                    {
+                                        return true;
+                                    }
+
+                                    break;
+                            }
+
+                            break;
+                        }
+
+                        case Accessibility.Private:
+                            if (acc2 == Accessibility.Private)
+                            {
+                                // if s2 is private, and it is within s1's parent, then this is at least as
+                                // restrictive as s1's private.
+                                Type? parent1 = s1.DeclaringType;
+
+                                if (parent1 is null)
+                                {
+                                    break;
+                                }
+
+                                Type parent1OriginalDefinition = OriginalDefinition(parent1);
+                                for (Type? parent2 = s2.DeclaringType; parent2 is not null; parent2 = parent2.DeclaringType)
+                                {
+                                    if (ReferenceEquals(OriginalDefinition(parent2), parent1OriginalDefinition))
+                                    {
+                                        return true;
+                                    }
+                                }
+                            }
+
+                            break;
+                    }
+                }
+
+                return false;
+            }
+
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            static bool IsAccessibleViaInheritance(Type superType, Type subType)
+            {
+                Type originalSuperType = OriginalDefinition(superType);
+                for (Type? current = subType; current is not null; current = current.BaseType)
+                {
+                    if (ReferenceEquals(OriginalDefinition(current), originalSuperType))
+                    {
+                        return true;
+                    }
+                }
+
+                if (originalSuperType.IsInterface)
+                {
+                    foreach (Type current in subType.GetInterfaces())
+                    {
+                        if (ReferenceEquals(OriginalDefinition(current), originalSuperType))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            static bool HasInternalAccessTo(Assembly fromAssembly, Assembly toAssembly)
+            {
+                if (fromAssembly == toAssembly)
+                {
+                    return true;
+                }
+
+                // Reflection analog of Roslyn's AreInternalsVisibleToThisAssembly. Closed hierarchies are compiled
+                // into a single assembly, so this branch only matters for the general faithfulness of the port; the
+                // friend assembly is matched by simple name (the runtime already enforced strong-name identity when
+                // it loaded the types).
+                string? fromName = fromAssembly.GetName().Name;
+                foreach (CustomAttributeData attribute in toAssembly.GetCustomAttributesData())
+                {
+                    if (attribute.AttributeType == typeof(InternalsVisibleToAttribute) &&
+                        attribute.ConstructorArguments.Count > 0 &&
+                        attribute.ConstructorArguments[0].Value is string friendName)
+                    {
+                        int comma = friendName.IndexOf(',');
+                        string friendSimpleName = comma < 0 ? friendName : friendName.Substring(0, comma);
+                        if (string.Equals(friendSimpleName, fromName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            static Type OriginalDefinition(Type type) =>
+                type.IsGenericType && !type.IsGenericTypeDefinition ? type.GetGenericTypeDefinition() : type;
+
+            static Accessibility GetDeclaredAccessibility(Type type)
+            {
+                if (type.IsPublic || type.IsNestedPublic)
+                {
+                    return Accessibility.Public;
+                }
+
+                if (type.IsNestedFamORAssem)
+                {
+                    return Accessibility.ProtectedOrInternal; // protected internal
+                }
+
+                if (type.IsNestedFamily)
+                {
+                    return Accessibility.Protected;
+                }
+
+                if (type.IsNestedFamANDAssem)
+                {
+                    return Accessibility.ProtectedAndInternal; // private protected
+                }
+
+                if (type.IsNestedPrivate)
+                {
+                    return Accessibility.Private;
+                }
+
+                // Top-level non-public (IsNotPublic) and nested assembly (IsNestedAssembly) are both 'internal'.
+                return Accessibility.Internal;
+            }
+        }
+
+        /// <summary>
+        /// Mirrors the members of Roslyn's <see cref="T:Microsoft.CodeAnalysis.Accessibility"/> that a C# type
+        /// declaration can have, so the ported accessibility comparison uses the compiler's terminology.
+        /// </summary>
+        private enum Accessibility
+        {
+            Private,
+            ProtectedAndInternal, // private protected
+            Protected,
+            Internal,
+            ProtectedOrInternal, // protected internal
+            Public,
         }
     }
 }
