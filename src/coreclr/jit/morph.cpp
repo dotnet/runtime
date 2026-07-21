@@ -10788,7 +10788,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         {
             // We may be able to throw away op1 (unless it has side-effects)
 
-            if ((op1->gtFlags & GTF_SIDE_EFFECT) == 0)
+            if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) == 0)
             {
                 DEBUG_DESTROY_NODE(op1);
                 DEBUG_DESTROY_NODE(mul);
