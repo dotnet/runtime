@@ -508,7 +508,7 @@ namespace System
                 // Apply the results of the QCall to the delegate instance.
                 _methodPtr = bindToMethodDetails.methodPtr;
                 _methodPtrAux = bindToMethodDetails.methodPtrAux;
-                Unsafe.As<MulticastDelegate>(this)._invocationCount = bindToMethodDetails.invocationCount;
+                _extraData = bindToMethodDetails.extraData;
                 if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
                 {
                     _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;
@@ -528,7 +528,7 @@ namespace System
             public int selfReferentialTarget; // Whether the delegate's target object is the same as the first argument of the method to bind to. Only meaningful for open instance delegates.
             public IntPtr methodPtr;
             public IntPtr methodPtrAux;
-            public IntPtr invocationCount;
+            public IntPtr extraData;
             public GCHandle loaderAllocatorGCHandle; // The loader allocator needed if the delegate needs to keep it alive
         }
 
@@ -554,7 +554,7 @@ namespace System
                 // Apply the results of the QCall to the delegate instance.
                 _methodPtr = bindToMethodDetails.methodPtr;
                 _methodPtrAux = bindToMethodDetails.methodPtrAux;
-                Unsafe.As<MulticastDelegate>(this)._invocationCount = bindToMethodDetails.invocationCount;
+                _extraData = bindToMethodDetails.extraData;
                 if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
                 {
                     _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;
@@ -630,7 +630,7 @@ namespace System
             // Apply the results of the QCall to the delegate instance.
             _methodPtr = bindToMethodDetails.methodPtr;
             _methodPtrAux = bindToMethodDetails.methodPtrAux;
-            Unsafe.As<MulticastDelegate>(this)._invocationCount = bindToMethodDetails.invocationCount;
+            _extraData = bindToMethodDetails.extraData;
             if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
             {
                 _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;

@@ -1296,7 +1296,7 @@ namespace System
 
         internal static IntPtr GetNativeCodeInternal(IRuntimeMethodInfo method)
         {
-            IntPtr value = GetNativeCode(method.Value);
+            IntPtr value = GetNativeCode(IRuntimeMethodInfo.GetValue(method));
             GC.KeepAlive(method);
             return value;
         }

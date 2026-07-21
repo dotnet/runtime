@@ -31,7 +31,7 @@ struct BindToMethodDetails
     BOOL selfReferentialTarget; // Whether the delegate's target object is the same as the first argument of the method to bind to. Only meaningful for open instance delegates.
     PCODE methodPtr;
     PCODE methodPtrAux;
-    INT_PTR invocationCount;
+    INT_PTR extraData;
     OBJECTHANDLE loaderAllocatorGCHandle; // The loader allocator needed if the delegate needs to keep it alive
 };
 
