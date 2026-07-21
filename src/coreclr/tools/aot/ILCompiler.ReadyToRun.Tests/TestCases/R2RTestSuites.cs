@@ -160,10 +160,17 @@ public class R2RTestSuites
             // reverts to the by-ref i32 ABI would produce no v128 in the signature at all.
             const byte WasmV128 = 0x7B;
 
-            // (method name, expects v128 return). All four take a Vector128<int> by value; Store
+            // (method name, expects v128 return). All take a v128-classified value by value (a
+            // Vector128<int>, a 128-bit Vector<int>, or a single-field struct wrapping one); Store
             // returns void (its 'ref Vector128<int>' destination is an i32 pointer).
             foreach ((string name, bool expectsV128Return) in
-                     new[] { ("Echo", true), ("ThroughLocal", true), ("Store", false), ("CallEcho", true) })
+                     new[]
+                     {
+                         ("Echo", true), ("ThroughLocal", true), ("Store", false), ("CallEcho", true),
+                         ("EchoVectorT", true), ("CallEchoVectorT", true),
+                         ("EchoWrapped", true), ("CallEchoWrapped", true),
+                         ("EchoWrappedVectorT", true), ("CallEchoWrappedVectorT", true),
+                     })
             {
                 ReadyToRunMethod method = Assert.Single(
                     methods, m => m.SignatureString.Contains($".{name}(", StringComparison.Ordinal));

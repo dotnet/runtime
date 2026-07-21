@@ -38,9 +38,7 @@ namespace Internal.JitInterface
 
         public static TypeDesc LowerToAbiType(TypeDesc type)
         {
-            // Vector128<T> is the only SIMD type passed by value as a wasm v128. The other SIMD
-            // types (Vector2/3/4, Vector64<T>, Vector<T>, ...) are not yet handled by the wasm
-            // calling convention and fall through to the generic struct lowering below.
+            // Vector128<T> and a 128-bit Vector<T> are wasm v128 ABI primitives passed by value.
             if (IsWasmV128Type(type))
             {
                 return type;
@@ -73,6 +71,10 @@ namespace Internal.JitInterface
 
                 if (numIntroducedFields != 1)
                 {
+                    // Multi-field aggregates (including a homogeneous 2x v128) use the generic by-ref
+                    // struct ABI; the wasm C ABI has no HFA/HVA concept. Only emscripten's opt-in
+                    // experimental multivalue ABI expands these into per-field registers, which we
+                    // don't target.
                     return null;
                 }
 
@@ -86,6 +88,13 @@ namespace Internal.JitInterface
 
                 type = firstFieldElementType;
 
+                // A single-field wrapper struct around a v128 lowers to the v128 primitive, matching
+                // emscripten, which passes a struct wrapping a v128 as a v128.
+                if (IsWasmV128Type(type))
+                {
+                    return type;
+                }
+
                 if (type.IsValueType && !type.IsPrimitive)
                 {
                     continue;
@@ -96,19 +105,35 @@ namespace Internal.JitInterface
         }
 
         /// <summary>
-        /// Determines whether a type is <see cref="System.Runtime.Intrinsics.Vector128{T}"/>, the
-        /// only SIMD vector type currently passed and returned by value as a wasm <c>v128</c>. The
-        /// JIT recognizes <c>Vector128&lt;T&gt;</c> as <c>TYP_SIMD16</c> on wasm only when <c>T</c> is
-        /// a primitive numeric type; other SIMD types (Vector2/3/4, Vector64/256/512&lt;T&gt;,
-        /// Vector&lt;T&gt;, ...) and non-primitive instantiations (e.g. the shared <c>__Canon</c> form)
-        /// are not handled by the wasm calling convention and continue to use the generic struct ABI.
+        /// Determines whether a type is passed and returned by value as a wasm <c>v128</c>, matching
+        /// the SIMD types the JIT recognizes as <c>TYP_SIMD16</c> on wasm. This is
+        /// <see cref="System.Runtime.Intrinsics.Vector128{T}"/> and a 128-bit
+        /// <see cref="System.Numerics.Vector{T}"/>, in both cases only when <c>T</c> is a supported
+        /// primitive numeric base type. Other SIMD types (Vector2/3/4, Vector64/256/512&lt;T&gt;, ...)
+        /// and non-primitive instantiations (e.g. the shared <c>__Canon</c> form) are not ABI
+        /// primitives and continue to use the generic struct ABI.
         /// </summary>
         private static bool IsWasmV128Type(TypeDesc type)
         {
-            return type.IsIntrinsic &&
-                   Internal.TypeSystem.Interop.InteropTypes.IsSystemRuntimeIntrinsicsVector128T(type.Context, type) &&
-                   type.Instantiation.Length == 1 &&
-                   VectorFieldLayoutAlgorithm.IsSupportedVectorBaseType(type.Instantiation[0]);
+            if (!type.IsIntrinsic ||
+                type.Instantiation.Length != 1 ||
+                !VectorFieldLayoutAlgorithm.IsSupportedVectorBaseType(type.Instantiation[0]))
+            {
+                return false;
+            }
+
+            // Vector128<T> is always a 16-byte v128.
+            if (Internal.TypeSystem.Interop.InteropTypes.IsSystemRuntimeIntrinsicsVector128T(type.Context, type))
+            {
+                return true;
+            }
+
+            // Vector<T> is target-sized, so it is only a v128 when the target's maximum SIMD width is
+            // 128-bit (i.e. it is exactly 16 bytes). This matches the JIT recognizing it as TYP_SIMD16
+            // via getVectorTByteLength() and keeps the ABI correct should wasm later gain wider vectors.
+            return type is DefType vectorOfT &&
+                   VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(vectorOfT) &&
+                   type.GetElementSize().AsInt == 16;
         }
 
         public static WasmValueType LowerType(TypeDesc type)
