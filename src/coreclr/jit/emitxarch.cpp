@@ -2071,9 +2071,8 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         if (IsKMOVInstruction(ins))
         {
 #if defined(DEBUG)
-            // KMOV only gains an EVEX form through APX promotion (MAP4), not the standard
-            // VEX-to-EVEX path. It is therefore excluded from DoJitStressEvexEncoding and
-            // instead stressed here under the promoted-EVEX stress knob.
+            // KMOV only gains an EVEX form through APX promotion, so it is excluded from
+            // DoJitStressEvexEncoding and instead stressed here under the promoted-EVEX stress knob.
             if (m_compiler->DoJitStressPromotedEvexEncoding())
             {
                 return true;
@@ -2111,9 +2110,8 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
     if (m_compiler->DoJitStressEvexEncoding())
     {
         // Requires the EVEX encoding due to STRESS mode.
-        // BMI and KMOV instructions must not be promoted here: their EVEX form uses MAP4
-        // (APX-extended), not the standard VEX-to-EVEX promotion path. They are instead
-        // stressed via the promoted-EVEX stress knob below.
+        // BMI and KMOV instructions must not be promoted here: they only gain an EVEX form through
+        // APX promotion. They are instead stressed via the promoted-EVEX stress knob below.
         if (!IsBMIInstruction(ins) && !IsKMOVInstruction(ins))
         {
             return true;
@@ -2122,9 +2120,8 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 
     if (m_compiler->DoJitStressPromotedEvexEncoding())
     {
-        // BMI instructions only gain an EVEX form through APX promotion (MAP4), so they are
-        // excluded from the standard EVEX stress above and promoted here instead. KMOV is
-        // handled in its dedicated branch (it always has a mask register and returns earlier).
+        // BMI instructions only gain an EVEX form through APX promotion, so they are excluded from
+        // the standard EVEX stress above and promoted here instead. KMOV is handled separately.
         if (IsBMIInstruction(ins))
         {
             return true;
