@@ -72,10 +72,16 @@ public class GetTotalAllocatedBytesServerGC
                     burst.Add(t);
                 }
 
-                if (token.WaitHandle.WaitOne(1500)) { burstCts.Cancel(); break; }
+                bool cancelled = token.WaitHandle.WaitOne(1500);
+
+                // Always cancel and join the burst threads so no allocator outlives the
+                // BURST -- this guarantees the following QUIET period is truly allocation-free.
                 burstCts.Cancel();
                 foreach (var t in burst)
                     t.Join(2000);
+
+                if (cancelled)
+                    break;
 
                 // QUIET: near-zero allocation so DATAS decides to shrink the heap count.
                 if (token.WaitHandle.WaitOne(3000))
