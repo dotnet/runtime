@@ -123,6 +123,11 @@ extends:
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
+      openbsd_x64:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-openbsd-amd64@sha256:496173363516799f0fb86ae2a03dffaa46bb07a40764997d7fef591cc4fd21ba
+        env:
+          ROOTFS_DIR: /crossrootfs/x64
+
       tizen_armel:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-armel-tizen@sha256:e309f18d07c331ce8f0e0bdea86092187337596828e271d82bb7ed6ac51f5218
         env:
