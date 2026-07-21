@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -187,5 +188,185 @@ namespace System.Formats.Asn1
             Vector<ushort> offset = value - minCharAllowed;
             return Vector.LessThanOrEqualAll(offset, range);
         }
+    }
+
+    internal sealed partial class BMPEncoding
+    {
+        private const ushort SurrogateStart = 0xD800;
+        private const ushort SurrogateRange = 0xDFFF - SurrogateStart;
+
+        protected override int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, bool write)
+        {
+            if (chars.IsEmpty)
+            {
+                return 0;
+            }
+
+            int position = 0;
+            int writeIdx = 0;
+
+            if (chars.Length >= Vector<ushort>.Count && Vector.IsHardwareAccelerated)
+            {
+                position = GetBytesVectorized(chars, bytes, write);
+                writeIdx = checked(position * sizeof(ushort));
+            }
+
+            for (; position < chars.Length; position++)
+            {
+                char c = chars[position];
+
+                if (char.IsSurrogate(c))
+                {
+                    EncoderFallback.CreateFallbackBuffer().Fallback(c, position);
+
+                    Debug.Fail("Fallback should have thrown");
+                    throw new InvalidOperationException();
+                }
+
+                ushort val16 = c;
+
+                if (write)
+                {
+                    bytes[writeIdx + 1] = (byte)val16;
+                    bytes[writeIdx] = (byte)(val16 >> 8);
+                }
+
+                writeIdx += sizeof(ushort);
+            }
+
+            return writeIdx;
+        }
+
+        protected override int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars, bool write)
+        {
+            if (bytes.IsEmpty)
+            {
+                return 0;
+            }
+
+            if (bytes.Length % sizeof(ushort) != 0)
+            {
+                DecoderFallback.CreateFallbackBuffer().Fallback(
+                    bytes.Slice(bytes.Length - 1).ToArray(),
+                    bytes.Length - 1);
+
+                Debug.Fail("Fallback should have thrown");
+                throw new InvalidOperationException();
+            }
+
+            int bytePosition = 0;
+            int writeIdx = 0;
+
+            if (bytes.Length >= Vector<ushort>.Count * sizeof(ushort) && Vector.IsHardwareAccelerated)
+            {
+                writeIdx = GetCharsVectorized(bytes, chars, write);
+                bytePosition = checked(writeIdx * sizeof(ushort));
+            }
+
+            for (int i = bytePosition; i < bytes.Length; i += sizeof(ushort))
+            {
+                char c = (char)BinaryPrimitives.ReadInt16BigEndian(bytes.Slice(i));
+
+                if (char.IsSurrogate(c))
+                {
+                    DecoderFallback.CreateFallbackBuffer().Fallback(
+                        bytes.Slice(i, sizeof(ushort)).ToArray(),
+                        i);
+
+                    Debug.Fail("Fallback should have thrown");
+                    throw new InvalidOperationException();
+                }
+
+                if (write)
+                {
+                    chars[writeIdx] = c;
+                }
+
+                writeIdx++;
+            }
+
+            return writeIdx;
+        }
+
+        // Keep the vectorization out of GetChars and GetBytes to avoid regressing code size
+        // and register allocation for small inputs.
+        private static int GetBytesVectorized(ReadOnlySpan<char> chars, Span<byte> bytes, bool write)
+        {
+            int available = write ? Math.Min(chars.Length, bytes.Length / sizeof(ushort)) : chars.Length;
+            int vectorizedLength = available - (available % Vector<ushort>.Count);
+            int position = 0;
+
+            // Revisit this cast when Vector<char> is supported: https://github.com/dotnet/runtime/issues/127611
+            ReadOnlySpan<ushort> source = MemoryMarshal.Cast<char, ushort>(chars);
+            Span<ushort> destination = write ? MemoryMarshal.Cast<byte, ushort>(bytes) : Span<ushort>.Empty;
+            Vector<ushort> surrogateStart = new Vector<ushort>(SurrogateStart);
+            Vector<ushort> surrogateRange = new Vector<ushort>(SurrogateRange);
+
+            for (; position < vectorizedLength; position += Vector<ushort>.Count)
+            {
+                Vector<ushort> value = new Vector<ushort>(source.Slice(position));
+
+                if (ContainsSurrogate(value, surrogateStart, surrogateRange))
+                {
+                    // Do not advance the position so the scalar path can determine the exact surrogate index.
+                    break;
+                }
+
+                if (write)
+                {
+                    ToBigEndian(value).CopyTo(destination.Slice(position));
+                }
+            }
+
+            return position;
+        }
+
+        private static int GetCharsVectorized(ReadOnlySpan<byte> bytes, Span<char> chars, bool write)
+        {
+            int sourceLength = bytes.Length / sizeof(ushort);
+            int available = write ? Math.Min(sourceLength, chars.Length) : sourceLength;
+            int vectorizedLength = available - (available % Vector<ushort>.Count);
+            int position = 0;
+
+            ReadOnlySpan<ushort> source = MemoryMarshal.Cast<byte, ushort>(bytes);
+            Span<ushort> destination = write ? MemoryMarshal.Cast<char, ushort>(chars) : Span<ushort>.Empty;
+            Vector<ushort> surrogateStart = new Vector<ushort>(SurrogateStart);
+            Vector<ushort> surrogateRange = new Vector<ushort>(SurrogateRange);
+
+            for (; position < vectorizedLength; position += Vector<ushort>.Count)
+            {
+                Vector<ushort> value = FromBigEndian(new Vector<ushort>(source.Slice(position)));
+
+                if (ContainsSurrogate(value, surrogateStart, surrogateRange))
+                {
+                    // Do not advance the position so the scalar path can determine the exact surrogate index.
+                    break;
+                }
+
+                if (write)
+                {
+                    value.CopyTo(destination.Slice(position));
+                }
+            }
+
+            return position;
+        }
+
+        private static bool ContainsSurrogate(
+            Vector<ushort> value,
+            Vector<ushort> surrogateStart,
+            Vector<ushort> surrogateRange)
+        {
+            Vector<ushort> offset = value - surrogateStart;
+            return Vector.LessThanOrEqualAny(offset, surrogateRange);
+        }
+
+        private static Vector<ushort> FromBigEndian(Vector<ushort> value) =>
+            BitConverter.IsLittleEndian ? ReverseEndianness(value) : value;
+
+        private static Vector<ushort> ToBigEndian(Vector<ushort> value) =>
+            BitConverter.IsLittleEndian ? ReverseEndianness(value) : value;
+
+        private static Vector<ushort> ReverseEndianness(Vector<ushort> value) => (value << 8) | (value >> 8);
     }
 }
