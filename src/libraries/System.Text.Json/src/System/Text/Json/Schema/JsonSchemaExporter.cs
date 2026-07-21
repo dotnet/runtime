@@ -203,7 +203,7 @@ namespace System.Text.Json.Schema
                         }
                     }
                 }
-                else if (schema.Enum != null)
+                else if (schema.Enum is not null)
                 {
                     Debug.Assert(elementTypeInfo.Type.IsEnum, "The enum keyword should only be populated by schemas for enum types.");
                     schema.Enum.Add(null); // Append null to the enum array.
@@ -281,7 +281,7 @@ namespace System.Text.Json.Schema
                     });
 
                 case JsonTypeInfoKind.Enumerable:
-                    Debug.Assert(typeInfo.ElementTypeInfo != null);
+                    Debug.Assert(typeInfo.ElementTypeInfo is not null);
 
                     if (typeDiscriminator is null)
                     {
@@ -331,7 +331,7 @@ namespace System.Text.Json.Schema
                     }
 
                 case JsonTypeInfoKind.Dictionary:
-                    Debug.Assert(typeInfo.ElementTypeInfo != null);
+                    Debug.Assert(typeInfo.ElementTypeInfo is not null);
 
                     List<KeyValuePair<string, JsonSchema>>? dictProps = null;
                     List<string>? dictRequired = null;
@@ -459,7 +459,7 @@ namespace System.Text.Json.Schema
                     }
                 }
 
-                if (state.ExporterOptions.TransformSchemaNode != null)
+                if (state.ExporterOptions.TransformSchemaNode is not null)
                 {
                     // Prime the schema for invocation by the JsonNode transformer.
                     schema.ExporterContext = exporterContext;
