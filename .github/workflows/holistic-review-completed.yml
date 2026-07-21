@@ -12,7 +12,7 @@ on:
         required: true
         type: string
       outcome:
-        description: 'One of: review-submitted or assessment-unchanged.'
+        description: 'One of: review-submitted, assessment-unchanged, or no-actionable-feedback.'
         required: true
         type: string
 

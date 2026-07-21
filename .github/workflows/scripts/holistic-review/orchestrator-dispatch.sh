@@ -191,6 +191,9 @@ while IFS= read -r entry; do
   review_attempt_commit=''
   review_attempt_base_ref=''
   review_attempt_count=0
+  last_no_actionable_commit=''
+  last_no_actionable_base_ref=''
+  last_no_actionable_base_sha=''
   worker_dispatch='null'
   manual_retry_reset=false
   if [ -n "$state_comment" ]; then
@@ -210,6 +213,9 @@ while IFS= read -r entry; do
     review_attempt_commit="$(jq -r '.review_attempt_commit // ""' <<< "$state_json")"
     review_attempt_base_ref="$(jq -r '.review_attempt_base_ref // ""' <<< "$state_json")"
     review_attempt_count="$(jq -r '.review_attempt_count // 0' <<< "$state_json")"
+    last_no_actionable_commit="$(jq -r '.last_no_actionable_commit // ""' <<< "$state_json")"
+    last_no_actionable_base_ref="$(jq -r '.last_no_actionable_base_ref // ""' <<< "$state_json")"
+    last_no_actionable_base_sha="$(jq -r '.last_no_actionable_base_sha // ""' <<< "$state_json")"
   fi
 
   write_state_comment() {
@@ -227,9 +233,12 @@ while IFS= read -r entry; do
         --arg review_attempt_base_ref "$review_attempt_base_ref" \
         --argjson review_attempt_count "$review_attempt_count" \
         --argjson max_review_attempts "$MAX_REVIEW_ATTEMPTS" \
+        --arg last_no_actionable_commit "$last_no_actionable_commit" \
+        --arg last_no_actionable_base_ref "$last_no_actionable_base_ref" \
+        --arg last_no_actionable_base_sha "$last_no_actionable_base_sha" \
         --argjson review_history "$review_history" '
           {
-            version: 8,
+            version: 9,
             last_dispatched_commit: $last_dispatched_commit,
             last_dispatched_base_ref: $last_dispatched_base_ref,
             last_dispatched_base_sha: $last_dispatched_base_sha,
@@ -242,7 +251,10 @@ while IFS= read -r entry; do
             review_attempt_count: $review_attempt_count,
             max_review_attempts: $max_review_attempts,
             review_history_format: "holistic-review-disclosure-v1",
-            review_history: $review_history
+            review_history: $review_history,
+            last_no_actionable_commit: $last_no_actionable_commit,
+            last_no_actionable_base_ref: $last_no_actionable_base_ref,
+            last_no_actionable_base_sha: $last_no_actionable_base_sha
           }
         '
     )"
@@ -260,13 +272,25 @@ while IFS= read -r entry; do
       ' >> "$state_updates_file"
   }
 
-  # Pull request reviews are authoritative for review identity. An unchanged-assessment
-  # callback advances the latest authenticated review's commit in the state comment, so
-  # retain that commit while the physical review remains the same.
+  # A no-actionable completion has no physical review. Keep its durable completion marker
+  # authoritative for this head/base pair instead of deriving an empty review history as pending.
   state_needs_update=false
+  has_no_actionable_completion=false
+  if [ "$last_no_actionable_commit" = "$head_sha" ] &&
+     [ "$last_no_actionable_base_ref" = "$base_ref" ]; then
+    has_no_actionable_completion=true
+  elif [ -n "$last_no_actionable_commit" ] ||
+       [ -n "$last_no_actionable_base_ref" ] ||
+       [ -n "$last_no_actionable_base_sha" ]; then
+    last_no_actionable_commit=''
+    last_no_actionable_base_ref=''
+    last_no_actionable_base_sha=''
+    state_needs_update=true
+  fi
   expected_summary_emoji=':eyes:'
-  if [ "$last_dispatched_commit" = "$last_reviewed_commit" ] &&
-     [ "$last_dispatched_base_ref" = "$last_reviewed_base_ref" ]; then
+  if [ "$has_no_actionable_completion" = true ] ||
+     { [ "$last_dispatched_commit" = "$last_reviewed_commit" ] &&
+       [ "$last_dispatched_base_ref" = "$last_reviewed_base_ref" ]; }; then
     expected_summary_emoji=':heavy_check_mark:'
   fi
   if [ -n "$state_comment" ] &&
@@ -275,48 +299,50 @@ while IFS= read -r entry; do
        <<< "$state_comment" > /dev/null; then
     state_needs_update=true
   fi
-  refreshed_review_history="$(get_review_history "$pr_number")"
-  recorded_review_id="$(jq -r 'if length == 0 then "" else .[-1].review_id end' <<< "$review_history")"
-  refreshed_review_id="$(jq -r 'if length == 0 then "" else .[-1].review_id end' <<< "$refreshed_review_history")"
-  if [ "$recorded_review_id" = "$refreshed_review_id" ] && [ -n "$recorded_review_id" ]; then
-    refreshed_review_history="$(
-      jq -cn \
-        --argjson review_history "$review_history" \
-        --argjson refreshed_review_history "$refreshed_review_history" '
-          $refreshed_review_history
-          | .[-1].commit = $review_history[-1].commit
-        '
-    )"
-  fi
-  if [ "$review_history" != "$refreshed_review_history" ]; then
-    review_history="$refreshed_review_history"
-    state_needs_update=true
-  fi
+  if [ "$has_no_actionable_completion" = false ]; then
+    refreshed_review_history="$(get_review_history "$pr_number")"
+    recorded_review_id="$(jq -r 'if length == 0 then "" else .[-1].review_id end' <<< "$review_history")"
+    refreshed_review_id="$(jq -r 'if length == 0 then "" else .[-1].review_id end' <<< "$refreshed_review_history")"
+    if [ "$recorded_review_id" = "$refreshed_review_id" ] && [ -n "$recorded_review_id" ]; then
+      refreshed_review_history="$(
+        jq -cn \
+          --argjson review_history "$review_history" \
+          --argjson refreshed_review_history "$refreshed_review_history" '
+            $refreshed_review_history
+            | .[-1].commit = $review_history[-1].commit
+          '
+      )"
+    fi
+    if [ "$review_history" != "$refreshed_review_history" ]; then
+      review_history="$refreshed_review_history"
+      state_needs_update=true
+    fi
 
-  refreshed_reviewed_commit="$(jq -r 'if length == 0 then "" else .[-1].commit end' <<< "$review_history")"
-  if [ "$last_reviewed_commit" != "$refreshed_reviewed_commit" ]; then
-    last_reviewed_commit="$refreshed_reviewed_commit"
-    state_needs_update=true
-  fi
-  if [ -n "$last_reviewed_commit" ]; then
-    if [ "$last_reviewed_base_ref" != "$base_ref" ] ||
-       [ "$last_reviewed_base_sha" != "$base_sha" ]; then
-      last_reviewed_base_ref="$base_ref"
-      last_reviewed_base_sha="$base_sha"
+    refreshed_reviewed_commit="$(jq -r 'if length == 0 then "" else .[-1].commit end' <<< "$review_history")"
+    if [ "$last_reviewed_commit" != "$refreshed_reviewed_commit" ]; then
+      last_reviewed_commit="$refreshed_reviewed_commit"
       state_needs_update=true
     fi
-    if [ -n "$review_attempt_commit" ] ||
-       [ -n "$review_attempt_base_ref" ] ||
-       [ "$review_attempt_count" -ne 0 ]; then
-      review_attempt_commit=''
-      review_attempt_base_ref=''
-      review_attempt_count=0
+    if [ -n "$last_reviewed_commit" ]; then
+      if [ "$last_reviewed_base_ref" != "$base_ref" ] ||
+         [ "$last_reviewed_base_sha" != "$base_sha" ]; then
+        last_reviewed_base_ref="$base_ref"
+        last_reviewed_base_sha="$base_sha"
+        state_needs_update=true
+      fi
+      if [ -n "$review_attempt_commit" ] ||
+         [ -n "$review_attempt_base_ref" ] ||
+         [ "$review_attempt_count" -ne 0 ]; then
+        review_attempt_commit=''
+        review_attempt_base_ref=''
+        review_attempt_count=0
+        state_needs_update=true
+      fi
+    elif [ -n "$last_reviewed_base_ref" ] || [ -n "$last_reviewed_base_sha" ]; then
+      last_reviewed_base_ref=''
+      last_reviewed_base_sha=''
       state_needs_update=true
     fi
-  elif [ -n "$last_reviewed_base_ref" ] || [ -n "$last_reviewed_base_sha" ]; then
-    last_reviewed_base_ref=''
-    last_reviewed_base_sha=''
-    state_needs_update=true
   fi
 
   if [ -n "$PR_NUMBERS" ] &&
@@ -332,8 +358,9 @@ while IFS= read -r entry; do
     state_needs_update=true
   fi
 
-  if [ "$last_reviewed_commit" = "$head_sha" ] &&
-     [ "$last_reviewed_base_ref" = "$base_ref" ]; then
+  if [ "$has_no_actionable_completion" = true ] ||
+     { [ "$last_reviewed_commit" = "$head_sha" ] &&
+       [ "$last_reviewed_base_ref" = "$base_ref" ]; }; then
     if [ -n "$review_attempt_commit" ] ||
        [ -n "$review_attempt_base_ref" ] ||
        [ "$review_attempt_count" -ne 0 ]; then

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 case "$OUTCOME" in
-  review-submitted|assessment-unchanged|'')
+  review-submitted|assessment-unchanged|no-actionable-feedback|'')
     ;;
   *)
     echo "Unsupported worker callback outcome: ${OUTCOME}" >&2
@@ -78,11 +78,8 @@ if [ -z "$OUTCOME" ]; then
   done
   if [ "$current_review" != "null" ] && [ -n "$current_review" ]; then
     OUTCOME='review-submitted'
-  elif [ "$(jq 'length' <<< "$review_history")" -gt 0 ]; then
-    OUTCOME='assessment-unchanged'
   else
-    echo "Worker callback did not identify a submitted review or a prior assessment." >&2
-    exit 1
+    OUTCOME='no-actionable-feedback'
   fi
 fi
 
@@ -128,20 +125,40 @@ case "$OUTCOME" in
       ' <<< "$review_history"
     )"
     ;;
+  no-actionable-feedback)
+    review_history='[]'
+    ;;
   *)
     echo "Unsupported worker callback outcome: ${OUTCOME}" >&2
     exit 1
     ;;
 esac
 
+base_ref="$(jq -r '.baseRefName' <<< "$pr")"
+base_sha="$(jq -r '.baseRefOid' <<< "$pr")"
+last_no_actionable_commit=''
+last_no_actionable_base_ref=''
+last_no_actionable_base_sha=''
+case "$OUTCOME" in
+  no-actionable-feedback)
+    review_history='[]'
+    last_no_actionable_commit="$HEAD_SHA"
+    last_no_actionable_base_ref="$base_ref"
+    last_no_actionable_base_sha="$base_sha"
+    ;;
+esac
+
 state_json="$(
   jq -c \
     --arg head_sha "$HEAD_SHA" \
-    --arg base_ref "$(jq -r '.baseRefName' <<< "$pr")" \
-    --arg base_sha "$(jq -r '.baseRefOid' <<< "$pr")" \
+    --arg base_ref "$base_ref" \
+    --arg base_sha "$base_sha" \
     --arg title "$(jq -r '.title' <<< "$pr")" \
+    --arg last_no_actionable_commit "$last_no_actionable_commit" \
+    --arg last_no_actionable_base_ref "$last_no_actionable_base_ref" \
+    --arg last_no_actionable_base_sha "$last_no_actionable_base_sha" \
     --argjson review_history "$review_history" '
-      .version = 8
+      .version = 9
       | .last_dispatched_commit = $head_sha
       | .last_dispatched_base_ref = $base_ref
       | .last_dispatched_base_sha = $base_sha
@@ -154,6 +171,9 @@ state_json="$(
       | .review_attempt_count = 0
       | .review_history_format = "holistic-review-disclosure-v1"
       | .review_history = $review_history
+      | .last_no_actionable_commit = $last_no_actionable_commit
+      | .last_no_actionable_base_ref = $last_no_actionable_base_ref
+      | .last_no_actionable_base_sha = $last_no_actionable_base_sha
       | del(.last_recorded_worker_run_id)
     ' <<< "$state_json"
 )"
