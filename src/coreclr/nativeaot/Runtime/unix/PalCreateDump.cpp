@@ -11,7 +11,6 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <sys/mman.h>
 #include <sys/types.h>

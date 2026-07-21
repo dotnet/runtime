@@ -97,7 +97,6 @@ typedef int T_CONTEXT;
 #include <winternl.h>
 #include <dbghelp.h>
 #endif
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <map>
 #include <set>
