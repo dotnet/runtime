@@ -1512,7 +1512,6 @@ public unsafe class DacDbiImplTests
         DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, (ModuleFlags)0, mockEcmaMetadata);
 
         int hr = dacDbi.GetMetadata(vmModule, null);
-
-        Assert.NotEqual(System.HResults.S_OK, hr);
+        Assert.Equal(System.HResults.E_POINTER, hr);
     }
 }

@@ -378,8 +378,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #if DEBUG
         if (_legacy is not null)
         {
-            DacDbiTargetBuffer pTargetBufferLocal;
-            int hrLocal = _legacy.GetMetadata(vmModule, &pTargetBufferLocal);
+            DacDbiTargetBuffer pTargetBufferLocal = default;
+            int hrLocal = _legacy.GetMetadata(vmModule, pTargetBuffer == null ? null : &pTargetBufferLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
