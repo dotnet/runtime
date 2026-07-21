@@ -170,7 +170,7 @@ namespace System.Text.Json
             {
                 if (_isInputSequence)
                 {
-                    Debug.Assert(_currentPosition.GetObject() != null);
+                    Debug.Assert(_currentPosition.GetObject() is not null);
                     return _sequence.GetPosition(_consumed, _currentPosition);
                 }
                 return default;
@@ -562,7 +562,7 @@ namespace System.Text.Json
                 result = TextEqualsHelper(otherUtf8Text.Slice(0, written));
             }
 
-            if (otherUtf8TextArray != null)
+            if (otherUtf8TextArray is not null)
             {
                 otherUtf8Text.Slice(0, written).Clear();
                 ArrayPool<byte>.Shared.Return(otherUtf8TextArray);
@@ -689,7 +689,7 @@ namespace System.Text.Json
         // Otherwise, return false.
         private static bool IsTokenTypeString(JsonTokenType tokenType)
         {
-            return tokenType == JsonTokenType.PropertyName || tokenType == JsonTokenType.String;
+            return tokenType is JsonTokenType.PropertyName or JsonTokenType.String;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1008,6 +1008,40 @@ namespace System.Text.Json
         {
             // Create local copy to avoid bounds checks.
             ReadOnlySpan<byte> localBuffer = _buffer;
+#if NET
+            // A vectorized SearchValues-based scan to the first non-whitespace byte is fastest on most
+            // runtimes, so we go straight to it. On Mono/WASM AOT (browser) the fixed per-call SIMD
+            // entry cost is high relative to the short inter-token whitespace runs typical of JSON,
+            // and reconstructing the line/byte-position bookkeeping needs up to two more vectorized
+            // passes (CountNewLines), so short runs regress there. The browser path therefore uses the
+            // plain scalar loop below instead. OperatingSystem.IsBrowser() folds to a constant per
+            // target, so only one path survives in codegen and non-browser output is unchanged from a
+            // direct vectorized scan.
+            if (!OperatingSystem.IsBrowser())
+            {
+                ReadOnlySpan<byte> remaining = localBuffer.Slice(_consumed);
+                int idx = remaining.IndexOfFirstNonWhiteSpace();
+                if (idx > 0)
+                {
+                    // Reproduce the scalar loop's line/byte-position bookkeeping for the skipped run.
+                    (int newLines, int lastLineFeedIndex) = JsonReaderHelper.CountNewLines(remaining.Slice(0, idx));
+                    _lineNumber += newLines;
+                    if (lastLineFeedIndex >= 0)
+                    {
+                        // Byte positions on the current line start after the last line feed character.
+                        _bytePositionInLine = idx - lastLineFeedIndex - 1;
+                    }
+                    else
+                    {
+                        _bytePositionInLine += idx;
+                    }
+
+                    _consumed += idx;
+                }
+
+                return;
+            }
+#endif
             for (; _consumed < localBuffer.Length; _consumed++)
             {
                 byte val = localBuffer[_consumed];
@@ -1439,7 +1473,7 @@ namespace System.Text.Json
             Debug.Assert(signResult == ConsumeNumberResult.OperationIncomplete);
 
             byte nextByte = data[i];
-            Debug.Assert(nextByte >= '0' && nextByte <= '9');
+            Debug.Assert(nextByte is >= (byte)'0' and <= (byte)'9');
 
             if (nextByte == '0')
             {
@@ -1471,14 +1505,14 @@ namespace System.Text.Json
 
                 Debug.Assert(result == ConsumeNumberResult.OperationIncomplete);
                 nextByte = data[i];
-                if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
+                if (nextByte is not ((byte)'.' or (byte)'E' or (byte)'e'))
                 {
                     _bytePositionInLine += i;
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, nextByte);
                 }
             }
 
-            Debug.Assert(nextByte == '.' || nextByte == 'E' || nextByte == 'e');
+            Debug.Assert(nextByte is (byte)'.' or (byte)'E' or (byte)'e');
 
             if (nextByte == '.')
             {
@@ -1495,14 +1529,14 @@ namespace System.Text.Json
 
                 Debug.Assert(result == ConsumeNumberResult.OperationIncomplete);
                 nextByte = data[i];
-                if (nextByte != 'E' && nextByte != 'e')
+                if (nextByte is not ((byte)'E' or (byte)'e'))
                 {
                     _bytePositionInLine += i;
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedNextDigitEValueNotFound, nextByte);
                 }
             }
 
-            Debug.Assert(nextByte == 'E' || nextByte == 'e');
+            Debug.Assert(nextByte is (byte)'E' or (byte)'e');
             i++;
 
             signResult = ConsumeSign(ref data, ref i);
@@ -1590,7 +1624,7 @@ namespace System.Text.Json
                 }
             }
             nextByte = data[i];
-            if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
+            if (nextByte is not ((byte)'.' or (byte)'E' or (byte)'e'))
             {
                 _bytePositionInLine += i;
                 ThrowHelper.ThrowJsonReaderException(ref this,
@@ -1669,7 +1703,7 @@ namespace System.Text.Json
             }
 
             byte nextByte = data[i];
-            if (nextByte == '+' || nextByte == '-')
+            if (nextByte is (byte)'+' or (byte)'-')
             {
                 i++;
                 if (i >= data.Length)
@@ -2438,7 +2472,7 @@ namespace System.Text.Json
             }
 
             byte next = localBuffer[1];
-            if (localBuffer[0] == 0x80 && (next == 0xA8 || next == 0xA9))
+            if (localBuffer[0] == 0x80 && (next is 0xA8 or 0xA9))
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.UnexpectedEndOfLineSeparator);
             }

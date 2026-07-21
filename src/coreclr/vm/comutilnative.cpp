@@ -786,6 +786,12 @@ extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHan
         MethodTable* pMT = target->GetMethodTable();
 
         funcPtr = pMT->GetRestoredSlot(g_pObjectFinalizerMD->GetSlot());
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // RunFinalizers invokes the finalizer via the function pointer, so its portable entrypoint must
+        // resolve to real code if possible.
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(funcPtr);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     END_QCALL;
@@ -946,7 +952,6 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise()
     return allocated;
 }
 
-#ifdef FEATURE_BASICFREEZE
 
 /*===============================RegisterFrozenSegment===============================
 **Action: Registers the frozen segment
@@ -1002,7 +1007,6 @@ extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void* segment)
     END_QCALL;
 }
 
-#endif // FEATURE_BASICFREEZE
 
 /*==============================SuppressFinalize================================
 **Action: Indicate that an object's finalizer should not be run by the system

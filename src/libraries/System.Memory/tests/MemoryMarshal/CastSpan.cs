@@ -36,7 +36,7 @@ namespace System.SpanTests
         {
             Span<uint> span = new Span<uint>(new uint[] { 1 });
             Span<EmptyStruct> emptyspan = MemoryMarshal.Cast<uint, EmptyStruct>(span);
-            Assert.Equal(1, Unsafe.SizeOf<EmptyStruct>());
+            Assert.Equal(1, sizeof(EmptyStruct));
             Assert.Equal(4, emptyspan.Length);
         }
 

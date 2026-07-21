@@ -116,7 +116,7 @@ internal sealed class FrameHelpers
                 else if (stubDispatchFrame.RepresentativeMTPtr != TargetPointer.Null)
                 {
                     IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-                    TypeHandle mtHandle = rtsContract.GetTypeHandle(stubDispatchFrame.RepresentativeMTPtr);
+                    ITypeHandle mtHandle = rtsContract.GetTypeHandle(stubDispatchFrame.RepresentativeMTPtr);
                     return rtsContract.GetMethodDescForSlot(mtHandle, (ushort)stubDispatchFrame.RepresentativeSlot);
                 }
                 else
@@ -270,15 +270,13 @@ internal sealed class FrameHelpers
                 Data.TailCallFrame tcf = _target.ProcessedData.GetOrAdd<Data.TailCallFrame>(frame.Address);
                 return tcf.ReturnAddress;
 
-            // FuncEvalFrame: returns 0 during exception eval, else from transition block
+            // FuncEvalFrame: returns 0 during exception eval
             case FrameType.FuncEvalFrame:
                 Data.FuncEvalFrame funcEval = _target.ProcessedData.GetOrAdd<Data.FuncEvalFrame>(frame.Address);
                 Data.DebuggerEval dbgEval = _target.ProcessedData.GetOrAdd<Data.DebuggerEval>(funcEval.DebuggerEvalPtr);
-                if (dbgEval.EvalUsesHijack)
+                if (!dbgEval.EvalUsesHijack)
                     return TargetCodePointer.Null;
-                Data.FramedMethodFrame funcEvalFmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frame.Address);
-                Data.TransitionBlock funcEvalTb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(funcEvalFmf.TransitionBlockPtr);
-                return funcEvalTb.ReturnAddress;
+                return funcEval.ReturnAddress;
 
             // Base Frame and unknown types: return 0 (matches native Frame::GetReturnAddressPtr_Impl)
             default:
@@ -369,6 +367,7 @@ internal sealed class FrameHelpers
             ContextHolder<ARM64Context> contextHolder => new ARM64FrameHandler(_target, contextHolder),
             ContextHolder<RISCV64Context> contextHolder => new RISCV64FrameHandler(_target, contextHolder),
             ContextHolder<LoongArch64Context> contextHolder => new LoongArch64FrameHandler(_target, contextHolder),
+            ContextHolder<WasmContext> contextHolder => new WasmFrameHandler(_target, contextHolder),
             _ => throw new InvalidOperationException("Unsupported context type"),
         };
     }
@@ -562,6 +561,7 @@ internal sealed class FrameHelpers
             RuntimeInfoArchitecture.X86 => "ecx",
             RuntimeInfoArchitecture.LoongArch64 => "a0",
             RuntimeInfoArchitecture.RiscV64 => "a0",
+            RuntimeInfoArchitecture.Wasm => WasmContext.InterpreterWalkFramePointerRegister,
             var arch => throw new NotSupportedException(
                 $"Unsupported architecture for first argument register: {arch}"),
         };

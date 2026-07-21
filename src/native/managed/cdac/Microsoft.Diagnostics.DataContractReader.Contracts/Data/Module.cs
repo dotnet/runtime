@@ -15,6 +15,7 @@ internal sealed partial class Module : IData<Module>
     [Field] public TargetPointer Base { get; }
     [Field] public TargetPointer LoaderAllocator { get; }
     [Field] public TargetPointer DynamicMetadata { get; }
+    [Field] public uint MetadataGeneration { get; }
     [Field] public TargetPointer SimpleName { get; }
     [Field] public TargetPointer Path { get; }
     [Field] public TargetPointer FileName { get; }
@@ -29,7 +30,11 @@ internal sealed partial class Module : IData<Module>
     [FieldAddress] public TargetPointer MethodDefToDescMap { get; }
     [FieldAddress] public TargetPointer TypeDefToMethodTableMap { get; }
     [FieldAddress] public TargetPointer TypeRefToMethodTableMap { get; }
-    [FieldAddress] public TargetPointer MethodDefToILCodeVersioningStateMap { get; }
+
+    // Present only when the target was built with code versioning (FEATURE_CODE_VERSIONING);
+    // absent on builds where it is disabled (e.g. WASM), where it reads as null.
+    [FieldAddress] public TargetPointer? MethodDefToILCodeVersioningStateMap { get; }
+
     [FieldAddress] public TargetPointer? EnCClassList { get; }
     [Field] public TargetPointer DynamicILBlobTable { get; }
 }

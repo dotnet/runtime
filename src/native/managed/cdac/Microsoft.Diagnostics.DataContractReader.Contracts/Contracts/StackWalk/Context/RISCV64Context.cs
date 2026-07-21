@@ -68,6 +68,7 @@ internal struct RISCV64Context : IPlatformContext
         unwinder.Unwind(ref this);
     }
 
+    public void UnsetSingleStepFlag() {}
     public bool TrySetRegister(string name, TargetNUInt value)
     {
         if (name.Equals("zero", StringComparison.OrdinalIgnoreCase)) { return false; }

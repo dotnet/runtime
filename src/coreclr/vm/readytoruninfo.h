@@ -442,6 +442,9 @@ struct cdac_data<ReadyToRunInfo>
     static constexpr size_t EntryPointToMethodDescMap = offsetof(ReadyToRunInfo, m_entryPointToMethodDescMap);
     static constexpr size_t LoadedImageBase = offsetof(ReadyToRunInfo, m_pLoadedImageBase);
     static constexpr size_t Composite = offsetof(ReadyToRunInfo, m_pComposite);
+#ifdef TARGET_WASM
+    static constexpr size_t MinVirtualIP = offsetof(ReadyToRunInfo, m_minVirtualIP);
+#endif // TARGET_WASM
 };
 
 class DynamicHelpers
@@ -478,6 +481,14 @@ struct GenericDictionaryDynamicHelperStubData
     UINT32 SlotOffset;
     GenericHandleArgs *HandleArgs;
 };
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+struct GenericDictionaryDynamicHelperStubData_PortableEntryPoint
+{
+    PCODE HelperFunctionTableIndex;
+    GenericDictionaryDynamicHelperStubData stubData;
+};
+#endif
 
 class ReadyToRunLoadedImage
 {

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -139,12 +138,12 @@ namespace System
         }
 
         // This function is known to the compiler.
-        private void InitializeClosedInstanceWithGVMResolution(object firstParameter, RuntimeMethodHandle tokenOfGenericVirtualMethod)
+        private void InitializeClosedInstanceWithGVMResolution(object firstParameter, IntPtr dispatchCell)
         {
             if (firstParameter is null)
                 throw new NullReferenceException();
 
-            IntPtr functionResolution = TypeLoaderExports.GVMLookupForSlot(firstParameter, tokenOfGenericVirtualMethod);
+            IntPtr functionResolution = RuntimeImports.RhpResolveInterfaceMethod(firstParameter, dispatchCell);
 
             if (functionResolution == IntPtr.Zero)
             {
@@ -484,7 +483,7 @@ namespace System
 
         // This method will combine this delegate with the passed delegate
         //  to form a new delegate.
-        protected virtual Delegate CombineImpl(Delegate? d)
+        protected Delegate CombineImpl(Delegate? d)
         {
             if (d is null)
                 return this;
@@ -602,7 +601,7 @@ namespace System
         //  look at the invocation list.)  If this is found we remove it from
         //  this list and return a new delegate.  If its not found a copy of the
         //  current list is returned.
-        protected virtual Delegate? RemoveImpl(Delegate d)
+        protected Delegate? RemoveImpl(Delegate? d)
         {
             // There is a special case were we are removing using a delegate as
             //    the value we need to check for this case
@@ -671,7 +670,7 @@ namespace System
             return this;
         }
 
-        public virtual Delegate[] GetInvocationList()
+        public Delegate[] GetInvocationList()
         {
             if (_helperObject is Wrapper[] invocationList)
             {
@@ -688,7 +687,7 @@ namespace System
             return new Delegate[] { this };
         }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null)
                 return false;
@@ -743,7 +742,7 @@ namespace System
             return object.ReferenceEquals(_target, d._target);
         }
 
-        public override int GetHashCode()
+        public sealed override int GetHashCode()
         {
             if (_helperObject is Wrapper[] invocationList)
             {
@@ -772,7 +771,7 @@ namespace System
             return hash;
         }
 
-        public bool HasSingleTarget => _helperObject is not Wrapper[];
+        public partial bool HasSingleTarget => _helperObject is not Wrapper[];
 
         // Used by delegate invocation list enumerator
         internal Delegate? TryGetAt(int index)

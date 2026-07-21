@@ -63,7 +63,7 @@ internal readonly struct Exception_1 : IException
         TargetPointer mt = objectContract.GetMethodTableAddress(stackTraceObj);
         if (mt == TargetPointer.Null)
             throw new InvalidOperationException($"Stack trace object 0x{stackTraceObj.Value:x} has no MethodTable.");
-        TypeHandle stackTraceHandle = rtsContract.GetTypeHandle(mt);
+        ITypeHandle stackTraceHandle = rtsContract.GetTypeHandle(mt);
 
         TargetPointer i1ArrayAddr;
         if (rtsContract.ContainsGCPointers(stackTraceHandle))

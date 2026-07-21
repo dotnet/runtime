@@ -1619,7 +1619,13 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
         return false;
     }
 
-    assert((TypeOfVN(vn) == TYP_I_IMPL) || (TypeOfVN(vn) == TYP_REF) || (TypeOfVN(vn) == TYP_BYREF));
+    // Ignore corner cases like a SIMD value - SIMD could be a base address of an indirection
+    // (e.g. SVE GatherVector, a vector of addresses).
+    var_types vnType = TypeOfVN(vn);
+    if ((vnType != TYP_I_IMPL) && (vnType != TYP_REF) && (vnType != TYP_BYREF))
+    {
+        return false;
+    }
 
     target_ssize_t offset;
     PeelOffsets(&vn, &offset);
@@ -3763,12 +3769,7 @@ ValueNum ValueNumStore::VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_ty
     if (fieldType == TYP_STRUCT)
     {
         structSize = m_compiler->info.compCompHnd->getClassSize(structHnd);
-
-        // We have to normalize here since there is no CorInfoType for vectors...
-        if (m_compiler->structSizeMightRepresentSIMDType(structSize))
-        {
-            fieldType = m_compiler->impNormStructType(structHnd);
-        }
+        fieldType  = m_compiler->impNormStructType(structHnd);
     }
 
     *pFieldType = fieldType;
@@ -7133,17 +7134,13 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 }
 
 #if defined(FEATURE_HW_INTRINSICS)
+                case VNF_HWI_Vector_ExtractMostSignificantBits:
 #if defined(TARGET_XARCH)
-                case VNF_HWI_Vector256_ExtractMostSignificantBits:
-                case VNF_HWI_Vector512_ExtractMostSignificantBits:
                 case VNF_HWI_X86Base_MoveMask:
                 case VNF_HWI_AVX_MoveMask:
                 case VNF_HWI_AVX2_MoveMask:
                 case VNF_HWI_AVX512_MoveMask:
-#elif defined(TARGET_ARM64)
-                case VNF_HWI_Vector64_ExtractMostSignificantBits:
 #endif
-                case VNF_HWI_Vector128_ExtractMostSignificantBits:
                 {
                     // We have 1 bit per element, remaining upper bits are 0
 
@@ -8284,18 +8281,17 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
         switch (ni)
         {
-#if defined(TARGET_ARM64)
-            case NI_Vector64_ExtractMostSignificantBits:
-#elif defined(TARGET_XARCH)
-            case NI_Vector256_ExtractMostSignificantBits:
+            case NI_Vector_ExtractMostSignificantBits:
+#if defined(TARGET_XARCH)
             case NI_X86Base_MoveMask:
             case NI_AVX_MoveMask:
             case NI_AVX2_MoveMask:
+#elif defined(TARGET_WASM)
+            case NI_PackedSimd_Bitmask:
 #endif
-            case NI_Vector128_ExtractMostSignificantBits:
             {
 
-#ifdef FEATURE_MASKED_HW_INTRINSICS
+#if defined(FEATURE_MASKED_HW_INTRINSICS) || defined(TARGET_WASM)
                 simdmask_t simdMaskVal;
 
                 switch (simdSize)
@@ -8336,10 +8332,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 assert(elemCount <= 32);
 
                 return VNForIntCon(static_cast<int32_t>(mask));
-#elif defined(TARGET_WASM)
-                NYI_WASM_SIMD("Vector128_ExtractMostSignificantBits");
-                break;
-#endif // FEATURE_MASKED_HW_INTRINSICS
+#endif // FEATURE_MASKED_HW_INTRINSICS || TARGET_WASM
             }
 
 #ifdef TARGET_XARCH
@@ -8422,21 +8415,21 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForLongCon(static_cast<int64_t>(result));
             }
 
-            case NI_Vector64_ToVector128:
-            case NI_Vector64_ToVector128Unsafe:
+            case NI_Vector_ToVector128:
+            case NI_Vector_ToVector128Unsafe:
             {
                 simd16_t result = {};
                 result.v64[0]   = GetConstantSimd8(arg0VN);
                 return VNForSimd16Con(result);
             }
 
-            case NI_Vector128_GetLower:
+            case NI_Vector_GetLower:
             {
                 simd8_t result = GetConstantSimd16(arg0VN).v64[0];
                 return VNForSimd8Con(result);
             }
 
-            case NI_Vector128_GetUpper:
+            case NI_Vector_GetUpper:
             {
                 simd8_t result = GetConstantSimd16(arg0VN).v64[1];
                 return VNForSimd8Con(result);
@@ -8549,67 +8542,75 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForLongCon(static_cast<int64_t>(result));
             }
 
-            case NI_Vector128_ToVector256:
-            case NI_Vector128_ToVector256Unsafe:
+            case NI_Vector_ToVector256:
+            case NI_Vector_ToVector256Unsafe:
             {
                 simd32_t result = {};
                 result.v128[0]  = GetConstantSimd16(arg0VN);
                 return VNForSimd32Con(result);
             }
 
-            case NI_Vector128_ToVector512:
+            case NI_Vector_ToVector512:
+            case NI_Vector_ToVector512Unsafe:
             {
                 simd64_t result = {};
-                result.v128[0]  = GetConstantSimd16(arg0VN);
+
+                if (simdSize == 16)
+                {
+                    result.v128[0] = GetConstantSimd16(arg0VN);
+                }
+                else
+                {
+                    assert(simdSize == 32);
+                    result.v256[0] = GetConstantSimd32(arg0VN);
+                }
                 return VNForSimd64Con(result);
             }
 
-            case NI_Vector256_GetLower:
+            case NI_Vector_GetLower:
             {
-                simd16_t result = GetConstantSimd32(arg0VN).v128[0];
-                return VNForSimd16Con(result);
+                if (simdSize == 64)
+                {
+                    simd32_t result = GetConstantSimd64(arg0VN).v256[0];
+                    return VNForSimd32Con(result);
+                }
+                else
+                {
+                    assert(simdSize == 32);
+                    simd16_t result = GetConstantSimd32(arg0VN).v128[0];
+                    return VNForSimd16Con(result);
+                }
             }
 
-            case NI_Vector256_GetUpper:
+            case NI_Vector_GetUpper:
             {
-                simd16_t result = GetConstantSimd32(arg0VN).v128[1];
-                return VNForSimd16Con(result);
+                if (simdSize == 64)
+                {
+                    simd32_t result = GetConstantSimd64(arg0VN).v256[1];
+                    return VNForSimd32Con(result);
+                }
+                else
+                {
+                    assert(simdSize == 32);
+                    simd16_t result = GetConstantSimd32(arg0VN).v128[1];
+                    return VNForSimd16Con(result);
+                }
             }
 
-            case NI_Vector256_ToVector512:
-            case NI_Vector256_ToVector512Unsafe:
-            {
-                simd64_t result = {};
-                result.v256[0]  = GetConstantSimd32(arg0VN);
-                return VNForSimd64Con(result);
-            }
-
-            case NI_Vector512_GetLower:
-            {
-                simd32_t result = GetConstantSimd64(arg0VN).v256[0];
-                return VNForSimd32Con(result);
-            }
-
-            case NI_Vector512_GetUpper:
-            {
-                simd32_t result = GetConstantSimd64(arg0VN).v256[1];
-                return VNForSimd32Con(result);
-            }
-
-            case NI_Vector512_GetLower128:
+            case NI_Vector_GetLower128:
             {
                 simd16_t result = GetConstantSimd64(arg0VN).v128[0];
                 return VNForSimd16Con(result);
             }
 #endif // TARGET_XARCH
 
-            case NI_Vector128_AsVector2:
+            case NI_Vector_AsVector2:
             {
                 simd8_t result = GetConstantSimd16(arg0VN).v64[0];
                 return VNForSimd8Con(result);
             }
 
-            case NI_Vector128_AsVector3:
+            case NI_Vector_AsVector3:
             {
                 simd12_t result = {};
                 simd16_t vector = GetConstantSimd16(arg0VN);
@@ -8621,7 +8622,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForSimd12Con(result);
             }
 
-            case NI_Vector128_AsVector128Unsafe:
+            case NI_Vector_AsVector128Unsafe:
             {
                 if (TypeOfVN(arg0VN) == TYP_SIMD8)
                 {
@@ -8644,13 +8645,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 }
             }
 
-            case NI_Vector128_ToScalar:
-#ifdef TARGET_ARM64
-            case NI_Vector64_ToScalar:
-#elif defined(TARGET_XARCH)
-            case NI_Vector256_ToScalar:
-            case NI_Vector512_ToScalar:
-#endif
+            case NI_Vector_ToScalar:
             {
                 return EvaluateSimdGetElement(this, TypeOfVN(arg0VN), baseType, arg0VN, 0);
             }
@@ -8778,13 +8773,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 
         switch (ni)
         {
-            case NI_Vector128_GetElement:
-#ifdef TARGET_ARM64
-            case NI_Vector64_GetElement:
-#elif defined(TARGET_XARCH)
-            case NI_Vector256_GetElement:
-            case NI_Vector512_GetElement:
-#endif
+            case NI_Vector_GetElement:
             {
                 var_types simdType = TypeOfVN(arg0VN);
                 int32_t   index    = GetConstantInt32(arg1VN);
@@ -8809,14 +8798,14 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 return EvaluateBinarySimd(this, GT_MUL, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
 
-            case NI_Vector128_WithLower:
+            case NI_Vector_WithLower:
             {
                 simd16_t result = GetConstantSimd16(arg0VN);
                 result.v64[0]   = GetConstantSimd8(arg1VN);
                 return VNForSimd16Con(result);
             }
 
-            case NI_Vector128_WithUpper:
+            case NI_Vector_WithUpper:
             {
                 simd16_t result = GetConstantSimd16(arg0VN);
                 result.v64[1]   = GetConstantSimd8(arg1VN);
@@ -8825,32 +8814,38 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 #endif // TARGET_ARM64
 
 #if defined(TARGET_XARCH)
-            case NI_Vector256_WithLower:
+            case NI_Vector_WithLower:
             {
-                simd32_t result = GetConstantSimd32(arg0VN);
-                result.v128[0]  = GetConstantSimd16(arg1VN);
-                return VNForSimd32Con(result);
+                if (simdSize == 64)
+                {
+                    simd64_t result = GetConstantSimd64(arg0VN);
+                    result.v256[0]  = GetConstantSimd32(arg1VN);
+                    return VNForSimd64Con(result);
+                }
+                else
+                {
+                    assert(simdSize == 32);
+                    simd32_t result = GetConstantSimd32(arg0VN);
+                    result.v128[0]  = GetConstantSimd16(arg1VN);
+                    return VNForSimd32Con(result);
+                }
             }
 
-            case NI_Vector256_WithUpper:
+            case NI_Vector_WithUpper:
             {
-                simd32_t result = GetConstantSimd32(arg0VN);
-                result.v128[1]  = GetConstantSimd16(arg1VN);
-                return VNForSimd32Con(result);
-            }
-
-            case NI_Vector512_WithLower:
-            {
-                simd64_t result = GetConstantSimd64(arg0VN);
-                result.v256[0]  = GetConstantSimd32(arg1VN);
-                return VNForSimd64Con(result);
-            }
-
-            case NI_Vector512_WithUpper:
-            {
-                simd64_t result = GetConstantSimd64(arg0VN);
-                result.v256[1]  = GetConstantSimd32(arg1VN);
-                return VNForSimd64Con(result);
+                if (simdSize == 64)
+                {
+                    simd64_t result = GetConstantSimd64(arg0VN);
+                    result.v256[1]  = GetConstantSimd32(arg1VN);
+                    return VNForSimd64Con(result);
+                }
+                else
+                {
+                    assert(simdSize == 32);
+                    simd32_t result = GetConstantSimd32(arg0VN);
+                    result.v128[1]  = GetConstantSimd16(arg1VN);
+                    return VNForSimd32Con(result);
+                }
             }
 #endif // TARGET_XARCH
 
@@ -9342,13 +9337,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
             }
 #endif
 
-            case NI_Vector128_op_Equality:
-#if defined(TARGET_ARM64)
-            case NI_Vector64_op_Equality:
-#elif defined(TARGET_XARCH)
-            case NI_Vector256_op_Equality:
-            case NI_Vector512_op_Equality:
-#endif // !TARGET_ARM64 && !TARGET_XARCH
+            case NI_Vector_op_Equality:
             {
                 if (varTypeIsFloating(baseType))
                 {
@@ -9363,13 +9352,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 break;
             }
 
-            case NI_Vector128_op_Inequality:
-#if defined(TARGET_ARM64)
-            case NI_Vector64_op_Inequality:
-#elif defined(TARGET_XARCH)
-            case NI_Vector256_op_Inequality:
-            case NI_Vector512_op_Inequality:
-#endif // !TARGET_ARM64 && !TARGET_XARCH
+            case NI_Vector_op_Inequality:
             {
                 if (varTypeIsFloating(baseType))
                 {
@@ -9469,13 +9452,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 
         switch (ni)
         {
-            case NI_Vector128_op_Equality:
-#if defined(TARGET_ARM64)
-            case NI_Vector64_op_Equality:
-#elif defined(TARGET_XARCH)
-            case NI_Vector256_op_Equality:
-            case NI_Vector512_op_Equality:
-#endif // !TARGET_ARM64 && !TARGET_XARCH
+            case NI_Vector_op_Equality:
             {
                 // We can't handle floating-point due to NaN
 
@@ -9486,13 +9463,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 break;
             }
 
-            case NI_Vector128_op_Inequality:
-#if defined(TARGET_ARM64)
-            case NI_Vector64_op_Inequality:
-#elif defined(TARGET_XARCH)
-            case NI_Vector256_op_Inequality:
-            case NI_Vector512_op_Inequality:
-#endif // !TARGET_ARM64 && !TARGET_XARCH
+            case NI_Vector_op_Inequality:
             {
                 // We can't handle floating-point due to NaN
 
@@ -9631,12 +9602,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 
     switch (ni)
     {
-#ifndef TARGET_WASM
-// TODO-WASM: Implement bitwise select case
-#if defined(TARGET_XARCH)
-        case NI_Vector128_ConditionalSelect:
-        case NI_Vector256_ConditionalSelect:
-        case NI_Vector512_ConditionalSelect:
+#if defined(TARGET_XARCH) || defined(TARGET_WASM)
+        case NI_Vector_ConditionalSelect:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_BitwiseSelect:
         case NI_Sve_ConditionalSelect:
@@ -9701,15 +9668,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
             }
             break;
         }
-#endif // !defined(TARGET_WASM)
 
-        case NI_Vector128_WithElement:
-#ifdef TARGET_ARM64
-        case NI_Vector64_WithElement:
-#elif defined(TARGET_XARCH)
-        case NI_Vector256_WithElement:
-        case NI_Vector512_WithElement:
-#endif
+        case NI_Vector_WithElement:
         {
             if (!IsVNConstant(arg0VN) || !IsVNConstant(arg1VN) || !IsVNConstant(arg2VN))
             {
@@ -10386,12 +10346,17 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64) || defined(TARGET_WASM)
                 case NI_System_Math_MaxNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::maximumNumber(arg0Val, arg1Val);
+#if defined(TARGET_WASM)
+                    // WASM lowers MaxNative to a NaN-propagating max instruction.
+                    res = FloatingPointUtils::maximum(arg0Val, arg1Val);
+#else
+                    res = FloatingPointUtils::maximumNumber(arg0Val, arg1Val);
+#endif
                     break;
                 }
 
@@ -10399,10 +10364,15 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
+#if defined(TARGET_WASM)
+                    // WASM lowers MinNative to a NaN-propagating min instruction.
+                    res = FloatingPointUtils::minimum(arg0Val, arg1Val);
+#else
+                    res = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
+#endif
                     break;
                 }
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_WASM
 
                 default:
                     // the above are the only binary math intrinsics at the time of this writing.
@@ -10428,12 +10398,17 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64) || defined(TARGET_WASM)
                 case NI_System_Math_MaxNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::maximumNumber(arg0Val, arg1Val);
+#if defined(TARGET_WASM)
+                    // WASM lowers MaxNative to a NaN-propagating max instruction.
+                    res = FloatingPointUtils::maximum(arg0Val, arg1Val);
+#else
+                    res = FloatingPointUtils::maximumNumber(arg0Val, arg1Val);
+#endif
                     break;
                 }
 
@@ -10441,10 +10416,15 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
+#if defined(TARGET_WASM)
+                    // WASM lowers MinNative to a NaN-propagating min instruction.
+                    res = FloatingPointUtils::minimum(arg0Val, arg1Val);
+#else
+                    res = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
+#endif
                     break;
                 }
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_WASM
 
                 case NI_System_Math_Pow:
                 {
@@ -10520,10 +10500,6 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 vnf = VNF_MaxInt_UN;
                 break;
 
-            case NI_System_Math_MaxNative:
-                vnf = VNF_MaxNumber;
-                break;
-
             case NI_System_Math_Min:
                 vnf = VNF_MinInt;
                 break;
@@ -10531,11 +10507,27 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
             case NI_System_Math_MinUnsigned:
                 vnf = VNF_MinInt_UN;
                 break;
+#endif // TARGET_RISCV64
+
+#if defined(TARGET_RISCV64) || defined(TARGET_WASM)
+            case NI_System_Math_MaxNative:
+#if defined(TARGET_WASM)
+                // WASM lowers MaxNative to a NaN-propagating max instruction.
+                vnf = VNF_Max;
+#else
+                vnf = VNF_MaxNumber;
+#endif
+                break;
 
             case NI_System_Math_MinNative:
+#if defined(TARGET_WASM)
+                // WASM lowers MinNative to a NaN-propagating min instruction.
+                vnf = VNF_Min;
+#else
                 vnf = VNF_MinNumber;
+#endif
                 break;
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_WASM
 
             case NI_System_Math_Pow:
                 vnf = VNF_Pow;
@@ -13736,6 +13728,35 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
             intrinsic->gtVNPair = vnStore->VNPWithExc(newVNP, excSet);
         }
     }
+    else if ((intrinsic->gtIntrinsicName == NI_PRIMITIVE_SaturateToInt8) ||
+             (intrinsic->gtIntrinsicName == NI_PRIMITIVE_SaturateToInt16) ||
+             (intrinsic->gtIntrinsicName == NI_PRIMITIVE_SaturateToUInt8) ||
+             (intrinsic->gtIntrinsicName == NI_PRIMITIVE_SaturateToUInt16))
+    {
+        // Unary integer-domain saturating conversions used by morph for non-FEATURE_HW_INTRINSICS
+        // float/double -> small integral cast lowering. Model as an opaque unary VN function so
+        // CSE/PRE work correctly without attempting constant folding here.
+        assert(intrinsic->AsOp()->gtOp2 == nullptr);
+        VNFunc vnf = VNF_Boundary;
+        switch (intrinsic->gtIntrinsicName)
+        {
+            case NI_PRIMITIVE_SaturateToInt8:
+                vnf = VNF_SaturateToInt8;
+                break;
+            case NI_PRIMITIVE_SaturateToInt16:
+                vnf = VNF_SaturateToInt16;
+                break;
+            case NI_PRIMITIVE_SaturateToUInt8:
+                vnf = VNF_SaturateToUInt8;
+                break;
+            case NI_PRIMITIVE_SaturateToUInt16:
+                vnf = VNF_SaturateToUInt16;
+                break;
+            default:
+                unreached();
+        }
+        intrinsic->gtVNPair = vnStore->VNPWithExc(vnStore->VNPairForFunc(intrinsic->TypeGet(), vnf, arg0VNP), arg0VNPx);
+    }
     else if (intrinsic->gtIntrinsicName == NI_PRIMITIVE_Log2)
     {
         intrinsic->gtVNPair = vnStore->VNPUniqueWithExc(intrinsic->TypeGet(), arg0VNPx);
@@ -13877,7 +13898,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
             }
         };
 
-        // There are some HWINTRINSICS operations that have zero args, i.e.  NI_Vector128_Zero
+        // There are some HWINTRINSICS operations that have zero args, i.e.  NI_Vector_Zero
         if (opCount == 0)
         {
             // There are zero arg HWINTRINSICS operations that encode the result type, i.e.  Vector128_AllBitSet
@@ -14938,11 +14959,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 
         case CORINFO_HELP_UNBOX_TYPETEST:
             vnf = VNF_Unbox_TypeTest;
-            break;
-
-        // A constant within any method.
-        case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
-            vnf = VNF_ManagedThreadId;
             break;
 
         case CORINFO_HELP_GETREFANY:

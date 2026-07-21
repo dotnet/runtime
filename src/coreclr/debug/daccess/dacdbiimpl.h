@@ -66,9 +66,6 @@ public:
         bool fThrowEx);
 
 
-    // Check whether the version of the DBI matches the version of the runtime.
-    HRESULT STDMETHODCALLTYPE CheckDbiVersion(const DbiVersion * pVersion);
-
     // Flush the DAC cache. This should be called when target memory changes.
     HRESULT STDMETHODCALLTYPE FlushCache();
 
@@ -105,7 +102,7 @@ public:
 
 
     // Initialize the native/IL sequence points and native var info for a function.
-    HRESULT STDMETHODCALLTYPE GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT NativeVarData * pNativeVarData, OUT SequencePoints * pSequencePoints);
+    HRESULT STDMETHODCALLTYPE GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT ULONG32 * pFixedArgCount, FP_NATIVEVARINFO_CALLBACK fpVarInfoCallback, FP_SEQUENCEPOINT_CALLBACK fpSeqPointCallback, CALLBACK_DATA pUserData);
 
     HRESULT STDMETHODCALLTYPE IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT BOOL * pResult);
 
@@ -123,7 +120,7 @@ public:
 
     HRESULT STDMETHODCALLTYPE IsValidObject(CORDB_ADDRESS obj, OUT BOOL * pResult);
 
-    HRESULT STDMETHODCALLTYPE CreateRefWalk(RefWalkHandle * pHandle, BOOL walkStacks, BOOL walkFQ, UINT32 handleWalkMask);
+    HRESULT STDMETHODCALLTYPE CreateRefWalk(RefWalkHandle * pHandle, BOOL walkStacks, UINT32 handleWalkMask);
     HRESULT STDMETHODCALLTYPE DeleteRefWalk(RefWalkHandle handle);
     HRESULT STDMETHODCALLTYPE WalkRefs(RefWalkHandle handle, ULONG count, OUT DacGcReference * objects, OUT ULONG *pFetched);
 
@@ -148,7 +145,7 @@ public:
     HRESULT STDMETHODCALLTYPE EnableGCNotificationEvents(BOOL fEnable);
     HRESULT STDMETHODCALLTYPE GetAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_Assembly *pvmAssembly);
     HRESULT STDMETHODCALLTYPE ParseContinuation(CORDB_ADDRESS continuationAddress,
-                                              OUT PCODE *pDiagnosticIP,
+                                              OUT CORDB_ADDRESS *pDiagnosticIP,
                                               OUT CORDB_ADDRESS *pNextContinuation,
                                               OUT UINT32 *pState);
     HRESULT STDMETHODCALLTYPE EnumerateAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, FP_ASYNC_LOCAL_CALLBACK fpCallback, CALLBACK_DATA pUserData);
@@ -161,17 +158,6 @@ private:
 
     // Get the number of fixed arguments to a function, i.e., the explicit args and the "this" pointer.
     SIZE_T GetArgCount(MethodDesc * pMD);
-
-    // Get locations and code offsets for local variables and arguments in a function
-    void GetNativeVarData(MethodDesc *    pMethodDesc,
-                          CORDB_ADDRESS   startAddr,
-                          SIZE_T          fixedArgCount,
-                          NativeVarData * pVarInfo);
-
-    // Get the native/IL sequence points for a function
-    void GetSequencePoints(MethodDesc *    pMethodDesc,
-                           CORDB_ADDRESS    startAddr,
-                           SequencePoints * pNativeMap);
 
 public:
 //----------------------------------------------------------------------------------
@@ -718,9 +704,6 @@ public:
     // Return the stack parameter size of the given method.
     ULONG32 GetStackParameterSize(EECodeInfo * pCodeInfo);
 
-    // Return the FramePointer of the current frame at which the stackwalker is stopped.
-    HRESULT STDMETHODCALLTYPE GetFramePointer(StackWalkHandle pSFIHandle, OUT FramePointer * pRetVal);
-
     FramePointer GetFramePointerWorker(StackFrameIterator * pIter);
 
     // Return TRUE if the specified CONTEXT is the CONTEXT of the leaf frame.
@@ -729,10 +712,6 @@ public:
 
     // DacDbi API: Get the context for a particular thread of the target process
     HRESULT STDMETHODCALLTYPE GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContextBuffer);
-
-    // This is a simple helper function to convert a CONTEXT to a DebuggerREGDISPLAY.  We need to do this
-    // inside DDI because the RS has no notion of REGDISPLAY.
-    HRESULT STDMETHODCALLTYPE ConvertContextToDebuggerRegDisplay(const DT_CONTEXT * pInContext, DebuggerREGDISPLAY * pOutDRD, BOOL fActive);
 
     // Check if the given method is a DiagnosticHidden or an LCG method.
     HRESULT STDMETHODCALLTYPE IsDiagnosticsHiddenOrLCGMethod(VMPTR_MethodDesc vmMethodDesc, OUT DynamicMethodType * pRetVal);
@@ -894,7 +873,7 @@ private:
 
 public:
     // API for picking up the info needed for a debugger to look up an image from its search path.
-    HRESULT STDMETHODCALLTYPE GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult);
+    HRESULT STDMETHODCALLTYPE GetModuleMetaDataFileInfo(VMPTR_Module vmModule, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult);
 };
 
 
@@ -958,7 +937,7 @@ protected:
 class DacRefWalker
 {
 public:
-    DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask, BOOL resolvePointers);
+    DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, UINT32 handleMask, BOOL resolvePointers);
     ~DacRefWalker();
 
     HRESULT Init();
@@ -971,7 +950,7 @@ private:
 
 private:
     ClrDataAccess *mDac;
-    BOOL mWalkStacks, mWalkFQ;
+    BOOL mWalkStacks;
     UINT32 mHandleMask;
 
     // Stacks
@@ -980,11 +959,6 @@ private:
 
     // Handles
     DacHandleWalker *mHandleWalker;
-
-    // FQ
-    PTR_PTR_Object mFQStart;
-    PTR_PTR_Object mFQEnd;
-    PTR_PTR_Object mFQCurr;
 };
 
 #endif // _DACDBI_IMPL_H_

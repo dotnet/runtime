@@ -3,6 +3,14 @@
 
 // C implementations of the pal_* APIs needed by trace.c on non-Windows.
 
+// glibc guards dladdr/Dl_info (used by pal_get_loaded_library) behind _GNU_SOURCE
+// in <dlfcn.h>. As a C translation unit we don't pick it up transitively the way
+// the C++ files do via libstdc++, so request it explicitly. Must be defined
+// before including any system header.
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #if defined(TARGET_FREEBSD)
 #define _WITH_GETLINE
 #endif
@@ -13,6 +21,7 @@
 
 #include <assert.h>
 #include <dirent.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -293,7 +302,138 @@ pal_char_t* pal_get_default_installation_dir(void)
     }
 
     return pal_strdup(_X("/usr/local/share/dotnet"));
+#elif defined(TARGET_OPENBSD)
+    return pal_strdup(_X("/usr/local/share/dotnet"));
 #else
     return pal_strdup(_X("/usr/share/dotnet"));
 #endif
+}
+
+static bool is_path_fully_qualified(const pal_char_t* path)
+{
+    return path[0] == DIR_SEPARATOR;
+}
+
+// Two-level stringize so PATH_MAX's value (not its name) can be used as an
+// explicit sscanf field width below.
+#define PROC_MAPS_STR2(x) #x
+#define PROC_MAPS_STR(x) PROC_MAPS_STR2(x)
+
+// dlopen on some systems only finds a loaded library when given its full path.
+// As a fallback, scan /proc/self/maps for a mapped file whose name contains
+// library_name. On success sets *dll and *out_path (heap-allocated, caller
+// frees) and returns true.
+static bool get_loaded_library_from_proc_maps(const pal_char_t* library_name, pal_dll_t* dll, pal_char_t** out_path)
+{
+    FILE* file = pal_file_open(_X("/proc/self/maps"), _X("r"));
+    if (file == NULL)
+        return false;
+
+    char* line = NULL;
+    size_t line_cap = 0;
+    bool found = false;
+    char found_path[PATH_MAX + 1];
+    while (getline(&line, &line_cap, file) != -1)
+    {
+        char buf[PATH_MAX + 1]; // + 1 for the NUL terminator
+        if (sscanf(line, "%*p-%*p %*[-rwxsp] %*p %*[:0-9a-f] %*d %" PROC_MAPS_STR(PATH_MAX) "s\n", buf) == 1)
+        {
+            const char* last_sep = strrchr(buf, DIR_SEPARATOR);
+            if (last_sep == NULL)
+                continue;
+
+            if (strstr(last_sep, library_name) != NULL)
+            {
+                memcpy(found_path, buf, strlen(buf) + 1);
+                found = true;
+                break;
+            }
+        }
+    }
+
+    free(line);
+    fclose(file);
+    if (!found)
+        return false;
+
+    pal_dll_t dll_maybe = dlopen(found_path, RTLD_LAZY | RTLD_NOLOAD);
+    if (dll_maybe == NULL)
+        return false;
+
+    pal_char_t* path_copy = pal_strdup(found_path);
+    if (path_copy == NULL)
+    {
+        dlclose(dll_maybe);
+        return false;
+    }
+
+    *dll = dll_maybe;
+    *out_path = path_copy;
+    return true;
+}
+
+bool pal_get_loaded_library(
+    const pal_char_t* library_name,
+    const char* symbol_name,
+    pal_dll_t* dll,
+    pal_char_t** out_path)
+{
+    *dll = NULL;
+    *out_path = NULL;
+
+    const pal_char_t* lookup_name = library_name;
+#if defined(TARGET_OSX)
+    pal_char_t* rpath_name = NULL;
+    if (!is_path_fully_qualified(library_name))
+    {
+        size_t cap = STRING_LENGTH(_X("@rpath/")) + pal_strlen(library_name) + 1;
+        rpath_name = (pal_char_t*)malloc(cap * sizeof(pal_char_t));
+        if (rpath_name == NULL)
+            return false;
+
+        pal_str_printf(rpath_name, cap, _X("@rpath/%s"), library_name);
+        lookup_name = rpath_name;
+    }
+#endif
+
+    pal_dll_t dll_maybe = dlopen(lookup_name, RTLD_LAZY | RTLD_NOLOAD);
+#if defined(TARGET_OSX)
+    free(rpath_name);
+#endif
+
+    if (dll_maybe == NULL)
+    {
+        if (is_path_fully_qualified(library_name))
+            return false;
+
+        return get_loaded_library_from_proc_maps(library_name, dll, out_path);
+    }
+
+    // Not all systems support getting the path from just the handle (e.g.
+    // dlinfo), so we rely on the caller passing a symbol name to get (any)
+    // address in the library.
+    if (symbol_name == NULL)
+    {
+        dlclose(dll_maybe);
+        return false;
+    }
+
+    void* proc = dlsym(dll_maybe, symbol_name);
+    Dl_info info;
+    if (proc == NULL || dladdr(proc, &info) == 0)
+    {
+        dlclose(dll_maybe);
+        return false;
+    }
+
+    pal_char_t* path_copy = pal_strdup(info.dli_fname);
+    if (path_copy == NULL)
+    {
+        dlclose(dll_maybe);
+        return false;
+    }
+
+    *dll = dll_maybe;
+    *out_path = path_copy;
+    return true;
 }
