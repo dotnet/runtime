@@ -648,6 +648,37 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             await changed;
         }
 
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public void CreateFileChangeToken_ReRegisterWhileRootMissing_TearsDownStaleWatcher()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            string rootPath = root.Path;
+
+            using var fileSystemWatcher = new MockFileSystemWatcher(rootPath);
+
+            // Call BeginInit, which suspends the watcher so enabling it stores EnableRaisingEvents without starting a real
+            // OS watch. This lets us delete the root directory below without the watcher's background
+            // thread asynchronously raising Error (which would make this test racy) while still
+            // reproducing the state this test targets: EnableRaisingEvents == true over a dead watch.
+            fileSystemWatcher.BeginInit();
+
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(rootPath, fileSystemWatcher, pollForChanges: false);
+
+            physicalFilesWatcher.CreateFileChangeToken("file.txt");
+            Assert.True(fileSystemWatcher.EnableRaisingEvents);
+
+            // The watched root is deleted out from under the watcher. On Linux the inotify watch is
+            // torn down (bound to the now-deleted inode), but EnableRaisingEvents keeps reporting true
+            // until OnError runs. A token can be re-registered in that window.
+            Directory.Delete(rootPath);
+
+            // Re-registering while the root is missing must tear down the stale watcher and fall back
+            // to watching for the root to reappear, rather than leaving the dead watch in place.
+            physicalFilesWatcher.CreateFileChangeToken("file.txt");
+            Assert.False(fileSystemWatcher.EnableRaisingEvents);
+        }
+
         [Theory]
         [MemberData(nameof(WatcherModeData))]
         public async Task WildcardToken_DoesNotThrow_WhenRootIsMissing(bool useActivePolling)
