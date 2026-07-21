@@ -264,14 +264,17 @@ namespace System.Numerics
                         return xIsNegative ? -1 : 1;
                     }
 
-                    // Same-signed NaNs are ordered by their raw payload, mirroring how the binary
-                    // formats order NaNs by their significand bits. The payload is used directly
-                    // rather than the decoded coefficient so every width (including Decimal128, whose
-                    // NaN coefficient decode is non-canonical) orders consistently.
-                    TValue xPayload = xBits & TDecimal.NaNPayloadMask;
-                    TValue yPayload = yBits & TDecimal.NaNPayloadMask;
+                    // Same-signed NaNs follow totalOrder's +sNaN < +qNaN ordering, then break ties on
+                    // the raw payload. The binary formats get this for free because their quiet bit is
+                    // the significand's most significant bit; the decimal signaling bit sits above the
+                    // payload but is set for signaling (not quiet), so it is folded in inverted to rank
+                    // quiet above signaling. Using the raw payload rather than the decoded coefficient
+                    // keeps every width consistent (including Decimal128, whose NaN decode is non-canonical).
+                    TValue signalingMask = TDecimal.SNaNMask ^ TDecimal.NaNMask;
+                    TValue xKey = (xBits & TDecimal.NaNPayloadMask) | ((xBits & signalingMask) ^ signalingMask);
+                    TValue yKey = (yBits & TDecimal.NaNPayloadMask) | ((yBits & signalingMask) ^ signalingMask);
 
-                    int payload = xPayload.CompareTo(yPayload);
+                    int payload = xKey.CompareTo(yKey);
                     return xIsNegative ? -payload : payload;
                 }
 
