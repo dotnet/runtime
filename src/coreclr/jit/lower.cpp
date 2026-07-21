@@ -1843,7 +1843,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
     {
         assert(arg->OperIsLocalRead());
 
-        JITDUMP("Argument is a local\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a local\n");
 
         GenTreeLclVarCommon* lcl = arg->AsLclVarCommon();
 
