@@ -7886,6 +7886,9 @@ HRESULT ProfToEEInterfaceImpl::GetStringLayoutHelper(ULONG *pBufferLengthOffset,
  *
  * Returns:
  *   S_OK if successful.
+ *   CORPROF_E_DATAINCOMPLETE if classID refers to a dynamically-generated type with no
+ *         backing metadata (e.g. a Runtime Async continuation), since no field layout
+ *         information is available for such types.
  */
 HRESULT ProfToEEInterfaceImpl::GetClassLayout(ClassID classID,
                                              COR_FIELD_OFFSET rFieldOffset[],
@@ -7944,6 +7947,19 @@ HRESULT ProfToEEInterfaceImpl::GetClassLayout(ClassID classID,
     if (typeHandle.IsTypeDesc() || typeHandle.AsMethodTable()->IsArray())
     {
         return E_INVALIDARG;
+    }
+
+    //
+    // Runtime Async introduces dynamically-created Continuation MethodTables that have
+    // no backing metadata (no TypeDef/FieldDef tokens). This API's contract assumes
+    // fields are always resolvable via metadata (see the FieldDesc::GetMemberDef() call
+    // in the fill-in loop below), so attempting to walk fields on one of these types
+    // dereferences a null FieldDesc* and crashes. Detect and reject up front instead.
+    // See https://github.com/dotnet/runtime/issues/120800.
+    //
+    if (typeHandle.IsContinuationWithoutMetadata())
+    {
+        return CORPROF_E_DATAINCOMPLETE;
     }
 
     //
