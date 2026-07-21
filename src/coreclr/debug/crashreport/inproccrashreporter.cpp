@@ -131,8 +131,9 @@ static void CacheSysctlString(const char* sysctlName, char* buffer, size_t buffe
 // ``(in <name>) `` so the frame stays self-describing — overflow is lossless,
 // just less compact for that frame.
 //
-// Single-instance because CreateReport is one-shot per process (guarded by
-// the ``s_generating`` InterlockedCompareExchange in CreateReport).
+// Single-instance because at most one report (signal-path or on-demand) runs at
+// a time, enforced by the m_reportInFlight guard in CreateReport. It is Reset()
+// at the start of each report so on-demand reports stay re-runnable.
 
 static constexpr int MAX_MODULES_IN_TABLE = 256;
 
@@ -166,6 +167,8 @@ public:
 
     int Count() const { return m_count; }
     const void* ModuleHandle(int i) const { return m_moduleHandles[i]; }
+
+    void Reset() { m_count = 0; }
 private:
     const void* m_moduleHandles[MAX_MODULES_IN_TABLE];
     int m_count = 0;
@@ -348,13 +351,38 @@ public:
     static InProcCrashReporter* GetInstance();
     static bool InitializeInstance(const InProcCrashReporterSettings& settings);
 
-    // Capture configuration and the crash-report template path. Must run before
-    // the instance is published to the PAL signal-handler path.
+    // Capture the VM callbacks and process identity. Must run before the instance
+    // is published to the PAL signal-handler path. Does not arm the crash-dump
+    // behavior (watchdog / lifecycle); see InitializeServices.
     void Initialize(const InProcCrashReporterSettings& settings);
 
-    void CreateReport(
+    // Initialize the env-gated crash-dump services (watchdog + lifecycle/file
+    // management) after the reporter has been initialized. Separated from
+    // Initialize so the reporter can be brought up with only its VM callbacks
+    // (making on-demand reports possible) independently of the crash-dump
+    // configuration, and so the services are started on the single configuration
+    // pass.
+    void InitializeServices(const InProcCrashReporterServicesSettings& settings);
+
+    // Signal-path report generation, invoked by the PAL fatal-signal dispatcher.
+    // Returns true if the report was generated, or false if it was skipped because
+    // another report (a nested fatal signal, or an in-flight on-demand report) is
+    // already using the shared reporter state.
+    bool CreateReport(
         int signal,
         void* context);
+
+    // On-demand report generation. Runs the same emit core as the signal path
+    // but without the watchdog or lifecycle/file management, routing the selected
+    // output format to `outputCallback`. Re-runnable (sequentially); rejects
+    // reentrant/concurrent use. Returns false if `outputCallback` is null or the
+    // call is reentered.
+    bool CreateReport(
+        InProcCrashReportOutputFormat outputFormat,
+        int signal,
+        void* context,
+        InProcCrashReportOutputCallback outputCallback,
+        void* callbackContext);
 
     void SetCrashKind(InProcCrashReportCrashKind crashKind);
     void BeginStackOverflowTrace(uint64_t crashingTid, uint32_t totalFrameCount);
@@ -368,6 +396,25 @@ private:
     InProcCrashReporter() = default;
     InProcCrashReporter(const InProcCrashReporter&) = delete;
     InProcCrashReporter& operator=(const InProcCrashReporter&) = delete;
+
+    // State of m_reportInFlight, the single guard shared by the signal-handler and
+    // on-demand CreateReport paths. The two paths are mutually exclusive: they
+    // contend for the same signal-safe writers, module table, thread context, and
+    // the process-global ThreadSuspend machinery (SuspendEE), none of which is safe
+    // to drive from two reports at once. At most one report runs at a time on a
+    // first-come-first-served basis:
+    //   * Whichever path observes an idle guard claims it and generates its report.
+    //   * Any other report - a nested fatal signal, or a signal arriving while an
+    //     on-demand report driven by a user fatal-error handler is in flight - finds
+    //     the guard held and aborts without generating. The in-flight report (or,
+    //     for the signal case, the imminent process termination) takes over.
+    // The on-demand path releases the guard when done so it stays re-runnable; the
+    // signal path never releases it, because a fatal signal terminates the process.
+    enum ReportInFlightState : LONG
+    {
+        ReportNotInFlight = 0,
+        ReportInFlight = 1,
+    };
 
     void EmitSynthesizedCrashThread(
         void* context,
@@ -385,8 +432,7 @@ private:
     void BeginJsonReport();
     void EndJsonReport(
         int signal,
-        bool jsonEnabled,
-        int fd);
+        bool finalizeReportFile);
 
     static const char* GetSignalNameAscii(int signal);
 
@@ -402,6 +448,7 @@ private:
     InProcCrashReportEnumerateThreadsCallback m_enumerateThreadsCallback = nullptr;
     InProcCrashReportModuleInfoCallback m_moduleInfoCallback = nullptr;
     volatile LONG m_crashKind = static_cast<LONG>(InProcCrashReportCrashKind::Unknown);
+    volatile LONG m_reportInFlight = ReportNotInFlight;
     uint32_t m_frameLimitPerThread = 0;
     InProcCrashReportLifecycle m_lifecycle;
     char m_reportFilePath[CRASHREPORT_PATH_BUFFER_SIZE];
@@ -559,31 +606,35 @@ public:
         const char* buffer,
         size_t len);
 
-    // SignalSafeJsonWriter callback that drops everything: used when the
-    // crash report is running in compact-log-only mode (no managed report
-    // directory configured) so the JSON formatter still keeps its bookkeeping
-    // consistent without emitting bytes anywhere.
-    static bool DiscardOutputCallback(const char* buffer, size_t len, void* ctx);
-
 };
 
-void
+bool
 InProcCrashReporter::CreateReport(
     int signal,
     void* context)
 {
-    static LONG s_generating = 0;
-    if (InterlockedCompareExchange(&s_generating, 1, 0) != 0)
+    // Claim the shared guard. The signal path and the on-demand path are mutually
+    // exclusive over the shared writers, module table, and the process-global
+    // ThreadSuspend machinery, so at most one report runs at a time. If a report
+    // is already in flight - an on-demand report driven by a user fatal-error
+    // handler, or a nested fatal signal - abort without generating: the in-flight
+    // report, or the imminent process termination, takes over from here. The
+    // signal path never releases the guard: a fatal signal terminates the process.
+    if (InterlockedCompareExchange(&m_reportInFlight, ReportInFlight, ReportNotInFlight) != ReportNotInFlight)
     {
-        return;
+        return false;
     }
+
     CrashReportWatchdogScope watchdogScope;
+
+    m_moduleTable.Reset();
+    m_consoleWriter.SetOutputSink(SignalSafeConsoleWriter::PlatformConsoleOutputSink());
 
     m_reportFilePath[0] = '\0';
     // The JSON file sink is enabled only by lifecycle-managed output. Otherwise
     // the crash report runs in compact-log-only mode: the JSON emitter still
-    // executes (so it can keep its bookkeeping consistent) but writes go to a
-    // no-op DiscardOutputCallback instead of an open fd.
+    // executes (so it can keep its bookkeeping consistent) but writes go to the
+    // writer's drop-all default sink instead of an open fd.
     int fd = -1;
     bool jsonEnabled = m_lifecycle.IsReportFileOutputEnabled() &&
         m_lifecycle.PrepareReportFile(&m_formatter, m_reportFilePath, sizeof(m_reportFilePath), &fd);
@@ -593,24 +644,86 @@ InProcCrashReporter::CreateReport(
         jsonEnabled = false;
     }
 
-    InProcCrashReportCrashKind crashKind = static_cast<InProcCrashReportCrashKind>(
-        InterlockedExchange(&m_crashKind, static_cast<LONG>(InProcCrashReportCrashKind::Unknown)));
+    InProcCrashReportCrashKind crashKind = static_cast<InProcCrashReportCrashKind>(VolatileLoad(&m_crashKind));
 
     m_outputContext.Init(fd);
     if (jsonEnabled)
     {
-        m_jsonWriter.Init(&CrashReportOutputContext::ChunkCallback, &m_outputContext);
+        m_jsonWriter.SetOutputSink(SignalSafeJsonOutputSink(&CrashReportOutputContext::ChunkCallback, &m_outputContext));
     }
     else
     {
-        m_jsonWriter.Init(&CrashReportHelpers::DiscardOutputCallback, nullptr);
+        // Compact-log-only mode: route the JSON emitter to the drop-all sink so
+        // it keeps its bookkeeping consistent without emitting bytes.
+        m_jsonWriter.SetOutputSink(SignalSafeJsonWriter::DropAllOutputSink());
     }
 
     BeginConsoleReport(signal);
     BeginJsonReport();
     EmitThreads(crashKind, context);
-    EndJsonReport(signal, jsonEnabled, fd);
+    EndJsonReport(signal, /*finalizeReportFile*/ jsonEnabled);
     EndConsoleReport();
+    return true;
+}
+
+bool
+InProcCrashReporter::CreateReport(
+    InProcCrashReportOutputFormat outputFormat,
+    int signal,
+    void* context,
+    InProcCrashReportOutputCallback outputCallback,
+    void* callbackContext)
+{
+    if (outputCallback == nullptr)
+    {
+        return false;
+    }
+
+    // Acquire the shared guard only from the idle state: yield (return false) to
+    // any report already in flight - another on-demand report, or the signal-path
+    // crash report. Mutual exclusion keeps the two paths off the shared writers
+    // and the process-global ThreadSuspend machinery at the same time.
+    if (InterlockedCompareExchange(&m_reportInFlight, ReportInFlight, ReportNotInFlight) != ReportNotInFlight)
+    {
+        return false;
+    }
+
+    m_moduleTable.Reset();
+
+    if (outputFormat == InProcCrashReportOutputFormat::Json)
+    {
+        m_jsonWriter.SetOutputSink(SignalSafeJsonOutputSink(outputCallback, callbackContext));
+        m_consoleWriter.SetOutputSink(SignalSafeConsoleWriter::DropAllOutputSink());
+    }
+    else
+    {
+        m_jsonWriter.SetOutputSink(SignalSafeJsonWriter::DropAllOutputSink());
+        m_consoleWriter.SetOutputSink(SignalSafeConsoleOutputSink(outputCallback, callbackContext, /*appendNewline*/ true));
+    }
+
+    uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
+    InProcCrashReportCrashKind crashKind = (VolatileLoad(&m_stackOverflowTrace.available) != 0 && m_stackOverflowTrace.crashingTid == crashingTid)
+        ? InProcCrashReportCrashKind::StackOverflow
+        : InProcCrashReportCrashKind::Unknown;
+
+    BeginConsoleReport(signal);
+    BeginJsonReport();
+    EmitThreads(crashKind, context);
+    EndJsonReport(signal, /*finalizeReportFile*/ false);
+    EndConsoleReport();
+
+    // Leave the writers and module table in a clean default state for the next
+    // run (platform console sink and drop-all JSON sink).
+    m_consoleWriter.SetOutputSink(SignalSafeConsoleWriter::PlatformConsoleOutputSink());
+    m_jsonWriter.SetOutputSink(SignalSafeJsonWriter::DropAllOutputSink());
+    m_moduleTable.Reset();
+
+    // Release the guard so a later report (on-demand or signal) can run. This
+    // report is the sole owner while it runs: a signal that arrived in the
+    // meantime aborted without touching the guard, and other on-demand callers
+    // yielded, so a plain reset to idle is safe.
+    InterlockedExchange(&m_reportInFlight, ReportNotInFlight);
+    return true;
 }
 
 void
@@ -712,8 +825,6 @@ InProcCrashReporter::Initialize(
     m_stackOverflowTrace.available = 0;
     m_reportFilePath[0] = '\0';
 
-    (void)CrashReportWatchdog::TryInitialize(settings.timeoutSeconds);
-
     m_processName[0] = '\0';
 #if defined(__ANDROID__)
     // On Android every app forks from the Zygote, so /proc/self/exe always
@@ -741,20 +852,30 @@ InProcCrashReporter::Initialize(
         }
     }
 
-    // File output is produced only through the lifecycle-managed report
-    // directory. When no root is configured the reporter still runs, emitting
-    // compact console logs without writing a JSON report file.
-    if (settings.reportRootPath != nullptr && settings.reportRootPath[0] != '\0')
-    {
-        m_lifecycle.Initialize(settings.reportRootPath, settings.maxFileCount);
-    }
-
 #if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
     // Cache sysctl values at Initialize because sysctl/sysctlbyname is not on POSIX's
     // async-signal-safe list; CreateReport reads these from the signal-handler path.
     CacheSysctlString("kern.osproductversion", m_osVersion, sizeof(m_osVersion));
     CacheSysctlString("hw.model", m_systemModel, sizeof(m_systemModel));
 #endif
+}
+
+void
+InProcCrashReporter::InitializeServices(const InProcCrashReporterServicesSettings& settings)
+{
+    if (settings.enableWatchdog)
+    {
+        (void)CrashReportWatchdog::TryInitialize(settings.timeoutSeconds);
+    }
+
+    // File output is produced only through the lifecycle-managed report
+    // directory, and only when both enabled and given a root path. When the
+    // lifecycle is disabled the reporter still runs, emitting compact console
+    // logs without writing a JSON report file.
+    if (settings.enableLifecycle && settings.reportRootPath != nullptr && settings.reportRootPath[0] != '\0')
+    {
+        m_lifecycle.Initialize(settings.reportRootPath, settings.maxFileCount);
+    }
 }
 
 void
@@ -821,15 +942,58 @@ InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context)
 void
 InProcCrashReportInitialize(const InProcCrashReporterSettings& settings)
 {
-    if (!InProcCrashReporter::InitializeInstance(settings))
+    (void)InProcCrashReporter::InitializeInstance(settings);
+}
+
+void
+InProcCrashReportInitializeServices(const InProcCrashReporterServicesSettings& settings)
+{
+    if (!settings.enableCreateCrashDump)
     {
         return;
     }
+
+    // Requires the reporter to have been initialized first (see
+    // InProcCrashReportInitialize); nothing to arm otherwise.
+    InProcCrashReporter* reporter = InProcCrashReporter::GetInstance();
+    if (reporter == nullptr)
+    {
+        return;
+    }
+
+    static LONG s_servicesInitialized = 0;
+    if (InterlockedCompareExchange(&s_servicesInitialized, 1, 0) != 0)
+    {
+        return;
+    }
+
+    reporter->InitializeServices(settings);
 
     // Register last so PAL only observes the dispatcher after the reporter
     // singleton is fully populated (mirrors the publication ordering used by
     // PAL_SetLogManagedCallstackForSignalCallback).
     PAL_SetInProcCrashReportCallback(&InProcCrashReportSignalDispatcher);
+}
+
+bool
+InProcCrashReportCreateReport(
+    InProcCrashReportOutputFormat outputFormat,
+    int signal,
+    void* context,
+    InProcCrashReportOutputCallback outputCallback,
+    void* callbackContext)
+{
+    InProcCrashReporter* reporter = InProcCrashReporter::GetInstance();
+    if (reporter == nullptr)
+    {
+        return false;
+    }
+
+    // Preserve the interrupted context's errno before the crash reporter uses syscalls.
+    int savedErrno = errno;
+    bool generated = reporter->CreateReport(outputFormat, signal, context, outputCallback, callbackContext);
+    errno = savedErrno;
+    return generated;
 }
 
 void
@@ -930,15 +1094,6 @@ CrashReportHelpers::WriteToFile(
         return false;
     }
 
-    return true;
-}
-
-bool
-CrashReportHelpers::DiscardOutputCallback(
-    const char* /*buffer*/,
-    size_t /*len*/,
-    void* /*ctx*/)
-{
     return true;
 }
 
@@ -2096,8 +2251,7 @@ InProcCrashReporter::BeginJsonReport()
 void
 InProcCrashReporter::EndJsonReport(
     int signal,
-    bool jsonEnabled,
-    int fd)
+    bool finalizeReportFile)
 {
     m_jsonWriter.CloseObject(); // payload
 
@@ -2118,8 +2272,9 @@ InProcCrashReporter::EndJsonReport(
 
     m_jsonWriter.CloseObject(); // root
 
-    if (jsonEnabled)
+    if (finalizeReportFile)
     {
+        int fd = m_outputContext.Fd();
         bool finishSucceeded = m_jsonWriter.Finish();
         bool writeFailed = m_outputContext.WriteFailed();
         if (!CrashReportHelpers::WriteToFile(fd, "\n", 1))

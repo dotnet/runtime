@@ -41,17 +41,78 @@
 
 static constexpr size_t SIGNAL_SAFE_CONSOLE_BUFFER_SIZE = 512;
 
+// Value type describing where flushed lines go and whether the writer appends a
+// '\n' before handing the line to the callback. Sinks that provide their own
+// line discipline (e.g. Android logcat) set appendNewline to false;
+// newline-delimited sinks (stderr, caller-supplied callbacks) set it to true.
+// Copyable so it can be assigned into the writer's internal sink.
+class SignalSafeConsoleOutputSink
+{
+public:
+    // Sink for a single flushed line. Receives the null-terminated line buffer
+    // and its byte size (excluding the terminator). Returns false on write failure.
+    // Shares the bool-returning shape of SignalSafeJsonOutputSink::Callback so a
+    // single caller-supplied callback type can drive either writer. Must be
+    // async-signal-safe.
+    using Callback = bool(*)(const char* buffer, size_t len, void* context);
+
+    SignalSafeConsoleOutputSink(Callback callback, void* context, bool appendNewline)
+        : m_callback(callback)
+        , m_context(context)
+        , m_appendNewline(appendNewline)
+    {
+    }
+
+    SignalSafeConsoleOutputSink(const SignalSafeConsoleOutputSink&) = default;
+    SignalSafeConsoleOutputSink& operator=(const SignalSafeConsoleOutputSink&) = default;
+
+    bool AppendNewline() const { return m_appendNewline; }
+
+    // A null callback drops output and reports success.
+    bool Write(const char* buffer, size_t len) const
+    {
+        return m_callback == nullptr || m_callback(buffer, len, m_context);
+    }
+
+private:
+    Callback m_callback;
+    void* m_context;
+    bool m_appendNewline;
+};
+
 class SignalSafeConsoleWriter
 {
 public:
+    // Default-constructed writers emit to the platform console (Android logcat
+    // under CRASHREPORT_LOG_TAG, stderr on Apple mobile platforms).
     SignalSafeConsoleWriter()
         : m_pos(0)
+        , m_sink(PlatformConsoleOutputSink())
+    {
+        m_buffer[0] = '\0';
+    }
+
+    // Routes output to a caller-supplied sink.
+    explicit SignalSafeConsoleWriter(const SignalSafeConsoleOutputSink& sink)
+        : m_pos(0)
+        , m_sink(sink)
     {
         m_buffer[0] = '\0';
     }
 
     SignalSafeConsoleWriter(const SignalSafeConsoleWriter&) = delete;
     SignalSafeConsoleWriter& operator=(const SignalSafeConsoleWriter&) = delete;
+
+    // Re-points the sink for reuse across reports and drops any partially
+    // buffered line. Pass PlatformConsoleOutputSink() to emit to the platform
+    // console or DropAllOutputSink() to suppress output.
+    void SetOutputSink(const SignalSafeConsoleOutputSink& sink);
+
+    // The default platform console sink (Android logcat / stderr).
+    static const SignalSafeConsoleOutputSink& PlatformConsoleOutputSink();
+
+    // A drop-all sink that discards output and reports success.
+    static const SignalSafeConsoleOutputSink& DropAllOutputSink();
 
     void AppendStr(const char* s);
     void AppendChar(char c);
@@ -75,4 +136,5 @@ private:
     SignalSafeFormatter m_formatter;
     char m_buffer[SIGNAL_SAFE_CONSOLE_BUFFER_SIZE];
     size_t m_pos;
+    SignalSafeConsoleOutputSink m_sink;
 };

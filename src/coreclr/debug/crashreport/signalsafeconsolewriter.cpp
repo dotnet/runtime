@@ -13,6 +13,52 @@
 
 static const char CRASHREPORT_LINE_SEPARATOR[] = "*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***";
 
+static bool
+PlatformConsoleWrite(const char* buffer, size_t /*len*/, void* /*context*/)
+{
+#if defined(__ANDROID__)
+    // __android_log_write expects a tag + null-terminated message; it adds its
+    // own line discipline (hence appendNewline == false for this sink). Each
+    // call becomes one logcat entry, which is what makes per-line filtering useful.
+    __android_log_write(ANDROID_LOG_FATAL, CRASHREPORT_LOG_TAG, buffer);
+#else
+    minipal_log_write_error(buffer);
+#endif
+    return true;
+}
+
+const SignalSafeConsoleOutputSink&
+SignalSafeConsoleWriter::PlatformConsoleOutputSink()
+{
+    // Android logcat provides its own line discipline, so the platform sink does
+    // not append '\n'; every other platform (stderr) does.
+    static const SignalSafeConsoleOutputSink s_platformSink(
+        &PlatformConsoleWrite,
+        nullptr,
+#if defined(__ANDROID__)
+        /*appendNewline*/ false);
+#else
+        /*appendNewline*/ true);
+#endif
+    return s_platformSink;
+}
+
+const SignalSafeConsoleOutputSink&
+SignalSafeConsoleWriter::DropAllOutputSink()
+{
+    // A null callback discards output and reports success.
+    static const SignalSafeConsoleOutputSink s_dropAllSink(nullptr, nullptr, /*appendNewline*/ false);
+    return s_dropAllSink;
+}
+
+void
+SignalSafeConsoleWriter::SetOutputSink(const SignalSafeConsoleOutputSink& sink)
+{
+    m_sink = sink;
+    m_pos = 0;
+    m_buffer[0] = '\0';
+}
+
 void
 SignalSafeConsoleWriter::AppendStr(const char* s)
 {
@@ -67,19 +113,20 @@ SignalSafeConsoleWriter::AppendSignedDecimal(int64_t v)
 void
 SignalSafeConsoleWriter::EndLine()
 {
-    // On Android, __android_log_write in Flush() adds its own line discipline.
-    // For other platforms, we still need to add a newline.
-#if !defined(__ANDROID__)
-    if (m_pos + 1 < sizeof(m_buffer))
+    // Sinks that supply their own line discipline (e.g. Android logcat) opt out
+    // of the trailing '\n'; every other sink expects newline-delimited lines.
+    if (m_sink.AppendNewline())
     {
-        m_buffer[m_pos++] = '\n';
+        if (m_pos + 1 < sizeof(m_buffer))
+        {
+            m_buffer[m_pos++] = '\n';
+        }
+        else
+        {
+            m_buffer[sizeof(m_buffer) - 2] = '\n';
+            m_pos = sizeof(m_buffer) - 1;
+        }
     }
-    else
-    {
-        m_buffer[sizeof(m_buffer) - 2] = '\n';
-        m_pos = sizeof(m_buffer) - 1;
-    }
-#endif // !__ANDROID__
     Flush();
 }
 
@@ -117,7 +164,7 @@ SignalSafeConsoleWriter::WriteSeparator()
 void
 SignalSafeConsoleWriter::Flush()
 {
-    // Always null-terminate so the platform write APIs see a proper C string.
+    // Always null-terminate so sinks that expect a C string (e.g. logcat) see one.
     if (m_pos < sizeof(m_buffer))
     {
         m_buffer[m_pos] = '\0';
@@ -127,14 +174,7 @@ SignalSafeConsoleWriter::Flush()
         m_buffer[sizeof(m_buffer) - 1] = '\0';
     }
 
-#if defined(__ANDROID__)
-    // __android_log_write expects a tag + null-terminated message; it adds its
-    // own line discipline so we deliberately do not append '\n'. Each call
-    // becomes one logcat entry, which is what makes per-line filtering useful.
-    __android_log_write(ANDROID_LOG_FATAL, CRASHREPORT_LOG_TAG, m_buffer);
-#else
-    minipal_log_write_error(m_buffer);
-#endif
+    m_sink.Write(m_buffer, m_pos);
 
     m_pos = 0;
     m_buffer[0] = '\0';

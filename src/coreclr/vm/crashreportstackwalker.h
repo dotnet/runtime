@@ -6,6 +6,13 @@
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
+// Bring up the in-proc crash reporter with only its VM callbacks so on-demand
+// reports are possible independently of the env-gated crash-dump configuration.
+void CrashReportInitialize();
+
+// Initialize the reporter (via CrashReportInitialize) and, based on the DOTNET_*
+// crash-report configuration, start its crash-dump services and register the PAL
+// signal-path dispatcher. Intended to run once at runtime startup.
 void CrashReportConfigure();
 
 #endif // FEATURE_INPROC_CRASHREPORT
