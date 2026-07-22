@@ -380,7 +380,7 @@ ShimLocalDataTarget::GetThreadContext(
 
     HRESULT hr = E_FAIL;
 
-    if (!CheckContextSizeForBuffer(contextSize, pContext) || contextSize < sizeof(T_CONTEXT))
+    if ((pContext == NULL) || !CheckContextSizeForFlags(contextSize, contextFlags))
     {
         return E_INVALIDARG;
     }
