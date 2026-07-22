@@ -1364,19 +1364,37 @@ GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
     // into two swizzles: 1 to handle elements from the first vector, and 1 to handle elements from the second vector.
     // The two swizzles will then be or'd together to produce the final result. We will be constructing IR like the
     // following:
+    //  op1             = ...
+    //  op2             = ...
+    //                  /--* op2
+    //                  /--* LCL_VAR op2Tmp
+    //                  STORE_LCL_VAR op2Tmp
+    // originalMask     = ...
+    //                  /--* originalMask
+    //                  /--* LCL_VAR originalMaskTmp
+    //                  STORE_LCL_VAR originalMaskTmp
+    //  m0        = *   LCL_VAR originalMaskTmp
     //                  /--*  op1 simd
-    //                  +--*  originalMask simd
+    //                  +--*  m0  simd
     //   tmp1      = *  HWINTRINSIC   simd   byte    PackedSimd.Swizzle
+    //   op2Reload = *  LCL_VAR op2tmp
+    //   m1        = *  LCL_VAR originalMaskTmp
     //   upperBnd  = *  CNS_VEC      simd   byte    <0x10, 0x10, ...>
-    //                   /--* originalMask simd
+    //                   /--*  m1 simd
     //                   +--*  upperBnd simd
     //   upperMask = *  HWINTRINSIC   simd    byte    PackedSimd.Subtract
-    //                   /--*  op2 simd
+    //                   /--*  op2Reload simd
     //                   +--*  upperMask simd
-    //   tmp2      = *  HWINTRINSIC   simd   byte    PackedSimd.Swizzle
+    //   tmp3      = *  HWINTRINSIC   simd   byte    PackedSimd.Swizzle
     //                   /--*  tmp1 simd
-    //                   +--*  tmp2 simd
+    //                   +--*  tmp3 simd
     //   res       =  *  HWINTRINSIC   simd   byte    PackedSimd.Or
+
+    // op2 needs to be moved, replace with a local, but don't immediately reload
+    LIR::Use     op2Use(BlockRange(), &node->Op(2), node);
+    unsigned int op2Tmp    = op2Use.ReplaceWithLclVar(m_compiler);
+    GenTree*     op2Reload = node->Op(2);
+    BlockRange().Remove(op2Reload);
 
     // Shuffle mask will be used twice, replace with a local
     LIR::Use     shuffleMaskUse(BlockRange(), &node->Op(3), node);
@@ -1385,37 +1403,43 @@ GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
     // Do a swizzle of the first vector with the original shuffle mask (now loaded from a local), which will produce a
     // vector with the elements from the first vector in the correct order, and zero's for all elements which correspond
     // to the second vector.
+    GenTree* maskReload = node->Op(3);
     GenTree* swizzle1 =
-        m_compiler->gtNewSimdHWIntrinsicNode(resultType, op1, node->Op(3), NI_PackedSimd_Swizzle, TYP_BYTE, 16);
+        m_compiler->gtNewSimdHWIntrinsicNode(resultType, op1, maskReload, NI_PackedSimd_Swizzle, TYP_BYTE, 16);
     BlockRange().InsertBefore(node, swizzle1);
     LowerNode(swizzle1);
 
-    // Subtract 16 from each mask element to mark each element which corresponds to the upper vector as unused, leading
-    // to a zero in the result of the swizzle.
+    // Re-load op2
+    BlockRange().InsertBefore(node, op2Reload);
+    LowerNode(op2Reload);
+
+    // Re-load the original shuffle mask
+    GenTreeLclVar* maskReload2 = m_compiler->gtNewLclVarNode(shuffleMaskTmp, shuffleMask->TypeGet());
+    BlockRange().InsertBefore(node, maskReload2);
+    LowerNode(maskReload2);
+
+    // Create constant upper bound vector of <16, 16, ..., 16>
     GenTreeVecCon* upperBound = m_compiler->gtNewVconNode(shuffleMask->TypeGet());
     upperBound->EvaluateBroadcastInPlace(TYP_BYTE, static_cast<int64_t>(16));
     BlockRange().InsertBefore(node, upperBound);
     LowerNode(upperBound);
 
-    // Re-load the original shuffle mask
-    GenTreeLclVar* shuffleMaskLclVar = m_compiler->gtNewLclVarNode(shuffleMaskTmp, shuffleMask->TypeGet());
-    BlockRange().InsertBefore(node, shuffleMaskLclVar);
-    LowerNode(shuffleMaskLclVar);
-
-    GenTree* upperMask = m_compiler->gtNewSimdHWIntrinsicNode(shuffleMask->TypeGet(), shuffleMaskLclVar, upperBound,
+    // Use the above to subtract 16 from each mask element to mark each element which corresponds to the lower vector as
+    // unused, leading to a zero in the result of the swizzle.
+    GenTree* upperMask = m_compiler->gtNewSimdHWIntrinsicNode(shuffleMask->TypeGet(), maskReload2, upperBound,
                                                               NI_PackedSimd_Subtract, TYP_BYTE, 16);
     BlockRange().InsertBefore(node, upperMask);
     LowerNode(upperMask);
 
     GenTree* swizzle2 =
-        m_compiler->gtNewSimdHWIntrinsicNode(resultType, op2, upperMask, NI_PackedSimd_Swizzle, TYP_BYTE, 16);
+        m_compiler->gtNewSimdHWIntrinsicNode(resultType, op2Reload, upperMask, NI_PackedSimd_Swizzle, TYP_BYTE, 16);
     BlockRange().InsertBefore(node, swizzle2);
     LowerNode(swizzle2);
 
     // Since we've left zero's for all the elements which correspond to the upper vector, we can just or the two
     // swizzles together to get the final result.
     GenTreeHWIntrinsic* result =
-        m_compiler->gtNewSimdHWIntrinsicNode(resultType, swizzle1, swizzle2, NI_PackedSimd_Or, TYP_INT, 16);
+        m_compiler->gtNewSimdHWIntrinsicNode(resultType, swizzle1, swizzle2, NI_PackedSimd_Or, TYP_BYTE, 16);
     BlockRange().InsertBefore(node, result);
 
     LIR::Use use;
