@@ -78,7 +78,7 @@ namespace System.Runtime.Serialization.DataContracts
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void Add(Type type)
         {
-            DataContract dataContract = GetDataContract(type);
+            DataContract dataContract = GetDataContract(type, verifyConstructor: false);
             EnsureTypeNotGeneric(dataContract.UnderlyingType);
             Add(dataContract);
         }
@@ -224,17 +224,17 @@ namespace System.Runtime.Serialization.DataContracts
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public DataContract GetDataContract(Type type)
+        public DataContract GetDataContract(Type type, bool verifyConstructor = true)
         {
             if (_surrogateProvider == null)
-                return DataContract.GetDataContract(type);
+                return DataContract.GetDataContract(type, verifyConstructor);
 
             DataContract? dataContract = DataContract.GetBuiltInDataContract(type);
             if (dataContract != null)
                 return dataContract;
 
             Type dcType = DataContractSurrogateCaller.GetDataContractType(_surrogateProvider, type);
-            dataContract = DataContract.GetDataContract(dcType);
+            dataContract = DataContract.GetDataContract(dcType, verifyConstructor);
             if (_extendedSurrogateProvider != null && !SurrogateData.Contains(dataContract))
             {
                 object? customData = DataContractSurrogateCaller.GetCustomDataToExport(_extendedSurrogateProvider, type, dcType);
@@ -281,7 +281,7 @@ namespace System.Runtime.Serialization.DataContracts
                 }
                 else
                 {
-                    return GetDataContract(dataMemberType);
+                    return GetDataContract(dataMemberType, verifyConstructor: false);
                 }
             }
             return dataMember.MemberTypeContract;
@@ -292,7 +292,7 @@ namespace System.Runtime.Serialization.DataContracts
         internal DataContract GetItemTypeDataContract(CollectionDataContract collectionContract)
         {
             if (collectionContract.ItemType != null)
-                return GetDataContract(collectionContract.ItemType);
+                return GetDataContract(collectionContract.ItemType, verifyConstructor: false);
             return collectionContract.ItemContract;
         }
 
