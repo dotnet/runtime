@@ -1358,7 +1358,9 @@ namespace System.Threading.RateLimiting.Test
             var limiter = new SlidingWindowRateLimiter(options);
 
             using var lease = limiter.AttemptAcquire(2);
-            // Queue item which changes the retry after time for failed items
+            // A queued item is present to confirm queue occupancy doesn't factor into the RetryAfter estimate
+            // (see CreateFailedSlidingWindowLease) - the failed request below is rejected immediately because 2 permits
+            // exceeds QueueLimit, not because of the queued item itself.
             var wait = limiter.AcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
