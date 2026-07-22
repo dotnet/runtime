@@ -164,17 +164,10 @@ SignalSafeConsoleWriter::WriteSeparator()
 void
 SignalSafeConsoleWriter::Flush()
 {
-    // Always null-terminate so sinks that expect a C string (e.g. logcat) see one.
-    if (m_pos < sizeof(m_buffer))
-    {
-        m_buffer[m_pos] = '\0';
-    }
-    else
-    {
-        m_buffer[sizeof(m_buffer) - 1] = '\0';
-    }
+    size_t len = (m_pos < sizeof(m_buffer)) ? m_pos : sizeof(m_buffer) - 1;
+    m_buffer[len] = '\0';
 
-    m_sink.Write(m_buffer, m_pos);
+    m_sink.Write(m_buffer, len);
 
     m_pos = 0;
     m_buffer[0] = '\0';
