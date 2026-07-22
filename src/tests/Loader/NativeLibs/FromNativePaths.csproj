@@ -3,6 +3,7 @@
     <!-- The test cannot be run twice in the same process since it moves a native dll that it uses for pinvoke later -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Test expects a CORE_ROOT -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
