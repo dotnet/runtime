@@ -160,7 +160,12 @@ struct MSLAYOUT TargetBuffer
     ULONG         cbSize;
 };
 
-// Describes an opaque target CONTEXT buffer in the host.
+// A variable sized host memory context buffer in target architecture specific layout.
+// The currently supported layout matches the Windows CONTEXT structure for the
+// target architecture.
+// Not (yet) supported:
+// - Optional trailing XState feature data in the buffer
+// - Add an architecture enum field to make the struct self-describing
 struct MSLAYOUT ContextBuffer
 {
     BYTE *  pContextBytes;
