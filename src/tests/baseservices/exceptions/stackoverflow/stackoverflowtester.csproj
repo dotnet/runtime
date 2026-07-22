@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, SuperPMICollectIncompatible -->
+    <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible, SuperPMICollectIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <Optimize>false</Optimize>
     <!-- Fails in many GCStress jobs. https://github.com/dotnet/runtime/issues/46279 -->
     <GCStressIncompatible>true</GCStressIncompatible>

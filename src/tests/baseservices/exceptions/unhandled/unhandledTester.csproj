@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for CMakeProjectReference and CopyToOutputDirectory -->
+    <!-- Needed for CLRTestTargetUnsupported, CMakeProjectReference and CopyToOutputDirectory -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <Optimize>false</Optimize>
   </PropertyGroup>
   <ItemGroup>
