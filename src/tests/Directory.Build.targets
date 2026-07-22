@@ -495,7 +495,7 @@
   </Target>
 
   <Target Name="GetRequiresProcessIsolation" Returns="@(ProjectRequiringProcessIsolation)">
-    <ItemGroup Condition="'$(RequiresProcessIsolation)' == 'true'">
+    <ItemGroup Condition="'$(RequiresProcessIsolation)' == 'true' and '$(GenerateRunScript)' == 'true' and '$(_WillCLRTestProjectBuild)' == 'true'">
       <ProjectRequiringProcessIsolation Include="$(MSBuildProjectFullPath)" />
     </ItemGroup>
   </Target>
