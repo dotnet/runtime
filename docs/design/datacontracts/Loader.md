@@ -51,7 +51,25 @@ record struct ModuleLookupTables(
     TargetPointer MethodDefToDesc,
     TargetPointer TypeDefToMethodTable,
     TargetPointer TypeRefToMethodTable,
-    TargetPointer MethodDefToILCodeVersioningState);
+    TargetPointer MethodDefToILCodeVersioningState,
+    uint TableDataOffset);
+
+readonly record struct LoaderHeapBlock(TargetPointer Address, TargetNUInt Size);
+
+enum LoaderAllocatorHeapType
+{
+    Unknown,
+    LowFrequencyHeap,
+    HighFrequencyHeap,
+    StaticsHeap,
+    StubHeap,
+    ExecutableHeap,
+    FixupPrecodeHeap,
+    NewStubPrecodeHeap,
+    DynamicHelpersStubHeap,
+    IndcellHeap,
+    CacheEntryHeap,
+}
 ```
 
 ``` csharp
@@ -60,6 +78,7 @@ ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer);
 IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
 TargetPointer GetRootAssembly();
 string GetAppDomainFriendlyName();
+TargetPointer GetAppDomain();
 TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
@@ -73,9 +92,10 @@ IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
 bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
 bool IsReadyToRun(ModuleHandle handle);
-bool TryGetSimpleName(ModuleHandle handle, out string simpleName);
+string GetSimpleName(ModuleHandle handle);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
+bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
 TargetPointer GetAssemblyLoadContext(ModuleHandle handle);
@@ -83,6 +103,8 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle);
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
 IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table);
 bool IsCollectible(ModuleHandle handle);
+bool IsDynamic(ModuleHandle handle);
+bool IsModuleMapped(ModuleHandle handle);
 bool IsAssemblyLoaded(ModuleHandle handle);
 TargetPointer GetGlobalLoaderAllocator();
 TargetPointer GetSystemAssembly();
@@ -92,7 +114,8 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
-IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
+IEnumerable<LoaderHeapBlock> EnumerateLoaderHeapBlocks(TargetPointer loaderHeap);
+IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
 
 DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle);
 void SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits);
@@ -106,6 +129,7 @@ enum DebuggerAssemblyControlFlags : uint
     DACF_NONE = 0x00,
     DACF_ALLOW_JIT_OPTS = 0x02,
     DACF_ENC_ENABLED = 0x08,
+    DACF_IGNORE_PDBS = 0x20,
     DACF_CONTROL_FLAGS_MASK = 0x2E,
 }
 ```
@@ -157,6 +181,7 @@ enum ClrModifiableAssemblies : uint
 | `PEAssembly` | `AssemblyBinder` | Pointer to the PEAssembly's binder |
 | `AssemblyBinder` | `AssemblyLoadContext` | Pointer to the AssemblyBinder's AssemblyLoadContext |
 | `PEImage` | `LoadedImageLayout` | Pointer to the PEImage's loaded PEImageLayout |
+| `PEImage` | `FlatImageLayout` | Pointer to the PEImage's flat PEImageLayout (used when there is no loaded layout, e.g. webcil images) |
 | `PEImage` | `ProbeExtensionResult` | PEImage's ProbeExtensionResult |
 | `ProbeExtensionResult` | `Type` | Type of ProbeExtensionResult |
 | `PEImageLayout` | `Base` | Base address of the image layout |
@@ -201,6 +226,10 @@ enum ClrModifiableAssemblies : uint
 | `DynamicILBlobTable` | `EntrySize` | Size of each table entry |
 | `DynamicILBlobTable` | `EntryMethodToken` | Offset of each entry method token from entry address |
 | `DynamicILBlobTable` | `EntryIL` | Offset of each entry IL from entry address |
+| `LoaderHeap` | `FirstBlock` | Pointer to the first `LoaderHeapBlock` in the linked list |
+| `LoaderHeapBlock` | `Next` | Pointer to the next `LoaderHeapBlock` in the linked list |
+| `LoaderHeapBlock` | `VirtualAddress` | Pointer to the start of the reserved virtual memory |
+| `LoaderHeapBlock` | `VirtualSize` | Size in bytes of the reserved virtual memory region |
 | `EEConfig` | `ModifiableAssemblies` | Controls Edit and Continue support (ClrModifiableAssemblies enum) |
 
 
@@ -378,6 +407,12 @@ string ILoader.GetAppDomainFriendlyName()
     return new string(name);
 }
 
+TargetPointer GetAppDomain()
+{
+    TargetPointer appDomainPointer = target.ReadGlobalPointer("AppDomain");
+    return target.ReadPointer(appDomainPointer);
+}
+
 TargetPointer ILoader.GetModule(ModuleHandle handle)
 {
     return handle.Address;
@@ -399,18 +434,31 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
     size = 0;
     imageFlags = 0;
 
-    TargetPointer peAssembly = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
-    if (peAssembly == 0) return false; // no loaded PEAssembly
-
-    TargetPointer peImage = target.ReadPointer(peAssembly + /* PEAssembly::PEImage offset */);
-    if(peImage == 0) return false; // no loaded PEImage
+    // try to get loaded PE image (peImage), if not loaded return false
 
     TargetPointer peImageLayout = target.ReadPointer(peImage + /* PEImage::LoadedImageLayout offset */);
+    if (peImageLayout == TargetPointer.Null)
+    {
+        // Images that are never mapped/loaded (e.g. a webcil ReadyToRun image on WASM) have no
+        // loaded layout; their metadata lives in the flat layout (m_pLayouts[IMAGE_FLAT]).
+        peImageLayout = target.ReadPointer(peImage + /* PEImage::FlatImageLayout offset */);
+        if (peImageLayout == TargetPointer.Null)
+            return false;
+    }
 
     baseAddress = target.ReadPointer(peImageLayout + /* PEImageLayout::Base offset */);
     size = target.Read<uint>(peImageLayout + /* PEImageLayout::Size offset */);
     imageFlags = target.Read<uint>(peImageLayout + /* PEImageLayout::Flags offset */);
     return true;
+}
+
+bool IsModuleMapped(ModuleHandle handle)
+{
+    // try to get loaded PE image, if not loaded return false
+    // try to get layout (peImageLayout)
+
+    uint format = target.Read<uint>(peImageLayout + /* PEImageLayout::Format offset */);
+    return /* Webcil images are never mapped; for PE images check the FLAG_MAPPED flag */;
 }
 
 TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
@@ -433,13 +481,19 @@ private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNu
 
     TargetPointer peImageLayout = target.ReadPointer(peImage + /* PEImage::LoadedImageLayout offset */);
     if(peImageLayout == TargetPointer.Null)
-        throw new InvalidOperationException("PEImage does not have a LoadedImageLayout associated with it.");
+    {
+        // Images that are never mapped/loaded (e.g. a webcil ReadyToRun image on WASM) have no
+        // loaded layout; fall back to the flat layout (m_pLayouts[IMAGE_FLAT]).
+        peImageLayout = target.ReadPointer(peImage + /* PEImage::FlatImageLayout offset */);
+        if(peImageLayout == TargetPointer.Null)
+            throw new InvalidOperationException("PEImage does not have a usable image layout associated with it.");
+    }
 
     // Get base address and flags from PEImageLayout
     TargetPointer baseAddress = target.ReadPointer(peImageLayout + /* PEImageLayout::Base offset */);
     uint imageFlags = target.Read<uint>(peImageLayout + /* PEImageLayout::Flags offset */);
 
-    bool isMapped = (imageFlags & (uint)PEImageFlags.FLAG_MAPPED) != 0;
+    bool isMapped = /* Webcil images are never mapped; for PE images check the FLAG_MAPPED flag */;
 
     uint offset;
     if (isMapped)
@@ -574,11 +628,7 @@ IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle)
 
 bool IsProbeExtensionResultValid(ModuleHandle handle)
 {
-    TargetPointer peAssembly = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
-    if (peAssembly == 0) return false; // no loaded PEAssembly
-
-    TargetPointer peImage = target.ReadPointer(peAssembly + /* PEAssembly::PEImage offset */);
-    if(peImage == 0) return false; // no loaded PEImage
+    // try to get loaded PE image, if not loaded return false
 
     TargetPointer probeExtensionResult = target.ReadPointer(peImage + /* PEImage::ProbeExtensionResult offset */);
     int type = target.Read<int>(probeExtensionResult + /* ProbeExtensionResult::Type offset */);
@@ -603,14 +653,11 @@ ModuleFlags GetFlags(ModuleHandle handle)
     return GetFlags(target.Read<uint>(handle.Address + /* Module::Flags offset */));
 }
 
-bool TryGetSimpleName(ModuleHandle handle, out string simpleName)
+string GetSimpleName(ModuleHandle handle)
 {
     TargetPointer simpleNameStart = target.ReadPointer(handle.Address + /* Module::SimpleName offset */);
-    if (simpleNameStart == TargetPointer.Null)
-        return false;
     byte[] simpleNameBytes = // Read<byte> from target starting at simpleNameStart until null terminator
-    simpleName = // convert to string, throw on invalid UTF-8
-    return true;
+    return // convert to string, throw on invalid UTF-8
 }
 
 string GetPath(ModuleHandle handle)
@@ -625,6 +672,19 @@ string GetFileName(ModuleHandle handle)
     TargetPointer fileNameStart = target.ReadPointer(handle.Address + /* Module::FileName offset */);
     char[] fileName = // Read<char> from target starting at fileNameStart until null terminator
     return new string(fileName);
+}
+
+bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize)
+{
+    timeStamp = 0;
+    imageSize = 0;
+
+    if (!TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out _, out _))
+        return false;
+    TargetPointer ntHeadersPtr = baseAddress + // offset to NT headers
+    timeStamp = // read from NT header
+    imageSize = // read from NT header
+    return true;
 }
 
 TargetPointer GetLoaderAllocator(ModuleHandle handle)
@@ -647,6 +707,7 @@ TargetPointer ILoader.GetAssemblyLoadContext(ModuleHandle handle)
 
 ModuleLookupTables GetLookupTables(ModuleHandle handle)
 {
+    uint tableDataOffset = (uint)/* ModuleLookupMap::TableData offset */;
     return new ModuleLookupTables(
         FieldDefToDescMap: target.ReadPointer(handle.Address + /* Module::FieldDefToDescMap */),
         ManifestModuleReferencesMap: target.ReadPointer(handle.Address + /* Module::ManifestModuleReferencesMap */),
@@ -654,8 +715,13 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle)
         MethodDefToDescMap: target.ReadPointer(handle.Address + /* Module::MethodDefToDescMap */),
         TypeDefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeDefToMethodTableMap */),
         TypeRefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */),
-        MethodDefToILCodeVersioningState: target.ReadPointer(handle.Address + /*
-        Module::MethodDefToILCodeVersioningState */));
+        // Module::MethodDefToILCodeVersioningState is only present when the target was built
+        // with code versioning (FEATURE_CODE_VERSIONING). When absent (e.g. on WASM) it is
+        // treated as a null (empty) table.
+        MethodDefToILCodeVersioningState: HasField(Module::MethodDefToILCodeVersioningState)
+            ? target.ReadPointer(handle.Address + /* Module::MethodDefToILCodeVersioningState */)
+            : TargetPointer.Null,
+        TableDataOffset: tableDataOffset);
 }
 
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
@@ -768,39 +834,39 @@ TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer)
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::ObjectHandle offset */);
 }
 
-IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
+IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
 {
     // Read LoaderAllocator data
     LoaderAllocator la = // read LoaderAllocator object at loaderAllocatorPointer
 
     // Always-present heaps
-    Dictionary<string, TargetPointer> heaps = {
-        ["LowFrequencyHeap"] = la.LowFrequencyHeap,
-        ["HighFrequencyHeap"] = la.HighFrequencyHeap,
-        ["StaticsHeap"] = la.StaticsHeap,
-        ["StubHeap"] = la.StubHeap,
-        ["ExecutableHeap"] = la.ExecutableHeap,
+    Dictionary<LoaderAllocatorHeapType, TargetPointer> heaps = {
+        [LoaderAllocatorHeapType.LowFrequencyHeap] = la.LowFrequencyHeap,
+        [LoaderAllocatorHeapType.HighFrequencyHeap] = la.HighFrequencyHeap,
+        [LoaderAllocatorHeapType.StaticsHeap] = la.StaticsHeap,
+        [LoaderAllocatorHeapType.StubHeap] = la.StubHeap,
+        [LoaderAllocatorHeapType.ExecutableHeap] = la.ExecutableHeap,
     };
 
     // Feature-conditional heaps: only included when the data descriptor field exists
     if (LoaderAllocator type has "FixupPrecodeHeap" field)
-        heaps["FixupPrecodeHeap"] = la.FixupPrecodeHeap;
+        heaps[LoaderAllocatorHeapType.FixupPrecodeHeap] = la.FixupPrecodeHeap;
 
     if (LoaderAllocator type has "NewStubPrecodeHeap" field)
-        heaps["NewStubPrecodeHeap"] = la.NewStubPrecodeHeap;
+        heaps[LoaderAllocatorHeapType.NewStubPrecodeHeap] = la.NewStubPrecodeHeap;
 
     if (LoaderAllocator type has "DynamicHelpersStubHeap" field)
-        heaps["DynamicHelpersStubHeap"] = la.DynamicHelpersStubHeap;
+        heaps[LoaderAllocatorHeapType.DynamicHelpersStubHeap] = la.DynamicHelpersStubHeap;
 
     // VirtualCallStubManager heaps: only included when VirtualCallStubManager is non-null
     if (la.VirtualCallStubManager != null)
     {
         VirtualCallStubManager vcsMgr = // read VirtualCallStubManager object at la.VirtualCallStubManager
 
-        heaps["IndcellHeap"] = vcsMgr.IndcellHeap;
+        heaps[LoaderAllocatorHeapType.IndcellHeap] = vcsMgr.IndcellHeap;
 
         if (VirtualCallStubManager type has "CacheEntryHeap" field)
-            heaps["CacheEntryHeap"] = vcsMgr.CacheEntryHeap;
+            heaps[LoaderAllocatorHeapType.CacheEntryHeap] = vcsMgr.CacheEntryHeap;
     }
 
     return heaps;
@@ -944,6 +1010,26 @@ class InstMethodHashTable
     {
         public TargetPointer MethodDesc { get; } = value & ~FLAG_MASK;
         public uint Flags { get; } = (uint)(value.Value & FLAG_MASK);
+    }
+}
+```
+
+#### EnumerateLoaderHeapBlocks
+
+```csharp
+IEnumerable<LoaderHeapBlock> ILoader.EnumerateLoaderHeapBlocks(TargetPointer loaderHeap)
+{
+    TargetPointer block = target.ReadPointer(loaderHeap + /* LoaderHeap::FirstBlock offset */);
+    HashSet<TargetPointer> visited = [];
+    while (block != TargetPointer.Null)
+    {
+        if (!visited.Add(block))
+            throw new InvalidOperationException();
+
+        yield return new LoaderHeapBlock(
+            target.ReadPointer(block + /* LoaderHeapBlock::VirtualAddress offset */),
+            target.ReadNUInt(block + /* LoaderHeapBlock::VirtualSize offset */));
+        block = target.ReadPointer(block + /* LoaderHeapBlock::Next offset */);
     }
 }
 ```

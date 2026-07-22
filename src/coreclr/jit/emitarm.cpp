@@ -3208,7 +3208,7 @@ void emitter::emitIns_R_R_R(instruction ins,
                 }
             }
 
-#if !defined(USE_HELPERS_FOR_INT_DIV)
+#if !USE_HELPERS_FOR_INT_DIV
             FALLTHROUGH;
         case INS_sdiv:
         case INS_udiv:
@@ -3344,11 +3344,6 @@ void emitter::emitIns_R_R_I_I(instruction ins,
     int msb   = lsb + width - 1;
     int imm   = 0; /* combined immediate */
 
-    assert((lsb >= 0) && (lsb <= 31));    // required for encodings
-    assert((width > 0) && (width <= 32)); // required for encodings
-    assert((msb >= 0) && (msb <= 31));    // required for encodings
-    assert(msb >= lsb);                   // required for encodings
-
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
@@ -3357,6 +3352,10 @@ void emitter::emitIns_R_R_I_I(instruction ins,
             assert(reg2 != REG_PC);
 
             assert(insDoesNotSetFlags(flags));
+            assert((lsb >= 0) && (lsb <= 31));    // required for encoding
+            assert((width > 0) && (width <= 32)); // required for encoding
+            assert((msb >= 0) && (msb <= 31));    // required for encoding
+            assert(msb >= lsb);                   // required for encoding
             imm = (lsb << 5) | msb;
 
             fmt = IF_T2_D0;
@@ -3369,7 +3368,39 @@ void emitter::emitIns_R_R_I_I(instruction ins,
             assert(reg2 != REG_PC);
 
             assert(insDoesNotSetFlags(flags));
+            assert((lsb >= 0) && (lsb <= 31));    // required for encoding
+            assert((width > 0) && (width <= 32)); // required for encoding
+            assert((msb >= 0) && (msb <= 31));    // required for encoding
+            assert(msb >= lsb);                   // required for encoding
             imm = (lsb << 5) | (width - 1);
+
+            fmt = IF_T2_D0;
+            sf  = INS_FLAGS_NOT_SET;
+            break;
+
+        case INS_ssat:
+            // imm1 = shift amount (must be 0 for no shift), imm2 = saturation bits N (1-32)
+            // Encoding: sat_imm field = N-1 stored in bits[4:0]; no shift (sh=0, imm5=0).
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
+
+            assert(insDoesNotSetFlags(flags));
+            assert((imm1 == 0) && (imm2 >= 1) && (imm2 <= 32)); // required for encoding
+            imm = (lsb << 5) | (width - 1);                     // lsb=shift=0, width=N -> sat_imm = N-1
+
+            fmt = IF_T2_D0;
+            sf  = INS_FLAGS_NOT_SET;
+            break;
+
+        case INS_usat:
+            // imm1 = shift amount (must be 0 for no shift), imm2 = saturation bits N (0-31)
+            // Encoding: sat_imm field = N stored directly in bits[4:0]; no shift (sh=0, imm5=0).
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
+
+            assert(insDoesNotSetFlags(flags));
+            assert((imm1 == 0) && (imm2 >= 0) && (imm2 <= 31)); // required for encoding
+            imm = (lsb << 5) | width;                           // lsb=shift=0, width=N -> sat_imm = N
 
             fmt = IF_T2_D0;
             sf  = INS_FLAGS_NOT_SET;
@@ -4316,8 +4347,6 @@ void emitter::emitSetMediumJump(instrDescJmp* id)
 /*****************************************************************************
  *
  *  Add a jmp instruction.
- *  When dst is NULL, instrCount specifies number of instructions
- *       to jump: positive is forward, negative is backward.
  *  Unconditional branches have two sizes: short and long.
  *  Conditional branches have three sizes: short, medium, and long. A long
  *     branch is a pseudo-instruction that represents two instructions:
@@ -4325,20 +4354,12 @@ void emitter::emitSetMediumJump(instrDescJmp* id)
  *     branch. Thus, we can handle branch offsets of imm24 instead of just imm20.
  */
 
-void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 */)
+void emitter::emitIns_J(instruction ins, BasicBlock* dst, bool keepShort)
 {
-    insFormat fmt = IF_NONE;
-
-    if (dst != NULL)
-    {
-        assert(dst->HasFlag(BBF_HAS_LABEL));
-    }
-    else
-    {
-        assert(instrCount != 0);
-    }
+    assert(dst->HasFlag(BBF_HAS_LABEL));
 
     /* Figure out the encoding format of the instruction */
+    insFormat fmt = IF_NONE;
     switch (ins)
     {
         case INS_b:
@@ -4374,6 +4395,24 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     id->idInsFmt(fmt);
     id->idInsSize(isz);
 
+    id->idAddr()->iiaBBlabel = dst;
+    if (keepShort)
+    {
+        id->idjKeepLong = false;
+        emitSetShortJump(id);
+    }
+    else
+    {
+        id->idjShort    = false;
+        id->idjKeepLong = (ins == INS_bl) || m_compiler->fgInDifferentRegions(m_compiler->compCurBB, dst);
+#ifdef DEBUG
+        if (m_compiler->opts.compLongAddress) // Force long branches
+        {
+            id->idjKeepLong = 1;
+        }
+#endif // DEBUG
+    }
+
 #ifdef DEBUG
     // Mark the finally call
     if ((ins == INS_bl) && m_compiler->compCurBB->KindIs(BBJ_CALLFINALLY))
@@ -4381,28 +4420,6 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
         id->idDebugOnlyInfo()->idFinallyCall = true;
     }
 #endif // DEBUG
-
-    /* Assume the jump will be long */
-
-    id->idjShort = 0;
-    if (dst != NULL)
-    {
-        id->idAddr()->iiaBBlabel = dst;
-        id->idjKeepLong          = (ins == INS_bl) || m_compiler->fgInDifferentRegions(m_compiler->compCurBB, dst);
-
-#ifdef DEBUG
-        if (m_compiler->opts.compLongAddress) // Force long branches
-            id->idjKeepLong = 1;
-#endif // DEBUG
-    }
-    else
-    {
-        id->idAddr()->iiaSetInstrCount(instrCount);
-        id->idjKeepLong = false;
-        /* This jump must be short */
-        emitSetShortJump(id);
-        id->idSetIsBound();
-    }
 
     /* Record the jump's IG and offset within it */
 
@@ -4696,12 +4713,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         printf("\n");
     }
 #endif
-
-    /* Managed RetVal: emit sequence point for the call */
-    if (m_compiler->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
-    {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
-    }
 
     /*
         We need to allocate the appropriate instruction descriptor based
@@ -5302,22 +5313,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     /* Figure out the distance to the target */
 
     srcOffs = emitCurCodeOffs(dst);
-    if (id->idAddr()->iiaHasInstrCount())
-    {
-        assert(ig != NULL);
-        int      instrCount = id->idAddr()->iiaGetInstrCount();
-        unsigned insNum     = emitFindInsNum(ig, id);
-        if (instrCount < 0)
-        {
-            // Backward branches using instruction count must be within the same instruction group.
-            assert(insNum + 1 >= (unsigned)(-instrCount));
-        }
-        dstOffs = ig->igOffs + emitFindOffset(ig, (insNum + 1 + instrCount));
-    }
-    else
-    {
-        dstOffs = id->idAddr()->iiaIGlabel->igOffs;
-    }
+    dstOffs = id->idAddr()->iiaIGlabel->igOffs;
 
     if (relAddr)
     {
@@ -5336,9 +5332,10 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         assert(ins == INS_movw || ins == INS_movt);
         distVal = (ssize_t)emitOffsetToPtr(dstOffs);
 
-        // ILC defines method symbols with the thumb bit already set, so don't add it here.
-        // For ReadyToRun and non-relocatable code (runtime JIT), we set it ourselves.
-        if (!m_compiler->IsNativeAot())
+        // ILC and crossgen2 defines method symbols with the thumb bit already set, so don't add it here.
+        // Assume compilations with relocs will put the thumb bit in the symbol.
+        // For non-relocatable code (runtime JIT), we set it ourselves.
+        if (!(m_compiler->opts.compReloc))
         {
             distVal += 1;
         }
@@ -7602,6 +7599,18 @@ void emitter::emitDispInsHelp(
                 int imm2 = msb + 1 - lsb;
                 emitDispImm(imm1, true);
                 emitDispImm(imm2, false);
+            }
+            else if (ins == INS_ssat)
+            {
+                // SSAT: stored as sat_imm = N-1; display as #N (saturation bits)
+                int satBits = (imm & 0x1f) + 1;
+                emitDispImm(satBits, false);
+            }
+            else if (ins == INS_usat)
+            {
+                // USAT: stored as sat_imm = N; display as #N (saturation bits)
+                int satBits = imm & 0x1f;
+                emitDispImm(satBits, false);
             }
             else
             {

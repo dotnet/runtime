@@ -29,9 +29,6 @@ Abstract:
 
 #include <sys/types.h>
 #include <unistd.h>
-#if HAVE_KQUEUE
-#include <sys/event.h>
-#endif // HAVE_KQUEUE
 #include "pal/dbgmsg.h"
 
 #ifdef _DEBUG
@@ -337,14 +334,8 @@ namespace CorUnix
     class CSynchWaitController : public CSynchControllerBase,
                                  public ISynchWaitController
     {
-        // Per-object-type specific data
-        //
-        // Process (otiProcess)
-        IPalObject *m_pProcessObject; // process that owns m_pProcLocalData, this is stored without a reference
-        CProcProcessLocalData * m_pProcLocalData;
-
     public:
-        CSynchWaitController() : m_pProcessObject(NULL), m_pProcLocalData(NULL) {}
+        CSynchWaitController() = default;
         virtual ~CSynchWaitController() = default;
 
         //
@@ -360,10 +351,6 @@ namespace CorUnix
             DWORD dwIndex);
 
         virtual void ReleaseController(void);
-
-        CProcProcessLocalData * GetProcessLocalData(void);
-
-        void SetProcessData(IPalObject* pProcessObject, CProcProcessLocalData * pProcLocalData);
     };
 
     class CSynchStateController : public CSynchControllerBase,
@@ -408,60 +395,17 @@ namespace CorUnix
             SynchMgrStatusReadyForProcessShutDown,
             SynchMgrStatusError
         };
-        enum SynchWorkerCmd
-        {
-            SynchWorkerCmdNop,
-            SynchWorkerCmdShutdown,
-            SynchWorkerCmdLast
-        };
-
-        typedef struct _MonitoredProcessesListNode
-        {
-            struct _MonitoredProcessesListNode * pNext;
-            LONG lRefCount;
-            CSynchData * psdSynchData;
-            DWORD dwPid;
-            DWORD dwExitCode;
-            bool fIsActualExitCode;
-
-            // Object that owns pProcLocalData. This is stored, with a reference, to
-            // ensure that pProcLocalData is not deleted.
-            IPalObject *pProcessObject;
-            CProcProcessLocalData * pProcLocalData;
-        } MonitoredProcessesListNode;
 
         // constants
         static const int CtrlrsCacheMaxSize                = 256;
         static const int SynchDataCacheMaxSize             = 256;
         static const int WTListNodeCacheMaxSize            = 256;
-        static const int MaxWorkerConsecutiveEintrs        = 128;
-        static const int MaxConsecutiveEagains             = 128;
-        static const int WorkerThreadProcMonitoringTimeout = 250;  // ms
-        static const int WorkerThreadShuttingDownTimeout   = 1000; // ms
-        static const int WorkerCmdCompletionTimeout        = 250;  // ms
         static const DWORD SecondNativeWaitTimeout         = INFINITE;
-        static const DWORD WorkerThreadTerminationTimeout  = 2000; // ms
 
         // static members
         static CPalSynchronizationManager * s_pObjSynchMgr;
         static Volatile<LONG>               s_lInitStatus;
         static minipal_mutex             s_csSynchProcessLock;
-        static minipal_mutex             s_csMonitoredProcessesLock;
-
-        // members
-        DWORD                           m_dwWorkerThreadTid;
-        IPalObject *                    m_pipoThread;
-        CPalThread *                    m_pthrWorker;
-        int                             m_iProcessPipeRead;
-        int                             m_iProcessPipeWrite;
-#if HAVE_KQUEUE
-        int                             m_iKQueue;
-        struct kevent                   m_keProcessPipeEvent;
-#endif // HAVE_KQUEUE
-
-        MonitoredProcessesListNode *    m_pmplnMonitoredProcesses;
-        LONG                            m_lMonitoredProcessesCount;
-        MonitoredProcessesListNode *    m_pmplnExitedNodes;
 
         // caches
         CSynchWaitControllerCache       m_cacheWaitCtrlrs;
@@ -473,7 +417,6 @@ namespace CorUnix
 
         // static methods
         static PAL_ERROR Initialize();
-        static DWORD PALAPI WorkerThread(LPVOID pArg);
 
     protected:
         CPalSynchronizationManager();
@@ -487,7 +430,6 @@ namespace CorUnix
 
     private:
         static IPalSynchronizationManager * CreatePalSynchronizationManager();
-        static PAL_ERROR StartWorker(CPalThread * pthrCurrent);
         static PAL_ERROR PrepareForShutdown(void);
 
     public:
@@ -709,39 +651,6 @@ namespace CorUnix
 
         static void ThreadPrepareForShutdown(void);
 
-#ifndef CORECLR
-        static bool GetProcessPipeName(
-            LPSTR pDest,
-            int iDestSize,
-            DWORD dwPid);
-#endif // !CORECLR
-
-        //
-        // Non-static helper methods
-        //
-    private:
-        LONG DoMonitorProcesses(CPalThread * pthrCurrent);
-
-        void DiscardMonitoredProcesses(CPalThread * pthrCurrent);
-
-        PAL_ERROR ReadCmdFromProcessPipe(
-            int iPollTimeout,
-            SynchWorkerCmd * pswcWorkerCmd,
-            SharedID * pshridMarshaledData,
-            DWORD * pdwData);
-
-        PAL_ERROR WakeUpLocalWorkerThread(
-            SynchWorkerCmd swcWorkerCmd);
-
-        int ReadBytesFromProcessPipe(
-            int iTimeout,
-            BYTE * pRecvBuf,
-            LONG lBytes);
-
-        bool CreateProcessPipe();
-
-        PAL_ERROR ShutdownProcessPipe();
-
     public:
         //
         // The following methods must be called only by a Sync*Controller or
@@ -751,25 +660,9 @@ namespace CorUnix
             CPalThread * pthrCurrent,
             ThreadWaitInfo * ptwiWaitInfo);
 
-        PAL_ERROR RegisterProcessForMonitoring(
-            CPalThread * pthrCurrent,
-            CSynchData *psdSynchData,
-            IPalObject *pProcessObject,
-            CProcProcessLocalData * pProcLocalData);
-
-        PAL_ERROR UnRegisterProcessForMonitoring(
-            CPalThread * pthrCurrent,
-            CSynchData *psdSynchData,
-            DWORD dwPid);
-
         //
         // Utility static methods, no lock required
         //
-        static bool HasProcessExited(
-            DWORD dwPid,
-            DWORD * pdwExitCode,
-            bool * pfIsActualExitCode);
-
         static bool InterlockedAwaken(
             DWORD *pWaitState);
 

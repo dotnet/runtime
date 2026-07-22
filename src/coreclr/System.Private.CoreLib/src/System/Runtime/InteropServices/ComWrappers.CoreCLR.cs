@@ -27,7 +27,6 @@ namespace System.Runtime.InteropServices
         [SuppressGCTransition]
         private static partial void GetIUnknownImplInternal(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
 
-        [RequiresUnsafe]
         internal static unsafe void GetUntrackedIUnknownImpl(out delegate* unmanaged[MemberFunction]<IntPtr, uint> fpAddRef, out delegate* unmanaged[MemberFunction]<IntPtr, uint> fpRelease)
         {
             fpAddRef = fpRelease = GetUntrackedAddRefRelease();
@@ -35,7 +34,6 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetUntrackedAddRefRelease")]
         [SuppressGCTransition]
-        [RequiresUnsafe]
         private static unsafe partial delegate* unmanaged[MemberFunction]<IntPtr, uint> GetUntrackedAddRefRelease();
 
         internal static IntPtr DefaultIUnknownVftblPtr { get; } = CreateDefaultIUnknownVftbl();
@@ -69,7 +67,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe int CallICustomQueryInterface(ManagedObjectWrapperHolder* pHolder, Guid* pIid, IntPtr* ppObject, Exception* pException)
         {
             try
@@ -103,7 +100,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetOrCreateComInterfaceForObjectWithGlobalMarshallingInstance(object* pObj, IntPtr* pResult, Exception* pException)
         {
             try
@@ -136,7 +132,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void GetOrCreateObjectForComInstanceWithGlobalMarshallingInstance(IntPtr comObject, int flags, object* pResult, Exception* pException)
         {
             try

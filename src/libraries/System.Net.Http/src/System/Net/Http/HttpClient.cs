@@ -73,6 +73,11 @@ namespace System.Net.Http
             get => _defaultVersionPolicy;
             set
             {
+                if ((uint)value > (uint)HttpVersionPolicy.RequestVersionExact)
+                {
+                    throw new ArgumentException(SR.Format(SR.net_invalid_enum, nameof(HttpVersionPolicy)), nameof(value));
+                }
+
                 CheckDisposedOrStarted();
                 _defaultVersionPolicy = value;
             }
@@ -182,6 +187,7 @@ namespace System.Net.Http
 
             (CancellationTokenSource cts, bool disposeCts, CancellationTokenSource pendingRequestsCts) = PrepareCancellationTokenSource(cancellationToken);
             HttpResponseMessage? response = null;
+            HttpContent.LimitArrayPoolWriteStream? buffer = null;
             try
             {
                 // Wait for the response message and make sure it completed successfully.
@@ -199,7 +205,7 @@ namespace System.Net.Http
 
                 // Since the underlying byte[] will never be exposed, we use an ArrayPool-backed
                 // stream to which we copy all of the data from the response.
-                using var buffer = new HttpContent.LimitArrayPoolWriteStream(
+                buffer = new HttpContent.LimitArrayPoolWriteStream(
                     _maxResponseContentBufferSize,
                     c.Headers.ContentLength.GetValueOrDefault(),
                     getFinalSizeFromPool: true);
@@ -224,6 +230,7 @@ namespace System.Net.Http
             }
             finally
             {
+                buffer?.ReturnAllPooledBuffers();
                 FinishSend(response, cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
             }
         }
@@ -254,6 +261,7 @@ namespace System.Net.Http
 
             (CancellationTokenSource cts, bool disposeCts, CancellationTokenSource pendingRequestsCts) = PrepareCancellationTokenSource(cancellationToken);
             HttpResponseMessage? response = null;
+            HttpContent.LimitArrayPoolWriteStream? buffer = null;
             try
             {
                 // Wait for the response message and make sure it completed successfully.
@@ -275,7 +283,7 @@ namespace System.Net.Http
                 // the buffer potentially several times and that it's unlikely the underlying buffer
                 // at the end will be the exact size needed, in which case it's more beneficial to use
                 // ArrayPool buffers and copy out to a new array at the end.
-                using var buffer = new HttpContent.LimitArrayPoolWriteStream(
+                buffer = new HttpContent.LimitArrayPoolWriteStream(
                     _maxResponseContentBufferSize,
                     c.Headers.ContentLength.GetValueOrDefault(),
                     getFinalSizeFromPool: false);
@@ -299,6 +307,7 @@ namespace System.Net.Http
             }
             finally
             {
+                buffer?.ReturnAllPooledBuffers();
                 FinishSend(response, cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
             }
         }

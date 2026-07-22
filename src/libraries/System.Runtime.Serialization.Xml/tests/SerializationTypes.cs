@@ -979,6 +979,36 @@ namespace SerializationTypes
         }
     }
 
+    public class BaseTypeWithShouldSerializeMethod
+    {
+        public string Foo { get; set; } = "default";
+
+        [System.Xml.Serialization.XmlAttribute]
+        public string Bar { get; set; } = "default";
+
+        public bool ShouldSerializeFoo()
+        {
+            return Foo != "default";
+        }
+
+        public bool ShouldSerializeBar()
+        {
+            return Bar != "default";
+        }
+    }
+
+    public class DerivedTypeWithInheritedShouldSerialize : BaseTypeWithShouldSerializeMethod
+    {
+    }
+
+    public class TypeWithFieldBackedSpecifiedMember
+    {
+        public string Foo { get; set; }
+
+        [System.Xml.Serialization.XmlIgnore]
+        public bool FooSpecified;
+    }
+
     public class KnownTypesThroughConstructorWithArrayProperties
     {
         public object StringArrayValue;

@@ -12,30 +12,30 @@ namespace System.Runtime.CompilerServices
     internal static unsafe partial class InitHelpers
     {
         [LibraryImport(RuntimeHelpers.QCall)]
-        [RequiresUnsafe]
         private static partial void InitClassHelper(MethodTable* mt);
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [RequiresUnsafe]
         internal static void InitClassSlow(MethodTable* mt)
         {
             InitClassHelper(mt);
         }
 
         [DebuggerHidden]
-        [RequiresUnsafe]
-        private static void InitClass(MethodTable* mt)
+        private static void* InitClass(MethodTable* mt)
         {
-            if (mt->AuxiliaryData->IsClassInited)
-                return;
-            else
+            if (!mt->AuxiliaryData->IsClassInited)
                 InitClassSlow(mt);
+
+            // The InitClass JIT helper is modeled as value-returning by the JIT and interpreter
+            // (the result is pushed and then discarded). On targets that use portable entry points
+            // (wasm), the call_indirect signature must match the compiled method exactly, including
+            // return arity, so this helper returns a (dummy) value rather than void.
+            return null;
         }
 
         [DebuggerHidden]
-        [RequiresUnsafe]
-        private static void InitInstantiatedClass(MethodTable* mt, MethodDesc* methodDesc)
+        private static void* InitInstantiatedClass(MethodTable* mt, MethodDesc* methodDesc)
         {
             MethodTable *pTemplateMT = methodDesc->MethodTable;
             MethodTable *pMT;
@@ -49,10 +49,11 @@ namespace System.Runtime.CompilerServices
                 pMT = pTemplateMT;
             }
 
-            if (pMT->AuxiliaryData->IsClassInitedAndActive)
-                return;
-            else
+            if (!pMT->AuxiliaryData->IsClassInitedAndActive)
                 InitClassSlow(pMT);
+
+            // See the comment in InitClass for why this helper returns a value rather than void.
+            return null;
         }
 
         [DebuggerHidden]

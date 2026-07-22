@@ -18,6 +18,9 @@ namespace System.Reflection
     {
         public sealed override bool IsSignatureType => true;
 
+        // The base implementation does not expose Nullable<T> behavior; subclasses override when appropriate.
+        public override Type? GetNullableUnderlyingType() => null;
+
         // Type flavor predicates
         public abstract override bool IsTypeDefinition { get; }
         protected abstract override bool HasElementTypeImpl();

@@ -2361,7 +2361,7 @@ void HandleHistogramProbeInstrumentor::Prepare(bool isPreImport)
     //
     for (BasicBlock* const block : m_compiler->Blocks())
     {
-        block->bbHistogramSchemaIndex = -1;
+        block->bbHandleHistogramSchemaIndex = -1;
     }
 #endif
 }
@@ -2382,7 +2382,7 @@ void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Sc
 
     // Remember the schema index for this block.
     //
-    block->bbHistogramSchemaIndex = (int)schema.size();
+    block->bbHandleHistogramSchemaIndex = (int)schema.size();
 
     // Scan the statements and identify the class probes
     //
@@ -2416,7 +2416,7 @@ void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& sch
 
     // Scan the statements and add class probes
     //
-    int histogramSchemaIndex = block->bbHistogramSchemaIndex;
+    int histogramSchemaIndex = block->bbHandleHistogramSchemaIndex;
     assert((histogramSchemaIndex >= 0) && (histogramSchemaIndex < (int)schema.size()));
 
     HandleHistogramProbeInserter insertProbes(schema, profileMemory, &histogramSchemaIndex, m_instrCount);
@@ -2445,7 +2445,7 @@ void ValueInstrumentor::Prepare(bool isPreImport)
     //
     for (BasicBlock* const block : m_compiler->Blocks())
     {
-        block->bbCountSchemaIndex = -1;
+        block->bbValueHistogramSchemaIndex = -1;
     }
 #endif
 }
@@ -2465,7 +2465,7 @@ void ValueInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
         return;
     }
 
-    block->bbHistogramSchemaIndex = (int)schema.size();
+    block->bbValueHistogramSchemaIndex = (int)schema.size();
 
     BuildValueHistogramProbeSchemaGen                             schemaGen(schema, m_schemaCount);
     ValueHistogramProbeVisitor<BuildValueHistogramProbeSchemaGen> visitor(m_compiler, schemaGen);
@@ -2491,7 +2491,7 @@ void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* p
         return;
     }
 
-    int histogramSchemaIndex = block->bbHistogramSchemaIndex;
+    int histogramSchemaIndex = block->bbValueHistogramSchemaIndex;
     assert((histogramSchemaIndex >= 0) && (histogramSchemaIndex < (int)schema.size()));
 
     ValueHistogramProbeInserter insertProbes(schema, profileMemory, &histogramSchemaIndex, m_instrCount);
@@ -3917,17 +3917,46 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
         assert(pseudoEdge != nullptr);
     }
 
-    assert(nEdges == nSucc);
-
-    if ((info->m_weight == BB_ZERO_WEIGHT) || (successorWeight == BB_ZERO_WEIGHT))
+    // We may not have the same number of model edges and flow edges.
+    //
+    // As in PropagateEdges, this can happen because some BBJ_LEAVE blocks may have
+    // been missed during our spanning tree walk since we don't know where all the
+    // finally blocks can return to just yet (specifically, in WalkSpanningTree, we
+    // may not add the target of a BBJ_LEAVE to the worklist). Worst case those
+    // missed blocks dominate other blocks so we can't limit the screening here to
+    // specific BBJ kinds.
+    //
+    // Handle those cases specifically, and also the zero-weight cases, by just
+    // assuming equally likely successors.
+    //
+    // (TODO: use synthesis here)
+    //
+    if ((nEdges != nSucc) || (info->m_weight == BB_ZERO_WEIGHT) || (successorWeight == BB_ZERO_WEIGHT))
     {
-        JITDUMP("\nPropagate: OSR entry block or successor weight is zero\n");
-        EntryWeightZero();
+        JITDUMP("\nPropagate: OSR entry block %s, setting outgoing likelihoods heuristically\n",
+                (nEdges != nSucc) ? "has inaccurate flow model" : "has zero weight");
+
+        weight_t const equalLikelihood = 1.0 / nSucc;
+
+        for (FlowEdge* const succEdge : block->SuccEdges())
+        {
+            BasicBlock* const succBlock = succEdge->getDestinationBlock();
+            JITDUMP("Setting likelihood of " FMT_BB " -> " FMT_BB " to " FMT_WT " (heur)\n", block->bbNum,
+                    succBlock->bbNum, equalLikelihood);
+            succEdge->setLikelihood(equalLikelihood);
+        }
+
+        if ((info->m_weight == BB_ZERO_WEIGHT) || (successorWeight == BB_ZERO_WEIGHT))
+        {
+            EntryWeightZero();
+        }
+
         return;
     }
 
     // Transfer model edge weight onto the FlowEdges as likelihoods.
     //
+    assert(nEdges == nSucc);
     JITDUMP("Normalizing OSR successor likelihoods with factor 1/" FMT_WT "\n", successorWeight);
 
     for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
@@ -4566,6 +4595,8 @@ void Compiler::fgDebugCheckProfile(PhaseChecks checks)
 //
 // Arguments:
 //   checks - checker options
+//   dump   - if true, report inconsistencies via JITDUMP without asserting (used by the
+//            re-run below to log details before the initial pass asserts)
 //
 // Returns:
 //   True if all enabled checks pass
@@ -4581,7 +4612,7 @@ void Compiler::fgDebugCheckProfile(PhaseChecks checks)
 //   There's no point checking until we've built pred lists, as
 //   we can't easily reason about consistency without them.
 //
-bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
+bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks, bool dump)
 {
     // We can check classic (min/max, late computed) weights
     //   and/or
@@ -4816,13 +4847,20 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 
         // Note we only assert when we think the profile data should be consistent.
         //
-        if (assertOnFailure)
+        if (assertOnFailure && !dump)
         {
+            // Re-run with dumping forced on so the offending blocks are logged before we assert.
+            //
+            const bool wasVerbose = verbose;
+            verbose               = true;
+            fgDebugCheckProfileWeights(checks, /* dump */ true);
+            verbose = wasVerbose;
+
             assert(!"Inconsistent profile data");
         }
     }
 
-    if (unflaggedBlocks > 0)
+    if ((unflaggedBlocks > 0) && !dump)
     {
         JITDUMP("%d blocks are missing BBF_PROF_WEIGHT flag.\n", unflaggedBlocks);
         assert(!"Missing BBF_PROF_WEIGHT flag");

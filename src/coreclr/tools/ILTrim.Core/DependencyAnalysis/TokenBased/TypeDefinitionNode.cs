@@ -128,28 +128,28 @@ namespace ILCompiler.DependencyAnalysis
 
             var builder = writeContext.MetadataBuilder;
 
-            // Adding PropertyMap entries when writing types ensures that the PropertyMap table has the same
-            // order as the TypeDefinition table. This allows us to use the same logic in MapTypePropertyList
-            // as we have for fields and methods. However, this depends on the properties being written in the
-            // same order as their types which will only be the case if the input assembly had properties sorted
-            // by type.
-            // TODO: Make this work with properties that aren't sorted in the same order as the TypeDef table
-            // (for example by sorting properties by type before emitting them, or by saving PropertyMap rows
-            // in the same order as tehy were in the input assembly.)
-            PropertyDefinitionHandle propertyHandle = writeContext.TokenMap.MapTypePropertyList(Handle);
-            if (!propertyHandle.IsNil)
-                builder.AddPropertyMap((TypeDefinitionHandle)writeContext.TokenMap.MapToken(Handle), propertyHandle);
-
-            EventDefinitionHandle eventHandle = writeContext.TokenMap.MapTypeEventList(Handle);
-            if (!eventHandle.IsNil)
-                builder.AddEventMap((TypeDefinitionHandle)writeContext.TokenMap.MapToken(Handle), eventHandle);
-
             TypeDefinitionHandle outputHandle = builder.AddTypeDefinition(typeDef.Attributes,
                 builder.GetOrAddString(reader.GetString(typeDef.Namespace)),
                 builder.GetOrAddString(reader.GetString(typeDef.Name)),
                 writeContext.TokenMap.MapToken(typeDef.BaseType),
                 writeContext.TokenMap.MapTypeFieldList(Handle),
                 writeContext.TokenMap.MapTypeMethodList(Handle));
+
+            // Adding PropertyMap/EventMap entries when writing types ensures that these tables have the same
+            // order as the TypeDefinition table. This allows us to use the same logic in MapTypePropertyList
+            // as we have for fields and methods. However, this depends on the properties being written in the
+            // same order as their types which will only be the case if the input assembly had properties sorted
+            // by type.
+            // TODO: Make this work with properties that aren't sorted in the same order as the TypeDef table
+            // (for example by sorting properties by type before emitting them, or by saving PropertyMap rows
+            // in the same order as they were in the input assembly.)
+            PropertyDefinitionHandle propertyHandle = writeContext.TokenMap.MapTypePropertyList(Handle);
+            if (!propertyHandle.IsNil)
+                builder.AddPropertyMap(outputHandle, propertyHandle);
+
+            EventDefinitionHandle eventHandle = writeContext.TokenMap.MapTypeEventList(Handle);
+            if (!eventHandle.IsNil)
+                builder.AddEventMap(outputHandle, eventHandle);
 
             if (typeDef.IsNested)
                 builder.AddNestedType(outputHandle, (TypeDefinitionHandle)writeContext.TokenMap.MapToken(typeDef.GetDeclaringType()));

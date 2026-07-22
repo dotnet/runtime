@@ -99,6 +99,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(source);
             Assert.Empty(result.Diagnostics);
             Assert.True(source.Value.SourceText.Lines.Count > 10);
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
         }
 
         private static bool s_initializedInterceptorVersion;
@@ -174,6 +175,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             Assert.True(resultEqualsBaseline, errorMessage);
 
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
+
             return result;
         }
 
@@ -203,17 +206,15 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             return assemblies;
         }
 
-        public static byte[] CreateAssemblyImage(Compilation compilation)
+        private static void AssertCanCreateAssemblyImage(Compilation compilation)
         {
-            MemoryStream ms = new MemoryStream();
-            var emitResult = compilation.Emit(ms);
+            var emitResult = compilation.Emit(Stream.Null);
             if (!emitResult.Success)
             {
                 // Explicit failures to include in the test output.
                 string errorMessage = string.Join(Environment.NewLine, emitResult.Diagnostics.Select(d => d.ToString()));
                 throw new InvalidOperationException(errorMessage);
             }
-            return ms.ToArray();
         }
     }
 }

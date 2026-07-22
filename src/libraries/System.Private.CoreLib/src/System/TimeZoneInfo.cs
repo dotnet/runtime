@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -216,7 +216,7 @@ namespace System
         /// Returns an array of TimeSpan objects representing all of
         /// the possible UTC offset values for this ambiguous time.
         /// </summary>
-        public TimeSpan[] GetAmbiguousTimeOffsets(DateTimeOffset dateTimeOffset)
+        public unsafe TimeSpan[] GetAmbiguousTimeOffsets(DateTimeOffset dateTimeOffset)
         {
             Span<TimeSpan> offsets = stackalloc TimeSpan[2];
 
@@ -232,7 +232,7 @@ namespace System
         /// Returns an array of TimeSpan objects representing all of
         /// possible UTC offset values for this ambiguous time.
         /// </summary>
-        public TimeSpan[] GetAmbiguousTimeOffsets(DateTime dateTime)
+        public unsafe TimeSpan[] GetAmbiguousTimeOffsets(DateTime dateTime)
         {
             if (!SupportsDaylightSavingTime)
             {

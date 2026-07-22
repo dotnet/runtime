@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -203,6 +203,33 @@ namespace System.Globalization
 
             return OrdinalCasing.ToUpper(c);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static char ToLowerOrdinal(char c)
+        {
+            if (GlobalizationMode.Invariant)
+            {
+                return char.IsAscii(c)
+                    ? ToLowerAsciiInvariant(c)
+                    : PreserveOrdinalLowerCasingClass(c, InvariantModeCasing.ToLower(c));
+            }
+
+            if (GlobalizationMode.UseNls)
+            {
+                return char.IsAscii(c)
+                    ? ToLowerAsciiInvariant(c)
+                    : PreserveOrdinalLowerCasingClass(c, Invariant.ChangeCase(c, toUpper: false));
+            }
+
+            return OrdinalCasing.ToLower(c);
+        }
+
+        // Ordinal lower casing must never move a character out of its ordinal upper-casing class, otherwise it
+        // would stop being consistent with OrdinalIgnoreCase (for example the Kelvin, Ohm and Angstrom signs). The
+        // ICU ordinal table encodes this directly, but invariant and NLS simple lowering do not, so keep the original
+        // character whenever its simple lower mapping would change its ordinal upper-casing form.
+        private static char PreserveOrdinalLowerCasingClass(char c, char lower) =>
+            lower == c || ToUpperOrdinal(lower) == ToUpperOrdinal(c) ? lower : c;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ChangeCaseToLower(ReadOnlySpan<char> source, Span<char> destination)
@@ -495,7 +522,7 @@ namespace System.Globalization
         /// </summary>
         /// <param name="value">The rune to convert to lowercase.</param>
         /// <returns>The specified rune converted to lowercase.</returns>
-        public Rune ToLower(Rune value)
+        public unsafe Rune ToLower(Rune value)
         {
             // Convert rune to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -503,7 +530,7 @@ namespace System.Globalization
             // Change span to lower and convert to rune
             if (valueChars.Length == 2)
             {
-                Span<char> lowerChars = stackalloc char[2];
+                Span<char> lowerChars = ['\0', '\0'];
                 ToLower(valueChars, lowerChars);
                 return new Rune(lowerChars[0], lowerChars[1]);
             }
@@ -517,7 +544,7 @@ namespace System.Globalization
         /// </summary>
         /// <param name="value">The rune to convert to uppercase.</param>
         /// <returns>The specified rune converted to uppercase.</returns>
-        public Rune ToUpper(Rune value)
+        public unsafe Rune ToUpper(Rune value)
         {
             // Convert rune to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -525,7 +552,7 @@ namespace System.Globalization
             // Change span to upper and convert to rune
             if (valueChars.Length == 2)
             {
-                Span<char> upperChars = stackalloc char[2];
+                Span<char> upperChars = ['\0', '\0'];
                 ToUpper(valueChars, upperChars);
                 return new Rune(upperChars[0], upperChars[1]);
             }
@@ -729,7 +756,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    Span<char> dst = stackalloc char[2];
+                    Span<char> dst = ['\0', '\0'];
                     ChangeCaseToUpper(src, dst);
                     result.Append(dst);
                 }
@@ -768,7 +795,6 @@ namespace System.Globalization
             return inputIndex;
         }
 
-        [RequiresUnsafe]
         private unsafe void ChangeCaseCore(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
         {
             if (GlobalizationMode.UseNls)

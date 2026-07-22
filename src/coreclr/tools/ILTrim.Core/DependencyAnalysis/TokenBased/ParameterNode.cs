@@ -20,7 +20,15 @@ namespace ILCompiler.DependencyAnalysis
 
         private ParameterHandle Handle => (ParameterHandle)_handle;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => null;
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        {
+            DependencyList dependencies = null;
+
+            Parameter parameter = _module.MetadataReader.GetParameter(Handle);
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, context, _module, parameter.GetCustomAttributes());
+
+            return dependencies;
+        }
 
         public override string ToString()
         {

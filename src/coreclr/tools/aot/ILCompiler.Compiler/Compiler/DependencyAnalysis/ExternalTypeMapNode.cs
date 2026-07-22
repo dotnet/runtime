@@ -33,30 +33,25 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
         {
+            List<CombinedDependencyListEntry> dependencies = [];
+
             foreach (var entry in _mapEntries)
             {
                 var (targetType, trimmingTargetType) = entry.Value;
                 if (trimmingTargetType is not null)
                 {
-                    TypeDesc effectiveTrimTargetType = GetEffectiveTrimTargetType(trimmingTargetType);
+                    IEETypeNode effectiveTrimTargetType = GetEffectiveTrimTargetType(context, trimmingTargetType);
 
-                    yield return new CombinedDependencyListEntry(
+                    dependencies.Add(new CombinedDependencyListEntry(
                         context.MetadataTypeSymbol(targetType),
-                        context.NecessaryTypeSymbol(effectiveTrimTargetType),
-                        "Type in external type map is cast target");
+                        effectiveTrimTargetType,
+                        "Type in external type map is cast target"));
 
-                    // If the trimming target type has a canonical form, it could be created at runtime by the type loader.
-                    // If there is a type loader template for it, create the generic type instantiation eagerly.
-                    TypeDesc canonTrimmingType = effectiveTrimTargetType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                    if (canonTrimmingType != effectiveTrimTargetType && GenericTypesTemplateMap.IsEligibleToHaveATemplate(canonTrimmingType))
-                    {
-                        yield return new CombinedDependencyListEntry(
-                            context.NecessaryTypeSymbol(effectiveTrimTargetType),
-                            context.NativeLayout.TemplateTypeLayout(canonTrimmingType),
-                            "External type map trim target that could be loaded at runtime");
-                    }
+                    RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(dependencies, context, effectiveTrimTargetType, "External type map trim target that could be loaded at runtime");
                 }
             }
+
+            return dependencies;
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
@@ -91,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis
                 var (targetType, trimmingTargetType) = entry.Value;
 
                 if (trimmingTargetType is null
-                    || factory.NecessaryTypeSymbol(GetEffectiveTrimTargetType(trimmingTargetType)).Marked)
+                    || GetEffectiveTrimTargetType(factory, trimmingTargetType).Marked)
                 {
                     IEETypeNode targetNode = factory.MetadataTypeSymbol(targetType);
                     Debug.Assert(targetNode.Marked);
@@ -100,15 +95,8 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        // Strip parameterized type wrappers (arrays, pointers, byrefs) to get the effective
-        // type for trimming purposes. If the trim target is Foo[], the TypeMap entry should be
-        // included when Foo is reachable, matching ILLink's TypeMapHandler stripping behavior.
-        private static TypeDesc GetEffectiveTrimTargetType(TypeDesc trimmingTargetType)
-        {
-            while (trimmingTargetType is ParameterizedType parameterized)
-                trimmingTargetType = parameterized.ParameterType;
-            return trimmingTargetType;
-        }
+        private static IEETypeNode GetEffectiveTrimTargetType(NodeFactory factory, TypeDesc trimmingTargetType)
+            => RuntimeConstructableTypeDependencies.GetEffectiveTrimTargetType(factory, trimmingTargetType, conditionConstructed: false);
 
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {

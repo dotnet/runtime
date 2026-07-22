@@ -188,6 +188,15 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
+        /// <remarks>
+        /// On Windows, if a handle to the process is available, this property can be read after the process exits.
+        /// On Unix, this property caches its value on first access. A cached value can be read after the process exits,
+        /// but accessing an uncached value after the process exits may throw <see cref="InvalidOperationException"/> when the value is unavailable.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// No process is associated with this object; on Windows, there is no process handle available; or on Unix,
+        /// the value was not cached and is unavailable after the process exited.
+        /// </exception>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
@@ -203,11 +212,11 @@ namespace System.Diagnostics
             }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the time that the associated process exited.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>Gets the time that the associated process exited.</summary>
+        /// <exception cref="InvalidOperationException">
+        /// No process is associated with this object, the process has not exited,
+        /// or there is no process handle available.
+        /// </exception>
         public DateTime ExitTime
         {
             get
@@ -221,6 +230,57 @@ namespace System.Diagnostics
                 return _exitTime;
             }
         }
+
+        /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
+        /// <remarks>
+        /// On Windows, if a handle to the process is available, the value can be retrieved after the process exits.
+        /// On Unix, the value is unavailable after the process exits.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// No process is associated with this object. On Windows, there is no process handle available.
+        /// On Unix, the process has exited.
+        /// </exception>
+        /// <exception cref="Win32Exception">The operating system could not retrieve process timing information.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public partial TimeSpan PrivilegedProcessorTime { get; }
+
+        /// <summary>
+        /// Gets the amount of time the associated process has spent utilizing the CPU.
+        /// It is the sum of the <see cref='UserProcessorTime'/> and <see cref='PrivilegedProcessorTime'/>.
+        /// </summary>
+        /// <remarks>
+        /// On Windows, if a handle to the process is available, the value can be retrieved after the process exits.
+        /// On Unix, the value is unavailable after the process exits.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// No process is associated with this object. On Windows, there is no process handle available.
+        /// On Unix, the process has exited.
+        /// </exception>
+        /// <exception cref="Win32Exception">The operating system could not retrieve process timing information.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public partial TimeSpan TotalProcessorTime { get; }
+
+        /// <summary>
+        /// Gets the amount of time the associated process has spent running code
+        /// inside the application portion of the process (not the operating system core).
+        /// </summary>
+        /// <remarks>
+        /// On Windows, if a handle to the process is available, the value can be retrieved after the process exits.
+        /// On Unix, the value is unavailable after the process exits.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// No process is associated with this object. On Windows, there is no process handle available.
+        /// On Unix, the process has exited.
+        /// </exception>
+        /// <exception cref="Win32Exception">The operating system could not retrieve process timing information.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public partial TimeSpan UserProcessorTime { get; }
 
         /// <devdoc>
         ///    <para>
@@ -749,7 +809,7 @@ namespace System.Diagnostics
         /// This state is useful, for example, when your application needs to wait for a starting process
         /// to finish creating its main window before the application communicates with that window.
         /// </remarks>
-        public bool WaitForInputIdle(TimeSpan timeout) => WaitForInputIdle(ToTimeoutMilliseconds(timeout));
+        public bool WaitForInputIdle(TimeSpan timeout) => WaitForInputIdle(ProcessUtils.ToTimeoutMilliseconds(timeout));
 
         public ISynchronizeInvoke? SynchronizingObject { get; set; }
 
@@ -935,6 +995,31 @@ namespace System.Diagnostics
 
             return new Process(".", false, processId, null);
         }
+
+        /// <summary>
+        /// Attempts to get a <see cref="Process"/> instance for an existing process with the specified process ID.
+        /// </summary>
+        /// <param name="processId">The process ID of the process to open.</param>
+        /// <param name="process">When this method returns <see langword="true"/>, contains a <see cref="Process"/> representing the opened process; otherwise, <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the process was found and opened successfully; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="processId"/> is negative or zero.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static bool TryGetProcessById(int processId, [NotNullWhen(true)] out Process? process)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(processId, 0);
+
+            if (ProcessManager.IsProcessRunning(processId))
+            {
+                process = new Process(".", false, processId, null);
+                return true;
+            }
+
+            process = null;
+            return false;
+        }
+
 
         /// <devdoc>
         ///    <para>
@@ -1186,74 +1271,7 @@ namespace System.Diagnostics
             {
                 if (!startInfo.UseShellExecute)
                 {
-                    // Windows supports creating non-inheritable pipe in atomic way.
-                    // When it comes to Unixes, it depends whether they support pipe2 sys-call or not.
-                    // If they don't, the pipe is created as inheritable and made non-inheritable with another sys-call.
-                    // Some process could be started in the meantime, so in order to prevent accidental handle inheritance,
-                    // a writer lock is used around the pipe creation code.
-
-                    bool requiresLock = anyRedirection && !ProcessUtils.SupportsAtomicNonInheritablePipeCreation;
-
-                    if (requiresLock)
-                    {
-                        ProcessUtils.s_processStartLock.EnterWriteLock();
-                    }
-
-                    try
-                    {
-                        if (startInfo.StandardInputHandle is not null)
-                        {
-                            childInputHandle = startInfo.StandardInputHandle;
-                        }
-                        else if (startInfo.RedirectStandardInput)
-                        {
-                            SafeFileHandle.CreateAnonymousPipe(out childInputHandle, out parentInputPipeHandle);
-                        }
-
-                        if (startInfo.StandardOutputHandle is not null)
-                        {
-                            childOutputHandle = startInfo.StandardOutputHandle;
-                        }
-                        else if (startInfo.RedirectStandardOutput)
-                        {
-                            SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputHandle, asyncRead: OperatingSystem.IsWindows());
-                        }
-
-                        if (startInfo.StandardErrorHandle is not null)
-                        {
-                            childErrorHandle = startInfo.StandardErrorHandle;
-                        }
-                        else if (startInfo.RedirectStandardError)
-                        {
-                            SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorHandle, asyncRead: OperatingSystem.IsWindows());
-                        }
-                    }
-                    finally
-                    {
-                        if (requiresLock)
-                        {
-                            ProcessUtils.s_processStartLock.ExitWriteLock();
-                        }
-                    }
-
-                    // After releasing the lock, open the null device handle once (if needed for StartDetached)
-                    // or fall back to the console handles. The null device handle will be disposed in the finally block below.
-                    if (startInfo.StartDetached)
-                    {
-                        if (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
-                        {
-                            SafeFileHandle nullDeviceHandle = File.OpenNullHandle();
-                            childInputHandle ??= nullDeviceHandle;
-                            childOutputHandle ??= nullDeviceHandle;
-                            childErrorHandle ??= nullDeviceHandle;
-                        }
-                    }
-                    else if (ProcessUtils.PlatformSupportsConsole)
-                    {
-                        childInputHandle ??= Console.OpenStandardInputHandle();
-                        childOutputHandle ??= Console.OpenStandardOutputHandle();
-                        childErrorHandle ??= Console.OpenStandardErrorHandle();
-                    }
+                    PrepareStandardHandles(startInfo, anyRedirection, ref parentInputPipeHandle, ref parentOutputPipeHandle, ref parentErrorPipeHandle, ref childInputHandle, ref childOutputHandle, ref childErrorHandle);
 
                     ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
                 }
@@ -1273,26 +1291,120 @@ namespace System.Diagnostics
             }
             finally
             {
-                // We MUST close the child handles, otherwise the parent
-                // process will not receive EOF when the child process closes its handles.
-                // It's OK to do it for handles returned by Console.OpenStandard*Handle APIs,
-                // because these handles are not owned and won't be closed by Dispose.
-                // We don't dispose handles that were passed in
-                // by the caller via StartInfo.StandardInputHandle/OutputHandle/ErrorHandle.
-                if (startInfo.StandardInputHandle is null)
+                CloseChildHandles(startInfo, childInputHandle, childOutputHandle, childErrorHandle);
+            }
+
+            CreateStandardStreams(startInfo, parentInputPipeHandle, parentOutputPipeHandle, parentErrorPipeHandle);
+
+            return true;
+        }
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        private static void PrepareStandardHandles(
+            ProcessStartInfo startInfo,
+            bool anyRedirection,
+            ref SafeFileHandle? parentInputPipeHandle,
+            ref SafeFileHandle? parentOutputPipeHandle,
+            ref SafeFileHandle? parentErrorPipeHandle,
+            ref SafeFileHandle? childInputHandle,
+            ref SafeFileHandle? childOutputHandle,
+            ref SafeFileHandle? childErrorHandle)
+        {
+            // Windows supports creating non-inheritable pipe in atomic way.
+            // When it comes to Unixes, it depends whether they support pipe2 sys-call or not.
+            // If they don't, the pipe is created as inheritable and made non-inheritable with another sys-call.
+            // Some process could be started in the meantime, so in order to prevent accidental handle inheritance,
+            // a writer lock is used around the pipe creation code.
+            bool requiresLock = anyRedirection && !ProcessUtils.SupportsAtomicNonInheritablePipeCreation;
+
+            if (requiresLock)
+            {
+                ProcessUtils.s_processStartLock.EnterWriteLock();
+            }
+
+            try
+            {
+                if (startInfo.StandardInputHandle is not null)
                 {
-                    childInputHandle?.Dispose();
+                    childInputHandle = startInfo.StandardInputHandle;
                 }
-                if (startInfo.StandardOutputHandle is null)
+                else if (startInfo.RedirectStandardInput)
                 {
-                    childOutputHandle?.Dispose();
+                    SafeFileHandle.CreateAnonymousPipe(out childInputHandle, out parentInputPipeHandle);
                 }
-                if (startInfo.StandardErrorHandle is null)
+
+                if (startInfo.StandardOutputHandle is not null)
                 {
-                    childErrorHandle?.Dispose();
+                    childOutputHandle = startInfo.StandardOutputHandle;
+                }
+                else if (startInfo.RedirectStandardOutput)
+                {
+                    SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputHandle, asyncRead: OperatingSystem.IsWindows());
+                }
+
+                if (startInfo.StandardErrorHandle is not null)
+                {
+                    childErrorHandle = startInfo.StandardErrorHandle;
+                }
+                else if (startInfo.RedirectStandardError)
+                {
+                    SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorHandle, asyncRead: OperatingSystem.IsWindows());
+                }
+            }
+            finally
+            {
+                if (requiresLock)
+                {
+                    ProcessUtils.s_processStartLock.ExitWriteLock();
                 }
             }
 
+            // After releasing the lock, open the null device handle once (if needed for StartDetached)
+            // or fall back to the console handles. The null device handle will be disposed in the finally block below.
+            if (startInfo.StartDetached)
+            {
+                if (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
+                {
+                    SafeFileHandle nullDeviceHandle = File.OpenNullHandle();
+                    childInputHandle ??= nullDeviceHandle;
+                    childOutputHandle ??= nullDeviceHandle;
+                    childErrorHandle ??= nullDeviceHandle;
+                }
+            }
+            else if (ProcessUtils.PlatformSupportsConsole)
+            {
+                childInputHandle ??= Console.OpenStandardInputHandle();
+                childOutputHandle ??= Console.OpenStandardOutputHandle();
+                childErrorHandle ??= Console.OpenStandardErrorHandle();
+            }
+        }
+
+        private static void CloseChildHandles(ProcessStartInfo startInfo, SafeFileHandle? childInputHandle, SafeFileHandle? childOutputHandle, SafeFileHandle? childErrorHandle)
+        {
+            // We MUST close the child handles, otherwise the parent
+            // process will not receive EOF when the child process closes its handles.
+            // It's OK to do it for handles returned by Console.OpenStandard*Handle APIs,
+            // because these handles are not owned and won't be closed by Dispose.
+            // We don't dispose handles that were passed in
+            // by the caller via StartInfo.StandardInputHandle/OutputHandle/ErrorHandle.
+            if (startInfo.StandardInputHandle is null)
+            {
+                childInputHandle?.Dispose();
+            }
+            if (startInfo.StandardOutputHandle is null)
+            {
+                childOutputHandle?.Dispose();
+            }
+            if (startInfo.StandardErrorHandle is null)
+            {
+                childErrorHandle?.Dispose();
+            }
+        }
+
+        private void CreateStandardStreams(ProcessStartInfo startInfo, SafeFileHandle? parentInputPipeHandle, SafeFileHandle? parentOutputPipeHandle, SafeFileHandle? parentErrorPipeHandle)
+        {
             if (startInfo.RedirectStandardInput)
             {
                 _standardInput = new StreamWriter(OpenStream(parentInputPipeHandle!, FileAccess.Write),
@@ -1311,6 +1423,57 @@ namespace System.Diagnostics
                 _standardError = new StreamReader(OpenStream(parentErrorPipeHandle!, FileAccess.Read),
                     startInfo.StandardErrorEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
             }
+        }
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        internal bool StartCoreWithCallback(ProcessStartInfo startInfo,
+#if TARGET_WINDOWS
+            Func<WindowsProcessStartArguments, nint>
+#else
+            Func<UnixProcessStartArguments, int>
+#endif
+            callback)
+        {
+            startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
+            _startInfo = startInfo;
+
+            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
+
+            SafeFileHandle? parentInputPipeHandle = null;
+            SafeFileHandle? parentOutputPipeHandle = null;
+            SafeFileHandle? parentErrorPipeHandle = null;
+
+            SafeFileHandle? childInputHandle = null;
+            SafeFileHandle? childOutputHandle = null;
+            SafeFileHandle? childErrorHandle = null;
+
+            try
+            {
+                PrepareStandardHandles(startInfo, anyRedirection, ref parentInputPipeHandle, ref parentOutputPipeHandle, ref parentErrorPipeHandle, ref childInputHandle, ref childOutputHandle, ref childErrorHandle);
+
+                ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
+
+                if (!StartCoreWithCallback(startInfo, childInputHandle, childOutputHandle, childErrorHandle, callback))
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                parentInputPipeHandle?.Dispose();
+                parentOutputPipeHandle?.Dispose();
+                parentErrorPipeHandle?.Dispose();
+
+                throw;
+            }
+            finally
+            {
+                CloseChildHandles(startInfo, childInputHandle, childOutputHandle, childErrorHandle);
+            }
+
+            CreateStandardStreams(startInfo, parentInputPipeHandle, parentOutputPipeHandle, parentErrorPipeHandle);
 
             return true;
         }
@@ -1457,6 +1620,8 @@ namespace System.Diagnostics
         /// </summary>
         public bool WaitForExit(int milliseconds)
         {
+            ArgumentOutOfRangeException.ThrowIfLessThan(milliseconds, Timeout.Infinite);
+
             bool exited = WaitForExitCore(milliseconds);
             if (exited && _watchForExit)
             {
@@ -1469,17 +1634,7 @@ namespace System.Diagnostics
         /// Instructs the Process component to wait the specified number of milliseconds for
         /// the associated process to exit.
         /// </summary>
-        public bool WaitForExit(TimeSpan timeout) => WaitForExit(ToTimeoutMilliseconds(timeout));
-
-        private static int ToTimeoutMilliseconds(TimeSpan timeout)
-        {
-            long totalMilliseconds = (long)timeout.TotalMilliseconds;
-
-            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
-
-            return (int)totalMilliseconds;
-        }
+        public bool WaitForExit(TimeSpan timeout) => WaitForExit(ProcessUtils.ToTimeoutMilliseconds(timeout));
 
         /// <summary>
         /// Instructs the Process component to wait for the associated process to exit, or

@@ -45,10 +45,19 @@ namespace BINDER_SPACE
         {
             m_hrBindingResult = hrBindingResult;
         }
+        inline SString &GetDiagnosticInfo()
+        {
+            return m_diagnosticInfo;
+        }
+        inline void SetDiagnosticInfo(LPCWSTR diagnosticInfo)
+        {
+            m_diagnosticInfo.Set(diagnosticInfo);
+        }
 
     protected:
         SString m_assemblyNameOrPath;
         HRESULT m_hrBindingResult;
+        SString m_diagnosticInfo;
     };
 
     class FailureCacheHashTraits : public DefaultSHashTraits<FailureCacheEntry *>

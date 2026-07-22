@@ -75,7 +75,7 @@ namespace System.Text.Json.Serialization.Converters
                 _nameCacheForReading.TryAdd(fieldInfo.JsonName, fieldInfo.Key);
             }
 
-            if (namingPolicy != null)
+            if (namingPolicy is not null)
             {
                 // Additionally populate the field index with the default names of fields that used a naming policy.
                 // This is done to preserve backward compat: default names should still be recognized by the parser.
@@ -204,7 +204,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (IsDefinedValueOrCombinationOfValues(key))
             {
-                Debug.Assert(s_isFlagsEnum || dictionaryKeyPolicy != null, "Should only be entered by flags enums or dictionary key policy.");
+                Debug.Assert(s_isFlagsEnum || dictionaryKeyPolicy is not null, "Should only be entered by flags enums or dictionary key policy.");
                 string stringValue = FormatEnumAsString(key, value, dictionaryKeyPolicy);
                 if (dictionaryKeyPolicy is null && _nameCacheForWriting.Count < NameCacheSizeSoftLimit)
                 {
@@ -233,7 +233,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        private bool TryParseEnumFromString(ref Utf8JsonReader reader, out T result)
+        private unsafe bool TryParseEnumFromString(ref Utf8JsonReader reader, out T result)
         {
             Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
 
@@ -285,7 +285,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
         End:
-            if (rentedBuffer != null)
+            if (rentedBuffer is not null)
             {
                 charBuffer.Clear();
                 ArrayPool<char>.Shared.Return(rentedBuffer);
@@ -393,7 +393,7 @@ namespace System.Text.Json.Serialization.Converters
         /// <summary>
         /// Attempt to format the enum value as a comma-separated string of flag values, or returns false if not a valid flag combination.
         /// </summary>
-        private string FormatEnumAsString(ulong key, T value, JsonNamingPolicy? dictionaryKeyPolicy)
+        private unsafe string FormatEnumAsString(ulong key, T value, JsonNamingPolicy? dictionaryKeyPolicy)
         {
             Debug.Assert(IsDefinedValueOrCombinationOfValues(key), "must only be invoked against valid enum values.");
             Debug.Assert(
@@ -434,7 +434,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                Debug.Assert(dictionaryKeyPolicy != null);
+                Debug.Assert(dictionaryKeyPolicy is not null);
 
                 foreach (EnumFieldInfo enumField in _enumFieldInfo)
                 {
@@ -511,6 +511,23 @@ namespace System.Text.Json.Serialization.Converters
             return new() { Type = JsonSchemaType.Integer };
         }
 
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling _)
+        {
+            EnumConverterOptions converterOptions = _converterOptions;
+            bool allowsString = (converterOptions & EnumConverterOptions.AllowStrings) != 0;
+            bool allowsNumber = (converterOptions & EnumConverterOptions.AllowNumbers) != 0;
+
+            Debug.Assert(allowsString || allowsNumber, "EnumConverter must allow strings, numbers, or both.");
+
+            return (allowsString, allowsNumber) switch
+            {
+                (true, true) => JsonValueType.String | JsonValueType.Number,
+                (true, false) => JsonValueType.String,
+                (false, true) => JsonValueType.Number,
+                _ => JsonValueType.Number, // Defensive: at least one must be true; default to numeric.
+            };
+        }
+
         private static EnumFieldInfo[] ResolveEnumFields(JsonNamingPolicy? namingPolicy)
         {
 #if NET
@@ -539,14 +556,14 @@ namespace System.Text.Json.Serialization.Converters
                 ulong key = ConvertToUInt64(value);
                 EnumFieldNameKind kind;
 
-                if (enumMemberAttributes != null && enumMemberAttributes.TryGetValue(originalName, out string? attributeName))
+                if (enumMemberAttributes is not null && enumMemberAttributes.TryGetValue(originalName, out string? attributeName))
                 {
                     originalName = attributeName;
                     kind = EnumFieldNameKind.Attribute;
                 }
                 else
                 {
-                    kind = namingPolicy != null ? EnumFieldNameKind.NamingPolicy : EnumFieldNameKind.Default;
+                    kind = namingPolicy is not null ? EnumFieldNameKind.NamingPolicy : EnumFieldNameKind.Default;
                 }
 
                 string jsonName = ResolveAndValidateJsonName(originalName, namingPolicy, kind);
@@ -572,11 +589,13 @@ namespace System.Text.Json.Serialization.Converters
                 name = namingPolicy.ConvertName(name);
             }
 
-            if (string.IsNullOrEmpty(name) || char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[name.Length - 1]) ||
-                (s_isFlagsEnum && name.Contains(',')))
+            if (name is null ||
+                (name.Length > 0 && (char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[name.Length - 1]))) ||
+                (s_isFlagsEnum && (name.Length == 0 || name.Contains(','))))
             {
-                // Reject null or empty strings or strings with leading or trailing whitespace.
-                // In the case of flags additionally reject strings containing commas.
+                // Reject null strings or strings with leading or trailing whitespace.
+                // In the case of flags additionally reject empty strings or strings containing commas,
+                // both of which would introduce ambiguity in flag value parsing and formatting.
                 ThrowHelper.ThrowInvalidOperationException_UnsupportedEnumIdentifier(typeof(T), name);
             }
 

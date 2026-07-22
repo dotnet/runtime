@@ -242,7 +242,20 @@ uint32_t NetSecurityNative_ImportPrincipalName(uint32_t* minorStatus,
     // Principal name will usually be in the form SERVICE/HOST. But SPNEGO protocol prefers
     // GSS_C_NT_HOSTBASED_SERVICE format. That format uses '@' separator instead of '/' between
     // service name and host name. So convert input string into that format.
+    //
+    // If the input contains both '/' and '@' (e.g. SERVICE/HOST@REALM), it is a fully
+    // qualified Kerberos principal name with an explicit realm. Import it directly as
+    // GSS_KRB5_NT_PRINCIPAL_NAME so the realm hint is respected.
     char* ptrSlash = (char*)memchr(inputName, '/', inputNameLen);
+    char* ptrAt = (char*)memchr(inputName, '@', inputNameLen);
+    if (ptrSlash != NULL && ptrAt != NULL)
+    {
+        static gss_OID_desc gss_krb5_nt_principal_name_desc =
+            {10, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01"};
+        GssBuffer inputNameBuffer = {.length = inputNameLen, .value = inputName};
+        return gss_import_name(minorStatus, &inputNameBuffer, &gss_krb5_nt_principal_name_desc, outputName);
+    }
+
     char* inputNameCopy = NULL;
     if (ptrSlash != NULL)
     {

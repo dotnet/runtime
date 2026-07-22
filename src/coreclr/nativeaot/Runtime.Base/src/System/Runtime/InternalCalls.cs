@@ -14,23 +14,6 @@ using Internal.Runtime;
 
 namespace System.Runtime
 {
-    internal enum DispatchCellType
-    {
-        InterfaceAndSlot = 0x0,
-        MetadataToken = 0x1,
-        VTableOffset = 0x2,
-    }
-
-    internal unsafe struct DispatchCellInfo
-    {
-        public DispatchCellType CellType;
-        public MethodTable* InterfaceType;
-        public ushort InterfaceSlot;
-        public byte HasCache;
-        public uint MetadataToken;
-        public uint VTableOffset;
-    }
-
     // Constants used with RhpGetClasslibFunction, to indicate which classlib function
     // we are interested in.
     // Note: make sure you change the def in ICodeManager.h if you change this!
@@ -40,7 +23,7 @@ namespace System.Runtime
         FailFast = 1,
         ThreadEntryPoint = 2,
         AppendExceptionStackFrame = 3,
-        // unused = 4,
+        ResolveDispatch = 4,
         GetSystemArrayEEType = 5,
         OnFirstChance = 6,
         OnUnhandledException = 7,
@@ -145,18 +128,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpEHEnumNext")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpEHEnumNext(void* pEHEnum, void* pEHClause);
-
-        [RuntimeImport(RuntimeLibrary, "RhpGetDispatchCellInfo")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpGetDispatchCellInfo(IntPtr pCell, out DispatchCellInfo newCellInfo);
-
-        [RuntimeImport(RuntimeLibrary, "RhpSearchDispatchCellCache")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr RhpSearchDispatchCellCache(IntPtr pCell, MethodTable* pInstanceType);
-
-        [RuntimeImport(RuntimeLibrary, "RhpUpdateDispatchCellCache")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr RhpUpdateDispatchCellCache(IntPtr pCell, IntPtr pTargetCode, MethodTable* pInstanceType, ref DispatchCellInfo newCellInfo);
 
         [RuntimeImport(RuntimeLibrary, "RhpGetClasslibFunctionFromCodeAddress")]
         [MethodImpl(MethodImplOptions.InternalCall)]

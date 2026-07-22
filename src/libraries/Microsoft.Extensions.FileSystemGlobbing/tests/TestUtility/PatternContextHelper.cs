@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests.TestUtility
         {
             foreach (var each in directoryNames)
             {
-                var directory = new MockDirectoryInfo(null, null, string.Empty, each, null);
+                var directory = new MockDirectoryInfo(null, string.Empty, each, null);
                 context.PushDirectory(directory);
             }
         }

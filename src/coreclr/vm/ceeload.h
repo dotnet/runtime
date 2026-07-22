@@ -351,6 +351,12 @@ struct VASigCookie
     Instantiation   methodInst;
 };
 
+template<>
+struct cdac_data<VASigCookie>
+{
+    static constexpr size_t Signature = offsetof(VASigCookie, signature);
+};
+
 //
 // VASigCookies are allocated in VASigCookieBlocks to amortize
 // allocation cost and allow proper bookkeeping.
@@ -874,6 +880,7 @@ protected:
 #endif
 
     PTR_PEAssembly GetPEAssembly() const { LIMITED_METHOD_DAC_CONTRACT; return m_pPEAssembly; }
+    PTR_VOID GetModuleBaseAddress() const { LIMITED_METHOD_DAC_CONTRACT; return m_baseAddress; }
 
     void ApplyMetaData();
 
@@ -1674,6 +1681,10 @@ private:
 protected:
     TADDR m_pDynamicMetadata;
 
+    // Incremented each time a module's metadata is updated.
+    // Indicates update to out-of-process readers.
+    uint32_t m_dwMetadataGeneration;
+
 public:
 #if !defined(DACCESS_COMPILE)
     PTR_Assembly GetNativeMetadataAssemblyRefFromCache(DWORD rid)
@@ -1704,6 +1715,7 @@ struct cdac_data<Module>
     static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
     static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
     static constexpr size_t DynamicMetadata = offsetof(Module, m_pDynamicMetadata);
+    static constexpr size_t MetadataGeneration = offsetof(Module, m_dwMetadataGeneration);
     static constexpr size_t SimpleName = offsetof(Module, m_pSimpleName);
     static constexpr size_t Path = offsetof(Module, m_path);
     static constexpr size_t FileName = offsetof(Module, m_fileName);
@@ -1721,6 +1733,9 @@ struct cdac_data<Module>
     static constexpr size_t MethodDefToILCodeVersioningStateMap = offsetof(Module, m_ILCodeVersioningStateMap);
 #endif // FEATURE_CODE_VERSIONING
     static constexpr size_t DynamicILBlobTable = offsetof(Module, m_debuggerSpecificData.m_pDynamicILBlobTable);
+#ifdef FEATURE_METADATA_UPDATER
+    static constexpr size_t EnCClassList = offsetof(Module, m_ClassList);
+#endif // FEATURE_METADATA_UPDATER
 };
 
 //

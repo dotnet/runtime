@@ -17,11 +17,6 @@ namespace System.Reflection.Internal
             return unchecked((currentKey * (int)0xA5555529) + (int)newKey);
         }
 
-        internal static int Combine(bool newKeyPart, int currentKey)
-        {
-            return Combine(currentKey, newKeyPart ? 1 : 0);
-        }
-
         /// <summary>
         /// The offset bias value used in the FNV-1a algorithm
         /// See http://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function

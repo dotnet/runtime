@@ -30,11 +30,10 @@ internal enum Crossgen2Option
 {
     Composite,
     InputBubble,
-    ObjectFormat,
     HotColdSplitting,
     Optimize,
-    TargetArch,
-    TargetOS,
+    TargetArchArm,
+    StripILBodies,
 }
 
 internal static class Crossgen2OptionsExtensions
@@ -58,11 +57,10 @@ internal static class Crossgen2OptionsExtensions
     {
         Crossgen2Option.Composite => $"--composite",
         Crossgen2Option.InputBubble => $"--input-bubble",
-        Crossgen2Option.ObjectFormat => $"--object-format",
         Crossgen2Option.HotColdSplitting => $"--hot-cold-splitting",
         Crossgen2Option.Optimize => $"--optimize",
-        Crossgen2Option.TargetArch => $"--target-arch",
-        Crossgen2Option.TargetOS => $"--target-os",
+        Crossgen2Option.TargetArchArm => $"--targetarch:arm",
+        Crossgen2Option.StripILBodies => $"--strip-il-bodies",
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 }
