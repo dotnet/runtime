@@ -159,4 +159,15 @@ internal struct WasmContext : IPlatformContext
         value = default;
         return false;
     }
+
+    public readonly bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value)
+    {
+        value = default;
+        return false;
+    }
+
+    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value) => false;
+
+    public readonly (uint Flag, string Name)[] GetScalarRegisters() => [];
+    public readonly (uint Flag, int Start, int End)[] GetWideSpans() => [];
 }
