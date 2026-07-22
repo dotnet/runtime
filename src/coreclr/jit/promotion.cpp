@@ -565,6 +565,25 @@ public:
             return 0;
         }
 
+        LclVarDsc* lcl = comp->lvaGetDesc(lclNum);
+        if (lcl->lvIsParam)
+        {
+            // Avoid decomposing a whole-struct operation when any induced access covers only part of a parameter
+            // register segment. Reconstructing that segment at the destination can be more expensive than preserving
+            // the original struct operation. Reject all induced promotions so we do not partially decompose it.
+            for (const PrimitiveAccess& inducedAccess : m_inducedAccesses)
+            {
+                bool requiresRegisterReconstruction;
+                if (Promotion::MapsToParameterRegister(comp, lclNum, inducedAccess.Offset, inducedAccess.AccessType,
+                                                       &requiresRegisterReconstruction) &&
+                    requiresRegisterReconstruction)
+                {
+                    JITDUMP("Not promoting induced accesses that require parameter register reconstruction\n");
+                    return 0;
+                }
+            }
+        }
+
         int numReps = 0;
         JITDUMP("Picking induced promotions for V%02u\n", lclNum);
         for (PrimitiveAccess& inducedAccess : m_inducedAccesses)
@@ -707,6 +726,13 @@ public:
         weight_t countOverlappedCallArgWtd        = 0;
         weight_t countOverlappedStoredFromCallWtd = 0;
 
+        bool mapsToParameterRegister = false;
+        if (lcl->lvIsParam)
+        {
+            mapsToParameterRegister =
+                Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType);
+        }
+
         bool overlap = false;
         for (const Access& otherAccess : m_accesses)
         {
@@ -778,7 +804,7 @@ public:
         else if (lcl->lvIsParam)
         {
             // For parameters, the backend may be able to map it directly from a register.
-            if (Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType))
+            if (mapsToParameterRegister)
             {
                 // No promotion will result in a store to stack in the prolog.
                 costWithout += COST_STRUCT_ACCESS_CYCLES * comp->fgFirstBB->getBBWeight(comp);
@@ -3031,13 +3057,20 @@ GenTree* Promotion::EffectiveUser(Compiler::GenTreeStack& ancestors)
 //   lclNum     - Local being accessed into
 //   offset     - Offset being accessed at
 //   accessType - Type of access
+//   requiresRegisterReconstruction - [out] Whether the access covers only part of its register segment
 //
 // Returns:
 //   True if the access can be efficiently done via a parameter register.
 //
-bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType)
+bool Promotion::MapsToParameterRegister(
+    Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType, bool* requiresRegisterReconstruction)
 {
     assert(lclNum < comp->info.compArgsCount);
+
+    if (requiresRegisterReconstruction != nullptr)
+    {
+        *requiresRegisterReconstruction = false;
+    }
 
     if (comp->opts.IsOSR())
     {
@@ -3074,6 +3107,11 @@ bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigne
             continue;
         }
 #endif // TARGET_ARM
+
+        if (requiresRegisterReconstruction != nullptr)
+        {
+            *requiresRegisterReconstruction = (offset != seg.Offset) || (genTypeSize(accessType) != seg.Size);
+        }
 
         return true;
     }
