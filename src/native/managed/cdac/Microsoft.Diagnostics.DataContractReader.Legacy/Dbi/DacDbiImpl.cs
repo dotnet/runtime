@@ -348,7 +348,48 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetMetadata(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetMetadata(vmModule, pTargetBuffer) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            *pTargetBuffer = default;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+            Contracts.ModuleFlags flags = loader.GetFlags(handle);
+            Contracts.IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
+
+            // Dynamic modules keep an eagerly-serialized metadata buffer, while non-dynamic modules read metadata from the loaded PE image.
+            TargetSpan targetSpan = flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit)
+                ? ecmaMetadata.GetReadWriteSavedMetadataAddress(handle)
+                : ecmaMetadata.GetReadOnlyMetadataAddress(handle);
+
+            pTargetBuffer->pAddress = targetSpan.Address.Value;
+            pTargetBuffer->cbSize = checked((uint)targetSpan.Size);
+
+            if (pTargetBuffer->cbSize == 0)
+            {
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_MISSING_METADATA)!;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DacDbiTargetBuffer pTargetBufferLocal = default;
+            int hrLocal = _legacy.GetMetadata(vmModule, pTargetBuffer == null ? null : &pTargetBufferLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pTargetBuffer->pAddress == pTargetBufferLocal.pAddress, $"pAddress: cDAC: {pTargetBuffer->pAddress:x}, DAC: {pTargetBufferLocal.pAddress:x}");
+                Debug.Assert(pTargetBuffer->cbSize == pTargetBufferLocal.cbSize, $"cbSize: cDAC: {pTargetBuffer->cbSize}, DAC: {pTargetBufferLocal.cbSize}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int GetSymbolsBuffer(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer, SymbolFormat* pSymbolFormat)
     {
