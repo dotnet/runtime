@@ -106,6 +106,16 @@ namespace System.Diagnostics
                 procInfo.SessionId = sessionId;
             }
 
+            // Get the process's physical memory footprint (private/unique memory usage). This can fail
+            // for the same permission reasons proc_taskallinfo above can - e.g. querying a process owned
+            // by another user - in which case PrivateBytes is left at its default of 0, matching prior
+            // (unset) behavior for this field on macOS.
+            ulong? physFootprint = Interop.libproc.GetProcessPhysicalFootprint(pid);
+            if (physFootprint.HasValue)
+            {
+                procInfo.PrivateBytes = (long)physFootprint.Value;
+            }
+
             // Create a threadinfo for each thread in the process
             List<KeyValuePair<ulong, Interop.libproc.proc_threadinfo?>> lstThreads = Interop.libproc.GetAllThreadsInProcess(pid);
             foreach (KeyValuePair<ulong, Interop.libproc.proc_threadinfo?> t in lstThreads)
