@@ -440,7 +440,7 @@ namespace System
                 return false;
 
             // Since this is a Delegate, and we know the types are the same, obj should also be a Delegate
-            Debug.Assert(obj is Delegate, "Shouldn't have failed here since we already checked the types are the same!");
+            Debug.Assert(obj is Delegate);
             return EqualsCore(Unsafe.As<Delegate>(obj));
         }
 #endif
