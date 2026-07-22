@@ -1340,7 +1340,7 @@ namespace System.Threading.RateLimiting.Test
 
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
             Assert.Equal(options.Window.Ticks, typedMetadata.Ticks);
-            Assert.Collection(failedLease.MetadataNames, item => item.Equals(MetadataName.RetryAfter.Name));
+            Assert.Collection(failedLease.MetadataNames, item => Assert.Equal(MetadataName.RetryAfter.Name, item));
         }
 
         [Fact]
