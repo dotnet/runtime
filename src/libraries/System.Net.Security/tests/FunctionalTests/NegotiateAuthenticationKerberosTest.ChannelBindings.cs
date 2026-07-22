@@ -72,11 +72,10 @@ namespace System.Net.Security.Tests
                 Binding = serverBinding,
             });
 
-            RunExchange(client, server, expectAuthenticated: true, out _, out _);
+            RunExchange(client, server, expectAuthenticated: true, out NegotiateAuthenticationStatusCode lastClientStatus, out NegotiateAuthenticationStatusCode lastServerStatus);
 
-            Assert.True(client.IsAuthenticated);
-            Assert.True(server.IsAuthenticated);
-        }
+            Assert.Equal(NegotiateAuthenticationStatusCode.Completed, lastClientStatus);
+            Assert.Equal(NegotiateAuthenticationStatusCode.Completed, lastServerStatus);
 
         private static void RunMismatch(ChannelBindingKind kind)
         {
