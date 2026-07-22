@@ -12,6 +12,21 @@ namespace ILCompiler
         private readonly object _structCacheLock = new object();
         private readonly Dictionary<int, TypeDesc> _structsBySize = new Dictionary<int, TypeDesc>();
         private volatile TypeDesc _cachedEmptyStruct;
+        private volatile TypeDesc _cachedV128Type;
+
+        /// <summary>
+        /// Gets the first SIMD v128 type encountered during lowering, or null if none has been seen.
+        /// Used by RaiseSignature to produce a roundtrippable type for the 'V' encoding.
+        /// </summary>
+        public TypeDesc CachedV128Type => _cachedV128Type;
+
+        /// <summary>
+        /// Caches a SIMD v128 type discovered during lowering. Only the first one is retained.
+        /// </summary>
+        public void CacheV128Type(TypeDesc type)
+        {
+            _cachedV128Type ??= type;
+        }
 
         /// <summary>
         /// Gets the first empty struct type encountered during lowering, or null if none has been seen.
