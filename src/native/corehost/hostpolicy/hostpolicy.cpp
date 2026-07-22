@@ -450,7 +450,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_main_with_output_buffer(const int ar
         {
             rc = StatusCode::HostApiBufferTooSmall;
             *required_buffer_size = len + 1;
-            trace::info(_X("get-native-search-directories failed with buffer too small"));
+            trace::info(_X("get-native-search-directories failed with buffer too small. Required: %d, available: %d"), len + 1, buffer_size);
         }
         else
         {
