@@ -160,7 +160,7 @@ static bool validate_dot_separated_identifiers(const pal_char_t* ids, size_t len
     return true;
 }
 
-static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool parse_only_production)
+static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver)
 {
     if (ver_str[0] == _X('\0'))
         return false;
@@ -197,9 +197,6 @@ static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool 
         c_fx_ver_set(out_ver, (int)major_val, (int)minor_val, (int)patch_val);
         return true;
     }
-
-    if (parse_only_production)
-        return false;
 
     if (!try_parse_version_number(pat_start, pat_non_numeric, &patch_val))
         return false;
@@ -245,10 +242,10 @@ static bool parse_internal(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool 
     return true;
 }
 
-bool c_fx_ver_parse(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool parse_only_production)
+bool c_fx_ver_parse(const pal_char_t* ver_str, c_fx_ver_t* out_ver)
 {
     c_fx_ver_init(out_ver);
-    return parse_internal(ver_str, out_ver, parse_only_production);
+    return parse_internal(ver_str, out_ver);
 }
 
 // Length of the dot-delimited identifier starting at position id_start.

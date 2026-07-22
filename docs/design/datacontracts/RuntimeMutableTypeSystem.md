@@ -5,7 +5,7 @@ This contract exposes runtime type system information about changes that occurre
 ## APIs of contract
 
 ```csharp
-IEnumerable<TargetPointer> EnumerateAddedFieldDescs(TypeHandle typeHandle, bool staticFields);
+IEnumerable<TargetPointer> EnumerateAddedFieldDescs(ITypeHandle typeHandle, bool staticFields);
 bool IsFieldDescEnCNew(TargetPointer fieldDescPointer);
 bool DoesEnCFieldDescNeedFixup(TargetPointer encFieldDescPointer);
 TargetPointer GetEnCStaticFieldDataAddress(TargetPointer encFieldDescPointer);
@@ -59,7 +59,7 @@ internal enum FieldDescFlags2 : uint
     OffsetMask = 0x07ffffff,
 }
 
-IEnumerable<TargetPointer> EnumerateAddedFieldDescs(TypeHandle typeHandle, bool staticFields)
+IEnumerable<TargetPointer> EnumerateAddedFieldDescs(ITypeHandle typeHandle, bool staticFields)
 {
     // get modulePtr and moduleHandle from typeHandle
     // if there is no EnC data, yield break

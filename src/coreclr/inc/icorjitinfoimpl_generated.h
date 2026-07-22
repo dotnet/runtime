@@ -543,6 +543,9 @@ CorInfoWasmType getWasmLowering(
 uint32_t getAddressAlignment(
           void* address) override;
 
+void getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut) override;
+
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;
 

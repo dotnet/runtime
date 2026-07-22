@@ -60,7 +60,7 @@ analyzer. It scans for classes carrying `[CdacType]` and emits a
 * A `private static readonly string[] _typeNames = { ... }` array
   holding the candidate type names from `[CdacType]`.
 * For types with `HasTypeHandle = true`: a
-  `public static TypeHandle TypeHandle(Target target)` accessor.
+  `public static ITypeHandle TypeHandle(Target target)` accessor.
 * For each `[Field(Writable = true)]` property: a
   `public void Write{Name}(T value)` method. The class captures the
   `Target` in a private `_target` field when any writable fields exist.

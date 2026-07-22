@@ -236,6 +236,10 @@ internal class BrowserRunner : IAsyncDisposable
             {
                 message = payloadMatch.Groups["payload"].Value;
             }
+            // Capture browser console output. chromedriver/Playwright forwards it natively,
+            // so tests no longer rely on the app host's --forward-console websocket forwarding.
+            lock (OutputLines)
+                OutputLines.Add(message);
             Match exitMatch = s_exitRegex.Match(message);
             if (exitMatch.Success)
             {

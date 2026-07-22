@@ -567,6 +567,10 @@ public:
     void dmpGetAwaitReturnCall(DWORDLONG key, Agnostic_GetAwaitReturnCallResult& value);
     CORINFO_METHOD_HANDLE repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
 
+    void recGetWasmWellKnownGlobals(const CORINFO_WASM_WELLKNOWN_GLOBALS* pBaseGlobals);
+    void dmpGetWasmWellKnownGlobals(DWORD key, const Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS& value);
+    void repGetWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut);
+
     void recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
     void dmpGetGSCookie(DWORD key, DLDL value);
     void repGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
@@ -1223,7 +1227,8 @@ enum mcPackets
     Packet_GetAsyncOtherVariant = 237,
     Packet_GetAwaitReturnCall = 238,
     Packet_GetAddressAlignment = 239,
-    Packet_CanValueClassInstancePointerEscape = 240,
+    Packet_GetWasmWellKnownGlobals = 240,
+    Packet_CanValueClassInstancePointerEscape = 241,
 };
 
 void SetDebugDumpVariables();
