@@ -3647,7 +3647,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
         //
         GenTreeFlags flagsToCheck = ~GTF_GLOB_REF;
 
-        // GTF_ORDER_SIDEEFF is stale if set set on a node whose oper does not support it,
+        // GTF_ORDER_SIDEEFF is stale if set on a node whose oper does not support it,
         // and whose children do not have it set
         if (tree->OperSupportsOrderingSideEffect())
         {
