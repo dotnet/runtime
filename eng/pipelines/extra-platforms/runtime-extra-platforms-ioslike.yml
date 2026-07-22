@@ -124,6 +124,8 @@ jobs:
             creator: dotnet-bot
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+            # Remove this iOS exclusion if iOS NativeAOT device tests are re-enabled.
+            condition: ne(variables['osGroup'], 'ios')
 
 #
 # Build the whole product using NativeAOT for iOS/tvOS and run runtime tests with iOS/tvOS devices
