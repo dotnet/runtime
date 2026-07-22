@@ -34161,16 +34161,16 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         if (tryHandle)
         {
             unsigned            simdBaseTypeSize = genTypeSize(simdBaseType);
-            GenTreeHWIntrinsic* cvtOp            = op->AsHWIntrinsic();
+            GenTreeHWIntrinsic* innerOp          = op->AsHWIntrinsic();
 
-            if (cvtOp->OperIsConvertMaskToVector())
+            if (innerOp->OperIsConvertMaskToVector())
             {
-                if ((genTypeSize(cvtOp->GetSimdBaseType()) == simdBaseTypeSize))
+                if ((genTypeSize(innerOp->GetSimdBaseType()) == simdBaseTypeSize))
                 {
                     // We need the operand to be the same kind of mask; otherwise
                     // the bitwise operation can differ in how it performs
 
-                    GenTree* maskNode = cvtOp->Op(1);
+                    GenTree* maskNode = innerOp->Op(1);
 
 #if defined(TARGET_ARM64)
                     DEBUG_DESTROY_NODE(op1);
@@ -34180,6 +34180,27 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     return maskNode;
                 }
             }
+
+            bool       isScalar = false;
+            genTreeOps oper     = innerOp->GetOperForHWIntrinsicId(&isScalar);
+#if defined(TARGET_XARCH)
+            // CvtMask(NOT(x)) => NOT(CvMask(x))
+            if (oper == GT_NOT || (oper == GT_XOR && innerOp->Op(2)->IsVectorAllBitsSet()))
+            {
+
+                GenTree* notOperand = innerOp->Op(1);
+
+                GenTree* innerMask = gtNewSimdCvtVectorToMaskNode(TYP_MASK, notOperand, simdBaseType, simdSize);
+                innerMask->SetMorphed(this);
+
+                GenTree* notMask =
+                    gtNewSimdHWIntrinsicNode(TYP_MASK, innerMask, NI_AVX512_NotMask, simdBaseType, simdSize);
+                notMask->SetMorphed(this);
+
+                DEBUG_DESTROY_NODE(op, tree);
+                return gtFoldExprHWIntrinsic(notMask->AsHWIntrinsic());
+            }
+#endif
         }
     }
 #else
