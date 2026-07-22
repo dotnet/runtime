@@ -711,8 +711,6 @@ CrashReportInitialize()
 void
 CrashReportConfigure()
 {
-    CrashReportInitialize();
-
     // Read crash report configuration here rather than in PROCAbortInitialize
     // because on Android the DOTNET_* environment variables are set via JNI
     // after PAL_Initialize has already run.
@@ -724,23 +722,30 @@ CrashReportConfigure()
     DWORD reportOnlyEnabled = 0;
     bool enableCrashReportOnly = enabledReportOnlyCfg.IsSet() && enabledReportOnlyCfg.TryAsInteger(10, reportOnlyEnabled) && reportOnlyEnabled == 1;
 
+    // Nothing configured: leave the reporter uninitialized so startup allocates
+    // nothing. The reporter is brought up on demand (e.g. from a fatal-error-handler
+    // setup path) via CrashReportInitialize when it is actually needed.
+    if (!enableCrashReport && !enableCrashReportOnly)
+    {
+        return;
+    }
+
+    CrashReportInitialize();
+
     CLRConfigNoCache crashReportRootPathCfg = CLRConfigNoCache::Get("CrashReportRootPath", /*noprefix*/ false, &getenv);
     const char* crashReportRootPath = crashReportRootPathCfg.IsSet() ? crashReportRootPathCfg.AsString() : nullptr;
 
     InProcCrashReporterServicesSettings settings = {};
-    settings.enableCreateCrashDump = enableCrashReport || enableCrashReportOnly;
-    if (settings.enableCreateCrashDump)
+    settings.enableCreateCrashDump = true;
+    if (crashReportRootPath != nullptr && crashReportRootPath[0] != '\0')
     {
-        if (crashReportRootPath != nullptr && crashReportRootPath[0] != '\0')
-        {
-            settings.enableLifecycle = true;
-            settings.reportRootPath = crashReportRootPath;
-            settings.maxFileCount = GetCrashReportMaxFileCount();
-        }
-
-        settings.enableWatchdog = true;
-        settings.timeoutSeconds = GetCrashReportTimeoutSeconds();
+        settings.enableLifecycle = true;
+        settings.reportRootPath = crashReportRootPath;
+        settings.maxFileCount = GetCrashReportMaxFileCount();
     }
+
+    settings.enableWatchdog = true;
+    settings.timeoutSeconds = GetCrashReportTimeoutSeconds();
 
     // Start the crash-dump services and register the PAL signal-path callback last
     // so PAL only observes the reporter after all VM callbacks are wired in.
