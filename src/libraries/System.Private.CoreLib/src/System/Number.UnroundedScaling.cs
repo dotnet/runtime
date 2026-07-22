@@ -211,7 +211,20 @@ namespace System
 
                 if ((digits * 10) >= minimumDigits)
                 {
-                    return (digits, 1 - power);
+                    int decimalExponent = 1 - power;
+
+                    if (typeof(TNumber) == typeof(double))
+                    {
+                        (ulong quotient, ulong remainder) = Math.DivRem(digits, 100_000_000);
+
+                        if (remainder == 0)
+                        {
+                            digits = quotient;
+                            decimalExponent += 8;
+                        }
+                    }
+
+                    return (digits, decimalExponent);
                 }
 
                 // With one valid integer there is no choice. With multiple valid
@@ -260,8 +273,9 @@ namespace System
             {
                 Debug.Assert((decimalExponent >= Pow10Min) && (decimalExponent <= Pow10Max));
 
-                int index = decimalExponent - Pow10Min;
-                return new Scaler(Pow10TabHi[index], Pow10TabLo[index], -(binaryExponent + Log2Pow10(decimalExponent) + 3));
+                int index = (decimalExponent - Pow10Min) * 2;
+                ReadOnlySpan<ulong> power = Pow10Tab.Slice(index, 2);
+                return new Scaler(power[0], power[1], -(binaryExponent + Log2Pow10(decimalExponent) + 3));
             }
 
             // Multiplies value by the cached power high * 2^64 - low and returns the
