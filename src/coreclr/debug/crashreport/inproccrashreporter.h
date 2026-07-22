@@ -76,6 +76,7 @@ enum class InProcCrashReportOutputFormat : uint32_t
     Log = 1,
 };
 
+// Receives report bytes; consumers must honor `length` (Json chunks are not NUL-terminated).
 using InProcCrashReportOutputCallback = bool (*)(const char* buffer, size_t length, void* context);
 
 struct InProcCrashReporterSettings
