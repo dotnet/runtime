@@ -37,7 +37,7 @@ struct LookupHolder
         // r12 points to _entryPoint[0] (stub base), set by the caller.
         
         _stub._entryPoint[0] = 0xe94c0018; // ld r10, 24(r12) -> __resolveWorkerTarget
-        _stub._entryPoint[1] = 0xE86C0020; // ld r5, 32(r12) -> _token
+        _stub._entryPoint[1] = 0xE8AC0020; // ld r5, 32(r12) -> _token
         _stub._entryPoint[2] = 0x7d4903a6; // mtspr CTR, r10
         _stub._entryPoint[3] = 0x4e800420; // bctr
         _stub._entryPoint[4] = 0x60000000; // nop
