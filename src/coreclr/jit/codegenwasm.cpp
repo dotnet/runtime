@@ -2862,7 +2862,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
     else // A normal store, not a WriteBarrier store
     {
-        var_types   type = tree->TypeGet();
+        var_types type = tree->TypeGet();
 
         // TODO-WASM: Memory barriers
         if (type == TYP_SIMD8)
