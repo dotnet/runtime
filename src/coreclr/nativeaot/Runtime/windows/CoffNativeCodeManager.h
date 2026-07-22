@@ -49,7 +49,7 @@ public:
                           PTR_VOID pvManagedCodeStartRange, uint32_t cbManagedCodeRange,
                           PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, uint32_t nRuntimeFunctionTable,
                           PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions);
-    ~CoffNativeCodeManager();
+    virtual ~CoffNativeCodeManager();
 
     //
     // Code manager methods
