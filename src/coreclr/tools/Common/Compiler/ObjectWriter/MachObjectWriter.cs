@@ -62,24 +62,6 @@ namespace ILCompiler.ObjectWriter
         private readonly uint _cpuSubType;
         private readonly List<MachSection> _sections = new();
 
-        // Apple ld-prime stores the addend of SUBTRACTOR/UNSIGNED relocations in a
-        // packed field with only ~20 bits available; values that don't fit go into
-        // a side table that itself has a hard cap ("too many large addends" assert,
-        // see issue #119380). To guarantee every emitted addend fits inline, we
-        // pre-emit a grid of local anchor symbols in every section that may need
-        // them, at every 2^RelocAnchorLog2Granularity bytes, and rebase each
-        // IMAGE_REL_BASED_RELPTR32 relocation's SUBTRACTOR onto the nearest anchor
-        // instead of the section start.
-        //
-        // The anchors are marked N_ALT_ENTRY so the linker treats them as
-        // additional names for whichever atom already contains their offset
-        // (MH_SUBSECTIONS_VIA_SYMBOLS would otherwise split atoms at every defined
-        // symbol). This lets us place anchors at fixed offsets without regard for
-        // atom boundaries, so the symbol-table position of the anchor for any
-        // given relocation site is just `firstAnchor + (offset >> log2granularity)`.
-        private const int RelocAnchorLog2Granularity = 19; // 512 KiB; addend bias <= 2^19 - 1 fits signed 20-bit
-        private const long RelocAnchorGranularity = 1L << RelocAnchorLog2Granularity;
-
         // Symbol table
         private readonly Dictionary<Utf8String, uint> _symbolNameToIndex = new();
         private readonly List<MachSymbol> _symbolTable = new();
@@ -498,30 +480,24 @@ namespace ILCompiler.ObjectWriter
                 case IMAGE_REL_BASED_RELPTR32:
                     if (_cpuType == CPU_TYPE_ARM64 || IsEhFrameSection(sectionIndex))
                     {
-                        section.NeedsRelocAnchors = true;
-                        // We cannot emit anchor symbols in executable sections as they may split
-                        // existing functions into multiple atoms, and ld-classic corrupts the
-                        // unwinding information for such functions. In theory we could support this
-                        // by using nearest preceding symbol as an anchor but that requires more
-                        // complex handling and we don't have any such relocs in our current scenarios.
-                        Debug.Assert((section.Flags & S_ATTR_PURE_INSTRUCTIONS) == 0, "Executable sections cannot contain RELPTR32 relocations on Mach-O");
+                        // Additional symbols split functions into multiple atoms in ld-classic,
+                        // which corrupts function-start and unwind information.
+                        Debug.Assert(!section.IsExecutable, "Executable sections cannot contain RELPTR32 relocations on Mach-O.");
+
+                        // Zerofill sections have no file-backed relocation field in which to
+                        // store the adjusted addend.
+                        Debug.Assert(!section.IsZeroFill, "Uninitialized sections cannot contain RELPTR32 relocations on Mach-O.");
 
                         // On ARM64 we need to represent PC relative relocations as
                         // subtraction and the PC offset is baked into the addend.
                         // On x64, ld64 requires X86_64_RELOC_SUBTRACTOR + X86_64_RELOC_UNSIGNED
                         // for DWARF .eh_frame section.
 
-                        // Bias the inline addend so the SUBTRACTOR's base symbol is the
-                        // nearest grid label at-or-below this relocation site instead of
-                        // the section start. EmitRelocationsX64/Arm64 picks the matching
-                        // label symbol based on the same arithmetic.
-                        long labelOffset = offset & ~(RelocAnchorGranularity - 1);
-                        long stored = addend - (offset - labelOffset);
-                        Debug.Assert(stored >= -(1L << RelocAnchorLog2Granularity) && stored < (1L << RelocAnchorLog2Granularity));
-                        BinaryPrimitives.WriteInt32LittleEndian(
-                            data,
-                            BinaryPrimitives.ReadInt32LittleEndian(data) +
-                            (int)stored);
+                        // Combine both sources of the addend before selecting an anchor. Do the
+                        // arithmetic in 64 bits so malformed input fails instead of wrapping.
+                        long inlineAddend = checked((long)BinaryPrimitives.ReadInt32LittleEndian(data) + addend);
+                        long storedAddend = PrepareRelptr32Addend(section, offset, inlineAddend);
+                        BinaryPrimitives.WriteInt32LittleEndian(data, checked((int)storedAddend));
                     }
                     else
                     {
@@ -557,37 +533,33 @@ namespace ILCompiler.ObjectWriter
             IDictionary<Utf8String, SymbolDefinition> definedSymbols,
             SortedSet<Utf8String> undefinedSymbols)
         {
-            // We already emitted symbols for all non-debug sections in EmitSectionsAndLayout,
-            // these symbols are local and we need to account for them.
+            // Emit the sparse anchors after the section symbols created by EmitSectionsAndLayout
+            // and before the remaining local symbols so all later symbol indexes account for them.
             uint symbolIndex = (uint)_symbolTable.Count;
             Utf8StringBuilder relocAnchorNameBuilder = new Utf8StringBuilder();
-            for (int sectionIndex = 0; sectionIndex < _sections.Count; sectionIndex++)
+            int anchorOrdinal = 0;
+            foreach (MachSection section in _sections)
             {
-                MachSection section = _sections[sectionIndex];
-                if (section.NeedsRelocAnchors)
+                foreach (RelocAnchor anchor in section.RelocAnchors)
                 {
-                    section.RelocAnchorsFirstSymbolIndex = symbolIndex;
-                    long size = (long)section.Size;
-                    long count = (size + RelocAnchorGranularity - 1) >> RelocAnchorLog2Granularity;
-                    for (long i = 1; i < count; i++)
+                    relocAnchorNameBuilder.Clear();
+                    _symbolTable.Add(new MachSymbol
                     {
-                        long labelOffset = i << RelocAnchorLog2Granularity;
-                        relocAnchorNameBuilder.Clear();
-                        relocAnchorNameBuilder.Append("lanchor"u8).Append(sectionIndex).Append('_').Append(checked((int)i));
-                        _symbolTable.Add(new MachSymbol
-                        {
-                            Name = relocAnchorNameBuilder.ToUtf8String(),
-                            Section = section,
-                            Value = section.VirtualAddress + (ulong)labelOffset,
-                            // N_ALT_ENTRY makes this symbol an additional name for the atom
-                            // that already covers `labelOffset` instead of starting a new atom.
-                            // Without it, MH_SUBSECTIONS_VIA_SYMBOLS would split the containing
-                            // atom (an EEType, sealed vtable, FDE, etc.) at every anchor position.
-                            Descriptor = N_NO_DEAD_STRIP | N_ALT_ENTRY,
-                            Type = N_SECT,
-                        });
-                        symbolIndex++;
-                    }
+                        // Lowercase names avoid Mach-O's temporary-symbol naming convention;
+                        // omitting N_EXT from Type keeps the anchors local to this object.
+                        Name = relocAnchorNameBuilder.Append("lreloc_anchor"u8).Append(anchorOrdinal++).ToUtf8String(),
+                        Section = section,
+                        Value = section.VirtualAddress + (ulong)anchor.Offset,
+                        // ld-classic starts an atom at every symbol. A boundary at the first byte
+                        // of the relocation cannot split the fixup, and N_NO_DEAD_STRIP preserves
+                        // the newly split tail. Do not use N_ALT_ENTRY: ld-classic still creates an
+                        // atom for it and has additional bugs when processing alternate entries.
+                        Descriptor = N_NO_DEAD_STRIP,
+                        Type = N_SECT,
+                    });
+                    // Relocation emission uses this recorded index instead of relying on the
+                    // anchors occupying a contiguous range in the symbol table.
+                    anchor.SymbolIndex = symbolIndex++;
                 }
             }
             _dySymbolTable.LocalSymbolsIndex = 0;
@@ -669,15 +641,80 @@ namespace ILCompiler.ObjectWriter
         private bool IsEhFrameSection(int sectionIndex) => false;
 #endif
 
+        // Apple ld-prime stores the addend of SUBTRACTOR/UNSIGNED relocations in a
+        // packed signed 20-bit field; values that don't fit go into a side table
+        // that itself has a hard cap ("too many large addends", see issue #119380).
+        // Sparse anchors at relocation sources keep every emitted addend inline
+        // without placing symbols at arbitrary offsets.
+        private const long MinimumRelptr32Addend = -(1L << 19);
+        private const long MaximumRelptr32Addend = (1L << 19) - 1;
+
+        // ld-prime only keeps values in this range in the relocation's packed addend field.
+        private static bool FitsInSigned20Bits(long value) =>
+            value >= MinimumRelptr32Addend && value <= MaximumRelptr32Addend;
+
+        // For relocation source P and anchor A, store inlineAddend - (P - A), preserving the
+        // original PC-relative value when the linker subtracts A. Create A at P when the nearest
+        // preceding anchor cannot encode that value in ld-prime's signed 20-bit field.
+        private static long PrepareRelptr32Addend(MachSection section, long offset, long inlineAddend)
+        {
+            // RELPTR32 relocations are processed in increasing offset order, so the last anchor in
+            // the list is the nearest one preceding this relocation.
+            List<RelocAnchor> anchors = section.RelocAnchors;
+            long anchorOffset = anchors.Count > 0 ? anchors[^1].Offset : 0;
+            long storedAddend = checked(inlineAddend - (offset - anchorOffset));
+
+            // Reuse the nearest preceding anchor while its adjusted addend remains encodable.
+            if (FitsInSigned20Bits(storedAddend))
+            {
+                return storedAddend;
+            }
+
+            // An anchor at offset removes the distance term completely. If inlineAddend itself is
+            // out of range, no source-position anchor can make this relocation encodable. We don't
+            // expect this to happen in practice since inline addends are usually small offsets, so
+            // just check with assert.
+            Debug.Assert(FitsInSigned20Bits(inlineAddend), "The RELPTR32 addend cannot fit in ld-prime's signed 20-bit inline encoding.");
+
+            anchors.Add(new RelocAnchor(offset));
+            return inlineAddend;
+        }
+
+        // Returns the symbol for the greatest anchor at or before offset. Anchors are appended in
+        // relocation order, so this reconstructs the anchor used by PrepareRelptr32Addend. The
+        // section symbol serves as the implicit anchor at offset zero.
         private uint GetRelocAnchorSymbolIndex(int sectionIndex, long offset)
         {
             MachSection section = _sections[sectionIndex];
-            Debug.Assert(section.NeedsRelocAnchors, "Section does not have relocation anchors");
-            uint baseIndex = section.RelocAnchorsFirstSymbolIndex;
-            uint anchorIndex = (uint)(offset >> RelocAnchorLog2Granularity);
-            // First anchor is at the section start, so if anchorIndex is 0 we want to return the
-            // section symbol index.
-            return anchorIndex == 0 ? (uint)sectionIndex : baseIndex + (anchorIndex - 1);
+            List<RelocAnchor> anchors = section.RelocAnchors;
+            int anchorIndex = section.CachedRelocAnchorIndex;
+
+            // Search again when the cached predecessor no longer brackets the relocation offset.
+            if ((anchorIndex >= 0 && anchors[anchorIndex].Offset > offset) ||
+                (anchorIndex + 1 < anchors.Count && anchors[anchorIndex + 1].Offset <= offset))
+            {
+                // Find the greatest anchor offset less than or equal to the relocation offset.
+                int lower = 0;
+                int upper = anchors.Count - 1;
+                while (lower <= upper)
+                {
+                    int middle = lower + ((upper - lower) / 2);
+                    if (anchors[middle].Offset <= offset)
+                    {
+                        lower = middle + 1;
+                    }
+                    else
+                    {
+                        upper = middle - 1;
+                    }
+                }
+
+                anchorIndex = upper;
+                section.CachedRelocAnchorIndex = anchorIndex;
+            }
+
+            // If no synthetic anchor precedes the relocation, use the implicit section-base anchor.
+            return anchorIndex >= 0 ? anchors[anchorIndex].SymbolIndex : (uint)sectionIndex;
         }
 
         private void EmitRelocationsX64(int sectionIndex, List<SymbolicRelocation> relocationList)
@@ -1032,6 +1069,21 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        // A sparse, section-relative symbol used as the SUBTRACTOR base for RELPTR32 relocations.
+        private sealed class RelocAnchor
+        {
+            // Offset of the relocation source that caused this anchor to be created.
+            public long Offset { get; }
+
+            // Assigned when EmitSymbolTable materializes the anchor as a Mach-O symbol.
+            public uint SymbolIndex { get; set; }
+
+            public RelocAnchor(long offset)
+            {
+                Offset = offset;
+            }
+        }
+
         private sealed class MachSection
         {
             private Stream dataStream;
@@ -1048,20 +1100,24 @@ namespace ILCompiler.ObjectWriter
             public uint Flags { get; set; }
 
             public uint Type => Flags & 0xFF;
-            public bool IsInFile => Size > 0 && Type != S_ZEROFILL && Type != S_GB_ZEROFILL && Type != S_THREAD_LOCAL_ZEROFILL;
+
+            // These classifications determine whether an anchor has file-backed storage and can
+            // safely introduce an atom boundary.
+            public bool IsZeroFill => Type is S_ZEROFILL or S_GB_ZEROFILL or S_THREAD_LOCAL_ZEROFILL;
+            public bool IsInFile => Size > 0 && !IsZeroFill;
+            public bool IsExecutable => (Flags & (S_ATTR_SOME_INSTRUCTIONS | S_ATTR_PURE_INSTRUCTIONS)) != 0;
 
             public bool IsDwarfSection { get; }
 
             public IList<MachRelocation> Relocations => relocationCollection ??= new List<MachRelocation>();
+
+            // Synthetic anchors are appended in strictly increasing section-relative order.
+            public List<RelocAnchor> RelocAnchors { get; } = new();
+            // Predecessor anchor index cached by GetRelocAnchorSymbolIndex; -1 represents the section symbol.
+            public int CachedRelocAnchorIndex { get; set; } = -1;
+
             public Stream Stream => dataStream;
             public byte SectionIndex { get; set; }
-
-            // The ld-prime addend workaround: relocations for this section that go
-            // through the SUBTRACTOR/UNSIGNED pair (IMAGE_REL_BASED_RELPTR32) are
-            // rebased onto local anchor symbols placed at a fixed grid (every
-            // RelocAnchorGranularity bytes).
-            public bool NeedsRelocAnchors { get; set; }
-            public uint RelocAnchorsFirstSymbolIndex { get; set; }
 
             public static int HeaderSize => 80; // 64-bit section
 
