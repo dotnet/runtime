@@ -82,8 +82,7 @@ namespace System.Text.Json.Schema
 
         public bool? Deprecated { get; set { VerifyMutable(); field = value; } }
 
-        public string? ContentEncoding { get => _contentEncoding; set { VerifyMutable(); _contentEncoding = value; } }
-        private string? _contentEncoding;
+        public string? ContentEncoding { get; set { VerifyMutable(); field = value; } }
 
         public JsonSchemaExporterContext? ExporterContext { get; set; }
 
@@ -115,7 +114,7 @@ namespace System.Text.Json.Schema
                 Count(MinLength is not null);
                 Count(MaxLength is not null);
                 Count(Deprecated is not null);
-                Count(ContentEncoding != null);
+                Count(ContentEncoding is not null);
 
                 return count;
 
@@ -252,7 +251,7 @@ namespace System.Text.Json.Schema
                 objSchema.Add(DeprecatedPropertyName, (JsonNode)deprecated);
             }
 
-            if (ContentEncoding != null)
+            if (ContentEncoding is not null)
             {
                 objSchema.Add(ContentEncodingPropertyName, ContentEncoding);
             }
