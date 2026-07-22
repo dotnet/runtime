@@ -43,7 +43,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 if ((info.id == NI_PackedSimd_Swizzle) && node->Op(2)->isContained())
                 {
                     // A constant, fully in-range mask was lowered to an immediate i8x16.shuffle.
-                    // genConsumeMultiOpOperands left the source on the value stack once (the mask
+                    // prior codegen left the source on the value stack once (the mask
                     // operand is contained, so no v128.const was materialized). i8x16.shuffle
                     // selects from two vectors, so push the source a second time and encode the
                     // mask as the 16-byte shuffle immediate.
@@ -68,6 +68,32 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     GetEmitter()->emitIns_Lane(ins, info.GetImmediateLaneOperand());
                 }
+                break;
+            }
+            case HW_Category_MemoryStore:
+            case HW_Category_MemoryLoad:
+            {
+                emitAttr elemSize = emitActualTypeSize(node->GetSimdBaseType());
+                GenTree* addr     = nullptr;
+                bool     isMem    = node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr);
+                assert(isMem && addr != nullptr);
+
+                regNumber addrReg = GetMultiUseOperandReg(addr);
+                genEmitNullCheck(addrReg);
+
+                if (info.needsJumpTableFallback())
+                {
+                    genHWIntrinsicJumpTableFallback(node, info);
+                }
+                else if (HWIntrinsicInfo::HasImmediateOperand(info.id))
+                {
+                    GetEmitter()->emitIns_MemargLane(ins, elemSize, 0, info.GetImmediateLaneOperand());
+                }
+                else
+                {
+                    GetEmitter()->emitIns_I(ins, elemSize, 0);
+                }
+
                 break;
             }
             default:
@@ -142,7 +168,11 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
     int               simdSize      = node->GetSimdSize();
     instruction const ins           = HWIntrinsicInfo::lookupIns(info.id, info.baseType, m_compiler);
     int               immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(info.id, simdSize, info.baseType);
-    WasmValueType     resultType    = ActualTypeToWasmValueType(genActualType(node->TypeGet()));
+    WasmValueType     resultType    = WasmValueType::Invalid;
+    if (!node->TypeIs(TYP_VOID))
+    {
+        resultType = ActualTypeToWasmValueType(genActualType(node->TypeGet()));
+    }
 
     GenTree*  immOp  = node->GetImmOp();
     regNumber immReg = GetMultiUseOperandReg(immOp);
@@ -206,6 +236,13 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
                 case HW_Category_IMM:
                 {
                     GetEmitter()->emitIns_Lane(ins, static_cast<uint8_t>(i));
+                    break;
+                }
+                case HW_Category_MemoryLoad:
+                case HW_Category_MemoryStore:
+                {
+                    emitAttr elemSize = emitActualTypeSize(node->GetSimdBaseType());
+                    GetEmitter()->emitIns_MemargLane(ins, elemSize, 0, static_cast<uint8_t>(i));
                     break;
                 }
                 default:

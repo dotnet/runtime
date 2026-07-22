@@ -202,6 +202,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmWebcilVersion Condition="'$(_WasmWebcilVersion)' == ''">0</_WasmWebcilVersion>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
+      <!-- With AOT, each AOT image hard-binds to every assembly it references when the image is
+           loaded. A BlazorWebAssemblyLazyLoad assembly is not present at runtime startup, so any
+           AOT image that references it would be marked unusable and its methods would fall back to
+           the interpreter (which can then hit unsupported constructs and abort). Enable lazy AOT
+           assembly loading so referenced lazy assemblies are only bound when they are loaded. -->
+      <_BlazorWebAssemblyRuntimeOptions Condition="'$(RunAOTCompilation)' == 'true' and @(BlazorWebAssemblyLazyLoad->Count()) != 0 and !$(_BlazorWebAssemblyRuntimeOptions.Contains('--aot-lazy-assembly-load'))">$([System.String]::Concat('$(_BlazorWebAssemblyRuntimeOptions)', ' --aot-lazy-assembly-load').Trim())</_BlazorWebAssemblyRuntimeOptions>
       <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == '' and '$(_TargetingNET100OrLater)' == 'true'">true</_WasmInlineBootConfig>
       <_WasmInlineBootConfig Condition="'$(_WasmInlineBootConfig)' == ''">false</_WasmInlineBootConfig>
       <!-- true = wasm assets will have hard fingerprint; false = wasm assets won't have even soft fingerprint -->
@@ -703,7 +709,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WriteBuildWasmBootJsonFile"
     DependsOnTargets="_WriteWasmBootJsonBuildPropertyStamp"
     Condition="'$(WasmBuildingForNestedPublish)' != 'true'"
-    Inputs="@(IntermediateAssembly);@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset);@(_WasmJsConfigStaticWebAsset);@(_WasmDotnetJsForBuild);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-build.stamp"
+    Inputs="@(IntermediateAssembly);@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset);@(_WasmJsConfigStaticWebAsset);@(_WasmDotnetJsForBuild);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(ProjectRuntimeConfigDevFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-build.stamp"
     Outputs="$(IntermediateOutputPath)wasm-bootjson-build.complete.stamp">
 
     <GenerateWasmBootJson
@@ -727,6 +733,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       EnvVariables="@(WasmEnvironmentVariable)"
       Profilers="$(WasmProfilers)"
       RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
+      RuntimeConfigDevJsonPath="$(ProjectRuntimeConfigDevFilePath)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
       ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"

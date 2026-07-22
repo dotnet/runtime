@@ -4,6 +4,7 @@
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -242,12 +243,63 @@ namespace System
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
+            // Identical encodings are equal unless they are NaN; this also resolves most inequalities cheaply.
+            if (leftDecimalBits == rightDecimalBits)
+            {
+                return !TDecimal.IsNaN(leftDecimalBits);
+            }
+
             if (TDecimal.IsNaN(leftDecimalBits) || TDecimal.IsNaN(rightDecimalBits))
             {
                 return false;
             }
 
-            return CompareDecimalIeee754<TDecimal, TValue>(leftDecimalBits, rightDecimalBits) == 0;
+            // Distinct bit patterns where either is infinity: equal only if both are infinity of the same sign
+            // (non-canonical infinities share the same value).
+            bool leftInfinity = TDecimal.IsInfinity(leftDecimalBits);
+            bool rightInfinity = TDecimal.IsInfinity(rightDecimalBits);
+
+            if (leftInfinity || rightInfinity)
+            {
+                return leftInfinity && rightInfinity && (TDecimal.IsNegative(leftDecimalBits) == TDecimal.IsNegative(rightDecimalBits));
+            }
+
+            DecodedDecimalIeee754<TValue> left = UnpackDecimalIeee754<TDecimal, TValue>(leftDecimalBits);
+            DecodedDecimalIeee754<TValue> right = UnpackDecimalIeee754<TDecimal, TValue>(rightDecimalBits);
+
+            bool leftZero = left.Significand == TValue.Zero;
+            bool rightZero = right.Significand == TValue.Zero;
+
+            if (leftZero || rightZero)
+            {
+                // Every zero (either sign, any cohort) is equal to every other zero and to nothing else.
+                return leftZero && rightZero;
+            }
+
+            if (left.Signed != right.Signed)
+            {
+                return false;
+            }
+
+            if (left.UnbiasedExponent == right.UnbiasedExponent)
+            {
+                return left.Significand == right.Significand;
+            }
+
+            // Align to the smaller exponent: the larger-exponent coefficient must divide evenly into the other.
+            if (left.UnbiasedExponent < right.UnbiasedExponent)
+            {
+                (left, right) = (right, left);
+            }
+
+            int diffExponent = left.UnbiasedExponent - right.UnbiasedExponent;
+            if (diffExponent >= TDecimal.Precision)
+            {
+                return false;
+            }
+
+            (TValue quotient, TValue remainder) = TValue.DivRem(right.Significand, TDecimal.Power10(diffExponent));
+            return (remainder == TValue.Zero) && (quotient == left.Significand);
         }
 
         /// <summary>
@@ -419,6 +471,7 @@ namespace System
         /// The 32-bit or 64-bit or 128-bit IEEE 754 decimal BID encoding (depending on <typeparamref name="TValue"/>),
         /// containing the sign bit, combination field, biased exponent, and coefficient continuation bits.
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static TValue DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(bool signed, TValue significand, int exponent)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
@@ -461,6 +514,216 @@ namespace System
             }
 
             return value;
+        }
+
+        /// <summary>
+        /// Converts a value from its IEEE 754 binary integer decimal (BID) bit pattern to the equivalent
+        /// densely packed decimal (DPD) bit pattern.
+        /// </summary>
+        internal static TValue EncodeDecimalIeee754<TDecimal, TValue>(TValue bidBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (TDecimal.IsInfinity(bidBits))
+            {
+                return ((bidBits & TDecimal.SignMask) != TValue.Zero) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            int declets = TDecimal.NumberBitsSignificand / 10;
+            TValue payloadMask = (TValue.One << TDecimal.NumberBitsSignificand) - TValue.One;
+
+            if (TDecimal.IsNaN(bidBits))
+            {
+                // The sign, the five-bit NaN marker, and the signaling bit occupy the same positions in both
+                // encodings; only the trailing payload changes representation (binary integer to declets). This
+                // is a cross-encoding conversion, so the reserved bits between the signaling bit and the payload
+                // are dropped to keep the result canonical.
+                TValue payload = bidBits & payloadMask;
+
+                if (payload >= TDecimal.Power10(TDecimal.Precision - 1))
+                {
+                    payload = TValue.Zero;
+                }
+
+                return (bidBits & (TDecimal.SignMask | TDecimal.SNaNMask)) | PackDeclets(payload, declets);
+            }
+
+            DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(bidBits);
+            uint biasedExponent = (uint)(decoded.UnbiasedExponent + TDecimal.ExponentBias);
+
+            TValue scale = TDecimal.Power10(TDecimal.Precision - 1);
+            TValue leadingDigit = decoded.Significand / scale;
+            uint msd = uint.CreateTruncating(leadingDigit);
+
+            int exponentContinuationBits = (Unsafe.SizeOf<TValue>() * 8) - 6 - TDecimal.NumberBitsSignificand;
+            uint exponentHigh = biasedExponent >> exponentContinuationBits;
+            uint exponentLow = biasedExponent & ((1u << exponentContinuationBits) - 1);
+
+            // The leading digit and the two most-significant exponent bits share the five-bit combination field.
+            uint combination = (msd <= 7)
+                ? (exponentHigh << 3) | msd
+                : 0b11000u | (exponentHigh << 1) | (msd - 8);
+
+            TValue result = (decoded.Signed ? TDecimal.SignMask : TValue.Zero);
+            result |= TValue.CreateTruncating(combination) << (TDecimal.NumberBitsSignificand + exponentContinuationBits);
+            result |= TValue.CreateTruncating(exponentLow) << TDecimal.NumberBitsSignificand;
+            result |= PackDeclets(decoded.Significand - (leadingDigit * scale), declets);
+            return result;
+        }
+
+        /// <summary>
+        /// Converts a value from its IEEE 754 densely packed decimal (DPD) bit pattern to the equivalent
+        /// binary integer decimal (BID) bit pattern.
+        /// </summary>
+        internal static TValue DecodeDecimalIeee754<TDecimal, TValue>(TValue dpdBits)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            if (TDecimal.IsInfinity(dpdBits))
+            {
+                return ((dpdBits & TDecimal.SignMask) != TValue.Zero) ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            int declets = TDecimal.NumberBitsSignificand / 10;
+            TValue payloadMask = (TValue.One << TDecimal.NumberBitsSignificand) - TValue.One;
+
+            if (TDecimal.IsNaN(dpdBits))
+            {
+                // The sign, the five-bit NaN marker, and the signaling bit occupy the same positions in both
+                // encodings; only the trailing payload changes representation (declets to binary integer). This
+                // is a cross-encoding conversion, so the reserved bits between the signaling bit and the payload
+                // are dropped to keep the result canonical.
+                TValue payload = UnpackDeclets(dpdBits & payloadMask, declets);
+
+                return (dpdBits & (TDecimal.SignMask | TDecimal.SNaNMask)) | payload;
+            }
+
+            int exponentContinuationBits = (Unsafe.SizeOf<TValue>() * 8) - 6 - TDecimal.NumberBitsSignificand;
+            uint combination = uint.CreateTruncating(dpdBits >> (TDecimal.NumberBitsSignificand + exponentContinuationBits)) & 0x1F;
+            uint exponentLow = uint.CreateTruncating(dpdBits >> TDecimal.NumberBitsSignificand) & ((1u << exponentContinuationBits) - 1);
+
+            uint exponentHigh;
+            uint msd;
+
+            if ((combination >> 3) != 0b11)
+            {
+                exponentHigh = combination >> 3;
+                msd = combination & 0x7;
+            }
+            else
+            {
+                exponentHigh = (combination >> 1) & 0x3;
+                msd = 8 | (combination & 1);
+            }
+
+            int unbiasedExponent = (int)((exponentHigh << exponentContinuationBits) | exponentLow) - TDecimal.ExponentBias;
+            TValue significand = (TValue.CreateTruncating(msd) * TDecimal.Power10(TDecimal.Precision - 1)) + UnpackDeclets(dpdBits & payloadMask, declets);
+
+            bool signed = (dpdBits & TDecimal.SignMask) != TValue.Zero;
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, significand, unbiasedExponent);
+        }
+
+        /// <summary>Packs the trailing decimal digits of a coefficient into densely packed decimal declets.</summary>
+        private static TValue PackDeclets<TValue>(TValue low, int declets)
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            TValue thousand = TValue.CreateTruncating(1000);
+            TValue trailing = TValue.Zero;
+
+            for (int i = 0; i < declets; i++)
+            {
+                TValue quotient = low / thousand;
+                uint group = uint.CreateTruncating(low - (quotient * thousand));
+                low = quotient;
+
+                uint declet = DigitsToDeclet((int)(group / 100), (int)((group / 10) % 10), (int)(group % 10));
+                trailing |= TValue.CreateTruncating(declet) << (10 * i);
+            }
+
+            return trailing;
+        }
+
+        /// <summary>Unpacks densely packed decimal declets into the trailing decimal digits of a coefficient.</summary>
+        private static TValue UnpackDeclets<TValue>(TValue trailing, int declets)
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            TValue thousand = TValue.CreateTruncating(1000);
+            TValue decletMask = TValue.CreateTruncating(0x3FF);
+            TValue low = TValue.Zero;
+
+            for (int i = declets - 1; i >= 0; i--)
+            {
+                uint declet = uint.CreateTruncating((trailing >> (10 * i)) & decletMask);
+                (int d2, int d1, int d0) = DecletToDigits(declet);
+                low = (low * thousand) + TValue.CreateTruncating((d2 * 100) + (d1 * 10) + d0);
+            }
+
+            return low;
+        }
+
+        /// <summary>Packs three decimal digits (each 0-9) into a ten-bit densely packed decimal declet.</summary>
+        private static uint DigitsToDeclet(int d2, int d1, int d0)
+        {
+            // See IEEE 754-2019 Table 3.6. Each digit's unit bit passes through unchanged (b7, b4, b0);
+            // the high bits of each digit and a three-bit selector for which digits are 8 or 9 fill the rest.
+            int u2 = d2 & 1;
+            int u1 = d1 & 1;
+            int u0 = d0 & 1;
+
+            int p2 = (d2 >> 2) & 1;
+            int q2 = (d2 >> 1) & 1;
+            int p1 = (d1 >> 2) & 1;
+            int q1 = (d1 >> 1) & 1;
+            int p0 = (d0 >> 2) & 1;
+            int q0 = (d0 >> 1) & 1;
+
+            bool large2 = d2 >= 8;
+            bool large1 = d1 >= 8;
+            bool large0 = d0 >= 8;
+
+            (int b9, int b8, int b6, int b5, int b3, int b2, int b1) = (large2, large1, large0) switch
+            {
+                (false, false, false) => (p2, q2, p1, q1, 0, p0, q0),
+                (false, false, true) => (p2, q2, p1, q1, 1, 0, 0),
+                (false, true, false) => (p2, q2, p0, q0, 1, 0, 1),
+                (true, false, false) => (p0, q0, p1, q1, 1, 1, 0),
+                (true, true, false) => (p0, q0, 0, 0, 1, 1, 1),
+                (true, false, true) => (p1, q1, 0, 1, 1, 1, 1),
+                (false, true, true) => (p2, q2, 1, 0, 1, 1, 1),
+                (true, true, true) => (0, 0, 1, 1, 1, 1, 1),
+            };
+
+            return (uint)((b9 << 9) | (b8 << 8) | (u2 << 7) | (b6 << 6) | (b5 << 5) | (u1 << 4) | (b3 << 3) | (b2 << 2) | (b1 << 1) | u0);
+        }
+
+        /// <summary>Unpacks a ten-bit densely packed decimal declet into three decimal digits (each 0-9).</summary>
+        private static (int D2, int D1, int D0) DecletToDigits(uint declet)
+        {
+            static int Digit(int hi, int mid, int lo) => (hi << 2) | (mid << 1) | lo;
+
+            int b0 = (int)(declet & 1);
+            int b1 = (int)((declet >> 1) & 1);
+            int b2 = (int)((declet >> 2) & 1);
+            int b3 = (int)((declet >> 3) & 1);
+            int b4 = (int)((declet >> 4) & 1);
+            int b5 = (int)((declet >> 5) & 1);
+            int b6 = (int)((declet >> 6) & 1);
+            int b7 = (int)((declet >> 7) & 1);
+            int b8 = (int)((declet >> 8) & 1);
+            int b9 = (int)((declet >> 9) & 1);
+
+            // See IEEE 754-2019 Table 3.6. b3 then b2/b1 then b6/b5 select which digits were 8 or 9.
+            return (b3, b2, b1, b6, b5) switch
+            {
+                (0, _, _, _, _) => (Digit(b9, b8, b7), Digit(b6, b5, b4), Digit(b2, b1, b0)),
+                (1, 0, 0, _, _) => (Digit(b9, b8, b7), Digit(b6, b5, b4), 8 | b0),
+                (1, 0, 1, _, _) => (Digit(b9, b8, b7), 8 | b4, Digit(b6, b5, b0)),
+                (1, 1, 0, _, _) => (8 | b7, Digit(b6, b5, b4), Digit(b9, b8, b0)),
+                (1, 1, 1, 0, 0) => (8 | b7, 8 | b4, Digit(b9, b8, b0)),
+                (1, 1, 1, 0, 1) => (8 | b7, Digit(b9, b8, b4), 8 | b0),
+                (1, 1, 1, 1, 0) => (Digit(b9, b8, b7), 8 | b4, 8 | b0),
+                _ => (8 | b7, 8 | b4, 8 | b0),
+            };
         }
 
         private static TValue RoundToZeroOrEpsilon<TDecimal, TValue>(ref NumberBuffer coefficient)
@@ -716,8 +979,21 @@ namespace System
 
             // Align `hi` to the common exponent by scaling its coefficient up by 10^effectiveDifference. The
             // scaled coefficient can exceed a single limb (up to ~10^(2*Precision+1)), so it is held at double
-            // width. The scale factor fits a single limb because effectiveDifference <= Precision + 2.
-            WideMultiply(hi.Significand, AlignmentScaleFactor<TDecimal, TValue>(effectiveDifference), out TValue magnitudeHigh, out TValue magnitudeLow);
+            // width. The scale factor fits a single limb because effectiveDifference <= Precision + 2. When the
+            // exponents are already equal (the common case) the scale factor is one, so the coefficient stays in
+            // the low limb and the wide multiply is skipped.
+            TValue magnitudeHigh;
+            TValue magnitudeLow;
+
+            if (effectiveDifference == 0)
+            {
+                magnitudeHigh = TValue.Zero;
+                magnitudeLow = hi.Significand;
+            }
+            else
+            {
+                WideMultiply(hi.Significand, AlignmentScaleFactor<TDecimal, TValue>(effectiveDifference), out magnitudeHigh, out magnitudeLow);
+            }
 
             // Align `lo` to the common exponent by discarding its `droppedDigits` least-significant digits, which
             // fall below the retained range and only contribute stickiness. The retained portion fits a single limb.
@@ -797,6 +1073,19 @@ namespace System
             if (TValue.IsZero(magnitudeHigh) && TValue.IsZero(magnitudeLow) && !sticky)
             {
                 return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(false, TValue.Zero, commonExponent);
+            }
+
+            // Common case: the exact sum already fits the format precision at a representable exponent, so it needs
+            // no rounding and encodes directly. This mirrors the no-rounding tail of the wide path below without the
+            // out-of-line call. A non-empty `sticky` tail cannot occur here: it only arises when the exponent
+            // difference exceeds the guard span, which forces more than `Precision` result digits (a non-zero high
+            // limb or a wider low limb), so it is excluded by these bounds and needs no separate check.
+            if (TValue.IsZero(magnitudeHigh)
+                && (commonExponent >= TDecimal.MinAdjustedExponent)
+                && (commonExponent <= TDecimal.MaxAdjustedExponent)
+                && (TDecimal.CountDigits(magnitudeLow) <= TDecimal.Precision))
+            {
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(resultSign, magnitudeLow, commonExponent);
             }
 
             return NumberToDecimalIeee754BitsFromWide<TDecimal, TValue>(resultSign, magnitudeHigh, magnitudeLow, commonExponent, sticky);
@@ -1195,19 +1484,45 @@ namespace System
 
             int quotientExponent = a.UnbiasedExponent - b.UnbiasedExponent - shift;
 
-            // Long-divide `a.Significand * 10^shift` by `b.Significand` one decimal digit at a time. The running
-            // remainder always stays below the divisor and the quotient always stays below 10^(Precision + 2), so
-            // every intermediate value fits a single limb and no wide integer is needed for division. The final
-            // remainder determines whether the quotient is exact.
+            // Long-divide `a.Significand * 10^shift` by `b.Significand`, extracting several decimal digits per
+            // iteration instead of one. Each step scales the remainder by the largest `10^k` that still fits the
+            // limb (chosen from its leading-zero headroom, so `10^k <= 2^LeadingZeroCount(remainder)`) and does a
+            // single `DivRem`. The running remainder stays below the divisor and the quotient stays below
+            // 10^(Precision + 2), so every intermediate value fits a single limb. The final remainder determines
+            // whether the quotient is exact.
             TValue divisor = b.Significand;
             TValue ten = TValue.CreateTruncating(10);
             (TValue quotient, TValue remainder) = TValue.DivRem(a.Significand, divisor);
 
-            for (int i = 0; i < shift; i++)
+            int remaining = shift;
+
+            while (remaining > 0)
             {
-                remainder *= ten;
-                (TValue digit, remainder) = TValue.DivRem(remainder, divisor);
-                quotient = (quotient * ten) + digit;
+                // `remainder < divisor <= MaxSignificand`, so it always has enough leading zeros for `k >= 1`.
+                // `(lz * 3) / 10 <= lz / log2(10)` keeps `remainder * 10^k` from overflowing the limb, and `k` is
+                // clamped to `Precision - 1` (an exponent every `Power10` table is guaranteed to hold) and to the
+                // digits still owed.
+                int lz = int.CreateTruncating(TValue.LeadingZeroCount(remainder));
+                int k = (lz * 3) / 10;
+
+                if (k > remaining)
+                {
+                    k = remaining;
+                }
+                if (k > TDecimal.Precision - 1)
+                {
+                    k = TDecimal.Precision - 1;
+                }
+                if (k < 1)
+                {
+                    k = 1;
+                }
+
+                TValue pow = TDecimal.Power10(k);
+                remainder *= pow;
+                (TValue chunk, remainder) = TValue.DivRem(remainder, divisor);
+                quotient = (quotient * pow) + chunk;
+                remaining -= k;
             }
 
             bool remainderNonZero = !TValue.IsZero(remainder);
@@ -2028,6 +2343,7 @@ namespace System
         /// entry each iteration and finish with a single lookup for the remainder. The result always fits a single limb
         /// for every supported format.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static TValue AlignmentScaleFactor<TDecimal, TValue>(int exponent)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
@@ -2050,6 +2366,7 @@ namespace System
         /// limbs (<paramref name="high"/> holds the more significant half). The product of two coefficients can
         /// require up to twice the format precision, which always fits in two limbs of the underlying integer width.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WideMultiply<TValue>(TValue left, TValue right, out TValue high, out TValue low)
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
@@ -2074,6 +2391,16 @@ namespace System
             int bits = TValue.Zero.GetByteCount() * 8;
             int half = bits / 2;
             TValue lowMask = (TValue.One << half) - TValue.One;
+
+            // When both operands fit in the low half their exact product fits in a single TValue, so one
+            // native multiply replaces the four-multiply schoolbook decomposition. This is the common case
+            // for the 128-bit format, whose coefficients fit in the low 64 bits at up to ~19 digits.
+            if (TValue.IsZero((left | right) >> half))
+            {
+                high = TValue.Zero;
+                low = left * right;
+                return;
+            }
 
             TValue leftLow = left & lowMask;
             TValue leftHigh = left >> half;
@@ -2205,7 +2532,7 @@ namespace System
         /// </summary>
         /// <remarks>
         /// Only the 128-bit format reaches this helper: the 32-bit and 64-bit formats widen the limb pair to a
-        /// single native integer and divide directly (see <see cref="DropDigits{TValue}"/> and
+        /// single native integer and divide directly (see <see cref="DropDigits{TDecimal, TValue}"/> and
         /// <see cref="WideDigitCount{TDecimal, TValue}"/>). The Intel reference implementation avoids hardware
         /// division here by multiplying with precomputed reciprocals of powers of ten (e.g.
         /// <c>bid_reciprocals10_64</c>) and shifting; this helper instead uses direct integer division for
@@ -2249,6 +2576,13 @@ namespace System
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
+            // When the high limb is zero the value fits in a single limb and the digit count comes straight
+            // from the per-format helper, avoiding a promotion to the wider integer type.
+            if (TValue.IsZero(high))
+            {
+                return TDecimal.CountDigits(low);
+            }
+
             // For the 32-bit and 64-bit formats the (high, low) limb pair fits in a single wider C# integer
             // (ulong and UInt128 respectively), so the digit count comes straight from the existing helpers
             // instead of stripping the high limb a digit at a time. The 128-bit format has no wider native
@@ -2320,13 +2654,39 @@ namespace System
         /// returned in <paramref name="roundDigit"/> for the rounding decision; all lower removed digits are folded
         /// into <paramref name="sticky"/>.
         /// </summary>
-        private static TValue DropDigits<TValue>(ref TValue high, ref TValue low, int dropCount, ref bool sticky, out int roundDigit)
+        private static TValue DropDigits<TDecimal, TValue>(ref TValue high, ref TValue low, int dropCount, ref bool sticky, out int roundDigit)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
             roundDigit = 0;
 
             if (dropCount == 0)
             {
+                return low;
+            }
+
+            // When the high limb is zero the value already fits in a single limb, so the digits are dropped
+            // with one native TValue division instead of promoting to a wider integer (a software 128-bit
+            // divide for the 64-bit format) or stripping a digit at a time (the 128-bit format). The removed
+            // low-order digits land in `removed`: its most-significant digit is the rounding digit and the rest
+            // folds into the sticky bit. `dropCount` is bounded by the precision so both powers stay in-table.
+            if (TValue.IsZero(high) && (dropCount < TDecimal.Precision))
+            {
+                (TValue quotient, TValue removed) = TDecimal.DivRemPow10(low, dropCount);
+                low = quotient;
+
+                if (dropCount == 1)
+                {
+                    // The removed portion is a single digit, which is the rounding digit itself.
+                    roundDigit = int.CreateTruncating(removed);
+                }
+                else
+                {
+                    (TValue rd, TValue rest) = TValue.DivRem(removed, TDecimal.Power10(dropCount - 1));
+                    roundDigit = int.CreateTruncating(rd);
+                    sticky |= !TValue.IsZero(rest);
+                }
+
                 return low;
             }
 
@@ -2482,7 +2842,7 @@ namespace System
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
             int dropCount = digitsCount - numberDigitsRemain;
-            TValue significand = DropDigits(ref high, ref low, dropCount, ref sticky, out int roundDigit);
+            TValue significand = DropDigits<TDecimal, TValue>(ref high, ref low, dropCount, ref sticky, out int roundDigit);
             int resultExponent = exponent + dropCount;
 
             bool roundUp = (roundDigit > 5)
@@ -2519,7 +2879,7 @@ namespace System
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
-            TValue lead = DropDigits(ref high, ref low, digitsCount - 1, ref sticky, out int roundDigit);
+            TValue lead = DropDigits<TDecimal, TValue>(ref high, ref low, digitsCount - 1, ref sticky, out int roundDigit);
             bool restNonZero = sticky || (roundDigit != 0);
             int leadDigit = int.CreateTruncating(lead);
 
@@ -3114,6 +3474,14 @@ namespace System
             // width-independent negate recovers the true magnitude (including the most-negative value).
             UInt128 magnitude = isNegative ? (~bits) + UInt128.One : bits;
 
+            // When the magnitude fits the significand (at most Precision digits) the integer is exactly
+            // representable with exponent 0, so encode it directly and skip rendering the digits and running
+            // the string-parse rounding pipeline. This is the overwhelmingly common case.
+            if (magnitude <= UInt128.CreateTruncating(TDecimal.MaxSignificand))
+            {
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(isNegative, TValue.CreateTruncating(magnitude), 0);
+            }
+
             return DecimalIeee754FromMagnitude<TDecimal, TValue>(isNegative, magnitude, 0);
         }
 
@@ -3232,6 +3600,38 @@ namespace System
                 return decoded.Signed ? -TFloat.Zero : TFloat.Zero;
             }
 
+            // Fast path: when the significand fits a ulong (always for Decimal32/64, and for Decimal128 up to
+            // ~19 digits) we already hold it as an integer mantissa, so we can feed the string-free
+            // Clinger/Eisel-Lemire fast paths directly instead of rendering to ASCII and re-parsing.
+            if (decoded.Significand <= TValue.CreateTruncating(ulong.MaxValue))
+            {
+                ulong mantissa = ulong.CreateTruncating(decoded.Significand);
+                int exponent = decoded.UnbiasedExponent;
+                int scale = TDecimal.CountDigits(decoded.Significand) + exponent;
+
+                TFloat result;
+
+                if (scale < TFloat.MinDecimalExponent)
+                {
+                    result = TFloat.Zero;
+                }
+                else if (scale > TFloat.MaxDecimalExponent)
+                {
+                    result = TFloat.PositiveInfinity;
+                }
+                else if (TryFloatingPointBitsFromMantissa<TFloat>(mantissa, exponent, out ulong bits))
+                {
+                    result = TFloat.BitsToFloat(bits);
+                }
+                else
+                {
+                    goto Slow;
+                }
+
+                return decoded.Signed ? -result : result;
+            }
+
+        Slow:
             // The NumberBuffer constructor rewrites Digits[0] as part of initialization, so the digits must be
             // written into the buffer's span after construction rather than before.
             UInt128 magnitude = UInt128.CreateTruncating(decoded.Significand);
@@ -3274,31 +3674,66 @@ namespace System
                 return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(isNegative, TValue.Zero, 0);
             }
 
-            // Produce the exact decimal expansion of the finite value. Passing a length-based cutoff of int.MaxValue
-            // ensures the buffer size is the limiting factor, and NumberBufferLength is large enough to hold the full
-            // expansion (so the result is exact and a single rounding to precision follows).
             Span<byte> digits = stackalloc byte[TFloat.NumberBufferLength];
             NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, digits);
+
+            // Fast path: round straight to the target precision. Dragon4's significant-digit cutoff is correctly
+            // rounded (round-half-even from the exact value), and because the coefficient then has at most Precision
+            // digits the shared pipeline performs no second rounding of significant digits, so the result is singly
+            // (correctly) rounded without materializing the full exact expansion.
+            Dragon4<TFloat>(value, cutoffNumber: TDecimal.Precision, isSignificantDigits: true, ref number, out bool isExact);
+            number.IsNegative = isNegative;
+
+            // IEEE convertFormat delivers the preferred (quantum) exponent Scale - DigitsCount for an exact result and
+            // Scale - Precision for an inexact one. Dragon4 gives the former directly. When the value is inexact its
+            // cutoff coefficient normally already spans Precision digits, but a rounding carry can drop trailing digits
+            // (for example 262143.99999999997 rounds to 262144), leaving DigitsCount < Precision and an exponent one or
+            // more places too high; re-materialize those trailing zeros so the coefficient carries the full Precision
+            // width. The subnormal decimal range is excluded because there the coefficient must round to fewer than
+            // Precision digits, which would double round the cutoff result, so those values take the exact path below.
+            if ((number.Scale - TDecimal.Precision) >= TDecimal.MinAdjustedExponent)
+            {
+                if (!isExact && (number.DigitsCount < TDecimal.Precision))
+                {
+                    int end = TDecimal.Precision;
+                    digits.Slice(number.DigitsCount, end - number.DigitsCount).Fill((byte)'0');
+                    digits[end] = (byte)'\0';
+                    number.DigitsCount = end;
+                }
+
+                MaterializePreferredZeros(ref number, digits);
+                number.CheckConsistency();
+                return NumberToDecimalIeee754Bits<TDecimal, TValue>(ref number);
+            }
+
+            // Subnormal decimal range: produce the full exact expansion and let the pipeline round once to the reduced
+            // precision the clamped quantum allows. Passing a length-based cutoff of int.MaxValue makes the buffer size
+            // the limiting factor, and NumberBufferLength is large enough to hold the full expansion so the result is
+            // exact and a single rounding to precision follows.
             Dragon4<TFloat>(value, cutoffNumber: int.MaxValue, isSignificantDigits: false, ref number);
             number.IsNegative = isNegative;
 
-            // IEEE convertFormat delivers the preferred (quantum) exponent: for an exact result it is the
-            // representable exponent closest to zero from below. Dragon4 strips trailing zeros, which can push the
-            // exponent above zero (e.g. 1000 -> digits "1", Scale 4, exponent 3). Re-materialize those trailing zeros
-            // to bring the exponent down to zero so integer-valued inputs keep quantum one (matching the decimal parse
-            // path); the shared pipeline then rounds when the coefficient exceeds the target precision.
-            int preferredZeros = number.Scale - number.DigitsCount;
-            if (preferredZeros > 0)
-            {
-                int end = number.DigitsCount + preferredZeros;
-                digits.Slice(number.DigitsCount, preferredZeros).Fill((byte)'0');
-                digits[end] = (byte)'\0';
-                number.DigitsCount = end;
-            }
-
+            MaterializePreferredZeros(ref number, digits);
             number.CheckConsistency();
 
             return NumberToDecimalIeee754Bits<TDecimal, TValue>(ref number);
+
+            // For an exact result IEEE convertFormat delivers the representable exponent closest to zero from below.
+            // Dragon4 strips trailing zeros, which can push the exponent above zero (e.g. 1000 -> digits "1", Scale 4,
+            // exponent 3). Re-materialize those trailing zeros to bring the exponent down to zero so integer-valued
+            // inputs keep quantum one (matching the decimal parse path); the shared pipeline then rounds when the
+            // coefficient exceeds the target precision.
+            static void MaterializePreferredZeros(ref NumberBuffer number, Span<byte> digits)
+            {
+                int preferredZeros = number.Scale - number.DigitsCount;
+                if (preferredZeros > 0)
+                {
+                    int end = number.DigitsCount + preferredZeros;
+                    digits.Slice(number.DigitsCount, preferredZeros).Fill((byte)'0');
+                    digits[end] = (byte)'\0';
+                    number.DigitsCount = end;
+                }
+            }
         }
 
         /// <summary>

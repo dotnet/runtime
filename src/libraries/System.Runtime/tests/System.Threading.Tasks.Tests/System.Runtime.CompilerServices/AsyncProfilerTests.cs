@@ -1730,6 +1730,22 @@ namespace System.Threading.Tasks.Tests
             return false;
         }
 
+        // Walk-break sibling exclusion: verifies that none of the given callstacks leak a frame
+        // belonging to a concurrent sibling dispatcher. Each dispatcher's walk must stop at its own
+        // boundary, so a branch's Resume callstack must contain only its own frame(s) and never a
+        // foreign marker. This guards against an under-breaking walk that would cross into a sibling.
+        private static void AssertCallstacksExcludeForeignMarkers(ParsedEventStream stream, List<ParsedEvent> callstacks, string ownMarker, params string[] foreignMarkers)
+        {
+            foreach (var cs in callstacks)
+            {
+                foreach (string foreign in foreignMarkers)
+                {
+                    AssertFalse(stream, cs.HasMarkerFrame(foreign),
+                        $"Callstack for {ownMarker} (DispatcherId {cs.DispatcherId}) leaked a sibling frame '{foreign}'");
+                }
+            }
+        }
+
         // For a given context, simulates the async callstack depth by walking events in order:
         // ResumeAsyncCallstack sets the depth to frame count, CompleteAsyncMethod decrements,
         // UnwindAsyncException subtracts unwound frames. Asserts depth reaches zero.
