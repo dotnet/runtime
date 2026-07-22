@@ -543,8 +543,6 @@ namespace System
 
             unsafe
             {
-                // Note the use of Unsafe.As on method. This is not a generally safe operation, but we require in CoreCLR that
-                // all implementors of IRuntimeMethodInfo have the same offset for the m_value field, so this is safe in this context.
                 ret = BindToMethodInfo(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
                     IRuntimeMethodInfo.GetValue(method), new QCallTypeHandle(ref methodType), flags, ObjectHandleOnStack.Create(ref target), out bindToMethodDetails);
             }
