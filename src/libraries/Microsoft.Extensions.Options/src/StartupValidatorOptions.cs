@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Options
         public Dictionary<(Type, string), Action> _validators { get; } = new Dictionary<(Type, string), Action>();
 
         // Maps each pair of a) options type and b) options name to an async method that runs the complete
-        // validation (synchronous and asynchronous validators) and seeds the monitor cache with the result
+        // validation (synchronous and asynchronous validators)
         public Dictionary<(Type, string), Func<CancellationToken, Task>> _asyncValidators { get; } = new Dictionary<(Type, string), Func<CancellationToken, Task>>();
     }
 }
