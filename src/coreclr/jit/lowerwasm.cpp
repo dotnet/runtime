@@ -1335,7 +1335,6 @@ GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
     assert(node->GetHWIntrinsicId() == NI_PackedSimd_Shuffle);
 
     GenTree*  op1         = node->Op(1);
-    GenTree*  op2         = node->Op(2);
     GenTree*  shuffleMask = node->Op(3);
     var_types resultType  = node->TypeGet();
 
@@ -1391,9 +1390,9 @@ GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
     //   res       =  *  HWINTRINSIC   simd   byte    PackedSimd.Or
 
     // op2 needs to be moved, replace with a local, but don't immediately reload
-    LIR::Use     op2Use(BlockRange(), &node->Op(2), node);
-    unsigned int op2Tmp    = op2Use.ReplaceWithLclVar(m_compiler);
-    GenTree*     op2Reload = node->Op(2);
+    LIR::Use op2Use(BlockRange(), &node->Op(2), node);
+    op2Use.ReplaceWithLclVar(m_compiler);
+    GenTree* op2Reload = node->Op(2);
     BlockRange().Remove(op2Reload);
 
     // Shuffle mask will be used twice, replace with a local
