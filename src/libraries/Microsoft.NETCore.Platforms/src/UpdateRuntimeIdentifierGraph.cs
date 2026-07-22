@@ -39,7 +39,7 @@ namespace Microsoft.NETCore.Platforms
                 }
 
                 string[] importedRids = rid.GetMetadata("Imports").Split(';');
-                runtimes.Add(rid.ItemSpec, new JsonObject { ["#import"] = new JsonArray(System.Array.ConvertAll(importedRids, r => (JsonNode)r)) });
+                runtimes.Add(rid.ItemSpec, new JsonObject { ["#import"] = new JsonArray([.. importedRids]) });
             }
 
             using FileStream streamWriter = File.Create(OutputFile!);
