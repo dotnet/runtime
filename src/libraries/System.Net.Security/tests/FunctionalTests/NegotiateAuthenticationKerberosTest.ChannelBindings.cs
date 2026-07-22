@@ -79,6 +79,7 @@ namespace System.Net.Security.Tests
         }
 
         private static void RunMismatch(ChannelBindingKind kind)
+        {
             using SafeChannelBindingHandle clientBinding = CreateChannelBinding(kind, hashSeed: 0x42);
             using SafeChannelBindingHandle serverBinding = CreateChannelBinding(kind, hashSeed: 0x99);
 
