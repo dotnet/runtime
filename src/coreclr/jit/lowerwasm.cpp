@@ -1339,14 +1339,27 @@ GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
     GenTree* shuffleMask = node->Op(3);
     var_types resultType = node->TypeGet();
 
-    // No extra work to do if the shuffle is a constant vector, it can be contained as an immediate and emitted.
+    // No extra work to do if the shuffle is an in-range constant vector, it can be contained as an immediate and emitted.
     if (shuffleMask->IsCnsVec())
     {
-        ContainCheckHWIntrinsic(node);
-        return node->gtNext;
+        const simd_t& mask = shuffleMask->AsVecCon()->gtSimdVal;
+        bool          allInRange = true;
+        for (int i = 0; i < 16; i++)
+        {
+            if (mask.u8[i] >= 32)
+            {
+                allInRange = false;
+                break;
+            }
+        }
+        if (allInRange)
+        {
+            ContainCheckHWIntrinsic(node);
+            return node->gtNext;
+        }
     }
 
-    // If the shuffle mask is not a constant vector, we will need to rewrite the shuffle into two swizzles:
+    // If the shuffle mask is not a constant vector or the mask is not in range, we will need to rewrite the shuffle into two swizzles:
     // 1 to handle elements from the first vector, and 1 to handle elements from the second vector. The two swizzles will then be or'd together to produce the final result.
     // We will be constructing IR like the following:
     //                  /--*  op1 simd
