@@ -805,6 +805,10 @@ namespace ILCompiler.ObjectWriter
 
         private readonly WasmSymbolManager _wasmSymbolManager = new();
 
+        /// <summary>
+        /// Maps an Import kind to the WasmIndexSpace that it can be referenced within.
+        /// Imports will always be the first logical entries in their respective index spaces.
+        /// </summary>
         private static WasmIndexSpace GetIndexSpace(WasmExternalKind kind) => kind switch
         {
             WasmExternalKind.Function => WasmIndexSpace.Function,
@@ -927,9 +931,8 @@ namespace ILCompiler.ObjectWriter
                             // the index assigned when the symbol was registered into its index space.
                             if (!_wasmSymbolManager.TryGetSymbol(reloc.SymbolName, out WasmSymbol symbol))
                             {
-                                throw new NotImplementedException($"No wasm index registered for symbol '{reloc.SymbolName}' (relocation {reloc.Type}).");
+                                throw new InvalidOperationException($"Symbol '{reloc.SymbolName}' was not registered. Relocation type {reloc.Type}.");
                             }
-
                             Relocation.WriteValue(reloc.Type, pData, symbol.Index + addend);
                             break;
                         }
@@ -1100,6 +1103,11 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        /// <summary>
+        /// This dictionary contains the map of symbol names to their location in the object file.
+        /// The SymbolDefinitions returned do not encode the logical index used in the Wasm module, and should not be used for
+        /// resolving relocations for INDEX relocation kinds.
+        /// </summary>
         private Dictionary<Utf8String, SymbolDefinition> _definedSymbols;
         private void WriteElements()
         {
