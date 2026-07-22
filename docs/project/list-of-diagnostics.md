@@ -286,6 +286,16 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1237`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
 |  __`SYSLIB1238`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
 |  __`SYSLIB1239`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
+|  __`SYSLIB1240`__ | Derived type is not a supported polymorphic derived type. |
+|  __`SYSLIB1241`__ | Inferred derived type is less accessible than the polymorphic base type. |
+|  __`SYSLIB1242`__ | Derived types produce a duplicate type discriminator. |
+|  __`SYSLIB1243`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1244`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1245`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1246`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1247`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1248`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1249`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
 
@@ -320,3 +330,4 @@ Diagnostic id values for experimental APIs must not be recycled, as that could s
 |  __`SYSLIB5004`__ |     .NET 9 |     TBD | `X86Base.DivRem` is experimental since performance is not as optimized as `T.DivRem` |
 |  __`SYSLIB5005`__ |     .NET 9 | .NET 10 | `System.Formats.Nrbf` is experimental |
 |  __`SYSLIB5006`__ |    .NET 10 |     TBD | Types for Post-Quantum Cryptography (PQC) are experimental. |
+|  __`SYSLIB5008`__ |    .NET 11 |     TBD | `SocketsHttpHandler` connection eviction control and `HttpRequestMessage.ConnectionId` APIs are experimental. |
