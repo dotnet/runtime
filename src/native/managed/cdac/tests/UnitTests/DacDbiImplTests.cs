@@ -1231,7 +1231,7 @@ public unsafe class DacDbiImplTests
         TargetPointer methodDescPointer = new(0x1000);
         MethodDescHandle methodDesc = new(methodDescPointer);
         TargetPointer methodTablePointer = new(0x2000);
-        TypeHandle methodTable = new(methodTablePointer);
+        ITypeHandle methodTable = new TargetTypeHandle(methodTablePointer);
         TargetCodePointer controlPC = new(0x3000);
         CodeBlockHandle codeBlock = new(new TargetPointer(0x4000));
         const uint MethodToken = 0x06000001;

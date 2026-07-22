@@ -2112,11 +2112,18 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     private static bool HasClassOrMethodInstantiation(IRuntimeTypeSystem rts, MethodDescHandle md)
     {
-        TargetPointer mtAddr = rts.GetMethodTable(md);
-        TypeHandle mt = rts.GetTypeHandle(mtAddr);
-        bool hasClassInstantiation = !rts.GetInstantiation(mt).IsEmpty;
-        bool hasMethodInstantiation = rts.IsGenericMethodDefinition(md) || !rts.GetGenericMethodInstantiation(md).IsEmpty;
-        return hasClassInstantiation || hasMethodInstantiation;
+        try
+        {
+            TargetPointer mtAddr = rts.GetMethodTable(md);
+            ITypeHandle mt = rts.GetTypeHandle(mtAddr);
+            bool hasClassInstantiation = !rts.GetInstantiation(mt).IsEmpty;
+            bool hasMethodInstantiation = rts.IsGenericMethodDefinition(md) || !rts.GetGenericMethodInstantiation(md).IsEmpty;
+            return hasClassInstantiation || hasMethodInstantiation;
+        }
+        catch (VirtualReadException)
+        {
+            return false;
+        }
     }
 
     // Filter used by GetCountOfInternalFrames and EnumerateInternalFrames to decide
@@ -2269,17 +2276,24 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     private TargetPointer ResolveMethodAssembly(IRuntimeTypeSystem rts, MethodDescHandle mdHandle)
     {
-        TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
-        if (mtPtr == TargetPointer.Null)
-            return TargetPointer.Null;
-        ITypeHandle typeHandle = rts.GetTypeHandle(mtPtr);
-        TargetPointer modulePtr = rts.GetModule(typeHandle);
-        if (modulePtr == TargetPointer.Null)
-            return TargetPointer.Null;
+        try
+        {
+            TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
+            if (mtPtr == TargetPointer.Null)
+                return TargetPointer.Null;
+            ITypeHandle typeHandle = rts.GetTypeHandle(mtPtr);
+            TargetPointer modulePtr = rts.GetModule(typeHandle);
+            if (modulePtr == TargetPointer.Null)
+                return TargetPointer.Null;
 
-        ILoader loader = _target.Contracts.Loader;
-        Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
-        return loader.GetAssembly(moduleHandle);
+            ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+            return loader.GetAssembly(moduleHandle);
+        }
+        catch (VirtualReadException)
+        {
+            return TargetPointer.Null;
+        }
     }
 
     private static CorDebugInternalFrameType ToCorDebugInternalFrameType(Contracts.InternalFrameType frameType)
