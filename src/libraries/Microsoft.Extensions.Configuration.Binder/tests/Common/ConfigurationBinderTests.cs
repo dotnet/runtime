@@ -1764,6 +1764,29 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         /// <summary>
+        /// A list whose element type has a collection populated through a constructor parameter must bind each
+        /// element's collection only once. List and array elements are constructed through a separate code path
+        /// (enumerable-with-add) from top-level, property, and dictionary binding.
+        /// </summary>
+        [Fact]
+        public void CanBind_ListOfTypeWithCollectionConstructorParameter()
+        {
+            string json = """
+            {
+                "Items": [ { "Instances": [ "a", "b" ] }, { "Instances": [ "c" ] } ]
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            List<GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter> result =
+                config.GetSection("Items").Get<List<GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter>>();
+
+            Assert.Equal(new[] { "a", "b" }, result[0].Instances);
+            Assert.Equal(new[] { "c" }, result[1].Instances);
+        }
+
+        /// <summary>
         /// A nested property whose type has a collection populated through a constructor parameter is bound through the
         /// null-check assignment (<c>??=</c>) path, where whether the instance was created through its constructor is
         /// decided at run time. The collection must still be bound only once.
@@ -1827,6 +1850,29 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             Assert.Equal(7, result.Number);
             Assert.Equal(new[] { "a", "b" }, result.Items);
+        }
+
+        /// <summary>
+        /// An init-only complex (non-collection) property that is not backed by a constructor parameter is bound in the
+        /// generated Initialize method. The generator must not emit a self-assignment for it (which would produce a
+        /// CS1717 compile error), and the property must still be bound correctly.
+        /// </summary>
+        [Fact]
+        public void CanBindOnParametersAndProperties_InitOnlyComplexPropertyWithoutConstructorParameter()
+        {
+            string json = """
+            {
+                "Number": 7,
+                "Child": { "Value": "hello" }
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            ClassWithInitOnlyComplexNoCtorParam result = config.Get<ClassWithInitOnlyComplexNoCtorParam>();
+
+            Assert.Equal(7, result.Number);
+            Assert.Equal("hello", result.Child.Value);
         }
 
         public static IEnumerable<object[]> Configuration_TestData()
