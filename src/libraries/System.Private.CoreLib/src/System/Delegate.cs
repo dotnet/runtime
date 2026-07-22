@@ -47,7 +47,7 @@ namespace System
 
         internal object GetTargetForSingleCastInstanceDelegate()
         {
-            Debug.Assert(HasSingleTarget && Target == _target && _target != null);
+            Debug.Assert(HasSingleTarget && Target == _target && _target is not null);
             return _target;
         }
 
@@ -98,7 +98,7 @@ namespace System
             public bool MoveNext()
             {
                 int index = _index + 1;
-                if ((_current = Unsafe.As<TDelegate>(_delegate?.TryGetAt(index))) == null)
+                if ((_current = Unsafe.As<TDelegate>(_delegate?.TryGetAt(index))) is null)
                 {
                     return false;
                 }
@@ -164,10 +164,10 @@ namespace System
 
         public static Delegate? Remove(Delegate? source, Delegate? value)
         {
-            if (source == null)
+            if (source is null)
                 return null;
 
-            if (value == null)
+            if (value is null)
                 return source;
 
             if (!RuntimeHelpers.TypeEquivalent(source, value))
@@ -193,7 +193,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Delegate? d1, Delegate? d2)
         {
-            // Test d2 first to allow branch elimination when inlined for null checks (== null)
+            // Test d2 first to allow branch elimination when inlined for null checks
             // so it can become a simple test
             if (d2 is null)
             {
@@ -206,7 +206,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Delegate? d1, Delegate? d2)
         {
-            // Test d2 first to allow branch elimination when inlined for not null checks (!= null)
+            // Test d2 first to allow branch elimination when inlined for not null checks
             // so it can become a simple test
             if (d2 is null)
             {
@@ -303,7 +303,7 @@ namespace System
             if (previous is null)
             {
                 previous = Interlocked.CompareExchange(ref d, o, null);
-                if (previous == null)
+                if (previous is null)
                     return true;
             }
 
@@ -355,7 +355,7 @@ namespace System
                 }
             }
 
-            if (resultList == null)
+            if (resultList is null)
             {
                 resultList = new Wrapper[BitOperations.RoundUpToPowerOf2((uint)resultCount)];
                 invocationList.CopyTo(resultList);
@@ -433,11 +433,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (obj == null)
-                return false;
             if (ReferenceEquals(this, obj))
                 return true;
-            if (!RuntimeHelpers.TypeEquivalent(this, obj))
+
+            if (obj is null || !RuntimeHelpers.TypeEquivalent(this, obj))
                 return false;
 
             // Since this is a Delegate, and we know the types are the same, obj should also be a Delegate
