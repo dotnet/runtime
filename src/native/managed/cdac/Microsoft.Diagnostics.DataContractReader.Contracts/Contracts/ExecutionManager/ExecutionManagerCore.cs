@@ -552,7 +552,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
         TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
-        TypeHandle th = rts.GetTypeHandle(mtPtr);
+        ITypeHandle th = rts.GetTypeHandle(mtPtr);
         TargetPointer handleModuleAddr = rts.GetModule(th);
 
         List<ExceptionClauseInfo> exceptionClauses = new List<ExceptionClauseInfo>();

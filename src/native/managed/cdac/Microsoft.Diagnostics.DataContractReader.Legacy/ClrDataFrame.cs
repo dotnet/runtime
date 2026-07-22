@@ -19,7 +19,6 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 {
     private readonly Target _target;
     private readonly IXCLRDataFrame? _legacyImpl;
-    private readonly IXCLRDataFrame2? _legacyImpl2;
 
     private readonly IStackDataFrameHandle _dataFrame;
 
@@ -27,14 +26,13 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     {
         _target = target;
         _legacyImpl = legacyImpl;
-        _legacyImpl2 = legacyImpl as IXCLRDataFrame2;
 
         _dataFrame = dataFrame;
     }
 
     // IXCLRDataFrame implementation
     int IXCLRDataFrame.GetFrameType(uint* simpleType, uint* detailedType)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFrameType(simpleType, detailedType) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataFrame.GetContext(
         uint contextFlags,
@@ -406,14 +404,14 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
 
     int IXCLRDataFrame.GetNumTypeArguments(uint* numTypeArgs)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetNumTypeArguments(numTypeArgs) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataFrame.GetTypeArgumentByIndex(uint index, DacComNullableByRef<IXCLRDataTypeInstance> typeArg)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetTypeArgumentByIndex(index, typeArg) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     // IXCLRDataFrame2 implementation
     int IXCLRDataFrame2.GetExactGenericArgsToken(DacComNullableByRef<IXCLRDataValue> genericToken)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl2 is not null ? _legacyImpl2.GetExactGenericArgsToken(genericToken) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     // ========== Metadata resolution helpers ==========
 
@@ -431,7 +429,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
 
         TargetPointer mtAddr = rts.GetMethodTable(mdh);
-        TypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
+        ITypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
         TargetPointer modulePtr = rts.GetModule(typeHandle);
         moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
 
@@ -744,7 +742,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             try
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-                ReadOnlySpan<TypeHandle> methodInst = rts.GetGenericMethodInstantiation(mdh);
+                ReadOnlySpan<ITypeHandle> methodInst = rts.GetGenericMethodInstantiation(mdh);
                 return ResolveGenericParam(rts, methodInst[index]);
             }
             catch (System.Exception) { return ((uint)ClrDataValueFlag.DEFAULT, -1); }
@@ -756,14 +754,14 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                 TargetPointer mtAddr = rts.GetMethodTable(mdh);
-                TypeHandle declaringType = rts.GetTypeHandle(mtAddr);
-                ReadOnlySpan<TypeHandle> typeInst = rts.GetInstantiation(declaringType);
+                ITypeHandle declaringType = rts.GetTypeHandle(mtAddr);
+                ReadOnlySpan<ITypeHandle> typeInst = rts.GetInstantiation(declaringType);
                 return ResolveGenericParam(rts, typeInst[index]);
             }
             catch (System.Exception) { return ((uint)ClrDataValueFlag.DEFAULT, -1); }
         }
 
-        private static (uint Flags, int Size) ResolveGenericParam(IRuntimeTypeSystem rts, TypeHandle resolvedType)
+        private static (uint Flags, int Size) ResolveGenericParam(IRuntimeTypeSystem rts, ITypeHandle resolvedType)
         {
             CorElementType elementType = rts.GetSignatureCorElementType(resolvedType);
             (uint flags, int size) = MapCorElementTypeToFlags(elementType);

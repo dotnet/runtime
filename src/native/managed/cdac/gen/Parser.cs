@@ -19,6 +19,15 @@ internal static class Parser
     public const string StaticReferenceAttributeFqn = AttrNs + ".StaticReferenceAttribute";
     public const string ThreadStaticAddressAttributeFqn = AttrNs + ".ThreadStaticAddressAttribute";
 
+    // The C# type used for a generated partial property declaration must match
+    // the user's declared type exactly, including nullable reference annotations
+    // (e.g. `SomeData?`). FullyQualifiedFormat omits those, so add them here.
+    // This is only for the *property* type; the read type argument (e.g. in
+    // ReadDataField<T>) uses the bare FullyQualifiedFormat.
+    private static readonly SymbolDisplayFormat s_propertyTypeFormat =
+        SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(
+            SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+
     public static CdacTypeModel? Parse(GeneratorAttributeSyntaxContext context)
     {
         if (context.TargetSymbol is not INamedTypeSymbol classSymbol)
@@ -203,7 +212,7 @@ internal static class Parser
             int offset = fieldOffsetAttr.ConstructorArguments.Length > 0 && fieldOffsetAttr.ConstructorArguments[0].Value is int o ? o : 0;
             bool littleEndian = GetNamedBool(fieldOffsetAttr, "LittleEndian");
             (FieldReadKind readKind, string? dataTypeArg, bool isNullable) = ClassifyFieldRead(prop, isPointer: false);
-            string fqnType = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            string fqnType = prop.Type.ToDisplayString(s_propertyTypeFormat);
 
             model = new MemberModel(
                 Name: prop.Name,
@@ -216,7 +225,7 @@ internal static class Parser
                 IsNullable: isNullable,
                 RawOffset: offset,
                 LittleEndian: littleEndian,
-                HasSetter: false,
+                Setter: SetterKind.None,
                 BoolUnderlyingType: null,
                 Names: EquatableArray<string>.FromEnumerable(new[] { prop.Name }));
             return true;
@@ -234,7 +243,17 @@ internal static class Parser
             bool isPointer = GetNamedBool(fieldAttr, "Pointer");
             string? boolUnderlyingType = GetUnderlyingBoolType(fieldAttr, "UnderlyingBoolType");
             (FieldReadKind readKind, string? dataTypeArg, bool isNullable) = ClassifyFieldRead(prop, isPointer);
-            string fqnType = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            string fqnType = prop.Type.ToDisplayString(s_propertyTypeFormat);
+
+            // A [Field] property is read-only, privately settable, or writable.
+            // It never exposes a public setter -- mutation goes through the
+            // generated Write{Name} method. The generated setter is always
+            // private, so a public setter in the declaration is a compile error
+            // (accessibility mismatch on the partial property).
+            bool writable = GetNamedBool(fieldAttr, "Writable");
+            SetterKind setter = writable
+                ? SetterKind.Writable
+                : prop.SetMethod is not null ? SetterKind.Private : SetterKind.None;
 
             // DescriptorOrFieldName is retained for static-accessor emit paths.
             // For [Field] codegen, only the Names array is used.
@@ -251,7 +270,7 @@ internal static class Parser
                 IsNullable: isNullable,
                 RawOffset: null,
                 LittleEndian: false,
-                HasSetter: GetNamedBool(fieldAttr, "Writable"),
+                Setter: setter,
                 BoolUnderlyingType: boolUnderlyingType,
                 Names: ComputeFieldNames(prop.Name, rawNames, usePropertyName));
             return true;
@@ -272,14 +291,14 @@ internal static class Parser
                 Name: prop.Name,
                 Kind: MemberKind.FieldAddress,
                 DescriptorOrFieldName: descriptorName,
-                PropertyOrReturnTypeFqn: prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                PropertyOrReturnTypeFqn: prop.Type.ToDisplayString(s_propertyTypeFormat),
                 ReadKind: FieldReadKind.Pointer,
                 DataTypeArgumentFqn: null,
                 IsOptional: isNullable,
                 IsNullable: isNullable,
                 RawOffset: null,
                 LittleEndian: false,
-                HasSetter: false,
+                Setter: SetterKind.None,
                 BoolUnderlyingType: null,
                 Names: ComputeFieldNames(prop.Name, rawNames, usePropertyName));
             return true;
@@ -291,14 +310,14 @@ internal static class Parser
                 Name: prop.Name,
                 Kind: MemberKind.InstanceDataStart,
                 DescriptorOrFieldName: prop.Name,
-                PropertyOrReturnTypeFqn: prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                PropertyOrReturnTypeFqn: prop.Type.ToDisplayString(s_propertyTypeFormat),
                 ReadKind: FieldReadKind.Pointer,
                 DataTypeArgumentFqn: null,
                 IsOptional: false,
                 IsNullable: false,
                 RawOffset: null,
                 LittleEndian: false,
-                HasSetter: false,
+                Setter: SetterKind.None,
                 BoolUnderlyingType: null,
                 Names: EquatableArray<string>.FromEnumerable(new[] { prop.Name }));
             return true;
@@ -334,14 +353,14 @@ internal static class Parser
             Name: method.Name,
             Kind: kind,
             DescriptorOrFieldName: fieldName,
-            PropertyOrReturnTypeFqn: method.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+            PropertyOrReturnTypeFqn: method.ReturnType.ToDisplayString(s_propertyTypeFormat),
             ReadKind: FieldReadKind.Pointer,
             DataTypeArgumentFqn: null,
             IsOptional: false,
             IsNullable: false,
             RawOffset: null,
             LittleEndian: false,
-            HasSetter: false,
+            Setter: SetterKind.None,
             BoolUnderlyingType: null,
             Names: EquatableArray<string>.FromEnumerable(new[] { fieldName }));
         return true;

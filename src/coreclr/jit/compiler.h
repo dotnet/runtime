@@ -3358,6 +3358,14 @@ public:
     GenTreeCall* gtNewHelperCallNode(
         unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr, GenTree* arg4 = nullptr);
 
+#ifdef TARGET_WASM
+    // On wasm these helpers return void* (InitHelpers.InitClass/InitInstantiatedClass). Model them as
+    // value-returning so the call_indirect signature matches the compiled managed helper; the value is unused.
+    static constexpr var_types HelperInitClassRetType = TYP_I_IMPL;
+#else
+    static constexpr var_types HelperInitClassRetType = TYP_VOID;
+#endif // TARGET_WASM
+
     GenTreeCall* gtNewVirtualFunctionLookupHelperCallNode(
         unsigned helper, var_types type, GenTree* thisPtr, GenTree* methHnd, GenTree* clsHnd = nullptr);
 
@@ -6959,7 +6967,7 @@ public:
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfile(PhaseChecks checks = PhaseChecks::CHECK_NONE);
-    bool fgDebugCheckProfileWeights(ProfileChecks checks);
+    bool fgDebugCheckProfileWeights(ProfileChecks checks, bool dump = false);
     bool fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks checks);
     bool fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks checks);
 
@@ -7845,15 +7853,12 @@ protected:
     CSEdsc* optCSEfindDsc(unsigned index);
     bool optUnmarkCSE(GenTree* tree);
 
-    // user defined callback data for the tree walk function optCSE_MaskHelper()
+    // Data for the tree walk that computes the mask of CSE definitions and uses
     struct optCSE_MaskData
     {
         EXPSET_TP CSE_defMask;
         EXPSET_TP CSE_useMask;
     };
-
-    // Treewalk helper for optCSE_DefMask and optCSE_UseMask
-    static fgWalkPreFn optCSE_MaskHelper;
 
     // This function walks all the node for an given tree
     // and return the mask of CSE definitions and uses for the tree

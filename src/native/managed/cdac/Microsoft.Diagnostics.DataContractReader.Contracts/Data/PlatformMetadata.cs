@@ -8,7 +8,7 @@ internal sealed partial class PlatformMetadata : IData<PlatformMetadata>
 {
     /// <summary>Address of the embedded PrecodeMachineDescriptor within this PlatformMetadata object.</summary>
     [FieldAddress]
-    public TargetPointer PrecodeMachineDescriptor { get; }
+    public partial TargetPointer PrecodeMachineDescriptor { get; }
 
-    [Field] public byte CodePointerFlags { get; }
+    [Field] public partial byte CodePointerFlags { get; }
 }

@@ -9604,6 +9604,14 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
         vecCon->gtSimdVal     = simd_t::Zero();
         return vecCon;
     }
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    else if (varTypeIsMask(type))
+    {
+        GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
+        mskCon->gtSimdMaskVal = simdmask_t::Zero();
+        return mskCon;
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -16058,15 +16066,25 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         return tree;
     }
 
+    // A COMMA has no fold in this one-const path; bail before the float dispatch
+    // below, which would otherwise misroute it based on op1's unrelated type.
+    if (oper == GT_COMMA)
+    {
+        return tree;
+    }
+
+    // Floating-point operators, including compares (which have an integral
+    // result but floating-point operands), are handled separately.
+    if (varTypeIsFloating(op1))
+    {
+        return gtFoldExprSpecialFloating(tree);
+    }
+
     /* We only consider TYP_INT for folding
      * Do not fold pointer arithmetic (e.g. addressing modes!) */
 
     if (oper != GT_QMARK && !varTypeIsIntOrI(type))
     {
-        if (varTypeIsFloating(type))
-        {
-            return gtFoldExprSpecialFloating(tree);
-        }
         return tree;
     }
 
@@ -16398,12 +16416,14 @@ DONE_FOLD:
 //
 GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
 {
-    assert(varTypeIsFloating(tree->TypeGet()));
     assert(tree->OperKind() & GTK_BINOP);
 
     GenTree*   op1  = tree->AsOp()->gtOp1;
     GenTree*   op2  = tree->AsOp()->gtOp2;
     genTreeOps oper = tree->OperGet();
+
+    // Compares have an integral result but floating-point operands.
+    assert(varTypeIsFloating(op1) && varTypeIsFloating(op2));
 
     GenTree* op;
     GenTree* cons;
@@ -16445,6 +16465,14 @@ GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
 
     // Here `op` is the non-constant operand, `cons` is the constant operand
     // and `val` is the constant value.
+
+    if (((op->gtFlags & GTF_SIDE_EFFECT) != 0) && tree->OperIsCompare() && ((tree->gtFlags & GTF_RELOP_JMP_USED) != 0))
+    {
+        // TODO-CQ: Some phases currently have an invariant that JTRUE(x)
+        // must have x be a relational operator. As such, we cannot currently
+        // fold such cases and need to preserve the tree as is.
+        return tree;
+    }
 
     switch (oper)
     {
@@ -16492,18 +16520,7 @@ GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
         }
 
         case GT_EQ:
-        {
-            assert((tree->gtFlags & GTF_RELOP_NAN_UN) == 0);
-
-            if (FloatingPointUtils::isNaN(val))
-            {
-                // Comparison with NaN is always false
-                op = gtWrapWithSideEffects(NewMorphedIntConNode(0), op, GTF_ALL_EFFECT);
-                goto DONE_FOLD;
-            }
-            break;
-        }
-
+        case GT_NE:
         case GT_GE:
         case GT_GT:
         case GT_LE:
@@ -16511,16 +16528,9 @@ GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
         {
             if (FloatingPointUtils::isNaN(val))
             {
-                if ((tree->gtFlags & GTF_RELOP_NAN_UN) != 0)
-                {
-                    // Unordered comparison with NaN is always true
-                    op = gtWrapWithSideEffects(NewMorphedIntConNode(1), op, GTF_ALL_EFFECT);
-                }
-                else
-                {
-                    // Comparison with NaN is always false
-                    op = gtWrapWithSideEffects(NewMorphedIntConNode(0), op, GTF_ALL_EFFECT);
-                }
+                // Ordered comparison with NaN is always false; unordered is always true
+                int result = ((tree->gtFlags & GTF_RELOP_NAN_UN) != 0) ? 1 : 0;
+                op         = gtWrapWithSideEffects(NewMorphedIntConNode(result), op, GTF_ALL_EFFECT);
                 goto DONE_FOLD;
             }
             break;
@@ -16547,19 +16557,6 @@ GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
 
             // We cannot handle `x *  0 ==  0` or ` 0 * x ==  0` since `-0 *  0 == -0`
             // We cannot handle `x * -0 == -0` or `-0 * x == -0` since `-0 * -0 ==  0`
-            break;
-        }
-
-        case GT_NE:
-        {
-            assert((tree->gtFlags & GTF_RELOP_NAN_UN) == 0);
-
-            if (FloatingPointUtils::isNaN(val))
-            {
-                // Comparison with NaN is always true
-                op = gtWrapWithSideEffects(NewMorphedIntConNode(1), op, GTF_ALL_EFFECT);
-                goto DONE_FOLD;
-            }
             break;
         }
 
@@ -22200,6 +22197,8 @@ bool GenTree::isCommutativeHWIntrinsic() const
         {
 #ifdef TARGET_XARCH
             case NI_X86Base_MultiplyAddAdjacent:
+            case NI_AVX2_MultiplyAddAdjacent:
+            case NI_AVX512_MultiplyAddAdjacent:
             {
                 return !varTypeIsShort(node->GetSimdBaseType());
             }
@@ -26101,9 +26100,6 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types type,
                         needsFixup = cnsNode->IsFloatNegativeZero();
                     }
                     else
-                    {
-                        needsFixup = cnsNode->IsVectorZero();
-                    }
                     {
                         needsFixup = cnsNode->IsVectorNegativeZero(simdBaseType);
                     }
@@ -30774,7 +30770,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
 {
     GenTree* addr = nullptr;
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_WASM)
     NamedIntrinsic      intrinsicId = GetHWIntrinsicId();
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
 
@@ -30964,7 +30960,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
         }
     }
 #endif // TARGET_XARCH
-#endif // TARGET_XARCH || TARGET_ARM64
+#endif // TARGET_XARCH || TARGET_ARM64 || TARGET_WASM
 
     if (pAddr != nullptr)
     {
@@ -31031,7 +31027,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
 {
     GenTree* addr = nullptr;
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_WASM)
     NamedIntrinsic      intrinsicId = GetHWIntrinsicId();
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
 
@@ -31104,7 +31100,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
         }
     }
 #endif // TARGET_XARCH
-#endif // TARGET_XARCH || TARGET_ARM64
+#endif // TARGET_XARCH || TARGET_ARM64 || TARGET_WASM
 
     if (pAddr != nullptr)
     {
@@ -31625,7 +31621,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(bool* isScalar, bool getE
                 {
                     oper = GT_NEG;
                 }
-                else if (isScalar && op1->IsCnsVec() && op1->AsVecCon()->IsScalarZero(simdBaseType))
+                else if (*isScalar && op1->IsCnsVec() && op1->AsVecCon()->IsScalarZero(simdBaseType))
                 {
                     oper = GT_NEG;
                 }
@@ -36261,15 +36257,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 if (op1->IsVectorAllBitsSet())
                 {
-                    if ((op3->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    if ((op3->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
                     {
-                        // op3 has side effects, this would require us to append a new statement
-                        // to ensure that it isn't lost, which isn't safe to do from the general
-                        // purpose handler here. We'll recognize this and mark it in VN instead
                         break;
                     }
-
-                    // op3 has no side effects, so we can return op2 directly
                     return op2;
                 }
 
@@ -36307,15 +36298,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 if (op1->IsTrueMask(simdBaseType))
                 {
-                    if ((op3->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    if ((op3->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
                     {
-                        // op3 has side effects, this would require us to append a new statement
-                        // to ensure that it isn't lost, which isn't safe to do from the general
-                        // purpose handler here. We'll recognize this and mark it in VN instead
                         break;
                     }
-
-                    // op3 has no side effects, so we can return op2 directly
                     return op2;
                 }
 
@@ -36545,21 +36531,20 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 if (maskIsAllBitsSet)
                 {
-                    if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
                     {
-                        // op1 has side effects, this would require us to append a new statement
-                        // to ensure that it isn't lost, which isn't safe to do from the general
-                        // purpose handler here. We'll recognize this and mark it in VN instead
                         break;
                     }
-
-                    // op1 has no side effects, so we can return op2 directly
                     return op2;
                 }
 
                 if (maskIsZero)
                 {
-                    return gtWrapWithSideEffects(op1, op2, GTF_ALL_EFFECT);
+                    if ((op2->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+                    {
+                        break;
+                    }
+                    return op1;
                 }
 
                 break;

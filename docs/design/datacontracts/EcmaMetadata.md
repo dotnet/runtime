@@ -6,6 +6,7 @@ This contract provides methods to get a view of the ECMA-335 metadata for a give
 
 ```csharp
 TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle);
+TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle);
 System.Reflection.Metadata.MetadataReader? GetMetadata(ModuleHandle handle);
 byte[] GetReadWriteMetadata(ModuleHandle handle);
 ```
@@ -68,6 +69,12 @@ TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)
     {
         return default;
     }
+
+    // Webcil (flat) images -- e.g. a ReadyToRun corelib on WASM -- are a stripped/rewrapped PE that
+    // cannot be parsed as a standard PE. They begin with the magic 'WbIL'. For those, the webcil
+    // header's PeCliHeaderRva locates the CLI (COR20) header, whose metadata directory (RVA + size at
+    // offset 8) locates the ECMA-335 metadata. RVAs are resolved via the loader's webcil-aware
+    // GetILAddr. For non-webcil images, read the CLI header from the PE headers as below.
 
     // Read CLR header per https://learn.microsoft.com/windows/win32/debug/pe-format
     ulong clrHeaderRVA = ...
