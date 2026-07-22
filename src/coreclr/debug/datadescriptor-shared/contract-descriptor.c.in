@@ -42,7 +42,7 @@ extern void* EMSCRIPTEN_KEEPALIVE GETTER_NAME(CONTRACT_NAME)()
 {
     return (void*)&CONTRACT_NAME;
 }
-#elif defined(EXPORT_CONTRACT) && defined(__wasm__)
+#elif defined(EXPORT_CONTRACT) && defined(TARGET_WASM)
 // Non-emscripten wasm (e.g. wasi-sdk): export the getter with an explicit export name so the
 // descriptor symbol is both reachable by a native host and, critically, kept alive by the linker.
 // Without an export rooting it, --gc-sections removes the descriptor from the final module (the
@@ -52,4 +52,4 @@ void* GETTER_NAME(CONTRACT_NAME)()
 {
     return (void*)&CONTRACT_NAME;
 }
-#endif // EXPORT_CONTRACT && (__EMSCRIPTEN__ || __wasm__)
+#endif // EXPORT_CONTRACT && (__EMSCRIPTEN__ || TARGET_WASM)
