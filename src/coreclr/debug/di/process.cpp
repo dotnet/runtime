@@ -6650,8 +6650,8 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
     if (fCheckInt3)
     {
         IDacDbiInterface::TargetInfo targetInfo;
-        IfFailRet(GetTargetInfo(&targetInfo));
-        if (targetInfo.arch == IDacDbiInterface::kArchX86 || targetInfo.arch == IDacDbiInterface::kArchAMD64)
+        if (SUCCEEDED(GetTargetInfo(&targetInfo)) &&
+            (targetInfo.arch == IDacDbiInterface::kArchX86 || targetInfo.arch == IDacDbiInterface::kArchAMD64))
         {
             if (size == 1 && buffer[0] == 0xCC)
             {
