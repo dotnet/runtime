@@ -565,26 +565,6 @@ public:
             return 0;
         }
 
-        LclVarDsc* lcl = comp->lvaGetDesc(lclNum);
-        if (lcl->lvIsParam)
-        {
-            // Avoid decomposing a whole-struct operation when any induced access covers only part of a floating-point
-            // parameter register segment. Reconstructing that segment at the destination can be more expensive than
-            // preserving the original struct operation. Reject all induced promotions so we do not partially decompose
-            // it.
-            for (const PrimitiveAccess& inducedAccess : m_inducedAccesses)
-            {
-                bool requiresFloatingPointRegisterReconstruction;
-                if (Promotion::MapsToParameterRegister(comp, lclNum, inducedAccess.Offset, inducedAccess.AccessType,
-                                                       &requiresFloatingPointRegisterReconstruction) &&
-                    requiresFloatingPointRegisterReconstruction)
-                {
-                    JITDUMP("Not promoting induced accesses that require floating-point register reconstruction\n");
-                    return 0;
-                }
-            }
-        }
-
         int numReps = 0;
         JITDUMP("Picking induced promotions for V%02u\n", lclNum);
         for (PrimitiveAccess& inducedAccess : m_inducedAccesses)
@@ -727,13 +707,6 @@ public:
         weight_t countOverlappedCallArgWtd        = 0;
         weight_t countOverlappedStoredFromCallWtd = 0;
 
-        bool mapsToParameterRegister = false;
-        if (lcl->lvIsParam)
-        {
-            mapsToParameterRegister =
-                Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType);
-        }
-
         bool overlap = false;
         for (const Access& otherAccess : m_accesses)
         {
@@ -805,7 +778,7 @@ public:
         else if (lcl->lvIsParam)
         {
             // For parameters, the backend may be able to map it directly from a register.
-            if (mapsToParameterRegister)
+            if (Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType))
             {
                 // No promotion will result in a store to stack in the prolog.
                 costWithout += COST_STRUCT_ACCESS_CYCLES * comp->fgFirstBB->getBBWeight(comp);
@@ -3058,24 +3031,13 @@ GenTree* Promotion::EffectiveUser(Compiler::GenTreeStack& ancestors)
 //   lclNum     - Local being accessed into
 //   offset     - Offset being accessed at
 //   accessType - Type of access
-//   requiresFloatingPointRegisterReconstruction - [out] Whether the access covers only part of its floating-point
-//                                                 register segment
 //
 // Returns:
 //   True if the access can be efficiently done via a parameter register.
 //
-bool Promotion::MapsToParameterRegister(Compiler* comp,
-                                        unsigned  lclNum,
-                                        unsigned  offset,
-                                        var_types accessType,
-                                        bool*     requiresFloatingPointRegisterReconstruction)
+bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType)
 {
     assert(lclNum < comp->info.compArgsCount);
-
-    if (requiresFloatingPointRegisterReconstruction != nullptr)
-    {
-        *requiresFloatingPointRegisterReconstruction = false;
-    }
 
     if (comp->opts.IsOSR())
     {
@@ -3112,13 +3074,6 @@ bool Promotion::MapsToParameterRegister(Compiler* comp,
             continue;
         }
 #endif // TARGET_ARM
-
-        if (requiresFloatingPointRegisterReconstruction != nullptr)
-        {
-            *requiresFloatingPointRegisterReconstruction =
-                varTypeUsesFloatReg(seg.GetRegisterType()) &&
-                ((offset != seg.Offset) || (genTypeSize(accessType) != seg.Size));
-        }
 
         return true;
     }
