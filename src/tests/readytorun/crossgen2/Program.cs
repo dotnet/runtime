@@ -571,7 +571,13 @@ public class Program
 
     private static bool DisposeEnumeratorTestWithConstrainedCall()
     {
-        string thisAssembly = Assembly.GetExecutingAssembly().Location;
+        Assembly assembly = Assembly.GetExecutingAssembly();
+        string thisAssembly = assembly.Location;
+        if (string.IsNullOrEmpty(thisAssembly))
+        {
+            // Composite WASM R2R assemblies have no location, but the entry assembly remains argv[0].
+            thisAssembly = Environment.GetCommandLineArgs()[0];
+        }
 
         using (var fs = new FileStream(thisAssembly, FileMode.Open, FileAccess.Read))
         {
