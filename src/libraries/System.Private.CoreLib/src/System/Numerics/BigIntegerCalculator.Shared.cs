@@ -73,7 +73,7 @@ namespace System.Numerics
         public static int ActualLength(ReadOnlySpan<nuint> value)
         {
             // Since we're reusing memory here, the actual length
-            // of a given value may be less then the array's length
+            // of a given value may be less than the array's length
 
             return value.LastIndexOfAnyExcept((nuint)0) + 1;
         }
@@ -664,7 +664,7 @@ namespace System.Numerics
                 // which naturally must have only native-width bits...
                 nuint digit = (valHi1 >= divHi) ? nuint.MaxValue : DivRem(valHi1, valHi0, divHi, out _);
 
-                // Our first guess may be a little bit to big
+                // Our first guess may be a little bit too big
                 while (DivideGuessTooBig(digit, valHi1, valHi0, valLo, divHi, divLo))
                 {
                     --digit;
