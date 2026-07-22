@@ -770,10 +770,9 @@ public class Program
         Console.WriteLine("Int result: {0}, expected: {1}", intResult, ExpectedIntResult);
 
         int stringResult = InstanceMethodCaller<string>.Compare("hello", "world");
-        const int ExpectedStringResult = -1;
-        Console.WriteLine("String result: {0}, expected: {1}", stringResult, ExpectedStringResult);
+        Console.WriteLine("String result: {0}, expected: less than zero", stringResult);
 
-        return intResult == ExpectedIntResult && stringResult == ExpectedStringResult;
+        return intResult == ExpectedIntResult && stringResult < 0;
     }
 
     private static string GetTypeName<T>()
