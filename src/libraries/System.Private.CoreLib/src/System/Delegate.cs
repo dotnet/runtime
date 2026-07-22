@@ -221,6 +221,8 @@ namespace System
         internal static MethodInfo GetInvokeMethod(Type delegateType)
         {
             Debug.Assert(delegateType.IsAssignableTo(typeof(Delegate)));
+            Debug.Assert(delegateType != typeof(Delegate));
+            Debug.Assert(delegateType != typeof(MulticastDelegate));
 
             MethodInfo? invoke = delegateType.GetMethod("Invoke", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             Debug.Assert(invoke is not null);
