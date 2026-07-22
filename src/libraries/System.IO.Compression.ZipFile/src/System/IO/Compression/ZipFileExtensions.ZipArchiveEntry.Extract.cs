@@ -226,9 +226,19 @@ namespace System.IO.Compression
                 destinationDirectoryFullPath = string.Concat(destinationDirectoryFullPath, new ReadOnlySpan<char>(in sep));
             }
 
-            fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(source.FullName)));
+            string sanitizedEntryPath = ArchivingUtils.SanitizeEntryFilePath(source.FullName);
 
-            if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
+            fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, sanitizedEntryPath));
+
+            // Verify the resolved path stays within the destination root. On case-insensitive platforms
+            // (Windows, macOS, iOS, tvOS) the comparison below is OrdinalIgnoreCase, which alone cannot
+            // detect a ".." segment that pops the root's final segment and re-descends into a
+            // differently-cased sibling directory (e.g. "../dest/pwn.txt" extracted into a root named
+            // "Dest"). Path.GetFullPath never re-cases the segments we supplied, so a prefix that matches
+            // only case-insensitively is the signature of exactly that escape. Require an ordinal match of
+            // the root prefix on those platforms to reject it, while still allowing benign in-root "..".
+            if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison) ||
+                (!PathInternal.IsCaseSensitive && !fileDestinationPath.StartsWith(destinationDirectoryFullPath, StringComparison.Ordinal)))
             {
                 throw new IOException(SR.IO_ExtractingResultsInOutside);
             }
