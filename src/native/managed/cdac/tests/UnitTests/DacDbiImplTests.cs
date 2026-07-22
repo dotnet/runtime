@@ -1277,7 +1277,7 @@ public unsafe class DacDbiImplTests
         var gcInfo = new Mock<IGCInfo>();
         IGCInfoHandle gcInfoHandle = Mock.Of<IGCInfoHandle>();
         gcInfo.Setup(g => g.DecodePlatformSpecificGCInfo(gcInfoAddress, gcVersion)).Returns(gcInfoHandle);
-        gcInfo.Setup(g => g.GetAmbientSP(gcInfoHandle, NativeOffset, new TargetPointer(0x6000), new TargetPointer(0x7000)))
+        gcInfo.Setup(g => g.GetAmbientSP(gcInfoHandle, (uint)NativeOffset, new TargetPointer(0x6000), new TargetPointer(0x7000)))
             .Returns(TargetPointer.Null);
 
         var target = new TestPlaceholderTarget.Builder(arch)
