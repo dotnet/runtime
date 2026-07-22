@@ -24,6 +24,13 @@ namespace System.Threading.RateLimiting
         private long _failedLeasesCount;
         private long _successfulLeasesCount;
 
+        /// <summary>
+        /// Function to calculate elapsed time from a given tick value.
+        /// Defaults to <see cref="RateLimiterHelper.GetElapsedTime(long?)"/>.
+        /// In tests, this field can be reassigned via reflection to inject custom time behavior without modifying the public API.
+        /// </summary>
+        private readonly Func<long?, TimeSpan?> _getElapsedTime = RateLimiterHelper.GetElapsedTime;
+
         private readonly Timer? _renewTimer;
         private readonly SlidingWindowRateLimiterOptions _options;
         private readonly TimeSpan _replenishmentPeriod;
@@ -125,7 +132,11 @@ namespace System.Threading.RateLimiting
                 }
 
                 Interlocked.Increment(ref _failedLeasesCount);
-                return FailedLease;
+                lock (Lock)
+                {
+                    // CreateFailedSlidingWindowLease requires Lock to be held - see comment on its declaration.
+                    return CreateFailedSlidingWindowLease(0);
+                }
             }
 
             lock (Lock)
@@ -135,9 +146,9 @@ namespace System.Threading.RateLimiting
                     return lease;
                 }
 
-                // TODO: Acquire additional metadata during a failed lease decision
                 Interlocked.Increment(ref _failedLeasesCount);
-                return FailedLease;
+                // Still holding Lock from the top of this block - required by CreateFailedSlidingWindowLease.
+                return CreateFailedSlidingWindowLease(permitCount);
             }
         }
 
@@ -204,8 +215,9 @@ namespace System.Threading.RateLimiting
                     else
                     {
                         Interlocked.Increment(ref _failedLeasesCount);
-                        // Don't queue if queue limit reached and QueueProcessingOrder is OldestFirst
-                        return new ValueTask<RateLimitLease>(FailedLease);
+                        // Don't queue if queue limit reached and QueueProcessingOrder is OldestFirst.
+                        // Still holding Lock from the top of this block - required by CreateFailedSlidingWindowLease.
+                        return new ValueTask<RateLimitLease>(CreateFailedSlidingWindowLease(permitCount));
                     }
                 }
 
@@ -216,6 +228,50 @@ namespace System.Threading.RateLimiting
 
                 return new ValueTask<RateLimitLease>(registration.Task);
             }
+        }
+
+        // All callers of this method must hold Lock. _requestsPerSegment and _currentSegmentIndex are only otherwise
+        // mutated under Lock (in ReplenishInternal), so reading them here without it would risk a torn read (a mix of
+        // pre- and post-replenish state) rather than a clean snapshot. If a new call site is ever added, it must
+        // acquire Lock before calling this method.
+        //
+        // Note: like FixedWindowRateLimiter.CreateFailedWindowLease, this estimate ignores queue state. If permits are
+        // available (_permitCount >= permitCount) but the request still fails because it can't jump an OldestFirst
+        // queue, neededPermits floors at 1 and the estimate is based on segment replenishment timing even though the
+        // real blocker is queue draining, not permit scarcity.
+        private SlidingWindowLease CreateFailedSlidingWindowLease(int permitCount)
+        {
+            // How many permits still need to free up to satisfy this request. Math.Max(1, ...) covers the
+            // permitCount == 0 fast-path case, where we just need *any* permit to become available
+            // (i.e. _permitCount > 0).
+            int neededPermits = Math.Max(1, permitCount - _permitCount);
+
+            // Walk forward from the oldest segment (the next to be freed) toward the newest, accumulating how many
+            // permits each segment will release, until we've accounted for enough to satisfy the request.
+            int cumulativeFreed = 0;
+            int periodsUntilEnough = _options.SegmentsPerWindow;
+            for (int i = 1; i <= _options.SegmentsPerWindow; i++)
+            {
+                int segmentIndex = (_currentSegmentIndex + i) % _options.SegmentsPerWindow;
+                cumulativeFreed += _requestsPerSegment[segmentIndex];
+                if (cumulativeFreed >= neededPermits)
+                {
+                    periodsUntilEnough = i;
+                    break;
+                }
+            }
+
+            TimeSpan? elapsedInCurrentPeriod = _getElapsedTime(_lastReplenishmentTick);
+            long remainingTicksInCurrentPeriod = _replenishmentPeriod.Ticks - (elapsedInCurrentPeriod?.Ticks ?? 0);
+            long remainingTicks = _replenishmentPeriod.Ticks * (periodsUntilEnough - 1) + remainingTicksInCurrentPeriod;
+
+            // Clamp to zero if negative (segment(s) expired but not yet replenished)
+            if (remainingTicks < 0)
+            {
+                remainingTicks = 0;
+            }
+
+            return new SlidingWindowLease(false, TimeSpan.FromTicks(remainingTicks));
         }
 
         private bool TryLeaseUnsynchronized(int permitCount, [NotNullWhen(true)] out RateLimitLease? lease)
@@ -298,7 +354,7 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                _lastReplenishmentTick = nowTicks;
+                Volatile.Write(ref _lastReplenishmentTick, nowTicks);
 
                 // Increment the current segment index while move the window
                 // We need to know the no. of requests that were acquired in a segment previously to ensure that we don't acquire more than the permit limit.
