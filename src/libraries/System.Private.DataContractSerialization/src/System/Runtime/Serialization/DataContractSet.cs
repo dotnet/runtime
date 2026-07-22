@@ -224,7 +224,14 @@ namespace System.Runtime.Serialization.DataContracts
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public DataContract GetDataContract(Type type, bool verifyConstructor = true)
+        public DataContract GetDataContract(Type type)
+        {
+            return GetDataContract(type, verifyConstructor: true);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private DataContract GetDataContract(Type type, bool verifyConstructor)
         {
             if (_surrogateProvider == null)
                 return DataContract.GetDataContract(type, verifyConstructor);
