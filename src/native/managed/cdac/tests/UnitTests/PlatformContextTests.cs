@@ -96,6 +96,16 @@ public class PlatformContextTests
         Assert.False(ctx.TryReadRegister(regNum, out _));
     }
 
+    [Fact]
+    public void X86_ContextFlags_MatchNativeContext()
+    {
+        var ctx = new X86Context();
+
+        Assert.Equal(0x00010001u, ctx.ContextControlFlags);
+        Assert.Equal(0x00010007u, ctx.FullContextFlags);
+        Assert.Equal(0x0001003fu, ctx.AllContextFlags);
+    }
+
     [Theory]
     [InlineData(0, 0x1234UL)]   // R0
     [InlineData(3, 0x2000UL)]   // Sp

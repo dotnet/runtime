@@ -7347,8 +7347,11 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
             || methodTable == CoreLibBinder::GetClass(CLASS__UINT32)
             || methodTable == CoreLibBinder::GetClass(CLASS__INT64)
             || methodTable == CoreLibBinder::GetClass(CLASS__UINT64)
+            || methodTable == CoreLibBinder::GetClass(CLASS__INT128)
+            || methodTable == CoreLibBinder::GetClass(CLASS__UINT128)
             || methodTable == CoreLibBinder::GetClass(CLASS__INTPTR)
             || methodTable == CoreLibBinder::GetClass(CLASS__UINTPTR)
+            || methodTable == CoreLibBinder::GetClass(CLASS__GUID)
             || methodTable == CoreLibBinder::GetClass(CLASS__RUNE)
             || methodTable->IsEnum()
             || IsBitwiseEquatable(typeHandle, methodTable))
@@ -10184,6 +10187,12 @@ CORINFO_WASM_TYPE_SYMBOL_HANDLE CEEInfo::getWasmTypeSymbol(
     UNREACHABLE_RET();
 }
 
+void CEEInfo::getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();
+}
+
 CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
 {
     CONTRACTL {
@@ -10359,7 +10368,7 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     EE_TO_JIT_TRANSITION();
 }
 
-CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg)
+CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg)
 {
     CONTRACTL {
         THROWS;
@@ -10387,11 +10396,11 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHa
     {
         if (sig.IsReturnTypeVoid())
         {
-            pTypicalAwaitMD = pMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_VALUETASK_WITH_RESULT);
+            pTypicalAwaitMD = pMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_VALUETASK);
         }
         else
         {
-            pTypicalAwaitMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_VALUETASK_OF_T_WITH_RESULT);
+            pTypicalAwaitMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_VALUETASK_OF_T);
             pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&retType, 1), TRUE);
         }
     }
@@ -10399,14 +10408,20 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHa
     {
         if (sig.IsReturnTypeVoid())
         {
-            pTypicalAwaitMD = pMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_TASK_WITH_RESULT);
+            pTypicalAwaitMD = pMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_TASK);
         }
         else
         {
-            pTypicalAwaitMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_TASK_OF_T_WITH_RESULT);
+            pTypicalAwaitMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_TASK_OF_T);
             pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&retType, 1), TRUE);
         }
     }
+
+    // The context for inlining the await call, mirroring what getCallInfo would
+    // report as its contextHandle. By default this is the returned method
+    // itself (an exact instantiation, or an approximate/shared one when a
+    // runtime lookup is required for the instantiation argument).
+    MethodDesc* pInliningContext = pMD;
 
     if (pMD->RequiresInstArg())
     {
@@ -10420,8 +10435,12 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHa
             instArg->lookupKind.needsRuntimeLookup = false;
             instArg->constLookup.accessType = IAT_VALUE;
             instArg->constLookup.addr = pContext;
+            // The exact instantiation is known, so use it as the inlining context.
+            pInliningContext = pContext;
         }
     }
+
+    *contextHandle = MAKE_METHODCONTEXT(pInliningContext);
 
     EE_TO_JIT_TRANSITION();
 
@@ -10920,7 +10939,9 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
 #endif
 
 #ifdef PROFILING_SUPPORTED
-    if (CORProfilerTrackEnterLeave() && !ftn->IsNoMetadata())
+    // P/Invokes are surfaced to profilers via ManagedToUnmanaged/UnmanagedToManaged
+    // transition callbacks, not Enter/Leave, so exclude them from ELT.
+    if (CORProfilerTrackEnterLeave() && !ftn->IsNoMetadata() && !ftn->IsPInvoke())
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE);
 
     if (CORProfilerTrackTransitions())
@@ -14313,6 +14334,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
     case READYTORUN_FIXUP_IndirectPInvokeTarget:
         {
             MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
@@ -14322,6 +14344,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             result = (size_t)(LPVOID)&(pMD->m_pPInvokeTarget);
         }
         break;
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 
     case READYTORUN_FIXUP_PInvokeTarget:
         {
@@ -15418,6 +15441,24 @@ CorInfoReloc CEEInfo::getRelocTypeHint(void * target)
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.
     return CorInfoReloc::NONE;
+}
+
+uint32_t CEEInfo::getAddressAlignment(void* address)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (address == NULL)
+    {
+        return 1;
+    }
+
+    // For an absolute runtime address the guaranteed alignment is the largest power of two that
+    // divides it. Cap at the page size, since image rebasing only preserves alignment within a
+    // page.
+    size_t addr     = (size_t)address;
+    size_t lowestBit = addr & (~addr + 1);
+    size_t maxAlign  = 0x1000;
+    return (uint32_t)(lowestBit < maxAlign ? lowestBit : maxAlign);
 }
 
 uint32_t CEEInfo::getExpectedTargetArchitecture()

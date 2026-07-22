@@ -157,7 +157,8 @@ public abstract class CdacStressTestBase
 
     /// <summary>
     /// Asserts the GCREFS stress run produced a <c>[GC_STATS]</c> summary
-    /// with at least one verification and no hard failures.
+    /// with at least one verification, no hard failures, and no deferred
+    /// (known-issue) frames.
     /// </summary>
     internal static void AssertAllPassed(CdacStressResults results, string debuggeeName)
     {
@@ -173,33 +174,13 @@ public abstract class CdacStressTestBase
             "did not initialize correctly.\n" +
             $"Log: {results.LogFilePath}");
 
-        if (results.Failed > 0)
+        if (results.Failed > 0 || results.KnownIssues > 0)
         {
             string analysis = results.AnalyzeFailures(maxFailures: 3);
             Assert.Fail(
                 $"GCREFS stress test '{debuggeeName}' had {results.Failed} failure(s) " +
-                $"out of {results.TotalVerifications} verifications " +
-                $"({results.KnownIssues} known issue(s) tolerated).\n" +
-                $"Log: {results.LogFilePath}\n\n{analysis}");
-        }
-
-        // On supported targets every Frame's caller-arg refs are enumerated via
-        // the GCRefMap blob synthesized by ICallingConvention -- there should be
-        // no deferred frames at all, so any KnownIssue count is a regression.
-        GetTargetPlatform(out OSPlatform os, out Architecture arch);
-        bool requiresZeroKnownIssues =
-            os == OSPlatform.Windows && arch is Architecture.X86 or Architecture.X64;
-        if (requiresZeroKnownIssues && results.KnownIssues > 0)
-        {
-            string analysis = results.AnalyzeFailures(maxFailures: 3);
-            Assert.Fail(
-                $"GCREFS stress test '{debuggeeName}' had {results.KnownIssues} known issue(s) " +
-                $"out of {results.TotalVerifications} verifications. " +
-                "Windows x86 / x64 are expected to enumerate every transition Frame's " +
-                "caller-stack refs via ICallingConvention.TryComputeArgGCRefMapBlob with no " +
-                "deferred frames. A non-zero KnownIssues count indicates the encoder declined " +
-                "a method it should support (e.g. a regression in ComputeArgGCRefMapBlobCore " +
-                "or a new code path returning E_NOTIMPL).\n" +
+                $"and {results.KnownIssues} known issue(s) out of " +
+                $"{results.TotalVerifications} verifications.\n" +
                 $"Log: {results.LogFilePath}\n\n{analysis}");
         }
     }

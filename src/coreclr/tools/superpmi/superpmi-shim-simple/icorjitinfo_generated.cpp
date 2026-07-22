@@ -851,9 +851,10 @@ void interceptor_ICJI::getAsyncInfo(
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(
           CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
           CORINFO_LOOKUP* instArg)
 {
-    return original_ICorJitInfo->getAwaitReturnCall(callerHandle, instArg);
+    return original_ICorJitInfo->getAwaitReturnCall(callerHandle, contextHandle, instArg);
 }
 
 mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
@@ -912,6 +913,18 @@ CorInfoWasmType interceptor_ICJI::getWasmLowering(
           CORINFO_CLASS_HANDLE structHnd)
 {
     return original_ICorJitInfo->getWasmLowering(structHnd);
+}
+
+uint32_t interceptor_ICJI::getAddressAlignment(
+          void* address)
+{
+    return original_ICorJitInfo->getAddressAlignment(address);
+}
+
+void interceptor_ICJI::getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    original_ICorJitInfo->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
 }
 
 uint32_t interceptor_ICJI::getThreadTLSIndex(

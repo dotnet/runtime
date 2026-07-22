@@ -4425,7 +4425,35 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     DEBUG_REP(dmpGetAsyncInfo(0, value));
 }
 
-void MethodContext::recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_LOOKUP* instArg, CORINFO_METHOD_HANDLE methHnd)
+void MethodContext::recGetWasmWellKnownGlobals(const CORINFO_WASM_WELLKNOWN_GLOBALS* pBaseGlobals)
+{
+    if (GetWasmWellKnownGlobals == nullptr)
+        GetWasmWellKnownGlobals = new LightWeightMap<DWORD, Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS>();
+
+    Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS value;
+    ZeroMemory(&value, sizeof(value));
+
+    value.stackPointer = CastHandle(pBaseGlobals->stackPointer);
+    value.imageBase    = CastHandle(pBaseGlobals->imageBase);
+    value.tableBase    = CastHandle(pBaseGlobals->tableBase);
+
+    GetWasmWellKnownGlobals->Add(0, value);
+    DEBUG_REC(dmpGetWasmWellKnownGlobals(0, value));
+}
+void MethodContext::dmpGetWasmWellKnownGlobals(DWORD key, const Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS& value)
+{
+    printf("GetWasmWellKnownGlobals key %u value stackPointer-%016" PRIX64 " imageBase-%016" PRIX64 " tableBase-%016" PRIX64,
+        key, value.stackPointer, value.imageBase, value.tableBase);
+}
+void MethodContext::repGetWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS value = LookupByKeyOrMissNoMessage(GetWasmWellKnownGlobals, 0);
+    pWellKnownGlobalsOut->stackPointer = (CORINFO_WASM_GLOBAL_SYMBOL_HANDLE)value.stackPointer;
+    pWellKnownGlobalsOut->imageBase    = (CORINFO_WASM_GLOBAL_SYMBOL_HANDLE)value.imageBase;
+    pWellKnownGlobalsOut->tableBase    = (CORINFO_WASM_GLOBAL_SYMBOL_HANDLE)value.tableBase;
+    DEBUG_REP(dmpGetWasmWellKnownGlobals(0, value));
+}
+void MethodContext::recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg, CORINFO_METHOD_HANDLE methHnd)
 {
     if (GetAwaitReturnCall == nullptr)
         GetAwaitReturnCall = new LightWeightMap<DWORDLONG, Agnostic_GetAwaitReturnCallResult>();
@@ -4433,6 +4461,7 @@ void MethodContext::recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORIN
     Agnostic_GetAwaitReturnCallResult value;
     ZeroMemory(&value, sizeof(value));
     value.methodHnd = CastHandle(methHnd);
+    value.contextHandle = CastHandle(*contextHandle);
     value.instArg = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(instArg);
 
     GetAwaitReturnCall->Add(CastHandle(callerHnd), value);
@@ -4440,14 +4469,16 @@ void MethodContext::recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORIN
 }
 void MethodContext::dmpGetAwaitReturnCall(DWORDLONG key, Agnostic_GetAwaitReturnCallResult& value)
 {
-    printf("GetAwaitReturnCall key %016" PRIX64 " value methodHnd-%016" PRIX64 " instArg %s",
+    printf("GetAwaitReturnCall key %016" PRIX64 " value methodHnd-%016" PRIX64 " contextHandle-%016" PRIX64 " instArg %s",
         key,
         value.methodHnd,
+        value.contextHandle,
         SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value.instArg).c_str());
 }
-CORINFO_METHOD_HANDLE MethodContext::repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_LOOKUP* instArg)
+CORINFO_METHOD_HANDLE MethodContext::repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg)
 {
     const Agnostic_GetAwaitReturnCallResult& result = LookupByKeyOrMissNoMessage(GetAwaitReturnCall, CastHandle(callerHnd));
+    *contextHandle = (CORINFO_CONTEXT_HANDLE)result.contextHandle;
     *instArg = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(result.instArg);
     return (CORINFO_METHOD_HANDLE)result.methodHnd;
 }
@@ -6478,6 +6509,39 @@ CorInfoReloc MethodContext::repGetRelocTypeHint(void* target)
 
     DEBUG_REP(dmpGetRelocTypeHint(key, (DWORD)retVal));
     return retVal;
+}
+
+void MethodContext::recGetAddressAlignment(void* address, uint32_t result)
+{
+    if (GetAddressAlignment == nullptr)
+        GetAddressAlignment = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key   = CastPointer(address);
+    DWORD     value = (DWORD)result;
+    GetAddressAlignment->Add(key, value);
+    DEBUG_REC(dmpGetAddressAlignment(key, value));
+}
+void MethodContext::dmpGetAddressAlignment(DWORDLONG key, DWORD value)
+{
+    printf("GetAddressAlignment key addr-%016" PRIX64 ", value align-%u", key, value);
+}
+uint32_t MethodContext::repGetAddressAlignment(void* address)
+{
+    DWORDLONG key = CastPointer(address);
+
+    if ((GetAddressAlignment == nullptr) || (GetAddressAlignment->GetIndex(key) == -1))
+    {
+#ifdef sparseMC
+        LogDebug("Sparse - repGetAddressAlignment yielding fake answer...");
+        return 1;
+#else
+        LogException(EXCEPTIONCODE_MC, "Didn't find %016" PRIX64 "", key);
+#endif
+    }
+
+    DWORD value = GetAddressAlignment->Get(key);
+    DEBUG_REP(dmpGetAddressAlignment(key, value));
+    return (uint32_t)value;
 }
 
 void MethodContext::recGetExpectedTargetArchitecture(DWORD result)

@@ -32,6 +32,7 @@ namespace Profiler.Tests
                               string reverseServerName = null,
                               bool loadAsNotification = false,
                               int notificationCopies = 1,
+                              bool appendNotificationSeparator = true,
                               string envVarProfilerPrefix = "DOTNET")
         {
             string arguments;
@@ -55,11 +56,22 @@ namespace Profiler.Tests
                     StringBuilder builder = new StringBuilder();
                     for (int i = 0; i < notificationCopies; ++i)
                     {
+                        if (i > 0)
+                        {
+                            builder.Append(";");
+                        }
+
                         builder.Append(profilerPath);
                         builder.Append("=");
                         builder.Append("{");
                         builder.Append(profilerClsid.ToString());
                         builder.Append("}");
+                    }
+
+                    // A trailing separator is optional. Omitting it exercises the common
+                    // real-world form where the final (or only) entry has no trailing ';'.
+                    if (appendNotificationSeparator)
+                    {
                         builder.Append(";");
                     }
 

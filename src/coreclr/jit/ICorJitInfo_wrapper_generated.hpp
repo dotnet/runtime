@@ -1181,10 +1181,11 @@ void WrapICorJitInfo::getAsyncInfo(
 
 CORINFO_METHOD_HANDLE WrapICorJitInfo::getAwaitReturnCall(
           CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
           CORINFO_LOOKUP* instArg)
 {
     API_ENTER(getAwaitReturnCall);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->getAwaitReturnCall(callerHandle, instArg);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getAwaitReturnCall(callerHandle, contextHandle, instArg);
     API_LEAVE(getAwaitReturnCall);
     return temp;
 }
@@ -1267,6 +1268,23 @@ CorInfoWasmType WrapICorJitInfo::getWasmLowering(
     CorInfoWasmType temp = wrapHnd->getWasmLowering(structHnd);
     API_LEAVE(getWasmLowering);
     return temp;
+}
+
+uint32_t WrapICorJitInfo::getAddressAlignment(
+          void* address)
+{
+    API_ENTER(getAddressAlignment);
+    uint32_t temp = wrapHnd->getAddressAlignment(address);
+    API_LEAVE(getAddressAlignment);
+    return temp;
+}
+
+void WrapICorJitInfo::getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    API_ENTER(getWasmWellKnownGlobals);
+    wrapHnd->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
+    API_LEAVE(getWasmWellKnownGlobals);
 }
 
 uint32_t WrapICorJitInfo::getThreadTLSIndex(
