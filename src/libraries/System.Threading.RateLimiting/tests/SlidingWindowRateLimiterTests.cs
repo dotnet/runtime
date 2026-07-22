@@ -1550,9 +1550,8 @@ namespace System.Threading.RateLimiting.Test
             replenishInternalMethod.Invoke(limiter, new object[] { currentTick + addMilliseconds * (long)(TimeSpan.TicksPerMillisecond / TickFrequency) });
         }
 
-        /// <summary>
-        /// Function that replaces the _getElapsedTime function in SlidingWindowRateLimiter to return a specified TimeSpan. Used for testing the RetryAfter metadata on failed leases.
-        /// </summary>
+        // Function that replaces the _getElapsedTime function in SlidingWindowRateLimiter to return a specified
+        // TimeSpan. Used for testing the RetryAfter metadata on failed leases.
         static internal void SetElapsedTimeSinceLastReplenishment(SlidingWindowRateLimiter limiter, TimeSpan elapsedTimeSinceLastReplenishment)
         {
             var _getElapsedTimeField = typeof(SlidingWindowRateLimiter).GetField("_getElapsedTime", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)!;
