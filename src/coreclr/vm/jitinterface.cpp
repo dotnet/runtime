@@ -6434,9 +6434,8 @@ bool CEEInfo::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return ret;
 }
 
-// Determine whether 'pModule' opted into the ECMA-335 augment for escaping value type instance
-// pointers by applying RefSafetyRulesAttribute with a version of at least 'minVersion' (11 for the
-// initial augment). The attribute is emitted at module scope by the C# compiler.
+// Determine whether 'pModule' has the RefSafetyRulesAttribute with a version
+// of at least 'minVersion'.
 static bool ModuleOptsIntoRefSafetyRules(Module* pModule, int minVersion)
 {
     STANDARD_VM_CONTRACT;
@@ -6482,19 +6481,12 @@ bool CEEInfo::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
     _ASSERTE(ftn != NULL);
 
     MethodDesc* pMD = GetMethod(ftn);
-
-    // The JIT only asks about the receiver of an instance method. This works for both direct and
-    // virtual/interface calls, and regardless of whether 'ftn' is the base (e.g. interface) method or
-    // the derived method: a method that lets 'this' escape must, together with every method it
-    // overrides, be annotated with [UnscopedRef], so inspecting the called method here is sufficient.
     _ASSERTE(!pMD->IsStatic());
 
-    // The guarantee only holds for modules that opted into the ref safety rules augment
-    // (RefSafetyRulesAttribute version 11 or above).
+    // ECMA augment III.1.7.7 allows making this escaping assumption based on
+    // RefSafetyRules and UnscopedRef attributes.
     if (ModuleOptsIntoRefSafetyRules(pMD->GetModule(), 11))
     {
-        // Per the augment, the 'this' pointer of a value type instance method does not escape
-        // the method unless the method is annotated with [UnscopedRef].
         result = (pMD->GetCustomAttribute(WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
     }
 

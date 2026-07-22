@@ -2135,9 +2135,9 @@ public:
     // base or the derived method) is sufficient.
     //
     // A 'false' result means the runtime can guarantee, based on the ECMA-335 augment tied to
-    // 'RefSafetyRulesAttribute', that the instance pointer does not escape 'ftn'. This allows the
-    // JIT to replace a heap box with a stack-allocated copy when devirtualizing calls onto boxed
-    // value types. A 'true' (conservative) result means no such guarantee can be made.
+    // 'RefSafetyRulesAttribute', that the instance pointer does not escape 'ftn'. A 'true'
+    // (conservative) result means no such guarantee can be made.
+    //
     virtual bool canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn) = 0;
 
     // Notify EE about intent to rely on given MethodInfo in the current method
