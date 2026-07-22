@@ -34,8 +34,15 @@ namespace CodeGenTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static float UnsafeAsSecondFloat_Double(double value)
         {
-            // ARM64-FULL-LINE: lsr {{x[0-9]+}}, {{x[0-9]+}}, #32
+            // X64-FULL-LINE: {{v?movshdup}} {{xmm[0-9]+}}, {{xmm[0-9]+}}
+            // ARM64-FULL-LINE: dup {{s[0-9]+}}, {{v[0-9]+}}.s[1]
             return Unsafe.Add(ref Unsafe.As<double, float>(ref value), 1);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static float UnsafeAsMisalignedFloat_Double(double value)
+        {
+            return Unsafe.As<byte, float>(ref Unsafe.AddByteOffset(ref Unsafe.As<double, byte>(ref value), 2));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -67,6 +74,10 @@ namespace CodeGenTests
             double doubleValue = BitConverter.Int64BitsToDouble(
                 ((long)BitConverter.SingleToInt32Bits(2.5f) << 32) | (uint)BitConverter.SingleToInt32Bits(1.25f));
             if (UnsafeAsSecondFloat_Double(doubleValue) != 2.5f)
+                return 0;
+
+            float expectedMisaligned = BitConverter.Int32BitsToSingle((int)(BitConverter.DoubleToInt64Bits(doubleValue) >> 16));
+            if (UnsafeAsMisalignedFloat_Double(doubleValue) != expectedMisaligned)
                 return 0;
 
             Vector128<float> floatVector = Vector128.Create(1.0f, 2.0f, 3.0f, 4.0f);

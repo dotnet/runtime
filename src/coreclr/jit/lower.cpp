@@ -9302,6 +9302,18 @@ void Lowering::FindInducedParameterRegisterLocals()
         bool useSimdGetElement = false;
 #ifdef FEATURE_SIMD
         useSimdGetElement = varTypeIsSIMD(value) && !varTypeIsSIMD(fld);
+
+#ifndef TARGET_WASM
+        if (!useSimdGetElement && varTypeIsFloating(value) && varTypeIsFloating(fld) &&
+            (fld->GetLclOffs() != regSegment->Offset) &&
+            (((fld->GetLclOffs() - regSegment->Offset) % genTypeSize(fld)) == 0))
+        {
+            assert(value->TypeIs(TYP_DOUBLE));
+            assert(fld->TypeIs(TYP_FLOAT));
+            value->gtType     = TYP_SIMD8;
+            useSimdGetElement = true;
+        }
+#endif // !TARGET_WASM
 #endif // FEATURE_SIMD
 
         if (useSimdGetElement)
