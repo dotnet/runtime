@@ -76,9 +76,9 @@ namespace System.Net.Security.Tests
 
             Assert.Equal(NegotiateAuthenticationStatusCode.Completed, lastClientStatus);
             Assert.Equal(NegotiateAuthenticationStatusCode.Completed, lastServerStatus);
+        }
 
         private static void RunMismatch(ChannelBindingKind kind)
-        {
             using SafeChannelBindingHandle clientBinding = CreateChannelBinding(kind, hashSeed: 0x42);
             using SafeChannelBindingHandle serverBinding = CreateChannelBinding(kind, hashSeed: 0x99);
 
