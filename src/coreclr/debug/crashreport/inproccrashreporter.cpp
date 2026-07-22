@@ -18,7 +18,6 @@
 
 #include <fcntl.h>
 #include <errno.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <new>
 #include <unistd.h>
@@ -608,7 +607,11 @@ InProcCrashReporter::CreateReport(
             return;
         }
 
-        assert(m_signalChainingReleasePipeReadFd >= 0);
+        if (m_signalChainingReleasePipeReadFd < 0)
+        {
+            return;
+        }
+
         while (true)
         {
             char ignored;
