@@ -568,17 +568,18 @@ public:
         LclVarDsc* lcl = comp->lvaGetDesc(lclNum);
         if (lcl->lvIsParam)
         {
-            // Avoid decomposing a whole-struct operation when any induced access covers only part of a parameter
-            // register segment. Reconstructing that segment at the destination can be more expensive than preserving
-            // the original struct operation. Reject all induced promotions so we do not partially decompose it.
+            // Avoid decomposing a whole-struct operation when any induced access covers only part of a floating-point
+            // parameter register segment. Reconstructing that segment at the destination can be more expensive than
+            // preserving the original struct operation. Reject all induced promotions so we do not partially decompose
+            // it.
             for (const PrimitiveAccess& inducedAccess : m_inducedAccesses)
             {
-                bool requiresRegisterReconstruction;
+                bool requiresFloatingPointRegisterReconstruction;
                 if (Promotion::MapsToParameterRegister(comp, lclNum, inducedAccess.Offset, inducedAccess.AccessType,
-                                                       &requiresRegisterReconstruction) &&
-                    requiresRegisterReconstruction)
+                                                       &requiresFloatingPointRegisterReconstruction) &&
+                    requiresFloatingPointRegisterReconstruction)
                 {
-                    JITDUMP("Not promoting induced accesses that require parameter register reconstruction\n");
+                    JITDUMP("Not promoting induced accesses that require floating-point register reconstruction\n");
                     return 0;
                 }
             }
@@ -3057,19 +3058,23 @@ GenTree* Promotion::EffectiveUser(Compiler::GenTreeStack& ancestors)
 //   lclNum     - Local being accessed into
 //   offset     - Offset being accessed at
 //   accessType - Type of access
-//   requiresRegisterReconstruction - [out] Whether the access covers only part of its register segment
+//   requiresFloatingPointRegisterReconstruction - [out] Whether the access covers only part of its floating-point
+//                                                 register segment
 //
 // Returns:
 //   True if the access can be efficiently done via a parameter register.
 //
-bool Promotion::MapsToParameterRegister(
-    Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType, bool* requiresRegisterReconstruction)
+bool Promotion::MapsToParameterRegister(Compiler* comp,
+                                        unsigned  lclNum,
+                                        unsigned  offset,
+                                        var_types accessType,
+                                        bool*     requiresFloatingPointRegisterReconstruction)
 {
     assert(lclNum < comp->info.compArgsCount);
 
-    if (requiresRegisterReconstruction != nullptr)
+    if (requiresFloatingPointRegisterReconstruction != nullptr)
     {
-        *requiresRegisterReconstruction = false;
+        *requiresFloatingPointRegisterReconstruction = false;
     }
 
     if (comp->opts.IsOSR())
@@ -3108,9 +3113,11 @@ bool Promotion::MapsToParameterRegister(
         }
 #endif // TARGET_ARM
 
-        if (requiresRegisterReconstruction != nullptr)
+        if (requiresFloatingPointRegisterReconstruction != nullptr)
         {
-            *requiresRegisterReconstruction = (offset != seg.Offset) || (genTypeSize(accessType) != seg.Size);
+            *requiresFloatingPointRegisterReconstruction =
+                varTypeUsesFloatReg(seg.GetRegisterType()) &&
+                ((offset != seg.Offset) || (genTypeSize(accessType) != seg.Size));
         }
 
         return true;

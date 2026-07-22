@@ -158,7 +158,7 @@ class Promotion
                                             unsigned  lclNum,
                                             unsigned  offs,
                                             var_types accessType,
-                                            bool*     requiresRegisterReconstruction = nullptr);
+                                            bool*     requiresFloatingPointRegisterReconstruction = nullptr);
 public:
     explicit Promotion(Compiler* compiler)
         : m_compiler(compiler)
