@@ -1764,6 +1764,49 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         /// <summary>
+        /// A nested property whose type has a collection populated through a constructor parameter is bound through the
+        /// null-check assignment (<c>??=</c>) path, where whether the instance was created through its constructor is
+        /// decided at run time. The collection must still be bound only once.
+        /// </summary>
+        [Fact]
+        public void CanBind_NestedTypeWithCollectionConstructorParameter()
+        {
+            string json = """
+            {
+                "Child": { "Instances": [ "a", "b" ] }
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            ContainerWithCtorCollectionChild result = config.Get<ContainerWithCtorCollectionChild>();
+
+            Assert.Equal(new[] { "a", "b" }, result.Child.Instances);
+        }
+
+        /// <summary>
+        /// When binding into an existing instance (which is not created through its constructor), a settable collection
+        /// property backed by a constructor parameter must still be bound. This guards against the deferral logic
+        /// over-skipping and silently not binding such properties.
+        /// </summary>
+        [Fact]
+        public void CanBindExistingInstance_BindsCtorMatchedCollection()
+        {
+            string json = """
+            {
+                "Instances": [ "first", "second" ]
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+            var instance = new SettableCollectionWithCaseMismatchedCtorParameter(new List<string>());
+
+            config.Bind(instance);
+
+            Assert.Equal(new[] { "first", "second" }, instance.Instances);
+        }
+
+        /// <summary>
         /// An init-only (or required) collection property that is not backed by a constructor parameter is bound in the
         /// generated Initialize method (through the object initializer). It must not be bound again in BindCore when the
         /// instance was created there, or the collection items would be duplicated.

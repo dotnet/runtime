@@ -260,6 +260,11 @@ namespace Microsoft.Extensions
             public IList<string> Instances { get; }
         }
 
+        public sealed class ContainerWithCtorCollectionChild
+        {
+            public GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter Child { get; set; }
+        }
+
         public class ParamsCollectionCtor
         {
             public ParamsCollectionCtor(params List<string> instances) => Instances = instances;
