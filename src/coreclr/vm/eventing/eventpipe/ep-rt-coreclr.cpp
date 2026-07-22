@@ -49,7 +49,7 @@ stack_walk_callback (
 
 	// Get the IP.
 	UINT_PTR control_pc = (UINT_PTR)frame->GetRegisterSet ()->ControlPC;
-	
+
 	if (!frame->IsFrameless() && frame->GetFrame()->GetFrameIdentifier() == FrameIdentifier::PrestubMethodFrame) {
 		// At the PrestubMethodFrame, the ControlPC is not valid. Since the eventpipe stackwalk is actually only based on the ip, skip this frame.
 		return SWA_CONTINUE;
@@ -164,7 +164,7 @@ ep_rt_coreclr_sample_profiler_write_sampling_event_for_threads (
 	walk_managed_stack_for_threads (sampling_thread, sampling_event);
 
 	// Resume managed execution.
-	ThreadSuspend::RestartEE (FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
+	ThreadSuspend::RestartEE (TRUE /* SuspendSucceeded */);
 
 	return;
 }
