@@ -567,6 +567,16 @@
         <target state="translated">Методы, помеченные атрибутом \"LibraryImportAttribute\", должны быть \"static\", \"partial\" и неуниверсальными. При создании источника в P/Invoke будут игнорироваться методы, отличные от \"static\", \"partial\" или универсальные.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidAttributedMethodMissingSafetyModifierDescriptionLibraryImport">
+        <source>Methods marked with 'LibraryImportAttribute' must be explicitly marked 'unsafe' or 'safe' when using the updated memory safety rules.</source>
+        <target state="new">Methods marked with 'LibraryImportAttribute' must be explicitly marked 'unsafe' or 'safe' when using the updated memory safety rules.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodMissingSafetyModifierMessageLibraryImport">
+        <source>Method '{0}' must be explicitly marked 'unsafe' or 'safe' when using the updated memory safety rules. P/Invoke source generation will ignore method '{0}'.</source>
+        <target state="new">Method '{0}' must be explicitly marked 'unsafe' or 'safe' when using the updated memory safety rules. P/Invoke source generation will ignore method '{0}'.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidAttributedMethodSignatureMessageCom">
         <source>Method '{0}' should be non-generic when on interfaces marked with the 'GeneratedComInterfaceAttribute'. COM source generation will ignore method '{0}'.</source>
         <target state="translated">Метод "{0}" должен быть неуниверсальным для интерфейсов с атрибутом "GeneratedComInterfaceAttribute". Генерация исходного кода модели COM будет игнорировать метод "{0}".</target>

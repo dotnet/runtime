@@ -50,6 +50,17 @@ namespace Microsoft.Interop
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.InvalidAttributedMethodDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.InvalidAttributedMethodMissingSafetyModifierMessageLibraryImport"/>
+        public static readonly DiagnosticDescriptor InvalidAttributedMethodMissingSafetyModifier =
+            DiagnosticDescriptorHelper.Create(
+            Ids.InvalidLibraryImportAttributeUsage,
+            GetResourceString(nameof(SR.InvalidLibraryImportAttributeUsageTitle)),
+            GetResourceString(nameof(SR.InvalidAttributedMethodMissingSafetyModifierMessageLibraryImport)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(SR.InvalidAttributedMethodMissingSafetyModifierDescriptionLibraryImport)));
+
         /// <inheritdoc cref="SR.InvalidStringMarshallingConfigurationMessageLibraryImport"/>
         public static readonly DiagnosticDescriptor InvalidStringMarshallingConfiguration =
             DiagnosticDescriptorHelper.Create(

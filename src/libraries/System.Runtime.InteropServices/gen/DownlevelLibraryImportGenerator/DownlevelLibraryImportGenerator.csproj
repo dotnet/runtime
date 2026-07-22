@@ -27,6 +27,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="..\Common\OperationExtensions.cs" Link="Common\OperationExtensions.cs" />
     <Compile Include="../Common/LibraryImportData.cs" Link="Common/LibraryImportData.cs" />
+    <Compile Include="../Common/LibraryImportGeneratorExtensions.cs" Link="Common/LibraryImportGeneratorExtensions.cs" />
     <Compile Include="../Common/UnreachableException.cs" Link="Common/UnreachableException.cs" />
   </ItemGroup>
 

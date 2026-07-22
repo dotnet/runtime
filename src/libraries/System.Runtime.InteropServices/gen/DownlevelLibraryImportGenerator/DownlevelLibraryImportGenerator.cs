@@ -275,7 +275,8 @@ namespace Microsoft.Interop
                 stubGenerator,
                 pinvokeStub.LibraryImportData,
                 innerPInvokeName,
-                pinvokeStub.StubMethodSyntaxTemplate.Identifier.Text);
+                pinvokeStub.StubMethodSyntaxTemplate.Identifier.Text,
+                pinvokeStub.StubMethodSyntaxTemplate.Modifiers.GetSafetyModifier() ?? Token(SyntaxKind.UnsafeKeyword));
 
             if (!forwardedAttributes.IsEmpty)
             {
@@ -320,7 +321,8 @@ namespace Microsoft.Interop
             ManagedToNativeStubGenerator stubGenerator,
             LibraryImportData libraryImportData,
             string stubTargetName,
-            string stubMethodName)
+            string stubMethodName,
+            SyntaxToken safetyModifier)
         {
             var dllImportArgs = new List<AttributeArgumentSyntax>
             {
@@ -356,7 +358,7 @@ namespace Microsoft.Interop
                 .AddModifiers(
                     Token(SyntaxKind.StaticKeyword),
                     Token(SyntaxKind.ExternKeyword),
-                    Token(SyntaxKind.UnsafeKeyword))
+                    safetyModifier)
                 .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
                 .WithAttributeLists(
                     SingletonList(AttributeList(

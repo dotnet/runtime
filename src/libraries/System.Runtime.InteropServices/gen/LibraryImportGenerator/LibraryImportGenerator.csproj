@@ -29,6 +29,7 @@
     <Compile Include="..\Common\ConvertToSourceGeneratedInteropFixer.cs" Link="Common\ConvertToSourceGeneratedInteropFixer.cs" />
     <Compile Include="..\Common\FixAllContextExtensions.cs" Link="Common\FixAllContextExtensions.cs" />
     <Compile Include="../Common/LibraryImportData.cs" Link="Common/LibraryImportData.cs" />
+    <Compile Include="../Common/LibraryImportGeneratorExtensions.cs" Link="Common/LibraryImportGeneratorExtensions.cs" />
     <Compile Include="../Common/UnreachableException.cs" Link="Common/UnreachableException.cs" />
   </ItemGroup>
 

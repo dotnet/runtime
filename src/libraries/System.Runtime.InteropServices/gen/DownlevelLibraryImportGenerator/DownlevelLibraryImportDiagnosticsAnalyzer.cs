@@ -24,6 +24,7 @@ namespace Microsoft.Interop.Analyzers
             ImmutableArray.Create(
                 GeneratorDiagnostics.InvalidAttributedMethodSignature,
                 GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers,
+                GeneratorDiagnostics.InvalidAttributedMethodMissingSafetyModifier,
                 GeneratorDiagnostics.InvalidStringMarshallingConfiguration,
                 GeneratorDiagnostics.ParameterTypeNotSupported,
                 GeneratorDiagnostics.ReturnTypeNotSupported,
@@ -329,6 +330,12 @@ namespace Microsoft.Interop.Analyzers
                 || !methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
             {
                 return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, methodSyntax.Identifier.GetLocation(), method.Name);
+            }
+
+            if (methodSyntax.SyntaxTree.UsesUpdatedMemorySafetyRules()
+                && methodSyntax.Modifiers.GetSafetyModifier() is null)
+            {
+                return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidAttributedMethodMissingSafetyModifier, methodSyntax.Identifier.GetLocation(), method.Name);
             }
 
             // Verify that the types the method is declared in are marked partial.
