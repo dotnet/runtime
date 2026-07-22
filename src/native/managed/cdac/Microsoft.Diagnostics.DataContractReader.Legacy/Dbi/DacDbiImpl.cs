@@ -1687,7 +1687,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             if (handleData.IsValid)
             {
-                // See https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L184
                 byte[] context = GetCurrentContextBytes(handleData.Current!);
                 context.AsSpan().CopyTo(new Span<byte>(pContext, context.Length));
             }
@@ -2005,6 +2004,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         IStackWalk sw = _target.Contracts.StackWalk;
         byte[] context = sw.GetRawContext(handle);
 
+        // See https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L184
         RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
         if (arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64)
         {
