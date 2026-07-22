@@ -2204,10 +2204,10 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
                 Object* continuationRet = nullptr;
                 Object** pContinuationRet = nullptr;
 #ifdef TARGET_WASM
-                MetaSig targetSig(pMethod);
-                if (targetSig.HasAsyncContinuation())
+                // Gate on IsAsyncMethod to match InvokeManagedMethod/InvokeCalliStub; don't preload
+                // the global, InvokeCalliStub publishes the callee's continuation into continuationRet.
+                if (pMethod->IsAsyncMethod())
                 {
-                    continuationRet = (Object*)(uintptr_t)RuntimeAsync_LoadAsyncContinuation();
                     pContinuationRet = &continuationRet;
                 }
 #endif // TARGET_WASM
