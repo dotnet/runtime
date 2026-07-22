@@ -75,9 +75,6 @@
     <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
   </ItemGroup>
 
-  <!-- Import shared native.wasm.targets for Emscripten SDK, ICU, exported functions/methods -->
-  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" />
-
   <!-- Derive Emscripten paths from EMSDK_PATH when workload paths are not set -->
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props"
           Condition="'$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
@@ -91,6 +88,63 @@
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
+
+  <!-- Fallback exported runtime methods and functions for the emcc link step.
+       Used when the workload path is active and native.wasm.targets is not available.
+       TODO-WASM https://github.com/dotnet/runtime/issues/126100#issuecomment-4925516500: Keep this list in sync with eng/native.wasm.targets.
+       When building in-tree, native.wasm.targets is imported AFTER this target (below)
+       and its GenerateEmccExports definition wins (MSBuild last-definition-wins). -->
+  <Target Name="GenerateEmccExports"
+          Condition="'$(TargetsBrowser)' == 'true'">
+    <ItemGroup>
+      <EmccExportedRuntimeMethod Include="FS" />
+      <EmccExportedRuntimeMethod Include="HEAP8" />
+      <EmccExportedRuntimeMethod Include="HEAP16" />
+      <EmccExportedRuntimeMethod Include="HEAPU8" />
+      <EmccExportedRuntimeMethod Include="HEAPU16" />
+      <EmccExportedRuntimeMethod Include="HEAP32" />
+      <EmccExportedRuntimeMethod Include="HEAPU32" />
+      <EmccExportedRuntimeMethod Include="HEAPF32" />
+      <EmccExportedRuntimeMethod Include="HEAPF64" />
+      <EmccExportedRuntimeMethod Include="HEAP64" />
+      <EmccExportedRuntimeMethod Include="HEAPU64" />
+      <EmccExportedRuntimeMethod Include="out" />
+      <EmccExportedRuntimeMethod Include="err" />
+      <EmccExportedRuntimeMethod Include="ccall" />
+      <EmccExportedRuntimeMethod Include="cwrap" />
+      <EmccExportedRuntimeMethod Include="setValue" />
+      <EmccExportedRuntimeMethod Include="getValue" />
+      <EmccExportedRuntimeMethod Include="UTF8ToString" />
+      <EmccExportedRuntimeMethod Include="UTF8ArrayToString" />
+      <EmccExportedRuntimeMethod Include="lengthBytesUTF8" />
+      <EmccExportedRuntimeMethod Include="stringToUTF8Array" />
+      <EmccExportedRuntimeMethod Include="safeSetTimeout" />
+      <EmccExportedRuntimeMethod Include="runtimeKeepalivePush" />
+      <EmccExportedRuntimeMethod Include="runtimeKeepalivePop" />
+      <EmccExportedRuntimeMethod Include="abort" />
+
+      <EmccExportedFunction Include="_free" />
+      <EmccExportedFunction Include="_htons" />
+      <EmccExportedFunction Include="_malloc" />
+      <EmccExportedFunction Include="_sbrk" />
+      <EmccExportedFunction Include="_memalign" />
+      <EmccExportedFunction Include="_posix_memalign" />
+      <EmccExportedFunction Include="_memset" />
+      <EmccExportedFunction Include="_ntohs" />
+      <EmccExportedFunction Include="stackAlloc" />
+      <EmccExportedFunction Include="stackRestore" />
+      <EmccExportedFunction Include="stackSave" />
+      <EmccExportedFunction Include="___stack_pointer" />
+      <EmccExportedFunction Include="___coreclr_wasm_rtlrestorecontext_tag" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Import shared native.wasm.targets for Emscripten SDK, ICU, exported functions/methods.
+       Only available in-tree (RepositoryEngineeringDir is set by the build system).
+       When present its GenerateEmccExports target overrides the fallback above
+       (MSBuild last-definition-wins), so the in-tree list is always authoritative. -->
+  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets"
+          Condition="'$(RepositoryEngineeringDir)' != '' and Exists('$(RepositoryEngineeringDir)native.wasm.targets')" />
 
   <!-- Allow running/debugging from VS -->
   <ItemGroup>
@@ -177,7 +231,7 @@
        served binary would be the original (runtime pack) dotnet.native.wasm. -->
   <Target Name="_CoreCLRWasmNativeForBuild"
           DependsOnTargets="WasmBuildApp"
-          BeforeTargets="_ResolveWasmOutputs"
+          BeforeTargets="_ComputeWasmBuildCandidates;_ResolveWasmOutputs"
           Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(WasmBuildOnlyAfterPublish)' != 'true' and
@@ -232,7 +286,7 @@
     _GatherWasmFilesToBuild (unlike _ComputeWasmBuildCandidates) does not pull it in on its own.
   -->
   <Target Name="_CoreCLRResolveRuntimePackVsAppLocalConflicts"
-          BeforeTargets="_ComputeWasmBuildCandidates;_GatherWasmFilesToBuild"
+          BeforeTargets="_ComputeWasmBuildCandidates;_GatherWasmFilesToBuild;_CoreCLRGatherWasmFiles"
           DependsOnTargets="ResolveReferences"
           Condition="'$(IsBrowserWasmProject)' == 'true'">
     <PropertyGroup>
@@ -318,7 +372,7 @@
     <_CoreCLRWasmBuildAppCoreDependsOn>
       _CoreCLRWasmInitialize;
       _CoreCLRSetupEmscripten;
-      _GatherWasmFilesToBuild;
+      _CoreCLRGatherWasmFiles;
       _CoreCLRPrepareForNativeBuild;
       _CoreCLRGenerateManagedToNative;
       _CoreCLRWriteCompileRsp;
@@ -333,6 +387,16 @@
   <Target Name="_CoreCLRWasmBuildAppCore"
           Condition="'$(WasmBuildNative)' == 'true'"
           DependsOnTargets="$(_CoreCLRWasmBuildAppCoreDependsOn)" />
+
+  <!-- During a nested publish, _GatherWasmFilesToPublish already populated
+       WasmAssembliesToBundle from ResolvedFileToPublish (which includes app
+       satellite assemblies). Calling _GatherWasmFilesToBuild would overwrite
+       that list with build-time items (IntermediateAssembly + ReferenceCopyLocalPaths)
+       which omit app satellites, causing ComputeWasmPublishAssets to fail.
+       Only call the SDK's _GatherWasmFilesToBuild for non-publish builds. -->
+  <Target Name="_CoreCLRGatherWasmFiles"
+          DependsOnTargets="_GatherWasmFilesToBuild"
+          Condition="'$(WasmBuildingForNestedPublish)' != 'true'" />
 
   <!-- ======================== Initialize ======================== -->
 
@@ -708,6 +772,7 @@
       <_EmccLinkStepArgs Include="-s INITIAL_MEMORY=$(WasmInitialHeapSize)" />
       <_EmccLinkStepArgs Include="-s MAXIMUM_MEMORY=$(EmccMaximumHeapSize)" />
       <_EmccLinkStepArgs Include="-s ALLOW_MEMORY_GROWTH=1" />
+      <_EmccLinkStepArgs Include="-s GROWABLE_ARRAYBUFFERS=0" />
       <_EmccLinkStepArgs Include="-s STACK_SIZE=$(EmccStackSize)" />
       <_EmccLinkStepArgs Include="-s WASM_BIGINT=1" />
 

@@ -16,7 +16,6 @@ using TestLibrary;
 
 public class Test_foreground_shutdown
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/83658", TestRuntimes.CoreCLR)]
     [Fact]
     public static int TestEntryPoint()
     {

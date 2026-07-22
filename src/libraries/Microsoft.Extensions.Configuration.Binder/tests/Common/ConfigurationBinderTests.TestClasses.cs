@@ -196,6 +196,27 @@ namespace Microsoft.Extensions
             }
         }
 
+        public class ClassWithMatchingParametersAndProperties_DifferentlyCasedCtorParam
+        {
+            private readonly string _color;
+
+            public ClassWithMatchingParametersAndProperties_DifferentlyCasedCtorParam(string color, int length)
+            {
+                _color = color;
+                this.ColorFromCtor = color;
+                this.Length = length;
+            }
+
+            public int Length { get; set; }
+
+            public string ColorFromCtor { get; }
+            public string Color
+            {
+                get => _color;
+                init => _color = "the color is " + value;
+            }
+        }
+
         public sealed class TreeElement : Dictionary<string, TreeElement>;
 
         public record TypeWithRecursionThroughCollections
