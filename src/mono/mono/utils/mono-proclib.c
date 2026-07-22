@@ -80,21 +80,53 @@ mono_cpu_count (void)
 	/* Android tries really hard to save power by powering off CPUs on SMP phones which
 	 * means the normal way to query cpu count returns a wrong value with userspace API.
 	 * Instead we use /sys entries to query the actual hardware CPU count.
+	 *
+	 * The /sys entry is a cpulist: a comma-separated list of CPU indexes and ranges,
+	 * e.g. "0", "0-7" or "0-3,5-7".
 	 */
 	int count = 0;
-	char buffer[8] = {'\0'};
+	int parse_success = 0;
+	char buffer[32];
 	int present = open ("/sys/devices/system/cpu/present", O_RDONLY);
-	/* Format of the /sys entry is a cpulist of indexes which in the case
-	 * of present is always of the form "0-(n-1)" when there is more than
-	 * 1 core, n being the number of CPU cores in the system. Otherwise
-	 * the value is simply 0
-	 */
-	if (present != -1 && read (present, (char*)buffer, sizeof (buffer)) > 3)
-		count = strtol (((char*)buffer) + 2, NULL, 10);
-	if (present != -1)
+	if (present != -1) {
+		int nread = read (present, buffer, sizeof (buffer) - 1);
 		close (present);
-	if (count > 0)
-		return count + 1;
+		if (nread > 0 && (nread < sizeof (buffer) - 1 || buffer [nread - 1] == '\n')) {
+			buffer[nread] = '\0';
+			char *p = buffer;
+			while (*p) {
+				char *endp = NULL;
+				errno = 0;
+				int lo = (int) strtol (p, &endp, 10);
+				if (endp == p || errno != 0)
+					break; /* no digits parsed, stop */
+				int hi = lo;
+				p = endp;
+				if (*p == '-') {
+					p++;
+					errno = 0;
+					hi = (int) strtol (p, &endp, 10);
+					if (endp == p || errno != 0)
+						break;
+					p = endp;
+				}
+				if (hi < lo)
+					break;
+				count += hi - lo + 1;
+
+				if (*p == ',')
+					p++;
+				else if (*p == '\n' || *p == '\0') {
+					parse_success = 1;
+					break;
+				}
+				else
+					break;
+			}
+		}
+	}
+	if (parse_success && count > 0)
+		return count;
 #endif
 
 #if defined(HOST_ARM) || defined (HOST_ARM64)
