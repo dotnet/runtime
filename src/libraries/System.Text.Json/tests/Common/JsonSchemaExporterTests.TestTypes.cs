@@ -1230,6 +1230,57 @@ namespace System.Text.Json.Schema.Tests
                         "deprecated": true
                     }
                     """);
+
+            // The same type used by both a deprecated and a non-deprecated property is
+            // duplicated rather than shared, so the "deprecated" keyword is only applied
+            // to the schema of the obsolete property.
+            yield return new TestData<PocoWithObsoletePropertiesSharingType>(
+                Value: new() { NotDeprecated = new(), Deprecated = new() },
+                ExpectedJsonSchema: """
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                          "NotDeprecated": {
+                            "type": ["object","null"],
+                            "properties": { "Value": { "type": "integer" } }
+                          },
+                          "Deprecated": {
+                            "type": ["object","null"],
+                            "properties": { "Value": { "type": "integer" } },
+                            "deprecated": true
+                          }
+                        }
+                    }
+                    """);
+
+            // A type shared via "$ref" across a deprecated and a non-deprecated collection
+            // property. The "deprecated" keyword is applied to the obsolete property and never
+            // leaks into the shared element definition referenced by both "$ref" occurrences.
+            yield return new TestData<PocoWithObsoleteCollectionProperties>(
+                Value: new() { First = [], Deprecated = [], NotDeprecated = [] },
+                ExpectedJsonSchema: """
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                          "First": {
+                            "type": ["array","null"],
+                            "items": {
+                              "type": ["object","null"],
+                              "properties": { "Value": { "type": "integer" } }
+                            }
+                          },
+                          "Deprecated": {
+                            "type": ["array","null"],
+                            "items": { "$ref": "#/properties/First/items" },
+                            "deprecated": true
+                          },
+                          "NotDeprecated": {
+                            "type": ["array","null"],
+                            "items": { "$ref": "#/properties/First/items" }
+                          }
+                        }
+                    }
+                    """);
 #pragma warning restore CS0612 // Type or member is obsolete
 
             // Collection types
@@ -1697,6 +1748,29 @@ namespace System.Text.Json.Schema.Tests
             public sealed class MyInnerObsoleteType
             {
             }
+        }
+
+        public sealed class PocoWithObsoletePropertiesSharingType
+        {
+            public PocoSharedByObsoleteMembers? NotDeprecated { get; set; }
+
+            [Obsolete]
+            public PocoSharedByObsoleteMembers? Deprecated { get; set; }
+        }
+
+        public sealed class PocoWithObsoleteCollectionProperties
+        {
+            public List<PocoSharedByObsoleteMembers>? First { get; set; }
+
+            [Obsolete]
+            public List<PocoSharedByObsoleteMembers>? Deprecated { get; set; }
+
+            public List<PocoSharedByObsoleteMembers>? NotDeprecated { get; set; }
+        }
+
+        public sealed class PocoSharedByObsoleteMembers
+        {
+            public int Value { get; set; }
         }
 
         public record TestData<T>(
