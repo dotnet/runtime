@@ -722,9 +722,6 @@ CrashReportConfigure()
     DWORD reportOnlyEnabled = 0;
     bool enableCrashReportOnly = enabledReportOnlyCfg.IsSet() && enabledReportOnlyCfg.TryAsInteger(10, reportOnlyEnabled) && reportOnlyEnabled == 1;
 
-    // Nothing configured: leave the reporter uninitialized so startup allocates
-    // nothing. The reporter is brought up on demand (e.g. from a fatal-error-handler
-    // setup path) via CrashReportInitialize when it is actually needed.
     if (!enableCrashReport && !enableCrashReportOnly)
     {
         return;
