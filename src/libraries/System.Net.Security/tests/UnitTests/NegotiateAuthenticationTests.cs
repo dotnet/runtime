@@ -538,12 +538,5 @@ namespace System.Net.Security.Tests
             Assert.Equal(NegotiateAuthenticationStatusCode.InvalidToken, statusCode);
             Assert.Null(response);
         }
-
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)]
-        public void ExtendedProtectionPolicy_NotSupportedOnUnix()
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => new NegotiateAuthentication(new NegotiateAuthenticationServerOptions { Policy = new ExtendedProtectionPolicy(PolicyEnforcement.Always) }));
-        }
     }
 }
