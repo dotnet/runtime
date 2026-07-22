@@ -167,7 +167,6 @@ public:
 
     int Count() const { return m_count; }
     const void* ModuleHandle(int i) const { return m_moduleHandles[i]; }
-
     void Reset() { m_count = 0; }
 private:
     const void* m_moduleHandles[MAX_MODULES_IN_TABLE];
@@ -352,31 +351,21 @@ public:
     static bool InitializeInstance(const InProcCrashReporterSettings& settings);
 
     // Capture the VM callbacks and process identity. Must run before the instance
-    // is published to the PAL signal-handler path. Does not arm the crash-dump
-    // behavior (watchdog / lifecycle); see InitializeServices.
+    // is published to the PAL signal-handler path.
     void Initialize(const InProcCrashReporterSettings& settings);
 
     // Initialize the env-gated crash-dump services (watchdog + lifecycle/file
-    // management) after the reporter has been initialized. Separated from
-    // Initialize so the reporter can be brought up with only its VM callbacks
-    // (making on-demand reports possible) independently of the crash-dump
-    // configuration, and so the services are started on the single configuration
-    // pass.
+    // management) after the reporter has been initialized.
     void InitializeServices(const InProcCrashReporterServicesSettings& settings);
 
     // Signal-path report generation, invoked by the PAL fatal-signal dispatcher.
-    // Returns true if the report was generated, or false if it was skipped because
-    // another report (a nested fatal signal, or an in-flight on-demand report) is
-    // already using the shared reporter state.
     bool CreateReport(
         int signal,
         void* context);
 
     // On-demand report generation. Runs the same emit core as the signal path
     // but without the watchdog or lifecycle/file management, routing the selected
-    // output format to `outputCallback`. Re-runnable (sequentially); rejects
-    // reentrant/concurrent use. Returns false if `outputCallback` is null or the
-    // call is reentered.
+    // output format to `outputCallback`.
     bool CreateReport(
         InProcCrashReportOutputFormat outputFormat,
         int signal,
@@ -397,19 +386,6 @@ private:
     InProcCrashReporter(const InProcCrashReporter&) = delete;
     InProcCrashReporter& operator=(const InProcCrashReporter&) = delete;
 
-    // State of m_reportInFlight, the single guard shared by the signal-handler and
-    // on-demand CreateReport paths. The two paths are mutually exclusive: they
-    // contend for the same signal-safe writers, module table, thread context, and
-    // the process-global ThreadSuspend machinery (SuspendEE), none of which is safe
-    // to drive from two reports at once. At most one report runs at a time on a
-    // first-come-first-served basis:
-    //   * Whichever path observes an idle guard claims it and generates its report.
-    //   * Any other report - a nested fatal signal, or a signal arriving while an
-    //     on-demand report driven by a user fatal-error handler is in flight - finds
-    //     the guard held and aborts without generating. The in-flight report (or,
-    //     for the signal case, the imminent process termination) takes over.
-    // The on-demand path releases the guard when done so it stays re-runnable; the
-    // signal path never releases it, because a fatal signal terminates the process.
     enum ReportInFlightState : LONG
     {
         ReportNotInFlight = 0,
@@ -613,13 +589,6 @@ InProcCrashReporter::CreateReport(
     int signal,
     void* context)
 {
-    // Claim the shared guard. The signal path and the on-demand path are mutually
-    // exclusive over the shared writers, module table, and the process-global
-    // ThreadSuspend machinery, so at most one report runs at a time. If a report
-    // is already in flight - an on-demand report driven by a user fatal-error
-    // handler, or a nested fatal signal - abort without generating: the in-flight
-    // report, or the imminent process termination, takes over from here. The
-    // signal path never releases the guard: a fatal signal terminates the process.
     if (InterlockedCompareExchange(&m_reportInFlight, ReportInFlight, ReportNotInFlight) != ReportNotInFlight)
     {
         return false;
@@ -653,8 +622,6 @@ InProcCrashReporter::CreateReport(
     }
     else
     {
-        // Compact-log-only mode: route the JSON emitter to the drop-all sink so
-        // it keeps its bookkeeping consistent without emitting bytes.
         m_jsonWriter.SetOutputSink(SignalSafeJsonWriter::DropAllOutputSink());
     }
 
@@ -679,10 +646,6 @@ InProcCrashReporter::CreateReport(
         return false;
     }
 
-    // Acquire the shared guard only from the idle state: yield (return false) to
-    // any report already in flight - another on-demand report, or the signal-path
-    // crash report. Mutual exclusion keeps the two paths off the shared writers
-    // and the process-global ThreadSuspend machinery at the same time.
     if (InterlockedCompareExchange(&m_reportInFlight, ReportInFlight, ReportNotInFlight) != ReportNotInFlight)
     {
         return false;
@@ -712,16 +675,10 @@ InProcCrashReporter::CreateReport(
     EndJsonReport(signal, /*finalizeReportFile*/ false);
     EndConsoleReport();
 
-    // Leave the writers and module table in a clean default state for the next
-    // run (platform console sink and drop-all JSON sink).
     m_consoleWriter.SetOutputSink(SignalSafeConsoleWriter::PlatformConsoleOutputSink());
     m_jsonWriter.SetOutputSink(SignalSafeJsonWriter::DropAllOutputSink());
     m_moduleTable.Reset();
 
-    // Release the guard so a later report (on-demand or signal) can run. This
-    // report is the sole owner while it runs: a signal that arrived in the
-    // meantime aborted without touching the guard, and other on-demand callers
-    // yielded, so a plain reset to idle is safe.
     InterlockedExchange(&m_reportInFlight, ReportNotInFlight);
     return true;
 }
@@ -953,8 +910,6 @@ InProcCrashReportInitializeServices(const InProcCrashReporterServicesSettings& s
         return;
     }
 
-    // Requires the reporter to have been initialized first (see
-    // InProcCrashReportInitialize); nothing to arm otherwise.
     InProcCrashReporter* reporter = InProcCrashReporter::GetInstance();
     if (reporter == nullptr)
     {
