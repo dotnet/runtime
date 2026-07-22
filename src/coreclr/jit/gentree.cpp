@@ -11810,7 +11810,7 @@ void Compiler::gtUpdateStmtSideEffects(Statement* stmt)
 //    tree            - Tree to update the side effects on
 //
 // Notes:
-//    This method currently only updates GTF_EXCEPT, GTF_ASG, and GTF_CALL flags.
+//    This method currently only updates GTF_EXCEPT, GTF_ASG, GTF_CALL, and GTF_ORDER_SIDEEFF flags.
 //    The other side effect flags may remain unnecessarily (conservatively) set.
 //    The caller of this method is expected to update the flags based on the children's flags.
 //
@@ -11845,6 +11845,13 @@ void Compiler::gtUpdateNodeOperSideEffects(GenTree* tree)
     else
     {
         tree->gtFlags &= ~GTF_CALL;
+    }
+
+    // Clear stale side effect flags here.  This is safe as
+    // callers are expected to recalculate this flag based on tree's children
+    if (((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !tree->OperSupportsOrderingSideEffect())
+    {
+        tree->gtFlags &= ~GTF_ORDER_SIDEEFF;
     }
 }
 
