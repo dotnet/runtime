@@ -35,7 +35,7 @@
     <Copy SourceFiles="@(NativeLibrariesToCopy)" DestinationFiles="@(NativeLibrariesToCopy -> '$(LibrarySubdirectory)/%(Filename)$(FileNameSuffix)%(Extension)')" />
   </Target>
 
-  <Target Name="SetUpSubdirectoryManaged" AfterTargets="Build">
+  <Target Name="SetUpSubdirectoryManaged" AfterTargets="Build" Condition="'$(_WillCLRTestProjectBuild)' == 'true'">
     <ItemGroup>
       <AssembliesToCopy Include="$(OutDir)/$(TargetName).dll" />
     </ItemGroup>
