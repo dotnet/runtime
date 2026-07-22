@@ -225,6 +225,9 @@ internal sealed class TypeValidation
         try
         {
             T dataClass = T.Create(target, dataAddress);
+            // Fields are read lazily, so force a full read to validate that the
+            // entire structure is readable (an unreadable field throws below).
+            (dataClass as IReadableData)?.EnsureAllFieldsRead();
             return true;
         }
         catch (VirtualReadException)

@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.InterpreterRealCodeHeader))]
 internal sealed partial class InterpreterRealCodeHeader : IData<InterpreterRealCodeHeader>
 {
-    [Field] public TargetPointer MethodDesc { get; }
-    [Field] public TargetPointer DebugInfo { get; }
-    [Field] public TargetPointer GCInfo { get; }
+    [Field] public partial TargetPointer MethodDesc { get; }
+    [Field] public partial TargetPointer DebugInfo { get; }
+    [Field] public partial TargetPointer GCInfo { get; }
 
     public EEILException? JitEHInfo { get; private set; }
 
