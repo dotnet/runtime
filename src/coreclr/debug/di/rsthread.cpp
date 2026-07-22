@@ -2734,9 +2734,7 @@ CordbUnmanagedThread::CordbUnmanagedThread(CordbProcess *pProcess, DWORD dwThrea
     m_pTLSExtendedArray(NULL),
     m_state(CUTS_None),
     m_originalHandler(NULL),
-#ifdef HOST_X86
     m_pSavedLeafSeh(NULL),
-#endif
     m_continueCountCached(0)
 {
     m_pLeftSideContext.Set(NULL);
@@ -2873,7 +2871,6 @@ VOID CordbUnmanagedThread::VerifyFSChain()
     return;
 }*/
 
-#ifdef HOST_X86
 HRESULT CordbUnmanagedThread::SaveCurrentLeafSeh()
 {
     _ASSERTE(m_pSavedLeafSeh == NULL);
@@ -2900,7 +2897,6 @@ HRESULT CordbUnmanagedThread::RestoreLeafSeh()
     m_pSavedLeafSeh = NULL;
     return S_OK;
 }
-#endif
 
 // Read the contents from the LS's Predefined TLS block.
 // This is an auxiliary TLS storage array-of-void*, indexed off the TLS.
@@ -3770,11 +3766,14 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijack(EHijackReason::EHijackReaso
     {
 // We save off the SEH handler on X86 to make sure we restore it properly after the hijack is complete
 // The hijacks don't return normally and the SEH chain might have handlers added that don't get removed by default
-#ifdef HOST_X86
-        hr = SaveCurrentLeafSeh();
-        if(FAILED(hr))
-            ThrowHR(hr);
-#endif
+        IDacDbiInterface::TargetInfo targetInfo;
+        IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+        if (targetInfo.arch == IDacDbiInterface::kArchX86)
+        {
+            hr = SaveCurrentLeafSeh();
+            if(FAILED(hr))
+                ThrowHR(hr);
+        }
         CORDB_ADDRESS LSContextAddr;
         IfFailThrow(GetProcess()->GetDAC()->Hijack(VMPTR_Thread::NullPtr(),
                                        GetOSTid(),
@@ -4043,9 +4042,12 @@ void CordbUnmanagedThread::SetupForSkipBreakpoint(NativePatch * pNativePatch)
         fTrapOnSkip = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgTrapOnSkip);
     }
 #endif
-#if defined(HOST_X86)
-    STRESS_LOG2(LF_CORDB, LL_INFO100, "CUT::SetupSkip. addr=%p. Opcode=%x\n", pNativePatch->pAddress, (DWORD) pNativePatch->opcode);
-#endif
+    IDacDbiInterface::TargetInfo targetInfo;
+    IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
+    if (targetInfo.arch == IDacDbiInterface::kArchX86)
+    {
+        STRESS_LOG2(LF_CORDB, LL_INFO100, "CUT::SetupSkip. addr=%p. Opcode=%x\n", pNativePatch->pAddress, (DWORD) pNativePatch->opcode);
+    }
 
     // Replace the BP w/ the opcode.
     RemoveRemotePatch(GetProcess(), pNativePatch->pAddress, pNativePatch->opcode);
@@ -4289,41 +4291,22 @@ BOOL CordbUnmanagedThread::IsExceptionFromLastRaiseException(const EXCEPTION_REC
 // This flavor is assuming our caller already knows the opcode.
 HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress)
 {
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    const BYTE patch = CORDbg_BREAK_INSTRUCTION;
-#elif defined(TARGET_ARM64)
-    const PRD_TYPE patch = CORDbg_BREAK_INSTRUCTION;
-#else
-    const BYTE patch = 0;
-    PORTABILITY_ASSERT("NYI: ApplyRemotePatch for this platform");
-#endif
-    HRESULT hr = pProcess->SafeWriteStruct(PTR_TO_CORDB_ADDRESS(pRemoteAddress), &patch);
+    ULONG32 patch = CORDbg_BREAK_INSTRUCTION;
+    HRESULT hr = pProcess->SafeWriteOpcode(PTR_TO_CORDB_ADDRESS(pRemoteAddress), patch);
     SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
     return S_OK;
 }
 
 
 // Get the opcode that we're replacing.
-HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, PRD_TYPE * pOpcode)
+HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 * pOpcode)
 {
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    // Read out opcode. 1 byte on x86
-    BYTE opcode;
-#elif defined(TARGET_ARM64)
-    // Read out opcode. 4 bytes on arm64
-    PRD_TYPE opcode;
-#else
-    BYTE opcode;
-    PORTABILITY_ASSERT("NYI: ApplyRemotePatch for this platform");
-#endif
-
-    HRESULT hr = pProcess->SafeReadStruct(PTR_TO_CORDB_ADDRESS(pRemoteAddress), &opcode);
+    HRESULT hr = pProcess->SafeReadOpcode(PTR_TO_CORDB_ADDRESS(pRemoteAddress), pOpcode);
     if (FAILED(hr))
     {
         return hr;
     }
 
-    *pOpcode = (PRD_TYPE) opcode;
     ApplyRemotePatch(pProcess, pRemoteAddress);
     return S_OK;
 }
@@ -4331,20 +4314,9 @@ HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, P
 //-----------------------------------------------------------------------------
 // Remove the int3 from the remote address
 //-----------------------------------------------------------------------------
-HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, PRD_TYPE opcode)
+HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 opcode)
 {
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    // Replace the BP w/ the opcode.
-    BYTE opcode2 = (BYTE) opcode;
-#elif defined(TARGET_ARM64)
-    // 4 bytes on arm64
-    PRD_TYPE opcode2 = opcode;
-#else
-    PRD_TYPE opcode2 = opcode;
-    PORTABILITY_ASSERT("NYI: RemoveRemotePatch for this platform");
-#endif
-
-    pProcess->SafeWriteStruct(PTR_TO_CORDB_ADDRESS(pRemoteAddress), &opcode2);
+    pProcess->SafeWriteOpcode(PTR_TO_CORDB_ADDRESS(pRemoteAddress), opcode);
 
     // This may fail because the module has been unloaded.  In which case, the patch is also
     // gone so it makes sense to return success.

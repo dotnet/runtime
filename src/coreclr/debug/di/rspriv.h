@@ -1153,11 +1153,11 @@ typedef enum {
 struct NativePatch
 {
     void * pAddress; // pointer into the LS address space.
-    PRD_TYPE opcode; // opcode to restore with.
+    ULONG32 opcode; // opcode to restore with.
 
     inline bool operator==(NativePatch p2)
     {
-        return memcmp(this, &p2, sizeof(p2)) == 0;
+        return (pAddress == p2.pAddress) && (opcode == p2.opcode);
     }
 };
 
@@ -1166,13 +1166,13 @@ struct NativePatch
 //-----------------------------------------------------------------------------
 
 // Remove the int3 from the remote address
-HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, PRD_TYPE opcode);
+HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 opcode);
 
 // This flavor is assuming our caller already knows the opcode.
 HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress);
 
 // Apply the patch and get the opcode that we're replacing.
-HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, PRD_TYPE * pOpcode);
+HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 * pOpcode);
 
 
 class CordbHashTable;
@@ -3279,6 +3279,12 @@ public:
     // Writes a buffer to the target
     void SafeWriteBuffer(TargetBuffer tb, const BYTE * pLocalBuffer);
 
+    // Reads the breakpoint opcode from the target, using the target's instruction width.
+    HRESULT SafeReadOpcode(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode);
+
+    // Writes an opcode to the target, using the target's instruction width.
+    HRESULT SafeWriteOpcode(CORDB_ADDRESS pRemotePtr, ULONG32 opcode);
+
 #if defined(FEATURE_INTEROP_DEBUGGING)
     void DuplicateHandleToLocalProcess(HANDLE * pLocalHandle, RemoteHANDLE * pRemoteHandle);
 #endif // FEATURE_INTEROP_DEBUGGING
@@ -3601,6 +3607,9 @@ public:
     IDacDbiInterface * GetDAC();
 
     HRESULT GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo);
+
+    // Get the width, in bytes, of the breakpoint opcode in the target's instruction stream.
+    HRESULT GetTargetOpcodeSize(ULONG32 * pcbSize);
 
     // Get the data-target, which provides access to the debuggee.
     ICorDebugDataTarget * GetDataTarget();
@@ -4111,7 +4120,7 @@ private:
     CUnmanagedThreadHashTableImpl m_unmanagedThreadHashTable;
     DWORD m_dwOutOfProcessStepping;
     bool m_fOutOfProcessSetThreadContextEventReceived;
-    HRESULT EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurThread, CORDB_ADDRESS_TYPE *patchSkipAddr, PRD_TYPE opcode);
+    HRESULT EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurThread, CORDB_ADDRESS_TYPE *patchSkipAddr, ULONG32 opcode);
 public:
     void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
     bool CanDetach(); // Must only be called on the Win32ET, determines if it is safe to detach. Only used by W32ETA_CAN_DETACH
@@ -10498,12 +10507,10 @@ public:
         return (DWORD) this->m_id;
     }
 
-#ifdef HOST_X86
     // Stores the thread's current leaf SEH handler
     HRESULT SaveCurrentLeafSeh();
     // Restores the thread's leaf SEH handler from the previously saved value
     HRESULT RestoreLeafSeh();
-#endif
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Logs basic data about a context to the debugging log
@@ -10548,10 +10555,8 @@ private:
     ULONG_PTR                  m_raiseExceptionExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
 
 
-#ifdef HOST_X86
     // the SEH handler which was the leaf when SaveCurrentSeh was called (prior to hijack)
     REMOTE_PTR                 m_pSavedLeafSeh;
-#endif
 
     HRESULT EnableSSAfterBP();
 

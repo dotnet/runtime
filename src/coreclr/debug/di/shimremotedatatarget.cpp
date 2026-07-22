@@ -246,7 +246,39 @@ HRESULT STDMETHODCALLTYPE
 ShimRemoteDataTarget::GetPlatform(
         CorDebugPlatform *pPlatform)
 {
-    return E_NOTIMPL;
+#ifdef TARGET_UNIX
+     #if defined(TARGET_X86)
+         *pPlatform = CORDB_PLATFORM_POSIX_X86;
+     #elif defined(TARGET_AMD64)
+         *pPlatform = CORDB_PLATFORM_POSIX_AMD64;
+     #elif defined(TARGET_ARM)
+         *pPlatform = CORDB_PLATFORM_POSIX_ARM;
+     #elif defined(TARGET_ARM64)
+         *pPlatform = CORDB_PLATFORM_POSIX_ARM64;
+     #elif defined(TARGET_LOONGARCH64)
+         *pPlatform = CORDB_PLATFORM_POSIX_LOONGARCH64;
+     #elif defined(TARGET_RISCV64)
+         *pPlatform = CORDB_PLATFORM_POSIX_RISCV64;
+     #else
+         #error Unknown Processor.
+     #endif
+#else
+    #if defined(TARGET_X86)
+        *pPlatform = CORDB_PLATFORM_WINDOWS_X86;
+    #elif defined(TARGET_AMD64)
+        *pPlatform = CORDB_PLATFORM_WINDOWS_AMD64;
+    #elif defined(TARGET_ARM)
+        *pPlatform = CORDB_PLATFORM_WINDOWS_ARM;
+    #elif defined(TARGET_ARM64)
+        *pPlatform = CORDB_PLATFORM_WINDOWS_ARM64;
+    #elif defined(TARGET_LOONGARCH64)
+        *pPlatform = CORDB_PLATFORM_WINDOWS_LOONGARCH64;
+    #else
+        #error Unknown Processor.
+    #endif
+#endif
+
+    return S_OK;
 }
 
 // impl of interface method ICorDebugDataTarget::ReadVirtual
