@@ -282,6 +282,13 @@ namespace Microsoft.Extensions
             public string[] Strings { get; }
         }
 
+        public sealed class ClassWithInitOnlyCollectionNoCtorParam
+        {
+            public ClassWithInitOnlyCollectionNoCtorParam(int Number) => this.Number = Number;
+            public int Number { get; }
+            public List<string> Items { get; init; }
+        }
+
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 
         public class ContainerWithNestedImmutableObject

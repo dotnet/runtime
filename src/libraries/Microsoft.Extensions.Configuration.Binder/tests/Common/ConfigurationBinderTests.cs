@@ -1763,6 +1763,29 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(new[] { "c" }, map["second"].Instances);
         }
 
+        /// <summary>
+        /// An init-only (or required) collection property that is not backed by a constructor parameter is bound in the
+        /// generated Initialize method (through the object initializer). It must not be bound again in BindCore when the
+        /// instance was created there, or the collection items would be duplicated.
+        /// </summary>
+        [Fact]
+        public void CanBindOnParametersAndProperties_InitOnlyCollectionWithoutConstructorParameter()
+        {
+            string json = """
+            {
+                "Number": 7,
+                "Items": [ "a", "b" ]
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            ClassWithInitOnlyCollectionNoCtorParam result = config.Get<ClassWithInitOnlyCollectionNoCtorParam>();
+
+            Assert.Equal(7, result.Number);
+            Assert.Equal(new[] { "a", "b" }, result.Items);
+        }
+
         public static IEnumerable<object[]> Configuration_TestData()
         {
             yield return new object[]

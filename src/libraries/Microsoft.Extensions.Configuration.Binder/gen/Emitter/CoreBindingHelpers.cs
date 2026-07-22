@@ -415,7 +415,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         // Since we're binding to local variables, we can always get and set
                         canSet: true,
                         canGet: true,
-                        InitializationKind.None);
+                        InitializationKind.None,
+                        bindingToLocal: true);
 
                     if (canBindToMember)
                     {
@@ -883,7 +884,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string validateMethodCallExpr = $"{Identifier.ValidateConfigurationKeys}(typeof({type.TypeRef.FullyQualifiedName}), {keyCacheFieldName}, {Identifier.configuration}, {Identifier.binderOptions});";
                 _writer.WriteLine(validateMethodCallExpr);
 
-                List<PropertySpec>? ctorMatchedProperties = null;
+                List<PropertySpec>? initializeBoundProperties = null;
 
                 foreach (PropertySpec property in type.Properties!)
                 {
@@ -892,25 +893,26 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         continue;
                     }
 
-                    // A property that is bound through a matching constructor parameter is already populated when the
-                    // instance is created through that constructor. Binding it again here would append to collections
-                    // that the constructor already filled, duplicating their items.
+                    // A property that is populated while the instance is created through its Initialize method - either
+                    // through a matching constructor parameter or as a required/init-only property assigned in the object
+                    // initializer - is already bound at that point. Binding it again here would append to collections
+                    // that Initialize already filled, duplicating their items.
                     // Defer such properties into a block guarded by !boundThroughConstructor so they are only bound when
-                    // the instance was not created through the constructor (e.g. Bind(existingInstance)), matching the
+                    // the instance was not created through Initialize (e.g. Bind(existingInstance)), matching the
                     // reflection binder.
-                    if (property.MatchingCtorParam is not null && IsPropertyReboundInBindCore(property))
+                    if (IsBoundInInitialize(type, property) && IsPropertyReboundInBindCore(property))
                     {
-                        (ctorMatchedProperties ??= new()).Add(property);
+                        (initializeBoundProperties ??= new()).Add(property);
                         continue;
                     }
 
                     EmitBindImplForProperty(property);
                 }
 
-                if (ctorMatchedProperties is not null)
+                if (initializeBoundProperties is not null)
                 {
                     EmitStartBlock($"if (!{Identifier.boundThroughConstructor})");
-                    foreach (PropertySpec property in ctorMatchedProperties)
+                    foreach (PropertySpec property in initializeBoundProperties)
                     {
                         EmitBindImplForProperty(property);
                     }
@@ -932,15 +934,26 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             /// <summary>
             /// Whether <paramref name="type"/> is an object created through a parameterized constructor that has at
-            /// least one property bound through a matching constructor parameter which would otherwise be re-bound in
-            /// its <c>BindCore</c> method. Such types receive an extra <c>boundThroughConstructor</c> parameter.
+            /// least one property bound while the instance is created (through its Initialize method) which would
+            /// otherwise be re-bound in its <c>BindCore</c> method. Such types receive an extra
+            /// <c>boundThroughConstructor</c> parameter.
             /// </summary>
             private bool ShouldEmitBoundThroughConstructorParameter(ComplexTypeSpec type) =>
-                type is ObjectSpec { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor, Properties: { } properties } &&
+                type is ObjectSpec { Properties: { } properties } objectType &&
                 properties.Any(property =>
-                    property.MatchingCtorParam is not null &&
+                    IsBoundInInitialize(objectType, property) &&
                     _typeIndex.ShouldBindTo(property) &&
                     IsPropertyReboundInBindCore(property));
+
+            /// <summary>
+            /// Whether <paramref name="property"/> is populated while an instance of <paramref name="type"/> is created
+            /// through its Initialize method: either it flows through a matching constructor parameter, or it is a
+            /// required/init-only property assigned in the object initializer. Only parameterized-constructor types have
+            /// an Initialize method; parameterless-constructor types bind all their properties in <c>BindCore</c>.
+            /// </summary>
+            private static bool IsBoundInInitialize(ObjectSpec type, PropertySpec property) =>
+                type.InstantiationStrategy is ObjectInstantiationStrategy.ParameterizedConstructor &&
+                (property.MatchingCtorParam is not null || property.SetOnInit);
 
             /// <summary>
             /// Whether binding <paramref name="property"/> in a <c>BindCore</c> method emits code that reads from or
@@ -973,7 +986,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string sectionPathExpr,
                 bool canSet,
                 bool canGet,
-                InitializationKind initializationKind)
+                InitializationKind initializationKind,
+                bool bindingToLocal = false)
             {
                 string sectionParseExpr = GetSectionFromConfigurationExpression(member.ConfigurationKeyName);
 
@@ -1066,7 +1080,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             string sectionIdentifier = GetIncrementalIdentifier(Identifier.section);
 
                             EmitStartBlock($"if ({sectionValidationCall} is {Identifier.IConfigurationSection} {sectionIdentifier})");
-                            EmitBindingLogicForComplexMember(member, memberAccessExpr, sectionIdentifier, canSet);
+                            EmitBindingLogicForComplexMember(member, memberAccessExpr, sectionIdentifier, canSet, bindingToLocal);
                             EmitEndBlock();
 
                             // The current configuration section doesn't have any children, let's check if we are binding to an array and the configuration value is empty string.
@@ -1092,7 +1106,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 MemberSpec member,
                 string memberAccessExpr,
                 string configArgExpr,
-                bool canSet)
+                bool canSet,
+                bool bindingToLocal = false)
             {
 
                 TypeSpec memberType = _typeIndex.GetTypeSpec(member.TypeRef);
@@ -1153,7 +1168,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 _writer.WriteLine($"{tempIdentifierStoringExpr}");
                             }
 
-                            if (member.CanGet && _typeIndex.CanInstantiate(effectiveMemberType))
+                            // When the config section is absent, re-assign the member to itself so any value-mutator
+                            // setter runs. This is unnecessary when binding into an Initialize local (no accessor to
+                            // invoke) and would emit a CS1717 self-assignment, so skip it in that case.
+                            if (!bindingToLocal && member.CanGet && _typeIndex.CanInstantiate(effectiveMemberType))
                             {
                                 EmitEndBlock();
                                 EmitStartBlock("else");
