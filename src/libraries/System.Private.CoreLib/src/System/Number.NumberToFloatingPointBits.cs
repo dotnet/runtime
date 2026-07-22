@@ -706,8 +706,22 @@ namespace System
 
             while (remaining != 0)
             {
-                uint count = Math.Min(remaining, 9);
-                uint value = DigitsToUInt32(src, (int)(count));
+                // Batch as many digits as fill a single block -- 9 on 32-bit (10^9 fits a uint),
+                // 19 on 64-bit (10^19 fits a nuint) -- so wide builds halve the multiply/add
+                // iterations instead of staying 32-bit-granular. nint.Size constant-folds here.
+                uint count;
+                nuint value;
+
+                if (nint.Size == 8)
+                {
+                    count = Math.Min(remaining, 19);
+                    value = (nuint)DigitsToUInt64(src, (int)count);
+                }
+                else
+                {
+                    count = Math.Min(remaining, 9);
+                    value = DigitsToUInt32(src, (int)count);
+                }
 
                 result.MultiplyPow10(count);
                 result.Add(value);

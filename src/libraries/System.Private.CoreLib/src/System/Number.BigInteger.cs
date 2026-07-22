@@ -898,12 +898,12 @@ namespace System
                 SetValue(out result, ref lhs);
             }
 
-            public void Add(uint value)
+            public void Add(nuint value)
             {
                 int length = (int)_length;
                 if (length == 0)
                 {
-                    SetUInt32(out this, value);
+                    SetUInt64(out this, value);
                     return;
                 }
 
