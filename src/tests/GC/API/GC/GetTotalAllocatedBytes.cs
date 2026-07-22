@@ -185,6 +185,11 @@ public class Test_GetTotalAllocatedBytes
     {
         TestSingleThreaded();
         TestSingleThreadedLOH();
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+    public static void TestMultithreaded()
+    {
         TestAnotherThread();
         TestLohSohConcurrently();
     }
