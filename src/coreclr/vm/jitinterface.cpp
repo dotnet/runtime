@@ -6473,7 +6473,6 @@ bool CEEInfo::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    // Conservatively assume the value type instance pointer may escape the callee.
     bool result = true;
 
     JIT_TO_EE_TRANSITION();
