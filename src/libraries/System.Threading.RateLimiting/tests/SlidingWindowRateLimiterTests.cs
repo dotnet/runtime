@@ -253,7 +253,7 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task FailsWhenQueuingMoreThanLimit_OldestFirst()
         {
-            var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
+            var options = new SlidingWindowRateLimiterOptions
             {
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
@@ -261,12 +261,18 @@ namespace System.Threading.RateLimiting.Test
                 Window = TimeSpan.FromMilliseconds(1),
                 SegmentsPerWindow = 2,
                 AutoReplenishment = false
-            });
+            };
+            var limiter = new SlidingWindowRateLimiter(options);
+
             using var lease = limiter.AttemptAcquire(1);
             var wait = limiter.AcquireAsync(1);
 
+            SetElapsedTimeSinceLastReplenishment(limiter, TimeSpan.Zero);
+
             var failedLease = await limiter.AcquireAsync(1);
             Assert.False(failedLease.IsAcquired);
+            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var timeSpan));
+            Assert.Equal(options.Window, timeSpan);
         }
 
         [Fact]
@@ -1308,6 +1314,232 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(7, limiter.GetStatistics().CurrentAvailablePermits);
         }
 
+        [Fact]
+        public async Task RetryMetadataOnFailedWaitAsync()
+        {
+            var options = new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                Window = TimeSpan.FromSeconds(20),
+                SegmentsPerWindow = 4,
+                AutoReplenishment = false
+            };
+            var limiter = new SlidingWindowRateLimiter(options);
+
+            using var lease = limiter.AttemptAcquire(2);
+
+            SetElapsedTimeSinceLastReplenishment(limiter, TimeSpan.Zero);
+
+            var failedLease = await limiter.AcquireAsync(2);
+            Assert.False(failedLease.IsAcquired);
+            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter.Name, out var metadata));
+            var metaDataTime = Assert.IsType<TimeSpan>(metadata);
+            Assert.Equal(options.Window.Ticks, metaDataTime.Ticks);
+
+            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
+            Assert.Equal(options.Window.Ticks, typedMetadata.Ticks);
+            Assert.Collection(failedLease.MetadataNames, item => item.Equals(MetadataName.RetryAfter.Name));
+        }
+
+        [Fact]
+        public async Task CorrectRetryMetadataWithQueuedItem()
+        {
+            var options = new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                Window = TimeSpan.FromSeconds(20),
+                SegmentsPerWindow = 4,
+                AutoReplenishment = false
+            };
+            var limiter = new SlidingWindowRateLimiter(options);
+
+            using var lease = limiter.AttemptAcquire(2);
+            // Queue item which changes the retry after time for failed items
+            var wait = limiter.AcquireAsync(1);
+            Assert.False(wait.IsCompleted);
+
+            SetElapsedTimeSinceLastReplenishment(limiter, TimeSpan.Zero);
+
+            var failedLease = await limiter.AcquireAsync(2);
+            Assert.False(failedLease.IsAcquired);
+            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
+            Assert.Equal(options.Window.Ticks, typedMetadata.Ticks);
+        }
+
+        [Fact]
+        public async Task CorrectRetryMetadataWithNonZeroAvailableItems()
+        {
+            var options = new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 3,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                Window = TimeSpan.FromSeconds(20),
+                SegmentsPerWindow = 4,
+                AutoReplenishment = false
+            };
+            var limiter = new SlidingWindowRateLimiter(options);
+
+            // 2 of the 3 permits are consumed, leaving 1 available - but that 1 isn't enough to satisfy the 3-permit
+            // request below, so it should still fail and estimate against the segment holding the other 2.
+            using var lease = limiter.AttemptAcquire(2);
+
+            SetElapsedTimeSinceLastReplenishment(limiter, TimeSpan.Zero);
+
+            var failedLease = await limiter.AcquireAsync(3);
+            Assert.False(failedLease.IsAcquired);
+            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
+            Assert.Equal(options.Window.Ticks, typedMetadata.Ticks);
+        }
+
+        [Fact]
+        public async Task RetryAfterWithPartiallyElapsedSegment()
+        {
+            var options = new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                Window = TimeSpan.FromSeconds(20),
+                SegmentsPerWindow = 4,
+                AutoReplenishment = false
+            };
+            var limiter = new SlidingWindowRateLimiter(options);
+
+            using var lease = limiter.AttemptAcquire(1);
+
+            // 2 seconds elapsed since the last replenishment tick. The single permit is in the current segment, so
+            // the deficit isn't resolved until the walk wraps all the way around: (SegmentsPerWindow - 1) full
+            // periods, plus the remainder of the current one.
+            SetElapsedTimeSinceLastReplenishment(limiter, TimeSpan.FromSeconds(2));
+
+            var failedLease = await limiter.AcquireAsync(1);
+            Assert.False(failedLease.IsAcquired);
+            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var timeSpan));
+            Assert.Equal(TimeSpan.FromSeconds(18), timeSpan); // 20 - 2 = 18
+        }
+
+        [Fact]
+        public async Task RetryAfterClampsToZeroWhenWindowExpired()
+        {
+            var options = new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                Window = TimeSpan.FromSeconds(20),
+                SegmentsPerWindow = 4,
+                AutoReplenishment = false
+            };
+            var limiter = new SlidingWindowRateLimiter(options);
+
+            using var lease = limiter.AttemptAcquire(1);
+
+            // 25 seconds elapsed - longer than the full window, so even after walking all the way around to the
+            // segment holding the permit, the estimate goes negative and should clamp to zero rather than report a
+            // negative TimeSpan.
+            SetElapsedTimeSinceLastReplenishment(limiter, TimeSpan.FromSeconds(25));
+
+            var failedLease = await limiter.AcquireAsync(1);
+            Assert.False(failedLease.IsAcquired);
+            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var timeSpan));
+            Assert.Equal(TimeSpan.Zero, timeSpan); // Clamped to zero, not negative
+        }
+
+        [Fact]
+        public void RetryMetadataOnFailedAttemptAcquire()
+        {
+            var options = new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                Window = TimeSpan.FromSeconds(20),
+                SegmentsPerWindow = 4,
+                AutoReplenishment = false
+            };
+            var limiter = new SlidingWindowRateLimiter(options);
+
+            using var lease = limiter.AttemptAcquire(2);
+
+            SetElapsedTimeSinceLastReplenishment(limiter, TimeSpan.Zero);
+
+            // Exercises the general locked branch in AttemptAcquireCore
+            var failedLease = limiter.AttemptAcquire(2);
+            Assert.False(failedLease.IsAcquired);
+            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var timeSpan));
+            Assert.Equal(options.Window, timeSpan);
+        }
+
+        [Fact]
+        public void RetryMetadataOnFailedAttemptAcquireZeroPermitCount()
+        {
+            var options = new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                Window = TimeSpan.FromSeconds(20),
+                SegmentsPerWindow = 4,
+                AutoReplenishment = false
+            };
+            var limiter = new SlidingWindowRateLimiter(options);
+
+            using var lease = limiter.AttemptAcquire(1);
+
+            SetElapsedTimeSinceLastReplenishment(limiter, TimeSpan.Zero);
+
+            // permitCount == 0 with no permits available hits the fast-path failure branch that was just moved inside
+            // the lock for the race condition fix.
+            var failedLease = limiter.AttemptAcquire(0);
+            Assert.False(failedLease.IsAcquired);
+            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var timeSpan));
+            Assert.Equal(options.Window, timeSpan);
+        }
+
+        [Fact]
+        public async Task RetryAfterAccountsForPermitsAcrossMultipleSegments()
+        {
+            var options = new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 4,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                Window = TimeSpan.FromSeconds(8),
+                SegmentsPerWindow = 4,
+                AutoReplenishment = false
+            };
+            var limiter = new SlidingWindowRateLimiter(options);
+
+            // Segment 0 holds 3 permits
+            using var lease1 = limiter.AttemptAcquire(3);
+            Assert.True(lease1.IsAcquired);
+
+            // Advance one period (2s) so segment 0 becomes an older segment relative to the new current one
+            Replenish(limiter, 2000L);
+
+            // Segment 1 (now current) holds the last permit - all 4 are now consumed
+            using var lease2 = limiter.AttemptAcquire(1);
+            Assert.True(lease2.IsAcquired);
+            Assert.Equal(0, limiter.GetStatistics().CurrentAvailablePermits);
+
+            SetElapsedTimeSinceLastReplenishment(limiter, TimeSpan.Zero);
+
+            // Only 2 permits are needed - segment 0's 3 permits alone satisfy that, one period before the walk would
+            // otherwise wrap all the way back to the current segment.
+            var failedLease = await limiter.AcquireAsync(2);
+            Assert.False(failedLease.IsAcquired);
+            Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var timeSpan));
+
+            // periodsUntilEnough = 3 (two empty segments walked, then segment 0 satisfies the deficit)
+            var periodTicks = options.Window.Ticks / options.SegmentsPerWindow;
+            Assert.Equal(TimeSpan.FromTicks(periodTicks * 3), timeSpan);
+        }
+
         private static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
 
         static internal void Replenish(SlidingWindowRateLimiter limiter, long addMilliseconds)
@@ -1316,6 +1548,16 @@ namespace System.Threading.RateLimiting.Test
             var internalTick = typeof(SlidingWindowRateLimiter).GetField("_lastReplenishmentTick", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)!;
             var currentTick = (long)internalTick.GetValue(limiter);
             replenishInternalMethod.Invoke(limiter, new object[] { currentTick + addMilliseconds * (long)(TimeSpan.TicksPerMillisecond / TickFrequency) });
+        }
+
+        /// <summary>
+        /// Function that replaces the _getElapsedTime function in SlidingWindowRateLimiter to return a specified TimeSpan. Used for testing the RetryAfter metadata on failed leases.
+        /// </summary>
+        static internal void SetElapsedTimeSinceLastReplenishment(SlidingWindowRateLimiter limiter, TimeSpan elapsedTimeSinceLastReplenishment)
+        {
+            var _getElapsedTimeField = typeof(SlidingWindowRateLimiter).GetField("_getElapsedTime", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)!;
+            Func<long?, TimeSpan?> overrideFunc = (_) => elapsedTimeSinceLastReplenishment;
+            _getElapsedTimeField.SetValue(limiter, overrideFunc);
         }
     }
 }
