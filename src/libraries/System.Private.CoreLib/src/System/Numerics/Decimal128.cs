@@ -51,6 +51,7 @@ namespace System.Numerics
         private static UInt128 PiValue => new UInt128(0x2FFE_9AE4_7957_96A7, 0xBABE_5564_E6F3_9F8F);  // +3.141592653589793238462643383279503
         private static UInt128 TauValue => new UInt128(0x2FFF_35C8_F2AF_2D4F, 0x757C_AAC9_CDE7_3F1E); // +6.283185307179586476925286766559006
         private static UInt128 QuietNaNValue => new UInt128(0xFC00_0000_0000_0000, 0);
+        private static UInt128 NaNPayloadMask => new UInt128(0x0000_3FFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
 
         private const ulong SignMaskUpper = 0x8000_0000_0000_0000;
         private const ulong NaNMaskUpper = 0x7C00_0000_0000_0000;
@@ -1254,7 +1255,7 @@ namespace System.Numerics
         static int INumberBase<Decimal128>.Radix => 10;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
-        static bool INumberBase<Decimal128>.IsCanonical(Decimal128 value) => Number.IsCanonicalDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower), nanReservedMask: new UInt128(0x01FF_C000_0000_0000, 0x0000_0000_0000_0000), nanPayloadMask: new UInt128(0x0000_3FFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), maxNaNPayload: new UInt128(0x0000_314D_C644_8D93, 0x38C1_5B09_FFFF_FFFF));
+        static bool INumberBase<Decimal128>.IsCanonical(Decimal128 value) => Number.IsCanonicalDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower), nanReservedMask: new UInt128(0x01FF_C000_0000_0000, 0x0000_0000_0000_0000), nanPayloadMask: NaNPayloadMask, maxNaNPayload: new UInt128(0x0000_314D_C644_8D93, 0x38C1_5B09_FFFF_FFFF));
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
         static bool INumberBase<Decimal128>.IsComplexNumber(Decimal128 value) => false;
@@ -1792,6 +1793,8 @@ namespace System.Numerics
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NaNMask => new UInt128(NaNMaskUpper, 0);
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.SNaNMask => new UInt128(SNaNMaskUpper, 0);
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NaNPayloadMask => NaNPayloadMask;
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.SignMask => new UInt128(SignMaskUpper, 0);
 
