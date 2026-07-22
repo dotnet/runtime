@@ -1086,13 +1086,12 @@ namespace Internal.JitInterface
         {
             MethodDesc method = HandleToObject(ftn);
 
-            // We only reason about the receiver of an instance method. This works for both direct and
-            // virtual/interface calls, and regardless of whether 'ftn' is the base (e.g. interface)
+            // The JIT only asks about the receiver of an instance method. This works for both direct
+            // and virtual/interface calls, and regardless of whether 'ftn' is the base (e.g. interface)
             // method or the derived method: a method that lets 'this' escape must, together with every
             // method it overrides, be annotated with [UnscopedRef], so inspecting the called method
             // here is sufficient.
-            if (method.Signature.IsStatic)
-                return true;
+            Debug.Assert(!method.Signature.IsStatic);
 
             if (method.GetTypicalMethodDefinition() is not EcmaMethod ecmaMethod)
                 return true;

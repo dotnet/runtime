@@ -6483,20 +6483,19 @@ bool CEEInfo::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
 
     MethodDesc* pMD = GetMethod(ftn);
 
-    // We only reason about the receiver of an instance method. This works for both direct and
+    // The JIT only asks about the receiver of an instance method. This works for both direct and
     // virtual/interface calls, and regardless of whether 'ftn' is the base (e.g. interface) method or
     // the derived method: a method that lets 'this' escape must, together with every method it
     // overrides, be annotated with [UnscopedRef], so inspecting the called method here is sufficient.
-    if (!pMD->IsStatic())
+    _ASSERTE(!pMD->IsStatic());
+
+    // The guarantee only holds for modules that opted into the ref safety rules augment
+    // (RefSafetyRulesAttribute version 11 or above).
+    if (ModuleOptsIntoRefSafetyRules(pMD->GetModule(), 11))
     {
-        // The guarantee only holds for modules that opted into the ref safety rules augment
-        // (RefSafetyRulesAttribute version 11 or above).
-        if (ModuleOptsIntoRefSafetyRules(pMD->GetModule(), 11))
-        {
-            // Per the augment, the 'this' pointer of a value type instance method does not escape
-            // the method unless the method is annotated with [UnscopedRef].
-            result = (pMD->GetCustomAttribute(WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
-        }
+        // Per the augment, the 'this' pointer of a value type instance method does not escape
+        // the method unless the method is annotated with [UnscopedRef].
+        result = (pMD->GetCustomAttribute(WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
     }
 
     EE_TO_JIT_TRANSITION();
