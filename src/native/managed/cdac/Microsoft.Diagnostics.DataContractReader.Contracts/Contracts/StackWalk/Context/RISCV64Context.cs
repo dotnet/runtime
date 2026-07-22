@@ -10,7 +10,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// <summary>
 /// RISC-V 64-bit specific thread context.
 /// </summary>
-[StructLayout(LayoutKind.Explicit, Pack = 1)]
+[StructLayout(LayoutKind.Explicit, Pack = 1, Size = 0x220)]
 internal struct RISCV64Context : IPlatformContext
 {
     [Flags]

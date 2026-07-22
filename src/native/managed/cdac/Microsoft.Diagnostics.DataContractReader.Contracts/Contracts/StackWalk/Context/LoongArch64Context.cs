@@ -10,7 +10,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// <summary>
 /// LoongArch64-specific thread context.
 /// </summary>
-[StructLayout(LayoutKind.Explicit, Pack = 1)]
+[StructLayout(LayoutKind.Explicit, Pack = 1, Size = 0x520)]
 internal struct LoongArch64Context : IPlatformContext
 {
     [Flags]
