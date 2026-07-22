@@ -32,8 +32,6 @@ namespace System
         private IntPtr _methodPtr;
         private nint _extraFunctionPointerOrData;
 
-        private bool IsDynamicDelegate => GetThunk(MulticastThunk) == IntPtr.Zero;
-
         public object? Target
         {
             get
@@ -271,7 +269,7 @@ namespace System
             return OpenMethodResolver.ResolveMethod(_extraFunctionPointerOrData, thisObject);
         }
                 
-        [DebuggerGuidedStepThroughAttribute]
+        [DebuggerGuidedStepThrough]
         protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
             DynamicInvokeInfo dynamicInvokeInfo = ReflectionAugments.GetDelegateDynamicInvokeInfo(GetType());
