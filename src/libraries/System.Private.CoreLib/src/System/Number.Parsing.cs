@@ -157,6 +157,7 @@ namespace System
         static abstract int CountDigits(TValue significand);
         static abstract int NumberBitsSignificand { get; }
         static abstract TValue NaNMask { get; }
+        static abstract TValue SNaNMask { get; }
         static abstract TValue SignMask { get; }
         static abstract TValue G0G1Mask { get; }
         static abstract TValue G0ToGwPlus1ExponentMask { get; } //G0 to G(w+1)
@@ -814,7 +815,7 @@ namespace System
                 {
                     ThrowFormatException(value);
                 }
-                ThrowOverflowException(SR.Overflow_Decimal);
+                ThrowDecimalOverflowException();
             }
 
             return result;
@@ -1735,9 +1736,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowOverflowException(string message)
+        internal static void ThrowDecimalOverflowException()
         {
-            throw new OverflowException(message);
+            throw new OverflowException(SR.Overflow_Decimal);
         }
 
         internal static TFloat NumberToFloat<TFloat>(ref NumberBuffer number)

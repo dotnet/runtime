@@ -593,9 +593,7 @@ public:
 
 typedef DPTR(class UnwindInfoTable) PTR_UnwindInfoTable;
 // On Windows x64, publish OS UnwindInfo (accessed from RUNTIME_FUNCTION
-// structures) to support the ability unwind the stack. Unfortunately the pre-Win8
-// APIs defined a callback API for publishing this data dynamically that ETW does
-// not use (and really can't because the walk happens in the kernel). In Win8
+// structures) to support the ability to unwind the stack. In Win8 and above
 // new APIs were defined that allow incremental publishing via a table.
 //
 // UnwindInfoTable is a class that wraps the OS APIs that we use to publish
@@ -614,8 +612,6 @@ public:
     // These are wrapper functions over the UnwindInfoTable functions that are specific to JIT compile code
     static void PublishUnwindInfoForMethod(TADDR baseAddress, T_RUNTIME_FUNCTION* methodUnwindData, int methodUnwindDataCount);
     static void UnpublishUnwindInfoForMethod(TADDR entryPoint);
-
-    static void Initialize();
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 private:
@@ -2728,7 +2724,21 @@ struct cdac_data<ExecutionManager>
 {
     static constexpr void* const CodeRangeMapAddress = (void*)&ExecutionManager::g_codeRangeMap.Data[0];
     static constexpr PTR_EEJitManager* EEJitManagerAddress = &ExecutionManager::m_pEEJitManager;
+#ifdef TARGET_WASM
+    static constexpr FunctionTableIndexRangeSection** FunctionTableIndexRangeListAddress = &ExecutionManager::s_pFunctionTableIndexRangeList;
+#endif // TARGET_WASM
 };
+
+#ifdef TARGET_WASM
+template<>
+struct cdac_data<FunctionTableIndexRangeSection>
+{
+    static constexpr size_t MinFunctionTableIndex = offsetof(FunctionTableIndexRangeSection, minFunctionTableIndex);
+    static constexpr size_t NumRuntimeFunctions = offsetof(FunctionTableIndexRangeSection, numRuntimeFunctions);
+    static constexpr size_t R2RModule = offsetof(FunctionTableIndexRangeSection, pR2RModule);
+    static constexpr size_t Next = offsetof(FunctionTableIndexRangeSection, pNext);
+};
+#endif // TARGET_WASM
 #endif
 
 inline CodeHeader * EEJitManager::GetCodeHeader(const METHODTOKEN& MethodToken)

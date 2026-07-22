@@ -14,7 +14,7 @@ namespace System.Text.Json.Nodes
 
         protected JsonValue(TValue value, JsonNodeOptions? options) : base(options)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
             Debug.Assert(value is not JsonElement or JsonElement { ValueKind: not JsonValueKind.Null });
             Debug.Assert(value is not JsonNode);
             Value = value;
