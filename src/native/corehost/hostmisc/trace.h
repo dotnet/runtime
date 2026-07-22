@@ -10,6 +10,12 @@
 #include "pal.h" // for pal_char_t, _X
 #include <minipal/types.h>
 
+#if defined(_WIN32)
+#define TRACE_ATTR_FORMAT_PRINTF(fmt_pos, arg_pos)
+#else
+#define TRACE_ATTR_FORMAT_PRINTF(fmt_pos, arg_pos) MINIPAL_ATTR_FORMAT_PRINTF(fmt_pos, arg_pos)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -19,11 +25,11 @@ typedef void (__cdecl *trace_error_writer_fn)(const pal_char_t* message);
 void trace_setup(void);
 bool trace_enable(void);
 bool trace_is_enabled(void);
-void trace_verbose(const pal_char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
-void trace_info(const pal_char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
-void trace_warning(const pal_char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
-void trace_error(const pal_char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
-void trace_println(const pal_char_t* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
+void trace_verbose(const pal_char_t* format, ...) TRACE_ATTR_FORMAT_PRINTF(1, 2);
+void trace_info(const pal_char_t* format, ...) TRACE_ATTR_FORMAT_PRINTF(1, 2);
+void trace_warning(const pal_char_t* format, ...) TRACE_ATTR_FORMAT_PRINTF(1, 2);
+void trace_error(const pal_char_t* format, ...) TRACE_ATTR_FORMAT_PRINTF(1, 2);
+void trace_println(const pal_char_t* format, ...) TRACE_ATTR_FORMAT_PRINTF(1, 2);
 void trace_println_empty(void);
 void trace_flush(void);
 
@@ -67,7 +73,7 @@ namespace trace
     inline bool enable() { return trace_enable(); }
     inline bool is_enabled() { return trace_is_enabled(); }
 
-    inline void MINIPAL_ATTR_FORMAT_PRINTF(1, 2) verbose(const pal::char_t* format, ...)
+    inline void TRACE_ATTR_FORMAT_PRINTF(1, 2) verbose(const pal::char_t* format, ...)
     {
         va_list args;
         va_start(args, format);
@@ -75,7 +81,7 @@ namespace trace
         va_end(args);
     }
 
-    inline void MINIPAL_ATTR_FORMAT_PRINTF(1, 2) info(const pal::char_t* format, ...)
+    inline void TRACE_ATTR_FORMAT_PRINTF(1, 2) info(const pal::char_t* format, ...)
     {
         va_list args;
         va_start(args, format);
@@ -83,7 +89,7 @@ namespace trace
         va_end(args);
     }
 
-    inline void MINIPAL_ATTR_FORMAT_PRINTF(1, 2) warning(const pal::char_t* format, ...)
+    inline void TRACE_ATTR_FORMAT_PRINTF(1, 2) warning(const pal::char_t* format, ...)
     {
         va_list args;
         va_start(args, format);
@@ -91,7 +97,7 @@ namespace trace
         va_end(args);
     }
 
-    inline void MINIPAL_ATTR_FORMAT_PRINTF(1, 2) error(const pal::char_t* format, ...)
+    inline void TRACE_ATTR_FORMAT_PRINTF(1, 2) error(const pal::char_t* format, ...)
     {
         va_list args;
         va_start(args, format);
@@ -99,7 +105,7 @@ namespace trace
         va_end(args);
     }
 
-    inline void MINIPAL_ATTR_FORMAT_PRINTF(1, 2) println(const pal::char_t* format, ...)
+    inline void TRACE_ATTR_FORMAT_PRINTF(1, 2) println(const pal::char_t* format, ...)
     {
         va_list args;
         va_start(args, format);
