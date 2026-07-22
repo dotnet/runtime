@@ -5199,6 +5199,29 @@ struct LowerFieldListRegisterInfo
     }
 };
 
+#ifdef FEATURE_SIMD
+static bool IsFloatPairFieldListRegister(GenTreeFieldList::Use* use,
+                                         unsigned               regStart,
+                                         unsigned               regEnd,
+                                         var_types              regType)
+{
+    if ((regType != TYP_DOUBLE) || (use == nullptr) || (use->GetType() != TYP_FLOAT) || (use->GetOffset() != regStart))
+    {
+        return false;
+    }
+
+    GenTreeFieldList::Use* secondUse = use->GetNext();
+    if ((secondUse == nullptr) || (secondUse->GetType() != TYP_FLOAT) ||
+        (secondUse->GetOffset() != regStart + genTypeSize(TYP_FLOAT)))
+    {
+        return false;
+    }
+
+    GenTreeFieldList::Use* nextUse = secondUse->GetNext();
+    return (nextUse == nullptr) || (nextUse->GetOffset() >= regEnd);
+}
+#endif // FEATURE_SIMD
+
 //----------------------------------------------------------------------------------------------
 // LowerRetFieldList:
 //   Lower a returned FIELD_LIST node.
@@ -5372,6 +5395,12 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
             return false;
         }
 
+#ifdef FEATURE_SIMD
+        bool supportsFloatPairInsertion = IsFloatPairFieldListRegister(use, regStart, regEnd, regType);
+#else
+        bool supportsFloatPairInsertion = false;
+#endif // FEATURE_SIMD
+
         do
         {
             unsigned fieldStart = use->GetOffset();
@@ -5396,12 +5425,15 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
                 return false;
             }
 
-            // float -> float insertions are not yet supported
+            // A pair of floats can be directly reconstructed in an 8-byte floating-point register.
             if (varTypeUsesFloatReg(use->GetNode()) && varTypeUsesFloatReg(regType) && (fieldStart != regStart))
             {
-                JITDUMP("it is not; field [%06u] requires an insertion into register %u\n",
-                        Compiler::dspTreeID(use->GetNode()), i);
-                return false;
+                if (!supportsFloatPairInsertion)
+                {
+                    JITDUMP("it is not; field [%06u] requires an insertion into register %u\n",
+                            Compiler::dspTreeID(use->GetNode()), i);
+                    return false;
+                }
             }
 
             // int -> float is currently only supported if we can do it as a single bitcast (i.e. without insertions
@@ -5464,6 +5496,32 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
 
         GenTree* fieldListPrev = fieldList->gtPrev;
 
+#ifdef FEATURE_SIMD
+        if (IsFloatPairFieldListRegister(use, regStart, regEnd, regType))
+        {
+            GenTreeFieldList::Use* secondUse = use->GetNext();
+            GenTree* value = m_compiler->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, use->GetNode(), TYP_FLOAT, 8);
+            BlockRange().InsertBefore(fieldList, value);
+
+            GenTree* index = m_compiler->gtNewIconNode(1);
+            BlockRange().InsertBefore(fieldList, index);
+
+            value = m_compiler->gtNewSimdWithElementNode(TYP_SIMD8, value, index, secondUse->GetNode(), TYP_FLOAT, 8);
+            BlockRange().InsertBefore(fieldList, value);
+
+            regEntry->SetNode(value);
+            regEntry->SetType(TYP_SIMD8);
+            regEntry->SetNext(secondUse->GetNext());
+            use = regEntry->GetNext();
+
+            if (fieldListPrev->gtNext != fieldList)
+            {
+                LowerRange(fieldListPrev->gtNext, fieldList->gtPrev);
+            }
+
+            continue;
+        }
+#endif // FEATURE_SIMD
         do
         {
             unsigned fieldStart = use->GetOffset();
