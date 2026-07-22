@@ -367,6 +367,19 @@ public unsafe partial interface IXCLRDataProcess2 : IXCLRDataProcess
 }
 
 [GeneratedComInterface]
+[Guid("5c552ab6-fc09-4cb3-8e36-22fa03c798b9")]
+public unsafe partial interface IXCLRDataProcess3 : IXCLRDataProcess2
+{
+    [PreserveSig]
+    int GetFunctionTable(
+        ClrDataAddress tableAddress,
+        uint bufferSize,
+        byte* buffer,
+        uint* bytesNeeded,
+        uint* entries);
+}
+
+[GeneratedComInterface]
 [Guid("E59D8D22-ADA7-49a2-89B5-A415AFCFC95F")]
 public unsafe partial interface IXCLRDataStackWalk
 {

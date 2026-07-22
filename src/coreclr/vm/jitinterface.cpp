@@ -14334,6 +14334,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
     case READYTORUN_FIXUP_IndirectPInvokeTarget:
         {
             MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
@@ -14343,6 +14344,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             result = (size_t)(LPVOID)&(pMD->m_pPInvokeTarget);
         }
         break;
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 
     case READYTORUN_FIXUP_PInvokeTarget:
         {

@@ -251,6 +251,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         case WasmValueType.F64:
                             expressions.Add(F64.Load((ulong)interpOffsets[i]));
                             break;
+                        case WasmValueType.V128:
+                            expressions.Add(V128.Load((ulong)interpOffsets[i]));
+                            break;
                         default:
                             throw new Exception("Unexpected wasm type for interpreter-to-R2R arg");
                     }

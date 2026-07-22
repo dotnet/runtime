@@ -13,6 +13,7 @@
 
 #define WASM_STRINGIFY_HELPER(value) #value
 #define WASM_STRINGIFY(value) WASM_STRINGIFY_HELPER(value)
+#define INLINED_PINVOKE_FROM_R2R 1
 
 void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
 
@@ -491,13 +492,22 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
         return;
     }
 
-    pRD->pCurrentContext->InterpreterIP = *(DWORD *)&m_pCallerReturnAddress;
-
     pRD->IsCallerContextValid = FALSE;
 
-    pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
-    pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
-    
+    if (m_pCallerReturnAddress == INLINED_PINVOKE_FROM_R2R)
+    {
+        pRD->pCurrentContext->InterpreterSP = (TADDR)m_pCallSiteSP;
+        pRD->pCurrentContext->InterpreterIP = GetWasmVirtualIPFromStackPointer((TADDR)m_pCallSiteSP);
+        _ASSERTE(pRD->pCurrentContext->InterpreterIP != 0); // We should be in RyuJit compiled code here
+        pRD->pCurrentContext->InterpreterFP = GetWasmFramePointerFromStackPointer((TADDR)m_pCallSiteSP, (PCODE)pRD->pCurrentContext->InterpreterIP);
+    }
+    else
+    {
+        pRD->pCurrentContext->InterpreterIP = *(DWORD *)&m_pCallerReturnAddress;
+        pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
+        pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
+    }
+
     SyncRegDisplayToCurrentContext(pRD);
 
 #ifdef FEATURE_INTERPRETER
@@ -701,15 +711,88 @@ extern "C" void STDCALL GenericPInvokeCalliHelper(void)
     PORTABILITY_ASSERT("GenericPInvokeCalliHelper is not implemented on wasm");
 }
 
-EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame)
+// Does the pinvoke frame transition; the naked wrappers below have already set the wasm
+// __stack_pointer global to sp so it is safe to run native code here.
+EXTERN_C void JIT_PInvokeBeginImpl(void* sp, InlinedCallFrame* pFrame)
 {
-    PORTABILITY_ASSERT("JIT_PInvokeBegin is not implemented on wasm");
+    Thread* pThread = GetThread();
+
+    // Initialize the JIT-provided frame storage, deriving its state from sp/pep since wasm
+    // has no machine registers to read the caller SP / return address from.
+    ::new ((void*)pFrame) InlinedCallFrame();
+    pFrame->m_pCallSiteSP          = sp;
+    pFrame->m_pCallerReturnAddress = INLINED_PINVOKE_FROM_R2R; // When this is true, UpdateRegDisplay_Impl derives state from m_pCallSiteSP.
+    pFrame->m_pCalleeSavedFP       = 0;
+    pFrame->m_pThread              = pThread;
+
+    // Link the frame and transition to preemptive GC mode for the native call.
+    pFrame->Push();
+    pThread->EnablePreemptiveGC();
 }
 
-EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame)
+// R2R keeps its shadow SP in a local and leaves the __stack_pointer global stale, so publish
+// the incoming sp to __stack_pointer before any native code runs and leave it there so the
+// subsequent native pinvoke target is also safe.
+extern "C" __attribute__((naked)) void JIT_PInvokeBegin(void* sp, InlinedCallFrame* pFrame, PCODE pep)
 {
-    PORTABILITY_ASSERT("JIT_PInvokeEnd is not implemented on wasm");
+    asm("local.get 0\n"                /* sp */
+        "global.set __stack_pointer\n" /* __stack_pointer = sp before any native code runs */
+        "local.get 0\n"                /* sp */
+        "local.get 1\n"                /* pFrame */
+        "call %0\n"
+        "return" ::"i"(JIT_PInvokeBeginImpl));
 }
+
+extern "C" VOID JIT_PInvokeEndRarePath();
+
+#ifdef DEBUG
+// Debug variant of these apis tests that sp and __stack_pointer are in sync
+EXTERN_C void JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, InlinedCallFrame* pFrame)
+{
+    _ASSERTE(sp == stack_pointer_global_value);
+    Thread* pThread = (Thread*)pFrame->m_pThread;
+
+    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+    if (g_TrapReturningThreads)
+    {
+        JIT_PInvokeEndRarePath();
+    }
+    else
+    {
+        pFrame->Pop();
+    }
+}
+
+extern "C" __attribute__((naked)) void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
+{
+    asm(
+        "local.get 0\n"                /* sp */
+        "global.get __stack_pointer\n" /* __stack_pointer */
+        "local.get 1\n"                /* pFrame */
+        "local.get 0\n"                /* sp */
+        "global.set __stack_pointer\n" /* __stack_pointer = sp before any native code runs, set this here, so that if the assumption around sp == __stack_pointer is wrong the assert logic will work correctly. */
+        "call %0\n"
+        "return" ::"i"(JIT_PInvokeEndImpl));
+}
+#else
+extern "C" void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
+{
+    UNREFERENCED_PARAMETER(sp);
+    UNREFERENCED_PARAMETER(pep);
+
+    Thread* pThread = (Thread*)pFrame->m_pThread;
+
+    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+    if (g_TrapReturningThreads)
+    {
+        JIT_PInvokeEndRarePath();
+    }
+    else
+    {
+        pFrame->Pop();
+    }
+}
+#endif
 
 extern "C" void STDCALL JIT_StackProbe()
 {
@@ -1405,6 +1488,55 @@ void InitializeWasmThunkCaches()
 InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
+
+    // String constructors use a special calling convention: they are compiled (both the R2R body and
+    // the caller-side thunks in crossgen2, see WasmLowering.GetStringCtorActualSignature) as static
+    // factory methods that allocate and return the string, i.e. "String Ctor(args)" rather than the
+    // declared "void .ctor(this, args)". The interpreter->R2R thunk selected here must therefore match
+    // that factory shape. This mirrors the R2R->interpreter direction in
+    // GetPortableEntryPointToInterpreterThunk (which uses the 'I'-prefixed keys).
+    if (pContextMD != NULL && pContextMD->IsCtor() && pContextMD->GetMethodTable()->IsString())
+    {
+        const char *thunkKey = nullptr;
+
+        if (metaSig.NumFixedArgs() == 1)
+        {
+            MetaSig ctorSig = metaSig;
+            if (ctorSig.NextArg() == ELEMENT_TYPE_VALUETYPE)
+            {
+                thunkKey = "MiS8p"; // String constructor with a single argument of type System.ReadOnlySpan<char>
+            }
+        }
+
+        if (thunkKey == nullptr)
+        {
+            switch (metaSig.NumFixedArgs())
+            {
+                case 1:
+                    thunkKey = "Miip";
+                    break;
+                case 2:
+                    thunkKey = "Miiip";
+                    break;
+                case 3:
+                    thunkKey = "Miiiip";
+                    break;
+                case 4:
+                    thunkKey = "Miiiiip";
+                    break;
+                default:
+                    PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk for string constructor");
+                    return nullptr;
+            }
+        }
+
+        InterpreterCalliCookie stringCtorThunk = LookupThunk(thunkKey);
+        if (stringCtorThunk == NULL)
+        {
+            PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk signature");
+        }
+        return stringCtorThunk;
+    }
 
     InterpreterCalliCookie thunk = ComputeCalliSigThunk(metaSig);
     if (thunk == NULL)
