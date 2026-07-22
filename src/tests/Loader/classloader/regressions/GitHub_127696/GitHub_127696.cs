@@ -11,6 +11,7 @@
 // to __Canon during recursive layout loading — the type was not in the hash, so the lookup
 // returned a null TypeHandle, which triggered an assert or a crash.
 
+using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -30,10 +31,27 @@ public class GitHub_127696
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static UserId? GetUserId(bool hasValue) => hasValue ? new UserId(new EntityIdValue<UserId>(42)) : null;
+    static T Create<T>(int id) where T : struct, IEntityId<T> => T.From(new EntityIdValue<T>(id));
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static UserId? GetUserId(bool hasValue) => hasValue ? Create<UserId>(42) : null;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int ConsumeNullable(UserId? id) => id?.Value.Id ?? -1;
+
+    interface IResource<TSelf> where TSelf : struct, IResource<TSelf>;
+
+    readonly struct Handle<TResource> where TResource : struct, IResource<TResource>;
+
+    readonly struct Resource : IResource<Resource>
+    {
+        readonly Handle<Resource> _handle;
+    }
+
+    readonly struct Wrapper
+    {
+        readonly Resource _resource;
+    }
 
     [Fact]
     public static void TestEntryPoint()
@@ -46,5 +64,13 @@ public class GitHub_127696
 
         Assert.Equal(42, a);
         Assert.Equal(-1, b);
+    }
+
+    [Fact]
+    public static void Repro130661IsFixed()
+    {
+        Type wrapper = typeof(GitHub_127696).Assembly.GetType("GitHub_127696+Wrapper", throwOnError: true)!;
+
+        Assert.Equal(nameof(Wrapper), wrapper.Name);
     }
 }
