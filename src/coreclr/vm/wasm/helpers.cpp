@@ -556,17 +556,18 @@ __attribute__((naked)) void ThrowRtlRestoreContextTag()
 
 // Runtime-owned WebAssembly global carrying the runtime-async continuation return
 // value. Exported so every R2R webcil imports this same global (see libCorerun.js).
+// Single-threaded today; like __stack_pointer it becomes per-thread once wasm threads land.
 asm(".globl __async_continuation\n"
     ".globaltype __async_continuation, i32\n"
     "__async_continuation:\n");
 
-extern "C" __attribute__((naked)) int32_t RuntimeAsync_LoadAsyncContinuation()
+extern "C" __attribute__((naked)) uint32_t RuntimeAsync_LoadAsyncContinuation()
 {
     asm("global.get __async_continuation\n"
         "return\n" ::);
 }
 
-extern "C" __attribute__((naked)) void RuntimeAsync_StoreAsyncContinuation(int32_t value)
+extern "C" __attribute__((naked)) void RuntimeAsync_StoreAsyncContinuation(uint32_t value)
 {
     asm("local.get 0\n"
         "global.set __async_continuation\n"
@@ -907,7 +908,7 @@ void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, in
     //
     if (pContinuationRet != nullptr)
     {
-        *pContinuationRet = (Object*)(uintptr_t)(uint32_t)RuntimeAsync_LoadAsyncContinuation();
+        *pContinuationRet = (Object*)(uintptr_t)RuntimeAsync_LoadAsyncContinuation();
     }
 }
 

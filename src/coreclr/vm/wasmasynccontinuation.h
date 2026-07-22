@@ -16,10 +16,10 @@
 #ifdef TARGET_WASM
 
 // Load the shared `asyncContinuation` global.
-extern "C" int32_t RuntimeAsync_LoadAsyncContinuation();
+extern "C" uint32_t RuntimeAsync_LoadAsyncContinuation();
 
 // Store the shared `asyncContinuation` global.
-extern "C" void RuntimeAsync_StoreAsyncContinuation(int32_t value);
+extern "C" void RuntimeAsync_StoreAsyncContinuation(uint32_t value);
 
 #endif // TARGET_WASM
 
