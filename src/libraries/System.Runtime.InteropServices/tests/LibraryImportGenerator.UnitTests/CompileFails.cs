@@ -55,17 +55,18 @@ namespace LibraryImportGenerator.UnitTests
         {
             // ComObjectWrapper-only interface (no CCW): cannot marshal managed -> unmanaged.
             // Return value / out are unmanaged -> managed and remain valid; by-value / in / ref are not.
+            const string entryPointType = "global::System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller<global::MyInterfaceType>";
             return VerifyAnalyzerCS.VerifyAnalyzerAsync(
                 CodeSnippets.GeneratedComInterfaceWithOptions("ComInterfaceOptions.ComObjectWrapper"),
                 VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(1)
-                    .WithArguments(string.Format(SR.ManagedObjectWrapperNotGeneratedForMarshallingFromManagedToUnmanaged, "MyInterfaceType"), "p"),
+                    .WithArguments(string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, entryPointType), "p"),
                 VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(2)
-                    .WithArguments(string.Format(SR.ManagedObjectWrapperNotGeneratedForMarshallingFromManagedToUnmanaged, "MyInterfaceType"), "pIn"),
+                    .WithArguments(string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, entryPointType), "pIn"),
                 VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(3)
-                    .WithArguments(string.Format(SR.ManagedObjectWrapperNotGeneratedForMarshallingFromManagedToUnmanaged, "MyInterfaceType"), "pRef"));
+                    .WithArguments(string.Format(SR.BidirectionalMissingRequiredMarshaller, entryPointType), "pRef"));
         }
 
         [Fact]
@@ -73,17 +74,18 @@ namespace LibraryImportGenerator.UnitTests
         {
             // ManagedObjectWrapper-only interface (no RCW): cannot marshal unmanaged -> managed.
             // Return value, out, and ref parameters are invalid; by-value / in remain valid.
+            const string entryPointType = "global::System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller<global::MyInterfaceType>";
             return VerifyAnalyzerCS.VerifyAnalyzerAsync(
                 CodeSnippets.GeneratedComInterfaceWithOptions("ComInterfaceOptions.ManagedObjectWrapper"),
                 VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
                     .WithLocation(0)
-                    .WithArguments(string.Format(SR.ComObjectWrapperNotGeneratedForMarshallingFromUnmanagedToManaged, "MyInterfaceType"), "Method"),
+                    .WithArguments(string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, entryPointType), "Method"),
                 VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(3)
-                    .WithArguments(string.Format(SR.ComObjectWrapperNotGeneratedForMarshallingFromUnmanagedToManaged, "MyInterfaceType"), "pRef"),
+                    .WithArguments(string.Format(SR.BidirectionalMissingRequiredMarshaller, entryPointType), "pRef"),
                 VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(4)
-                    .WithArguments(string.Format(SR.ComObjectWrapperNotGeneratedForMarshallingFromUnmanagedToManaged, "MyInterfaceType"), "pOut"));
+                    .WithArguments(string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, entryPointType), "pOut"));
         }
 
         public static IEnumerable<object[]> CodeSnippetsToCompile()
