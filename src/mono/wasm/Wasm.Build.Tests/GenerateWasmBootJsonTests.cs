@@ -1,0 +1,213 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Text.Json;
+using Microsoft.NET.Sdk.WebAssembly;
+using Xunit;
+
+#nullable enable
+
+namespace Wasm.Build.Tests
+{
+    [TestCategory("no-workload")]
+    public class GenerateWasmBootJsonTests
+    {
+        [Fact]
+        public void ReadRuntimeConfigFiles_NullMainConfigPath_ReturnsNull()
+        {
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(null, null);
+
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void ReadRuntimeConfigFiles_MainConfigNotExists_ReturnsNull()
+        {
+            using var dir = new TempDirectory();
+            string nonExistentPath = Path.Combine(dir.Path, "does-not-exist.runtimeconfig.json");
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(nonExistentPath, null);
+
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void ReadRuntimeConfigFiles_DevConfigPreservesBooleanAndNumericTypes()
+        {
+            using var dir = new TempDirectory();
+            string mainConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.json",
+                configProperties: new() { ["key1"] = "value1" });
+            string devConfigPath = Path.Combine(dir.Path, "App.runtimeconfig.dev.json");
+            File.WriteAllText(devConfigPath, """
+                {
+                  "runtimeOptions": {
+                    "configProperties": {
+                      "System.HotReload.Enable": true,
+                      "System.HotReload.MaxRetries": 10
+                    }
+                  }
+                }
+                """);
+
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(mainConfig, devConfigPath);
+
+            Assert.NotNull(result?.runtimeOptions?.configProperties);
+            Dictionary<string, object> props = result!.runtimeOptions!.configProperties!;
+            Assert.Equal(JsonValueKind.True, ((JsonElement)props["System.HotReload.Enable"]).ValueKind);
+            Assert.Equal(JsonValueKind.Number, ((JsonElement)props["System.HotReload.MaxRetries"]).ValueKind);
+            Assert.Equal(10, ((JsonElement)props["System.HotReload.MaxRetries"]).GetInt32());
+        }
+
+        [Fact]
+        public void ReadRuntimeConfigFiles_MainConfigOnly_ReturnsMainProperties()
+        {
+            using var dir = new TempDirectory();
+            string mainConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.json",
+                configProperties: new() { ["key1"] = "value1", ["key2"] = "42" });
+
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(mainConfig, null);
+
+            Assert.NotNull(result);
+            Assert.NotNull(result.runtimeOptions?.configProperties);
+            Assert.Equal("value1", result.runtimeOptions!.configProperties!["key1"].ToString());
+            Assert.Equal("42", result.runtimeOptions.configProperties["key2"].ToString());
+        }
+
+        [Fact]
+        public void ReadRuntimeConfigFiles_DevConfigNotExists_ReturnsMainPropertiesUnchanged()
+        {
+            using var dir = new TempDirectory();
+            string mainConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.json",
+                configProperties: new() { ["key1"] = "value1" });
+            string devConfigPath = Path.Combine(dir.Path, "App.runtimeconfig.dev.json");
+
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(mainConfig, devConfigPath);
+
+            Assert.NotNull(result);
+            Assert.Equal("value1", result.runtimeOptions?.configProperties?["key1"].ToString());
+        }
+
+        [Fact]
+        public void ReadRuntimeConfigFiles_DevConfigAddsNewProperty()
+        {
+            using var dir = new TempDirectory();
+            string mainConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.json",
+                configProperties: new() { ["key1"] = "value1" });
+            string devConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.dev.json",
+                configProperties: new() { ["key2"] = "value2" });
+
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(mainConfig, devConfig);
+
+            Assert.NotNull(result?.runtimeOptions?.configProperties);
+            Assert.Equal("value1", result!.runtimeOptions!.configProperties!["key1"].ToString());
+            Assert.Equal("value2", result.runtimeOptions.configProperties["key2"].ToString());
+        }
+
+        [Fact]
+        public void ReadRuntimeConfigFiles_DevConfigOverridesMainProperty()
+        {
+            using var dir = new TempDirectory();
+            string mainConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.json",
+                configProperties: new() { ["System.Runtime.Feature"] = "false" });
+            string devConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.dev.json",
+                configProperties: new() { ["System.Runtime.Feature"] = "true" });
+
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(mainConfig, devConfig);
+
+            Assert.NotNull(result?.runtimeOptions?.configProperties);
+            Assert.Equal("true", result!.runtimeOptions!.configProperties!["System.Runtime.Feature"].ToString());
+        }
+
+        [Fact]
+        public void ReadRuntimeConfigFiles_DevConfigMergesWhenMainHasNoConfigProperties()
+        {
+            using var dir = new TempDirectory();
+            string mainConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.json",
+                configProperties: null);
+            string devConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.dev.json",
+                configProperties: new() { ["System.HotReload.Enable"] = "true" });
+
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(mainConfig, devConfig);
+
+            Assert.NotNull(result?.runtimeOptions?.configProperties);
+            Assert.Equal("true", result!.runtimeOptions!.configProperties!["System.HotReload.Enable"].ToString());
+        }
+
+        [Fact]
+        public void ReadRuntimeConfigFiles_DevConfigEmptyProperties_DoesNotAlterResult()
+        {
+            using var dir = new TempDirectory();
+            string mainConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.json",
+                configProperties: new() { ["key1"] = "value1" });
+            string devConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.dev.json",
+                configProperties: new());
+
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(mainConfig, devConfig);
+
+            Assert.NotNull(result?.runtimeOptions?.configProperties);
+            Assert.Single(result!.runtimeOptions!.configProperties!);
+            Assert.Equal("value1", result.runtimeOptions.configProperties["key1"].ToString());
+        }
+
+        private static string WriteRuntimeConfig(string dir, string fileName, Dictionary<string, string>? configProperties)
+        {
+            string path = Path.Combine(dir, fileName);
+            using var stream = File.OpenWrite(path);
+            using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+            writer.WriteStartObject();
+            writer.WritePropertyName("runtimeOptions");
+            writer.WriteStartObject();
+            if (configProperties is not null)
+            {
+                writer.WritePropertyName("configProperties");
+                writer.WriteStartObject();
+                foreach ((string key, string value) in configProperties)
+                {
+                    writer.WriteString(key, value);
+                }
+                writer.WriteEndObject();
+            }
+            writer.WriteEndObject();
+            writer.WriteEndObject();
+            return path;
+        }
+
+        private static RuntimeConfigData? InvokeReadRuntimeConfigFiles(string? mainConfigPath, string? devConfigPath)
+        {
+            MethodInfo method = typeof(GenerateWasmBootJson).GetMethod(
+                "ReadRuntimeConfigFiles",
+                BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("Could not find GenerateWasmBootJson.ReadRuntimeConfigFiles.");
+
+            object? result = method.Invoke(null, new object?[] { mainConfigPath, devConfigPath });
+            return (RuntimeConfigData?)result;
+        }
+
+        private sealed class TempDirectory : IDisposable
+        {
+            public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.IO.Path.GetRandomFileName());
+
+            public TempDirectory() => Directory.CreateDirectory(Path);
+
+            public void Dispose()
+            {
+                try
+                {
+                    Directory.Delete(Path, recursive: true);
+                }
+                catch (DirectoryNotFoundException)
+                {
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
+        }
+    }
+}
