@@ -492,8 +492,8 @@ namespace System
                 Unsafe.SkipInit(out result);
 
                 // Order operands so the longer one drives the loop.
-                ref BigInteger large = ref (lhs._length < rhs._length) ? ref rhs : ref lhs;
-                ref BigInteger small = ref (lhs._length < rhs._length) ? ref lhs : ref rhs;
+                ref BigInteger large = ref (lhs._length < rhs._length ? ref rhs : ref lhs);
+                ref BigInteger small = ref (lhs._length < rhs._length ? ref lhs : ref rhs);
 
                 int largeLength = (int)large._length;
                 int smallLength = (int)small._length;
@@ -658,10 +658,10 @@ namespace System
                         for (int i = 0; i < divisorLength; i++)
                         {
                             UInt128 product = (UInt128)(ulong)divisor._blocks[i] * quotient + borrow;
-                            nuint low = (nuint)(ulong)product;
+                            nuint low = (nuint)product.Lower;
                             nuint orig = dividend._blocks[i];
                             dividend._blocks[i] = orig - low;
-                            borrow = (nuint)(ulong)(product >> 64) + ((orig < low) ? (nuint)1 : 0);
+                            borrow = (nuint)product.Upper + ((orig < low) ? (nuint)1 : 0);
                         }
                     }
                     else
@@ -701,6 +701,7 @@ namespace System
                     dividend._length = divisorLength;
                 }
 
+                Debug.Assert(quotient < 10);
                 return (uint)quotient;
             }
 
@@ -1040,9 +1041,31 @@ namespace System
 
                 int length = (int)_length;
 
-                // Mul1 is safe in place.
-                Span<nuint> blocks = _blocks;
-                nuint carry = BigIntegerCalculator.Mul1(blocks[..length], blocks[..length], 10);
+                // Multiply-by-10 is called once per output digit in Dragon4's hot loop. Routing it
+                // through the shared Mul1 kernel costs a non-inlined call plus span setup per digit
+                // (the unrolled UInt128 body is too large to inline), which measurably regresses
+                // ToString of long fixed-precision formats. Keeping the single-block multiply inline
+                // here avoids that; nint.Size constant-folds to the native-width loop.
+                nuint carry = 0;
+
+                if (nint.Size == 8)
+                {
+                    for (int i = 0; i < length; i++)
+                    {
+                        UInt128 product = (UInt128)(ulong)_blocks[i] * 10 + carry;
+                        _blocks[i] = (nuint)product.Lower;
+                        carry = (nuint)product.Upper;
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < length; i++)
+                    {
+                        ulong product = (ulong)(uint)_blocks[i] * 10 + carry;
+                        _blocks[i] = (nuint)(uint)product;
+                        carry = (nuint)(uint)(product >> 32);
+                    }
+                }
 
                 if (carry != 0)
                 {
@@ -1058,7 +1081,7 @@ namespace System
                         return;
                     }
 
-                    blocks[length] = carry;
+                    _blocks[length] = carry;
                     _length = length + 1;
                 }
             }
