@@ -222,7 +222,7 @@ namespace System
         {
             Debug.Assert(delegateType.IsAssignableTo(typeof(Delegate)));
 
-            MethodInfo? invoke = delegateType.GetMethod("Invoke", BindingFlags.Public | BindingFlags.Instance);
+            MethodInfo? invoke = delegateType.GetMethod("Invoke", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             Debug.Assert(invoke is not null);
 
             return invoke;
