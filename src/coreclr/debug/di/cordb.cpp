@@ -449,7 +449,7 @@ DbiGetThreadContext(HANDLE hThread,
             ctx->ContextFlags = lpContext->ContextFlags;
             if (::GetThreadContext(hThread, ctx))
             {
-                *lpContext = *(T_CONTEXT*)ctx;
+                memcpy(lpContext, ctx, ContextSizeForFlags(ctx->ContextFlags));
                 res = TRUE;
             }
 
@@ -485,7 +485,7 @@ DbiSetThreadContext(HANDLE hThread,
         CONTEXT *ctx = (CONTEXT*)_aligned_malloc(sizeof(CONTEXT), 16);
         if (ctx)
         {
-            *ctx = *(CONTEXT*)lpContext;
+            memcpy(ctx, lpContext, ContextSizeForFlags(lpContext->ContextFlags));
             res = ::SetThreadContext(hThread, ctx);
             _aligned_free(ctx);
         }
