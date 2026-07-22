@@ -69,6 +69,7 @@ public class GitHub_127696
     [Fact]
     public static void Repro130661IsFixed()
     {
+        // Resolve by name so the loader has to materialize the nested type on demand.
         Type wrapper = typeof(GitHub_127696).Assembly.GetType("GitHub_127696+Wrapper", throwOnError: true)!;
 
         Assert.Equal(nameof(Wrapper), wrapper.Name);

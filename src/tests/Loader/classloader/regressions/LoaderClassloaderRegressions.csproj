@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <HasMergedInTests>true</HasMergedInTests>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="GitHub_127696/GitHub_127696.cs" />
     <MergedWrapperProjectReference Include="*/**/*.??proj" />
