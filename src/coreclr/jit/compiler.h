@@ -3358,6 +3358,14 @@ public:
     GenTreeCall* gtNewHelperCallNode(
         unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr, GenTree* arg4 = nullptr);
 
+#ifdef TARGET_WASM
+    // On wasm these helpers return void* (InitHelpers.InitClass/InitInstantiatedClass). Model them as
+    // value-returning so the call_indirect signature matches the compiled managed helper; the value is unused.
+    static constexpr var_types HelperInitClassRetType = TYP_I_IMPL;
+#else
+    static constexpr var_types HelperInitClassRetType = TYP_VOID;
+#endif // TARGET_WASM
+
     GenTreeCall* gtNewVirtualFunctionLookupHelperCallNode(
         unsigned helper, var_types type, GenTree* thisPtr, GenTree* methHnd, GenTree* clsHnd = nullptr);
 
