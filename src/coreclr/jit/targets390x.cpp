@@ -85,8 +85,7 @@ ABIPassingInformation S390xClassifier::Classify(Compiler*    comp,
             }
             else
             {
-                unsigned alignment =
-                    compAppleArm64Abi() ? min(elemSize, (unsigned)TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
+                unsigned alignment = TARGET_POINTER_SIZE;
                 m_stackArgSize = roundUp(m_stackArgSize, alignment);
                 info           = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0,
                                                                                                      structLayout->GetSize()));
@@ -165,25 +164,8 @@ ABIPassingInformation S390xClassifier::Classify(Compiler*    comp,
         }
         else
         {
-            unsigned alignment;
-            if (compAppleArm64Abi())
-            {
-                if (varTypeIsStruct(type))
-                {
-                    alignment = TARGET_POINTER_SIZE;
-                }
-                else
-                {
-                    alignment = genTypeSize(type);
-                }
-
-                m_stackArgSize = roundUp(m_stackArgSize, alignment);
-            }
-            else
-            {
-                alignment = TARGET_POINTER_SIZE;
-                assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
-            }
+            unsigned alignment = TARGET_POINTER_SIZE;
+            assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
 
             info = ABIPassingInformation::FromSegment(comp, ABIPassingSegment::OnStack(m_stackArgSize, 0, passedSize));
 
