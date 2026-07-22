@@ -67,11 +67,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             yield return new object[] { MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.ReadWriteExecute };
             yield return new object[] { MemoryMappedFileAccess.ReadExecute, MemoryMappedFileAccess.Read };
             yield return new object[] { MemoryMappedFileAccess.ReadExecute, MemoryMappedFileAccess.CopyOnWrite };
-            // https://github.com/dotnet/runtime/issues/114403
-            if (PlatformDetection.IsNotMacCatalyst)
-            {
-                yield return new object[] { MemoryMappedFileAccess.ReadExecute, MemoryMappedFileAccess.ReadExecute };
-            }
+            yield return new object[] { MemoryMappedFileAccess.ReadExecute, MemoryMappedFileAccess.ReadExecute };
             yield return new object[] { MemoryMappedFileAccess.CopyOnWrite, MemoryMappedFileAccess.Read };
             yield return new object[] { MemoryMappedFileAccess.CopyOnWrite, MemoryMappedFileAccess.CopyOnWrite };
             yield return new object[] { MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.Read };
