@@ -307,7 +307,7 @@ namespace System
             // These values are used to inspect why the print loop terminated so we can properly round the final digit.
             bool low;            // did the value get within marginLow distance from zero
             bool high;           // did the value get within marginHigh distance from one
-            uint outputDigit;    // current digit being output
+            uint outputDigit = 0;    // current digit being output
 
             if (cutoffNumber == -1)
             {
@@ -370,24 +370,94 @@ namespace System
                 low = false;
                 high = false;
 
-                while (true)
+                // This path never inspects per-digit margins, so when the per-digit divide is genuinely
+                // O(L > 1) we pull a whole native block's worth of digits at a time: `floor(scaledValue *
+                // 10^(K-1) / scale)` yields the next K digits in one big divide. K is the largest power of
+                // ten that fits a block (19 on 64-bit, 9 on 32-bit). The digit at cutoffExponent is always
+                // the rounding digit, so it is left to a per-digit tail whose leftover scaledValue drives
+                // the rounding logic. A single-block scale (e.g. small integers) already extracts a digit
+                // in O(1), so batching would only add block-divide overhead -- it stays on the scalar loop.
+                if (scale.GetLength() > 1)
                 {
-                    // divide out the scale to extract the digit
-                    outputDigit = BigInteger.HeuristicDivide(ref scaledValue, ref scale);
-                    Debug.Assert(outputDigit < 10);
+                    int MaxBatchDigits = (nint.Size == 8) ? 19 : 9;
+                    bool roundingDigitExtracted = false;
 
-                    if (scaledValue.IsZero() || (digitExponent <= cutoffExponent))
+                    while (digitExponent > cutoffExponent)
                     {
-                        break;
+                        int batchDigits = Math.Min(digitExponent - cutoffExponent, MaxBatchDigits);
+
+                        if (batchDigits > 1)
+                        {
+                            scaledValue.MultiplyPow10((uint)(batchDigits - 1));
+                        }
+
+                        BigInteger.DivRem(ref scaledValue, ref scale, out BigInteger batch, out BigInteger remainder);
+                        Debug.Assert(batch.GetLength() <= 1);
+
+                        // Expand the block quotient into `batchDigits` zero-padded decimal digits.
+                        nuint blockDigits = (batch.GetLength() == 0) ? 0 : batch.GetBlock(0);
+
+                        for (int i = batchDigits - 1; i >= 0; i--)
+                        {
+                            (blockDigits, nuint digit) = Math.DivRem(blockDigits, (nuint)10);
+                            buffer[curDigit + i] = (byte)('0' + digit);
+                        }
+
+                        if (remainder.IsZero())
+                        {
+                            // The value was captured exactly within this block. The trailing zeros are not
+                            // significant, so the last non-zero digit becomes the rounding digit and the
+                            // leftover scaledValue is exactly zero (an exact round-down below).
+                            int last = curDigit + batchDigits - 1;
+
+                            while ((last > curDigit) && (buffer[last] == '0'))
+                            {
+                                last--;
+                            }
+
+                            outputDigit = (uint)(buffer[last] - '0');
+                            curDigit = last;
+                            scaledValue = remainder;
+                            roundingDigitExtracted = true;
+                            break;
+                        }
+
+                        curDigit += batchDigits;
+
+                        // multiply larger by the output base to line up the next block
+                        remainder.Multiply10();
+                        scaledValue = remainder;
+                        digitExponent -= batchDigits;
                     }
 
-                    // store the output digit
-                    buffer[curDigit] = (byte)('0' + outputDigit);
-                    curDigit++;
+                    if (!roundingDigitExtracted)
+                    {
+                        // extract the rounding digit at cutoffExponent
+                        outputDigit = BigInteger.HeuristicDivide(ref scaledValue, ref scale);
+                        Debug.Assert(outputDigit < 10);
+                    }
+                }
+                else
+                {
+                    while (true)
+                    {
+                        // divide out the scale to extract the digit
+                        outputDigit = BigInteger.HeuristicDivide(ref scaledValue, ref scale);
+                        Debug.Assert(outputDigit < 10);
 
-                    // multiply larger by the output base
-                    scaledValue.Multiply10();
-                    digitExponent--;
+                        if (scaledValue.IsZero() || (digitExponent <= cutoffExponent))
+                        {
+                            break;
+                        }
+
+                        // store the output digit
+                        buffer[curDigit] = (byte)('0' + outputDigit);
+                        curDigit++;
+
+                        // multiply larger by the output base
+                        scaledValue.Multiply10();
+                        digitExponent--;
+                    }
                 }
             }
             else
