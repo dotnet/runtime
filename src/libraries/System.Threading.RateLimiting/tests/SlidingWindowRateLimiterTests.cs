@@ -1315,7 +1315,7 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public async Task RetryMetadataOnFailedWaitAsync()
+        public async Task RetryMetadataOnFailedAcquireAsync()
         {
             var options = new SlidingWindowRateLimiterOptions
             {
