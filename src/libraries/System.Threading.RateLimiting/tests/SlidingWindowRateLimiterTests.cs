@@ -1562,13 +1562,15 @@ namespace System.Threading.RateLimiting.Test
             var lockProperty = typeof(SlidingWindowRateLimiter).GetProperty("Lock", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)!;
             var lockObject = lockProperty.GetValue(limiter)!;
 
+            Task<RateLimitLease> acquireTask;
+
             // Hold the limiter's own lock on this thread, so a concurrent AttemptAcquire(0) can pass
             // its outer, unlocked _permitCount check (which sees 0) but then has to block on the lock
             // before it reaches the recheck. That's exactly the race window the fix is meant to close.
             Monitor.Enter(lockObject);
             try
             {
-                var acquireTask = Task.Run(() => limiter.AttemptAcquire(0));
+                acquireTask = Task.Run(() => limiter.AttemptAcquire(0));
 
                 // Two segments in this window - the first Replenish call advances to the (empty)
                 // second segment; the second call wraps back around and frees the permit that was
@@ -1576,14 +1578,16 @@ namespace System.Threading.RateLimiting.Test
                 Replenish(limiter, 1L);
                 Replenish(limiter, 1L);
                 Assert.True(limiter.GetStatistics().CurrentAvailablePermits > 0);
-                var result = await acquireTask;
-                Assert.True(result.IsAcquired);
+
+                // Do not await acquireTask here - see comment above about why.
             }
             finally
             {
                 Monitor.Exit(lockObject);
             }
 
+            var result = await acquireTask;
+            Assert.True(result.IsAcquired);
             Assert.Equal(0, limiter.GetStatistics().TotalFailedLeases); // the bug would have incremented this
         }
 
