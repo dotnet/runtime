@@ -268,7 +268,7 @@ namespace System
         {
             return OpenMethodResolver.ResolveMethod(_extraFunctionPointerOrData, thisObject);
         }
-                
+
         [DebuggerGuidedStepThrough]
         protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
