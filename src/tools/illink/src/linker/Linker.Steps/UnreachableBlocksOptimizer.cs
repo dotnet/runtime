@@ -1187,7 +1187,7 @@ namespace Mono.Linker.Steps
                 var reachable = new BitArray(FoldedInstructions.Count);
 
                 Stack<int>? condBranches = null;
-                bool exceptionHandlersChecked = !Body.HasExceptionHandlers;
+                BitArray? reachableExceptionHandlers = Body.HasExceptionHandlers ? new BitArray(ExceptionHandlers.Count) : null;
                 Instruction target;
                 int i = 0;
                 while (true)
@@ -1245,23 +1245,23 @@ namespace Mono.Linker.Steps
                         continue;
                     }
 
-                    if (!exceptionHandlersChecked)
+                    if (reachableExceptionHandlers != null)
                     {
-                        exceptionHandlersChecked = true;
-
+                        // Newly reachable handlers can contain protected regions for nested handlers.
                         var instrs = Instructions;
-                        foreach (var handler in ExceptionHandlers)
+                        for (int handlerIndex = 0; handlerIndex < ExceptionHandlers.Count; handlerIndex++)
                         {
+                            if (reachableExceptionHandlers[handlerIndex])
+                                continue;
+
+                            var handler = ExceptionHandlers[handlerIndex];
                             int start = instrs.IndexOf(handler.TryStart);
                             int end = instrs.IndexOf(handler.TryEnd) - 1;
 
                             if (!HasAnyBitSet(reachable, start, end))
-                            {
-                                unreachableHandlers ??= new List<ExceptionHandler>();
-
-                                unreachableHandlers.Add(handler);
                                 continue;
-                            }
+
+                            reachableExceptionHandlers[handlerIndex] = true;
 
                             condBranches ??= new Stack<int>();
 
@@ -1288,6 +1288,15 @@ namespace Mono.Linker.Steps
                         {
                             i = condBranches.Pop();
                             continue;
+                        }
+
+                        for (int handlerIndex = 0; handlerIndex < ExceptionHandlers.Count; handlerIndex++)
+                        {
+                            if (reachableExceptionHandlers[handlerIndex])
+                                continue;
+
+                            unreachableHandlers ??= new List<ExceptionHandler>();
+                            unreachableHandlers.Add(ExceptionHandlers[handlerIndex]);
                         }
                     }
 
