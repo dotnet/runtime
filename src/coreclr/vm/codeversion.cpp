@@ -1621,6 +1621,24 @@ HRESULT CodeVersionManager::SetActiveILCodeVersions(ILCodeVersion* pActiveVersio
         *pMethodDescs = CDynArray<MethodDesc*>();
 
         MethodDesc* pLoadedMethodDesc = pActiveVersions[i].GetModule()->LookupMethodDef(pActiveVersions[i].GetMethodDef());
+
+        // The methodDef of a Runtime Async method resolves to the Task-returning thunk, but the
+        // async variant is the MethodDesc that owns the user IL and actually executes. Redirect to
+        // the variant so its native code (not the thunk's) is republished for the new IL version.
+        // Without this, ReJIT of an already-jitted async method silently has no effect
+        // (https://github.com/dotnet/runtime/issues/128944). This mirrors the handling in
+        // MethodDesc::ResetCodeEntryPointForEnC. The variant is already created at this point (the
+        // method has native code being versioned), so the no-create/no-GC lookup is safe in this
+        // GC_NOTRIGGER path.
+        if (pLoadedMethodDesc != NULL && pLoadedMethodDesc->IsAsyncThunkMethod())
+        {
+            MethodDesc* pAsyncVariant = pLoadedMethodDesc->GetAsyncVariantNoCreate();
+            if (pAsyncVariant != NULL)
+            {
+                pLoadedMethodDesc = pAsyncVariant;
+            }
+        }
+
         if (FAILED(hr = CodeVersionManager::EnumerateClosedMethodDescs(pLoadedMethodDesc, pMethodDescs, &errorRecords)))
         {
             _ASSERTE(hr == E_OUTOFMEMORY);
