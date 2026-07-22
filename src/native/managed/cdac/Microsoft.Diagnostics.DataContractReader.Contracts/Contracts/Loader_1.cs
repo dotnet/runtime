@@ -195,6 +195,26 @@ internal readonly struct Loader_1 : ILoader
         return true;
     }
 
+    // Resolves the PEImageLayout used to read a module's image contents. Prefers the mapped/loaded
+    // layout; when that is absent (e.g. a webcil ReadyToRun image on WASM is only ever flat) falls
+    // back to the flat layout, whose section data still backs the image's RVAs and metadata.
+    private bool TryGetUsableImageLayout(Data.PEImage peImage, [NotNullWhen(true)] out Data.PEImageLayout? imageLayout)
+    {
+        imageLayout = null;
+
+        TargetPointer imageLayoutPtr = peImage.LoadedImageLayout;
+        if (imageLayoutPtr == TargetPointer.Null)
+        {
+            if (peImage.FlatImageLayout is not TargetPointer flatLayoutPtr || flatLayoutPtr == TargetPointer.Null)
+                return false;
+
+            imageLayoutPtr = flatLayoutPtr;
+        }
+
+        imageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(imageLayoutPtr);
+        return true;
+    }
+
     bool ILoader.TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags)
     {
         baseAddress = TargetPointer.Null;
@@ -204,10 +224,8 @@ internal readonly struct Loader_1 : ILoader
         if (!TryGetPEImage(handle, out Data.PEImage? peImage))
             return false; // no PE image
 
-        if (peImage.LoadedImageLayout == TargetPointer.Null)
-            return false; // no loaded image layout
-
-        Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
+        if (!TryGetUsableImageLayout(peImage, out Data.PEImageLayout? peImageLayout))
+            return false; // no usable image layout
 
         baseAddress = peImageLayout.Base;
         size = peImageLayout.Size;
@@ -319,9 +337,8 @@ internal readonly struct Loader_1 : ILoader
         if (assembly.PEImage == TargetPointer.Null)
             throw new InvalidOperationException("PEAssembly does not have a PEImage associated with it.");
         Data.PEImage peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(assembly.PEImage);
-        if (peImage.LoadedImageLayout == TargetPointer.Null)
-            throw new InvalidOperationException("PEImage does not have a LoadedImageLayout associated with it.");
-        Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
+        if (!TryGetUsableImageLayout(peImage, out Data.PEImageLayout? peImageLayout))
+            throw new InvalidOperationException("PEImage does not have a usable image layout associated with it.");
         uint offset;
         if (IsMapped(peImageLayout))
             offset = (uint)rva;
@@ -533,7 +550,8 @@ internal readonly struct Loader_1 : ILoader
             module.MethodDefToDescMap,
             module.TypeDefToMethodTableMap,
             module.TypeRefToMethodTableMap,
-            module.MethodDefToILCodeVersioningStateMap,
+            // Absent on builds without code versioning (e.g. WASM); treat as an empty table.
+            module.MethodDefToILCodeVersioningStateMap ?? TargetPointer.Null,
             tableDataOffset);
     }
 

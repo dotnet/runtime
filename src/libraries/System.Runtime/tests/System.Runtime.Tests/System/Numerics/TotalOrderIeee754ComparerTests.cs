@@ -1,9 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -94,6 +95,34 @@ namespace System.Runtime.Tests
             Assert.Equal(result, Math.Sign(comparer.Compare(x, y)));
         }
 
+        public static IEnumerable<object[]> BFloat16TestData
+        {
+            get
+            {
+                yield return new object[] { (BFloat16)0.0f, (BFloat16)0.0f, 0 };
+                yield return new object[] { (BFloat16)(-0.0f), (BFloat16)(-0.0f), 0 };
+                yield return new object[] { (BFloat16)0.0f, (BFloat16)(-0.0f), 1 };
+                yield return new object[] { (BFloat16)(-0.0f), (BFloat16)0.0f, -1 };
+                yield return new object[] { (BFloat16)0.0f, (BFloat16)1.0f, -1 };
+                yield return new object[] { BFloat16.PositiveInfinity, (BFloat16)1.0f, 1 };
+                yield return new object[] { BFloat16.NaN, BFloat16.NegativeInfinity, -1 };
+                yield return new object[] { BFloat16.NaN, (BFloat16)(-1.0f), -1 };
+                yield return new object[] { -BFloat16.NaN, (BFloat16)1.0f, 1 };
+                yield return new object[] { -BFloat16.NaN, BFloat16.PositiveInfinity, 1 };
+                yield return new object[] { BFloat16.NaN, BFloat16.NaN, 0 };
+                yield return new object[] { BFloat16.NaN, -BFloat16.NaN, -1 };
+                yield return new object[] { Unsafe.BitCast<ushort, BFloat16>(0x7FC0), Unsafe.BitCast<ushort, BFloat16>(0x7FC1), -1 }; // implementation defined, not part of IEEE 754 totalOrder
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(BFloat16TestData))]
+        public void TotalOrderTestBFloat16(BFloat16 x, BFloat16 y, int result)
+        {
+            var comparer = new TotalOrderIeee754Comparer<BFloat16>();
+            Assert.Equal(result, Math.Sign(comparer.Compare(x, y)));
+        }
+
         public static IEnumerable<object[]> NFloatTestData
         {
             get
@@ -131,6 +160,130 @@ namespace System.Runtime.Tests
         public void TotalOrderTestNFloat(NFloat x, NFloat y, int result)
         {
             var comparer = new TotalOrderIeee754Comparer<NFloat>();
+            Assert.Equal(result, Math.Sign(comparer.Compare(x, y)));
+        }
+
+        public static IEnumerable<object[]> Decimal32TestData
+        {
+            get
+            {
+                yield return new object[] { Decimal32.Parse("0", CultureInfo.InvariantCulture), Decimal32.Parse("0", CultureInfo.InvariantCulture), 0 };
+                yield return new object[] { Decimal32.NegativeZero, Decimal32.NegativeZero, 0 };
+                yield return new object[] { Decimal32.Parse("0", CultureInfo.InvariantCulture), Decimal32.NegativeZero, 1 };
+                yield return new object[] { Decimal32.NegativeZero, Decimal32.Parse("0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal32.Parse("0", CultureInfo.InvariantCulture), Decimal32.Parse("1", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal32.PositiveInfinity, Decimal32.Parse("1", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal32.NaN, Decimal32.NegativeInfinity, -1 };
+                yield return new object[] { Decimal32.NaN, Decimal32.Parse("-1", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { -Decimal32.NaN, Decimal32.Parse("1", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { -Decimal32.NaN, Decimal32.PositiveInfinity, 1 };
+                yield return new object[] { Decimal32.NaN, Decimal32.NaN, 0 };
+                yield return new object[] { Decimal32.NaN, -Decimal32.NaN, -1 };
+                // Same-signed NaNs are ordered by payload (implementation defined, not part of IEEE 754 totalOrder)
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0x7C00_0000), Unsafe.BitCast<uint, Decimal32>(0x7C00_0001), -1 };
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0xFC00_0000), Unsafe.BitCast<uint, Decimal32>(0xFC00_0001), 1 };
+                // Signaling NaNs order before quiet NaNs of the same sign (+sNaN < +qNaN)
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0x7E00_0000), Unsafe.BitCast<uint, Decimal32>(0x7C00_0000), -1 };
+                yield return new object[] { Unsafe.BitCast<uint, Decimal32>(0xFE00_0000), Unsafe.BitCast<uint, Decimal32>(0xFC00_0000), 1 };
+                // Cohort members: equal value, differing quantum exponent (totalOrder orders by exponent)
+                yield return new object[] { Decimal32.Parse("1.00", CultureInfo.InvariantCulture), Decimal32.Parse("1.0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal32.Parse("1.0", CultureInfo.InvariantCulture), Decimal32.Parse("1.00", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal32.Parse("1e1", CultureInfo.InvariantCulture), Decimal32.Parse("10e0", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal32.Parse("-1.00", CultureInfo.InvariantCulture), Decimal32.Parse("-1.0", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal32.Parse("-1.0", CultureInfo.InvariantCulture), Decimal32.Parse("-1.00", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal32.Parse("0.00", CultureInfo.InvariantCulture), Decimal32.Parse("0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal32.Parse("-0.00", CultureInfo.InvariantCulture), Decimal32.NegativeZero, 1 };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Decimal32TestData))]
+        public void TotalOrderTestDecimal32(Decimal32 x, Decimal32 y, int result)
+        {
+            var comparer = new TotalOrderIeee754Comparer<Decimal32>();
+            Assert.Equal(result, Math.Sign(comparer.Compare(x, y)));
+        }
+
+        public static IEnumerable<object[]> Decimal64TestData
+        {
+            get
+            {
+                yield return new object[] { Decimal64.Parse("0", CultureInfo.InvariantCulture), Decimal64.Parse("0", CultureInfo.InvariantCulture), 0 };
+                yield return new object[] { Decimal64.NegativeZero, Decimal64.NegativeZero, 0 };
+                yield return new object[] { Decimal64.Parse("0", CultureInfo.InvariantCulture), Decimal64.NegativeZero, 1 };
+                yield return new object[] { Decimal64.NegativeZero, Decimal64.Parse("0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal64.Parse("0", CultureInfo.InvariantCulture), Decimal64.Parse("1", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal64.PositiveInfinity, Decimal64.Parse("1", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal64.NaN, Decimal64.NegativeInfinity, -1 };
+                yield return new object[] { Decimal64.NaN, Decimal64.Parse("-1", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { -Decimal64.NaN, Decimal64.Parse("1", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { -Decimal64.NaN, Decimal64.PositiveInfinity, 1 };
+                yield return new object[] { Decimal64.NaN, Decimal64.NaN, 0 };
+                yield return new object[] { Decimal64.NaN, -Decimal64.NaN, -1 };
+                // Same-signed NaNs are ordered by payload (implementation defined, not part of IEEE 754 totalOrder)
+                yield return new object[] { Unsafe.BitCast<ulong, Decimal64>(0x7C00_0000_0000_0000), Unsafe.BitCast<ulong, Decimal64>(0x7C00_0000_0000_0001), -1 };
+                yield return new object[] { Unsafe.BitCast<ulong, Decimal64>(0xFC00_0000_0000_0000), Unsafe.BitCast<ulong, Decimal64>(0xFC00_0000_0000_0001), 1 };
+                // Signaling NaNs order before quiet NaNs of the same sign (+sNaN < +qNaN)
+                yield return new object[] { Unsafe.BitCast<ulong, Decimal64>(0x7E00_0000_0000_0000), Unsafe.BitCast<ulong, Decimal64>(0x7C00_0000_0000_0000), -1 };
+                yield return new object[] { Unsafe.BitCast<ulong, Decimal64>(0xFE00_0000_0000_0000), Unsafe.BitCast<ulong, Decimal64>(0xFC00_0000_0000_0000), 1 };
+                // Cohort members: equal value, differing quantum exponent (totalOrder orders by exponent)
+                yield return new object[] { Decimal64.Parse("1.00", CultureInfo.InvariantCulture), Decimal64.Parse("1.0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal64.Parse("1.0", CultureInfo.InvariantCulture), Decimal64.Parse("1.00", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal64.Parse("1e1", CultureInfo.InvariantCulture), Decimal64.Parse("10e0", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal64.Parse("-1.00", CultureInfo.InvariantCulture), Decimal64.Parse("-1.0", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal64.Parse("-1.0", CultureInfo.InvariantCulture), Decimal64.Parse("-1.00", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal64.Parse("0.00", CultureInfo.InvariantCulture), Decimal64.Parse("0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal64.Parse("-0.00", CultureInfo.InvariantCulture), Decimal64.NegativeZero, 1 };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Decimal64TestData))]
+        public void TotalOrderTestDecimal64(Decimal64 x, Decimal64 y, int result)
+        {
+            var comparer = new TotalOrderIeee754Comparer<Decimal64>();
+            Assert.Equal(result, Math.Sign(comparer.Compare(x, y)));
+        }
+
+        public static IEnumerable<object[]> Decimal128TestData
+        {
+            get
+            {
+                yield return new object[] { Decimal128.Parse("0", CultureInfo.InvariantCulture), Decimal128.Parse("0", CultureInfo.InvariantCulture), 0 };
+                yield return new object[] { Decimal128.NegativeZero, Decimal128.NegativeZero, 0 };
+                yield return new object[] { Decimal128.Parse("0", CultureInfo.InvariantCulture), Decimal128.NegativeZero, 1 };
+                yield return new object[] { Decimal128.NegativeZero, Decimal128.Parse("0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal128.Parse("0", CultureInfo.InvariantCulture), Decimal128.Parse("1", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal128.PositiveInfinity, Decimal128.Parse("1", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal128.NaN, Decimal128.NegativeInfinity, -1 };
+                yield return new object[] { Decimal128.NaN, Decimal128.Parse("-1", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { -Decimal128.NaN, Decimal128.Parse("1", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { -Decimal128.NaN, Decimal128.PositiveInfinity, 1 };
+                yield return new object[] { Decimal128.NaN, Decimal128.NaN, 0 };
+                yield return new object[] { Decimal128.NaN, -Decimal128.NaN, -1 };
+                // Same-signed NaNs are ordered by payload (implementation defined, not part of IEEE 754 totalOrder).
+                // The payload here lives entirely in the low bits, which the coefficient decode would discard.
+                yield return new object[] { Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x7C00_0000_0000_0000, 0x0000_0000_0000_0000)), Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x7C00_0000_0000_0000, 0x0000_0000_0000_0001)), -1 };
+                yield return new object[] { Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0xFC00_0000_0000_0000, 0x0000_0000_0000_0000)), Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0xFC00_0000_0000_0000, 0x0000_0000_0000_0001)), 1 };
+                // Signaling NaNs order before quiet NaNs of the same sign (+sNaN < +qNaN)
+                yield return new object[] { Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x7E00_0000_0000_0000, 0x0000_0000_0000_0000)), Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0x7C00_0000_0000_0000, 0x0000_0000_0000_0000)), -1 };
+                yield return new object[] { Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0xFE00_0000_0000_0000, 0x0000_0000_0000_0000)), Unsafe.BitCast<UInt128, Decimal128>(new UInt128(0xFC00_0000_0000_0000, 0x0000_0000_0000_0000)), 1 };
+                // Cohort members: equal value, differing quantum exponent (totalOrder orders by exponent)
+                yield return new object[] { Decimal128.Parse("1.00", CultureInfo.InvariantCulture), Decimal128.Parse("1.0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal128.Parse("1.0", CultureInfo.InvariantCulture), Decimal128.Parse("1.00", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal128.Parse("1e1", CultureInfo.InvariantCulture), Decimal128.Parse("10e0", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal128.Parse("-1.00", CultureInfo.InvariantCulture), Decimal128.Parse("-1.0", CultureInfo.InvariantCulture), 1 };
+                yield return new object[] { Decimal128.Parse("-1.0", CultureInfo.InvariantCulture), Decimal128.Parse("-1.00", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal128.Parse("0.00", CultureInfo.InvariantCulture), Decimal128.Parse("0", CultureInfo.InvariantCulture), -1 };
+                yield return new object[] { Decimal128.Parse("-0.00", CultureInfo.InvariantCulture), Decimal128.NegativeZero, 1 };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Decimal128TestData))]
+        public void TotalOrderTestDecimal128(Decimal128 x, Decimal128 y, int result)
+        {
+            var comparer = new TotalOrderIeee754Comparer<Decimal128>();
             Assert.Equal(result, Math.Sign(comparer.Compare(x, y)));
         }
 

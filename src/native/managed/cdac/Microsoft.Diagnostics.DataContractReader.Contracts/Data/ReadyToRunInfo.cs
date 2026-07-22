@@ -19,6 +19,9 @@ internal sealed partial class ReadyToRunInfo : IData<ReadyToRunInfo>
     [Field] public TargetPointer Composite { get; }
     [Field] public uint NumImportSections { get; }
 
+    // WASM-only: base virtual IP for this module's R2R function table (m_minVirtualIP).
+    [Field] public TargetPointer? MinVirtualIP { get; }
+
     public TargetPointer RuntimeFunctions { get; private set; }
     public TargetPointer HotColdMap { get; private set; }
     public TargetPointer ImportSections { get; private set; }

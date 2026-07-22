@@ -54,7 +54,7 @@ namespace System.Text.Json
 
             internal DbRow(JsonTokenType jsonTokenType, int location, int sizeOrLength)
             {
-                Debug.Assert(jsonTokenType > JsonTokenType.None && jsonTokenType <= JsonTokenType.Null);
+                Debug.Assert(jsonTokenType is > JsonTokenType.None and <= JsonTokenType.Null);
                 Debug.Assert((byte)jsonTokenType < 1 << 4);
                 Debug.Assert(location >= 0);
                 Debug.Assert(sizeOrLength >= UnknownSize);

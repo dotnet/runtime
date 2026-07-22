@@ -1114,7 +1114,7 @@ HRESULT EEToProfInterfaceImpl::SetEnterLeaveFunctionHooksForJit(FunctionEnter3 *
 // tailored to the post-pinvoke operations.
 extern "C" VOID JIT_PInvokeEndRarePath();
 
-void JIT_PInvokeEndRarePath()
+NOINLINE void JIT_PInvokeEndRarePath()
 {
     PreserveLastErrorHolder preserveLastError;
 
