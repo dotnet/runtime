@@ -177,6 +177,10 @@ namespace ILCompiler.ObjectWriter
         private SectionWriter WriteImport(WasmImport import)
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.ImportSection);
+            Utf8String symbolName = new(import.Name);
+            _wasmSymbolManager.AddImport(symbolName, GetIndexSpace(import.Kind), import.Index);
+            writer.EmitSymbolDefinition(symbolName);
+
             writer.WriteUtf8WithLength(import.Module);
             writer.WriteUtf8WithLength(import.Name);
             writer.WriteByte((byte)import.Kind);
@@ -185,10 +189,6 @@ namespace ILCompiler.ObjectWriter
             int bytesWritten = import.Encode(writer.Buffer.GetSpan(encodeSize));
             Debug.Assert(bytesWritten == encodeSize);
             writer.Buffer.Advance((int)bytesWritten);
-
-            Utf8String symbolName = new(import.Name);
-            _wasmSymbolManager.AddImport(symbolName, GetIndexSpace(import.Kind), import.Index);
-            writer.EmitSymbolDefinition(symbolName);
 
             _numImports++;
             return writer;
@@ -384,9 +384,10 @@ namespace ILCompiler.ObjectWriter
             byte[] data = new byte[codeSize];
             body.Encode(data);
 
+            codeWriter.EmitSymbolDefinition(name);
             codeWriter.EmitData(data);
-            RegisterFunctionSymbol(name);
 
+            RegisterFunctionSymbol(name);
             RegisterStubIndexAndSignature(body.Signature);
 
         }
@@ -563,6 +564,7 @@ namespace ILCompiler.ObjectWriter
             bool added = _definedGlobals.TryAdd(name, global);
             Debug.Assert(added, $"Duplicate global name: {name}");
 
+            writer.EmitSymbolDefinition(symbolName);
             int size = global.EncodeSize();
             int written = global.Encode(writer.Buffer.GetSpan(size));
             Debug.Assert(written == size);
@@ -1064,9 +1066,9 @@ namespace ILCompiler.ObjectWriter
             SectionWriter typeSectionWriter = GetOrCreateSection(ObjectNodeSection.WasmTypeSection);
             byte[] encodedSignature = new byte[signature.EncodeSize()];
             signature.Encode(encodedSignature);
-            typeSectionWriter.EmitData(encodedSignature);
             _wasmSymbolManager.AddDefinition(signatureKey, WasmIndexSpace.Type);
             typeSectionWriter.EmitSymbolDefinition(signatureKey);
+            typeSectionWriter.EmitData(encodedSignature);
 
             return _wasmSymbolManager.GetSymbol(signatureKey).Index;
         }
