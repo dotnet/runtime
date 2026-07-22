@@ -555,8 +555,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
         return;
     }
 
-    assert(!src->TypeIs(TYP_STRUCT));
-
     // If the child of GT_PUTARG_STK is a constant, we don't need a register to
     // move it to memory (stack location).
     //
@@ -662,7 +660,7 @@ void Lowering::LowerCast(GenTree* tree)
         //
         // This creates the equivalent of the following C# code:
         //   var addRes = Sse2.AddScalar(castResult, Vector128.CreateScalar(4294967296.0));
-        //   castResult = Sse41.BlendVariable(castResult, addRes, castResult);
+        //   castResult = X86Base.BlendVariable(castResult, addRes, castResult);
 
         GenTreeVecCon* addCns    = m_compiler->gtNewVconNode(TYP_SIMD16);
         addCns->gtSimdVal.f64[0] = 4294967296.0;
@@ -985,7 +983,7 @@ void Lowering::LowerCast(GenTree* tree)
                             // this is adequate to force selection of the negated result.
                             //
                             // This creates the equivalent of the following C# code:
-                            //   convertResult = Sse41.BlendVariable(result, negated, result);
+                            //   convertResult = X86Base.BlendVariable(result, negated, result);
 
                             convertResult =
                                 m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, result, negated, resultClone,
@@ -1458,7 +1456,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 GenTreeHWIntrinsic* userIntrin = user->AsHWIntrinsic();
 
                 bool       userIsScalar = false;
-                genTreeOps userOper     = userIntrin->GetOperForHWIntrinsicId(&isScalar);
+                genTreeOps userOper     = userIntrin->GetOperForHWIntrinsicId(&userIsScalar);
 
                 // userIntrin may have re-interpreted the base type
                 //
@@ -1549,7 +1547,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                                 //   B: op1
                                 //   C: op2 (AllBitsSet)
                                 //
-                                // This represents a double not, so so just return op2
+                                // This represents a double not, so just return op2
                                 // which is the only actual value now that the parameters
                                 // were shifted around
 
@@ -1892,7 +1890,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     testIntrinsicId = NI_AVX512_PTESTM;
                 }
 
-                node->Op(1) = op1;
                 BlockRange().Remove(op2);
 
                 LIR::Use op1Use(BlockRange(), &node->Op(1), node);
@@ -2191,7 +2188,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else
                 {
-                    // We're an unused zero constant node, so don't both creating
+                    // We're an unused zero constant node, so don't bother creating
                     // a new node for something that will never be consumed
                 }
 
@@ -2427,7 +2424,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             assert(varTypeIsIntegral(node->GetSimdBaseType()));
 
-            // pre-AVX512 doesn't actually support these intrinsics in hardware so we need to swap the operands around
+            // There's no integer compare-less-than instruction, so the managed intrinsic ID is unconditionally
+            // rewritten to compare-greater-than with the operands swapped
             NamedIntrinsic newIntrinsicId = NI_Illegal;
 
             switch (intrinsicId)
@@ -2662,16 +2660,42 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // be read from an undersized contained memory operand. Any other consumer (a store,
             // return, or call argument) materializes a value of the node's own type and size via the
             // ABI, so removing the node there would corrupt the copy size; keep the node for those.
+            //
+            // The one exception is an AVX2 gather index: the VSIB encoding (xmm vs ymm) is selected
+            // from the index operand's own width rather than the gather's size, so a width-changing
+            // reinterpret feeding it is load-bearing and must be kept.
 
             LIR::Use use;
             if (BlockRange().TryGetUse(node, &use) && use.User()->OperIsHWIntrinsic())
             {
-                GenTree* op1  = node->Op(1);
-                GenTree* next = node->gtNext;
+                GenTreeHWIntrinsic* user        = use.User()->AsHWIntrinsic();
+                GenTree*            gatherIndex = nullptr;
 
-                use.ReplaceWith(op1);
-                BlockRange().Remove(node);
-                return next;
+                switch (user->GetHWIntrinsicId())
+                {
+                    case NI_AVX2_GatherVector128:
+                    case NI_AVX2_GatherVector256:
+                        gatherIndex = user->Op(2);
+                        break;
+
+                    case NI_AVX2_GatherMaskVector128:
+                    case NI_AVX2_GatherMaskVector256:
+                        gatherIndex = user->Op(3);
+                        break;
+
+                    default:
+                        break;
+                }
+
+                if (gatherIndex != node)
+                {
+                    GenTree* op1  = node->Op(1);
+                    GenTree* next = node->gtNext;
+
+                    use.ReplaceWith(op1);
+                    BlockRange().Remove(node);
+                    return next;
+                }
             }
             break;
         }
@@ -2981,7 +3005,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                 {
                     assert((count == 1) || (count == 2) || (count == 4));
 
-                    if (!TryInvertMask(maskNode, simdSize, simdBaseType))
+                    if (!TryInvertMask(maskNode, simdSize, maskBaseType))
                     {
                         // We weren't able to invert the mask, so we need to do it here, keeping the upper
                         // n-bits clear. If we have 1 element, then the upper 7-bits need to be cleared. If we have
@@ -5816,7 +5840,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             case TYP_DOUBLE:
             {
                 // We will be constructing the following parts:
-                //   idx  =    CNS_INT       int    0x31
+                //   idx  =    CNS_INT       int    0x33
                 //          /--*  op1  simd16
                 //          +--*  op2  simd16
                 //          +--*  idx  int
@@ -5825,7 +5849,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 //   node = *  HWINTRINSIC   simd16 T ToScalar
 
                 // This is roughly the following managed code:
-                //   var tmp3 = Avx.DotProduct(op1, op2, 0x31);
+                //   var tmp3 = Avx.DotProduct(op1, op2, 0x33);
                 //   return tmp3.ToScalar();
 
                 idx = m_compiler->gtNewIconNode(0x33, TYP_INT);
@@ -6206,7 +6230,7 @@ GenTree* Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
             uint32_t elemSize = genTypeSize(simdBaseType);
 
             GenTreeLclVarCommon* lclVar  = op1->AsLclVarCommon();
-            uint32_t             lclOffs = lclVar->GetLclOffs() + (0 * elemSize);
+            uint32_t             lclOffs = lclVar->GetLclOffs();
             LclVarDsc*           lclDsc  = m_compiler->lvaGetDesc(lclVar);
 
             if (lclDsc->lvDoNotEnregister && (lclOffs <= 0xFFFF) && ((lclOffs + elemSize) <= lclDsc->lvExactSize()))
@@ -6420,7 +6444,7 @@ GenTree* Lowering::TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode)
     }
 
     // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
-    if (((opNode->gtFlags & GTF_SET_FLAGS) != 0) || ((negNode->gtFlags & GTF_SET_FLAGS) != 0))
+    if (((andNode->gtFlags & GTF_SET_FLAGS) != 0) || ((negNode->gtFlags & GTF_SET_FLAGS) != 0))
     {
         return nullptr;
     }
@@ -6718,7 +6742,7 @@ bool Lowering::IsRMWIndirCandidate(GenTree* operand, GenTree* storeInd)
 
             if (m_scratchSideEffects.InterferesWith(m_compiler, node, false))
             {
-                // The indirection's tree contains some node that can't be moved to the storeInder. The indirection is
+                // The indirection's tree contains some node that can't be moved to the storeIndir. The indirection is
                 // not a candidate. Clear any leftover mark bits and return.
                 for (; markCount > 0; node = node->gtPrev)
                 {
@@ -6824,7 +6848,7 @@ bool Lowering::IsBinOpInRMWStoreInd(GenTree* tree)
 //  Parameters:
 //     tree               -  GT_STOREIND node
 //     outIndirCandidate  -  out param set to indirCandidate as described above
-//     ouutIndirOpSource  -  out param set to indirOpSource as described above
+//     outIndirOpSource  -  out param set to indirOpSource as described above
 //
 //  Return value
 //     True if there is a RMW memory operation rooted at a GT_STOREIND tree
@@ -7621,7 +7645,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     else if (node->OperIs(GT_MUL_LONG))
     {
         hasImpliedFirstOperand = true;
-        // GT_MUL_LONG hsa node type LONG but work on INT
+        // GT_MUL_LONG has node type LONG but work on INT
         nodeType = TYP_INT;
     }
 #endif
@@ -10493,7 +10517,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                             }
 
-                            TryMakeSrcContainedOrRegOptional(node, op2);
+                            if (!op2->isContained())
+                            {
+                                TryMakeSrcContainedOrRegOptional(node, op2);
+                            }
                             break;
                         }
 

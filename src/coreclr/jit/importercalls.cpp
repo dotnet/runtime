@@ -12502,8 +12502,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
         if (varTypeIsStruct(elemType))
         {
             JITDUMP("impArrayAccessIntrinsic: rejecting SET array intrinsic because elemType is TYP_STRUCT"
-                    " (implementation limitation)\n",
-                    arrayElemSize);
+                    " (implementation limitation)\n");
             return nullptr;
         }
 
