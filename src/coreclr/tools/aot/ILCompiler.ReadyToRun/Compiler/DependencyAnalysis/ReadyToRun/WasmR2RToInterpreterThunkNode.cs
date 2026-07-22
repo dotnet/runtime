@@ -360,12 +360,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.LoadWithRVAOffset(_helperCell));
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));
 
-            if (hasAsyncContinuation)
-            {
-                expressions.Add(Local.Get(0));
-                expressions.Add(I32.Load((ulong)asyncContinuationOffset));
-                expressions.Add(Global.Set(WasmObjectWriter.AsyncContinuationGlobalIndex));
-            }
+            // The interpreter publishes its async continuation to the global itself
+            // (prestub.cpp), so there is nothing to propagate back here.
 
             // Restore the old stack pointer global
             expressions.Add(Local.Get(savedSpLocalIndex));
