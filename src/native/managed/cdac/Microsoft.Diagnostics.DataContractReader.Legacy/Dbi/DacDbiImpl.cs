@@ -1841,7 +1841,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, int* pRetVal)
+    public int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, FrameType* pRetVal)
     {
         if (pSFIHandle == 0)
             return HResults.E_INVALIDARG;
@@ -1849,13 +1849,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         nuint legacyHandle = 0;
         FrameType ftResult = FrameType.kInvalid;
-        StackWalkFrameInfo frameInfo = default;
 #if DEBUG
         bool haveFrameInfo = false;
+        bool isInterrupted = false;
 #endif
         try
         {
-            *pRetVal = (int)FrameType.kInvalid;
+            *pRetVal = FrameType.kInvalid;
             GCHandle gcHandle = GCHandle.FromIntPtr((nint)pSFIHandle);
             if (gcHandle.Target is not StackWalkHandleData handleData)
                 throw new ArgumentException("Invalid stack walk handle", nameof(pSFIHandle));
@@ -1867,7 +1867,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             }
             else
             {
-                IStackDataFrameHandle handle = handleData.Current!;
+                IStackDataFrameHandle handle = handleData.Current;
                 bool fInitFrameData = false;
                 switch (handle.State)
                 {
@@ -1894,15 +1894,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
                 if (fInitFrameData && pFrameData != 0)
                 {
-                    frameInfo = _target.Contracts.StackWalk.GetCurrentFrameInfo(handle);
 #if DEBUG
                     haveFrameInfo = true;
+                    isInterrupted = handle.IsInterrupted;
 #endif
-                    InitFrameData(handle, ftResult, frameInfo, pFrameData);
+                    InitFrameData(handle, ftResult, pFrameData);
                 }
             }
 
-            *pRetVal = (int)ftResult;
+            *pRetVal = ftResult;
         }
         catch (System.Exception ex)
         {
@@ -1918,12 +1918,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 new Span<byte>(pLegacyCtx, (int)contextSize).Clear();
                 Debugger_STRData legacyData = default;
                 legacyData.ctx = (nuint)pLegacyCtx;
-                int legacyRetVal = 0;
+                FrameType legacyRetVal = FrameType.kInvalid;
                 int hrLocal = _legacy.GetStackWalkCurrentFrameInfo(legacyHandle, (nint)(&legacyData), &legacyRetVal);
                 Debug.ValidateHResult(hr, hrLocal);
                 if (hr == HResults.S_OK)
                 {
-                    Debug.Assert((int)ftResult == legacyRetVal, $"FrameType mismatch - cDAC: {ftResult}, DAC: {(FrameType)legacyRetVal}");
+                    Debug.Assert(ftResult == legacyRetVal, $"FrameType mismatch - cDAC: {ftResult}, DAC: {legacyRetVal}");
                     if (haveFrameInfo && pFrameData != 0)
                     {
                         Debugger_STRData* pcdac = (Debugger_STRData*)pFrameData;
@@ -1958,7 +1958,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                             Debug.Assert(cv.jitFuncData.isInstantiatedGeneric == lv.jitFuncData.isInstantiatedGeneric, $"isInstantiatedGeneric mismatch - cDAC: {cv.jitFuncData.isInstantiatedGeneric}, DAC: {lv.jitFuncData.isInstantiatedGeneric}");
                             Debug.Assert(cv.jitFuncData.fpParentOrSelf == lv.jitFuncData.fpParentOrSelf, $"fpParentOrSelf mismatch - cDAC: 0x{cv.jitFuncData.fpParentOrSelf:x}, DAC: 0x{lv.jitFuncData.fpParentOrSelf:x}");
                             Debug.Assert(cv.jitFuncData.parentNativeOffset == lv.jitFuncData.parentNativeOffset, $"parentNativeOffset mismatch - cDAC: 0x{cv.jitFuncData.parentNativeOffset:x}, DAC: 0x{lv.jitFuncData.parentNativeOffset:x}");
-                            if (frameInfo.IsInterrupted)
+                            if (isInterrupted)
                                 Debug.Assert(cv.jitFuncData.justAfterILThrow == lv.jitFuncData.justAfterILThrow, $"justAfterILThrow mismatch - cDAC: {cv.jitFuncData.justAfterILThrow}, DAC: {lv.jitFuncData.justAfterILThrow}");
                         }
                     }
@@ -2024,7 +2024,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         context.AsSpan().CopyTo(new Span<byte>((byte*)ctxPtr, context.Length));
     }
 
-    private void InitFrameData(IStackDataFrameHandle handle, FrameType ft, StackWalkFrameInfo frameInfo, nint pFrameData)
+    private void InitFrameData(IStackDataFrameHandle handle, FrameType ft, nint pFrameData)
     {
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         IExecutionManager eman = _target.Contracts.ExecutionManager;
@@ -2035,7 +2035,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
         Debugger_STRData data = default;
         data.ctx = incomingCtx;
-        data.fp = frameInfo.FramePointer.Value;
+        data.fp = _target.Contracts.StackWalk.GetFramePointer(handle).Value;
         data.vmCurrentAppDomainToken = currentAppDomain.Value;
         WriteContext(handle, incomingCtx);
 
@@ -2053,8 +2053,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             data.v.mapping = (int)CorDebugMappingResult.MAPPING_NO_INFO;
             data.v.fVarArgs = (byte)(rts.IsVarArg(md) ? 1 : 0);
             data.v.fNoMetadata = (byte)((rts.IsNoMetadataMethod(md, out _) || rts.IsILStub(md) || IsDiagnosticsHidden(rts.GetAsyncMethodFlags(md)) || rts.IsWrapperStub(md)) ? 1 : 0);
-            data.v.taAmbientESP = frameInfo.AmbientSP.Value;
-
             GenericContextLoc genericContextLoc = rts.GetGenericContextLoc(md);
             if (genericContextLoc != GenericContextLoc.None)
             {
@@ -2079,7 +2077,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             TargetCodePointer controlPC = _target.Contracts.StackWalk.GetInstructionPointer(handle);
             ulong nativeOffset = 0;
-            if (eman.GetCodeBlockHandle(controlPC) is CodeBlockHandle cbh)
+            CodeBlockHandle? codeBlockHandle = eman.GetCodeBlockHandle(controlPC);
+            if (codeBlockHandle is CodeBlockHandle cbh)
             {
                 try
                 {
@@ -2096,14 +2095,30 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             data.v.jitFuncData.nativeColdSize = 0;
             data.v.jitFuncData.nativeOffset = nativeOffset;
             data.v.jitFuncData.vmNativeCodeMethodDescToken = mdPtr.Value;
-            data.v.jitFuncData.fIsFilterFrame = frameInfo.IsFilterFunclet ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-            data.v.jitFuncData.parentNativeOffset = frameInfo.ParentNativeOffset;
-            data.v.jitFuncData.fpParentOrSelf = frameInfo.ParentOrSelfFrameMarker.Value;
+            data.v.taAmbientESP = GetAmbientSP(handle, codeBlockHandle, (uint)nativeOffset).Value;
+            data.v.jitFuncData.fIsFilterFrame = codeBlockHandle is CodeBlockHandle codeBlock && eman.IsFilterFunclet(codeBlock)
+                ? Interop.BOOL.TRUE
+                : Interop.BOOL.FALSE;
+            data.v.jitFuncData.fpParentOrSelf = _target.Contracts.StackWalk.GetParentOrSelfFrameMarker(handle, out uint parentNativeOffset).Value;
+            data.v.jitFuncData.parentNativeOffset = parentNativeOffset;
             data.v.jitFuncData.isInstantiatedGeneric = HasClassOrMethodInstantiation(rts, md) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-            data.v.jitFuncData.justAfterILThrow = (frameInfo.IsInterrupted && !frameInfo.HasFaulted && nativeOffset != 0) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data.v.jitFuncData.justAfterILThrow = (handle.IsInterrupted && !handle.HasFaulted && nativeOffset != 0) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
 
         *pDest = data;
+    }
+
+    private TargetPointer GetAmbientSP(IStackDataFrameHandle handle, CodeBlockHandle? codeBlockHandle, uint nativeOffset)
+    {
+        if (codeBlockHandle is not CodeBlockHandle cbh)
+            return TargetPointer.Null;
+
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+        eman.GetGCInfo(cbh, out TargetPointer gcInfoAddress, out uint gcVersion);
+        IGCInfo gcInfo = _target.Contracts.GCInfo;
+        IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddress, gcVersion);
+        IStackWalk stackWalk = _target.Contracts.StackWalk;
+        return gcInfo.GetAmbientSP(gcInfoHandle, nativeOffset, stackWalk.GetBasePointer(handle), stackWalk.GetStackPointer(handle));
     }
 
     private static bool IsDiagnosticsHidden(AsyncMethodFlags flags)

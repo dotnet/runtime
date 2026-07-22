@@ -8,6 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 internal interface IGCInfoTraits
 {
     static virtual bool IsInterpreter => false;
+    static virtual bool UsesStackPointerAsAmbientSP => false;
     static virtual int NO_GS_COOKIE { get; } = -1;
     static virtual uint NO_STACK_BASE_REGISTER { get; } = 0xFFFFFFFF;
     static virtual uint NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA { get; } = 0xFFFFFFFF;

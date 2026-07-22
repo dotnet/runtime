@@ -9,6 +9,12 @@ public interface IStackDataFrameHandle
 {
     // Describes what the current Context/FrameIter of this handle represents.
     StackWalkState State { get; }
+
+    // True when the current managed frame was interrupted by an exception frame.
+    bool IsInterrupted { get; }
+
+    // True when the interrupting frame represents an active hardware fault.
+    bool HasFaulted { get; }
 }
 
 public enum StackWalkState
@@ -50,6 +56,15 @@ byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
 
+// Gets the computed debugger frame pointer for the current stack dataframe.
+TargetPointer GetFramePointer(IStackDataFrameHandle stackDataFrameHandle);
+
+// Gets the base pointer register from the current frame's context.
+TargetPointer GetBasePointer(IStackDataFrameHandle stackDataFrameHandle);
+
+// Gets the stack pointer from the current frame's context.
+TargetPointer GetStackPointer(IStackDataFrameHandle stackDataFrameHandle);
+
 // Gets the Frame name associated with the given Frame identifier. If no matching Frame name found returns an empty string.
 string GetFrameName(TargetPointer frameIdentifier);
 
@@ -84,24 +99,15 @@ byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint
 // Returns the saved TargetContext pointer carried by the head Frame, if applicable.
 TargetPointer GetRedirectedContextPointer(ThreadData threadData);
 
-// Returns funclet / interrupt state and the frame pointer for the current stack dataframe.
-StackWalkFrameInfo GetCurrentFrameInfo(IStackDataFrameHandle stackDataFrameHandle);
+// Returns the caller stack pointer for a non-funclet frame. For a funclet, returns
+// the caller stack pointer of its parent method frame and reports the parent's native offset.
+TargetPointer GetParentOrSelfFrameMarker(
+    IStackDataFrameHandle stackDataFrameHandle,
+    out uint parentNativeOffset);
 
 // Returns the exact generic instantiation context token for the current frameless managed frame,
 // or TargetPointer.Null if it can't be recovered.
 TargetPointer GetExactGenericArgsToken(IStackDataFrameHandle stackDataFrameHandle);
-```
-
-```csharp
-public record struct StackWalkFrameInfo(
-    TargetPointer FramePointer,
-    bool IsFunclet,
-    bool IsFilterFunclet,
-    TargetPointer ParentOrSelfFrameMarker,
-    bool IsInterrupted,
-    bool HasFaulted,
-    uint ParentNativeOffset = 0,
-    TargetPointer AmbientSP = default);
 ```
 
 ## Version 1
@@ -612,6 +618,26 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress)
 TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)
 ```
 
+`GetFramePointer` returns the debugger frame pointer that uniquely identifies the current frame. On x64 it is the current stack pointer. On ARM, ARM64, RISCV64, and LoongArch64 it is the caller stack pointer. On x86, frameless managed methods use the unwound stack pointer minus the callee-popped argument size and one pointer, while runtime-unwindable native markers use the return-address slot from the recovered hijacked context.
+
+```csharp
+TargetPointer GetFramePointer(IStackDataFrameHandle stackDataFrameHandle)
+```
+
+`GetStackPointer` returns the stack pointer from the current frame's context.
+
+```csharp
+TargetPointer GetStackPointer(IStackDataFrameHandle stackDataFrameHandle)
+```
+
+`GetBasePointer` returns the base pointer register from the current frame's context: EBP on x86, RBP on x64, and the platform frame-pointer register on other architectures.
+
+```csharp
+TargetPointer GetBasePointer(IStackDataFrameHandle stackDataFrameHandle)
+```
+
+Each `IStackDataFrameHandle` also exposes `IsInterrupted` and `HasFaulted`. `IsInterrupted` is true when the current managed frame was reached through an exception Frame. `HasFaulted` is true when that exception Frame is a `FaultingExceptionFrame` whose saved context still has `CONTEXT_EXCEPTION_ACTIVE` set.
+
 `WalkStackReferences` walks the entire managed stack and enumerates all live GC references at each frame. It returns a list of `StackReferenceData` describing each GC-tracked slot (its address, whether it's an interior pointer, and the register/stack location). This API is the primary consumer for `SOSDacImpl.GetStackReferences`.
 
 ```csharp
@@ -628,15 +654,7 @@ If no Frame in the chain produces a usable context (thread is not running manage
 
 `GetRedirectedContextPointer` returns the saved `TargetContext` pointer carried by the head Frame when that Frame is a `RedirectedThreadFrame` (a `ResumableFrame`). Otherwise it returns `TargetPointer.Null`.
 
-`GetCurrentFrameInfo` returns a `StackWalkFrameInfo` describing the current stack dataframe. It is the data a debugger needs to shape a managed stack frame (funclet handling and interrupt/fault state):
-
-* `FramePointer` is the frame pointer for the current frame. On x64 it is the current context's stack pointer; on ARM, ARM64, RISCV64 and LoongArch64 it is the caller's stack pointer (the stack pointer after unwinding the current context one iteration). On x86 it mirrors native `GetFramePointerWorker`: for a frameless managed method it is the unwound stack pointer less the callee-popped argument size and one pointer (native `ComputeX86FramePointer`), and for a runtime-unwindable native marker it is the return-address slot of the recovered hijacked context. Other architectures are unsupported.
-* `IsFunclet` / `IsFilterFunclet` report whether the current frame is a funclet, and whether it is a filter funclet.
-* `ParentOrSelfFrameMarker` is the caller's stack pointer for a non-funclet frame. For a funclet it is the caller's stack pointer of the funclet's parent method frame, located by a self-contained secondary stackwalk that skips intervening (possibly nested) funclets. If the parent cannot be located (the funclet and its parent have already been unwound) it falls back to the caller's stack pointer.
-* `IsInterrupted` is true when the current managed frame was interrupted by an exception frame (`FaultingExceptionFrame`/`SoftwareExceptionFrame`).
-* `HasFaulted` is true when the interrupting frame was a `FaultingExceptionFrame` and its saved context has `CONTEXT_EXCEPTION_ACTIVE` set. Runtime exception handling may rewrite a hardware-fault context to a managed callsite and clear this bit; such a frame remains interrupted but is not reported as faulted.
-* `ParentNativeOffset` is meaningful only for funclets: it is the relative native offset of the parent method frame located by the secondary walk above (0 for non-funclets).
-* `AmbientSP` is the "ambient stack pointer" (native `taAmbientESP`), and is `TargetPointer.Null` (0) on every architecture except x86 and ARM (32-bit). On ARM32 it is the current context's stack pointer. On x86 it is computed from the GC info by `IGCInfo.GetAmbientSP` (native `EECodeManager::GetAmbientSP`): `Null` in the prolog/epilog; the masked outermost base frame pointer for methods with handlers; the outermost base frame pointer for EBP frames; and the stack pointer plus the pushed-argument size for ESP frames.
+`GetParentOrSelfFrameMarker` returns the caller stack pointer for a non-funclet frame and sets `parentNativeOffset` to zero. For a funclet, it performs a secondary stack walk that skips intervening funclets and returns the caller stack pointer and relative native offset of the parent method frame. If that parent cannot be located because it has already been unwound, the method returns the current frame's caller stack pointer and sets `parentNativeOffset` to zero.
 
 `GetExactGenericArgsToken` recovers the exact generic instantiation context for the current frameless managed frame, mirroring native `CrawlFrame::GetExactGenericArgsToken`. It returns `TargetPointer.Null` unless the frame is `Frameless`, has a `MethodDesc`, and that method is shared by generic instantiations (`GetGenericContextLoc != None`). When applicable it:
 

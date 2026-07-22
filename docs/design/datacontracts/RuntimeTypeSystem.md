@@ -323,6 +323,9 @@ partial interface IRuntimeTypeSystem : IContract
     // value-type instance method that unboxes `this` before forwarding).
     public virtual bool IsUnboxingStub(MethodDescHandle methodDesc);
 
+    // Returns true if the method signature uses the vararg calling convention.
+    public virtual bool IsVarArg(MethodDescHandle methodDesc);
+
 }
 ```
 
@@ -2024,6 +2027,20 @@ stored in `MethodDescFlags3` and surfaces as the `IsUnboxingStub` flag on
 ```csharp
     public bool IsUnboxingStub(MethodDescHandle methodDescHandle)
         => _methodDescs[methodDescHandle.Address].IsUnboxingStub;
+```
+
+Determining if a method uses the vararg calling convention:
+
+```csharp
+    public bool IsVarArg(MethodDescHandle methodDescHandle)
+    {
+        ReadOnlySpan<byte> signature = IsStoredSigMethodDesc(methodDescHandle)
+            ? GetStoredSignature(methodDescHandle)
+            : GetMetadataSignature(methodDescHandle);
+
+        return !signature.IsEmpty
+            && (SignatureCallingConvention)(signature[0] & 0x0F) == SignatureCallingConvention.VarArgs;
+    }
 ```
 
 Extracting a pointer to the `MethodDescVersioningState` data for a given method

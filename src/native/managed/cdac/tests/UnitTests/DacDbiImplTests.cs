@@ -1239,20 +1239,19 @@ public unsafe class DacDbiImplTests
 
         var frameHandle = new Mock<IStackDataFrameHandle>();
         frameHandle.SetupGet(h => h.State).Returns(StackWalkState.Frameless);
+        frameHandle.SetupGet(h => h.IsInterrupted).Returns(true);
+        frameHandle.SetupGet(h => h.HasFaulted).Returns(false);
 
         var stackWalk = new Mock<IStackWalk>();
         stackWalk
             .Setup(s => s.CreateStackWalk(It.IsAny<ThreadData>(), It.IsAny<byte[]>(), true))
             .Returns([frameHandle.Object]);
         stackWalk.Setup(s => s.GetMethodDescPtr(frameHandle.Object)).Returns(methodDescPointer);
-        stackWalk.Setup(s => s.GetCurrentFrameInfo(frameHandle.Object)).Returns(
-            new StackWalkFrameInfo(
-                new TargetPointer(0x5000),
-                IsFunclet: false,
-                IsFilterFunclet: false,
-                new TargetPointer(0x6000),
-                IsInterrupted: true,
-                HasFaulted: false));
+        stackWalk.Setup(s => s.GetFramePointer(frameHandle.Object)).Returns(new TargetPointer(0x5000));
+        stackWalk.Setup(s => s.GetBasePointer(frameHandle.Object)).Returns(new TargetPointer(0x6000));
+        stackWalk.Setup(s => s.GetStackPointer(frameHandle.Object)).Returns(new TargetPointer(0x7000));
+        uint parentNativeOffset = 0;
+        stackWalk.Setup(s => s.GetParentOrSelfFrameMarker(frameHandle.Object, out parentNativeOffset)).Returns(new TargetPointer(0x8000));
         stackWalk.Setup(s => s.GetExactGenericArgsToken(frameHandle.Object)).Throws<VirtualReadException>();
         stackWalk.Setup(s => s.GetInstructionPointer(frameHandle.Object)).Returns(controlPC);
 
@@ -1271,11 +1270,21 @@ public unsafe class DacDbiImplTests
         executionManager.Setup(e => e.GetCodeBlockHandle(controlPC)).Returns(codeBlock);
         executionManager.Setup(e => e.GetStartAddress(codeBlock)).Throws<VirtualReadException>();
         executionManager.Setup(e => e.GetRelativeOffset(codeBlock)).Returns(new TargetNUInt(NativeOffset));
+        TargetPointer gcInfoAddress = new(0x9000);
+        uint gcVersion = 0;
+        executionManager.Setup(e => e.GetGCInfo(codeBlock, out gcInfoAddress, out gcVersion));
+
+        var gcInfo = new Mock<IGCInfo>();
+        IGCInfoHandle gcInfoHandle = Mock.Of<IGCInfoHandle>();
+        gcInfo.Setup(g => g.DecodePlatformSpecificGCInfo(gcInfoAddress, gcVersion)).Returns(gcInfoHandle);
+        gcInfo.Setup(g => g.GetAmbientSP(gcInfoHandle, NativeOffset, new TargetPointer(0x6000), new TargetPointer(0x7000)))
+            .Returns(TargetPointer.Null);
 
         var target = new TestPlaceholderTarget.Builder(arch)
             .AddMockContract(stackWalk)
             .AddMockContract(rts)
             .AddMockContract(executionManager)
+            .AddMockContract(gcInfo)
             .AddMockContract(new Mock<ILoader>())
             .Build();
         DacDbiImpl dacDbi = new(target, legacyObj: null);
@@ -1286,11 +1295,11 @@ public unsafe class DacDbiImplTests
         try
         {
             Debugger_STRData data = default;
-            int frameType;
+            Legacy.FrameType frameType;
             int hr = dacDbi.GetStackWalkCurrentFrameInfo(stackWalkHandle, (nint)(&data), &frameType);
 
             Assert.Equal(System.HResults.S_OK, hr);
-            Assert.Equal((int)Legacy.FrameType.kManagedStackFrame, frameType);
+            Assert.Equal(Legacy.FrameType.kManagedStackFrame, frameType);
             Assert.Equal(0UL, data.v.exactGenericArgsToken);
             Assert.Equal(MethodToken, data.v.funcData.funcMetadataToken);
             Assert.Equal(0UL, data.v.funcData.vmAssembly);

@@ -157,13 +157,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     [Flags]
-    internal enum ILStubType : uint
-    {
-        StubPInvokeVarArg = 0x4,
-        StubCLRToCOMInterop = 0x6,
-    }
-
-    [Flags]
     internal enum AsyncMethodFlags_1 : uint
     {
         None = 0,
@@ -171,6 +164,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         IsAsyncVariant = 0x4,
         Thunk = 0x10,
         ReturnDroppingThunk = 0x20,
+    }
+
+    [Flags]
+    internal enum ILStubType : uint
+    {
+        StubPInvokeVarArg = 0x4,
+        StubCLRToCOMInterop = 0x6,
     }
 
     // on MethodDescChunk.FlagsAndTokenRange
@@ -2308,32 +2308,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool IsVarArg(MethodDescHandle methodDescHandle)
     {
-        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
-        if (IsStoredSigMethodDesc(methodDescHandle, out ReadOnlySpan<byte> storedSig))
-        {
-            if (storedSig.Length < 1)
-                return false;
-            return (SignatureCallingConvention)(storedSig[0] & 0x0F) == SignatureCallingConvention.VarArgs;
-        }
-
-        uint token = methodDesc.Token;
-        if (EcmaMetadataUtils.GetRowId(token) == 0)
+        if (!TryGetMethodSignature(methodDescHandle, out ReadOnlySpan<byte> signature) || signature.IsEmpty)
             return false;
 
-        TargetPointer modulePtr = GetOrCreateMethodTable(methodDesc).Module;
-        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
-        MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
-        if (mdReader is null)
-            return false;
-
-        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(token));
-        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-        BlobReader sigReader = mdReader.GetBlobReader(methodDef.Signature);
-        if (sigReader.Length < 1)
-            return false;
-
-        SignatureHeader header = sigReader.ReadSignatureHeader();
-        return header.CallingConvention == SignatureCallingConvention.VarArgs;
+        return (SignatureCallingConvention)(signature[0] & 0x0F) == SignatureCallingConvention.VarArgs;
     }
 
     private sealed class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries

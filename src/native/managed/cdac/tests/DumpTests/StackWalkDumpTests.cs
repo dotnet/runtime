@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
@@ -100,6 +101,24 @@ public class StackWalkDumpTests : DumpTestBase
         byte[] context = stackWalk.GetRawContext(firstFrame);
         Assert.NotNull(context);
         Assert.True(context.Length > 0, "Expected non-empty raw context for stack frame");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void StackWalk_FrameAccessorsMatchContext(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+
+        IStackDataFrameHandle frame = DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread)
+            .First(frame => stackWalk.GetMethodDescPtr(frame) != TargetPointer.Null);
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(Target);
+        context.FillFromBuffer(stackWalk.GetRawContext(frame));
+
+        Assert.Equal(context.StackPointer, stackWalk.GetStackPointer(frame));
+        Assert.Equal(context.FramePointer, stackWalk.GetBasePointer(frame));
     }
 
     [ConditionalTheory]

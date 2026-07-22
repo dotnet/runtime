@@ -676,7 +676,7 @@ public unsafe partial interface IDacDbiInterface
     int CheckContext(ulong vmThread, byte* pContext);
 
     [PreserveSig]
-    int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, int* pRetVal);
+    int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, FrameType* pRetVal);
 
     [PreserveSig]
     int GetCountOfInternalFrames(ulong vmThread, uint* pRetVal);

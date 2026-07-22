@@ -679,7 +679,9 @@ bool TryGetGenericContextStorage(IGCInfoHandle handle,
 
 TargetPointer GetAmbientSP(IGCInfoHandle handle, uint codeOffset, TargetPointer fp, TargetPointer sp)
 {
-    // Non-x86 decoders: return TargetPointer.Null (there is no ambient SP).
+    // ARM32: return sp.
+    //
+    // Other non-x86 decoders: return TargetPointer.Null (there is no ambient SP).
     //
     // x86 (InfoHdr) decoder, mirroring native EECodeManager::GetAmbientSP:
     //   - return Null if codeOffset is in the prolog or an epilog;

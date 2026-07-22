@@ -1064,69 +1064,39 @@ internal partial class StackWalk_1 : IStackWalk
         return handle.Context.InstructionPointer;
     }
 
-    StackWalkFrameInfo IStackWalk.GetCurrentFrameInfo(IStackDataFrameHandle stackDataFrameHandle)
+    TargetPointer IStackWalk.GetFramePointer(IStackDataFrameHandle stackDataFrameHandle)
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+        return ComputeFramePointer(handle);
+    }
 
-        TargetPointer framePointer = ComputeFramePointer(handle);
-        bool isFunclet = IsFunclet(handle);
-        bool isFilterFunclet = IsFilterFunclet(handle);
+    TargetPointer IStackWalk.GetBasePointer(IStackDataFrameHandle stackDataFrameHandle)
+    {
+        StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+        return handle.Context.FramePointer;
+    }
 
-        TargetPointer parentOrSelf;
-        uint parentNativeOffset = 0;
-        if (isFunclet)
+    TargetPointer IStackWalk.GetStackPointer(IStackDataFrameHandle stackDataFrameHandle)
+    {
+        StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+        return handle.Context.StackPointer;
+    }
+
+    TargetPointer IStackWalk.GetParentOrSelfFrameMarker(IStackDataFrameHandle stackDataFrameHandle, out uint parentNativeOffset)
+    {
+        StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+        parentNativeOffset = 0;
+        if (IsFunclet(handle))
         {
             if (TryGetFuncletParentInfo(handle, out TargetPointer parent, out parentNativeOffset))
             {
-                parentOrSelf = parent;
+                return parent;
             }
-            else
-            {
-                // The funclet (and its parent) have already been unwound; fall back to the caller SP.
-                parentOrSelf = CallerStackPointer(handle);
-            }
-        }
-        else
-        {
-            parentOrSelf = CallerStackPointer(handle);
+
+            parentNativeOffset = 0;
         }
 
-        return new StackWalkFrameInfo(
-            framePointer,
-            isFunclet,
-            isFilterFunclet,
-            parentOrSelf,
-            handle.IsInterrupted,
-            handle.HasFaulted,
-            parentNativeOffset,
-            ComputeAmbientSP(handle));
-    }
-
-    private TargetPointer ComputeAmbientSP(StackDataFrameHandle handle)
-    {
-        // Mirrors native CrawlFrame::GetAmbientSPFromCrawlFrame: ARM (32-bit) returns the current
-        // SP, x86 computes it from the GC info, and every other architecture returns 0.
-        RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
-        if (arch == RuntimeInfoArchitecture.Arm)
-            return handle.State == StackWalkState.Frameless ? handle.Context.StackPointer : TargetPointer.Null;
-
-        if (arch != RuntimeInfoArchitecture.X86)
-            return TargetPointer.Null;
-
-        if (handle.State != StackWalkState.Frameless)
-            return TargetPointer.Null;
-
-        if (!IsManaged(handle.Context.InstructionPointer, out CodeBlockHandle? cbh))
-            return TargetPointer.Null;
-
-        uint relOffset = (uint)_eman.GetRelativeOffset(cbh.Value).Value;
-        _eman.GetGCInfo(cbh.Value, out TargetPointer gcInfoAddr, out uint gcVersion);
-        IGCInfoHandle gcHandle = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddr, gcVersion);
-
-        if (!handle.Context.TryReadRegister("ebp", out TargetNUInt ebp))
-            return TargetPointer.Null;
-
-        return _target.Contracts.GCInfo.GetAmbientSP(gcHandle, relOffset, new TargetPointer(ebp.Value), handle.Context.StackPointer);
+        return CallerStackPointer(handle);
     }
 
     private TargetPointer CallerStackPointer(StackDataFrameHandle handle)
@@ -1223,7 +1193,7 @@ internal partial class StackWalk_1 : IStackWalk
                 or RuntimeInfoArchitecture.RiscV64
                 or RuntimeInfoArchitecture.LoongArch64 => CallerStackPointer(handle),
             RuntimeInfoArchitecture.X86 => ComputeX86FramePointer(handle),
-            _ => throw new InvalidOperationException($"GetCurrentFrameInfo is not supported on {arch}"),
+            _ => throw new InvalidOperationException($"GetFramePointer is not supported on {arch}"),
         };
     }
 

@@ -73,6 +73,9 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
     TargetPointer IGCInfo.GetAmbientSP(IGCInfoHandle gcInfoHandle, uint codeOffset, TargetPointer fp, TargetPointer sp)
     {
         IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        if (TTraits.UsesStackPointerAsAmbientSP)
+            return sp;
+
         return handle.GetAmbientSP(codeOffset, fp, sp);
     }
 
