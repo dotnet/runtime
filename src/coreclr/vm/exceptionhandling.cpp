@@ -4123,7 +4123,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
     // Check for reverse pinvoke or CallDescrWorkerInternal.
     if (isNativeTransition)
     {
-        CLR_BOOL isPropagatingToNativeCode = FALSE;
+        bool isPropagatingToNativeCode = false;
         EECodeInfo codeInfo(preUnwindControlPC);
         // If we are unwinding from a funclet, we don't care about the reverse pinvoke frame of the parent method
         // that we would get from the GC info. It applies to the parent method only. The funclet itself cannot be
@@ -4182,12 +4182,12 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             if (IsCallDescrWorkerInternalReturnAddress(GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext)))
             {
                 EH_LOG((LL_INFO100, "SfiNext: the native frame is CallDescrWorkerInternal\n"));
-                isPropagatingToNativeCode = TRUE;
+                isPropagatingToNativeCode = true;
             }
             else if (doingFuncletUnwind && codeInfo.GetJitManager()->IsFilterFunclet(&codeInfo))
             {
                 EH_LOG((LL_INFO100, "SfiNext: current frame is filter funclet\n"));
-                isPropagatingToNativeCode = TRUE;
+                isPropagatingToNativeCode = true;
             }
         }
 
