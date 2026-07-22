@@ -146,7 +146,7 @@ namespace Microsoft.Extensions.Options
     {
         void Validate();
     }
-    public partial interface IAsyncStartupValidator : Microsoft.Extensions.Options.IStartupValidator
+    public partial interface IAsyncStartupValidator
     {
         System.Threading.Tasks.Task ValidateAsync(System.Threading.CancellationToken cancellationToken = default);
     }

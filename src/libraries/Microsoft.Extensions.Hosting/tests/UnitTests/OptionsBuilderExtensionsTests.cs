@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -402,6 +403,125 @@ namespace Microsoft.Extensions.Hosting.Tests
 
                 ValidateFailure<ComplexOptions>(error, 3, "Virtual", "Integer");
             }
+        }
+
+        [Fact]
+        public async Task ValidateOnStart_CustomSyncStartupValidator_OverridesAsyncValidationOnStart()
+        {
+            var custom = new TrackingStartupValidator();
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                services.AddSingleton<IStartupValidator>(custom);
+                services.AddOptions<ComplexOptions>()
+                    .Configure(o => o.Boolean = false)
+                    .Validate(o => o.Boolean, "should not run")
+                    .ValidateOnStart();
+            });
+
+            using (var host = hostBuilder.Build())
+            {
+                // The custom synchronous validator takes precedence and fully controls startup validation,
+                // so the failing ValidateOnStart (async) validation never runs and the host starts.
+                await host.StartAsync();
+            }
+
+            Assert.True(custom.Validated);
+        }
+
+        [Fact]
+        public async Task ValidateOnStart_CustomSyncStartupValidatorThatFails_ThrowsOnStart()
+        {
+            var hostBuilder = CreateHostBuilder(services =>
+                services.AddSingleton<IStartupValidator>(new ThrowingStartupValidator()));
+
+            using (var host = hostBuilder.Build())
+            {
+                await Assert.ThrowsAsync<OptionsValidationException>(async () => await host.StartAsync());
+            }
+        }
+
+        [Fact]
+        public async Task ValidateOnStart_MultipleAsyncStartupValidators_AllRunOnStart()
+        {
+            var custom = new TrackingAsyncStartupValidator();
+            bool validateOnStartRan = false;
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                services.AddSingleton<IAsyncStartupValidator>(custom);
+                services.AddOptions<ComplexOptions>()
+                    .Configure(o => o.Boolean = true)
+                    .Validate(o =>
+                    {
+                        validateOnStartRan = true;
+                        return o.Boolean;
+                    })
+                    .ValidateOnStart();
+            });
+
+            using (var host = hostBuilder.Build())
+            {
+                await host.StartAsync();
+            }
+
+            // Both the custom async validator and the built-in ValidateOnStart validator participate.
+            Assert.True(custom.Validated);
+            Assert.True(validateOnStartRan);
+        }
+
+        [Fact]
+        public async Task ValidateOnStart_StandaloneAsyncStartupValidator_RunsOnStart()
+        {
+            var custom = new TrackingAsyncStartupValidator();
+            var hostBuilder = CreateHostBuilder(services => services.AddSingleton<IAsyncStartupValidator>(custom));
+
+            using (var host = hostBuilder.Build())
+            {
+                await host.StartAsync();
+            }
+
+            Assert.True(custom.Validated);
+        }
+
+        [Fact]
+        public async Task ValidateOnStart_AsyncStartupValidatorThatFails_ThrowsOnStart()
+        {
+            var hostBuilder = CreateHostBuilder(services =>
+                services.AddSingleton<IAsyncStartupValidator>(new ThrowingAsyncStartupValidator()));
+
+            using (var host = hostBuilder.Build())
+            {
+                await Assert.ThrowsAsync<OptionsValidationException>(async () => await host.StartAsync());
+            }
+        }
+
+        private sealed class TrackingStartupValidator : IStartupValidator
+        {
+            public bool Validated { get; private set; }
+
+            public void Validate() => Validated = true;
+        }
+
+        private sealed class TrackingAsyncStartupValidator : IAsyncStartupValidator
+        {
+            public bool Validated { get; private set; }
+
+            public Task ValidateAsync(CancellationToken cancellationToken = default)
+            {
+                Validated = true;
+                return Task.CompletedTask;
+            }
+        }
+
+        private sealed class ThrowingStartupValidator : IStartupValidator
+        {
+            public void Validate() =>
+                throw new OptionsValidationException("name", typeof(object), new[] { "sync startup validation failed" });
+        }
+
+        private sealed class ThrowingAsyncStartupValidator : IAsyncStartupValidator
+        {
+            public Task ValidateAsync(CancellationToken cancellationToken = default) =>
+                throw new OptionsValidationException("name", typeof(object), new[] { "async startup validation failed" });
         }
 
         private static void ValidateFailure(Type type, OptionsValidationException e, int count = 1, params string[] errorsToMatch)

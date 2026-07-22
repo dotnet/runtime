@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         /// <summary>
         /// Order:
         ///  IHostLifetime.WaitForStartAsync
-        ///  Services.GetService{IStartupValidator}().ValidateAsync() (or .Validate() for a sync-only validator)
+        ///  Startup validation: a custom sync IStartupValidator (if any) via Validate(), otherwise every IAsyncStartupValidator via ValidateAsync()
         ///  IHostedLifecycleService.StartingAsync
         ///  IHostedService.Start
         ///  IHostedLifecycleService.StartedAsync
@@ -95,14 +95,20 @@ namespace Microsoft.Extensions.Hosting.Internal
                 {
                     // Run startup validation before resolving hosted services so a hosted service that
                     // reads validated options in its constructor observes the validated instance.
-                    IStartupValidator? validator = Services.GetService<IStartupValidator>();
-                    if (validator is IAsyncStartupValidator asyncValidator)
+                    IStartupValidator? startupValidator = Services.GetService<IStartupValidator>();
+                    if (startupValidator is not null && startupValidator is not IAsyncStartupValidator)
                     {
-                        await asyncValidator.ValidateAsync(cancellationToken).ConfigureAwait(false);
+                        // A custom IStartupValidator takes precedence for back-compatibility and fully controls
+                        // startup validation, overriding any registered IAsyncStartupValidator instances
+                        // (including the one registered by ValidateOnStart).
+                        startupValidator.Validate();
                     }
                     else
                     {
-                        validator?.Validate();
+                        foreach (IAsyncStartupValidator asyncValidator in Services.GetServices<IAsyncStartupValidator>())
+                        {
+                            await asyncValidator.ValidateAsync(cancellationToken).ConfigureAwait(false);
+                        }
                     }
 
                     _hostedServices ??= Services.GetRequiredService<IEnumerable<IHostedService>>();

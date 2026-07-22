@@ -28,7 +28,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
             string name = optionsBuilder.Name;
 
+            // Register the built-in validator as a single IStartupValidator (for back-compatibility)
+            // and as an enumerable IAsyncStartupValidator so the host can run it alongside any custom async validators.
             optionsBuilder.Services.TryAddTransient<IStartupValidator, StartupValidator>();
+            optionsBuilder.Services.TryAddEnumerable(ServiceDescriptor.Transient<IAsyncStartupValidator, StartupValidator>());
             optionsBuilder.Services.AddOptions<StartupValidatorOptions>()
                 .Configure<IOptionsMonitor<TOptions>, IOptionsFactory<TOptions>, IOptionsMonitorCache<TOptions>>((vo, monitor, factory, cache) =>
                 {

@@ -208,6 +208,50 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
+        public void ValidateOnStart_RegistersBuiltInValidatorAsBothInterfaces()
+        {
+            var services = new ServiceCollection();
+
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "test")
+                .Validate(o => true)
+                .ValidateOnStart();
+
+            ServiceProvider sp = services.BuildServiceProvider();
+
+            IStartupValidator sync = sp.GetRequiredService<IStartupValidator>();
+            Assert.IsType<IAsyncStartupValidator>(sync, exactMatch: false);
+            Assert.Single(sp.GetServices<IAsyncStartupValidator>());
+        }
+
+        [Fact]
+        public void ValidateOnStart_CalledMultipleTimes_RegistersSingleAsyncStartupValidator()
+        {
+            var services = new ServiceCollection();
+
+            services.AddOptions<FakeOptions>("a").Configure(o => o.Message = "a").Validate(o => true).ValidateOnStart();
+            services.AddOptions<FakeOptions>("b").Configure(o => o.Message = "b").Validate(o => true).ValidateOnStart();
+
+            ServiceProvider sp = services.BuildServiceProvider();
+
+            Assert.Single(sp.GetServices<IAsyncStartupValidator>());
+        }
+
+        [Fact]
+        public void ValidateOnStart_CustomAsyncStartupValidator_CoexistsWithBuiltInInEnumerable()
+        {
+            var services = new ServiceCollection();
+
+            services.AddSingleton<IAsyncStartupValidator>(new TrackingAsyncStartupValidator());
+            services.AddOptions<FakeOptions>().Configure(o => o.Message = "test").Validate(o => true).ValidateOnStart();
+
+            ServiceProvider sp = services.BuildServiceProvider();
+
+            // A custom async startup validator (a different implementation type) coexists with the built-in one.
+            Assert.Equal(2, sp.GetServices<IAsyncStartupValidator>().Count());
+        }
+
+        [Fact]
         public async Task StartupValidator_ValidateAsync_CancellationTokenPropagated()
         {
             var services = new ServiceCollection();
@@ -853,6 +897,17 @@ namespace Microsoft.Extensions.Options.Tests
         private class CustomSyncOnlyValidator : IStartupValidator
         {
             public void Validate() { }
+        }
+
+        private sealed class TrackingAsyncStartupValidator : IAsyncStartupValidator
+        {
+            public bool Validated { get; private set; }
+
+            public Task ValidateAsync(CancellationToken cancellationToken = default)
+            {
+                Validated = true;
+                return Task.CompletedTask;
+            }
         }
 
         private sealed class SyncCapableAsyncValidator : IValidateOptions<FakeOptions>, IAsyncValidateOptions<FakeOptions>
