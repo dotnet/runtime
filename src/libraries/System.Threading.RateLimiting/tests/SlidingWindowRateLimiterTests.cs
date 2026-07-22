@@ -1542,6 +1542,51 @@ namespace System.Threading.RateLimiting.Test
             Assert.Equal(TimeSpan.FromTicks(periodTicks * 3), timeSpan);
         }
 
+        [Fact]
+        public async Task AttemptAcquireZero_PermitBecomesAvailableWhileWaitingForLock()
+        {
+            var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                Window = TimeSpan.FromMilliseconds(2),
+                SegmentsPerWindow = 2,
+                AutoReplenishment = false
+            });
+
+            using var lease = limiter.AttemptAcquire(1);
+            Assert.True(lease.IsAcquired);
+            Assert.Equal(0, limiter.GetStatistics().CurrentAvailablePermits);
+
+            var lockProperty = typeof(SlidingWindowRateLimiter).GetProperty("Lock", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)!;
+            var lockObject = lockProperty.GetValue(limiter)!;
+
+            // Hold the limiter's own lock on this thread, so a concurrent AttemptAcquire(0) can pass
+            // its outer, unlocked _permitCount check (which sees 0) but then has to block on the lock
+            // before it reaches the recheck. That's exactly the race window the fix is meant to close.
+            Monitor.Enter(lockObject);
+            try
+            {
+                var acquireTask = Task.Run(() => limiter.AttemptAcquire(0));
+
+                // Two segments in this window - the first Replenish call advances to the (empty)
+                // second segment; the second call wraps back around and frees the permit that was
+                // recorded against the first segment.
+                Replenish(limiter, 1L);
+                Replenish(limiter, 1L);
+                Assert.True(limiter.GetStatistics().CurrentAvailablePermits > 0);
+                var result = await acquireTask;
+                Assert.True(result.IsAcquired);
+            }
+            finally
+            {
+                Monitor.Exit(lockObject);
+            }
+
+            Assert.Equal(0, limiter.GetStatistics().TotalFailedLeases); // the bug would have incremented this
+        }
+
         private static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
 
         static internal void Replenish(SlidingWindowRateLimiter limiter, long addMilliseconds)

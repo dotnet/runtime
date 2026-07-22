@@ -131,10 +131,17 @@ namespace System.Threading.RateLimiting
                     return SuccessfulLease;
                 }
 
-                Interlocked.Increment(ref _failedLeasesCount);
                 lock (Lock)
                 {
-                    // CreateFailedSlidingWindowLease requires Lock to be held - see comment on its declaration.
+                    // Edge case where the check before the lock showed 0 available permits but when we got the lock some permits were now available
+                    if (_permitCount > 0)
+                    {
+                        Interlocked.Increment(ref _successfulLeasesCount);
+                        return SuccessfulLease;
+                    }
+
+                    Interlocked.Increment(ref _failedLeasesCount);
+                    // Still holding Lock from the top of this block - required by CreateFailedSlidingWindowLease.
                     return CreateFailedSlidingWindowLease(0);
                 }
             }
