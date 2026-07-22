@@ -381,7 +381,7 @@ public sealed class OutOfProcessTest : ITestInfo
     public string ContainingType => "OutOfProcessTest";
 
     private CodeBuilder _executionStatement { get; }
-    public string RelativeAssemblyPath { get; }
+    internal string RelativeAssemblyPath { get; }
 
     public OutOfProcessTest(string displayName, string relativeAssemblyPath, string? testBuildMode)
     {
