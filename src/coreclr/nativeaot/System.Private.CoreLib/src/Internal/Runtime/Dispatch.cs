@@ -25,13 +25,13 @@ namespace Internal.Runtime
                 var pDispatchCellRegion = (DispatchCell*)RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.InterfaceDispatchCellRegion, out int length);
                 if ((byte*)pCell >= (byte*)pDispatchCellRegion && (byte*)pCell < (byte*)pDispatchCellRegion + length)
                 {
-                    return ResolveStaticInterfaceDispatch(typeManager, pObject, (nuint)(pCell - pDispatchCellRegion), (uint)(length / sizeof(DispatchCell)));
+                    return ResolveStaticInterfaceDispatch(typeManager, pObject, (nuint)(pCell - pDispatchCellRegion));
                 }
 
                 pDispatchCellRegion = (DispatchCell*)RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GvmDispatchCellRegion, out length);
                 if ((byte*)pCell >= (byte*)pDispatchCellRegion && (byte*)pCell < (byte*)pDispatchCellRegion + length)
                 {
-                    return ResolveGvmDispatch(typeManager, pObject, (nuint)(pCell - pDispatchCellRegion), (uint)(length / sizeof(DispatchCell)));
+                    return ResolveGvmDispatch(typeManager, pObject, (nuint)(pCell - pDispatchCellRegion));
                 }
             }
 
@@ -53,10 +53,8 @@ namespace Internal.Runtime
             return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, (MethodTable*)pDynamicInterfaceCell->InterfaceType, (ushort)pDynamicInterfaceCell->Slot);
         }
 
-        private static unsafe IntPtr ResolveStaticInterfaceDispatch(TypeManagerHandle typeManager, object pObject, nuint cellIndex, uint cellCount)
+        private static unsafe IntPtr ResolveStaticInterfaceDispatch(TypeManagerHandle typeManager, object pObject, nuint cellIndex)
         {
-            Debug.Assert(cellIndex < cellCount);
-
             NativeParser parser = GetDispatchCellInfo(
                 typeManager,
                 ReadyToRunSectionType.InterfaceDispatchCellInfoRegion,
@@ -70,10 +68,8 @@ namespace Internal.Runtime
             return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, interfaceType, checked((ushort)slot));
         }
 
-        private static unsafe IntPtr ResolveGvmDispatch(TypeManagerHandle typeManager, object pObject, nuint cellIndex, uint cellCount)
+        private static unsafe IntPtr ResolveGvmDispatch(TypeManagerHandle typeManager, object pObject, nuint cellIndex)
         {
-            Debug.Assert(cellIndex < cellCount);
-
             NativeParser parser = GetDispatchCellInfo(
                 typeManager,
                 ReadyToRunSectionType.GvmDispatchCellInfoRegion,
