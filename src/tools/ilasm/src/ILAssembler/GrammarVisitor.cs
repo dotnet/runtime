@@ -787,7 +787,10 @@ namespace ILAssembler
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitAtOpt(CILParser.AtOptContext context) => VisitAtOpt(context);
-        public static GrammarResult.Literal<string?> VisitAtOpt(CILParser.AtOptContext context) => context.id() is {} id ? new(VisitId(id).Value) : new(null);
+        public GrammarResult.Literal<string?> VisitAtOpt(CILParser.AtOptContext context)
+            => context.id() is { } id ? new(VisitId(id).Value)
+            : context.int32() is { } i ? new(VisitInt32(i).Value.ToString())
+            : new(null);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitBoolSeq(CILParser.BoolSeqContext context) => VisitBoolSeq(context);
         public static GrammarResult.FormattedBlob VisitBoolSeq(CILParser.BoolSeqContext context)
