@@ -23,6 +23,8 @@ public interface ITestInfo
 
 public interface ITestReporterWrapper
 {
+    bool ShouldReturnAfterSkipReporting { get; }
+
     CodeBuilder WrapTestExecutionWithReporting(CodeBuilder testExecution, ITestInfo test);
 
     string GenerateSkippedTestReporting(ITestInfo skippedTest, string? skipReason = null);
@@ -187,9 +189,12 @@ public sealed class ConditionalTest : ITestInfo
             if (skipReporting.Length > 0)
             {
                 builder.AppendLine(skipReporting);
-                // Return so a skipped test isn't also reported as passed by the trailing
-                // ReportPassedTest. Safe because each executor holds a single test.
-                builder.AppendLine("return;");
+                if (testReporterWrapper.ShouldReturnAfterSkipReporting)
+                {
+                    // Return so a skipped test isn't also reported as passed by the trailing
+                    // ReportPassedTest. Safe because each executor holds a single test.
+                    builder.AppendLine("return;");
+                }
             }
         }
         return builder;
@@ -491,9 +496,12 @@ public sealed class AlwaysSkippedTest : ITestInfo
         if (skipReporting.Length > 0)
         {
             builder.AppendLine(skipReporting);
-            // Return so a skipped test isn't also reported as passed by the trailing
-            // ReportPassedTest. Safe because each executor holds a single test.
-            builder.AppendLine("return;");
+            if (testReporterWrapper.ShouldReturnAfterSkipReporting)
+            {
+                // Return so a skipped test isn't also reported as passed by the trailing
+                // ReportPassedTest. Safe because each executor holds a single test.
+                builder.AppendLine("return;");
+            }
         }
         return builder;
     }
@@ -522,9 +530,42 @@ public sealed class AlwaysSkippedTest : ITestInfo
 
 public sealed class NoTestReporting : ITestReporterWrapper
 {
+    public bool ShouldReturnAfterSkipReporting => false;
+
     public CodeBuilder WrapTestExecutionWithReporting(CodeBuilder testExecution, ITestInfo test) => testExecution;
 
     public string GenerateSkippedTestReporting(ITestInfo skippedTest, string? skipReason = null) => string.Empty;
+}
+
+public sealed class StandaloneTestReporting : ITestReporterWrapper
+{
+    private readonly string _testExecutedLocalIdentifier;
+    private readonly string _skipReasonLocalIdentifier;
+
+    public StandaloneTestReporting(string testExecutedLocalIdentifier, string skipReasonLocalIdentifier)
+    {
+        _testExecutedLocalIdentifier = testExecutedLocalIdentifier;
+        _skipReasonLocalIdentifier = skipReasonLocalIdentifier;
+    }
+
+    public bool ShouldReturnAfterSkipReporting => false;
+
+    public CodeBuilder WrapTestExecutionWithReporting(CodeBuilder testExecution, ITestInfo test)
+    {
+        CodeBuilder builder = new();
+        builder.AppendLine($"{_testExecutedLocalIdentifier} = true;");
+        builder.Append(testExecution);
+        return builder;
+    }
+
+    public string GenerateSkippedTestReporting(ITestInfo skippedTest, string? skipReason = null)
+    {
+        string reasonExpression = skipReason is not null
+            ? $"@\"{skipReason.Replace("\r", "").Replace("\n", " ").Replace("\"", "\"\"")}\""
+            : "string.Empty";
+
+        return $"{_skipReasonLocalIdentifier} ??= {reasonExpression};";
+    }
 }
 
 /// <summary>
@@ -543,6 +584,8 @@ internal sealed class SkipReportingPassthrough : ITestReporterWrapper
         _outer = outer;
         _displayNameSource = displayNameSource;
     }
+
+    public bool ShouldReturnAfterSkipReporting => _outer.ShouldReturnAfterSkipReporting;
 
     public CodeBuilder WrapTestExecutionWithReporting(CodeBuilder testExecution, ITestInfo test) => testExecution;
 
@@ -567,6 +610,8 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
         _outputRecorderIdentifier = outputRecorderIdentifier;
         _outOfProcessPlanWriterIdentifier = outOfProcessPlanWriterIdentifier;
     }
+
+    public bool ShouldReturnAfterSkipReporting => true;
 
     public CodeBuilder WrapTestExecutionWithReporting(CodeBuilder testExecutionExpression,
                                                       ITestInfo test)
@@ -639,6 +684,16 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
                              + $" statsCsvSw);");
         }
 
+        if (test is OutOfProcessTest)
+        {
+            builder.AppendLine("catch (TestLibrary.OutOfProcessTestSkippedException ex)");
+
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine(GenerateSkippedTestReporting(test, "ex.Message", skipReasonIsExpression: true));
+            }
+        }
+
         builder.AppendLine("catch (System.Exception ex)");
 
         using (builder.NewBracesScope())
@@ -657,8 +712,13 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
     }
 
     public string GenerateSkippedTestReporting(ITestInfo skippedTest, string? skipReason = null)
+        => GenerateSkippedTestReporting(skippedTest, skipReason, skipReasonIsExpression: false);
+
+    private string GenerateSkippedTestReporting(ITestInfo skippedTest, string? skipReason, bool skipReasonIsExpression)
     {
-        string reasonExpression = skipReason != null
+        string reasonExpression = skipReasonIsExpression
+            ? skipReason!
+            : skipReason != null
             ? $"@\"{skipReason.Replace("\r", "").Replace("\n", " ").Replace("\"", "\"\"")}\""
             : "string.Empty";
 

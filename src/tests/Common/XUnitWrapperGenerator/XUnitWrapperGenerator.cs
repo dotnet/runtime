@@ -270,7 +270,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
         else
         {
-            context.AddSource("SimpleRunner.g.cs", GenerateStandaloneSimpleTestRunner(methods, aliasMap));
+            context.AddSource(
+                "SimpleRunner.g.cs",
+                GenerateStandaloneSimpleTestRunner(
+                    methods,
+                    aliasMap,
+                    configOptions.GlobalOptions.RequiresProcessIsolation()));
         }
     }
 
@@ -590,9 +595,16 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         return builder.GetCode();
     }
 
-    private static string GenerateStandaloneSimpleTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap)
+    private static string GenerateStandaloneSimpleTestRunner(
+        ImmutableArray<ITestInfo> testInfos,
+        ImmutableDictionary<string, string> aliasMap,
+        bool reportOutOfProcessStatus)
     {
-        ITestReporterWrapper reporter = new NoTestReporting();
+        const string testExecutedIdentifier = "outOfProcessTestExecuted";
+        const string skipReasonIdentifier = "outOfProcessSkipReason";
+        ITestReporterWrapper reporter = reportOutOfProcessStatus
+            ? new StandaloneTestReporting(testExecutedIdentifier, skipReasonIdentifier)
+            : new NoTestReporting();
         CodeBuilder builder = new();
         AppendAliasMap(builder, aliasMap);
         builder.AppendLine("class __GeneratedMainWrapper");
@@ -601,6 +613,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             builder.AppendLine("public static int Main()");
             using (builder.NewBracesScope())
             {
+                if (reportOutOfProcessStatus)
+                {
+                    builder.AppendLine($"bool {testExecutedIdentifier} = false;");
+                    builder.AppendLine($"string {skipReasonIdentifier} = null;");
+                    builder.AppendLine();
+                }
                 builder.AppendLine("try");
                 using (builder.NewBracesScope())
                 {
@@ -614,6 +632,16 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 {
                     builder.AppendLine("System.Console.WriteLine(ex.ToString());");
                     builder.AppendLine("return 101;");
+                }
+                if (reportOutOfProcessStatus)
+                {
+                    builder.AppendLine();
+                    builder.AppendLine(@"string outOfProcessStatusFile = System.Environment.GetEnvironmentVariable(""__TestOutOfProcessStatusFile"");");
+                    builder.AppendLine($"if (outOfProcessStatusFile is not null && !{testExecutedIdentifier} && {skipReasonIdentifier} is not null)");
+                    using (builder.NewBracesScope())
+                    {
+                        builder.AppendLine($"System.IO.File.WriteAllText(outOfProcessStatusFile, {skipReasonIdentifier} + System.Environment.NewLine);");
+                    }
                 }
                 builder.AppendLine("return 100;");
             }

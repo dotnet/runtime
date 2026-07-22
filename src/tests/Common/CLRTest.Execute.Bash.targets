@@ -51,7 +51,7 @@ WARNING:   When setting properties based on their current state (for example:
   Note also that this means it will run after the first of such targets.
   -->
   <Target Name="GenerateBashExecutionScript"
-    Inputs="$(MSBuildProjectFullPath)"
+    Inputs="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath)"
     Outputs="$(OutputPath)\$(AssemblyName).sh"
     DependsOnTargets="$(BashScriptSnippetGen);GetIlasmRoundTripBashScript;GetSuperPMICollectionBashScript">
 
@@ -530,16 +530,27 @@ run_out_of_process_tests() {
     local oop_result="${oop_assembly}.outofprocess-result"
     local oop_output="${oop_result}.output.$$"
     local oop_result_tmp="${oop_result}.tmp.$$"
+    local oop_status="${PWD}/${oop_result}.status.$$"
     local oop_exit
 
-    rm -f "$oop_result" "$oop_output" "$oop_result_tmp"
+    rm -f "$oop_result" "$oop_output" "$oop_result_tmp" "$oop_status"
+    export __TestOutOfProcessStatusFile="$oop_status"
     /usr/bin/env bash "$oop_wrapper" < /dev/null > "$oop_output" 2>&1
     oop_exit=$?
+    unset __TestOutOfProcessStatusFile
 
     {
-      echo 1
+      echo 2
       echo "$oop_result_token"
       echo "$oop_exit"
+      if [ -f "$oop_status" ]
+      then
+        echo Skip
+        cat "$oop_status"
+      else
+        echo Pass
+        echo
+      fi
       cat "$oop_output"
     } > "$oop_result_tmp"
 
@@ -550,7 +561,7 @@ run_out_of_process_tests() {
       echo "Failed to write out-of-process result '$oop_result'."
       rm -f "$oop_result_tmp"
     fi
-    rm -f "$oop_output"
+    rm -f "$oop_output" "$oop_status"
   done < "$oop_plan_file"
 
   CLRTestExecutionArguments=("${oop_merged_execution_arguments[@]}")

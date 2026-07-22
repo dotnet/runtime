@@ -14,12 +14,23 @@ using Xunit;
 
 namespace TestLibrary
 {
+    public sealed class OutOfProcessTestSkippedException : Exception
+    {
+        public OutOfProcessTestSkippedException(string message)
+            : base(message)
+        {
+        }
+    }
+
     public static class OutOfProcessTest
     {
         private const string OutOfProcessPlanFileEnvironmentVariable = "__TestOutOfProcessPlanFile";
         private const string OutOfProcessResultFileSuffix = ".outofprocess-result";
-        private const string OutOfProcessResultFormatVersion = "1";
+        private const string OutOfProcessResultFormatVersion = "2";
+        private const string OutOfProcessResultPassed = "Pass";
+        private const string OutOfProcessResultSkipped = "Skip";
         private const string OutOfProcessResultTokenEnvironmentVariable = "__TestOutOfProcessResultToken";
+        private const string OutOfProcessStatusFileEnvironmentVariable = "__TestOutOfProcessStatusFile";
 
         internal static bool runningInWindows;
         internal static string reportBase;
@@ -73,7 +84,9 @@ namespace TestLibrary
             string outputDir = System.IO.Path.GetFullPath(Path.Combine(reportBase, Path.GetDirectoryName(assemblyPath)));
             string outputFile = Path.Combine(outputDir, "output.txt");
             string errorFile = Path.Combine(outputDir, "error.txt");
+            string statusFile = Path.Combine(outputDir, Path.GetFileName(assemblyPath) + ".outofprocess-status");
             string testExecutable = null;
+            string skipReason = null;
             Exception infraEx = null;
 
             try
@@ -95,15 +108,33 @@ namespace TestLibrary
 
                 if (!File.Exists(testExecutable))
                 {
-                    Console.WriteLine($"Test executable '{testExecutable}' not found, skipping.");
-
-                    // Skip platform-specific test when running on the excluded platform
-                    return;
+                    throw new OutOfProcessTestSkippedException(
+                        $"Test executable '{testExecutable}' was not found on this platform.");
                 }
 
                 System.IO.Directory.CreateDirectory(outputDir);
+                File.Delete(statusFile);
 
-                ret = wrapper.RunTest(testExecutable, outputFile, errorFile, Assembly.GetEntryAssembly()!.FullName!, testBinaryBase, outputDir);
+                string previousStatusFile = Environment.GetEnvironmentVariable(OutOfProcessStatusFileEnvironmentVariable);
+                try
+                {
+                    Environment.SetEnvironmentVariable(OutOfProcessStatusFileEnvironmentVariable, statusFile);
+                    ret = wrapper.RunTest(testExecutable, outputFile, errorFile, Assembly.GetEntryAssembly()!.FullName!, testBinaryBase, outputDir);
+                }
+                finally
+                {
+                    Environment.SetEnvironmentVariable(OutOfProcessStatusFileEnvironmentVariable, previousStatusFile);
+                }
+
+                if (File.Exists(statusFile))
+                {
+                    skipReason = File.ReadAllText(statusFile).TrimEnd('\r', '\n');
+                    File.Delete(statusFile);
+                }
+            }
+            catch (OutOfProcessTestSkippedException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -163,6 +194,12 @@ namespace TestLibrary
                 }
 
                 Assert.True(ret == CoreclrTestWrapperLib.EXIT_SUCCESS_CODE, string.Join(Environment.NewLine, testOutput));
+
+                if (skipReason is not null)
+                {
+                    throw new OutOfProcessTestSkippedException(
+                        skipReason.Length != 0 ? skipReason : "Out-of-process test was skipped.");
+                }
             }
         }
 
@@ -195,6 +232,8 @@ namespace TestLibrary
             string formatVersion = resultReader.ReadLine();
             string actualResultToken = resultReader.ReadLine();
             string exitCodeText = resultReader.ReadLine();
+            string resultStatus = resultReader.ReadLine();
+            string skipReason = resultReader.ReadLine();
             string output = resultReader.ReadToEnd();
 
             if (!String.Equals(formatVersion, OutOfProcessResultFormatVersion, StringComparison.Ordinal))
@@ -212,6 +251,23 @@ namespace TestLibrary
                 Assert.Fail($"Test Infrastructure Failure: Out-of-process result file '{resultFile}' contains invalid exit code '{exitCodeText}'.");
             }
 
+            if (!String.Equals(resultStatus, OutOfProcessResultPassed, StringComparison.Ordinal)
+                && !String.Equals(resultStatus, OutOfProcessResultSkipped, StringComparison.Ordinal))
+            {
+                Assert.Fail($"Test Infrastructure Failure: Out-of-process result file '{resultFile}' contains invalid result status '{resultStatus}'.");
+            }
+
+            if (skipReason is null)
+            {
+                Assert.Fail($"Test Infrastructure Failure: Out-of-process result file '{resultFile}' does not contain a skip reason line.");
+            }
+
+            if (String.Equals(resultStatus, OutOfProcessResultPassed, StringComparison.Ordinal)
+                && skipReason.Length != 0)
+            {
+                Assert.Fail($"Test Infrastructure Failure: Out-of-process result file '{resultFile}' contains a skip reason for a passing test.");
+            }
+
             Console.WriteLine($"Out-of-process result file: {resultFile}");
             Console.Write(output);
             if (output.Length != 0 && output[output.Length - 1] != '\n')
@@ -222,6 +278,12 @@ namespace TestLibrary
 
             Assert.True(exitCode == CoreclrTestWrapperLib.EXIT_SUCCESS_CODE,
                         $"Out-of-process wrapper failed with exit code {exitCode}.{Environment.NewLine}{output}");
+
+            if (String.Equals(resultStatus, OutOfProcessResultSkipped, StringComparison.Ordinal))
+            {
+                throw new OutOfProcessTestSkippedException(
+                    skipReason.Length != 0 ? skipReason : "Out-of-process test was skipped.");
+            }
         }
     }
 }

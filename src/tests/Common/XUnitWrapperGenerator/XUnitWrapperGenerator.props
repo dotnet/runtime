@@ -6,6 +6,7 @@
     <CompilerVisibleProperty Include="TargetArchitecture" />
     <CompilerVisibleProperty Include="CLRTestPriorityToBuild" />
     <CompilerVisibleProperty Include="TestBuildMode" />
+    <CompilerVisibleProperty Include="RequiresProcessIsolation" />
     <!-- Properties that influence test harness generation -->
     <CompilerVisibleProperty Include="InMergedTestDirectory" />
     <CompilerVisibleProperty Include="IsMergedTestRunnerAssembly" />

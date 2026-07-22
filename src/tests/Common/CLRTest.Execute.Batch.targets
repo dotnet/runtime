@@ -50,7 +50,7 @@ WARNING:   When setting properties based on their current state (for example:
   Note also that this means it will run after the first of such targets.
   -->
   <Target Name="GenerateBatchExecutionScript"
-    Inputs="$(MSBuildProjectFullPath)"
+    Inputs="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath)"
     Outputs="$(OutputPath)\$(AssemblyName).cmd"
     DependsOnTargets="$(BatchScriptSnippetGen);GetIlasmRoundTripBatchScript;GetSuperPMICollectionBatchScript">
 
@@ -394,21 +394,31 @@ IF NOT DEFINED RunWithNodeJS (
                 set "__OopResult=%%P.outofprocess-result"
                 set "__OopOutput=!__OopResult!.output.!RANDOM!"
                 set "__OopResultTemp=!__OopResult!.tmp.!RANDOM!"
-                del /q "!__OopResult!" "!__OopOutput!" "!__OopResultTemp!" 2>NUL
+                set "__OopStatus=!__OopResult!.status.!RANDOM!"
+                del /q "!__OopResult!" "!__OopOutput!" "!__OopResultTemp!" "!__OopStatus!" 2>NUL
 
                 set "CORE_ROOT=!__CoreRootWin!"
+                for %%S in ("!__OopStatus!") do set "__TestOutOfProcessStatusFile=%%~fS"
                 "%ComSpec%" /D /S /C call "!__OopWrapper!" > "!__OopOutput!" 2>&1
                 set "__OopExit=!ERRORLEVEL!"
+                set "__TestOutOfProcessStatusFile="
                 set "CORE_ROOT=!__CoreRootUnix!"
 
                 (
-                    ECHO 1
+                    ECHO 2
                     ECHO !__OopResultToken!
                     ECHO !__OopExit!
+                    IF EXIST "!__OopStatus!" (
+                        ECHO Skip
+                        TYPE "!__OopStatus!"
+                    ) ELSE (
+                        ECHO Pass
+                        ECHO.
+                    )
                     TYPE "!__OopOutput!"
                 ) > "!__OopResultTemp!"
                 move /Y "!__OopResultTemp!" "!__OopResult!" >NUL
-                del /q "!__OopOutput!" 2>NUL
+                del /q "!__OopOutput!" "!__OopStatus!" 2>NUL
             )
 
             set "CLRTestExecutionArguments=!__OopMergedExecutionArguments!"
