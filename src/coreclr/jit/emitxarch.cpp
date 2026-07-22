@@ -392,7 +392,7 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         }
 
         insFlags flags = CodeGenInterface::instInfo[ins];
-        return ((flags & INS_FLAGS_APX_EVEX_PROMOTABLE) != 0) || IsBMIInstruction(ins) || IsKMOVInstruction(ins);
+        return ((flags & INS_FLAGS_APX_EVEX_Mask) != 0) || IsBMIInstruction(ins) || IsKMOVInstruction(ins);
     }
 
     insFlags flags = CodeGenInterface::instInfo[ins];
@@ -416,7 +416,7 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
 
     // APX-only instructions and instructions with NDD/NF support
     // can be EVEX-encoded when promoted EVEX encoding is available.
-    if ((flags & INS_FLAGS_APX_EVEX_PROMOTABLE) != 0)
+    if ((flags & INS_FLAGS_APX_EVEX_Mask) != 0)
     {
         return UsePromotedEVEXEncoding();
     }
@@ -552,7 +552,7 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
     }
 
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_FLAGS_APX_EVEX_PROMOTABLE) != 0;
+    return (flags & INS_FLAGS_APX_EVEX_Mask) != 0;
 #else // !TARGET_AMD64
     return false;
 #endif

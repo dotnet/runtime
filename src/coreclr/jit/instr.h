@@ -239,6 +239,12 @@ enum insFlags : uint64_t
     // APX: EVEX.NF:
     INS_Flags_Has_NF  = 1ULL << 46,
 
+    // Mask of all APX-EVEX related flags. An instruction matches this mask if it either only exists in the
+    // APX EVEX space (Encoding_EVEX_APX_ONLY, e.g. crc32_apx/movbe_apx) or gains an APX encoding through the
+    // NDD (INS_Flags_Has_NDD) or NF (INS_Flags_Has_NF) features. Use it to quickly test whether an instruction
+    // has any APX-EVEX capability.
+    INS_FLAGS_APX_EVEX_Mask = (Encoding_EVEX_APX_ONLY | INS_Flags_Has_NDD | INS_Flags_Has_NF),
+
     // base kmask size used for a 128-bit vector
     // used to determine if we can use embedded masking
     KMask_Base1    = 1ULL << 47,
@@ -254,10 +260,6 @@ enum insFlags : uint64_t
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
 };
-
-// Combined mask for all instructions that can use APX extended EVEX encoding
-// (APX-only, NDD-capable, or NF-capable).
-#define INS_FLAGS_APX_EVEX_PROMOTABLE (Encoding_EVEX_APX_ONLY | INS_Flags_Has_NDD | INS_Flags_Has_NF)
 
 enum insOpts: unsigned
 {
