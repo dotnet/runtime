@@ -429,8 +429,8 @@ namespace System.Formats.Cbor
 
             foreach ((int o, int l) in ranges)
             {
-                utf8Encoding.GetChars(buffer.Slice(o, l), destination);
-                destination = destination.Slice(l);
+                int chunkCharsWritten = utf8Encoding.GetChars(buffer.Slice(o, l), destination);
+                destination = destination.Slice(chunkCharsWritten);
             }
 
             charsWritten = concatenatedStringSize;
