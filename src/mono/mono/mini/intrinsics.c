@@ -297,8 +297,8 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		//
 		// * MinNumber / MaxNumber: IEEE 754-2019 minimumNumber / maximumNumber
 		//   (NaN-suppressing and sign-of-zero aware, treating -0 as less than +0).
-		//   Lower to llvm.minimumnum / llvm.maximumnum, which on AArch64 maps to a
-		//   single fminnm / fmaxnm instruction; see mini-llvm.c and llvm-intrinsics.h.
+		//   Lowered in mini-llvm.c by composing llvm.minimum / llvm.maximum with an
+		//   explicit NaN fixup; see the OP_FMINNUM case there and llvm-intrinsics.h.
 		// * Abs: BCL forwarder to MathF.Abs / Math.Abs. Today this usually inlines
 		//   into the Math/MathF recognition above, but adding direct recognition
 		//   keeps the lowering working even if the JIT inliner declines.
