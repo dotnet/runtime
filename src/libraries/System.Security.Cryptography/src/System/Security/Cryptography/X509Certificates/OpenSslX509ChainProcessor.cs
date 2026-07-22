@@ -716,6 +716,18 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ProcessPolicy(elements, ref overallStatus, applicationPolicy, certificatePolicy);
             }
+            else
+            {
+                CertificatePolicyChain.ErrorVector errors = CertificatePolicyChain.CheckEncodingOnly(
+                    ElementsToCerts(elements),
+                    elements.Length);
+
+                if (errors.Any)
+                {
+                    overallStatus ??= new List<X509ChainStatus>();
+                    MergePolicyErrors(elements, errors, usageErrors: default, overallStatus);
+                }
+            }
 
             ChainStatus = overallStatus?.ToArray() ?? Array.Empty<X509ChainStatus>();
             ChainElements = elements;
@@ -897,68 +909,117 @@ namespace System.Security.Cryptography.X509Certificates
             return elements;
         }
 
-        private static void ProcessPolicy(
+        private static void MergePolicyErrors(
             X509ChainElement[] elements,
-            ref List<X509ChainStatus>? overallStatus,
-            OidCollection? applicationPolicy,
-            OidCollection? certificatePolicy)
+            CertificatePolicyChain.ErrorVector extensionErrors,
+            CertificatePolicyChain.ErrorVector usageErrors,
+            List<X509ChainStatus> overallStatus)
         {
-            List<X509Certificate2> certsToRead = new List<X509Certificate2>();
-
-            foreach (X509ChainElement element in elements)
+            X509ChainStatus policyConstr = new X509ChainStatus
             {
-                certsToRead.Add(element.Certificate);
+                Status = X509ChainStatusFlags.InvalidPolicyConstraints,
+                StatusInformation = GetErrorString(X509VerifyStatusCodeUniversal.X509_V_ERR_INVALID_POLICY_EXTENSION),
+            };
+
+            X509ChainStatus badExt = new X509ChainStatus
+            {
+                Status = X509ChainStatusFlags.InvalidExtension,
+                StatusInformation = GetErrorString(X509VerifyStatusCodeUniversal.X509_V_ERR_INVALID_EXTENSION),
+            };
+
+            X509ChainStatus badUsage = new X509ChainStatus
+            {
+                Status = X509ChainStatusFlags.NotValidForUsage,
+                StatusInformation = SR.Chain_NoPolicyMatch,
+            };
+
+            if (extensionErrors.Any)
+            {
+                AddUniqueStatus(overallStatus, ref policyConstr);
+                AddUniqueStatus(overallStatus, ref badExt);
             }
 
-            CertificatePolicyChain policyChain = new CertificatePolicyChain(certsToRead);
-
-            bool failsPolicyChecks = false;
-
-            if (certificatePolicy != null)
+            if (usageErrors.Any)
             {
-                if (!policyChain.MatchesCertificatePolicies(certificatePolicy))
-                {
-                    failsPolicyChecks = true;
-                }
+                AddUniqueStatus(overallStatus, ref badUsage);
             }
 
-            if (applicationPolicy != null)
+            // No individual element can have seen more errors than the chain overall,
+            // so avoid regrowth of the list.
+            List<X509ChainStatus> elementStatus = new List<X509ChainStatus>(overallStatus.Count);
+
+            for (int i = 0; i < elements.Length; i++)
             {
-                if (!policyChain.MatchesApplicationPolicies(applicationPolicy))
-                {
-                    failsPolicyChecks = true;
-                }
-            }
+                bool ext = extensionErrors[i];
+                bool usage = usageErrors[i];
 
-            if (failsPolicyChecks)
-            {
-                overallStatus ??= new List<X509ChainStatus>();
-
-                X509ChainStatus chainStatus = new X509ChainStatus
-                {
-                    Status = X509ChainStatusFlags.NotValidForUsage,
-                    StatusInformation = SR.Chain_NoPolicyMatch,
-                };
-
-                AddUniqueStatus(overallStatus, ref chainStatus);
-
-                // No individual element can have seen more errors than the chain overall,
-                // so avoid regrowth of the list.
-                var elementStatus = new List<X509ChainStatus>(overallStatus.Count);
-
-                for (int i = 0; i < elements.Length; i++)
+                if (ext || usage)
                 {
                     X509ChainElement element = elements[i];
                     elementStatus.Clear();
                     elementStatus.AddRange(element.ChainElementStatus);
 
-                    AddUniqueStatus(elementStatus, ref chainStatus);
+                    if (ext)
+                    {
+                        AddUniqueStatus(elementStatus, ref policyConstr);
+                        AddUniqueStatus(elementStatus, ref badExt);
+                    }
+
+                    if (usage)
+                    {
+                        AddUniqueStatus(elementStatus, ref badUsage);
+                    }
 
                     elements[i] = new X509ChainElement(
                         element.Certificate,
                         elementStatus.ToArray(),
                         element.Information);
                 }
+            }
+        }
+
+        private static void ProcessPolicy(
+            X509ChainElement[] elements,
+            ref List<X509ChainStatus>? overallStatus,
+            OidCollection? applicationPolicy,
+            OidCollection? certificatePolicy)
+        {
+            bool isPartialChain = false;
+            X509ChainElement lastElement = elements[^1];
+            Debug.Assert(lastElement.ChainElementStatus is not null);
+
+            foreach (X509ChainStatus status in lastElement.ChainElementStatus)
+            {
+                if (status.Status == X509ChainStatusFlags.PartialChain)
+                {
+                    isPartialChain = true;
+                    break;
+                }
+            }
+
+            CertificatePolicyChain.ErrorVector usageErrors = default;
+            CertificatePolicyChain.ErrorVector encodingErrors = default;
+
+            CertificatePolicyChain policyChain = CertificatePolicyChain.Build(
+                ElementsToCerts(elements),
+                elements.Length,
+                isPartialChain,
+                ref encodingErrors);
+
+            if (certificatePolicy is not null)
+            {
+                policyChain.MatchCertificatePolicies(certificatePolicy, ref usageErrors);
+            }
+
+            if (applicationPolicy is not null)
+            {
+                policyChain.MatchApplicationPolicies(applicationPolicy, ref usageErrors);
+            }
+
+            if (usageErrors.Any || encodingErrors.Any)
+            {
+                overallStatus ??= new List<X509ChainStatus>();
+                MergePolicyErrors(elements, encodingErrors, usageErrors, overallStatus);
             }
         }
 
@@ -1305,6 +1366,14 @@ namespace System.Security.Cryptography.X509Certificates
             return s_errorStrings.GetOrAdd(
                 code.Code,
                 Interop.Crypto.GetX509VerifyCertErrorString);
+        }
+
+        private static IEnumerable<X509Certificate2> ElementsToCerts(X509ChainElement[] elements)
+        {
+            foreach (X509ChainElement element in elements)
+            {
+                yield return element.Certificate;
+            }
         }
 
         private sealed class WorkingChain : IDisposable
