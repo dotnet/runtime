@@ -276,23 +276,23 @@ namespace System
             // Output the exponent of the first digit we will print
             decimalExponent = --digitExponent;
 
-            // In preparation for calling BigInteger.HeuristicDivie(), we need to scale up our values such that the highest block of the denominator is greater than or equal to 8.
+            // In preparation for calling BigInteger.HeuristicDivide(), we need to scale up our values such that the highest block of the denominator is greater than or equal to 8.
             // We also need to guarantee that the numerator can never have a length greater than the denominator after each loop iteration.
-            // This requires the highest block of the denominator to be less than or equal to 429496729 which is the highest number that can be multiplied by 10 without overflowing to a new block.
+            // This requires the highest block of the denominator to be less than or equal to the highest number that can be multiplied by 10 without overflowing to a new block (nuint.MaxValue / 10).
 
             Debug.Assert(scale.GetLength() > 0);
-            uint hiBlock = scale.GetBlock(scale.GetLength() - 1);
+            nuint hiBlock = scale.GetBlock(scale.GetLength() - 1);
 
-            if ((hiBlock < 8) || (hiBlock > 429496729))
+            if ((hiBlock < 8) || (hiBlock > (nuint.MaxValue / 10)))
             {
-                // Perform a bit shift on all values to get the highest block of the denominator into the range [8,429496729].
-                // We are more likely to make accurate quotient estimations in BigInteger.HeuristicDivide() with higher denominator values so we shift the denominator to place the highest bit at index 27 of the highest block.
-                // This is safe because (2^28 - 1) = 268435455 which is less than 429496729.
-                // This means that all values with a highest bit at index 27 are within range.
+                // Perform a bit shift on all values to get the highest block of the denominator into the range [8, nuint.MaxValue / 10].
+                // We are more likely to make accurate quotient estimations in BigInteger.HeuristicDivide() with higher denominator values so we shift the denominator to place the highest bit at index (BitsPerBlock - 5) of the highest block.
+                // This is safe because (2^(BitsPerBlock - 4) - 1) is less than (nuint.MaxValue / 10).
+                // This means that all values with a highest bit at index (BitsPerBlock - 5) are within range.
                 Debug.Assert(hiBlock != 0);
                 int hiBlockLog2 = BitOperations.Log2(hiBlock);
-                Debug.Assert((hiBlockLog2 < 3) || (hiBlockLog2 > 27));
-                int shift = (32 + 27 - hiBlockLog2) % 32;
+                Debug.Assert((hiBlockLog2 < 3) || (hiBlockLog2 > (BigInteger.BitsPerBlock - 5)));
+                int shift = (BigInteger.BitsPerBlock + (BigInteger.BitsPerBlock - 5) - hiBlockLog2) % BigInteger.BitsPerBlock;
 
                 scale.ShiftLeft(shift);
                 scaledValue.ShiftLeft(shift);

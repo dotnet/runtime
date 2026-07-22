@@ -238,7 +238,7 @@ namespace System.Numerics
 
             if (right.Length < MultiplyKaratsubaThreshold)
             {
-                Naive(left, right, bits);
+                MultiplyNaive(left, right, bits);
             }
             else if ((left.Length + 1) >> 1 is int n && right.Length <= n)
             {
@@ -513,24 +513,6 @@ namespace System.Numerics
                 AddSelf(bitsHigh, carry);
 
                 carryBuffer.Dispose();
-            }
-
-            static void Naive(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
-            {
-                Debug.Assert(right.Length < MultiplyKaratsubaThreshold);
-
-                // Multiplies the bits using the "grammar-school" method.
-                // Envisioning the "rhombus" of a pen-and-paper calculation
-                // should help getting the idea of these two loops...
-                // The inner multiplication operations are safe, because
-                // z_i+j + a_j * b_i + c <= 2(2^n - 1) + (2^n - 1)^2 =
-                // = 2^(2n) - 1, where n = BitsPerLimb.
-
-                for (int i = 0; i < right.Length; i++)
-                {
-                    nuint carry = MulAdd1(bits.Slice(i), left, right[i]);
-                    bits[i + left.Length] = carry;
-                }
             }
         }
 

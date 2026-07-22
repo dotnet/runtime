@@ -633,6 +633,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Parsing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Rounding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\BFloat16.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\BigIntegerCalculator.Shared.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\BitOperations.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Colors\Argb.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Colors\Argb.T.cs" />

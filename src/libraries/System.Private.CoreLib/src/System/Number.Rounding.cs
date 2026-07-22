@@ -404,7 +404,7 @@ namespace System
                 do
                 {
                     BigInteger.DivRem(ref quotient, ref ten, out BigInteger newQuotient, out BigInteger digit);
-                    uint digitValue = digit.IsZero() ? 0 : digit.GetBlock(0);
+                    uint digitValue = digit.IsZero() ? 0 : (uint)digit.GetBlock(0);
                     buffer[digitCount++] = (byte)('0' + digitValue);
                     BigInteger.SetValue(out quotient, ref newQuotient);
                 }

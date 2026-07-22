@@ -304,7 +304,7 @@ namespace System
         }
 
         // Lookup table for power-of-10 boundaries corrections
-        private static ReadOnlySpan<uint> PowersOf10 =>
+        internal static ReadOnlySpan<uint> PowersOf10 =>
         [
             1,
             10,
