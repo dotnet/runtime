@@ -20,6 +20,11 @@ namespace Microsoft.Extensions.Configuration
         private readonly List<IDisposable> _changeTokenRegistrations;
         private ConfigurationReloadToken _changeToken = new ConfigurationReloadToken();
 
+        // Per-root reference state, bound to the (fixed) provider list and swapped for a fresh instance on every reload
+        // (see RaiseChanged) so a reload can never surface stale reference information. When no provider opts into
+        // references (ConfigurationReferences:Enabled), reads take the plain provider path with no reference overhead.
+        private volatile ReferenceEngine? _referenceEngine;
+
         /// <summary>
         /// Initializes a Configuration root with a list of providers.
         /// </summary>
@@ -29,6 +34,7 @@ namespace Microsoft.Extensions.Configuration
             ArgumentNullException.ThrowIfNull(providers);
 
             _providers = providers;
+            _referenceEngine = ReferenceEngine.Create(providers);
             _changeTokenRegistrations = new List<IDisposable>(providers.Count);
             foreach (IConfigurationProvider p in providers)
             {
@@ -49,8 +55,21 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The configuration value.</returns>
         public string? this[string key]
         {
-            get => GetConfiguration(_providers, key);
-            set => SetConfiguration(_providers, key, value);
+            get
+            {
+                if (ReferenceEngine.Disabled)
+                {
+                    return GetConfiguration(_providers, key);
+                }
+
+                _referenceEngine!.TryRead(key, out string? value);
+                return value;
+            }
+            set
+            {
+                SetConfiguration(_providers, key, value);
+                _referenceEngine = ReferenceEngine.Create(_providers);
+            }
         }
 
         /// <summary>
@@ -91,9 +110,12 @@ namespace Microsoft.Extensions.Configuration
 
         private void RaiseChanged()
         {
+            _referenceEngine = ReferenceEngine.Create(_providers);
             ConfigurationReloadToken previousToken = Interlocked.Exchange(ref _changeToken, new ConfigurationReloadToken());
             previousToken.OnReload();
         }
+
+        internal ReferenceEngine? ReferenceEngine => _referenceEngine;
 
         /// <inheritdoc />
         public void Dispose()

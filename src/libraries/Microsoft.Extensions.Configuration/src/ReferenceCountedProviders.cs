@@ -29,16 +29,22 @@ namespace Microsoft.Extensions.Configuration
         // This is Dispose() rather than RemoveReference() so we can conveniently release a reference at the end of a using block.
         public abstract void Dispose();
 
+        public abstract ReferenceEngine? ReferenceEngine { get; }
+
+        public abstract void ResetReferenceEngine();
+
         private sealed class ActiveReferenceCountedProviders : ReferenceCountedProviders
         {
             private long _refCount = 1;
             // volatile is not strictly necessary because the runtime adds a barrier either way, but volatile indicates that this field has
             // unsynchronized readers meaning the all writes initializing the list must be published before updating the _providers reference.
             private volatile List<IConfigurationProvider> _providers;
+            private volatile ReferenceEngine? _referenceEngine;
 
             public ActiveReferenceCountedProviders(List<IConfigurationProvider> providers)
             {
                 _providers = providers;
+                _referenceEngine = ReferenceEngine.Create(providers);
             }
 
             public override List<IConfigurationProvider> Providers
@@ -52,10 +58,15 @@ namespace Microsoft.Extensions.Configuration
                 {
                     Debug.Assert(_refCount > 0);
                     _providers = value;
+                    _referenceEngine = ReferenceEngine.Create(value);
                 }
             }
 
             public override List<IConfigurationProvider> NonReferenceCountedProviders => _providers;
+
+            public override ReferenceEngine? ReferenceEngine => _referenceEngine;
+
+            public override void ResetReferenceEngine() => _referenceEngine = ReferenceEngine.Create(_providers);
 
             public override void AddReference()
             {
@@ -78,13 +89,20 @@ namespace Microsoft.Extensions.Configuration
 
         private sealed class DisposedReferenceCountedProviders : ReferenceCountedProviders
         {
+            private volatile ReferenceEngine? _referenceEngine;
+
             public DisposedReferenceCountedProviders(List<IConfigurationProvider> providers)
             {
                 Providers = providers;
+                _referenceEngine = ReferenceEngine.Create(providers);
             }
 
             public override List<IConfigurationProvider> Providers { get; set; }
             public override List<IConfigurationProvider> NonReferenceCountedProviders => Providers;
+
+            public override ReferenceEngine? ReferenceEngine => _referenceEngine;
+
+            public override void ResetReferenceEngine() => _referenceEngine = ReferenceEngine.Create(Providers);
 
             public override void AddReference() { }
             public override void Dispose() { }

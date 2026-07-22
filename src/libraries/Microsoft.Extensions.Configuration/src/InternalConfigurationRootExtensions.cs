@@ -20,13 +20,30 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>Immediate children sub-sections of section specified by key.</returns>
         internal static IEnumerable<IConfigurationSection> GetChildrenImplementation(this IConfigurationRoot root, string? path)
         {
+            // For ConfigurationManager the engine is obtained from the pinned provider generation, so the engine and the
+            // providers it resolves against are always the same generation. A plain ConfigurationRoot exposes its engine
+            // directly (its provider list is fixed).
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
-            IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
+            ReferenceEngine? engine = reference?.ReferenceEngine ?? (root as ConfigurationRoot)?.ReferenceEngine;
 
-            IEnumerable<IConfigurationSection> children = providers
-                .Aggregate(Enumerable.Empty<string>(),
-                    (seed, source) => source.GetChildKeys(seed, path))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+            IEnumerable<string> childKeys;
+            if (ReferenceEngine.Disabled || engine is null)
+            {
+                // No engine (references disabled, or a third-party root): enumerate children the plain way, with nothing
+                // to resolve or merge.
+                IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
+                childKeys = providers
+                    .Aggregate(Enumerable.Empty<string>(), (seed, source) => source.GetChildKeys(seed, path))
+                    .Distinct(StringComparer.OrdinalIgnoreCase);
+            }
+            else
+            {
+                // References merge into the children: a redirected section lists its target's children unioned with any
+                // keys a higher provider defines under the reference, at every hop of the chain.
+                childKeys = engine.ChildKeys(path);
+            }
+
+            IEnumerable<IConfigurationSection> children = childKeys
                 .Select(key => root.GetSection(path == null ? key : path + ConfigurationPath.KeyDelimiter + key));
 
             if (reference is null)
@@ -42,19 +59,37 @@ namespace Microsoft.Extensions.Configuration
 
         internal static bool TryGetConfiguration(this IConfigurationRoot root, string key, out string? value)
         {
-            // common cases Providers is IList<IConfigurationProvider> in ConfigurationRoot
+            // For ConfigurationManager, take a counted reference and use the engine from that pinned generation
+            // so a concurrent source mutation can neither dispose the providers mid-read nor pair them with a different
+            // generation's index. The resolved key is then read like any other.
+            if (!ReferenceEngine.Disabled)
+            {
+                if (root is ConfigurationManager cm)
+                {
+                    using ReferenceCountedProviders reference = cm.GetProvidersReference();
+                    return reference.ReferenceEngine!.TryRead(key, out value);
+                }
+                else if (root is ConfigurationRoot cr)
+                {
+                    return cr.ReferenceEngine!.TryRead(key, out value);
+                }
+            }
+
+            // Plain path: references globally disabled, no opted-in provider, or a third-party root implementation.
+            // Commonly Providers is already IList<IConfigurationProvider> in ConfigurationRoot.
             IList<IConfigurationProvider> providers = root.Providers is IList<IConfigurationProvider> list
                 ? list
                 : root.Providers.ToList();
+            return TryGet(providers, key, out value);
+        }
 
-            // ensure looping in the reverse order
+        private static bool TryGet(IList<IConfigurationProvider> providers, string key, out string? value)
+        {
             for (int i = providers.Count - 1; i >= 0; i--)
             {
-                IConfigurationProvider provider = providers[i];
-
                 try
                 {
-                    if (provider.TryGet(key, out value))
+                    if (providers[i].TryGet(key, out value))
                     {
                         return true;
                     }
@@ -76,6 +111,5 @@ namespace Microsoft.Extensions.Configuration
             value = null;
             return false;
         }
-
     }
 }
