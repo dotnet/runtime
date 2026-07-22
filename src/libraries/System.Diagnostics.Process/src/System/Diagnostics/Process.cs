@@ -1763,7 +1763,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public bool Signal(PosixSignal signal)
         {
-            if (!TryGetHandleForSignal(out SafeProcessHandle? handle, out bool disposeHandle) || handle is null)
+            if (!TryGetHandleForSignal(out SafeProcessHandle? handle, out bool disposeHandle))
             {
                 return false;
             }
@@ -1816,35 +1816,27 @@ namespace System.Diagnostics
         }
 
         /// <inheritdoc cref="SafeProcessHandle.WaitForExitAsync(CancellationToken)"/>
-        public Task<ProcessExitStatus> WaitForExitStatusAsync(CancellationToken cancellationToken = default)
+        public async Task<ProcessExitStatus> WaitForExitStatusAsync(CancellationToken cancellationToken = default)
         {
             SafeProcessHandle handle = GetHandleForWait(out bool disposeHandle);
-            return WaitForExitStatusAsyncCore(handle, disposeHandle, cancellationToken);
-
-            static async Task<ProcessExitStatus> WaitForExitStatusAsyncCore(
-                SafeProcessHandle processHandle,
-                bool disposeProcessHandle,
-                CancellationToken cancellationToken)
+            try
             {
-                try
+                return await handle.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                if (disposeHandle)
                 {
-                    return await processHandle.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-                }
-                finally
-                {
-                    if (disposeProcessHandle)
-                    {
-                        processHandle.Dispose();
-                    }
+                    handle.Dispose();
                 }
             }
         }
 
-        private bool TryGetHandleForSignal(out SafeProcessHandle? processHandle, out bool disposeHandle)
+        private bool TryGetHandleForSignal([NotNullWhen(true)] out SafeProcessHandle? processHandle, out bool disposeHandle)
         {
             if (_haveProcessHandle)
             {
-                processHandle = _processHandle;
+                processHandle = _processHandle!;
                 disposeHandle = false;
                 return true;
             }
@@ -1884,7 +1876,7 @@ namespace System.Diagnostics
                 return processHandle;
             }
 
-            throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId.ToString()));
+            throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId));
         }
 
         /// <devdoc>
