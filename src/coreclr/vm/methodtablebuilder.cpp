@@ -1704,8 +1704,10 @@ MethodTableBuilder::BuildMethodTableThrowing(
         PlaceInterfaceMethods();
 #else
         // In release builds, skip the (potentially expensive) interface method placement when the
-        // typical instantiation's DispatchMap can be reused for this non-typical instantiation.
-        if (GetTypicalMethodTableForDispatchMapReuse() == NULL)
+        // typical instantiation's DispatchMap can be reused, or when the resulting DispatchMap is
+        // already known to be empty (see GetTypicalMethodTableForDispatchMapReuse).
+        MethodTable *pUnusedTypicalMTForDispatchMap = NULL;
+        if (GetTypicalMethodTableForDispatchMapReuse(&pUnusedTypicalMTForDispatchMap) == DispatchMapReuseKind::BuildNormally)
         {
             PlaceInterfaceMethods();
         }
@@ -8039,35 +8041,45 @@ MethodTableBuilder::PlaceInterfaceMethods()
 
 
 //*******************************************************************************
-// If the type being built is a non-typical instantiation of a generic class or valuetype
-// whose typical instantiation already has a DispatchMap, return that typical instantiation's
-// MethodTable. The encoded DispatchMap is instantiation-independent (it consists of type IDs
-// and slot numbers only), so it can be reused directly, avoiding a redundant - and potentially
-// expensive - run of PlaceInterfaceMethods for every instantiation. Returns NULL when the
-// DispatchMap must be built normally.
-MethodTable *
-MethodTableBuilder::GetTypicalMethodTableForDispatchMapReuse()
+// Determines how the DispatchMap for the type being built relates to its typical instantiation.
+// The encoded DispatchMap is instantiation-independent (it consists of type IDs and slot numbers
+// only), so a non-typical instantiation of a generic type can reuse its typical instantiation's
+// DispatchMap directly, avoiding a redundant - and potentially expensive - run of
+// PlaceInterfaceMethods for every instantiation.
+//
+//   - BuildNormally:  there is no typical instantiation to reuse from (interface or typical type
+//                     definition); PlaceInterfaceMethods must run and the map is built normally.
+//   - ReuseTypicalMap: the typical instantiation has its own DispatchMap; *ppTypicalMTForReuse is
+//                     set to it so its bytes can be reused.
+//   - KnownEmpty:     the typical instantiation has no DispatchMap, so this instantiation's map is
+//                     known to be empty; PlaceInterfaceMethods can be skipped entirely.
+MethodTableBuilder::DispatchMapReuseKind
+MethodTableBuilder::GetTypicalMethodTableForDispatchMapReuse(MethodTable **ppTypicalMTForReuse)
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(ppTypicalMTForReuse != NULL);
+    *ppTypicalMTForReuse = NULL;
+
     // DispatchMaps are not built for interfaces.
     if (IsInterface())
-        return NULL;
+        return DispatchMapReuseKind::BuildNormally;
 
     // Only non-typical instantiations of generic types have a distinct typical instantiation.
     if (bmtGenerics->IsTypicalTypeDefinition())
-        return NULL;
+        return DispatchMapReuseKind::BuildNormally;
 
     MethodTable *pTypicalMT = bmtGenerics->GetTypicalMethodTable();
-    if (pTypicalMT == NULL)
-        return NULL;
+    _ASSERTE(pTypicalMT != NULL);
 
-    // Only reuse when the typical instantiation actually has its own DispatchMap. If it has none,
-    // this non-typical instantiation would produce none either, so the normal (empty) path is taken.
+    // If the typical instantiation has no DispatchMap of its own, then this non-typical
+    // instantiation would produce an (identical) empty DispatchMap. The result is therefore known
+    // to be empty and PlaceInterfaceMethods can be skipped.
     if (!pTypicalMT->HasDispatchMapSlot())
-        return NULL;
+        return DispatchMapReuseKind::KnownEmpty;
 
-    return pTypicalMT;
+    *ppTypicalMTForReuse = pTypicalMT;
+    return DispatchMapReuseKind::ReuseTypicalMap;
 } // MethodTableBuilder::GetTypicalMethodTableForDispatchMapReuse
 
 
@@ -10949,15 +10961,18 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     size_t dispatchMapAllocationSize = 0;
 
     // Determine whether this (non-typical) generic instantiation can reuse its typical
-    // instantiation's DispatchMap. The encoded map is instantiation-independent.
-    MethodTable *pTypicalMTForDispatchMap = GetTypicalMethodTableForDispatchMapReuse();
+    // instantiation's DispatchMap, or whether its DispatchMap is already known to be empty.
+    // The encoded map is instantiation-independent.
+    MethodTable *pTypicalMTForDispatchMap = NULL;
+    DispatchMapReuseKind dispatchMapReuseKind = GetTypicalMethodTableForDispatchMapReuse(&pTypicalMTForDispatchMap);
 
     if (bmtVT->pDispatchMapBuilder->Count() > 0
 #ifndef _DEBUG
         // In release builds, when reusing the typical instantiation's map, PlaceInterfaceMethods
         // was skipped, so the builder only holds a partial (method-impl-only) map. Don't bother
-        // encoding it; it would just be discarded below.
-        && pTypicalMTForDispatchMap == NULL
+        // encoding it; it would just be discarded below. When the map is known to be empty the
+        // builder is empty as well, so nothing needs to be encoded.
+        && dispatchMapReuseKind == DispatchMapReuseKind::BuildNormally
 #endif // !_DEBUG
         )
     {
@@ -10975,8 +10990,9 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         dispatchMapAllocationSize = (size_t) DispatchMap::GetObjectSize(cbDispatchMapTemp);
     }
 
-    if (pTypicalMTForDispatchMap != NULL)
+    if (dispatchMapReuseKind == DispatchMapReuseKind::ReuseTypicalMap)
     {
+        _ASSERTE(pTypicalMTForDispatchMap != NULL);
         DispatchMap *pTypicalDispatchMap = pTypicalMTForDispatchMap->GetDispatchMap();
         // The reuse helper only returns a MethodTable that has its own DispatchMap slot.
         CONSISTENCY_CHECK(CheckPointer(pTypicalDispatchMap));
@@ -10999,6 +11015,16 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         dispatchMapAllocationSize = (size_t) DispatchMap::GetObjectSize(cbDispatchMapTemp);
 #endif // _DEBUG
     }
+#ifdef _DEBUG
+    else if (dispatchMapReuseKind == DispatchMapReuseKind::KnownEmpty)
+    {
+        // The typical instantiation has no DispatchMap, so this instantiation's DispatchMap must be
+        // empty too. In debug builds PlaceInterfaceMethods always runs, so validate that it indeed
+        // produced nothing.
+        _ASSERTE_MSG(bmtVT->pDispatchMapBuilder->Count() == 0,
+            "Non-typical instantiation produced DispatchMap entries even though its typical instantiation has no DispatchMap");
+    }
+#endif // _DEBUG
 
     // Add space for optional members here. Same as GetOptionalMembersSize()
     cbTotalSize += MethodTable::GetOptionalMembersAllocationSize((dwNumInterfaces != 0) /* hasInterfaceMap */);

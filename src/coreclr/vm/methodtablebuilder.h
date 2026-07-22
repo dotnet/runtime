@@ -2774,12 +2774,31 @@ private:
     PlaceInterfaceMethods();
 
     // --------------------------------------------------------------------------------------------
-    // If the type being built is a non-typical instantiation of a generic class/valuetype whose
-    // typical instantiation has already been loaded with a DispatchMap, returns that typical
-    // instantiation's MethodTable so that its (instantiation-independent) DispatchMap can be
-    // reused instead of being rebuilt. Returns NULL when the DispatchMap must be built normally.
-    MethodTable *
-    GetTypicalMethodTableForDispatchMapReuse();
+    // Describes how the DispatchMap for the type being built relates to its typical instantiation.
+    enum class DispatchMapReuseKind
+    {
+        // There is no typical instantiation to reuse from (the type is an interface or is itself a
+        // typical type definition). The DispatchMap must be built normally, which requires running
+        // PlaceInterfaceMethods.
+        BuildNormally,
+
+        // The typical instantiation has its own DispatchMap. Because the encoded map is
+        // instantiation-independent, it can be reused directly instead of being rebuilt.
+        ReuseTypicalMap,
+
+        // The typical instantiation has no DispatchMap of its own, so this non-typical instantiation
+        // is known to have an empty DispatchMap as well. PlaceInterfaceMethods can be skipped and no
+        // DispatchMap needs to be built.
+        KnownEmpty,
+    };
+
+    // --------------------------------------------------------------------------------------------
+    // Determines how the DispatchMap for the type being built relates to its typical instantiation
+    // (see DispatchMapReuseKind). When the result is ReuseTypicalMap, *ppTypicalMTForReuse is set to
+    // the typical instantiation's MethodTable whose DispatchMap can be reused; otherwise it is set to
+    // NULL.
+    DispatchMapReuseKind
+    GetTypicalMethodTableForDispatchMapReuse(MethodTable **ppTypicalMTForReuse);
 
     // --------------------------------------------------------------------------------------------
     // For every MethodImpl pair (represented by Entry) in bmtMethodImpl, place the body in the
