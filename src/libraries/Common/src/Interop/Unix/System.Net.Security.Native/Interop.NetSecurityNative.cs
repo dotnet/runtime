@@ -129,7 +129,7 @@ internal static partial class Interop
                 out isNtlmUsed);
         }
 
-        internal static unsafe Status InitSecContext(
+        internal static Status InitSecContext(
             out Status minorStatus,
             SafeGssCredHandle initiatorCredHandle,
             ref SafeGssContextHandle contextHandle,
