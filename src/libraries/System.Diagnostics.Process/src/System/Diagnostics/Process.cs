@@ -1761,18 +1761,131 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public bool Signal(PosixSignal signal) => SafeHandle.Signal(signal);
+        public bool Signal(PosixSignal signal)
+        {
+            if (!TryGetHandleForSignal(out SafeProcessHandle? handle, out bool disposeHandle) || handle is null)
+            {
+                return false;
+            }
+
+            try
+            {
+                return handle.Signal(signal);
+            }
+            finally
+            {
+                if (disposeHandle)
+                {
+                    handle.Dispose();
+                }
+            }
+        }
 
         /// <inheritdoc cref="SafeProcessHandle.WaitForExit()"/>
-        public ProcessExitStatus WaitForExitStatus() => SafeHandle.WaitForExit();
+        public ProcessExitStatus WaitForExitStatus()
+        {
+            SafeProcessHandle handle = GetHandleForWait(out bool disposeHandle);
+            try
+            {
+                return handle.WaitForExit();
+            }
+            finally
+            {
+                if (disposeHandle)
+                {
+                    handle.Dispose();
+                }
+            }
+        }
 
         /// <inheritdoc cref="SafeProcessHandle.TryWaitForExit(TimeSpan, out ProcessExitStatus?)"/>
-        public bool TryWaitForExitStatus(TimeSpan timeout, [NotNullWhen(true)] out ProcessExitStatus? exitStatus) =>
-            SafeHandle.TryWaitForExit(timeout, out exitStatus);
+        public bool TryWaitForExitStatus(TimeSpan timeout, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            SafeProcessHandle handle = GetHandleForWait(out bool disposeHandle);
+            try
+            {
+                return handle.TryWaitForExit(timeout, out exitStatus);
+            }
+            finally
+            {
+                if (disposeHandle)
+                {
+                    handle.Dispose();
+                }
+            }
+        }
 
         /// <inheritdoc cref="SafeProcessHandle.WaitForExitAsync(CancellationToken)"/>
-        public Task<ProcessExitStatus> WaitForExitStatusAsync(CancellationToken cancellationToken = default) =>
-            SafeHandle.WaitForExitAsync(cancellationToken);
+        public Task<ProcessExitStatus> WaitForExitStatusAsync(CancellationToken cancellationToken = default)
+        {
+            SafeProcessHandle handle = GetHandleForWait(out bool disposeHandle);
+            return WaitForExitStatusAsyncCore(handle, disposeHandle, cancellationToken);
+
+            static async Task<ProcessExitStatus> WaitForExitStatusAsyncCore(
+                SafeProcessHandle processHandle,
+                bool disposeProcessHandle,
+                CancellationToken cancellationToken)
+            {
+                try
+                {
+                    return await processHandle.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    if (disposeProcessHandle)
+                    {
+                        processHandle.Dispose();
+                    }
+                }
+            }
+        }
+
+        private bool TryGetHandleForSignal(out SafeProcessHandle? processHandle, out bool disposeHandle)
+        {
+            if (_haveProcessHandle)
+            {
+                processHandle = _processHandle;
+                disposeHandle = false;
+                return true;
+            }
+
+            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            CheckDisposed();
+            EnsureState(State.HaveId | State.IsLocal);
+
+            disposeHandle = true;
+            return SafeProcessHandle.TryOpen(_processId, out processHandle);
+        }
+
+        private SafeProcessHandle GetHandleForWait(out bool disposeHandle)
+        {
+            if (_haveProcessHandle)
+            {
+                disposeHandle = false;
+                return _processHandle!;
+            }
+
+            CheckDisposed();
+            EnsureState(State.HaveId | State.IsLocal);
+
+            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            {
+                disposeHandle = false;
+                return SafeHandle;
+            }
+
+            disposeHandle = true;
+            if (SafeProcessHandle.TryOpen(_processId, out SafeProcessHandle? processHandle))
+            {
+                return processHandle;
+            }
+
+            throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId.ToString()));
+        }
 
         /// <devdoc>
         /// <para>

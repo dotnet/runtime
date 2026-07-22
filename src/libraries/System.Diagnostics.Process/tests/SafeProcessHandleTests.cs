@@ -206,6 +206,18 @@ namespace System.Diagnostics.Tests
             Assert.False(testHandle ? handle.Signal(PosixSignal.SIGKILL) : process.Signal(PosixSignal.SIGKILL));
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Signal_SIGKILL_AlreadyExited_WithUnopenedHandle_ReturnsFalse()
+        {
+            Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+            process.Start();
+
+            using Process unopenedProcess = Process.GetProcessById(process.Id);
+
+            Assert.True(process.WaitForExit(WaitInMS));
+            Assert.False(unopenedProcess.Signal(PosixSignal.SIGKILL));
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(true)]
