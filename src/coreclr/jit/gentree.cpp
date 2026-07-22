@@ -9604,6 +9604,14 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
         vecCon->gtSimdVal     = simd_t::Zero();
         return vecCon;
     }
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    else if (varTypeIsMask(type))
+    {
+        GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
+        mskCon->gtSimdMaskVal = simdmask_t::Zero();
+        return mskCon;
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -22189,6 +22197,8 @@ bool GenTree::isCommutativeHWIntrinsic() const
         {
 #ifdef TARGET_XARCH
             case NI_X86Base_MultiplyAddAdjacent:
+            case NI_AVX2_MultiplyAddAdjacent:
+            case NI_AVX512_MultiplyAddAdjacent:
             {
                 return !varTypeIsShort(node->GetSimdBaseType());
             }
@@ -26090,9 +26100,6 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types type,
                         needsFixup = cnsNode->IsFloatNegativeZero();
                     }
                     else
-                    {
-                        needsFixup = cnsNode->IsVectorZero();
-                    }
                     {
                         needsFixup = cnsNode->IsVectorNegativeZero(simdBaseType);
                     }
@@ -31614,7 +31621,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(bool* isScalar, bool getE
                 {
                     oper = GT_NEG;
                 }
-                else if (isScalar && op1->IsCnsVec() && op1->AsVecCon()->IsScalarZero(simdBaseType))
+                else if (*isScalar && op1->IsCnsVec() && op1->AsVecCon()->IsScalarZero(simdBaseType))
                 {
                     oper = GT_NEG;
                 }

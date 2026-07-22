@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.VASigCookie))]
 internal sealed partial class VASigCookie : IData<VASigCookie>
 {
-    [Field] public uint SizeOfArgs { get; }
-    [Field] public Signature Signature { get; }
+    [Field] public partial uint SizeOfArgs { get; }
+    [Field] public partial Signature Signature { get; }
 }

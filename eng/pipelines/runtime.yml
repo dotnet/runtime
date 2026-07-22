@@ -165,6 +165,16 @@ extends:
           - wasi_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
 
+      # CoreCLR library-test smoke leg run on wasmtime via Helix
+      # (wasi_wasm queue). Starts with a single-library smoke set; see
+      # https://github.com/dotnet/runtime/issues/130129.
+      - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-library-tests.yml
+        parameters:
+          platforms:
+          - wasi_wasm
+          shouldRunSmokeOnly: true
+          alwaysRun: ${{ variables.isRollingBuild }}
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml

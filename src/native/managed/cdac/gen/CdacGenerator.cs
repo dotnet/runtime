@@ -11,7 +11,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DataGenerator;
 /// <summary>
 /// Source generator for cdac <see cref="IData{T}"/> classes. Emits the
 /// boilerplate <c>IData&lt;T&gt;.Create</c> factory, managed-type
-/// <c>TypeHandle</c> accessors, and static-field accessors from
+/// <c>ITypeHandle</c> accessors, and static-field accessors from
 /// declarative attributes.
 /// </summary>
 /// <remarks>

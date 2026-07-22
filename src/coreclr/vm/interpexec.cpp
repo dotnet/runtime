@@ -3,6 +3,9 @@
 
 #ifdef FEATURE_INTERPRETER
 
+#include <limits>
+#include <functional>
+
 #include "threads.h"
 #include "gcenv.h"
 #include "interpexec.h"

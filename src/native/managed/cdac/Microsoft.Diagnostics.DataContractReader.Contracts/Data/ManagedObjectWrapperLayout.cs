@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ManagedObjectWrapperLayout))]
 internal sealed partial class ManagedObjectWrapperLayout : IData<ManagedObjectWrapperLayout>
 {
-    [Field] public long RefCount { get; }
-    [Field] public int Flags { get; }
-    [Field] public int UserDefinedCount { get; }
-    [Field] public TargetPointer UserDefined { get; }
-    [Field] public TargetPointer Dispatches { get; }
+    [Field] public partial long RefCount { get; }
+    [Field] public partial int Flags { get; }
+    [Field] public partial int UserDefinedCount { get; }
+    [Field] public partial TargetPointer UserDefined { get; }
+    [Field] public partial TargetPointer Dispatches { get; }
 }
