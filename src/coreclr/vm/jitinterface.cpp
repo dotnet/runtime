@@ -12407,7 +12407,6 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
 	"IsCompletedMethod",
 	"get_Value",
 	"GetRawStringData",
-
 	"GetExtendedString",
         "ReleaseHandle",
         "AllBytesInUInt32AreAscii",
@@ -12430,7 +12429,6 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         "Contains",
         "get_Term",
         "ReadInt",
-
         "IsEntered",
         "AreSameType",
         "AreSame",
@@ -12440,7 +12438,6 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         "AsPointer",
         "GetUnderlyingNativeHandle",
         "Unregister",
-	
 	"IsNullOrWhiteSpace",
        	"IndexOfAnyChar",
        	"InitializeIsSupported",
@@ -12456,7 +12453,6 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        	"IsNullRef",
        	"LoadNUInt",
        	"AsRef",
- 
 	"get_CanWrite",
        	"get_CanSeek",
        	"get_HasLeftoverData",
@@ -12466,7 +12462,6 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         "ThrowIfInvalid",
        	"GetHandleValue",
        	"InternalFree",
-
 	"get_Default",
 	"get_Ordinal",
       	"get_OrdinalIgnoreCase",
@@ -12564,7 +12559,6 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "get_IsEmpty",
        "get_Latin1CharInfo",
        "get_GenericCache",
-
        "get_HomeTermInfoLocation",
        "get_StringsTableOffset",
        "get_StringOffsetsOffset",
@@ -12575,7 +12569,6 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "get_DecoderFallback",
        "get_MaxCharCount",
        "op_Equality",
-
        "Concat",
        "AllCharsInUInt32AreAscii",
        "InvalidateCachedCursorPosition",
@@ -12586,7 +12579,7 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "GetCharsFast",
        "AddKey",
        "Copy",
-       "get_Current"
+       "get_Current",
        "GetByteCount",
        "GetByteCountCommon",
        "GetByteCountFast",
@@ -12622,8 +12615,33 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        "GetCharCountFast",
        "set_Length",
        "AddWithResize",
-       "GetConstructorCandidates"
-
+       "GetConstructorCandidates",
+       "IsAssignableTo",
+       "IsAssignableFrom",
+       "ToIntPtr",
+       "FilterHelper",
+       "GetMemberList",
+       "GetMemberCache",
+       "GetRuntimeType",
+       "FilterApplyConstructorInfo",
+       "AssertIsValidCodePoint",
+       "AssertCategoryCasingTableLevels",
+       "ManagedStartup",
+       "ProcessStartupHooks",
+       "OpenStandardOutput",
+       "CreateFileHandle",
+       "SetHandle",
+       "ExpandPrime",
+       "ValidateSettings",
+       "GetIndexOfFirstNonAsciiChar",
+       "GetIndexOfFirstNonAsciiChar_Vector",
+       "NarrowFourUtf16CharsToAsciiAndWriteToBuffer",
+       "GetRootElementType",
+       "HasElementTypeImpl",
+       "IsPointer",
+       "IsFunctionPointer",
+       "IsByRef",
+       "GetPinnableReference",
     };
 
     struct JitInclusionEntry
