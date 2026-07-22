@@ -6,9 +6,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
     <NoWarn>8002,NU1701</NoWarn>
-    <!-- Keep in sync with ILCompiler.ReadyToRun.csproj. GetTargetAllowsRuntimeCodeGeneration in
-         Program.cs relies on this define to distinguish targets that support runtime code generation. -->
-    <DefineConstants Condition="'$(FeatureDynamicCodeCompiled)' == 'true'">$(DefineConstants);FEATURE_DYNAMIC_CODE_COMPILED</DefineConstants>
     <Platforms>x64;x86;arm64;arm;loongarch64;riscv64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>

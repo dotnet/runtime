@@ -709,14 +709,8 @@ namespace ILCompiler
 
         private static bool GetTargetAllowsRuntimeCodeGeneration(TargetOS operatingSystem, TargetArchitecture architecture)
         {
-#if FEATURE_DYNAMIC_CODE_COMPILED
             return operatingSystem is not (TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator or TargetOS.Browser or TargetOS.Wasi)
                 && architecture is not TargetArchitecture.Wasm32;
-#else
-            _ = operatingSystem;
-            _ = architecture;
-            return false;
-#endif
         }
 
         private void CheckManagedCppInputFiles(IEnumerable<string> inputPaths)
