@@ -107,18 +107,12 @@ namespace System.Runtime.InteropServices.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetNativeVariantForObject_InvalidArrayType_TestData))]
-        public void GetNativeVariantForObject_InvalidArrayType_ThrowsInvalidCastException(object obj)
+        public unsafe void GetNativeVariantForObject_InvalidArrayType_ThrowsInvalidCastException(object obj)
         {
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf<ComVariant>());
-            try
-            {
-                Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject(obj, pNative));
-                Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject<object>(obj, pNative));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(pNative);
-            }
+            ComVariant variant = default;
+
+            Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject(obj, (nint)(&variant)));
+            Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject<object>(obj, (nint)(&variant)));
         }
     }
 }
