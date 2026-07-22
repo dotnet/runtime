@@ -17,6 +17,7 @@ using Xunit;
 
 public class GitHub_127696
 {
+    // Issue #127696 shape.
     interface IEntityId<T> where T : struct, IEntityId<T>
     {
         EntityIdValue<T> Value { get; }
@@ -39,6 +40,7 @@ public class GitHub_127696
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int ConsumeNullable(UserId? id) => id?.Value.Id ?? -1;
 
+    // Issue #130661 shape (does not require static abstracts).
     interface IResource<TSelf> where TSelf : struct, IResource<TSelf>;
 
     readonly struct Handle<TResource> where TResource : struct, IResource<TResource>;
@@ -56,6 +58,7 @@ public class GitHub_127696
     [Fact]
     public static void TestEntryPoint()
     {
+        // Exercises issue #127696.
         UserId? present = GetUserId(true);
         UserId? absent = GetUserId(false);
 
@@ -69,6 +72,7 @@ public class GitHub_127696
     [Fact]
     public static void Repro130661IsFixed()
     {
+        // Exercises issue #130661.
         // Resolve by name so the loader has to materialize the nested type on demand.
         Type wrapper = typeof(GitHub_127696).Assembly.GetType("GitHub_127696+Wrapper", throwOnError: true)!;
 
