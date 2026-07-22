@@ -972,7 +972,6 @@ namespace System.StubHelpers
                 int allocSize = Marshal.SizeOfHelper((RuntimeType)_layoutType, false);
                 IntPtr pNative = Marshal.AllocCoTaskMem(allocSize);
 
-                // marshal the object as class with layout (UnmanagedType.LPStruct)
                 try
                 {
                     if (IsIn(dwFlags))
