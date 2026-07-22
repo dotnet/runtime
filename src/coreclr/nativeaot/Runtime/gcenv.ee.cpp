@@ -52,7 +52,7 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
     FireEtwGCSuspendEEEnd_V1(GetClrInstanceId());
 }
 
-void GCToEEInterface::RestartEE()
+void GCToEEInterface::RestartEE(bool bUnused)
 {
     FireEtwGCRestartEEBegin_V1(GetClrInstanceId());
 

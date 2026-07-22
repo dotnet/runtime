@@ -12,7 +12,7 @@ class GCToEEInterface
 {
 public:
     static void SuspendEE(SUSPEND_REASON reason);
-    static void RestartEE(); //resume threads.
+    static void RestartEE(bool bUnused); //resume threads.
 
     //
     // The GC roots enumeration callback

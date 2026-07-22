@@ -53,7 +53,7 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
         g_pDebugInterface->SuspendForGarbageCollectionCompleted();
 }
 
-void GCToEEInterface::RestartEE()
+void GCToEEInterface::RestartEE(bool bUnused)
 {
     WRAPPER_NO_CONTRACT;
 

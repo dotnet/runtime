@@ -820,7 +820,7 @@ void gc_heap::check_heap_count ()
         dprintf (6666, ("heap count stays the same %d, no work to do, set processed sample count to %Id",
             dynamic_heap_count_data.new_n_heaps, dynamic_heap_count_data.current_samples_count));
 
-        GCToEEInterface::RestartEE();
+        GCToEEInterface::RestartEE(TRUE);
 
         return;
     }
@@ -859,7 +859,7 @@ void gc_heap::check_heap_count ()
 
     change_heap_count (dynamic_heap_count_data.new_n_heaps);
 
-    GCToEEInterface::RestartEE();
+    GCToEEInterface::RestartEE(TRUE);
     dprintf (9999, ("h0 restarted EE"));
 
     dprintf (6666, ("h0 finished changing, set should change to false!\n"));

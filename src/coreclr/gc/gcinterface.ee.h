@@ -117,10 +117,10 @@ public:
     void FireGCAllocationTick_V1(uint32_t allocationAmount, uint32_t allocationKind) PURE_VIRTUAL
 
     virtual
-    void FireGCAllocationTick_V4(uint64_t allocationAmount, 
-                                 uint32_t allocationKind, 
-                                 uint32_t heapIndex, 
-                                 void* objectAddress, 
+    void FireGCAllocationTick_V4(uint64_t allocationAmount,
+                                 uint32_t allocationKind,
+                                 uint32_t heapIndex,
+                                 void* objectAddress,
                                  uint64_t objectSize) PURE_VIRTUAL
 
     virtual
@@ -208,7 +208,7 @@ public:
     // Resumes all paused threads, with a boolean indicating
     // if the EE is being restarted because a GC is complete.
     virtual
-    void RestartEE() PURE_VIRTUAL
+    void RestartEE(bool bUnused) PURE_VIRTUAL
 
     // Performs a stack walk of all managed threads and invokes the given promote_func
     // on all GC roots encountered on the stack. Depending on the condemned generation,

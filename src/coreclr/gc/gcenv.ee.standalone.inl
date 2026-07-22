@@ -30,10 +30,10 @@ inline void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
     g_theGCToCLR->SuspendEE(reason);
 }
 
-inline void GCToEEInterface::RestartEE()
+inline void GCToEEInterface::RestartEE(bool bUnused)
 {
     assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->RestartEE();
+    g_theGCToCLR->RestartEE(TRUE);
 }
 
 inline void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc)

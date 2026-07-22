@@ -2929,7 +2929,7 @@ void
 gc_heap::restart_EE ()
 {
     dprintf (2, ("restart_EE"));
-    GCToEEInterface::RestartEE ();
+    GCToEEInterface::RestartEE (TRUE);
 }
 
 //Initializes PER_HEAP_ISOLATED data members.
