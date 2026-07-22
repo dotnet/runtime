@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 
 #if NET
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
 #endif
@@ -966,13 +967,18 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static Vector128<byte> SimdShuffle(Vector128<byte> left, Vector128<byte> right, Vector128<byte> mask8F)
         {
-            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
+            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian);
 
             if (Ssse3.IsSupported)
             {
                 return Ssse3.Shuffle(left, right);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.Swizzle(left, right & mask8F);
             }
             else
             {
