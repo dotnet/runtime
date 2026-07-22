@@ -95,41 +95,61 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82967", TestPlatforms.Browser | TestPlatforms.Wasi)]
-        // Unprimed: a collection type seen cold (read-write first) caches the "read-only contract" shape.
-        [InlineData(false, typeof(TypeWithReadWriteColdCollectionAndNoCtorOnCollection), "ArrayOfExporterTypesTests.ColdPerson")]
-        // Primed: a collection type first seen through a get-only member caches the "constructor-check" shape.
-        [InlineData(true, typeof(TypeWithReadWriteCollectionAndNoCtorOnCollection), "ArrayOfExporterTypesTests.Person")]
-        public void ReadWriteCollectionWithoutParameterlessConstructor_ExportsConsistently(bool primeGetOnlyContractFirst, Type containerType, string collectionSchemaName)
+        // Full-schema export - unprimed: a collection seen cold (read-write first) caches the plain collection shape (no constructor check).
+        [InlineData(typeof(Admin), "ArrayOfExporterTypesTests.Admin", false, false)]
+        // Full-schema export - primed: a collection first seen through a get-only member caches the "constructor-check" shape.
+        [InlineData(typeof(Engineer), "ArrayOfExporterTypesTests.Engineer", true, false)]
+        // Name-only export - unprimed (cold) collection.
+        [InlineData(typeof(Employee), "ArrayOfExporterTypesTests.Employee", false, true)]
+        // Name-only export - primed (get-only-first) collection.
+        [InlineData(typeof(Architect), "ArrayOfExporterTypesTests.Architect", true, true)]
+        public void ReadWriteCollectionWithoutParameterlessConstructor_ExportsConsistently(Type itemType, string collectionSchemaName, bool primeGetOnlyContractFirst, bool nameOnlyExport)
         {
             // A schema describes the shape of data, not whether an instance of a type can be
             // constructed, so a collection type that lacks a parameterless constructor is still fully
             // describable. Depending on whether such a collection is first seen through a get-only
             // member or through a read-write reference, its DataContract is cached in one of two shapes
-            // in the process-global cache (first-write-wins). Exporting a read-write reference used to
-            // throw only when the get-only shape had been cached first - a purely cache-order-dependent
-            // difference, since a cold export of the identical type emitted schema without throwing.
-            // Export must now behave the same regardless of which shape was cached first.
+            // in the process-global cache (first-write-wins). Exporting used to throw only when the
+            // get-only shape had been cached first - a purely cache-order-dependent difference, since a
+            // cold export of the identical type emitted schema without throwing. Export must now behave
+            // the same regardless of which shape was cached first, across both the full-schema surface
+            // and the name-only entry points (which bypass the DataContractSet walk).
             //
             // Because the cache keeps whichever shape it sees first, the two orderings use different
             // collection types (keyed by their distinct item types) so both shapes can be produced
-            // deterministically in a single process: the primed case forces the get-only shape by
-            // exporting a get-only holder first; the unprimed case exports a read-write reference to a
-            // collection type that nothing else ever touches get-only, so it is always seen cold. Both
-            // must emit schema; neither may throw. The constructibility requirement is unchanged and is
-            // still enforced by the serializer at (de)serialization time.
+            // deterministically in a single process: the primed cases force the get-only shape by
+            // exporting a get-only holder first; the unprimed cases only ever reference a collection type
+            // that nothing else touches get-only, so it is always seen cold. Neither may throw. The
+            // constructibility requirement is unchanged and is still enforced by the serializer at
+            // (de)serialization time.
             if (primeGetOnlyContractFirst)
             {
                 // Referencing the collection through a get-only member first caches its DataContract with
-                // the constructor-check flag set - the state that used to make the later read-write export throw.
-                new XsdDataContractExporter().Export(typeof(ReadOnlyCollectionWithoutCtorHolder));
+                // the constructor-check flag set - the state that used to make the later export throw.
+                new XsdDataContractExporter().Export(typeof(TypeWithGetOnlyCollectionWithoutCtor<>).MakeGenericType(itemType));
             }
 
             XsdDataContractExporter exporter = new XsdDataContractExporter();
-            exporter.Export(containerType);
 
-            string schemas = SchemaUtils.DumpSchema(exporter.Schemas);
-            _output.WriteLine(schemas);
-            Assert.Contains($@"<xs:complexType name=""{collectionSchemaName}"">", schemas);
+            if (!nameOnlyExport)
+            {
+                // Export a container that references the collection through a read-write member; the
+                // collection's complexType is emitted as part of the container's schema.
+                exporter.Export(typeof(TypeWithReadWriteCollectionAndNoCtorOnCollection<>).MakeGenericType(itemType));
+
+                string schemas = SchemaUtils.DumpSchema(exporter.Schemas);
+                _output.WriteLine(schemas);
+                Assert.Contains($@"<xs:complexType name=""{collectionSchemaName}"">", schemas);
+            }
+            else
+            {
+                // The name-only entry points are queried against the collection type itself - the type
+                // whose cached shape used to make these calls throw - not a container that references it.
+                var collectionType = typeof(CollectionWithoutParameterlessCtor<>).MakeGenericType(itemType);
+                Assert.Equal(collectionSchemaName, exporter.GetSchemaTypeName(collectionType).Name);
+                Assert.Null(exporter.GetSchemaType(collectionType));
+                Assert.Equal(collectionSchemaName, exporter.GetRootElementName(collectionType).Name);
+            }
         }
 
         [Theory]
@@ -527,29 +547,25 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
             }
         }
 
-        // Priming helper for ReadWriteCollectionWithoutParameterlessConstructor_ExportsConsistently.
-        // Referencing CollectionWithoutParameterlessCtor<Person> through a get-only member registers
-        // its DataContract in the process-global cache with the constructor-check flag set, without
-        // throwing - the cache state that historically made a later read-write reference throw.
-        public class ReadOnlyCollectionWithoutCtorHolder
+        public class TypeWithGetOnlyCollectionWithoutCtor<T>
         {
-            private CollectionWithoutParameterlessCtor<Person> friends;
+            private CollectionWithoutParameterlessCtor<T> friends;
 
-            public CollectionWithoutParameterlessCtor<Person> Friends
+            public CollectionWithoutParameterlessCtor<T> Friends
             {
                 get
                 {
-                    friends = friends ?? new CollectionWithoutParameterlessCtor<Person>(2);
+                    friends = friends ?? new CollectionWithoutParameterlessCtor<T>(2);
                     return friends;
                 }
             }
         }
 
-        public class TypeWithReadWriteCollectionAndNoCtorOnCollection
+        public class TypeWithReadWriteCollectionAndNoCtorOnCollection<T>
         {
             private double[] potentialSalaries;
             private double[] potentialExpenditures;
-            CollectionWithoutParameterlessCtor<Person> friends;
+            CollectionWithoutParameterlessCtor<T> friends;
 
             public double[] PotentialSalaries
             {
@@ -573,40 +589,11 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
             }
 
 
-            public CollectionWithoutParameterlessCtor<Person> Friends
+            public CollectionWithoutParameterlessCtor<T> Friends
             {
                 get
                 {
-                    friends = friends ?? new CollectionWithoutParameterlessCtor<Person>(2);
-                    return friends;
-                }
-                set
-                {
-                    friends = value;
-                }
-            }
-        }
-
-        // Dedicated to the unprimed (cold) case of
-        // ReadWriteCollectionWithoutParameterlessConstructor_ExportsConsistently. ColdPerson exists only
-        // so CollectionWithoutParameterlessCtor<ColdPerson> is a distinct cache key that is seen exclusively
-        // through a read-write reference. Do NOT reference that collection through a get-only member
-        // anywhere, or the cold cache shape this case relies on will no longer be produced.
-        [Serializable]
-        public class ColdPerson
-        {
-            string name = "Jane Doe";
-        }
-
-        public class TypeWithReadWriteColdCollectionAndNoCtorOnCollection
-        {
-            CollectionWithoutParameterlessCtor<ColdPerson> friends;
-
-            public CollectionWithoutParameterlessCtor<ColdPerson> Friends
-            {
-                get
-                {
-                    friends = friends ?? new CollectionWithoutParameterlessCtor<ColdPerson>(2);
+                    friends = friends ?? new CollectionWithoutParameterlessCtor<T>(2);
                     return friends;
                 }
                 set

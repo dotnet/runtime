@@ -191,7 +191,7 @@ namespace System.Runtime.Serialization
             ArgumentNullException.ThrowIfNull(type);
 
             type = GetSurrogatedType(type);
-            DataContract dataContract = DataContract.GetDataContract(type);
+            DataContract dataContract = DataContract.GetDataContract(type, verifyConstructor: false);
             EnsureTypeNotGeneric(dataContract.UnderlyingType);
             if (dataContract is XmlDataContract xmlDataContract && xmlDataContract.IsAnonymous)
                 return XmlQualifiedName.Empty;
@@ -210,7 +210,7 @@ namespace System.Runtime.Serialization
             ArgumentNullException.ThrowIfNull(type);
 
             type = GetSurrogatedType(type);
-            DataContract dataContract = DataContract.GetDataContract(type);
+            DataContract dataContract = DataContract.GetDataContract(type, verifyConstructor: false);
             EnsureTypeNotGeneric(dataContract.UnderlyingType);
             if (dataContract is XmlDataContract xmlDataContract && xmlDataContract.IsAnonymous)
                 return xmlDataContract.XsdType;
@@ -229,7 +229,7 @@ namespace System.Runtime.Serialization
             ArgumentNullException.ThrowIfNull(type);
 
             type = GetSurrogatedType(type);
-            DataContract dataContract = DataContract.GetDataContract(type);
+            DataContract dataContract = DataContract.GetDataContract(type, verifyConstructor: false);
             EnsureTypeNotGeneric(dataContract.UnderlyingType);
             if (dataContract is not XmlDataContract xdc || xdc.HasRoot) // All non-XmlDataContracts "have root".
             {
