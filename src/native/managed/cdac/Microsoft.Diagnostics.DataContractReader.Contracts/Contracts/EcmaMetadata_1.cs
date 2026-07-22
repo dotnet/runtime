@@ -41,18 +41,56 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         {
             throw new InvalidOperationException("Module is not loaded.");
         }
-        bool isMapped = (imageFlags & 0x1) != 0; // FLAG_MAPPED = 0x1
-        PEStreamOptions isLoaded = isMapped ? PEStreamOptions.IsLoadedImage : PEStreamOptions.Default;
 
-        TargetStream stream = new(target, baseAddress, size);
-        using PEReader peReader = new PEReader(stream, isLoaded);
+        TargetSpan result;
+        if (IsWebcilImage(baseAddress))
+        {
+            // Webcil (flat) images -- e.g. ReadyToRun corelib on WASM -- are a stripped/rewrapped PE
+            // that System.Reflection.Metadata's PEReader cannot parse. Locate the metadata via the
+            // webcil header instead.
+            result = GetWebcilReadOnlyMetadataAddress(handle, baseAddress);
+        }
+        else
+        {
+            bool isMapped = (imageFlags & 0x1) != 0; // FLAG_MAPPED = 0x1
+            PEStreamOptions isLoaded = isMapped ? PEStreamOptions.IsLoadedImage : PEStreamOptions.Default;
 
-        int metadataStartOffset = peReader.PEHeaders.MetadataStartOffset;
-        int metadataSize = peReader.PEHeaders.MetadataSize;
+            TargetStream stream = new(target, baseAddress, size);
+            using PEReader peReader = new PEReader(stream, isLoaded);
 
-        TargetSpan result = new TargetSpan(baseAddress + (ulong)metadataStartOffset, (ulong)metadataSize);
+            int metadataStartOffset = peReader.PEHeaders.MetadataStartOffset;
+            int metadataSize = peReader.PEHeaders.MetadataSize;
+
+            result = new TargetSpan(baseAddress + (ulong)metadataStartOffset, (ulong)metadataSize);
+        }
+
         _readOnlyMetadataAddress[handle] = result;
         return result;
+    }
+
+    // 'W','b','I','L' little-endian -- the magic at the start of a webcil header (see docs/design/mono/webcil.md).
+    private const uint WebcilMagic = 0x4C49_6257;
+
+    private bool IsWebcilImage(TargetPointer baseAddress)
+        => target.ReadLittleEndian<uint>(baseAddress) == WebcilMagic;
+
+    private TargetSpan GetWebcilReadOnlyMetadataAddress(ModuleHandle handle, TargetPointer webcilBase)
+    {
+        // The webcil header points to the PE CLI (COR20) header; the metadata directory (RVA + size
+        // at offset 8 in the COR20 header) locates the ECMA-335 metadata blob. RVAs are resolved
+        // through the loader, which understands the webcil section layout.
+        Data.WebcilHeader header = target.ProcessedData.GetOrAdd<Data.WebcilHeader>(webcilBase);
+        Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        ILoader loader = target.Contracts.Loader;
+
+        TargetPointer cliHeader = loader.GetILAddr(module.PEAssembly, checked((int)header.PeCliHeaderRva));
+
+        // IMAGE_COR20_HEADER: cb (4) + MajorRuntimeVersion (2) + MinorRuntimeVersion (2) then the
+        // MetaData IMAGE_DATA_DIRECTORY (RVA @ 8, Size @ 12).
+        Data.ImageDataDirectory metadataDirectory = target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(cliHeader + 8);
+
+        TargetPointer metadataAddress = loader.GetILAddr(module.PEAssembly, checked((int)metadataDirectory.VirtualAddress));
+        return new TargetSpan(metadataAddress, metadataDirectory.Size);
     }
 
     public MetadataReader? GetMetadata(ModuleHandle handle)

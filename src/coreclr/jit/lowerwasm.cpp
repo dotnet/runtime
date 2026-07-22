@@ -834,6 +834,13 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic      intrinsic = node->GetHWIntrinsicId();
     HWIntrinsicCategory category  = HWIntrinsicInfo::lookupCategory(intrinsic);
+    bool                hasImmOp  = HWIntrinsicInfo::HasImmediateOperand(intrinsic);
+    GenTree*            addr      = nullptr;
+
+    if (node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr))
+    {
+        SetMultiplyUsed(addr DEBUGARG("LowerHWIntrinsic memory address (null check)"));
+    }
 
     switch (intrinsic)
     {
@@ -907,9 +914,20 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
         case NI_PackedSimd_ExtractScalar:
         case NI_PackedSimd_ReplaceScalar:
+        case NI_PackedSimd_LoadScalarAndInsert:
+        case NI_PackedSimd_StoreSelectedScalar:
         {
-            assert(category == HW_Category_IMM);
+            assert(hasImmOp);
             return LowerHWIntrinsicWithImm(node);
+        }
+
+        case NI_PackedSimd_LoadScalarAndSplatVector128:
+        case NI_PackedSimd_LoadScalarVector128:
+        case NI_PackedSimd_LoadWideningVector128:
+        {
+            // These intrinsics don't require an immediate operand
+            assert(!hasImmOp);
+            break;
         }
 
         case NI_PackedSimd_Swizzle:
@@ -1306,21 +1324,13 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(node->GetHWIntrinsicId());
-    switch (category)
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+    if (HWIntrinsicInfo::HasImmediateOperand(intrinsicId))
     {
-        case HWIntrinsicCategory::HW_Category_IMM:
+        GenTree* immOp = node->GetImmOp();
+        if (immOp->IsCnsIntOrI())
         {
-            GenTree* immOp = node->GetImmOp();
-            if (immOp->IsCnsIntOrI())
-            {
-                MakeSrcContained(node, immOp);
-            }
-            break;
-        }
-        default:
-        {
-            break;
+            MakeSrcContained(node, immOp);
         }
     }
 }

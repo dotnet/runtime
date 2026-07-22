@@ -270,26 +270,16 @@ namespace System
         {
             return OpenMethodResolver.ResolveMethod(_extraFunctionPointerOrData, thisObject);
         }
-
-        [DebuggerGuidedStepThrough]
+                
+        [DebuggerGuidedStepThroughAttribute]
         protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
-            if (IsDynamicDelegate)
-            {
-                // DynamicDelegate case
-                object? result = ((Func<object?[]?, object?>)_helperObject)(args);
-                DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-                return result;
-            }
-            else
-            {
-                DynamicInvokeInfo dynamicInvokeInfo = ReflectionAugments.GetDelegateDynamicInvokeInfo(GetType());
+            DynamicInvokeInfo dynamicInvokeInfo = ReflectionAugments.GetDelegateDynamicInvokeInfo(GetType());
 
-                object? result = dynamicInvokeInfo.Invoke(_target, _methodPtr,
-                    args, binderBundle: null, wrapInTargetInvocationException: true);
-                DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-                return result;
-            }
+            object? result = dynamicInvokeInfo.Invoke(_target, _methodPtr,
+                args, binderBundle: null, wrapInTargetInvocationException: true);
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
         }
 
         protected virtual MethodInfo GetMethodImpl()

@@ -74,7 +74,7 @@ internal readonly struct Object_1 : IObject
         if (mt == TargetPointer.Null)
             throw new ArgumentException("Address represents a set-free object");
         Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
-        TypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
+        ITypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
         uint rank;
         if (!typeSystemContract.IsArray(typeHandle, out rank))
             throw new ArgumentException("Address does not represent an array object", nameof(address));
@@ -214,7 +214,7 @@ internal readonly struct Object_1 : IObject
         if (mt == TargetPointer.Null)
             throw new ArgumentException("Address represents a free object");
         Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
-        TypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
+        ITypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
 
         ulong size = typeSystemContract.GetBaseSize(typeHandle);
         uint componentSize = typeSystemContract.GetComponentSize(typeHandle);
