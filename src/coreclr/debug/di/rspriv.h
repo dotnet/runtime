@@ -11395,13 +11395,11 @@ inline void ValidateOrThrow(const void * p)
 // aligns argBase on platforms that require it else it's a no-op
 inline void AlignAddressForType(CordbType* pArgType, CORDB_ADDRESS& argBase)
 {
-#ifdef FEATURE_64BIT_ALIGNMENT
     BOOL align = FALSE;
     IfFailThrow(pArgType->RequiresAlign8(&align));
 
     if (align)
         argBase = ALIGN_ADDRESS(argBase, 8);
-#endif
 }
 
 //-----------------------------------------------------------------------------
