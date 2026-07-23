@@ -1080,28 +1080,31 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     const weight_t    b1FallthroughLikelihood = retainedEdge->getLikelihood();
     BasicBlock* const b1RemovedTarget         = removedEdge->getDestinationBlock();
 
+    // Need to repair b2's profile as b1->b2 flow will be unconditional.
+    // "fgCompactBlock" will end up using b2's new profile weight
+    // Don't decrement the removed-edge-target's weight because the same control flow still
+    // reaches that block.
+    if (m_b2->hasProfileWeight())
+    {
+        m_b2->increaseBBProfileWeight(removedEdge->getLikelyWeight());
+    }
+
     m_compiler->fgRemoveRefPred(removedEdge);
     m_b1->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
-
-    // Repair profile.
-    m_compiler->fgRepairProfileCondToUncond(m_b1, retainedEdge, removedEdge);
 
     // The combined b1+b2 block reuses b2's edges, and their likelihoods must be prorated
     // based on likelihood of b1->b2 (fallthrough) control flow.
     // The edge to shared target (b1RemovedTarget) must also take into account b1->shared
     // edge likelihood
-    if (m_b1->hasProfileWeight())
+    FlowEdge* const b2Edges[] = {m_b2->GetTrueEdge(), m_b2->GetFalseEdge()};
+    for (FlowEdge* const b2Edge : b2Edges)
     {
-        FlowEdge* const b2Edges[] = {m_b2->GetTrueEdge(), m_b2->GetFalseEdge()};
-        for (FlowEdge* const b2Edge : b2Edges)
+        weight_t combined = b1FallthroughLikelihood * b2Edge->getLikelihood();
+        if (b2Edge->getDestinationBlock() == b1RemovedTarget)
         {
-            weight_t combined = b1FallthroughLikelihood * b2Edge->getLikelihood();
-            if (b2Edge->getDestinationBlock() == b1RemovedTarget)
-            {
-                combined += b1RemovedLikelihood;
-            }
-            b2Edge->setLikelihood(min(1.0, combined));
+            combined += b1RemovedLikelihood;
         }
+        b2Edge->setLikelihood(min(1.0, combined));
     }
 
     // Fixup flags.
