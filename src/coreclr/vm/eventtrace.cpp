@@ -3546,7 +3546,9 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
         // Only ReJIT versions are reported with a non-zero IL code version id; EnC (and the
         // default version) report 0. This retains compatibility with how EnC updates were
         // reported before EnC edits were modeled as IL code versions - historically they were
-        // not given unique IL code version IDs in these events.
+        // not given unique IL code version IDs in these events. We aren't aware of
+        // any specific scenario that relies on the ENC ids reporting zero or a design
+        // goal that it needs to remain this way.
         ReJITID ilCodeVersionId = 0;
 #ifdef FEATURE_CODE_VERSIONING
         if (pConfig->GetCodeVersion().GetILCodeVersion().GetSource() == CodeVersionSource::kReJIT)
