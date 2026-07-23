@@ -383,10 +383,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(result.GeneratedSource);
             Assert.Empty(result.Diagnostics);
 
-            // Ensure the generated code can be compiled.
-            // If there is any compilation error, exception will be thrown with the list of the errors in the exception message.
-            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
-            Assert.NotNull(emittedAssemblyImage);
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
@@ -417,10 +414,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(result.GeneratedSource);
             Assert.Empty(result.Diagnostics);
 
-            // Ensure the generated code can be compiled. The collection type is only reachable through a
-            // read-only property, so its BindCore helper must still be generated for the constructor parameter.
-            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
-            Assert.NotNull(emittedAssemblyImage);
+            // The collection type is only reachable through a read-only property, so its BindCore
+            // helper must still be generated for the constructor parameter.
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
@@ -452,8 +448,51 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(result.GeneratedSource);
             Assert.Empty(result.Diagnostics);
 
-            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
-            Assert.NotNull(emittedAssemblyImage);
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task TypeReachableOnlyThroughNonBindablePropertyIsNotEmitted()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        ExampleOptions options = new();
+                        config.Bind(options);
+                    }
+                }
+
+                public class ExampleOptions
+                {
+                    public List<string> ExampleCollection { get; set; } = new();
+
+                    // Non-bindable internal property. UnreachableChild is only reachable through it,
+                    // so the generator must not emit any binding code that references it.
+                    internal List<UnreachableChild> UsesCollection => new();
+                }
+
+                public class UnreachableChild
+                {
+                    public string Value { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            // The type is reachable only through a non-bindable property, so the generator must
+            // not register or emit any binding code that references it.
+            Assert.DoesNotContain("UnreachableChild", result.GeneratedSource.Value.SourceText.ToString());
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
         [Fact]
