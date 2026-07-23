@@ -8,22 +8,20 @@ using System.Linq;
 
 namespace Microsoft.Extensions.Configuration
 {
-    // A snapshot of every configuration key whose effective value is a reference, mapping the key to its immediate
-    // target. Built once per provider generation by scanning the opted-in providers (see Build). Only opted-in
-    // providers (ConfigurationReferences:Enabled = true) contribute references, and a reference is recorded only when no
-    // higher-precedence provider overrides its key, so every entry is the effective reference for that key. Entries are
-    // kept unflattened - each maps to its immediate target - so resolution follows the chain hop by hop and can apply a
+    // A snapshot of every configuration path that is a reference, mapping the path to its immediate target. Built once
+    // per provider generation by scanning the providers (see Build). A reference is declared by a reserved "$ref" child
+    // key - "<path>:$ref = <target>" - so a plain value is never mistaken for a reference and no escaping is needed; the
+    // highest-precedence provider that declares a path's $ref wins, and an empty target drops it. Entries are kept
+    // unflattened - each maps to its immediate target - so resolution follows the chain hop by hop and can apply a
     // higher provider's override at every hop; a chain that never terminates (a cycle, or a self-reference that grows
     // without bound) is caught by the resolution walk itself (see ReferenceEngine.CycleGuard).
     internal sealed class ReferenceIndex
     {
         public static readonly ReferenceIndex Empty = new ReferenceIndex(new Dictionary<string, (string Target, int Level)>(StringComparer.OrdinalIgnoreCase));
 
-        // The per-provider opt-in key. A provider whose value for this key parses as true has its ref(...) values
-        // interpreted as references.
-        internal const string EnabledKey = "ConfigurationReferences:Enabled";
-
-        private const string ReferenceMarkerPrefix = "ref(";
+        // The reserved final segment that declares a reference: "<path>:$ref = <target>" makes <path> a reference to
+        // <target>. Because the marker is a key, not a value, values are always literal and never need escaping.
+        internal const string RefSegment = "$ref";
 
         // Each reference key maps to its target and the level (provider index) of the provider that declared it. The
         // level lets resolution honour a higher-precedence provider that overrides a mirrored value. Entries are kept
@@ -88,14 +86,12 @@ namespace Microsoft.Extensions.Configuration
             return target is not null;
         }
 
-        // Builds the index for a provider generation. First it records every key whose effective value is a reference,
-        // mapped to that reference's target and the level of the provider that declared it: only opted-in providers contribute (ConfigurationProvider inheritors are read from their
-        // loaded dictionary, others are walked via GetChildKeys); providers are visited from highest to
-        // lowest precedence and the first occurrence of a key wins, so a key overridden by a higher opted-in provider is
-        // never recorded from a lower one; and a reference is recorded only when no higher provider holds its key at all
-        // (a higher holder can only be non-opted - an opted one would have claimed the key first - and its literal
-        // shadows the reference). Entries are kept unflattened so resolution can apply a higher provider's override at
-        // each hop of a chain; a chain that never terminates is caught later, by the resolution walk (see ReferenceEngine).
+        // Builds the index for a provider generation. Scans every provider (a ChainedConfigurationProvider resolves its
+        // own references and hides its inner providers, so it is skipped) from highest to lowest precedence for "$ref"
+        // keys. Each "<path>:$ref = <target>" records <path> -> (<target>, declaring level); the highest provider that
+        // declares a path's $ref wins (a lower provider's $ref for the same path is ignored) and an empty target drops
+        // the reference. Entries are kept unflattened so resolution can apply a higher provider's override at each hop
+        // of a chain; a chain that never terminates is caught later, by the resolution walk (see ReferenceEngine).
         public static ReferenceIndex Build(IList<IConfigurationProvider> providers)
         {
             Dictionary<string, (string Target, int Level)>? targets = null;
@@ -104,75 +100,29 @@ namespace Microsoft.Extensions.Configuration
             for (int i = providers.Count - 1; i >= 0; i--)
             {
                 IConfigurationProvider provider = providers[i];
-                if (provider is ChainedConfigurationProvider || !IsOptedIn(provider))
+                if (provider is ChainedConfigurationProvider)
                 {
                     // A ChainedConfigurationProvider wraps a whole IConfiguration that already resolves its own
-                    // references, and its merged view hides the inner providers, so we cannot tell which of them opted
-                    // in. Skip scanning it for references; its values are still read through the normal provider path
-                    // (and can still shadow a lower reference), it just contributes none of its own to this index.
+                    // references, and its merged view hides the inner providers. Its values are still read through the
+                    // normal provider path, but it contributes none of its own references to this index.
                     continue;
                 }
 
                 foreach (KeyValuePair<string, string?> entry in ScanProvider(provider))
                 {
-                    // The highest opted-in provider holding the key decides it, so claim it here and ignore any lower
-                    // opted-in value. Record a reference only when the value is ref(...) and no higher provider holds
-                    // the key: a higher holder can only be non-opted (an opted one would have claimed the key first)
-                    // and its literal shadows the reference. A shadowed key stays shadowed for every lower provider
-                    // too, so there is nothing to reconsider below.
-                    if ((claimed ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase)).Add(entry.Key)
-                        && TryParseReference(entry.Value, out string? target)
-                        && !HasHigherHolder(providers, entry.Key, i))
+                    // The highest provider that declares a path's $ref decides it; claim the path here so a lower
+                    // provider's $ref for the same path is ignored. An empty target claims the path but records no
+                    // reference, so a higher provider can drop a lower reference by setting its $ref to empty.
+                    if (IsRefKey(entry.Key, out string? referencePath)
+                        && (claimed ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase)).Add(referencePath)
+                        && !string.IsNullOrEmpty(entry.Value))
                     {
-                        (targets ??= new Dictionary<string, (string Target, int Level)>(StringComparer.OrdinalIgnoreCase))[entry.Key] = (target, i);
+                        (targets ??= new Dictionary<string, (string Target, int Level)>(StringComparer.OrdinalIgnoreCase))[referencePath] = (entry.Value!, i);
                     }
                 }
             }
 
-            if (targets is null)
-            {
-                return Empty;
-            }
-
-            return new ReferenceIndex(targets);
-        }
-
-        // Whether a provider opted into references: its ConfigurationReferences:Enabled value parses as true. A provider
-        // disposed concurrently (or after the ConfigurationManager itself was disposed) is treated as not opted in,
-        // matching the plain read path that skips a provider throwing ObjectDisposedException.
-        private static bool IsOptedIn(IConfigurationProvider provider)
-        {
-            try
-            {
-                return provider.TryGet(EnabledKey, out string? value) && bool.TryParse(value, out bool enabled) && enabled;
-            }
-            catch (ObjectDisposedException)
-            {
-                return false;
-            }
-        }
-
-        // Whether any provider above <paramref name="level"/> holds <paramref name="key"/>. During Build such a holder
-        // is necessarily non-opted (an opted one would have claimed the key first), so its literal shadows a reference
-        // recorded at <paramref name="level"/>.
-        private static bool HasHigherHolder(IList<IConfigurationProvider> providers, string key, int level)
-        {
-            for (int i = providers.Count - 1; i > level; i--)
-            {
-                try
-                {
-                    if (providers[i].TryGet(key, out _))
-                    {
-                        return true;
-                    }
-                }
-                catch (ObjectDisposedException)
-                {
-                    // A provider disposed concurrently holds nothing; skip it, as the plain read path does.
-                }
-            }
-
-            return false;
+            return targets is null ? Empty : new ReferenceIndex(targets);
         }
 
         // The key/value pairs of a provider for the reference scan: a ConfigurationProvider exposes its loaded
@@ -219,25 +169,25 @@ namespace Microsoft.Extensions.Configuration
             return entries;
         }
 
-        // Parses ref(target) into its single target key. Returns false (a literal) for a null value, a non-marker, or an
-        // empty ref(). The target is the trimmed body between the parentheses.
-        private static bool TryParseReference([NotNullWhen(true)] string? value, [NotNullWhen(true)] out string? target)
+        // Whether <paramref name="key"/> declares a reference - its final segment is the reserved "$ref" - and, if so,
+        // the <paramref name="referencePath"/> it governs (the key without the trailing ":$ref"). A bare "$ref" at the
+        // root is not a reference, as there is no path for it to govern.
+        internal static bool IsRefKey(string key, [NotNullWhen(true)] out string? referencePath)
         {
-            if (value is not null
-                && value.Length > ReferenceMarkerPrefix.Length
-                && value[value.Length - 1] == ')'
-                && value.StartsWith(ReferenceMarkerPrefix, StringComparison.Ordinal))
+            int suffixLength = ConfigurationPath.KeyDelimiter.Length + RefSegment.Length;
+            if (key.Length > suffixLength
+                && key[key.Length - suffixLength] == ConfigurationPath.KeyDelimiter[0]
+                && string.Compare(key, key.Length - RefSegment.Length, RefSegment, 0, RefSegment.Length, StringComparison.OrdinalIgnoreCase) == 0)
             {
-                ReadOnlySpan<char> body = value.AsSpan(ReferenceMarkerPrefix.Length, value.Length - ReferenceMarkerPrefix.Length - 1).Trim();
-                if (body.Length != 0)
-                {
-                    target = body.ToString();
-                    return true;
-                }
+                referencePath = key.Substring(0, key.Length - suffixLength);
+                return true;
             }
 
-            target = null;
+            referencePath = null;
             return false;
         }
+
+        // Whether a single key segment is the reserved "$ref" marker, so enumeration can hide it.
+        internal static bool IsRefSegment(string segment) => string.Equals(segment, RefSegment, StringComparison.OrdinalIgnoreCase);
     }
 }

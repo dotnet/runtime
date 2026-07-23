@@ -40,23 +40,16 @@ namespace Microsoft.Extensions.Configuration.Test
 
         [Theory]
         [MemberData(nameof(RootKinds))]
-        public void NonOptedProvider_ReferenceIsLiteral(RootKind kind)
+        public void RefShapedValue_IsAlwaysLiteral(RootKind kind)
         {
-            // Without ConfigurationReferences:Enabled the provider does not participate: a ref(...) value is verbatim.
+            // References are declared with a $ref key, never a value, so a value that merely looks like ref(...) is a
+            // plain literal and is never resolved.
             IConfigurationRoot root = BuildRoot(kind, Plain(
                 ("Shared:Credential", "secret"),
                 ("Client:Credential", "ref(Shared:Credential)")));
 
             Assert.Equal("ref(Shared:Credential)", root["Client:Credential"]);
             Assert.Null(root["Client:Credential:Anything"]);
-        }
-
-        [Fact]
-        public void EnableKey_IsVisible()
-        {
-            IConfigurationRoot root = BuildRoot(RootKind.Builder, Enabled(("A", "b")));
-
-            Assert.Equal("true", root["ConfigurationReferences:Enabled"]);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -71,14 +64,15 @@ namespace Microsoft.Extensions.Configuration.Test
                 IConfigurationRoot root = new ConfigurationBuilder()
                     .AddInMemoryCollection(new Dictionary<string, string?>
                     {
-                        ["ConfigurationReferences:Enabled"] = "true",
                         ["Shared:Credential"] = "secret",
-                        ["Client:Credential"] = "ref(Shared:Credential)",
+                        ["Client:Credential:$ref"] = "Shared:Credential",
                     })
                     .Build();
 
-                // With references globally disabled, even an opted-in provider's marker is returned verbatim.
-                Assert.Equal("ref(Shared:Credential)", root["Client:Credential"]);
+                // With references globally disabled, the $ref marker is inert data: the reference is not resolved
+                // (Client:Credential has no value of its own) and the marker key reads back verbatim.
+                Assert.Null(root["Client:Credential"]);
+                Assert.Equal("Shared:Credential", root["Client:Credential:$ref"]);
             }, options);
         }
 
@@ -100,6 +94,21 @@ namespace Microsoft.Extensions.Configuration.Test
             IConfigurationRoot root = BuildRoot(kind, Enabled(("Client:Credential", "ref(Missing)")));
 
             Assert.Null(root["Client:Credential"]);
+        }
+
+        [Fact]
+        public void RefMarker_IsHiddenFromEnumeration()
+        {
+            // The $ref marker declares the reference; it must not surface as a child of the reference section (else it
+            // would leak into GetChildren, AsEnumerable and the configuration binder). A local override alongside it is
+            // still surfaced.
+            IConfigurationRoot root = BuildLayered(
+                Enabled(("Client:Credential", "ref(Shared:Credential)"), ("Shared:Credential:Id", "id")),
+                Plain(("Client:Credential:Extra", "local")));
+
+            string[] children = root.GetSection("Client:Credential").GetChildren().Select(c => c.Key).OrderBy(k => k).ToArray();
+            Assert.Equal(new[] { "Extra", "Id" }, children);
+            Assert.DoesNotContain(children, c => string.Equals(c, "$ref", System.StringComparison.OrdinalIgnoreCase));
         }
 
         [Theory]
@@ -390,14 +399,11 @@ namespace Microsoft.Extensions.Configuration.Test
         public void DeepChain_ResolvesWithoutDepthLimit()
         {
             // No depth cap: a legitimate chain far longer than any old bound must still resolve.
-            var data = new Dictionary<string, string?>(System.StringComparer.OrdinalIgnoreCase)
-            {
-                [ConfigurationReferencesEnabledKey] = "true",
-            };
+            var data = new Dictionary<string, string?>(System.StringComparer.OrdinalIgnoreCase);
             const int Hops = 500;
             for (int i = 0; i < Hops; i++)
             {
-                data[$"R{i}"] = $"ref(R{i + 1})";
+                data[$"R{i}:$ref"] = $"R{i + 1}";
             }
             data[$"R{Hops}"] = "final";
 
@@ -413,14 +419,11 @@ namespace Microsoft.Extensions.Configuration.Test
         {
             // Enumeration follows the mirror chain iteratively, so a deep (finite) chain of section references must not
             // overflow the stack: R0=ref(R1), ..., R{N-1}=ref(R{N}); R{N} has a child.
-            var data = new Dictionary<string, string?>(System.StringComparer.OrdinalIgnoreCase)
-            {
-                [ConfigurationReferencesEnabledKey] = "true",
-            };
+            var data = new Dictionary<string, string?>(System.StringComparer.OrdinalIgnoreCase);
             const int Hops = 5000;
             for (int i = 0; i < Hops; i++)
             {
-                data[$"R{i}"] = $"ref(R{i + 1})";
+                data[$"R{i}:$ref"] = $"R{i + 1}";
             }
             data[$"R{Hops}:Leaf"] = "deep";
 
@@ -533,17 +536,18 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void HigherNonOptedLiteral_ShadowsLowerReferenceAndSubtree()
+        public void HigherScalarOverride_OverridesValueButSubtreeStillMirrors()
         {
-            // A lower opted-in provider makes A:B a reference to section E; a higher non-opted provider overrides A:B
-            // with a literal. The literal wins ("later set wins") and, being a scalar, suppresses the mirrored subtree.
+            // A lower provider makes A:B a reference to section E; a higher provider overrides A:B's own scalar value.
+            // The override wins for A:B's value, but references merge rather than suppress, so the mirrored subtree
+            // (A:B:X, A:B:Y from E) is still visible.
             IConfigurationRoot root = BuildLayered(
                 Enabled(("A:B", "ref(E)"), ("E:X", "5"), ("E:Y", "6")),
                 Plain(("A:B", "literal")));
 
             Assert.Equal("literal", root["A:B"]);
-            Assert.Null(root["A:B:X"]);
-            Assert.Empty(root.GetSection("A:B").GetChildren());
+            Assert.Equal("5", root["A:B:X"]);
+            Assert.Equal("6", root["A:B:Y"]);
         }
 
         [Fact]
@@ -649,9 +653,8 @@ namespace Microsoft.Extensions.Configuration.Test
             {
                 InitialData = new[]
                 {
-                    new KeyValuePair<string, string?>(ConfigurationReferencesEnabledKey, "true"),
                     new KeyValuePair<string, string?>("Shared:Credential", "old"),
-                    new KeyValuePair<string, string?>("Client:Credential", "ref(Shared:Credential)"),
+                    new KeyValuePair<string, string?>("Client:Credential:$ref", "Shared:Credential"),
                 }
             };
             var builder = new ConfigurationBuilder();
@@ -672,27 +675,25 @@ namespace Microsoft.Extensions.Configuration.Test
         // === ConfigurationManager ===
 
         [Fact]
-        public void Manager_IndexerSetsLiteral_ResolvedOnRead()
+        public void Manager_IndexerSetsReference_ResolvedOnRead()
         {
             using var manager = new ConfigurationManager();
 
-            manager["ConfigurationReferences:Enabled"] = "true";
             manager["Shared:Credential"] = "secret";
-            manager["Client:Credential"] = "ref(Shared:Credential)";
+            manager["Client:Credential:$ref"] = "Shared:Credential";
 
             Assert.Equal("secret", manager["Client:Credential"]);
         }
 
         [Fact]
-        public void Manager_IndexerEnablesReferencesAfterRead_TakesEffect()
+        public void Manager_IndexerAddsReferenceAfterRead_TakesEffect()
         {
             using var manager = new ConfigurationManager();
             manager["Plain"] = "x";
-            _ = manager["Plain"]; // prime the cache while references are disabled (caches "no provider opted in")
+            _ = manager["Plain"]; // prime the index while there are no references (caches an empty index)
 
-            manager["ConfigurationReferences:Enabled"] = "true";
             manager["Shared"] = "secret";
-            manager["Client"] = "ref(Shared)";
+            manager["Client:$ref"] = "Shared";
 
             Assert.Equal("secret", manager["Client"]);
         }
@@ -706,7 +707,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 ("C", "vC")));
             Assert.Equal("vB", root["A"]); // prime the index (A -> B)
 
-            root["A"] = "ref(C)";
+            root["A:$ref"] = "C";
 
             Assert.Equal("vC", root["A"]);
         }
@@ -768,7 +769,7 @@ namespace Microsoft.Extensions.Configuration.Test
             // ObjectDisposedException and returns false. Building the reference index scans providers too, so it must
             // tolerate the same rather than letting the exception escape that read.
             var manager = new ConfigurationManager();
-            ((IConfigurationBuilder)manager).Add(new ThrowOnDisposeSource(Dict(optIn: true, new (string, string?)[]
+            ((IConfigurationBuilder)manager).Add(new ThrowOnDisposeSource(Dict(references: true, new (string, string?)[]
             {
                 ("Shared:Credential", "secret"),
                 ("Client:Credential", "ref(Shared:Credential)"),
@@ -785,11 +786,10 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void NonScannableOptedProvider_ReferenceResolves()
+        public void NonScannableProvider_ReferenceResolves()
         {
             IConfigurationRoot root = BuildLayered(
                 Unscannable(
-                    ("ConfigurationReferences:Enabled", "true"),
                     ("Shared:Credential", "secret"),
                     ("Client:Credential", "ref(Shared:Credential)")));
 
@@ -814,15 +814,12 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void Reference_InChainedConfiguration_IsNotResolvedByOuterEngine()
+        public void RefShapedValueInChainedConfig_StaysLiteral()
         {
-            // The chained config opts in (its second provider sets Enabled), but the ref(...) value lives in a
-            // different, non-opted inner provider, so the inner config keeps it a literal. The outer engine sees only
-            // the chained provider's merged view and cannot tell which inner provider each key came from, so it skips
-            // the chained provider rather than misreading that literal as a reference.
+            // References are declared with a $ref key, so a ref(...)-shaped value is a plain literal - inside a chained
+            // config and through the outer engine alike.
             IConfigurationRoot inner = new ConfigurationBuilder()
                 .Add(Plain(("Literal", "ref(Target)")))
-                .Add(Enabled())
                 .Build();
 
             Assert.Equal("ref(Target)", inner["Literal"]);
@@ -858,8 +855,6 @@ namespace Microsoft.Extensions.Configuration.Test
 
         // === Helpers ===
 
-        internal const string ConfigurationReferencesEnabledKey = "ConfigurationReferences:Enabled";
-
         private static IConfigurationRoot BuildRoot(RootKind kind, IConfigurationSource source) => BuildRoot(kind, new[] { source });
 
         private static IConfigurationRoot BuildRoot(RootKind kind, IConfigurationSource[] sources)
@@ -893,26 +888,43 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         private static IConfigurationSource Enabled(params (string Key, string? Value)[] entries)
-            => new MemoryConfigurationSource { InitialData = Dict(optIn: true, entries) };
+            => new MemoryConfigurationSource { InitialData = Dict(references: true, entries) };
 
         private static IConfigurationSource Plain(params (string Key, string? Value)[] entries)
-            => new MemoryConfigurationSource { InitialData = Dict(optIn: false, entries) };
+            => new MemoryConfigurationSource { InitialData = Dict(references: false, entries) };
 
         private static IConfigurationSource Unscannable(params (string Key, string? Value)[] entries)
-            => new UnscannableSource(Dict(optIn: false, entries));
+            => new UnscannableSource(Dict(references: true, entries));
 
-        private static IDictionary<string, string?> Dict(bool optIn, (string Key, string? Value)[] entries)
+        // Tests author references inline as ("Path", "ref(Target)") for readability. The model declares a reference with
+        // a reserved "$ref" child key, so a ref(...) authoring entry becomes "Path:$ref = Target"; when references is
+        // false the entry is kept verbatim (a ref(...) value is then just a literal, as it always is in this model).
+        private static IDictionary<string, string?> Dict(bool references, (string Key, string? Value)[] entries)
         {
             var dictionary = new Dictionary<string, string?>(System.StringComparer.OrdinalIgnoreCase);
-            if (optIn)
-            {
-                dictionary[ConfigurationReferencesEnabledKey] = "true";
-            }
             foreach ((string key, string? value) in entries)
             {
-                dictionary[key] = value;
+                if (references && TryUnwrapRef(value, out string? target))
+                {
+                    dictionary[key + ConfigurationPath.KeyDelimiter + "$ref"] = target;
+                }
+                else
+                {
+                    dictionary[key] = value;
+                }
             }
             return dictionary;
+        }
+
+        private static bool TryUnwrapRef(string? value, out string? target)
+        {
+            if (value is not null && value.StartsWith("ref(", System.StringComparison.Ordinal) && value.EndsWith(")", System.StringComparison.Ordinal))
+            {
+                target = value.Substring(4, value.Length - 5).Trim();
+                return target.Length != 0;
+            }
+            target = null;
+            return false;
         }
 
         // A provider that implements IConfigurationProvider directly (not via ConfigurationProvider), so the reference

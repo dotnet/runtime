@@ -27,11 +27,12 @@ namespace Microsoft.Extensions.Configuration
             ReferenceEngine? engine = reference?.ReferenceEngine ?? (root as ConfigurationRoot)?.ReferenceEngine;
 
             IEnumerable<string> childKeys;
-            if (ReferenceEngine.Disabled || engine is null)
+            if (ReferenceEngine.Disabled || engine is null || engine.IndexIsEmpty)
             {
-                // No engine (references disabled, or a third-party root): enumerate children the plain way, with nothing
-                // to resolve or merge.
-                IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
+                // No engine (references disabled, or a third-party root), or this generation declares no references:
+                // enumerate children the plain way, with nothing to resolve, merge or hide, and allocate exactly like a
+                // reference-free configuration. Use the engine's provider list when present so it matches the generation.
+                IEnumerable<IConfigurationProvider> providers = engine?.Providers ?? reference?.Providers ?? root.Providers;
                 childKeys = providers
                     .Aggregate(Enumerable.Empty<string>(), (seed, source) => source.GetChildKeys(seed, path))
                     .Distinct(StringComparer.OrdinalIgnoreCase);
@@ -75,7 +76,7 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
-            // Plain path: references globally disabled, no opted-in provider, or a third-party root implementation.
+            // Plain path: references globally disabled, or a third-party root implementation.
             // Commonly Providers is already IList<IConfigurationProvider> in ConfigurationRoot.
             IList<IConfigurationProvider> providers = root.Providers is IList<IConfigurationProvider> list
                 ? list

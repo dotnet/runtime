@@ -16,9 +16,9 @@ namespace Microsoft.Extensions.Configuration
     // reference information.
     internal sealed class ReferenceEngine
     {
-        // A process-wide opt-out for apps that do not want configuration references at all, independent of the
-        // per-provider opt-in. The value is a feature switch so the resolution paths can be trimmed away when set. Read
-        // as the outermost gate at every call site, so a set switch lets the trimmer drop the whole reference path.
+        // A process-wide opt-out for apps that do not want configuration references at all. The value is a feature
+        // switch so the resolution paths can be trimmed away when set. Read as the outermost gate at every call site, so
+        // a set switch lets the trimmer drop the whole reference path.
         [FeatureSwitchDefinition("Microsoft.Extensions.Configuration.DisableConfigurationReferences")]
         internal static bool Disabled { get; } =
             AppContext.TryGetSwitch("Microsoft.Extensions.Configuration.DisableConfigurationReferences", out bool disabled) && disabled;
@@ -37,8 +37,7 @@ namespace Microsoft.Extensions.Configuration
         public IList<IConfigurationProvider> Providers { get; }
 
         // The memoized reference index for this generation, built once from Providers. ReferenceIndex.Build returns the
-        // empty sentinel when no provider opted in (nothing is scanned) or the opted-in providers hold no references, so
-        // both "nothing to resolve" cases land on IsEmpty.
+        // empty sentinel when no provider declares any $ref, so that "nothing to resolve" case lands on IsEmpty.
         private ReferenceIndex Index()
         {
             ReferenceIndex? computed = _index;
@@ -53,6 +52,11 @@ namespace Microsoft.Extensions.Configuration
             return computed;
         }
 
+        // Whether this generation resolves nothing (no provider declares a $ref). Lets enumeration take the plain
+        // provider path - allocating like a reference-free configuration - instead of the merge path. The index is
+        // built (once, memoized) to answer this, which the first read of the generation does anyway.
+        internal bool IndexIsEmpty => Index().IsEmpty;
+
         // Reads <paramref name="key"/>, applying recursive-merge reference resolution. The key is followed hop by hop
         // through the reference chain; at each hop a provider strictly above the reference's declaring level may
         // override the mirrored value at that exact path, otherwise the mirror is followed. When no reference governs
@@ -60,9 +64,11 @@ namespace Microsoft.Extensions.Configuration
         public bool TryRead(string key, out string? value)
         {
             ReferenceIndex index = Index();
-            if (index.IsEmpty)
+            // A $ref key is structural metadata, not data: read it raw without resolving, so it neither redirects
+            // through its own parent's reference nor joins the walk. An empty index likewise means nothing resolves.
+            if (index.IsEmpty || ReferenceIndex.IsRefKey(key, out _))
             {
-                // This generation holds no references, so nothing resolves: read the key directly, skipping the walk.
+                // This generation holds no references (or the key is a marker), so read the key directly.
                 return TryGetAbove(key, minLevelExclusive: -1, out value);
             }
 
@@ -167,7 +173,8 @@ namespace Microsoft.Extensions.Configuration
 
             foreach (string key in keys)
             {
-                if (seen.Add(key))
+                // Hide the reserved $ref marker: it declares the reference, it is not a child of the section.
+                if (!ReferenceIndex.IsRefSegment(key) && seen.Add(key))
                 {
                     result.Add(key);
                 }

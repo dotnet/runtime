@@ -21,8 +21,8 @@ namespace Microsoft.Extensions.Configuration
         private ConfigurationReloadToken _changeToken = new ConfigurationReloadToken();
 
         // Per-root reference state, bound to the (fixed) provider list and swapped for a fresh instance on every reload
-        // (see RaiseChanged) so a reload can never surface stale reference information. When no provider opts into
-        // references (ConfigurationReferences:Enabled), reads take the plain provider path with no reference overhead.
+        // (see RaiseChanged) so a reload can never surface stale reference information. When no provider declares any
+        // $ref the index is empty, so reads take the plain provider path with no reference overhead.
         private volatile ReferenceEngine? _referenceEngine;
 
         /// <summary>
