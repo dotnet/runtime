@@ -656,11 +656,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };
 
-        return ReadWellKnownGlobalPointer(globalName);
-    }
-
-    private TargetPointer ReadWellKnownGlobalPointer(string globalName)
-    {
         if (!_target.TryReadGlobalPointer(globalName, out TargetPointer? ptrPtr) || ptrPtr is null)
             return TargetPointer.Null;
         if (!_target.TryReadPointer(ptrPtr.Value, out TargetPointer value))
