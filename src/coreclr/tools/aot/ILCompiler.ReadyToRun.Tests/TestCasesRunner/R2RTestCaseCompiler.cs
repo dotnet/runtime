@@ -72,7 +72,7 @@ internal sealed class R2RTestCaseCompiler
             syntaxTrees,
             references,
             new CSharpCompilationOptions(outputKind)
-                .WithOptimizationLevel(OptimizationLevel.Debug)
+                .WithOptimizationLevel(OptimizationLevel.Release)
                 .WithAllowUnsafe(true)
                 .WithNullableContextOptions(NullableContextOptions.Enable));
 

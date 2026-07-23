@@ -18,6 +18,13 @@ internal enum Crossgen2AssemblyOption
     CrossModuleOptimization,
 }
 
+internal enum CoreLibTargetArchitecture
+{
+    Host,
+    Arm32,
+    Wasm
+}
+
 internal enum Crossgen2InputKind
 {
     InputAssembly,

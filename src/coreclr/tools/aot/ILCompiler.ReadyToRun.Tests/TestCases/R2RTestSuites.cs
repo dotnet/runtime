@@ -232,11 +232,6 @@ public class R2RTestSuites
         }
     }
 
-    // Note: The arm tests compile for an arm32 target, but they are compiled with the host Corelib. If there are
-    // load-bearing dependencies in the arm32 corelib (that aren't present in the host corelib) that crossgen2 requires,
-    // these tests may fail. Wasm tests are similar, but since it doesn't require a special cross-build setup, they use
-    // a wasm corelib in CI. arm32 tests could be similarly set up, but it hasn't been done yet.
-
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.ArmOnHostOSSupported))]
     public void ArmThumbBitRelocationTargets()
     {

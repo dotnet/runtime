@@ -223,6 +223,7 @@ extends:
                 eq(variables['wasmDarcDependenciesChanged'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -872,24 +873,9 @@ extends:
           jobParameters:
             timeoutInMinutes: 120
             nameSuffix: CLR_Tools_Tests
-            # Depend on the browser-wasm libraries built below so the wasm crossgen2 R2R test
-            # (ILCompiler.ReadyToRun.Tests) can compile against real browser-wasm references.
-            dependsOn:
-            - build_browser_wasm_linux_Release_CLR_Tools_Tests_WasmLibs
             buildArgs: -s clr.aot+clr.iltools+clr.corelib+clr.nativecorelib+libs.sfx+clr.toolstests+tools.cdac+tools.cdactests -c $(_BuildConfig) -test
             enablePublishTestResults: true
             testResultsFormat: 'xunit'
-            preBuildSteps:
-              # Lay the browser-wasm libraries into artifacts/bin so TestPaths' WasmRuntimePackDir
-              # resolves and the wasm R2R test compiles against real browser-wasm references.
-              - template: /eng/pipelines/common/download-artifact-step.yml
-                parameters:
-                  artifactName: CLR_Tools_Tests_WasmLibs_BuildArtifacts_browser_wasm_Release
-                  artifactFileName: CLR_Tools_Tests_WasmLibs_BuildArtifacts_browser_wasm_Release$(archiveExtension)
-                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
-                  cleanUnpackFolder: false
-                  overwriteExistingFiles: true
-                  displayName: Browser-Wasm Libraries
             # We want to run AOT tests when illink changes because there's share code and tests from illink which are used by AOT
             condition: >-
               or(
@@ -898,35 +884,52 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdac.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
-      # Build the browser-wasm managed runtime pack that the CLR_Tools_Tests job uses
-      # as crossgen2 references for the wasm ReadyToRun test. Native runtime and host
-      # assets are omitted because the test only consumes managed assemblies.
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Release
+          buildConfig: checked
           platforms:
-          - browser_wasm
+          - linux_x64
           jobParameters:
-            nameSuffix: CLR_Tools_Tests_WasmLibs
-            buildArgs: -s clr.corelib+libs+libs.pretest -c Release /p:IncludeStaticLibrariesInPack=false
+            dependsOn:
+            - build_browser_wasm_linux_checked_CoreCLR_ReleaseLibraries
+            - build_linux_arm_checked_CoreCLR_ReleaseLibraries
+            - build_linux_x64_checked_CoreCLR_ReleaseLibraries
             timeoutInMinutes: 120
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-artifact-step.yml
+            nameSuffix: CLR_R2R_Tests
+            buildArgs: -s clr.r2rtests -lc Release -c $(_BuildConfig) -test /p:RequireTargetArchRuntimePack=true
+            enablePublishTestResults: true
+            testResultsFormat: 'xunit'
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
                 parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: CLR_Tools_Tests_WasmLibs_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-                  displayName: Browser-Wasm Libraries
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_browser_wasm_linux_Checked
+                  artifactFileName: CoreCLR_ReleaseLibraries_BuildArtifacts_browser_wasm_linux_Checked$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  cleanUnpackFolder: false
+                  overwriteExistingFiles: true
+                  displayName: Download browser-wasm artifacts
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_linux_arm_Checked
+                  artifactFileName: CoreCLR_ReleaseLibraries_BuildArtifacts_linux_arm_Checked$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  cleanUnpackFolder: false
+                  overwriteExistingFiles: true
+                  displayName: Download linux-arm artifacts
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_linux_x64_Checked
+                  artifactFileName: CoreCLR_ReleaseLibraries_BuildArtifacts_linux_x64_Checked$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  cleanUnpackFolder: false
+                  overwriteExistingFiles: true
+                  displayName: Download linux-x64 artifacts
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdac.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
+
       #
       # Build CrossDacs
       #

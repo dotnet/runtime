@@ -28,12 +28,6 @@ internal sealed class TestPaths
             ?? throw new InvalidOperationException($"Missing RuntimeHostConfigurationOption '{key}'. Was the project built with the correct properties?");
     }
 
-    private static string? GetOptionalConfig(string key)
-    {
-        string? value = AppContext.GetData(key) as string;
-        return string.IsNullOrEmpty(value) ? null : value;
-    }
-
     /// <summary>
     /// Path to the crossgen2 output directory (contains the self-contained crossgen2 executable and clrjit).
     /// e.g. artifacts/bin/coreclr/linux.x64.Checked/x64/crossgen2/
@@ -58,23 +52,23 @@ internal sealed class TestPaths
     public string RuntimePackNativeDir => GetRequiredConfig("R2RTest.RuntimePackNativeDir");
 
     /// <summary>
-    /// Path to the browser-wasm runtime pack managed assemblies directory, or <c>null</c> when the
-    /// browser-wasm runtime pack has not been built/downloaded (e.g. in the default linux-x64 tools
-    /// test job). When present, the wasm crossgen2 compilation references these real browser-wasm
+    /// Path to the browser-wasm runtime pack managed assemblies directory.
+    /// When present, the wasm crossgen2 compilation references these real browser-wasm
     /// framework assemblies instead of the host runtime pack.
-    /// e.g. artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/runtimes/browser-wasm/lib/net11.0/
     /// </summary>
-    public string? WasmRuntimePackDir => GetOptionalConfig("R2RTest.WasmRuntimePackDir");
+    public string WasmRuntimePackDir => GetRequiredConfig("R2RTest.WasmRuntimePackDir");
 
     /// <summary>
     /// Path to the browser-wasm runtime pack native directory (contains the wasm
-    /// System.Private.CoreLib.dll), or <c>null</c> when not available.
-    /// e.g. artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/runtimes/browser-wasm/native/
+    /// System.Private.CoreLib.dll).
     /// </summary>
-    public string? WasmRuntimePackNativeDir => GetOptionalConfig("R2RTest.WasmRuntimePackNativeDir");
+    public string WasmRuntimePackNativeDir => GetRequiredConfig("R2RTest.WasmRuntimePackNativeDir");
 
-    public bool RequireWasmReferences => string.Equals(
-        GetOptionalConfig("R2RTest.RequireWasmReferences"),
+    public string ArmRuntimePackDir => GetRequiredConfig("R2RTest.ArmRuntimePackDir");
+    public string ArmRuntimePackNativeDir => GetRequiredConfig("R2RTest.ArmRuntimePackNativeDir");
+
+    public bool RequireTargetArchRuntimePack => string.Equals(
+        GetRequiredConfig("R2RTest.RequireTargetArchRuntimePack"),
         bool.TrueString,
         StringComparison.OrdinalIgnoreCase);
 

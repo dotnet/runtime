@@ -4,15 +4,10 @@
     <AssemblyName>ILCompiler.ReadyToRun.Tests</AssemblyName>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
-    <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Platforms>x64;x86</Platforms>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <RuntimeIdentifiers>linux-x64;win-x64;osx-x64</RuntimeIdentifiers>
-    <Configurations>Debug;Release;Checked</Configurations>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
-    <RequireWasmReferences Condition="'$(RequireWasmReferences)' == ''">false</RequireWasmReferences>
+    <RequireTargetArchRuntimePack Condition="'$(RequireTargetArchRuntimePack)' == ''">false</RequireTargetArchRuntimePack>
   </PropertyGroup>
 
   <ItemGroup>
@@ -40,24 +35,13 @@
     <WasmRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', 'browser-wasm', 'native'))</WasmRuntimePackNativeDir>
     <WasmRuntimePackDir Condition="!Exists('$(WasmRuntimePackDir)') and Exists('$(WasmRuntimePackRoot)Release/runtimes/browser-wasm/lib/$(NetCoreAppCurrent)')">$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', 'Release', 'runtimes', 'browser-wasm', 'lib', '$(NetCoreAppCurrent)'))</WasmRuntimePackDir>
     <WasmRuntimePackNativeDir Condition="!Exists('$(WasmRuntimePackNativeDir)') and Exists('$(WasmRuntimePackRoot)Release/runtimes/browser-wasm/native')">$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', 'Release', 'runtimes', 'browser-wasm', 'native'))</WasmRuntimePackNativeDir>
+
+    <ArmRuntimePackRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(TargetOS)-arm'))</ArmRuntimePackRoot>
+    <ArmRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', '$(TargetOS)-arm', 'lib', '$(NetCoreAppCurrent)'))</ArmRuntimePackDir>
+    <ArmRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(ArmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', '$(TargetOS)-arm', 'native'))</ArmRuntimePackNativeDir>
+    <ArmRuntimePackDir Condition="!Exists('$(ArmRuntimePackDir)') and Exists('$(ArmRuntimePackRoot)Release/runtimes/$(TargetOS)-arm/lib/$(NetCoreAppCurrent)')">$([MSBuild]::NormalizeDirectory('$(ArmRuntimePackRoot)', 'Release', 'runtimes', '$(TargetOS)-arm', 'lib', '$(NetCoreAppCurrent)'))</ArmRuntimePackDir>
+    <ArmRuntimePackNativeDir Condition="!Exists('$(ArmRuntimePackNativeDir)') and Exists('$(ArmRuntimePackRoot)Release/runtimes/$(TargetOS)-arm/native')">$([MSBuild]::NormalizeDirectory('$(ArmRuntimePackRoot)', 'Release', 'runtimes', '$(TargetOS)-arm', 'native'))</ArmRuntimePackNativeDir>
   </PropertyGroup>
-
-
-  <!-- The JITs must be built before crossgen2_inbuild so that they can be copied to the output directory -->
-  <Target Name="BuildAllJitsForReadyToRunTests"
-          DependsOnTargets=""
-          BeforeTargets="ResolveProjectReferences"
-          Condition="'$(DesignTimeBuild)' != 'true'">
-    <PropertyGroup>
-      <_BuildJitsCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">true</_BuildJitsCrossArch>
-      <_BuildJitsProperties>ClrAllJitsSubset=true;ClrWasmJitSubset=true;Configuration=$(CoreCLRConfiguration)</_BuildJitsProperties>
-      <_BuildJitsProperties Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(_BuildJitsProperties);Ninja=true</_BuildJitsProperties>
-      <_BuildJitsProperties Condition="'$(_BuildJitsCrossArch)' == 'true'">$(_BuildJitsProperties);HostArchitecture=$(BuildArchitecture);HostCrossOS=$(HostOS);CrossBuild=false;BuildSubdirectory=$(BuildArchitecture);CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1;PgoInstrument=false;NoPgoOptimize=true</_BuildJitsProperties>
-    </PropertyGroup>
-    <MSBuild Projects="$(CoreClrProjectRoot)runtime.proj"
-             Targets="Build"
-             Properties="$(_BuildJitsProperties)" />
-  </Target>
 
   <Target Name="ValidatePathsExist"
           BeforeTargets="Build"
@@ -70,13 +54,17 @@
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)')"
            Text="Runtime pack path '$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' does not exist." />
 
-    <!-- Wasm runtime pack is not strictly required for local builds, but is enforced in CI with RequireWasmReferences -->
-    <Error Condition="'$(RequireWasmReferences)' == 'true' and (!Exists('$(WasmRuntimePackDir)') or !Exists('$(WasmRuntimePackNativeDir)System.Private.CoreLib.dll'))"
-           Text="The browser-wasm runtime pack was not found under '$(WasmRuntimePackRoot)'. Build and download the wasm prerequisite artifact before building this test." />
-    <Warning Condition="'$(RequireWasmReferences)' != 'true' and !Exists('$(WasmRuntimePackDir)')"
+    <!-- Wasm and arm32 runtime packs are not strictly required for local builds, but are required in CI by setting RequireTargetArchRuntimePack to true -->
+    <Error Condition="'$(RequireTargetArchRuntimePack)' == 'true' and (!Exists('$(WasmRuntimePackDir)') or !Exists('$(WasmRuntimePackNativeDir)System.Private.CoreLib.dll') or !Exists('$(ArmRuntimePackDir)') or !Exists('$(ArmRuntimePackNativeDir)System.Private.CoreLib.dll'))"
+           Text="The browser-wasm or arm32 runtime pack was not found under '$(WasmRuntimePackRoot)' or '$(ArmRuntimePackRoot)'. Build the wasm and arm32 prerequisite artifacts before building this test." />
+    <Message Importance="High" Condition="'$(RequireTargetArchRuntimePack)' != 'true' and !Exists('$(WasmRuntimePackDir)')"
              Text="Browser-wasm runtime pack path '$(WasmRuntimePackDir)' does not exist. Browser-wasm ReadyToRun tests will fall back to host references, which may cause unexpected failures. Generate by building the clr.corelib+libs+libs.pretest subsets for browser-wasm." />
-    <Warning Condition="'$(RequireWasmReferences)' != 'true' and !Exists('$(WasmRuntimePackNativeDir)System.Private.CoreLib.dll')"
+    <Message Importance="High" Condition="'$(RequireTargetArchRuntimePack)' != 'true' and !Exists('$(WasmRuntimePackNativeDir)System.Private.CoreLib.dll')"
              Text="Browser-wasm System.Private.CoreLib.dll was not found under '$(WasmRuntimePackNativeDir)'. Browser-wasm ReadyToRun tests will fall back to host references, which may cause unexpected failures. Generate by building the clr.corelib+libs+libs.pretest subsets for browser-wasm." />
+    <Message Importance="High" Condition="'$(RequireTargetArchRuntimePack)' != 'true' and !Exists('$(ArmRuntimePackDir)')"
+             Text="Arm32 runtime pack path '$(ArmRuntimePackDir)' does not exist. Arm32 ReadyToRun tests will fall back to host references, which may cause unexpected failures. Generate by building the clr.corelib+libs+libs.pretest subsets for arm32." />
+    <Message Importance="High" Condition="'$(RequireTargetArchRuntimePack)' != 'true' and !Exists('$(ArmRuntimePackNativeDir)System.Private.CoreLib.dll')"
+             Text="Arm32 System.Private.CoreLib.dll was not found under '$(ArmRuntimePackNativeDir)'. Arm32 ReadyToRun tests will fall back to host references, which may cause unexpected failures. Generate by building the clr.corelib+libs+libs.pretest subsets for arm32." />
   </Target>
 
   <!-- RuntimeConfiguration values that depend on build output paths must be set in a target -->
@@ -95,14 +83,22 @@
         <Value>$(MicrosoftNetCoreAppRuntimePackNativeDir)</Value>
       </RuntimeHostConfigurationOption>
 
-      <RuntimeHostConfigurationOption Include="R2RTest.RequireWasmReferences">
-        <Value>$(RequireWasmReferences)</Value>
+      <RuntimeHostConfigurationOption Include="R2RTest.RequireTargetArchRuntimePack">
+        <Value>$(RequireTargetArchRuntimePack)</Value>
       </RuntimeHostConfigurationOption>
+
       <RuntimeHostConfigurationOption Include="R2RTest.WasmRuntimePackDir">
         <Value>$(WasmRuntimePackDir)</Value>
       </RuntimeHostConfigurationOption>
       <RuntimeHostConfigurationOption Include="R2RTest.WasmRuntimePackNativeDir">
         <Value>$(WasmRuntimePackNativeDir)</Value>
+      </RuntimeHostConfigurationOption>
+
+      <RuntimeHostConfigurationOption Include="R2RTest.ArmRuntimePackDir">
+        <Value>$(ArmRuntimePackDir)</Value>
+      </RuntimeHostConfigurationOption>
+      <RuntimeHostConfigurationOption Include="R2RTest.ArmRuntimePackNativeDir">
+        <Value>$(ArmRuntimePackNativeDir)</Value>
       </RuntimeHostConfigurationOption>
 
       <!-- Used for gating Debug-only JIT features from being tested. -->

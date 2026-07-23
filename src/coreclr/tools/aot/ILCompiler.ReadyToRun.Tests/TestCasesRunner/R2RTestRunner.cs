@@ -214,16 +214,22 @@ internal sealed class R2RTestRunner
 
             // Step 2: Run each crossgen2 compilation and validate
             var driver = new R2RDriver(_output, _paths);
-            List<string> hostRefPaths = BuildReferencePaths(useWasmReferences: false);
+            List<string> hostRefPaths = BuildReferencePaths(CoreLibTargetArchitecture.Host);
             List<string>? wasmRefPaths = null;
+            List<string>? armRefPaths = null;
 
             foreach(var compilation in testCase.Compilations)
             {
                 List<string> refPaths = hostRefPaths;
                 if (compilation.TargetRid == TargetRid.BrowserWasm)
                 {
-                    wasmRefPaths ??= BuildReferencePaths(useWasmReferences: true);
+                    wasmRefPaths ??= BuildReferencePaths(CoreLibTargetArchitecture.Wasm);
                     refPaths = wasmRefPaths;
+                }
+                else if (compilation.TargetRid == TargetRid.HostArm)
+                {
+                    armRefPaths ??= BuildReferencePaths(CoreLibTargetArchitecture.Arm32);
+                    refPaths = armRefPaths;
                 }
 
                 string outputPath = RunCrossgenCompilation(
@@ -254,7 +260,7 @@ internal sealed class R2RTestRunner
         var paths = new Dictionary<string, string>();
 
         // Tests shouldn't require a platform-specific runtime/ref pack for Roslyn compilation
-        var defaultReferences = BuildReferencePaths(useWasmReferences: false);
+        var defaultReferences = BuildReferencePaths(CoreLibTargetArchitecture.Host);
         var compiler = new R2RTestCaseCompiler(defaultReferences);
         foreach (var asm in assemblies)
         {
@@ -365,47 +371,43 @@ internal sealed class R2RTestRunner
     /// <summary>
     /// Runtime packs are used as references for both Roslyn compilation and crossgen2 compilation. This method builds the reference paths for both.
     /// </summary>
-    /// <param name="useWasmReferences">Whether to try to use browser-wasm references. The host references are used as a fallback if browser-wasm references are not available.</param>
-    private List<string> BuildReferencePaths(bool useWasmReferences)
+    private List<string> BuildReferencePaths(CoreLibTargetArchitecture coreLibArch)
     {
         List<string> paths;
-
-        if (useWasmReferences)
+        (string runtimePackDir, string runtimePackNativeDir) = coreLibArch switch
         {
-            string? wasmRuntimePackDir = _paths.WasmRuntimePackDir;
-            string? wasmCoreLibPath = _paths.WasmRuntimePackNativeDir is null
-                ? null
-                : Path.Combine(_paths.WasmRuntimePackNativeDir, "System.Private.CoreLib.dll");
-
-            if (wasmRuntimePackDir is not null && wasmCoreLibPath is not null
-                && File.Exists(wasmCoreLibPath) && Directory.Exists(wasmRuntimePackDir))
+            CoreLibTargetArchitecture.Host => (_paths.RuntimePackDir, _paths.RuntimePackNativeDir),
+            CoreLibTargetArchitecture.Arm32 => (_paths.ArmRuntimePackDir, _paths.ArmRuntimePackNativeDir),
+            CoreLibTargetArchitecture.Wasm => (_paths.WasmRuntimePackDir, _paths.WasmRuntimePackNativeDir),
+            _ => throw new InvalidOperationException($"Unknown CoreLibTargetArchitecture: {coreLibArch}")
+        };
+        if (!RuntimePackPathsAreValid(runtimePackDir, runtimePackNativeDir))
+        {
+            if (_paths.RequireTargetArchRuntimePack)
             {
-                _output.WriteLine($"Using browser-wasm runtime pack references from '{wasmRuntimePackDir}'");
-                paths =
-                [
-                    ..Directory.GetFiles(wasmRuntimePackDir, "*.dll"),
-                    wasmCoreLibPath
-                ];
-                return paths;
+                throw new InvalidOperationException($"Required runtime pack for {coreLibArch} not found: {runtimePackDir} or {runtimePackNativeDir}");
             }
             else
             {
-                Assert.False(
-                    _paths.RequireWasmReferences,
-                    "Browser-wasm framework references are required, but the browser-wasm runtime pack was not found.");
-                _output.WriteLine($"Browser-wasm runtime pack references not available. Falling back to host references.");
+                _output.WriteLine($"Warning: Required runtime pack for {coreLibArch} not found: {runtimePackDir} or {runtimePackNativeDir}. Falling back to host references.");
+                (runtimePackDir, runtimePackNativeDir) = (_paths.RuntimePackDir, _paths.RuntimePackNativeDir);
             }
         }
 
-        string coreLibPath = Path.Combine(_paths.RuntimePackNativeDir, "System.Private.CoreLib.dll");
+        string coreLibPath = Path.Combine(runtimePackNativeDir, "System.Private.CoreLib.dll");
         Assert.True(File.Exists(coreLibPath), $"System.Private.CoreLib.dll not found: {coreLibPath}");
-        Assert.True(Directory.Exists(_paths.RuntimePackDir), $"Runtime pack directory not found: {_paths.RuntimePackDir}");
+        Assert.True(Directory.Exists(runtimePackDir), $"Runtime pack directory not found: {runtimePackDir}");
 
         paths = [
-            ..Directory.GetFiles(_paths.RuntimePackDir, "*.dll"),
+            ..Directory.GetFiles(runtimePackDir, "*.dll"),
             coreLibPath
         ];
 
         return paths;
+
+        bool RuntimePackPathsAreValid(string runtimePackDir, string runtimePackNativeDir)
+        {
+            return Directory.Exists(runtimePackDir) && File.Exists(Path.Combine(runtimePackNativeDir, "System.Private.CoreLib.dll"));
+        }
     }
 }

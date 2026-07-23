@@ -163,7 +163,7 @@
 
     <!-- Define AllSubsets to include all available subsets including OnDemand ones -->
     <AllSubsetsExpansion>clr.nativeprereqs+clr.iltools+clr.runtime+clr.native+clr.aot+clr.nativeaotlibs+clr.nativeaotruntime+clr.crossarchtools</AllSubsetsExpansion>
-    <AllSubsetsExpansion>$(AllSubsetsExpansion)+clr.paltests+clr.paltestlist+clr.hosts+clr.jit+clr.alljits+clr.alljitscommunity+clr.spmi+clr.corelib+clr.nativecorelib+clr.tools+clr.toolstests+clr.packages</AllSubsetsExpansion>
+    <AllSubsetsExpansion>$(AllSubsetsExpansion)+clr.paltests+clr.paltestlist+clr.hosts+clr.jit+clr.alljits+clr.alljitscommunity+clr.spmi+clr.corelib+clr.nativecorelib+clr.tools+clr.toolstests+clr.r2rtests+clr.packages</AllSubsetsExpansion>
     <AllSubsetsExpansion Condition="$([MSBuild]::IsOsPlatform(Windows))">$(AllSubsetsExpansion)+linuxdac+alpinedac</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+mono.runtime+provision.emsdk+mono.aotcross+mono.corelib+mono.manifests+mono.packages+mono.tools+mono.wasmruntime+mono.wasiruntime+mono.wasmworkload+mono.mscordbi+mono.workloads</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+tools.illink+tools.cdac+tools.illinktests+tools.cdactests+tools.cdacdumptests</AllSubsetsExpansion>
@@ -227,6 +227,7 @@
     <SubsetName Include="Clr.NativeCoreLib" Description="Run crossgen on System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Clr.Tools" Description="Managed tools that support CoreCLR development and testing." />
     <SubsetName Include="Clr.ToolsTests" OnDemand="true" Description="Unit tests for the clr.tools subset." />
+    <SubsetName Include="Clr.R2RTests" OnDemand="true" Description="Unit tests for crossgen2 (ReadyToRun compiler)." />
     <SubsetName Include="Clr.Packages" Description="The projects that produce NuGet packages for the CoreCLR runtime, crossgen, and IL tools." />
     <SubsetName Include="LinuxDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" OnDemand="true" Description="The cross-OS Windows->libc-based Linux DAC. Skipped on x86." />
     <SubsetName Include="AlpineDac" Condition="$([MSBuild]::IsOsPlatform(Windows))" OnDemand="true" Description="The cross-OS Windows->musl-libc-based Linux DAC. Skipped on x86" />
@@ -508,11 +509,14 @@
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Trimming.Tests\ILCompiler.Trimming.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.ReadyToRun.Tests\ILCompiler.ReadyToRun.Tests.csproj"
-      Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\ILVerification.Tests\ILVerification.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\ILTrim.Tests\ILTrim.Tests.csproj"
+      Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+clr.r2rtests+'))">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.ReadyToRun.Tests\ILCompiler.ReadyToRun.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
   </ItemGroup>
 
