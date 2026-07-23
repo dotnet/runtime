@@ -1079,29 +1079,3 @@ public unsafe partial interface IDacDbiInterface
     [PreserveSig]
     int CopyContext(ContextBuffer destinationContext, ContextBuffer sourceContext, uint flags);
 }
-
-public enum TargetArchitecture
-{
-    Unknown = 0,
-    X86,
-    AMD64,
-    Arm,
-    Arm64,
-    LoongArch64,
-    RiscV64,
-    Wasm,
-}
-
-public enum TargetOperatingSystem
-{
-    Unknown = 0,
-    Windows,
-    Unix,
-}
-
-public struct TargetInfo
-{
-    public TargetArchitecture Arch;
-    public TargetOperatingSystem OS;
-    public uint PointerSize;
-}
