@@ -173,7 +173,7 @@ var_types Compiler::getBaseTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls
 //    sizeBytes if non-null is set to size in bytes.
 //
 // Notes:
-//    If the size of the struct is already known call structSizeMightRepresentSIMDType
+//    If the size of the struct is already known call structMightRepresentSIMDType
 //    to determine if this api needs to be called.
 //
 //    The type handle passed here can only be used in a subset of JIT-EE calls
@@ -313,6 +313,19 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                         if (size == 0)
                         {
                             return TYP_UNDEF;
+                        }
+
+                        // Vector<T>'s length is target-dependent, so under a cross-targeting altjit (e.g.
+                        // SuperPMI replaying a context captured for a target with a different Vector<T>
+                        // length) our size can disagree with the VM's. Treat it as a regular struct then,
+                        // keeping every size query consistent with the VM rather than emitting SIMD codegen
+                        // against a mismatched size.
+                        if (!info.compMatchedVM)
+                        {
+                            if (size != info.compCompHnd->getClassSize(typeHnd))
+                            {
+                                return TYP_UNDEF;
+                            }
                         }
                         break;
                     }

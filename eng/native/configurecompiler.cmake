@@ -40,12 +40,10 @@ endif()
 #-----------------------------------------------------
 
 if (CLR_CMAKE_HOST_UNIX)
+    add_compile_options(-g)
     add_compile_options(-Wall)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Wno-null-conversion)
-        add_compile_options(-glldb)
-    else()
-        add_compile_options(-g)
     endif()
 endif()
 
@@ -96,9 +94,9 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:$<TARGET_PROPERTY:CLR_EH_OPTION>>)
   add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
 
-  if (NOT CLR_CMAKE_PGO_INSTRUMENT)
+  if (NOT CLR_CMAKE_PGO_INSTRUMENT AND NOT CLR_CMAKE_ENABLE_SANITIZERS)
     # Load all imported DLLs from the System32 directory.
-    # Don't do this when instrumenting for PGO as a local DLL dependency is introduced by the instrumentation
+    # Don't do this when instrumenting for PGO or when a sanitizer is enabled as a local DLL dependency is introduced by the instrumentation
     add_linker_flag(/DEPENDENTLOADFLAG:0x800)
   endif()
 
@@ -857,6 +855,9 @@ if(CLR_CMAKE_TARGET_UNIX)
   endif()
   if(CLR_CMAKE_TARGET_BROWSER)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_BROWSER>)
+  endif()
+  if(CLR_CMAKE_TARGET_WASI)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WASI>)
   endif()
 elseif(CLR_CMAKE_TARGET_WASI)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WASI>)

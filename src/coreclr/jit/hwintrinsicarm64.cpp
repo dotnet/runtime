@@ -1013,13 +1013,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (retType == TYP_SIMD)
             {
+                // Call directly to ensure the correct simdBaseType, to as that
+                // should allow for easier optimisations.
                 retNode = gtNewSimdVconNode(retType, simdBaseType, SimdScalableRepeated, 0);
                 break;
             }
 
-            GenTreeVecCon* vecCon = gtNewVconNode(retType);
-            vecCon->gtSimdVal     = simd_t::Zero();
-            retNode               = vecCon;
+            retNode = gtNewZeroConNode(retType);
             break;
         }
 
@@ -1035,6 +1035,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Sve_CreateTrueMaskUInt64:
         {
             assert(sig->numArgs == 1);
+            assert(retType == TYP_MASK);
             op1 = impPopStack().val;
 
             // Where possible, import a constant vector to allow for optimisations.
@@ -1053,11 +1054,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
                 else
                 {
-                    simd_t simdVal;
+                    simdmask_t simdVal;
 
-                    if (EvaluateSimdPatternToVector(simdBaseType, &simdVal, (SveMaskPattern)pattern))
+                    if (EvaluateSimdPatternToMask<simd16_t>(simdBaseType, &simdVal, (SveMaskPattern)pattern))
                     {
-                        retNode = gtNewVconNode(retType, &simdVal);
+                        GenTreeMskCon* mskCon = gtNewMskConNode(retType);
+                        mskCon->gtSimdMaskVal = simdVal;
+                        retNode               = mskCon;
                         break;
                     }
                 }
@@ -1065,6 +1068,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             // Was not able to generate a pattern, instead import the intrinsic node.
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, intrinsic, simdBaseType, simdSize);
+
             break;
         }
 

@@ -7,11 +7,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class Lock : IData<Lock>
 {
     [Field("_state")]
-    public uint State { get; }
+    public partial uint State { get; }
 
     [Field("_owningThreadId")]
-    public int OwningThreadId { get; }
+    public partial int OwningThreadId { get; }
 
     [Field("_recursionCount")]
-    public uint RecursionCount { get; }
+    public partial uint RecursionCount { get; }
 }

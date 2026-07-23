@@ -3334,7 +3334,8 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 // IsValidLclAddr: Can the given local address be represented as "LCL_ADDR"?
 //
 // Local address nodes cannot point beyond the local and can only store
-// 16 bits worth of offset.
+// 16 bits worth of offset. Additionally, the emitter can only encode byte-sized
+// offsets for locals numbered 32768 or greater.
 //
 // Arguments:
 //    lclNum - The local's number
@@ -3351,6 +3352,16 @@ inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
         return (offset == 0);
     }
 #endif
+
+    // The emitter only supports byte-sized offsets for locals numbered 32768 or greater
+    // (see emitLclVarAddr::initLclVarAddr). Reject larger offsets here so such accesses are
+    // kept as explicit address computations instead of being folded into a LCL_FLD or a
+    // contained LCL_ADDR, both of which the emitter would be unable to encode.
+    if ((lclNum >= 32768) && (offset >= 256))
+    {
+        return false;
+    }
+
     return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
 }
 
