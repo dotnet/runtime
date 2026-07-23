@@ -11,18 +11,18 @@ namespace Microsoft.Interop
         private const string SafeModifier = "safe";
         private const string UpdatedMemorySafetyRulesFeature = "updated-memory-safety-rules";
 
-        internal static SyntaxToken? GetSafetyModifier(this SyntaxTokenList modifiers)
+        internal static bool HasSafetyModifier(this SyntaxTokenList modifiers)
         {
             foreach (SyntaxToken modifier in modifiers)
             {
                 // LibraryImportGenerator supports compiler hosts whose public SyntaxKind API predates SafeKeyword.
                 if (modifier.IsKind(SyntaxKind.UnsafeKeyword) || modifier.ValueText == SafeModifier)
                 {
-                    return modifier.WithoutTrivia();
+                    return true;
                 }
             }
 
-            return null;
+            return false;
         }
 
         internal static bool UsesUpdatedMemorySafetyRules(this SyntaxTree syntaxTree)

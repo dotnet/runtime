@@ -110,7 +110,7 @@ namespace LibraryImportGenerator.UnitTests
         [InlineData(true, false, "unsafe")]
         [InlineData(true, true, "safe")]
         [InlineData(true, true, "unsafe")]
-        public Task UserDeclaredSafetyModifierIsMirroredOnGeneratedExtern(bool downlevel, bool wrapper, string safetyModifier)
+        public Task UserDeclaredSafetyModifierIsAppliedToGeneratedSignatures(bool downlevel, bool wrapper, string safetyModifier)
         {
             string returnType = wrapper ? "byte" : "void";
             string parameters = wrapper ? "byte p, in byte pIn, ref byte pRef, out byte pOut" : "";
@@ -139,7 +139,7 @@ namespace LibraryImportGenerator.UnitTests
                 UnsafeStatementSyntax unsafeStatement = Assert.IsType<UnsafeStatementSyntax>(Assert.Single(stub.Body!.Statements));
                 LocalFunctionStatementSyntax localExtern = Assert.Single(unsafeStatement.Block.Statements.OfType<LocalFunctionStatementSyntax>());
                 Assert.True(localExtern.Modifiers.Any(SyntaxKind.ExternKeyword));
-                AssertSafetyModifier(localExtern.Modifiers, safetyModifier);
+                AssertSafetyModifier(localExtern.Modifiers, "unsafe");
             });
         }
 

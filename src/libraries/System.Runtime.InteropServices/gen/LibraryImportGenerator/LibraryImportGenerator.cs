@@ -322,8 +322,7 @@ namespace Microsoft.Interop
                 options,
                 pinvokeStub.LibraryImportData,
                 innerPInvokeName,
-                pinvokeStub.StubMethodSyntaxTemplate.Identifier.Text,
-                pinvokeStub.StubMethodSyntaxTemplate.Modifiers.GetSafetyModifier() ?? Token(SyntaxKind.UnsafeKeyword));
+                pinvokeStub.StubMethodSyntaxTemplate.Identifier.Text);
 
             if (!forwardedAttributes.IsEmpty)
             {
@@ -374,8 +373,7 @@ namespace Microsoft.Interop
             LibraryImportGeneratorOptions options,
             LibraryImportData libraryImportData,
             string stubTargetName,
-            string stubMethodName,
-            SyntaxToken safetyModifier)
+            string stubMethodName)
         {
             Debug.Assert(!options.GenerateForwarders, "GenerateForwarders should have already been handled to use a forwarder stub");
 
@@ -413,7 +411,7 @@ namespace Microsoft.Interop
                 .AddModifiers(
                     Token(SyntaxKind.StaticKeyword),
                     Token(SyntaxKind.ExternKeyword),
-                    safetyModifier)
+                    Token(SyntaxKind.UnsafeKeyword))
                 .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
                 .WithAttributeLists(
                     SingletonList(AttributeList(

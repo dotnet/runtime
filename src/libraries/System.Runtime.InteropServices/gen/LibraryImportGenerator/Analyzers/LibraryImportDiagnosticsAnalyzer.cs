@@ -329,7 +329,7 @@ namespace Microsoft.Interop.Analyzers
             }
 
             if (methodSyntax.SyntaxTree.UsesUpdatedMemorySafetyRules()
-                && methodSyntax.Modifiers.GetSafetyModifier() is null)
+                && !methodSyntax.Modifiers.HasSafetyModifier())
             {
                 return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidAttributedMethodMissingSafetyModifier, methodSyntax.Identifier.GetLocation(), method.Name);
             }
