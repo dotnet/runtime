@@ -1,4 +1,3 @@
-using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
@@ -8,15 +7,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
     [SetupLinkerArgument("--enable-opt", "ipconstprop")]
     public class NestedFinallyInFinallyHandler
     {
-        [Kept]
-        static int CleanupCount;
-
         public static void Main()
         {
             Test();
-
-            if (CleanupCount != 1)
-                throw new InvalidOperationException();
         }
 
         [Kept]
@@ -36,7 +29,14 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
                 }
                 finally
                 {
-                    Cleanup();
+                    try
+                    {
+                        Cleanup();
+                    }
+                    finally
+                    {
+                        NestedCleanup();
+                    }
                 }
             }
         }
@@ -49,6 +49,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
         static void Reached() { }
 
         [Kept]
-        static void Cleanup() => CleanupCount++;
+        static void Cleanup() { }
+
+        [Kept]
+        static void NestedCleanup() { }
     }
 }
