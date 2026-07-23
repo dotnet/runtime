@@ -14552,7 +14552,13 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             ReadyToRunInfo * pR2RInfo = currentModule->GetReadyToRunInfo();
 
             DWORD stubRVA = GET_UNALIGNED_VAL32(pBlob);
+#ifdef TARGET_WASM
+            // Wasm code is a function-table index, not imageBase+RVA; resolve like a method entry point.
+            //
+            PCODE stubEntryPoint = pR2RInfo->GetMinFunctionTableIndex() + stubRVA;
+#else
             PCODE stubEntryPoint = dac_cast<TADDR>(pR2RInfo->GetImage()->GetBase()) + stubRVA;
+#endif // TARGET_WASM
 
             pR2RInfo->RegisterResumptionStub(stubEntryPoint);
 

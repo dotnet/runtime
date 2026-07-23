@@ -260,10 +260,34 @@ namespace Internal.JitInterface
                 pos++;
             }
 
-            // Parse parameters (everything until 'p' suffix or end of string)
             List<TypeDesc> parameters = new List<TypeDesc>();
             bool hasThis = false;
+            bool isAsyncCall = false;
+            bool hasGenericContextBeforeAsync = false;
 
+            if (pos < sig.Length && sig[pos] == 'T')
+            {
+                hasThis = true;
+                pos++;
+            }
+
+            // A generic context precedes the async marker in the Wasm ABI; it is encoded with the
+            // hidden-pointer char (matching the encode side), i32 on wasm32 and i64 on wasm64.
+            char hiddenParamChar = (context.Target.PointerSize == 4) ? 'i' : 'l';
+            if ((pos + 1 < sig.Length) && (sig[pos] == hiddenParamChar) && (sig[pos + 1] == 'a'))
+            {
+                hasGenericContextBeforeAsync = true;
+                parameters.Add(RaiseSigChar(sig[pos], context));
+                pos++;
+            }
+
+            if (pos < sig.Length && sig[pos] == 'a')
+            {
+                isAsyncCall = true;
+                pos++;
+            }
+
+            // Parse explicit parameters (everything until the portable-entrypoint suffix or end of string).
             while (pos < sig.Length && sig[pos] != 'p')
             {
                 char c = sig[pos];
@@ -304,8 +328,15 @@ namespace Internal.JitInterface
 
             MethodSignature result = new MethodSignature(flags, 0, returnType, parameters.ToArray());
 
-            WasmSignature roundtripped = GetSignature(result, LoweringFlags.None);
-            Debug.Assert(roundtripped.Equals(wasmSignature),
+            WasmSignature roundtripped = GetSignature(result, isAsyncCall ? LoweringFlags.IsAsyncCall : LoweringFlags.None);
+            string roundtrippedStr = roundtripped.SignatureString;
+            if (hasGenericContextBeforeAsync && isAsyncCall)
+            {
+                // The roundtrip re-encodes the generic context as a leading parameter, so it emits the
+                // async marker before the hidden-pointer char; swap them back to match the input ordering.
+                roundtrippedStr = roundtrippedStr.Replace($"a{hiddenParamChar}", $"{hiddenParamChar}a");
+            }
+            Debug.Assert(roundtrippedStr.Equals(wasmSignature.SignatureString, StringComparison.Ordinal),
                 $"RaiseSignature roundtrip failed: input='{wasmSignature.SignatureString}', roundtripped='{roundtripped.SignatureString}'");
 
             return result;
@@ -456,7 +487,7 @@ namespace Internal.JitInterface
             if (flags.HasFlag(LoweringFlags.IsAsyncCall))
             {
                 result.Add(pointerType); // async continuation
-                sigBuilder.Append(hiddenParamChar);
+                sigBuilder.Append('a');
             }
 
             for (int i = explicitThis ? 1 : 0; i < signature.Length; i++)

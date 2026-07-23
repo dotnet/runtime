@@ -6055,6 +6055,7 @@ unsigned CodeGen::genEmitJumpTable(GenTree* treeNode, bool relativeAddr)
     emit->emitDataGenEnd();
     return jmpTabBase;
 }
+#endif // !defined(TARGET_WASM)
 
 //----------------------------------------------------------------------------------
 // genEmitAsyncResumeInfoTable:
@@ -6102,8 +6103,6 @@ CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
     UNATIVE_OFFSET        baseOffs = genEmitAsyncResumeInfoTable(&dataSection);
     return m_compiler->eeFindJitDataOffs(baseOffs + stateNum * sizeof(CORINFO_AsyncResumeInfo));
 }
-
-#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // getCallTarget - Get the node that evaluates to the call target
@@ -7443,8 +7442,13 @@ void CodeGen::genReturn(GenTree* treeNode)
 
     if (treeNode->OperIs(GT_RETURN) && m_compiler->compIsAsync())
     {
+#ifdef TARGET_WASM
+        // Wasm returns the continuation in a global.
+        genClearAsyncContinuationGlobal();
+#else
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
         gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
+#endif
     }
 
 #if defined(DEBUG) && defined(TARGET_XARCH)

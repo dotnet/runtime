@@ -2592,12 +2592,17 @@ namespace Internal.JitInterface
                             pResult->codePointerOrStubLookup.constLookup = default;
                         }
                         else if (MethodBeingCompiled is AsyncResumptionStub resumptionStub
-                            && nonUnboxingMethod == resumptionStub.TargetMethod)
+                            && nonUnboxingMethod == resumptionStub.TargetMethod
+                            && !_compilation.NodeFactory.Target.IsWasm)
                         {
                             // Async resumption stubs must call the exact code version that created
                             // the continuation, since the continuation layout is coupled to the
                             // compilation. Use a direct call to the compiled method body so tiering
                             // backpatching cannot redirect this call to a different code version.
+                            //
+                            // TODO-WASM: Using indirect calls on Wasm for now. Adjust once we understand
+                            // how code versioning should work along with R2R / portable entry points.
+                            //
                             MethodDesc compilableTarget = nonUnboxingMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                             MethodWithGCInfo targetCodeNode = _compilation.NodeFactory.CompiledMethodNode(compilableTarget);
                             pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(targetCodeNode);

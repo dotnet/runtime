@@ -3600,6 +3600,7 @@ namespace Internal.JitInterface
             pWellKnownGlobalsOut.stackPointer = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.StackPointerName)));
             pWellKnownGlobalsOut.imageBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.ImageBaseName)));
             pWellKnownGlobalsOut.tableBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.TableBaseName)));
+            pWellKnownGlobalsOut.asyncContinuation = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.AsyncContinuationName)));
         }
         private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONTEXT_STRUCT** contextHandle, ref CORINFO_LOOKUP instArg)
         {
@@ -4446,6 +4447,7 @@ namespace Internal.JitInterface
                 CorInfoReloc.RISCV64_PCREL_S => RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S,
                 CorInfoReloc.WASM_FUNCTION_INDEX_LEB => RelocType.WASM_FUNCTION_INDEX_LEB,
                 CorInfoReloc.WASM_TABLE_INDEX_SLEB => RelocType.WASM_TABLE_INDEX_SLEB,
+                CorInfoReloc.WASM_TABLE_INDEX_I32 => RelocType.WASM_TABLE_INDEX_I32,
                 CorInfoReloc.WASM_MEMORY_ADDR_LEB => RelocType.WASM_MEMORY_ADDR_LEB,
                 CorInfoReloc.WASM_MEMORY_ADDR_SLEB => RelocType.WASM_MEMORY_ADDR_SLEB,
                 CorInfoReloc.WASM_MEMORY_ADDR_REL_SLEB => RelocType.WASM_MEMORY_ADDR_REL_SLEB,

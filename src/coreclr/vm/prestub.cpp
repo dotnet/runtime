@@ -29,6 +29,10 @@
 #include "interpexec.h"
 #endif
 
+#ifdef TARGET_WASM
+#include "wasmasynccontinuation.h"
+#endif
+
 #ifdef FEATURE_COMINTEROP
 #include "clrtocomcall.h"
 #endif
@@ -2103,9 +2107,13 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-#elif defined(TARGET_WASM)
-        // We do not yet have an ABI for WebAssembly native code to handle here.
-#else
+    #elif defined(TARGET_WASM)
+        // Wasm has no async-continuation-return register; write the value to the
+        // shared `asyncContinuation` global (see wasmasynccontinuation.h) that the
+        // R2R caller reads after the call. The transition-block register area is
+        // unused on wasm.
+        RuntimeAsync_StoreAsyncContinuation((uint32_t)(uintptr_t)*frames.interpreterFrame.GetContinuationPtr());
+    #else
         #error Unsupported architecture
 #endif
 
@@ -2193,7 +2201,23 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
             if (targetIp == NULL)
             {
                 _ASSERTE(!PortableEntryPoint::PrefersInterpreterEntryPoint(portableEntrypoint));
-                InvokeManagedMethod(pMethod, args, retBuff, (PCODE)targetIp, nullptr /* WASM-TODO, handle RuntimeAsync */);
+                Object* continuationRet = nullptr;
+                Object** pContinuationRet = nullptr;
+#ifdef TARGET_WASM
+                // Gate on IsAsyncMethod to match InvokeManagedMethod/InvokeCalliStub; don't preload
+                // the global, InvokeCalliStub publishes the callee's continuation into continuationRet.
+                if (pMethod->IsAsyncMethod())
+                {
+                    pContinuationRet = &continuationRet;
+                }
+#endif // TARGET_WASM
+                InvokeManagedMethod(pMethod, args, retBuff, (PCODE)targetIp, pContinuationRet);
+#ifdef TARGET_WASM
+                if (pContinuationRet != nullptr)
+                {
+                    RuntimeAsync_StoreAsyncContinuation((uint32_t)(uintptr_t)continuationRet);
+                }
+#endif // TARGET_WASM
             }
 
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;

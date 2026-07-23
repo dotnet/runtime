@@ -22,7 +22,8 @@ namespace ILCompiler.DependencyAnalysis
                 globals = FrozenDictionary.Create<Utf8String, WasmWellKnownGlobalSymbolNode>([
                     new(new(WasmWellKnownGlobalSymbolNode.StackPointerName), new WasmWellKnownGlobalSymbolNode(WasmWellKnownGlobalSymbolNode.StackPointerName)),
                     new(new(WasmWellKnownGlobalSymbolNode.ImageBaseName), new WasmWellKnownGlobalSymbolNode(WasmWellKnownGlobalSymbolNode.ImageBaseName)),
-                    new(new(WasmWellKnownGlobalSymbolNode.TableBaseName), new WasmWellKnownGlobalSymbolNode(WasmWellKnownGlobalSymbolNode.TableBaseName))
+                    new(new(WasmWellKnownGlobalSymbolNode.TableBaseName), new WasmWellKnownGlobalSymbolNode(WasmWellKnownGlobalSymbolNode.TableBaseName)),
+                    new(new(WasmWellKnownGlobalSymbolNode.AsyncContinuationName), new WasmWellKnownGlobalSymbolNode(WasmWellKnownGlobalSymbolNode.AsyncContinuationName))
                 ]);
 
                 globals = Interlocked.CompareExchange(ref _wasmWellKnownGlobals, globals, null) ?? globals;

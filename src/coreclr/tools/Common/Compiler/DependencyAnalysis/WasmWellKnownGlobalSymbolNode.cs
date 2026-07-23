@@ -16,6 +16,7 @@ namespace ILCompiler.DependencyAnalysis
         public const string StackPointerName = "__stack_pointer";
         public const string ImageBaseName = "__memory_base";
         public const string TableBaseName = "__table_base";
+        public const string AsyncContinuationName = "__async_continuation";
 
         public override int ClassCode => 0x79046cf9;
 
