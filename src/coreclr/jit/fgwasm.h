@@ -431,6 +431,29 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
         return false;
     };
 
+    // The function region (funclet) index that physically contains 'block'.
+    // 0 == the main method. This mirrors funGetFuncIdx() but works for an
+    // arbitrary block (not just a funclet entry), distinguishing a filter
+    // funclet (FUNC_FILTER) from its filter-handler.
+    //
+    auto funcRegionOf = [comp](BasicBlock* blk) -> unsigned {
+        if (!blk->hasHndIndex())
+        {
+            return 0;
+        }
+
+        EHblkDsc* const eh      = comp->ehGetDsc(blk->getHndIndex());
+        unsigned        funcIdx = eh->ebdFuncIndex;
+
+        if (eh->HasFilter() && eh->InFilterRegionBBRange(blk))
+        {
+            // The filter is the funclet immediately preceding its filter-handler.
+            funcIdx--;
+        }
+
+        return funcIdx;
+    };
+
     // Special case throw helper blocks that are not yet connected in the flow graph.
     //
     Compiler::AddCodeDscMap* const acdMap = comp->fgGetAddCodeDscMap();
@@ -447,13 +470,15 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
 
             for (const Compiler::AddCodeDscKey& key : Compiler::AddCodeDscMap::KeyIteration(acdMap))
             {
-                const unsigned acdData = key.Data();
-                bool           matches = (acdData == blockData);
+                const unsigned acdData         = key.Data();
+                bool           matches         = (acdData == blockData);
+                bool           viaEnclosingTry = false;
 
                 if (!matches && isTrySideEntry && (key.Designator() == Compiler::AcdKeyDesignator::KD_TRY))
                 {
                     // Also add edges from all enclosing try regions
-                    matches = comp->bbInTryRegions(key.RegionIndex(), block);
+                    matches         = comp->bbInTryRegions(key.RegionIndex(), block);
+                    viaEnclosingTry = matches;
                 }
 
                 if (matches)
@@ -468,7 +493,18 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
                     //
                     if (acd->acdUsed)
                     {
-                        RETURN_ON_ABORT(func(acd->acdDstBlk));
+                        // bbInTryRegions is a purely lexical try-nesting test, so an enclosing-try
+                        // match can name a throw helper that lives in a different function region
+                        // (funclet) than this side-entry -- e.g. a main-method helper for an outer
+                        // try whose handler funclet merely nests inside that try. Attaching it here
+                        // would pull the helper into this funclet's layout, interleaving it with
+                        // funclet blocks and corrupting the emitted wasm. Only attach when the helper
+                        // and the side-entry share the same function region.
+                        //
+                        if (!viaEnclosingTry || (funcRegionOf(block) == funcRegionOf(acd->acdDstBlk)))
+                        {
+                            RETURN_ON_ABORT(func(acd->acdDstBlk));
+                        }
                     }
                 }
             }
