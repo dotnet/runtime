@@ -43,9 +43,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             _refReaders = refReaders.ToArray();
 
             TypeRefTypeSystemModule coreLibModule = new TypeRefTypeSystemModule(this, new AssemblyNameInfo("System.Private.CoreLib"));
-            foreach (string name in MetadataTypeSystemContext.WellKnownTypeNames)
+            foreach ((string ns, string name) in MetadataTypeSystemContext.WellKnownTypeNames)
             {
-                coreLibModule.GetOrAddType("System", name);
+                coreLibModule.GetOrAddType(ns, name);
             }
 
             _typeRefModules.Add(coreLibModule.Assembly.GetName().Name, coreLibModule);
