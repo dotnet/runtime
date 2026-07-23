@@ -615,6 +615,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
         try
         {
+            if (mod.IsNullRef)
+                throw new NullReferenceException();
+
             ILoader loader = _target.Contracts.Loader;
             IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
                 loader.GetAppDomain(),
