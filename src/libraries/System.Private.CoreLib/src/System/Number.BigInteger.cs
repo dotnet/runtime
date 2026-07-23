@@ -904,7 +904,7 @@ namespace System
                 int length = (int)_length;
                 if (length == 0)
                 {
-                    SetUInt64(out this, value);
+                    SetBlock(out this, value);
                     return;
                 }
 
