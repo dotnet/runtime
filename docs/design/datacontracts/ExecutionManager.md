@@ -610,6 +610,20 @@ IEnumerable<ICodeHeapInfo> IExecutionManager.GetCodeHeapInfos()
 }
 ```
 
+### Dynamic Function Table Entries
+
+`GetDynamicFunctionTableEntries` returns the target addresses of the
+`RUNTIME_FUNCTION` records for a Windows dynamic function table. These records describe
+the unwind information for dynamically generated JIT code and are consumed by
+out-of-process unwinders.
+
+`tableAddress` identifies a target `DYNAMIC_FUNCTION_TABLE`. Its `Context` identifies
+the owning `EEJitManager`, and its `MinimumAddress` identifies the associated code heap.
+The result contains the entries for that heap, ordered by descending method start address
+and then by ascending entry address within a method. If the table does not identify a
+known code heap, or if the target does not support Windows dynamic function tables, the
+result is empty.
+
 ### RangeSectionMap
 
 The range section map logically partitions the entire 32-bit or 64-bit addressable space into chunks.
