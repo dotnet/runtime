@@ -56,13 +56,14 @@ SignalSafeConsoleWriter::SetOutputSink(const SignalSafeConsoleOutputSink& sink)
 {
     m_sink = sink;
     m_pos = 0;
+    m_writeFailed = false;
     m_buffer[0] = '\0';
 }
 
 void
 SignalSafeConsoleWriter::AppendStr(const char* s)
 {
-    if (s == nullptr || m_pos + 1 >= sizeof(m_buffer))
+    if (m_writeFailed || s == nullptr || m_pos + 1 >= sizeof(m_buffer))
     {
         return;
     }
@@ -79,7 +80,7 @@ SignalSafeConsoleWriter::AppendStr(const char* s)
 void
 SignalSafeConsoleWriter::AppendChar(char c)
 {
-    if (m_pos + 1 < sizeof(m_buffer))
+    if (!m_writeFailed && m_pos + 1 < sizeof(m_buffer))
     {
         m_buffer[m_pos++] = c;
     }
@@ -113,6 +114,11 @@ SignalSafeConsoleWriter::AppendSignedDecimal(int64_t v)
 void
 SignalSafeConsoleWriter::EndLine()
 {
+    if (m_writeFailed)
+    {
+        return;
+    }
+
     // Sinks that supply their own line discipline (e.g. Android logcat) opt out
     // of the trailing '\n'; every other sink expects newline-delimited lines.
     if (m_sink.AppendNewline())
@@ -164,10 +170,20 @@ SignalSafeConsoleWriter::WriteSeparator()
 void
 SignalSafeConsoleWriter::Flush()
 {
+    if (m_writeFailed)
+    {
+        m_pos = 0;
+        m_buffer[0] = '\0';
+        return;
+    }
+
     size_t len = (m_pos < sizeof(m_buffer)) ? m_pos : sizeof(m_buffer) - 1;
     m_buffer[len] = '\0';
 
-    m_sink.Write(m_buffer, len);
+    if (!m_sink.Write(m_buffer, len))
+    {
+        m_writeFailed = true;
+    }
 
     m_pos = 0;
     m_buffer[0] = '\0';

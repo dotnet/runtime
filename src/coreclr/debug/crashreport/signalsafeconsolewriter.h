@@ -75,6 +75,7 @@ class SignalSafeConsoleWriter
 public:
     SignalSafeConsoleWriter()
         : m_pos(0)
+        , m_writeFailed(false)
         , m_sink(PlatformConsoleOutputSink())
     {
         m_buffer[0] = '\0';
@@ -82,6 +83,7 @@ public:
 
     explicit SignalSafeConsoleWriter(const SignalSafeConsoleOutputSink& sink)
         : m_pos(0)
+        , m_writeFailed(false)
         , m_sink(sink)
     {
         m_buffer[0] = '\0';
@@ -110,11 +112,14 @@ public:
     void WriteSeparator();
     void WriteBlank() { WriteLine(""); }
 
+    bool HasWriteFailed() const { return m_writeFailed; }
+
 private:
     void Flush();
 
     SignalSafeFormatter m_formatter;
     char m_buffer[SIGNAL_SAFE_CONSOLE_BUFFER_SIZE];
     size_t m_pos;
+    bool m_writeFailed;
     SignalSafeConsoleOutputSink m_sink;
 };

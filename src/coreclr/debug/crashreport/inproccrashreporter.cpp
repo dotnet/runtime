@@ -313,8 +313,7 @@ class CrashReportOutputContext
 {
 public:
     CrashReportOutputContext()
-        : m_fd(-1),
-          m_writeFailed(false)
+        : m_fd(-1)
     {
     }
 
@@ -327,12 +326,10 @@ public:
     CrashReportOutputContext& operator=(const CrashReportOutputContext&) = delete;
 
     int Fd() const { return m_fd; }
-    bool WriteFailed() const { return m_writeFailed; }
 
     void Init(int fd)
     {
         m_fd = fd;
-        m_writeFailed = false;
     }
 
     static bool ChunkCallback(const char* buffer, size_t len, void* ctx);
@@ -341,7 +338,6 @@ private:
     bool HandleChunk(const char* buffer, size_t len);
 
     int m_fd;
-    bool m_writeFailed;
 };
 
 class InProcCrashReporter
@@ -403,10 +399,10 @@ private:
         void* context);
 
     void BeginConsoleReport(int signal);
-    void EndConsoleReport();
+    bool EndConsoleReport();
 
     void BeginJsonReport();
-    void EndJsonReport(
+    bool EndJsonReport(
         int signal,
         bool finalizeReportFile);
 
@@ -628,9 +624,10 @@ InProcCrashReporter::CreateReport(
     BeginConsoleReport(signal);
     BeginJsonReport();
     EmitThreads(crashKind, context);
-    EndJsonReport(signal, /*finalizeReportFile*/ jsonEnabled);
-    EndConsoleReport();
-    return true;
+    bool jsonSucceeded = EndJsonReport(signal, /*finalizeReportFile*/ jsonEnabled);
+    bool consoleSucceeded = EndConsoleReport();
+
+    return jsonSucceeded && consoleSucceeded;
 }
 
 bool
@@ -642,6 +639,12 @@ InProcCrashReporter::CreateReport(
     void* callbackContext)
 {
     if (outputCallback == nullptr)
+    {
+        return false;
+    }
+
+    if (outputFormat != InProcCrashReportOutputFormat::Json &&
+        outputFormat != InProcCrashReportOutputFormat::Log)
     {
         return false;
     }
@@ -672,15 +675,17 @@ InProcCrashReporter::CreateReport(
     BeginConsoleReport(signal);
     BeginJsonReport();
     EmitThreads(crashKind, context);
-    EndJsonReport(signal, /*finalizeReportFile*/ false);
-    EndConsoleReport();
+    bool jsonSucceeded = EndJsonReport(signal, /*finalizeReportFile*/ false);
+    bool consoleSucceeded = EndConsoleReport();
+
+    bool reportSucceeded = jsonSucceeded && consoleSucceeded;
 
     m_consoleWriter.SetOutputSink(SignalSafeConsoleWriter::PlatformConsoleOutputSink());
     m_jsonWriter.SetOutputSink(SignalSafeJsonWriter::DropAllOutputSink());
     m_moduleTable.Reset();
 
     InterlockedExchange(&m_reportInFlight, ReportNotInFlight);
-    return true;
+    return reportSucceeded;
 }
 
 void
@@ -1062,13 +1067,7 @@ CrashReportOutputContext::HandleChunk(
         return false;
     }
 
-    if (!CrashReportHelpers::WriteToFile(m_fd, buffer, len))
-    {
-        m_writeFailed = true;
-        return false;
-    }
-
-    return true;
+    return CrashReportHelpers::WriteToFile(m_fd, buffer, len);
 }
 
 bool
@@ -2147,7 +2146,7 @@ InProcCrashReporter::BeginConsoleReport(int signal)
     m_consoleWriter.EndLine();
 }
 
-void
+bool
 InProcCrashReporter::EndConsoleReport()
 {
     if (m_moduleTable.Count() != 0)
@@ -2178,6 +2177,7 @@ InProcCrashReporter::EndConsoleReport()
     }
 
     m_consoleWriter.WriteSeparator();
+    return !m_consoleWriter.HasWriteFailed();
 }
 
 // --- InProcCrashReporter: JSON report lifecycle ----------------------------
@@ -2203,7 +2203,7 @@ InProcCrashReporter::BeginJsonReport()
     m_jsonWriter.WriteDecimalAsString("pid", static_cast<uint64_t>(GetCurrentProcessId()));
 }
 
-void
+bool
 InProcCrashReporter::EndJsonReport(
     int signal,
     bool finalizeReportFile)
@@ -2231,18 +2231,12 @@ InProcCrashReporter::EndJsonReport(
     {
         int fd = m_outputContext.Fd();
         bool finishSucceeded = m_jsonWriter.Finish();
-        bool writeFailed = m_outputContext.WriteFailed();
-        if (!CrashReportHelpers::WriteToFile(fd, "\n", 1))
-        {
-            writeFailed = true;
-        }
-
+        bool newlineSucceeded = CrashReportHelpers::WriteToFile(fd, "\n", 1);
         bool closeSucceeded = close(fd) == 0;
-        bool reportSucceeded = finishSucceeded && !writeFailed && closeSucceeded;
+        bool reportSucceeded = finishSucceeded && newlineSucceeded && closeSucceeded;
         m_lifecycle.FinishReportFile(reportSucceeded, m_reportFilePath);
+        return reportSucceeded;
     }
-    else
-    {
-        (void)m_jsonWriter.Finish();
-    }
+
+    return m_jsonWriter.Finish();
 }
