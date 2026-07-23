@@ -1727,6 +1727,16 @@ void EEJitManager::SetCpuInfo()
     {
         CPUCompileFlags.Set(InstructionSet_Zicond);
     }
+#elif defined(TARGET_LOONGARCH64)
+    if (((cpuFeatures & LOONGARCH64IntrinsicConstants_LAM_BH) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableLoongArch64LAM_BH))
+    {
+        CPUCompileFlags.Set(InstructionSet_LAM_BH);
+    }
+
+    if (((cpuFeatures & LOONGARCH64IntrinsicConstants_LAM_CAS) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableLoongArch64LAM_CAS))
+    {
+        CPUCompileFlags.Set(InstructionSet_LAM_CAS);
+    }
 #endif
 
     // These calls are very important as it ensures the flags are consistent with any
