@@ -327,9 +327,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                         }
                         finally
                         {
-                            foreach (CertificateAuthority intermediate in intermediates)
+                            if (intermediates is not null)
                             {
-                                intermediate.Dispose();
+                                foreach (CertificateAuthority intermediate in intermediates)
+                                {
+                                    intermediate.Dispose();
+                                }
                             }
                         }
                     }
