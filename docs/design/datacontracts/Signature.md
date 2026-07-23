@@ -16,7 +16,7 @@ These tags are used in signatures generated internally by the runtime that are n
 ## APIs of contract
 
 ```csharp
-TypeHandle DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, TypeHandle ctx);
+ITypeHandle? DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, ITypeHandle? ctx);
 
 // Returns the address of the first argument of a vararg call relative to the cookie pointer location.
 TargetPointer GetVarArgArgsBase(TargetPointer vaSigCookieAddr);
@@ -31,8 +31,9 @@ Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
 | `VASigCookie` | `SizeOfArgs` | Total size in bytes of the pushed argument list. Used on x86 to locate the args base. |
-| `VASigCookie` | `SignaturePointer` | Target address of the raw vararg signature blob. |
-| `VASigCookie` | `SignatureLength` | Length in bytes of the raw vararg signature blob. |
+| `VASigCookie` | `Signature` | The raw vararg signature (see `Signature`). |
+| `Signature` | `SignaturePointer` | Target address of the raw signature blob. |
+| `Signature` | `SignatureLength` | Length in bytes of the raw signature blob. |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -53,7 +54,7 @@ Constants:
 | `ELEMENT_TYPE_INTERNAL` | runtime-internal element type tag for an internal `TypeHandle` | `0x21` |
 | `ELEMENT_TYPE_CMOD_INTERNAL` | runtime-internal element type tag for an internal modified type | `0x22` |
 
-Decoding a signature follows the ECMA-335 §II.23.2 grammar. For all standard element types, decoding behaves identically to `System.Reflection.Metadata.SignatureDecoder<TType, TGenericContext>`. When the decoder encounters one of the runtime-internal tags above, it reads the target-sized pointer (and optional `required` byte for `ELEMENT_TYPE_CMOD_INTERNAL`) from the signature blob and resolves it to a runtime `TypeHandle`.
+Decoding a signature follows the ECMA-335 §II.23.2 grammar. For all standard element types, decoding behaves identically to `System.Reflection.Metadata.SignatureDecoder<TType, TGenericContext>`. When the decoder encounters one of the runtime-internal tags above, it reads the target-sized pointer to a runtime `TypeHandle` (and optional `required` byte for `ELEMENT_TYPE_CMOD_INTERNAL`) from the signature blob and resolves it to an `ITypeHandle`.
 
 The decoder is implemented as `RuntimeSignatureDecoder<TType, TGenericContext>` -- a clone of SRM's `SignatureDecoder<TType, TGenericContext>` with added support for the runtime-internal element types. The clone takes an additional `Target` so internal-type pointers can be sized for the target architecture. Provider implementations implement `IRuntimeSignatureTypeProvider<TType, TGenericContext>` -- a superset of `System.Reflection.Metadata.ISignatureTypeProvider<TType, TGenericContext>` -- adding methods for the runtime-internal element types:
 
@@ -62,15 +63,15 @@ TType GetInternalType(TargetPointer typeHandlePointer);
 TType GetInternalModifiedType(TargetPointer typeHandlePointer, TType unmodifiedType, bool isRequired);
 ```
 
-The contract's provider resolves these pointers through `RuntimeTypeSystem.GetTypeHandle`. Standard ECMA-335 element types resolve through `RuntimeTypeSystem.GetPrimitiveType` and `RuntimeTypeSystem.GetConstructedType`. Generic type parameters (`VAR`) and generic method parameters (`MVAR`) resolve via `RuntimeTypeSystem.GetInstantiation` and `RuntimeTypeSystem.GetGenericMethodInstantiation` respectively, using a `TypeHandle` (for generic types) or `MethodDescHandle` (for generic methods) generic context. `GetTypeFromDefinition` and `GetTypeFromReference` resolve tokens via the module's `TypeDefToMethodTableMap` / `TypeRefToMethodTableMap`; cross-module references and `GetTypeFromSpecification` are not currently implemented.
+The contract's provider resolves these pointers through `RuntimeTypeSystem.GetTypeHandle`. Standard ECMA-335 element types resolve through `RuntimeTypeSystem.GetPrimitiveType` and `RuntimeTypeSystem.GetConstructedType`. Generic type parameters (`VAR`) and generic method parameters (`MVAR`) resolve via `RuntimeTypeSystem.GetInstantiation` and `RuntimeTypeSystem.GetGenericMethodInstantiation` respectively, using an `ITypeHandle` (for generic types) or `MethodDescHandle` (for generic methods) generic context. `GetTypeFromDefinition` and `GetTypeFromReference` resolve tokens via the module's `TypeDefToMethodTableMap` / `TypeRefToMethodTableMap`; cross-module references and `GetTypeFromSpecification` are not currently implemented.
 
 ```csharp
-TypeHandle ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, TypeHandle ctx)
+ITypeHandle? ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, ITypeHandle? ctx)
 {
-    SignatureTypeProvider<TypeHandle> provider = new(_target, moduleHandle);
+    SignatureTypeProvider<ITypeHandle?> provider = new(_target, moduleHandle);
     MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
     BlobReader blobReader = mdReader.GetBlobReader(blobHandle);
-    RuntimeSignatureDecoder<TypeHandle, TypeHandle> decoder = new(provider, _target, mdReader, ctx);
+    RuntimeSignatureDecoder<ITypeHandle?, ITypeHandle?> decoder = new(provider, _target, mdReader, ctx);
     return decoder.DecodeFieldSignature(ref blobReader);
 }
 ```
@@ -104,7 +105,7 @@ void ISignature.GetVarArgSignature(TargetPointer vaSigCookieAddr, out TargetPoin
     TargetPointer vaSigCookie = _target.ReadPointer(vaSigCookieAddr);
     VASigCookie cookie = _target.ProcessedData.GetOrAdd<VASigCookie>(vaSigCookie);
 
-    signatureAddress = cookie.SignaturePointer;
-    signatureLength = cookie.SignatureLength;
+    signatureAddress = cookie.Signature.SignaturePointer;
+    signatureLength = cookie.Signature.SignatureLength;
 }
 ```

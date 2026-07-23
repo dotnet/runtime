@@ -7,8 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class StressMsg : IData<StressMsg>
 {
     [FieldAddress]
-    public TargetPointer Header { get; }
+    public partial TargetPointer Header { get; }
 
     [FieldAddress]
-    public TargetPointer Args { get; }
+    public partial TargetPointer Args { get; }
 }

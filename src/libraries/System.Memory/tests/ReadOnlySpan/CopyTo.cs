@@ -136,12 +136,12 @@ namespace System.SpanTests
         public static void CopyToLargeSizeTest(long bufferSize)
         {
             // If this test is run in a 32-bit process, the large allocation will fail.
-            if (Unsafe.SizeOf<IntPtr>() != sizeof(long))
+            if (sizeof(IntPtr) != sizeof(long))
             {
                 return;
             }
 
-            int GuidCount = (int)(bufferSize / Unsafe.SizeOf<Guid>());
+            int GuidCount = (int)(bufferSize / sizeof(Guid));
             bool allocatedFirst = false;
             bool allocatedSecond = false;
             IntPtr memBlockFirst = IntPtr.Zero;
