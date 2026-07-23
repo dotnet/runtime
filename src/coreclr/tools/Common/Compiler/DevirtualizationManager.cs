@@ -107,7 +107,7 @@ namespace ILCompiler
 
             if (declMethod.OwningType.IsInterface)
             {
-                if (implType.IsWellKnownType(WellKnownType.Array))
+                if (implType.IsWellKnownType(WellKnownType.Array) && declMethod.Context.GetWellKnownType(WellKnownType.SZArrayHelper, throwIfNotFound: false) is not null)
                 {
                     if (declMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
                     {
