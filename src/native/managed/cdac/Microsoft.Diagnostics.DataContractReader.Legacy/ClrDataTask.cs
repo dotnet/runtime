@@ -16,6 +16,8 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
     private readonly Target _target;
     private readonly IXCLRDataTask? _legacyImpl;
 
+    internal TargetPointer Address => _address;
+
     public ClrDataTask(TargetPointer address, Target target, IXCLRDataTask? legacyImpl)
     {
         _address = address;

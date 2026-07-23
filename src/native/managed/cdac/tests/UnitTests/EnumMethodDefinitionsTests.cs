@@ -5,7 +5,10 @@ using System;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -203,6 +206,72 @@ public unsafe class EnumMethodDefinitionsTests
             var emd = new ClrDataModule.EnumMethodDefinitions(reader, 0, 0);
 
             Assert.Throws<ArgumentException>(() => emd.Start(fullName));
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumTypeDefinitions_EnumeratesMetadataAndReleasesHandle(MockTarget.Architecture arch)
+    {
+        fixed (byte* ptr = s_metadataBytes)
+        {
+            var reader = new MetadataReader(ptr, s_metadataBytes.Length);
+            var loader = new Mock<ILoader>();
+            var metadata = new Mock<IEcmaMetadata>();
+            TargetPointer moduleAddress = new(0x1000);
+            var moduleHandle = new Contracts.ModuleHandle(moduleAddress);
+            loader.Setup(l => l.GetModuleHandleFromModulePtr(moduleAddress)).Returns(moduleHandle);
+            metadata.Setup(m => m.GetMetadata(moduleHandle)).Returns(reader);
+
+            TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+                .AddMockContract(loader)
+                .AddMockContract(metadata)
+                .Build();
+            IXCLRDataModule module = new ClrDataModule(moduleAddress, target, legacyImpl: null);
+
+            ulong handle;
+            Assert.Equal(HResults.S_OK, module.StartEnumTypeDefinitions(&handle));
+            Assert.NotEqual(0ul, handle);
+
+            int count = 0;
+            var typeDefinition = new DacComNullableByRef<IXCLRDataTypeDefinition>(isNullRef: false);
+            while (module.EnumTypeDefinition(&handle, typeDefinition) == HResults.S_OK)
+            {
+                Assert.IsType<ClrDataTypeDefinition>(typeDefinition.Interface);
+                count++;
+            }
+
+            Assert.Equal(reader.TypeDefinitions.Count, count);
+            Assert.Equal(HResults.S_OK, module.EndEnumTypeDefinitions(handle));
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumTypeDefinitions_RejectsInvalidArguments(MockTarget.Architecture arch)
+    {
+        fixed (byte* ptr = s_metadataBytes)
+        {
+            var reader = new MetadataReader(ptr, s_metadataBytes.Length);
+            var loader = new Mock<ILoader>();
+            var metadata = new Mock<IEcmaMetadata>();
+            TargetPointer moduleAddress = new(0x1000);
+            var moduleHandle = new Contracts.ModuleHandle(moduleAddress);
+            loader.Setup(l => l.GetModuleHandleFromModulePtr(moduleAddress)).Returns(moduleHandle);
+            metadata.Setup(m => m.GetMetadata(moduleHandle)).Returns(reader);
+
+            TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+                .AddMockContract(loader)
+                .AddMockContract(metadata)
+                .Build();
+            IXCLRDataModule module = new ClrDataModule(moduleAddress, target, legacyImpl: null);
+
+            Assert.Equal(HResults.E_POINTER, module.StartEnumTypeDefinitions(null));
+
+            ulong invalidHandle = 0;
+            var typeDefinition = new DacComNullableByRef<IXCLRDataTypeDefinition>(isNullRef: false);
+            Assert.Equal(HResults.E_INVALIDARG, module.EnumTypeDefinition(&invalidHandle, typeDefinition));
+            Assert.Equal(HResults.E_INVALIDARG, module.EndEnumTypeDefinitions(invalidHandle));
         }
     }
 }
