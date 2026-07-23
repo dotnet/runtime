@@ -453,7 +453,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
             PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
             PROCLogManagedCallstackForSignal(code);
-            PROCCreateCrashDumpIfEnabled(code, siginfo, context, /* serialize */ true, /* signalChainAfterReport */ false);
+            PROCCreateCrashDumpIfEnabled(code, siginfo, context, /* serialize */ true);
 
             // Restore the original and restart h/w exception.
             restore_signal(code, action);
@@ -475,7 +475,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
         PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
         PROCLogManagedCallstackForSignal(code);
-        PROCCreateCrashDumpIfEnabled(code, siginfo, context, /* serialize */ true, /* signalChainAfterReport */ true);
+        PROCCreateCrashDumpIfEnabled(code, siginfo, context, /* serialize */ true);
     }
 
     if (IsSaSigInfo(action))
@@ -496,7 +496,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
         PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
         PROCLogManagedCallstackForSignal(code);
-        PROCCreateCrashDumpIfEnabled(code, siginfo, context, /* serialize */ true, /* signalChainAfterReport */ false);
+        PROCCreateCrashDumpIfEnabled(code, siginfo, context, /* serialize */ true);
     }
 }
 
@@ -887,7 +887,7 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
         if (enableDumpOnSigTerm.IsSet() && enableDumpOnSigTerm.TryAsInteger(10, val) && val == 1)
         {
             PROCLogManagedCallstackForSignal(code);
-            PROCCreateCrashDumpIfEnabled(code, siginfo, context, /* serialize */ false, /* signalChainAfterReport */ false);
+            PROCCreateCrashDumpIfEnabled(code, siginfo, context, /* serialize */ false);
         }
     }
 

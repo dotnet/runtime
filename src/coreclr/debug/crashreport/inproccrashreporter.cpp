@@ -357,8 +357,7 @@ public:
     void CreateReport(
         int signal,
         void* context,
-        bool serialize,
-        bool signalChainAfterReport);
+        bool serialize);
 
     void SetCrashKind(InProcCrashReportCrashKind crashKind);
     void BeginStackOverflowTrace(uint64_t crashingTid, uint32_t totalFrameCount);
@@ -575,11 +574,9 @@ void
 InProcCrashReporter::CreateReport(
     int signal,
     void* context,
-    bool serialize,
-    bool signalChainAfterReport)
+    bool serialize)
 {
     static LONGLONG s_generatingThreadId = 0;
-    (void)signalChainAfterReport;
 
     if (!serialize)
     {
@@ -837,7 +834,7 @@ InProcCrashReporter::EndStackOverflowTrace()
 }
 
 void
-InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context, bool serialize, bool signalChainAfterReport)
+InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context, bool serialize)
 {
     (void)siginfo;
 
@@ -849,7 +846,7 @@ InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context, bool
 
     // Preserve the interrupted context's errno before the crash reporter uses syscalls.
     int savedErrno = errno;
-    reporter->CreateReport(signal, context, serialize, signalChainAfterReport);
+    reporter->CreateReport(signal, context, serialize);
     errno = savedErrno;
 }
 

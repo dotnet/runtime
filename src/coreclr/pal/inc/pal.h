@@ -270,17 +270,13 @@ PAL_SetLogManagedCallstackForSignalCallback(
 /// mirrors createdump behavior: when true, callback implementations may
 /// serialize concurrent reporters because the caller expects process teardown;
 /// when false, callbacks should not block other threads indefinitely.
-/// signalChainAfterReport indicates that signal chaining continues after the
-/// callback returns. If callback implementations synchronize concurrent callers,
-/// this indicates that slower threads should be released after report
-/// generation has finished.
 ///
 /// Registration is opt-in: if no callback is installed the PAL falls back
 /// to its default crash-dump path (createdump where available). The PAL
 /// itself has no source-level dependency on the in-proc reporter library;
 /// it only knows about this callback ABI.
 /// </summary>
-typedef VOID (*PINPROCCRASHREPORT_CALLBACK)(int signal, void* siginfo, void* context, bool serialize, bool signalChainAfterReport);
+typedef VOID (*PINPROCCRASHREPORT_CALLBACK)(int signal, void* siginfo, void* context, bool serialize);
 
 PALIMPORT
 VOID
