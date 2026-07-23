@@ -869,6 +869,8 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
  */
 inline bool Compiler::bbIsInSameFunclet(BasicBlock* block1, BasicBlock* block2)
 {
+    assert(fgFuncletsCreated);
+
     auto funcRegionOf = [this](BasicBlock* blk) -> unsigned {
         if (!blk->hasHndIndex())
         {
