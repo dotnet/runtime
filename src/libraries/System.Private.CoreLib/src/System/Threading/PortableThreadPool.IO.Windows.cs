@@ -194,10 +194,6 @@ namespace System.Threading
             // Pool of reusable Event objects to avoid allocating one per completion.
             private readonly ConcurrentQueue<Event>? _eventPool;
 
-            // Reusable, preallocated scratch buffer to collect the events produced by a single
-            // GetQueuedCompletionStatusEx call before packing them into a balanced binary tree.
-            // The number of events can never exceed NativeEventCapacity, so this array never needs to grow.
-            private readonly Event[]? _events;
             private readonly Thread _thread;
 
             public IOCompletionPoller(nint port)
@@ -211,7 +207,6 @@ namespace System.Threading
                         (Interop.Kernel32.OVERLAPPED_ENTRY*)
                         NativeMemory.Alloc(NativeEventCapacity, (nuint)sizeof(Interop.Kernel32.OVERLAPPED_ENTRY));
                     _eventPool = new ConcurrentQueue<Event>();
-                    _events = new Event[NativeEventCapacity];
 
                     // These threads don't run user code, use a smaller stack size
                     _thread = new Thread(Poll, SmallStackSizeBytes);
@@ -247,7 +242,6 @@ namespace System.Threading
             {
                 Debug.Assert(_nativeEvents != null);
                 Debug.Assert(_eventPool != null);
-                Debug.Assert(_events != null);
 
                 while (
                     Interop.Kernel32.GetQueuedCompletionStatusEx(
@@ -261,31 +255,12 @@ namespace System.Threading
                     Debug.Assert(nativeEventCount > 0);
                     Debug.Assert(nativeEventCount <= NativeEventCapacity);
 
-                    Event[] events = _events;
-                    int count = 0;
-                    for (int i = 0; i < nativeEventCount; ++i)
+                    // Pack all the events into a single balanced binary tree and post it to the
+                    // thread pool queue as one item. The tree is built directly from the native
+                    // events buffer and is unpacked into the local queues as the items execute.
+                    Event? root = BuildTree(_nativeEvents, 0, nativeEventCount);
+                    if (root is not null)
                     {
-                        Interop.Kernel32.OVERLAPPED_ENTRY* nativeEvent = &_nativeEvents[i];
-                        if (nativeEvent->lpOverlapped != null) // shouldn't be null since null is not posted
-                        {
-                            Event newEvent = _eventPool.TryDequeue(out Event? existingEvent) ?
-                                existingEvent :
-                                new Event(_eventPool);
-
-                            events[count++] = newEvent.With(nativeEvent->lpOverlapped, nativeEvent->dwNumberOfBytesTransferred);
-                        }
-                    }
-
-                    if (count > 0)
-                    {
-                        // Pack all the events into a single balanced binary tree and post it to the
-                        // thread pool queue as one item. The tree is unpacked into the local
-                        // queues as the items execute.
-                        Event root = BuildTree(new ReadOnlySpan<Event>(events, 0, count));
-
-                        // Clear the references so the scratch buffer doesn't keep the events alive.
-                        Array.Clear(events, 0, count);
-
                         ThreadPool.UnsafeQueueUserWorkItemInternal(root, preferLocal: false);
                     }
                 }
@@ -293,19 +268,39 @@ namespace System.Threading
                 ThrowHelper.ThrowApplicationException(Marshal.GetHRForLastWin32Error());
             }
 
-            // Builds a balanced binary tree out of the events in the span, returning its root.
-            private static Event BuildTree(ReadOnlySpan<Event> events)
+            // Builds a balanced binary tree out of the native events in [start, start + count), returning its root.
+            private Event? BuildTree(Interop.Kernel32.OVERLAPPED_ENTRY* nativeEvents, int start, int count)
             {
-                Debug.Assert(!events.IsEmpty);
+                Debug.Assert(_eventPool != null);
 
-                Event root = events[0];
-                ReadOnlySpan<Event> rest = events.Slice(1);
+                // Scan for the first non-null entry to use as the root. Entries shouldn't be null since null
+                // is not posted, but the completion port is shared and could receive one. Skipping such
+                // entries may leave the tree slightly unbalanced, which is fine given how rare this is.
+                while (count > 0 && nativeEvents[start].lpOverlapped == null)
+                {
+                    start++;
+                    count--;
+                }
+
+                if (count == 0)
+                {
+                    return null;
+                }
+
+                Interop.Kernel32.OVERLAPPED_ENTRY* nativeEvent = &nativeEvents[start];
+                Event newEvent = _eventPool.TryDequeue(out Event? existingEvent) ?
+                    existingEvent :
+                    new Event(_eventPool);
+                Event root = newEvent.With(nativeEvent->lpOverlapped, nativeEvent->dwNumberOfBytesTransferred);
+
+                int restCount = count - 1;
+                int restStart = start + 1;
 
                 // Give the left side the extra element when the count is odd.
-                int leftCount = (rest.Length + 1) / 2;
+                int leftCount = (restCount + 1) / 2;
 
-                root._left = leftCount > 0 ? BuildTree(rest.Slice(0, leftCount)) : null;
-                root._right = rest.Length > leftCount ? BuildTree(rest.Slice(leftCount)) : null;
+                root._left = leftCount > 0 ? BuildTree(nativeEvents, restStart, leftCount) : null;
+                root._right = restCount > leftCount ? BuildTree(nativeEvents, restStart + leftCount, restCount - leftCount) : null;
 
                 return root;
             }
@@ -314,7 +309,6 @@ namespace System.Threading
             {
                 Debug.Assert(_nativeEvents == null);
                 Debug.Assert(_eventPool == null);
-                Debug.Assert(_events == null);
 
                 while (true)
                 {
