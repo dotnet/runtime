@@ -106,10 +106,11 @@ namespace System.Diagnostics
                 procInfo.SessionId = sessionId;
             }
 
-            // Get the process's physical memory footprint (private/unique memory usage). This can fail
-            // for the same permission reasons proc_taskallinfo above can - e.g. querying a process owned
-            // by another user - in which case PrivateBytes is left at its default of 0, matching prior
-            // (unset) behavior for this field on macOS.
+            // Get the process's physical memory footprint - an accounting-based measurement (the same value
+            // shown in Activity Monitor's Memory column), not a strict count of unique/private pages. This can
+            // fail for the same permission reasons proc_taskallinfo above can - e.g. querying a process owned
+            // by another user - in which case PrivateBytes is left at its default of 0, matching prior (unset)
+            // behavior for this field on macOS.
             if (Interop.libproc.TryGetProcessPhysicalFootprint(pid, out ulong physicalFootprint))
             {
                 procInfo.PrivateBytes = physicalFootprint > long.MaxValue ? long.MaxValue : (long)physicalFootprint;

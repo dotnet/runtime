@@ -382,7 +382,9 @@ internal static partial class Interop
         }
 
         /// <summary>
-        /// Attempts to get the physical memory footprint (private/unique memory usage) for the process identified by the PID
+        /// Attempts to get the physical memory footprint for the process identified by the PID. This is an
+        /// accounting-based measurement of the process's memory usage - the same value shown in Activity
+        /// Monitor's Memory column - not a strict count of pages unique/private to the process.
         /// </summary>
         /// <param name="pid">The process to retrieve the physical footprint for</param>
         /// <param name="physicalFootprint">When this method returns true, contains the process's physical footprint in bytes</param>
