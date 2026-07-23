@@ -4179,6 +4179,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
+            if (pResult is null)
+                throw new NullReferenceException();
+
+            *pResult = Interop.BOOL.FALSE;
             Contracts.ThreadState threadState = _target.Contracts.Thread.GetThreadData(vmThread).State;
             *pResult = (threadState & (Contracts.ThreadState.DebugSyncSuspended | Contracts.ThreadState.Hijacked)) != 0
                         ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
@@ -4190,11 +4194,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #if DEBUG
         if (_legacy is not null)
         {
-            Interop.BOOL pResultLocal;
-            int hrLocal = _legacy.IsThreadSuspendedOrHijacked(vmThread, &pResultLocal);
+            Interop.BOOL resultLocal = Interop.BOOL.FALSE;
+            Interop.BOOL* resultLocalPtr = pResult is null ? null : &resultLocal;
+            int hrLocal = _legacy.IsThreadSuspendedOrHijacked(vmThread, resultLocalPtr);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == pResultLocal);
+                Debug.Assert(*pResult == resultLocal);
         }
 #endif
         return hr;
