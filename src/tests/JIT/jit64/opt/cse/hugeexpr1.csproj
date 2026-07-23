@@ -11,8 +11,6 @@
   <PropertyGroup>
     <DebugType>Full</DebugType>
     <Optimize>True</Optimize>
-    <!-- This test is very resource heavy and doesn't play well with some JitStress modes, especially when memory is limited  (x86),
-         on arm the test fails to crossgen with stress mode because of an relocation offset size limit, see https://github.com/dotnet/runtime/issues/9821 -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="hugeexpr1.cs" />

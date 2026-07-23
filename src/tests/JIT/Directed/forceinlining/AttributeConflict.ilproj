@@ -5,10 +5,6 @@
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
-  <PropertyGroup>
-    <!-- Interpreter does not support Inlining -->
-    <InterpreterIncompatible>true</InterpreterIncompatible>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttributeConflict.il" />
   </ItemGroup>

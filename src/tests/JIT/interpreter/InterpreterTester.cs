@@ -13,7 +13,7 @@ using Xunit;
 
 public class InterpreterTester
 {
-    [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
+    [SkipOnCoreClr("Temporarily disabled due to problems generating interpreter bytecode for methods with an existing prestub.", RuntimeTestModes.AnyJitOptimizationStress)]
     [SkipOnCoreClr("Temporarily disabled due to https://github.com/dotnet/runtime/issues/112827.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void RunTests()

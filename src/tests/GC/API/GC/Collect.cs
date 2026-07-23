@@ -7,6 +7,7 @@ using Xunit;
 
 public class Test_Collect {
     [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+    [SkipOnCoreClr("GC.Collect does not exhibit the generational behavior this test validates under the CoreCLR interpreter. See https://github.com/dotnet/runtime/issues/118618.", RuntimeTestModes.InterpreterActive)]
     [Fact]
     public static int TestEntryPoint()
     {

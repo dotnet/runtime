@@ -85,12 +85,11 @@ The test is a long-running GC test that should only execute when `RunningLongGCT
 is set. The skip check (injected via `CLRTest.GC.targets` as a shell pre-command)
 runs per-process, so the test needs its own process.
 
-### 15. Project sets `<CLRTestExecutionArguments>` to a non-default value
+### 15. Project sets `<CLRTestExecutionArguments>` to a non-empty value
 
 Execution arguments passed to the test runner are per-process configuration. Setting
-this property (even to an empty string to clear inherited arguments) changes how the
-test process is invoked, which is incompatible with a shared runner that uses its own
-fixed invocation.
+this property to a non-empty value changes how the test process is invoked, which is
+incompatible with a shared runner that uses its own fixed invocation.
 
 ### 16. Project sets `<CrossGenTest>false</CrossGenTest>`
 
@@ -196,7 +195,7 @@ If the project file contains **any** of the following MSBuild properties or item
 | `IlasmRoundTripIncompatible` | Per-process skip check |
 | `UnloadabilityIncompatible` | Per-process skip check |
 | `IsLongRunningGCTest` | Per-process skip pre-command |
-| `CLRTestExecutionArguments` | Per-process invocation arguments |
+| `CLRTestExecutionArguments` (non-empty) | Per-process invocation arguments |
 | `CLRTestTargetUnsupported` | Build/execution filtering |
 | `NativeAotIncompatible` | Build/execution filtering |
 | `MonoAotIncompatible` | Build/execution filtering |

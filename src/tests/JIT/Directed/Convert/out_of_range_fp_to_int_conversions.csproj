@@ -3,7 +3,6 @@
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <Optimize>True</Optimize>
-    <!-- This test can run for a very long time in stress modes -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="out_of_range_fp_to_int_conversions.cs" />

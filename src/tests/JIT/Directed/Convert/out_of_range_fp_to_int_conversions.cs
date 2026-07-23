@@ -320,8 +320,8 @@ namespace FPBehaviorApp
         }
 
         [ActiveIssue("Mono does not define out of range fp to int conversions", TestRuntimes.Mono)]
-        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
-        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+        [SkipOnCoreClr("This test can run for a very long time under JIT stress.", RuntimeTestModes.AnyJitOptimizationStress)]
+        [SkipOnCoreClr("This test can run for a very long time under GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {

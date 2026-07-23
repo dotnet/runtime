@@ -13,8 +13,6 @@ public class Test_GetAllocatedBytesForCurrentThread
 {
     static Random Rand = new Random();
 
-    public static bool IsNotHeapVerifyOnArmArchitecture => !(Utilities.IsArm && TestLibrary.CoreClrConfigurationDetection.IsHeapVerify);
-
     public static bool GetAllocatedBytesForCurrentThread(int size)
     {
         int startCount = GC.CollectionCount(0);
@@ -103,9 +101,9 @@ public class Test_GetAllocatedBytesForCurrentThread
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
-    [ActiveIssue("https://github.com/dotnet/runtime/pull/126108", TestRuntimes.Mono)]
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
-    [ConditionalFact(typeof(Test_GetAllocatedBytesForCurrentThread), nameof(IsNotHeapVerifyOnArmArchitecture))]
+    [Fact]
     public static int TestEntryPoint() 
     {
         // First test with collection

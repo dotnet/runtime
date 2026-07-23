@@ -9,7 +9,6 @@
   </PropertyGroup>
   <PropertyGroup>
     <Optimize>True</Optimize>
-    <!-- It hits timeout with R2R and JitStress=1, issue 16573 -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
