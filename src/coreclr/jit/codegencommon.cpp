@@ -1831,6 +1831,18 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         regNumber reg1 = retDesc->GetABIReturnReg(0, call->GetUnmanagedCallConv());
         regNumber reg2 = retDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv());
 
+#ifdef TARGET_ARM64
+        if ((!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2)) &&
+            (retDesc->GetReturnFieldOffset(1) != TARGET_POINTER_SIZE))
+        {
+            // The two-register debug-info representation places the second
+            // register at the next pointer-sized offset. ARM64 HFAs/HVAs with
+            // smaller or larger elements use a different offset and cannot be
+            // represented without recording per-register piece sizes.
+            return;
+        }
+#endif
+
 #if !defined(TARGET_64BIT)
         // Multi-register debug-info encodings that involve floating-point
         // registers assume each register holds an 8-byte half of the value, so
@@ -1850,11 +1862,13 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         {
             return;
         }
-#elif !defined(TARGET_AMD64)
-        // This unified RegNum encoding is implemented only for AMD64. Other 64-bit
-        // targets still need dedicated encodings to represent FP-containing
-        // two-register returns without ambiguity, so suppress those cases here
-        // instead of emitting an encoding the debugger cannot decode.
+#elif !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
+        // AMD64 and ARM64 include FP registers in their debug RegNum enumerations,
+        // so VLT_REG_REG can encode FP-containing two-register returns. Other
+        // 64-bit targets do not yet implement the debugger-side floating-point
+        // read path, so suppress those cases instead of emitting an encoding the
+        // debugger cannot decode. A pair of integer registers is still encoded
+        // below as VLT_REG_REG.
         if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
         {
             return;
