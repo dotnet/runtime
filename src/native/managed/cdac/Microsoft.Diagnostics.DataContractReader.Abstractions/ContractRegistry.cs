@@ -113,6 +113,10 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual ISignature Signature => GetContract<ISignature>();
     /// <summary>
+    /// Gets an instance of the TypeInformation contract for the target.
+    /// </summary>
+    public virtual ITypeInformation TypeInformation => GetContract<ITypeInformation>();
+    /// <summary>
     /// Gets an instance of the SyncBlock contract for the target.
     /// </summary>
     public virtual ISyncBlock SyncBlock => GetContract<ISyncBlock>();
