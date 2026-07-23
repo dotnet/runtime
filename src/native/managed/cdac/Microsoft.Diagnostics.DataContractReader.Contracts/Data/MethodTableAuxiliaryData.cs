@@ -6,7 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.MethodTableAuxiliaryData))]
 internal sealed partial class MethodTableAuxiliaryData : IData<MethodTableAuxiliaryData>
 {
-    [Field] public TargetPointer LoaderModule { get; }
-    [Field] public short OffsetToNonVirtualSlots { get; }
-    [Field] public uint Flags { get; }
+    [Field] public partial TargetPointer LoaderModule { get; }
+    [Field] public partial short OffsetToNonVirtualSlots { get; }
+    [Field] public partial uint Flags { get; }
 }

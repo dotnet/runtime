@@ -204,16 +204,16 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1));
     }
 
-    static void CallFunc_I32_I32_S8_I32_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_IND(2), ARG_I32(3), ARG_I32(4));
-    }
-
     static void CallFunc_I32_I32_S8_I32_I32_S8_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_IND(2), ARG_I32(3), ARG_I32(4), ARG_IND(5));
+    }
+
+    static void CallFunc_I32_I32_S8_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    {
+        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_IND(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6));
     }
 
     static void CallFunc_I32_I32_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -222,10 +222,10 @@ namespace
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2));
     }
 
-    static void CallFunc_I32_I32_I32_S8_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    static void CallFunc_I32_I32_I32_S8_I32_I32_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
-        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_IND(3), ARG_I32(4));
+        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
+        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_IND(3), ARG_I32(4), ARG_I32(5), ARG_I32(6));
     }
 
     static void CallFunc_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -692,10 +692,10 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "MiiS8i", (void*)&CallFunc_I32_S8_I32_RetI32 },
     { "MiiS8iii", (void*)&CallFunc_I32_S8_I32_I32_I32_RetI32 },
     { "Miii", (void*)&CallFunc_I32_I32_RetI32 },
-    { "MiiiS8ii", (void*)&CallFunc_I32_I32_S8_I32_I32_RetI32 },
     { "MiiiS8iiS8", (void*)&CallFunc_I32_I32_S8_I32_I32_S8_RetI32 },
+    { "MiiiS8iiii", (void*)&CallFunc_I32_I32_S8_I32_I32_I32_I32_RetI32 },
     { "Miiii", (void*)&CallFunc_I32_I32_I32_RetI32 },
-    { "MiiiiS8i", (void*)&CallFunc_I32_I32_I32_S8_I32_RetI32 },
+    { "MiiiiS8iii", (void*)&CallFunc_I32_I32_I32_S8_I32_I32_I32_RetI32 },
     { "Miiiii", (void*)&CallFunc_I32_I32_I32_I32_RetI32 },
     { "Miiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_RetI32 },
     { "Miiiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_RetI32 },

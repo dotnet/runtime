@@ -6,8 +6,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.DynamicMetadata))]
 internal sealed partial class DynamicMetadata : IData<DynamicMetadata>
 {
-    [Field] public uint Size { get; }
+    [Field] public partial uint Size { get; }
 
     [FieldAddress]
-    public TargetPointer Data { get; }
+    public partial TargetPointer Data { get; }
 }

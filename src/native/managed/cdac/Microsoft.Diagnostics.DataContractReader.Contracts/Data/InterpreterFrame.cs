@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.InterpreterFrame))]
 internal sealed partial class InterpreterFrame : IData<InterpreterFrame>
 {
-    [Field] public TargetPointer TopInterpMethodContextFrame { get; }
-    [Field] public bool IsFaulting { get; }
+    [Field] public partial TargetPointer TopInterpMethodContextFrame { get; }
+    [Field] public partial bool IsFaulting { get; }
 }
