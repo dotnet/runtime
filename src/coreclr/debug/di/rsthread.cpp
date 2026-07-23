@@ -1592,8 +1592,11 @@ HRESULT CordbThread::SetManagedContext(ContextBuffer contextBuffer)
         hr = GetProcess()->SafeReadThreadContext(m_vmLeftSideContext, temporaryContext);
         IfFailThrow(hr);
 
-        // flags == 0: tempContext already carries the target's ContextFlags (read above).
-        IfFailThrow(GetProcess()->GetDAC()->CopyContext(temporaryContext, contextBuffer, 0));
+        IfFailThrow(GetProcess()->GetDAC()->CopyContext(
+            temporaryContext,
+            contextBuffer,
+            IDacDbiInterface::kCopyContextPreserveDestinationFlags,
+            0));
 
         hr = GetProcess()->SafeWriteThreadContext(m_vmLeftSideContext, temporaryContext);
         IfFailThrow(hr);
@@ -3221,7 +3224,6 @@ HRESULT CordbUnmanagedThread::GetThreadContext(T_CONTEXT* pContext)
             "HijackedForSync=%d RaiseExceptionHijacked=%d.\n",
             IsContextSet(), IsGenericHijacked(), IsBlockingForSync(), IsRaiseExceptionHijacked()));
         LOG((LF_CORDB, LL_INFO10000, "CUT::GTC: hijackCtx is:\n"));
-        LogContext(GetHijackCtx());
         CORDbgCopyThreadContext(reinterpret_cast<BYTE *>(pContext), sizeof(T_CONTEXT),
                                 reinterpret_cast<const BYTE *>(GetHijackCtx()), sizeof(T_CONTEXT));
     }
@@ -3256,7 +3258,6 @@ HRESULT CordbUnmanagedThread::GetThreadContext(T_CONTEXT* pContext)
     {
         UnsetSSFlag(pContext);
     }
-    LogContext(pContext);
 
     return hr;
 }
@@ -3270,8 +3271,6 @@ HRESULT CordbUnmanagedThread::SetThreadContext(T_CONTEXT* pContext)
 
     LOG((LF_CORDB, LL_INFO10000,
         "CUT::STC: thread=0x%p, flags=0x%x.\n", this, pContext->ContextFlags));
-
-    LogContext(pContext);
 
     // If the thread is first chance hijacked, then write the context into the remote process. If the thread is generic
     // hijacked, then update the copy of the context that we already have. Otherwise call the normal Win32 function.
@@ -3369,32 +3368,6 @@ VOID CordbUnmanagedThread::EndStepping()
     _ASSERTE(succ);
 }
 
-
-// Writes some details of the given context into the debugger log
-VOID CordbUnmanagedThread::LogContext(T_CONTEXT* pContext)
-{
-#if defined(TARGET_X86)
-    LOG((LF_CORDB, LL_INFO10000,
-        "CUT::LC: Eip=0x%08x, Esp=0x%08x, Eflags=0x%08x\n", pContext->Eip, pContext->Esp,
-        pContext->EFlags));
-#elif defined(TARGET_AMD64)
-    LOG((LF_CORDB, LL_INFO10000,
-        "CUT::LC: Rip=" FMT_ADDR ", Rsp=" FMT_ADDR ", Eflags=0x%08x\n",
-        DBG_ADDR(pContext->Rip),
-        DBG_ADDR(pContext->Rsp),
-        pContext->EFlags));    // EFlags is still 32bits on AMD64
-#elif defined(TARGET_ARM64)
-    LOG((LF_CORDB, LL_INFO10000,
-        "CUT::LC: Pc=" FMT_ADDR ", Sp=" FMT_ADDR ", Lr=" FMT_ADDR ", Cpsr=" FMT_ADDR "\n",
-        DBG_ADDR(pContext->Pc),
-        DBG_ADDR(pContext->Sp),
-        DBG_ADDR(pContext->Lr),
-        DBG_ADDR(pContext->Cpsr)));
-#else   // TARGET_X86
-    PORTABILITY_ASSERT("LogContext needs a PC and stack pointer.");
-#endif  // TARGET_X86
-}
-
 // Hijacks this thread using the FirstChanceSuspend hijack
 HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
 {
@@ -3425,7 +3398,6 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
 
     // snapshot the current context so we can start spoofing it
     LOG((LF_CORDB, LL_INFO10000, "CUT::SFCHFS: hijackCtx started as:\n"));
-    LogContext(GetHijackCtx());
 
     // Save the thread's full context + CONTEXT_EXTENDED_REGISTERS
     // to avoid getting incomplete information and corrupt the thread context
@@ -3451,7 +3423,6 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
     CORDbgCopyThreadContext(reinterpret_cast<BYTE *>(GetHijackCtx()), sizeof(T_CONTEXT),
                             reinterpret_cast<const BYTE *>(&context), sizeof(context));
     LOG((LF_CORDB, LL_INFO10000, "CUT::SFCHFS: thread=0x%x Hijacking for sync. Original context is:\n", this));
-    LogContext(GetHijackCtx());
 
     // We're hijacking now...
     SetState(CUTS_FirstChanceHijacked);

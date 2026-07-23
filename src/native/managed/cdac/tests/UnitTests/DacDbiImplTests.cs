@@ -848,6 +848,90 @@ public unsafe class DacDbiImplTests
     }
 
     [Theory]
+    [MemberData(nameof(TargetArchitectures))]
+    public void CopyContext_CopyModeControlsContextFlags(MockTarget.Architecture arch, string targetArch)
+    {
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .AddGlobalStrings((Constants.Globals.Architecture, targetArch))
+            .AddContract<IRuntimeInfo>(version: "c1")
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null);
+
+        IPlatformAgnosticContext destinationContext = IPlatformAgnosticContext.GetContextForPlatform(target);
+        IPlatformAgnosticContext sourceContext = IPlatformAgnosticContext.GetContextForPlatform(target);
+        destinationContext.RawContextFlags = destinationContext.ContextControlFlags;
+        sourceContext.RawContextFlags = sourceContext.FullContextFlags;
+
+        string? sourceOnlyRegister = null;
+        foreach ((uint flag, string name) in sourceContext.GetScalarRegisters())
+        {
+            if ((sourceContext.FullContextFlags & flag) == flag &&
+                (destinationContext.ContextControlFlags & flag) != flag)
+            {
+                sourceOnlyRegister = name;
+                break;
+            }
+        }
+
+        Assert.NotNull(sourceOnlyRegister);
+        TargetNUInt expectedValue = new(0x1234);
+        Assert.True(sourceContext.TrySetRegister(sourceOnlyRegister, expectedValue));
+
+        byte[] destinationBytes = destinationContext.GetBytes();
+        byte[] sourceBytes = sourceContext.GetBytes();
+        fixed (byte* pDestination = destinationBytes)
+        fixed (byte* pSource = sourceBytes)
+        {
+            ContextBuffer destinationBuffer = new() { pContextBytes = pDestination, contextSize = (uint)destinationBytes.Length };
+            ContextBuffer sourceBuffer = new() { pContextBytes = pSource, contextSize = (uint)sourceBytes.Length };
+            int hr = dacDbi.CopyContext(destinationBuffer, sourceBuffer, ContextCopyMode.PreserveDestinationFlags, flags: 0);
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
+
+        destinationContext.FillFromBuffer(destinationBytes);
+        Assert.Equal(destinationContext.ContextControlFlags, destinationContext.RawContextFlags);
+        Assert.True(destinationContext.TryReadRegister(sourceOnlyRegister, out TargetNUInt preservedValue));
+        Assert.NotEqual(expectedValue, preservedValue);
+
+        fixed (byte* pDestination = destinationBytes)
+        fixed (byte* pSource = sourceBytes)
+        {
+            ContextBuffer destinationBuffer = new() { pContextBytes = pDestination, contextSize = (uint)destinationBytes.Length };
+            ContextBuffer sourceBuffer = new() { pContextBytes = pSource, contextSize = (uint)sourceBytes.Length };
+            int hr = dacDbi.CopyContext(destinationBuffer, sourceBuffer, ContextCopyMode.MergeSourceFlags, flags: 0);
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
+
+        destinationContext.FillFromBuffer(destinationBytes);
+        Assert.Equal(sourceContext.FullContextFlags, destinationContext.RawContextFlags);
+        Assert.True(destinationContext.TryReadRegister(sourceOnlyRegister, out TargetNUInt actualValue));
+        Assert.Equal(expectedValue, actualValue);
+
+        TargetNUInt destinationValue = new(0x5678);
+        destinationContext.RawContextFlags = destinationContext.FullContextFlags;
+        Assert.True(destinationContext.TrySetRegister(sourceOnlyRegister, destinationValue));
+        destinationBytes = destinationContext.GetBytes();
+
+        fixed (byte* pDestination = destinationBytes)
+        fixed (byte* pSource = sourceBytes)
+        {
+            ContextBuffer destinationBuffer = new() { pContextBytes = pDestination, contextSize = (uint)destinationBytes.Length };
+            ContextBuffer sourceBuffer = new() { pContextBytes = pSource, contextSize = (uint)sourceBytes.Length };
+            int hr = dacDbi.CopyContext(
+                destinationBuffer,
+                sourceBuffer,
+                ContextCopyMode.UseExplicitFlags,
+                flags: 0);
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
+
+        destinationContext.FillFromBuffer(destinationBytes);
+        Assert.Equal(0u, destinationContext.RawContextFlags);
+        Assert.True(destinationContext.TryReadRegister(sourceOnlyRegister, out actualValue));
+        Assert.Equal(destinationValue, actualValue);
+    }
+
+    [Theory]
     [MemberData(nameof(TargetArchitectures_SpRange))]
     public void CheckContext_WithControlFlag_ValidatesSpRange(MockTarget.Architecture arch, string targetArch, ulong sp, int expectedHr)
     {

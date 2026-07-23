@@ -1077,5 +1077,12 @@ public unsafe partial interface IDacDbiInterface
     int CompareControlRegisters(ContextBuffer contextBuffer1, ContextBuffer contextBuffer2, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int CopyContext(ContextBuffer destinationContext, ContextBuffer sourceContext, uint flags);
+    int CopyContext(ContextBuffer destinationContext, ContextBuffer sourceContext, ContextCopyMode copyMode, uint flags);
+}
+
+public enum ContextCopyMode
+{
+    PreserveDestinationFlags = 0,
+    MergeSourceFlags,
+    UseExplicitFlags,
 }

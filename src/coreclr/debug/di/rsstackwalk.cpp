@@ -264,8 +264,13 @@ HRESULT CordbStackWalk::GetContext(ULONG32   contextFlags,
                 ThrowWin32(ERROR_INSUFFICIENT_BUFFER);
             }
 
+            DT_CONTEXT * pContext = reinterpret_cast<DT_CONTEXT *>(pbContextBuf);
+
+            // Some helper functions that examine the context expect the flags to be initialized.
+            pContext->ContextFlags = contextFlags;
+
             // check the size of the incoming buffer
-            if (contextBufSize < ContextSizeForFlags(contextFlags))
+            if (!CheckContextSizeForBuffer(contextBufSize, pbContextBuf))
             {
                 ThrowWin32(ERROR_INSUFFICIENT_BUFFER);
             }
@@ -293,7 +298,11 @@ HRESULT CordbStackWalk::GetContext(ULONG32   contextFlags,
                 // Stamp the requested contextFlags on the destination so the copy
                 // pulls exactly those chunks from the source.
                 ContextBuffer destinationContext = { pbContextBuf, contextBufSize };
-                IfFailThrow(pDAC->CopyContext(destinationContext, GetContextBuffer(), contextFlags));
+                IfFailThrow(pDAC->CopyContext(
+                    destinationContext,
+                    GetContextBuffer(),
+                    IDacDbiInterface::kCopyContextUseExplicitFlags,
+                    contextFlags));
             }
         }
     }
@@ -351,10 +360,13 @@ void CordbStackWalk::SetContextWorker(CorDebugSetContextFlag flag, ULONG32 conte
     ULONG32 cbCtx = GetProcess()->GetTargetContextSize();
     NewArrayHolder<BYTE> tmpCtx(new BYTE[cbCtx]);
     memcpy(tmpCtx, m_pContextBuffer, cbCtx);
-    // flags == 0: tmpCtx already carries the desired ContextFlags (copied above).
     ContextBuffer temporaryContext = { tmpCtx, cbCtx };
     ContextBuffer sourceContext = { context, contextSize };
-    IfFailThrow(pDAC->CopyContext(temporaryContext, sourceContext, 0));
+    IfFailThrow(pDAC->CopyContext(
+        temporaryContext,
+        sourceContext,
+        IDacDbiInterface::kCopyContextMergeSourceFlags,
+        0));
     IfFailThrow(pDAC->CheckContext(m_pCordbThread->m_vmThreadToken, temporaryContext));
 
     memcpy(m_pContextBuffer, tmpCtx, cbCtx);

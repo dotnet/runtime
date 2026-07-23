@@ -2246,13 +2246,20 @@ public:
         IN ContextBuffer contextBuffer2,
         OUT BOOL * pResult) = 0;
 
-    // Copies srcCtxBuf into dstCtxBuf, respecting the ContextFlags of both
-    // contexts. flags != 0 first stamps dstCtxBuf->ContextFlags = flags so the
-    // copy pulls exactly the requested chunks from the source; flags == 0
-    // preserves the destination's existing ContextFlags.
+    typedef enum
+    {
+        kCopyContextPreserveDestinationFlags = 0,
+        kCopyContextMergeSourceFlags,
+        kCopyContextUseExplicitFlags,
+    } ContextCopyMode;
+
+    // Copies sourceContext into destinationContext, respecting the ContextFlags
+    // selected by copyMode. flags supplies the destination ContextFlags when
+    // copyMode is kCopyContextUseExplicitFlags.
     virtual HRESULT STDMETHODCALLTYPE CopyContext(
         IN ContextBuffer destinationContext,
         IN ContextBuffer sourceContext,
+        IN ContextCopyMode copyMode,
         IN ULONG32 flags) = 0;
 
     // The following tag tells the DD-marshalling tool to stop scanning.

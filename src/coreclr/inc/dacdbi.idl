@@ -97,6 +97,7 @@ typedef int DynamicMethodType;
 typedef int FrameType;
 typedef int EHijackReason;
 typedef int CLR_DEBUGGING_PROCESS_FLAGS;
+typedef int ContextCopyMode;
 
 // Size type
 typedef unsigned int SIZE_T;
@@ -478,9 +479,12 @@ interface IDacDbiInterface : IUnknown
 
     HRESULT CompareControlRegisters([in] ContextBuffer contextBuffer1, [in] ContextBuffer contextBuffer2, [out] BOOL * pResult);
 
-    // Copies srcCtxBuf into dstCtxBuf, respecting the ContextFlags of both
-    // contexts. flags != 0 first stamps dstCtxBuf's ContextFlags so the copy
-    // pulls exactly the requested chunks from the source; flags == 0 preserves
-    // the destination's existing ContextFlags.
-    HRESULT CopyContext([in] ContextBuffer destinationContext, [in] ContextBuffer sourceContext, [in] ULONG32 flags);
+    // Copies sourceContext into destinationContext, respecting the ContextFlags
+    // selected by copyMode. flags supplies the destination ContextFlags when
+    // copyMode requests explicit flags.
+    HRESULT CopyContext(
+        [in] ContextBuffer destinationContext,
+        [in] ContextBuffer sourceContext,
+        [in] ContextCopyMode copyMode,
+        [in] ULONG32 flags);
 };

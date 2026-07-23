@@ -5894,7 +5894,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int CopyContext(ContextBuffer destinationContext, ContextBuffer sourceContext, uint flags)
+    public int CopyContext(ContextBuffer destinationContext, ContextBuffer sourceContext, ContextCopyMode copyMode, uint flags)
     {
         int hr = HResults.S_OK;
         IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
@@ -5921,10 +5921,22 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             IPlatformAgnosticContext srcCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
             srcCtx.FillFromBuffer(src);
 
-            // flags != 0 stamps the destination's ContextFlags so the copy pulls exactly the
-            // requested groups from the source; flags == 0 preserves the destination's flags.
-            if (flags != 0)
-                dstCtx.RawContextFlags = flags;
+            if (copyMode != ContextCopyMode.UseExplicitFlags && flags != 0)
+                throw new ArgumentException("Flags are only valid when explicit context flags are requested.", nameof(flags));
+
+            switch (copyMode)
+            {
+                case ContextCopyMode.PreserveDestinationFlags:
+                    break;
+                case ContextCopyMode.MergeSourceFlags:
+                    dstCtx.RawContextFlags |= srcCtx.RawContextFlags;
+                    break;
+                case ContextCopyMode.UseExplicitFlags:
+                    dstCtx.RawContextFlags = flags;
+                    break;
+                default:
+                    throw new ArgumentException("Invalid context copy mode.", nameof(copyMode));
+            }
 
             uint dstFlags = dstCtx.RawContextFlags;
             uint srcFlags = srcCtx.RawContextFlags;
@@ -5961,7 +5973,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 ContextBuffer scratchDestination = new() { pContextBytes = pScratchDst, contextSize = ctx.Size };
                 ContextBuffer scratchSource = new() { pContextBytes = pScratchSrc, contextSize = ctx.Size };
-                int hrLocal = _legacy.CopyContext(scratchDestination, scratchSource, flags);
+                int hrLocal = _legacy.CopyContext(scratchDestination, scratchSource, copyMode, flags);
                 Debug.ValidateHResult(hr, hrLocal);
                 if (hr == HResults.S_OK)
                     Debug.Assert(new ReadOnlySpan<byte>(destinationContext.pContextBytes, (int)ctx.Size).SequenceEqual(scratchDst.AsSpan(0, (int)ctx.Size)),

@@ -5874,6 +5874,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CompareControlRegisters(
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CopyContext(
     IN ContextBuffer destinationContext,
     IN ContextBuffer sourceContext,
+    IN ContextCopyMode copyMode,
     IN ULONG32 flags)
 {
     DD_ENTER_MAY_THROW;
@@ -5885,19 +5886,37 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CopyContext(
     // ContextFlags.
     if (!CheckContextSizeForBuffer(sourceContext.contextSize, sourceContext.pContextBytes))
         return E_INVALIDARG;
+    if (copyMode != kCopyContextUseExplicitFlags && flags != 0)
+        return E_INVALIDARG;
 
-    if (flags != 0)
+    switch (copyMode)
     {
-        // flags != 0 stamps the destination's ContextFlags before the copy, so the
-        // chunk-wise copy pulls exactly the requested pieces from the source.
-        if (!CheckContextSizeForFlags(destinationContext.contextSize, flags))
-            return E_INVALIDARG;
-        reinterpret_cast<DT_CONTEXT *>(destinationContext.pContextBytes)->ContextFlags = flags;
-    }
-    else
-    {
-        // flags == 0 preserves the destination's existing ContextFlags.
-        if (!CheckContextSizeForBuffer(destinationContext.contextSize, destinationContext.pContextBytes))
+        case kCopyContextPreserveDestinationFlags:
+            if (!CheckContextSizeForBuffer(destinationContext.contextSize, destinationContext.pContextBytes))
+                return E_INVALIDARG;
+            break;
+
+        case kCopyContextMergeSourceFlags:
+        {
+            if (!CheckContextSizeForBuffer(destinationContext.contextSize, destinationContext.pContextBytes))
+                return E_INVALIDARG;
+
+            DT_CONTEXT * pDestination = reinterpret_cast<DT_CONTEXT *>(destinationContext.pContextBytes);
+            const DT_CONTEXT * pSource = reinterpret_cast<const DT_CONTEXT *>(sourceContext.pContextBytes);
+            DWORD mergedFlags = pDestination->ContextFlags | pSource->ContextFlags;
+            if (!CheckContextSizeForFlags(destinationContext.contextSize, mergedFlags))
+                return E_INVALIDARG;
+            pDestination->ContextFlags = mergedFlags;
+            break;
+        }
+
+        case kCopyContextUseExplicitFlags:
+            if (!CheckContextSizeForFlags(destinationContext.contextSize, flags))
+                return E_INVALIDARG;
+            reinterpret_cast<DT_CONTEXT *>(destinationContext.pContextBytes)->ContextFlags = flags;
+            break;
+
+        default:
             return E_INVALIDARG;
     }
 

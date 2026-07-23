@@ -163,7 +163,11 @@ HRESULT CordbRegisterSet::GetThreadContext(ULONG32 contextSize, BYTE context[])
         // Overlay this frame's registers from the cached CONTEXT buffer, honoring the destination's
         // ContextFlags (the leaf's if copied above, otherwise the caller's incoming flags).
         ContextBuffer destinationContext = { context, contextSize };
-        IfFailThrow(pDAC->CopyContext(destinationContext, m_contextBuffer, 0));
+        IfFailThrow(pDAC->CopyContext(
+            destinationContext,
+            m_contextBuffer,
+            IDacDbiInterface::kCopyContextPreserveDestinationFlags,
+            0));
     }
     EX_CATCH_HRESULT(hr);
     return hr;

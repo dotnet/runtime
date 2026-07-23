@@ -167,7 +167,11 @@ public:
 
     HRESULT STDMETHODCALLTYPE CompareControlRegisters(IN ContextBuffer contextBuffer1, IN ContextBuffer contextBuffer2, OUT BOOL * pResult);
 
-    HRESULT STDMETHODCALLTYPE CopyContext(IN ContextBuffer destinationContext, IN ContextBuffer sourceContext, IN ULONG32 flags);
+    HRESULT STDMETHODCALLTYPE CopyContext(
+        IN ContextBuffer destinationContext,
+        IN ContextBuffer sourceContext,
+        IN ContextCopyMode copyMode,
+        IN ULONG32 flags);
 
 private:
     void TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed              boxed,

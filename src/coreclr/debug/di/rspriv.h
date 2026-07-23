@@ -10509,9 +10509,6 @@ public:
     HRESULT RestoreLeafSeh();
 #endif
 
-    // Logs basic data about a context to the debugging log
-    static VOID LogContext(T_CONTEXT* pContext);
-
 public:
     HANDLE                     m_handle;
 

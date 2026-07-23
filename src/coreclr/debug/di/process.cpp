@@ -12511,7 +12511,6 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         T_CONTEXT tempDebugContext;
         tempDebugContext.ContextFlags = CONTEXT_FULL;
         DbiGetThreadContext(pUnmanagedThread->m_handle, &tempDebugContext);
-        CordbUnmanagedThread::LogContext(&tempDebugContext);
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
         const ULONG_PTR breakpointOpcodeSize = 1;
 #elif defined(TARGET_ARM64)
