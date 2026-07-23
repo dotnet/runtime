@@ -129,7 +129,10 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
     int IXCLRDataTypeInstance.GetNumTypeArguments(uint* numTypeArgs) => _legacyImpl?.GetNumTypeArguments(numTypeArgs) ?? HResults.E_NOTIMPL;
     int IXCLRDataTypeInstance.GetTypeArgumentByIndex(uint index, DacComNullableByRef<IXCLRDataTypeInstance> typeArg) => _legacyImpl?.GetTypeArgumentByIndex(index, typeArg) ?? HResults.E_NOTIMPL;
     int IXCLRDataTypeInstance.GetFlags(uint* flags) => _legacyImpl?.GetFlags(flags) ?? HResults.E_NOTIMPL;
-    int IXCLRDataTypeInstance.IsSameObject(IXCLRDataTypeInstance? type) => ReferenceEquals(this, type) ? HResults.S_OK : HResults.S_FALSE;
+    int IXCLRDataTypeInstance.IsSameObject(IXCLRDataTypeInstance? type)
+        => type is ClrDataTypeInstance other && other._typeHandle.Address == _typeHandle.Address
+            ? HResults.S_OK
+            : HResults.S_FALSE;
     int IXCLRDataTypeInstance.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer) => _legacyImpl?.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) ?? HResults.E_NOTIMPL;
     int IXCLRDataTypeInstance.GetNumStaticFields2(uint flags, uint* numFields) => _legacyImpl?.GetNumStaticFields2(flags, numFields) ?? HResults.E_NOTIMPL;
     int IXCLRDataTypeInstance.StartEnumStaticFields(uint flags, IXCLRDataTask? tlsTask, ulong* handle) => _legacyImpl?.StartEnumStaticFields(flags, tlsTask, handle) ?? HResults.E_NOTIMPL;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -67,10 +68,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
             MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(module)
                 ?? throw new InvalidOperationException("Failed to get metadata reader");
             TypeDefinitionHandle handle = MetadataTokens.TypeDefinitionHandle((int)(_token & 0x00ffffff));
-            TypeDefinition definition = reader.GetTypeDefinition(handle);
-            string name = reader.GetString(definition.Name);
-            string @namespace = reader.GetString(definition.Namespace);
-            string result = string.IsNullOrEmpty(@namespace) ? name : $"{@namespace}.{name}";
+            string result = GetTypeName(reader, handle);
             OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, result);
             if (nameBuf is not null && bufLen < result.Length + 1)
                 hr = HResults.S_FALSE;
@@ -92,6 +90,26 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
         }
 #endif
         return hr;
+    }
+
+    private static string GetTypeName(MetadataReader reader, TypeDefinitionHandle handle)
+    {
+        var names = new List<string>();
+        TypeDefinition definition = reader.GetTypeDefinition(handle);
+        while (true)
+        {
+            names.Add(reader.GetString(definition.Name));
+            if (!definition.IsNested)
+                break;
+
+            handle = definition.GetDeclaringType();
+            definition = reader.GetTypeDefinition(handle);
+        }
+
+        names.Reverse();
+        string name = string.Join('+', names);
+        string @namespace = reader.GetString(definition.Namespace);
+        return string.IsNullOrEmpty(@namespace) ? name : $"{@namespace}.{name}";
     }
 
     int IXCLRDataTypeDefinition.GetTokenAndScope(uint* token, DacComNullableByRef<IXCLRDataModule> mod)
@@ -124,7 +142,10 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
     int IXCLRDataTypeDefinition.EndEnumInstances(ulong handle) => _legacyImpl?.EndEnumInstances(handle) ?? HResults.E_NOTIMPL;
     int IXCLRDataTypeDefinition.GetCorElementType(uint* type) => _legacyImpl?.GetCorElementType(type) ?? HResults.E_NOTIMPL;
     int IXCLRDataTypeDefinition.GetFlags(uint* flags) => _legacyImpl?.GetFlags(flags) ?? HResults.E_NOTIMPL;
-    int IXCLRDataTypeDefinition.IsSameObject(IXCLRDataTypeDefinition? type) => ReferenceEquals(this, type) ? HResults.S_OK : HResults.S_FALSE;
+    int IXCLRDataTypeDefinition.IsSameObject(IXCLRDataTypeDefinition? type)
+        => type is ClrDataTypeDefinition other && other._module == _module && other._token == _token
+            ? HResults.S_OK
+            : HResults.S_FALSE;
     int IXCLRDataTypeDefinition.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer) => _legacyImpl?.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) ?? HResults.E_NOTIMPL;
     int IXCLRDataTypeDefinition.GetArrayRank(uint* rank) => _legacyImpl?.GetArrayRank(rank) ?? HResults.E_NOTIMPL;
     int IXCLRDataTypeDefinition.GetBase(DacComNullableByRef<IXCLRDataTypeDefinition> @base) => _legacyImpl?.GetBase(@base) ?? HResults.E_NOTIMPL;

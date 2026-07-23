@@ -130,6 +130,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         private string? _methodName;
         public IEnumerator<uint> Enumerator { get; set; } = Enumerable.Empty<uint>().GetEnumerator();
         public nuint LegacyHandle { get; set; } = 0;
+        public TargetPointer AppDomain { get; set; }
 
         public EnumMethodDefinitions(MetadataReader reader, uint flags, nuint legacyHandle)
         {
@@ -261,6 +262,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
     int IXCLRDataModule.StartEnumTypeDefinitions(ulong* handle)
     {
+        if (handle is null)
+            return HResults.E_POINTER;
+
         int hr = HResults.S_OK;
         ulong legacyHandle = 0;
         int hrLocal = HResults.S_OK;
@@ -270,9 +274,6 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
         try
         {
-            if (handle is null)
-                throw new NullReferenceException();
-
             *handle = 0;
             MetadataReader reader = GetMetadataReader();
             IEnumerable<uint> tokens = reader.TypeDefinitions.Select(static h => (uint)MetadataTokens.GetToken(h));
@@ -346,6 +347,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
     int IXCLRDataModule.StartEnumTypeInstances(IXCLRDataAppDomain? appDomain, ulong* handle)
     {
+        if (handle is null)
+            return HResults.E_POINTER;
+
         int hr = HResults.S_OK;
         ulong legacyHandle = 0;
         int hrLocal = HResults.S_OK;
@@ -355,9 +359,6 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
         try
         {
-            if (handle is null)
-                throw new NullReferenceException();
-
             *handle = 0;
             MetadataReader reader = GetMetadataReader();
             ILoader loader = _target.Contracts.Loader;
@@ -578,6 +579,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     }
     int IXCLRDataModule.StartEnumMethodInstancesByName(char* name, uint flags, IXCLRDataAppDomain? appDomain, ulong* handle)
     {
+        if (handle is null)
+            return HResults.E_POINTER;
+
         int hr = HResults.S_OK;
         ulong legacyHandle = 0;
         int hrLocal = HResults.S_OK;
@@ -592,6 +596,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
             EnumMethodDefinitions definitions = new(GetMetadataReader(), flags, (nuint)legacyHandle);
             definitions.Start(new string(name));
+            definitions.AppDomain = appDomain is ClrDataAppDomain clrDataAppDomain
+                ? clrDataAppDomain.Address
+                : _target.Contracts.Loader.GetAppDomain();
             *handle = (ulong)((IEnum<uint>)definitions).GetHandle();
             legacyHandle = 0;
         }
@@ -649,7 +656,10 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                 if (methodDesc != TargetPointer.Null)
                 {
                     MethodDescHandle methodDescHandle = _target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(methodDesc);
-                    method.Interface = new ClrDataMethodInstance(_target, methodDescHandle, _target.Contracts.Loader.GetAppDomain(), legacyMethod);
+                    if (_target.Contracts.RuntimeTypeSystem.GetNativeCode(methodDescHandle) == TargetCodePointer.Null)
+                        continue;
+
+                    method.Interface = new ClrDataMethodInstance(_target, methodDescHandle, enumeration.AppDomain, legacyMethod);
                     break;
                 }
             }
@@ -708,6 +718,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
     int IXCLRDataModule.StartEnumDataByName(char* name, uint flags, IXCLRDataAppDomain? appDomain, IXCLRDataTask? tlsTask, ulong* handle)
     {
+        if (handle is null)
+            return HResults.E_POINTER;
+
         int hr = HResults.S_OK;
         ulong legacyHandle = 0;
         int hrLocal = HResults.S_OK;
@@ -779,10 +792,13 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
 
         try
         {
-            if (enumeration.Enumerator.MoveNext())
+            while (enumeration.Enumerator.MoveNext())
             {
                 DataField field = enumeration.Enumerator.Current;
                 TargetPointer address = GetFieldAddress(field);
+                if (address == TargetPointer.Null)
+                    continue;
+
                 NativeVarLocation location = new()
                 {
                     AddressOrValue = address.ToClrDataAddress(_target),
@@ -790,11 +806,11 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                     IsRegisterValue = false,
                 };
                 value.Interface = new ClrDataValue(_target, field.Flags, [location], legacyValue);
+                break;
             }
-            else
-            {
+
+            if (value.Interface is null)
                 hr = HResults.S_FALSE;
-            }
         }
         catch (System.Exception ex)
         {
