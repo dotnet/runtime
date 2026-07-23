@@ -1967,6 +1967,27 @@ DWORD MethodTable::GetIndexForFieldDesc(FieldDesc *pField)
 
 namespace
 {
+    // Resolve the MethodTable for a value-type field.
+    //
+    // pCachedValueTypeMT is the MethodTable from the ByValueClassCache, or NULL when there was no
+    // cache (which happens on recursive layout-classification calls). When it is NULL and the field
+    // is a value type, the exact generic instantiation may not yet be in the type loader hash
+    // (e.g. EntityIdValue<UserId> replaced by EntityIdValue<__Canon> to break recursion during load).
+    // In that case FieldDesc::GetSize(NULL) -> LookupApproxFieldTypeHandle (DontLoadTypes) would return
+    // a null TypeHandle and crash. GetApproxFieldTypeHandleThrowing loads the field type with
+    // dropGenericArgumentLevel=TRUE (see FieldDesc::GetApproxFieldTypeHandleThrowing), which always
+    // resolves to the canonical __Canon form - fully loaded and correctly sized for any shared
+    // instantiation.
+    MethodTable* ResolveValueTypeFieldMT(FieldDesc* pField, MethodTable* pCachedValueTypeMT)
+    {
+        WRAPPER_NO_CONTRACT;
+        if (pCachedValueTypeMT == NULL && pField->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            pCachedValueTypeMT = pField->GetApproxFieldTypeHandleThrowing().GetMethodTable();
+        }
+        return pCachedValueTypeMT;
+    }
+
     // Does this type have fields that are implicitly defined through repetition and not explicitly defined in metadata?
     bool HasImpliedRepeatedFields(MethodTable* pMT, MethodTable* pFirstFieldValueType = nullptr)
     {
@@ -2000,16 +2021,8 @@ namespace
         // instead of adding additional padding at the end of a one-field structure.
         // We do this check here to save looking up the FixedBufferAttribute when loading the field
         // from metadata.
-        // When firstFieldElementType is ELEMENT_TYPE_VALUETYPE and pFirstFieldValueType is NULL,
-        // GetSize(NULL) would call LookupApproxFieldTypeHandle (DontLoadTypes), which can fail to
-        // find a generic instantiation that was canonicalized during recursive layout loading
-        // (e.g. EntityIdValue<UserId> replaced with EntityIdValue<__Canon>).  Load the approximate
-        // type handle instead: dropGenericArgumentLevel=TRUE always resolves to the canonical
-        // __Canon form, which is fully loaded and has the correct size for any shared instantiation.
-        if (firstFieldElementType == ELEMENT_TYPE_VALUETYPE && pFirstFieldValueType == nullptr)
-        {
-            pFirstFieldValueType = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-        }
+        // Resolve the value-type field MethodTable when the caller didn't supply one; see helper.
+        pFirstFieldValueType = ResolveValueTypeFieldMT(pFieldStart, pFirstFieldValueType);
 
         return (CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
                             || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
@@ -2167,18 +2180,8 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
     FieldDesc *pFieldStart = GetApproxFieldDescListRaw();
 
     // Pre-resolve the first field's MethodTable so HasImpliedRepeatedFields and all subsequent
-    // GetSize calls receive a valid (non-null) MT for value-type fields.
-    // ByValueClassCacheLookup returns NULL when pByValueClassCache is NULL (recursive calls).
-    // In that case the exact generic instantiation may not be in the type loader hash yet
-    // (e.g. EntityIdValue<UserId> replaced by EntityIdValue<__Canon> to break recursion),
-    // so GetSize(NULL) -> LookupApproxFieldTypeHandle (DontLoadTypes) would return a null
-    // TypeHandle and crash.  GetApproxFieldTypeHandleThrowing uses LoadTypes with
-    // dropGenericArgumentLevel=TRUE, which always resolves to the canonical __Canon form.
-    MethodTable* pFirstFieldValueTypeMT = ByValueClassCacheLookup(pByValueClassCache, 0);
-    if (pFirstFieldValueTypeMT == nullptr && pFieldStart->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
-    {
-        pFirstFieldValueTypeMT = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-    }
+    // GetSize calls receive a valid (non-null) MT for value-type fields; see ResolveValueTypeFieldMT.
+    MethodTable* pFirstFieldValueTypeMT = ResolveValueTypeFieldMT(pFieldStart, ByValueClassCacheLookup(pByValueClassCache, 0));
 
     bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this, pFirstFieldValueTypeMT);
 
@@ -2191,12 +2194,10 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
     {
         FieldDesc* pField;
         DWORD fieldOffset;
-        unsigned int fieldIndexForCacheLookup = fieldIndex;
 
         if (hasImpliedRepeatedFields)
         {
             pField = pFieldStart;
-            fieldIndexForCacheLookup = 0;
             fieldOffset = fieldIndex * pField->GetSize(pFirstFieldValueTypeMT);
         }
         else
@@ -2210,19 +2211,12 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         CorElementType fieldType = pField->GetFieldType();
         SystemVClassificationType fieldClassificationType = CorInfoType2UnixAmd64Classification(fieldType);
 
-        // Resolve the nested MethodTable for value-type fields.  For implied-repeated-field
-        // structs (inline arrays / fixed buffers) every iteration reuses the pre-resolved first
-        // field MT.  Otherwise look up the cache entry; when pByValueClassCache is NULL
-        // (recursive call) the exact generic instantiation may not be in the type loader hash
-        // yet, so fall back to GetApproxFieldTypeHandleThrowing which loads the canonical
-        // __Canon form and always succeeds.
+        // For implied-repeated-field structs (inline arrays / fixed buffers) every iteration reuses
+        // the pre-resolved first field MT.  Otherwise resolve the nested value-type MethodTable,
+        // falling back to the canonical __Canon form on recursive calls; see ResolveValueTypeFieldMT.
         MethodTable* pFieldValueTypeMT = hasImpliedRepeatedFields
             ? pFirstFieldValueTypeMT
-            : ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup);
-        if (fieldClassificationType == SystemVClassificationTypeStruct && pFieldValueTypeMT == nullptr)
-        {
-            pFieldValueTypeMT = pField->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-        }
+            : ResolveValueTypeFieldMT(pField, ByValueClassCacheLookup(pByValueClassCache, fieldIndex));
 
         unsigned int fieldSize = pField->GetSize(pFieldValueTypeMT);
         _ASSERTE(fieldSize != (unsigned int)-1);
