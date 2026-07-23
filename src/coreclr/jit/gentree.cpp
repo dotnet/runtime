@@ -24674,7 +24674,8 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(var_types type, GenTree* op1, va
             if (varTypeIsIntegral(simdBaseType))
             {
                 scalableVecCon->gtSimdScalableVal.gtSimdScalableIndex =
-                    static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+                    static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue()) &
+                    SimdAllBitsSetForElementType(simdBaseType);
             }
             else if (simdBaseType == TYP_FLOAT)
             {
@@ -24808,7 +24809,8 @@ GenTree* Compiler::gtNewSimdCreateScalarNode(var_types type, GenTree* op1, var_t
             if (varTypeIsIntegral(simdBaseType))
             {
                 scalableVecCon->gtSimdScalableVal.gtSimdScalableIndex =
-                    static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+                    static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue()) &
+                    SimdAllBitsSetForElementType(simdBaseType);
             }
             else if (simdBaseType == TYP_FLOAT)
             {
@@ -24938,7 +24940,8 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types type,
             if (varTypeIsIntegral(simdBaseType))
             {
                 scalableVecCon->gtSimdScalableVal.gtSimdScalableIndex =
-                    static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+                    static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue()) &
+                    SimdAllBitsSetForElementType(simdBaseType);
             }
             else if (simdBaseType == TYP_FLOAT)
             {
@@ -25089,9 +25092,11 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
                 GenTreeVecCon* scalableVecCon = gtNewSimdVconNode(type, simdBaseType, SimdScalableSequence, 0);
 
                 scalableVecCon->gtSimdScalableVal.gtSimdScalableIndex =
-                    static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+                    static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue()) &
+                    SimdAllBitsSetForElementType(simdBaseType);
                 scalableVecCon->gtSimdScalableVal.gtSimdScalableStep =
-                    static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
+                    static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue()) &
+                    SimdAllBitsSetForElementType(simdBaseType);
                 return scalableVecCon;
             }
             else
