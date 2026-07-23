@@ -1876,6 +1876,32 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 });
         }
 
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void VerifySignature_MLDsa_WrongSignatureAlgorithmId()
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+
+            using (X509Certificate2 cert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
+                signer.DigestAlgorithm = new Oid(Oids.Sha384, null);
+                cms.ComputeSignature(signer);
+                byte[] cmsBytes = cms.Encode();
+
+                ReadOnlySpan<byte> mldsa65Oid = [0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x12];
+                int scanLength = cmsBytes.Length - MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes;
+                int signerAlgTypeIndex = cmsBytes.AsSpan(0, scanLength).LastIndexOf(mldsa65Oid);
+
+                // Change the last byte of the OID to make it say ML-DSA-87
+                cmsBytes[signerAlgTypeIndex + mldsa65Oid.Length - 1] = 0x13;
+
+                cms.Decode(cmsBytes);
+                Assert.Equal(Oids.MLDsa87, cms.SignerInfos[0].SignatureAlgorithm.Value);
+                Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
+            }
+        }
+
         private static void AssertSignerHasCorrectDefaultDigest(Action<Action<CmsSigner>> test)
         {
             // DigestAlgorithm property on new signer has correct default value

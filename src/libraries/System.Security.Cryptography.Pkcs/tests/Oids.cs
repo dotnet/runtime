@@ -27,6 +27,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public const string Dh = "1.2.840.10046.2.1";
         public const string EcPublicKey = "1.2.840.10045.2.1";
         public const string EcdsaSha256 = "1.2.840.10045.4.3.2";
+        public const string MLDsa44 = "2.16.840.1.101.3.4.3.17";
+        public const string MLDsa65 = "2.16.840.1.101.3.4.3.18";
+        public const string MLDsa87 = "2.16.840.1.101.3.4.3.19";
 
         // Cryptographic Attribute Types
         public const string SigningTime = "1.2.840.113549.1.9.5";
