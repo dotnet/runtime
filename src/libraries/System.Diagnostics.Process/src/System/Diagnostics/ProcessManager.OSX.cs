@@ -112,7 +112,7 @@ namespace System.Diagnostics
             // (unset) behavior for this field on macOS.
             if (Interop.libproc.TryGetProcessPhysicalFootprint(pid, out ulong physicalFootprint))
             {
-                procInfo.PrivateBytes = (long)physicalFootprint;
+                procInfo.PrivateBytes = physicalFootprint > long.MaxValue ? long.MaxValue : (long)physicalFootprint;
             }
 
             // Create a threadinfo for each thread in the process
