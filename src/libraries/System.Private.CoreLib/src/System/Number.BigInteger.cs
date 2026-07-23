@@ -487,20 +487,20 @@ namespace System
             private nint _length;
             private BlocksBuffer _blocks;
 
-            public static void Add(scoped ref BigInteger lhs, scoped ref BigInteger rhs, out BigInteger result)
+            public static void Add(scoped ref readonly BigInteger lhs, scoped ref readonly BigInteger rhs, out BigInteger result)
             {
                 Unsafe.SkipInit(out result);
 
                 // Order operands so the longer one drives the loop.
-                ref BigInteger large = ref (lhs._length < rhs._length ? ref rhs : ref lhs);
-                ref BigInteger small = ref (lhs._length < rhs._length ? ref lhs : ref rhs);
+                ref readonly BigInteger large = ref (lhs._length < rhs._length ? ref rhs : ref lhs);
+                ref readonly BigInteger small = ref (lhs._length < rhs._length ? ref lhs : ref rhs);
 
                 int largeLength = (int)large._length;
                 int smallLength = (int)small._length;
 
                 if (smallLength == 0)
                 {
-                    SetValue(out result, ref large);
+                    SetValue(out result, in large);
                     return;
                 }
 
@@ -523,7 +523,7 @@ namespace System
                 result._length = (resultBlocks[largeLength] != 0) ? (largeLength + 1) : largeLength;
             }
 
-            public static int Compare(scoped ref BigInteger lhs, scoped ref BigInteger rhs)
+            public static int Compare(scoped ref readonly BigInteger lhs, scoped ref readonly BigInteger rhs)
             {
                 Debug.Assert(unchecked((uint)lhs._length) <= MaxBlockCount);
                 Debug.Assert(unchecked((uint)rhs._length) <= MaxBlockCount);
@@ -536,7 +536,7 @@ namespace System
                 return 64 - BitOperations.LeadingZeroCount(value);
             }
 
-            public static int CountSignificantBits(ref BigInteger value)
+            public static int CountSignificantBits(scoped ref readonly BigInteger value)
             {
                 if (value.IsZero())
                 {
@@ -550,7 +550,7 @@ namespace System
                 return (lastIndex * BitsPerBlock) + (BitsPerBlock - BitOperations.LeadingZeroCount(value._blocks[lastIndex]));
             }
 
-            public static void DivRem(scoped ref BigInteger lhs, scoped ref BigInteger rhs, out BigInteger quo, out BigInteger rem)
+            public static void DivRem(scoped ref readonly BigInteger lhs, scoped ref readonly BigInteger rhs, out BigInteger quo, out BigInteger rem)
             {
                 Unsafe.SkipInit(out quo);
 
@@ -610,13 +610,13 @@ namespace System
                 {
                     // Handle the case where we have no quotient
                     SetZero(out quo);
-                    SetValue(out rem, ref lhs);
+                    SetValue(out rem, in lhs);
                     return;
                 }
                 else
                 {
                     int quoLength = lhsLength - rhsLength + 1;
-                    SetValue(out rem, ref lhs);
+                    SetValue(out rem, in lhs);
 
                     // The shared kernel divides in place: rem holds the dividend on entry and the
                     // remainder (in its low rhsLength blocks) on exit, with quo receiving the quotient.
@@ -628,7 +628,7 @@ namespace System
                 }
             }
 
-            public static uint HeuristicDivide(ref BigInteger dividend, ref BigInteger divisor)
+            public static uint HeuristicDivide(scoped ref BigInteger dividend, scoped ref readonly BigInteger divisor)
             {
                 int divisorLength = (int)divisor._length;
 
@@ -683,7 +683,7 @@ namespace System
 
                 // If the dividend is still larger than the divisor, we overshot our estimate quotient. To correct,
                 // we increment the quotient and subtract one more divisor from the dividend (Because we guaranteed the error range).
-                if (Compare(ref dividend, ref divisor) >= 0)
+                if (Compare(ref dividend, in divisor) >= 0)
                 {
                     quotient++;
 
@@ -705,7 +705,7 @@ namespace System
                 return (uint)quotient;
             }
 
-            public static void Multiply(scoped ref BigInteger lhs, nuint value, out BigInteger result)
+            public static void Multiply(scoped ref readonly BigInteger lhs, nuint value, out BigInteger result)
             {
                 Unsafe.SkipInit(out result);
 
@@ -717,7 +717,7 @@ namespace System
                     }
                     else
                     {
-                        SetValue(out result, ref lhs);
+                        SetValue(out result, in lhs);
                     }
                     return;
                 }
@@ -751,19 +751,19 @@ namespace System
                 result._length = resultLength;
             }
 
-            public static void Multiply(scoped ref BigInteger lhs, scoped ref readonly BigInteger rhs, out BigInteger result)
+            public static void Multiply(scoped ref readonly BigInteger lhs, scoped ref readonly BigInteger rhs, out BigInteger result)
             {
                 Unsafe.SkipInit(out result);
 
                 if (lhs._length <= 1)
                 {
-                    Multiply(ref Unsafe.AsRef(in rhs), lhs.ToBlock(), out result);
+                    Multiply(in rhs, lhs.ToBlock(), out result);
                     return;
                 }
 
                 if (rhs._length <= 1)
                 {
-                    Multiply(ref lhs, rhs.ToBlock(), out result);
+                    Multiply(in lhs, rhs.ToBlock(), out result);
                     return;
                 }
 
@@ -1144,13 +1144,13 @@ namespace System
 #endif
             }
 
-            public static void SetValue(out BigInteger result, scoped ref BigInteger value)
+            public static void SetValue(out BigInteger result, scoped ref readonly BigInteger value)
             {
                 Unsafe.SkipInit(out result);
                 int rhsLength = (int)value._length;
 
                 result._length = rhsLength;
-                Buffer.Memmove(ref result._blocks[0], ref value._blocks[0], (nuint)rhsLength);
+                value._blocks[..rhsLength].CopyTo(result._blocks);
             }
 
             public static void SetZero(out BigInteger result)
