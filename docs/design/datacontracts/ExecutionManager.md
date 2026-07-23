@@ -250,11 +250,11 @@ Global variables used:
 | `ExecutionManagerCodeRangeMapAddress` | TargetPointer | Pointer to the global RangeSectionMap |
 | `EEJitManagerAddress` | TargetPointer | Address of the global pointer to the EEJitManager instance (read a TargetPointer from this address to obtain the instance address) |
 | `StubCodeBlockLast` | uint8 | Maximum sentinel code header value indentifying a stub code block |
-| `ThePreStub` | TargetPointer | Address of the global containing the prestub entrypoint |
-| `VarargPInvokeStub` | TargetPointer | Address of the global containing the vararg P/Invoke stub entrypoint |
-| `VarargPInvokeStub_RetBuffArg` | TargetPointer | Address of the global containing the vararg P/Invoke ret-buffer stub entrypoint, when applicable |
-| `GenericPInvokeCalliHelper` | TargetPointer | Address of the global containing the generic P/Invoke calli helper entrypoint |
-| `JIT_TailCall` | TargetPointer | Address of the global containing the x86 Windows tail-call helper entrypoint |
+| `ThePreStub` | TargetPointer | The prestub entrypoint address |
+| `VarargPInvokeStub` | TargetPointer | The vararg P/Invoke stub entrypoint address |
+| `VarargPInvokeStub_RetBuffArg` | TargetPointer | The vararg P/Invoke ret-buffer stub entrypoint address, when applicable |
+| `GenericPInvokeCalliHelper` | TargetPointer | The generic P/Invoke calli helper entrypoint address |
+| `TailCallJitHelper` | TargetPointer | The x86 Windows tail-call helper (`JIT_TailCall`) entrypoint address |
 | `HashMapSlotsPerBucket` | uint32 | Number of slots in each bucket of a `HashMap` |
 | `HashMapValueMask` | uint64 | Bitmask used when storing values in a `HashMap` |
 | `FeatureEHFunclets` | uint8 | 1 if EH funclets are enabled, 0 otherwise |

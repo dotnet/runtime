@@ -676,11 +676,11 @@ public class ExecutionManagerTests
     {
         (string Name, ulong Address, CodeKind Kind)[] stubs =
         [
-            (nameof(CodeKind.ThePreStub), 0x00aa_1000, CodeKind.ThePreStub),
-            (nameof(CodeKind.VarargPInvokeStub), 0x00aa_2000, CodeKind.VarargPInvokeStub),
-            ("VarargPInvokeStub_RetBuffArg", 0x00aa_3000, CodeKind.VarargPInvokeStub),
-            (nameof(CodeKind.GenericPInvokeCalliHelper), 0x00aa_4000, CodeKind.GenericPInvokeCalliHelper),
-            (nameof(CodeKind.JIT_TailCall), 0x00aa_5000, CodeKind.JIT_TailCall),
+            (Constants.Globals.ThePreStub, 0x00aa_1000, CodeKind.ThePreStub),
+            (Constants.Globals.VarargPInvokeStub, 0x00aa_2000, CodeKind.VarargPInvokeStub),
+            (Constants.Globals.VarargPInvokeStub_RetBuffArg, 0x00aa_3000, CodeKind.VarargPInvokeStub),
+            (Constants.Globals.GenericPInvokeCalliHelper, 0x00aa_4000, CodeKind.GenericPInvokeCalliHelper),
+            (Constants.Globals.TailCallJitHelper, 0x00aa_5000, CodeKind.JIT_TailCall),
         ];
         MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
         Target target = CreateTarget(

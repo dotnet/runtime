@@ -40,19 +40,18 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
         _interpreterJitManager = new InterpreterJitManager(_target, nibbleMap);
-        _thePreStub = ReadGlobalStub(nameof(CodeKind.ThePreStub));
-        _varargPInvokeStub = ReadGlobalStub(nameof(CodeKind.VarargPInvokeStub));
-        _varargPInvokeStubRetBuffArg = ReadGlobalStub("VarargPInvokeStub_RetBuffArg");
-        _genericPInvokeCalliHelper = ReadGlobalStub(nameof(CodeKind.GenericPInvokeCalliHelper));
-        _jitTailCall = ReadGlobalStub(nameof(CodeKind.JIT_TailCall));
+        _thePreStub = ReadGlobalStub(Constants.Globals.ThePreStub);
+        _varargPInvokeStub = ReadGlobalStub(Constants.Globals.VarargPInvokeStub);
+        _varargPInvokeStubRetBuffArg = ReadGlobalStub(Constants.Globals.VarargPInvokeStub_RetBuffArg);
+        _genericPInvokeCalliHelper = ReadGlobalStub(Constants.Globals.GenericPInvokeCalliHelper);
+        _jitTailCall = ReadGlobalStub(Constants.Globals.TailCallJitHelper);
     }
 
     private TargetPointer ReadGlobalStub(string name)
     {
-        if (!_target.TryReadGlobalPointer(name, out TargetPointer? value))
-            return TargetPointer.Null;
-
-        return _target.ReadPointer(value.Value);
+        return _target.TryReadGlobalPointer(name, out TargetPointer? ptr)
+            ? ptr.Value
+            : TargetPointer.Null;
     }
 
     public void Flush(FlushScope scope)

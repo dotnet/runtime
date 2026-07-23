@@ -35,19 +35,3 @@
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
-
-struct GlobalStubData;
-
-template<>
-struct cdac_data<GlobalStubData>
-{
-    inline static TADDR ThePreStub = GetEEFuncEntryPoint(::ThePreStub);
-    inline static TADDR VarargPInvokeStub = GetEEFuncEntryPoint(::VarargPInvokeStub);
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-    inline static TADDR VarargPInvokeStub_RetBuffArg = GetEEFuncEntryPoint(::VarargPInvokeStub_RetBuffArg);
-#endif
-    inline static TADDR GenericPInvokeCalliHelper = GetEEFuncEntryPoint(::GenericPInvokeCalliHelper);
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
-    inline static TADDR JIT_TailCall = GetEEFuncEntryPoint(::JIT_TailCall);
-#endif
-};
