@@ -19,18 +19,15 @@ IGCInfoHandle DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersio
 
 /* Methods to query information from the GCInfo */
 
+// Decodes the GC info header for the method (version, code/prolog size, stack base
+// register, stack parameter area size, varargs flag, GS cookie, PSP sym, and generics
+// instantiation context). See the GCInfoHeader record below. The stack base register and
+// the size of the outgoing-argument scratch area (previously exposed as separate methods)
+// are now reported as the StackBaseRegister and SizeOfStackParameterArea header fields.
+GCInfoHeader GetHeader(IGCInfoHandle handle);
+
 // Fetches length of code as reported in GCInfo
 uint GetCodeLength(IGCInfoHandle handle);
-
-// Returns the stack base register number decoded from GCInfo
-uint GetStackBaseRegister(IGCInfoHandle handle);
-
-// Returns the size in bytes of the outgoing-argument scratch area in the current
-// frame, decoded from `_fixedStackParameterScratchArea` (`SizeOfStackOutgoingAndScratchArea`,
-// encoded via `SIZE_OF_STACK_AREA_ENCBASE`). Platform-specific and can be non-zero on
-// AMD64/ARM64/ARM/RISCV64/LoongArch64. Not supported on x86 (the x86 GC info scheme has
-// no separate scratch-area concept; the x86 GC walker uses per-offset transitions).
-uint GetSizeOfStackParameterArea(IGCInfoHandle handle);
 
 // Returns the size in bytes of stack-passed arguments that the callee pops on return,
 // mirroring native `EECodeManager::GetStackParameterSize` (eetwain.cpp). Non-zero only
@@ -39,13 +36,18 @@ uint GetSizeOfStackParameterArea(IGCInfoHandle handle);
 // header. Returns 0 on every other architecture.
 uint GetCalleePoppedArgumentsSize(IGCInfoHandle handle);
 
-// Returns the list of interruptible code offset ranges from the GCInfo
-// (not implemented for x86 — x86 encodes per-offset transitions rather than explicit ranges).
+// Returns the list of interruptible code offset ranges from the GCInfo.
 IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle);
 
-// Returns all live GC slots at the given instruction offset
-// (not implemented for x86 — see X86GCInfo for the underlying transition data; the cDAC
-// adapter is future work).
+// Returns the code offsets of all partially-interruptible safe points (call sites).
+IReadOnlyList<uint> GetSafePoints(IGCInfoHandle handle);
+
+// Returns the lifetime (live code range) of every GC slot tracked by the GCInfo,
+// covering both tracked slots (from interruptible ranges or per-safe-point live states)
+// and untracked slots (live for the whole method).
+IReadOnlyList<GCSlotLifetime> GetSlotLifetimes(IGCInfoHandle handle);
+
+// Returns all live GC slots at the given instruction offset.
 IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options);
 
 // Returns true if the instruction offset is a GC-safe point.
@@ -53,6 +55,45 @@ bool IsGcSafe(IGCInfoHandle handle, uint instructionOffset);
 ```
 
 ```csharp
+// Stack offset of a special GC info slot (GS cookie, PSP sym, or generics inst context).
+public readonly record struct SpecialSlot(int SpOffset);
+
+// Kind of the generics instantiation context reported in the GC info header.
+public enum GenericsContextKind
+{
+    None = 0,
+    MethodDesc = 1,
+    MethodHandle = 2,
+    This = 3,
+}
+
+// Header fields decoded from the GC info stream for a method.
+public readonly record struct GCInfoHeader(
+    uint Version,                          // GC info version
+    uint CodeSize,                         // Method code length in bytes
+    uint PrologSize,                       // Size of the prolog in bytes
+    uint StackBaseRegister,                // Stack base register number (NO_STACK_BASE_REGISTER if none)
+    uint SizeOfStackParameterArea,         // Size in bytes of the outgoing-argument scratch area (0 on x86)
+    bool IsVarArg,                         // True if the method is varargs
+    bool WantsReportOnlyLeaf,              // True if only the leaf frame should report GC references
+    bool HasTailCalls,                     // True if the method contains tail calls
+    SpecialSlot? GSCookie,                 // GS cookie stack slot, or null if none
+    uint GSCookieValidRangeStart,          // Start of the code range where the GS cookie is valid
+    uint GSCookieValidRangeEnd,            // End (exclusive) of the GS cookie valid range
+    SpecialSlot? PSPSym,                   // PSP sym stack slot, or null if none
+    SpecialSlot? GenericsInstContext,      // Generics instantiation context stack slot, or null if none
+    GenericsContextKind GenericsInstContextKind); // Kind of the generics instantiation context
+
+// Unified lifetime (live code range) of a GC slot, register or stack.
+public readonly record struct GCSlotLifetime(
+    bool IsRegister,       // True if the slot is a CPU register; false if stack location
+    uint RegisterNumber,   // Register number (meaningful only when IsRegister is true)
+    int SpOffset,          // Stack offset from the base (meaningful only when IsRegister is false)
+    uint BaseRegister,     // Stack base: 0 = CALLER_SP_REL, 1 = SP_REL, 2 = FRAMEREG_REL
+    uint GcFlags,          // GC slot flags: 0x1 = interior pointer, 0x2 = pinned, 0x4 = untracked
+    uint BeginOffset,      // Code offset where the slot becomes live
+    uint EndOffset);       // Code offset where the slot becomes dead (exclusive)
+
 // Describes a code region where the GC can safely interrupt execution.
 public readonly record struct InterruptibleRange(
     uint StartOffset,   // Start of the interruptible region (byte offset from method start)
