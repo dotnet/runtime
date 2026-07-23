@@ -1041,8 +1041,8 @@ namespace
             (pMT->GetNumGenericArgs() == 1) &&
             CorIsNumericalType(pMT->GetInstantiation()[0].GetSignatureCorElementType());
         if (isSupportedVectorBaseType &&
-            ((pVector128MT != NULL && pMT->HasSameTypeDefAs(pVector128MT)) ||
-             ((size == 16) && (pVectorTMT != NULL) && pMT->HasSameTypeDefAs(pVectorTMT))))
+            ((pVector128MT != nullptr && pMT->HasSameTypeDefAs(pVector128MT)) ||
+             ((size == 16) && (pVectorTMT != nullptr) && pMT->HasSameTypeDefAs(pVectorTMT))))
         {
             return { ConvertType::ToV128, 0 };
         }
