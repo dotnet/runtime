@@ -1458,28 +1458,19 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 continue;
             }
 
-            // Non-contiguous, non-subsumed forward branch. When this branch exits one
-            // or more enclosing try/catch regions, start the Block at the OUTERMOST
-            // such region's try-begin so the Block encloses those trys' ends. Each TRY
-            // interval emits a trailing validation `unreachable` right after its `end`
-            // (codegenwasm.cpp genEmitStartBlock), and for equal extents the interval
-            // sort nests a Block just outside a Try. Starting the Block only at the
-            // innermost try (the previous behavior) leaves it nested inside an outer try
-            // that shares this branch's target as its end cursor; the branch then lands
-            // on that outer try's trailing `unreachable` instead of the continuation.
-            //
-            // This matters for wasm catch resumption (resume-after-catch), where the
-            // paired ExnRefWrapper is stretched past the try-end to cover the catch-
-            // resumption dispatcher, so the normal-completion continuation sits exactly
-            // at the outer try's end cursor. For a single-level try/catch the outermost
-            // escaped region is also the innermost, so this reproduces the previous
-            // behavior.
+            // Non-contiguous, non-subsumed forward branch. If it exits enclosing
+            // try/catch regions, start the Block at the outermost escaped catch-try
+            // so the Block encloses those trys' ends. Each Try emits a trailing
+            // validation `unreachable` after its `end`; starting only at the innermost
+            // try would nest the Block inside an outer try sharing this target as its
+            // end cursor, so the branch would land on that `unreachable` instead of the
+            // continuation. Single-level try/catch is unchanged (outermost == innermost).
             //
             BasicBlock* blockStart = block;
             for (EHblkDsc* tryDsc = ehGetBlockTryDsc(block); tryDsc != nullptr;)
             {
-                // Once succ is contained in an enclosing try, all further-out trys
-                // contain it too, so the branch does not exit them.
+                // Once succ is contained in an enclosing try, all outer trys contain it
+                // too, so the branch does not exit them.
                 //
                 if (bbInTryRegions(ehGetIndex(tryDsc), succ))
                 {
