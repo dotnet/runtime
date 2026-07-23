@@ -469,13 +469,13 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 //==========================================================================================
 // get the method desc given the interface method desc
 /* static */ MethodDesc *MethodTable::GetMethodDescForInterfaceMethodAndServer(
-                            TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer)
+                            TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer, MethodTable* pServerMT)
 {
     CONTRACT(MethodDesc*)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pItfMD));
         PRECONDITION(pItfMD->IsInterface());
         PRECONDITION(!ownerType.IsNull());
@@ -483,15 +483,17 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
-    VALIDATEOBJECTREF(*pServer);
+#ifdef DEBUG
+    {
+        GCX_COOP();
+        VALIDATEOBJECTREF(*pServer);
+    }
+#endif
 
 #ifdef _DEBUG
     MethodTable * pItfMT =  ownerType.GetMethodTable();
     _ASSERTE(pItfMT != NULL);
 #endif // _DEBUG
-
-    MethodTable *pServerMT = (*pServer)->GetMethodTable();
-    _ASSERTE(pServerMT != NULL);
 
 #ifdef FEATURE_COMINTEROP
     if (pServerMT->IsComObjectType() && !pItfMD->HasMethodInstantiation())
@@ -516,15 +518,19 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         && !TypeHandle(pServerMT).CanCastTo(ownerType)) // we need to make sure object doesn't implement this interface in a natural way
     {
         TypeHandle implTypeHandle;
-        OBJECTREF obj = *pServer;
+        {
+            GCX_COOP();
 
-        GCPROTECT_BEGIN(obj);
-        OBJECTREF implTypeRef = DynamicInterfaceCastable::GetInterfaceImplementation(&obj, ownerType);
-        _ASSERTE(implTypeRef != NULL);
+            OBJECTREF obj = *pServer;
 
-        ReflectClassBaseObject *implTypeObj = ((ReflectClassBaseObject *)OBJECTREFToObject(implTypeRef));
-        implTypeHandle = implTypeObj->GetType();
-        GCPROTECT_END();
+            GCPROTECT_BEGIN(obj);
+            OBJECTREF implTypeRef = DynamicInterfaceCastable::GetInterfaceImplementation(&obj, ownerType);
+            _ASSERTE(implTypeRef != NULL);
+
+            ReflectClassBaseObject *implTypeObj = ((ReflectClassBaseObject *)OBJECTREFToObject(implTypeRef));
+            implTypeHandle = implTypeObj->GetType();
+            GCPROTECT_END();
+        }
 
         RETURN(implTypeHandle.GetMethodTable()->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
     }
@@ -542,7 +548,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pItfMD));
         PRECONDITION(pItfMD->IsInterface());
         PRECONDITION(IsComObjectType());
@@ -3537,7 +3543,11 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
         MethodTable * pCanonMT = GetCanonicalMethodTable();
 
         // Call the code method without touching MethodDesc if possible
-        PCODE pCctorCode = pCanonMT->GetRestoredSlot(pCanonMT->GetClassConstructorSlot());
+        PCODE pCctorCode;
+        {
+            GCX_PREEMP();
+            pCctorCode = pCanonMT->GetRestoredSlot(pCanonMT->GetClassConstructorSlot());
+        }
         MethodTable* instantiatingArg = pCanonMT->IsSharedByGenericInstantiations() ? this : nullptr;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
@@ -7793,7 +7803,7 @@ PCODE MethodTable::GetRestoredSlot(DWORD slotNumber)
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
