@@ -83,7 +83,7 @@ bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer);
 | `StressLogEnabled` | `uint8` | Whether the stress log is enabled |
 | `StressLogHasModuleTable` | `uint8` | Whether the stress log module table is present |
 | `StressLogMaxMessageSize` | `uint64` | Maximum size of a stress log message |
-| `StressLogMaxModules` | `uint32` | Maximum number of module descriptors in the stress log module table |
+| `StressLogMaxModules` | `pointer` | Maximum number of module descriptors in the stress log module table |
 | `StressLogModuleTable` | `pointer` | Pointer to the stress log module descriptor table |
 | `StressLogValidChunkSig` | `uint32` | Signature value stored in both markers of a valid stress log chunk |
 

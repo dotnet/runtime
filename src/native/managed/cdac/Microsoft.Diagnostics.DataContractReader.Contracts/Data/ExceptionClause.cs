@@ -25,7 +25,6 @@ internal sealed partial class EEExceptionClause : IData<EEExceptionClause>, IExc
     [Field] public partial TargetNUInt TypeHandle { get; }
 
     public uint ClassToken => (uint)TypeHandle.Value;
-
     public uint FilterOffset => ClassToken;
 }
 

@@ -10,12 +10,10 @@
   <ItemGroup>
     <ProjectReference Include="..\..\mscordaccore_universal\mscordaccore_universal.csproj" AdditionalProperties="$(SplitSubprojectProps)" />
     <ProjectReference Include="..\TestInfrastructure\Microsoft.Diagnostics.DataContractReader.TestInfrastructure.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
-    <ProjectReference Include="..\..\tools\CdacUsageGraph\src\CdacUsageGraph\CdacUsageGraph.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" />
   </ItemGroup>
 
 </Project>

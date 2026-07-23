@@ -13,7 +13,7 @@ namespace CdacUsageGraph.Docs;
 /// tables; both the <c>docs</c> command and the doc-drift unit test use it, and
 /// <c>generate-docs.ps1</c> is a thin wrapper around the command.
 /// </summary>
-internal sealed partial class DocGenerator
+public sealed partial class DocGenerator
 {
     private const string TypeSizeField = "<type size>";
 

@@ -18,7 +18,6 @@ internal sealed partial class ArrayListBase : IData<ArrayListBase>
     public partial TargetPointer FirstBlock { get; }
 
     public IReadOnlyList<ArrayListBlock> Blocks { get; private set; } = [];
-
     public IReadOnlyList<TargetPointer> Elements { get; private set; } = [];
 
     [MemberNotNull(nameof(Blocks), nameof(Elements))]

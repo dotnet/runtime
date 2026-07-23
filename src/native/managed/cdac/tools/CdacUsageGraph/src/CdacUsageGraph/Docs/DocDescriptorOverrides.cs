@@ -11,7 +11,7 @@ namespace CdacUsageGraph.Docs;
 /// Contract-wide entries use the contract short name; version-specific entries use
 /// <c>Contract@version</c> and are combined with any contract-wide entries.
 /// </summary>
-internal sealed class DocDescriptorOverrides
+public sealed class DocDescriptorOverrides
 {
     private readonly Dictionary<string, List<string>> _supplement;
     private readonly Dictionary<string, List<string>> _suppress;

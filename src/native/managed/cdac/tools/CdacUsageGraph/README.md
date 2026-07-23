@@ -125,21 +125,8 @@ dotnet test tests/CdacUsageGraph.Tests -c Debug
 ```
 
 Included tests cover discovery, the end-to-end walk against the real cDAC source, and the
-**doc-drift gate** (`DocsAreUpToDateTests`) which asserts the generated marker blocks in
-`docs/design/datacontracts/*.md` are up to date. Because the test project is in the
-`tools.cdactests` subset, this gate runs in the `CdacUnitTests` CI leg on every PR that
-touches `src/native/managed/cdac/**`.
-
-### Compare against the docs
-
-```powershell
-pwsh ./compare.ps1
-```
-
-Writes `./output/doc-comparison.md` with type-level and field-level diffs
-(`DocOnly` / `ToolOnly`). Names are normalized before diffing (type aliases such as
-`GCHeapSVR`=`GCHeap`, trailing `_<version>` stripped, and field names compared
-without `m_`/`_` prefixes), so only genuine drift is surfaced.
+documentation generator. The repository documentation gates run from
+`src/native/managed/cdac/tests/UsageTests`.
 
 ### Generating / checking the docs
 

@@ -15,7 +15,7 @@ namespace CdacUsageGraph.Docs;
 /// }
 /// </code>
 /// </summary>
-internal sealed class DocDescriptorMeanings
+public sealed class DocDescriptorMeanings
 {
     private readonly Dictionary<string, string> _meanings;
     private readonly Dictionary<string, string> _globalMeanings;

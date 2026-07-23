@@ -9,8 +9,6 @@ internal sealed partial class TLSIndex : IData<TLSIndex>
     [Field] public partial uint TLSIndexRawIndex { get; }
 
     public int IndexOffset => (int)(TLSIndexRawIndex & 0xFFFFFF);
-
     public int IndexType => (int)(TLSIndexRawIndex >> 24);
-
     public bool IsAllocated => TLSIndexRawIndex != 0xFFFFFFFF;
 }

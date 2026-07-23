@@ -107,9 +107,9 @@ internal sealed class StressLogTraversal(Target target, IStressMessageReader mes
             moduleTable = stressLog.Modules ?? throw new InvalidOperationException("StressLogModuleTable is not set and StressLog does not contain a ModuleTable offset, but StressLogHasModuleTable is set to 1.");
         }
         uint moduleEntrySize = Data.StressLogModuleDesc.GetSize(target);
-        uint maxModules = target.ReadGlobal<uint>(Constants.Globals.StressLogMaxModules);
+        TargetNUInt maxModules = new(target.ReadGlobalPointer(Constants.Globals.StressLogMaxModules).Value);
         ulong cumulativeOffset = 0;
-        for (ulong i = 0; i < maxModules; ++i)
+        for (ulong i = 0; i < maxModules.Value; ++i)
         {
             Data.StressLogModuleDesc module = target.ProcessedData.GetOrAdd<Data.StressLogModuleDesc>(moduleTable.Value + i * moduleEntrySize);
             ulong relativeOffset = formatOffset - cumulativeOffset;
