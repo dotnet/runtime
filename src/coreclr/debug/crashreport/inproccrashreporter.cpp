@@ -18,6 +18,9 @@
 
 #include <fcntl.h>
 #include <errno.h>
+#if HAVE_POLL
+#include <poll.h>
+#endif
 #include <stdlib.h>
 #include <new>
 #include <unistd.h>
@@ -367,18 +370,6 @@ public:
 
 private:
     InProcCrashReporter() = default;
-    ~InProcCrashReporter()
-    {
-        if (m_signalChainingReleasePipeReadFd >= 0)
-        {
-            close(m_signalChainingReleasePipeReadFd);
-        }
-
-        if (m_signalChainingReleasePipeWriteFd >= 0)
-        {
-            close(m_signalChainingReleasePipeWriteFd);
-        }
-    }
     InProcCrashReporter(const InProcCrashReporter&) = delete;
     InProcCrashReporter& operator=(const InProcCrashReporter&) = delete;
 
@@ -417,9 +408,6 @@ private:
     volatile LONG m_crashKind = static_cast<LONG>(InProcCrashReportCrashKind::Unknown);
     uint32_t m_frameLimitPerThread = 0;
     InProcCrashReportLifecycle m_lifecycle;
-    int m_signalChainingReleasePipeReadFd = -1;
-    int m_signalChainingReleasePipeWriteFd = -1;
-    volatile LONG m_signalChainingReleasePipeClosed = 0;
     char m_reportFilePath[CRASHREPORT_PATH_BUFFER_SIZE];
     char m_processName[CRASHREPORT_STRING_BUFFER_SIZE];
     char m_stringScratch[CRASHREPORT_STRING_BUFFER_SIZE];
@@ -591,6 +579,7 @@ InProcCrashReporter::CreateReport(
     bool signalChainAfterReport)
 {
     static LONGLONG s_generatingThreadId = 0;
+    (void)signalChainAfterReport;
 
     if (!serialize)
     {
@@ -607,28 +596,18 @@ InProcCrashReporter::CreateReport(
             return;
         }
 
-        if (m_signalChainingReleasePipeReadFd < 0)
-        {
-            return;
-        }
-
+#if HAVE_POLL
+        // INFTIM is not defined when including pal.h; -1 is the equivalent poll() "wait forever" timeout.
+        const int PollWaitForever = -1;
+#endif
         while (true)
         {
-            char ignored;
-            ssize_t readResult = read(m_signalChainingReleasePipeReadFd, &ignored, sizeof(ignored));
-            if (readResult >= 0)
-            {
-                // EOF (0) means the winner closed the write-end; >0 means a byte was delivered.
-                return;
-            }
-
-            if (errno == EINTR)
-            {
-                // Interrupted by a signal before data/EOF, retry until the winner releases us.
-                continue;
-            }
-
-            return;
+#if HAVE_POLL
+            poll(nullptr, 0, PollWaitForever);
+#else
+            // fakepoll uses select() and is not suitable for this signal-handler path.
+            pause();
+#endif
         }
     }
 
@@ -666,13 +645,6 @@ InProcCrashReporter::CreateReport(
     EmitThreads(crashKind, context);
     EndJsonReport(signal, jsonEnabled, fd);
     EndConsoleReport();
-
-    if (signalChainAfterReport &&
-        InterlockedCompareExchange(&m_signalChainingReleasePipeClosed, 1, 0) == 0 &&
-        m_signalChainingReleasePipeWriteFd >= 0)
-    {
-        close(m_signalChainingReleasePipeWriteFd);
-    }
 }
 
 void
@@ -737,12 +709,6 @@ InProcCrashReporter::InitializeInstance(
     }
 
     reporter->Initialize(settings);
-    if (reporter->m_signalChainingReleasePipeReadFd < 0 || reporter->m_signalChainingReleasePipeWriteFd < 0)
-    {
-        InProcCrashReportLogInitializationFailure(".NET crash report disabled: failed to initialize signal chaining release pipe");
-        delete reporter;
-        return false;
-    }
 
     if (InterlockedCompareExchangePointer(&s_reporter, reporter, nullptr) != nullptr)
     {
@@ -816,28 +782,6 @@ InProcCrashReporter::Initialize(
     if (settings.reportRootPath != nullptr && settings.reportRootPath[0] != '\0')
     {
         m_lifecycle.Initialize(settings.reportRootPath, settings.maxFileCount);
-    }
-
-    int releasePipe[2];
-#if HAVE_PIPE2
-    if (pipe2(releasePipe, O_CLOEXEC) == 0)
-#else
-    if (pipe(releasePipe) == 0)
-#endif
-    {
-#if !HAVE_PIPE2
-        if (fcntl(releasePipe[0], F_SETFD, FD_CLOEXEC) == -1 ||
-            fcntl(releasePipe[1], F_SETFD, FD_CLOEXEC) == -1)
-        {
-            close(releasePipe[0]);
-            close(releasePipe[1]);
-        }
-        else
-#endif
-        {
-            m_signalChainingReleasePipeReadFd = releasePipe[0];
-            m_signalChainingReleasePipeWriteFd = releasePipe[1];
-        }
     }
 
 #if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
