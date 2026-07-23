@@ -878,7 +878,6 @@ private sealed class DynamicILBlobTraits : ITraits<uint, DynamicILBlobEntry>
     public bool Equals(uint left, uint right) => left == right;
     public uint Hash(uint key) => key;
     public bool IsNull(DynamicILBlobEntry entry) => entry.EntryMethodToken == 0;
-    public DynamicILBlobEntry Null() => new DynamicILBlobEntry(0, TargetPointer.Null);
     public bool IsDeleted(DynamicILBlobEntry entry) => false;
 }
 
@@ -909,8 +908,9 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
     and values corresponding to the offset values. Optionally, it contains a Size field.
     */
     SHash<uint, Data.DynamicILBlobEntry> shash = shashContract.CreateSHash<uint, Data.DynamicILBlobEntry>(target, dynamicBlobTablePtr, DataType.DynamicILBlobTable, traits)
-    Data.DynamicILBlobEntry blobEntry = shashContract.LookupSHash(shash, token);
-    return /* blob entry IL address */
+    // LookupSHash returns null when no entry matches the token.
+    Data.DynamicILBlobEntry? blobEntry = shashContract.LookupSHash(shash, token);
+    return blobEntry?.EntryIL ?? TargetPointer.Null;
 }
 
 DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle)

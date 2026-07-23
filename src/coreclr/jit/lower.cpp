@@ -1843,7 +1843,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
     {
         assert(arg->OperIsLocalRead());
 
-        JITDUMP("Argument is a local\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a local\n");
 
         GenTreeLclVarCommon* lcl = arg->AsLclVarCommon();
 
@@ -9289,7 +9289,23 @@ void Lowering::FindInducedParameterRegisterLocals()
 
         GenTree* value = m_compiler->gtNewLclVarNode(remappedLclNum);
 
+#ifdef TARGET_WASM
+        if (varTypeIsSIMD(value) && !varTypeIsSIMD(fld))
+        {
+            // Unlike native targets, wasm cannot reinterpret a v128 local access as a scalar.
+            const unsigned laneOffset = fld->GetLclOffs() - regSegment->Offset;
+            const unsigned scalarSize = genTypeSize(fld);
+            assert((laneOffset % scalarSize) == 0);
+
+            const unsigned laneIndex = laneOffset / scalarSize;
+            value                    = m_compiler->gtNewSimdGetElementNode(fld->TypeGet(), value,
+                                                                           m_compiler->gtNewIconNode(static_cast<ssize_t>(laneIndex)),
+                                                                           fld->TypeGet(), genTypeSize(value));
+        }
+        else if (varTypeUsesFloatReg(value))
+#else
         if (varTypeUsesFloatReg(value))
+#endif // TARGET_WASM
         {
             assert(fld->GetLclOffs() == regSegment->Offset);
 

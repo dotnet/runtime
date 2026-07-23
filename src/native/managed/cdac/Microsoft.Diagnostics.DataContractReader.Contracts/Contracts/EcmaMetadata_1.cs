@@ -393,7 +393,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         return module.MetadataGeneration;
     }
 
-    private TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle)
+    public TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle)
     {
         Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         Data.DynamicMetadata dynamicMetadata = target.ProcessedData.GetOrAdd<Data.DynamicMetadata>(module.DynamicMetadata);

@@ -33,6 +33,9 @@ namespace System
         // Types for Post-Quantum Cryptography (PQC) are experimental.
         internal const string PostQuantumCryptographyDiagId = "SYSLIB5006";
 
+        // Low-level TLS engine (TlsContext / TlsSession) is experimental.
+        internal const string LowLevelTlsDiagId = "SYSLIB5007";
+
         // SocketsHttpHandler connection eviction control and HttpRequestMessage.ConnectionId APIs are experimental.
         internal const string SocketsHttpHandlerExperimentalDiagId = "SYSLIB5008";
 

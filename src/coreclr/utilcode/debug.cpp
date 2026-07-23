@@ -65,6 +65,7 @@ static void DECLSPEC_NORETURN FailFastOnAssert()
     CreateCrashDumpIfEnabled();
 #endif
     RaiseFailFastException(NULL, NULL, 0);
+    UNREACHABLE();
 }
 
 #ifdef _DEBUG

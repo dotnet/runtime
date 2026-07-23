@@ -8,10 +8,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.TableSegment))]
 internal sealed partial class TableSegment : IData<TableSegment>
 {
-    [Field] public TargetPointer NextSegment { get; }
+    [Field] public partial TargetPointer NextSegment { get; }
 
     [FieldAddress]
-    public TargetPointer RgValue { get; }
+    public partial TargetPointer RgValue { get; }
 
     public byte[] RgTail { get; private set; }
     public byte[] RgAllocation { get; private set; }

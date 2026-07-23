@@ -702,7 +702,6 @@ internal readonly struct Loader_1 : ILoader
         public bool Equals(uint left, uint right) => left == right;
         public uint Hash(uint key) => key;
         public bool IsNull(DynamicILBlobEntry entry) => entry.EntryMethodToken == 0;
-        public DynamicILBlobEntry Null() => new DynamicILBlobEntry(0, TargetPointer.Null);
         public bool IsDeleted(DynamicILBlobEntry entry) => false;
     }
 
@@ -729,7 +728,8 @@ internal readonly struct Loader_1 : ILoader
         }
         DynamicILBlobTable dynamicILBlobTable = _target.ProcessedData.GetOrAdd<DynamicILBlobTable>(module.DynamicILBlobTable);
         ISHash shashContract = _target.Contracts.SHash;
-        return shashContract.LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
+        DynamicILBlobEntry? entry = shashContract.LookupSHash(dynamicILBlobTable.HashTable, token);
+        return entry?.EntryIL ?? TargetPointer.Null;
     }
 
     IEnumerable<LoaderHeapBlock> ILoader.EnumerateLoaderHeapBlocks(TargetPointer loaderHeap)

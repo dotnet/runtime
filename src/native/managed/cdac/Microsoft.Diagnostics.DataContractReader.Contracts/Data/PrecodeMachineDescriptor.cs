@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.PrecodeMachineDescriptor))]
 internal sealed partial class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
 {
-    [Field] public byte InvalidPrecodeType { get; }
-    [Field] public byte StubPrecodeType { get; }
-    [Field] public uint StubCodePageSize { get; }
+    [Field] public partial byte InvalidPrecodeType { get; }
+    [Field] public partial byte StubPrecodeType { get; }
+    [Field] public partial uint StubCodePageSize { get; }
 
     public byte? OffsetOfPrecodeType { get; private set; } // Not present for version 3 and above
     public byte? ReadWidthOfPrecodeType { get; private set; } // Not present for version 3 and above

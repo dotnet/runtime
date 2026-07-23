@@ -173,8 +173,8 @@ LOCAL_LABEL(StringSizeOverflow):
         ori  $a2, $a2, 0xfff
         bltu  $a2, $a1, LOCAL_LABEL(ArraySizeOverflow)
 
-        ld.h  $a2, $a0, OFFSETOF__MethodTable__m_usComponentSize
-        mulw.d.w  $a2, $a1, $a2
+        ld.hu  $a2, $a0, OFFSETOF__MethodTable__m_usComponentSize
+        mulw.d.wu  $a2, $a1, $a2
         addi.d  $a2, $a2, SZARRAY_BASE_SIZE + 7
         bstrins.d  $a2, $r0, 2, 0
 

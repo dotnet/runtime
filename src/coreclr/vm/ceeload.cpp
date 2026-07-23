@@ -3898,7 +3898,7 @@ void ReflectionModule::Destruct()
 
     Module::Destruct();
 
-    delete (uint32_t*)m_pDynamicMetadata;
+    delete[] (uint8_t*)m_pDynamicMetadata;
     m_pDynamicMetadata = (TADDR)NULL;
 
     m_CrstLeafLock.Destroy();
@@ -4035,7 +4035,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     {
         CrstHolder ch(&m_CrstLeafLock);
 
-        delete (uint32_t*)m_pDynamicMetadata;
+        delete[] (uint8_t*)m_pDynamicMetadata;
 
         m_pDynamicMetadata = (TADDR)pBuffer.Extract();
         m_dwMetadataGeneration++;

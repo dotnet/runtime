@@ -10,14 +10,14 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.CMiniMdRW))]
 internal sealed partial class CMiniMdRW : IData<CMiniMdRW>
 {
-    [FieldAddress] public TargetPointer Schema { get; }
-    [Field] public uint TableCount { get; }
-    [Field(UnderlyingBoolType = typeof(uint))] public bool All4ByteColumns { get; }
-    [FieldAddress] public TargetPointer Tables { get; }
-    [FieldAddress] public TargetPointer StringHeap { get; }
-    [FieldAddress] public TargetPointer BlobHeap { get; }
-    [FieldAddress] public TargetPointer UserStringHeap { get; }
-    [FieldAddress] public TargetPointer GuidHeap { get; }
+    [FieldAddress] public partial TargetPointer Schema { get; }
+    [Field] public partial uint TableCount { get; }
+    [Field(UnderlyingBoolType = typeof(uint))] public partial bool All4ByteColumns { get; }
+    [FieldAddress] public partial TargetPointer Tables { get; }
+    [FieldAddress] public partial TargetPointer StringHeap { get; }
+    [FieldAddress] public partial TargetPointer BlobHeap { get; }
+    [FieldAddress] public partial TargetPointer UserStringHeap { get; }
+    [FieldAddress] public partial TargetPointer GuidHeap { get; }
     public ImmutableArray<TargetPointer> TableSegments { get; private set; }
 
     [MemberNotNull(nameof(TableSegments))]

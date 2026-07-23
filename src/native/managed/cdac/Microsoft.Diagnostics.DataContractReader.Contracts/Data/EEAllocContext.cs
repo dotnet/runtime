@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.EEAllocContext))]
 internal sealed partial class EEAllocContext : IData<EEAllocContext>
 {
-    [Field] public GCAllocContext GCAllocationContext { get; }
+    [Field] public partial GCAllocContext GCAllocationContext { get; }
 }

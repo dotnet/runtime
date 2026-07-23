@@ -6,6 +6,7 @@ This contract provides methods to get a view of the ECMA-335 metadata for a give
 
 ```csharp
 TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle);
+TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle);
 System.Reflection.Metadata.MetadataReader? GetMetadata(ModuleHandle handle);
 ```
 

@@ -6,12 +6,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ILCodeVersionNode))]
 internal sealed partial class ILCodeVersionNode : IData<ILCodeVersionNode>
 {
-    [Field] public TargetNUInt VersionId { get; }
-    [Field] public TargetPointer Next { get; }
-    [Field] public uint RejitState { get; }
-    [Field] public TargetPointer ILAddress { get; }
-    [Field] public uint Deoptimized { get; }
-    [Field] public uint Source { get; }
-    [Field] public TargetNUInt EnCVersion { get; }
-    [Field] public InstrumentedILOffsetMapping InstrumentedILMap { get; }
+    [Field] public partial TargetNUInt VersionId { get; }
+    [Field] public partial TargetPointer Next { get; }
+    [Field] public partial uint RejitState { get; }
+    [Field] public partial TargetPointer ILAddress { get; }
+    [Field] public partial uint Deoptimized { get; }
+    [Field] public partial uint Source { get; }
+    [Field] public partial TargetNUInt EnCVersion { get; }
+    [Field] public partial InstrumentedILOffsetMapping InstrumentedILMap { get; }
 }
