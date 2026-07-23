@@ -229,6 +229,7 @@ protected:
     void                       genEmitBeginBlock(WasmValueType blockType = WasmValueType::Invalid);
     void                       genEmitEndBlock();
     void                       genEmitFunctionEnd(bool emitTerminalUnreachable = true);
+    bool                       genIsLastBlockOfCurrentFunc(BasicBlock* block);
 #endif
 
     void genEmitStartBlock(BasicBlock* block);

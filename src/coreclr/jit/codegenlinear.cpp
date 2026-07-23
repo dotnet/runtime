@@ -808,7 +808,7 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
             // At function/funclet end, close open intervals and emit `end`
             // (we've already emitted the terminating `unreachable` above).
             //
-            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+            if (genIsLastBlockOfCurrentFunc(block))
             {
                 genEmitFunctionEnd(/* emitTerminalUnreachable */ false);
             }
@@ -910,7 +910,7 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
             // (e.g., backedge of an infinite loop), close any still-open
             // wasm intervals and emit the function-body terminator.
             //
-            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+            if (genIsLastBlockOfCurrentFunc(block))
             {
                 genEmitFunctionEnd();
             }

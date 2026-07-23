@@ -472,6 +472,35 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
+// genIsLastBlockOfCurrentFunc: determine whether `block` is the last block of the
+//   wasm function or funclet currently being generated -- i.e. the block after
+//   which the function body's terminal `end` opcode must be emitted.
+//
+// Arguments:
+//   block - the block being generated
+//
+// Return Value:
+//   true if `block` is the current func/funclet's last block.
+//
+// Notes:
+//   A wasm function body is structurally required to end in `end`, even when its
+//   last block is a no-return call (e.g. a throw-helper tail). `block->Next()`
+//   walks the GLOBAL block order (bbNext), in which a funclet's last block can be
+//   followed by an interspersed root throw-helper block (`fgIsThrowHlpBlk`, no
+//   handler index) that is not a funclet begin, so `bbIsFuncletBeg(block->Next())`
+//   fails to recognize the funclet boundary. Codegen iterates per-funclet
+//   (`genCodeForFunclet` over `funcInfo->Blocks()`), so also compare against the
+//   current func/funclet's authoritative last block (`FuncInfoDsc::GetLastBlock`:
+//   `ebdHndLast` for handlers, `BBFilterLast` for filters, and
+//   `fgLastBBInMainFunction` for the root).
+//
+bool CodeGen::genIsLastBlockOfCurrentFunc(BasicBlock* block)
+{
+    return block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()) ||
+           (block == m_compiler->funCurrentFunc()->GetLastBlock(m_compiler));
+}
+
+//------------------------------------------------------------------------
 // genFuncletEpilog: codegen for funclet epilogs.
 //
 // Arguments:
@@ -479,7 +508,10 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 //
 void CodeGen::genFuncletEpilog(BasicBlock* block)
 {
-    if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+    // Emit the function-body terminator (`end`) when this epilog block is the last
+    // block of the funclet; otherwise emit `return` to unwind to the caller.
+    //
+    if (genIsLastBlockOfCurrentFunc(block))
     {
         instGen(INS_end);
     }
@@ -3781,7 +3813,7 @@ void CodeGen::genCallFinally(BasicBlock* block)
         // A retless BBJ_CALLFINALLY can be the last block of a wasm function/funclet;
         // every wasm function body must end with `end`.
         //
-        if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+        if (genIsLastBlockOfCurrentFunc(block))
         {
             GetEmitter()->emitIns(INS_end);
         }
