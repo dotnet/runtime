@@ -48,4 +48,8 @@ internal static class Locator
     /// <summary>The data-descriptor meanings sidecar next to the datacontracts docs.</summary>
     public static FileInfo MeaningsFile(DirectoryInfo cdacRoot) =>
         new(Path.Combine(DocsDirectory(cdacRoot).FullName, "data-descriptor-meanings.json"));
+
+    /// <summary>The data-descriptor override sidecar next to the datacontracts docs.</summary>
+    public static FileInfo OverridesFile(DirectoryInfo cdacRoot) =>
+        new(Path.Combine(DocsDirectory(cdacRoot).FullName, "data-descriptor-overrides.json"));
 }

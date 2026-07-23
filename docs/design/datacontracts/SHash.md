@@ -33,12 +33,20 @@ reference type (`class`).
 
 In order to properly populate an SHash, we need to know the size of each element, which varies from instantiation to instantiation of SHash. Therefore, we pass as an argument the DataType ```type``` which contains the particular offsets.
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `type` | `Table` | Address of the SHash table |
-| `type` | `TableSize` | Number of entries in the table |
-| `type` | `EntrySize` | Size in bytes of each table entry |
+<!-- BEGIN GENERATED: usage contract=SHash version=c1 -->
+### Data descriptors used
+
+_None._
+
+### Global variables used
+
+_None._
+
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=SHash version=c1 -->
+
 
 ``` csharp
 
@@ -55,7 +63,7 @@ ISHash<TKey, TEntry> ISHash.CreateSHash<TKey, TEntry>(Target target, TargetPoint
 {
     TargetPointer table = target.ReadPointer(address + /* type::Table offset */);
     uint tableSize = target.Read<uint>(address + /* type::TableSize offset */);
-    uint entrySize = target.Read<uint>(address + /* type::EntrySize offset */);
+    uint entrySize = type.Size ?? 0;
     List<TEntry> entries = [];
     for (int i = 0; i < tableSize; i++)
     {

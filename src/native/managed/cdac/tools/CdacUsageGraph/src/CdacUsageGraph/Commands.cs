@@ -46,6 +46,10 @@ internal static class Commands
         {
             Description = "The data-descriptor-meanings.json sidecar. Auto-detected next to the docs if omitted.",
         };
+        Option<FileInfo?> overridesOption = new Option<FileInfo?>("--overrides")
+        {
+            Description = "The data-descriptor-overrides.json sidecar. Auto-detected next to the docs if omitted.",
+        };
         Option<bool> checkOption = new Option<bool>("--check")
         {
             Description = "Fail (exit 1) if any doc's generated blocks are out of date instead of rewriting them.",
@@ -56,6 +60,7 @@ internal static class Commands
             cdacRootOption,
             docsDirOption,
             meaningsOption,
+            overridesOption,
             checkOption,
         };
 
@@ -64,9 +69,13 @@ internal static class Commands
             DirectoryInfo cdacRoot = parseResult.GetValue(cdacRootOption)!;
             DirectoryInfo docsDir = parseResult.GetValue(docsDirOption) ?? Locator.DocsDirectory(cdacRoot);
             FileInfo meanings = parseResult.GetValue(meaningsOption) ?? Locator.MeaningsFile(cdacRoot);
+            FileInfo overrides = parseResult.GetValue(overridesOption) ?? Locator.OverridesFile(cdacRoot);
 
             UsageGraph graph = AnalysisPipeline.BuildGraph(cdacRoot.FullName);
-            DocGenerator generator = new DocGenerator(graph, DocDescriptorMeanings.Load(meanings.FullName));
+            DocGenerator generator = new DocGenerator(
+                graph,
+                DocDescriptorMeanings.Load(meanings.FullName),
+                DocDescriptorOverrides.Load(overrides.FullName));
 
             if (parseResult.GetValue(checkOption))
             {

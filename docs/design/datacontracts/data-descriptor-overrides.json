@@ -1,0 +1,32 @@
+{
+  "_suppress": {
+    "PrecodeStubs@c1": [
+      "PrecodeMachineDescriptor.DynamicHelperPrecodeType",
+      "PrecodeMachineDescriptor.FixupBytes",
+      "PrecodeMachineDescriptor.FixupIgnoredBytes",
+      "PrecodeMachineDescriptor.FixupStubPrecodeSize",
+      "PrecodeMachineDescriptor.InterpreterPrecodeType",
+      "PrecodeMachineDescriptor.StubBytes",
+      "PrecodeMachineDescriptor.StubIgnoredBytes",
+      "PrecodeMachineDescriptor.StubPrecodeSize",
+      "PrecodeMachineDescriptor.UMEntryPrecodeType"
+    ],
+    "PrecodeStubs@c2": [
+      "PrecodeMachineDescriptor.DynamicHelperPrecodeType",
+      "PrecodeMachineDescriptor.FixupBytes",
+      "PrecodeMachineDescriptor.FixupIgnoredBytes",
+      "PrecodeMachineDescriptor.FixupStubPrecodeSize",
+      "PrecodeMachineDescriptor.InterpreterPrecodeType",
+      "PrecodeMachineDescriptor.StubBytes",
+      "PrecodeMachineDescriptor.StubIgnoredBytes",
+      "PrecodeMachineDescriptor.StubPrecodeSize",
+      "PrecodeMachineDescriptor.UMEntryPrecodeType"
+    ],
+    "PrecodeStubs@c3": [
+      "PrecodeMachineDescriptor.FixupPrecodeType",
+      "PrecodeMachineDescriptor.OffsetOfPrecodeType",
+      "PrecodeMachineDescriptor.ReadWidthOfPrecodeType",
+      "PrecodeMachineDescriptor.ShiftOfPrecodeType"
+    ]
+  }
+}

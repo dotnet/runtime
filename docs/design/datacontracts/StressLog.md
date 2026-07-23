@@ -37,47 +37,77 @@ IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddres
 bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer);
 ```
 
-## Versions 1 and 2
+## Version 1 dependency summary
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| StressLog | LoggedFacilities | Bitmask of facilities that are logged |
-| StressLog | Level | Level of logging |
-| StressLog | MaxSizePerThread | Maximum size of the log per thread |
-| StressLog | MaxSizeTotal | Maximum size of the log |
-| StressLog | TotalChunks | Total number of chunks across all thread-specific logs |
-| StressLog | TickFrequency | Number of ticks per second for stresslog timestamps |
-| StressLog | StartTimestamp | Timestamp when the stress log was started |
-| StressLog | StartTime | Wall-clock time when the stress log was started (FILETIME, 100ns units since Jan 1 1601) |
-| StressLog | ModuleOffset | Offset of the module in the stress log |
-| StressLog | Modules | Offset of the stress log's module table (if StressLogHasModuleTable is `1`) |
-| StressLog | Logs | Pointer to the thread-specific logs |
-| StressLogModuleDesc | BaseAddress | Base address of the module |
-| StressLogModuleDesc | Size | Size of the module |
-| ThreadStressLog | Next | Pointer to the next thread-specific log |
-| ThreadStressLog | ThreadId | ID of the thread |
-| ThreadStressLog | WriteHasWrapped | Whether the write pointer is writing to previously used chunks |
-| ThreadStressLog | CurrentPtr | Pointer to the most recently written message |
-| ThreadStressLog | ChunkListHead | Pointer to the head of the chunk list |
-| ThreadStressLog | ChunkListTail | Pointer to the tail of the chunk list |
-| ThreadStressLog | CurrentWriteChunk | Pointer to the chunk currently being written to |
-| StressLogChunk | Next | Pointer to the next chunk |
-| StressLogChunk | Buf | The data stored in the chunk |
-| StressLogChunk | Sig1 | First byte of the chunk signature (to ensure validity) |
-| StressLogChunk | Sig2 | Second byte of the chunk signature (to ensure validity) |
-| StressMsgHeader | Opaque structure | Header of a stress message. Meaning of bits is version-dependent. |
-| StressMsg | Header | The message header |
-| StressMsg | Args | The arguments of the message (number of arguments specified in the header) |
+<!-- BEGIN GENERATED: usage contract=StressLog version=c1 -->
+### Data descriptors used
 
-Global variables used:
-| Global Name | Type | Purpose |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `StressLog` | `Level` | `uint32` | Level of logging |
+| `StressLog` | `LoggedFacilities` | `uint32` | Bitmask of facilities that are logged |
+| `StressLog` | `Logs` | `pointer` | Pointer to the thread-specific logs |
+| `StressLog` | `MaxSizePerThread` | `uint32` | Maximum size of the log per thread |
+| `StressLog` | `MaxSizeTotal` | `uint32` | Maximum size of the log |
+| `StressLog` | `ModuleOffset` | `nuint` | Offset of the module in the stress log |
+| `StressLog` | `Modules` | `pointer` | Offset of the stress log's module table (if StressLogHasModuleTable is 1) |
+| `StressLog` | `StartTime` | `uint64` | Wall-clock time when the stress log was started (FILETIME, 100ns units since Jan 1 1601) |
+| `StressLog` | `StartTimestamp` | `uint64` | Timestamp when the stress log was started |
+| `StressLog` | `TickFrequency` | `uint64` | Number of ticks per second for stresslog timestamps |
+| `StressLog` | `TotalChunks` | `int32` | Total number of chunks across all thread-specific logs |
+| `StressLogChunk` | *(type size)* | `uint32` | Size in bytes of each stress log chunk |
+| `StressLogChunk` | `Buf` | `pointer` | The data stored in the chunk |
+| `StressLogChunk` | `Next` | `pointer` | Pointer to the next chunk |
+| `StressLogChunk` | `Sig1` | `uint32` | First byte of the chunk signature (to ensure validity) |
+| `StressLogChunk` | `Sig2` | `uint32` | Second byte of the chunk signature (to ensure validity) |
+| `StressLogModuleDesc` | *(type size)* | `uint32` | Size of the data descriptor layout |
+| `StressLogModuleDesc` | `BaseAddress` | `pointer` | Base address of the module |
+| `StressLogModuleDesc` | `Size` | `nuint` | Size of the module |
+| `StressMsg` | `Args` | `pointer` | The arguments of the message (number of arguments specified in the header) |
+| `StressMsg` | `Header` | `pointer` | The message header |
+| `StressMsgHeader` | *(type size)* | `uint32` | Size in bytes of the fixed stress message header before its arguments |
+| `ThreadStressLog` | `ChunkListHead` | `pointer` | Pointer to the head of the chunk list |
+| `ThreadStressLog` | `ChunkListTail` | `pointer` | Pointer to the tail of the chunk list |
+| `ThreadStressLog` | `CurrentPtr` | `pointer` | Pointer to the most recently written message |
+| `ThreadStressLog` | `CurrentWriteChunk` | `pointer` | Pointer to the chunk currently being written to |
+| `ThreadStressLog` | `Next` | `pointer` | Pointer to the next thread-specific log |
+| `ThreadStressLog` | `ThreadId` | `uint64` | ID of the thread |
+| `ThreadStressLog` | `WriteHasWrapped` | `uint8` | Whether the write pointer is writing to previously used chunks |
+
+### Global variables used
+
+| Global | Type | Meaning |
 | --- | --- | --- |
-| StressLogEnabled | byte | Whether the stress log is enabled |
-| StressLog | pointer | Pointer to the stress log |
-| StressLogChunkSize | uint | Size of a stress log chunk |
-| StressLogMaxMessageSize | ulong | Maximum size of a stress log message |
-| StressLogHasModuleTable | byte | Whether the stress log module table is present |
+| `StressLog` | `pointer` | Pointer to the stress log |
+| `StressLogChunkSize` | `uint32` | Size of a stress log chunk |
+| `StressLogEnabled` | `uint8` | Whether the stress log is enabled |
+| `StressLogHasModuleTable` | `uint8` | Whether the stress log module table is present |
+| `StressLogMaxMessageSize` | `uint64` | Maximum size of a stress log message |
+| `StressLogMaxModules` | `uint32` | Maximum number of module descriptors in the stress log module table |
+| `StressLogModuleTable` | `pointer` | Pointer to the stress log module descriptor table |
+| `StressLogValidChunkSig` | `uint32` | Signature value stored in both markers of a valid stress log chunk |
+
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=StressLog version=c1 -->
+
+## Version 2 dependency changes from Version 1
+
+<!-- BEGIN GENERATED: usage contract=StressLog version=c2 diff-from=c1 -->
+### Data descriptor changes from `c1`
+
+_No changes._
+
+### Global variable changes from `c1`
+
+_No changes._
+
+### Contract dependency changes from `c1`
+
+_No changes._
+<!-- END GENERATED: usage contract=StressLog version=c2 diff-from=c1 -->
+
 
 ```csharp
 bool HasStressLog()

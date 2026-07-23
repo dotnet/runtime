@@ -27,7 +27,8 @@ public sealed class DocsAreUpToDateTests
 
         UsageGraph graph = AnalysisPipeline.BuildGraph(cdacRoot.FullName);
         DocDescriptorMeanings meanings = DocDescriptorMeanings.Load(Locator.MeaningsFile(cdacRoot).FullName);
-        DocGenerator generator = new DocGenerator(graph, meanings);
+        DocDescriptorOverrides overrides = DocDescriptorOverrides.Load(Locator.OverridesFile(cdacRoot).FullName);
+        DocGenerator generator = new DocGenerator(graph, meanings, overrides);
 
         IReadOnlyList<string> drifted = generator.Check(docsDir.FullName);
 
@@ -228,10 +229,60 @@ public sealed class DocsAreUpToDateTests
     public void RejectsMalformedDescriptorOverrideKey()
     {
         using TempDirectory temp = new();
-        string path = Path.Combine(temp.Path, "meanings.json");
+        string path = Path.Combine(temp.Path, "overrides.json");
         File.WriteAllText(path, """{ "_supplement": { "Thread": ["MissingDot"] } }""");
 
-        Assert.Throws<System.Text.Json.JsonException>(() => DocDescriptorMeanings.Load(path));
+        Assert.Throws<System.Text.Json.JsonException>(() => DocDescriptorOverrides.Load(path));
+    }
+
+    [Fact]
+    public void AppliesVersionSpecificDescriptorOverrides()
+    {
+        using TempDirectory temp = new();
+        string docPath = Path.Combine(temp.Path, "Widget.md");
+        string overridesPath = Path.Combine(temp.Path, "overrides.json");
+        File.WriteAllText(docPath,
+            "<!-- BEGIN GENERATED: usage contract=Widget version=c1 -->\n" +
+            "<!-- END GENERATED: usage contract=Widget version=c1 -->\n" +
+            "<!-- BEGIN GENERATED: usage contract=Widget version=c2 -->\n" +
+            "<!-- END GENERATED: usage contract=Widget version=c2 -->");
+        File.WriteAllText(
+            overridesPath,
+            """
+            {
+              "_supplement": { "Widget@c2": ["Widget.Added"] },
+              "_suppress": {
+                "Widget": ["Widget.Common"],
+                "Widget@c1": ["Widget.VersionSpecific"]
+              }
+            }
+            """);
+        UsageGraph graph = new(
+            "",
+            0,
+            [
+                new ContractVersionUsage(
+                    new ContractVersion(new ContractInterface("IWidget"), "c1"),
+                    [new DataTypeUsage("Data.Widget", false, [new FieldUsage("Common", "int32"), new FieldUsage("VersionSpecific", "int32")])],
+                    [],
+                    []),
+                new ContractVersionUsage(
+                    new ContractVersion(new ContractInterface("IWidget"), "c2"),
+                    [new DataTypeUsage("Data.Widget", false, [new FieldUsage("Common", "int32"), new FieldUsage("VersionSpecific", "int32")])],
+                    [],
+                    []),
+            ]);
+
+        new DocGenerator(
+            graph,
+            DocDescriptorMeanings.Empty,
+            DocDescriptorOverrides.Load(overridesPath)).Emit(temp.Path);
+
+        string generated = File.ReadAllText(docPath);
+        Assert.DoesNotContain("| `Widget` | `Common` |", generated);
+        Assert.Contains("| `Widget` | `VersionSpecific` |", generated);
+        Assert.Contains("| `Widget` | `Added` |", generated);
+        Assert.Equal(1, generated.Split("| `Widget` | `VersionSpecific` |").Length - 1);
     }
 
     [Fact]

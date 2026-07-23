@@ -19,11 +19,16 @@ internal sealed partial class DocGenerator
 
     private readonly UsageGraph _graph;
     private readonly DocDescriptorMeanings _meanings;
+    private readonly DocDescriptorOverrides _overrides;
 
-    public DocGenerator(UsageGraph graph, DocDescriptorMeanings meanings)
+    public DocGenerator(
+        UsageGraph graph,
+        DocDescriptorMeanings meanings,
+        DocDescriptorOverrides? overrides = null)
     {
         _graph = graph;
         _meanings = meanings;
+        _overrides = overrides ?? DocDescriptorOverrides.Empty;
     }
 
     /// <summary>Rewrites every marker block in <paramref name="docsDir"/>; returns the changed file names.</summary>
@@ -324,9 +329,9 @@ internal sealed partial class DocGenerator
             foreach (FieldUsage field in dataType.Fields)
                 keys.Add($"{type}.{field.Name}");
         }
-        foreach (string key in _meanings.Supplement(contractShort))
+        foreach (string key in _overrides.Supplement(contractShort, version))
             keys.Add(key);
-        foreach (string key in _meanings.Suppress(contractShort))
+        foreach (string key in _overrides.Suppress(contractShort, version))
             keys.Remove(key);
 
         return keys

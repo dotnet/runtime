@@ -144,7 +144,8 @@ without `m_`/`_` prefixes), so only genuine drift is surfaced.
 ### Generating / checking the docs
 
 The `docs` sub-command (and its thin `generate-docs.ps1` wrapper) fills the generated marker
-blocks from the analysis, merging in `data-descriptor-meanings.json`:
+blocks from the analysis, merging in `data-descriptor-meanings.json` and
+`data-descriptor-overrides.json`:
 
 ```powershell
 pwsh ./generate-docs.ps1           # rewrite marked blocks in place
@@ -168,9 +169,11 @@ removals relative to another registered version:
 ```
 
 Descriptor rows are sorted by descriptor name and then field name; the sidecar supplies
-human-authored meanings while names and native types come from the analysis. The sidecar stores
-one canonical `_fields` map keyed by `Type.Field` and one canonical `_globals` map keyed by global
-name. Only the `_supplement` and `_suppress` overrides are grouped by contract.
+human-authored meanings while names and native types come from the analysis.
+`data-descriptor-meanings.json` stores one canonical `_fields` map keyed by `Type.Field` and one
+canonical `_globals` map keyed by global name. `data-descriptor-overrides.json` stores
+`_supplement` and `_suppress` lists keyed by a contract name or by `Contract@version`; version
+entries are combined with any contract-wide entries.
 
 The documentation generation logic lives in `Docs/DocGenerator.cs` so the CI unit test and the
 regen use one implementation. `MSBuildWorkspace` evaluates the real Contracts project, including

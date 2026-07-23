@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 # Thin wrapper over the CdacUsageGraph 'docs' command, which fills the generated marker blocks in
-# docs/design/datacontracts/*.md from the analysis (merging in data-descriptor-meanings.json).
+# docs/design/datacontracts/*.md from the analysis and its meanings and overrides sidecars.
 # The generation logic lives in the tool (CdacUsageGraph/Docs/DocGenerator.cs) so it stays in lock-
 # step with the doc-drift unit test.
 #
