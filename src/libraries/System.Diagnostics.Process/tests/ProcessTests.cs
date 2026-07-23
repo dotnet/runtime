@@ -2361,7 +2361,10 @@ namespace System.Diagnostics.Tests
             CreateDefaultProcess();
 
 #pragma warning disable 0618
-            Assert.InRange(_process.PrivateMemorySize, 1, int.MaxValue);
+            // PrivateMemorySize is unchecked((int)PrivateMemorySize64) and can be negative on
+            // high-memory processes - assert the cast relationship rather than a value range,
+            // matching TestVirtualMemorySize.
+            Assert.Equal(unchecked((int)_process.PrivateMemorySize64), _process.PrivateMemorySize);
 #pragma warning restore 0618
         }
 
