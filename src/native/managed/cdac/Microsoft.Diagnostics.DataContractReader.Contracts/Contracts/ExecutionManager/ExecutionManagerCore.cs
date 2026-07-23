@@ -492,6 +492,38 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         }
     }
 
+    IReadOnlyList<TargetPointer> IExecutionManager.GetDynamicFunctionTableEntries(TargetPointer tableAddress)
+    {
+        // Port of the DAC's OutOfProcessFunctionTableCallbackEx (see vm/../debug/daccess/fntableaccess.cpp).
+        // The dynamic-function-table header identifies both the owning JIT manager (via its Context) and
+        // the module base (via MinimumAddress) of the code heap whose function table is requested.
+        Data.DynamicFunctionTable table = _target.ProcessedData.GetOrAdd<Data.DynamicFunctionTable>(tableAddress);
+
+        // The low bits of Context are flags; the remaining bits point at the owning EEJitManager.
+        TargetPointer jitManagerAddress = new(table.Context.Value & ~(ulong)3);
+        TargetPointer minimumAddress = table.MinimumAddress;
+
+        Data.EEJitManager jitManager = _target.ProcessedData.GetOrAdd<Data.EEJitManager>(jitManagerAddress);
+
+        TargetPointer nodeAddr = jitManager.AllCodeHeaps;
+        while (nodeAddr != TargetPointer.Null)
+        {
+            Data.CodeHeapListNode node = _target.ProcessedData.GetOrAdd<Data.CodeHeapListNode>(nodeAddr);
+
+            // HeapList::GetModuleBase - the personality routine on 64-bit targets when set,
+            // otherwise the map base. This matches the value used to register the function table.
+            TargetPointer moduleBase = node.CLRPersonalityRoutine is { } personalityRoutine && personalityRoutine != TargetPointer.Null
+                ? personalityRoutine
+                : node.MapBase;
+            if (moduleBase == minimumAddress)
+                return _eeJitManager.EnumerateFunctionTableEntries(node);
+
+            nodeAddr = node.Next;
+        }
+
+        return [];
+    }
+
     private RangeSection RangeSectionFromCodeBlockHandle(CodeBlockHandle codeInfoHandle)
     {
         if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))

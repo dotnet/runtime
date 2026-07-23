@@ -13,7 +13,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
 public class ExecutionManagerTests
 {
-    private static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockExecutionManagerBuilder emBuilder)
+    internal static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockExecutionManagerBuilder emBuilder)
     {
         TargetTestHelpers helpers = emBuilder.Builder.TargetTestHelpers;
         var types = new Dictionary<DataType, Target.TypeInfo>
@@ -29,6 +29,7 @@ public class ExecutionManagerTests
             [DataType.InterpreterRealCodeHeader] = TargetTestHelpers.CreateTypeInfo(emBuilder.InterpreterRealCodeHeaderLayout),
             [DataType.ReadyToRunInfo] = TargetTestHelpers.CreateTypeInfo(emBuilder.ReadyToRunInfoLayout),
             [DataType.EEJitManager] = TargetTestHelpers.CreateTypeInfo(emBuilder.EEJitManagerLayout),
+            [DataType.DynamicFunctionTable] = TargetTestHelpers.CreateTypeInfo(emBuilder.DynamicFunctionTableLayout),
             [DataType.Module] = TargetTestHelpers.CreateTypeInfo(emBuilder.ModuleLayout),
             [DataType.CodeRangeMapRangeList] = TargetTestHelpers.CreateTypeInfo(emBuilder.CodeRangeMapRangeListLayout),
             [DataType.ImageDataDirectory] = TargetTestHelpers.CreateTypeInfo(emBuilder.ImageDataDirectoryLayout),
@@ -42,7 +43,7 @@ public class ExecutionManagerTests
         return types;
     }
 
-    private static Target CreateTarget(MockExecutionManagerBuilder emBuilder)
+    internal static Target CreateTarget(MockExecutionManagerBuilder emBuilder)
     {
         var arch = emBuilder.Builder.TargetTestHelpers.Arch;
         return new TestPlaceholderTarget.Builder(arch)
@@ -940,5 +941,183 @@ public class ExecutionManagerTests
         TargetCodePointer precodeAddress = new(precodeRangeStart + 0x100);
         var eeInfo = em.GetCodeBlockHandle(precodeAddress);
         Assert.Null(eeInfo);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetDynamicFunctionTableEntries_MultipleMethods(string version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u;
+        const uint codeRangeSize = 0xc000u;
+        const uint methodSize = 0x100;
+        const ulong personalityRoutine = 0x00cc_0000u;
+
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+
+        MockExecutionManagerBuilder.JittedCodeRange jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+        NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+
+        // Three methods with varying unwind info counts, allocated in ascending address order.
+        MockExecutionManagerBuilder.JittedMethodWithUnwindInfo m0 = emBuilder.AddJittedMethodWithUnwindInfo(jittedCode, methodSize, 0x0101_0000, [0x10]);
+        MockExecutionManagerBuilder.JittedMethodWithUnwindInfo m1 = emBuilder.AddJittedMethodWithUnwindInfo(jittedCode, methodSize, 0x0101_1000, [0x20, 0x40]);
+        MockExecutionManagerBuilder.JittedMethodWithUnwindInfo m2 = emBuilder.AddJittedMethodWithUnwindInfo(jittedCode, methodSize, 0x0101_2000, [0x80]);
+
+        foreach (MockExecutionManagerBuilder.JittedMethodWithUnwindInfo m in new[] { m0, m1, m2 })
+            nibBuilder.AllocateCodeChunk(new TargetCodePointer(m.CodeAddress), methodSize);
+
+        ulong endAddress = m2.CodeAddress + methodSize;
+        ulong moduleBase = arch.Is64Bit ? personalityRoutine : codeRangeStart;
+
+        MockCodeHeapListNode node = emBuilder.AddCodeHeapListNode(
+            next: 0,
+            startAddress: codeRangeStart,
+            endAddress: endAddress,
+            mapBase: codeRangeStart,
+            headerMap: nibBuilder.NibbleMapFragment.Address,
+            clrPersonalityRoutine: personalityRoutine);
+        emBuilder.SetAllCodeHeaps(node.Address);
+
+        // Context carries flags in its low bits; the contract must strip them to find the JIT manager.
+        MockDynamicFunctionTable table = emBuilder.AddDynamicFunctionTable(moduleBase, emBuilder.EEJitManagerAddress | 2);
+
+        Target target = CreateTarget(emBuilder);
+        IExecutionManager em = target.Contracts.ExecutionManager;
+
+        uint rfSize = (uint)emBuilder.RuntimeFunctionLayout.Size;
+        IReadOnlyList<TargetPointer> entries = em.GetDynamicFunctionTableEntries(new TargetPointer(table.Address));
+
+        // Entries are ordered by descending method start address, ascending within each method.
+        List<TargetPointer> expected = [];
+        foreach (MockExecutionManagerBuilder.JittedMethodWithUnwindInfo m in new[] { m2, m1, m0 })
+        {
+            for (uint i = 0; i < m.NumUnwindInfos; i++)
+                expected.Add(new TargetPointer(m.UnwindInfosAddress + i * rfSize));
+        }
+
+        Assert.Equal(expected, entries);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetDynamicFunctionTableEntries_SkipsStubCodeBlocks(string version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u;
+        const uint codeRangeSize = 0xc000u;
+        const uint methodSize = 0x100;
+        const ulong personalityRoutine = 0x00cc_0000u;
+        const int stubCodeBlockKind = 4; // STUB_CODE_BLOCK_STUBPRECODE (<= StubCodeBlockLast)
+
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+
+        MockExecutionManagerBuilder.JittedCodeRange jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+        NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+
+        MockExecutionManagerBuilder.JittedMethodWithUnwindInfo m0 = emBuilder.AddJittedMethodWithUnwindInfo(jittedCode, methodSize, 0x0101_0000, [0x10]);
+        MockJittedMethod stub = emBuilder.AddStubCodeBlock(jittedCode, methodSize, stubCodeBlockKind);
+        MockExecutionManagerBuilder.JittedMethodWithUnwindInfo m1 = emBuilder.AddJittedMethodWithUnwindInfo(jittedCode, methodSize, 0x0101_1000, [0x20]);
+
+        nibBuilder.AllocateCodeChunk(new TargetCodePointer(m0.CodeAddress), methodSize);
+        nibBuilder.AllocateCodeChunk(new TargetCodePointer(stub.CodeAddress), methodSize);
+        nibBuilder.AllocateCodeChunk(new TargetCodePointer(m1.CodeAddress), methodSize);
+
+        ulong endAddress = m1.CodeAddress + methodSize;
+        ulong moduleBase = arch.Is64Bit ? personalityRoutine : codeRangeStart;
+
+        MockCodeHeapListNode node = emBuilder.AddCodeHeapListNode(
+            next: 0,
+            startAddress: codeRangeStart,
+            endAddress: endAddress,
+            mapBase: codeRangeStart,
+            headerMap: nibBuilder.NibbleMapFragment.Address,
+            clrPersonalityRoutine: personalityRoutine);
+        emBuilder.SetAllCodeHeaps(node.Address);
+
+        MockDynamicFunctionTable table = emBuilder.AddDynamicFunctionTable(moduleBase, emBuilder.EEJitManagerAddress);
+
+        Target target = CreateTarget(emBuilder);
+        IExecutionManager em = target.Contracts.ExecutionManager;
+
+        uint rfSize = (uint)emBuilder.RuntimeFunctionLayout.Size;
+        IReadOnlyList<TargetPointer> entries = em.GetDynamicFunctionTableEntries(new TargetPointer(table.Address));
+
+        // The stub in the middle contributes no entries; only the two real methods do.
+        List<TargetPointer> expected =
+        [
+            new TargetPointer(m1.UnwindInfosAddress),
+            new TargetPointer(m0.UnwindInfosAddress),
+        ];
+        Assert.Equal(expected, entries);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetDynamicFunctionTableEntries_NoMatchingHeap_ReturnsEmpty(string version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u;
+        const uint codeRangeSize = 0xc000u;
+        const uint methodSize = 0x100;
+        const ulong personalityRoutine = 0x00cc_0000u;
+
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+
+        MockExecutionManagerBuilder.JittedCodeRange jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+        NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+        MockExecutionManagerBuilder.JittedMethodWithUnwindInfo m0 = emBuilder.AddJittedMethodWithUnwindInfo(jittedCode, methodSize, 0x0101_0000, [0x10]);
+        nibBuilder.AllocateCodeChunk(new TargetCodePointer(m0.CodeAddress), methodSize);
+
+        MockCodeHeapListNode node = emBuilder.AddCodeHeapListNode(
+            next: 0,
+            startAddress: codeRangeStart,
+            endAddress: m0.CodeAddress + methodSize,
+            mapBase: codeRangeStart,
+            headerMap: nibBuilder.NibbleMapFragment.Address,
+            clrPersonalityRoutine: personalityRoutine);
+        emBuilder.SetAllCodeHeaps(node.Address);
+
+        // MinimumAddress matches no code heap's module base.
+        MockDynamicFunctionTable table = emBuilder.AddDynamicFunctionTable(0xdead_0000, emBuilder.EEJitManagerAddress);
+
+        Target target = CreateTarget(emBuilder);
+        IExecutionManager em = target.Contracts.ExecutionManager;
+
+        IReadOnlyList<TargetPointer> entries = em.GetDynamicFunctionTableEntries(new TargetPointer(table.Address));
+        Assert.Empty(entries);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetDynamicFunctionTableEntries_NullPersonalityRoutine_FallsBackToMapBase(string version, MockTarget.Architecture arch)
+    {
+        // When the personality routine is null (e.g. an interpreter code heap on 64-bit, or any
+        // 32-bit heap where the field is absent), the module base falls back to the map base -
+        // matching HeapList::GetModuleBase and the value used to register the function table.
+        const ulong codeRangeStart = 0x0a0a_0000u;
+        const uint codeRangeSize = 0xc000u;
+        const uint methodSize = 0x100;
+
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+
+        MockExecutionManagerBuilder.JittedCodeRange jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+        NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+        MockExecutionManagerBuilder.JittedMethodWithUnwindInfo m0 = emBuilder.AddJittedMethodWithUnwindInfo(jittedCode, methodSize, 0x0101_0000, [0x10]);
+        nibBuilder.AllocateCodeChunk(new TargetCodePointer(m0.CodeAddress), methodSize);
+
+        // Explicit zero personality routine; module base must resolve to MapBase (codeRangeStart).
+        MockCodeHeapListNode node = emBuilder.AddCodeHeapListNode(
+            next: 0,
+            startAddress: codeRangeStart,
+            endAddress: m0.CodeAddress + methodSize,
+            mapBase: codeRangeStart,
+            headerMap: nibBuilder.NibbleMapFragment.Address,
+            clrPersonalityRoutine: 0);
+        emBuilder.SetAllCodeHeaps(node.Address);
+
+        MockDynamicFunctionTable table = emBuilder.AddDynamicFunctionTable(codeRangeStart, emBuilder.EEJitManagerAddress);
+
+        Target target = CreateTarget(emBuilder);
+        IExecutionManager em = target.Contracts.ExecutionManager;
+
+        IReadOnlyList<TargetPointer> entries = em.GetDynamicFunctionTableEntries(new TargetPointer(table.Address));
+        Assert.Equal([new TargetPointer(m0.UnwindInfosAddress)], entries);
     }
 }

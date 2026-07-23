@@ -113,6 +113,11 @@ public interface IExecutionManager : IContract
     uint GetStackParameterSize(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
     IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => throw new NotImplementedException();
+    // Enumerate the RUNTIME_FUNCTION target addresses belonging to the dynamic function table
+    // identified by tableAddress (a DYNAMIC_FUNCTION_TABLE*). Entries are returned in the same order
+    // as the DAC's OutOfProcessFunctionTableCallbackEx (descending method start address, ascending
+    // within each method). Returns an empty list if the table does not correspond to a known code heap.
+    IReadOnlyList<TargetPointer> GetDynamicFunctionTableEntries(TargetPointer tableAddress) => throw new NotImplementedException();
     // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.)
     // or as managed code. Returns Unknown if the address is not recognized.
     CodeKind GetCodeKind(TargetCodePointer codeAddress) => throw new NotImplementedException();

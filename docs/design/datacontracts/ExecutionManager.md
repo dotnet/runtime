@@ -48,6 +48,11 @@ struct CodeBlockHandle
     // Walks the linked list of CodeHeapListNodes starting from the EEJitManager's AllCodeHeaps head
     // and returns information about each code heap.
     IEnumerable<ICodeHeapInfo> GetCodeHeapInfos();
+    // Enumerates the RUNTIME_FUNCTION target addresses belonging to the dynamic function table
+    // identified by tableAddress (a DYNAMIC_FUNCTION_TABLE*). Entries are ordered by descending
+    // method start address, and ascending within each method. Returns an empty list if the table
+    // does not correspond to a known code heap.
+    IReadOnlyList<TargetPointer> GetDynamicFunctionTableEntries(TargetPointer tableAddress);
 
     // Get the exception clause info for the code block
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle);
@@ -178,6 +183,9 @@ Data descriptors used:
 | `CodeHeapListNode` | `MapBase` | Start of the map - start address rounded down based on OS page size |
 | `CodeHeapListNode` | `HeaderMap` | Bit array used to find the start of methods - relative to `MapBase` |
 | `CodeHeapListNode` | `Heap` | Pointer to the `CodeHeap` object managed by this node |
+| `CodeHeapListNode` | `CLRPersonalityRoutine` | (64-bit only) Jump thunk to the personality routine; used as the module base when matching a dynamic function table's minimum address |
+| `DynamicFunctionTable` | `MinimumAddress` | Module base address covered by this dynamic function table (matches a code heap's module base) |
+| `DynamicFunctionTable` | `Context` | Tagged pointer to the owning `EEJitManager` (low bits are flags and must be stripped) |
 | `CodeHeap` | `HeapType` | `uint8` discriminant identifying the concrete heap type |
 | `LoaderCodeHeap` | `LoaderHeap` | Offset of the embedded `ExplicitControlLoaderHeap` within the `LoaderCodeHeap` object; adding this to the object's base address yields the loader heap address |
 | `HostCodeHeap` | `BaseAddress` | Pointer to the base of the committed memory region |
@@ -609,6 +617,78 @@ IEnumerable<ICodeHeapInfo> IExecutionManager.GetCodeHeapInfos()
     }
 }
 ```
+
+### Dynamic Function Table Enumeration
+
+`GetDynamicFunctionTableEntries` ports the DAC's `OutOfProcessFunctionTableCallbackEx`
+(`src/coreclr/debug/daccess/fntableaccess.cpp`). It resolves the RUNTIME_FUNCTION entries that
+back a target dynamic function table so out-of-process unwinders (such as windbg) can look up
+function tables without the legacy DAC.
+
+The `tableAddress` argument points at a target `DYNAMIC_FUNCTION_TABLE`. Its `Context` field is a
+tagged pointer to the owning `EEJitManager` (the low bits are flags and are masked off), and its
+`MinimumAddress` field identifies the module base of the requested code heap. The algorithm walks
+the JIT manager's code heap list and, for the heap whose module base matches `MinimumAddress`,
+reverse-walks the nibble map to visit each method from the end of the used region back to the
+start. For each method it resolves the real code header (skipping stub code blocks) and collects
+that method's inline RUNTIME_FUNCTION entries.
+
+```csharp
+IReadOnlyList<TargetPointer> IExecutionManager.GetDynamicFunctionTableEntries(TargetPointer tableAddress)
+{
+    DynamicFunctionTable table = /* read DynamicFunctionTable at tableAddress */;
+    TargetPointer jitManagerAddress = table.Context & ~3; // strip flag bits
+    TargetPointer minimumAddress = table.MinimumAddress;
+
+    EEJitManager jitManager = /* read EEJitManager at jitManagerAddress */;
+    TargetPointer nodeAddr = jitManager.AllCodeHeaps;
+    while (nodeAddr != TargetPointer.Null)
+    {
+        CodeHeapListNode node = /* read CodeHeapListNode at nodeAddr */;
+        // HeapList::GetModuleBase - the personality routine on 64-bit targets when set, otherwise the map base.
+        TargetPointer moduleBase = (node.CLRPersonalityRoutine is not null && node.CLRPersonalityRoutine != 0)
+            ? node.CLRPersonalityRoutine
+            : node.MapBase;
+        if (moduleBase == minimumAddress)
+            return EnumerateFunctionTableEntries(node);
+        nodeAddr = node.Next;
+    }
+    return [];
+}
+
+List<TargetPointer> EnumerateFunctionTableEntries(CodeHeapListNode node)
+{
+    uint runtimeFunctionSize = /* sizeof(RUNTIME_FUNCTION) */;
+    List<TargetPointer> entries = [];
+    TargetCodePointer current = node.EndAddress;
+    while (true)
+    {
+        TargetPointer codeStart = NibbleMap.FindMethodCode(node, current);
+        if (codeStart == TargetPointer.Null)
+            break;
+
+        // The real code header pointer is stored immediately before the code start.
+        TargetPointer codeHeaderAddress = Target.ReadPointer(codeStart - pointerSize);
+        if (!IsStubCodeBlock(codeHeaderAddress))
+        {
+            RealCodeHeader realCodeHeader = /* read RealCodeHeader at codeHeaderAddress */;
+            for (uint i = 0; i < realCodeHeader.NumUnwindInfos; i++)
+                entries.Add(realCodeHeader.UnwindInfos + i * runtimeFunctionSize);
+        }
+
+        if (codeStart <= node.StartAddress)
+            break;
+        current = codeStart - 1;
+    }
+    return entries;
+}
+```
+
+The COM shim `IXCLRDataProcess3::GetFunctionTable` marshals the resulting entries: it reports the
+required byte count and entry count on every valid call, returns `S_OK` with zero entries for an
+empty or unmatched table, returns `S_FALSE` for a size query or an undersized buffer (writing
+nothing), and returns `S_OK` after copying the contiguous RUNTIME_FUNCTION bytes when the buffer is
+large enough.
 
 ### RangeSectionMap
 
