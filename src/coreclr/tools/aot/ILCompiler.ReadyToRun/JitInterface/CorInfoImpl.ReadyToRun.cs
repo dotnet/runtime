@@ -2550,7 +2550,7 @@ namespace Internal.JitInterface
                         }
 
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.SymbolNodeFactory.InterfaceDispatchCell(
+                            _compilation.SymbolNodeFactory.DispatchCell(
                                 ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: null, unboxing: false),
                                 MethodBeingCompiled));
 
@@ -3220,8 +3220,12 @@ namespace Internal.JitInterface
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null, unboxing: false, genericContextObject: null);
 
-            if ((ecmaMethod.GetPInvokeMethodCallingConventions() & UnmanagedCallingConventions.IsSuppressGcTransition) != 0)
+            if (((ecmaMethod.GetPInvokeMethodCallingConventions() & UnmanagedCallingConventions.IsSuppressGcTransition) != 0)
+                || _compilation.NodeFactory.Target.IsWasm)
             {
+                // Suppress GC transition P/Invokes are called directly, since we can't do a GC transition at this point.
+                // On Wasm, we also call directly because the runtime doesn't generate P/Invoke import precodes/stubs; instead,
+                // errors are reported when we fix up the method.
                 pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetPInvokeTargetNode(methodWithToken));
                 pLookup.accessType = InfoAccessType.IAT_PVALUE;
             }
@@ -3603,6 +3607,18 @@ namespace Internal.JitInterface
             if ((callSig != null) && _compilation.NodeFactory.Target.IsWasm)
             {
                 var sig = HandleToObject(callSig->methodSignature);
+
+                if (callSig->callConv == CorInfoCallConv.CORINFO_CALLCONV_DEFAULT &&
+                    callSig->retType == CorInfoType.CORINFO_TYPE_CLASS &&
+                    !sig.IsStatic &&
+                    sig.ReturnType == sig.Context.GetWellKnownType(WellKnownType.Void))
+                {
+                    // Detect special case for string ctors
+                    if (sig.Context.GetWellKnownType(WellKnownType.String).GetMethod(".ctor"u8, sig) is not null)
+                    {
+                        sig = WasmLowering.GetStringCtorActualSignature(sig);
+                    }
+                }
 
                 WasmLowering.LoweringFlags flags = 0;
                 if (callSig->hasTypeArg())

@@ -614,14 +614,6 @@ public:
             {
                 unsigned vlfvOffset;
             } vlFixedVarArg;
-
-            // VLT_MEMORY
-
-            struct
-            {
-                void* rpValue; // pointer to the in-process
-                               // location of the value.
-            } vlMemory;
         };
 
         // Helper functions
@@ -629,6 +621,8 @@ public:
         bool vlIsInReg(regNumber reg) const;
         bool vlIsOnStack(regNumber reg, signed offset) const;
         bool vlIsOnStack() const;
+
+        static ICorDebugInfo::RegNum mapRegNumToDebugRegNum(regNumber reg);
 
         void storeVariableInRegisters(regNumber reg, regNumber otherReg);
         void storeVariableOnStack(regNumber stackBaseReg, NATIVE_OFFSET variableStackOffset);

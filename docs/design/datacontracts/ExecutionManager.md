@@ -207,6 +207,7 @@ Data descriptors used:
 | `ReadyToRunInfo` | `LoadedImageBase` | Base address of the loaded R2R image |
 | `ReadyToRunInfo` | `Composite` | Pointer to the `ReadyToRunCoreInfo` used for section lookup |
 | `ReadyToRunInfo` | `ExceptionInfoSection` | Pointer to the `ImageDataDirectory` for R2R exception info section |
+| `ReadyToRunInfo` | `MinVirtualIP` | (WASM only) Base virtual IP for the module's ReadyToRun functions; a function-table index is mapped to a virtual IP relative to this base |
 | `ReadyToRunHeader` | `MajorVersion` | ReadyToRun major version |
 | `ReadyToRunHeader` | `MinorVersion` | ReadyToRun minor version |
 | `ImageDataDirectory` | `VirtualAddress` | Virtual address of the image data directory |
@@ -239,6 +240,10 @@ Data descriptors used:
 | `ReadyToRunSection` | `Section` | `IMAGE_DATA_DIRECTORY` for the section data |
 | `ExceptionLookupTableEntry` | `MethodStartRVA` | RVA of the method start |
 | `ExceptionLookupTableEntry` | `ExceptionInfoRVA` | RVA of the exception clause data |
+| `FunctionTableIndexRangeSection` | `MinFunctionTableIndex` | (WASM only) Lowest ReadyToRun function-table index covered by this range |
+| `FunctionTableIndexRangeSection` | `NumRuntimeFunctions` | (WASM only) Number of runtime functions in the range |
+| `FunctionTableIndexRangeSection` | `R2RModule` | (WASM only) Pointer to the owning ReadyToRun module |
+| `FunctionTableIndexRangeSection` | `Next` | (WASM only) Pointer to the next `FunctionTableIndexRangeSection` in the list |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -253,6 +258,7 @@ Global variables used:
 | `FeatureOnStackReplacement` | uint8 | 1 if FEATURE_ON_STACK_REPLACEMENT is enabled, 0 otherwise |
 | `FeaturePortableEntrypoints` | uint8 | 1 if FEATURE_PORTABLE_ENTRYPOINTS is enabled, 0 otherwise |
 | `ObjectMethodTable` | TargetPointer | Pointer to the `System.Object` MethodTable, used for catch-all handler detection |
+| `FunctionTableIndexRangeList` | TargetPointer | (WASM only) Head of the linked list of `FunctionTableIndexRangeSection`, mapping ReadyToRun function-table indices to their owning module for virtual-IP stack walking |
 
 Contract constants used:
 | Name | Type | Purpose | Value |

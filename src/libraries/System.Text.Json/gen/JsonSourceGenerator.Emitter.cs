@@ -449,6 +449,8 @@ namespace System.Text.Json.SourceGeneration
                     jsonTypeInfo.NumberHandling = {{FormatNumberHandling(typeGenerationSpec.NumberHandling)}};
                     """);
 
+                GenerateClosedTypeInferenceGuard(writer, typeGenerationSpec);
+
                 GenerateTypeInfoFactoryFooter(writer);
 
                 if (serializeMethodName != null)
@@ -634,6 +636,8 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
+                GenerateClosedTypeInferenceGuard(writer, typeMetadata);
+
                 GenerateTypeInfoFactoryFooter(writer);
 
                 if (propInitMethodName != null)
@@ -686,20 +690,6 @@ namespace System.Text.Json.SourceGeneration
                 // the canonical switch arm (preferring the non-Nullable<T> sibling so
                 // most-derived dispatch reports typeof(T)). The null payload is handled
                 // separately by the `null =>` arm via nullCase.
-                int switchArmCount = 0;
-                bool armsMergeDeclaredCases = false;
-                foreach (UnionCaseSpec caseSpec in unionCases)
-                {
-                    if (caseSpec.IsSwitchArm)
-                    {
-                        switchArmCount++;
-                    }
-                    else
-                    {
-                        armsMergeDeclaredCases = true;
-                    }
-                }
-
                 string unionCasesExpr = unionCases.Count == 0
                     ? $"global::System.Array.Empty<{JsonUnionCaseInfoTypeRef}>()"
                     : $$"""new {{JsonUnionCaseInfoTypeRef}}[] { {{string.Join(", ", unionCases.Select(c => $"new {JsonUnionCaseInfoTypeRef}(typeof({c.CaseType.FullyQualifiedName})) {{ IsNullable = {(c.IsNullable ? "true" : "false")} }}"))}} }""";
@@ -748,22 +738,7 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine("},");
 
                     // The deconstructor switch has no `_` arm — it relies on the union's
-                    // declared case set being exhaustively covered by its arms. Roslyn's
-                    // union exhaustiveness analyzer fails to recognize coverage in two
-                    // shapes today: (a) when switchArmCount == 1 the switch looks
-                    // non-exhaustive on `object?`-shaped surface area, and (b) when
-                    // Foo(T)+Foo(Nullable<T>) overloads merge into a single `T` arm the
-                    // Nullable<T> declared case isn't seen as covered. Tracked by
-                    // https://github.com/dotnet/roslyn/issues/83666; the fix is present
-                    // in Roslyn 5.9.0-1.26279.1 and later. Once the compiler bundled by
-                    // this repo's SDK reaches that version this pragma and the
-                    // `armsMergeDeclaredCases` plumbing can be removed.
-                    bool needsExhaustivenessPragma = switchArmCount == 1 || armsMergeDeclaredCases;
-                    if (needsExhaustivenessPragma)
-                    {
-                        writer.WriteLine("#pragma warning disable CS8509 // https://github.com/dotnet/roslyn/issues/83666");
-                    }
-
+                    // declared case set being exhaustively covered by its arms.
                     writer.WriteLine($"UnionDeconstructor = static ({genericArg} value) =>");
                     writer.WriteLine('{');
                     writer.Indentation++;
@@ -816,11 +791,6 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine("};");
                     writer.Indentation--;
                     writer.WriteLine("},");
-
-                    if (needsExhaustivenessPragma)
-                    {
-                        writer.WriteLine("#pragma warning restore CS8509");
-                    }
                 }
 
                 writer.WriteLine("TypeClassifier = null,");
@@ -1959,6 +1929,27 @@ namespace System.Text.Json.SourceGeneration
                     """);
             }
 
+            /// <summary>
+            /// Emits a runtime guard for closed hierarchies whose derived-type polymorphism metadata was not
+            /// generated because <c>JsonSourceGenerationOptionsAttribute.InferClosedTypePolymorphism</c> was
+            /// disabled at compile time. Enabling the setting only on the runtime <c>JsonSerializerOptions</c>
+            /// cannot recover that metadata, so we fail explicitly rather than silently serializing the base
+            /// type non-polymorphically.
+            /// </summary>
+            private static void GenerateClosedTypeInferenceGuard(SourceWriter writer, TypeGenerationSpec typeSpec)
+            {
+                if (typeSpec.IsClosedTypeWithoutInferredPolymorphism)
+                {
+                    writer.WriteLine($$"""
+
+                        if (options.InferClosedTypePolymorphism)
+                        {
+                            throw new {{InvalidOperationExceptionTypeRef}}(string.Format("{{ExceptionMessages.ClosedTypeInferenceRequiresCompileTimeOptIn}}", typeof({{typeSpec.TypeRef.FullyQualifiedName}})));
+                        }
+                        """);
+                }
+            }
+
             private static SourceText GetRootJsonContextImplementation(ContextGenerationSpec contextSpec, bool emitGetConverterForNullablePropertyMethod, bool emitValueTypeSetterDelegate, bool emitByteArrayValueHelper)
             {
                 string contextTypeRef = contextSpec.ContextType.FullyQualifiedName;
@@ -2118,6 +2109,9 @@ namespace System.Text.Json.SourceGeneration
 
                 if (optionsSpec.IncludeFields is bool includeFields)
                     writer.WriteLine($"IncludeFields = {FormatBoolLiteral(includeFields)},");
+
+                if (optionsSpec.InferClosedTypePolymorphism is bool inferClosedTypePolymorphism)
+                    writer.WriteLine($"InferClosedTypePolymorphism = {FormatBoolLiteral(inferClosedTypePolymorphism)},");
 
                 if (optionsSpec.MaxDepth is int maxDepth)
                     writer.WriteLine($"MaxDepth = {maxDepth},");

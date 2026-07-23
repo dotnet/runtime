@@ -1013,22 +1013,27 @@ public:
     // for a function.
     // Arguments:
     //    input:
-    //       vmMethodDesc    MethodDesc of the function
-    //       startAddr       starting address of the function--this serves to
-    //                       differentiate various EnC versions of the function
+    //       vmMethodDesc       MethodDesc of the function
+    //       startAddr          starting address of the function--this serves to
+    //                          differentiate various EnC versions of the function
     //       fCodeAvailable
+    //       fpVarInfoCallback  callback invoked once per native variable info entry
+    //       fpSeqPointCallback callback invoked once per sequence point entry
+    //       pUserData          user data passed to the callbacks
     //    output:
-    //       pNativeVarData  space for the native code offset information for locals
-    //       pSequencePoints space for the IL/native sequence points
+    //       pFixedArgCount     number of fixed arguments (explicit args + this)
     // Return value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     // Assumptions:
-    //    vmMethodDesc, pNativeVarInfo and pSequencePoints are non-NULL
+    //    vmMethodDesc is non-NULL
 
     // Notes:
     //-----------------------------------------------------------------------------
 
-    virtual HRESULT STDMETHODCALLTYPE GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT NativeVarData * pNativeVarData, OUT SequencePoints * pSequencePoints) = 0;
+    typedef void (*FP_NATIVEVARINFO_CALLBACK)(ICorDebugInfo::NativeVarInfo *pVarInfo, CALLBACK_DATA pUserData);
+    typedef void (*FP_SEQUENCEPOINT_CALLBACK)(ICorDebugInfo::OffsetMapping *pMapping, CALLBACK_DATA pUserData);
+
+    virtual HRESULT STDMETHODCALLTYPE GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT ULONG32 * pFixedArgCount, FP_NATIVEVARINFO_CALLBACK fpVarInfoCallback, FP_SEQUENCEPOINT_CALLBACK fpSeqPointCallback, CALLBACK_DATA pUserData) = 0;
 
     //
     // Get the filter CONTEXT on the LS.  Once we move entirely over to the new managed pipeline
@@ -1210,31 +1215,6 @@ public:
     //
 
     virtual HRESULT STDMETHODCALLTYPE GetStackParameterSize(CORDB_ADDRESS controlPC, OUT ULONG32 * pRetVal) = 0;
-
-    //
-    // Get the FramePointer of the current frame where the stackwalker is stopped at.
-    //
-    // Arguments:
-    //    pSFIHandle - the handle to the stackwalker
-    //    pRetVal - [out] The FramePointer of the current frame.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //    The FramePointer of a stack frame is:
-    //    the stack address of the return address on x86,
-    //    the current SP on AMD64,
-    //
-    //    On x86, to get the stack address of the return address, we need to unwind one more frame
-    //    and use the SP of the caller frame as the FramePointer of the callee frame.  This
-    //    function does NOT do that.  It just returns the SP.  The caller needs to handle the
-    //    unwinding.
-    //
-    //    The FramePointer of an explicit frame is just the stack address of the explicit frame.
-    //
-
-    virtual HRESULT STDMETHODCALLTYPE GetFramePointer(StackWalkHandle pSFIHandle, OUT FramePointer * pRetVal) = 0;
 
     //
     // Check whether the specified CONTEXT is the CONTEXT of the leaf frame.  This function doesn't care
@@ -2195,7 +2175,7 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE ParseContinuation(
         CORDB_ADDRESS continuationAddress,
-        OUT PCODE* pDiagnosticIP,
+        OUT CORDB_ADDRESS* pDiagnosticIP,
         OUT CORDB_ADDRESS* pNextContinuation,
         OUT UINT32* pState) = 0;
 

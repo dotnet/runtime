@@ -1037,18 +1037,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     // code. This also avoid races with profiler overriding ngened code (see
     // matching SetNativeCodeInterlocked done after
     // JITCachedFunctionSearchStarted)
-    if (!pConfig->SetNativeCode(pCode, &pOtherCode))
-    {
-#ifdef HAVE_GCCOVER
-        // When GCStress is enabled, this thread should always win the publishing race
-        // since we're under a lock.
-        _ASSERTE(!GCStress<cfg_instr_jit>::IsEnabled() || !"GC Cover native code publish failed");
-#endif
-
-        // Another thread beat us to publishing its copy of the JITted code.
-        return pOtherCode;
-    }
-
 #ifdef FEATURE_INTERPRETER
     if (*pIsInterpreterCode)
     {
@@ -1063,6 +1051,18 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
         pConfig->GetMethodDesc()->SetInterpreterCode(interpreterCode);
     }
 #endif // FEATURE_INTERPRETER
+
+    if (!pConfig->SetNativeCode(pCode, &pOtherCode))
+    {
+#ifdef HAVE_GCCOVER
+        // When GCStress is enabled, this thread should always win the publishing race
+        // since we're under a lock.
+        _ASSERTE(!GCStress<cfg_instr_jit>::IsEnabled() || !"GC Cover native code publish failed");
+#endif
+
+        // Another thread beat us to publishing its copy of the JITted code.
+        return pOtherCode;
+    }
 
 #ifdef FEATURE_CODE_VERSIONING
     pConfig->SetGeneratedOrLoadedNewCode();
@@ -2509,14 +2509,26 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             if (helperMD->ShouldCallPrestub())
                 (void)helperMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
             void* ilStubInterpData = helperMD->GetInterpreterCode();
-            // WASM-TODO: update this when we will have codegen
-            _ASSERTE(ilStubInterpData != NULL);
-            SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
 
             // Use this method's own PortableEntryPoint rather than the helper's.
             // It is required to maintain 1:1 mapping between MethodDesc and its entrypoint.
             PCODE entryPoint = GetPortableEntryPoint();
-            PortableEntryPoint::SetInterpreterData(entryPoint, (PCODE)(TADDR)ilStubInterpData);
+            if (ilStubInterpData != NULL)
+            {
+                // The managed implementation runs in the interpreter.
+                SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+                PortableEntryPoint::SetInterpreterData(entryPoint, (PCODE)(TADDR)ilStubInterpData);
+            }
+            else
+            {
+                // The managed implementation was compiled to native (R2R) code rather than interpreter
+                // byte code. This happens for String constructors, whose managed Ctor factory method is
+                // R2R-compiled. Publish the helper's native code into this method's own portable
+                // entrypoint so callers dispatch directly to it instead of looping back into the prestub.
+                // In this path helperMD comes from an FCall helper entrypoint, so native code must exist.
+                _ASSERTE(PortableEntryPoint::HasNativeEntryPoint(pCode));
+                PortableEntryPoint::SetActualCode(entryPoint, (PCODE)(TADDR)PortableEntryPoint::GetActualCode(pCode));
+            }
             pCode = entryPoint;
         }
 #else // !FEATURE_PORTABLE_ENTRYPOINTS

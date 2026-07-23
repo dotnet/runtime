@@ -103,7 +103,7 @@ enum class ClasslibFunctionId
     FailFast = 1,
     ThreadEntryPoint = 2,
     AppendExceptionStackFrame = 3,
-    // unused = 4,
+    ResolveDispatch = 4,
     GetSystemArrayEEType = 5,
     OnFirstChanceException = 6,
     OnUnhandledException = 7,
@@ -165,7 +165,8 @@ public:
 
     virtual bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                             REGDISPLAY *    pRegisterSet,          // in
-                                            PTR_PTR_VOID *  ppvRetAddrLocation     // out
+                                            PTR_PTR_VOID *  ppvRetAddrLocation,    // out
+                                            uintptr_t *     pSpForArm64PacSign     // out
                                             ) PURE_VIRTUAL
 
 #ifdef TARGET_X86
