@@ -50,20 +50,18 @@ namespace System.Security.Cryptography.Pkcs
                         SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, _signatureAlgorithm));
                 }
 
-                MLDsa? publicKey = certificate.GetMLDsaPublicKey();
-
-                if (publicKey is null)
+                using (MLDsa? publicKey = certificate.GetMLDsaPublicKey())
                 {
-                    return false;
-                }
+                    if (publicKey is null)
+                    {
+                        return false;
+                    }
 
-                if (publicKey.Algorithm != _parameterSet)
-                {
-                    return false;
-                }
+                    if (publicKey.Algorithm != _parameterSet)
+                    {
+                        return false;
+                    }
 
-                using (publicKey)
-                {
                     return publicKey.VerifyData(
                         valueHash,
 #if NET || NETSTANDARD2_1
