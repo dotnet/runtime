@@ -6,16 +6,19 @@ using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
 
 using ModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.ModuleHandle;
+using SignatureTypeContext = Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers.TypeInformation.SignatureTypeContext;
+using SignatureTypeInfoProvider = Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers.TypeInformation.SignatureTypeInfoProvider;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-public class TypeInformationTests
+public class CallingConventionTypeInformationTests
 {
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
@@ -136,8 +139,8 @@ public class TypeInformationTests
             .AddMockContract(rts)
             .AddMockContract(loader)
             .AddMockContract(ecmaMetadata)
-            .AddContract<ITypeInformation>("c1")
             .Build();
+        TypeInformation typeInformation = new(target);
         SignatureTypeInfo owningType = new(
             CorElementType.ValueType,
             exactTypeHandle: null,
@@ -145,7 +148,7 @@ public class TypeInformationTests
             [argumentInfo]);
 
         SignatureTypeInfo result =
-            target.Contracts.TypeInformation.GetFieldTypeInfo(fieldDesc, owningType);
+            typeInformation.GetFieldTypeInfo(fieldDesc, owningType);
 
         Assert.Equal(argumentInfo, result);
     }
@@ -158,12 +161,14 @@ public class TypeInformationTests
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
             .AddMockContract(rts)
             .Build();
+        TypeInformation typeInformation = new(target);
         CdacTypeHandle typeHandle = new(
             new SignatureTypeInfo(
                 CorElementType.ValueType,
                 exactTypeHandle: null,
                 genericTypeDefinition: Mock.Of<ITypeHandle>()),
-            target);
+            target,
+            typeInformation);
 
         Assert.True(typeHandle.HasIndeterminateSize());
         Assert.Throws<NotImplementedException>(() => typeHandle.GetSize());
@@ -187,7 +192,7 @@ public class TypeInformationTests
         MetadataBuilder metadataBuilder = new();
         metadataBuilder.AddModule(
             generation: 0,
-            metadataBuilder.GetOrAddString("TypeInformationTests"),
+            metadataBuilder.GetOrAddString("CallingConventionTypeInformationTests"),
             metadataBuilder.GetOrAddGuid(Guid.Empty),
             encId: default,
             encBaseId: default);

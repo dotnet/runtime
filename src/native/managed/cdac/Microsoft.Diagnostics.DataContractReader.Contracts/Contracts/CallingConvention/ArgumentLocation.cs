@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.JitInterface;
+using Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 

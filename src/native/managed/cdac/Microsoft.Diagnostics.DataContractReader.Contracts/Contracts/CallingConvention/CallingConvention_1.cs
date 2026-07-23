@@ -7,6 +7,7 @@ using System.Reflection.Metadata;
 using Internal.CallingConvention;
 using Internal.CorConstants;
 using Internal.JitInterface;
+using Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 using CallingConventions = Internal.CallingConvention.CallingConventions;
@@ -17,10 +18,17 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal sealed class CallingConvention_1 : ICallingConvention
 {
     private readonly Target _target;
+    private readonly TypeInformation _typeInformation;
 
     internal CallingConvention_1(Target target)
     {
         _target = target;
+        _typeInformation = new TypeInformation(target);
+    }
+
+    public void Flush(FlushScope scope)
+    {
+        _typeInformation.Flush();
     }
 
     public bool TryComputeArgGCRefMapBlob(MethodDescHandle methodDesc, out byte[] blob)
@@ -58,8 +66,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
 
-        MethodSignature<SignatureTypeInfo> methodSig =
-            _target.Contracts.TypeInformation.DecodeMethodSignature(methodDesc);
+        MethodSignature<SignatureTypeInfo> methodSig = _typeInformation.DecodeMethodSignature(methodDesc);
 
         bool isVarArg = methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs;
 
@@ -79,10 +86,10 @@ internal sealed class CallingConvention_1 : ICallingConvention
         CdacTypeHandle[] parameterTypes = new CdacTypeHandle[methodSig.ParameterTypes.Length];
         for (int i = 0; i < parameterTypes.Length; i++)
         {
-            parameterTypes[i] = new CdacTypeHandle(methodSig.ParameterTypes[i], _target);
+            parameterTypes[i] = new CdacTypeHandle(methodSig.ParameterTypes[i], _target, _typeInformation);
         }
 
-        CdacTypeHandle returnType = new CdacTypeHandle(methodSig.ReturnType, _target);
+        CdacTypeHandle returnType = new CdacTypeHandle(methodSig.ReturnType, _target, _typeInformation);
 
         TransitionBlock transitionBlock = BuildTransitionBlock(runtimeInfo);
 
@@ -262,12 +269,12 @@ internal sealed class CallingConvention_1 : ICallingConvention
     private CdacTypeHandle GetObjectTypeHandle(IRuntimeTypeSystem rts)
     {
         TargetPointer objectMt = rts.GetWellKnownMethodTable(WellKnownMethodTable.Object);
-        return new CdacTypeHandle(rts.GetTypeHandle(objectMt), _target);
+        return new CdacTypeHandle(rts.GetTypeHandle(objectMt), _target, _typeInformation);
     }
 
     private CdacTypeHandle GetIntPtrTypeHandle(IRuntimeTypeSystem rts)
     {
-        return new CdacTypeHandle(rts.GetPrimitiveType(CdacCorElementType.I), _target);
+        return new CdacTypeHandle(rts.GetPrimitiveType(CdacCorElementType.I), _target, _typeInformation);
     }
 
     // =====================================================================
@@ -283,7 +290,6 @@ internal sealed class CallingConvention_1 : ICallingConvention
     {
         IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        ITypeInformation typeInformation = _target.Contracts.TypeInformation;
 
         RuntimeInfoArchitecture arch = runtimeInfo.GetTargetArchitecture();
         bool isX86 = arch is RuntimeInfoArchitecture.X86;
@@ -394,7 +400,6 @@ internal sealed class CallingConvention_1 : ICallingConvention
                                 // FieldDesc level regardless of which T closes
                                 // the type.
                                 EmitByRefLikeInterior(
-                                    typeInformation,
                                     rts,
                                     arg.TypeInfo,
                                     arg.Offset,
@@ -539,8 +544,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
     // ByRefLike value-type fields. ELEMENT_TYPE_PTR / IntPtr / void* fields
     // are deliberately skipped to match runtime behavior for QCall-style
     // handle wrappers.
-    private static void EmitByRefLikeInterior(
-        ITypeInformation typeInformation,
+    private void EmitByRefLikeInterior(
         IRuntimeTypeSystem rts,
         SignatureTypeInfo byRefLikeType,
         int baseOffset,
@@ -548,7 +552,6 @@ internal sealed class CallingConvention_1 : ICallingConvention
     {
         // Bound recursion just in case the data is corrupt / cycles in a dump.
         EmitByRefLikeInteriorRecursive(
-            typeInformation,
             rts,
             byRefLikeType,
             baseOffset,
@@ -556,8 +559,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
             depth: 0);
     }
 
-    private static void EmitByRefLikeInteriorRecursive(
-        ITypeInformation typeInformation,
+    private void EmitByRefLikeInteriorRecursive(
         IRuntimeTypeSystem rts,
         SignatureTypeInfo byRefLikeType,
         int baseOffset,
@@ -610,7 +612,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 SignatureTypeInfo nestedType;
                 try
                 {
-                    nestedType = typeInformation.GetFieldTypeInfo(fdPtr, byRefLikeType);
+                    nestedType = _typeInformation.GetFieldTypeInfo(fdPtr, byRefLikeType);
                 }
                 catch
                 {
@@ -623,7 +625,6 @@ internal sealed class CallingConvention_1 : ICallingConvention
                     continue;
 
                 EmitByRefLikeInteriorRecursive(
-                    typeInformation,
                     rts,
                     nestedType,
                     absOffset,

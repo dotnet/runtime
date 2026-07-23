@@ -40,13 +40,18 @@ yet. The cdacstress harness (`src/coreclr/vm/cdacstress.cpp`,
 against the runtime's `ComputeCallRefMap` output as its correctness
 oracle.
 
-The contract decodes method signatures through the
-[TypeInformation](./TypeInformation.md) contract.
+Method and field signatures are decoded with `RuntimeSignatureDecoder` into an
+internal representation that retains the outermost element type, an optional
+exact loaded `ITypeHandle`, the generic type definition, and recursively
+decoded generic arguments. Unlike `ITypeHandle`, which represents an exact
+target-backed type, this representation preserves information about types that
+are not fully loaded.
 
 Contracts used:
 
 | Contract Name |
 | --- |
+| EcmaMetadata |
+| Loader |
 | RuntimeInfo |
 | RuntimeTypeSystem |
-| TypeInformation |

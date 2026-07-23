@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using Internal.CallingConvention;
 using Internal.JitInterface;
+using Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers;
 
 using CdacITypeHandle = Microsoft.Diagnostics.DataContractReader.Contracts.ITypeHandle;
 using CdacCorElementType = Microsoft.Diagnostics.DataContractReader.Contracts.CorElementType;
@@ -20,10 +21,12 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
 {
     private readonly SignatureTypeInfo _typeInfo;
     private readonly Target _target;
+    private readonly TypeInformation _typeInformation;
 
-    public CdacTypeHandle(CdacITypeHandle? typeHandle, Target target)
+    public CdacTypeHandle(CdacITypeHandle? typeHandle, Target target, TypeInformation typeInformation)
     {
         _target = target;
+        _typeInformation = typeInformation;
         _typeInfo = typeHandle is null
             ? default
             : new SignatureTypeInfo(
@@ -31,10 +34,11 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
                 typeHandle);
     }
 
-    public CdacTypeHandle(SignatureTypeInfo typeInfo, Target target)
+    public CdacTypeHandle(SignatureTypeInfo typeInfo, Target target, TypeInformation typeInformation)
     {
         _typeInfo = typeInfo;
         _target = target;
+        _typeInformation = typeInformation;
     }
 
     private IRuntimeTypeSystem Rts => _target.Contracts.RuntimeTypeSystem;
@@ -230,7 +234,7 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
                 SignatureTypeInfo nested;
                 try
                 {
-                    nested = _target.Contracts.TypeInformation.GetFieldTypeInfo(
+                    nested = _typeInformation.GetFieldTypeInfo(
                         singleFieldType.Value,
                         _typeInfo);
                 }
@@ -238,7 +242,7 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
                 {
                     return false;
                 }
-                return new CdacTypeHandle(nested, _target).IsTrivialPointerSizedStruct();
+                return new CdacTypeHandle(nested, _target, _typeInformation).IsTrivialPointerSizedStruct();
 
             default:
                 return false;
