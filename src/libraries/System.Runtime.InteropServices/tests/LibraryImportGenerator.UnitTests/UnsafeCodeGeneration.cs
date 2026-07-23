@@ -219,9 +219,10 @@ namespace LibraryImportGenerator.UnitTests
             test.TestCode = source;
             test.TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck;
             test.ExpectedDiagnostics.Add(
-                VerifyCS.Diagnostic(Microsoft.Interop.GeneratorDiagnostics.InvalidAttributedMethodMissingSafetyModifier)
-                    .WithLocation(0)
-                    .WithArguments("Method"));
+                VerifyCS.DiagnosticWithArguments(
+                    Microsoft.Interop.GeneratorDiagnostics.InvalidAttributedMethodMissingSafetyModifier,
+                    "Method")
+                    .WithLocation(0));
 
             return test.RunAsync();
         }
@@ -287,7 +288,7 @@ namespace LibraryImportGenerator.UnitTests
             protected override ParseOptions CreateParseOptions()
             {
                 CSharpParseOptions options = (CSharpParseOptions)base.CreateParseOptions();
-                return options.WithFeatures([new KeyValuePair<string, string>("updated-memory-safety-rules", "true")]);
+                return options.WithFeatures([.. options.Features, new KeyValuePair<string, string>("updated-memory-safety-rules", "true")]);
             }
 
             protected override bool IsCompilerDiagnosticIncluded(Diagnostic diagnostic, CompilerDiagnostics compilerDiagnostics)
