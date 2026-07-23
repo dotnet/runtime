@@ -121,7 +121,6 @@ internal sealed class CallingConvention_1 : ICallingConvention
             {
                 Offset = transitionBlock.ThisOffset,
                 ElementType = isValueTypeThis ? CdacCorElementType.ValueType : CdacCorElementType.Class,
-                TypeHandle = owningType,
                 IsThis = true,
                 IsValueTypeThis = isValueTypeThis,
             });
@@ -183,7 +182,6 @@ internal sealed class CallingConvention_1 : ICallingConvention
                     {
                         Offset = argOffset,
                         ElementType = elemType,
-                        TypeHandle = typeInfo.ExactTypeHandle,
                         TypeInfo = typeInfo,
                         IsStructPassedInRegs = true,
                         SysVEightByteDescriptor = sysvDesc,
@@ -217,7 +215,6 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 {
                     Offset = argOffset,
                     ElementType = elemType,
-                    TypeHandle = typeInfo.ExactTypeHandle,
                     TypeInfo = typeInfo,
                     IsPassedByRef = passedByRef,
                     IsByRefLikeStruct = isByRefLikeStruct,
@@ -405,7 +402,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
                                 emitted = true;
                             }
 
-                            if (arg.TypeHandle is ITypeHandle typeHandle && rts.ContainsGCPointers(typeHandle))
+                            if (arg.TypeInfo.ExactTypeHandle is ITypeHandle typeHandle && rts.ContainsGCPointers(typeHandle))
                             {
                                 // By-value struct with embedded GC pointers: emit one
                                 // Ref token per pointer slot inside the struct. Mirrors
