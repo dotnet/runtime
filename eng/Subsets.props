@@ -534,6 +534,9 @@
   <ItemGroup Condition="$(_subset.Contains('+tools.cdactests+'))">
     <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\UnitTests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
     <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\DataGenerator\Microsoft.Diagnostics.DataContractReader.DataGenerator.Tests.csproj" Test="true" Category="tools"/>
+    <!-- CdacUsageGraph analysis tool: its test transitively builds the tool exe and gates the
+         data-descriptor doc drift check. Skipped in source-only builds (uses Roslyn/System.CommandLine). -->
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tools\CdacUsageGraph\tests\CdacUsageGraph.Tests\CdacUsageGraph.Tests.csproj" Test="true" Category="tools" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdacdumptests+'))">

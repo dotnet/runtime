@@ -1,0 +1,319 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using CdacUsageGraph;
+using CdacUsageGraph.Docs;
+using CdacUsageGraph.Model;
+using Xunit;
+
+namespace CdacUsageGraph.Tests;
+
+/// <summary>
+/// Drift gate: the generated marker blocks in <c>docs/design/datacontracts/*.md</c> must match what
+/// the analysis currently produces. This runs the same <see cref="DocGenerator"/> the <c>docs</c>
+/// command uses; if it fails, run <c>CdacUsageGraph docs</c> (or <c>generate-docs.ps1</c>) and commit
+/// the result. Skipped when the cDAC source can't be located (e.g. running outside the repo).
+/// </summary>
+public sealed class DocsAreUpToDateTests
+{
+    [Fact]
+    public void GeneratedDocBlocksMatchAnalysis()
+    {
+        DirectoryInfo? cdacRoot = Locator.FindCdacRoot();
+        if (cdacRoot is null) return; // cDAC source not found (running outside the repo)
+
+        DirectoryInfo docsDir = Locator.DocsDirectory(cdacRoot);
+        if (!docsDir.Exists) return;
+
+        UsageGraph graph = AnalysisPipeline.BuildGraph(cdacRoot.FullName);
+        DocDescriptorMeanings meanings = DocDescriptorMeanings.Load(Locator.MeaningsFile(cdacRoot).FullName);
+        DocGenerator generator = new DocGenerator(graph, meanings);
+
+        IReadOnlyList<string> drifted = generator.Check(docsDir.FullName);
+
+        Assert.True(
+            drifted.Count == 0,
+            $"The generated usage doc blocks are out of date for: {string.Join(", ", drifted)}. " +
+            "Run 'CdacUsageGraph docs' (or generate-docs.ps1) and commit the result.");
+    }
+
+    [Theory]
+    [InlineData("<!-- BEGIN GENERATED: usage contract=Thread version=c1 -->")]
+    [InlineData(
+        "<!-- BEGIN GENERATED: unknown contract=Thread version=c1 -->\n" +
+        "<!-- END GENERATED: unknown contract=Thread version=c1 -->")]
+    [InlineData(
+        "<!-- BEGIN GENERATED: data-descriptors contract=Thread version=c1 -->\n" +
+        "<!-- END GENERATED: data-descriptors contract=Thread version=c1 -->")]
+    [InlineData(
+        "<!-- BEGIN GENERATED: contracts-used contract=Thread version=c1 -->\n" +
+        "<!-- END GENERATED: contracts-used contract=Thread version=c1 -->")]
+    [InlineData(
+        "<!-- BEGIN GENERATED: usage contract=Thread version=c1 -->\n" +
+        "<!-- END GENERATED: usage contract=Thread version=c1 -->\n" +
+        "<!-- BEGIN GENERATED: usage contract=Thread version=c1 -->\n" +
+        "<!-- END GENERATED: usage contract=Thread version=c1 -->")]
+    [InlineData(
+        "<!-- BEGIN GENERATED: usage contract=Thread version=c1 mode=compact -->\n" +
+        "<!-- END GENERATED: usage contract=Thread version=c1 mode=compact -->")]
+    public void RejectsInvalidGeneratedMarkers(string content)
+    {
+        using TempDirectory temp = new();
+        File.WriteAllText(Path.Combine(temp.Path, "Thread.md"), content);
+        DocGenerator generator = new(EmptyGraph(), DocDescriptorMeanings.Empty);
+
+        Assert.Throws<InvalidOperationException>(() => generator.Check(temp.Path));
+    }
+
+    [Fact]
+    public void GeneratesUsageDiffFromRegisteredVersion()
+    {
+        using TempDirectory temp = new();
+        string path = Path.Combine(temp.Path, "Widget.md");
+        File.WriteAllText(path,
+            "<!-- BEGIN GENERATED: usage contract=Widget version=c2 diff-from=c1 -->\n" +
+            "<!-- END GENERATED: usage contract=Widget version=c2 diff-from=c1 -->");
+        UsageGraph graph = new(
+            "",
+            1,
+            [
+                new ContractVersionUsage(
+                    new ContractVersion(new ContractInterface("IWidget"), "c1"),
+                    [
+                        new DataTypeUsage(
+                            "Data.Widget",
+                            false,
+                            [
+                                new FieldUsage("RemovedField", "uint32"),
+                                new FieldUsage("SharedField", "uint64"),
+                            ]),
+                    ],
+                    [new GlobalUsage("RemovedGlobal", "uint32", false)],
+                    [new ContractInterface("IRemovedContract"), new ContractInterface("ISharedContract")]),
+                new ContractVersionUsage(
+                    new ContractVersion(new ContractInterface("IWidget"), "c2"),
+                    [
+                        new DataTypeUsage(
+                            "Data.Widget",
+                            false,
+                            [
+                                new FieldUsage("AddedField", "pointer"),
+                                new FieldUsage("SharedField", "uint64"),
+                            ]),
+                    ],
+                    [new GlobalUsage("AddedGlobal", "pointer", false)],
+                    [new ContractInterface("IAddedContract"), new ContractInterface("ISharedContract")]),
+            ]);
+
+        new DocGenerator(graph, DocDescriptorMeanings.Empty).Emit(temp.Path);
+
+        string generated = File.ReadAllText(path);
+        Assert.Contains(
+            "| Added | `Widget` | `AddedField` | `pointer` | _TODO: describe_ |",
+            generated);
+        Assert.Contains(
+            "| Removed | `Widget` | `RemovedField` | `uint32` | _TODO: describe_ |",
+            generated);
+        Assert.DoesNotContain("SharedField", generated);
+        Assert.Contains(
+            "| Added | `AddedGlobal` | `pointer` | _TODO: describe_ |",
+            generated);
+        Assert.Contains(
+            "| Removed | `RemovedGlobal` | `uint32` | _TODO: describe_ |",
+            generated);
+        Assert.Contains("| Added | `AddedContract` |", generated);
+        Assert.Contains("| Removed | `RemovedContract` |", generated);
+        Assert.DoesNotContain("SharedContract", generated);
+    }
+
+    [Fact]
+    public void GeneratesUnknownTypeForEmptyFieldTypeSet()
+    {
+        using TempDirectory temp = new();
+        string path = Path.Combine(temp.Path, "Widget.md");
+        File.WriteAllText(path,
+            "<!-- BEGIN GENERATED: usage contract=Widget version=c1 -->\n" +
+            "<!-- END GENERATED: usage contract=Widget version=c1 -->");
+        UsageGraph graph = new(
+            "",
+            1,
+            [
+                new ContractVersionUsage(
+                    new ContractVersion(new ContractInterface("IWidget"), "c1"),
+                    [
+                        new DataTypeUsage(
+                            "Data.Widget",
+                            false,
+                            [new FieldUsage("Value", "unknown")]),
+                    ],
+                    [],
+                    []),
+            ]);
+
+        new DocGenerator(graph, DocDescriptorMeanings.Empty).Emit(temp.Path);
+
+        Assert.Contains(
+            "| `Widget` | `Value` | `unknown` | _TODO: describe_ |",
+            File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void GeneratesNoneForEmptyUsageSections()
+    {
+        using TempDirectory temp = new();
+        string path = Path.Combine(temp.Path, "Widget.md");
+        File.WriteAllText(path,
+            "<!-- BEGIN GENERATED: usage contract=Widget version=c1 -->\n" +
+            "<!-- END GENERATED: usage contract=Widget version=c1 -->");
+
+        UsageGraph graph = new(
+            "",
+            0,
+            [new ContractVersionUsage(new ContractVersion(new ContractInterface("IWidget"), "c1"), [], [], [])]);
+        new DocGenerator(graph, DocDescriptorMeanings.Empty).Emit(temp.Path);
+
+        Assert.Equal(
+            3,
+            System.Text.RegularExpressions.Regex.Matches(
+                File.ReadAllText(path),
+                "_None\\._").Count);
+    }
+
+    [Fact]
+    public void IdentifiesSymbolicGlobalNamesAsPatterns()
+    {
+        using TempDirectory temp = new();
+        string path = Path.Combine(temp.Path, "Widget.md");
+        File.WriteAllText(path,
+                "<!-- BEGIN GENERATED: usage contract=Widget version=c1 -->\n" +
+                "<!-- END GENERATED: usage contract=Widget version=c1 -->");
+        UsageGraph graph = new(
+                "",
+                0,
+                [
+                    new ContractVersionUsage(
+                        new ContractVersion(new ContractInterface("IWidget"), "c1"),
+                        [],
+                        [new GlobalUsage("<type>.<field>", "pointer", false)],
+                        []),
+                ]);
+
+        new DocGenerator(graph, DocDescriptorMeanings.Empty).Emit(temp.Path);
+
+        Assert.Contains(
+                "| `<type>.<field>` *(name pattern)* | `pointer` |",
+                File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void RejectsUsageDiffFromUnregisteredVersion()
+    {
+        using TempDirectory temp = new();
+        string path = Path.Combine(temp.Path, "Widget.md");
+        File.WriteAllText(path,
+            "<!-- BEGIN GENERATED: usage contract=Widget version=c2 diff-from=c1 -->\n" +
+            "<!-- END GENERATED: usage contract=Widget version=c2 diff-from=c1 -->");
+        UsageGraph graph = new(
+            "",
+            0,
+            [new ContractVersionUsage(new ContractVersion(new ContractInterface("IWidget"), "c2"), [], [], [])]);
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => new DocGenerator(graph, DocDescriptorMeanings.Empty).Check(temp.Path));
+
+        Assert.Contains("Widget c1", exception.Message);
+    }
+
+    [Fact]
+    public void RejectsMalformedDescriptorOverrideKey()
+    {
+        using TempDirectory temp = new();
+        string path = Path.Combine(temp.Path, "meanings.json");
+        File.WriteAllText(path, """{ "_supplement": { "Thread": ["MissingDot"] } }""");
+
+        Assert.Throws<System.Text.Json.JsonException>(() => DocDescriptorMeanings.Load(path));
+    }
+
+    [Fact]
+    public void LoadsCanonicalFieldAndGlobalMeanings()
+    {
+        using TempDirectory temp = new();
+        string path = Path.Combine(temp.Path, "meanings.json");
+        File.WriteAllText(
+            path,
+            """
+            {
+              "_fields": { "Widget.Value": "Widget value" },
+              "_globals": { "WidgetStore": "Pointer to the widget store" }
+            }
+            """);
+
+        DocDescriptorMeanings meanings = DocDescriptorMeanings.Load(path);
+
+        Assert.Equal("Widget value", meanings.Meaning("Widget.Value"));
+        Assert.Equal("Pointer to the widget store", meanings.GlobalMeaning("WidgetStore"));
+    }
+
+    [Fact]
+    public void RejectsContractScopedMeanings()
+    {
+        using TempDirectory temp = new();
+        string path = Path.Combine(temp.Path, "meanings.json");
+        File.WriteAllText(path, """{ "Widget": { "Widget.Value": "Widget value" } }""");
+
+        Assert.Throws<System.Text.Json.JsonException>(() => DocDescriptorMeanings.Load(path));
+    }
+
+    [Fact]
+    public void FormatsManagedCdacNamesAsMarkdownCodeSpans()
+    {
+        using TempDirectory temp = new();
+        string path = Path.Combine(temp.Path, "Thread.md");
+        File.WriteAllText(path,
+            "<!-- BEGIN GENERATED: usage contract=Thread version=c1 -->\n" +
+            "<!-- END GENERATED: usage contract=Thread version=c1 -->");
+        UsageGraph graph = new(
+            "",
+            1,
+            [
+                new ContractVersionUsage(
+                    new ContractVersion(new ContractInterface("IThread"), "c1"),
+                    [
+                        new DataTypeUsage(
+                            "Data.System.Threading.Lock",
+                            false,
+                            [new FieldUsage("_state", "int32")]),
+                        new DataTypeUsage(
+                            "Data.System.Collections.Generic.List`1",
+                            false,
+                            [new FieldUsage("_items", "pointer")]),
+                    ],
+                    [],
+                    []),
+            ]);
+
+        new DocGenerator(graph, DocDescriptorMeanings.Empty).Emit(temp.Path);
+
+        string generated = File.ReadAllText(path);
+        Assert.Contains(
+            "| `System.Threading.Lock` | `_state` | `int32` | _TODO: describe_ |",
+            generated);
+        Assert.Contains(
+            "| ``System.Collections.Generic.List`1`` | `_items` | `pointer` | _TODO: describe_ |",
+            generated);
+    }
+
+    private static UsageGraph EmptyGraph() => new(
+        "",
+        0,
+        []);
+
+    private sealed class TempDirectory : IDisposable
+    {
+        public TempDirectory() => Path = Directory.CreateTempSubdirectory("CdacUsageGraphTests").FullName;
+
+        public string Path { get; }
+
+        public void Dispose() => Directory.Delete(Path, recursive: true);
+    }
+}
