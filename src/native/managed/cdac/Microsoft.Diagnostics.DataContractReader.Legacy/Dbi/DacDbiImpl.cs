@@ -4151,15 +4151,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetModuleMetaDataFileInfo(ulong vmModule, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, Interop.BOOL* pResult)
     {
+        if (dwTimeStamp is null || dwImageSize is null || pStrFilename == 0 || pResult is null)
+            return HResults.E_POINTER;
+        *pResult = Interop.BOOL.FALSE;
+        *dwTimeStamp = 0;
+        *dwImageSize = 0;
         int hr = HResults.S_OK;
         string path = string.Empty;
         try
         {
-            if (dwTimeStamp is null || dwImageSize is null || pStrFilename == 0 || pResult is null)
-                throw new NullReferenceException("One or more parameters are null");
-            *pResult = Interop.BOOL.FALSE;
-            *dwTimeStamp = 0;
-            *dwImageSize = 0;
             if (vmModule == 0)
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
             Contracts.ILoader loader = _target.Contracts.Loader;
