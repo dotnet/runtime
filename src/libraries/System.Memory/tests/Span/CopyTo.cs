@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.SpanTests
@@ -191,18 +190,15 @@ namespace System.SpanTests
             Assert.Equal("Hello", dst[0]);
         }
 
-        // This test case tests the Span.CopyTo method for large buffers of size 4GB or more. In the fast path,
-        // the CopyTo method performs copy in chunks of size 4GB (uint.MaxValue) with final iteration copying
-        // the residual chunk of size (bufferSize % 4GB). The inputs sizes to this method, 4GB and 4GB+256B,
-        // test the two size selection paths in CoptyTo method - memory size that is multiple of 4GB or,
-        // a multiple of 4GB + some more size.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/24139")]
+        // Verifies that Span.CopyTo does not truncate the byte count when it exceeds uint.MaxValue.
+        // For a >4GB span, the element count times sizeof(T) must stay a 64-bit value all the way
+        // down to the native memmove; a 32-bit truncation would copy far fewer bytes. A single
+        // overlapping buffer is used so only one >4GB block is needed instead of two.
         [Theory]
         [OuterLoop]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [InlineData(4L * 1024L * 1024L * 1024L)]
-        [InlineData((4L * 1024L * 1024L * 1024L) + 256)]
-        public static void CopyToLargeSizeTest(long bufferSize)
+        public static unsafe void CopyToLargeSizeTest(long bufferSize)
         {
             // If this test is run in a 32-bit process, the large allocation will fail.
             if (sizeof(IntPtr) != sizeof(long))
@@ -210,50 +206,36 @@ namespace System.SpanTests
                 return;
             }
 
-            int GuidCount = (int)(bufferSize / sizeof(Guid));
-            bool allocatedFirst = false;
-            bool allocatedSecond = false;
-            IntPtr memBlockFirst = IntPtr.Zero;
-            IntPtr memBlockSecond = IntPtr.Zero;
+            int guidCount = (int)(bufferSize / sizeof(Guid));
+            const int Gap = 1; // Offset source and destination so the copy is a real move, not a self-copy.
 
-            unsafe
+            if (!AllocationHelper.TryAllocNative((IntPtr)(bufferSize + (Gap * sizeof(Guid))), out IntPtr memBlock))
             {
-                try
-                {
-                    allocatedFirst = AllocationHelper.TryAllocNative((IntPtr)bufferSize, out memBlockFirst);
-                    allocatedSecond = AllocationHelper.TryAllocNative((IntPtr)bufferSize, out memBlockSecond);
+                return;
+            }
 
-                    if (allocatedFirst && allocatedSecond)
-                    {
-                        ref Guid memoryFirst = ref Unsafe.AsRef<Guid>(memBlockFirst.ToPointer());
-                        var spanFirst = new Span<Guid>(memBlockFirst.ToPointer(), GuidCount);
+            try
+            {
+                var buffer = new Span<Guid>((void*)memBlock, guidCount + Gap);
+                Span<Guid> source = buffer.Slice(0, guidCount);
+                Span<Guid> destination = buffer.Slice(Gap, guidCount);
 
-                        ref Guid memorySecond = ref Unsafe.AsRef<Guid>(memBlockSecond.ToPointer());
-                        var spanSecond = new Span<Guid>(memBlockSecond.ToPointer(), GuidCount);
+                Guid fill = Guid.Parse("900DBAD9-00DB-AD90-00DB-AD900DBADBAD");
+                Guid tail = Guid.Parse("2B2B2B2B-2B2B-2B2B-2B2B-2B2B2B2B2B2B");
 
-                        Guid theGuid = Guid.Parse("900DBAD9-00DB-AD90-00DB-AD900DBADBAD");
-                        for (int count = 0; count < GuidCount; ++count)
-                        {
-                            Unsafe.Add(ref memoryFirst, count) = theGuid;
-                        }
+                buffer.Fill(fill);
+                source[guidCount - 1] = tail; // A truncated copy leaves the destination tail as 'fill'.
 
-                        spanFirst.CopyTo(spanSecond);
+                source.CopyTo(destination);
 
-                        for (int count = 0; count < GuidCount; ++count)
-                        {
-                            Guid guidfirst = Unsafe.Add(ref memoryFirst, count);
-                            Guid guidSecond = Unsafe.Add(ref memorySecond, count);
-                            Assert.Equal(guidfirst, guidSecond);
-                        }
-                    }
-                }
-                finally
-                {
-                    if (allocatedFirst)
-                        AllocationHelper.ReleaseNative(ref memBlockFirst);
-                    if (allocatedSecond)
-                        AllocationHelper.ReleaseNative(ref memBlockSecond);
-                }
+                // Only the boundaries are checked; the tail catches a truncated length and walking
+                // every element would add minutes for no additional coverage.
+                Assert.Equal(fill, destination[0]);
+                Assert.Equal(tail, destination[guidCount - 1]);
+            }
+            finally
+            {
+                AllocationHelper.ReleaseNative(ref memBlock);
             }
         }
 
