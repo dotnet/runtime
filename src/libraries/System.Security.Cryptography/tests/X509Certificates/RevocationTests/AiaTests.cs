@@ -222,24 +222,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         {
             const int IntermediateCount = 8;
 
-            CertificateAuthority.BuildPrivatePki(
-                PkiOptions.AllRevocation,
-                out RevocationResponder responder,
-                out CertificateAuthority root,
-                out CertificateAuthority[] intermediates,
-                out X509Certificate2 endEntity,
-                intermediateAuthorityCount: IntermediateCount,
-                pkiOptionsInSubject: false,
-                testName: nameof(AiaCompletionHasLimits));
-
-            using (responder)
-            using (root)
-            using (endEntity)
-            {
-                try
+            RetryHelper.Execute(
+                () =>
                 {
-                    RetryHelper.Execute(
-                        () =>
+                    CertificateAuthority.BuildPrivatePki(
+                        PkiOptions.AllRevocation,
+                        out RevocationResponder responder,
+                        out CertificateAuthority root,
+                        out CertificateAuthority[] intermediates,
+                        out X509Certificate2 endEntity,
+                        intermediateAuthorityCount: IntermediateCount,
+                        pkiOptionsInSubject: false,
+                        testName: nameof(AiaCompletionHasLimits));
+
+                    using (responder)
+                    using (root)
+                    using (endEntity)
+                    {
+                        try
                         {
                             using (ChainHolder holder = new ChainHolder())
                             {
@@ -324,22 +324,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                                     }
                                 }
                             }
-                        });
-                }
-                finally
-                {
-                    foreach (CertificateAuthority intermediate in intermediates)
-                    {
-                        intermediate.Dispose();
+                        }
+                        finally
+                        {
+                            foreach (CertificateAuthority intermediate in intermediates)
+                            {
+                                intermediate.Dispose();
+                            }
+                        }
                     }
-                }
+                });
 
-                static void CloneIntoExtraStore(X509Chain chain, int index)
-                {
-                    ReadOnlySpan<byte> source = chain.ChainElements[index].Certificate.RawDataMemory.Span;
-                    X509Certificate2 cert = X509CertificateLoader.LoadCertificate(source);
-                    chain.ChainPolicy.ExtraStore.Add(cert);
-                }
+            static void CloneIntoExtraStore(X509Chain chain, int index)
+            {
+                ReadOnlySpan<byte> source = chain.ChainElements[index].Certificate.RawDataMemory.Span;
+                X509Certificate2 cert = X509CertificateLoader.LoadCertificate(source);
+                chain.ChainPolicy.ExtraStore.Add(cert);
             }
         }
     }
