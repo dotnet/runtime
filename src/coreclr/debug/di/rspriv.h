@@ -10512,10 +10512,8 @@ public:
     // Restores the thread's leaf SEH handler from the previously saved value
     HRESULT RestoreLeafSeh();
 
-#ifdef FEATURE_INTEROP_DEBUGGING
     // Logs basic data about a context to the debugging log
     static VOID LogContext(DT_CONTEXT* pContext);
-#endif // FEATURE_INTEROP_DEBUGGING
 
 public:
     HANDLE                     m_handle;
