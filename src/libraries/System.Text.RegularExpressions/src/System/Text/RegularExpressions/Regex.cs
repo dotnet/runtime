@@ -82,6 +82,21 @@ namespace System.Text.RegularExpressions
         /// Initializes a new instance of the <see cref="Regex" /> class for the specified regular expression.
         /// </summary>
         /// <param name="pattern">The regular expression pattern to match.</param>
+        /// <remarks>
+        /// The <paramref name="pattern"/> parameter consists of regular expression language elements that symbolically
+        /// describe the string to match. For more information about regular expressions, see
+        /// <see href="https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-language-quick-reference">Regular Expression Language - Quick Reference</see>.
+        /// <para>Calling the <see cref="Regex(string)"/> constructor is equivalent to calling the
+        /// <see cref="Regex(string, RegexOptions)"/> constructor with a value of <see cref="RegexOptions.None"/> for the <c>options</c> argument.</para>
+        /// <para>A <see cref="Regex"/> object is immutable, which means it can be used only for the match pattern you define when you create it.
+        /// However, it can be used any number of times without being recompiled.</para>
+        /// <para>This constructor creates a case-sensitive regular expression. For a case-insensitive match, use the
+        /// <see cref="Regex(string, RegexOptions)"/> constructor.</para>
+        /// </remarks>
+        /// <example>
+        /// The following example uses this constructor to create a regular expression that matches words beginning with the letters "a" or "t".
+        /// <code lang="cs" source="../../../../tests/FunctionalTests/Regex.Examples.cs" region="RegexCtorString" />
+        /// </example>
         /// <exception cref="ArgumentException">A regular expression parsing error occurred.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="pattern" /> is <see langword="null" />.</exception>
         public Regex([StringSyntax(StringSyntaxAttribute.Regex)] string pattern) :
@@ -95,6 +110,17 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="pattern">The regular expression pattern to match.</param>
         /// <param name="options">A bitwise combination of the enumeration values that modify the regular expression.</param>
+        /// <remarks>
+        /// The <paramref name="pattern"/> parameter consists of regular expression language elements that symbolically
+        /// describe the string to match. For more information about regular expressions, see
+        /// <see href="https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-language-quick-reference">Regular Expression Language - Quick Reference</see>.
+        /// <para>A <see cref="Regex"/> object is immutable, which means it can be used only for the match parameters you define when you create it.
+        /// However, it can be used any number of times without being recompiled.</para>
+        /// </remarks>
+        /// <example>
+        /// The following example uses this constructor to create a case-insensitive regular expression that matches words beginning with the letters "a" or "t".
+        /// <code lang="cs" source="../../../../tests/FunctionalTests/Regex.Examples.cs" region="RegexCtorStringOptions" />
+        /// </example>
         /// <exception cref="ArgumentException">A regular expression parsing error occurred.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="pattern" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentOutOfRangeException">
@@ -115,6 +141,37 @@ namespace System.Text.RegularExpressions
         /// <param name="matchTimeout">
         /// A time-out interval, or <see cref="InfiniteMatchTimeout" /> to indicate that the method should not time out.
         /// </param>
+        /// <remarks>
+        /// The <paramref name="pattern"/> parameter consists of regular expression language elements that symbolically
+        /// describe the string to match. For more information about regular expressions, see
+        /// <see href="https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-language-quick-reference">Regular Expression Language - Quick Reference</see>.
+        /// <para>A <see cref="Regex"/> object is immutable, which means it can be used only for the match pattern you define when you create it.
+        /// However, it can be used any number of times without being recompiled.</para>
+        /// <para>The <paramref name="matchTimeout"/> parameter specifies how long a pattern-matching method should try to find a match before it times out.
+        /// If no match is found in that time interval, the pattern-matching method throws a <see cref="RegexMatchTimeoutException"/>.
+        /// The instance pattern-matching methods that observe the <paramref name="matchTimeout"/> interval include:</para>
+        /// <list type="bullet">
+        /// <item><description><see cref="IsMatch(string)"/></description></item>
+        /// <item><description><see cref="Match(string)"/></description></item>
+        /// <item><description><see cref="Matches(string)"/></description></item>
+        /// <item><description><see cref="Replace(string, string)"/></description></item>
+        /// <item><description><see cref="Split(string)"/></description></item>
+        /// <item><description><see cref="Match.NextMatch"/></description></item>
+        /// </list>
+        /// <para>Setting a time-out interval can help prevent regular expressions that rely on excessive backtracking from appearing
+        /// to stop responding when they process input that contains near matches. For more information, see
+        /// <see href="https://learn.microsoft.com/dotnet/standard/base-types/best-practices-regex">Best practices for regular expressions in .NET</see> and
+        /// <see href="https://learn.microsoft.com/dotnet/standard/base-types/backtracking-in-regular-expressions">Backtracking in regular expressions</see>.
+        /// When choosing a time-out interval, consider the following factors:</para>
+        /// <list type="bullet">
+        /// <item><description>The length and complexity of the regular expression pattern.</description></item>
+        /// <item><description>The expected machine load.</description></item>
+        /// </list>
+        /// </remarks>
+        /// <example>
+        /// The following example creates a <see cref="Regex"/> object with a very short initial time-out and retries with a larger one if a timeout occurs.
+        /// <code lang="cs" source="../../../../tests/FunctionalTests/Regex.Examples.cs" region="RegexCtorStringOptionsMatchTimeout" />
+        /// </example>
         /// <exception cref="ArgumentException">A regular expression parsing error occurred.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="pattern" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentOutOfRangeException">
