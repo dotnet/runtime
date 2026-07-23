@@ -858,6 +858,9 @@ public unsafe partial interface IDacDbiInterface
     int GetActiveRejitILCodeVersionNode(ulong vmModule, uint methodTk, ulong* pVmILCodeVersionNode);
 
     [PreserveSig]
+    int GetEnCILCodeAndSig(ulong vmModule, uint methodTk, nuint enCVersion, DacDbiTargetBuffer* pCodeInfo, uint* pLocalSigToken);
+
+    [PreserveSig]
     int GetNativeCodeVersionNode(ulong vmMethod, ulong codeStartAddress, ulong* pVmNativeCodeVersionNode);
 
     [PreserveSig]

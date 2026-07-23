@@ -3236,7 +3236,7 @@ void Debugger::getBoundaries(MethodDesc * md,
  *
  ******************************************************************************/
 void Debugger::getVars(MethodDesc * md, ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
-                       bool *extendOthers)
+                       bool *extendOthers, unsigned ilCodeSize)
 {
 #ifndef DACCESS_COMPILE
     CONTRACTL
@@ -3273,25 +3273,17 @@ void Debugger::getVars(MethodDesc * md, ULONG32 *cVars, ICorDebugInfo::ILVarInfo
 
         if (fVarArg)
         {
-            COR_ILMETHOD *ilMethod = g_pEEInterface->MethodDescGetILHeader(md);
+            // It is, so we need to tell the JIT to give us the
+            // varags handle.
+            ICorDebugInfo::ILVarInfo *p = new ICorDebugInfo::ILVarInfo[1];
+            _ASSERTE(p != NULL); // throws on oom error
 
-            if (ilMethod)
-            {
-                // It is, so we need to tell the JIT to give us the
-                // varags handle.
-                ICorDebugInfo::ILVarInfo *p = new ICorDebugInfo::ILVarInfo[1];
-                _ASSERTE(p != NULL); // throws on oom error
+            p->startOffset = 0;
+            p->endOffset = ilCodeSize;
+            p->varNumber = (DWORD) ICorDebugInfo::VARARGS_HND_ILNUM;
 
-                COR_ILMETHOD_DECODER header(ilMethod);
-                unsigned int ilCodeSize = header.GetCodeSize();
-
-                p->startOffset = 0;
-                p->endOffset = ilCodeSize;
-                p->varNumber = (DWORD) ICorDebugInfo::VARARGS_HND_ILNUM;
-
-                *cVars = 1;
-                *vars = p;
-            }
+            *cVars = 1;
+            *vars = p;
         }
     }
 
@@ -3380,7 +3372,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
     {
         CodeVersionManager::LockHolder codeVersioningLockHolder;
         ILCodeVersion ilCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(module, mdMeth);
-        if (!ilCodeVersion.IsDefaultVersion())
+        if (!ilCodeVersion.IsDefaultVersion() && ilCodeVersion.GetSource() == CodeVersionSource::kReJIT)
         {
             return CORDBG_E_SET_IP_IMPOSSIBLE;
         }
@@ -3907,7 +3899,7 @@ GetSetFrameHelper::Init(MethodDesc *pMD)
     // Initialize decoderOldIL before checking the method argument signature.
     EX_TRY
     {
-        pILHeader = pMD->GetILHeader();
+        pILHeader = pMD->GetActiveILHeader();
     }
     EX_CATCH_HRESULT(hr);
     if (FAILED(hr))
@@ -11962,7 +11954,7 @@ HRESULT Debugger::DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef)
 
     {
         CodeVersionManager::LockHolder codeVersioningLockHolder;
-        if (FAILED(hr = pCodeVersionManager->AddILCodeVersion(pModule, methodDef, &ilCodeVersion, TRUE)))
+        if (FAILED(hr = pCodeVersionManager->AddILCodeVersion(pModule, methodDef, &ilCodeVersion, TRUE, CodeVersionSource::kReJIT)))
         {
             LOG((LF_TIEREDCOMPILATION, LL_INFO100, "Debugger::DeoptimizeMethodHelper AddILCodeVersion returned hr 0x%x\n", hr));
             return hr;

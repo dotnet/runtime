@@ -1287,6 +1287,65 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
 #endif // !DACCESS_COMPILE
 }
 
+COR_ILMETHOD* MethodDesc::GetActiveILHeader()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(MayHaveILHeader());
+    }
+    CONTRACTL_END
+
+#ifdef FEATURE_CODE_VERSIONING
+    if (InEnCEnabledModule())
+    {
+        CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
+        if (pCodeVersionManager->GetILCodeVersioningState(dac_cast<PTR_Module>(GetModule()), GetMemberDef()) != NULL)
+        {
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
+            ILCodeVersion activeVersion = pCodeVersionManager->GetActiveILCodeVersion(PTR_MethodDesc(this));
+            if (!activeVersion.IsNull() && activeVersion.GetSource() == CodeVersionSource::kEnC)
+            {
+                return activeVersion.GetIL();
+            }
+        }
+    }
+#endif // FEATURE_CODE_VERSIONING
+
+    return GetILHeader();
+}
+
+COR_ILMETHOD* MethodDesc::GetILHeaderForNativeCode(PCODE nativeCodeStartAddress)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(MayHaveILHeader());
+    }
+    CONTRACTL_END
+
+#ifdef FEATURE_CODE_VERSIONING
+    if (IsVersionable() && nativeCodeStartAddress != (PCODE)NULL)
+    {
+        CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(PTR_MethodDesc(this), nativeCodeStartAddress);
+        if (!nativeCodeVersion.IsNull())
+        {
+            ILCodeVersion ilCodeVersion = nativeCodeVersion.GetILCodeVersion();
+            if (!ilCodeVersion.IsNull() && ilCodeVersion.GetSource() == CodeVersionSource::kEnC)
+            {
+                return ilCodeVersion.GetIL();
+            }
+        }
+    }
+#endif // FEATURE_CODE_VERSIONING
+
+    return GetILHeader();
+}
+
 #if defined(TARGET_X86) && defined(HAVE_GCCOVER)
 //*******************************************************************************
 ReturnKind MethodDesc::GetReturnKind()
@@ -3406,7 +3465,7 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
-#ifdef FEATURE_TIERED_COMPILATION
+#ifdef FEATURE_CODE_VERSIONING
 void MethodDesc::ResetCodeEntryPoint()
 {
     WRAPPER_NO_CONTRACT;
@@ -3432,57 +3491,7 @@ void MethodDesc::ResetCodeEntryPoint()
         GetPrecode()->ResetTargetInterlocked();
     }
 }
-#endif // FEATURE_TIERED_COMPILATION
-
-void MethodDesc::ResetCodeEntryPointForEnC()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(!IsVersionable());
-    _ASSERTE(!IsVersionableWithPrecode());
-    _ASSERTE(!MayHaveEntryPointSlotsToBackpatch());
-
-    // Updates are expressed via metadata diff and a methoddef of a runtime async method
-    // would be resolved to the task-returning thunk.
-    // If we see a thunk here, fetch the async variant that owns the IL and reset that.
-    if (IsAsyncThunkMethod())
-    {
-        MethodDesc *otherVariant = GetAsyncVariantNoCreate();
-        _ASSERTE(otherVariant != NULL);
-        otherVariant->ResetCodeEntryPointForEnC();
-        return;
-    }
-
-#ifdef FEATURE_INTERPRETER
-    ClearInterpreterCodePointer();
-#endif
-
-    LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s\n", this, m_pszDebugClassName, m_pszDebugMethodName));
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    bool oldEntrypointHadNativeCode = GetPortableEntryPointIfExists() != (PCODE)NULL && PortableEntryPoint::ToPortableEntryPoint(GetPortableEntryPoint())->HasNativeCode();
-    ResetPortableEntryPoint();
-    if (oldEntrypointHadNativeCode)
-    {
-        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(GetPortableEntryPoint());
-    }
-#else // !FEATURE_PORTABLE_ENTRYPOINTS
-    LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: HasPrecode():%s, HasNativeCodeSlot():%s\n",
-        (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));
-    if (HasPrecode())
-    {
-        GetPrecode()->ResetTargetInterlocked();
-    }
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
-
-    if (HasNativeCodeSlot())
-    {
-        PTR_PCODE ppCode = GetAddrOfNativeCodeSlot();
-        PCODE pCode = *ppCode;
-        LOG((LF_CORDB, LL_INFO1000000, "MD::RCEPFENC: %p -> %p\n",
-            ppCode, pCode));
-        *ppCode = (PCODE)NULL;
-    }
-}
-
+#endif // FEATURE_CODE_VERSIONING
 
 //*******************************************************************************
 BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
@@ -3538,7 +3547,6 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     } CONTRACTL_END;
 
     _ASSERTE(!HasPrecode());
-    _ASSERTE(!IsVersionable());
 
     PCODE pExpected = GetTemporaryEntryPoint();
     PTR_PCODE pSlot = GetAddrOfSlot();
@@ -3549,6 +3557,7 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     _ASSERTE(!RequiresStableEntryPoint()); // The RequiresStableEntryPoint scenarios should all result in a stable entry point which is a PreCode, so that it can be replaced and adjusted over time.
+    _ASSERTE(!IsVersionable());
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     return fResult;

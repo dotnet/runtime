@@ -2509,9 +2509,16 @@ public sealed unsafe partial class SOSDacImpl
 
         ILCodeVersionHandle ilCodeVersion = cv.GetILCodeVersion(nativeCodeVersion);
 
-        pReJitData->rejitID = rejit.GetRejitId(ilCodeVersion).Value;
         TargetCodePointer nativeCode = cv.GetNativeCode(nativeCodeVersion);
         pReJitData->NativeCodeAddr = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode).Value;
+        if (cv.GetSource(ilCodeVersion) != CodeVersionSource.ReJIT)
+        {
+            pReJitData->rejitID = 0;
+            pReJitData->flags = DacpReJitData.Flags.kActive;
+            return;
+        }
+
+        pReJitData->rejitID = rejit.GetRejitId(ilCodeVersion).Value;
 
         if (nativeCodeVersion.CodeVersionNodeAddress != activeNativeCodeVersion.CodeVersionNodeAddress ||
             nativeCodeVersion.MethodDescAddress != activeNativeCodeVersion.MethodDescAddress)
@@ -5471,7 +5478,11 @@ public sealed unsafe partial class SOSDacImpl
             TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
             Contracts.ILCodeVersionHandle activeILCodeVersion = codeVersionsContract.GetActiveILCodeVersion(methodDescPtr);
 
-            if (rejitContract.GetRejitState(activeILCodeVersion) == Contracts.RejitState.Requested)
+            if (!activeILCodeVersion.IsValid || codeVersionsContract.GetSource(activeILCodeVersion) != CodeVersionSource.ReJIT)
+            {
+                throw new ArgumentException();
+            }
+            else if (rejitContract.GetRejitState(activeILCodeVersion) == Contracts.RejitState.Requested)
             {
                 *pRejitId = (int)rejitContract.GetRejitId(activeILCodeVersion).Value;
             }
@@ -5513,7 +5524,7 @@ public sealed unsafe partial class SOSDacImpl
                 .FirstOrDefault(ilcode => rejitContract.GetRejitId(ilcode).Value == (ulong)rejitId,
                     ILCodeVersionHandle.Invalid);
 
-            if (!ilCodeVersion.IsValid)
+            if (!ilCodeVersion.IsValid || cv.GetSource(ilCodeVersion) != CodeVersionSource.ReJIT)
                 throw new ArgumentException();
             else
             {
@@ -5586,7 +5597,7 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.ILCodeVersionHandle activeILCodeVersion = cv.GetActiveILCodeVersion(methodDescPtr);
 
             // rejit in progress or rejit applied?
-            if (rejit.GetRejitState(activeILCodeVersion) != RejitState.Active || !cv.HasDefaultIL(activeILCodeVersion))
+            if ((rejit.GetRejitState(activeILCodeVersion) != RejitState.Active || !cv.HasDefaultIL(activeILCodeVersion)) && cv.GetSource(activeILCodeVersion) == CodeVersionSource.ReJIT)
             {
                 pILData->type = DacpProfilerILData.ModificationType.ReJITModified;
                 pILData->rejitID = (uint)rejit.GetRejitId(activeILCodeVersion).Value;
@@ -5648,9 +5659,11 @@ public sealed unsafe partial class SOSDacImpl
                     // first condition: is method in process of being rejitted?
                     // second condition: has rejit been applied or null default IL been otherwise used for profiler modification (see src/coreclr/vm/codeversion.cpp comment)?
                     // third condition: has profiler modified IL through ICorProfilerInfo::SetILFunctionBody?
-                    if (rejit.GetRejitState(activeILCodeVersion) != RejitState.Active ||
+                    // final condition: EnC versions share the code-versioning infrastructure but must be excluded here.
+                    if ((rejit.GetRejitState(activeILCodeVersion) != RejitState.Active ||
                         !cv.HasDefaultIL(activeILCodeVersion) ||
-                        loader.GetDynamicIL(moduleHandle, token) != 0)
+                        loader.GetDynamicIL(moduleHandle, token) != 0) &&
+                        cv.GetSource(activeILCodeVersion) == CodeVersionSource.ReJIT)
                     {
                         methodDescs[*pcMethodDescs] = md.ToClrDataAddress(_target);
                         (*pcMethodDescs)++;

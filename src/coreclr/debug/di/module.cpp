@@ -2124,7 +2124,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
     if (m_vmAssembly.IsNull())
         return E_UNEXPECTED;
 
-#ifdef FEATURE_REMAP_FUNCTION
+#ifdef FEATURE_METADATA_UPDATER
     HRESULT hr;
 
     void * pRemoteBuf = NULL;

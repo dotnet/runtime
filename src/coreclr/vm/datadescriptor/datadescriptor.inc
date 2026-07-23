@@ -1186,6 +1186,8 @@ CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, RejitState, cdac_data<ILCodeVersion
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, ILAddress, cdac_data<ILCodeVersionNode>::ILAddress)
 CDAC_TYPE_FIELD(ILCodeVersionNode, TYPE(InstrumentedILOffsetMapping), InstrumentedILMap, cdac_data<ILCodeVersionNode>::InstrumentedILMap)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, Deoptimized, cdac_data<ILCodeVersionNode>::Deoptimized)
+CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, Source, cdac_data<ILCodeVersionNode>::Source)
+CDAC_TYPE_FIELD(ILCodeVersionNode, T_NUINT, EnCVersion, cdac_data<ILCodeVersionNode>::EnCVersion)
 CDAC_TYPE_END(ILCodeVersionNode)
 
 CDAC_TYPE_BEGIN(InstrumentedILOffsetMapping)

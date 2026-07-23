@@ -214,6 +214,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
         switch (TypeFromToken(token))
         {
             case mdtMethodDef:
+            {
 
                 // MethodDef token - update/add a method
 
@@ -240,8 +241,26 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                     IfFailRet(E_INVALIDARG);
                 }
 
-                SetDynamicIL(token, (TADDR)(&pLocalILMemory[dwMethodRVA]));
-
+                ILCodeVersion ilCodeVersion;
+                CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
+                {
+                    CodeVersionManager::LockHolder codeVersioningLockHolder;
+                    if (FAILED(hr = pCodeVersionManager->AddILCodeVersion(this, token, &ilCodeVersion, FALSE, CodeVersionSource::kEnC, m_applyChangesCount)))
+                    {
+                        LOG((LF_ENC, LL_INFO100, "EACM::AEAC: Error AddILCodeVersion returned hr 0x%x\n", hr));
+                        return hr;
+                    }
+                    ilCodeVersion.SetIL((COR_ILMETHOD*)&pLocalILMemory[dwMethodRVA]);
+                    ilCodeVersion.SetRejitState(RejitFlags::kStateActive);
+                }
+                {
+                    GCX_PREEMP();
+                    if (FAILED(hr = pCodeVersionManager->SetActiveILCodeVersions(&ilCodeVersion, 1, NULL)))
+                    {
+                        LOG((LF_ENC, LL_INFO100, "EACM::AEAC: Error SetActiveILCodeVersions returned hr 0x%x\n", hr));
+                        return hr;
+                    }
+                }
                 // use module to resolve to method
                 pMethod = LookupMethodDef(token);
                 if (pMethod)
@@ -256,6 +275,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                 }
 
                 break;
+            }
 
             case mdtFieldDef:
 
@@ -354,41 +374,8 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
         }
     }
 
-    // Notify the JIT that we've got new IL for this method
-    // This will ensure that all new calls to the method will go to the new version.
-    // The runtime does this by never backpatching the methodtable slots in EnC-enabled modules.
     LOG((LF_ENC, LL_INFO100000, "EACM::UM: Updating function %s::%s to version %d\n",
         pMethod->m_pszDebugClassName, pMethod->m_pszDebugMethodName, m_applyChangesCount));
-
-    // Reset any flags relevant to the old code
-    //
-    // Note that this only works since we've very carefully made sure that _all_ references
-    // to the Method's code must be to the call/jmp blob immediately in front of the
-    // MethodDesc itself.  See MethodDesc::InEnCEnabledModule()
-    //
-    if (!pMethod->HasClassOrMethodInstantiation())
-    {
-        // Not a method impacted by generics, so this is the MethodDesc to use.
-        pMethod->ResetCodeEntryPointForEnC();
-    }
-    else
-    {
-        // Generics are involved so we need to search for all related MethodDescs.
-        Module* module = pMethod->GetLoaderModule();
-        mdMethodDef tkMethod = pMethod->GetMemberDef();
-
-        LoadedMethodDescIterator it(
-            AppDomain::GetCurrentDomain(),
-            module,
-            tkMethod,
-            AssemblyIterationFlags(kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
-        while (it.Next(pAssembly.This()))
-        {
-            MethodDesc* pMD = it.Current();
-            pMD->ResetCodeEntryPointForEnC();
-        }
-    }
 
     return S_OK;
 }
@@ -616,7 +603,16 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
             pMD->DoPrestub(NULL);
             LOG((LF_ENC, LL_INFO100, "EACM::ResumeInUpdatedFunction JIT of %p successful\n", pMD));
         }
-        jittedCode = pMD->GetNativeCode();
+#ifdef FEATURE_CODE_VERSIONING
+        {
+            CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
+            jittedCode = pCodeVersionManager->GetActiveILCodeVersion(pMD)
+                             .GetActiveNativeCodeVersion(pMD).GetNativeCode();
+        }
+#else
+        _ASSERTE(!"This code should be unreachable without FEATURE_CODE_VERSIONING");
+#endif
     } EX_CATCH {
 #ifdef _DEBUG
         {

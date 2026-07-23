@@ -3570,7 +3570,7 @@ ClrDataMethodDefinition::GetIlMethod(void)
     {
         if (m_methodDesc->MayHaveILHeader())
         {
-            return m_methodDesc->GetILHeader();
+            return m_methodDesc->GetActiveILHeader();
         }
         else
         {

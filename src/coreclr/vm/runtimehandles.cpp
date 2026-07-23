@@ -2070,7 +2070,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod,
             pMethodIL = pMethod->GetWrappedMethodDesc();
         }
 
-        pILHeader = pMethodIL->GetILHeader();
+        pILHeader = pMethodIL->GetActiveILHeader();
     }
 
     if (pILHeader)

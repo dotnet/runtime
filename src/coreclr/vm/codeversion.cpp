@@ -49,10 +49,10 @@ void NativeCodeVersion::SetGCCoverageInfo(PTR_GCCoverageInfo gcCover)
 
 #else // FEATURE_CODE_VERSIONING
 
-// This is just used as a unique id. Overflow is OK. If we happen to have more than 4+Billion rejits
+// This is just used as a unique id. Overflow is OK. If we happen to have more than 4+Billion code versions
 // and somehow manage to not run out of memory, we'll just have to redefine ReJITID as size_t.
 /* static */
-static ReJITID s_GlobalReJitId = 1;
+static ReJITID s_GlobalCodeVersionId = 1;
 
 #ifndef DACCESS_COMPILE
 NativeCodeVersionNode::NativeCodeVersionNode(
@@ -566,13 +566,15 @@ ILCodeVersionNode::ILCodeVersionNode() :
     m_rejitState(RejitFlags::kStateRequested),
     m_pIL(),
     m_jitFlags(0),
+    m_source(CodeVersionSource::kUnknown),
+    m_encVersion(CorDB_DEFAULT_ENC_FUNCTION_VERSION),
     m_deoptimized(FALSE)
 {
     m_pIL.Store(dac_cast<PTR_COR_ILMETHOD>(nullptr));
 }
 
 #ifndef DACCESS_COMPILE
-ILCodeVersionNode::ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJITID id, BOOL isDeoptimized) :
+ILCodeVersionNode::ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJITID id, BOOL isDeoptimized, CodeVersionSource source, SIZE_T encVersion) :
     m_pModule(pModule),
     m_methodDef(methodDef),
     m_rejitId(id),
@@ -580,6 +582,8 @@ ILCodeVersionNode::ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJ
     m_rejitState(RejitFlags::kStateRequested),
     m_pIL(nullptr),
     m_jitFlags(0),
+    m_source(source),
+    m_encVersion(encVersion),
     m_deoptimized(isDeoptimized)
 {}
 #endif
@@ -625,6 +629,18 @@ DWORD ILCodeVersionNode::GetJitFlags() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return m_jitFlags.Load();
+}
+
+CodeVersionSource ILCodeVersionNode::GetSource() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return m_source;
+}
+
+SIZE_T ILCodeVersionNode::GetEnCVersion() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return m_encVersion;
 }
 
 const InstrumentedILOffsetMapping* ILCodeVersionNode::GetInstrumentedILMap() const
@@ -873,6 +889,32 @@ RejitFlags ILCodeVersion::GetRejitState() const
     else
     {
         return RejitFlags::kStateActive;
+    }
+}
+
+CodeVersionSource ILCodeVersion::GetSource() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    if (m_storageKind == StorageKind::Explicit)
+    {
+        return AsNode()->GetSource();
+    }
+    else
+    {
+        return CodeVersionSource::kUnknown;
+    }
+}
+
+SIZE_T ILCodeVersion::GetEnCVersion() const
+{
+    if (m_storageKind == StorageKind::Explicit)
+    {
+        return AsNode()->GetEnCVersion();
+    }
+    else
+    {
+        // The synthetic default version represents the method's original (unedited) IL.
+        return CorDB_DEFAULT_ENC_FUNCTION_VERSION;
     }
 }
 
@@ -1521,7 +1563,7 @@ NativeCodeVersion CodeVersionManager::GetNativeCodeVersion(PTR_MethodDesc pMetho
 }
 
 #ifndef DACCESS_COMPILE
-HRESULT CodeVersionManager::AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ILCodeVersion* pILCodeVersion, BOOL isDeoptimized)
+HRESULT CodeVersionManager::AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ILCodeVersion* pILCodeVersion, BOOL isDeoptimized, CodeVersionSource source, SIZE_T encVersion)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(IsLockOwnedByCurrentThread());
@@ -1534,7 +1576,7 @@ HRESULT CodeVersionManager::AddILCodeVersion(Module* pModule, mdMethodDef method
         return hr;
     }
 
-    ILCodeVersionNode* pILCodeVersionNode = new (nothrow) ILCodeVersionNode(pModule, methodDef, InterlockedIncrement(reinterpret_cast<LONG*>(&s_GlobalReJitId)), isDeoptimized);
+    ILCodeVersionNode* pILCodeVersionNode = new (nothrow) ILCodeVersionNode(pModule, methodDef, InterlockedIncrement(reinterpret_cast<LONG*>(&s_GlobalCodeVersionId)), isDeoptimized, source, encVersion);
     if (pILCodeVersionNode == NULL)
     {
         return E_OUTOFMEMORY;
@@ -2029,6 +2071,15 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
         return S_OK;
     }
 
+    if (pMD->IsAsyncThunkMethod())
+    {
+        pMD = pMD->GetAsyncVariantNoCreate();
+    }
+    if (pMD == NULL)
+    {
+        return S_OK;
+    }
+
     if (!pMD->HasClassOrMethodInstantiation())
     {
         // We have a JITted non-generic.
@@ -2109,6 +2160,14 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
     while (it.Next(pAssembly.This()))
     {
         MethodDesc * pLoadedMD = it.Current();
+        if (pLoadedMD->IsAsyncThunkMethod())
+        {
+            pLoadedMD = pLoadedMD->GetAsyncVariantNoCreate();
+        }
+        if (pLoadedMD == NULL)
+        {
+            continue;
+        }
 
         if (!pLoadedMD->IsVersionable())
         {
@@ -2163,10 +2222,7 @@ bool CodeVersionManager::IsMethodSupported(PTR_MethodDesc pMethodDesc)
         !pMethodDesc->IsDynamicMethod() &&
 
         // CodeVersionManager data structures don't properly handle the lifetime semantics of collectible code at this point
-        !pMethodDesc->GetLoaderAllocator()->IsCollectible() &&
-
-        // EnC has its own way of versioning
-        !pMethodDesc->InEnCEnabledModule();
+        !pMethodDesc->GetLoaderAllocator()->IsCollectible();
 }
 
 //---------------------------------------------------------------------------------------
@@ -2307,7 +2363,8 @@ void CodeVersionManager::ReportCodePublishError(Module* pModule, mdMethodDef met
     BOOL isRejitted = FALSE;
     {
         LockHolder codeVersioningLockHolder;
-        isRejitted = !GetActiveILCodeVersion(pModule, methodDef).IsDefaultVersion();
+        ILCodeVersion codeVersion = GetActiveILCodeVersion(pModule, methodDef);
+        isRejitted = !codeVersion.IsDefaultVersion() && codeVersion.GetSource() == CodeVersionSource::kReJIT;
     }
 
     // this isn't perfect, we might be activating a tiered jitting variation of a rejitted

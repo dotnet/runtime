@@ -23,6 +23,15 @@ internal struct NativeCodeVersionHandle
 ```
 
 ```csharp
+public enum CodeVersionSource : uint
+{
+    Unknown,
+    ReJIT,
+    EnC,
+}
+```
+
+```csharp
 // Return a handle to the active version of the IL code for a given method descriptor
 public virtual ILCodeVersionHandle GetActiveILCodeVersion(TargetPointer methodDesc);
 // Return a handle to the IL code version representing the given native code version
@@ -58,6 +67,12 @@ public virtual bool TryGetInstrumentedILMap(ILCodeVersionHandle ilCodeVersionHan
 
 // Gets the optimization tier for a native code version
 public virtual OptimizationTier GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle);
+
+// Gets what produced an IL code version (ReJIT, EnC, or Unknown for the default version)
+public virtual CodeVersionSource GetSource(ILCodeVersionHandle ilCodeVersionHandle);
+
+// Gets the EnC version number of an IL code version
+public virtual TargetNUInt GetEnCVersion(ILCodeVersionHandle ilCodeVersionHandle);
 ```
 
 ### Extension Methods
@@ -91,6 +106,8 @@ Data descriptors used:
 | ILCodeVersionNode | Next | Pointer to the next `ILCodeVersionNode`|
 | ILCodeVersionNode | RejitState | ReJIT state of the node |
 | ILCodeVersionNode | ILAddress | Address of IL corresponding to `ILCodeVersionNode`|
+| ILCodeVersionNode | Source | a `CodeVersionSource` value indicating what produced this version (ReJIT, EnC, or unknown) |
+| ILCodeVersionNode | EnCVersion | for an EnC version, the EnC (edit) version number this node corresponds to |
 | ILCodeVersionNode | InstrumentedILMap | Embedded `InstrumentedILOffsetMapping` describing the instrumented IL offset mapping |
 | InstrumentedILOffsetMapping | Count | Number of instrumented IL offset map entries |
 | InstrumentedILOffsetMapping | Map | Pointer to the array of instrumented IL offset map entries |
@@ -121,6 +138,12 @@ private enum ILCodeVersionKind
     Synthetic = 2, // means Module and Token are set
 }
 ```
+
+### Contract Constants:
+
+| Constant Name | Value | Description |
+| --- | --- | --- |
+| `CorDB_DEFAULT_ENC_FUNCTION_VERSION` | 1 | The EnC version number of the original (unedited) IL. The synthetic default IL code version, and any version not produced by EnC, is treated as having this version. |
 
 Global variables used: *none*
 
@@ -350,14 +373,6 @@ bool ICodeVersions.CodeVersionManagerSupportsMethod(TargetPointer methodDescAddr
         return false;
     if (rts.IsCollectibleMethod(md))
         return false;
-    TargetPointer mtAddr = rts.GetMethodTable(md);
-    TypeHandle mt = rts.GetTypeHandle(mtAddr);
-    TargetPointer modAddr = rts.GetModule(mt);
-    ILoader loader = _target.Contracts.Loader;
-    ModuleHandle mod = loader.GetModuleHandleFromModulePtr(modAddr);
-    ModuleFlags modFlags = loader.GetFlags(mod);
-    if (modFlags.HasFlag(ModuleFlags.EditAndContinue))
-        return false;
     return true;
 }
 ```
@@ -401,6 +416,28 @@ TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle, Targe
 bool ICodeVersions.HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle)
 {
     return ilCodeVersionHandle.IsExplicit ? AsNode(ilCodeVersionHandle).ILAddress == TargetPointer.Null : true;
+}
+```
+
+### Getting what produced an IL code version
+
+```csharp
+CodeVersionSource ICodeVersions.GetSource(ILCodeVersionHandle ilCodeVersionHandle)
+{
+    if (!ilCodeVersionHandle.IsExplicit)
+        return CodeVersionSource.Unknown;
+    return // node Source
+}
+```
+
+### Getting the EnC version of an IL code version
+
+```csharp
+TargetNUInt ICodeVersions.GetEnCVersion(ILCodeVersionHandle ilCodeVersionHandle)
+{
+    if (!ilCodeVersionHandle.IsExplicit)
+        return new TargetNUInt(CorDB_DEFAULT_ENC_FUNCTION_VERSION);
+    return AsNode(ilCodeVersionHandle).EnCVersion;
 }
 ```
 

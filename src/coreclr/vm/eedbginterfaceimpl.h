@@ -152,8 +152,6 @@ public:
 
     Module *MethodDescGetModule(MethodDesc *pFD);
 
-    COR_ILMETHOD* MethodDescGetILHeader(MethodDesc *pFD);
-
     MethodDesc *FindLoadedMethodRefOrDef(Module* pModule,
                                           mdToken memberRef);
 
