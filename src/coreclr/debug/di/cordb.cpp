@@ -469,7 +469,7 @@ BOOL
 DbiSetThreadContext(HANDLE hThread,
     const DT_CONTEXT *lpContext)
 {
-#if !defined(HOST_ARM) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || !defined(__ANDROID__)
+#if !defined(HOST_ARM) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || defined(__ANDROID__)
     _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
     return FALSE;
 #else
