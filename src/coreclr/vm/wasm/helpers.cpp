@@ -1033,13 +1033,16 @@ namespace
         }
 
         MethodTable* pMT = th.AsMethodTable();
+        PTR_MethodTable pVector128MT = CoreLibBinder::GetClassIfExist(CLASS__VECTOR128T);
+        PTR_MethodTable pVectorTMT = CoreLibBinder::GetClassIfExist(CLASS__VECTORT);
+
         bool isSupportedVectorBaseType =
             pMT->IsIntrinsicType() &&
             (pMT->GetNumGenericArgs() == 1) &&
             CorIsNumericalType(pMT->GetInstantiation()[0].GetSignatureCorElementType());
         if (isSupportedVectorBaseType &&
-            (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T)) ||
-             ((size == 16) && pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT)))))
+            ((pVector128MT != NULL && pMT->HasSameTypeDefAs(pVector128MT)) ||
+             ((size == 16) && (pVectorTMT != NULL) && pMT->HasSameTypeDefAs(pVectorTMT))))
         {
             return { ConvertType::ToV128, 0 };
         }
