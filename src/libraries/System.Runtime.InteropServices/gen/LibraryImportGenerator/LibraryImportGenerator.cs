@@ -49,7 +49,7 @@ namespace Microsoft.Interop
                         : null)
                 .Where(
                     static modelData => modelData is not null
-                        && Analyzers.LibraryImportDiagnosticsAnalyzer.GetDiagnosticIfInvalidMethodForGeneration(modelData.Syntax, modelData.Symbol) is null);
+                        && modelData.Syntax.GetDiagnosticIfInvalidMethodForGeneration(modelData.Symbol) is null);
 
             // Compute generator options
             IncrementalValueProvider<LibraryImportGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
