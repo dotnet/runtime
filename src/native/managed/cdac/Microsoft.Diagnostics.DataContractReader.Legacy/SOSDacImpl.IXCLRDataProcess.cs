@@ -529,9 +529,10 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         {
             if (handle is null)
                 throw new ArgumentNullException(nameof(handle));
+            if (*handle == 0)
+                return HResults.S_FALSE;
             if (mod.IsNullRef)
                 throw new NullReferenceException();
-
             GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
             if (gcHandle.Target is not ProcessEnum<Contracts.ModuleHandle> modules)
                 throw new ArgumentException();
