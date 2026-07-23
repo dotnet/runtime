@@ -1545,15 +1545,6 @@ namespace Internal.JitInterface
                 }
             }
 
-#if READYTORUN
-            if (isArray)
-            {
-                // Array interface devirt is not yet supported by R2R.
-                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                return false;
-            }
-#endif
-
             if (requiresInstMethodDescArg)
             {
 #if READYTORUN

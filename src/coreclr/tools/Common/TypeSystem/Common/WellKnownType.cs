@@ -44,5 +44,12 @@ namespace Internal.TypeSystem
         Exception,
 
         TypedReference,
+
+        SZArrayHelper,
+        IEnumerableGeneric,
+        IListGeneric,
+        ICollectionGeneric,
+        IReadOnlyListGeneric,
+        IReadOnlyCollectionGeneric,
     }
 }
