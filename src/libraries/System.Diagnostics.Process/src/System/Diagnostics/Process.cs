@@ -501,9 +501,9 @@ namespace System.Diagnostics
         /// <para>
         /// On macOS, this value is the process's physical memory footprint - an accounting-based measurement,
         /// the same value shown in Activity Monitor's Memory column - rather than a strict count of unshared
-        /// pages. Querying a process other than the current one requires permission to inspect that process
-        /// (for example, querying a process owned by another user typically fails); when permission is denied,
-        /// this property returns 0.
+        /// pages. If the footprint can't be retrieved for the specified process - for example, if the caller
+        /// lacks permission to query a process owned by another user, or the process has since exited - this
+        /// property returns 0.
         /// </para>
         /// </remarks>
         public long PrivateMemorySize64

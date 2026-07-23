@@ -389,8 +389,8 @@ internal static partial class Interop
         /// <param name="pid">The process to retrieve the physical footprint for</param>
         /// <param name="physicalFootprint">When this method returns true, contains the process's physical footprint in bytes</param>
         /// <returns>
-        /// true if the physical footprint could be retrieved; false if the caller doesn't have permission
-        /// to query the specified process, or another failure occurred
+        /// true if the physical footprint could be retrieved; false if it could not - for example, if the
+        /// caller lacks permission to query a process owned by another user, or the process has since exited
         /// </returns>
         internal static unsafe bool TryGetProcessPhysicalFootprint(int pid, out ulong physicalFootprint)
         {

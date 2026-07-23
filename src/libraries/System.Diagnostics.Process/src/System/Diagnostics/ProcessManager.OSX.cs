@@ -108,9 +108,9 @@ namespace System.Diagnostics
 
             // Get the process's physical memory footprint - an accounting-based measurement (the same value
             // shown in Activity Monitor's Memory column), not a strict count of unique/private pages. This can
-            // fail for the same permission reasons proc_taskallinfo above can - e.g. querying a process owned
-            // by another user - in which case PrivateBytes is left at its default of 0, matching prior (unset)
-            // behavior for this field on macOS.
+            // fail for several reasons - e.g. lacking permission to query a process owned by another user, or
+            // the process having exited since it was enumerated - in which case PrivateBytes is left at its
+            // default of 0, matching prior (unset) behavior for this field on macOS.
             if (Interop.libproc.TryGetProcessPhysicalFootprint(pid, out ulong physicalFootprint))
             {
                 procInfo.PrivateBytes = physicalFootprint > long.MaxValue ? long.MaxValue : (long)physicalFootprint;
