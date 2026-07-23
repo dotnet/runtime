@@ -174,6 +174,7 @@ LWM(DoesFieldBelongToClass, DLDL, DWORD)
 DENSELWM(SigInstHandleMap, DWORDLONG)
 LWM(GetWasmTypeSymbol, Agnostic_GetWasmTypeSymbol, DWORDLONG)
 LWM(GetAddressAlignment, DWORDLONG, DWORD)
+LWM(CanOmitPinning, DWORDLONG, DWORD)
 LWM(GetWasmWellKnownGlobals, DWORD, Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS)
 
 #undef LWM

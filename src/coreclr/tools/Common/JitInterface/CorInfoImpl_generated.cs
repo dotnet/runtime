@@ -150,6 +150,7 @@ namespace Internal.JitInterface
                 s_callbacks.getFpStructLowering = &_getFpStructLowering;
                 s_callbacks.getWasmLowering = &_getWasmLowering;
                 s_callbacks.getAddressAlignment = &_getAddressAlignment;
+                s_callbacks.canOmitPinning = &_canOmitPinning;
                 s_callbacks.getWasmWellKnownGlobals = &_getWasmWellKnownGlobals;
                 s_callbacks.getThreadTLSIndex = &_getThreadTLSIndex;
                 s_callbacks.getAddrOfCaptureThreadGlobal = &_getAddrOfCaptureThreadGlobal;
@@ -334,6 +335,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_FPSTRUCT_LOWERING*, void> getFpStructLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoWasmType> getWasmLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, void*, uint> getAddressAlignment;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte> canOmitPinning;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_WASM_WELLKNOWN_GLOBALS*, void> getWasmWellKnownGlobals;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, uint> getThreadTLSIndex;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, int*> getAddrOfCaptureThreadGlobal;
@@ -2303,6 +2305,21 @@ namespace Internal.JitInterface
             try
             {
                 return _this.getAddressAlignment(address);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static byte _canOmitPinning(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* fldHnd)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.canOmitPinning(fldHnd) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {

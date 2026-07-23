@@ -540,6 +540,9 @@ CorInfoWasmType getWasmLowering(
 uint32_t getAddressAlignment(
           void* address) override;
 
+bool canOmitPinning(
+          CORINFO_FIELD_HANDLE fldHnd) override;
+
 void getWasmWellKnownGlobals(
           CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut) override;
 

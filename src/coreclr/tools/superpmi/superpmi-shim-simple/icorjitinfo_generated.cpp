@@ -921,6 +921,12 @@ uint32_t interceptor_ICJI::getAddressAlignment(
     return original_ICorJitInfo->getAddressAlignment(address);
 }
 
+bool interceptor_ICJI::canOmitPinning(
+          CORINFO_FIELD_HANDLE fldHnd)
+{
+    return original_ICorJitInfo->canOmitPinning(fldHnd);
+}
+
 void interceptor_ICJI::getWasmWellKnownGlobals(
           CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
 {

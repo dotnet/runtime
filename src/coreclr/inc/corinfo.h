@@ -3224,6 +3224,9 @@ public:
             void* address
             ) = 0;
 
+    // Returns true iff pinning of the field's address can be elided because runtime guarantees stability.
+    virtual bool canOmitPinning(CORINFO_FIELD_HANDLE fldHnd) = 0;
+
     // Get the well-known wasm global symbols (shadow stack pointer, image base, table base)
     // that JIT-generated wasm code references via WASM_GLOBAL_INDEX_LEB relocations.
     virtual void getWasmWellKnownGlobals(

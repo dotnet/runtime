@@ -1643,6 +1643,55 @@ bool CEEInfo::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     return res;
 }
 
+bool CEEInfo::canOmitPinning(CORINFO_FIELD_HANDLE fldHnd)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    FieldDesc* field = reinterpret_cast<FieldDesc*>(fldHnd);
+    _ASSERT(field != NULL);
+
+    if (field->IsStatic() && !field->IsThreadStatic())
+    {
+        MethodTable* fieldOwner = field->GetEnclosingMethodTable();
+        TypeHandle   fieldOwnerType(fieldOwner);
+        if (!fieldOwnerType.GetLoaderAllocator()->CanUnload() && !fieldOwnerType.IsCanonicalSubtype())
+        {
+            if (field->IsRVA() || !field->IsByValue())
+            {
+                result = true;
+            }
+            else
+            {
+                fieldOwner->EnsureStaticDataAllocated();
+                GCX_COOP();
+                void* pAddr = field->GetStaticAddressHandle((void*)field->GetBase());
+                Object* frozenObj = VolatileLoad((Object**)pAddr);
+                _ASSERT(frozenObj != nullptr);
+
+                // ContainsGCPointers here is unnecessary but it's cheaper than IsInFrozenSegment
+                // for structs containing gc handles.
+                if (!frozenObj->GetMethodTable()->ContainsGCPointers() &&
+                    GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(frozenObj))
+                {
+                    result = true;
+                }
+            }
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 int CEEInfo::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
 {
     CONTRACTL {

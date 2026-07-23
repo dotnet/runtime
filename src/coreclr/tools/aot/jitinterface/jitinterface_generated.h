@@ -141,6 +141,7 @@ struct JitInterfaceCallbacks
     void (* getFpStructLowering)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
     CorInfoWasmType (* getWasmLowering)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
     uint32_t (* getAddressAlignment)(void * thisHandle, CorInfoExceptionClass** ppException, void* address);
+    bool (* canOmitPinning)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd);
     void (* getWasmWellKnownGlobals)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut);
     uint32_t (* getThreadTLSIndex)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     int32_t* (* getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
@@ -1459,6 +1460,15 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     uint32_t temp = _callbacks->getAddressAlignment(_thisHandle, &pException, address);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual bool canOmitPinning(
+          CORINFO_FIELD_HANDLE fldHnd)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->canOmitPinning(_thisHandle, &pException, fldHnd);
     if (pException != nullptr) throw pException;
     return temp;
 }

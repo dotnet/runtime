@@ -305,6 +305,7 @@ FUNCTIONS
     void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
     CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd);
     uint32_t getAddressAlignment(void* address);
+    bool canOmitPinning(CORINFO_FIELD_HANDLE fldHnd);
     void getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut);
     uint32_t getThreadTLSIndex(void                  **ppIndirection);
     int32_t * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);

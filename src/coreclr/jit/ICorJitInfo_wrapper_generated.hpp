@@ -1279,6 +1279,15 @@ uint32_t WrapICorJitInfo::getAddressAlignment(
     return temp;
 }
 
+bool WrapICorJitInfo::canOmitPinning(
+          CORINFO_FIELD_HANDLE fldHnd)
+{
+    API_ENTER(canOmitPinning);
+    bool temp = wrapHnd->canOmitPinning(fldHnd);
+    API_LEAVE(canOmitPinning);
+    return temp;
+}
+
 void WrapICorJitInfo::getWasmWellKnownGlobals(
           CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
 {

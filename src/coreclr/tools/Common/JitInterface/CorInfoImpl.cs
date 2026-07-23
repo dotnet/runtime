@@ -3387,6 +3387,25 @@ namespace Internal.JitInterface
             return HandleToObject(fldHnd).IsStatic;
         }
 
+        private bool canOmitPinning(CORINFO_FIELD_STRUCT_* fldHnd)
+        {
+            FieldDesc field = HandleToObject(fldHnd);
+            if (!field.IsStatic || field.IsThreadStatic || field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                return false;
+            }
+
+#if READYTORUN
+            // RVA data and reference-type static slots are always stable. Keep value-type GC
+            // statics conservative because ReadyToRun can store them in movable boxes.
+            return field.HasRva || !field.FieldType.IsValueType || !field.HasGCStaticBase;
+#else
+            // NativeAOT allocates GC statics on the pinned object heap, so every non-thread
+            // static field address is stable.
+            return true;
+#endif
+        }
+
         private void getBoundaries(CORINFO_METHOD_STRUCT_* ftn, ref uint cILOffsets, ref uint* pILOffsets, BoundaryTypes* implicitBoundaries)
         {
             // TODO: Debugging
