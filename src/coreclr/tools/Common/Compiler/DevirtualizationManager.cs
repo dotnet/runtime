@@ -72,11 +72,11 @@ namespace ILCompiler
             }
 
             // Is target interface IList<T> or one of its ancestors, or IReadOnlyList<T>?
-            if (interfaceType.HasSameTypeDefinition(interfaceType.Context.GetWellKnownType(WellKnownType.IEnumerableGeneric)) ||
-                interfaceType.HasSameTypeDefinition(interfaceType.Context.GetWellKnownType(WellKnownType.IListGeneric)) ||
-                interfaceType.HasSameTypeDefinition(interfaceType.Context.GetWellKnownType(WellKnownType.IReadOnlyListGeneric)) ||
-                interfaceType.HasSameTypeDefinition(interfaceType.Context.GetWellKnownType(WellKnownType.ICollectionGeneric)) ||
-                interfaceType.HasSameTypeDefinition(interfaceType.Context.GetWellKnownType(WellKnownType.IReadOnlyCollectionGeneric)))
+            if ((interfaceType.Context.GetWellKnownType(WellKnownType.IEnumerableGeneric, throwIfNotFound: false) is { } enumerableInterface && interfaceType.HasSameTypeDefinition(enumerableInterface)) ||
+                (interfaceType.Context.GetWellKnownType(WellKnownType.IListGeneric, throwIfNotFound: false) is { } listInterface && interfaceType.HasSameTypeDefinition(listInterface)) ||
+                (interfaceType.Context.GetWellKnownType(WellKnownType.IReadOnlyListGeneric, throwIfNotFound: false) is { } readOnlyListInterface && interfaceType.HasSameTypeDefinition(readOnlyListInterface)) ||
+                (interfaceType.Context.GetWellKnownType(WellKnownType.ICollectionGeneric, throwIfNotFound: false) is { } collectionInterface && interfaceType.HasSameTypeDefinition(collectionInterface)) ||
+                (interfaceType.Context.GetWellKnownType(WellKnownType.IReadOnlyCollectionGeneric, throwIfNotFound: false) is { } readOnlyCollectionInterface && interfaceType.HasSameTypeDefinition(readOnlyCollectionInterface)))
             {
                 return true;
             }
