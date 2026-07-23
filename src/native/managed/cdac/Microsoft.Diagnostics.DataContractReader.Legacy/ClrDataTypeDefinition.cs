@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -25,6 +26,22 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
         _module = module;
         _token = token;
         _legacyImpl = legacyImpl;
+    }
+
+    private MetadataReader GetMetadataReader()
+    {
+        ILoader loader = _target.Contracts.Loader;
+        Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(_module);
+        return _target.Contracts.EcmaMetadata.GetMetadata(module)
+            ?? throw new InvalidOperationException("Failed to get metadata reader");
+    }
+
+    private IEnumerable<uint> EnumerateMethodDefinitionTokens()
+    {
+        MetadataReader reader = GetMetadataReader();
+        TypeDefinitionHandle handle = MetadataTokens.TypeDefinitionHandle((int)(_token & 0x00ffffff));
+        foreach (MethodDefinitionHandle methodHandle in reader.GetTypeDefinition(handle).GetMethods())
+            yield return (uint)MetadataTokens.GetToken(methodHandle);
     }
 
     int IXCLRDataTypeDefinition.GetModule(DacComNullableByRef<IXCLRDataModule> mod)
@@ -63,10 +80,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
             if (flags != 0)
                 throw new ArgumentException();
 
-            ILoader loader = _target.Contracts.Loader;
-            Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(_module);
-            MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(module)
-                ?? throw new InvalidOperationException("Failed to get metadata reader");
+            MetadataReader reader = GetMetadataReader();
             TypeDefinitionHandle handle = MetadataTokens.TypeDefinitionHandle((int)(_token & 0x00ffffff));
             string result = GetTypeName(reader, handle);
             OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, result);
@@ -130,9 +144,123 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
         return hr;
     }
 
-    int IXCLRDataTypeDefinition.StartEnumMethodDefinitions(ulong* handle) => _legacyImpl?.StartEnumMethodDefinitions(handle) ?? HResults.E_NOTIMPL;
-    int IXCLRDataTypeDefinition.EnumMethodDefinition(ulong* handle, DacComNullableByRef<IXCLRDataMethodDefinition> methodDefinition) => _legacyImpl?.EnumMethodDefinition(handle, methodDefinition) ?? HResults.E_NOTIMPL;
-    int IXCLRDataTypeDefinition.EndEnumMethodDefinitions(ulong handle) => _legacyImpl?.EndEnumMethodDefinitions(handle) ?? HResults.E_NOTIMPL;
+    int IXCLRDataTypeDefinition.StartEnumMethodDefinitions(ulong* handle)
+    {
+        int hr = HResults.S_OK;
+        ulong legacyHandle = 0;
+        int hrLocal = HResults.S_OK;
+
+        if (_legacyImpl is not null)
+            hrLocal = _legacyImpl.StartEnumMethodDefinitions(&legacyHandle);
+
+        try
+        {
+            if (handle is null)
+                throw new NullReferenceException();
+
+            *handle = (ulong)((IEnum<uint>)new ClrDataModule.ModuleEnumeration<uint>(EnumerateMethodDefinitionTokens(), (nuint)legacyHandle)).GetHandle();
+            legacyHandle = 0;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+        finally
+        {
+            if (_legacyImpl is not null && legacyHandle != 0)
+                _legacyImpl.EndEnumMethodDefinitions(legacyHandle);
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+            Debug.ValidateHResult(hr, hrLocal);
+#endif
+        return hr;
+    }
+
+    int IXCLRDataTypeDefinition.EnumMethodDefinition(ulong* handle, DacComNullableByRef<IXCLRDataMethodDefinition> methodDefinition)
+    {
+        int hr = HResults.S_OK;
+        ClrDataModule.ModuleEnumeration<uint> enumeration;
+
+        try
+        {
+            if (handle is null || methodDefinition.IsNullRef)
+                throw new NullReferenceException();
+            if (*handle == 0)
+                return HResults.S_FALSE;
+
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+            if (gcHandle.Target is not ClrDataModule.ModuleEnumeration<uint> currentEnumeration)
+                throw new ArgumentException();
+
+            enumeration = currentEnumeration;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        IXCLRDataMethodDefinition? legacyMethod = null;
+        int hrLocal = HResults.S_OK;
+        if (_legacyImpl is not null)
+        {
+            ulong legacyHandle = enumeration.LegacyHandle;
+            DacComNullableByRef<IXCLRDataMethodDefinition> legacyOut = new(isNullRef: false);
+            hrLocal = _legacyImpl.EnumMethodDefinition(&legacyHandle, legacyOut);
+            legacyMethod = legacyOut.Interface;
+            enumeration.LegacyHandle = (nuint)legacyHandle;
+        }
+
+        try
+        {
+            if (enumeration.Enumerator.MoveNext())
+                methodDefinition.Interface = new ClrDataMethodDefinition(_target, _module, enumeration.Enumerator.Current, legacyMethod);
+            else
+                hr = HResults.S_FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+            Debug.ValidateHResult(hr, hrLocal);
+#endif
+        return hr;
+    }
+
+    int IXCLRDataTypeDefinition.EndEnumMethodDefinitions(ulong handle)
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (handle == 0)
+                throw new ArgumentException();
+
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)handle);
+            if (gcHandle.Target is not ClrDataModule.ModuleEnumeration<uint> enumeration)
+                throw new ArgumentException();
+
+            ((IEnum<uint>)enumeration).Dispose();
+            gcHandle.Free();
+
+            if (_legacyImpl is not null && enumeration.LegacyHandle != 0)
+            {
+                int hrLocal = _legacyImpl.EndEnumMethodDefinitions((ulong)enumeration.LegacyHandle);
+                if (hrLocal < 0)
+                    hr = hrLocal;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
     int IXCLRDataTypeDefinition.StartEnumMethodDefinitionsByName(char* name, uint flags, ulong* handle) => _legacyImpl?.StartEnumMethodDefinitionsByName(name, flags, handle) ?? HResults.E_NOTIMPL;
     int IXCLRDataTypeDefinition.EnumMethodDefinitionByName(ulong* handle, DacComNullableByRef<IXCLRDataMethodDefinition> method) => _legacyImpl?.EnumMethodDefinitionByName(handle, method) ?? HResults.E_NOTIMPL;
     int IXCLRDataTypeDefinition.EndEnumMethodDefinitionsByName(ulong handle) => _legacyImpl?.EndEnumMethodDefinitionsByName(handle) ?? HResults.E_NOTIMPL;
@@ -140,7 +268,39 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
     int IXCLRDataTypeDefinition.StartEnumInstances(IXCLRDataAppDomain? appDomain, ulong* handle) => _legacyImpl?.StartEnumInstances(appDomain, handle) ?? HResults.E_NOTIMPL;
     int IXCLRDataTypeDefinition.EnumInstance(ulong* handle, DacComNullableByRef<IXCLRDataTypeInstance> instance) => _legacyImpl?.EnumInstance(handle, instance) ?? HResults.E_NOTIMPL;
     int IXCLRDataTypeDefinition.EndEnumInstances(ulong handle) => _legacyImpl?.EndEnumInstances(handle) ?? HResults.E_NOTIMPL;
-    int IXCLRDataTypeDefinition.GetCorElementType(uint* type) => _legacyImpl?.GetCorElementType(type) ?? HResults.E_NOTIMPL;
+    int IXCLRDataTypeDefinition.GetCorElementType(uint* type)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (type is null)
+                throw new NullReferenceException();
+
+            ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(_module);
+            TargetPointer methodTable = loader.GetModuleLookupMapElement(loader.GetLookupTables(module).TypeDefToMethodTable, _token, out _);
+            if (methodTable == TargetPointer.Null)
+                return HResults.E_NOTIMPL;
+
+            *type = (uint)_target.Contracts.RuntimeTypeSystem.GetInternalCorElementType(_target.Contracts.RuntimeTypeSystem.GetTypeHandle(methodTable));
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint typeLocal = 0;
+            int hrLocal = _legacyImpl.GetCorElementType(&typeLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr >= 0 && type is not null)
+                Debug.Assert(*type == typeLocal, $"cDAC: {*type}, DAC: {typeLocal}");
+        }
+#endif
+        return hr;
+    }
     int IXCLRDataTypeDefinition.GetFlags(uint* flags) => _legacyImpl?.GetFlags(flags) ?? HResults.E_NOTIMPL;
     int IXCLRDataTypeDefinition.IsSameObject(IXCLRDataTypeDefinition? type)
         => type is ClrDataTypeDefinition other && other._module == _module && other._token == _token
