@@ -221,10 +221,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         public static void AiaCompletionHasLimits()
         {
             const int IntermediateCount = 8;
+            int iteration = 0;
 
             RetryHelper.Execute(
                 () =>
                 {
+                    iteration++;
+
                     CertificateAuthority.BuildPrivatePki(
                         PkiOptions.AllRevocation,
                         out RevocationResponder responder,
@@ -233,7 +236,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                         out X509Certificate2 endEntity,
                         intermediateAuthorityCount: IntermediateCount,
                         pkiOptionsInSubject: false,
-                        testName: nameof(AiaCompletionHasLimits));
+                        testName: $"{nameof(AiaCompletionHasLimits)}_{iteration}");
 
                     using (responder)
                     using (root)
