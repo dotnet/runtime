@@ -39,7 +39,43 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         *bytesNeeded = 0;
         *entries = 0;
 
-        return HResults.E_NOTIMPL;
+        try
+        {
+            IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+            IReadOnlyList<TargetPointer> functionEntries =
+                executionManager.GetDynamicFunctionTableEntries(tableAddress.ToTargetPointer(_target));
+
+            uint runtimeFunctionSize = _target.GetTypeInfo(DataType.RuntimeFunction).Size!.Value;
+            uint count = (uint)functionEntries.Count;
+            ulong totalBytes = (ulong)count * runtimeFunctionSize;
+            if (totalBytes > uint.MaxValue)
+                return HResults.E_FAIL;
+
+            *entries = count;
+            *bytesNeeded = (uint)totalBytes;
+
+            // An empty or unmatched table reports zero entries and succeeds.
+            if (count == 0)
+                return HResults.S_OK;
+
+            // A size query (null buffer) or a buffer that is too small writes nothing and reports
+            // the required sizes so the caller can retry with adequate storage.
+            if (buffer is null || bufferSize < totalBytes)
+                return HResults.S_FALSE;
+
+            Span<byte> destination = new(buffer, checked((int)totalBytes));
+            int entrySize = checked((int)runtimeFunctionSize);
+            for (int i = 0; i < functionEntries.Count; i++)
+            {
+                _target.ReadBuffer(functionEntries[i].Value, destination.Slice(i * entrySize, entrySize));
+            }
+
+            return HResults.S_OK;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
     }
 
     int IXCLRDataProcess.Flush()
