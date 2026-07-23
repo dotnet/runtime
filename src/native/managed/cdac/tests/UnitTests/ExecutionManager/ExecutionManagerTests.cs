@@ -45,9 +45,18 @@ public class ExecutionManagerTests
 
     internal static Target CreateTarget(
         MockExecutionManagerBuilder emBuilder,
+        RuntimeInfoOperatingSystem operatingSystem = RuntimeInfoOperatingSystem.Windows,
+        RuntimeInfoArchitecture? targetArchitecture = null,
         params (string Name, ulong Value)[] additionalGlobals)
     {
         var arch = emBuilder.Builder.TargetTestHelpers.Arch;
+        RuntimeInfoArchitecture architecture = targetArchitecture ?? (arch.Is64Bit
+            ? RuntimeInfoArchitecture.X64
+            : RuntimeInfoArchitecture.Arm);
+        Mock<IRuntimeInfo> runtimeInfo = new();
+        runtimeInfo.Setup(r => r.GetTargetOperatingSystem()).Returns(operatingSystem);
+        runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(architecture);
+
         return new TestPlaceholderTarget.Builder(arch)
             .UseReader(emBuilder.Builder.GetMemoryContext().ReadFromTarget)
             .AddTypes(CreateContractTypes(emBuilder))
@@ -55,6 +64,7 @@ public class ExecutionManagerTests
             .AddGlobals(additionalGlobals)
             .AddContract<IExecutionManager>(version: emBuilder.Version)
             .AddMockContract<IPlatformMetadata>(Mock.Of<IPlatformMetadata>())
+            .AddMockContract(runtimeInfo)
             .Build();
     }
 
@@ -1141,5 +1151,22 @@ public class ExecutionManagerTests
 
         IReadOnlyList<TargetPointer> entries = em.GetDynamicFunctionTableEntries(new TargetPointer(table.Address));
         Assert.Equal([new TargetPointer(m0.UnwindInfosAddress)], entries);
+    }
+
+    [Theory]
+    [InlineData(RuntimeInfoOperatingSystem.Unix, RuntimeInfoArchitecture.X64)]
+    [InlineData(RuntimeInfoOperatingSystem.Windows, RuntimeInfoArchitecture.X86)]
+    public void GetDynamicFunctionTableEntries_UnsupportedPlatform_ReturnsEmpty(
+        RuntimeInfoOperatingSystem operatingSystem,
+        RuntimeInfoArchitecture architecture)
+    {
+        MockTarget.Architecture targetArchitecture = new() { IsLittleEndian = true, Is64Bit = true };
+        MockExecutionManagerBuilder emBuilder = new("c1", targetArchitecture, MockExecutionManagerBuilder.DefaultAllocationRange);
+        Target target = CreateTarget(emBuilder, operatingSystem, architecture);
+
+        IReadOnlyList<TargetPointer> entries =
+            target.Contracts.ExecutionManager.GetDynamicFunctionTableEntries(new TargetPointer(0xdead_beef));
+
+        Assert.Empty(entries);
     }
 }

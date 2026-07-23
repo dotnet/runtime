@@ -498,6 +498,13 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     IReadOnlyList<TargetPointer> IExecutionManager.GetDynamicFunctionTableEntries(TargetPointer tableAddress)
     {
+        IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
+        if (runtimeInfo.GetTargetOperatingSystem() != RuntimeInfoOperatingSystem.Windows ||
+            runtimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86)
+        {
+            return [];
+        }
+
         // Port of the DAC's OutOfProcessFunctionTableCallbackEx (see vm/../debug/daccess/fntableaccess.cpp).
         // The dynamic-function-table header identifies both the owning JIT manager (via its Context) and
         // the module base (via MinimumAddress) of the code heap whose function table is requested.

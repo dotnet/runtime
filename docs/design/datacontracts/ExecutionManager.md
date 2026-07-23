@@ -621,8 +621,7 @@ out-of-process unwinders.
 the owning `EEJitManager`, and its `MinimumAddress` identifies the associated code heap.
 The result contains the entries for that heap, ordered by descending method start address
 and then by ascending entry address within a method. If the table does not identify a
-known code heap, or if the target does not support Windows dynamic function tables, the
-result is empty.
+known code heap, or if the target is not Windows non-x86, the result is empty.
 
 ### RangeSectionMap
 
