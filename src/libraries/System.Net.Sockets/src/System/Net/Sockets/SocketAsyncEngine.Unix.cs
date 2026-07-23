@@ -253,7 +253,7 @@ namespace System.Net.Sockets
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            public void HandleSocketEvents(int numEvents)
+            public readonly void HandleSocketEvents(int numEvents)
             {
                 SocketIOEvent[] asyncEvents = _asyncEvents;
                 int count = 0;
