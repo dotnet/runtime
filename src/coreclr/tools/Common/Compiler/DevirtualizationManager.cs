@@ -62,7 +62,7 @@ namespace ILCompiler
             return ResolveVirtualMethod(declMethod, implType.GetClosestDefType(), out devirtualizationDetail);
         }
 
-        private bool IsImplicitInterfaceOfSZArray(TypeDesc interfaceType)
+        private static bool IsImplicitInterfaceOfSZArray(TypeDesc interfaceType)
         {
             Debug.Assert(interfaceType.IsInterface);
 
@@ -84,7 +84,7 @@ namespace ILCompiler
             return false;
         }
 
-        private MethodDesc GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(MethodDesc declMethod, TypeDesc typeParam)
+        private static MethodDesc GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(MethodDesc declMethod, TypeDesc typeParam)
         {
             MethodDesc genericImplementor = declMethod.Context.GetWellKnownType(WellKnownType.SZArrayHelper).GetMethod(declMethod.Name, null);
             Debug.Assert(genericImplementor != null);
