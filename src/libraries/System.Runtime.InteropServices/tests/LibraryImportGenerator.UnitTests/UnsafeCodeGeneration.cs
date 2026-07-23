@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 using Microsoft.Interop.UnitTests;
 using Xunit;
 
@@ -19,6 +20,15 @@ namespace LibraryImportGenerator.UnitTests
 {
     public class UnsafeCodeGeneration
     {
+        private const string MissingSafetyModifierSource = """
+            using System.Runtime.InteropServices;
+            partial class C
+            {
+                [LibraryImport("DoesNotExist")]
+                public static partial void {|#0:Method|}();
+            }
+            """;
+
         // The generator must not add an `unsafe` modifier to the containing type; instead any stub that
         // needs an unsafe context opens an explicit `unsafe` block in its body. This keeps the generated
         // output valid regardless of whether an `unsafe` modifier on a type establishes a body context.
@@ -102,15 +112,23 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Theory]
-        [InlineData(false, false, "safe")]
-        [InlineData(false, false, "unsafe")]
-        [InlineData(false, true, "safe")]
-        [InlineData(false, true, "unsafe")]
-        [InlineData(true, false, "safe")]
-        [InlineData(true, false, "unsafe")]
-        [InlineData(true, true, "safe")]
-        [InlineData(true, true, "unsafe")]
-        public Task UserDeclaredSafetyModifierIsAppliedToGeneratedSignatures(bool downlevel, bool wrapper, string safetyModifier)
+        [InlineData(false, "safe")]
+        [InlineData(false, "unsafe")]
+        [InlineData(true, "safe")]
+        [InlineData(true, "unsafe")]
+        public Task UserDeclaredSafetyModifierIsAppliedToGeneratedSignatures(bool wrapper, string safetyModifier)
+            => VerifySafetyModifierGenerationAsync(downlevel: false, wrapper, safetyModifier);
+
+        [Theory]
+        [OuterLoop("Uses the network for downlevel ref packs")]
+        [InlineData(false, "safe")]
+        [InlineData(false, "unsafe")]
+        [InlineData(true, "safe")]
+        [InlineData(true, "unsafe")]
+        public Task DownlevelUserDeclaredSafetyModifierIsAppliedToGeneratedSignatures(bool wrapper, string safetyModifier)
+            => VerifySafetyModifierGenerationAsync(downlevel: true, wrapper, safetyModifier);
+
+        private static Task VerifySafetyModifierGenerationAsync(bool downlevel, bool wrapper, string safetyModifier)
         {
             string returnType = wrapper ? "byte" : "void";
             string parameters = wrapper ? "byte p, in byte pIn, ref byte pRef, out byte pOut" : "";
@@ -143,22 +161,14 @@ namespace LibraryImportGenerator.UnitTests
             });
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public Task UpdatedMemorySafetyRulesRequireExplicitSafetyModifier(bool downlevel)
-        {
-            string source = """
-                using System.Runtime.InteropServices;
-                partial class C
-                {
-                    [LibraryImport("DoesNotExist")]
-                    public static partial void {|#0:Method|}();
-                }
-                """;
+        [Fact]
+        public Task UpdatedMemorySafetyRulesRequireExplicitSafetyModifier()
+            => RunMissingSafetyModifierTestAsync(downlevel: false, MissingSafetyModifierSource);
 
-            return RunMissingSafetyModifierTestAsync(downlevel, source);
-        }
+        [Fact]
+        [OuterLoop("Uses the network for downlevel ref packs")]
+        public Task DownlevelUpdatedMemorySafetyRulesRequireExplicitSafetyModifier()
+            => RunMissingSafetyModifierTestAsync(downlevel: true, MissingSafetyModifierSource);
 
         private static Task RunSafetyModifierTestAsync(bool downlevel, string source, Action<Compilation> verifyCompilation)
         {
