@@ -225,7 +225,7 @@ public sealed class DocsAreUpToDateTests
             overridesPath,
             """
             {
-              "_supplement": { "Widget@c2": ["Widget.Added"] },
+              "_supplement": { "Widget@c2": { "Widget.Added": "int32" } },
               "_suppress": {
                 "Widget": ["Widget.Common"],
                 "Widget@c1": ["Widget.VersionSpecific"]
@@ -256,8 +256,47 @@ public sealed class DocsAreUpToDateTests
         string generated = File.ReadAllText(docPath);
         Assert.DoesNotContain("| `Widget` | `Common` |", generated);
         Assert.Contains("| `Widget` | `VersionSpecific` |", generated);
-        Assert.Contains("| `Widget` | `Added` |", generated);
+        Assert.Contains("| `Widget` | `Added` | `int32` |", generated);
         Assert.Equal(1, generated.Split("| `Widget` | `VersionSpecific` |").Length - 1);
+    }
+
+    [Fact]
+    public void UsesSourceVersionTypesForSupplementedDescriptorDiffs()
+    {
+        using TempDirectory temp = new();
+        string docPath = Path.Combine(temp.Path, "Widget.md");
+        string overridesPath = Path.Combine(temp.Path, "overrides.json");
+        File.WriteAllText(docPath,
+            "<!-- BEGIN GENERATED: usage contract=Widget version=c1 -->\n" +
+            "<!-- END GENERATED: usage contract=Widget version=c1 -->\n" +
+            "<!-- BEGIN GENERATED: usage contract=Widget version=c2 diff-from=c1 -->\n" +
+            "<!-- END GENERATED: usage contract=Widget version=c2 diff-from=c1 -->");
+        File.WriteAllText(
+            overridesPath,
+            """
+            {
+              "_supplement": {
+                "Widget@c1": { "Widget.Removed": "pointer" },
+                "Widget@c2": { "Widget.Added": "int32" }
+              }
+            }
+            """);
+        UsageGraph graph = new(
+            "",
+            0,
+            [
+                new ContractVersionUsage(new ContractVersion(new ContractInterface("IWidget"), "c1"), [], [], []),
+                new ContractVersionUsage(new ContractVersion(new ContractInterface("IWidget"), "c2"), [], [], []),
+            ]);
+
+        new DocGenerator(
+            graph,
+            DocDescriptorMeanings.Empty,
+            DocDescriptorOverrides.Load(overridesPath)).Emit(temp.Path);
+
+        string generated = File.ReadAllText(docPath);
+        Assert.Contains("| Added | `Widget` | `Added` | `int32` |", generated);
+        Assert.Contains("| Removed | `Widget` | `Removed` | `pointer` |", generated);
     }
 
     [Fact]

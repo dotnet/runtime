@@ -15,7 +15,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/TestInfrastructure/Microsoft.Diagnostics.DataContractReader.TestInfrastructure.csproj" />
     <Project Path="tests/UnitTests/Microsoft.Diagnostics.DataContractReader.Tests.csproj" />
-    <Project Path="tests/UsageTests/Microsoft.Diagnostics.DataContractReader.UsageTests.csproj" />
+    <Project Path="tests/UsageTests/Microsoft.Diagnostics.DataContractReader.Usage.Tests.csproj" />
     <Project Path="tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj" />
     <Project Path="tests/DataGenerator/Microsoft.Diagnostics.DataContractReader.DataGenerator.Tests.csproj" />
   </Folder>

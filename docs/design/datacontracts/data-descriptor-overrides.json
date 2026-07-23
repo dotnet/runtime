@@ -1,4 +1,11 @@
 {
+  "_supplement": {
+    "SHash": {
+      "type.<type size>": "uint32",
+      "type.Table": "pointer",
+      "type.TableSize": "uint32"
+    }
+  },
   "_suppress": {
     "PrecodeStubs@c1": [
       "PrecodeMachineDescriptor.DynamicHelperPrecodeType",

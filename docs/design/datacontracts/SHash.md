@@ -36,7 +36,11 @@ In order to properly populate an SHash, we need to know the size of each element
 <!-- BEGIN GENERATED: usage contract=SHash version=c1 -->
 ### Data descriptors used
 
-_None._
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `type` | *(type size)* | `uint32` | Size in bytes of each SHash table entry |
+| `type` | `Table` | `pointer` | Address of the SHash table |
+| `type` | `TableSize` | `uint32` | Number of entries in the table |
 
 ### Global variables used
 

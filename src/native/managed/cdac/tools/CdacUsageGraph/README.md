@@ -159,8 +159,9 @@ Descriptor rows are sorted by descriptor name and then field name; the sidecar s
 human-authored meanings while names and native types come from the analysis.
 `data-descriptor-meanings.json` stores one canonical `_fields` map keyed by `Type.Field` and one
 canonical `_globals` map keyed by global name. `data-descriptor-overrides.json` stores
-`_supplement` and `_suppress` lists keyed by a contract name or by `Contract@version`; version
-entries are combined with any contract-wide entries.
+`_supplement` and `_suppress` entries keyed by a contract name or by `Contract@version`; version
+entries are combined with any contract-wide entries. Supplements may use a key-to-native-type map
+when the descriptor is not statically known to the usage graph.
 
 The documentation generation logic lives in `Docs/DocGenerator.cs` so the CI unit test and the
 regen use one implementation. `MSBuildWorkspace` evaluates the real Contracts project, including

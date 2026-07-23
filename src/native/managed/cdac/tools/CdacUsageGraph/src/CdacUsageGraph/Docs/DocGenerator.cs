@@ -141,7 +141,7 @@ public sealed partial class DocGenerator
             (string type, string field) = SplitDescriptorKey(key);
             rows.Add(
                 $"| {FormatCode(type)} | {FormatDescriptorField(field)} | " +
-                $"{FormatCode(GetFieldType(type, field))} | {DescriptorMeaning(type, key, field)} |");
+                $"{FormatCode(GetFieldType(type, field, contractShort, version))} | {DescriptorMeaning(type, key, field)} |");
         }
         return rows;
     }
@@ -198,10 +198,10 @@ public sealed partial class DocGenerator
             StringComparer.Ordinal);
         HashSet<string> baseline = GetDescriptorKeys(contractShort, diffFrom).ToHashSet(
             StringComparer.Ordinal);
-        List<(string Change, string Key)> changes = baseline
+        List<(string Change, string Key, string SourceVersion)> changes = baseline
             .Except(current)
-            .Select(key => (Change: "Removed", Key: key))
-            .Concat(current.Except(baseline).Select(key => (Change: "Added", Key: key)))
+            .Select(key => (Change: "Removed", Key: key, SourceVersion: diffFrom))
+            .Concat(current.Except(baseline).Select(key => (Change: "Added", Key: key, SourceVersion: version)))
             .OrderBy(entry => entry.Key.Substring(0, entry.Key.LastIndexOf('.')),
                 StringComparer.OrdinalIgnoreCase)
             .ThenBy(entry => entry.Key.Substring(entry.Key.LastIndexOf('.') + 1),
@@ -216,12 +216,12 @@ public sealed partial class DocGenerator
             "| Change | Data Descriptor | Field | Type | Meaning |",
             "| --- | --- | --- | --- | --- |",
         ];
-        foreach ((string change, string key) in changes)
+        foreach ((string change, string key, string sourceVersion) in changes)
         {
             (string type, string field) = SplitDescriptorKey(key);
             rows.Add(
                 $"| {change} | {FormatCode(type)} | {FormatDescriptorField(field)} | " +
-                $"{FormatCode(GetFieldType(type, field))} | {DescriptorMeaning(type, key, field)} |");
+                $"{FormatCode(GetFieldType(type, field, contractShort, sourceVersion))} | {DescriptorMeaning(type, key, field)} |");
         }
         return rows;
     }
@@ -383,7 +383,7 @@ public sealed partial class DocGenerator
         }
     }
 
-    private string GetFieldType(string type, string field)
+    private string GetFieldType(string type, string field, string contractShort, string version)
     {
         if (field == TypeSizeField)
             return "uint32";
@@ -394,6 +394,7 @@ public sealed partial class DocGenerator
             .Where(dataType => dataType.Name == dataTypeName)
             .SelectMany(dataType => dataType.Fields)
             .FirstOrDefault(candidate => candidate.Name == field)?.Type
+            ?? _overrides.SupplementNativeType(contractShort, version, $"{type}.{field}")
             ?? "unknown";
     }
 

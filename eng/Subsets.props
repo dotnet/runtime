@@ -535,7 +535,7 @@
     <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\UnitTests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
     <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\DataGenerator\Microsoft.Diagnostics.DataContractReader.DataGenerator.Tests.csproj" Test="true" Category="tools"/>
     <!-- Uses CdacUsageGraph, which depends on Roslyn and System.CommandLine packages unavailable in source-only builds. -->
-    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\UsageTests\Microsoft.Diagnostics.DataContractReader.UsageTests.csproj" Test="true" Category="tools" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\UsageTests\Microsoft.Diagnostics.DataContractReader.Usage.Tests.csproj" Test="true" Category="tools" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdacdumptests+'))">
