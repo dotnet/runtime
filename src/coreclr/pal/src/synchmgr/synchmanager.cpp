@@ -26,7 +26,9 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC); // some headers have code with asserts, so do t
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/stat.h>
+#if !defined(TARGET_WASI)
 #include <sys/wait.h>
+#endif
 #include <unistd.h>
 #include <fcntl.h>
 #include <limits.h>

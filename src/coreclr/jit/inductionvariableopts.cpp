@@ -433,8 +433,8 @@ void PerLoopInfo::Invalidate(FlowGraphNaturalLoop* loop)
 //   sense that all their predecessors must come from inside the loop. Loop
 //   exit canonicalization guarantees this for regular exit blocks. It is not
 //   guaranteed for exceptional exits, but we do not expect to widen IVs that
-//   are live into exceptional exits since those are marked DNER which makes it
-//   unprofitable anyway.
+//   are live into exceptional exits since those are not register candidates
+//   (see optWidenPrimaryIV) which makes it unprofitable anyway.
 //
 //   Note that there may be natural loops that have not had their regular exits
 //   canonicalized at the time when IV opts run, in particular if RBO/assertion
@@ -751,7 +751,7 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned ne
     {
         gtSetStmtInfo(stmt);
         fgSetStmtSeq(stmt);
-        JITDUMP("New tree:\n", dspTreeID(stmt->GetRootNode()));
+        JITDUMP("New tree:\n");
         DISPTREE(stmt->GetRootNode());
         JITDUMP("\n");
     }
@@ -921,7 +921,11 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, Sc
 
     BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
     BasicBlock* initBlock = preheader;
-    if ((startSsaDsc->GetBlock() != nullptr) && (startSsaDsc->GetDefNode() != nullptr))
+    // Prefer to initialize the widened IV in the same block as the reaching def
+    // of the narrow IV, but only if the reaching def is not a phi. RBO's jump threading
+    // can leave stale SSA with the once-containing block being unreachable.
+    if ((startSsaDsc->GetBlock() != nullptr) && (startSsaDsc->GetDefNode() != nullptr) &&
+        !startSsaDsc->GetDefNode()->IsPhiDefn())
     {
         initBlock = startSsaDsc->GetBlock();
     }
@@ -1328,15 +1332,18 @@ bool Compiler::optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loo
         return true;
     }
 
-    if (varDsc->lvDoNotEnregister)
-    {
-        // This filters out locals that may be live into exceptional exits.
-        return true;
-    }
-
     if (!varDsc->lvTracked && !varDsc->lvInSsa)
     {
         // We do not have liveness we can use for this untracked local.
+        return true;
+    }
+
+    if (varDsc->lvTracked && varDsc->IsLiveInOutOfHandler())
+    {
+        // The local is live into an EH handler (an exceptional exit). The
+        // regular exit blocks visited below do not include handlers, and we
+        // use this as a cheap alternative to checking all EH successors
+        // of all blocks in the loop.
         return true;
     }
 
@@ -1357,6 +1364,25 @@ bool Compiler::optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loo
         // (and whether it doesn't extend their lifetimes too much).
         return true;
     }
+
+#ifdef DEBUG
+    // We currently do not expect to optimize locals that are live into exceptional
+    // exits. Such IVs are not currently register candidates (EH write-thru is
+    // only for single def locals) which makes it unprofitable. If this ever
+    // changes we need some more expansive handling here.
+    loop->VisitLoopBlocks([=](BasicBlock* block) {
+        block->VisitAllSuccs(this, [=](BasicBlock* succ) {
+            if (!loop->ContainsBlock(succ) && bbIsHandlerBeg(succ))
+            {
+                assert(!optLocalIsLiveIntoBlock(lclNum, succ) && "Candidate local is live into exceptional exit");
+            }
+
+            return BasicBlockVisit::Continue;
+        });
+
+        return BasicBlockVisit::Continue;
+    });
+#endif
 
     return false;
 }
@@ -2758,7 +2784,7 @@ bool Compiler::optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, PerLoopInfo* loopI
             continue;
         }
 
-        JITDUMP(" has no essential uses and will be removed\n", lclNum);
+        JITDUMP(" has no essential uses and will be removed\n");
         auto remove = [=](BasicBlock* block, Statement* stmt) {
             JITDUMP("  Removing " FMT_STMT "\n", stmt->GetID());
             fgRemoveStmt(block, stmt);

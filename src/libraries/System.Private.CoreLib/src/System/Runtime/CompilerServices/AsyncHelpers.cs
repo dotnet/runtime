@@ -47,7 +47,20 @@ namespace System.Runtime.CompilerServices
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
-            state.StackState->CriticalNotifier = awaiter;
+
+            // We optimize specially for "await Task.Yield()" -- in the same
+            // way that YieldAwaiter implements IStateMachineBoxAwareAwaiter
+            // for async1. This avoids allocating internal thread pool objects
+            // for this case.
+            if (typeof(TAwaiter) == typeof(YieldAwaitable.YieldAwaiter))
+            {
+                state.StackState->CriticalNotifier = RuntimeAsyncYielder.Instance;
+            }
+            else
+            {
+                state.StackState->CriticalNotifier = awaiter;
+            }
+
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }
@@ -65,7 +78,7 @@ namespace System.Runtime.CompilerServices
             if (!task.IsCompleted)
             {
                 TailAwait();
-                return AwaitTask(task, ConfigureAwaitOptions.ContinueOnCapturedContext);
+                return Suspend(task, ConfigureAwaitOptions.ContinueOnCapturedContext);
             }
 
             TaskAwaiter.ValidateEnd(task);
@@ -84,7 +97,7 @@ namespace System.Runtime.CompilerServices
             if (!task.IsCompleted)
             {
                 TailAwait();
-                AwaitTask(task, ConfigureAwaitOptions.ContinueOnCapturedContext);
+                Suspend(task, ConfigureAwaitOptions.ContinueOnCapturedContext);
                 return;
             }
 
@@ -116,7 +129,7 @@ namespace System.Runtime.CompilerServices
                 }
 
                 TailAwait();
-                return AwaitTask(t, ConfigureAwaitOptions.ContinueOnCapturedContext);
+                return Suspend(t, ConfigureAwaitOptions.ContinueOnCapturedContext);
             }
 
             Debug.Assert(obj is IValueTaskSource<T>);
@@ -124,7 +137,7 @@ namespace System.Runtime.CompilerServices
             if (vts.GetStatus(task._token) == ValueTaskSourceStatus.Pending)
             {
                 TailAwait();
-                return AwaitValueTaskSource(vts, task._token, true);
+                return Suspend(vts, task._token, true);
             }
 
             return vts.GetResult(task._token);
@@ -154,7 +167,7 @@ namespace System.Runtime.CompilerServices
                 }
 
                 TailAwait();
-                AwaitTask(t, ConfigureAwaitOptions.ContinueOnCapturedContext);
+                Suspend(t, ConfigureAwaitOptions.ContinueOnCapturedContext);
                 return;
             }
 
@@ -163,7 +176,7 @@ namespace System.Runtime.CompilerServices
             if (vts.GetStatus(task._token) == ValueTaskSourceStatus.Pending)
             {
                 TailAwait();
-                AwaitValueTaskSource(vts, task._token, true);
+                Suspend(vts, task._token, true);
                 return;
             }
 
@@ -190,7 +203,7 @@ namespace System.Runtime.CompilerServices
             if (!awaiter.IsCompleted)
             {
                 TailAwait();
-                AwaitTask(awaiter.m_task, awaiter.m_options);
+                Suspend(awaiter.m_task, awaiter.m_options);
                 return;
             }
 
@@ -235,7 +248,7 @@ namespace System.Runtime.CompilerServices
                 }
 
                 TailAwait();
-                AwaitTask(t, task._continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+                Suspend(t, task._continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
                 return;
             }
 
@@ -244,7 +257,7 @@ namespace System.Runtime.CompilerServices
             if (vts.GetStatus(task._token) == ValueTaskSourceStatus.Pending)
             {
                 TailAwait();
-                AwaitValueTaskSource(vts, task._token, task._continueOnCapturedContext);
+                Suspend(vts, task._token, task._continueOnCapturedContext);
                 return;
             }
 
@@ -269,7 +282,7 @@ namespace System.Runtime.CompilerServices
             if (!awaiter.IsCompleted)
             {
                 TailAwait();
-                return AwaitTask(awaiter.m_task, awaiter.m_options);
+                return Suspend(awaiter.m_task, awaiter.m_options);
             }
 
             return awaiter.GetResult();
@@ -301,7 +314,7 @@ namespace System.Runtime.CompilerServices
                 }
 
                 TailAwait();
-                return AwaitTask(t, task._continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+                return Suspend(t, task._continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
             }
 
             Debug.Assert(obj is IValueTaskSource<T>);
@@ -309,7 +322,7 @@ namespace System.Runtime.CompilerServices
             if (vts.GetStatus(task._token) == ValueTaskSourceStatus.Pending)
             {
                 TailAwait();
-                return AwaitValueTaskSource(vts, task._token, task._continueOnCapturedContext);
+                return Suspend(vts, task._token, task._continueOnCapturedContext);
             }
 
             return vts.GetResult(task._token);

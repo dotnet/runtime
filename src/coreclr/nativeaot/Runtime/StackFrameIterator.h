@@ -53,6 +53,7 @@ public:
     bool             IsActiveStackFrame();
 #ifdef TARGET_X86
     bool             GetHijackedReturnValueLocation(PTR_OBJECTREF * pLocation, GCRefKind * pKind);
+    bool             GetHijackedAsyncContinuation(PTR_OBJECTREF * pLocation);
 #endif
     void             SetControlPC(PTR_VOID controlPC);
     PTR_VOID         GetControlPC() { return m_ControlPC; }
@@ -240,6 +241,7 @@ protected:
 #ifdef TARGET_X86
     PTR_OBJECTREF       m_pHijackedReturnValue;
     GCRefKind           m_HijackedReturnValueKind;
+    PTR_OBJECTREF       m_pHijackedAsyncContinuation;
 #endif
     PTR_uintptr_t       m_pConservativeStackRangeLowerBound;
     PTR_uintptr_t       m_pConservativeStackRangeUpperBound;

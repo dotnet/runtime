@@ -37,6 +37,14 @@ public abstract class Target
     public abstract bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer);
 
     /// <summary>
+    /// Sets the context of the given thread from the supplied buffer
+    /// </summary>
+    /// <param name="threadId">The identifier of the thread whose context is to be set. The identifier is defined by the operating system.</param>
+    /// <param name="context">Buffer containing the new thread context. The contents must be a platform context structure of the size expected by the target.</param>
+    /// <returns>true if successful, false otherwise</returns>
+    public abstract bool TrySetThreadContext(ulong threadId, ReadOnlySpan<byte> context);
+
+    /// <summary>
     /// Reads a well-known global pointer value from the target process
     /// </summary>
     /// <param name="global">The name of the global</param>
@@ -136,6 +144,14 @@ public abstract class Target
     /// <returns>Value read from the target</returns>
     /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
     public abstract TargetNUInt ReadNUInt(ulong address);
+
+    /// <summary>
+    /// Read a native signed integer from the target in target endianness
+    /// </summary>
+    /// <param name="address">Address to start reading from</param>
+    /// <returns>Value read from the target</returns>
+    /// <exception cref="VirtualReadException">Thrown when the read operation fails</exception>
+    public abstract TargetNInt ReadNInt(ulong address);
 
     /// <summary>
     /// Read a well known global from the target process as a string
@@ -239,6 +255,14 @@ public abstract class Target
     public abstract TypeInfo GetTypeInfo(string typeName);
 
     /// <summary>
+    /// Try to resolve a native cdac type info by name. Returns <c>false</c> when the
+    /// descriptor does not define this type, instead of throwing. Used by
+    /// <c>TargetLayoutExtensions.ResolveLayouts</c> for IData classes that opt into
+    /// per-field fallback between native cdac descriptors and managed type metadata.
+    /// </summary>
+    public abstract bool TryGetTypeInfo(string typeName, out TypeInfo info);
+
+    /// <summary>
     /// Get the data cache for the target
     /// </summary>
     public abstract IDataCache ProcessedData { get; }
@@ -316,12 +340,12 @@ public abstract class Target
     public abstract ContractRegistry Contracts { get; }
 
     /// <summary>
-    /// Clear all cached data held by this target, including processed data and contract caches.
+    /// Clear cached data held by this target for the given <paramref name="scope"/>.
     /// Called when the target process state may have changed (e.g. on resume).
     /// </summary>
-    public virtual void Flush()
+    public virtual void Flush(FlushScope scope)
     {
         ProcessedData.Clear();
-        Contracts.Flush();
+        Contracts.Flush(scope);
     }
 }

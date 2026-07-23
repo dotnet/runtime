@@ -576,7 +576,6 @@ public:
     STDMETHODIMP GetUserString(
         mdString stk,                   // [IN] the string token.
         ULONG   *pchString,             // [OUT] count of characters in the string.
-        BOOL    *pbIs80Plus,            // [OUT] specifies where there are extended characters >= 0x80.
         LPCWSTR *pwszUserString);
 
     //*****************************************************************************

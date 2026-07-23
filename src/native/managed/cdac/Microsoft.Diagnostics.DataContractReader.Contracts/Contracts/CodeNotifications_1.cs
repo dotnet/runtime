@@ -48,7 +48,7 @@ internal readonly struct CodeNotifications_1 : ICodeNotifications
 
         if (v.TryFindEntry(module, methodToken, out uint existingIndex))
         {
-            v.GetEntry(existingIndex).State = (ushort)flags;
+            v.GetEntry(existingIndex).WriteState((ushort)flags);
 
             return;
         }
@@ -119,7 +119,7 @@ internal readonly struct CodeNotifications_1 : ICodeNotifications
             }
             else
             {
-                entry.State = (ushort)flags;
+                entry.WriteState((ushort)flags);
             }
 
             changed = true;
@@ -169,7 +169,7 @@ internal readonly struct CodeNotifications_1 : ICodeNotifications
         public uint Length
         {
             get => _sentinel.MethodToken;
-            set => _sentinel.MethodToken = value;
+            set => _sentinel.WriteMethodToken(value);
         }
 
         public uint Capacity => _target.ReadGlobal<uint>(Constants.Globals.JITNotificationTableSize);

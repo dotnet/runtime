@@ -710,6 +710,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows has no API to query the blocking state of a socket and assumes true.
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support Socket.Blocking")]
         public void Ctor_SafeHandle_BlockingMatchesHandle(bool blocking)
         {
             using var orig = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);

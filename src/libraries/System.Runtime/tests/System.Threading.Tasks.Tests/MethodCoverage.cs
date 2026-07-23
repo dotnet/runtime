@@ -22,7 +22,7 @@ namespace TaskCoverage
         }
 
         //EH
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void TaskContinuation()
         {

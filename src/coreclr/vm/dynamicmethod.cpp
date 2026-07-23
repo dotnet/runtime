@@ -928,7 +928,8 @@ bool DynamicMethodDesc::TryDestroy()
 void LCGMethodResolver::Reset()
 {
     m_DynamicStringLiterals = NULL;
-    m_DynamicCodePointers   = NULL;
+    m_initialCodePointer    = {};
+    m_DynamicCodePointers   = &m_initialCodePointer;
     m_UsedIndCellList       = NULL;
     m_pJumpStubCache        = NULL;
     m_next                  = NULL;
@@ -1347,7 +1348,7 @@ STRINGREF* LCGMethodResolver::GetOrInternString(STRINGREF *pProtectedStringRef)
     // Get the global string literal interning map
     GlobalStringLiteralMap* pStringLiteralMap = SystemDomain::GetGlobalStringLiteralMap();
 
-    // Calculating the hash: EEUnicodeHashTableHelper::GetHash
+    // Calculating the hash.
     EEStringData StringData = EEStringData((*pProtectedStringRef)->GetStringLength(), (*pProtectedStringRef)->GetBuffer());
     DWORD dwHash = pStringLiteralMap->GetHash(&StringData);
 
@@ -1357,7 +1358,7 @@ STRINGREF* LCGMethodResolver::GetOrInternString(STRINGREF *pProtectedStringRef)
     StringLiteralEntryHolder pEntry(pStringLiteralMap->GetInternedString(pProtectedStringRef, dwHash, /* bAddIfNotFound */ TRUE));
 
     DynamicStringLiteral* pStringLiteral = (DynamicStringLiteral*)m_jitTempData.New(sizeof(DynamicStringLiteral));
-    pStringLiteral->m_pEntry = pEntry.Extract();
+    pStringLiteral->m_pEntry = pEntry.Detach();
 
     // Add to m_DynamicStringLiterals:
     //  we don't need to check for duplicate because the string literal entries in
@@ -1583,10 +1584,14 @@ void** LCGMethodResolver::AllocateRecordCodePointer()
     }
     CONTRACTL_END;
 
-    DynamicCodePointer* codePointer = (DynamicCodePointer*)m_jitTempData.New(sizeof(DynamicCodePointer));
-    *codePointer = {};
-    codePointer->m_pNext = m_DynamicCodePointers;
-    m_DynamicCodePointers = codePointer;
+    DynamicCodePointer* codePointer = &m_initialCodePointer;
+    if (codePointer->m_pEntry != NULL)
+    {
+        codePointer = (DynamicCodePointer*)m_jitTempData.New(sizeof(DynamicCodePointer));
+        *codePointer = {};
+        codePointer->m_pNext = m_DynamicCodePointers;
+        m_DynamicCodePointers = codePointer;
+    }
 
     return &codePointer->m_pEntry;
 }

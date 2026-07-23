@@ -8,6 +8,7 @@ function libCoreRunFactory() {
         "$ENV",
         "$FS",
         "corerun_shutdown",
+        "__stack_pointer",
         "$UTF8ToString"
     ];
     if (LibraryManager.library.$NODEFS) {
@@ -55,7 +56,7 @@ function libCoreRunFactory() {
                 let value = 0;
                 let shift = 0;
 
-                for (;;) {
+                for (; ;) {
                     if (offset >= limit) {
                         throw new RangeError("Unexpected end of input while reading ULEB128");
                     }
@@ -183,7 +184,7 @@ function libCoreRunFactory() {
                 wasmModule = new WebAssembly.Module(wasmBytes);
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
-                console.error("Failed to construct WebAssembly module for Webcil image:", {wasmPath, errorMessage});
+                console.error("Failed to construct WebAssembly module for Webcil image:", { wasmPath, errorMessage });
                 return false;
             }
 
@@ -208,7 +209,7 @@ function libCoreRunFactory() {
                 wasmTable.grow(tableSize);
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
-                console.error("Failed to grow WebAssembly table for Webcil image:", {wasmPath, errorMessage});
+                console.error("Failed to grow WebAssembly table for Webcil image:", { wasmPath, errorMessage });
                 return false;
             }
 
@@ -223,18 +224,23 @@ function libCoreRunFactory() {
                 if (typeof (wasmExports.__stack_pointer) === "undefined") {
                     throw new Error("__stack_pointer was not preserved by the linker or optimizer");
                 }
+                if (typeof (wasmExports.__coreclr_wasm_rtlrestorecontext_tag) === "undefined") {
+                    throw new Error("__coreclr_wasm_rtlrestorecontext_tag was not preserved by the linker or optimizer");
+                }
                 payloadPtr = HEAPU32[ptrPtr >>> 2 >>> 0];
                 wasmInstance = new WebAssembly.Instance(wasmModule, {
                     webcil: {
                         memory: wasmMemory,
                         stackPointer: wasmExports.__stack_pointer,
+                        rtlRestoreContextTag: wasmExports.__coreclr_wasm_rtlrestorecontext_tag,
                         table: wasmTable,
                         tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
                         imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr)
-                    }});
+                    }
+                });
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
-                console.error("Failed to construct WebAssembly instance for Webcil image:", {wasmPath, errorMessage});
+                console.error("Failed to construct WebAssembly instance for Webcil image:", { wasmPath, errorMessage });
                 return false;
             } finally {
                 stackRestore(sp);

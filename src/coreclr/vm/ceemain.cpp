@@ -778,8 +778,6 @@ void EEStartupHelper()
         IfFailGoLog(EnsureRtlFunctions());
 #endif // !TARGET_UNIX
 
-        UnwindInfoTable::Initialize();
-
         // Fire the runtime information ETW event
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
 
@@ -988,10 +986,9 @@ void EEStartupHelper()
 
 #ifdef HAVE_GCCOVER
         MethodDesc::Init();
-        if (CdacStress::IsEnabled())
-        {
-            CdacStress::Initialize();
-        }
+#endif
+#ifdef CDAC_STRESS
+        CdacStressPolicy::Initialize();
 #endif
 
         Assembly::Initialize();
@@ -1273,8 +1270,8 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // Indicate the EE is the shut down phase.
         InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Start);
 
-#ifdef HAVE_GCCOVER
-        CdacStress::Shutdown();
+#ifdef CDAC_STRESS
+        CdacStressPolicy::Shutdown();
 #endif
 
         if (!IsAtProcessExit() && !g_fFastExitProcess)

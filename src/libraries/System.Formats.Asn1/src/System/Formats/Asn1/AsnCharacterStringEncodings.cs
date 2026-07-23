@@ -117,7 +117,7 @@ namespace System.Formats.Asn1
         }
     }
 
-    internal sealed class IA5Encoding : RestrictedAsciiStringEncoding
+    internal sealed class IA5Encoding : RestrictedAsciiRangeEncoding
     {
         // T-REC-X.680-201508 sec 41, Table 8.
         // ISO International Register of Coded Character Sets to be used with Escape Sequences 001
@@ -133,7 +133,7 @@ namespace System.Formats.Asn1
         }
     }
 
-    internal sealed class VisibleStringEncoding : RestrictedAsciiStringEncoding
+    internal sealed class VisibleStringEncoding : RestrictedAsciiRangeEncoding
     {
         // T-REC-X.680-201508 sec 41, Table 8.
         // ISO International Register of Coded Character Sets to be used with Escape Sequences 006

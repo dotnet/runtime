@@ -3,23 +3,12 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal class HijackArgsAMD64 : IData<HijackArgsAMD64>
+[CdacType(nameof(DataType.HijackArgs))]
+internal partial class HijackArgsAMD64 : IData<HijackArgsAMD64>
 {
-    static HijackArgsAMD64 IData<HijackArgsAMD64>.Create(Target target, TargetPointer address)
-        => new HijackArgsAMD64(target, address);
+    [FieldAddress]
+    public partial TargetPointer CalleeSavedRegisters { get; }
 
-    public HijackArgsAMD64(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.HijackArgs);
-        CalleeSavedRegisters = address + (ulong)type.Fields[nameof(CalleeSavedRegisters)].Offset;
-
-        // On Windows, Rsp is present
-        if (type.Fields.ContainsKey(nameof(Rsp)))
-        {
-            Rsp = target.ReadPointerField(address, type, nameof(Rsp));
-        }
-    }
-
-    public TargetPointer CalleeSavedRegisters { get; }
-    public TargetPointer? Rsp { get; }
+    // On Windows, Rsp is present
+    [Field] public partial TargetPointer? Rsp { get; }
 }

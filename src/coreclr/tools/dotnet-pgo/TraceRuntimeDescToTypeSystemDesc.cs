@@ -437,7 +437,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         }
                         else
                         {
-                            if ((uninstantiatedType.Name.SequenceEqual("__Canon"u8)) && uninstantiatedType.Namespace.SequenceEqual("System"u8) && (uninstantiatedType.Module == uninstantiatedType.Context.SystemModule))
+                            if ((uninstantiatedType.Name == "__Canon"u8) && uninstantiatedType.Namespace == "System"u8 && (uninstantiatedType.Module == uninstantiatedType.Context.SystemModule))
                             {
                                 tinfo.Type = uninstantiatedType.Context.CanonType;
                             }

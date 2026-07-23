@@ -333,6 +333,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_BFIZ:
             genCodeForBfiz(treeNode->AsOp());
             break;
+
+        case GT_BFX:
+            genCodeForBfx(treeNode->AsBfm());
+            break;
 #endif // TARGET_ARM64
 
         case GT_JMP:
@@ -580,7 +584,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //
 void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (!m_compiler->getNeedsGSSecurityCookie())
     {
@@ -708,12 +712,94 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_frintn, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
+
+        case NI_PRIMITIVE_PopCount:
+        {
+            genConsumeOperands(treeNode->AsOp());
+
+            regNumber srcReg = srcNode->GetRegNum();
+            regNumber dstReg = treeNode->GetRegNum();
+
+            assert(genIsValidIntReg(srcReg));
+            assert(genIsValidIntReg(dstReg));
+
+            if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_Cssc))
+            {
+                // FEAT_CSSC provides a scalar cnt operating directly on general registers.
+                GetEmitter()->emitIns_R_R(INS_cnt, emitActualTypeSize(srcNode), dstReg, srcReg, INS_OPTS_NONE);
+                break;
+            }
+
+            regNumber tmpReg = internalRegisters.GetSingle(treeNode);
+
+            assert(genIsValidFloatReg(tmpReg));
+
+            emitAttr attr = emitTypeSize(srcNode->TypeGet());
+
+            if (attr != EA_8BYTE)
+            {
+                GetEmitter()->emitIns_R_I(INS_movi, EA_8BYTE, tmpReg, 0, INS_OPTS_8B);
+            }
+            GetEmitter()->emitIns_R_R_I(INS_ins, attr, tmpReg, srcReg, 0, INS_OPTS_NONE);
+            GetEmitter()->emitIns_R_R(INS_cnt, EA_8BYTE, tmpReg, tmpReg, INS_OPTS_8B);
+            GetEmitter()->emitIns_R_R(INS_addv, EA_8BYTE, tmpReg, tmpReg, INS_OPTS_8B);
+            GetEmitter()->emitIns_R_R_I(INS_umov, attr, dstReg, tmpReg, 0, INS_OPTS_NONE);
+            break;
+        }
+
+        case NI_PRIMITIVE_TrailingZeroCount:
+        {
+            genConsumeOperands(treeNode->AsOp());
+
+            regNumber srcReg = srcNode->GetRegNum();
+            regNumber dstReg = treeNode->GetRegNum();
+
+            assert(genIsValidIntReg(srcReg));
+            assert(genIsValidIntReg(dstReg));
+
+            if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_Cssc))
+            {
+                // FEAT_CSSC provides a scalar ctz operating directly on general registers.
+                GetEmitter()->emitIns_R_R(INS_ctz, emitActualTypeSize(srcNode), dstReg, srcReg, INS_OPTS_NONE);
+                break;
+            }
+
+            GetEmitter()->emitIns_R_R(INS_rbit, emitActualTypeSize(srcNode), dstReg, srcReg, INS_OPTS_NONE);
+            GetEmitter()->emitIns_R_R(INS_clz, emitActualTypeSize(srcNode), dstReg, dstReg, INS_OPTS_NONE);
+            break;
+        }
 #endif // TARGET_ARM64
 
         case NI_System_Math_Sqrt:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_SQRT, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
+
+#ifdef TARGET_ARM
+        case NI_PRIMITIVE_SaturateToInt8:
+            // SSAT Rd, #8, Rn - saturate int32 to signed 8-bit range [-128, 127]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_ssat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 8);
+            break;
+
+        case NI_PRIMITIVE_SaturateToInt16:
+            // SSAT Rd, #16, Rn - saturate int32 to signed 16-bit range [-32768, 32767]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_ssat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 16);
+            break;
+
+        case NI_PRIMITIVE_SaturateToUInt8:
+            // USAT Rd, #8, Rn - saturate int32 to unsigned 8-bit range [0, 255]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_usat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 8);
+            break;
+
+        case NI_PRIMITIVE_SaturateToUInt16:
+            // USAT Rd, #16, Rn - saturate int32 to unsigned 16-bit range [0, 65535]
+            genConsumeOperands(treeNode->AsOp());
+            GetEmitter()->emitIns_R_R_I_I(INS_usat, EA_4BYTE, treeNode->GetRegNum(), srcNode->GetRegNum(), 0, 16);
+            break;
+#endif // TARGET_ARM
 
 #if defined(FEATURE_SIMD)
             // The handling is a bit more complex so genSimdUpperSave/Restore
@@ -1344,7 +1430,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
     else
     {
         unsigned immWidth   = emitter::getBitWidth(size); // For ARM64, immWidth will be set to 32 or 64
-        unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal & (immWidth - 1);
+        unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->IconValue() & (immWidth - 1);
         GetEmitter()->emitIns_R_R_I(ins, size, dstReg, operand->GetRegNum(), shiftByImm);
     }
 
@@ -3253,19 +3339,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     assert(params.secondRetSize != EA_BYREF);
 #endif
 
-    params.isJump      = call->IsFastTailCall();
-    params.hasAsyncRet = call->IsAsync();
-
-    // We need to propagate the debug information to the call instruction, so we can emit
-    // an IL to native mapping record for the call, to support managed return value debugging.
-    // We don't want tail call helper calls that were converted from normal calls to get a record,
-    // so we skip this hash table lookup logic in that case.
-    if (m_compiler->opts.compDbgInfo && m_compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
-    {
-        DebugInfo di;
-        (void)m_compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
-        params.debugInfo = di;
-    }
+    params.isJump          = call->IsFastTailCall();
+    params.hasAsyncRet     = call->IsAsync();
+    params.returnValueCall = call;
 
 #ifdef DEBUG
     // Pass the call signature information down into the emitter so the emitter can associate
@@ -3333,7 +3409,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             emitter*       emitter  = GetEmitter();
             emitAttr       attr     = (emitAttr)(EA_CNS_TLSGD_RELOC | EA_CNS_RELOC_FLG | params.retSize);
             GenTreeIntCon* iconNode = target->AsIntCon();
-            params.methHnd          = (CORINFO_METHOD_HANDLE)iconNode->gtIconVal;
+            params.methHnd          = (CORINFO_METHOD_HANDLE)iconNode->IconValue();
             params.retSize          = EA_SET_FLG(params.retSize, EA_CNS_TLSGD_RELOC);
             params.noSafePoint      = true;
 
@@ -3365,7 +3441,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // ldr
             // add
             emitter->emitIns_Adrp_Ldr_Add(attr, REG_R0, target->GetRegNum(),
-                                          (ssize_t)params.methHnd DEBUGARG(iconNode->gtTargetHandle)
+                                          (ssize_t)params.methHnd DEBUGARG(iconNode->GetTargetHandle())
                                               DEBUGARG(iconNode->gtFlags));
         }
 #endif
@@ -4020,11 +4096,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
     switch (blkOp->gtBlkOpKind)
     {
-        case GenTreeBlk::BlkOpKindCpObjUnroll:
-            assert(!blkOp->gtBlkOpGcUnsafe);
-            genCodeForCpObj(blkOp->AsBlk());
-            break;
-
         case GenTreeBlk::BlkOpKindLoop:
             assert(!isCopyBlk);
             genCodeForInitBlkLoop(blkOp);
@@ -4111,6 +4182,42 @@ void CodeGen::genCodeForMulLong(GenTreeOp* mul)
 #endif
 
     genProduceReg(mul);
+}
+
+//------------------------------------------------------------------------
+// genCodeForDivModOverflowCheck: Emit the (MinInt / -1) overflow check for a signed integer divide.
+//
+// Arguments:
+//    tree - the GT_DIV node
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genCodeForDivModOverflowCheck(GenTreeOp* tree)
+{
+    // Signed-division might overflow.
+    assert(tree->OperIs(GT_DIV));
+    assert(!tree->gtGetOp2()->IsIntegralConst(0));
+
+    emitter*  emit        = GetEmitter();
+    emitAttr  size        = EA_ATTR(genTypeSize(genActualType(tree->TypeGet())));
+    regNumber divisorReg  = tree->gtGetOp2()->GetRegNum();
+    regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
+
+    BasicBlock* sdivLabel = genCreateTempLabel();
+
+    // Check if the divisor is not -1; if so branch to 'sdivLabel'.
+    emit->emitIns_R_I(INS_cmp, size, divisorReg, -1);
+    inst_JMP(EJ_ne, sdivLabel);
+    // If control flow continues past here the 'divisorReg' is known to be -1.
+    //
+    // Issue the 'cmp dividendReg, 1' instruction.
+    // 'cmp' computes 'dividendReg - 1' and updates only the condition flags,
+    // setting the V (overflow) flag exactly when dividendReg is MinInt.
+    emit->emitIns_R_I(INS_cmp, size, dividendReg, 1);
+    genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flag is set throw ArithmeticException
+
+    genDefineTempLabel(sdivLabel);
 }
 
 //------------------------------------------------------------------------
@@ -4313,7 +4420,7 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, const ReturnTypeDesc* retTypeDesc
 //
 void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
 #ifdef TARGET_ARM64
     // Probe large frames now, if necessary, since genPushCalleeSavedRegisters() will allocate the frame. Note that
@@ -4947,8 +5054,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     if (verbose)
         printf("*************** In genFnEpilog()\n");
 #endif // DEBUG
-
-    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
     VarSetOps::Assign(m_compiler, gcInfo.gcVarPtrSetCur, GetEmitter()->emitInitGCrefVars);
     gcInfo.gcRegGCrefSetCur = GetEmitter()->emitInitGCrefRegs;
