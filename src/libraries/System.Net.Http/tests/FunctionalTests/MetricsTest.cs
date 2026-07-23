@@ -294,21 +294,33 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public Task ActiveRequests_Success_Recorded()
         {
+            var serverTcs = new TaskCompletionSource();
+            var clientTcs = new TaskCompletionSource();
+
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
                 using InstrumentRecorder<long> recorder = SetupInstrumentRecorder<long>(InstrumentNames.ActiveRequests);
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
 
-                HttpResponseMessage response = await SendAsync(client, request);
+                var requestTask = SendAsync(client, request);
+                await serverTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                recorder.RecordObservableInstruments();
+                clientTcs.SetResult();
+                var response = await requestTask;
                 response.Dispose(); // Make sure disposal doesn't interfere with recording by enforcing early disposal.
 
                 Assert.Collection(recorder.GetMeasurements(),
-                    m => VerifyActiveRequests(m, 1, uri),
-                    m => VerifyActiveRequests(m, -1, uri));
+                    m => VerifyActiveRequests(m, 1, uri));
             }, async server =>
             {
-                await server.AcceptConnectionSendResponseAndCloseAsync();
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    var requestData = await connection.ReadRequestDataAsync();
+                    serverTcs.SetResult();
+                    await clientTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    await connection.SendResponseAsync();
+                });
             });
         }
 
