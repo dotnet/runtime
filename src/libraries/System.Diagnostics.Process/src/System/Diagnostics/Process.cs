@@ -486,9 +486,30 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Gets the amount of private memory, in bytes, allocated for the associated process.</summary>
+        /// <remarks>
+        /// The value returned reflects the most recently refreshed memory usage for the process. Call
+        /// <see cref="Refresh"/> first to get an up-to-date value.
+        /// <para>
+        /// On Windows, this corresponds to the Private Bytes performance counter for the process.
+        /// </para>
+        /// <para>
+        /// On Linux, this value reflects memory the process has committed that isn't shared with other processes.
+        /// </para>
+        /// <para>
+        /// On macOS, this value is the process's physical memory footprint - the same measurement shown in
+        /// Activity Monitor's Memory column - rather than a strict count of unshared pages. Querying a process
+        /// other than the current one requires permission to inspect that process (for example, querying a
+        /// process owned by another user typically fails); when permission is denied, this property returns 0.
+        /// </para>
+        /// </remarks>
         public long PrivateMemorySize64
             => GetProcessInfo().PrivateBytes;
 
+        /// <summary>Gets the amount of private memory, in bytes, allocated for the associated process.</summary>
+        /// <remarks>See <see cref="PrivateMemorySize64"/> for platform-specific remarks. This property is a lossy,
+        /// unchecked cast of that value to <see cref="int"/> and can be negative when the 64-bit value exceeds
+        /// <see cref="int.MaxValue"/>.</remarks>
         [Obsolete("Process.PrivateMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PrivateMemorySize64 instead.")]
         public int PrivateMemorySize
             => unchecked((int)GetProcessInfo().PrivateBytes);
