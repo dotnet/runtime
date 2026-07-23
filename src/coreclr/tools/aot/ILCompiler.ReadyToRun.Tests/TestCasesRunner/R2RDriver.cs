@@ -139,14 +139,10 @@ internal sealed class R2RDriver
         string stdout = stdoutTask.GetAwaiter().GetResult();
         string stderr = stderrTask.GetAwaiter().GetResult();
 
-        if (!string.IsNullOrEmpty(stdout))
-        {
-            _output.WriteLine(stdout);
-        }
-
         if (process.ExitCode != 0)
         {
             _output.WriteLine($"  crossgen2 FAILED (exit code {process.ExitCode})");
+            _output.WriteLine(stdout);
             _output.WriteLine(stderr);
         }
 
