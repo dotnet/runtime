@@ -1,22 +1,19 @@
 # Contract TypeInformation
 
 This reader-provided contract decodes runtime signatures into type information
-without requiring every type in the signature to have an exact loaded runtime
-type.
+without requiring every type in the signature to be fully loaded.
 
-`ITypeHandle` continues to represent only an exact target-backed `MethodTable`
-or `TypeDesc`. `SignatureTypeInfo` is a separate representation for facts that
-remain available from the signature:
+`SignatureTypeInfo` represents information decoded from a signature
+even when an exact loaded runtime type is unavailable:
 
 - the outermost `CorElementType`
 - an optional exact loaded `ITypeHandle`
 - the loaded generic type definition, when applicable
 - recursively decoded generic type arguments
 
-This separation lets GC signature consumers classify reference and byref
-arguments without fabricating an `ITypeHandle`. Operations that require exact
-runtime layout, such as value-type size, GCDesc, HFA, alignment, or ABI
-classification, still require `SignatureTypeInfo.ExactTypeHandle`.
+This lets the reader retain information about types that are not fully loaded
+instead of losing the entire type when an exact target-backed handle cannot be
+resolved.
 
 ## APIs of contract
 
