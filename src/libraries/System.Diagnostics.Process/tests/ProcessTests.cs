@@ -1140,11 +1140,15 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestPrivateMemorySize64()
+        public void TestPrivateMemorySize64AndPrivateMemorySize()
         {
             CreateDefaultProcess();
 
             Assert.InRange(_process.PrivateMemorySize64, 1, long.MaxValue);
+
+#pragma warning disable 0618
+            Assert.Equal(unchecked((int)_process.PrivateMemorySize64), _process.PrivateMemorySize);
+#pragma warning restore 0618
         }
 
         [Fact]
@@ -2352,16 +2356,6 @@ namespace System.Diagnostics.Tests
             var process = new Process();
 #pragma warning disable 0618
             Assert.Throws<InvalidOperationException>(() => process.PeakWorkingSet);
-#pragma warning restore 0618
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestPrivateMemorySize()
-        {
-            CreateDefaultProcess();
-
-#pragma warning disable 0618
-            Assert.Equal(unchecked((int)_process.PrivateMemorySize64), _process.PrivateMemorySize);
 #pragma warning restore 0618
         }
 
