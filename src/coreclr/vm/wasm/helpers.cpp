@@ -1033,18 +1033,21 @@ namespace
         }
 
         MethodTable* pMT = th.AsMethodTable();
-        PTR_MethodTable pVector128MT = CoreLibBinder::GetClassIfExist(CLASS__VECTOR128T);
-        PTR_MethodTable pVectorTMT = CoreLibBinder::GetClassIfExist(CLASS__VECTORT);
 
         bool isSupportedVectorBaseType =
             pMT->IsIntrinsicType() &&
             (pMT->GetNumGenericArgs() == 1) &&
             CorIsNumericalType(pMT->GetInstantiation()[0].GetSignatureCorElementType());
-        if (isSupportedVectorBaseType &&
-            ((pVector128MT != nullptr && pMT->HasSameTypeDefAs(pVector128MT)) ||
-             ((size == 16) && (pVectorTMT != nullptr) && pMT->HasSameTypeDefAs(pVectorTMT))))
+        if (isSupportedVectorBaseType)
         {
-            return { ConvertType::ToV128, 0 };
+            PTR_MethodTable pVector128MT = CoreLibBinder::GetClassIfExist(CLASS__VECTOR128T);
+            PTR_MethodTable pVectorTMT = CoreLibBinder::GetClassIfExist(CLASS__VECTORT);
+
+            if ((pVector128MT != nullptr && pMT->HasSameTypeDefAs(pVector128MT)) ||
+                ((size == 16) && (pVectorTMT != nullptr) && pMT->HasSameTypeDefAs(pVectorTMT)))
+            {
+                return { ConvertType::ToV128, 0 };
+            }
         }
 
         uint32_t numInstanceFields = pMT->GetNumInstanceFields();
