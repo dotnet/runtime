@@ -37,7 +37,6 @@
 #include "ecall.h"
 #include "generics.h"
 #include "typestring.h"
-#include "caparser.h"
 #include "typedesc.h"
 #include "genericdict.h"
 #include "array.h"
@@ -6434,37 +6433,6 @@ bool CEEInfo::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return ret;
 }
 
-// Determine whether 'pModule' has the RefSafetyRulesAttribute with a version
-// of at least 'minVersion'.
-static bool ModuleOptsIntoRefSafetyRules(Module* pModule, int minVersion)
-{
-    STANDARD_VM_CONTRACT;
-
-    const void* pData  = NULL;
-    ULONG       cbData = 0;
-    HRESULT     hr =
-        pModule->GetCustomAttribute(TokenFromRid(1, mdtModule), WellKnownAttribute::RefSafetyRules, &pData, &cbData);
-    if (hr != S_OK)
-    {
-        return false;
-    }
-
-    // RefSafetyRulesAttribute(int version): a 2-byte prolog followed by the int32 version argument.
-    CustomAttributeParser cap(pData, cbData);
-    if (FAILED(cap.SkipProlog()))
-    {
-        return false;
-    }
-
-    INT32 version;
-    if (FAILED(cap.GetI4(&version)))
-    {
-        return false;
-    }
-
-    return version >= minVersion;
-}
-
 bool CEEInfo::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
 {
     CONTRACTL {
@@ -6484,7 +6452,7 @@ bool CEEInfo::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
 
     // ECMA augment III.1.7.7 allows making this escaping assumption based on
     // RefSafetyRules and UnscopedRef attributes.
-    if (ModuleOptsIntoRefSafetyRules(pMD->GetModule(), 11))
+    if (pMD->GetModule()->OptsIntoRefSafetyRulesV11())
     {
         result = (pMD->GetCustomAttribute(WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
     }
