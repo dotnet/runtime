@@ -5500,13 +5500,9 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
         if (IsFloatPairFieldListRegister(use, regStart, regEnd, regType))
         {
             GenTreeFieldList::Use* secondUse = use->GetNext();
-            GenTree*               firstVector =
-                m_compiler->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, use->GetNode(), TYP_FLOAT, 16);
-            BlockRange().InsertBefore(fieldList, firstVector);
-
+            GenTree* firstVector = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, use->GetNode(), TYP_FLOAT, 16);
             GenTree* secondVector =
-                m_compiler->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, secondUse->GetNode(), TYP_FLOAT, 16);
-            BlockRange().InsertBefore(fieldList, secondVector);
+                InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, secondUse->GetNode(), TYP_FLOAT, 16);
 
             GenTree* value = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, firstVector, secondVector,
                                                                   NI_X86Base_UnpackLow, TYP_FLOAT, 16);
@@ -5517,10 +5513,7 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
             regEntry->SetNext(secondUse->GetNext());
             use = regEntry->GetNext();
 
-            if (fieldListPrev->gtNext != fieldList)
-            {
-                LowerRange(fieldListPrev->gtNext, fieldList->gtPrev);
-            }
+            LowerNode(value);
 
             continue;
         }
