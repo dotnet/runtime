@@ -1144,9 +1144,6 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
 
-            // Fixed for https://github.com/dotnet/runtime/issues/105665 - now backed by
-            // proc_pid_rusage(RUSAGE_INFO_V4)/ri_phys_footprint on macOS instead of being
-            // permanently 0, so this no longer needs Darwin-specific handling.
             Assert.InRange(_process.PrivateMemorySize64, 1, long.MaxValue);
         }
 
@@ -2364,7 +2361,6 @@ namespace System.Diagnostics.Tests
             CreateDefaultProcess();
 
 #pragma warning disable 0618
-            // Fixed for https://github.com/dotnet/runtime/issues/105665 - see TestPrivateMemorySize64.
             Assert.InRange(_process.PrivateMemorySize, 1, int.MaxValue);
 #pragma warning restore 0618
         }
