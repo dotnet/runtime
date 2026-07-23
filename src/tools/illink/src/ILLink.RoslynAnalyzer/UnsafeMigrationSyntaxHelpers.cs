@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace ILLink.Shared
+namespace ILLink.RoslynAnalyzer
 {
     /// <summary>
     /// Provides source-shared modifier inspection for the unsafe-v2 analyzers and code fixes.

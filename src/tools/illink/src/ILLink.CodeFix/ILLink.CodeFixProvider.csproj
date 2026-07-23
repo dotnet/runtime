@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\ILLink.Shared\UnsafeMigrationSyntaxHelpers.cs" Link="UnsafeMigrationSyntaxHelpers.cs" />
+    <Compile Include="..\ILLink.RoslynAnalyzer\UnsafeMigrationSyntaxHelpers.cs" Link="UnsafeMigrationSyntaxHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -8,10 +8,7 @@
     <Import_RootNamespace>ILLink.Shared</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)/**/*.cs"
-             Exclude="$(MSBuildThisFileDirectory)UnsafeMigrationSyntaxHelpers.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)UnsafeMigrationSyntaxHelpers.cs"
-             Condition="'$(AnalyzerLanguage)' == 'cs'" />
+    <Compile Include="$(MSBuildThisFileDirectory)/**/*.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)SharedStrings.resx">
