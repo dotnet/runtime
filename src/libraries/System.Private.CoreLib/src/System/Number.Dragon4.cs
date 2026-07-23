@@ -379,12 +379,12 @@ namespace System
                 // in O(1), so batching would only add block-divide overhead -- it stays on the scalar loop.
                 if (scale.GetLength() > 1)
                 {
-                    int MaxBatchDigits = (nint.Size == 8) ? 19 : 9;
+                    int maxBatchDigits = (nint.Size == 8) ? 19 : 9;
                     bool roundingDigitExtracted = false;
 
                     while (digitExponent > cutoffExponent)
                     {
-                        int batchDigits = Math.Min(digitExponent - cutoffExponent, MaxBatchDigits);
+                        int batchDigits = Math.Min(digitExponent - cutoffExponent, maxBatchDigits);
 
                         if (batchDigits > 1)
                         {
@@ -417,7 +417,7 @@ namespace System
 
                             outputDigit = (uint)(buffer[last] - '0');
                             curDigit = last;
-                            scaledValue = remainder;
+                            BigInteger.SetZero(out scaledValue);
                             roundingDigitExtracted = true;
                             break;
                         }
