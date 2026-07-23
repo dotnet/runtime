@@ -494,13 +494,16 @@ namespace System.Diagnostics
         /// On Windows, this corresponds to the Private Bytes performance counter for the process.
         /// </para>
         /// <para>
-        /// On Linux, this value reflects memory the process has committed that isn't shared with other processes.
+        /// On Linux, this value is the size of the process's data segment, as reported by the VmData field
+        /// of /proc/[pid]/status - an approximation (roughly heap plus global/static data) rather than a
+        /// precise measurement of memory unshared with other processes.
         /// </para>
         /// <para>
-        /// On macOS, this value is the process's physical memory footprint - the same measurement shown in
-        /// Activity Monitor's Memory column - rather than a strict count of unshared pages. Querying a process
-        /// other than the current one requires permission to inspect that process (for example, querying a
-        /// process owned by another user typically fails); when permission is denied, this property returns 0.
+        /// On macOS, this value is the process's physical memory footprint - an accounting-based measurement,
+        /// the same value shown in Activity Monitor's Memory column - rather than a strict count of unshared
+        /// pages. Querying a process other than the current one requires permission to inspect that process
+        /// (for example, querying a process owned by another user typically fails); when permission is denied,
+        /// this property returns 0.
         /// </para>
         /// </remarks>
         public long PrivateMemorySize64
