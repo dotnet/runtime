@@ -533,6 +533,11 @@ namespace Internal.Reflection.Augments
             return Type.GetTypeFromHandle(typeHandle).Assembly;
         }
 
+        public static bool HasClassConstructor(RuntimeTypeHandle typeHandle)
+        {
+            return ReflectionCoreExecution.ExecutionEnvironment.GetStaticClassConstructionContext(typeHandle) != 0;
+        }
+
         public static void RunClassConstructor(RuntimeTypeHandle typeHandle)
         {
             IntPtr pStaticClassConstructionContext = ReflectionCoreExecution.ExecutionEnvironment.GetStaticClassConstructionContext(typeHandle);

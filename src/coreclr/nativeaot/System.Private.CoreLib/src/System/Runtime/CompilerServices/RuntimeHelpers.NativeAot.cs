@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Threading;
 
 using Internal.Reflection.Augments;
-using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 
@@ -275,6 +276,87 @@ namespace System.Runtime.CompilerServices
 
         public static void PrepareDelegate(Delegate d)
         {
+        }
+
+        private static class DelegateCache
+        {
+            public static readonly Lock CacheLock = new();
+            public static readonly Dictionary<(nint, RuntimeType), Delegate> Instance = [];
+            public static readonly Dictionary<nuint, (object target, bool frozen)> Target = [];
+        }
+
+        // This method is used by the JIT as a helper
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe Delegate CreateSharedDelegateHelper(nint method, ref Delegate? storage, MethodTable* delegateMt, MethodTable* targetMt, uint info)
+        {
+            RuntimeType delegateType = Type.GetTypeFromMethodTable(delegateMt);
+            Debug.Assert(delegateType.GetRuntimeTypeInfo().IsDelegate);
+
+            bool isStatic = (info & 1) != 0;
+            bool throwIfClosed = (info & 2) != 0;
+            int paramCount = (int)(info >> 2);
+
+            MethodInfo invokeMethod = Delegate.GetInvokeMethod(delegateType);
+            int invokeCount = invokeMethod.GetParametersAsSpan().Length;
+
+            bool isOpen = invokeCount == paramCount;
+            // reject invalid closed delegates
+            if (!isOpen && throwIfClosed)
+            {
+                throw new NotSupportedException();
+            }
+
+            Delegate newDelegate;
+            lock (DelegateCache.CacheLock)
+            {
+                object? target = null;
+                bool allowFrozen = true;
+                if (targetMt != null)
+                {
+                    if (targetMt->IsFinalizable || ReflectionAugments.HasClassConstructor(Type.GetTypeFromMethodTable(targetMt).TypeHandle))
+                        throw new NotSupportedException();
+
+                    ref (object target, bool frozen) targetReference = ref CollectionsMarshal.GetValueRefOrAddDefault(DelegateCache.Target, (nuint)targetMt, out bool targetExists);
+                    if (targetExists)
+                    {
+                        Debug.Assert(targetReference.target.GetMethodTable() == targetMt);
+                        target = targetReference.target;
+                        allowFrozen = targetReference.frozen;
+                    }
+                    else
+                    {
+                        target = FrozenObjectHeapManager.Instance.TryAllocateObject(targetMt);
+                        if (target is null)
+                        {
+                            target = RuntimeImports.RhNewObject(targetMt);
+                            allowFrozen = false;
+                        }
+                        Debug.Assert(target.GetMethodTable() == targetMt);
+
+                        targetReference = (target, allowFrozen);
+                    }
+                }
+
+                ref Delegate? reference = ref CollectionsMarshal.GetValueRefOrAddDefault(DelegateCache.Instance, (method, delegateType), out bool exists);
+                if (exists)
+                {
+                    Debug.Assert(reference.GetType() == delegateType);
+                    newDelegate = reference;
+                }
+                else
+                {
+                    object? newInstance = allowFrozen ? FrozenObjectHeapManager.Instance.TryAllocateObject(delegateMt) : null;
+                    newInstance ??= RuntimeImports.RhNewObject(delegateMt);
+                    Debug.Assert(newInstance.GetType() == delegateType);
+
+                    newDelegate = Unsafe.As<Delegate>(newInstance);
+                    Delegate.FillDelegate(newDelegate, method, target, isStatic, isOpen);
+
+                    reference = newDelegate;
+                }
+            }
+
+            return Interlocked.CompareExchange(ref storage, newDelegate, null) ?? newDelegate;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",

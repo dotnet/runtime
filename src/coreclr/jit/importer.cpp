@@ -2552,6 +2552,12 @@ typeInfo Compiler::makeTypeInfo(CORINFO_CLASS_HANDLE clsHnd)
     return makeTypeInfo(info.compCompHnd->asCorInfoType(clsHnd), clsHnd);
 }
 
+typeInfo Compiler::makeTypeInfoForFieldAddr(mdToken fieldToken)
+{
+    assert(fieldToken != 0);
+    return typeInfo(fieldToken);
+}
+
 /*****************************************************************************
  *
  *  Check if a TailCall is legal.
@@ -9579,7 +9585,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (isLoadAddress)
                 {
-                    tiRetVal = typeInfo(TYP_BYREF);
+                    tiRetVal = makeTypeInfoForFieldAddr(resolvedToken.token);
                 }
                 else
                 {

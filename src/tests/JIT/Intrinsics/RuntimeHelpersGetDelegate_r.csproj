@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="RuntimeHelpersGetDelegateIL.ilproj" />
+    <ProjectReference Include="RuntimeHelpersGetDelegateCases.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="RuntimeHelpersGetDelegate.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

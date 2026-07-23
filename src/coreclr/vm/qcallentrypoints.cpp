@@ -111,6 +111,7 @@ static const Entry s_QCall[] =
     DllImportEntry(Delegate_GetMulticastInvokeSlow)
     DllImportEntry(Delegate_AdjustTarget)
     DllImportEntry(Delegate_Construct)
+    DllImportEntry(Delegate_CreateDelegate)
     DllImportEntry(Delegate_CreateMethodInfo)
     DllImportEntry(Delegate_GetMethodDesc)
     DllImportEntry(Environment_Exit)

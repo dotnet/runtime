@@ -232,6 +232,29 @@ namespace System.Runtime.CompilerServices
             PrepareDelegate(ObjectHandleOnStack.Create(ref d));
         }
 
+        [LibraryImport(QCall, EntryPoint = "Delegate_CreateDelegate")]
+        private static unsafe partial void CreateDelegate(nint method, MethodTable* delegateMt, MethodTable* targetMt, ObjectHandleOnStack objHandle);
+
+        // This method is used by the JIT as a helper
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe Delegate CreateSharedDelegateHelper(nint method, ref Delegate? storage, MethodTable* delegateMt, MethodTable* targetMt)
+        {
+            ArgumentNullException.ThrowIfNull(method);
+
+            Debug.Assert(RuntimeTypeHandle.GetRuntimeType(delegateMt).IsDelegate());
+
+            Delegate? newDelegate = null;
+            CreateDelegate(method, delegateMt, targetMt, ObjectHandleOnStack.Create(ref newDelegate));
+
+            if (newDelegate is null)
+            {
+                throw new NotSupportedException();
+            }
+
+            Debug.Assert(newDelegate.GetType() == RuntimeTypeHandle.GetRuntimeType(delegateMt));
+            return Interlocked.CompareExchange(ref storage, newDelegate, null) ?? newDelegate;
+        }
+
         /// <summary>
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
         /// returned.

@@ -3356,7 +3356,7 @@ public:
     GenTreeCall* gtNewIndCallNode(GenTree* addr, var_types type, const DebugInfo& di = DebugInfo());
 
     GenTreeCall* gtNewHelperCallNode(
-        unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr, GenTree* arg4 = nullptr);
+        unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr, GenTree* arg4 = nullptr, GenTree* arg5 = nullptr);
 
 #ifdef TARGET_WASM
     // On wasm these helpers return void* (InitHelpers.InitClass/InitInstantiatedClass). Model them as
@@ -12370,6 +12370,7 @@ public:
     typeInfo makeTypeInfo(CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
     typeInfo makeTypeInfo(CorInfoType          ciType,
                           CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
+    typeInfo makeTypeInfoForFieldAddr(mdToken fieldToken);
 
     bool checkTailCallConstraint(OPCODE                  opcode,
                                  CORINFO_RESOLVED_TOKEN* pResolvedToken,

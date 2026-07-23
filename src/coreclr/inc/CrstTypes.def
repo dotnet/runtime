@@ -192,6 +192,10 @@ Crst FCall
     AcquiredBefore LoaderHeap
 End
 
+Crst FrozenDelegateTarget
+    Unordered
+End
+
 Crst FrozenObjectHeap
     Unordered
 End
