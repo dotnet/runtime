@@ -161,8 +161,8 @@ struct MSLAYOUT TargetBuffer
 };
 
 // A variable sized host memory context buffer in target architecture specific layout.
-// The currently supported layout matches the Windows CONTEXT structure for the
-// target architecture.
+// The currently supported layout matches the CONTEXT structure for the
+// target architecture and OS.
 // Not (yet) supported:
 // - Optional trailing XState feature data in the buffer
 // - Add an architecture enum field to make the struct self-describing
