@@ -9,8 +9,6 @@ internal readonly struct ArgumentLocation
 {
     public int Offset { get; init; }
     public CorElementType ElementType { get; init; }
-    public ITypeHandle? TypeHandle { get; init; }
-    // Retains signature shape and generic context when TypeHandle is unavailable.
     public SignatureTypeInfo TypeInfo { get; init; }
     public bool IsThis { get; init; }
     public bool IsValueTypeThis { get; init; }
