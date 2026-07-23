@@ -4886,7 +4886,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::Hijack(VMPTR_Thread vmThread, ULO
         //
         // The debugger could always re-enable the single-step flag if it wants to.
     #ifndef FEATURE_EMULATE_SINGLESTEP
-        UnsetSSFlag(reinterpret_cast<DT_CONTEXT *>(&ctx));
+        UnsetSSFlag(&ctx);
     #endif
 
         // Push pointers
@@ -5027,7 +5027,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::Hijack(VMPTR_Thread vmThread, ULO
 }
 
 // Return the filter CONTEXT on the LS.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetManagedStoppedContext(VMPTR_Thread vmThread, OUT VMPTR_CONTEXT * pRetVal)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetManagedStoppedContext(VMPTR_Thread vmThread, OUT CORDB_ADDRESS * pRetVal)
 {
     DD_ENTER_MAY_THROW;
 
@@ -5035,13 +5035,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetManagedStoppedContext(VMPTR_Th
     EX_TRY
     {
 
-        VMPTR_CONTEXT vmContext = VMPTR_CONTEXT::NullPtr();
+        CORDB_ADDRESS contextAddr = (CORDB_ADDRESS)NULL;
 
         Thread * pThread = vmThread.GetDacPtr();
         if (pThread->GetInteropDebuggingHijacked())
         {
             _ASSERTE(!ISREDIRECTEDTHREAD(pThread));
-            vmContext = VMPTR_CONTEXT::NullPtr();
+            contextAddr = (CORDB_ADDRESS)NULL;
         }
         else
         {
@@ -5049,7 +5049,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetManagedStoppedContext(VMPTR_Th
             if (pLSContext != NULL)
             {
                 _ASSERTE(!ISREDIRECTEDTHREAD(pThread));
-                vmContext.SetHostPtr(pLSContext);
+                contextAddr = (CORDB_ADDRESS)PTR_HOST_TO_TADDR(pLSContext);
             }
             else if (ISREDIRECTEDTHREAD(pThread))
             {
@@ -5058,12 +5058,12 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetManagedStoppedContext(VMPTR_Th
 
                 if (pLSContext != NULL)
                 {
-                    vmContext.SetHostPtr(pLSContext);
+                    contextAddr = (CORDB_ADDRESS)PTR_HOST_TO_TADDR(pLSContext);
                 }
             }
         }
 
-        *pRetVal = vmContext;
+        *pRetVal = contextAddr;
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -5420,15 +5420,20 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDebuggerControlBlockAddress(OU
 }
 
 // DacDbi API: Get the context for a particular thread of the target process
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContextBuffer)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, ContextBuffer contextBuffer)
 {
     DD_ENTER_MAY_THROW
+
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < sizeof(DT_CONTEXT)))
+    {
+        return E_INVALIDARG;
+    }
 
     HRESULT hr = S_OK;
     EX_TRY
     {
 
-        _ASSERTE(pContextBuffer != NULL);
+        DT_CONTEXT * pContextBuffer = reinterpret_cast<DT_CONTEXT *>(contextBuffer.pContextBytes);
 
         Thread *  pThread  = vmThread.GetDacPtr();
 
@@ -5507,6 +5512,714 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread,
     }
     EX_CATCH_HRESULT(hr);
     return hr;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTargetContextSize(ULONG32 contextFlags, OUT ULONG32 * pSize)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (pSize == NULL)
+        return E_INVALIDARG;
+
+#if defined(DT_CONTEXT_EXTENDED_REGISTERS)
+    if ((contextFlags & DT_CONTEXT_EXTENDED_REGISTERS) != DT_CONTEXT_EXTENDED_REGISTERS)
+    {
+        *pSize = offsetof(DT_CONTEXT, ExtendedRegisters);
+    }
+    else
+#endif
+    {
+        *pSize = sizeof(DT_CONTEXT);
+    }
+
+    return S_OK;
+}
+
+static UINT_PTR * GetRegisterSlotFromContext(BYTE * ctxBuf, CorDebugRegister reg)
+{
+    DT_CONTEXT * pCtx = (DT_CONTEXT *)ctxBuf;
+
+#if defined(TARGET_X86)
+    switch (reg)
+    {
+    case REGISTER_INSTRUCTION_POINTER: return (UINT_PTR *)&pCtx->Eip;
+    case REGISTER_STACK_POINTER:       return (UINT_PTR *)&pCtx->Esp;
+    case REGISTER_FRAME_POINTER:       return (UINT_PTR *)&pCtx->Ebp;
+    case REGISTER_X86_EAX:             return (UINT_PTR *)&pCtx->Eax;
+    case REGISTER_X86_ECX:             return (UINT_PTR *)&pCtx->Ecx;
+    case REGISTER_X86_EDX:             return (UINT_PTR *)&pCtx->Edx;
+    case REGISTER_X86_EBX:             return (UINT_PTR *)&pCtx->Ebx;
+    case REGISTER_X86_ESI:             return (UINT_PTR *)&pCtx->Esi;
+    case REGISTER_X86_EDI:             return (UINT_PTR *)&pCtx->Edi;
+    default: return NULL;
+    }
+#elif defined(TARGET_AMD64)
+    switch (reg)
+    {
+    case REGISTER_INSTRUCTION_POINTER: return (UINT_PTR *)&pCtx->Rip;
+    case REGISTER_STACK_POINTER:       return (UINT_PTR *)&pCtx->Rsp;
+    case REGISTER_AMD64_RBP:           return (UINT_PTR *)&pCtx->Rbp;
+    case REGISTER_AMD64_RAX:           return (UINT_PTR *)&pCtx->Rax;
+    case REGISTER_AMD64_RCX:           return (UINT_PTR *)&pCtx->Rcx;
+    case REGISTER_AMD64_RDX:           return (UINT_PTR *)&pCtx->Rdx;
+    case REGISTER_AMD64_RBX:           return (UINT_PTR *)&pCtx->Rbx;
+    case REGISTER_AMD64_RSI:           return (UINT_PTR *)&pCtx->Rsi;
+    case REGISTER_AMD64_RDI:           return (UINT_PTR *)&pCtx->Rdi;
+    case REGISTER_AMD64_R8:            return (UINT_PTR *)&pCtx->R8;
+    case REGISTER_AMD64_R9:            return (UINT_PTR *)&pCtx->R9;
+    case REGISTER_AMD64_R10:           return (UINT_PTR *)&pCtx->R10;
+    case REGISTER_AMD64_R11:           return (UINT_PTR *)&pCtx->R11;
+    case REGISTER_AMD64_R12:           return (UINT_PTR *)&pCtx->R12;
+    case REGISTER_AMD64_R13:           return (UINT_PTR *)&pCtx->R13;
+    case REGISTER_AMD64_R14:           return (UINT_PTR *)&pCtx->R14;
+    case REGISTER_AMD64_R15:           return (UINT_PTR *)&pCtx->R15;
+    default: return NULL;
+    }
+#elif defined(TARGET_ARM)
+    switch (reg)
+    {
+    case REGISTER_INSTRUCTION_POINTER: return (UINT_PTR *)&pCtx->Pc;
+    case REGISTER_STACK_POINTER:       return (UINT_PTR *)&pCtx->Sp;
+    case REGISTER_ARM_R0:              return (UINT_PTR *)&pCtx->R0;
+    case REGISTER_ARM_R1:              return (UINT_PTR *)&pCtx->R1;
+    case REGISTER_ARM_R2:              return (UINT_PTR *)&pCtx->R2;
+    case REGISTER_ARM_R3:              return (UINT_PTR *)&pCtx->R3;
+    case REGISTER_ARM_R4:              return (UINT_PTR *)&pCtx->R4;
+    case REGISTER_ARM_R5:              return (UINT_PTR *)&pCtx->R5;
+    case REGISTER_ARM_R6:              return (UINT_PTR *)&pCtx->R6;
+    case REGISTER_ARM_R7:              return (UINT_PTR *)&pCtx->R7;
+    case REGISTER_ARM_R8:              return (UINT_PTR *)&pCtx->R8;
+    case REGISTER_ARM_R9:              return (UINT_PTR *)&pCtx->R9;
+    case REGISTER_ARM_R10:             return (UINT_PTR *)&pCtx->R10;
+    case REGISTER_ARM_R11:             return (UINT_PTR *)&pCtx->R11;
+    case REGISTER_ARM_R12:             return (UINT_PTR *)&pCtx->R12;
+    case REGISTER_ARM_LR:              return (UINT_PTR *)&pCtx->Lr;
+    default: return NULL;
+    }
+#elif defined(TARGET_ARM64)
+    switch (reg)
+    {
+    case REGISTER_INSTRUCTION_POINTER: return (UINT_PTR *)&pCtx->Pc;
+    case REGISTER_STACK_POINTER:       return (UINT_PTR *)&pCtx->Sp;
+    case REGISTER_ARM64_FP:            return (UINT_PTR *)&pCtx->Fp;
+    case REGISTER_ARM64_LR:            return (UINT_PTR *)&pCtx->Lr;
+    default:
+        if (reg >= REGISTER_ARM64_X0 && reg <= REGISTER_ARM64_X28)
+            return (UINT_PTR *)&pCtx->X[reg - REGISTER_ARM64_X0];
+        return NULL;
+    }
+#elif defined(TARGET_LOONGARCH64)
+    switch (reg)
+    {
+    case REGISTER_INSTRUCTION_POINTER: return (UINT_PTR *)&pCtx->Pc;
+    case REGISTER_STACK_POINTER:       return (UINT_PTR *)&pCtx->Sp;
+    case REGISTER_LOONGARCH64_FP:      return (UINT_PTR *)&pCtx->Fp;
+    case REGISTER_LOONGARCH64_RA:      return (UINT_PTR *)&pCtx->Ra;
+    case REGISTER_LOONGARCH64_TP:      return (UINT_PTR *)&pCtx->Tp;
+    case REGISTER_LOONGARCH64_X0:       return (UINT_PTR *)&pCtx->X0;
+    default:
+        if (reg >= REGISTER_LOONGARCH64_A0 && reg <= REGISTER_LOONGARCH64_A7)
+            return (UINT_PTR *)&pCtx->A0 + (reg - REGISTER_LOONGARCH64_A0);
+        if (reg >= REGISTER_LOONGARCH64_T0 && reg <= REGISTER_LOONGARCH64_T8)
+            return (UINT_PTR *)&pCtx->T0 + (reg - REGISTER_LOONGARCH64_T0);
+        if (reg >= REGISTER_LOONGARCH64_S0 && reg <= REGISTER_LOONGARCH64_S8)
+            return (UINT_PTR *)&pCtx->S0 + (reg - REGISTER_LOONGARCH64_S0);
+        return NULL;
+    }
+#elif defined(TARGET_RISCV64)
+    switch (reg)
+    {
+    case REGISTER_INSTRUCTION_POINTER: return (UINT_PTR *)&pCtx->Pc;
+    case REGISTER_STACK_POINTER:       return (UINT_PTR *)&pCtx->Sp;
+    case REGISTER_RISCV64_FP:          return (UINT_PTR *)&pCtx->Fp;
+    case REGISTER_RISCV64_RA:          return (UINT_PTR *)&pCtx->Ra;
+    case REGISTER_RISCV64_GP:          return (UINT_PTR *)&pCtx->Gp;
+    case REGISTER_RISCV64_TP:          return (UINT_PTR *)&pCtx->Tp;
+    case REGISTER_RISCV64_S1:          return (UINT_PTR *)&pCtx->S1;
+    default:
+        if (reg >= REGISTER_RISCV64_T0 && reg <= REGISTER_RISCV64_T2)
+            return (UINT_PTR *)&pCtx->T0 + (reg - REGISTER_RISCV64_T0);
+        if (reg >= REGISTER_RISCV64_A0 && reg <= REGISTER_RISCV64_A7)
+            return (UINT_PTR *)&pCtx->A0 + (reg - REGISTER_RISCV64_A0);
+        if (reg >= REGISTER_RISCV64_S2 && reg <= REGISTER_RISCV64_S11)
+            return (UINT_PTR *)&pCtx->S2 + (reg - REGISTER_RISCV64_S2);
+        if (reg >= REGISTER_RISCV64_T3 && reg <= REGISTER_RISCV64_T6)
+            return (UINT_PTR *)&pCtx->T3 + (reg - REGISTER_RISCV64_T3);
+        return NULL;
+    }
+#else
+    return NULL;
+#endif
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::WriteRegistersToContext(
+    IN ContextBuffer contextBuffer,
+    IN const CorDebugRegister * regs,
+    IN ULONG32 nRegs,
+    IN const TADDR * values)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (contextBuffer.pContextBytes == NULL || (nRegs > 0 && (regs == NULL || values == NULL)))
+        return E_INVALIDARG;
+    if (contextBuffer.contextSize < sizeof(DT_CONTEXT))
+        return E_INVALIDARG;
+
+    for (ULONG32 i = 0; i < nRegs; i++)
+    {
+        // Registers with no CONTEXT slot (e.g. float / SIMD registers) are skipped.
+        UINT_PTR * pSlot = GetRegisterSlotFromContext(contextBuffer.pContextBytes, regs[i]);
+        if (pSlot != NULL)
+            *pSlot = (UINT_PTR)values[i];
+    }
+    return S_OK;
+}
+
+namespace
+{
+    bool TryReadFloatRegisterFromContext(BYTE * ctxBuf, CorDebugRegister reg, DOUBLE * pValue);
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ReadRegistersFromContext(
+    IN ContextBuffer contextBuffer,
+    IN const CorDebugRegister * regs,
+    IN ULONG32 nRegs,
+    OUT CORDB_REGISTER * pValues)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (contextBuffer.pContextBytes == NULL || (nRegs > 0 && (regs == NULL || pValues == NULL)))
+        return E_INVALIDARG;
+    if (contextBuffer.contextSize < sizeof(DT_CONTEXT))
+        return E_INVALIDARG;
+
+    for (ULONG32 i = 0; i < nRegs; i++)
+    {
+        UINT_PTR * pSlot = GetRegisterSlotFromContext(contextBuffer.pContextBytes, regs[i]);
+        if (pSlot != NULL)
+        {
+            pValues[i] = (CORDB_REGISTER)(UINT_PTR)*pSlot;
+            continue;
+        }
+
+        DOUBLE floatValue = 0.0;
+        if (TryReadFloatRegisterFromContext(contextBuffer.pContextBytes, regs[i], &floatValue))
+            memcpy(&pValues[i], &floatValue, sizeof(CORDB_REGISTER));
+        else
+            pValues[i] = (CORDB_REGISTER)0;
+    }
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAvailableRegistersMask(
+    IN BOOL fActive,
+    IN BOOL fQuickUnwind,
+    IN ULONG32 regCount,
+    OUT BYTE pAvailable[])
+{
+    DD_ENTER_MAY_THROW;
+
+    if (pAvailable == NULL || regCount == 0)
+        return E_INVALIDARG;
+
+    ZeroMemory(pAvailable, regCount);
+
+    auto setBit = [pAvailable, regCount](int reg)
+    {
+        ULONG32 byteIdx = (ULONG32)reg / 8;
+        if (byteIdx < regCount)
+            pAvailable[byteIdx] |= (BYTE)(1 << (reg % 8));
+    };
+
+#if defined(TARGET_X86)
+    setBit(REGISTER_INSTRUCTION_POINTER);
+    setBit(REGISTER_STACK_POINTER);
+    setBit(REGISTER_FRAME_POINTER);
+    if (!fQuickUnwind || fActive)
+    {
+        setBit(REGISTER_X86_EAX);
+        setBit(REGISTER_X86_ECX);
+        setBit(REGISTER_X86_EDX);
+        setBit(REGISTER_X86_EBX);
+        setBit(REGISTER_X86_ESI);
+        setBit(REGISTER_X86_EDI);
+    }
+    if (fActive)
+    {
+        for (int r = REGISTER_X86_FPSTACK_0; r <= REGISTER_X86_FPSTACK_7; r++)
+            setBit(r);
+    }
+#elif defined(TARGET_AMD64)
+    setBit(REGISTER_INSTRUCTION_POINTER);
+    setBit(REGISTER_STACK_POINTER);
+    if (!fQuickUnwind || fActive)
+    {
+        setBit(REGISTER_AMD64_RBP);
+        setBit(REGISTER_AMD64_RAX);
+        setBit(REGISTER_AMD64_RCX);
+        setBit(REGISTER_AMD64_RDX);
+        setBit(REGISTER_AMD64_RBX);
+        setBit(REGISTER_AMD64_RSI);
+        setBit(REGISTER_AMD64_RDI);
+        for (int r = REGISTER_AMD64_R8; r <= REGISTER_AMD64_R15; r++)
+            setBit(r);
+    }
+    if (fActive)
+    {
+        for (int r = REGISTER_AMD64_XMM0; r <= REGISTER_AMD64_XMM15; r++)
+            setBit(r);
+    }
+#elif defined(TARGET_ARM)
+    UNREFERENCED_PARAMETER(fActive);
+    UNREFERENCED_PARAMETER(fQuickUnwind);
+    setBit(REGISTER_INSTRUCTION_POINTER);
+    setBit(REGISTER_STACK_POINTER);
+    for (int r = REGISTER_ARM_R0; r <= REGISTER_ARM_R12; r++)
+        setBit(r);
+    setBit(REGISTER_ARM_LR);
+#elif defined(TARGET_ARM64)
+    UNREFERENCED_PARAMETER(fActive);
+    UNREFERENCED_PARAMETER(fQuickUnwind);
+    setBit(REGISTER_ARM64_PC);
+    setBit(REGISTER_ARM64_SP);
+    setBit(REGISTER_ARM64_FP);
+    setBit(REGISTER_ARM64_LR);
+    for (int r = REGISTER_ARM64_X0; r <= REGISTER_ARM64_X28; r++)
+        setBit(r);
+    for (int r = REGISTER_ARM64_V0; r <= REGISTER_ARM64_V31; r++)
+        setBit(r);
+#elif defined(TARGET_LOONGARCH64)
+    UNREFERENCED_PARAMETER(fActive);
+    UNREFERENCED_PARAMETER(fQuickUnwind);
+    setBit(REGISTER_LOONGARCH64_PC);
+    setBit(REGISTER_LOONGARCH64_SP);
+    setBit(REGISTER_LOONGARCH64_FP);
+    setBit(REGISTER_LOONGARCH64_RA);
+    setBit(REGISTER_LOONGARCH64_TP);
+    setBit(REGISTER_LOONGARCH64_X0);
+    for (int r = REGISTER_LOONGARCH64_A0; r <= REGISTER_LOONGARCH64_A7; r++)
+        setBit(r);
+    for (int r = REGISTER_LOONGARCH64_T0; r <= REGISTER_LOONGARCH64_T8; r++)
+        setBit(r);
+    for (int r = REGISTER_LOONGARCH64_S0; r <= REGISTER_LOONGARCH64_S8; r++)
+        setBit(r);
+    for (int r = REGISTER_LOONGARCH64_F0; r <= REGISTER_LOONGARCH64_F31; r++)
+        setBit(r);
+#elif defined(TARGET_RISCV64)
+    UNREFERENCED_PARAMETER(fActive);
+    UNREFERENCED_PARAMETER(fQuickUnwind);
+    setBit(REGISTER_RISCV64_PC);
+    setBit(REGISTER_RISCV64_RA);
+    setBit(REGISTER_RISCV64_SP);
+    setBit(REGISTER_RISCV64_GP);
+    setBit(REGISTER_RISCV64_TP);
+    setBit(REGISTER_RISCV64_FP);
+    setBit(REGISTER_RISCV64_S1);
+    for (int r = REGISTER_RISCV64_T0; r <= REGISTER_RISCV64_T2; r++)
+        setBit(r);
+    for (int r = REGISTER_RISCV64_A0; r <= REGISTER_RISCV64_A7; r++)
+        setBit(r);
+    for (int r = REGISTER_RISCV64_S2; r <= REGISTER_RISCV64_S11; r++)
+        setBit(r);
+    for (int r = REGISTER_RISCV64_T3; r <= REGISTER_RISCV64_T6; r++)
+        setBit(r);
+    for (int r = REGISTER_RISCV64_F0; r <= REGISTER_RISCV64_F31; r++)
+        setBit(r);
+#else
+    UNREFERENCED_PARAMETER(fActive);
+    UNREFERENCED_PARAMETER(fQuickUnwind);
+    return E_NOTIMPL;
+#endif
+
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ContextHasExtendedRegisters(
+    IN ContextBuffer contextBuffer,
+    OUT BOOL * pResult)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (contextBuffer.pContextBytes == NULL || pResult == NULL)
+        return E_INVALIDARG;
+    if (contextBuffer.contextSize < sizeof(DT_CONTEXT))
+        return E_INVALIDARG;
+
+    *pResult = FALSE;
+#if defined(DT_CONTEXT_EXTENDED_REGISTERS)
+    DT_CONTEXT * pCtx = (DT_CONTEXT *)contextBuffer.pContextBytes;
+    *pResult = (pCtx->ContextFlags & DT_CONTEXT_EXTENDED_REGISTERS) == DT_CONTEXT_EXTENDED_REGISTERS;
+#endif
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CompareControlRegisters(
+    IN ContextBuffer contextBuffer1,
+    IN ContextBuffer contextBuffer2,
+    OUT BOOL * pResult)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (contextBuffer1.pContextBytes == NULL || contextBuffer2.pContextBytes == NULL || pResult == NULL)
+        return E_INVALIDARG;
+    if (contextBuffer1.contextSize < sizeof(DT_CONTEXT) || contextBuffer2.contextSize < sizeof(DT_CONTEXT))
+        return E_INVALIDARG;
+
+    *pResult = ::CompareControlRegisters(
+        reinterpret_cast<const DT_CONTEXT *>(contextBuffer1.pContextBytes),
+        reinterpret_cast<const DT_CONTEXT *>(contextBuffer2.pContextBytes));
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CopyContext(
+    IN ContextBuffer destinationContext,
+    IN ContextBuffer sourceContext,
+    IN ContextCopyMode copyMode,
+    IN ULONG32 flags)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (destinationContext.pContextBytes == NULL || sourceContext.pContextBytes == NULL)
+        return E_INVALIDARG;
+
+    // The chunk-wise copy below only touches the CONTEXT regions selected by the
+    // ContextFlags.
+    if (!CheckContextSizeForBuffer(sourceContext.contextSize, sourceContext.pContextBytes))
+        return E_INVALIDARG;
+    if (copyMode != kCopyContextUseExplicitFlags && flags != 0)
+        return E_INVALIDARG;
+
+    switch (copyMode)
+    {
+        case kCopyContextPreserveDestinationFlags:
+            if (!CheckContextSizeForBuffer(destinationContext.contextSize, destinationContext.pContextBytes))
+                return E_INVALIDARG;
+            break;
+
+        case kCopyContextMergeSourceFlags:
+        {
+            if (!CheckContextSizeForBuffer(destinationContext.contextSize, destinationContext.pContextBytes))
+                return E_INVALIDARG;
+
+            DT_CONTEXT * pDestination = reinterpret_cast<DT_CONTEXT *>(destinationContext.pContextBytes);
+            const DT_CONTEXT * pSource = reinterpret_cast<const DT_CONTEXT *>(sourceContext.pContextBytes);
+            DWORD mergedFlags = pDestination->ContextFlags | pSource->ContextFlags;
+            if (!CheckContextSizeForFlags(destinationContext.contextSize, mergedFlags))
+                return E_INVALIDARG;
+            pDestination->ContextFlags = mergedFlags;
+            break;
+        }
+
+        case kCopyContextUseExplicitFlags:
+            if (!CheckContextSizeForFlags(destinationContext.contextSize, flags))
+                return E_INVALIDARG;
+            reinterpret_cast<DT_CONTEXT *>(destinationContext.pContextBytes)->ContextFlags = flags;
+            break;
+
+        default:
+            return E_INVALIDARG;
+    }
+
+    CORDbgCopyThreadContext(
+        destinationContext.pContextBytes, destinationContext.contextSize,
+        sourceContext.pContextBytes, sourceContext.contextSize);
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ConvertJitRegNumToCorDebugRegister(
+    IN ULONG32 jitRegNum,
+    OUT CorDebugRegister * pReg)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (pReg == NULL)
+        return E_INVALIDARG;
+    if (jitRegNum >= ARRAY_SIZE(g_JITToCorDbgReg))
+        return E_INVALIDARG;
+
+    *pReg = ConvertRegNumToCorDebugRegister(static_cast<ICorDebugInfo::RegNum>(jitRegNum));
+    return S_OK;
+}
+
+namespace
+{
+    double BitsToDouble(UINT64 bits)
+    {
+        double d;
+        memcpy(&d, &bits, sizeof(double));
+        return d;
+    }
+
+    // Convert an x87 80-bit double-extended value to IEEE-754 binary64 with
+    // round-to-nearest-even, matching the hardware FSTP conversion the legacy
+    // x86 path used (gradual underflow to subnormals, overflow to infinity).
+    // Layout (Intel SDM Vol 1 sec 8.2.2): bytes 0-7 = 64-bit significand with an
+    // explicit integer bit at 63; bytes 8-9 = 15-bit biased exponent (bias
+    // 16383) in bits 0-14 and the sign in bit 15.
+    double X87ExtendedToDouble(const BYTE * slot10)
+    {
+        UINT64 significand = 0;
+        memcpy(&significand, slot10, sizeof(UINT64));
+        UINT16 signExp = 0;
+        memcpy(&signExp, slot10 + 8, sizeof(UINT16));
+
+        UINT64 sign  = (UINT64)((signExp >> 15) & 1) << 63;
+        UINT32 exp80 = (UINT32)(signExp & 0x7FFF);
+
+        if (exp80 == 0x7FFF)
+        {
+            UINT64 frac = significand & ~(1ULL << 63);
+            if (frac == 0)
+                return BitsToDouble(sign | ((UINT64)0x7FF << 52));
+            // Force a quiet NaN (keeping the high payload bits) so a signaling
+            // NaN is never misencoded as an infinity.
+            UINT64 payload = (frac >> 12) & ((1ULL << 51) - 1);
+            return BitsToDouble(sign | ((UINT64)0x7FF << 52) | (1ULL << 51) | payload);
+        }
+
+        // Zero, extended denormals and unnormals all fall below the binary64
+        // subnormal floor (2^-1074) and map to signed zero.
+        if (exp80 == 0 || (significand & (1ULL << 63)) == 0)
+            return BitsToDouble(sign);
+
+        int expD = (int)exp80 - 16383 + 1023;   // pre-rounding binary64 biased exponent
+
+        if (expD >= 0x7FF)
+            return BitsToDouble(sign | ((UINT64)0x7FF << 52));   // overflow -> infinity
+
+        if (expD > 0)
+        {
+            // Normal: keep the top 52 fraction bits and round the low 11 to even.
+            UINT64 frac      = significand & ~(1ULL << 63);   // 63 fraction bits
+            UINT64 result    = frac >> 11;                    // top 52 bits
+            UINT64 discarded = frac & 0x7FF;                  // low 11 bits
+            if (discarded > 0x400 || (discarded == 0x400 && (result & 1)))
+            {
+                result++;
+                if (result >> 52)                             // carry out of the fraction
+                {
+                    result = 0;
+                    expD++;
+                    if (expD >= 0x7FF)
+                        return BitsToDouble(sign | ((UINT64)0x7FF << 52));
+                }
+            }
+            return BitsToDouble(sign | ((UINT64)expD << 52) | (result & ((1ULL << 52) - 1)));
+        }
+
+        // Subnormal / underflow (expD <= 0): right-shift the significand by
+        // (12 - expD) and round to nearest-even. A carry into bit 52 promotes the
+        // value to the smallest normal, which the encoding produces for free.
+        int shift = 12 - expD;                                // >= 12
+        if (shift > 64)                                       // below half the smallest subnormal
+            return BitsToDouble(sign);
+
+        UINT64 result;
+        UINT64 discarded;
+        UINT64 half;
+        if (shift == 64)
+        {
+            result    = 0;
+            discarded = significand;
+            half      = 1ULL << 63;
+        }
+        else
+        {
+            result    = significand >> shift;
+            discarded = significand & ((1ULL << shift) - 1);
+            half      = 1ULL << (shift - 1);
+        }
+        if (discarded > half || (discarded == half && (result & 1)))
+            result++;
+        return BitsToDouble(sign | result);
+    }
+
+    UINT64 DoubleToBits(double d)
+    {
+        UINT64 bits;
+        memcpy(&bits, &d, sizeof(UINT64));
+        return bits;
+    }
+
+    void X87DoubleToExtended(double value, BYTE * slot10)
+    {
+        UINT64 bits = DoubleToBits(value);
+        UINT64 sign = (bits >> 63) & 1;
+        UINT32 exp  = (UINT32)((bits >> 52) & 0x7FF);
+        UINT64 frac = bits & ((1ULL << 52) - 1);
+
+        UINT64 mant;      // 64-bit significand with explicit integer bit at 63
+        UINT16 signExp;   // sign (bit 15) + 15-bit biased exponent
+
+        if (exp == 0x7FF)
+        {
+            // Infinity or NaN: max exponent, integer bit set. Preserve the NaN
+            // payload (shifted into the extended fraction) and force it quiet.
+            mant = (1ULL << 63) | (frac << 11);
+            if (frac != 0)
+                mant |= (1ULL << 62);   // quiet bit
+            signExp = (UINT16)((sign << 15) | 0x7FFF);
+        }
+        else if (exp == 0 && frac == 0)
+        {
+            // Signed zero.
+            mant    = 0;
+            signExp = (UINT16)(sign << 15);
+        }
+        else if (exp == 0)
+        {
+            // Binary64 subnormal: normalize into the wider extended exponent range.
+            // value = frac * 2^(-1074); shift the leading fraction bit up to bit 63.
+            int leadingZeros = 0;
+            UINT64 m = frac;
+            while ((m & (1ULL << 51)) == 0)
+            {
+                m <<= 1;
+                leadingZeros++;
+            }
+            mant = m << 12;                                  // integer bit lands at 63
+            int e = -1023 - leadingZeros + 16383;            // rebias to extended
+            signExp = (UINT16)((sign << 15) | (UINT32)(e & 0x7FFF));
+        }
+        else
+        {
+            // Normal: prepend the implicit integer bit, align to bit 63, rebias.
+            mant = ((1ULL << 52) | frac) << 11;
+            int e = (int)exp - 1023 + 16383;
+            signExp = (UINT16)((sign << 15) | (UINT32)(e & 0x7FFF));
+        }
+
+        memcpy(slot10, &mant, sizeof(UINT64));
+        memcpy(slot10 + 8, &signExp, sizeof(UINT16));
+    }
+
+    // Read a single floating-point / SIMD register from a target CONTEXT buffer.
+    bool TryReadFloatRegisterFromContext(BYTE * ctxBuf, CorDebugRegister reg, DOUBLE * pValue)
+    {
+        DT_CONTEXT * pCtx = (DT_CONTEXT *)ctxBuf;
+
+#if defined(TARGET_X86)
+        if ((int)reg < REGISTER_X86_FPSTACK_0 || (int)reg > REGISTER_X86_FPSTACK_7)
+            return false;
+
+        const DT_FLOATING_SAVE_AREA * pFp = &pCtx->FloatSave;
+        ULONG32 rawTop        = (pFp->StatusWord >> 11) & 0x7;
+        ULONG32 floatStackTop = 7 - rawTop;
+        ULONG32 logical       = (ULONG32)((int)reg - REGISTER_X86_FPSTACK_0);
+
+        // The availability mask exposes all 8 FPSTACK registers even when the
+        // live stack is shallower; those out-of-depth slots read 0.
+        if (logical > floatStackTop)
+        {
+            *pValue = 0.0;
+            return true;
+        }
+
+        // REGISTER_X86_FPSTACK_0 names the bottom of the logical stack, so a
+        // logical index counts up from the bottom: ST(i) with i = top - logical.
+        ULONG32 physIdx = (rawTop + (floatStackTop - logical)) & 0x7;
+        *pValue = X87ExtendedToDouble((const BYTE *)pFp->RegisterArea + physIdx * 10);
+        return true;
+#elif defined(TARGET_AMD64)
+        if ((int)reg < REGISTER_AMD64_XMM0 || (int)reg > REGISTER_AMD64_XMM0 + 15)
+            return false;
+        memcpy(pValue, (const BYTE *)&pCtx->Xmm0 + (ULONG32)((int)reg - REGISTER_AMD64_XMM0) * 16, sizeof(DOUBLE));
+        return true;
+#elif defined(TARGET_ARM64)
+        if ((int)reg < REGISTER_ARM64_V0 || (int)reg > REGISTER_ARM64_V0 + 31)
+            return false;
+        memcpy(pValue, (const BYTE *)&pCtx->V + (ULONG32)((int)reg - REGISTER_ARM64_V0) * 16, sizeof(DOUBLE));
+        return true;
+#elif defined(TARGET_LOONGARCH64)
+        if ((int)reg < REGISTER_LOONGARCH64_F0 || (int)reg > REGISTER_LOONGARCH64_F0 + 31)
+            return false;
+        memcpy(pValue, (const BYTE *)&pCtx->F + (ULONG32)((int)reg - REGISTER_LOONGARCH64_F0) * 32, sizeof(DOUBLE));
+        return true;
+#elif defined(TARGET_RISCV64)
+        if ((int)reg < REGISTER_RISCV64_F0 || (int)reg > REGISTER_RISCV64_F0 + 31)
+            return false;
+        memcpy(pValue, (const BYTE *)&pCtx->F + (ULONG32)((int)reg - REGISTER_RISCV64_F0) * 8, sizeof(DOUBLE));
+        return true;
+#elif defined(TARGET_ARM)
+        if ((int)reg < REGISTER_ARM_D0 || (int)reg > REGISTER_ARM_D0 + 31)
+            return false;
+        memcpy(pValue, (const BYTE *)&pCtx->D + (ULONG32)((int)reg - REGISTER_ARM_D0) * 8, sizeof(DOUBLE));
+        return true;
+#else
+        UNREFERENCED_PARAMETER(pCtx);
+        UNREFERENCED_PARAMETER(reg);
+        UNREFERENCED_PARAMETER(pValue);
+        return false;
+#endif
+    }
+}
+
+// Write a single floating-point / SIMD register into a target CONTEXT buffer.
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::WriteFloatRegisterToContext(
+    IN  ContextBuffer contextBuffer,
+    IN  CorDebugRegister reg,
+    IN  const BYTE * pValue,
+    IN  ULONG32 valueSize)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (contextBuffer.pContextBytes == NULL || pValue == NULL ||
+        (valueSize != sizeof(float) && valueSize != sizeof(double)))
+    {
+        return E_INVALIDARG;
+    }
+    if (contextBuffer.contextSize < sizeof(DT_CONTEXT))
+        return E_INVALIDARG;
+
+    DT_CONTEXT * pCtx = reinterpret_cast<DT_CONTEXT *>(contextBuffer.pContextBytes);
+
+#if defined(TARGET_X86)
+    if ((int)reg < REGISTER_X86_FPSTACK_0 || (int)reg > REGISTER_X86_FPSTACK_7)
+        return E_INVALIDARG;
+
+    DT_FLOATING_SAVE_AREA * pFp = &pCtx->FloatSave;
+    ULONG32 rawTop        = (pFp->StatusWord >> 11) & 0x7;
+    ULONG32 floatStackTop = 7 - rawTop;
+    ULONG32 logical       = (ULONG32)((int)reg - REGISTER_X86_FPSTACK_0);
+    if (logical > floatStackTop)
+        return E_INVALIDARG;
+
+    // REGISTER_X86_FPSTACK_0 names the bottom of the logical stack: ST(i) with
+    // i = top - logical. Map to the physical RegisterArea slot and re-encode.
+    ULONG32 physIdx = (rawTop + (floatStackTop - logical)) & 0x7;
+    BYTE * slot     = (BYTE *)pFp->RegisterArea + physIdx * 10;
+    double d = (valueSize == sizeof(float)) ? (double)(*(const float *)pValue)
+                                            : *(const double *)pValue;
+    X87DoubleToExtended(d, slot);
+#elif defined(TARGET_AMD64)
+    if ((int)reg < REGISTER_AMD64_XMM0 || (int)reg > REGISTER_AMD64_XMM0 + 15)
+        return E_INVALIDARG;
+    memcpy((BYTE *)&pCtx->Xmm0 + (ULONG32)((int)reg - REGISTER_AMD64_XMM0) * 16, pValue, valueSize);
+#elif defined(TARGET_ARM64)
+    if ((int)reg < REGISTER_ARM64_V0 || (int)reg > REGISTER_ARM64_V0 + 31)
+        return E_INVALIDARG;
+    memcpy((BYTE *)&pCtx->V + (ULONG32)((int)reg - REGISTER_ARM64_V0) * 16, pValue, valueSize);
+#elif defined(TARGET_LOONGARCH64)
+    if ((int)reg < REGISTER_LOONGARCH64_F0 || (int)reg > REGISTER_LOONGARCH64_F0 + 31)
+        return E_INVALIDARG;
+    memcpy((BYTE *)&pCtx->F + (ULONG32)((int)reg - REGISTER_LOONGARCH64_F0) * 32, pValue, valueSize);
+#elif defined(TARGET_RISCV64)
+    if ((int)reg < REGISTER_RISCV64_F0 || (int)reg > REGISTER_RISCV64_F0 + 31)
+        return E_INVALIDARG;
+    memcpy((BYTE *)&pCtx->F + (ULONG32)((int)reg - REGISTER_RISCV64_F0) * 8, pValue, valueSize);
+#elif defined(TARGET_ARM)
+    if ((int)reg < REGISTER_ARM_D0 || (int)reg > REGISTER_ARM_D0 + 31)
+        return E_INVALIDARG;
+    memcpy((BYTE *)&pCtx->D + (ULONG32)((int)reg - REGISTER_ARM_D0) * 8, pValue, valueSize);
+#else
+    UNREFERENCED_PARAMETER(pCtx);
+    UNREFERENCED_PARAMETER(reg);
+    UNREFERENCED_PARAMETER(pValue);
+    UNREFERENCED_PARAMETER(valueSize);
+    return E_NOTIMPL;
+#endif
+
+    return S_OK;
 }
 
 // Create a VMPTR_Object from a target object address

@@ -16,7 +16,6 @@
 #define THUMB_CODE 1
 #endif
 
-typedef ULONGLONG                   FPRegister64;
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 
@@ -86,13 +85,13 @@ constexpr CorDebugRegister g_JITToCorDbgReg[] =
 //
 // inline function to access/modify the CONTEXT
 //
-inline void CORDbgSetIP(DT_CONTEXT *context, LPVOID eip) {
+inline void CORDbgSetIP(T_CONTEXT *context, LPVOID eip) {
     LIMITED_METHOD_CONTRACT;
 
     context->Pc = (UINT32)(size_t)eip;
 }
 
-inline CORDB_ADDRESS CORDbgGetSP(const DT_CONTEXT * context) {
+inline CORDB_ADDRESS CORDbgGetSP(const T_CONTEXT * context) {
     LIMITED_METHOD_CONTRACT;
 
     return (CORDB_ADDRESS)(context->Sp);
@@ -168,13 +167,13 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
 
 class Thread;
 // Enable single stepping.
-void SetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
+void SetSSFlag(T_CONTEXT *pCtx, Thread *pThread);
 
 // Disable single stepping
-void UnsetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
+void UnsetSSFlag(T_CONTEXT *pCtx, Thread *pThread);
 
 // Check if single stepping is enabled.
-bool IsSSFlagEnabled(DT_CONTEXT *pCtx, Thread *pThread);
+bool IsSSFlagEnabled(T_CONTEXT *pCtx, Thread *pThread);
 
 #include "arm_primitives.h"
 #endif // PRIMITIVES_H_

@@ -870,19 +870,19 @@ typedef FLOATING_SAVE_AREA *PFLOATING_SAVE_AREA;
 typedef struct _CONTEXT {
     ULONG ContextFlags;
 
-    ULONG   Dr0_PAL_Undefined;
-    ULONG   Dr1_PAL_Undefined;
-    ULONG   Dr2_PAL_Undefined;
-    ULONG   Dr3_PAL_Undefined;
-    ULONG   Dr6_PAL_Undefined;
-    ULONG   Dr7_PAL_Undefined;
+    ULONG   Dr0; // UNDEFINED
+    ULONG   Dr1; // UNDEFINED
+    ULONG   Dr2; // UNDEFINED
+    ULONG   Dr3; // UNDEFINED
+    ULONG   Dr6; // UNDEFINED
+    ULONG   Dr7; // UNDEFINED
 
     FLOATING_SAVE_AREA FloatSave;
 
-    ULONG   SegGs_PAL_Undefined;
-    ULONG   SegFs_PAL_Undefined;
-    ULONG   SegEs_PAL_Undefined;
-    ULONG   SegDs_PAL_Undefined;
+    ULONG   SegGs; // UNDEFINED
+    ULONG   SegFs; // UNDEFINED
+    ULONG   SegEs; // UNDEFINED
+    ULONG   SegDs; // UNDEFINED
 
     ULONG   Edi;
     ULONG   Esi;

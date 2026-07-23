@@ -109,9 +109,19 @@ T_CONTEXT * GetContextBufferFromHandle(StackWalkHandle pSFIHandle)
 
 
 // Create and return a stackwalker on the specified thread.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CreateStackWalk(VMPTR_Thread vmThread, DT_CONTEXT * pInternalContextBuffer, OUT StackWalkHandle * ppSFIHandle)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CreateStackWalk(VMPTR_Thread vmThread, ContextBuffer contextBuffer, OUT StackWalkHandle * ppSFIHandle)
 {
     DD_ENTER_MAY_THROW;
+
+    if (ppSFIHandle == NULL)
+    {
+        return E_INVALIDARG;
+    }
+    *ppSFIHandle = NULL;
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < sizeof(DT_CONTEXT)))
+    {
+        return E_INVALIDARG;
+    }
 
     HRESULT hr = S_OK;
     EX_TRY
@@ -131,13 +141,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CreateStackWalk(VMPTR_Thread vmTh
 
         // initialize the CONTEXT.
         // SetStackWalk will initial the RegDisplay from this context.
-        IfFailThrow(GetContext(vmThread, pInternalContextBuffer));
+        IfFailThrow(GetContext(vmThread, contextBuffer));
 
         // initialize the stackwalker
         IfFailThrow(SetStackWalkCurrentContext(vmThread,
                                                *ppSFIHandle,
                                                SET_CONTEXT_FLAG_ACTIVE_FRAME,
-                                               pInternalContextBuffer));
+                                               contextBuffer));
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -156,9 +166,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::DeleteStackWalk(StackWalkHandle p
 }
 
 // Get the CONTEXT of the current frame at which the stackwalker is stopped.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentContext(StackWalkHandle pSFIHandle, DT_CONTEXT * pContext)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentContext(StackWalkHandle pSFIHandle, ContextBuffer contextBuffer)
 {
     DD_ENTER_MAY_THROW;
+
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < sizeof(DT_CONTEXT)))
+    {
+        return E_INVALIDARG;
+    }
 
     HRESULT hr = S_OK;
     EX_TRY
@@ -166,7 +181,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentContext(StackW
 
         StackFrameIterator * pIter = GetIteratorFromHandle(pSFIHandle);
 
-        GetStackWalkCurrentContext(pIter, pContext);
+        GetStackWalkCurrentContext(pIter, reinterpret_cast<DT_CONTEXT *>(contextBuffer.pContextBytes));
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -189,20 +204,27 @@ void DacDbiInterfaceImpl::GetStackWalkCurrentContext(StackFrameIterator * pIter,
 
 
 // Set the stackwalker to the specified CONTEXT.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetStackWalkCurrentContext(VMPTR_Thread vmThread, StackWalkHandle pSFIHandle, CorDebugSetContextFlag flag, DT_CONTEXT * pContext)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetStackWalkCurrentContext(VMPTR_Thread vmThread, StackWalkHandle pSFIHandle, CorDebugSetContextFlag flag, ContextBuffer contextBuffer)
 {
     DD_ENTER_MAY_THROW;
+
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < sizeof(DT_CONTEXT)))
+    {
+        return E_INVALIDARG;
+    }
 
     HRESULT hr = S_OK;
     EX_TRY
     {
+
+        DT_CONTEXT * pContext = reinterpret_cast<DT_CONTEXT *>(contextBuffer.pContextBytes);
 
         StackFrameIterator * pIter = GetIteratorFromHandle(pSFIHandle);
         REGDISPLAY * pRD  = GetRegDisplayFromHandle(pSFIHandle);
 
     #if defined(_DEBUG)
         // The caller should have checked this already.
-        _ASSERTE(CheckContext(vmThread, pContext) == S_OK);
+        _ASSERTE(CheckContext(vmThread, contextBuffer) == S_OK);
     #endif  // _DEBUG
 
         // DD can't keep pointers back into the RS address space.
@@ -341,10 +363,16 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
 
 // Check whether the specified CONTEXT is valid.  The only check we perform right now is whether the
 // SP in the specified CONTEXT is in the stack range of the thread.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CheckContext(VMPTR_Thread       vmThread,
-                                          const DT_CONTEXT * pContext)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CheckContext(VMPTR_Thread vmThread, ContextBuffer contextBuffer)
 {
     DD_ENTER_MAY_THROW;
+
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < sizeof(DT_CONTEXT)))
+    {
+        return E_INVALIDARG;
+    }
+
+    const DT_CONTEXT * pContext = reinterpret_cast<const DT_CONTEXT *>(contextBuffer.pContextBytes);
 
     // If the SP in the CONTEXT isn't valid, then there's no point in checking.
     if ((pContext->ContextFlags & CONTEXT_CONTROL) == 0)
@@ -551,9 +579,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
         Frame *     pFrame     = pThread->GetFrame();
         AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
-        // cStubFrame entries have no DT_CONTEXT buffer; leave ctx as NULL so consumers
+        // cStubFrame entries have no DT_CONTEXT buffer; leave ctx empty so consumers
         // (and the cDAC cross-check, which sets ctx = 0) don't observe a garbage value.
-        frameData.ctx = NULL;
+        frameData.ctx = {};
         frameData.eType = Debugger_STRData::cStubFrame;
 
         while (pFrame != FRAME_TOP)
@@ -722,13 +750,25 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
 }
 
 // Return TRUE if the specified CONTEXT is the CONTEXT of the leaf frame.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread, const DT_CONTEXT * pContext, OUT BOOL * pResult)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread, ContextBuffer contextBuffer, OUT BOOL * pResult)
 {
     DD_ENTER_MAY_THROW;
+
+    if (pResult == NULL)
+    {
+        return E_INVALIDARG;
+    }
+    *pResult = FALSE;
+    if ((contextBuffer.pContextBytes == NULL) || (contextBuffer.contextSize < sizeof(DT_CONTEXT)))
+    {
+        return E_INVALIDARG;
+    }
 
     HRESULT hr = S_OK;
     EX_TRY
     {
+
+        const DT_CONTEXT * pContext = reinterpret_cast<const DT_CONTEXT *>(contextBuffer.pContextBytes);
 
         DT_CONTEXT ctxLeaf;
         Thread *  pThread  = vmThread.GetDacPtr();
@@ -739,7 +779,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread
                                                 reinterpret_cast<BYTE *>(&ctxLeaf)));
 
         // Call a platform-specific helper to compare the two contexts.
-        *pResult = CompareControlRegisters(pContext, &ctxLeaf);
+        *pResult = ::CompareControlRegisters(pContext, &ctxLeaf);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -772,8 +812,8 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
     {
         pFrameData->eType = Debugger_STRData::cRuntimeNativeFrame;
 
-        _ASSERTE(pFrameData->ctx != NULL);
-        GetStackWalkCurrentContext(pIter, pFrameData->ctx);
+        _ASSERTE(pFrameData->ctx.pContextBytes != NULL);
+        GetStackWalkCurrentContext(pIter, reinterpret_cast<DT_CONTEXT *>(pFrameData->ctx.pContextBytes));
     }
     else if (ft == kManagedStackFrame)
     {
@@ -803,8 +843,8 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
 
         pFrameData->eType = Debugger_STRData::cMethodFrame;
 
-        _ASSERTE(pFrameData->ctx != NULL);
-        GetStackWalkCurrentContext(pIter, pFrameData->ctx);
+        _ASSERTE(pFrameData->ctx.pContextBytes != NULL);
+        GetStackWalkCurrentContext(pIter, reinterpret_cast<DT_CONTEXT *>(pFrameData->ctx.pContextBytes));
 
         //
         // initialize the fields in Debugger_STRData::v

@@ -50,7 +50,6 @@ typedef ULONG64 VMPTR_Assembly;
 typedef ULONG64 VMPTR_Module;
 typedef ULONG64 VMPTR_Thread;
 typedef ULONG64 VMPTR_MethodDesc;
-typedef ULONG64 VMPTR_CONTEXT;
 typedef ULONG64 VMPTR_TypeHandle;
 typedef ULONG64 VMPTR_FieldDesc;
 typedef ULONG64 VMPTR_Object;
@@ -64,6 +63,7 @@ typedef ULONG64 VMPTR_NativeCodeVersionNode;
 
 // Address and token types
 typedef ULONG64 CORDB_ADDRESS;
+typedef ULONG64 CORDB_REGISTER;
 typedef ULONG64 GENERICS_TYPE_TOKEN;
 typedef ULONG64 PCODE;
 typedef ULONG64 TADDR;
@@ -75,8 +75,12 @@ typedef int mdMethodDef;
 
 // Context types
 typedef int T_CONTEXT;
-typedef int DT_CONTEXT;
 typedef int EXCEPTION_RECORD;
+typedef struct
+{
+    BYTE * pContextBytes;
+    ULONG32 contextSize;
+} ContextBuffer;
 
 // Metadata interface
 typedef int IMDInternalImport;
@@ -93,6 +97,7 @@ typedef int DynamicMethodType;
 typedef int FrameType;
 typedef int EHijackReason;
 typedef int CLR_DEBUGGING_PROCESS_FLAGS;
+typedef int ContextCopyMode;
 
 // Size type
 typedef unsigned int SIZE_T;
@@ -272,19 +277,19 @@ interface IDacDbiInterface : IUnknown
         [in] CALLBACK_DATA pUserData);
 
     // Context and Stack Walking
-    HRESULT GetManagedStoppedContext([in] VMPTR_Thread vmThread, [out] VMPTR_CONTEXT * pRetVal);
-    HRESULT CreateStackWalk([in] VMPTR_Thread vmThread, [in, out] DT_CONTEXT * pInternalContextBuffer, [out] StackWalkHandle * ppSFIHandle);
+    HRESULT GetManagedStoppedContext([in] VMPTR_Thread vmThread, [out] CORDB_ADDRESS * pRetVal);
+    HRESULT CreateStackWalk([in] VMPTR_Thread vmThread, [in] ContextBuffer contextBuffer, [out] StackWalkHandle * ppSFIHandle);
     HRESULT DeleteStackWalk([in] StackWalkHandle ppSFIHandle);
-    HRESULT GetStackWalkCurrentContext([in] StackWalkHandle pSFIHandle, [out] DT_CONTEXT * pContext);
-    HRESULT SetStackWalkCurrentContext([in] VMPTR_Thread vmThread, [in] StackWalkHandle pSFIHandle, [in] CorDebugSetContextFlag flag, [in] DT_CONTEXT * pContext);
+    HRESULT GetStackWalkCurrentContext([in] StackWalkHandle pSFIHandle, [in] ContextBuffer contextBuffer);
+    HRESULT SetStackWalkCurrentContext([in] VMPTR_Thread vmThread, [in] StackWalkHandle pSFIHandle, [in] CorDebugSetContextFlag flag, [in] ContextBuffer contextBuffer);
     HRESULT UnwindStackWalkFrame([in] StackWalkHandle pSFIHandle, [out] BOOL * pResult);
-    HRESULT CheckContext([in] VMPTR_Thread vmThread, [in] const DT_CONTEXT * pContext);
+    HRESULT CheckContext([in] VMPTR_Thread vmThread, [in] ContextBuffer contextBuffer);
     HRESULT GetStackWalkCurrentFrameInfo([in] StackWalkHandle pSFIHandle, [out] struct Debugger_STRData * pFrameData, [out] FrameType * pRetVal);
     HRESULT GetCountOfInternalFrames([in] VMPTR_Thread vmThread, [out] ULONG32 * pRetVal);
     HRESULT EnumerateInternalFrames([in] VMPTR_Thread vmThread, [in] FP_INTERNAL_FRAME_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
     HRESULT GetStackParameterSize([in] CORDB_ADDRESS controlPC, [out] ULONG32 * pRetVal);
-    HRESULT IsLeafFrame([in] VMPTR_Thread vmThread, [in] const DT_CONTEXT * pContext, [out] BOOL * pResult);
-    HRESULT GetContext([in] VMPTR_Thread vmThread, [out] DT_CONTEXT * pContextBuffer);
+    HRESULT IsLeafFrame([in] VMPTR_Thread vmThread, [in] ContextBuffer contextBuffer, [out] BOOL * pResult);
+    HRESULT GetContext([in] VMPTR_Thread vmThread, [in] ContextBuffer contextBuffer);
 
     // Method
     HRESULT IsDiagnosticsHiddenOrLCGMethod([in] VMPTR_MethodDesc vmMethodDesc, [out] DynamicMethodType * pRetVal);
@@ -440,4 +445,46 @@ interface IDacDbiInterface : IUnknown
 
     // Generic Arg Token
     HRESULT GetGenericArgTokenIndex([in] VMPTR_MethodDesc vmMethod, [out] UINT32 * pTokenIndex);
+
+    // Context size queries
+    HRESULT GetTargetContextSize([in] ULONG32 contextFlags, [out] ULONG32 * pSize);
+
+    // CONTEXT register accessors.
+    HRESULT WriteRegistersToContext([in] ContextBuffer contextBuffer, [in] const int * regs, [in] ULONG32 nRegs, [in] const TADDR * values);
+    HRESULT ReadRegistersFromContext([in] ContextBuffer contextBuffer, [in] const int * regs, [in] ULONG32 nRegs, [out] CORDB_REGISTER * pValues);
+
+    // Returns the full availability bitmask for the target architecture in
+    // CorDebugRegister bit positions, including both integer (GPR) and
+    // floating-point / SIMD registers.
+    HRESULT GetAvailableRegistersMask(
+        [in] BOOL fActive,
+        [in] BOOL fQuickUnwind,
+        [in] ULONG32 regCount,
+        [out, size_is(regCount)] BYTE pAvailable[]);
+
+    // Translates a JIT ICorDebugInfo::RegNum to a CorDebugRegister value
+    HRESULT ConvertJitRegNumToCorDebugRegister([in] ULONG32 jitRegNum, [out] int * pReg);
+
+    // Writes a single floating-point / SIMD register into a DBI-side context
+    // buffer. SIMD register files receive a raw byte copy into the low bytes of
+    // the slot; x87 slots are numerically re-encoded into 80-bit double-extended
+    // form. valueSize is the natural width of the value (4 for R4, 8 for R8).
+    HRESULT WriteFloatRegisterToContext(
+        [in]  ContextBuffer contextBuffer,
+        [in]  int reg,
+        [in]  const BYTE * pValue,
+        [in]  ULONG32 valueSize);
+
+    HRESULT ContextHasExtendedRegisters([in] ContextBuffer contextBuffer, [out] BOOL * pResult);
+
+    HRESULT CompareControlRegisters([in] ContextBuffer contextBuffer1, [in] ContextBuffer contextBuffer2, [out] BOOL * pResult);
+
+    // Copies sourceContext into destinationContext, respecting the ContextFlags
+    // selected by copyMode. flags supplies the destination ContextFlags when
+    // copyMode requests explicit flags.
+    HRESULT CopyContext(
+        [in] ContextBuffer destinationContext,
+        [in] ContextBuffer sourceContext,
+        [in] ContextCopyMode copyMode,
+        [in] ULONG32 flags);
 };

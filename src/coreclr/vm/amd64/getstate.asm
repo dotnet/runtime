@@ -29,9 +29,6 @@ LEAF_ENTRY GetRBP, _TEXT
 
 LEAF_END GetRBP, _TEXT
 
-;// this is the same implementation as the function of the same name in di\amd64\floatconversion.asm and they must
-;// remain in sync.
-
 ;// @dbgtodo inspection: remove this function when we remove the ipc event to load the float state
 
 ; extern "C" double FPFillR8(void* fpContextSlot);

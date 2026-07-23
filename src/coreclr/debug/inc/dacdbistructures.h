@@ -160,6 +160,18 @@ struct MSLAYOUT TargetBuffer
     ULONG         cbSize;
 };
 
+// A variable sized host memory context buffer in target architecture specific layout.
+// The currently supported layout matches the CONTEXT structure for the
+// target architecture and OS.
+// Not (yet) supported:
+// - Optional trailing XState feature data in the buffer
+// - Add an architecture enum field to make the struct self-describing
+struct MSLAYOUT ContextBuffer
+{
+    BYTE *  pContextBytes;
+    ULONG32 contextSize;
+};
+
 // Module properties, retrieved by DAC.
 struct MSLAYOUT ModuleInfo
 {
@@ -539,11 +551,10 @@ struct MSLAYOUT Debugger_JITFuncData
 #endif                          // ARM context structures have a 16-byte alignment requirement
 struct MSLAYOUT Debugger_STRData
 {
-    // fp is a CORDB_ADDRESS (fixed 64-bit) rather than a host-sized FramePointer; the RS
-    // converts to/from FramePointer at the boundary. ctx is deliberately a host-sized
-    // pointer to a dbi-allocated DT_CONTEXT buffer that the DAC writes through.
+    // fp is fixed-width across target architectures. ctx wraps a DBI-owned buffer
+    // (pointer plus size) holding the target's opaque CONTEXT byte image.
     CORDB_ADDRESS           fp;
-    DT_CONTEXT *            ctx;
+    ContextBuffer           ctx;
     VMPTR_AppDomain         vmCurrentAppDomainToken;
 
 
