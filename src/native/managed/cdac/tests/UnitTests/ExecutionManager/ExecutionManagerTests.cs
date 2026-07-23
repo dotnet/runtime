@@ -685,7 +685,7 @@ public class ExecutionManagerTests
         MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
         Target target = CreateTarget(
             emBuilder,
-            stubs.Select(stub => (stub.Name, emBuilder.AddPointerGlobal(stub.Address, stub.Name))).ToArray());
+            stubs.Select(stub => (stub.Name, stub.Address)).ToArray());
 
         foreach ((_, ulong address, CodeKind kind) in stubs)
         {

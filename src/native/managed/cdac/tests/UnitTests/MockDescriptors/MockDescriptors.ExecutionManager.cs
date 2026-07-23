@@ -921,7 +921,7 @@ internal sealed class MockExecutionManagerBuilder
         return jittedMethodLayout.Create(methodFragment);
     }
 
-    internal ulong AddPointerGlobal(ulong value, string name)
+    private ulong AddPointerGlobal(ulong value, string name)
     {
         MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)Builder.TargetTestHelpers.PointerSize, name);
         Builder.TargetTestHelpers.WritePointer(fragment.Data, value);
