@@ -1153,11 +1153,11 @@ typedef enum {
 struct NativePatch
 {
     void * pAddress; // pointer into the LS address space.
-    PRD_TYPE opcode; // opcode to restore with.
+    ULONG32 opcode; // opcode to restore with.
 
     inline bool operator==(NativePatch p2)
     {
-        return memcmp(this, &p2, sizeof(p2)) == 0;
+        return (pAddress == p2.pAddress) && (opcode == p2.opcode);
     }
 };
 
@@ -1166,13 +1166,13 @@ struct NativePatch
 //-----------------------------------------------------------------------------
 
 // Remove the int3 from the remote address
-HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, PRD_TYPE opcode);
+HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 opcode);
 
 // This flavor is assuming our caller already knows the opcode.
 HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress);
 
 // Apply the patch and get the opcode that we're replacing.
-HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, PRD_TYPE * pOpcode);
+HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 * pOpcode);
 
 
 class CordbHashTable;
@@ -2860,6 +2860,8 @@ public:
 
     virtual bool IsThreadSuspendedOrHijacked(ICorDebugThread * pThread) = 0;
 
+    virtual HRESULT GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo) = 0;
+
 #ifdef FEATURE_INTEROP_DEBUGGING
     virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread) = 0;
 #endif
@@ -3277,6 +3279,12 @@ public:
     // Writes a buffer to the target
     void SafeWriteBuffer(TargetBuffer tb, const BYTE * pLocalBuffer);
 
+    // Reads the breakpoint opcode from the target, using the target's instruction width.
+    HRESULT SafeReadOpcode(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode);
+
+    // Writes an opcode to the target, using the target's instruction width.
+    HRESULT SafeWriteOpcode(CORDB_ADDRESS pRemotePtr, ULONG32 opcode);
+
 #if defined(FEATURE_INTEROP_DEBUGGING)
     void DuplicateHandleToLocalProcess(HANDLE * pLocalHandle, RemoteHANDLE * pRemoteHandle);
 #endif // FEATURE_INTEROP_DEBUGGING
@@ -3597,6 +3605,11 @@ public:
 
     // Get the DAC interface.
     IDacDbiInterface * GetDAC();
+
+    HRESULT GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo);
+
+    // Get the width, in bytes, of the breakpoint opcode in the target's instruction stream.
+    HRESULT GetTargetOpcodeSize(ULONG32 * pcbSize);
 
     // Get the data-target, which provides access to the debuggee.
     ICorDebugDataTarget * GetDataTarget();
@@ -3961,7 +3974,7 @@ public:
     PRD_TYPE             *m_rgUncommittedOpcode;
 
     // CORDB_ADDRESS's are UINT_PTR's (64 bit under HOST_64BIT, 32 bit otherwise)
-#if defined(TARGET_64BIT)
+#if defined(HOST_64BIT)
 #define MAX_ADDRESS     (UINT64_MAX)
 #else
 #define MAX_ADDRESS     (UINT32_MAX)
@@ -4086,6 +4099,9 @@ private:
 
     IDacDbiInterface *  m_pDacPrimitives;
 
+    IDacDbiInterface::TargetInfo m_cachedTargetInfo;
+    bool                m_fHasCachedTargetInfo;
+
     IEventChannel *     m_pEventChannel;
 
     // If true, then we'll ASSERT if we detect the target is corrupt or inconsistent
@@ -4104,7 +4120,7 @@ private:
     CUnmanagedThreadHashTableImpl m_unmanagedThreadHashTable;
     DWORD m_dwOutOfProcessStepping;
     bool m_fOutOfProcessSetThreadContextEventReceived;
-    HRESULT EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurThread, CORDB_ADDRESS_TYPE *patchSkipAddr, PRD_TYPE opcode);
+    HRESULT EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurThread, CORDB_ADDRESS_TYPE *patchSkipAddr, ULONG32 opcode);
 public:
     void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
     bool CanDetach(); // Must only be called on the Win32ET, determines if it is safe to detach. Only used by W32ETA_CAN_DETACH
@@ -4770,11 +4786,9 @@ public:
     // Is this type a GC-root.
     bool IsGCRoot();
 
-#ifdef FEATURE_64BIT_ALIGNMENT
     // checks if the type requires 8-byte alignment.
     // this is not exposed via ICorDebug at present.
     HRESULT RequiresAlign8(BOOL* isRequired);
-#endif
 
     //-----------------------------------------------------------
     // Data members
@@ -10481,7 +10495,6 @@ public:
 
     void HijackToRaiseException();
     void RestoreFromRaiseExceptionHijack();
-    void SaveRaiseExceptionEntryContext();
     void ClearRaiseExceptionEntryContext();
     BOOL IsExceptionFromLastRaiseException(const EXCEPTION_RECORD* pExceptionRecord);
 
@@ -10494,12 +10507,10 @@ public:
         return (DWORD) this->m_id;
     }
 
-#ifdef TARGET_X86
     // Stores the thread's current leaf SEH handler
     HRESULT SaveCurrentLeafSeh();
     // Restores the thread's leaf SEH handler from the previously saved value
     HRESULT RestoreLeafSeh();
-#endif
 
     // Logs basic data about a context to the debugging log
     static VOID LogContext(DT_CONTEXT* pContext);
@@ -10542,10 +10553,8 @@ private:
     ULONG_PTR                  m_raiseExceptionExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
 
 
-#ifdef TARGET_X86
     // the SEH handler which was the leaf when SaveCurrentSeh was called (prior to hijack)
     REMOTE_PTR                 m_pSavedLeafSeh;
-#endif
 
     HRESULT EnableSSAfterBP();
 
@@ -11384,17 +11393,11 @@ inline void ValidateOrThrow(const void * p)
 // aligns argBase on platforms that require it else it's a no-op
 inline void AlignAddressForType(CordbType* pArgType, CORDB_ADDRESS& argBase)
 {
-#ifdef TARGET_ARM
-// TODO: review the following
-#ifdef FEATURE_64BIT_ALIGNMENT
     BOOL align = FALSE;
-    HRESULT hr = pArgType->RequiresAlign8(&align);
-    _ASSERTE(SUCCEEDED(hr));
+    IfFailThrow(pArgType->RequiresAlign8(&align));
 
     if (align)
         argBase = ALIGN_ADDRESS(argBase, 8);
-#endif // FEATURE_64BIT_ALIGNMENT
-#endif // TARGET_ARM
 }
 
 //-----------------------------------------------------------------------------
