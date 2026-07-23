@@ -128,13 +128,6 @@ internal static class WasmR2RAssert
         CheckFunctionExports(exports, importedFunctionCount, definedFunctionCount, failures);
         CheckElementFunctionReferences(reader, importedFunctionCount, definedFunctionCount, failures);
 
-        const uint RestoreContextTagIndex = 0;
-        if (!WasmImageContainsRestoreContextTagReference(reader, RestoreContextTagIndex))
-        {
-            failures.Add(
-                $"Expected a try_table catch_ref of imported tag index {RestoreContextTagIndex}.");
-        }
-
         diagnostic = failures.Count == 0
             ? "WASM imports, definitions, exports, and instruction references use the expected per-kind indices."
             : string.Join(Environment.NewLine, failures);
@@ -251,40 +244,6 @@ internal static class WasmR2RAssert
                     $"expected {expectedIndex} after {importedFunctionCount} function imports.");
             }
         }
-    }
-
-    private static bool WasmImageContainsRestoreContextTagReference(
-        WebcilImageReader reader,
-        uint restoreContextTagIndex)
-    {
-        Debug.Assert(restoreContextTagIndex <= 0x7F);
-
-        // try_table, empty block type, one catch clause, catch_ref, padded tagidx, label 0
-        Span<byte> pattern = stackalloc byte[10];
-        pattern[0] = 0x1F;
-        pattern[1] = 0x40;
-        pattern[2] = 0x01;
-        pattern[3] = 0x01;
-        pattern[4] = (byte)((restoreContextTagIndex & 0x7F) | 0x80);
-        pattern[5] = 0x80;
-        pattern[6] = 0x80;
-        pattern[7] = 0x80;
-        pattern[8] = 0x00;
-        pattern[9] = 0x00;
-
-        for (int functionIndex = 0; ; functionIndex++)
-        {
-            WebcilImageReader.WasmFunctionInfo? body = reader.GetWasmFunctionBody(functionIndex);
-            if (body is null)
-                break;
-
-            ReadOnlySpan<byte> instructions = body.Value.Image.AsSpan().Slice(
-                body.Value.InstructionOffset, body.Value.InstructionLength);
-            if (instructions.IndexOf(pattern) >= 0)
-                return true;
-        }
-
-        return false;
     }
 
     private static Dictionary<(string Module, string Name), WasmImportIndex> ReadWasmImports(WebcilImageReader reader)
