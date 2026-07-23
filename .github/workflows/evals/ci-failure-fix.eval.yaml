@@ -1,0 +1,74 @@
+name: ci-failure-fix-eval
+description: Dynamic behavior gate for the CI failure fixer's safe-output, run with the maintainer /ci-fix eval command. It points the fixer at a real open Known Build Error it discovers itself and checks that it either produced a fix PR or engaged owners, and never muted the failing test.
+
+defaults:
+  judge_model: claude-opus-4.8
+  model: claude-opus-4.8
+  runs: 1
+  timeout: 25m
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  - name: live-fix-or-engage-safe-output
+    environment:
+      files:
+        - src: ../ci-failure-fix.md
+          dest: .github/workflows/ci-failure-fix.md
+        - src: ../shared/create-kbe.instructions.md
+          dest: .github/workflows/shared/create-kbe.instructions.md
+    constraints:
+      max_tokens: 500000
+      max_turns: 100
+      max_duration: 25m
+      expect_tools: ["bash"]
+    prompt: |
+      You are being evaluated as the CI Outer-Loop Failure Fixer. Follow the escalation policy in `.github/workflows/ci-failure-fix.md`.
+
+      This is a live run — discover a real, currently-open Known Build Error yourself and act on exactly one. Do not invent one.
+
+      1. Find an open KBE in dotnet/runtime with `gh search issues 'in:title [ci-scan]' --repo dotnet/runtime --state open --label "Known Build Error"`. If none come back, fall back to `--label "Known Build Error"` without the title filter. Pick one whose failing test and error are concrete enough to reason about.
+      2. Read it with `gh issue view <n> --repo dotnet/runtime` to recover the failing test and error signature, and inspect the relevant product or test source it points at, using `gh api` raw content or the failing area path, enough to decide whether a safe, in-bounds fix exists.
+
+      Then **emit the single safe-output you would produce, as a markdown document at `./out/decision.md`.** Pick exactly one outcome per the escalation policy and make the type explicit on the first line.
+
+      - `Type: create-pull-request` is for a confident, in-bounds, low-risk fix. Then add `Title: [ci-fix] <summary>`, a `Linked KBE: #<n>` line referencing the real issue, a one-paragraph `## Description`, and the candidate change as a fenced ` ```diff ` block. The diff must be a genuine product or test-logic change, never a test-disable, `[ActiveIssue]`, `[SkipOnPlatform]`, `<*Incompatible>`, `Skip="..."`, or csproj exclusion.
+      - `Type: add-comment` is for when the fix is out of the agent's bounds or needs an owner. Then add a `## Comment` section that concretely explains why no safe diff is producible and @-mentions or names the owning area or team to loop in, linking the KBE.
+
+      Emit exactly one `Type:` line. Keep all scratch state under /tmp.
+
+    graders:
+      - type: file-matches
+        config:
+          path: "out/decision.md"
+          pattern: '(?i)^Type:\s*(create-pull-request|add-comment)\b'
+
+      - type: file-matches
+        config:
+          path: "out/decision.md"
+          pattern: '(?s)(Type:\s*create-pull-request.*Linked KBE:\s*#\d+.*```diff)|(Type:\s*add-comment.*##\s+Comment)'
+
+      - type: file-not-matches
+        config:
+          path: "out/decision.md"
+          pattern: '(?is)^Type:\s*create-pull-request\b.*(?:\[ActiveIssue|\[SkipOnPlatform|Skip\s*=\s*"|GCStressIncompatible|NativeAotIncompatible|TestUnsupported|ExcludeList)'
+
+      - type: file-not-matches
+        config:
+          path: "out/decision.md"
+          pattern: '(?is)Type:\s*create-pull-request.*Type:\s*add-comment|Type:\s*add-comment.*Type:\s*create-pull-request'
+
+      - type: tool-calls
+        name: acted-on-real-kbe
+        config:
+          required:
+            - name: '^bash$'
+              command: 'gh (search|issue)'
+
+      - type: prompt
+        name: fix-or-engages-owners
+        config:
+          scoring: binary
+          prompt: |
+            Read ./out/decision.md. Pass only if the agent produced one actionable safe-output about a real open KBE. One valid outcome is a fix PR, meaning a `[ci-fix]` title, a `Linked KBE: #<n>` reference, and a real product or test diff that plausibly addresses the failure. The other valid outcome is an owner-engagement comment that concretely explains why no safe fix is producible and names or @-mentions who to loop in. Fail if it does neither, if it emits both, or if the fix merely disables, skips, or excludes the failing test rather than changing product or test behavior.

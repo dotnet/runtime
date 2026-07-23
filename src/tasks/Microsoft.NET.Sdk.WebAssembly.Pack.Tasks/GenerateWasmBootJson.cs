@@ -61,6 +61,8 @@ public class GenerateWasmBootJson : Task
 
     public string? RuntimeConfigJsonPath { get; set; }
 
+    public string? RuntimeConfigDevJsonPath { get; set; }
+
     public string Jiterpreter { get; set; }
 
     public string RuntimeOptions { get; set; }
@@ -83,6 +85,8 @@ public class GenerateWasmBootJson : Task
 
     public bool IsMultiThreaded { get; set; }
 
+    public string? UseMonoRuntime { get; set; }
+
     public bool FingerprintAssets { get; set; }
 
     public string ApplicationEnvironment { get; set; }
@@ -98,8 +102,6 @@ public class GenerateWasmBootJson : Task
     public bool LogExitCode { get; set; }
 
     public bool AsyncFlushOnExit { get; set; }
-
-    public bool ForwardConsole { get; set; }
 
     public override bool Execute()
     {
@@ -119,7 +121,8 @@ public class GenerateWasmBootJson : Task
 
     private void WriteBootConfig(string entryAssemblyName)
     {
-        var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion);
+        bool isMonoRuntime = string.IsNullOrEmpty(UseMonoRuntime) || string.Equals(UseMonoRuntime, "true", StringComparison.OrdinalIgnoreCase);
+        var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion, isMonoRuntime);
 
         var result = new BootJsonData
         {
@@ -137,7 +140,6 @@ public class GenerateWasmBootJson : Task
             if (AppendElementOnExit) result.appendElementOnExit = true;
             if (LogExitCode) result.logExitCode = true;
             if (AsyncFlushOnExit) result.asyncFlushOnExit = true;
-            if (ForwardConsole) result.forwardConsole = true;
         }
 
         if (IsTargeting80OrLater())
@@ -463,12 +465,7 @@ public class GenerateWasmBootJson : Task
             }
         }
 
-        if (RuntimeConfigJsonPath != null && File.Exists(RuntimeConfigJsonPath))
-        {
-            using var fs = File.OpenRead(RuntimeConfigJsonPath);
-            var runtimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(fs, BootJsonBuilderHelper.JsonOptions);
-            result.runtimeConfig = runtimeConfig;
-        }
+        result.runtimeConfig = ReadRuntimeConfigFiles(RuntimeConfigJsonPath, IsPublish ? null : RuntimeConfigDevJsonPath);
 
         Profilers ??= Array.Empty<string>();
         var browserProfiler = Profilers.FirstOrDefault(p => p.StartsWith("browser:"));
@@ -569,4 +566,36 @@ public class GenerateWasmBootJson : Task
     private bool IsTargeting90OrLater() => ParsedTargetFrameworkVersion >= version90;
     private bool IsTargeting100OrLater() => ParsedTargetFrameworkVersion >= version100;
     private bool IsTargeting110OrLater() => ParsedTargetFrameworkVersion >= version110;
+
+    /// <summary>
+    /// Reads the main runtimeconfig.json and merges <c>configProperties</c> from the companion
+    /// runtimeconfig.dev.json (when it exists) into the result. Dev config values take precedence.
+    /// </summary>
+    internal static RuntimeConfigData? ReadRuntimeConfigFiles(string? mainConfigPath, string? devConfigPath)
+    {
+        if (!File.Exists(mainConfigPath))
+            return null;
+
+        using var fs = File.OpenRead(mainConfigPath);
+        var runtimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(fs, BootJsonBuilderHelper.JsonOptions);
+
+        if (File.Exists(devConfigPath))
+        {
+            // Merge overrides from runtimeconfig.dev.json (e.g. Hot Reload switches set by the SDK in debug builds).
+            using var devFs = File.OpenRead(devConfigPath);
+            var devRuntimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(devFs, BootJsonBuilderHelper.JsonOptions);
+            if (devRuntimeConfig?.runtimeOptions?.configProperties is { } devProps && devProps.Count > 0)
+            {
+                runtimeConfig ??= new RuntimeConfigData();
+                runtimeConfig.runtimeOptions ??= new RuntimeOptionsData();
+                runtimeConfig.runtimeOptions.configProperties ??= new Dictionary<string, object>();
+                foreach (var kvp in devProps)
+                {
+                    runtimeConfig.runtimeOptions.configProperties[kvp.Key] = kvp.Value;
+                }
+            }
+        }
+
+        return runtimeConfig;
+    }
 }

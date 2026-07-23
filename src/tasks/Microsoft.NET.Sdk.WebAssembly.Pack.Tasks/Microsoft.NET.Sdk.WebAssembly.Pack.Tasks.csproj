@@ -7,9 +7,17 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>annotations</Nullable>
+    <!-- Emit into stable, version-independent folder names instead of the TFM so the package layout and its
+         consumers don't need updating whenever the .NET Core TFM bumps. -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(OutputPath)net\</OutputPath>
+    <OutputPath Condition="'$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(OutputPath)netframework\</OutputPath>
+    <IntermediateOutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(IntermediateOutputPath)net\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(IntermediateOutputPath)netframework\</IntermediateOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.Tests" />
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="..\WasmAppBuilder\WebcilConverter.cs" />
     <Compile Include="..\WasmAppBuilder\LogAdapter.cs" />
@@ -19,11 +27,10 @@
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <_PublishFramework Remove="@(_PublishFramework)" />
-      <_PublishFramework Include="$(TargetFrameworks)" />
-
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.dll" TargetPath="tools\%(_PublishFramework.Identity)" />
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.pdb" TargetPath="tools\%(_PublishFramework.Identity)" />
+      <FilesToPackage Include="$(OutputPath)net\*.dll" TargetPath="tools\net" />
+      <FilesToPackage Include="$(OutputPath)net\*.pdb" TargetPath="tools\net" />
+      <FilesToPackage Condition="'$(NetFrameworkToolCurrent)' != ''" Include="$(OutputPath)netframework\*.dll" TargetPath="tools\netframework" />
+      <FilesToPackage Condition="'$(NetFrameworkToolCurrent)' != ''" Include="$(OutputPath)netframework\*.pdb" TargetPath="tools\netframework" />
     </ItemGroup>
   </Target>
 </Project>

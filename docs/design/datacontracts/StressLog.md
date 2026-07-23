@@ -18,13 +18,8 @@ internal record struct StressLogData(
 
 internal record struct ThreadStressLogData(
     TargetPointer Address,
-    TargetPointer NextPointer,
     ulong ThreadId,
-    bool WriteHasWrapped,
-    TargetPointer CurrentPointer,
-    TargetPointer ChunkListHead,
-    TargetPointer ChunkListTail,
-    TargetPointer CurrentWriteChunk);
+    bool WriteHasWrapped);
 
 internal record struct StressMsgData(
     uint Facility,
@@ -38,7 +33,7 @@ bool HasStressLog();
 StressLogData GetStressLogData();
 StressLogData GetStressLogData(TargetPointer stressLogPointer);
 IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer logs);
-IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog);
+IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddress);
 bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer);
 ```
 
@@ -67,7 +62,6 @@ Data descriptors used:
 | ThreadStressLog | ChunkListHead | Pointer to the head of the chunk list |
 | ThreadStressLog | ChunkListTail | Pointer to the tail of the chunk list |
 | ThreadStressLog | CurrentWriteChunk | Pointer to the chunk currently being written to |
-| StressLogChunk | Prev | Pointer to the previous chunk |
 | StressLogChunk | Next | Pointer to the next chunk |
 | StressLogChunk | Buf | The data stored in the chunk |
 | StressLogChunk | Sig1 | First byte of the chunk signature (to ensure validity) |
@@ -157,20 +151,15 @@ IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer logs)
 
         yield return new ThreadStressLogData(
             currentPointer,
-            threadStressLog.Next,
             threadStressLog.ThreadId,
-            threadStressLog.WriteHasWrapped,
-            threadStressLog.CurrentPtr,
-            threadStressLog.ChunkListHead,
-            threadStressLog.ChunkListTail,
-            threadStressLog.CurrentWriteChunk);
+            threadStressLog.WriteHasWrapped);
 
         currentPointer = threadStressLog.Next;
     }
 }
 
 // Return messages going in reverse chronological order, newest first.
-IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog)
+IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddress)
 {
     // 1. Get the current message pointer from the log and the info about the current chunk the runtime is writing into.
     //    Record our current read pointer as the current message pointer.
@@ -233,8 +222,9 @@ protected TargetPointer GetFormatPointer(ulong formatOffset)
         moduleTable = stressLog.Modules ?? throw new InvalidOperationException("StressLogModuleTable is not set and StressLog does not contain a ModuleTable offset, but StressLogHasModuleTable is set to 1.");
     }
     uint moduleEntrySize = target.GetTypeInfo(DataType.StressLogModuleDesc).Size!.Value;
-    uint maxModules = target.ReadGlobal<uint>("StressLogMaxModules");
-    for (uint i = 0; i < maxModules; ++i)
+    TargetNUInt maxModules = new(target.ReadGlobalPointer("StressLogMaxModules").Value);
+    ulong cumulativeOffset = 0;
+    for (ulong i = 0; i < maxModules.Value; ++i)
     {
         StressLogModuleDesc module = new(Target, moduleTable.Value + i * moduleEntrySize);
         ulong relativeOffset = formatOffset - cumulativeOffset;

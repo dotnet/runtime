@@ -57,7 +57,7 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(stream);
             ArgumentNullException.ThrowIfNull(compressionOptions);
 
-            int windowBits = CompressionFormatHelper.ResolveWindowBits(compressionOptions.WindowLog, CompressionFormat.ZLib);
+            int windowBits = CompressionFormatHelper.ResolveWindowBits(compressionOptions.WindowLog2, CompressionFormat.ZLib);
 
             _deflateStream = new DeflateStream(stream, compressionOptions, leaveOpen, windowBits);
         }

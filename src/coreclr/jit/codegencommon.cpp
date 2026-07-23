@@ -402,6 +402,9 @@ CodeGen::CodeGen(Compiler* theCompiler)
     m_cgEmitter->codeGen = this;
     m_cgEmitter->gcInfo  = &gcInfo;
 
+    // On wasm this is never set by register allocation, so initialize it here.
+    calleeRegArgMaskLiveIn = RBM_NONE;
+
 #ifdef DEBUG
     setVerbose(m_compiler->verbose);
 #endif // DEBUG
@@ -1828,14 +1831,35 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         regNumber reg1 = retDesc->GetABIReturnReg(0, call->GetUnmanagedCallConv());
         regNumber reg2 = retDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv());
 
-        // VLT_REG_REG can only encode integer registers. On platforms where structs
-        // can be returned in a mix of int and float registers (SysV x64, RISC-V),
-        // skip recording if any register is not an int register.
-        // TODO: Supporting this case is tracked by https://github.com/dotnet/runtime/issues/129344
+#if !defined(TARGET_64BIT)
+        // Multi-register debug-info encodings that involve floating-point
+        // registers assume each register holds an 8-byte half of the value, so
+        // they are only implemented for 64-bit targets. On a 32-bit target a
+        // value returned in two floating-point registers (e.g. an ARM32 HFA such
+        // as a struct of two floats or doubles) cannot yet be represented; skip
+        // emitting MRV info for it rather than producing an encoding the debugger
+        // cannot decode. A pair of integer registers (e.g. x86 EAX:EDX) is still
+        // encoded below as VLT_REG_REG.
+        //
+        // Supporting this on ARM32 also depends on implementing managed FP-register
+        // value inspection there, which is itself unimplemented (the single-register
+        // VLT_REG_FP case is @ARMTODO/E_NOTIMPL in the DBI), and on mapping the JIT's
+        // single-precision register numbering to the debugger's D-register indexing.
+        // TODO: Implement 32-bit support for two-floating-point-register returns.
         if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
         {
             return;
         }
+#elif !defined(TARGET_AMD64)
+        // This unified RegNum encoding is implemented only for AMD64. Other 64-bit
+        // targets still need dedicated encodings to represent FP-containing
+        // two-register returns without ambiguity, so suppress those cases here
+        // instead of emitting an encoding the debugger cannot decode.
+        if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
+        {
+            return;
+        }
+#endif // !TARGET_64BIT
 
         info.returnValueLoc.storeVariableInRegisters(reg1, reg2);
     }
@@ -1845,17 +1869,12 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         info.returnValueLoc.vlType         = VLT_FPSTK;
         info.returnValueLoc.vlFPstk.vlfReg = 0;
 #else
-        // VLT_REG_FP uses a 0-based FP register index; the DBI adds the
-        // platform-specific XMM0/V0 base when converting to CorDebugRegister.
-        info.returnValueLoc.vlType       = VLT_REG_FP;
-        info.returnValueLoc.vlReg.vlrReg = (regNumber)(REG_FLOATRET - REG_FP_FIRST);
+        info.returnValueLoc.storeVariableInRegisters(REG_FLOATRET, REG_NA);
 #endif
     }
     else if (varTypeUsesFloatReg(call))
     {
-        // VLT_REG_FP uses a 0-based FP register index.
-        info.returnValueLoc.vlType       = VLT_REG_FP;
-        info.returnValueLoc.vlReg.vlrReg = (regNumber)(REG_FLOATRET - REG_FP_FIRST);
+        info.returnValueLoc.storeVariableInRegisters(REG_FLOATRET, REG_NA);
     }
     else
     {
@@ -3415,6 +3434,11 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
     }
 #endif
 
+    if (calleeRegArgMaskLiveIn == RBM_NONE)
+    {
+        return;
+    }
+
     regMaskTP paramRegs = calleeRegArgMaskLiveIn;
     if (m_compiler->opts.OptimizationDisabled())
     {
@@ -3682,7 +3706,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
     //
     assert(!m_compiler->opts.IsOSR());
 
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     unsigned varNum = 0;
 
@@ -3790,7 +3814,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
  */
 void CodeGen::genCheckUseBlockInit()
 {
-    assert(!m_compiler->compGeneratingProlog);
+    assert(!GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     unsigned initStkLclCnt = 0; // The number of int-sized stack local variables that need to be initialized (variables
                                 // larger than int count for more than 1).
@@ -4027,7 +4051,7 @@ void CodeGen::genCheckUseBlockInit()
  */
 void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& initDblRegs, const regNumber& initReg)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     // The first float/double reg that is initialized to 0. So they can be used to
     // initialize the remaining registers.
@@ -4154,7 +4178,7 @@ regNumber CodeGen::genGetZeroReg(regNumber initReg, bool* pInitRegZeroed)
 //                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
 void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (genUseBlockInit)
     {
@@ -4597,7 +4621,7 @@ void CodeGen::genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegS
 
 void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     const bool reportArg = m_compiler->lvaReportParamTypeArg();
 
@@ -5139,7 +5163,6 @@ void CodeGen::genFinalizeFrame()
  */
 void CodeGen::genFnProlog()
 {
-    ScopedSetVariable<bool> _setGeneratingProlog(&m_compiler->compGeneratingProlog, true);
 
     m_compiler->funSetCurrentFunc(0);
 
@@ -5835,10 +5858,7 @@ void CodeGen::genFnProlog()
 
         genHomeStackPartOfSplitParameter(initReg, &initRegZeroed);
 
-        if (calleeRegArgMaskLiveIn != RBM_NONE)
-        {
-            genHomeRegisterParams(initReg, &initRegZeroed);
-        }
+        genHomeRegisterParams(initReg, &initRegZeroed);
 
         // Home the incoming arguments.
         genEnregisterIncomingStackArgs();

@@ -9,17 +9,17 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.RCW))]
 internal sealed partial class RCW : IData<RCW>
 {
-    [Field] public TargetPointer NextCleanupBucket { get; }
-    [Field] public TargetPointer NextRCW { get; }
-    [Field] public uint Flags { get; }
-    [Field] public TargetPointer CtxCookie { get; }
-    [Field] public TargetPointer CtxEntry { get; }
-    [Field] public TargetPointer IdentityPointer { get; }
-    [Field] public uint SyncBlockIndex { get; }
-    [Field] public TargetPointer VTablePtr { get; }
-    [Field] public TargetPointer CreatorThread { get; }
-    [Field] public uint RefCount { get; }
-    [Field] public TargetPointer UnknownPointer { get; }
+    [Field] public partial TargetPointer NextCleanupBucket { get; }
+    [Field] public partial TargetPointer NextRCW { get; }
+    [Field] public partial uint Flags { get; }
+    [Field] public partial TargetPointer CtxCookie { get; }
+    [Field] public partial TargetPointer CtxEntry { get; }
+    [Field] public partial TargetPointer IdentityPointer { get; }
+    [Field] public partial uint SyncBlockIndex { get; }
+    [Field] public partial TargetPointer VTablePtr { get; }
+    [Field] public partial TargetPointer CreatorThread { get; }
+    [Field] public partial uint RefCount { get; }
+    [Field] public partial TargetPointer UnknownPointer { get; }
 
     public IReadOnlyList<Data.InterfaceEntry> InterfaceEntries { get; private set; } = [];
 
