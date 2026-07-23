@@ -215,6 +215,7 @@ instructionset     ,ARM64 ,Aes                   ,           ,9  ,Aes           
 instructionset     ,ARM64 ,Crc32                 ,           ,18 ,Crc32                 ,crc
 instructionset     ,ARM64 ,Dp                    ,           ,23 ,Dp                    ,dotprod
 instructionset     ,ARM64 ,Rdm                   ,           ,24 ,Rdm                   ,rdma
+instructionset     ,ARM64 ,                      ,Fp16       ,95 ,Fp16                  ,fp16
 instructionset     ,ARM64 ,Sha1                  ,           ,19 ,Sha1                  ,sha1
 instructionset     ,ARM64 ,Sha256                ,           ,20 ,Sha256                ,sha2
 instructionset     ,ARM64 ,                      ,Atomics    ,21 ,Atomics               ,lse
@@ -240,6 +241,7 @@ instructionset64bit,ARM64 ,Aes
 instructionset64bit,ARM64 ,Crc32
 instructionset64bit,ARM64 ,Dp
 instructionset64bit,ARM64 ,Rdm
+instructionset64bit,ARM64 ,Fp16
 instructionset64bit,ARM64 ,Sha1
 instructionset64bit,ARM64 ,Sha256
 instructionset64bit,ARM64 ,Sve
@@ -259,6 +261,7 @@ implication        ,ARM64 ,Aes        ,ArmBase
 implication        ,ARM64 ,Crc32      ,ArmBase
 implication        ,ARM64 ,Dp         ,AdvSimd
 implication        ,ARM64 ,Rdm        ,AdvSimd
+implication        ,ARM64 ,Fp16       ,AdvSimd
 implication        ,ARM64 ,Sha1       ,ArmBase
 implication        ,ARM64 ,Sha256     ,ArmBase
 implication        ,ARM64 ,Vector64   ,AdvSimd

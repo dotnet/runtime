@@ -1113,7 +1113,7 @@ inline static bool isValidGeneralDatasize(emitAttr size)
 
 inline static bool isValidScalarDatasize(emitAttr size)
 {
-    return (size == EA_8BYTE) || (size == EA_4BYTE);
+    return (size == EA_8BYTE) || (size == EA_4BYTE) || (size == EA_2BYTE);
 }
 
 inline static bool isValidScalableDatasize(emitAttr size)
@@ -1331,12 +1331,12 @@ inline static bool insOptsConvertFloatToFloat(insOpts opt)
 
 inline static bool insOptsConvertFloatToInt(insOpts opt)
 {
-    return ((opt >= INS_OPTS_S_TO_4BYTE) && (opt <= INS_OPTS_D_TO_8BYTE));
+    return ((opt >= INS_OPTS_S_TO_4BYTE) && (opt <= INS_OPTS_H_TO_8BYTE));
 }
 
 inline static bool insOptsConvertIntToFloat(insOpts opt)
 {
-    return ((opt >= INS_OPTS_4BYTE_TO_S) && (opt <= INS_OPTS_8BYTE_TO_D));
+    return ((opt >= INS_OPTS_4BYTE_TO_S) && (opt <= INS_OPTS_8BYTE_TO_H));
 }
 
 inline static bool insOptsScalable(insOpts opt)

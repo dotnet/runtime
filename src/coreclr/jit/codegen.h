@@ -631,6 +631,7 @@ protected:
 #if defined(TARGET_ARM64)
     void genArm64EmitterUnitTestsGeneral();
     void genArm64EmitterUnitTestsAdvSimd();
+    void genArm64EmitterUnitTestsFp16();
     void genArm64EmitterUnitTestsSve();
     void genArm64EmitterUnitTestsPac();
 #endif

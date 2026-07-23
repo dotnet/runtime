@@ -2788,6 +2788,10 @@ void CodeGen::genEmitterUnitTests()
     {
         genArm64EmitterUnitTestsAdvSimd();
     }
+    if (unitTestSectionAll || (strstr(unitTestSection, "fp16") != nullptr))
+    {
+        genArm64EmitterUnitTestsFp16();
+    }
     if (unitTestSectionAll || (strstr(unitTestSection, "sve") != nullptr))
     {
         genArm64EmitterUnitTestsSve();

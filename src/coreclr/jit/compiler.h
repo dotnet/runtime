@@ -5343,6 +5343,13 @@ protected:
 
     NamedIntrinsic lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     NamedIntrinsic lookupPrimitiveIntNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
+    NamedIntrinsic lookupHalfNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
+#if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
+    NamedIntrinsic lookupHalfIntrinsic(NamedIntrinsic ni);
+#endif // FEATURE_HW_INTRINSICS && (TARGET_XARCH || TARGET_ARM64)
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+    int lookupHalfRoundingMode(NamedIntrinsic ni);
+#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig,

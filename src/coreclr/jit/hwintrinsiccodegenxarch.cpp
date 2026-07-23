@@ -1036,6 +1036,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX512:
         case InstructionSet_AVX512_X64:
         case InstructionSet_AVX512v2:
+        case InstructionSet_AVX10v1:
         case InstructionSet_AVX10v2:
         case InstructionSet_AVX10v2_X64:
         case InstructionSet_AVXVNNIINT:
@@ -1890,6 +1891,7 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
 
         case NI_AVX512_FusedMultiplyAdd:
         case NI_AVX512_FusedMultiplyAddScalar:
+        case NI_AVX10v1_FusedMultiplyAddScalar:
         case NI_AVX512_FusedMultiplyAddNegated:
         case NI_AVX512_FusedMultiplyAddNegatedScalar:
         case NI_AVX512_FusedMultiplyAddSubtract:
@@ -3697,6 +3699,35 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             assert(baseType == TYP_ULONG || baseType == TYP_LONG);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
             genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, instOptions);
+            break;
+        }
+
+        case NI_AVX10v1_ConvertToInt32WithTruncation:
+        case NI_AVX10v1_ConvertToUInt32WithTruncation:
+#if defined(TARGET_AMD64)
+        case NI_AVX10v1_ConvertToInt64WithTruncation:
+        case NI_AVX10v1_ConvertToUInt64WithTruncation:
+#endif // TARGET_AMD64
+        {
+            // The source is a scalar `Half` (bound as `TYP_USHORT`) held in a vector register while the
+            // result is produced directly into a general purpose register. Use the size of the target
+            // integer type so the correct register width is displayed (e.g. `eax` rather than `rax`).
+            assert(baseType == TYP_USHORT);
+            attr = emitTypeSize(targetType);
+            genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
+            break;
+        }
+
+        case NI_AVX10v1_ConvertScalarToVector128Half:
+        {
+            // For integer sources the value is read directly from a general purpose register, so the
+            // operand size must reflect the source type (e.g. `ecx` rather than `rcx`). Floating-point
+            // sources come from a vector register and use the full 128-bit size.
+            if (varTypeIsIntegral(baseType))
+            {
+                attr = emitActualTypeSize(baseType);
+            }
+            genHWIntrinsic_R_R_RM(node, ins, attr, instOptions);
             break;
         }
 
