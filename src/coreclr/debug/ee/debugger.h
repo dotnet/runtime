@@ -2886,23 +2886,7 @@ private:
     PTR_DebuggerLazyInit         m_pLazyData;
 
 
-    // A list of all defines that affect layout of MD types
-    typedef enum _Target_Defines
-    {
-        DEFINE__DEBUG = 1,
-    } _Target_Defines;
-
-    // A bitfield that has bits set at build time corresponding
-    // to which defines are active
-    static const int _defines = 0
-#ifdef _DEBUG
-        | DEFINE__DEBUG
-#endif
-        ;
-
 public:
-    DWORD m_defines;
-    DWORD m_mdDataStructureVersion;
 #ifndef DACCESS_COMPILE
     virtual void SuspendForGarbageCollectionStarted();
     virtual void SuspendForGarbageCollectionCompleted();

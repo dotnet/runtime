@@ -391,6 +391,84 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
+    public int GetReadWriteMetadataSize(ulong vmModule, uint* pSize)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pSize == null)
+                throw new ArgumentNullException(nameof(pSize));
+            if (vmModule == 0)
+                throw new ArgumentException("Module pointer must be non-zero.", nameof(vmModule));
+
+            *pSize = 0;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+
+            byte[] blob = _target.Contracts.EcmaMetadata.GetReadWriteMetadata(handle);
+            *pSize = (uint)blob.Length;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint sizeLocal;
+            int hrLocal = _legacy.GetReadWriteMetadataSize(vmModule, &sizeLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pSize == sizeLocal, $"cDAC size: {*pSize}, DAC size: {sizeLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    public int FillReadWriteMetadata(ulong vmModule, byte* pBuffer, uint cbBuffer)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pBuffer == null)
+                throw new ArgumentNullException(nameof(pBuffer));
+            if (vmModule == 0)
+                throw new ArgumentException("Module pointer must be non-zero.", nameof(vmModule));
+
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+
+            byte[] blob = _target.Contracts.EcmaMetadata.GetReadWriteMetadata(handle);
+            if (cbBuffer < (uint)blob.Length)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER)!;
+
+            blob.AsSpan().CopyTo(new Span<byte>(pBuffer, (int)cbBuffer));
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            byte[] bufferLocal = new byte[cbBuffer];
+            int hrLocal;
+            fixed (byte* pLocal = bufferLocal)
+            {
+                hrLocal = _legacy.FillReadWriteMetadata(vmModule, pLocal, cbBuffer);
+            }
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(new Span<byte>(pBuffer, (int)cbBuffer).SequenceEqual(bufferLocal), "cDAC and DAC read-write metadata buffers differ.");
+            }
+        }
+#endif
+        return hr;
+    }
+
     public int GetSymbolsBuffer(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer, SymbolFormat* pSymbolFormat)
     {
         int hr = HResults.S_OK;
@@ -5112,64 +5190,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*pOptimizationsDisabled == localPOptimizationsDisabled);
-        }
-#endif
-
-        return hr;
-    }
-
-    public int GetDefinesBitField(uint* pDefines)
-    {
-        *pDefines = 0;
-        int hr = HResults.S_OK;
-        try
-        {
-            if (!_target.Contracts.Debugger.TryGetDebuggerData(out Contracts.DebuggerData data))
-                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_NOTREADY)!;
-            *pDefines = data.DefinesBitField;
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint resultLocal;
-            int hrLocal = _legacy.GetDefinesBitField(&resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pDefines == resultLocal);
-        }
-#endif
-
-        return hr;
-    }
-
-    public int GetMDStructuresVersion(uint* pMDStructuresVersion)
-    {
-        *pMDStructuresVersion = 0;
-        int hr = HResults.S_OK;
-        try
-        {
-            if (!_target.Contracts.Debugger.TryGetDebuggerData(out Contracts.DebuggerData data))
-                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_NOTREADY)!;
-            *pMDStructuresVersion = data.MDStructuresVersion;
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint resultLocal;
-            int hrLocal = _legacy.GetMDStructuresVersion(&resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pMDStructuresVersion == resultLocal);
         }
 #endif
 

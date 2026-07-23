@@ -2044,36 +2044,6 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE AreOptimizationsDisabled(VMPTR_Module vmModule, mdMethodDef methodTk, OUT BOOL* pOptimizationsDisabled) = 0;
 
-    // Retrieves a bit field indicating which defines were in use when clr was built. This only includes
-    // defines that are specified in the Debugger::_Target_Defines enumeration, which is a small subset of
-    // all defines.
-    //
-    //
-    // Arguments:
-    //    pDefines  - [out] The set of defines clr.dll was built with. Bit offsets are encoded using the
-    //                enumeration Debugger::_Target_Defines
-    //
-    // Returns:
-    //    S_OK if no error
-    //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
-    //
-    virtual HRESULT STDMETHODCALLTYPE GetDefinesBitField(ULONG32 *pDefines) = 0;
-
-    // Retrieves a version number indicating the shape of the data structures used in the Metadata implementation
-    // inside clr.dll. This number changes anytime a datatype layout changes so that they can be correctly
-    // deserialized from out of process
-    //
-    //
-    // Arguments:
-    //    pMDStructuresVersion  - [out] The layout version number for metadata data structures. See
-    //                            Debugger::Debugger() in Debug\ee\Debugger.cpp for a description of the options.
-    //
-    // Returns:
-    //    S_OK if no error
-    //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
-    //
-    virtual HRESULT STDMETHODCALLTYPE GetMDStructuresVersion(ULONG32* pMDStructuresVersion) = 0;
-
 #ifdef FEATURE_CODE_VERSIONING
     // Retrieves the active rejit ILCodeVersionNode for a given module/methodDef, if it exists.
     //     Active is defined as after GetReJitParameters returns from the profiler dll and
@@ -2207,6 +2177,31 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetGenericArgTokenIndex(
         VMPTR_MethodDesc vmMethod,
         OUT UINT32* pTokenIndex) = 0;
+
+    // Get the size in bytes of the serialized read-write metadata blob for a module.
+    //
+    // Arguments:
+    //    vmModule - target module whose in-memory read-write metadata should be serialized.
+    //    pSize    - Out parameter receiving the size in bytes of the serialized ECMA-335 metadata blob.
+    //
+    // Notes:
+    //    This reconstructs a contiguous ECMA-335 metadata image from the target's writable
+    //    (MDInternalRW) metadata. Use FillReadWriteMetadata to retrieve the bytes into a
+    //    caller-allocated buffer of at least *pSize bytes.
+    virtual HRESULT STDMETHODCALLTYPE GetReadWriteMetadataSize(VMPTR_Module vmModule, OUT ULONG32 * pSize) = 0;
+
+    // Serialize the read-write metadata for a module into a caller-allocated buffer.
+    //
+    // Arguments:
+    //    vmModule - target module whose in-memory read-write metadata should be serialized.
+    //    pBuffer  - caller-allocated buffer that receives the serialized ECMA-335 metadata blob.
+    //    cbBuffer - size in bytes of pBuffer; must be at least the size reported by GetReadWriteMetadataSize.
+    //
+    // Notes:
+    //    The resulting buffer is a contiguous ECMA-335 metadata image suitable for OpenScopeOnMemory.
+    //    Returns HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER) when cbBuffer is smaller than the
+    //    serialized metadata size.
+    virtual HRESULT STDMETHODCALLTYPE FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer) = 0;
 
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL

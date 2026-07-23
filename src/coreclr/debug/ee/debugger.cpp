@@ -829,7 +829,6 @@ Debugger::Debugger()
     m_sendExceptionsOutsideOfJMC(TRUE),
     m_forceNonInterceptable(FALSE),
     m_pLazyData(NULL),
-    m_defines(_defines),
     m_isSuspendedForGarbageCollection(FALSE),
     m_isBlockedOnGarbageCollectionEvent(FALSE),
     m_willBlockOnGarbageCollectionEvent(FALSE),
@@ -857,14 +856,6 @@ Debugger::Debugger()
     m_pForceCatchHandlerFoundEventsTable = new ForceCatchHandlerFoundTable();
     m_pCustomNotificationTable = new CustomNotificationTable();
 
-    //------------------------------------------------------------------------------
-    // Metadata data structure version numbers
-    //
-    // 1 - initial state of the layouts ( .NET Framework 4.5.2 )
-    //
-    // as data structure layouts change, add a new version number
-    // and comment the changes
-    m_mdDataStructureVersion = 1;
     m_fOutOfProcessSetContextEnabled =
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
         Thread::AreShadowStacksEnabled() || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_OutOfProcessSetContext) != 0;

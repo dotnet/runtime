@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Numerics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -19,6 +18,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
     private const byte HEAP_GUID_4 = 0x02;
     private const byte HEAP_BLOB_4 = 0x04;
     private readonly Dictionary<ModuleHandle, (uint Generation, MetadataReaderProvider? Provider)> _metadata = [];
+    private readonly Dictionary<ModuleHandle, (uint Generation, byte[] Blob)> _readWriteMetadataBlob = [];
     private readonly Dictionary<ModuleHandle, TargetSpan> _readOnlyMetadataAddress = [];
 
     public void Flush(FlushScope scope)
@@ -26,6 +26,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         if (scope == FlushScope.All)
         {
             _metadata.Clear();
+            _readWriteMetadataBlob.Clear();
             _readOnlyMetadataAddress.Clear();
         }
     }
@@ -135,164 +136,183 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
             }
             case AvailableMetadataType.ReadWrite:
             {
-                var targetEcmaMetadata = GetReadWriteMetadata(handle);
-
-                // From the multiple different target spans, we need to build a single
-                // contiguous ECMA-335 metadata blob.
-                BlobBuilder builder = new BlobBuilder();
-                builder.WriteUInt32(0x424A5342);
-
-                // major version
-                builder.WriteUInt16(1);
-
-                // minor version
-                builder.WriteUInt16(1);
-
-                // reserved
-                builder.WriteUInt32(0);
-
-                string version = targetEcmaMetadata.Schema.MetadataVersion;
-                builder.WriteInt32(AlignUp(version.Length + 1, 4));
-                Write4ByteAlignedString(builder, version);
-
-                // reserved
-                builder.WriteUInt16(0);
-
-                // number of streams
-                ushort numStreams = 5; // #Strings, #US, #Blob, #GUID, #~ (metadata)
-                if (targetEcmaMetadata.Schema.VariableSizedColumnsAreAll4BytesLong)
-                {
-                    // We direct MetadataReader to use 4-byte encoding for all variable-sized columns
-                    // by providing the marker stream for a "minimal delta" image.
-                    numStreams++;
-                }
-                builder.WriteUInt16(numStreams);
-
-                // Write Stream headers
-                if (targetEcmaMetadata.Schema.VariableSizedColumnsAreAll4BytesLong)
-                {
-                    // Write the #JTD stream to indicate that all variable-sized columns are 4 bytes long.
-                    WriteStreamHeader(builder, "#JTD", 0).WriteInt32(builder.Count);
-                }
-
-                BlobWriter stringsOffset = WriteStreamHeader(builder, "#Strings", (int)AlignUp((ulong)targetEcmaMetadata.StringHeap.Length, 4ul));
-                BlobWriter blobOffset = WriteStreamHeader(builder, "#Blob", (int)AlignUp((ulong)targetEcmaMetadata.BlobHeap.Length, 4ul));
-                BlobWriter guidOffset = WriteStreamHeader(builder, "#GUID", (int)AlignUp((ulong)targetEcmaMetadata.GuidHeap.Length, 4ul));
-                BlobWriter userStringOffset = WriteStreamHeader(builder, "#US", (int)AlignUp((ulong)targetEcmaMetadata.UserStringHeap.Length, 4ul));
-
-                // We'll use the "uncompressed" tables stream name as the runtime may have created the *Ptr tables
-                // that are only present in the uncompressed tables stream.
-                BlobWriter tablesOffset = new(builder.ReserveBytes(4));
-                BlobWriter tablesSize = new(builder.ReserveBytes(4));
-                Write4ByteAlignedString(builder, "#-");
-
-                // Write the heap-style Streams
-
-                stringsOffset.WriteInt32(builder.Count);
-                WriteAlignedHeap(builder, targetEcmaMetadata.StringHeap);
-
-                blobOffset.WriteInt32(builder.Count);
-                WriteAlignedHeap(builder, targetEcmaMetadata.BlobHeap);
-
-                guidOffset.WriteInt32(builder.Count);
-                WriteAlignedHeap(builder, targetEcmaMetadata.GuidHeap);
-
-                userStringOffset.WriteInt32(builder.Count);
-                WriteAlignedHeap(builder, targetEcmaMetadata.UserStringHeap);
-
-                // Write tables stream
-                int tableStreamStart = builder.Count;
-                tablesOffset.WriteInt32(tableStreamStart);
-
-                // Write tables stream header
-                builder.WriteInt32(0); // reserved
-                // ECMA-335 II.24.2.6: MajorVersion shall be 2, MinorVersion shall be 0.
-                builder.WriteByte(2); // major version
-                builder.WriteByte(0); // minor version
-                uint heapSizes =
-                    (targetEcmaMetadata.Schema.LargeStringHeap ? (uint)HEAP_STRING_4 : 0) |
-                    (targetEcmaMetadata.Schema.LargeGuidHeap ? (uint)HEAP_GUID_4 : 0) |
-                    (targetEcmaMetadata.Schema.LargeBlobHeap ? (uint)HEAP_BLOB_4 : 0);
-
-                builder.WriteByte((byte)heapSizes);
-                builder.WriteByte(1); // reserved
-
-                ulong validTables = 0;
-                for (int i = 0; i < targetEcmaMetadata.Schema.RowCount.Length; i++)
-                {
-                    if (targetEcmaMetadata.Schema.RowCount[i] != 0)
-                    {
-                        validTables |= 1ul << i;
-                    }
-                }
-
-                ulong sortedTables = 0;
-                for (int i = 0; i < targetEcmaMetadata.Schema.IsSorted.Length; i++)
-                {
-                    if (targetEcmaMetadata.Schema.IsSorted[i])
-                    {
-                        sortedTables |= 1ul << i;
-                    }
-                }
-
-                builder.WriteUInt64(validTables);
-                builder.WriteUInt64(sortedTables);
-
-                foreach (int rowCount in targetEcmaMetadata.Schema.RowCount)
-                {
-                    if (rowCount > 0)
-                    {
-                        builder.WriteInt32(rowCount);
-                    }
-                }
-
-                // Write the tables
-                foreach (byte[] table in targetEcmaMetadata.Tables)
-                {
-                    builder.WriteBytes(table);
-                }
-
-                // Patch the #- stream size now that the full table stream has been written.
-                tablesSize.WriteInt32(builder.Count - tableStreamStart);
-
-                MemoryStream metadataStream = new MemoryStream();
-                builder.WriteContentTo(metadataStream);
-                metadataStream.Position = 0;
-                return MetadataReaderProvider.FromMetadataStream(metadataStream);
-
-                static BlobWriter WriteStreamHeader(BlobBuilder builder, string name, int size)
-                {
-                    BlobWriter offset = new(builder.ReserveBytes(4));
-                    builder.WriteInt32(size);
-                    Write4ByteAlignedString(builder, name);
-                    return offset;
-                }
-
-                static void WriteAlignedHeap(BlobBuilder builder, byte[] heap)
-                {
-                    builder.WriteBytes(heap);
-                    for (int i = heap.Length; i < (int)AlignUp((ulong)heap.Length, 4ul); i++)
-                    {
-                        builder.WriteByte(0);
-                    }
-                }
-
-                static void Write4ByteAlignedString(BlobBuilder builder, string value)
-                {
-                    int bufferStart = builder.Count;
-                    builder.WriteUTF8(value);
-                    builder.WriteByte(0);
-                    int stringEnd = builder.Count;
-                    // The name field occupies the null-terminated string padded to a 4-byte boundary,
-                    // i.e. AlignUp(length + 1, 4) bytes (the +1 accounts for the null terminator).
-                    for (int i = stringEnd; i < bufferStart + AlignUp(value.Length + 1, 4); i++)
-                    {
-                        builder.WriteByte(0);
-                    }
-                }
+                byte[] data = GetReadWriteMetadata(handle);
+                return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
             }
             default:
                 throw new NotImplementedException();
+        }
+    }
+
+    public byte[] GetReadWriteMetadata(ModuleHandle handle)
+    {
+        if (GetAvailableMetadataType(handle) != AvailableMetadataType.ReadWrite)
+        {
+            throw new ArgumentException("Module does not have read/write metadata.", nameof(handle));
+        }
+        uint generation = GetMetadataGeneration(handle);
+
+        if (_readWriteMetadataBlob.TryGetValue(handle, out (uint Generation, byte[] Blob) cached) && cached.Generation == generation)
+        {
+            return cached.Blob;
+        }
+
+        byte[] blob = BuildReadWriteMetadataBlob(GetTargetEcmaMetadata(handle));
+        _readWriteMetadataBlob[handle] = (generation, blob);
+        return blob;
+    }
+
+    private static byte[] BuildReadWriteMetadataBlob(TargetEcmaMetadata targetEcmaMetadata)
+    {
+        // From the multiple different target spans, we need to build a single
+        // contiguous ECMA-335 metadata blob.
+        BlobBuilder builder = new BlobBuilder();
+        builder.WriteUInt32(0x424A5342);
+
+        // major version
+        builder.WriteUInt16(1);
+
+        // minor version
+        builder.WriteUInt16(1);
+
+        // reserved
+        builder.WriteUInt32(0);
+
+        string version = targetEcmaMetadata.Schema.MetadataVersion;
+        builder.WriteInt32(AlignUp(version.Length + 1, 4));
+        Write4ByteAlignedString(builder, version);
+
+        // reserved
+        builder.WriteUInt16(0);
+
+        // number of streams
+        ushort numStreams = 5; // #Strings, #US, #Blob, #GUID, #~ (metadata)
+        if (targetEcmaMetadata.Schema.VariableSizedColumnsAreAll4BytesLong)
+        {
+            // We direct MetadataReader to use 4-byte encoding for all variable-sized columns
+            // by providing the marker stream for a "minimal delta" image.
+            numStreams++;
+        }
+        builder.WriteUInt16(numStreams);
+
+        // Write Stream headers
+        if (targetEcmaMetadata.Schema.VariableSizedColumnsAreAll4BytesLong)
+        {
+            // Write the #JTD stream to indicate that all variable-sized columns are 4 bytes long.
+            WriteStreamHeader(builder, "#JTD", 0).WriteInt32(builder.Count);
+        }
+
+        BlobWriter stringsOffset = WriteStreamHeader(builder, "#Strings", (int)AlignUp((ulong)targetEcmaMetadata.StringHeap.Length, 4ul));
+        BlobWriter blobOffset = WriteStreamHeader(builder, "#Blob", (int)AlignUp((ulong)targetEcmaMetadata.BlobHeap.Length, 4ul));
+        BlobWriter guidOffset = WriteStreamHeader(builder, "#GUID", (int)AlignUp((ulong)targetEcmaMetadata.GuidHeap.Length, 4ul));
+        BlobWriter userStringOffset = WriteStreamHeader(builder, "#US", (int)AlignUp((ulong)targetEcmaMetadata.UserStringHeap.Length, 4ul));
+
+        // We'll use the "uncompressed" tables stream name as the runtime may have created the *Ptr tables
+        // that are only present in the uncompressed tables stream.
+        BlobWriter tablesOffset = new(builder.ReserveBytes(4));
+        BlobWriter tablesSize = new(builder.ReserveBytes(4));
+        Write4ByteAlignedString(builder, "#-");
+
+        // Write the heap-style Streams
+
+        stringsOffset.WriteInt32(builder.Count);
+        WriteAlignedHeap(builder, targetEcmaMetadata.StringHeap);
+
+        blobOffset.WriteInt32(builder.Count);
+        WriteAlignedHeap(builder, targetEcmaMetadata.BlobHeap);
+
+        guidOffset.WriteInt32(builder.Count);
+        WriteAlignedHeap(builder, targetEcmaMetadata.GuidHeap);
+
+        userStringOffset.WriteInt32(builder.Count);
+        WriteAlignedHeap(builder, targetEcmaMetadata.UserStringHeap);
+
+        // Write tables stream
+        int tableStreamStart = builder.Count;
+        tablesOffset.WriteInt32(tableStreamStart);
+
+        // Write tables stream header
+        builder.WriteInt32(0); // reserved
+        // ECMA-335 II.24.2.6: MajorVersion shall be 2, MinorVersion shall be 0.
+        builder.WriteByte(2); // major version
+        builder.WriteByte(0); // minor version
+        uint heapSizes =
+            (targetEcmaMetadata.Schema.LargeStringHeap ? (uint)HEAP_STRING_4 : 0) |
+            (targetEcmaMetadata.Schema.LargeGuidHeap ? (uint)HEAP_GUID_4 : 0) |
+            (targetEcmaMetadata.Schema.LargeBlobHeap ? (uint)HEAP_BLOB_4 : 0);
+
+        builder.WriteByte((byte)heapSizes);
+        builder.WriteByte(1); // reserved
+
+        ulong validTables = 0;
+        for (int i = 0; i < targetEcmaMetadata.Schema.RowCount.Length; i++)
+        {
+            if (targetEcmaMetadata.Schema.RowCount[i] != 0)
+            {
+                validTables |= 1ul << i;
+            }
+        }
+
+        ulong sortedTables = 0;
+        for (int i = 0; i < targetEcmaMetadata.Schema.IsSorted.Length; i++)
+        {
+            if (targetEcmaMetadata.Schema.IsSorted[i])
+            {
+                sortedTables |= 1ul << i;
+            }
+        }
+
+        builder.WriteUInt64(validTables);
+        builder.WriteUInt64(sortedTables);
+
+        foreach (int rowCount in targetEcmaMetadata.Schema.RowCount)
+        {
+            if (rowCount > 0)
+            {
+                builder.WriteInt32(rowCount);
+            }
+        }
+
+        // Write the tables
+        foreach (byte[] table in targetEcmaMetadata.Tables)
+        {
+            builder.WriteBytes(table);
+        }
+
+        // Patch the #- stream size now that the full table stream has been written.
+        tablesSize.WriteInt32(builder.Count - tableStreamStart);
+
+        return builder.ToArray();
+
+        static BlobWriter WriteStreamHeader(BlobBuilder builder, string name, int size)
+        {
+            BlobWriter offset = new(builder.ReserveBytes(4));
+            builder.WriteInt32(size);
+            Write4ByteAlignedString(builder, name);
+            return offset;
+        }
+
+        static void WriteAlignedHeap(BlobBuilder builder, byte[] heap)
+        {
+            builder.WriteBytes(heap);
+            for (int i = heap.Length; i < (int)AlignUp((ulong)heap.Length, 4ul); i++)
+            {
+                builder.WriteByte(0);
+            }
+        }
+
+        static void Write4ByteAlignedString(BlobBuilder builder, string value)
+        {
+            int bufferStart = builder.Count;
+            builder.WriteUTF8(value);
+            builder.WriteByte(0);
+            int stringEnd = builder.Count;
+            // The name field occupies the null-terminated string padded to a 4-byte boundary,
+            // i.e. AlignUp(length + 1, 4) bytes (the +1 accounts for the null terminator).
+            for (int i = stringEnd; i < bufferStart + AlignUp(value.Length + 1, 4); i++)
+            {
+                builder.WriteByte(0);
+            }
         }
     }
 
@@ -401,7 +421,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         return new TargetSpan(dynamicMetadata.Data, dynamicMetadata.Size);
     }
 
-    private TargetEcmaMetadata GetReadWriteMetadata(ModuleHandle handle)
+    private TargetEcmaMetadata GetTargetEcmaMetadata(ModuleHandle handle)
     {
         TargetPointer peAssemblyPtr = target.Contracts.Loader.GetPEAssembly(handle);
         Data.PEAssembly peAssembly = target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);

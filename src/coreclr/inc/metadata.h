@@ -1081,58 +1081,6 @@ DECLARE_INTERFACE_(IMDInternalEmit, IUnknown)
 
 }; // IMDInternalEmit
 
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-
-struct IMDCustomDataSource;
-class CMiniMdSchema;
-struct CMiniTableDef;
-namespace MetaData
-{
-    class DataBlob;
-}
-
-// {CC0C8F7A-A00B-493D-80B6-CE0C92491670}
-EXTERN_GUID(IID_IMDCustomDataSource, 0xcc0c8f7a, 0xa00b, 0x493d, 0x80, 0xb6, 0xce, 0xc, 0x92, 0x49, 0x16, 0x70);
-
-#undef  INTERFACE
-#define INTERFACE IMDCustomDataSource
-DECLARE_INTERFACE_(IMDCustomDataSource, IUnknown)
-{
-    STDMETHOD(GetSchema)(CMiniMdSchema* pSchema) PURE;
-    STDMETHOD(GetTableDef)(ULONG32 tableIndex, CMiniTableDef* pTableDef) PURE;
-    STDMETHOD(GetBlobHeap)(MetaData::DataBlob* pBlobHeapData) PURE;
-    STDMETHOD(GetGuidHeap)(MetaData::DataBlob* pGuidHeapData) PURE;
-    STDMETHOD(GetStringHeap)(MetaData::DataBlob* pStringHeapData) PURE;
-    STDMETHOD(GetUserStringHeap)(MetaData::DataBlob* pUserStringHeapData) PURE;
-    STDMETHOD(GetTableRecords)(ULONG32 tableIndex, MetaData::DataBlob* pTableRecordData) PURE;
-    STDMETHOD(GetTableSortable)(ULONG32 tableIndex, BOOL* pSortable) PURE;
-    STDMETHOD(GetStorageSignature)(MetaData::DataBlob* pStorageSignature) PURE;
-
-}; // IMDCustomDataSource
-
-// {503F79FB-7AAE-4364-BDA6-8E235D173AEC}
-EXTERN_GUID(IID_IMetaDataDispenserCustom,
-    0x503f79fb, 0x7aae, 0x4364, 0xbd, 0xa6, 0x8e, 0x23, 0x5d, 0x17, 0x3a, 0xec);
-
-#undef  INTERFACE
-#define INTERFACE IMetaDataDispenserCustom
-DECLARE_INTERFACE_(IMetaDataDispenserCustom, IUnknown)
-{
-    STDMETHOD(OpenScopeOnCustomDataSource)(    // Return code.
-        IMDCustomDataSource  *pCustomSource,  // [in] The scope to open.
-        DWORD                dwOpenFlags,    // [in] Open mode flags.
-        REFIID               riid,           // [in] The interface desired.
-        IUnknown             **ppIUnk) PURE; // [out] Return interface on success.
-
-}; // IMetaDataDispenserCustom
-
-#endif // FEATURE_METADATA_CUSTOM_DATA_SOURCE
-
-#ifdef FEATURE_METADATA_DEBUGGEE_DATA_SOURCE
-struct ICorDebugDataTarget;
-HRESULT CreateRemoteMDInternalRWSource(TADDR mdInternalRWRemoteAddress, ICorDebugDataTarget* pDataTarget, DWORD defines, DWORD dataStructureVersion, IMDCustomDataSource** ppDataSource);
-#endif
-
 enum MetaDataReorderingOptions {
     NoReordering=0x0,
     ReArrangeStringPool=0x1

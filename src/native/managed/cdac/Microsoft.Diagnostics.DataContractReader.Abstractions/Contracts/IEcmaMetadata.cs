@@ -13,6 +13,7 @@ public interface IEcmaMetadata : IContract
     TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle) => throw new NotImplementedException();
 
     MetadataReader? GetMetadata(ModuleHandle module) => throw new NotImplementedException();
+    byte[] GetReadWriteMetadata(ModuleHandle handle) => throw new NotImplementedException();
 }
 
 public readonly struct EcmaMetadata : IEcmaMetadata

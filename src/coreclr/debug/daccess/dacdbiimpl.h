@@ -140,8 +140,6 @@ public:
     HRESULT STDMETHODCALLTYPE GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode vmILCodeVersionNode, DacSharedReJitInfo* pData);
 #endif // FEATURE_CODE_VERSIONING
     HRESULT STDMETHODCALLTYPE AreOptimizationsDisabled(VMPTR_Module vmModule, mdMethodDef methodTk, OUT BOOL* pOptimizationsDisabled);
-    HRESULT STDMETHODCALLTYPE GetDefinesBitField(ULONG32 *pDefines);
-    HRESULT STDMETHODCALLTYPE GetMDStructuresVersion(ULONG32* pMDStructuresVersion);
     HRESULT STDMETHODCALLTYPE EnableGCNotificationEvents(BOOL fEnable);
     HRESULT STDMETHODCALLTYPE GetAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_Assembly *pvmAssembly);
     HRESULT STDMETHODCALLTYPE ParseContinuation(CORDB_ADDRESS continuationAddress,
@@ -151,7 +149,12 @@ public:
     HRESULT STDMETHODCALLTYPE EnumerateAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, FP_ASYNC_LOCAL_CALLBACK fpCallback, CALLBACK_DATA pUserData);
     HRESULT STDMETHODCALLTYPE GetGenericArgTokenIndex(VMPTR_MethodDesc vmMethod, OUT UINT32* pIndex);
 
+    HRESULT STDMETHODCALLTYPE GetReadWriteMetadataSize(VMPTR_Module vmModule, OUT ULONG32 * pSize);
+    HRESULT STDMETHODCALLTYPE FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer);
+
 private:
+    void SerializeReadWriteMetadata(Module * pModule, BYTE ** ppBlob, ULONG32 * pcbBlob);
+
     void TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed              boxed,
                                        TypeHandle                      typeHandle,
                                        DebuggerIPCE_ExpandedTypeData * pTypeInfo);
