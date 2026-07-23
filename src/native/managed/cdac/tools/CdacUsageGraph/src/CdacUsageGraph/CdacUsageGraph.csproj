@@ -35,6 +35,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="CdacUsageGraph.Tests" />
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.Tests" />
   </ItemGroup>
 
 </Project>

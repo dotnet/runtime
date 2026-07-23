@@ -12,8 +12,13 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests.UsageGraph;
 
 public sealed class UsageGraphFixture
 {
-    public UsageGraphFixture() => Usage = UsageGraphAnalyzer.Analyze(FindCdacRoot().FullName);
+    public UsageGraphFixture()
+    {
+        CdacRoot = FindCdacRoot();
+        Usage = UsageGraphAnalyzer.Analyze(CdacRoot.FullName);
+    }
 
+    public DirectoryInfo CdacRoot { get; }
     public ContractUsageGraph Usage { get; }
 
     private static DirectoryInfo FindCdacRoot()
