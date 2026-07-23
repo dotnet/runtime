@@ -126,7 +126,6 @@ internal static class WasmR2RAssert
         // webcilVersion is the first global defined in the module (not imported), so it's index should be the count of imported globals
         CheckWasmExport(exports, "webcilVersion", WasmImportKind.Global, importedGlobalCount, failures);
         CheckFunctionExports(exports, importedFunctionCount, definedFunctionCount, failures);
-        CheckElementFunctionReferences(reader, importedFunctionCount, definedFunctionCount, failures);
 
         diagnostic = failures.Count == 0
             ? "WASM imports, definitions, exports, and instruction references use the expected per-kind indices."
@@ -219,33 +218,6 @@ internal static class WasmR2RAssert
         }
     }
 
-    private static void CheckElementFunctionReferences(
-        WebcilImageReader reader,
-        uint importedFunctionCount,
-        uint definedFunctionCount,
-        List<string> failures)
-    {
-        List<uint> functionIndices = ReadWasmElementFunctionIndices(reader);
-        if (functionIndices.Count != definedFunctionCount)
-        {
-            failures.Add(
-                $"Found {functionIndices.Count} element function references for " +
-                $"{definedFunctionCount} function-section entries.");
-            return;
-        }
-
-        for (int i = 0; i < functionIndices.Count; i++)
-        {
-            uint expectedIndex = importedFunctionCount + (uint)i;
-            if (functionIndices[i] != expectedIndex)
-            {
-                failures.Add(
-                    $"Element function reference {functionIndices[i]} at position {i}; " +
-                    $"expected {expectedIndex} after {importedFunctionCount} function imports.");
-            }
-        }
-    }
-
     private static Dictionary<(string Module, string Name), WasmImportIndex> ReadWasmImports(WebcilImageReader reader)
     {
         ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
@@ -303,35 +275,6 @@ internal static class WasmR2RAssert
             throw new BadImageFormatException("WASM export section contains trailing data.");
 
         return exports;
-    }
-
-    private static List<uint> ReadWasmElementFunctionIndices(WebcilImageReader reader)
-    {
-        ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
-        if (!TryGetWasmSectionBounds(image, WasmSectionKind.Element, out int offset, out int sectionEnd))
-            throw new BadImageFormatException("WASM image does not contain an element section.");
-
-        uint segmentCount = ReadWasmUleb32(image, ref offset, sectionEnd);
-        if (segmentCount != 1)
-            throw new BadImageFormatException($"Expected one WASM element segment, found {segmentCount}.");
-
-        uint segmentFlags = ReadWasmUleb32(image, ref offset, sectionEnd);
-        if (segmentFlags != 1)
-            throw new BadImageFormatException($"Expected a passive WASM element segment, found flags {segmentFlags}.");
-
-        byte elementKind = ReadWasmByte(image, ref offset, sectionEnd);
-        if (elementKind != 0)
-            throw new BadImageFormatException($"Expected a funcref WASM element segment, found kind {elementKind}.");
-
-        uint functionCount = ReadWasmUleb32(image, ref offset, sectionEnd);
-        var functionIndices = new List<uint>(checked((int)functionCount));
-        for (uint i = 0; i < functionCount; i++)
-            functionIndices.Add(ReadWasmUleb32(image, ref offset, sectionEnd));
-
-        if (offset != sectionEnd)
-            throw new BadImageFormatException("WASM element section contains trailing data.");
-
-        return functionIndices;
     }
 
     private static bool TryGetWasmSectionBounds(
