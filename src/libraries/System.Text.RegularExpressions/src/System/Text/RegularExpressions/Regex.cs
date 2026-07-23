@@ -95,7 +95,7 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         /// <example>
         /// The following example uses this constructor to create a regular expression that matches words beginning with the letters "a" or "t".
-        /// <code lang="cs" source="../../../../tests/FunctionalTests/Regex.Examples.cs" region="RegexCtorString" />
+        /// <code lang="cs" source="../../../../tests/FunctionalTests/Regex.Examples.cs" id="RegexCtorString" />
         /// </example>
         /// <exception cref="ArgumentException">A regular expression parsing error occurred.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="pattern" /> is <see langword="null" />.</exception>
@@ -119,7 +119,7 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         /// <example>
         /// The following example uses this constructor to create a case-insensitive regular expression that matches words beginning with the letters "a" or "t".
-        /// <code lang="cs" source="../../../../tests/FunctionalTests/Regex.Examples.cs" region="RegexCtorStringOptions" />
+        /// <code lang="cs" source="../../../../tests/FunctionalTests/Regex.Examples.cs" id="RegexCtorStringOptions" />
         /// </example>
         /// <exception cref="ArgumentException">A regular expression parsing error occurred.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="pattern" /> is <see langword="null" />.</exception>
@@ -170,7 +170,7 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         /// <example>
         /// The following example creates a <see cref="Regex"/> object with a very short initial time-out and retries with a larger one if a timeout occurs.
-        /// <code lang="cs" source="../../../../tests/FunctionalTests/Regex.Examples.cs" region="RegexCtorStringOptionsMatchTimeout" />
+        /// <code lang="cs" source="../../../../tests/FunctionalTests/Regex.Examples.cs" id="RegexCtorStringOptionsMatchTimeout" />
         /// </example>
         /// <exception cref="ArgumentException">A regular expression parsing error occurred.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="pattern" /> is <see langword="null" />.</exception>
