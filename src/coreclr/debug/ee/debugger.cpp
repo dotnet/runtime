@@ -3236,7 +3236,7 @@ void Debugger::getBoundaries(MethodDesc * md,
  *
  ******************************************************************************/
 void Debugger::getVars(MethodDesc * md, ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
-                       bool *extendOthers, COR_ILMETHOD_DECODER * pILHeader)
+                       bool *extendOthers, unsigned ilCodeSize)
 {
 #ifndef DACCESS_COMPILE
     CONTRACTL
@@ -3273,39 +3273,17 @@ void Debugger::getVars(MethodDesc * md, ULONG32 *cVars, ICorDebugInfo::ILVarInfo
 
         if (fVarArg)
         {
-            bool fHasHeader = false;
-            unsigned int ilCodeSize = 0;
+            // It is, so we need to tell the JIT to give us the
+            // varags handle.
+            ICorDebugInfo::ILVarInfo *p = new ICorDebugInfo::ILVarInfo[1];
+            _ASSERTE(p != NULL); // throws on oom error
 
-            if (pILHeader != NULL)
-            {
-                fHasHeader = true;
-                ilCodeSize = pILHeader->GetCodeSize();
-            }
-            else
-            {
-                COR_ILMETHOD *ilMethod = g_pEEInterface->MethodDescGetILHeader(md);
-                if (ilMethod != NULL)
-                {
-                    fHasHeader = true;
-                    COR_ILMETHOD_DECODER header(ilMethod);
-                    ilCodeSize = header.GetCodeSize();
-                }
-            }
+            p->startOffset = 0;
+            p->endOffset = ilCodeSize;
+            p->varNumber = (DWORD) ICorDebugInfo::VARARGS_HND_ILNUM;
 
-            if (fHasHeader)
-            {
-                // It is, so we need to tell the JIT to give us the
-                // varags handle.
-                ICorDebugInfo::ILVarInfo *p = new ICorDebugInfo::ILVarInfo[1];
-                _ASSERTE(p != NULL); // throws on oom error
-
-                p->startOffset = 0;
-                p->endOffset = ilCodeSize;
-                p->varNumber = (DWORD) ICorDebugInfo::VARARGS_HND_ILNUM;
-
-                *cVars = 1;
-                *vars = p;
-            }
+            *cVars = 1;
+            *vars = p;
         }
     }
 

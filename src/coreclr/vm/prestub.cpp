@@ -394,7 +394,16 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
         DACNotifyCompilationFinished(this, pCode);
 
 #if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
-        NotifyGdb::MethodPrepared(this);
+        COR_ILMETHOD* pILHeader = MayHaveILHeader() ? pConfig->GetILHeader() : NULL;
+        if (pILHeader != NULL)
+        {
+            COR_ILMETHOD_DECODER ilHeader(pILHeader, GetMDImport(), NULL);
+            NotifyGdb::MethodPrepared(this, pCode, &ilHeader);
+        }
+        else
+        {
+            NotifyGdb::MethodPrepared(this, pCode, NULL);
+        }
 #endif
     }
 
@@ -705,17 +714,6 @@ namespace
 
         COR_ILMETHOD* ilHeader = pConfig->GetILHeader();
 
-        // For a Runtime Async method the methoddef maps to a Task-returning thunk with runtime-provided implementation,
-        // while the default IL belongs to the Async implementation variant.
-        // Similarly we can get here for an async variant of a task-returning method where we use the original method's
-        // IL and create an async version.
-        // By default the config captures the default methoddesc, which would be a thunk, thus no IL header.
-        // So, if config provides no header and we see an implementation method desc, then just ask the method desc itself.
-        if (ilHeader == NULL && pMD->IsAsyncVariantMethod())
-        {
-            ilHeader = pMD->GetILHeader();
-        }
-
         if (ilHeader == NULL)
             return NULL;
 
@@ -931,7 +929,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     DACNotifyCompilationFinished(this, pCode);
 
 #if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
-    NotifyGdb::MethodPrepared(this);
+    NotifyGdb::MethodPrepared(this, pCode, pilHeader);
 #endif
 
     return pCode;

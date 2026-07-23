@@ -213,7 +213,7 @@ public:
     virtual void getVars(MethodDesc * ftn,
                  ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
                  bool *extendOthers,
-                 COR_ILMETHOD_DECODER * pILHeader) = 0;
+                 unsigned ilCodeSize) = 0;
 
     virtual BOOL CheckGetPatchedOpcode(CORDB_ADDRESS_TYPE *address, /*OUT*/ PRD_TYPE *pOpcode) = 0;
 
