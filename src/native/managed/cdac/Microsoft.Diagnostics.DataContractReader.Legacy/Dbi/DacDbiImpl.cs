@@ -2131,7 +2131,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         IExecutionManager eman = _target.Contracts.ExecutionManager;
         eman.GetGCInfo(cbh, out TargetPointer gcInfoAddress, out uint gcVersion);
         IGCInfo gcInfo = _target.Contracts.GCInfo;
-        IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddress, gcVersion);
+        TargetCodePointer ip = _target.Contracts.StackWalk.GetInstructionPointer(handle);
+        CodeKind codeKind = eman.GetCodeKind(ip);
+        IGCInfoHandle gcInfoHandle = codeKind == CodeKind.Interpreter
+            ? gcInfo.DecodeInterpreterGCInfo(gcInfoAddress, gcVersion)
+            : gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddress, gcVersion);
         IStackWalk stackWalk = _target.Contracts.StackWalk;
         return gcInfo.GetAmbientSP(gcInfoHandle, nativeOffset, stackWalk.GetContextFramePointer(handle), stackWalk.GetStackPointer(handle));
     }

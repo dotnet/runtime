@@ -631,7 +631,7 @@ TargetPointer GetRuntimeFramePointer(IStackDataFrameHandle stackDataFrameHandle)
 TargetPointer GetStackPointer(IStackDataFrameHandle stackDataFrameHandle)
 ```
 
-`GetBasePointer` returns the base pointer register from the current frame's context: EBP on x86, RBP on x64, and the platform frame-pointer register on other architectures.
+`GetContextFramePointer` returns the base pointer register from the current frame's context: EBP on x86, RBP on x64, and the platform frame-pointer register on other architectures.
 
 ```csharp
 TargetPointer GetContextFramePointer(IStackDataFrameHandle stackDataFrameHandle)

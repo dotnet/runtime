@@ -1067,7 +1067,17 @@ internal partial class StackWalk_1 : IStackWalk
     TargetPointer IStackWalk.GetRuntimeFramePointer(IStackDataFrameHandle stackDataFrameHandle)
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
-        return ComputeFramePointer(handle);
+        RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+        return arch switch
+        {
+            RuntimeInfoArchitecture.X64 => handle.Context.StackPointer,
+            RuntimeInfoArchitecture.Arm64
+                or RuntimeInfoArchitecture.Arm
+                or RuntimeInfoArchitecture.RiscV64
+                or RuntimeInfoArchitecture.LoongArch64 => CallerStackPointer(handle),
+            RuntimeInfoArchitecture.X86 => ComputeX86FramePointer(handle),
+            _ => throw new InvalidOperationException($"GetRuntimeFramePointer is not supported on {arch}"),
+        };
     }
 
     TargetPointer IStackWalk.GetContextFramePointer(IStackDataFrameHandle stackDataFrameHandle)
@@ -1182,24 +1192,7 @@ internal partial class StackWalk_1 : IStackWalk
                 : context.TryReadRegister((int)storage.RegisterNumber, out value);
     }
 
-    private TargetPointer ComputeFramePointer(StackDataFrameHandle handle)
-    {
-        RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
-        return arch switch
-        {
-            RuntimeInfoArchitecture.X64 => handle.Context.StackPointer,
-            RuntimeInfoArchitecture.Arm64
-                or RuntimeInfoArchitecture.Arm
-                or RuntimeInfoArchitecture.RiscV64
-                or RuntimeInfoArchitecture.LoongArch64 => CallerStackPointer(handle),
-            RuntimeInfoArchitecture.X86 => ComputeX86FramePointer(handle),
-            _ => throw new InvalidOperationException($"GetFramePointer is not supported on {arch}"),
-        };
-    }
-
-    // Mirrors native DacDbiInterfaceImpl::GetFramePointerWorker on x86 (dacdbiimplstackwalk.cpp):
-    // frameless managed methods use ComputeX86FramePointer; runtime-unwindable native markers take the
-    // stack address of the return address from the hijacked context.
+    // See https://github.com/dotnet/runtime/blob/71830fdb091c9be1ad297b8649ac445af628fb81/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L659
     private TargetPointer ComputeX86FramePointer(StackDataFrameHandle handle)
     {
         uint pointerSize = (uint)_target.PointerSize;
