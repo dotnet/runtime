@@ -967,6 +967,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 GenTree* Lowering::LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node)
 {
     GenTree* immOp = node->GetImmOp();
+    assert(varTypeIsIntegral(immOp->TypeGet()) && "Immediate operand must be an integral type");
+
     if (!immOp->IsCnsIntOrI())
     {
         // This node has a non-constant immediate operand, so it will need a jump table
@@ -1465,15 +1467,19 @@ GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-    if (HWIntrinsicInfo::HasImmediateOperand(intrinsicId) || node->GetHWIntrinsicId() == NI_PackedSimd_Shuffle)
+    if (HWIntrinsicInfo::HasImmediateOperand(intrinsicId))
     {
         GenTree* immOp = node->GetImmOp();
-        // An immediate operand for SIMD should either be:
-        // - An integer lane index OR
-        // - A constant vector (for example, for a shuffle)
-        if (immOp->IsCnsIntOrI() || immOp->IsCnsVec())
+        if (immOp->IsCnsIntOrI())
         {
             MakeSrcContained(node, immOp);
         }
+    }
+    else if (intrinsicId == NI_PackedSimd_Shuffle && node->Op(3)->IsCnsVec())
+    {
+        // Shuffle is a special case where the mask is a constant vector immediate
+        // which must be contained. If the mask is non-constant we will re-write the shuffle into a fallback equivalent operation.
+        // (see LowerHWIntrinsicNativeShuffle).
+        MakeSrcContained(node, node->Op(3));
     }
 }
