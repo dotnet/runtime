@@ -154,13 +154,14 @@ namespace System.SpanTests
                 Guid fill = Guid.Parse("900DBAD9-00DB-AD90-00DB-AD900DBADBAD");
                 Guid tail = Guid.Parse("2B2B2B2B-2B2B-2B2B-2B2B-2B2B2B2B2B2B");
 
-                buffer.Fill(fill);
-                source[guidCount - 1] = tail; // A truncated copy leaves the destination tail as 'fill'.
+                // Only the boundaries are initialized and checked. Filling all 4GB would add a full
+                // extra memory pass on top of the copy for no additional coverage.
+                source[0] = fill;
+                source[guidCount - 1] = tail;
+                destination[guidCount - 1] = fill; // A truncated copy leaves this as 'fill' rather than 'tail'.
 
                 ((ReadOnlySpan<Guid>)source).CopyTo(destination);
 
-                // Only the boundaries are checked; the tail catches a truncated length and walking
-                // every element would add minutes for no additional coverage.
                 Assert.Equal(fill, destination[0]);
                 Assert.Equal(tail, destination[guidCount - 1]);
             }

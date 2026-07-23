@@ -31,7 +31,14 @@ namespace System.SpanTests
             catch (OutOfMemoryException)
             {
                 memory = IntPtr.Zero;
-                s_memoryLock.ReleaseMutex();
+            }
+            finally
+            {
+                // Only a successful allocation keeps the mutex; the matching ReleaseNative frees it.
+                // Any failure (OOM, a null result, or an unexpected throw) must release it here so a
+                // later large allocation doesn't hang waiting on a mutex that will never be freed.
+                if (memory == IntPtr.Zero)
+                    s_memoryLock.ReleaseMutex();
             }
 
             return memory != IntPtr.Zero;
