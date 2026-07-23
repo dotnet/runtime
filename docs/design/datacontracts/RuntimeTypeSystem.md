@@ -215,16 +215,6 @@ public enum WellKnownMethodTable
     Exception,
     Free,
     Canon,
-    EH,
-    ExceptionServicesInternalCalls,
-    StackFrameIterator,
-}
-
-// Identifies one of the runtime's well-known singleton MethodDescs, each addressable
-// via a dedicated global pointer.
-public enum WellKnownMethodDesc
-{
-    EnvironmentCallEntryPoint,
 }
 ```
 
@@ -738,11 +728,6 @@ Contracts used:
             WellKnownMethodTable.Free => "FreeObjectMethodTable",
             WellKnownMethodTable.Canon => "CanonMethodTable",
         };
-        return ReadWellKnownGlobalPointer(globalName);
-    }
-
-    private TargetPointer ReadWellKnownGlobalPointer(string globalName)
-    {
         if (!target.TryReadGlobalPointer(globalName, out TargetPointer? ptrPtr))
             return TargetPointer.Null;
         if (!target.TryReadPointer(ptrPtr.Value, out TargetPointer value))
