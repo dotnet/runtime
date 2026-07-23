@@ -202,7 +202,11 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
             using var mmapFile = MemoryMappedFile.CreateFromFile(fileStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
             using var accessor = mmapFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
-            var cpuType = (MachCpuType)MachObjectFile.Create(new MemoryMappedMachOViewAccessor(accessor)).Header.CpuType;
+
+            var file = new MemoryMappedMachOViewAccessor(accessor);
+            file.Read(0, out MachHeader header);
+
+            var cpuType = (MachCpuType)header.CpuType;
             return cpuType is MachCpuType.Arm64 or MachCpuType.Arm64_32;
         }
 
