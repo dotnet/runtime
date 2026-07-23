@@ -19,6 +19,13 @@ namespace Microsoft.NET.HostModel.MachO;
 internal unsafe partial class MachObjectFile
 {
     internal const uint DefaultPageSize = 0x1000;
+    // The default code directory page size codesign uses to hash the code slots (4 KiB).
+    // https://github.com/apple-oss-distributions/Security/blob/Security-61901.0.87.0.1/OSX/libsecurity_codesigning/lib/diskrep.h#L158-L160
+    internal const uint DefaultCodeDirectoryPageSize = 0x1000;
+    // The code directory page size codesign uses to hash the code slots of arm64/arm64_32 objects (16 KiB).
+    // https://github.com/apple-oss-distributions/Security/blob/Security-61901.0.87.0.1/OSX/libsecurity_codesigning/lib/machorep.cpp#L574-L591
+    // https://github.com/apple-oss-distributions/Security/blob/Security-61901.0.87.0.1/OSX/libsecurity_codesigning/lib/diskrep.h#L158-L160
+    internal const uint Arm64CodeDirectoryPageSize = 0x4000;
     private const uint CodeSignatureAlignment = 0x10;
     private MachHeader _header;
     private (LinkEditLoadCommand Command, long FileOffset) _codeSignatureLoadCommand;
@@ -133,11 +140,21 @@ internal unsafe partial class MachObjectFile
         uint signatureStart = machObject._codeSignatureLoadCommand.Command.GetDataOffset(machObject._header);
         RequirementsBlob requirementsBlob = RequirementsBlob.Empty;
         CmsWrapperBlob cmsWrapperBlob = CmsWrapperBlob.Empty;
+
+        // Match codesign behavior on macOS 26+:
+        //   16 KiB code directory page size for arm64/arm64_32
+        //   4 KiB otherwise
+        // Before macOS 26, it used 4 KiB for every architecture.
+        // A 16 KiB code directory page is valid on older arm64 macOS versions.
+        uint pageSize = (MachCpuType)machObject._header.CpuType is MachCpuType.Arm64 or MachCpuType.Arm64_32
+            ? Arm64CodeDirectoryPageSize
+            : DefaultCodeDirectoryPageSize;
         var codeDirectory = CodeDirectoryBlob.Create(
             file,
             signatureStart,
             identifier,
-            requirementsBlob);
+            requirementsBlob,
+            pageSize: pageSize);
 
         return new EmbeddedSignatureBlob(
             codeDirectoryBlob: codeDirectory,

@@ -79,7 +79,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             Assert.True(IsSigned(managedSignedPath + ".resigned"), $"Failed to resign {filePath}");
         }
 
-        [Theory(Skip = "Temporarily disabled due to macOS 26 codesign behavior change - only hashing __TEXT segment")]
+        [Theory]
         [PlatformSpecific(TestPlatforms.OSX)]
         [MemberData(nameof(GetTestFilePaths), nameof(MatchesCodesignOutput))]
         public void MatchesCodesignOutput(string filePath, TestArtifact _)
@@ -88,6 +88,12 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             string originalFilePath = filePath;
             string codesignFilePath = filePath + ".codesigned";
             string managedSignedPath = filePath + ".signed";
+
+            // codesign's default arm64 code directory page size only matches HostModel's (16 KiB) on macOS 26+.
+            // On older macOS, codesign defaults to 4 KiB for arm64, so there is nothing meaningful to compare.
+            Assert.SkipWhen(
+                !OperatingSystem.IsMacOSVersionAtLeast(26) && IsArm64File(originalFilePath),
+                "codesign uses a different default code directory page size for arm64 before macOS 26.");
 
             // Codesigned file
             File.Copy(filePath, codesignFilePath);
@@ -189,6 +195,15 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             {
                 SelfContainedApp.Dispose();
             }
+        }
+
+        static bool IsArm64File(string filePath)
+        {
+            using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
+            using var mmapFile = MemoryMappedFile.CreateFromFile(fileStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
+            using var accessor = mmapFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
+            var cpuType = (MachCpuType)MachObjectFile.Create(new MemoryMappedMachOViewAccessor(accessor)).Header.CpuType;
+            return cpuType is MachCpuType.Arm64 or MachCpuType.Arm64_32;
         }
 
         static void AssertMachFilesAreEquivalent(string codesignedPath, string managedSignedPath, string fileName)
