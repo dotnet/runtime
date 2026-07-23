@@ -179,6 +179,57 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        public async Task UnmanagedCallersOnly_Nested(Configuration config, bool aot)
+        {
+            // Regression coverage for the wasm reverse-P/Invoke (native-to-interp) thunk key of a
+            // nested [UnmanagedCallersOnly] type. Reflection reports the enclosing namespace for a
+            // nested type while the runtime reads the (empty) metadata namespace; if PInvokeCollector
+            // emits the reflection namespace the key never matches, so the lookup returns null -
+            // CoreCLR asserts on the first cold ldftn and Mono traps as "null function". Executed on
+            // browser-wasm in CI for both the Mono and CoreCLR generators (the wasi leg is build-only).
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_nested");
+            string programRelativePath = Path.Combine("Common", "Program.cs");
+            ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackNested.cs"));
+
+            string output = PublishForVariadicFunctionTests(info, config, aot);
+            Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+                config,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("Namespaced.Outer.Nested.C", result.TestOutput);
+            Assert.Contains("Namespaced.Outer.Nested.Deeper.D", result.TestOutput);
+        }
+
+        [Theory]
+        [BuildAndRun()]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/130739")]
+        public async Task UnmanagedCallersOnly_NestedConflict(Configuration config, bool aot)
+        {
+            // The reverse-P/Invoke thunk key drops the enclosing-type chain, keying only on the
+            // simple type name plus the (empty) nested namespace. Two nested types that share a
+            // simple name under different enclosing types therefore collide and currently fail the
+            // build. This encodes the desired behavior (both callbacks resolve and run) and is
+            // skipped until #130739 removes the limitation.
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_nested_conflict");
+            string programRelativePath = Path.Combine("Common", "Program.cs");
+            ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackNestedConflict.cs"));
+
+            PublishForVariadicFunctionTests(info, config, aot);
+
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+                config,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("Conflicting.OuterA.Conflict.C", result.TestOutput);
+            Assert.Contains("Conflicting.OuterB.Conflict.C", result.TestOutput);
+        }
+
+        [Theory]
+        [BuildAndRun()]
         // The test fetches WasmAppBuilder.dll from the Microsoft.NET.Runtime.WebAssembly.Sdk
         // workload pack, which is not present in the NoWorkload (CoreCLR-Wasm) Helix payload.
         [TestCategory("mono")]
@@ -357,6 +408,9 @@ namespace Wasm.Build.Tests
             Assert.Contains(result.TestOutput, m => m.Contains("iares[0]=32"));
             Assert.Contains(result.TestOutput, m => m.Contains("iares[1]=2"));
             Assert.Contains("fares.elements[1]=2", result.TestOutput);
+            // https://github.com/dotnet/runtime/issues/112262: 64-bit enum pinvoke args
+            Assert.Contains("eu (eu)=18374966859414961921", result.TestOutput);
+            Assert.Contains("ei (ei)=-2", result.TestOutput);
         }
 
         [Theory]
@@ -370,6 +424,23 @@ namespace Wasm.Build.Tests
         [TestCategory("native-mono")]
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
+
+        [Theory]
+        [BuildAndRun(aot: false)]
+        [TestCategory("native-mono")]
+        public void UnsupportedOSPlatformPInvokeIsSkipped(Configuration config, bool aot)
+        {
+            // https://github.com/dotnet/runtime/issues/110870: a Windows-only pinvoke with
+            // non-blittable parameters must be skipped (not analyzed) when building for the
+            // browser, so it must not emit WASM0060/WASM0062/WASM0001.
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "osplatform_pinvoke",
+                extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnsupportedOSPlatform.cs"));
+            (_, string output) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false, AOT: aot), isNativeBuild: true);
+            Assert.DoesNotContain("WASM0001", output);
+            Assert.DoesNotContain("WASM0060", output);
+            Assert.DoesNotContain("WASM0062", output);
+        }
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
@@ -407,6 +478,36 @@ namespace Wasm.Build.Tests
             ));
             Assert.DoesNotContain("Conflict.A.Managed8\u4F60Func(123) -> 123", result.TestOutput);
             Assert.Contains("ManagedFunc returned 42", result.TestOutput);
+        }
+
+        [Theory]
+        [BuildAndRun(aot: false)]
+        public async Task UnmanagedCallbackWithManyArgs(Configuration config, bool aot)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/109338:
+            // [UnmanagedCallersOnly] exports with more than MAX_INTERP_ENTRY_ARGS (8)
+            // arguments trapped with "null function or function signature mismatch"
+            // when invoked from native code.
+            var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
+            var extraItems = @"<NativeFileReference Include=""local.c"" />";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "uco_manyargs", extraItems: extraItems, extraProperties: extraProperties);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackManyArgs.cs"));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "local_manyargs.c"), Path.Combine(_projectDir, "local.c"));
+            // The test program does not use JS interop, so the JS interop assembly would be
+            // linked away by the trimmer and the template main.js (which calls
+            // getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
+
+            PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+                config,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("ManagedSum8 returned 36", result.TestOutput);
+            Assert.Contains("ManagedSum9 returned 45", result.TestOutput);
+            Assert.Contains("ManagedSum16 returned 136", result.TestOutput);
+            Assert.Contains("ManagedVoid12 stored 78", result.TestOutput);
         }
     }
 }

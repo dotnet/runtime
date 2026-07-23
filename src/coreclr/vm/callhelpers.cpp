@@ -574,9 +574,8 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     PCODE ctorCode = pMD->GetSingleCallableAddrOfCode();
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    // CallDefaultConstructor invokes the ctor via a typed call_indirect, so its portable
-    // entry point must resolve to real code (native R2R or a correctly-typed interpreter
-    // thunk) rather than a temporary precode.
+    // CallDefaultConstructor invokes the ctor via the function pointer, so its portable entrypoint
+    // must resolve to real code if possible.
     MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(ctorCode);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 

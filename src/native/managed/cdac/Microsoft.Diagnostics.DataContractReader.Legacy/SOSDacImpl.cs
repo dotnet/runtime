@@ -467,7 +467,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetAssemblyLocation(ClrDataAddress assembly, int count, char* location, uint* pNeeded)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetAssemblyLocation(assembly, count, location, pNeeded) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? modules, uint* pNeeded)
     {
         int hr = HResults.S_OK;
@@ -929,7 +929,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetDacModuleHandle(void* phModule)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetDacModuleHandle(phModule) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int ISOSDacInterface.GetDomainFromContext(ClrDataAddress context, ClrDataAddress* domain)
     {
         int hr = HResults.S_OK;
@@ -1004,11 +1004,11 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetFailedAssemblyData(ClrDataAddress assembly, uint* pContext, int* pResult)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyData(assembly, pContext, pResult) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFailedAssemblyDisplayName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyDisplayName(assembly, count, name, pNeeded) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFailedAssemblyList(ClrDataAddress appDomain, int count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyList(appDomain, count, values, pNeeded) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int ISOSDacInterface.GetFailedAssemblyLocation(ClrDataAddress assembly, uint count, char* location, uint* pNeeded)
     {
         int hr = HResults.S_OK;
@@ -1067,21 +1067,21 @@ public sealed unsafe partial class SOSDacImpl
             FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
 
             TargetPointer enclosingMT = rtsContract.GetMTOfEnclosingClass(fieldDescTargetPtr);
-            TypeHandle ctx = rtsContract.GetTypeHandle(enclosingMT);
+            ITypeHandle ctx = rtsContract.GetTypeHandle(enclosingMT);
             TargetPointer modulePtr = rtsContract.GetModule(ctx);
             Contracts.ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
             MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)!;
             FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
 
-            TypeHandle foundTypeHandle = rtsContract.GetFieldDescApproxTypeHandle(fieldDescTargetPtr);
+            ITypeHandle? foundTypeHandle = rtsContract.GetFieldDescApproxTypeHandle(fieldDescTargetPtr);
             try
             {
                 // get the MT of the type
                 // This is an implementation detail of the DAC that we replicate here to get method tables for non-MT types
                 // that we can return to SOS for pretty-printing.
-                // In the future we may want to return a TypeHandle instead of a MethodTable, and modify SOS to do more complete pretty-printing.
+                // In the future we may want to return an ITypeHandle instead of a MethodTable, and modify SOS to do more complete pretty-printing.
                 // DAC equivalent: src/coreclr/vm/typehandle.inl TypeHandle::GetMethodTable
-                if (foundTypeHandle.IsNull)
+                if (foundTypeHandle is null)
                     // if we can't find the MT (e.g in a minidump)
                     data->MTOfType = 0;
                 else if (rtsContract.IsFunctionPointer(foundTypeHandle, out _, out _) || rtsContract.IsPointer(foundTypeHandle))
@@ -1089,20 +1089,14 @@ public sealed unsafe partial class SOSDacImpl
                 // array MTs
                 else if (rtsContract.IsArray(foundTypeHandle, out _))
                     data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
-                else
+                else if (rtsContract.HasTypeParam(foundTypeHandle))
                 {
-                    try
-                    {
-                        // value typedescs
-                        TypeHandle paramTypeHandle = rtsContract.GetTypeParam(foundTypeHandle);
-                        data->MTOfType = paramTypeHandle.Address.ToClrDataAddress(_target);
-                    }
-                    catch (ArgumentException)
-                    {
-                        // non-array MTs
-                        data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
-                    }
+                    // value typedescs
+                    ITypeHandle paramTypeHandle = rtsContract.GetTypeParam(foundTypeHandle);
+                    data->MTOfType = paramTypeHandle.Address.ToClrDataAddress(_target);
                 }
+                else
+                    data->MTOfType = foundTypeHandle.Address.ToClrDataAddress(_target);
             }
             catch (VirtualReadException)
             {
@@ -1642,7 +1636,7 @@ public sealed unsafe partial class SOSDacImpl
                     StrongReference = h.StrongReference ? 1 : 0,
                     RefCount = h.RefCount,
                     JupiterRefCount = 0,
-                    IsPegged = h.IsPegged ? 1 : 0,
+                    IsPegged = 0,
                 };
             }
 
@@ -1859,7 +1853,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetHandleEnumForGC(uint gen, DacComNullableByRef<ISOSHandleEnum> ppHandleEnum)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetHandleEnumForGC(gen, ppHandleEnum) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHandleEnumForTypes([In, MarshalUsing(CountElementName = "count")] uint[] types, uint count, DacComNullableByRef<ISOSHandleEnum> ppHandleEnum)
     {
         int hr = HResults.S_OK;
@@ -1886,7 +1880,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.GetHeapAllocData(uint count, void* data, uint* pNeeded)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetHeapAllocData(count, data, pNeeded) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHeapAnalyzeData(ClrDataAddress addr, DacpGcHeapAnalyzeData* data)
     {
         int hr = HResults.S_OK;
@@ -2323,7 +2317,7 @@ public sealed unsafe partial class SOSDacImpl
             data->MethodDescPtr = addr;
             TargetPointer methodTableAddr = rtsContract.GetMethodTable(methodDescHandle);
             data->MethodTablePtr = methodTableAddr.ToClrDataAddress(_target);
-            TypeHandle typeHandle = rtsContract.GetTypeHandle(methodTableAddr);
+            ITypeHandle typeHandle = rtsContract.GetTypeHandle(methodTableAddr);
             data->ModulePtr = rtsContract.GetModule(typeHandle).ToClrDataAddress(_target);
 
             // If rejit info is appropriate, get the following:
@@ -2799,7 +2793,7 @@ public sealed unsafe partial class SOSDacImpl
             if (mt == 0 || data == null)
                 throw new ArgumentException();
             Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.TypeHandle methodTable = contract.GetTypeHandle(mt.ToTargetPointer(_target));
+            ITypeHandle methodTable = contract.GetTypeHandle(mt.ToTargetPointer(_target));
 
             DacpMethodTableData result = default;
             result.baseSize = contract.GetBaseSize(methodTable);
@@ -2872,7 +2866,7 @@ public sealed unsafe partial class SOSDacImpl
 
             TargetPointer mtAddress = mt.ToTargetPointer(_target);
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle typeHandle = rtsContract.GetTypeHandle(mtAddress);
+            ITypeHandle typeHandle = rtsContract.GetTypeHandle(mtAddress);
             data->FirstField = rtsContract.GetFieldDescList(typeHandle).FirstOrDefault().ToClrDataAddress(_target);
             data->wNumInstanceFields = rtsContract.GetNumInstanceFields(typeHandle);
             data->wNumStaticFields = rtsContract.GetNumStaticFields(typeHandle);
@@ -2912,7 +2906,7 @@ public sealed unsafe partial class SOSDacImpl
             if (eeClassReallyCanonMT == 0 || value == null)
                 throw new ArgumentException();
             Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.TypeHandle methodTableHandle = contract.GetTypeHandle(eeClassReallyCanonMT.ToTargetPointer(_target));
+            ITypeHandle methodTableHandle = contract.GetTypeHandle(eeClassReallyCanonMT.ToTargetPointer(_target));
             *value = methodTableHandle.Address.ToClrDataAddress(_target);
         }
         catch (global::System.Exception ex)
@@ -2942,7 +2936,7 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
             Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
             Contracts.ILoader loader = _target.Contracts.Loader;
-            Contracts.TypeHandle methodTableHandle = typeSystemContract.GetTypeHandle(mt.ToTargetPointer(_target, overrideCheck: true));
+            ITypeHandle methodTableHandle = typeSystemContract.GetTypeHandle(mt.ToTargetPointer(_target, overrideCheck: true));
             if (typeSystemContract.IsFreeObjectMethodTable(methodTableHandle))
             {
                 OutputBufferHelpers.CopyStringToBuffer(mtName, count, pNeeded, "Free");
@@ -3014,7 +3008,7 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             TargetPointer methodTable = mt.ToTargetPointer(_target);
-            TypeHandle methodTableHandle = rts.GetTypeHandle(methodTable); // validate MT
+            ITypeHandle methodTableHandle = rts.GetTypeHandle(methodTable); // validate MT
 
             ushort vtableSlots = rts.GetNumVtableSlots(methodTableHandle);
 
@@ -3257,7 +3251,7 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.ILoader loader = _target.Contracts.Loader;
 
             TargetPointer mt = objectContract.GetMethodTableAddress(obj.ToTargetPointer(_target));
-            Contracts.TypeHandle typeHandle = rts.GetTypeHandle(mt);
+            ITypeHandle typeHandle = rts.GetTypeHandle(mt);
 
             TargetPointer modulePointer = rts.GetModule(typeHandle);
             if (modulePointer == TargetPointer.Null)
@@ -3329,7 +3323,7 @@ public sealed unsafe partial class SOSDacImpl
 
             TargetPointer objPtr = objAddr.ToTargetPointer(_target);
             TargetPointer mt = objectContract.GetMethodTableAddress(objPtr);
-            TypeHandle handle = runtimeTypeSystemContract.GetTypeHandle(mt);
+            ITypeHandle handle = runtimeTypeSystemContract.GetTypeHandle(mt);
 
             data->MethodTable = mt.ToClrDataAddress(_target);
             data->Size = runtimeTypeSystemContract.GetBaseSize(handle);
@@ -3371,7 +3365,7 @@ public sealed unsafe partial class SOSDacImpl
                 data->Size += numComponents * data->dwComponentSize;
 
                 // Get the type of the array elements
-                TypeHandle element = runtimeTypeSystemContract.GetTypeParam(handle);
+                ITypeHandle element = runtimeTypeSystemContract.GetTypeParam(handle);
                 data->ElementTypeHandle = element.Address.Value;
                 data->ElementType = (uint)runtimeTypeSystemContract.GetSignatureCorElementType(element);
 
@@ -4745,27 +4739,27 @@ public sealed unsafe partial class SOSDacImpl
             int iterationMax = 8192;
 
             Contracts.ILoader loader = _target.Contracts.Loader;
-            TargetPointer block = loader.GetFirstLoaderHeapBlock(loaderHeapAddr);
-            TargetPointer firstBlock = block;
+            using IEnumerator<Contracts.LoaderHeapBlock> blocks = loader.EnumerateLoaderHeapBlocks(loaderHeapAddr).GetEnumerator();
             int i = 0;
-            while (block != TargetPointer.Null && i++ < iterationMax)
+            try
             {
-                Contracts.LoaderHeapBlockData blockData;
-                try
+                while (i < iterationMax && blocks.MoveNext())
                 {
-                    blockData = loader.GetLoaderHeapBlockData(block);
-                }
-                catch (VirtualReadException)
-                {
-                    throw new NullReferenceException();
-                }
-                pCallback(blockData.Address.Value, (nuint)blockData.Size.Value, block == firstBlock ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
+                    i++;
+                    Contracts.LoaderHeapBlock block = blocks.Current;
+                    pCallback(block.Address.Value, (nuint)block.Size.Value, i == 1 ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
 #if DEBUG
-                DebugTraverseLoaderHeapBlocks.Add((blockData.Address.Value, (nuint)blockData.Size.Value));
+                    DebugTraverseLoaderHeapBlocks.Add((block.Address.Value, (nuint)block.Size.Value));
 #endif
-                block = blockData.NextBlock;
-                if (block == firstBlock)
-                    throw new NullReferenceException();
+                }
+            }
+            catch (VirtualReadException)
+            {
+                throw new NullReferenceException();
+            }
+            catch (InvalidOperationException)
+            {
+                throw new NullReferenceException();
             }
             if (i >= iterationMax)
                 hr = HResults.S_FALSE;
@@ -5430,7 +5424,7 @@ public sealed unsafe partial class SOSDacImpl
 
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             ILoader loaderContract = _target.Contracts.Loader;
-            Contracts.TypeHandle typeHandle = rtsContract.GetTypeHandle(mt.ToTargetPointer(_target));
+            ITypeHandle typeHandle = rtsContract.GetTypeHandle(mt.ToTargetPointer(_target));
 
             bool isCollectible = rtsContract.IsCollectible(typeHandle);
             if (isCollectible)
@@ -5584,7 +5578,7 @@ public sealed unsafe partial class SOSDacImpl
             // getting the module handle and the token from the method desc
             MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
             TargetPointer mt = rts.GetMethodTable(mdh);
-            TypeHandle typeHandle = rts.GetTypeHandle(mt);
+            ITypeHandle typeHandle = rts.GetTypeHandle(mt);
             TargetPointer modulePtr = rts.GetModule(typeHandle);
             uint token = rts.GetMethodToken(mdh);
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
@@ -5645,7 +5639,7 @@ public sealed unsafe partial class SOSDacImpl
             {
                 if (*pcMethodDescs >= cMethodDescs)
                     break;
-                TypeHandle typeHandle = rts.GetTypeHandle(ptr);
+                ITypeHandle typeHandle = rts.GetTypeHandle(ptr);
                 foreach (TargetPointer md in rts.GetIntroducedMethodDescs(typeHandle))
                 {
                     MethodDescHandle mdh = rts.GetMethodDescHandle(md);
@@ -6004,7 +5998,7 @@ public sealed unsafe partial class SOSDacImpl
 
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             Contracts.ILoader loaderContract = _target.Contracts.Loader;
-            Contracts.TypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
+            ITypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
             Contracts.ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(rtsContract.GetModule(methodTableHandle));
             TargetPointer alc = loaderContract.GetAssemblyLoadContext(moduleHandle);
             *assemblyLoadContext = alc.ToClrDataAddress(_target);
@@ -6290,7 +6284,7 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle mtHandle = rtsContract.GetTypeHandle(mt);
+            ITypeHandle mtHandle = rtsContract.GetTypeHandle(mt);
             if (rtsContract.IsTrackedReferenceWithFinalizer(mtHandle))
                 *isTrackedType = Interop.BOOL.TRUE;
 
@@ -6732,7 +6726,7 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.TypeHandle typeHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
+            ITypeHandle typeHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
             if (GCStaticsAddress != null)
                 *GCStaticsAddress = rtsContract.GetGCStaticsBasePointer(typeHandle).ToClrDataAddress(_target);
             if (nonGCStaticsAddress != null)
@@ -6773,7 +6767,7 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             TargetPointer methodTablePtr = methodTable.ToTargetPointer(_target);
             TargetPointer threadPtr = thread.ToTargetPointer(_target);
-            Contracts.TypeHandle typeHandle = rtsContract.GetTypeHandle(methodTablePtr);
+            ITypeHandle typeHandle = rtsContract.GetTypeHandle(methodTablePtr);
             ushort numThreadStaticFields = rtsContract.GetNumThreadStaticFields(typeHandle);
             if (numThreadStaticFields == 0)
             {
@@ -6826,7 +6820,7 @@ public sealed unsafe partial class SOSDacImpl
                 throw new NullReferenceException();
 
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.TypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
+            ITypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
             *initializationStatus = (MethodTableInitializationFlags)0;
             if (rtsContract.IsClassInited(methodTableHandle))
                 *initializationStatus = MethodTableInitializationFlags.MethodTableInitialized;
@@ -6860,14 +6854,14 @@ public sealed unsafe partial class SOSDacImpl
     {
         private readonly Target _target;
         private readonly IRuntimeTypeSystem _rts;
-        private readonly TypeHandle _methodTable;
+        private readonly ITypeHandle _methodTable;
 
         private readonly ISOSMethodEnum? _legacyMethodEnum;
 
         private uint _iteratorIndex;
         private List<SOSMethodData> _methods = [];
 
-        public SOSMethodEnum(Target target, TypeHandle methodTable, ISOSMethodEnum? legacyMethodEnum)
+        public SOSMethodEnum(Target target, ITypeHandle methodTable, ISOSMethodEnum? legacyMethodEnum)
         {
             _target = target;
             _rts = _target.Contracts.RuntimeTypeSystem;
@@ -6903,7 +6897,7 @@ public sealed unsafe partial class SOSDacImpl
                     TargetPointer mtAddr = _rts.GetMethodTable(mdh);
                     methodData.DefiningMethodTable = mtAddr.ToClrDataAddress(_target);
 
-                    TypeHandle typeHandle = _rts.GetTypeHandle(mtAddr);
+                    ITypeHandle typeHandle = _rts.GetTypeHandle(mtAddr);
                     methodData.DefiningModule = _rts.GetModule(typeHandle).ToClrDataAddress(_target);
                     methodData.Token = _rts.GetMethodToken(mdh);
                 }
@@ -6927,7 +6921,7 @@ public sealed unsafe partial class SOSDacImpl
                     TargetPointer mtAddr = _rts.GetMethodTable(mdh);
                     methodData.DefiningMethodTable = mtAddr.ToClrDataAddress(_target);
 
-                    TypeHandle typeHandle = _rts.GetTypeHandle(mtAddr);
+                    ITypeHandle typeHandle = _rts.GetTypeHandle(mtAddr);
                     methodData.DefiningModule = _rts.GetModule(typeHandle).ToClrDataAddress(_target);
                     methodData.Token = _rts.GetMethodToken(mdh);
 
@@ -7046,7 +7040,7 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle methodTableHandle = rts.GetTypeHandle(mt.ToTargetPointer(_target));
+            ITypeHandle methodTableHandle = rts.GetTypeHandle(mt.ToTargetPointer(_target));
 
             ISOSMethodEnum? legacyMethodEnum = null;
 #if DEBUG

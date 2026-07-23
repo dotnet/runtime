@@ -71,7 +71,6 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public async Task RunWorkerAsync_NoOnWorkHandler_SetsResultToNull()
         {
             var tcs = new TaskCompletionSource();
@@ -326,8 +325,9 @@ namespace System.ComponentModel.EventBasedAsync.Tests
             bw.Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+        // Waits on a ManualResetEventSlim with a timeout, which requires multithreading support; on single-threaded
+        // wasm (browser CoreCLR interpreter) the blocking wait throws PlatformNotSupportedException.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void TestFinalization()
         {
             // BackgroundWorker has a finalizer that exists purely for backwards compatibility

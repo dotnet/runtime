@@ -1,13 +1,87 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Collections.Generic;
+using System.Numerics;
 using System.Reflection;
+using System.Text;
 using Xunit;
 
 namespace System.Formats.Asn1.Tests.Writer
 {
     public static class SimpleWriterTests
     {
+        public static IEnumerable<object[]> VectorBoundaryLengths
+        {
+            get
+            {
+                yield return new object[] { Vector<byte>.Count - 1 };
+                yield return new object[] { Vector<byte>.Count };
+                yield return new object[] { Vector<byte>.Count + 1 };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorBoundaryLengths))]
+        public static void WriteVisibleString_DoesNotAccessOutsideBounds(int payloadLength)
+        {
+            using BoundedMemory<char> value = BoundedMemory.Allocate<char>(payloadLength);
+            value.Span.Fill('A');
+            value.MakeReadonly();
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.VisibleString, value.Span);
+            byte[] encoded = writer.Encode();
+
+            string decoded = AsnDecoder.ReadCharacterString(
+                encoded,
+                AsnEncodingRules.DER,
+                UniversalTagNumber.VisibleString,
+                out int bytesConsumed);
+            Assert.Equal(encoded.Length, bytesConsumed);
+            Assert.Equal(payloadLength, decoded.Length);
+            AssertExtensions.FilledWith('A', decoded);
+        }
+
+        [Fact]
+        public static void WriteVisibleString_VectorSizedRange()
+        {
+            const int PayloadLength = 128;
+            char[] value = new char[PayloadLength];
+
+            for (int i = 0; i < PayloadLength; i++)
+            {
+                value[i] = i % 2 == 0 ? (char)0x20 : (char)0x7E;
+            }
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.VisibleString, value);
+            byte[] encoded = writer.Encode();
+
+            Assert.Equal((byte)UniversalTagNumber.VisibleString, encoded[0]);
+            Assert.Equal(0x81, encoded[1]);
+            Assert.Equal(PayloadLength, encoded[2]);
+            Assert.Equal(new string(value), Encoding.ASCII.GetString(encoded, 3, PayloadLength));
+        }
+
+        [Theory]
+        [InlineData('\u001F', 10)]
+        [InlineData('\u007F', 10)]
+        [InlineData('\u001F', 128)]
+        [InlineData('\u007F', 128)]
+        public static void WriteVisibleString_Invalid(char invalidValue, int invalidIndex)
+        {
+            char[] value = new string('A', 129).ToCharArray();
+            value[invalidIndex] = invalidValue;
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            EncoderFallbackException exception = Assert.Throws<EncoderFallbackException>(
+                () => writer.WriteCharacterString(UniversalTagNumber.VisibleString, value));
+            Assert.Equal(invalidIndex, exception.Index);
+            Assert.Equal(0, writer.GetEncodedLength());
+        }
+
         [Theory]
         [InlineData(-1)]
         [InlineData(3)]

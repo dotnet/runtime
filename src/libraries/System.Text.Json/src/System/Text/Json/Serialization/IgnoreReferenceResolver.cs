@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization
 
         internal override void PopReferenceForCycleDetection()
         {
-            Debug.Assert(_stackForCycleDetection != null);
+            Debug.Assert(_stackForCycleDetection is not null);
             _stackForCycleDetection.Pop();
         }
 

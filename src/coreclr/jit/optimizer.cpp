@@ -6083,7 +6083,7 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                     // the implicit "live-in" one, which is not guaranteed, but very likely.
                     if ((defIndex == 1) && !varDsc->TypeIs(TYP_STRUCT))
                     {
-                        JITDUMP(" -- no; first explicit def of a non-STRUCT local\n", lclNum);
+                        JITDUMP(" -- no; first explicit def of a non-STRUCT local\n");
                         continue;
                     }
 

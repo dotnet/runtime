@@ -3,54 +3,54 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System
 {
-    [ClassInterface(ClassInterfaceType.None)]
-    [ComVisible(true)]
     [NonVersionable]
     public abstract partial class Delegate : ICloneable, ISerializable
     {
         private const nint UnmanagedMarker = -1;
 
         // This is set under 3 circumstances
-        // 1. Multicast delegates - object[]
+        // 1. Multicast delegates - Wrapper[]
         // 2. Method cache - MethodInfo
         // 3. Collectible delegates - LoaderAllocator and such
-        internal object? _helperObject;
+        private object? _helperObject;
 
         // _target is the object we will invoke on
         // Keep _target and _methodPtr next to each other for optimal delegate invoke performance
-        internal object? _target;
+        private object? _target;
 
         // _methodPtr is a pointer to the method we will invoke
         // It could be a small thunk if this is a static or UM call
-        internal IntPtr _methodPtr;
+        private IntPtr _methodPtr;
 
         // In the case of a static method passed to a delegate, this field stores
         // whatever _methodPtr would have stored: and _methodPtr points to a
         // small thunk which removes the "this" pointer before going on
         // to _methodPtrAux.
-        internal IntPtr _methodPtrAux;
+        private IntPtr _methodPtrAux;
 
         // this stores the multicast count, UnmanagedMarker or target MethodDesc
-        internal nint _extraData;
+        private nint _extraData;
 
         private bool IsUnmanagedFunctionPtr => _extraData == UnmanagedMarker;
 
         private bool IsClosed => _methodPtrAux == 0;
 
-        public partial bool HasSingleTarget => _helperObject is null || _helperObject.GetType() != typeof(object[]);
+        public partial bool HasSingleTarget => _helperObject is null || _helperObject.GetType() != typeof(Wrapper[]);
 
         public object? Target =>
-            TryGetInvocations(out ReadOnlySpan<object> invocations)
-                ? ((Delegate)invocations[^1]).Target
+            TryGetInvocations(out ReadOnlySpan<Wrapper> invocations)
+                ? invocations[^1].Value!.Target
                 : IsClosed ? _target : null;
 
         private unsafe MethodDesc* MethodDesc
@@ -113,7 +113,7 @@ namespace System
         // This method returns the Invocation list of this multicast delegate.
         public Delegate[] GetInvocationList()
         {
-            if (!TryGetInvocations(out ReadOnlySpan<object> invocations))
+            if (!TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
             {
                 return [this];
             }
@@ -121,13 +121,13 @@ namespace System
             Delegate[] invocationList = new Delegate[invocations.Length];
             for (int i = 0; i < invocations.Length; i++)
             {
-                invocationList[i] = (Delegate)invocations[i];
+                invocationList[i] = invocations[i].Value!;
             }
             return invocationList;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryGetInvocations(out ReadOnlySpan<object> invocations)
+        private bool TryGetInvocations(out ReadOnlySpan<Wrapper> invocations)
         {
             if (HasSingleTarget)
             {
@@ -135,24 +135,24 @@ namespace System
                 return false;
             }
 
-            Debug.Assert(_helperObject is object[]);
-            object[] invocationList = (object[])_helperObject;
+            Debug.Assert(_helperObject is Wrapper[]);
+            Wrapper[] invocationList = (Wrapper[])_helperObject;
 
             Debug.Assert(invocationList.Length > 1);
             Debug.Assert((uint)invocationList.Length >= (nuint)_extraData);
-            Debug.Assert(invocationList[0] is MulticastDelegate);
+            Debug.Assert(invocationList[0].Value is not null);
 
-            invocations = new ReadOnlySpan<object>(invocationList, 0, (int)_extraData);
+            invocations = new ReadOnlySpan<Wrapper>(invocationList, 0, (int)_extraData);
             return true;
         }
 
         // Used by delegate invocation list enumerator
         private Delegate? TryGetAt(int index)
         {
-            if (TryGetInvocations(out ReadOnlySpan<object> invocations))
+            if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
             {
                 if ((uint)index < (uint)invocations.Length)
-                    return (Delegate)invocations[index];
+                    return invocations[index].Value;
             }
             else if (index == 0)
             {
@@ -206,26 +206,12 @@ namespace System
                     return false;
 
                 // multicast
-                if (TryGetInvocations(out ReadOnlySpan<object> invocations))
-                {
-                    if (!other.TryGetInvocations(out ReadOnlySpan<object> otherInvocations) || invocations.Length != otherInvocations.Length)
-                        return false;
-
-                    for (int i = 0; i < invocations.Length; i++)
-                    {
-                        if (!invocations[i].Equals(otherInvocations[i]))
-                            return false;
-                    }
-
-                    return true;
-                }
+                if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
+                    return other.TryGetInvocations(out ReadOnlySpan<Wrapper> otherInvocations) && invocations.SequenceEqual(otherInvocations);
 
                 // unmanaged
                 if (IsUnmanagedFunctionPtr)
-                {
-                    return other.IsUnmanagedFunctionPtr &&
-                           _methodPtrAux == other._methodPtrAux;
-                }
+                    return other.IsUnmanagedFunctionPtr && _methodPtrAux == other._methodPtrAux;
 
                 // Under cached interface dispatch we might see the shared CID_VirtualOpenDelegateDispatch stub.
                 // Fallback to desc comparison in such case for correctness.
@@ -243,12 +229,12 @@ namespace System
 
         public sealed override unsafe int GetHashCode()
         {
-            if (TryGetInvocations(out ReadOnlySpan<object> invocations))
+            if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
             {
                 int hash = 0;
-                foreach (MulticastDelegate multicastDelegate in invocations)
+                foreach (ref readonly Wrapper wrapper in invocations)
                 {
-                    hash = hash * 33 + multicastDelegate.GetHashCode();
+                    hash = hash * 33 + wrapper.GetHashCode();
                 }
                 return hash;
             }
@@ -272,8 +258,8 @@ namespace System
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            return TryGetInvocations(out ReadOnlySpan<object> invocations)
-                ? ((Delegate)invocations[^1]).Method
+            return TryGetInvocations(out ReadOnlySpan<Wrapper> invocations)
+                ? invocations[^1].Value!.Method
                 : _helperObject as MethodInfo ?? GetMethodImplUncached();
         }
 
@@ -530,34 +516,31 @@ namespace System
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool BindToMethodInfo(ObjectHandleOnStack d, ObjectHandleOnStack target, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags);
 
-        private static MulticastDelegate InternalAlloc(RuntimeType type)
+        private static Delegate InternalAlloc(RuntimeType type)
         {
-            Debug.Assert(type.IsAssignableTo(typeof(MulticastDelegate)));
-            return Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAlloc(type));
+            Debug.Assert(type.IsAssignableTo(typeof(Delegate)));
+            return Unsafe.As<Delegate>(RuntimeTypeHandle.InternalAlloc(type));
         }
 
-        internal static unsafe MulticastDelegate InternalAlloc(MethodTable* type)
+        private static unsafe Delegate InternalAlloc(MethodTable* type)
         {
-            Debug.Assert(RuntimeTypeHandle.GetRuntimeType(type).IsAssignableTo(typeof(MulticastDelegate)));
-            return Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAllocNoChecks(type));
+            Debug.Assert(RuntimeTypeHandle.GetRuntimeType(type).IsAssignableTo(typeof(Delegate)));
+            return Unsafe.As<Delegate>(RuntimeTypeHandle.InternalAllocNoChecks(type));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe bool InternalEqualTypes(object a, object b)
+        private static unsafe bool InternalEqualTypes(object a, object b)
         {
             if (a.GetType() == b.GetType())
                 return true;
+
 #if FEATURE_TYPEEQUIVALENCE
             MethodTable* pMTa = RuntimeHelpers.GetMethodTable(a);
             MethodTable* pMTb = RuntimeHelpers.GetMethodTable(b);
 
-            bool ret;
-
-            // only use QCall to check the type equivalence scenario
-            if (pMTa->HasTypeEquivalence && pMTb->HasTypeEquivalence)
-                ret = RuntimeHelpers.AreTypesEquivalent(pMTa, pMTb);
-            else
-                ret = false;
+            bool ret = pMTa->HasTypeEquivalence && pMTb->HasTypeEquivalence &&
+                // only use QCall to check the type equivalence scenario
+                RuntimeHelpers.AreTypesEquivalent(pMTa, pMTb);
 
             GC.KeepAlive(a);
             GC.KeepAlive(b);
@@ -592,7 +575,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMulticastInvokeSlow")]
         private static unsafe partial void* GetMulticastInvokeSlow(MethodTable* pMT);
 
-        internal unsafe IntPtr GetMulticastInvoke()
+        private unsafe IntPtr GetMulticastInvoke()
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
             void* ptr = GetMulticastInvoke(pMT);
@@ -609,7 +592,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void* GetInvokeMethod(MethodTable* pMT);
 
-        internal unsafe IntPtr GetInvokeMethod()
+        private unsafe IntPtr GetInvokeMethod()
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
             void* ptr = GetInvokeMethod(pMT);
@@ -617,7 +600,7 @@ namespace System
             return (IntPtr)ptr;
         }
 
-        internal static unsafe IRuntimeMethodInfo CreateMethodInfo(MethodDesc* methodDesc)
+        private static unsafe IRuntimeMethodInfo CreateMethodInfo(MethodDesc* methodDesc)
         {
             IRuntimeMethodInfo? methodInfo = null;
             CreateMethodInfo(methodDesc, ObjectHandleOnStack.Create(ref methodInfo));
@@ -637,6 +620,189 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMethodDesc")]
         private static unsafe partial MethodDesc* GetMethodDesc(ObjectHandleOnStack instance);
 
+        internal struct Wrapper(Delegate? value) : IEquatable<Wrapper>
+        {
+            internal Delegate? Value = value;
+
+            public readonly bool Equals(Wrapper other)
+            {
+                // we should never get null here
+                Debug.Assert(Value is not null);
+                Debug.Assert(other.Value is not null);
+                return Value.Equals(other.Value);
+            }
+
+            public override readonly bool Equals(object? obj)
+            {
+                // we should never get another type here
+                Debug.Assert(obj is Wrapper);
+                return Equals((Wrapper)obj);
+            }
+
+            public override readonly int GetHashCode()
+            {
+                // we should never get null here
+                Debug.Assert(Value is not null);
+                return Value.GetHashCode();
+            }
+        }
+
+        private unsafe Delegate NewMulticastDelegate(Wrapper[] invocationList, int invocationCount, bool thisIsMultiCastAlready = false)
+        {
+            // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
+            Delegate result = InternalAlloc(RuntimeHelpers.GetMethodTable(this));
+
+            // Performance optimization - if this already points to a true multicast delegate,
+            // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them
+            if (thisIsMultiCastAlready)
+            {
+                result._methodPtr = _methodPtr;
+                result._methodPtrAux = _methodPtrAux;
+            }
+            else
+            {
+                result._methodPtr = GetMulticastInvoke();
+                result._methodPtrAux = GetInvokeMethod();
+            }
+            result._target = result;
+            result._helperObject = invocationList;
+            result._extraData = invocationCount;
+
+            return result;
+        }
+
+        private static bool TrySetSlot(ref Delegate? d, Delegate o)
+        {
+            Delegate? previous = d;
+            if (previous is null)
+            {
+                previous = Interlocked.CompareExchange(ref d, o, null);
+                if (previous == null)
+                    return true;
+            }
+
+            // The slot may be already set because we have added and removed the same method before.
+            // Optimize this case, because it's cheaper than copying the array.
+            return previous._methodPtr == o._methodPtr &&
+                   previous._methodPtrAux == o._methodPtrAux &&
+                   previous._target == o._target;
+        }
+
+        // This method will combine this delegate with the passed delegate
+        //    to form a new delegate.
+        protected Delegate CombineImpl(Delegate? d)
+        {
+            if (d is null)
+                return this;
+
+            // Verify that the types are the same...
+            if (!InternalEqualTypes(this, d))
+                throw new ArgumentException(SR.Arg_DlgtTypeMis);
+
+            Wrapper wrapper = new Wrapper(d);
+            ReadOnlySpan<Wrapper> followList = d.TryGetInvocations(out ReadOnlySpan<Wrapper> span) ? span : new ReadOnlySpan<Wrapper>(ref wrapper);
+
+            if (!TryGetInvocations(out ReadOnlySpan<Wrapper> invocationList))
+            {
+                int newResultCount = 1 + followList.Length;
+                Wrapper[] newResultList = new Wrapper[newResultCount];
+                newResultList[0] = new Wrapper(this);
+                followList.CopyTo(new Span<Wrapper>(newResultList, 1, followList.Length));
+                return NewMulticastDelegate(newResultList, newResultCount);
+            }
+
+            int resultCount = invocationList.Length + followList.Length;
+            Wrapper[]? resultList = (Wrapper[])_helperObject!;
+            if (resultList.Length < resultCount)
+            {
+                resultList = null;
+            }
+            else
+            {
+                Span<Wrapper> newInvocations = resultList.AsSpan(invocationList.Length, followList.Length);
+                for (int i = 0; i < followList.Length; i++)
+                {
+                    if (TrySetSlot(ref newInvocations[i].Value, followList[i].Value!))
+                        continue;
+
+                    resultList = null;
+                    break;
+                }
+            }
+
+            if (resultList == null)
+            {
+                resultList = new Wrapper[BitOperations.RoundUpToPowerOf2((uint)resultCount)];
+                invocationList.CopyTo(resultList);
+                followList.CopyTo(resultList.AsSpan(invocationList.Length));
+            }
+            return NewMulticastDelegate(resultList, resultCount, true);
+        }
+
+        private static Wrapper[] DeleteFromInvocationList(ReadOnlySpan<Wrapper> invocationList, int deleteIndex, int deleteCount)
+        {
+            Wrapper[] newInvocationList = new Wrapper[BitOperations.RoundUpToPowerOf2((uint)(invocationList.Length - deleteCount))];
+
+            invocationList.Slice(0, deleteIndex).CopyTo(newInvocationList);
+            invocationList.Slice(deleteIndex + deleteCount).CopyTo(newInvocationList.AsSpan(deleteIndex));
+
+            return newInvocationList;
+        }
+
+        // This method currently looks backward on the invocation list
+        //    for an element that has Delegate based equality with value.  (Doesn't
+        //    look at the invocation list.)  If this is found we remove it from
+        //    this list and return a new delegate.  If its not found a copy of the
+        //    current list is returned.
+        protected Delegate? RemoveImpl(Delegate? d)
+        {
+            // There is a special case were we are removing using a delegate as
+            //    the value we need to check for this case
+            if (d is null)
+                return this;
+
+            bool isMulticast = TryGetInvocations(out ReadOnlySpan<Wrapper> invocationList);
+
+            if (!d.TryGetInvocations(out ReadOnlySpan<Wrapper> otherInvocations))
+            {
+                // they are both not real Multicast
+                if (!isMulticast)
+                    return Equals(d) ? null : this;
+
+                int index = invocationList.LastIndexOf(new Wrapper(d));
+                if (index < 0)
+                    return this;
+
+                // Special case - only one value left, either at the beginning or the end
+                if (invocationList.Length == 2)
+                    return invocationList[1 - index].Value;
+
+                Wrapper[] list = DeleteFromInvocationList(invocationList, index, 1);
+                return NewMulticastDelegate(list, invocationList.Length - 1, true);
+            }
+
+            if (!isMulticast)
+                return this;
+
+            int i = invocationList.LastIndexOf(otherInvocations);
+            if (i < 0)
+                return this;
+
+            int newCount = invocationList.Length - otherInvocations.Length;
+            switch (newCount)
+            {
+                case 0:
+                    // Special case - no values left
+                    return null;
+                case 1:
+                    // Special case - only one value left, either at the beginning or the end
+                    return invocationList[i == 0 ? ^1 : 0].Value;
+                default:
+                    Wrapper[] list = DeleteFromInvocationList(invocationList, i, otherInvocations.Length);
+                    return NewMulticastDelegate(list, newCount, true);
+            }
+        }
+
         internal static IntPtr AdjustTarget(object target, IntPtr methodPtr)
         {
             return AdjustTarget(ObjectHandleOnStack.Create(ref target), methodPtr);
@@ -653,6 +819,91 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InitializeVirtualCallStub")]
         private static partial void InitializeVirtualCallStub(ObjectHandleOnStack d, IntPtr methodPtr);
+
+        [DoesNotReturn]
+        [DebuggerNonUserCode]
+        private static void ThrowNullThisInDelegateToInstance() =>
+            throw new ArgumentException(SR.Arg_DlgtNullInst);
+
+#pragma warning disable IDE0060
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorClosed(object target, IntPtr methodPtr)
+        {
+            if (target == null)
+                ThrowNullThisInDelegateToInstance();
+            _target = target;
+            _methodPtr = methodPtr;
+        }
+
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorClosedStatic(object target, IntPtr methodPtr)
+        {
+            _target = target;
+            _methodPtr = methodPtr;
+        }
+
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorRTClosed(object target, IntPtr methodPtr)
+        {
+            if (target == null)
+                ThrowNullThisInDelegateToInstance();
+            _target = target;
+            _methodPtr = AdjustTarget(target, methodPtr);
+        }
+
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorOpen(object target, IntPtr methodPtr, IntPtr shuffleThunk)
+        {
+            _target = this;
+            _methodPtr = shuffleThunk;
+            _methodPtrAux = methodPtr;
+        }
+
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk)
+        {
+            _target = this;
+            _methodPtr = shuffleThunk;
+            InitializeVirtualCallStub(methodPtr);
+        }
+
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorCollectibleClosedStatic(object target, IntPtr methodPtr, IntPtr gchandle)
+        {
+            _target = target;
+            _methodPtr = methodPtr;
+            _helperObject = GCHandle.InternalGet(gchandle);
+            Debug.Assert(HasSingleTarget);
+        }
+
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorCollectibleOpen(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
+        {
+            _target = this;
+            _methodPtr = shuffleThunk;
+            _methodPtrAux = methodPtr;
+            _helperObject = GCHandle.InternalGet(gchandle);
+            Debug.Assert(HasSingleTarget);
+        }
+
+        [DebuggerNonUserCode]
+        [DebuggerStepThrough]
+        private void CtorCollectibleVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
+        {
+            _target = this;
+            _methodPtr = shuffleThunk;
+            _helperObject = GCHandle.InternalGet(gchandle);
+            Debug.Assert(HasSingleTarget);
+            InitializeVirtualCallStub(methodPtr);
+        }
+#pragma warning restore IDE0060
     }
 
     // These flags effect the way BindToMethodInfo and BindToMethodName are allowed to bind a delegate to a target method. Their

@@ -46,8 +46,7 @@ var_types WasmClassifier::ToJitType(CorInfoWasmType wasmType)
         case CORINFO_WASM_TYPE_F64:
             return TYP_DOUBLE;
         case CORINFO_WASM_TYPE_V128:
-            // TODO-WASM: Simd support
-            unreached();
+            return TYP_SIMD16;
         default:
             unreached();
     }

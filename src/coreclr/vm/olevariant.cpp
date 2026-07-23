@@ -2513,9 +2513,13 @@ BASEARRAYREF OleVariant::ExtractWrappedObjectsFromArray(BASEARRAYREF *pArray)
             for (; pSrc < pSrcEnd; pSrc++, pDest++)
             {
                 if (*pSrc != NULL)
-                    memcpyNoGCRefs(pDest, &(*pSrc)->GetWrappedObject(), sizeof(DECIMAL));
+                {
+                    *pDest = (*pSrc)->GetWrappedObject();
+                }
                 else
-                    memset(pDest, 0, sizeof(DECIMAL));
+                {
+                    *pDest = DECIMAL{};
+                }
             }
         }
         else if (hndWrapperType == TypeHandle(CoreLibBinder::GetClass(CLASS__BSTR_WRAPPER)))
