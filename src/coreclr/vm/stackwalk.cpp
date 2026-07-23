@@ -2333,7 +2333,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 #ifdef TARGET_WASM
             if ((pInlinedFrame != NULL) && (adr == (PCODE)INLINED_PINVOKE_FROM_R2R))
             {
-                adr = GetWasmVirtualIPFromStackPointer((TADDR)((InlinedCallFrame*)pInlinedFrame)->m_pCallSiteSP);
+                adr = GetWasmVirtualIPFromStackPointer(dac_cast<TADDR>(((InlinedCallFrame*)pInlinedFrame)->GetCallSiteSP()));
                 if (adr == (PCODE)NULL)
                 {
                     retVal = SWA_FAILED;
