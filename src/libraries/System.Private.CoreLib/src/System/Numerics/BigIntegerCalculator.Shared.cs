@@ -592,7 +592,7 @@ namespace System.Numerics
         public static void MultiplyNaive(ReadOnlySpan<nuint> left, ReadOnlySpan<nuint> right, Span<nuint> bits)
         {
             Debug.Assert(left.Length >= right.Length);
-            Debug.Assert(bits.Length >= left.Length + right.Length);
+            Debug.Assert(right.IsEmpty || bits.Length >= left.Length + right.Length);
 
             // Multiplies the bits using the "grammar-school" method.
             // Envisioning the "rhombus" of a pen-and-paper calculation
