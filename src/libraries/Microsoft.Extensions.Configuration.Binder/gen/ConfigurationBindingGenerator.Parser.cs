@@ -720,19 +720,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         if (member is IPropertySymbol { IsIndexer: false, IsImplicitlyDeclared: false } property)
                         {
+                            string propertyName = property.Name;
+                            bool isDuplicateOrOverride = property.IsOverride || properties?.ContainsKey(propertyName) is true;
+
                             if (IsUnsupportedType(property.Type))
                             {
-                                if (ContainsErrorType(property.Type))
+                                // Gate the skip diagnostic on the same override/duplicate check used for supported
+                                // properties, so walking the base chain doesn't report SYSLIB1101 twice for an
+                                // overridden error-typed property.
+                                if (ContainsErrorType(property.Type) && !isDuplicateOrOverride)
                                 {
-                                    RecordDiagnostic(DiagnosticDescriptors.PropertyNotSupported, typeParseInfo.BinderInvocation?.Location, [property.Name, typeParseInfo.FullName]);
+                                    RecordDiagnostic(DiagnosticDescriptors.PropertyNotSupported, typeParseInfo.BinderInvocation?.Location, [propertyName, typeParseInfo.FullName]);
                                 }
 
                                 continue;
                             }
 
-                            string propertyName = property.Name;
-
-                            if (property.IsOverride || properties?.ContainsKey(propertyName) is true)
+                            if (isDuplicateOrOverride)
                             {
                                 continue;
                             }

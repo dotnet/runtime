@@ -248,13 +248,19 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             public int Count { get; set; }
                         }
 
-                        public sealed class DstsOptions
+                        public class DstsOptionsBase
+                        {
+                            public virtual MissingTypes.HttpRequestMessage? OverriddenMessage { get; set; }
+                        }
+
+                        public sealed class DstsOptions : DstsOptionsBase
                         {
                             public MissingTypes.ValueTypeMessage? ValueTypeMessage { get; set; }
                             public MissingTypes.HttpRequestMessage? HttpRequestMessage { get; set; }
                             public MissingTypes.CredentialDescription? CredentialDescription { get; set; }
                             public Wrapper<MissingTypes.HttpRequestMessage>? WrappedMessage { get; set; }
                             public System.Tuple<int, MissingTypes.CredentialDescription>? TupleMessage { get; set; }
+                            public override MissingTypes.HttpRequestMessage? OverriddenMessage { get; set; }
                             public int Value { get; set; }
                         }
                         """)
@@ -286,12 +292,13 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             result.ValidateDiagnostics(ExpectedDiagnostics.None);
             Assert.NotNull(result.GeneratedSource);
-            Assert.Contains("Value", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.Contains("instance.Value = ", result.GeneratedSource.Value.SourceText.ToString());
             Assert.DoesNotContain("ValueTypeMessage", result.GeneratedSource.Value.SourceText.ToString());
             Assert.DoesNotContain("HttpRequestMessage", result.GeneratedSource.Value.SourceText.ToString());
             Assert.DoesNotContain("CredentialDescription", result.GeneratedSource.Value.SourceText.ToString());
             Assert.DoesNotContain("WrappedMessage", result.GeneratedSource.Value.SourceText.ToString());
             Assert.DoesNotContain("TupleMessage", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("OverriddenMessage", result.GeneratedSource.Value.SourceText.ToString());
 
             // Each skipped member surfaces a SYSLIB1101 warning so the incomplete binding is not silent.
             foreach (string skippedProperty in new[] { "ValueTypeMessage", "HttpRequestMessage", "CredentialDescription", "WrappedMessage", "TupleMessage" })
@@ -301,6 +308,12 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     diagnostic.Severity == DiagnosticSeverity.Warning &&
                     diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains($"'{skippedProperty}'"));
             }
+
+            // An overridden error-typed property must report SYSLIB1101 exactly once, not once per
+            // occurrence while walking the inheritance chain.
+            Assert.Equal(1, result.Diagnostics.Count(diagnostic =>
+                diagnostic.Id == "SYSLIB1101" &&
+                diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains("'OverriddenMessage'")));
 
             // The bindable member must still bind without a diagnostic.
             Assert.DoesNotContain(result.Diagnostics, diagnostic =>

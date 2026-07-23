@@ -217,5 +217,18 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 throw new InvalidOperationException(errorMessage);
             }
         }
+
+        private static byte[] CreateAssemblyImage(Compilation compilation)
+        {
+            using MemoryStream stream = new();
+            var emitResult = compilation.Emit(stream);
+            if (!emitResult.Success)
+            {
+                // Explicit failures to include in the test output.
+                string errorMessage = string.Join(Environment.NewLine, emitResult.Diagnostics.Select(d => d.ToString()));
+                throw new InvalidOperationException(errorMessage);
+            }
+            return stream.ToArray();
+        }
     }
 }
