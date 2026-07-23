@@ -124,8 +124,8 @@ internal sealed class CodeDirectoryBlob : IBlob
         long signatureStart,
         string identifier,
         RequirementsBlob requirementsBlob,
-        HashType hashType = HashType.SHA256,
-        uint pageSize = MachObjectFile.DefaultCodeDirectoryPageSize)
+        uint pageSize,
+        HashType hashType = HashType.SHA256)
     {
         uint codeSlotCount = GetCodeSlotCount((uint)signatureStart, pageSize);
         uint specialCodeSlotCount = (uint)CodeDirectorySpecialSlot.Requirements;
@@ -294,7 +294,7 @@ internal sealed class CodeDirectoryBlob : IBlob
         return (uint)(Encoding.UTF8.GetByteCount(identifier) + 1);
     }
 
-    internal static uint GetCodeSlotCount(uint signatureStart, uint pageSize = MachObjectFile.DefaultCodeDirectoryPageSize)
+    internal static uint GetCodeSlotCount(uint signatureStart, uint pageSize)
     {
         return (signatureStart + pageSize - 1) / pageSize;
     }

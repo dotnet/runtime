@@ -19,12 +19,10 @@ namespace Microsoft.NET.HostModel.MachO;
 internal unsafe partial class MachObjectFile
 {
     internal const uint DefaultPageSize = 0x1000;
-    // The default code directory page size codesign uses to hash the code slots (4 KiB).
+    // Code directory page size codesign uses to hash the code slots
     // https://github.com/apple-oss-distributions/Security/blob/Security-61901.0.87.0.1/OSX/libsecurity_codesigning/lib/diskrep.h#L158-L160
-    internal const uint DefaultCodeDirectoryPageSize = 0x1000;
-    // The code directory page size codesign uses to hash the code slots of arm64/arm64_32 objects (16 KiB).
     // https://github.com/apple-oss-distributions/Security/blob/Security-61901.0.87.0.1/OSX/libsecurity_codesigning/lib/machorep.cpp#L574-L591
-    // https://github.com/apple-oss-distributions/Security/blob/Security-61901.0.87.0.1/OSX/libsecurity_codesigning/lib/diskrep.h#L158-L160
+    internal const uint DefaultCodeDirectoryPageSize = 0x1000;
     internal const uint Arm64CodeDirectoryPageSize = 0x4000;
     private const uint CodeSignatureAlignment = 0x10;
     private MachHeader _header;
@@ -46,6 +44,17 @@ internal unsafe partial class MachObjectFile
     internal EmbeddedSignatureBlob? EmbeddedSignatureBlob => _codeSignatureBlob;
 
     internal MachHeader Header => _header;
+
+    // Match codesign behavior on macOS 26+:
+    //   16 KiB code directory page size for arm64/arm64_32
+    //   4 KiB otherwise
+    // Before macOS 26, it used 4 KiB for every architecture.
+    // HostModel always uses the macOS 26 value so signing is deterministic and independent of the build
+    // machine's OS; a 16 KiB code directory page is valid on older arm64 macOS versions.
+    private uint CodeDirectoryPageSize
+        => (MachCpuType)_header.CpuType is MachCpuType.Arm64 or MachCpuType.Arm64_32
+            ? Arm64CodeDirectoryPageSize
+            : DefaultCodeDirectoryPageSize;
 
     private MachObjectFile(
         MachHeader header,
@@ -141,20 +150,12 @@ internal unsafe partial class MachObjectFile
         RequirementsBlob requirementsBlob = RequirementsBlob.Empty;
         CmsWrapperBlob cmsWrapperBlob = CmsWrapperBlob.Empty;
 
-        // Match codesign behavior on macOS 26+:
-        //   16 KiB code directory page size for arm64/arm64_32
-        //   4 KiB otherwise
-        // Before macOS 26, it used 4 KiB for every architecture.
-        // A 16 KiB code directory page is valid on older arm64 macOS versions.
-        uint pageSize = (MachCpuType)machObject._header.CpuType is MachCpuType.Arm64 or MachCpuType.Arm64_32
-            ? Arm64CodeDirectoryPageSize
-            : DefaultCodeDirectoryPageSize;
         var codeDirectory = CodeDirectoryBlob.Create(
             file,
             signatureStart,
             identifier,
             requirementsBlob,
-            pageSize: pageSize);
+            machObject.CodeDirectoryPageSize);
 
         return new EmbeddedSignatureBlob(
             codeDirectoryBlob: codeDirectory,
@@ -443,7 +444,7 @@ internal unsafe partial class MachObjectFile
     {
         uint csOffset = GetSignatureStart();
         uint csPtr = (uint)(_codeSignatureLoadCommand.Command.IsDefault ? NextLoadCommandOffset : _codeSignatureLoadCommand.FileOffset);
-        uint csSize = (uint)EmbeddedSignatureBlob.GetSignatureSize(csOffset, identifier);
+        uint csSize = (uint)EmbeddedSignatureBlob.GetSignatureSize(csOffset, identifier, CodeDirectoryPageSize);
 
         if (_codeSignatureLoadCommand.Command.IsDefault)
         {
