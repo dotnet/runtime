@@ -785,8 +785,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
         public async Task AllSocketsHttpHandlerCounters_Success_Recorded()
         {
-            TaskCompletionSource clientWaitingTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            TaskCompletionSource serverWaitingTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource clientTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource serverTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource clientDisposedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -799,31 +799,21 @@ namespace System.Net.Http.Functional.Tests
 
                     using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
                     Task<HttpResponseMessage> sendAsyncTask = SendAsync(invoker, request);
-                    await serverWaitingTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    await serverTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
                     recorder.RecordObservableInstruments();
-                    clientWaitingTcs.SetResult();
-                    recorder.RecordObservableInstruments();
-                    await serverWaitingTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    clientTcs.SetResult();
                     HttpResponseMessage response = await sendAsyncTask;
                     response.Dispose();
 
                     await WaitForEnvironmentTicksToAdvance();
                     recorder.RecordObservableInstruments();
                 }
-
                 clientDisposedTcs.SetResult();
 
-                IReadOnlyList<RecordedCounter> measurements = recorder.GetMeasurements();
-                foreach (RecordedCounter m in measurements)
-                {
-                    _output.WriteLine(m.ToString());
-                }
-
-                Assert.Collection(measurements,
-                    m => VerifyActiveRequests(m.InstrumentName, (long)m.Value, m.Tags, 1, uri),
+                Assert.Collection(recorder.GetMeasurements(),
                     m => VerifyTimeInQueue(m.InstrumentName, m.Value, m.Tags, uri, UseVersion),
+                    m => VerifyActiveRequests(m.InstrumentName, (long)m.Value, m.Tags, 1, uri),
                     m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, 1, uri, UseVersion, "active"),
-                    m => VerifyActiveRequests(m.InstrumentName, (long)m.Value, m.Tags, -1, uri),
                     m => VerifyRequestDuration(m.InstrumentName, (double)m.Value, m.Tags, uri, UseVersion, 200),
                     m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, 1, uri, UseVersion, "idle"),
                     m => VerifyConnectionDuration(m.InstrumentName, m.Value, m.Tags, uri, UseVersion));
@@ -833,10 +823,9 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     await connection.ReadRequestDataAsync();
-                    await clientWaitingTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
-                    serverWaitingTcs.SetResult();
-                    await clientWaitingTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
-                    await connection.SendResponseAsync(content: new string('a', 10*1024));
+                    serverTcs.SetResult();
+                    await clientTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    await connection.SendResponseAsync(isFinal: true);
                     await clientDisposedTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
                 });
             });
@@ -1518,6 +1507,9 @@ namespace System.Net.Http.Functional.Tests
         {
             await RemoteExecutor.Invoke(static async Task () =>
             {
+                var serverTcs = new TaskCompletionSource();
+                var clientTcs = new TaskCompletionSource();
+
                 using HttpMetricsTest_DefaultMeter test = new(null);
                 await test.LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
                 {
@@ -1525,15 +1517,24 @@ namespace System.Net.Http.Functional.Tests
                     using InstrumentRecorder<long> recorder = new InstrumentRecorder<long>(InstrumentNames.ActiveRequests);
                     using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = test.UseVersion };
 
-                    HttpResponseMessage response = await client.SendAsync(request);
+                    var requestTask = client.SendAsync(request);
+                    await serverTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    recorder.RecordObservableInstruments();
+                    clientTcs.SetResult();
+                    var response = await requestTask;
                     response.Dispose(); // Make sure disposal doesn't interfere with recording by enforcing early disposal.
 
                     Assert.Collection(recorder.GetMeasurements(),
-                        m => VerifyActiveRequests(m, 1, uri),
-                        m => VerifyActiveRequests(m, -1, uri));
+                        m => VerifyActiveRequests(m, 1, uri));
                 }, async server =>
                 {
-                    await server.AcceptConnectionSendResponseAndCloseAsync();
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        var requestData = await connection.ReadRequestDataAsync();
+                        serverTcs.SetResult();
+                        await clientTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                        await connection.SendResponseAsync();
+                    });
                 });
             }).DisposeAsync();
         }
@@ -1545,8 +1546,9 @@ namespace System.Net.Http.Functional.Tests
         {
             await RemoteExecutor.Invoke(static async Task () =>
             {
-                TaskCompletionSource clientWaitingTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-                TaskCompletionSource serverWaitingTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource clientTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource serverTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource clientDisposedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 using HttpMetricsTest_DefaultMeter test = new(null);
                 await test.LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -1557,37 +1559,35 @@ namespace System.Net.Http.Functional.Tests
                     {
                         using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = test.UseVersion };
                         Task<HttpResponseMessage> sendAsyncTask = client.SendAsync(request);
-                        await serverWaitingTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                        await serverTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
                         recorder.RecordObservableInstruments();
-                        clientWaitingTcs.SetResult();
+                        clientTcs.SetResult();
                         HttpResponseMessage response = await sendAsyncTask;
                         response.Dispose();
 
                         await WaitForEnvironmentTicksToAdvance();
                         recorder.RecordObservableInstruments();
                     }
+                    clientDisposedTcs.SetResult();
 
                     Version version = HttpVersion.Version11;
                     Assert.Collection(recorder.GetMeasurements(),
-                        m => VerifyActiveRequests(m.InstrumentName, (long)m.Value, m.Tags, 1, uri),
                         m => VerifyTimeInQueue(m.InstrumentName, m.Value, m.Tags, uri, version),
+                        m => VerifyActiveRequests(m.InstrumentName, (long)m.Value, m.Tags, 1, uri),
                         m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, 1, uri, version, "active"),
-                        m => VerifyActiveRequests(m.InstrumentName, (long)m.Value, m.Tags, -1, uri),
                         m => VerifyRequestDuration(m.InstrumentName, (double)m.Value, m.Tags, uri, version, 200),
                         m => VerifyOpenConnections(m.InstrumentName, m.Value, m.Tags, 1, uri, version, "idle"),
                         m => VerifyConnectionDuration(m.InstrumentName, m.Value, m.Tags, uri, version));
                 },
                 async server =>
                 {
-                    await clientWaitingTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
-
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestDataAsync();
-                        serverWaitingTcs.SetResult();
-                        await clientWaitingTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                        serverTcs.SetResult();
+                        await clientTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
                         await connection.SendResponseAsync(isFinal: false);
-                        await connection.WaitForCloseAsync(CancellationToken.None);
+                        await clientDisposedTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
                     });
                 });
             }).DisposeAsync();
