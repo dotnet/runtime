@@ -46,14 +46,8 @@ namespace ILLink.RoslynAnalyzer
             context.RegisterOperationAction(AnalyzeLocalFunction, OperationKind.LocalFunction);
         }
 
-        private static void AnalyzeSymbol(SymbolAnalysisContext context)
-        {
-            // Roslyn does not invoke symbol actions for local functions.
-            if (context.Symbol is IMethodSymbol { MethodKind: MethodKind.LocalFunction })
-                return;
-
+        private static void AnalyzeSymbol(SymbolAnalysisContext context) =>
             AnalyzeSymbol(context.Symbol, context.CancellationToken, context.ReportDiagnostic);
-        }
 
         private static void AnalyzeLocalFunction(OperationAnalysisContext context) =>
             AnalyzeSymbol(
