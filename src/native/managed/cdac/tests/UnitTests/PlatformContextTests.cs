@@ -36,8 +36,6 @@ public class PlatformContextTests
     [InlineData(29, 0xABCDUL)] // Fp
     [InlineData(31, 0x5678UL)] // Sp
     [InlineData(32, 0x9000UL)] // Pc
-    [InlineData(33, 0x1122334455667788UL)] // V0, low 64 bits
-    [InlineData(64, 0x8877665544332211UL)] // V31, low 64 bits
     public void ARM64_TrySetAndRead_ByNumber_RoundTrips(int regNum, ulong testValue)
     {
         var ctx = new ARM64Context();
@@ -56,21 +54,28 @@ public class PlatformContextTests
         Assert.False(ctx.TryReadRegister(regNum, out _));
     }
 
-    [Fact]
-    public unsafe void ARM64_VectorRegisterNumber_UsesLow64Bits()
+    [Theory]
+    [InlineData(33)] // V0
+    [InlineData(64)] // V31
+    public void ARM64_VectorRegisterNumber_WriteReturnsFalse(int regNum)
+    {
+        // Vector registers are read-only through the numeric register accessor.
+        var ctx = new ARM64Context();
+        Assert.False(ctx.TrySetRegister(regNum, new TargetNUInt(0x1122334455667788UL)));
+    }
+
+    [Theory]
+    [InlineData(33, 0)]  // V0 -> V[0]
+    [InlineData(64, 62)] // V31 -> V[62]
+    public unsafe void ARM64_VectorRegisterNumber_ReadUsesLow64Bits(int regNum, int vIndex)
     {
         var ctx = new ARM64Context();
         ulong* registers = ctx.V;
-        registers[1] = 0x1111;
-        registers[3] = 0x3333;
-        registers[4] = 0x4444;
+        registers[vIndex] = 0x1122334455667788UL;      // low 64 bits
+        registers[vIndex + 1] = 0x8877665544332211UL;  // high 64 bits (must be ignored)
 
-        Assert.True(ctx.TrySetRegister(34, new TargetNUInt(0x2222)));
-
-        Assert.Equal(0x1111UL, registers[1]);
-        Assert.Equal(0x2222UL, registers[2]);
-        Assert.Equal(0x3333UL, registers[3]);
-        Assert.Equal(0x4444UL, registers[4]);
+        Assert.True(ctx.TryReadRegister(regNum, out TargetNUInt value));
+        Assert.Equal(0x1122334455667788UL, value.Value);
     }
 
     [Theory]

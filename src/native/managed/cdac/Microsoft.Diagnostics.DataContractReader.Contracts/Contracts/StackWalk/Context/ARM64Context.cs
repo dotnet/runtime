@@ -158,12 +158,6 @@ internal struct ARM64Context : IPlatformContext
 
     public bool TrySetRegister(int number, TargetNUInt value)
     {
-        if ((uint)(number - 33) < 32)
-        {
-            SetVectorRegister(number - 33, value);
-            return true;
-        }
-
         switch (number)
         {
             case 0: X0 = value.Value; return true;
@@ -250,20 +244,10 @@ internal struct ARM64Context : IPlatformContext
         }
     }
 
-    private unsafe void SetVectorRegister(int index, TargetNUInt value)
-    {
-        fixed (ulong* registers = V)
-        {
-            registers[index * 2] = value.Value;
-        }
-    }
-
     private readonly unsafe TargetNUInt ReadVectorRegister(int index)
     {
-        fixed (ulong* registers = V)
-        {
-            return new TargetNUInt(registers[index * 2]);
-        }
+        // V indexes into the low 64 bits of each 128-bit register, so double the index.
+        return new TargetNUInt(V[index * 2]);
     }
 
     // Control flags
