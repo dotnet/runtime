@@ -23,7 +23,7 @@ using System;
 using System.Threading.Tasks;
 using Xunit;
 
-public class Runtime_NNNNN
+public class Runtime_131285
 {
     [Fact]
     public static void TestEntryPoint()
