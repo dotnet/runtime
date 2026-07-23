@@ -687,6 +687,11 @@ namespace System.Net.Http.Functional.Tests
                 Handler.Credentials = credentialsMode == 1 ? new CredentialCache() : new CustomCredentials();
             }
 
+            var originalServerTcs = new TaskCompletionSource();
+            var redirectServerTcs = new TaskCompletionSource();
+            var clientTcs1 = new TaskCompletionSource();
+            var clientTcs2 = new TaskCompletionSource();
+
             return LoopbackServerFactory.CreateServerAsync((originalServer, originalUri) =>
             {
                 return LoopbackServerFactory.CreateServerAsync(async (redirectServer, redirectUri) =>
@@ -696,21 +701,36 @@ namespace System.Net.Http.Functional.Tests
                     using HttpRequestMessage request = new(HttpMethod.Get, originalUri) { Version = UseVersion };
 
                     Task clientTask = SendAsync(client, request);
-                    Task serverTask = originalServer.HandleRequestAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", redirectUri.AbsoluteUri) });
-
+                    var serverTask = originalServer.AcceptConnectionAsync(async connection =>
+                    {
+                        var requestData = await connection.ReadRequestDataAsync();
+                        originalServerTcs.SetResult();
+                        await clientTcs1.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                        await connection.SendResponseAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", redirectUri.AbsoluteUri) });
+                    });
+                    await originalServerTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    recorder.RecordObservableInstruments();
+                    clientTcs1.SetResult();
                     await Task.WhenAny(clientTask, serverTask);
                     Assert.False(clientTask.IsCompleted, $"{clientTask.Status}: {clientTask.Exception}");
                     await serverTask;
 
-                    serverTask = redirectServer.HandleRequestAsync();
+                    serverTask = redirectServer.AcceptConnectionAsync(async connection =>
+                    {
+                        var requestData = await connection.ReadRequestDataAsync();
+                        redirectServerTcs.SetResult();
+                        await clientTcs2.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                        await connection.SendResponseAsync();
+                    });
+                    await redirectServerTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    recorder.RecordObservableInstruments();
+                    clientTcs2.SetResult();
                     await TestHelper.WhenAllCompletedOrAnyFailed(clientTask, serverTask);
                     await clientTask;
 
                     Assert.Collection(recorder.GetMeasurements(),
                         m => VerifyActiveRequests(m, 1, originalUri),
-                        m => VerifyActiveRequests(m, -1, originalUri),
-                        m => VerifyActiveRequests(m, 1, redirectUri),
-                        m => VerifyActiveRequests(m, -1, redirectUri));
+                        m => VerifyActiveRequests(m, 1, redirectUri));
                 });
             });
         }
