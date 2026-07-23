@@ -988,6 +988,7 @@ namespace
         ToI64,
         ToF32,
         ToF64,
+        ToV128,
         ToStruct,   // S<N> — multi-field struct passed by pointer, structSize holds the size
         ToEmpty,    // e — empty struct, takes no wasm argument
     };
@@ -1031,6 +1032,23 @@ namespace
         }
 
         MethodTable* pMT = th.AsMethodTable();
+
+        bool isSupportedVectorBaseType =
+            pMT->IsIntrinsicType() &&
+            (pMT->GetNumGenericArgs() == 1) &&
+            CorIsNumericalType(pMT->GetInstantiation()[0].GetSignatureCorElementType());
+        if (isSupportedVectorBaseType)
+        {
+            PTR_MethodTable pVector128MT = CoreLibBinder::GetClassIfExist(CLASS__VECTOR128T);
+            PTR_MethodTable pVectorTMT = CoreLibBinder::GetClassIfExist(CLASS__VECTORT);
+
+            if ((pVector128MT != nullptr && pMT->HasSameTypeDefAs(pVector128MT)) ||
+                ((size == 16) && (pVectorTMT != nullptr) && pMT->HasSameTypeDefAs(pVectorTMT)))
+            {
+                return { ConvertType::ToV128, 0 };
+            }
+        }
+
         uint32_t numInstanceFields = pMT->GetNumInstanceFields();
 
         // WASM-TODO: Empty structs should return ToEmpty once .NET
@@ -1106,6 +1124,7 @@ namespace
             case ConvertType::ToI64:       c = 'l'; break;
             case ConvertType::ToF32:       c = 'f'; break;
             case ConvertType::ToF64:       c = 'd'; break;
+            case ConvertType::ToV128:      c = 'V'; break;
             case ConvertType::ToEmpty:     c = 'e'; break;
             case ConvertType::ToStruct:
             {

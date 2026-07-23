@@ -12,7 +12,6 @@ public static class Runtime_130831
     // Compare the exact bit pattern: Double/Single.Equals treat -0.0 and +0.0 as equal,
     // so a plain Assert.Equal would not observe a wrong-signed-zero result.
     [Fact]
-    [SkipOnMono("https://github.com/dotnet/runtime/issues/131130", TestPlatforms.Any)]
     public static void TestEntryPoint()
     {
         Assert.Equal(BitConverter.DoubleToInt64Bits(-0.0), BitConverter.DoubleToInt64Bits(MinNegZeroConst(+0.0)));
