@@ -5199,7 +5199,7 @@ struct LowerFieldListRegisterInfo
     }
 };
 
-#ifdef FEATURE_SIMD
+#if defined(TARGET_XARCH)
 static bool IsFloatPairFieldListRegister(GenTreeFieldList::Use* use,
                                          unsigned               regStart,
                                          unsigned               regEnd,
@@ -5220,7 +5220,7 @@ static bool IsFloatPairFieldListRegister(GenTreeFieldList::Use* use,
     GenTreeFieldList::Use* nextUse = secondUse->GetNext();
     return (nextUse == nullptr) || (nextUse->GetOffset() >= regEnd);
 }
-#endif // FEATURE_SIMD
+#endif // TARGET_XARCH
 
 //----------------------------------------------------------------------------------------------
 // LowerRetFieldList:
@@ -5395,11 +5395,11 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
             return false;
         }
 
-#ifdef FEATURE_SIMD
+#if defined(TARGET_XARCH)
         bool supportsFloatPairInsertion = IsFloatPairFieldListRegister(use, regStart, regEnd, regType);
 #else
         bool supportsFloatPairInsertion = false;
-#endif // FEATURE_SIMD
+#endif // TARGET_XARCH
 
         do
         {
@@ -5496,21 +5496,24 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
 
         GenTree* fieldListPrev = fieldList->gtPrev;
 
-#ifdef FEATURE_SIMD
+#if defined(TARGET_XARCH)
         if (IsFloatPairFieldListRegister(use, regStart, regEnd, regType))
         {
             GenTreeFieldList::Use* secondUse = use->GetNext();
-            GenTree* value = m_compiler->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, use->GetNode(), TYP_FLOAT, 8);
-            BlockRange().InsertBefore(fieldList, value);
+            GenTree*               firstVector =
+                m_compiler->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, use->GetNode(), TYP_FLOAT, 16);
+            BlockRange().InsertBefore(fieldList, firstVector);
 
-            GenTree* index = m_compiler->gtNewIconNode(1);
-            BlockRange().InsertBefore(fieldList, index);
+            GenTree* secondVector =
+                m_compiler->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, secondUse->GetNode(), TYP_FLOAT, 16);
+            BlockRange().InsertBefore(fieldList, secondVector);
 
-            value = m_compiler->gtNewSimdWithElementNode(TYP_SIMD8, value, index, secondUse->GetNode(), TYP_FLOAT, 8);
+            GenTree* value = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, firstVector, secondVector,
+                                                                  NI_X86Base_UnpackLow, TYP_FLOAT, 16);
             BlockRange().InsertBefore(fieldList, value);
 
             regEntry->SetNode(value);
-            regEntry->SetType(TYP_SIMD8);
+            regEntry->SetType(TYP_SIMD16);
             regEntry->SetNext(secondUse->GetNext());
             use = regEntry->GetNext();
 
@@ -5521,7 +5524,7 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
 
             continue;
         }
-#endif // FEATURE_SIMD
+#endif // TARGET_XARCH
         do
         {
             unsigned fieldStart = use->GetOffset();

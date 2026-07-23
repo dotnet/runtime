@@ -9,16 +9,16 @@ public class FieldListFloatInsertion
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static FloatPair ReturnPair(float x, float y)
     {
-        // X64-LINUX-FULL-LINE: {{v?insertps}} {{xmm[0-9]+}}, {{xmm[0-9]+}}, 16
-        // X64-OSX-FULL-LINE: {{v?insertps}} {{xmm[0-9]+}}, {{xmm[0-9]+}}, 16
+        // X64-LINUX-FULL-LINE: {{v?unpcklps}} {{xmm[0-9]+}}, {{xmm[0-9]+}}
+        // X64-OSX-FULL-LINE: {{v?unpcklps}} {{xmm[0-9]+}}, {{xmm[0-9]+}}
         return new FloatPair { X = x, Y = y };
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static float PassPair(float x, float y)
     {
-        // X64-LINUX-FULL-LINE: {{v?insertps}} {{xmm[0-9]+}}, {{xmm[0-9]+}}, 16
-        // X64-OSX-FULL-LINE: {{v?insertps}} {{xmm[0-9]+}}, {{xmm[0-9]+}}, 16
+        // X64-LINUX-FULL-LINE: {{v?unpcklps}} {{xmm[0-9]+}}, {{xmm[0-9]+}}
+        // X64-OSX-FULL-LINE: {{v?unpcklps}} {{xmm[0-9]+}}, {{xmm[0-9]+}}
         return SumPair(new FloatPair { X = x, Y = y });
     }
 
