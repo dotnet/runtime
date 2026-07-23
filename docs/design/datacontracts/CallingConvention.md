@@ -39,3 +39,34 @@ yet. The cdacstress harness (`src/coreclr/vm/cdacstress.cpp`,
 `ARGITER` sub-check) uses byte-for-byte comparison of the returned blob
 against the runtime's `ComputeCallRefMap` output as its correctness
 oracle.
+
+The contract decodes method signatures through the
+[TypeInformation](./TypeInformation.md) contract. Each parameter therefore
+has both:
+
+- signature facts used for GC classification, including `Class`, `Byref`,
+  array, pointer, and generic shape
+- an optional exact loaded `ITypeHandle` used for value-type layout and ABI
+  classification
+
+An unresolved TypeDef or TypeRef encoded as `ELEMENT_TYPE_CLASS` is still
+reported as a GC reference. A generic instantiation whose exact constructed
+type is unavailable retains its generic definition and type arguments.
+
+CallingConvention does not infer value-type ABI layout from an open generic
+definition. If an argument or return value requires value-type size, alignment,
+HFA, GCDesc, or platform ABI classification and no exact loaded type is
+available, `TryComputeArgGCRefMapBlob` returns `false`.
+
+For byref-like value types, field traversal uses `TypeInformation.GetFieldTypeInfo`
+with the current generic type context. The exact type is used when available;
+otherwise the generic definition supplies the instantiation-independent field
+shape while recursively decoded type arguments preserve nested generic context.
+
+Contracts used:
+
+| Contract Name |
+| --- |
+| RuntimeInfo |
+| RuntimeTypeSystem |
+| TypeInformation |

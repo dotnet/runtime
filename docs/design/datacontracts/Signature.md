@@ -80,6 +80,8 @@ ITypeHandle? ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle
 
 `RuntimeSignatureDecoder` is shared infrastructure within the cDAC. Other contracts construct their own decoder and provider directly when they need to decode method or local signatures rather than going through this contract. For example, the [StackWalk](./StackWalk.md) contract uses `RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext>` with a GC-specific provider to classify method parameters during signature-based GC reference scanning.
 
+The [TypeInformation](./TypeInformation.md) contract uses the same decoder with a provider that keeps signature classification and generic shape separate from an optional exact loaded `ITypeHandle`.
+
 ### Vararg call cookies
 
 `GetVarArgArgsBase` and `GetVarArgSignature` decode a `VASigCookie*` slot pushed by a vararg call site.
