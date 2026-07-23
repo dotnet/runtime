@@ -500,19 +500,23 @@ namespace System.Text.Json.Serialization.Converters
 
                     if (_enumFieldInfo.Length > 0)
                     {
-                        StringBuilder patternBuilder = new("^(");
-                        patternBuilder.Append(Regex.Escape(_enumFieldInfo[0].JsonName));
+                        using ValueStringBuilder sb = new(stackalloc char[JsonConstants.StackallocCharThreshold]);
+                        sb.Append("^(");
+                        sb.Append(Regex.Escape(_enumFieldInfo[0].JsonName));
                         for (int i = 1; i < _enumFieldInfo.Length; i++)
                         {
-                            patternBuilder.Append('|').Append(Regex.Escape(_enumFieldInfo[i].JsonName));
+                            sb.Append('|');
+                            sb.Append(Regex.Escape(_enumFieldInfo[i].JsonName));
                         }
-                        patternBuilder.Append(")(\\w*,\\w*(");
-                        patternBuilder.Append(Regex.Escape(_enumFieldInfo[0].JsonName));
+                        sb.Append(")(\\w*,\\w*(");
+                        sb.Append(Regex.Escape(_enumFieldInfo[0].JsonName));
                         for (int i = 1; i < _enumFieldInfo.Length; i++)
                         {
-                            patternBuilder.Append('|').Append(Regex.Escape(_enumFieldInfo[i].JsonName));
+                            sb.Append('|');
+                            sb.Append(Regex.Escape(_enumFieldInfo[i].JsonName));
                         }
-                        pattern = patternBuilder.Append("))*$").ToString();
+                        sb.Append("))*$");
+                        pattern = sb.ToString();
                     }
 
                     return new() { Type = JsonSchemaType.String, Pattern = pattern };
