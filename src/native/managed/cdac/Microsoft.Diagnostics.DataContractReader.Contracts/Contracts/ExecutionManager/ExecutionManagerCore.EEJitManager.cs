@@ -34,7 +34,8 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 return false;
 
             Debug.Assert(codeStart.Value <= jittedCodeAddress.Value);
-            TargetNUInt relativeOffset = new TargetNUInt(jittedCodeAddress.Value - codeStart.Value);
+            TargetPointer instrPointer = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
+            TargetNUInt relativeOffset = new TargetNUInt(instrPointer.Value - codeStart.Value);
 
             if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
                 return false;
