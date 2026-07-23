@@ -157,6 +157,8 @@ namespace System
         static abstract int CountDigits(TValue significand);
         static abstract int NumberBitsSignificand { get; }
         static abstract TValue NaNMask { get; }
+        static abstract TValue SNaNMask { get; }
+        static abstract TValue NaNPayloadMask { get; }
         static abstract TValue SignMask { get; }
         static abstract TValue G0G1Mask { get; }
         static abstract TValue G0ToGwPlus1ExponentMask { get; } //G0 to G(w+1)

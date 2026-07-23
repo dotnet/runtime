@@ -709,7 +709,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_WriteBuildWasmBootJsonFile"
     DependsOnTargets="_WriteWasmBootJsonBuildPropertyStamp"
     Condition="'$(WasmBuildingForNestedPublish)' != 'true'"
-    Inputs="@(IntermediateAssembly);@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset);@(_WasmJsConfigStaticWebAsset);@(_WasmDotnetJsForBuild);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-build.stamp"
+    Inputs="@(IntermediateAssembly);@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset);@(_WasmJsConfigStaticWebAsset);@(_WasmDotnetJsForBuild);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(ProjectRuntimeConfigDevFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-build.stamp"
     Outputs="$(IntermediateOutputPath)wasm-bootjson-build.complete.stamp">
 
     <GenerateWasmBootJson
@@ -733,6 +733,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       EnvVariables="@(WasmEnvironmentVariable)"
       Profilers="$(WasmProfilers)"
       RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
+      RuntimeConfigDevJsonPath="$(ProjectRuntimeConfigDevFilePath)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
       ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"

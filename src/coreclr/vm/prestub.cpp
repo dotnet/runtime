@@ -33,9 +33,7 @@
 #include "clrtocomcall.h"
 #endif
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #include "methoddescbackpatchinfo.h"
 
@@ -371,10 +369,8 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
             pCode = GetPrecompiledCode(pConfig, shouldTier);
         }
 
-#ifdef FEATURE_PERFMAP
         if (pCode != (PCODE)NULL)
             PerfMap::LogPreCompiledMethod(this, pCode);
-#endif
     }
 
     if (pConfig->IsForMulticoreJit() && pCode == (PCODE)NULL && pConfig->ReadyToRunRejectedPrecompiledCode())
@@ -910,12 +906,15 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     }
 #endif // PROFILING_SUPPORTED
 
-#ifdef FEATURE_PERFMAP
 #if defined(FEATURE_INTERPRETER)
     if (isInterpreterCode)
     {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        InterpByteCodeStart* interpreterCode = (InterpByteCodeStart*)PortableEntryPoint::GetInterpreterData(pCode);
+#else
         InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
         InterpByteCodeStart* interpreterCode = (InterpByteCodeStart*)pPrecode->GetData()->ByteCodeAddr;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         PCODE irAddress = PINSTRToPCODE((TADDR)interpreterCode);
         PerfMap::LogInterpreterMethod(this, irAddress, sizeOfCode);
     }
@@ -925,7 +924,6 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         // Save the JIT'd method information so that perf can resolve JIT'd call frames.
         PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
     }
-#endif
 
     // The notification will only occur if someone has registered for this method.
     DACNotifyCompilationFinished(this, pCode);
@@ -2504,14 +2502,26 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             if (helperMD->ShouldCallPrestub())
                 (void)helperMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
             void* ilStubInterpData = helperMD->GetInterpreterCode();
-            // WASM-TODO: update this when we will have codegen
-            _ASSERTE(ilStubInterpData != NULL);
-            SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
 
             // Use this method's own PortableEntryPoint rather than the helper's.
             // It is required to maintain 1:1 mapping between MethodDesc and its entrypoint.
             PCODE entryPoint = GetPortableEntryPoint();
-            PortableEntryPoint::SetInterpreterData(entryPoint, (PCODE)(TADDR)ilStubInterpData);
+            if (ilStubInterpData != NULL)
+            {
+                // The managed implementation runs in the interpreter.
+                SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+                PortableEntryPoint::SetInterpreterData(entryPoint, (PCODE)(TADDR)ilStubInterpData);
+            }
+            else
+            {
+                // The managed implementation was compiled to native (R2R) code rather than interpreter
+                // byte code. This happens for String constructors, whose managed Ctor factory method is
+                // R2R-compiled. Publish the helper's native code into this method's own portable
+                // entrypoint so callers dispatch directly to it instead of looping back into the prestub.
+                // In this path helperMD comes from an FCall helper entrypoint, so native code must exist.
+                _ASSERTE(PortableEntryPoint::HasNativeEntryPoint(pCode));
+                PortableEntryPoint::SetActualCode(entryPoint, (PCODE)(TADDR)PortableEntryPoint::GetActualCode(pCode));
+            }
             pCode = entryPoint;
         }
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
@@ -2934,14 +2944,16 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
         if (fVirtual)
         {
-            GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
-
             // Get the stub manager for this module
             VirtualCallStubManager *pMgr = pModule->GetLoaderAllocator()->GetVirtualCallStubManager();
 
             OBJECTREF *protectedObj = pEMFrame->GetThisPtr();
             _ASSERTE(protectedObj != NULL);
-            if (*protectedObj == NULL) {
+            if (!*protectedObj) {
+                // NOTE: This is in a preemptive block, but the ! operator
+                // is safe to use on OBJECTREF even in preemptive mode
+                // (as long as the OBJECTREF is not on a managed object which
+                // in this case it is not)
                 COMPlusThrow(kNullReferenceException);
             }
 
@@ -2980,6 +2992,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 #endif
                 }
 
+                GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
+
                 // We lost the race or the R2R image was generated without cached interface dispatch support, simply do the resolution in pure C++
                 DispatchToken token;
                 if (pMT->IsInterface())
@@ -3005,6 +3019,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                     token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
 
                     StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
+                    GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
                     pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
                 }
                 else
@@ -3845,6 +3860,10 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
                 if (objRef == NULL)
                     COMPlusThrow(kNullReferenceException);
 
+                MethodTable* pMTObjRef = objRef->GetMethodTable();
+
+                GCX_PREEMP();
+
                 // Duplicated logic from JIT_VirtualFunctionPointer_Framed
                 if (!pMD->IsVtableMethod())
                 {
@@ -3852,7 +3871,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
                 }
                 else
                 {
-                    result = pMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, th);
+                    result = pMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, pMTObjRef, th);
                 }
 
                 GCPROTECT_END();

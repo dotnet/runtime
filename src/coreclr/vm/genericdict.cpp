@@ -671,6 +671,7 @@ Dictionary::PopulateEntry(
     Module *           pModule /* = NULL */)
 {
      CONTRACTL {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
     } CONTRACTL_END;

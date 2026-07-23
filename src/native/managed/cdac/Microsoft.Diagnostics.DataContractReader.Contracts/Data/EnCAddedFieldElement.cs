@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.EnCAddedFieldElement))]
 internal sealed partial class EnCAddedFieldElement : IData<EnCAddedFieldElement>
 {
-    [Field] public TargetPointer Next { get; }
-    [FieldAddress] public TargetPointer FieldDesc { get; }
+    [Field] public partial TargetPointer Next { get; }
+    [FieldAddress] public partial TargetPointer FieldDesc { get; }
 }

@@ -109,7 +109,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -340,7 +340,7 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -417,7 +417,7 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -493,7 +493,7 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -1147,7 +1147,7 @@ void EnCFieldDesc::Init(mdFieldDef token, BOOL fIsStatic)
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -1627,17 +1627,18 @@ void EnCEEClassData::AddField(EnCAddedFieldElement *pAddedField)
     // If the list is empty, just add this field as the only entry
     if (*pList == NULL)
     {
-        *pList = pAddedField;
+        VolatileStore(pList, pAddedField);
         return;
     }
 
     // Otherwise, add this field to the end of the field list
-    EnCAddedFieldElement *pCur = *pList;
-    while (pCur->m_next != NULL)
+    EnCAddedFieldElement *pCur = VolatileLoad(pList);
+    EnCAddedFieldElement *pNext;
+    while (pNext = VolatileLoad(&pCur->m_next), pNext != NULL)
     {
-        pCur = pCur->m_next;
+        pCur = pNext;
     }
-    pCur->m_next = pAddedField;
+    VolatileStore(&pCur->m_next, pAddedField);
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -1831,7 +1832,7 @@ PTR_EnCFieldDesc EncApproxFieldDescIterator::NextEnC()
         // We're at the start of the instance list.
         if ( doInst )
         {
-            m_pCurrListElem = m_encClassData->m_pAddedInstanceFields;
+            m_pCurrListElem = VolatileLoad(&m_encClassData->m_pAddedInstanceFields);
         }
     }
 
@@ -1844,7 +1845,7 @@ PTR_EnCFieldDesc EncApproxFieldDescIterator::NextEnC()
         // We're at the start of the statics list.
         if ( doStatic )
         {
-            m_pCurrListElem = m_encClassData->m_pAddedStaticFields;
+            m_pCurrListElem = VolatileLoad(&m_encClassData->m_pAddedStaticFields);
         }
     }
 
@@ -1859,7 +1860,7 @@ PTR_EnCFieldDesc EncApproxFieldDescIterator::NextEnC()
     // Advance the list pointer and return the element
     m_encFieldsReturned++;
     PTR_EnCFieldDesc fd = PTR_EnCFieldDesc(PTR_HOST_MEMBER_TADDR(EnCAddedFieldElement, m_pCurrListElem, m_fieldDesc));
-    m_pCurrListElem = m_pCurrListElem->m_next;
+    m_pCurrListElem = VolatileLoad(&m_pCurrListElem->m_next);
     return fd;
 }
 

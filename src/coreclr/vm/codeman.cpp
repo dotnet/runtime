@@ -41,9 +41,7 @@
 #include "../debug/daccess/fntableaccess.h"
 #endif // HOST_64BIT
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 // Default number of jump stubs in a jump stub block
 #define DEFAULT_JUMPSTUBS_PER_BLOCK  32
@@ -6240,7 +6238,7 @@ PCODE ExecutionManager::jumpStub(MethodDesc* pMD, PCODE target,
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(pLoaderAllocator != NULL || pMD != NULL);
         PRECONDITION(loAddr < hiAddr);
     } CONTRACTL_END;
@@ -6327,6 +6325,7 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
                                         bool throwOnOutOfMemoryWithinRange)
 {
     CONTRACTL {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(pLoaderAllocator != NULL);
@@ -6433,9 +6432,7 @@ DONE:
 
     emitBackToBackJump(jumpStub, jumpStubRW, (void*) target);
 
-#ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "emitBackToBackJump", (PCODE)jumpStub, BACK_TO_BACK_JUMP_ALLOCATE_SIZE, PerfMapStubType::IndividualWithinBlock);
-#endif
 
     // We always add the new jumpstub to the jumpStubCache
     //

@@ -19,9 +19,7 @@
 #include "stubgen.h"
 #include "appdomain.inl"
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 class UMEntryThunkFreeList
 {
@@ -122,7 +120,7 @@ UMEntryThunkData *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pMD));
     }
     CONTRACTL_END;
@@ -269,7 +267,7 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
@@ -291,9 +289,7 @@ UMEntryThunkData* UMEntryThunkData::CreateUMEntryThunk()
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         pThunk = (UMEntryThunk*)pamTracker->Track(pLoaderAllocator->GetNewStubPrecodeHeap()->AllocStub());
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
-#ifdef FEATURE_PERFMAP
         PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)pThunk, sizeof(UMEntryThunk), PerfMapStubType::IndividualWithinBlock);
-#endif
         pData->m_pUMEntryThunk = pThunk;
         pThunk->Init(pThunk, dac_cast<TADDR>(pData), NULL, dac_cast<TADDR>(PRECODE_UMENTRY_THUNK));
         pamTracker->SuppressRelease();

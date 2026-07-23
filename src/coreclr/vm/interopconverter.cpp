@@ -363,7 +363,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
     if (throwIfNoComIP && pUnk == NULL)
         COMPlusThrowHR(hr);
 
-    _ASSERTE(((*poref) == NULL) || (pvObj != NULL));
+    _ASSERTE(((*poref) == NULL) || !throwIfNoComIP || (pUnk != NULL));
     return pUnk;
 }
 

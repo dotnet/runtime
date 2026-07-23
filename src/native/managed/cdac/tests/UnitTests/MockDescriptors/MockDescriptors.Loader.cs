@@ -81,8 +81,9 @@ internal sealed class MockLoaderModule : TypedView
     private const string MethodDefToILCodeVersioningStateMapFieldName = "MethodDefToILCodeVersioningStateMap";
     private const string DynamicILBlobTableFieldName = "DynamicILBlobTable";
 
-    public static Layout<MockLoaderModule> CreateLayout(MockTarget.Architecture architecture)
-        => new SequentialLayoutBuilder("Module", architecture)
+    public static Layout<MockLoaderModule> CreateLayout(MockTarget.Architecture architecture, bool includeCodeVersioning = true)
+    {
+        SequentialLayoutBuilder builder = new SequentialLayoutBuilder("Module", architecture)
             .AddPointerField(AssemblyFieldName)
             .AddPointerField(PEAssemblyFieldName)
             .AddPointerField(BaseFieldName)
@@ -102,10 +103,20 @@ internal sealed class MockLoaderModule : TypedView
             .AddPointerField(MemberRefToDescMapFieldName)
             .AddPointerField(MethodDefToDescMapFieldName)
             .AddPointerField(TypeDefToMethodTableMapFieldName)
-            .AddPointerField(TypeRefToMethodTableMapFieldName)
-            .AddPointerField(MethodDefToILCodeVersioningStateMapFieldName)
+            .AddPointerField(TypeRefToMethodTableMapFieldName);
+
+        // MethodDefToILCodeVersioningStateMap is only emitted when the target was built with
+        // code versioning (FEATURE_CODE_VERSIONING). Builds where it is disabled (e.g. WASM)
+        // omit it from the Module layout entirely.
+        if (includeCodeVersioning)
+        {
+            builder = builder.AddPointerField(MethodDefToILCodeVersioningStateMapFieldName);
+        }
+
+        return builder
             .AddPointerField(DynamicILBlobTableFieldName)
             .Build<MockLoaderModule>();
+    }
 
     public ulong Assembly
     {
@@ -242,14 +253,14 @@ internal sealed class MockLoaderBuilder
     {
     }
 
-    public MockLoaderBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+    public MockLoaderBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange, bool includeCodeVersioning = true)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
         Builder = builder;
         _allocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
 
-        ModuleLayout = MockLoaderModule.CreateLayout(builder.TargetTestHelpers.Arch);
+        ModuleLayout = MockLoaderModule.CreateLayout(builder.TargetTestHelpers.Arch, includeCodeVersioning);
         AssemblyLayout = MockLoaderAssembly.CreateLayout(builder.TargetTestHelpers.Arch);
         EEConfigLayout = MockEEConfig.CreateLayout(builder.TargetTestHelpers.Arch);
         LoaderHeapLayout = MockLoaderHeap.CreateLayout(builder.TargetTestHelpers.Arch);

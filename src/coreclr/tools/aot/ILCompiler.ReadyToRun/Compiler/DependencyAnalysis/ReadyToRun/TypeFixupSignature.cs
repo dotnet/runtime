@@ -213,17 +213,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dependencies.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
             }
 
-            // We record the usage of this type, so that virtual method dependency analysis can resolve implementations.
-            // GVMDependenciesNode uses this for generic virtual methods (dynamic dependencies).
-            // InheritedVirtualMethodsNode uses conditional static dependencies for non-GVM virtual methods.
-            if (!_typeDesc.IsGenericDefinition &&
-                !_typeDesc.IsInterface &&
-                _typeDesc.IsDefType &&
-                (factory.CompilationCurrentPhase == 0) &&
-                factory.CompilationModuleGroup.VersionsWithType(_typeDesc))
-            {
-                dependencies.Add(factory.InheritedVirtualMethods(_typeDesc), "Inherited virtual/interface methods on type");
-            }
+            factory.AddVirtualMethodDiscoveryDependencies(ref dependencies, _typeDesc);
 
             if (_fixupKind == ReadyToRunFixupKind.TypeHandle)
             {

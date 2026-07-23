@@ -2504,13 +2504,12 @@ BOOL DispatchInfo::SynchWithManagedView()
     // Determine if this is the first time we synch.
     BOOL bFirstSynch = (m_pFirstMemberInfo == NULL);
 
+    GCX_PREEMP();
+
     // This method needs to be synchronized to make sure two threads don't try and
     // add members at the same time.
     CrstHolder ch(&m_lock);
     {
-        // Make sure we switch to cooperative mode before we start.
-        GCX_COOP();
-
         // Go through the list of member info's and find the end.
         DispatchMemberInfo **ppNextMember = &m_pFirstMemberInfo;
         while (*ppNextMember)
@@ -2518,6 +2517,9 @@ BOOL DispatchInfo::SynchWithManagedView()
 
         // Retrieve the member info map.
         pMemberMap = GetMemberInfoMap();
+
+        // Make sure we switch to cooperative mode before we start.
+        GCX_COOP();
 
         for (int cPhase = 0; cPhase < 3; cPhase++)
         {
@@ -2826,11 +2828,10 @@ ComMTMemberInfoMap *DispatchInfo::GetMemberInfoMap()
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
-
 
     // Create the member info map.
     NewHolder<ComMTMemberInfoMap> pMemberInfoMap (new ComMTMemberInfoMap(m_pMT));
