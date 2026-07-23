@@ -110,10 +110,9 @@ namespace System.Diagnostics
             // for the same permission reasons proc_taskallinfo above can - e.g. querying a process owned
             // by another user - in which case PrivateBytes is left at its default of 0, matching prior
             // (unset) behavior for this field on macOS.
-            ulong? physFootprint = Interop.libproc.GetProcessPhysicalFootprint(pid);
-            if (physFootprint.HasValue)
+            if (Interop.libproc.TryGetProcessPhysicalFootprint(pid, out ulong physicalFootprint))
             {
-                procInfo.PrivateBytes = (long)physFootprint.Value;
+                procInfo.PrivateBytes = (long)physicalFootprint;
             }
 
             // Create a threadinfo for each thread in the process
