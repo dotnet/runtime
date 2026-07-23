@@ -2254,31 +2254,6 @@ public:
         IN ContextBuffer destinationContext,
         IN ContextBuffer sourceContext,
         IN ULONG32 flags) = 0;
-    typedef enum
-    {
-        kArchUnknown = 0,
-        kArchX86,
-        kArchAMD64,
-        kArchArm,
-        kArchArm64,
-        kArchLoongArch64,
-        kArchRiscV64,
-        kArchWasm,
-    } TargetArchitecture;
-
-    typedef enum
-    {
-        kOSUnknown = 0,
-        kOSWindows,
-        kOSUnix,
-    } TargetOperatingSystem;
-
-    struct TargetInfo
-    {
-        TargetArchitecture    arch;
-        TargetOperatingSystem os;
-        ULONG32               pointerSize;
-    };
 
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL
