@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ReadyToRunCoreHeader))]
 internal sealed partial class ReadyToRunCoreHeader : IData<ReadyToRunCoreHeader>
 {
-    [Field] public uint NumberOfSections { get; }
+    [Field] public partial uint NumberOfSections { get; }
 
     public IReadOnlyList<ReadyToRunSection> Sections { get; private set; } = [];
 

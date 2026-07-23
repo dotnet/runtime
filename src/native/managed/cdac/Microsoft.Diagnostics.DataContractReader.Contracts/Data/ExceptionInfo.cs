@@ -6,20 +6,20 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ExceptionInfo))]
 internal sealed partial class ExceptionInfo : IData<ExceptionInfo>
 {
-    [Field] public TargetPointer PreviousNestedInfo { get; }
-    [Field] public TargetPointer ThrownObject { get; }
-    [Field] public uint ExceptionFlags { get; }
-    [Field] public TargetPointer StackLowBound { get; }
-    [Field] public TargetPointer StackHighBound { get; }
-    [Field] public TargetPointer ExceptionRecord { get; }
-    [Field] public TargetPointer ContextRecord { get; }
+    [Field] public partial TargetPointer PreviousNestedInfo { get; }
+    [Field] public partial TargetPointer ThrownObject { get; }
+    [Field] public partial uint ExceptionFlags { get; }
+    [Field] public partial TargetPointer StackLowBound { get; }
+    [Field] public partial TargetPointer StackHighBound { get; }
+    [Field] public partial TargetPointer ExceptionRecord { get; }
+    [Field] public partial TargetPointer ContextRecord { get; }
 
     // Only present on Windows platforms
-    [Field] public TargetPointer? ExceptionWatsonBucketTrackerBuckets { get; }
-    [Field] public byte PassNumber { get; }
-    [Field] public TargetPointer CSFEHClause { get; }
-    [Field] public TargetPointer CSFEnclosingClause { get; }
-    [Field] public TargetPointer CallerOfActualHandlerFrame { get; }
-    [Field] public uint ClauseForCatchHandlerStartPC { get; }
-    [Field] public uint ClauseForCatchHandlerEndPC { get; }
+    [Field] public partial TargetPointer? ExceptionWatsonBucketTrackerBuckets { get; }
+    [Field] public partial byte PassNumber { get; }
+    [Field] public partial TargetPointer CSFEHClause { get; }
+    [Field] public partial TargetPointer CSFEnclosingClause { get; }
+    [Field] public partial TargetPointer CallerOfActualHandlerFrame { get; }
+    [Field] public partial uint ClauseForCatchHandlerStartPC { get; }
+    [Field] public partial uint ClauseForCatchHandlerEndPC { get; }
 }

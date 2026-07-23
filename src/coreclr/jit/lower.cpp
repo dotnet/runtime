@@ -9380,7 +9380,10 @@ void Lowering::FindInducedParameterRegisterLocals()
         if (useSimdGetElement)
         {
 #ifdef FEATURE_SIMD
-            unsigned laneIndex = (fld->GetLclOffs() - regSegment->Offset) / genTypeSize(fld);
+            unsigned laneOffset = fld->GetLclOffs() - regSegment->Offset;
+            assert((laneOffset % genTypeSize(fld)) == 0);
+
+            unsigned laneIndex = laneOffset / genTypeSize(fld);
             value              = m_compiler->gtNewSimdGetElementNode(fld->TypeGet(), value,
                                                                      m_compiler->gtNewIconNode((ssize_t)laneIndex), fld->TypeGet(),
                                                                      genTypeSize(value));

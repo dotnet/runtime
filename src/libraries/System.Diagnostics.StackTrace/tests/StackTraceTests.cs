@@ -750,9 +750,14 @@ namespace System.Diagnostics.Tests
             yield return new object[] { () => V2Methods.Quuux(), MethodExceptionStrings["Quuux"] };
             yield return new object[] { () => V2Methods.Bux(), MethodExceptionStrings["Bux"] };
             yield return new object[] { () => V2Methods.ThrowsSoon(), MethodExceptionStrings["ThrowsSoon"] };
-            yield return new object[] { () => V2Methods.ThrowsSoonValueTaskSource(), MethodExceptionStrings["ThrowsSoonValueTaskSource"] };
             yield return new object[] { () => V1Methods.EdiOuter(), MethodExceptionStrings["EdiOuter"] };
         }
+
+        // Move test case back into Ctor_Async_TestData once enabled.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/131123", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreClrInterpreter))]
+        public Task ToString_Async_ThrowsSoonValueTaskSource() =>
+            ToString_Async(V2Methods.ThrowsSoonValueTaskSource, MethodExceptionStrings["ThrowsSoonValueTaskSource"]);
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]

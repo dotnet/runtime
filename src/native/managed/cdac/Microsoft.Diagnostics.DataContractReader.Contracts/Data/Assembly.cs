@@ -6,12 +6,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.Assembly))]
 internal sealed partial class Assembly : IData<Assembly>
 {
-    [Field] public TargetPointer Module { get; }
-    [Field] public byte IsCollectible { get; }
-    [Field] public bool IsDynamic { get; }
-    [Field] public TargetPointer Error { get; }
-    [Field] public uint NotifyFlags { get; }
-    [Field] public bool IsLoaded { get; }
+    [Field] public partial TargetPointer Module { get; }
+    [Field] public partial byte IsCollectible { get; }
+    [Field] public partial bool IsDynamic { get; }
+    [Field] public partial TargetPointer Error { get; }
+    [Field] public partial uint NotifyFlags { get; }
+    [Field] public partial bool IsLoaded { get; }
 
     public bool IsError => Error != TargetPointer.Null;
 }
