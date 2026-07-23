@@ -94,6 +94,18 @@ namespace System.Net.Http
                     _cleanPoolTimeout = timerPeriod.TotalSeconds >= MinScavengeSeconds ? timerPeriod : TimeSpan.FromSeconds(MinScavengeSeconds);
                 }
 
+                // The connection eviction callback is invoked from this timer. If one is set, make sure the timer
+                // fires at least this often so eviction decisions happen on a predictable cadence, regardless of
+                // how large (or infinite) the idle timeout is, which would otherwise drive the period alone.
+                if (settings._shouldEvictConnection is not null)
+                {
+                    const int MaxEvictionIntervalSeconds = 5;
+                    if (_cleanPoolTimeout.TotalSeconds > MaxEvictionIntervalSeconds)
+                    {
+                        _cleanPoolTimeout = TimeSpan.FromSeconds(MaxEvictionIntervalSeconds);
+                    }
+                }
+
                 using (ExecutionContext.SuppressFlow()) // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever
                 {
                     // Create the timer.  Ensure the Timer has a weak reference to this manager; otherwise, it
@@ -434,6 +446,11 @@ namespace System.Net.Http
         {
             HttpRequestException rethrowException;
 
+            // Save the original ProxyAuthorization header value so we can restore it when retrying with a different proxy.
+            // This ensures that any proxy credentials set from the credential cache during a failed attempt are cleared
+            // before trying the next proxy, while preserving any user-set credentials.
+            Headers.AuthenticationHeaderValue? originalProxyAuthorization = request.Headers.ProxyAuthorization;
+
             do
             {
                 try
@@ -443,6 +460,10 @@ namespace System.Net.Http
                 catch (HttpRequestException ex) when (ex.AllowRetry != RequestRetryType.NoRetry)
                 {
                     rethrowException = ex;
+
+                    // Clear any proxy-auth credentials that were set from the proxy credential cache for the previous proxy.
+                    // Restore the original value before retrying with the next proxy.
+                    request.Headers.ProxyAuthorization = originalProxyAuthorization;
                 }
             }
             while (multiProxy.ReadNext(out firstProxy, out _));

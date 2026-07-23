@@ -978,7 +978,7 @@ inline PTR_STORAGESTREAM NextStorageStream(PTR_STORAGESTREAM pSS)
 
     SUPPORTS_DAC;
     TADDR pc = dac_cast<TADDR>(pSS);
-    pc += (sizeof(STORAGESTREAM) - 32 /*sizeof(STORAGESTREAM::rcName)*/ + strlen(pSS->rcName)+1+3)&~3;
+    pc += (sizeof(STORAGESTREAM) - 32 /*sizeof(STORAGESTREAM::rcName)*/ + strlen((const char*)pSS->rcName)+1+3)&~3;
     return PTR_STORAGESTREAM(pc);
 }
 //-------------------------------------------------------------------------------

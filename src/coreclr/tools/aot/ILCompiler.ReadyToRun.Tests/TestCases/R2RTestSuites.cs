@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection.PortableExecutable;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
@@ -92,8 +93,112 @@ public class R2RTestSuites
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
             Assert.True(webcilReader.IsWasmWrapped);
             Assert.Equal(WasmMachine.Wasm32, reader.Machine);
-            Assert.True(R2RAssert.GetAllMethods(reader).Exists(method =>
+
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal)));
+            // Reads static data, so the JIT materializes the image base via a well-known-global global.get.
+            Assert.True(methods.Exists(method =>
+                method.SignatureString.Contains("SumStaticData", StringComparison.Ordinal)));
+            // Has a try/finally, so the JIT materializes the table base via a well-known-global global.get.
+            Assert.True(methods.Exists(method =>
+                method.SignatureString.Contains("SumWithFinally", StringComparison.Ordinal)));
+
+            // The wasm JIT references the ABI well-known globals via maximally padded WASM_GLOBAL_INDEX_LEB
+            // relocations that the R2R object writer must self-resolve back to the fixed global
+            // indices. Verify the emitted code contains a correctly self-resolved 'global.get' for the
+            // image base (1, materialized by static-data reads in SumStaticData) and the table base
+            // (2, materialized by the try/finally funclet path in SumWithFinally). Each pattern encodes
+            // the exact resolved index, so a regression in self-resolution changes it (or makes
+            // crossgen2 throw while emitting the method). The stack-pointer well-known global is passed to
+            // managed methods as a parameter in R2R, so it is not referenced via 'global.get' here.
+            const int ImageBaseGlobal = 1;
+            const int TableBaseGlobal = 2;
+            Assert.True(R2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, ImageBaseGlobal),
+                "Expected a 'global.get' of the wasm image-base well-known global in the emitted code.");
+            Assert.True(R2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
+                "Expected a 'global.get' of the wasm table-base well-known global in the emitted code.");
+        }
+    }
+
+    [Fact]
+    public void WasmSimdModule()
+    {
+        var wasmSimdModule = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmSimdModule),
+            SourceResourceNames = ["Webcil/WasmSimdModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmSimdModule),
+            [
+                new(nameof(WasmSimdModule), [new CrossgenAssembly(wasmSimdModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs =
+                    {
+                        "--targetarch",
+                        "wasm",
+                        "--targetos",
+                        "browser",
+                    },
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(webcilReader.IsWasmWrapped);
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+
+            // Each method's compiled body must actually use the wasm v128 (0x7B) valtype for its
+            // Vector128<int> parameter, and for its return when it returns one. A regression that
+            // reverts to the by-ref i32 ABI would produce no v128 in the signature at all.
+            const byte WasmV128 = 0x7B;
+
+            // (method name, expects v128 return). All take a v128-classified value by value (a
+            // Vector128<int>, a 128-bit Vector<int>, or a single-field struct wrapping one); Store
+            // returns void (its 'ref Vector128<int>' destination is an i32 pointer).
+            foreach ((string name, bool expectsV128Return) in
+                     new[]
+                     {
+                         ("Echo", true), ("ThroughLocal", true), ("Store", false), ("CallEcho", true),
+                         ("EchoVectorT", true), ("CallEchoVectorT", true),
+                         ("EchoWrapped", true), ("CallEchoWrapped", true),
+                         ("EchoWrappedVectorT", true), ("CallEchoWrappedVectorT", true),
+                     })
+            {
+                ReadyToRunMethod method = Assert.Single(
+                    methods, m => m.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
+
+                WebcilImageReader.WasmFunctionInfo body = ResolveWasmBody(reader, webcilReader, method);
+
+                Assert.True(
+                    body.ParamTypes.Count(b => b == WasmV128) == 1,
+                    $"'{name}' should have exactly one wasm v128 parameter; params were {Format(body.ParamTypes)}.");
+                Assert.True(
+                    body.ResultTypes.Contains(WasmV128) == expectsV128Return,
+                    $"'{name}' v128 return expectation was {expectsV128Return}; results were {Format(body.ResultTypes)}.");
+            }
+
+            static string Format(IReadOnlyList<byte> valTypes) =>
+                $"[{string.Join(",", valTypes.Select(b => $"0x{b:X2}"))}]";
+        }
+
+        static WebcilImageReader.WasmFunctionInfo ResolveWasmBody(
+            ReadyToRunReader reader, WebcilImageReader webcilReader, ReadyToRunMethod method)
+        {
+            uint tableIndex = checked(reader.WasmMinFunctionTableIndex + (uint)method.EntryPointRuntimeFunctionId);
+            int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(tableIndex);
+            Assert.True(functionIndex >= 0, $"Could not resolve wasm table index {tableIndex} to a function body.");
+
+            WebcilImageReader.WasmFunctionInfo? body = webcilReader.GetWasmFunctionBody(functionIndex);
+            Assert.True(body is not null, $"Wasm function body {functionIndex} was not found.");
+            return body.Value;
         }
     }
 
@@ -166,7 +271,8 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    // JitStressProcedureSplitting is only available in Debug/Checked JIT builds.
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotReleaseCoreCLR))]
     public void ArmThumbBitHotColdRuntimeFunctions()
     {
         var hotColdSplitting = new CompiledAssembly

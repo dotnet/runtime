@@ -182,6 +182,7 @@ namespace ILCompiler.DependencyAnalysis
 #if !READYTORUN
                                 TypeSystemEntity origin = (implementingMethodInstantiation.OwningType != potentialOverrideType) ? potentialOverrideType : null;
                                 factory.MetadataManager.NoteOverridingMethod(_method, implementingMethodInstantiation, origin);
+                                factory.MetadataManager.GetDependenciesForOverridingMethod(ref dynamicDependencies, factory, _method, implementingMethodInstantiation);
 #endif
                             }
 
@@ -240,6 +241,7 @@ namespace ILCompiler.DependencyAnalysis
                             dynamicDependencies.Add(new CombinedDependencyListEntry(node, null, "DerivedMethodInstantiation"));
 #if !READYTORUN
                         factory.MetadataManager.NoteOverridingMethod(_method, instantiatedTargetMethod);
+                        factory.MetadataManager.GetDependenciesForOverridingMethod(ref dynamicDependencies, factory, _method, instantiatedTargetMethod);
 
                         foundImpl = true;
 #endif

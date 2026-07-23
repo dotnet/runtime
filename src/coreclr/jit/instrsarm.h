@@ -429,6 +429,8 @@ INST1(sbfx,    "sbfx",   0, 0, IF_T2_D0,  0xF3400000)
                                            //  Rd,Rn,#b,#w       T2_D0     111100110100nnnn 0iiiddddii0wwwww   F340 0000           imm(0-31),imm(0-31)
 INST1(sdiv,    "sdiv",   0, 0, IF_T2_C5,  0xFB90F0F0)
                                            //  Rd,Rn,Rm          T2_C5     111110111001nnnn 1111dddd1111mmmm   FB90 F0F0
+INST1(ssat,    "ssat",   0, 0, IF_T2_D0,  0xF3000000)
+                                           //  Rd,Rn,#sat        T2_D0     111100110000nnnn 0iiiddddii0sssss   F300 0000           imm(0-31)
 INST1(smlal,   "smlal",  0, 0, IF_T2_F1,  0xFBC00000)
                                            //  Rl,Rh,Rn,Rm       T2_F1     111110111100nnnn llllhhhh0000mmmm   FBC0 0000
 INST1(smull,   "smull",  0, 0, IF_T2_F1,  0xFB800000)
@@ -459,6 +461,8 @@ INST1(umlal,   "umlal",  0, 0, IF_T2_F1,  0xFBE00000)
                                            //  Rl,Rh,Rn,Rm       T2_F1     111110111110nnnn llllhhhh0000mmmm   FBE0 0000
 INST1(umull,   "umull",  0, 0, IF_T2_F1,  0xFBA00000)
                                            //  Rl,Rh,Rn,Rm       T2_F1     111110111010nnnn llllhhhh0000mmmm   FBA0 0000
+INST1(usat,    "usat",   0, 0, IF_T2_D0,  0xF3800000)
+                                           //  Rd,Rn,#sat        T2_D0     111100111000nnnn 0iiiddddii0sssss   F380 0000           imm(0-31)
 
 #ifdef FEATURE_ITINSTRUCTION
 INST1(it,      "it",     0, 0, IF_T1_B,   0xBF08)

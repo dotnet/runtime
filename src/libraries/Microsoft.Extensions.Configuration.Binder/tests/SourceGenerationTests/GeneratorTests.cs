@@ -387,10 +387,63 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(result.GeneratedSource);
             Assert.Empty(result.Diagnostics);
 
-            // Ensure the generated code can be compiled.
-            // If there is any compilation error, exception will be thrown with the list of the errors in the exception message.
-            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
-            Assert.NotNull(emittedAssemblyImage);
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        // Required, settable property whose value flows through a constructor marked [SetsRequiredMembers]
+        // whose parameter name differs only in casing from the property.
+        [InlineData("""
+            [method: SetsRequiredMembers]
+            public class GreetSettings(string name)
+            {
+                public string Greeting { get; set; } = "Hello";
+                public required string Name { get; set; } = name;
+            }
+            """)]
+        // Same as above, but the constructor parameter name matches the property name exactly.
+        [InlineData("""
+            [method: SetsRequiredMembers]
+            public class GreetSettings(string Name)
+            {
+                public string Greeting { get; set; } = "Hello";
+                public required string Name { get; set; } = Name;
+            }
+            """)]
+        // Required property set via a constructor parameter, but the constructor does not set required
+        // members, so the property must still be assigned through the object initializer.
+        [InlineData("""
+            public class GreetSettings(string name)
+            {
+                public string Greeting { get; set; } = "Hello";
+                public required string Name { get; set; } = name;
+            }
+            """)]
+        public async Task RequiredPropertyWithMatchingConstructorParameter(string greetSettingsType)
+        {
+            string source = $$"""
+                using System.Diagnostics.CodeAnalysis;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        GreetSettings settings = config.GetSection("Settings").Get<GreetSettings>()!;
+                    }
+                }
+
+                {{greetSettingsType}}
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
         [Fact]
@@ -419,10 +472,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(result.GeneratedSource);
             Assert.Empty(result.Diagnostics);
 
-            // Ensure the generated code can be compiled.
-            // If there is any compilation error, exception will be thrown with the list of the errors in the exception message.
-            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
-            Assert.NotNull(emittedAssemblyImage);
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
         /// <summary>

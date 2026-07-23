@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.EEClassOptionalFields))]
 internal sealed partial class EEClassOptionalFields : IData<EEClassOptionalFields>
 {
-    [Field] public SystemVEightByteRegistersInfo? EightByteRegistersInfo { get; }
+    [Field] public partial SystemVEightByteRegistersInfo? EightByteRegistersInfo { get; }
 }

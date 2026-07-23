@@ -114,16 +114,35 @@ public class DataGeneratorTests
     }
 
     [Fact]
-    public void Cross_BothMissingField_Throws()
+    public void Cross_BothMissingField_ThrowsOnRead()
     {
-        // Neither source has "A".
+        // Neither source has "A". Construction succeeds (lazy); the read throws
+        // the same exception the eager path threw, just deferred to first access.
         var target = new TestTarget()
             .AddNativeType("TestCross", size: 16, ("B", 8))
             .AddManagedType("Test.Cross", size: 8, ("B", 0))
             .Allocate(InstanceAddr, 32);
 
-        Assert.Throws<InvalidOperationException>(
-            () => Materialize<TestCross>(target, InstanceAddr));
+        TestCross t = Materialize<TestCross>(target, InstanceAddr);
+
+        Assert.Throws<InvalidOperationException>(() => t.A);
+    }
+
+    [Fact]
+    public void MissingField_ConstructionSucceeds_OtherFieldsReadable()
+    {
+        // The descriptor omits "A" but has "B". Constructing the object must
+        // not throw (versioning: an absent field only fails when read), and the
+        // present field "B" must still be readable.
+        var target = new TestTarget()
+            .AddNativeType("TestCross", size: 16, ("B", 8))
+            .AddManagedType("Test.Cross", size: 16, ("B", 8))
+            .Allocate(InstanceAddr, 16, (8, U64(0x1234u)));
+
+        TestCross t = Materialize<TestCross>(target, InstanceAddr);
+
+        Assert.Equal((TargetPointer)0x1234u, t.B);              // present field reads fine
+        Assert.Throws<InvalidOperationException>(() => t.A);    // absent field fails on read
     }
 
     // ================================================================
@@ -354,8 +373,9 @@ public class DataGeneratorTests
             .AddNativeType("TestNoPropertyName", size: 4, ("Flags", 0))
             .Allocate(InstanceAddr, 4, (0, U32(0xBEEFu)));
 
-        Assert.Throws<InvalidOperationException>(
-            () => Materialize<TestNoPropertyName>(target, InstanceAddr));
+        TestNoPropertyName t = Materialize<TestNoPropertyName>(target, InstanceAddr);
+
+        Assert.Throws<InvalidOperationException>(() => t.Flags);
     }
 
     // ================================================================
