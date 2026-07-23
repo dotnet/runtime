@@ -30,14 +30,13 @@ HRESULT GetCurrentObjCtx(IUnknown **ppObjCtx)
 // LPVOID SetupOleContext()
 LPVOID SetupOleContext()
 {
-    CONTRACT (LPVOID)
+    CONTRACTL
     {
         NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     IUnknown* pObjCtx = NULL;
 
@@ -63,26 +62,25 @@ LPVOID SetupOleContext()
     }
 #endif // FEATURE_COMINTEROP
 
-    RETURN pObjCtx;
+    return pObjCtx;
 }
 
 //================================================================
 // LPVOID GetCurrentCtxCookie()
 LPVOID GetCurrentCtxCookie()
 {
-    CONTRACT (LPVOID)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifdef FEATURE_COMINTEROP
     // check if com is started
     if (!g_fComStarted)
-        RETURN NULL;
+        return NULL;
 #endif // FEATURE_COMINTEROP
 
     ULONG_PTR ctxptr = 0;
@@ -90,7 +88,7 @@ LPVOID GetCurrentCtxCookie()
     if (CoGetContextToken(&ctxptr) != S_OK)
         ctxptr = 0;
 
-    RETURN (LPVOID)ctxptr;
+    return (LPVOID)ctxptr;
 }
 
 //+-------------------------------------------------------------------------
@@ -158,4 +156,3 @@ HRESULT GetCurrentApartmentTypeNT5(IObjectContext *pObjCurrCtx, APTTYPE* pType)
 }
 
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-

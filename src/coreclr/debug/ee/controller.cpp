@@ -1030,17 +1030,15 @@ void DebuggerController::CancelOutstandingThreadStarter(Thread * pThread)
 // How: initializes the critical section
 HRESULT DebuggerController::Initialize()
 {
-    CONTRACT(HRESULT)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         // This can be called in an "early attach" case, so DebuggerIsInvolved()
         // will be b/c we don't realize the debugger's attaching to us.
         //PRECONDITION(DebuggerIsInvolved());
-        POSTCONDITION(CheckPointer(g_patches));
-        POSTCONDITION(RETVAL == S_OK);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (g_patches == NULL)
     {
@@ -1071,7 +1069,7 @@ HRESULT DebuggerController::Initialize()
 
     _ASSERTE(g_patches != NULL);
 
-    RETURN (S_OK);
+    return S_OK;
 }
 
 
@@ -1109,7 +1107,6 @@ DebuggerController::DebuggerController(Thread * pThread, AppDomain * pAppDomain)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        CONSTRUCTOR_CHECK;
     }
     CONTRACTL_END;
 
@@ -2229,7 +2226,6 @@ void DebuggerController::AddPatchToStartOfLatestMethod(MethodDesc * fd)
     mdToken defToken = fd->GetMemberDef();
     DebuggerMethodInfo* pDMI = g_pDebugger->GetOrCreateMethodInfo(pModule, defToken);
     DebuggerController::AddILPatch(GetAppDomain(), pModule, defToken, fd, pDMI->GetCurrentEnCVersion(), 0, FALSE);
-    return;
 }
 
 
@@ -3114,7 +3110,7 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
 #endif
 )
 {
-    CONTRACT(DPOSS_ACTION)
+    CONTRACTL
     {
         // @todo - should this throw or not?
         NOTHROW;
@@ -3126,9 +3122,8 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         PRECONDITION(CheckPointer(address));
         PRECONDITION(!HasLock());
 
-        POSTCONDITION(!HasLock()); // make sure we're not leaking the controller lock
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CONTRACT_VIOLATION(ThrowsViolation);
 
@@ -3145,7 +3140,8 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
     {
 
         LOG((LF_CORDB|LF_ENC, LL_INFO1000, "DC::DPOSS returning, no patch table.\n"));
-        RETURN (used);
+        _ASSERTE(!HasLock());
+        return used;
     }
     _ASSERTE(g_patches != NULL);
 
@@ -3340,7 +3336,8 @@ Exit:
 
     }
 
-    RETURN used;
+    _ASSERTE(!HasLock());
+    return used;
 }
 
 bool DebuggerController::IsSingleStepEnabled()
@@ -3614,7 +3611,7 @@ BOOL DebuggerController::DispatchExceptionHook(Thread *thread,
     if (!g_patchTableValid)
     {
         LOG((LF_CORDB, LL_INFO1000, "DC::DEH: returning, no patch table.\n"));
-        return (TRUE);
+        return TRUE;
     }
 
 
@@ -3650,7 +3647,7 @@ BOOL DebuggerController::DispatchExceptionHook(Thread *thread,
 
     LOG((LF_CORDB, LL_INFO1000, "DC::DEH: returning 0x%x!\n", tpr));
 
-    return (tpr != TPR_IGNORE_AND_STOP);
+    return tpr != TPR_IGNORE_AND_STOP;
 }
 
 //
@@ -4995,7 +4992,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
     if (!IsSingleStep(exception->ExceptionCode))
     {
         LOG((LF_CORDB, LL_INFO10000, "Exception in patched Bypass instruction .\n"));
-        return (TPR_IGNORE_AND_STOP);
+        return TPR_IGNORE_AND_STOP;
     }
 
     _ASSERTE(m_pSharedPatchBypassBuffer);
@@ -5084,7 +5081,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
                 else
                 {
                     LOG((LF_CORDB, LL_INFO10000, "Bypass instruction not redirected because we're not in managed or stub code.\n"));
-                    return (TPR_IGNORE_AND_STOP);
+                    return TPR_IGNORE_AND_STOP;
                 }
             }
         }
@@ -6183,7 +6180,7 @@ static bool IsTailCall(const BYTE * ip, ControllerStackInfo* info, TailCallFunct
 
     if (type == TailCallFunctionType::StoreTailCallArgs)
     {
-        return (pTargetMD && pTargetMD->IsDynamicMethod() && pTargetMD->AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubTailCallStoreArgs);
+        return pTargetMD && pTargetMD->IsDynamicMethod() && pTargetMD->AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubTailCallStoreArgs;
     }
 
     if (pTargetMD != pTailCallDispatcherMD)
@@ -8402,7 +8399,7 @@ void DebuggerStepper::ResetRange()
 //-----------------------------------------------------------------------------
 bool DebuggerStepper::IsFrozen()
 {
-    return (m_cFuncEvalNesting > 0);
+    return m_cFuncEvalNesting > 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -8411,7 +8408,7 @@ bool DebuggerStepper::IsFrozen()
 //-----------------------------------------------------------------------------
 bool DebuggerStepper::IsDead()
 {
-    return (m_cFuncEvalNesting < 0);
+    return m_cFuncEvalNesting < 0;
 }
 
 // * ------------------------------------------------------------------------

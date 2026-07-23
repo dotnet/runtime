@@ -118,7 +118,7 @@ CHECK PEDecoder::CheckILOnlyFormat() const
 
 BOOL PEDecoder::HasNTHeaders() const
 {
-    CONTRACT(BOOL)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
@@ -126,12 +126,12 @@ BOOL PEDecoder::HasNTHeaders() const
         SUPPORTS_DAC;
         PRECONDITION(HasContents());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Check for a valid DOS header
 
     if (m_size < sizeof(IMAGE_DOS_HEADER))
-        RETURN FALSE;
+        return FALSE;
 
     IMAGE_DOS_HEADER* pDOS = PTR_IMAGE_DOS_HEADER(m_base);
 
@@ -139,7 +139,7 @@ BOOL PEDecoder::HasNTHeaders() const
         if (pDOS->e_magic != VAL16(IMAGE_DOS_SIGNATURE)
             || (DWORD) pDOS->e_lfanew == VAL32(0))
         {
-            RETURN FALSE;
+            return FALSE;
         }
 
         // Check for integer overflow
@@ -147,31 +147,31 @@ BOOL PEDecoder::HasNTHeaders() const
                                S_SIZE_T(sizeof(IMAGE_NT_HEADERS)));
         if (cbNTHeaderEnd.IsOverflow())
         {
-            RETURN FALSE;
+            return FALSE;
         }
 
         // Now check for a valid NT header
         if (m_size < cbNTHeaderEnd.Value())
         {
-            RETURN FALSE;
+            return FALSE;
         }
     }
 
     IMAGE_NT_HEADERS *pNT = PTR_IMAGE_NT_HEADERS(m_base + VAL32(pDOS->e_lfanew));
 
     if (pNT->Signature != VAL32(IMAGE_NT_SIGNATURE))
-        RETURN FALSE;
+        return FALSE;
 
     if (pNT->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR32_MAGIC))
     {
         if (pNT->FileHeader.SizeOfOptionalHeader != VAL16(sizeof(IMAGE_OPTIONAL_HEADER32)))
-            RETURN FALSE;
+            return FALSE;
     }
     else if (pNT->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR64_MAGIC))
     {
         // on 64 bit we can promote this
         if (pNT->FileHeader.SizeOfOptionalHeader != VAL16(sizeof(IMAGE_OPTIONAL_HEADER64)))
-            RETURN FALSE;
+            return FALSE;
 
         // Check for integer overflow
         S_SIZE_T cbNTHeaderEnd(S_SIZE_T(static_cast<SIZE_T>(VAL32(pDOS->e_lfanew))) +
@@ -179,23 +179,23 @@ BOOL PEDecoder::HasNTHeaders() const
 
         if (cbNTHeaderEnd.IsOverflow())
         {
-            RETURN FALSE;
+            return FALSE;
     }
 
         // Now check for a valid NT header
         if (m_size < cbNTHeaderEnd.Value())
         {
-            RETURN FALSE;
+            return FALSE;
         }
 
     }
     else
-        RETURN FALSE;
+        return FALSE;
 
     // Go ahead and cache NT header since we already found it.
     m_pNTHeaders = dac_cast<PTR_IMAGE_NT_HEADERS>(pNT);
 
-    RETURN TRUE;
+    return TRUE;
 }
 
 CHECK PEDecoder::CheckNTHeaders() const
@@ -683,25 +683,25 @@ CHECK PEDecoder::CheckInternalAddress(SIZE_T address, COUNT_T size, IsNullOK ok)
 
 RVA PEDecoder::InternalAddressToRva(SIZE_T address) const
 {
-    CONTRACT(RVA)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckNTHeaders());
         NOTHROW;
         GC_NOTRIGGER;
-        POSTCONDITION(CheckRva(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (m_flags & FLAG_RELOCATED)
     {
         // Address has been fixed up
-        RETURN (RVA) ((BYTE *) address - (BYTE *) m_base);
+        _ASSERTE(CheckRva((RVA) ((BYTE *) address - (BYTE *) m_base)));
+        return (RVA) ((BYTE *) address - (BYTE *) m_base);
     }
     else
     {
         // Address has not been fixed up
-        RETURN (RVA) (address - (SIZE_T) GetPreferredBase());
+        return (RVA) (address - (SIZE_T) GetPreferredBase());
     }
 }
 
@@ -709,7 +709,7 @@ RVA PEDecoder::InternalAddressToRva(SIZE_T address) const
 // The name should include the starting "." as well.
 IMAGE_SECTION_HEADER *PEDecoder::FindSection(LPCSTR sectionName) const
 {
-    CONTRACT(IMAGE_SECTION_HEADER *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckNTHeaders());
@@ -717,16 +717,15 @@ IMAGE_SECTION_HEADER *PEDecoder::FindSection(LPCSTR sectionName) const
         NOTHROW;
         GC_NOTRIGGER;
         CANNOT_TAKE_LOCK;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Ensure that the section name length is valid
     SIZE_T iSectionNameLength = strlen(sectionName);
     if ((iSectionNameLength < 1) || (iSectionNameLength > IMAGE_SIZEOF_SHORT_NAME))
     {
         _ASSERTE(!"Invalid section name!");
-        RETURN NULL;
+        return NULL;
     }
 
     // Get the start and ends of the sections
@@ -753,23 +752,22 @@ IMAGE_SECTION_HEADER *PEDecoder::FindSection(LPCSTR sectionName) const
      }
 
     if (TRUE == fFoundSection)
-        RETURN pSection;
+        return pSection;
     else
-        RETURN NULL;
+        return NULL;
 }
 
 IMAGE_SECTION_HEADER *PEDecoder::RvaToSection(RVA rva) const
 {
-    CONTRACT(IMAGE_SECTION_HEADER *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
         CANNOT_TAKE_LOCK;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     PTR_IMAGE_SECTION_HEADER section = dac_cast<PTR_IMAGE_SECTION_HEADER>(FindFirstSection(FindNTHeaders()));
     PTR_IMAGE_SECTION_HEADER sectionEnd = section + VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
@@ -788,31 +786,30 @@ IMAGE_SECTION_HEADER *PEDecoder::RvaToSection(RVA rva) const
                 }
             }
             if (rva < VAL32(section->VirtualAddress))
-                RETURN NULL;
+                return NULL;
             else
             {
-                RETURN section;
+                return section;
             }
         }
 
         section++;
     }
 
-    RETURN NULL;
+    return NULL;
 }
 
 IMAGE_SECTION_HEADER *PEDecoder::OffsetToSection(COUNT_T fileOffset) const
 {
-    CONTRACT(IMAGE_SECTION_HEADER *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckNTHeaders());
         NOTHROW;
         GC_NOTRIGGER;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     PTR_IMAGE_SECTION_HEADER section = dac_cast<PTR_IMAGE_SECTION_HEADER>(FindFirstSection(FindNTHeaders()));
     PTR_IMAGE_SECTION_HEADER sectionEnd = section + VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
@@ -822,20 +819,22 @@ IMAGE_SECTION_HEADER *PEDecoder::OffsetToSection(COUNT_T fileOffset) const
         if (fileOffset < section->PointerToRawData + section->SizeOfRawData)
         {
             if (fileOffset < section->PointerToRawData)
-                RETURN NULL;
+                return NULL;
             else
-                RETURN section;
+                {
+                    return section;
+                }
         }
 
         section++;
     }
 
-    RETURN NULL;
+    return NULL;
 }
 
 TADDR PEDecoder::GetRvaData(RVA rva, IsNullOK ok /*= NULL_NOT_OK*/) const
 {
-    CONTRACT(TADDR)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckNTHeaders());
@@ -845,10 +844,10 @@ TADDR PEDecoder::GetRvaData(RVA rva, IsNullOK ok /*= NULL_NOT_OK*/) const
         CANNOT_TAKE_LOCK;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if ((rva == 0)&&(ok == NULL_NOT_OK))
-        RETURN (TADDR)NULL;
+        return (TADDR)NULL;
 
     RVA offset;
     if (IsMapped())
@@ -858,12 +857,12 @@ TADDR PEDecoder::GetRvaData(RVA rva, IsNullOK ok /*= NULL_NOT_OK*/) const
         offset = RvaToOffset(rva);
     }
 
-    RETURN( m_base + offset );
+    return m_base + offset;
 }
 
 RVA PEDecoder::GetDataRva(const TADDR data) const
 {
-    CONTRACT(RVA)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckNTHeaders());
@@ -872,16 +871,16 @@ RVA PEDecoder::GetDataRva(const TADDR data) const
         GC_NOTRIGGER;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (data == (TADDR)NULL)
-        RETURN 0;
+        return 0;
 
     COUNT_T offset = (COUNT_T) (data - m_base);
     if (IsMapped())
-        RETURN offset;
+        return offset;
     else
-        RETURN OffsetToRva(offset);
+        return OffsetToRva(offset);
 }
 
 BOOL PEDecoder::PointerInPE(PTR_CVOID data) const
@@ -911,7 +910,7 @@ BOOL PEDecoder::PointerInPE(PTR_CVOID data) const
 
 TADDR PEDecoder::GetOffsetData(COUNT_T fileOffset, IsNullOK ok /*= NULL_NOT_OK*/) const
 {
-    CONTRACT(TADDR)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckNTHeaders());
@@ -919,12 +918,12 @@ TADDR PEDecoder::GetOffsetData(COUNT_T fileOffset, IsNullOK ok /*= NULL_NOT_OK*/
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if ((fileOffset == 0)&&(ok == NULL_NOT_OK))
-        RETURN (TADDR)NULL;
+        return (TADDR)NULL;
 
-    RETURN GetRvaData(OffsetToRva(fileOffset));
+    return GetRvaData(OffsetToRva(fileOffset));
 }
 
 //-------------------------------------------------------------------------------
@@ -1210,20 +1209,20 @@ ULONG PEDecoder::GetEntryPointToken() const
 
 IMAGE_COR_VTABLEFIXUP *PEDecoder::GetVTableFixups(COUNT_T *pCount) const
 {
-    CONTRACT(IMAGE_COR_VTABLEFIXUP *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckCorHeader());
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
     IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->VTableFixups;
 
     if (pCount != NULL)
         *pCount = VAL32(pDir->Size)/sizeof(IMAGE_COR_VTABLEFIXUP);
 
-    RETURN PTR_IMAGE_COR_VTABLEFIXUP(GetDirectoryData(pDir));
+    return PTR_IMAGE_COR_VTABLEFIXUP(GetDirectoryData(pDir));
 }
 
 CHECK PEDecoder::CheckILOnly() const
@@ -2138,15 +2137,14 @@ PTR_IMAGE_DEBUG_DIRECTORY PEDecoder::GetDebugDirectoryEntry(UINT index) const
 
 PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
 {
-    CONTRACT(PTR_CVOID)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(HasReadyToRunHeader());
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK)); // TBD - may not store metadata for IJW
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     IMAGE_DATA_DIRECTORY *pDir = NULL;
     {
@@ -2175,14 +2173,14 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
                 *pSize = 0;
             }
 
-            RETURN NULL;
+            return NULL;
         }
     }
 
     if (pSize != NULL)
         *pSize = VAL32(pDir->Size);
 
-    RETURN dac_cast<PTR_VOID>(GetDirectoryData(pDir));
+    return dac_cast<PTR_VOID>(GetDirectoryData(pDir));
 }
 
 BOOL PEDecoder::HasNativeEntryPoint() const
@@ -2201,16 +2199,15 @@ BOOL PEDecoder::HasNativeEntryPoint() const
 
 void *PEDecoder::GetNativeEntryPoint() const
 {
-    CONTRACT (void *) {
+    CONTRACTL {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckCorHeader());
         PRECONDITION(HasNativeEntryPoint());
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
-    RETURN ((void *) GetRvaData((RVA)VAL32(IMAGE_COR20_HEADER_FIELD(*GetCorHeader(), EntryPointToken))));
+    return (void *) GetRvaData((RVA)VAL32(IMAGE_COR20_HEADER_FIELD(*GetCorHeader(), EntryPointToken)));
 }
 
 #ifdef DACCESS_COMPILE
@@ -2254,7 +2251,7 @@ BOOL PEDecoder::GetForceRelocs()
     WRAPPER_NO_CONTRACT;
 
     static ConfigDWORD forceRelocs;
-    return (forceRelocs.val(CLRConfig::INTERNAL_ForceRelocs) != 0);
+    return forceRelocs.val(CLRConfig::INTERNAL_ForceRelocs) != 0;
 }
 
 BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)

@@ -316,13 +316,13 @@ void CEEInfo::GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext *pTy
 CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
                                    TypeHandle typeHnd, /* optional in */
                                    CORINFO_CLASS_HANDLE *clsRet/* optional out */ ) {
-    CONTRACT(CorInfoType) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         PRECONDITION((CorTypeInfo::IsGenericVariable(eeType)) ==
                      (!typeHnd.IsNull() && typeHnd.IsGenericVariable()));
         PRECONDITION(eeType != ELEMENT_TYPE_GENERICINST);
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     TypeHandle typeHndUpdated = typeHnd;
 
@@ -401,7 +401,7 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
     if (clsRet)
         *clsRet = CORINFO_CLASS_HANDLE(typeHndUpdated.AsPtr());
 
-    RETURN res;
+    return res;
 }
 
 enum ConvToJitSigFlags : int

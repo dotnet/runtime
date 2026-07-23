@@ -20,22 +20,21 @@
 // get the method table for dynamic methods
 DynamicMethodTable* Module::GetDynamicMethodTable()
 {
-    CONTRACT (DynamicMethodTable*)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(m_pDynamicMethodTable));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!m_pDynamicMethodTable)
         DynamicMethodTable::CreateDynamicMethodTable(&m_pDynamicMethodTable, this, AppDomain::GetCurrentDomain());
 
 
-    RETURN m_pDynamicMethodTable;
+    return m_pDynamicMethodTable;
 }
 
 void ReleaseDynamicMethodTable(DynamicMethodTable *pDynMT)
@@ -49,7 +48,7 @@ void ReleaseDynamicMethodTable(DynamicMethodTable *pDynMT)
 
 void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocation, Module *pModule, AppDomain *pDomain)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -57,16 +56,15 @@ void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocatio
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(ppLocation));
         PRECONDITION(CheckPointer(pModule));
-        POSTCONDITION(CheckPointer(*ppLocation));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     AllocMemTracker amt;
 
     LoaderHeap* pHeap = pDomain->GetHighFrequencyHeap();
     _ASSERTE(pHeap);
 
-    if (*ppLocation) RETURN;
+    if (*ppLocation) return;
 
     DynamicMethodTable* pDynMT = (DynamicMethodTable*)
             amt.Track(pHeap->AllocMem(S_SIZE_T(sizeof(DynamicMethodTable))));
@@ -74,7 +72,7 @@ void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocatio
     // Note: Memory allocated on loader heap is zero filled
     // memset((void*)pDynMT, 0, sizeof(DynamicMethodTable));
 
-    if (*ppLocation) RETURN;
+    if (*ppLocation) return;
 
     LOG((LF_BCL, LL_INFO100, "Level2 - Creating DynamicMethodTable {0x%p}...\n", pDynMT));
 
@@ -84,19 +82,18 @@ void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocatio
     pDynMT->m_pDomain = pDomain;
     pDynMT->MakeMethodTable(&amt);
 
-    if (*ppLocation) RETURN;
+    if (*ppLocation) return;
 
     if (InterlockedCompareExchangeT(ppLocation, pDynMT, NULL) != NULL)
     {
         LOG((LF_BCL, LL_INFO100, "Level2 - Another thread got here first - deleting DynamicMethodTable {0x%p}...\n", pDynMT));
-        RETURN;
+        return;
     }
 
     dynMTHolder.SuppressRelease();
 
     amt.SuppressRelease();
     LOG((LF_BCL, LL_INFO10, "Level1 - DynamicMethodTable created {0x%p}...\n", pDynMT));
-    RETURN;
 }
 
 void DynamicMethodTable::MakeMethodTable(AllocMemTracker *pamTracker)
@@ -142,14 +139,14 @@ void DynamicMethodTable::Destroy()
 
 void DynamicMethodTable::AddMethodsToList()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     AllocMemTracker amt;
 
@@ -161,12 +158,12 @@ void DynamicMethodTable::AddMethodsToList()
     //
     MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(pHeap, 0 /* one chunk of maximum size */,
         mcDynamic, TRUE /* fNonVtableSlot */, TRUE /* fNativeCodeSlot */, FALSE /* HasAsyncMethodData */, m_pMethodTable, &amt);
-    if (m_DynamicMethodList) RETURN;
+    if (m_DynamicMethodList) return;
 
     int methodCount = pChunk->GetCount();
 
     BYTE* pResolvers = (BYTE*)amt.Track(pHeap->AllocMem(S_SIZE_T(sizeof(LCGMethodResolver)) * S_SIZE_T(methodCount)));
-    if (m_DynamicMethodList) RETURN;
+    if (m_DynamicMethodList) return;
 
     DynamicMethodDesc *pNewMD = (DynamicMethodDesc *)pChunk->GetFirstMethodDesc();
     DynamicMethodDesc *pPrevMD = NULL;
@@ -200,12 +197,12 @@ void DynamicMethodTable::AddMethodsToList()
         pResolvers += sizeof(LCGMethodResolver);
     }
 
-    if (m_DynamicMethodList) RETURN;
+    if (m_DynamicMethodList) return;
 
     {
         // publish method list and method table
         LockHolder lh(this);
-        if (m_DynamicMethodList) RETURN;
+        if (m_DynamicMethodList) return;
 
         // publish the new method descs on the method table
         m_pMethodTable->GetClass()->AddChunk(pChunk);
@@ -217,7 +214,7 @@ void DynamicMethodTable::AddMethodsToList()
 
 DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSize, PTR_CUTF8 name)
 {
-    CONTRACT (DynamicMethodDesc*)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
@@ -226,9 +223,8 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(psig));
         PRECONDITION(sigSize > 0);
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     LOG((LF_BCL, LL_INFO10000, "Level4 - Getting DynamicMethod\n"));
 
@@ -289,7 +285,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     pNewMD->SetNotInline(TRUE);
     pNewMD->GetLCGMethodResolver()->Reset();
 
-    RETURN pNewMD;
+    return pNewMD;
 }
 
 void DynamicMethodTable::AddToFreeList(DynamicMethodDesc *pMethod)
@@ -320,15 +316,14 @@ void DynamicMethodTable::AddToFreeList(DynamicMethodDesc *pMethod)
 //
 HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenManager *pJitManager)
 {
-    CONTRACT (HeapList*)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION((RETVAL != NULL) || !pInfo->GetThrowOnOutOfMemoryWithinRange());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     NewHolder<HostCodeHeap> pCodeHeap(new HostCodeHeap(pJitManager, !pInfo->IsInterpreted()));
 
@@ -336,7 +331,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
     if (pHp == NULL)
     {
         _ASSERTE(!pInfo->GetThrowOnOutOfMemoryWithinRange());
-        RETURN NULL;
+        return NULL;
     }
 
     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - base addr 0x%p, size available 0x%p, nibble map ptr 0x%p\n",
@@ -345,7 +340,8 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
     pCodeHeap.SuppressRelease();
 
     LOG((LF_BCL, LL_INFO10, "Level1 - CodeHeap created {0x%p}\n", (HostCodeHeap*)pCodeHeap));
-    RETURN pHp;
+    _ASSERTE((pHp != NULL) || !pInfo->GetThrowOnOutOfMemoryWithinRange());
+    return pHp;
 }
 
 HostCodeHeap::HostCodeHeap(EECodeGenManager *pJitManager, bool isExecutable)

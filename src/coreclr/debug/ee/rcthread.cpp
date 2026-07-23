@@ -39,7 +39,6 @@ DebuggerRCThread::DebuggerRCThread(Debugger * pDebugger)
     {
         WRAPPER(THROWS);
         GC_NOTRIGGER;
-        CONSTRUCTOR_CHECK;
     }
     CONTRACTL_END;
 
@@ -116,14 +115,13 @@ HANDLE CreateWin32EventOrThrow(
     BOOL bInitialState
 )
 {
-    CONTRACT(HANDLE)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(lpEventAttributes, NULL_OK));
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     HANDLE h = NULL;
     h = CreateEvent(lpEventAttributes, (BOOL) eType, bInitialState, NULL);
@@ -131,7 +129,7 @@ HANDLE CreateWin32EventOrThrow(
     if (h == NULL)
         ThrowLastError();
 
-    RETURN h;
+    return h;
 }
 
 //---------------------------------------------------------------------------------------

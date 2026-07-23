@@ -214,7 +214,7 @@ static SOleTlsData* GetOrCreateOleTlsData()
         GC_TRIGGERS;
         MODE_COOPERATIVE;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SOleTlsData* pOleTlsData = TryGetOleTlsData();
     if (pOleTlsData == NULL)

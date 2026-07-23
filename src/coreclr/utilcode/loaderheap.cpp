@@ -49,7 +49,6 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
         FORBID_FAULT;
     }
@@ -349,15 +348,14 @@ void *UnlockedLoaderHeap::UnlockedAllocMem(size_t dwSize
                                            COMMA_INDEBUG(_In_ const char *szFile)
                                            COMMA_INDEBUG(int  lineNum))
 {
-    CONTRACT(void*)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         THROWS;
         GC_NOTRIGGER;
         INJECT_FAULT(ThrowOutOfMemory(););
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     void *pResult = UnlockedAllocMem_NoThrow(
         dwSize COMMA_INDEBUG(szFile) COMMA_INDEBUG(lineNum));
@@ -365,7 +363,7 @@ void *UnlockedLoaderHeap::UnlockedAllocMem(size_t dwSize
     if (pResult == NULL)
         ThrowOutOfMemory();
 
-    RETURN pResult;
+    return pResult;
 }
 
 #ifdef _DEBUG
@@ -401,18 +399,17 @@ void *UnlockedLoaderHeap::UnlockedAllocMem_NoThrow(size_t dwSize
                                                    COMMA_INDEBUG(_In_ const char *szFile)
                                                    COMMA_INDEBUG(int lineNum))
 {
-    CONTRACT(void*)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT(CONTRACT_RETURN NULL;);
+        INJECT_FAULT(return NULL;);
         PRECONDITION(dwSize != 0);
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    SHOULD_INJECT_FAULT(RETURN NULL);
+    SHOULD_INJECT_FAULT(return NULL);
 
     INDEBUG(size_t dwRequestedSize = dwSize;)
 
@@ -483,7 +480,7 @@ again:
 #endif
 
             EtwAllocRequest(this, pData, dwSize);
-            RETURN pData;
+            return pData;
         }
     }
 
@@ -493,7 +490,7 @@ again:
         goto again;
 
     // We could not satisfy this allocation request
-    RETURN NULL;
+    return NULL;
 }
 
 void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
@@ -672,7 +669,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
                                                           COMMA_INDEBUG(_In_ const char *szFile)
                                                           COMMA_INDEBUG(int  lineNum))
 {
-    CONTRACT(void*)
+    CONTRACTL
     {
         NOTHROW;
 
@@ -681,12 +678,8 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
 
         PRECONDITION( alignment != 0 );
         PRECONDITION(0 == (alignment & (alignment - 1))); // require power of 2
-        POSTCONDITION( (RETVAL) ?
-                       (0 == ( ((UINT_PTR)(RETVAL)) & (alignment - 1))) : // If non-null, pointer must be aligned
-                       (pdwExtra == NULL || 0 == *pdwExtra)    //   or else *pdwExtra must be set to 0
-                     );
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     STATIC_CONTRACT_FAULT;
 
@@ -696,7 +689,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
         *pdwExtra = 0;
     }
 
-    SHOULD_INJECT_FAULT(RETURN NULL);
+    SHOULD_INJECT_FAULT(return NULL);
 
     void *pResult;
 
@@ -705,7 +698,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
     // Check for overflow if we align the allocation
     if (dwRequestedSize + alignment < dwRequestedSize)
     {
-        RETURN NULL;
+        return NULL;
     }
 
     // We don't know how much "extra" we need to satisfy the alignment until we know
@@ -718,7 +711,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
     {
         if (!GetMoreCommittedPages(dwRoomSize))
         {
-            RETURN NULL;
+            return NULL;
         }
     }
 
@@ -737,7 +730,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
     S_SIZE_T cbAllocSize = S_SIZE_T( dwRequestedSize ) + S_SIZE_T( extra );
     if( cbAllocSize.IsOverflow() )
     {
-        RETURN NULL;
+        return NULL;
     }
 
     size_t dwSize = AllocMem_TotalSize( cbAllocSize.Value());
@@ -794,7 +787,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
         *pdwExtra = extra;
     }
 
-    RETURN pResult;
+    return pResult;
 
 }
 

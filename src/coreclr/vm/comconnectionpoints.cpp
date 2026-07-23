@@ -287,17 +287,16 @@ HRESULT __stdcall ConnectionPoint::EnumConnections(IEnumConnections **ppEnum)
 
 IConnectionPointContainer *ConnectionPoint::GetConnectionPointContainerWorker()
 {
-    CONTRACT(IConnectionPointContainer*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Retrieve the IConnectionPointContainer from the owner wrapper.
-    RETURN (IConnectionPointContainer*)
+    return (IConnectionPointContainer*)
         ComCallWrapper::GetComIPFromCCW(m_pOwnerWrap, IID_IConnectionPointContainer, NULL);
 }
 
@@ -466,32 +465,31 @@ void ConnectionPoint::SetupEventMethods()
 
 MethodDesc *ConnectionPoint::FindProviderMethodDesc( MethodDesc *pEventMethodDesc, EnumEventMethods Method )
 {
-    CONTRACT (MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pEventMethodDesc));
         PRECONDITION(Method == EventAdd || Method == EventRemove);
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     // Retrieve the event method.
     MethodDesc *pProvMethodDesc =
         MemberLoader::FindEventMethod(m_pTCEProviderMT, pEventMethodDesc->GetName(), Method, MemberLoader::FM_IgnoreCase);
     if (!pProvMethodDesc)
-        RETURN NULL;
+        return NULL;
 
     // Validate that the signature of the delegate is the expected signature.
     MetaSig Sig(pProvMethodDesc);
     if (Sig.NextArg() != ELEMENT_TYPE_CLASS)
-        RETURN NULL;
+        return NULL;
 
     // <TODO>@TODO: this ignores the type of failure - try GetLastTypeHandleThrowing()</TODO>
     TypeHandle DelegateType = Sig.GetLastTypeHandleNT();
     if (DelegateType.IsNull())
-        RETURN NULL;
+        return NULL;
 
     PCCOR_SIGNATURE pEventMethSig;
     DWORD cEventMethSig;
@@ -503,10 +501,10 @@ MethodDesc *ConnectionPoint::FindProviderMethodDesc( MethodDesc *pEventMethodDes
         pEventMethodDesc->GetModule());
 
     if (!pInvokeMD)
-        RETURN NULL;
+        return NULL;
 
     // The requested method exists and has the appropriate signature.
-    RETURN pProvMethodDesc;
+    return pProvMethodDesc;
 }
 
 void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubscriber, MethodDesc *pProvMethodDesc, MethodDesc *pEventMethodDesc )

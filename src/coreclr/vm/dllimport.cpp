@@ -1124,12 +1124,11 @@ public:
 
     PCCOR_SIGNATURE GetStubTargetMethodSig()
     {
-        CONTRACT(PCCOR_SIGNATURE)
+        CONTRACTL
         {
             STANDARD_VM_CHECK;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_NOT_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         BYTE *pb;
 
@@ -1145,7 +1144,7 @@ public:
             pb = (BYTE*)m_qbNativeFnSigBuffer.Ptr();
         }
 
-        RETURN pb;
+        return pb;
     }
 
     DWORD
@@ -2098,7 +2097,7 @@ BOOL PInvokeStubLinker::IsCleanupNeeded()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return (m_fHasCleanupCode || IsCleanupWorkListSetup());
+    return m_fHasCleanupCode || IsCleanupWorkListSetup();
 }
 
 BOOL PInvokeStubLinker::IsExceptionCleanupNeeded()
@@ -2928,14 +2927,13 @@ void PInvokeStaticSigInfo::DllImportInit(
 #if !defined (TARGET_UNIX)
 static LPBYTE FollowIndirect(LPBYTE pTarget)
 {
-    CONTRACT(LPBYTE)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     LPBYTE pRet = NULL;
 
@@ -2962,7 +2960,7 @@ static LPBYTE FollowIndirect(LPBYTE pTarget)
     }
     EX_END_CATCH
 
-    RETURN pRet;
+    return pRet;
 }
 #endif // !TARGET_UNIX
 
@@ -4451,7 +4449,7 @@ namespace
         bool& bILStubCreator,
         MethodDesc* pLastMD)
     {
-        CONTRACT(MethodDesc*)
+        CONTRACTL
         {
             STANDARD_VM_CHECK;
 
@@ -4459,9 +4457,8 @@ namespace
             PRECONDITION(!pParams->m_sig.IsEmpty());
             PRECONDITION(CheckPointer(pParams->m_pModule));
             PRECONDITION(CheckPointer(pTargetMD, NULL_OK));
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         MethodDesc*     pMD;
 
@@ -4479,7 +4476,7 @@ namespace
                                         bILStubCreator,
                                         pLastMD);
 
-        RETURN pMD;
+        return pMD;
     }
 
     void RemoveILStubCacheEntry(PInvokeStubParameters* pParams, ILStubHashBlob* pHashParams)
@@ -4817,7 +4814,7 @@ void PInvoke::CalculateStackArgumentSize(PInvokeMethodDesc* pMD)
 // of the stub method
 HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, MethodDesc **ppRetStubMD)
 {
-    CONTRACT(HRESULT)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -4826,7 +4823,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
         PRECONDITION(CheckPointer(ppRetStubMD));
         PRECONDITION(*ppRetStubMD == NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     HRESULT hr;
 
@@ -4863,11 +4860,11 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
                 &cbBytes);
 
             if (FAILED(hr))
-                RETURN hr;
+                return hr;
             // GetCustomAttribute returns S_FALSE when it cannot find the attribute but nothing fails...
             // Translate that to E_FAIL
             else if (hr == S_FALSE)
-                RETURN E_FAIL;
+                return E_FAIL;
         }
         else
         {
@@ -4879,14 +4876,14 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
             if (pInterfaceMD)
             {
                 hr = FindPredefinedILStubMethod(pInterfaceMD, dwStubFlags, ppRetStubMD);
-                RETURN hr;
+                return hr;
             }
             else
-                RETURN E_FAIL;
+                return E_FAIL;
         }
     }
     else
-        RETURN E_FAIL;
+        return E_FAIL;
 
     //
     // Parse the attribute
@@ -5081,7 +5078,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 
     *ppRetStubMD = pStubMD;
 
-    RETURN S_OK;
+    return S_OK;
 }
 #endif // FEATURE_COMINTEROP
 
@@ -5187,14 +5184,13 @@ namespace
                             bool*                    pGeneratedNewStub = nullptr
                             )
     {
-        CONTRACT(MethodDesc*)
+        CONTRACTL
         {
             STANDARD_VM_CHECK;
 
             PRECONDITION(CheckPointer(pSigDesc));
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
 
         ///////////////////////////////
@@ -5233,7 +5229,7 @@ namespace
             // This cannot be done during NGEN/PEVerify (in PASSIVE_DOMAIN) so I've moved it here
             pStubMD->EnsureActive();
 
-            RETURN pStubMD;
+            return pStubMD;
         }
 #endif // FEATURE_COMINTEROP
 
@@ -5480,7 +5476,7 @@ namespace
         }
 #endif // defined(TARGET_X86)
 
-        RETURN pStubMD;
+        return pStubMD;
     }
 }
 
@@ -5491,14 +5487,13 @@ MethodDesc* PInvoke::CreateCLRToNativeILStub(
                 CorInfoCallConvExtension unmgdCallConv,
                 DWORD                    dwStubFlags) // PInvokeStubFlags
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pSigDesc));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     int         iLCIDArg = 0;
     int         numArgs = 0;
@@ -5553,7 +5548,7 @@ MethodDesc* PInvoke::CreateCLRToNativeILStub(
                 pParamTokenArray,
                 iLCIDArg);
 
-    RETURN pStubMD;
+    return pStubMD;
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -5565,7 +5560,7 @@ MethodDesc* PInvoke::CreateFieldAccessILStub(
                 DWORD              dwStubFlags, // PInvokeStubFlags
                 FieldDesc*         pFD)
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
 
@@ -5573,9 +5568,8 @@ MethodDesc* PInvoke::CreateFieldAccessILStub(
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(pFD, NULL_OK));
         PRECONDITION(SF_IsFieldGetterStub(dwStubFlags) || SF_IsFieldSetterStub(dwStubFlags));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     int numArgs = (SF_IsFieldSetterStub(dwStubFlags) ? 1 : 0);
     int numParamTokens = numArgs + 1;
@@ -5626,7 +5620,7 @@ MethodDesc* PInvoke::CreateFieldAccessILStub(
                 pParamTokenArray,
                 -1);
 
-    RETURN pStubMD;
+    return pStubMD;
 }
 #endif // FEATURE_COMINTEROP
 
@@ -5634,15 +5628,14 @@ MethodDesc* PInvoke::CreateFieldAccessILStub(
 
 MethodDesc* PInvoke::CreateLayoutClassMarshalILStub(MethodTable* pMT, MarshalOperation operation)
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(!pMT->IsValueType());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // void (ref byte managedData, byte* nativeData, ref CleanupWorkListElement cwl)
     FunctionSigBuilder sigBuilder;
@@ -5688,7 +5681,7 @@ MethodDesc* PInvoke::CreateLayoutClassMarshalILStub(MethodTable* pMT, MarshalOpe
 
     szMetaSig.SuppressRelease();
 
-    RETURN pStubMD;
+    return pStubMD;
 }
 
 #endif // DACCESS_COMPILE
@@ -5719,15 +5712,14 @@ namespace
     {
         // GetProcAddress cannot be called while preemptive GC is disabled.
         // It requires the OS to take the loader lock.
-        CONTRACT(LPVOID)
+        CONTRACTL
         {
             STANDARD_VM_CHECK;
             PRECONDITION(CheckPointer(pMD));
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN pMD->FindEntryPoint(hMod);
+        return pMD->FindEntryPoint(hMod);
     }
 
     //---------------------------------------------------------
@@ -5803,21 +5795,20 @@ namespace
 
 PCODE PInvoke::GetStubForILStub(MethodDesc* pManagedMD, MethodDesc** ppStubMD, DWORD dwStubFlags)
 {
-    CONTRACT(PCODE)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pManagedMD));
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CONSISTENCY_CHECK(*ppStubMD == NULL);
 
     PInvokeStaticSigInfo sigInfo(pManagedMD);
     *ppStubMD = PInvoke::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pManagedMD);
 
-    RETURN JitILStub(*ppStubMD);
+    return JitILStub(*ppStubMD);
 }
 
 PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, DWORD dwStubFlags)
@@ -5932,14 +5923,14 @@ PCODE JitILStub(MethodDesc* pStubMD)
 
 PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
 {
-    CONTRACT(PCODE)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(pMD->IsPInvoke() || pMD->IsCLRToCOMCall() || pMD->IsEEImpl() || pMD->IsIL());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     PCODE                   pStub = (PCODE)NULL;
     MethodDesc*             pStubMD = NULL;
@@ -5983,7 +5974,7 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
         EnsureComStarted();
     }
 
-    RETURN pStub;
+    return pStub;
 }
 
 VOID PInvokeMethodDesc::SetPInvokeTarget(LPVOID pTarget)

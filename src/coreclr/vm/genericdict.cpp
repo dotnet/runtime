@@ -40,16 +40,15 @@ DictionaryLayout* DictionaryLayout::Allocate(WORD              numSlots,
                                              LoaderAllocator * pAllocator,
                                              AllocMemTracker * pamTracker)
 {
-    CONTRACT(DictionaryLayout*)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pAllocator));
         PRECONDITION(numSlots > 0);
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     S_SIZE_T bytes = S_SIZE_T(sizeof(DictionaryLayout)) + S_SIZE_T(sizeof(DictionaryEntryLayout)) * S_SIZE_T(numSlots-1);
 
@@ -64,7 +63,7 @@ DictionaryLayout* DictionaryLayout::Allocate(WORD              numSlots,
     pD->m_numSlots = numSlots;
     pD->m_numInitialSlots = numSlots;
 
-    RETURN pD;
+    return pD;
 }
 
 #endif //!DACCESS_COMPILE
@@ -482,13 +481,12 @@ DictionaryEntryLayout::GetKind()
 #ifndef DACCESS_COMPILE
 Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG slotIndex)
 {
-    CONTRACT(Dictionary*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DWORD numGenericArgs = pMD->GetNumGenericMethodArgs();
 
@@ -535,18 +533,17 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
         }
     }
 
-    RETURN pDictionary;
+    return pDictionary;
 }
 
 Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG slotIndex)
 {
-    CONTRACT(Dictionary*)
+    CONTRACTL
     {
        THROWS;
        GC_TRIGGERS;
-       POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DWORD numGenericArgs = pMT->GetNumGenericArgs();
 
@@ -595,7 +592,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
         }
     }
 
-    RETURN pDictionary;
+    return pDictionary;
 }
 
 struct StaticVirtualDispatchHashBlob : public ILStubHashBlobBase

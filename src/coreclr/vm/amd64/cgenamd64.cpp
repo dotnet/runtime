@@ -270,14 +270,14 @@ TADDR ResumableFrame::GetReturnAddressPtr_Impl()
 
 void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CopyMemory(pRD->pCurrentContext, m_Regs, sizeof(CONTEXT));
     // Clear the CONTEXT_XSTATE, since the REGDISPLAY contains just plain CONTEXT structure
@@ -305,7 +305,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
 
     pRD->IsCallerContextValid = FALSE;
 
-    RETURN;
 }
 
 // The HijackFrame has to know the registers that are pushed by OnHijackTripThread
