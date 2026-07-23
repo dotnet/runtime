@@ -540,10 +540,6 @@ The contract depends on the following globals
 | `ObjectArrayMethodTable` | A pointer to the address of the `object[]` `MethodTable` (`g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT]`)
 | `ExceptionMethodTable` | A pointer to the address of the `System.Exception` `MethodTable` (`g_pExceptionClass`)
 | `CanonMethodTable` | A pointer to the address of the canonical `MethodTable` used for shared generics (`System.__Canon`)
-| `EHMethodTable` | A pointer to the address of the `MethodTable` for the runtime exception-handling helper class
-| `ExceptionServicesInternalCallsMethodTable` | A pointer to the address of the `MethodTable` for the exception-services internal-calls class
-| `StackFrameIteratorMethodTable` | A pointer to the address of the `MethodTable` for `System.Runtime.StackFrameIterator`
-| `EnvironmentCallEntryPointMethodDesc` | A pointer to the address of the `MethodDesc` for the runtime entry-point method
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
 | `ArrayBaseSize` | The base size of an array object; used to compute multidimensional array rank from `MethodTable::BaseSize`
 
@@ -741,19 +737,6 @@ Contracts used:
             WellKnownMethodTable.Exception => "ExceptionMethodTable",
             WellKnownMethodTable.Free => "FreeObjectMethodTable",
             WellKnownMethodTable.Canon => "CanonMethodTable",
-            WellKnownMethodTable.EH => "EHMethodTable",
-            WellKnownMethodTable.ExceptionServicesInternalCalls => "ExceptionServicesInternalCallsMethodTable",
-            WellKnownMethodTable.StackFrameIterator => "StackFrameIteratorMethodTable",
-        };
-        return ReadWellKnownGlobalPointer(globalName);
-    }
-
-    public TargetPointer GetWellKnownMethodDesc(WellKnownMethodDesc kind)
-    {
-        // As GetWellKnownMethodTable, but for well-known MethodDesc globals.
-        string globalName = kind switch
-        {
-            WellKnownMethodDesc.EnvironmentCallEntryPoint => "EnvironmentCallEntryPointMethodDesc",
         };
         return ReadWellKnownGlobalPointer(globalName);
     }

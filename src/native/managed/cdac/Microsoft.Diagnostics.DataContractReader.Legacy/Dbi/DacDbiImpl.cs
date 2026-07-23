@@ -1847,14 +1847,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
         int hr = HResults.S_OK;
         nuint legacyHandle = 0;
-        FrameType ftResult = FrameType.kInvalid;
+        FrameType ftResult = FrameType.Invalid;
 #if DEBUG
         bool haveFrameInfo = false;
         bool isInterrupted = false;
 #endif
         try
         {
-            *pRetVal = FrameType.kInvalid;
+            *pRetVal = FrameType.Invalid;
             GCHandle gcHandle = GCHandle.FromIntPtr((nint)pSFIHandle);
             if (gcHandle.Target is not StackWalkHandleData handleData)
                 throw new ArgumentException("Invalid stack walk handle", nameof(pSFIHandle));
@@ -1862,36 +1862,37 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             if (!handleData.IsValid)
             {
-                ftResult = FrameType.kAtEndOfStack;
+                ftResult = FrameType.AtEndOfStack;
             }
             else
             {
                 IStackDataFrameHandle handle = handleData.Current;
-                bool fInitFrameData = false;
+                bool initFrameData = false;
                 switch (handle.State)
                 {
                     case StackWalkState.Frameless:
-                        ftResult = ClassifyManagedFrame(handle, out fInitFrameData);
+                        ftResult = FrameType.ManagedStackFrame;
+                        initFrameData = true;
                         break;
                     case StackWalkState.InitialNativeContext:
                     case StackWalkState.NativeMarker:
                         TargetCodePointer controlPC = _target.Contracts.StackWalk.GetInstructionPointer(handle);
                         if (_target.Contracts.Debugger.GetHijackKind(controlPC) != HijackKind.None)
                         {
-                            ftResult = FrameType.kNativeRuntimeUnwindableStackFrame;
-                            fInitFrameData = true;
+                            ftResult = FrameType.NativeRuntimeUnwindableStackFrame;
+                            initFrameData = true;
                         }
                         else
                         {
-                            ftResult = FrameType.kNativeStackFrame;
+                            ftResult = FrameType.NativeStackFrame;
                         }
                         break;
                     default:
-                        ftResult = FrameType.kInvalid;
+                        ftResult = FrameType.Invalid;
                         break;
                 }
 
-                if (fInitFrameData && pFrameData != 0)
+                if (initFrameData && pFrameData != 0)
                 {
 #if DEBUG
                     haveFrameInfo = true;
@@ -1917,7 +1918,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 new Span<byte>(pLegacyCtx, (int)contextSize).Clear();
                 Debugger_STRData legacyData = default;
                 legacyData.ctx = (nuint)pLegacyCtx;
-                FrameType legacyRetVal = FrameType.kInvalid;
+                FrameType legacyRetVal = FrameType.Invalid;
                 int hrLocal = _legacy.GetStackWalkCurrentFrameInfo(legacyHandle, (nint)(&legacyData), &legacyRetVal);
                 Debug.ValidateHResult(hr, hrLocal);
                 if (hr == HResults.S_OK)
@@ -1938,7 +1939,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                                 Debug.Fail(DescribeContextDiff(cctx, lctx));
                         }
 
-                        if (ftResult == FrameType.kManagedStackFrame)
+                        if (ftResult == FrameType.ManagedStackFrame)
                         {
                             DebuggerIPCE_STRData_MethodFrame cv = pcdac->v;
                             DebuggerIPCE_STRData_MethodFrame lv = legacyData.v;
@@ -1970,33 +1971,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
 #endif
         return hr;
-    }
-
-    private FrameType ClassifyManagedFrame(IStackDataFrameHandle handle, out bool fInitFrameData)
-    {
-        fInitFrameData = false;
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        TargetPointer mdPtr = _target.Contracts.StackWalk.GetMethodDescPtr(handle);
-        if (mdPtr == TargetPointer.Null)
-            throw new InvalidOperationException("Frameless method has no MethodDesc");
-
-        MethodDescHandle md = rts.GetMethodDescHandle(mdPtr);
-        TargetPointer mtPtr = rts.GetMethodTable(md);
-
-        if (mtPtr == rts.GetWellKnownMethodTable(WellKnownMethodTable.EH)
-            || mtPtr == rts.GetWellKnownMethodTable(WellKnownMethodTable.ExceptionServicesInternalCalls)
-            || mtPtr == rts.GetWellKnownMethodTable(WellKnownMethodTable.StackFrameIterator))
-        {
-            return FrameType.kManagedExceptionHandlingCodeFrame;
-        }
-
-        if (mdPtr == rts.GetWellKnownMethodDesc(WellKnownMethodDesc.EnvironmentCallEntryPoint))
-        {
-            return FrameType.kRuntimeEntryPointFrame;
-        }
-
-        fInitFrameData = true;
-        return FrameType.kManagedStackFrame;
     }
 
     private byte[] GetCurrentContextBytes(IStackDataFrameHandle handle)
@@ -2035,11 +2009,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
         Debugger_STRData data = default;
         data.ctx = incomingCtx;
-        data.fp = _target.Contracts.StackWalk.GetFramePointer(handle).Value;
+        data.fp = _target.Contracts.StackWalk.GetRuntimeFramePointer(handle).Value;
         data.vmCurrentAppDomainToken = currentAppDomain.Value;
         WriteContext(handle, incomingCtx);
 
-        if (ft == FrameType.kNativeRuntimeUnwindableStackFrame)
+        if (ft == FrameType.NativeRuntimeUnwindableStackFrame)
         {
             data.eType = Debugger_STRData.EType.cRuntimeNativeFrame;
         }
@@ -2099,7 +2073,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             data.v.jitFuncData.fIsFilterFrame = codeBlockHandle is CodeBlockHandle codeBlock && eman.IsFilterFunclet(codeBlock)
                 ? Interop.BOOL.TRUE
                 : Interop.BOOL.FALSE;
-            data.v.jitFuncData.fpParentOrSelf = _target.Contracts.StackWalk.GetParentOrSelfFrameMarker(handle, out uint parentNativeOffset).Value;
+            data.v.jitFuncData.fpParentOrSelf = _target.Contracts.StackWalk.GetFuncletRootId(handle, out uint parentNativeOffset).Value;
             data.v.jitFuncData.parentNativeOffset = parentNativeOffset;
             data.v.jitFuncData.isInstantiatedGeneric = HasClassOrMethodInstantiation(rts, md) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             data.v.jitFuncData.justAfterILThrow = (handle.IsInterrupted && !handle.HasFaulted && nativeOffset != 0) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
@@ -2118,7 +2092,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         IGCInfo gcInfo = _target.Contracts.GCInfo;
         IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddress, gcVersion);
         IStackWalk stackWalk = _target.Contracts.StackWalk;
-        return gcInfo.GetAmbientSP(gcInfoHandle, nativeOffset, stackWalk.GetBasePointer(handle), stackWalk.GetStackPointer(handle));
+        return gcInfo.GetAmbientSP(gcInfoHandle, nativeOffset, stackWalk.GetContextFramePointer(handle), stackWalk.GetStackPointer(handle));
     }
 
     private static bool IsDiagnosticsHidden(AsyncMethodFlags flags)

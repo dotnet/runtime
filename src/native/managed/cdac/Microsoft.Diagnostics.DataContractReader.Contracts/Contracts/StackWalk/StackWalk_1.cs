@@ -1064,13 +1064,13 @@ internal partial class StackWalk_1 : IStackWalk
         return handle.Context.InstructionPointer;
     }
 
-    TargetPointer IStackWalk.GetFramePointer(IStackDataFrameHandle stackDataFrameHandle)
+    TargetPointer IStackWalk.GetRuntimeFramePointer(IStackDataFrameHandle stackDataFrameHandle)
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
         return ComputeFramePointer(handle);
     }
 
-    TargetPointer IStackWalk.GetBasePointer(IStackDataFrameHandle stackDataFrameHandle)
+    TargetPointer IStackWalk.GetContextFramePointer(IStackDataFrameHandle stackDataFrameHandle)
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
         return handle.Context.FramePointer;
@@ -1082,7 +1082,7 @@ internal partial class StackWalk_1 : IStackWalk
         return handle.Context.StackPointer;
     }
 
-    TargetPointer IStackWalk.GetParentOrSelfFrameMarker(IStackDataFrameHandle stackDataFrameHandle, out uint parentNativeOffset)
+    TargetPointer IStackWalk.GetFuncletRootId(IStackDataFrameHandle stackDataFrameHandle, out uint parentNativeOffset)
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
         parentNativeOffset = 0;

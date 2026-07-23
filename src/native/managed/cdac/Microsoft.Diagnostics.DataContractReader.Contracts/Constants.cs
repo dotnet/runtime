@@ -37,10 +37,6 @@ public static class Constants
         public const string CanonMethodTable = nameof(CanonMethodTable);
         public const string ContinuationSingletonEEClass = nameof(ContinuationSingletonEEClass);
         public const string ExceptionMethodTable = nameof(ExceptionMethodTable);
-        public const string EHMethodTable = nameof(EHMethodTable);
-        public const string ExceptionServicesInternalCallsMethodTable = nameof(ExceptionServicesInternalCallsMethodTable);
-        public const string StackFrameIteratorMethodTable = nameof(StackFrameIteratorMethodTable);
-        public const string EnvironmentCallEntryPointMethodDesc = nameof(EnvironmentCallEntryPointMethodDesc);
         public const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
         public const string ObjectMethodTable = nameof(ObjectMethodTable);
         public const string ObjectArrayMethodTable = nameof(ObjectArrayMethodTable);

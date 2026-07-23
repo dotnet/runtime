@@ -112,14 +112,6 @@ public enum WellKnownMethodTable
     Exception,
     Free,
     Canon,
-    EH,
-    ExceptionServicesInternalCalls,
-    StackFrameIterator,
-}
-
-public enum WellKnownMethodDesc
-{
-    EnvironmentCallEntryPoint,
 }
 
 // cDAC-owned representation of a SystemV AMD64 eightbyte register classification. The values mirror
@@ -187,9 +179,6 @@ public interface IRuntimeTypeSystem : IContract
     // Returns the address of one of the runtime's well-known singleton MethodTables,
     // or TargetPointer.Null if the runtime has not yet initialized that global.
     TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind) => throw new NotImplementedException();
-    // Returns the address of one of the runtime's well-known singleton MethodDescs,
-    // or TargetPointer.Null if the runtime has not yet initialized that global.
-    TargetPointer GetWellKnownMethodDesc(WellKnownMethodDesc kind) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
     bool ContainsGCPointers(ITypeHandle typeHandle) => throw new NotImplementedException();
     // True if MethodTable represents a byreflike value (Span<T>, ReadOnlySpan<T>, etc.).

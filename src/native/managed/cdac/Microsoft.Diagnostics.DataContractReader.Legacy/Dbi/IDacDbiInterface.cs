@@ -349,14 +349,12 @@ public struct Debugger_STRData
 
 public enum FrameType
 {
-    kInvalid = 0,
-    kManagedStackFrame = 1,
-    kExplicitFrame = 2,
-    kNativeStackFrame = 3,
-    kNativeRuntimeUnwindableStackFrame = 4,
-    kManagedExceptionHandlingCodeFrame = 5,
-    kRuntimeEntryPointFrame = 6,
-    kAtEndOfStack = 7,
+    Invalid = 0,
+    ManagedStackFrame = 1,
+    ExplicitFrame = 2,
+    NativeStackFrame = 3,
+    NativeRuntimeUnwindableStackFrame = 4,
+    AtEndOfStack = 5,
 }
 
 #pragma warning restore CS0649

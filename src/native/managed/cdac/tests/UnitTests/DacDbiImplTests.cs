@@ -1247,11 +1247,11 @@ public unsafe class DacDbiImplTests
             .Setup(s => s.CreateStackWalk(It.IsAny<ThreadData>(), It.IsAny<byte[]>(), true))
             .Returns([frameHandle.Object]);
         stackWalk.Setup(s => s.GetMethodDescPtr(frameHandle.Object)).Returns(methodDescPointer);
-        stackWalk.Setup(s => s.GetFramePointer(frameHandle.Object)).Returns(new TargetPointer(0x5000));
-        stackWalk.Setup(s => s.GetBasePointer(frameHandle.Object)).Returns(new TargetPointer(0x6000));
+        stackWalk.Setup(s => s.GetRuntimeFramePointer(frameHandle.Object)).Returns(new TargetPointer(0x5000));
+        stackWalk.Setup(s => s.GetContextFramePointer(frameHandle.Object)).Returns(new TargetPointer(0x6000));
         stackWalk.Setup(s => s.GetStackPointer(frameHandle.Object)).Returns(new TargetPointer(0x7000));
         uint parentNativeOffset = 0;
-        stackWalk.Setup(s => s.GetParentOrSelfFrameMarker(frameHandle.Object, out parentNativeOffset)).Returns(new TargetPointer(0x8000));
+        stackWalk.Setup(s => s.GetFuncletRootId(frameHandle.Object, out parentNativeOffset)).Returns(new TargetPointer(0x8000));
         stackWalk.Setup(s => s.GetExactGenericArgsToken(frameHandle.Object)).Throws<VirtualReadException>();
         stackWalk.Setup(s => s.GetInstructionPointer(frameHandle.Object)).Returns(controlPC);
 
@@ -1299,7 +1299,7 @@ public unsafe class DacDbiImplTests
             int hr = dacDbi.GetStackWalkCurrentFrameInfo(stackWalkHandle, (nint)(&data), &frameType);
 
             Assert.Equal(System.HResults.S_OK, hr);
-            Assert.Equal(Legacy.FrameType.kManagedStackFrame, frameType);
+            Assert.Equal(Legacy.FrameType.ManagedStackFrame, frameType);
             Assert.Equal(0UL, data.v.exactGenericArgsToken);
             Assert.Equal(MethodToken, data.v.funcData.funcMetadataToken);
             Assert.Equal(0UL, data.v.funcData.vmAssembly);

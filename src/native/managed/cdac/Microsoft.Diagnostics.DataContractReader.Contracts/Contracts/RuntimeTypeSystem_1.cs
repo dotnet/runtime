@@ -653,20 +653,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             WellKnownMethodTable.Exception => Constants.Globals.ExceptionMethodTable,
             WellKnownMethodTable.Free => Constants.Globals.FreeObjectMethodTable,
             WellKnownMethodTable.Canon => Constants.Globals.CanonMethodTable,
-            WellKnownMethodTable.EH => Constants.Globals.EHMethodTable,
-            WellKnownMethodTable.ExceptionServicesInternalCalls => Constants.Globals.ExceptionServicesInternalCallsMethodTable,
-            WellKnownMethodTable.StackFrameIterator => Constants.Globals.StackFrameIteratorMethodTable,
-            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
-        };
-
-        return ReadWellKnownGlobalPointer(globalName);
-    }
-
-    public TargetPointer GetWellKnownMethodDesc(WellKnownMethodDesc kind)
-    {
-        string globalName = kind switch
-        {
-            WellKnownMethodDesc.EnvironmentCallEntryPoint => Constants.Globals.EnvironmentCallEntryPointMethodDesc,
             _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };
 

@@ -62,21 +62,25 @@ namespace System.Runtime
 #endif // NATIVEAOT
 
         [StackTraceHidden]
+        [DebuggerHidden]
         internal bool Init(EH.PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault = false, bool* fIsExceptionIntercepted = null)
         {
             return InternalCalls.RhpSfiInit(ref this, pStackwalkCtx, instructionFault, fIsExceptionIntercepted);
         }
 
+        [DebuggerHidden]
         internal bool Next()
         {
             return Next(null, null, null);
         }
 
+        [DebuggerHidden]
         internal bool Next(uint* uExCollideClauseIdx, bool* fIsExceptionIntercepted)
         {
             return Next(uExCollideClauseIdx, null, fIsExceptionIntercepted);
         }
 
+        [DebuggerHidden]
         internal bool Next(uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted)
         {
             return InternalCalls.RhpSfiNext(ref this, uExCollideClauseIdx, fUnwoundReversePInvoke, fIsExceptionIntercepted);

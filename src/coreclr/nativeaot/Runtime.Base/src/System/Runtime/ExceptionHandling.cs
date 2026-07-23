@@ -19,6 +19,7 @@ namespace System.Runtime
 {
     internal static unsafe partial class EH
     {
+        [DebuggerHidden]
         internal static UIntPtr MaxSP
         {
             get
@@ -82,6 +83,7 @@ namespace System.Runtime
 #if !NATIVEAOT
         [DoesNotReturn]
 #endif
+        [DebuggerHidden]
         internal static void FallbackFailFast(RhFailFastReason reason, object? unhandledException)
         {
 #if NATIVEAOT
@@ -102,6 +104,7 @@ namespace System.Runtime
 #if !NATIVEAOT
         [DoesNotReturn]
 #endif
+        [DebuggerHidden]
         internal static void FailFastViaClasslib(RhFailFastReason reason, object? unhandledException,
             IntPtr classlibAddress)
         {
@@ -146,6 +149,7 @@ namespace System.Runtime
         {
         }
 
+        [DebuggerHidden]
         internal static void* PointerAlign(void* ptr, int alignmentInBytes)
         {
             int alignMask = alignmentInBytes - 1;
@@ -155,6 +159,7 @@ namespace System.Runtime
 #endif // TARGET_WINDOWS
 
 #if NATIVEAOT
+        [DebuggerHidden]
         private static void OnFirstChanceExceptionViaClassLib(object exception)
         {
             IntPtr pOnFirstChanceFunction =
@@ -176,6 +181,7 @@ namespace System.Runtime
         }
 #endif // NATIVEAOT
 
+        [DebuggerHidden]
         private static void OnUnhandledExceptionViaClassLib(object exception)
         {
 #if NATIVEAOT
@@ -200,6 +206,7 @@ namespace System.Runtime
 #endif
         }
 
+        [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void UnhandledExceptionFailFastViaClasslib(
             RhFailFastReason reason, object unhandledException, IntPtr classlibAddress, ref ExInfo exInfo)
@@ -253,6 +260,7 @@ namespace System.Runtime
             RH_EH_FIRST_RETHROW_FRAME = 2,
         }
 
+        [DebuggerHidden]
         private static void AppendExceptionStackFrameViaClasslib(object exception, IntPtr ip,
             UIntPtr sp, ref ExInfo exInfo,
             ref bool isFirstRethrowFrame, ref bool isFirstFrame)
@@ -293,6 +301,7 @@ namespace System.Runtime
         // Given an ExceptionID and an address pointing somewhere into a managed module, get
         // an exception object of a type that the module containing the given address will understand.
         // This finds the classlib-defined GetRuntimeException function and asks it for the exception object.
+        [DebuggerHidden]
         internal static Exception GetClasslibException(ExceptionIDs id, IntPtr address)
         {
 #if NATIVEAOT
@@ -346,6 +355,7 @@ namespace System.Runtime
         // Given an ExceptionID and an MethodTable address, get an exception object of a type that the module containing
         // the given address will understand. This finds the classlib-defined GetRuntimeException function and asks
         // it for the exception object.
+        [DebuggerHidden]
         internal static Exception GetClasslibExceptionFromEEType(ExceptionIDs id, MethodTable* pEEType)
         {
             // Find the classlib function that will give us the exception object we want to throw. This
@@ -380,6 +390,7 @@ namespace System.Runtime
         // the asm helpers to these functions, which performs the throw. The tail-call is important: it ensures that
         // the stack is crawlable from within these functions.
         [StackTraceHidden]
+        [DebuggerHidden]
         [RuntimeExport("RhExceptionHandling_ThrowClasslibOverflowException")]
         public static void ThrowClasslibOverflowException(IntPtr address)
         {
@@ -390,6 +401,7 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
+        [DebuggerHidden]
         [RuntimeExport("RhExceptionHandling_ThrowClasslibDivideByZeroException")]
         public static void ThrowClasslibDivideByZeroException(IntPtr address)
         {
@@ -400,6 +412,7 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
+        [DebuggerHidden]
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
         public static void FailedAllocation(MethodTable* pEEType, bool fIsOverflow)
         {
@@ -418,6 +431,7 @@ namespace System.Runtime
         // and may be called by either MRT or other classlibs and that helper needs to throw an exception.
         // There are only a few cases where this happens now (the fast allocation helpers), so we limit the
         // exception types that MRT will return.
+        [DebuggerHidden]
         [RuntimeExport("GetRuntimeException")]
         public static Exception GetRuntimeException(ExceptionIDs id)
         {
@@ -579,6 +593,7 @@ namespace System.Runtime
         // Called by RhpThrowHwEx
         //
         [StackTraceHidden]
+        [DebuggerHidden]
 #if NATIVEAOT
         [RuntimeExport("RhThrowHwEx")]
         public static void RhThrowHwEx(uint exceptionCode, ref ExInfo exInfo)
@@ -668,6 +683,7 @@ namespace System.Runtime
         private const uint MaxTryRegionIdx = 0xFFFFFFFFu;
 
         [StackTraceHidden]
+        [DebuggerHidden]
 #if NATIVEAOT
         [RuntimeExport("RhThrowEx")]
         public static void RhThrowEx(object exceptionObj, ref ExInfo exInfo)
@@ -708,6 +724,7 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
+        [DebuggerHidden]
 #if NATIVEAOT
         [RuntimeExport("RhRethrow")]
         public static void RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
@@ -745,6 +762,7 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
+        [DebuggerHidden]
         private static void DispatchEx(scoped ref StackFrameIterator frameIter, ref ExInfo exInfo)
         {
             Debug.Assert(exInfo._passNumber == 1, "expected asm throw routine to set the pass");
@@ -957,12 +975,14 @@ namespace System.Runtime
 #endif // !NATIVEAOT
         }
 
+        [DebuggerHidden]
         [System.Diagnostics.Conditional("DEBUG")]
         private static void DebugScanCallFrame(int passNumber, byte* ip, UIntPtr sp)
         {
             Debug.Assert(ip != null, "IP address must not be null");
         }
 
+        [DebuggerHidden]
         [System.Diagnostics.Conditional("DEBUG")]
         private static void DebugVerifyHandlingFrame(UIntPtr handlingFrameSP)
         {
@@ -975,6 +995,7 @@ namespace System.Runtime
 
         // Caclulate the code offset from the start of the method as if the hot and cold regions were
         // stored sequentially in memory.
+        [DebuggerHidden]
         private static uint CalculateCodeOffset(byte* pbControlPC, in MethodRegionInfo methodRegionInfo)
         {
             uint codeOffset = (uint)(pbControlPC - methodRegionInfo._hotStartAddress);
@@ -987,6 +1008,7 @@ namespace System.Runtime
             return codeOffset;
         }
 
+        [DebuggerHidden]
         private static void UpdateStackTrace(object exceptionObj, UIntPtr curFramePtr, IntPtr ip, UIntPtr sp,
             ref bool isFirstRethrowFrame, ref UIntPtr prevFramePtr, ref bool isFirstFrame, ref ExInfo exInfo)
         {
@@ -1007,6 +1029,7 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
+        [DebuggerHidden]
         private static bool FindFirstPassHandler(object exception, uint idxStart,
             ref StackFrameIterator frameIter, out uint tryRegionIdx, out byte* pHandler)
         {
@@ -1108,6 +1131,7 @@ namespace System.Runtime
 
 #if DEBUG && !INPLACE_RUNTIME && NATIVEAOT
         private static MethodTable* s_pLowLevelObjectType;
+        [DebuggerHidden]
         private static void AssertNotRuntimeObject(MethodTable* pClauseType)
         {
             //
@@ -1131,6 +1155,7 @@ namespace System.Runtime
 #endif // DEBUG && !INPLACE_RUNTIME && NATIVEAOT
 
 
+        [DebuggerHidden]
         private static bool ShouldTypedClauseCatchThisException(object exception, MethodTable* pClauseType, bool tryUnwrapException)
         {
 #if NATIVEAOT
@@ -1161,11 +1186,13 @@ namespace System.Runtime
         }
 
 #if NATIVEAOT
+        [DebuggerHidden]
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart)
         {
             InvokeSecondPass(ref exInfo, idxStart, MaxTryRegionIdx);
         }
 
+        [DebuggerHidden]
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart, uint idxLimit)
         {
             EHEnum ehEnum;
@@ -1235,11 +1262,13 @@ namespace System.Runtime
         }
 
 #pragma warning disable IDE0060
+        [DebuggerHidden]
         [UnmanagedCallersOnly(EntryPoint = "RhpFailFastForPInvokeExceptionPreemp")]
         public static void RhpFailFastForPInvokeExceptionPreemp(IntPtr PInvokeCallsiteReturnAddr, void* pExceptionRecord, void* pContextRecord)
         {
             FailFastViaClasslib(RhFailFastReason.UnhandledExceptionFromPInvoke, null, PInvokeCallsiteReturnAddr);
         }
+        [DebuggerHidden]
         [RuntimeExport("RhpFailFastForPInvokeExceptionCoop")]
         public static void RhpFailFastForPInvokeExceptionCoop(IntPtr classlibBreadcrumb, void* pExceptionRecord, void* pContextRecord)
         {

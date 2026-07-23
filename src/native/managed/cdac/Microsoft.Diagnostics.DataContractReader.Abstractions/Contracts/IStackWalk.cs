@@ -90,8 +90,8 @@ public interface IStackWalk : IContract
     IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData, bool resolveInteriorPointers) => throw new NotImplementedException();
     byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
-    TargetPointer GetFramePointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
-    TargetPointer GetBasePointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+    TargetPointer GetRuntimeFramePointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+    TargetPointer GetContextFramePointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     TargetPointer GetStackPointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     string GetFrameName(TargetPointer frameIdentifier) => throw new NotImplementedException();
     TargetPointer GetMethodDescPtr(TargetPointer framePtr) => throw new NotImplementedException();
@@ -102,7 +102,7 @@ public interface IStackWalk : IContract
     DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress) => throw new NotImplementedException();
     TargetPointer GetRedirectedContextPointer(ThreadData threadData) => throw new NotImplementedException();
     byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags) => throw new NotImplementedException();
-    TargetPointer GetParentOrSelfFrameMarker(IStackDataFrameHandle stackDataFrameHandle, out uint parentNativeOffset) => throw new NotImplementedException();
+    TargetPointer GetFuncletRootId(IStackDataFrameHandle stackDataFrameHandle, out uint parentNativeOffset) => throw new NotImplementedException();
     TargetPointer GetExactGenericArgsToken(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
 }
 

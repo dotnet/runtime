@@ -118,7 +118,7 @@ public class StackWalkDumpTests : DumpTestBase
         context.FillFromBuffer(stackWalk.GetRawContext(frame));
 
         Assert.Equal(context.StackPointer, stackWalk.GetStackPointer(frame));
-        Assert.Equal(context.FramePointer, stackWalk.GetBasePointer(frame));
+        Assert.Equal(context.FramePointer, stackWalk.GetContextFramePointer(frame));
     }
 
     [ConditionalTheory]
