@@ -1596,8 +1596,7 @@ FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL)
-        return 0;
+    _ASSERTE(obj != NULL);
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     return objRef->TryGetHashCode();
