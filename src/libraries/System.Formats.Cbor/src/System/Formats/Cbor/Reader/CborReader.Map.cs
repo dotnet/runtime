@@ -160,7 +160,18 @@ namespace System.Formats.Cbor
         {
             Debug.Assert(_currentKeyOffset != null);
 
-            HashSet<(int Offset, int Length)> keyEncodingRanges = GetKeyEncodingRanges();
+            HashSet<(int Offset, int Length)>? keyEncodingRanges = _keyEncodingRanges;
+            if (keyEncodingRanges is null)
+            {
+                if (_previousKeyEncodingRange is null)
+                {
+                    _previousKeyEncodingRange = currentKeyEncodingRange;
+                    return;
+                }
+
+                keyEncodingRanges = GetKeyEncodingRanges();
+                keyEncodingRanges.Add(_previousKeyEncodingRange.Value);
+            }
 
             if (!keyEncodingRanges.Add(currentKeyEncodingRange))
             {
