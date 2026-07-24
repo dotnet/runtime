@@ -18,7 +18,7 @@ namespace ILLink.CodeFix
 {
     /// <summary>
     /// Centralizes declaration discovery and trivia-preserving modifier edits for the unsafe-v2 code-fix providers.
-    /// It is shared by fixes for <c>CS9389</c>, <c>CS9377</c>/<c>CS0106</c>, <c>IL5005</c>, <c>IL5006</c>, and <c>CS9392</c>.
+    /// It is shared by unsafe migration fixes for compiler diagnostics, <c>IL5005</c>, and <c>IL5006</c>.
     /// </summary>
     internal static class UnsafeModifierCodeFixHelpers
     {
@@ -97,6 +97,32 @@ namespace ILLink.CodeFix
         }
 
         /// <summary>
+        /// Replaces an explicit safe contract with unsafe, or adds unsafe when no safety modifier is present.
+        /// </summary>
+        internal static async Task<Document> SetUnsafeModifierAsync(
+            Document document,
+            SyntaxNode declaration,
+            CancellationToken cancellationToken)
+        {
+            SyntaxToken safeModifier = UnsafeMigrationSyntaxHelpers.GetSafeModifier(declaration);
+            if (safeModifier != default)
+            {
+                var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                if (root is null)
+                    return document;
+
+                SyntaxToken unsafeModifier = SyntaxFactory.Token(SyntaxKind.UnsafeKeyword)
+                    .WithTriviaFrom(safeModifier);
+                return document.WithSyntaxRoot(root.ReplaceToken(safeModifier, unsafeModifier));
+            }
+
+            if (UnsafeMigrationSyntaxHelpers.HasModifier(declaration, SyntaxKind.UnsafeKeyword))
+                return document;
+
+            return await AddUnsafeModifierAsync(document, declaration, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
         /// Removes unsafe without disturbing modifiers that the current SyntaxGenerator does not model.
         /// </summary>
         internal static async Task<Document> RemoveUnsafeModifierAsync(
@@ -168,8 +194,11 @@ namespace ILLink.CodeFix
 
         private static SyntaxTokenList AddUnsafeModifier(SyntaxTokenList modifiers)
         {
-            // Place unsafe before extern while preserving the existing modifier order.
+            // Place unsafe before syntax-sensitive extern/partial modifiers while preserving other modifier order.
             int insertionIndex = modifiers.IndexOf(SyntaxKind.ExternKeyword);
+            int partialIndex = modifiers.IndexOf(SyntaxKind.PartialKeyword);
+            if (partialIndex >= 0 && (insertionIndex < 0 || partialIndex < insertionIndex))
+                insertionIndex = partialIndex;
             if (insertionIndex < 0)
                 insertionIndex = modifiers.Count;
 
@@ -203,7 +232,7 @@ namespace ILLink.CodeFix
             return modifiers;
         }
 
-        private static SyntaxNode WithModifiers(SyntaxNode declaration, SyntaxTokenList modifiers) =>
+        internal static SyntaxNode WithModifiers(SyntaxNode declaration, SyntaxTokenList modifiers) =>
             declaration switch
             {
                 BaseTypeDeclarationSyntax type => type.WithModifiers(modifiers),

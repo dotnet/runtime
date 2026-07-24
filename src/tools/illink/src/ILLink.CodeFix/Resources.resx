@@ -126,8 +126,8 @@
   <data name="RequiresDynamicCodeCodeFixTitle" xml:space="preserve">
     <value>Add RequiresDynamicCode attribute to parent method</value>
   </data>
-  <data name="RequiresUnsafeCodeFixTitle" xml:space="preserve">
-    <value>Add 'unsafe' to parent method</value>
+  <data name="AddUnsafeContextCodeFixTitle" xml:space="preserve">
+    <value>Add unsafe context</value>
   </data>
   <data name="AddUnsafeToExternCodeFixTitle" xml:space="preserve">
     <value>Mark extern member 'unsafe'</value>
@@ -143,6 +143,9 @@
   </data>
   <data name="AddUnsafeToFieldCodeFixTitle" xml:space="preserve">
     <value>Mark field-like member 'unsafe'</value>
+  </data>
+  <data name="SynchronizeUnsafeContractCodeFixTitle" xml:space="preserve">
+    <value>Propagate unsafe contract</value>
   </data>
   <data name="UconditionalSuppressMessageCodeFixTitle" xml:space="preserve">
     <value>Add UnconditionalSuppressMessage attribute to parent method</value>

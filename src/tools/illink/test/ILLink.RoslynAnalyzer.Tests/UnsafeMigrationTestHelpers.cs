@@ -79,6 +79,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             return solution.WithProjectParseOptions(projectId, parseOptions)
                 .WithProjectCompilationOptions(projectId, compilationOptions);
         }
+
     }
 }
 #endif

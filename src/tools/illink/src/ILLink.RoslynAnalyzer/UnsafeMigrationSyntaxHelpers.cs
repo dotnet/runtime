@@ -32,6 +32,9 @@ namespace ILLink.RoslynAnalyzer
         internal static bool HasSafeModifier(SyntaxNode declaration) =>
             s_safeKeyword != SyntaxKind.None && GetModifiers(declaration).Any(s_safeKeyword);
 
+        internal static SyntaxToken GetSafeModifier(SyntaxNode declaration) =>
+            s_safeKeyword == SyntaxKind.None ? default : GetModifier(declaration, s_safeKeyword);
+
         internal static SyntaxToken GetModifier(SyntaxNode declaration, SyntaxKind modifier)
         {
             foreach (SyntaxToken token in GetModifiers(declaration))
