@@ -33,6 +33,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         class UnusedImplementation : IUnused
         {
+            [UnexpectedWarning("IL2046", Tool.Analyzer, "https://github.com/dotnet/runtime/pull/130640")]
+            [UnexpectedWarning("IL2092", Tool.Analyzer, "https://github.com/dotnet/runtime/pull/130640")]
             public void Method(Type type) { }
         }
 
@@ -45,6 +47,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         class TypeOnlyImplementation : ITypeOnly
         {
+            [UnexpectedWarning("IL2046", Tool.Analyzer, "https://github.com/dotnet/runtime/pull/130640")]
+            [UnexpectedWarning("IL2092", Tool.Analyzer, "https://github.com/dotnet/runtime/pull/130640")]
             public void Method(Type type) { }
         }
 
@@ -78,6 +82,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         class UnusedImplementationOfPartiallyUsedInterface : IPartiallyUsed
         {
+            [UnexpectedWarning("IL2046", Tool.Analyzer, "https://github.com/dotnet/runtime/pull/130640")]
+            [UnexpectedWarning("IL2092", Tool.Analyzer, "https://github.com/dotnet/runtime/pull/130640")]
             public void Method(Type type) { }
         }
     }
