@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- CS3021: linked production code carries [CLSCompliant] but the test assembly has no assembly-level attribute. -->
+    <NoWarn>$(NoWarn);CS3021</NoWarn>
+  </PropertyGroup>
+  <!-- Do not reference this assembly from the TargetingPack since we are building part of the source code for tests. -->
+  <ItemGroup>
+    <DefaultReferenceExclusion Include="System.Net.NameResolution" />
+  </ItemGroup>
+  <!-- Production code under test: the managed DNS wire-format parsing/encoding types. -->
+  <ItemGroup>
+    <Compile Include="..\..\src\System\Net\DnsEncodedName.cs"
+             Link="ProductionCode\System\Net\DnsEncodedName.cs" />
+    <Compile Include="..\..\src\System\Net\DnsMessageHeader.cs"
+             Link="ProductionCode\System\Net\DnsMessageHeader.cs" />
+    <Compile Include="..\..\src\System\Net\DnsMessageReader.cs"
+             Link="ProductionCode\System\Net\DnsMessageReader.cs" />
+    <Compile Include="..\..\src\System\Net\DnsMessageWriter.cs"
+             Link="ProductionCode\System\Net\DnsMessageWriter.cs" />
+    <Compile Include="..\..\src\System\Net\DnsRecordParsing.cs"
+             Link="ProductionCode\System\Net\DnsRecordParsing.cs" />
+    <Compile Include="..\..\src\System\Net\DnsResponseCode.cs"
+             Link="ProductionCode\System\Net\DnsResponseCode.cs" />
+    <Compile Include="..\..\src\System\Net\DnsWireEnums.cs"
+             Link="ProductionCode\System\Net\DnsWireEnums.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="DnsEncodedNameTests.cs" />
+    <Compile Include="DnsMessageHeaderTests.cs" />
+    <Compile Include="DnsMessageReaderTests.cs" />
+    <Compile Include="DnsMessageWriterTests.cs" />
+    <Compile Include="DnsRecordTypeTests.cs" />
+  </ItemGroup>
+</Project>
