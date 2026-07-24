@@ -398,7 +398,10 @@ IF NOT DEFINED RunWithNodeJS (
                 del /q "!__OopResult!" "!__OopOutput!" "!__OopResultTemp!" "!__OopStatus!" 2>NUL
 
                 set "CORE_ROOT=!__CoreRootWin!"
-                for %%S in ("!__OopStatus!") do set "__TestOutOfProcessStatusFile=%%~fS"
+                for %%S in ("!__OopStatus!") do set "__OopStatusUnix=%%~fS"
+                set "__OopStatusUnix=!__OopStatusUnix:\=/!"
+                if "!__OopStatusUnix:~1,1!"==":" set "__OopStatusUnix=/!__OopStatusUnix:~3!"
+                set "__TestOutOfProcessStatusFile=!__OopStatusUnix!"
                 "%ComSpec%" /D /S /C call "!__OopWrapper!" > "!__OopOutput!" 2>&1
                 set "__OopExit=!ERRORLEVEL!"
                 set "__TestOutOfProcessStatusFile="

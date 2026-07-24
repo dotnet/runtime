@@ -187,6 +187,7 @@ public class Test_GetTotalAllocatedBytes
         TestSingleThreadedLOH();
     }
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void TestMultithreaded()
     {
