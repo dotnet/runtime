@@ -3068,33 +3068,20 @@ void AppDomain::GetParentAssemblyChain(Assembly *pStartAssembly, SString &chain,
     }
 }
 
-PEAssembly* AppDomain::FindCachedFile(AssemblySpec* pSpec, BOOL fThrow /*=TRUE*/)
+PEAssembly* AppDomain::FindCachedFile(AssemblySpec* pSpec)
 {
-    CONTRACTL
-    {
-        if (fThrow) {
-            GC_TRIGGERS;
-            THROWS;
-        }
-        else {
-            GC_NOTRIGGER;
-            NOTHROW;
-        }
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pSpec != NULL);
 
     // Check to see if this fits our rather loose idea of a reference to CoreLib.
     // If so, don't use fusion to bind it - do it ourselves.
-    if (fThrow && pSpec->IsCoreLib())
+    if (pSpec->IsCoreLib())
     {
         CONSISTENCY_CHECK(SystemDomain::System()->SystemAssembly() != NULL);
-        PEAssembly * pPEAssembly = SystemDomain::System()->SystemPEAssembly();
-        pPEAssembly->AddRef();
-        return pPEAssembly;
+        return SystemDomain::System()->SystemPEAssembly();
     }
 
-    return m_AssemblyCache.LookupFile(pSpec, fThrow);
+    return m_AssemblyCache.LookupFile(pSpec, /* fThrow */ TRUE);
 }
 
 
@@ -3160,7 +3147,8 @@ PEAssembly * AppDomain::BindAssemblySpec(
     BinderTracing::AssemblyBindOperation bindOperation(pSpec);
 
     HRESULT hrBindResult = S_OK;
-    PEAssemblyHolder result;
+    // Retain the lifetime of the non-cached PEAssembly until the caller has a chance to add it to the cache.
+    PEAssemblyHolder nonCachedLifetime;
     StackSString bindDiagnosticInfo;
 
     bool isCached = false;
@@ -3169,7 +3157,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
         isCached = IsCached(pSpec);
         if (!isCached)
         {
-
+            PEAssembly* result = NULL;
             {
                 ReleaseHolder<BINDER_SPACE::Assembly> boundAssembly;
                 hrBindResult = pSpec->Bind(this, &boundAssembly, &bindDiagnosticInfo);
@@ -3180,12 +3168,12 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     {
                         // Avoid rebinding to another copy of CoreLib
                         result = SystemDomain::SystemPEAssembly();
-                        result.SuppressRelease(); // Didn't get a refcount
                     }
                     else
                     {
                         // IsSystem on the PEAssembly should be false, even for CoreLib satellites
                         result = PEAssembly::Open(boundAssembly);
+                        nonCachedLifetime = result;
                     }
 
                     // Setup the reference to the binder, which performed the bind, into the AssemblySpec
@@ -3311,16 +3299,15 @@ PEAssembly * AppDomain::BindAssemblySpec(
     EX_END_CATCH
 
     // Now, if it's a cacheable bind we need to re-fetch the result from the cache, as we may have been racing with another
-    // thread to store our result.  Note that we may throw from here, if there is a cached exception.
-    // This will release the refcount of the current result holder (if any), and will replace
-    // it with a non-addref'ed result
-    result = FindCachedFile(pSpec);
-
+    // thread to store our result. Note that we may throw from here, if there is a cached exception.
+    // Note the non-cached result holder above may be released (if any).
+    // Returned cached files are not AddRef'd, so we call AddRef in order to retain it.
+    PEAssemblyHolder result{ FindCachedFile(pSpec) };
     if (result != NULL)
         result->AddRef();
 
-    bindOperation.SetResult(result.GetValue(), isCached);
-    return result.Extract();
+    bindOperation.SetResult(result, isCached);
+    return result.Detach();
 } // AppDomain::BindAssemblySpec
 
 

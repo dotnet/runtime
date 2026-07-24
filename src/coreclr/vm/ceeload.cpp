@@ -1790,7 +1790,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
 
         if (fInMemorySymbols)
         {
-            ReleaseHolder<IStream> pIStream( NULL );
+            ReleaseHolder<IStream> pIStream;
 
             // If debug stream is already specified, don't bother to go through fusion
             // This is the common case for case 2 (hosted modules) and case 3 (Ref.Emit).
@@ -1818,7 +1818,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
                 // (RW) metadata interface: the reader only needs it to satisfy the
                 // binder, and producing the real importer would force this module's
                 // metadata to its locked RW backing store.
-                ReleaseHolder<IMetaDataImport2> pNoopImport = GetNoopMetaDataImport2();
+                ReleaseHolder<IMetaDataImport2> pNoopImport{ GetNoopMetaDataImport2() };
                 hr = pBinder->GetReaderFromStream(pNoopImport, pIStream, &pReader);
             }
         }
@@ -1831,13 +1831,13 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // interface for this module: the reader only needs it to satisfy the
             // binder, and obtaining the real importer would force this module's
             // metadata to its locked RW backing store.
-            ReleaseHolder<IMetaDataImport2> pNoopImport = GetNoopMetaDataImport2();
+            ReleaseHolder<IMetaDataImport2> pNoopImport{ GetNoopMetaDataImport2() };
             hr = pBinder->GetReaderForFile(pNoopImport, path, NULL, &pReader);
         }
 
         if (SUCCEEDED(hr))
         {
-            m_pISymUnmanagedReader = pReader.Extract();
+            m_pISymUnmanagedReader = pReader.Detach();
             LOG((LF_CORDB, LL_INFO10, "M::GISUR: Loaded symbols for module %s\n", GetDebugName()));
         }
         else
@@ -1896,7 +1896,7 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     STANDARD_VM_CONTRACT;
 
     // Create a IStream from the memory for the syms.
-    ComHolderPreemp<CGrowableStream> pStream(new CGrowableStream());
+    ReleaseHolder<CGrowableStream> pStream(new CGrowableStream());
 
     // Do not need to AddRef the CGrowableStream because the constructor set it to 1
     // ref count already. The Module will keep a copy for its own use.
@@ -2469,7 +2469,7 @@ Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
     }
 
     {
-        PEAssemblyHolder pPEAssembly = GetPEAssembly()->LoadAssembly(kAssemblyRef);
+        PEAssemblyHolder pPEAssembly{ GetPEAssembly()->LoadAssembly(kAssemblyRef) };
         AssemblySpec spec;
         spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetAssembly());
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up

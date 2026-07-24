@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // ---------------------------------------------------------------------------
 // Contract.inl
-//
-
-// ! I am the owner for issues in the contract *infrastructure*, not for every
-// ! CONTRACT_VIOLATION dialog that comes up. If you interrupt my work for a routine
-// ! CONTRACT_VIOLATION, you will become the new owner of this file.
 // ---------------------------------------------------------------------------
 
 #ifndef CONTRACT_INL_

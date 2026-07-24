@@ -1671,8 +1671,8 @@ SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArray
     {
         GCX_PREEMP();
 
-        ComHolderPreemp<ITypeInfo> pITI;
-        ComHolderPreemp<IRecordInfo> pRecInfo;
+        ReleaseHolder<ITypeInfo> pITI;
+        ReleaseHolder<IRecordInfo> pRecInfo;
         IfFailThrow(GetITypeInfoForEEClass(pInterfaceMT, &pITI));
         IfFailThrow(GetRecordInfoFromTypeInfo(pITI, &pRecInfo));
         IfFailThrow(SafeArraySetRecordInfo(pSafeArray, pRecInfo));
@@ -2212,7 +2212,7 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-    ComHolderAnyMode<ITypeInfo> pTypeInfo;
+    ReleaseHolderAnyMode<ITypeInfo> pTypeInfo;
     RecordVariantHolder pRecHolder(pOleVariant);
 
     // Initialize the OLE variant's VT_RECORD fields to NULL.

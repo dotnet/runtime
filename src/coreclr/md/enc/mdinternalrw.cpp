@@ -196,7 +196,7 @@ STDAPI GetMDInternalInterfaceFromPublic(
 
     if (riid != IID_IMDInternalImport || pIUnkPublic == NULL || ppIUnkInternal == NULL)
         IfFailGo(E_INVALIDARG);
-    IfFailGo( pIUnkPublic->QueryInterface(IID_IGetIMDInternalImport, &pGetIMDInternalImport));
+    IfFailGo( pIUnkPublic->QueryInterface(IID_IGetIMDInternalImport, (void**)&pGetIMDInternalImport));
     IfFailGo( pGetIMDInternalImport->GetIMDInternalImport((IMDInternalImport **)ppIUnkInternal));
 
 ErrExit:

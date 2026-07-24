@@ -6,7 +6,7 @@
 #define __HOLDER_H_
 
 #include "cor.h"
-#include "staticcontract.h"
+#include "contract.h"
 #include "volatile.h"
 #include "palclr.h"
 #include <minipal/com/memory.h>
@@ -814,37 +814,6 @@ public:
 };
 
 //-----------------------------------------------------------------------------
-// NOTE: THIS IS UNSAFE TO USE IN THE VM for interop COM objects!!
-//  WE DO NOT CORRECTLY CHANGE TO PREEMPTIVE MODE BEFORE CALLING RELEASE!!
-//  USE ComHolderAnyMode
-//
-// ReleaseHolder : COM Interface holder for use outside the VM (or on well known instances
-//                  which do not need preemptive Release)
-//
-// Usage example:
-//
-//  {
-//      ReleaseHolder<IFoo> foo;
-//      hr = FunctionToGetRefOfFoo(&foo);
-//      // Note ComHolder doesn't call AddRef - it assumes you already have a ref (if non-0).
-//  } // foo->Release() on out of scope (WITHOUT RESPECT FOR GC MODE!!)
-//
-//-----------------------------------------------------------------------------
-
-template <typename TYPE>
-FORCEINLINE void DoTheRelease(TYPE *value)
-{
-    STATIC_CONTRACT_WRAPPER;
-    if (value)
-    {
-        value->Release();
-    }
-}
-
-template<typename _TYPE>
-using ReleaseHolder = SpecializedWrapper<_TYPE, DoTheRelease<_TYPE>>;
-
-//-----------------------------------------------------------------------------
 // NewHolder : New'ed memory holder
 //
 //  {
@@ -1021,6 +990,34 @@ public:
         return value;
     }
 };
+
+template <typename TYPE>
+struct ReleaseHolderTraits final
+{
+    using Type = TYPE*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+#ifdef ENABLE_EE_CONTRACTS
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_PREEMPTIVE;
+        } CONTRACTL_END;
+#else
+        STATIC_CONTRACT_NOTHROW;
+        STATIC_CONTRACT_GC_TRIGGERS;
+        STATIC_CONTRACT_MODE_PREEMPTIVE;
+#endif // ENABLE_EE_CONTRACTS
+
+        if (value != NULL)
+            value->Release();
+    }
+};
+
+template<typename _TYPE>
+using ReleaseHolder = LifetimeHolder<ReleaseHolderTraits<_TYPE>>;
 
 //-----------------------------------------------------------------------------
 // Wrap win32 functions using HANDLE
@@ -1382,7 +1379,7 @@ namespace clr
     {
         STATIC_CONTRACT_LIMITED_METHOD;
         //@TODO: Would be good to add runtime validation that the return value is used.
-        return SafeAddRef(pItf.GetValue());
+        return SafeAddRef(static_cast<ItfT*>(pItf));
     }
 
     namespace detail

@@ -3,11 +3,6 @@
 
 // ---------------------------------------------------------------------------
 // EEContract.h
-//
-
-// ! I am the owner for issues in the contract *infrastructure*, not for every
-// ! CONTRACT_VIOLATION dialog that comes up. If you interrupt my work for a routine
-// ! CONTRACT_VIOLATION, you will become the new owner of this file.
 // ---------------------------------------------------------------------------
 
 
@@ -25,6 +20,12 @@
 #undef GC_NOTRIGGER
 
 #ifdef ENABLE_CONTRACTS_IMPL
+
+// Indicates that the EE contract vocabulary (GC_TRIGGERS and MODE_COOPERATIVE/PREEMPTIVE/ANY)
+// is available and enforced.
+#define ENABLE_EE_CONTRACTS
+
+class Thread;
 
 class EEContract : public BaseContract
 {

@@ -391,6 +391,12 @@ BOOL EEDbgInterfaceImpl::IsManagedNativeCode(const BYTE *address)
     return ExecutionManager::IsManagedCode((PCODE)address);
 }
 
+BOOL EEDbgInterfaceImpl::IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip)
+{
+    WRAPPER_NO_CONTRACT;
+    return ::IsIPInModule(pModuleBaseAddress, ip);
+}
+
 PCODE EEDbgInterfaceImpl::GetNativeCodeStartAddress(PCODE address)
 {
     WRAPPER_NO_CONTRACT;

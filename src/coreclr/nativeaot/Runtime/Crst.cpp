@@ -12,6 +12,7 @@ void CrstStatic::Init(CrstType eType, CrstFlags eFlags)
 {
     UNREFERENCED_PARAMETER(eType);
     UNREFERENCED_PARAMETER(eFlags);
+
 #ifndef DACCESS_COMPILE
 #if defined(_DEBUG)
     m_uiOwnerId.Clear();

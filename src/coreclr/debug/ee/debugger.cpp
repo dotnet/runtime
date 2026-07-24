@@ -3027,7 +3027,7 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
         (void)pModule; //prevent "unused variable" error from GCC
         _ASSERTE(pModule != NULL);
 
-        ComHolderPreemp<ISymUnmanagedReader> pReader(pModule->GetISymUnmanagedReader());
+        ReleaseHolder<ISymUnmanagedReader> pReader(pModule->GetISymUnmanagedReader());
 
         // If we got a reader, use it.
         if (pReader != NULL)
@@ -11779,7 +11779,7 @@ void Debugger::GetAndSendTransitionStubInfo(CORDB_ADDRESS_TYPE *stubAddress)
     // If its not a stub, then maybe its an address in mscoree?
     if (result == false)
     {
-        result = (IsIPInModule(GetClrModuleBase(), (PCODE)stubAddress) == TRUE);
+        result = (g_pEEInterface->IsIPInModule(GetClrModuleBase(), (PCODE)stubAddress) == TRUE);
     }
 
     // This is a synchronous event (reply required)

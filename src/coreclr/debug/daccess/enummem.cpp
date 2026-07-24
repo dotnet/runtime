@@ -880,13 +880,13 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                     if (SUCCEEDED(pMethod->GetTypeInstance(&pTypeInstance)) &&
                         (pTypeInstance != NULL))
                     {
-                        pTypeInstance.Clear();
+                        pTypeInstance.Free();
                     }
 
                     if(SUCCEEDED(pMethod->GetDefinition(&pMethodDefinition)) &&
                        (pMethodDefinition != NULL))
                     {
-                        pMethodDesc = ((ClrDataMethodDefinition *)pMethodDefinition.GetValue())->GetMethodDesc();
+                        pMethodDesc = ((ClrDataMethodDefinition *)(IXCLRDataMethodDefinition*)pMethodDefinition)->GetMethodDesc();
                         if (pMethodDesc)
                         {
 
@@ -998,11 +998,11 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                             }
 #endif // USE_GC_INFO_DECODER
                         }
-                        pMethodDefinition.Clear();
+                        pMethodDefinition.Free();
                     }
-                    pMethod.Clear();
+                    pMethod.Free();
                 }
-                pFrame.Clear();
+                pFrame.Free();
             }
 
             previousSP = currentSP;
@@ -1127,8 +1127,8 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
         DebuggingExceptionTrackerList exceptionTrackingInner;
 
         CLRDATA_ENUM        handle;
-        ReleaseHolder<IXCLRDataTask> pIXCLRDataTask(NULL);
-        ReleaseHolder<IXCLRDataExceptionState> pExcepState(NULL);
+        ReleaseHolder<IXCLRDataTask> pIXCLRDataTask;
+        ReleaseHolder<IXCLRDataExceptionState> pExcepState;
         Thread              *pThread = NULL;
 
         // enumerating through each thread
@@ -1144,19 +1144,20 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
             EX_TRY
             {
                 // get Thread *
-                pThread = ((ClrDataTask *)pIXCLRDataTask.GetValue())->GetThread();
+                pThread = ((ClrDataTask*)(IXCLRDataTask*)pIXCLRDataTask)->GetThread();
 
                 // dump the exception object
                 DumpManagedExcepObject(flags, pThread->LastThrownObject());
 
                 // Now probe into the exception info
+                pExcepState.Free();
                 status = pIXCLRDataTask->GetCurrentExceptionState(&pExcepState);
                 while (status == S_OK && pExcepState != NULL)
                 {
                     EX_TRY
                     {
                         // touch the throwable in exception state
-                        PTR_UNCHECKED_OBJECTREF throwRef(((ClrDataExceptionState *)pExcepState.GetValue())->m_throwable);
+                        PTR_UNCHECKED_OBJECTREF throwRef(((ClrDataExceptionState*)(IXCLRDataExceptionState*)pExcepState)->m_throwable);
 
                         // If we've already attempted enumeration for this exception, it's time to quit.
                         if (!exceptionTrackingInner.AddNewAddressOnly(throwRef.GetAddr()))
@@ -1180,7 +1181,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
             EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
 
             // get next thread
-            pIXCLRDataTask.Clear();
+            pIXCLRDataTask.Free();
             status = EnumTask(&handle, &pIXCLRDataTask);
         }
         EndEnumTasks(handle);
@@ -1222,7 +1223,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
             EX_TRY
             {
                 // get Thread *
-                pThread = ((ClrDataTask *)pIXCLRDataTask.GetValue())->GetThread();
+                pThread = ((ClrDataTask*)(IXCLRDataTask*)pIXCLRDataTask)->GetThread();
 
                 // Write out the Thread instance
                 DacEnumHostDPtrMem(pThread);
@@ -1248,17 +1249,18 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
                 if (status == S_OK && pStackWalk != NULL)
                 {
                     status = EnumMemWalkStackHelper(flags, pStackWalk, pThread);
-                    pStackWalk.Clear();
+                    pStackWalk.Free();
                 }
 
                 // Now probe into the exception info
+                pExcepState.Free();
                 status = pIXCLRDataTask->GetCurrentExceptionState(&pExcepState);
                 while (status == S_OK && pExcepState != NULL)
                 {
                     EX_TRY
                     {
                         // touch the throwable in exception state
-                        PTR_UNCHECKED_OBJECTREF throwRef(((ClrDataExceptionState *)pExcepState.GetValue())->m_throwable);
+                        PTR_UNCHECKED_OBJECTREF throwRef(((ClrDataExceptionState*)(IXCLRDataExceptionState*)pExcepState)->m_throwable);
 
                         // If we've already attempted enumeration for this exception, it's time to quit.
                         if (!exceptionTracking.AddNewAddressOnly(throwRef.GetAddr()))
@@ -1278,7 +1280,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
                             ReleaseHolder<IXCLRDataTypeInstance> pTypeInstance(NULL);
                             // Make sure that we can get back a TypeInstance during inspection
                             status = pValue->GetType(&pTypeInstance);
-                            pValue.Clear();
+                            pValue.Free();
                         }
 
                         // If Exception state has a new context, we will walk with the stashed context as well.
@@ -1290,7 +1292,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
                         // to walk the stack correctly here. Anyway, we try to catch exception thrown
                         // by bad stack walk in EnumMemWalkStackHelper.
                         //
-                        PTR_CONTEXT pContext = ((ClrDataExceptionState*)pExcepState.GetValue())->GetCurrentContextRecord();
+                        PTR_CONTEXT pContext = ((ClrDataExceptionState*)(IXCLRDataExceptionState*)pExcepState)->GetCurrentContextRecord();
                         if (pContext != NULL)
                         {
                             T_CONTEXT newContext;
@@ -1306,7 +1308,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
                                 {
                                     status = EnumMemWalkStackHelper(flags, pStackWalk, pThread);
                                 }
-                                pStackWalk.Clear();
+                                pStackWalk.Free();
                             }
                         }
                     }
@@ -1324,7 +1326,7 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
             EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
 
             // get next thread
-            pIXCLRDataTask.Clear();
+            pIXCLRDataTask.Free();
             status = EnumTask(&handle, &pIXCLRDataTask);
         }
         EndEnumTasks(handle);
@@ -1381,7 +1383,7 @@ HRESULT ClrDataAccess::EnumMemStowedException(CLRDataEnumMemoryFlags flags)
         }
         EX_TRY
         {
-            if (((ClrDataTask *)pIXCLRDataTask.GetValue())->GetThread()->GetOSThreadId() == exThreadID)
+            if (((ClrDataTask*)(IXCLRDataTask*)pIXCLRDataTask)->GetThread()->GetOSThreadId() == exThreadID)
             {
                 // found the thread
                 foundThread = TRUE;
@@ -1391,7 +1393,7 @@ HRESULT ClrDataAccess::EnumMemStowedException(CLRDataEnumMemoryFlags flags)
         EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
 
         // get next thread
-        pIXCLRDataTask.Clear();
+        pIXCLRDataTask.Free();
         status = EnumTask(&handle, &pIXCLRDataTask);
     }
     EndEnumTasks(handle);

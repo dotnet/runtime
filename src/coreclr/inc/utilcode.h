@@ -806,8 +806,10 @@ public:
 
     T *Append()
     {
-        CONTRACTL {
+        CONTRACTL
+        {
             NOTHROW;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         // The array should grow, if we can't fit one more element into the array.
@@ -818,8 +820,10 @@ public:
 
     T *AppendThrowing()
     {
-        CONTRACTL {
+        CONTRACTL
+        {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         // The array should grow, if we can't fit one more element into the array.
@@ -3448,8 +3452,6 @@ namespace util
 }
 
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
-
-BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip);
 
 namespace UtilCode
 {

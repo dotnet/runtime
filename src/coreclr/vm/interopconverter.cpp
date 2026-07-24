@@ -93,7 +93,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
 
     BOOL        fReleaseWrapper     = false;
     HRESULT     hr                  = E_NOINTERFACE;
-    ComHolderAnyMode<IUnknown> pUnk;
+    ReleaseHolderAnyMode<IUnknown> pUnk;
     size_t      ul                  = 0;
 
     if (*poref == NULL)
@@ -123,7 +123,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
     //  get the pUnk from the ComCallWrapper, otherwise from the RCW
     if ((NULL != pInteropInfo->GetCCW()) || (!pInteropInfo->RCWWasUsed()))
     {
-        CCWHolder pCCWHold = ComCallWrapper::InlineGetWrapper(poref);
+        CCWHolder pCCWHold{ ComCallWrapper::InlineGetWrapper(poref) };
 
         GetComIPFromCCW::flags flags = GetComIPFromCCW::None;
         if (!bEnableCustomizedQueryInterface)   { flags |= GetComIPFromCCW::SuppressCustomizedQueryInterface; }
@@ -224,7 +224,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
 
     if ( (NULL != pInteropInfo->GetCCW()) || (!pInteropInfo->RCWWasUsed()) )
     {
-        CCWHolder pCCWHold = ComCallWrapper::InlineGetWrapper(poref);
+        CCWHolder pCCWHold{ ComCallWrapper::InlineGetWrapper(poref) };
 
         // If the user requested IDispatch, then check for IDispatch first.
         if (ReqIpType & ComIpType_Dispatch)
@@ -342,12 +342,12 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
 
     if ((NULL != pInteropInfo->GetCCW()) || (!pInteropInfo->RCWWasUsed()))
     {
-        CCWHolder pCCWHold = ComCallWrapper::InlineGetWrapper(poref);
+        CCWHolder pCCWHold{ ComCallWrapper::InlineGetWrapper(poref) };
         pUnk = ComCallWrapper::GetComIPFromCCW(pCCWHold, iid, NULL);
     }
     else
     {
-        ComHolderAnyMode<IUnknown> pUnkHolder;
+        ReleaseHolderAnyMode<IUnknown> pUnkHolder;
 
         RCWHolder pRCW(GetThread());
         RCWPROTECT_BEGIN(pRCW, pBlock);
@@ -407,7 +407,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
     Thread * pThread = GetThread();
 
     IUnknown* pOuter = pUnk;
-    ComHolderAnyMode<IUnknown> pAutoOuterUnk;
+    ReleaseHolderAnyMode<IUnknown> pAutoOuterUnk;
 
     if (pUnk != NULL)
     {

@@ -5315,7 +5315,7 @@ namespace
                             {
                                 pStubMD = ilStubCreatorHelper.GetStubMD();
 
-                                pEntry.Assign(ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock"));
+                                pEntry = ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock");
                                 pEntryLock.Assign(pEntry, FALSE);
 
                                 // We have the entry lock we need to use, so we can release the global lock.
