@@ -553,11 +553,11 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 || inBuffer is not null
                 || outBufferSize != sizeof(uint))
             {
-                throw new ArgumentException();
+                throw new ArgumentException("Invalid request parameters.");
             }
 
             if (outBuffer is null)
-                throw new NullReferenceException();
+                throw new NullReferenceException("The output buffer is null.");
 
             *(uint*)outBuffer = 1;
         }
