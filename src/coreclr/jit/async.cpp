@@ -831,10 +831,9 @@ PhaseStatus AsyncTransformation::Run()
     // create the resumption switch.
     CreateResumptionSwitch();
 
-    for (int i = 0; i < continuationMemberOffsets.Height(); i++)
+    for (GenTree* node : continuationMemberOffsets.BottomUpOrder())
     {
-        GenTree* node        = continuationMemberOffsets.Bottom(i);
-        size_t   memberIndex = node->AsVal()->gtVal1;
+        size_t memberIndex = node->AsVal()->gtVal1;
         assert(memberIndex < continuationLayout->ContinuationMemberOffsets.size());
         assert(continuationLayout->ContinuationMemberOffsets[memberIndex] != UINT_MAX);
         ssize_t offset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) +
@@ -1465,14 +1464,12 @@ void ContinuationLayout::Dump(int indent)
 
     for (size_t i = 0; i < ContinuationMemberOffsets.size(); i++)
     {
-        if (ContinuationMemberOffsets[i] == UINT_MAX)
+        if (ContinuationMemberOffsets[i] != UINT_MAX)
         {
-            continue;
+            printf("%*s  +%03u ", indent, "", ContinuationMemberOffsets[i]);
+            JitTls::GetCompiler()->GetContinuationMember(i).Print();
+            printf("\n");
         }
-
-        printf("%*s  +%03u ", indent, "", ContinuationMemberOffsets[i]);
-        JitTls::GetCompiler()->GetContinuationMember(i).Print();
-        printf("\n");
     }
 
     for (const LiveLocalInfo& inf : Locals)
@@ -1530,11 +1527,7 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
     ContinuationLayout* layout = new (m_compiler, CMK_Async) ContinuationLayout(m_compiler);
     layout->Locals.reserve(m_locals.size());
     size_t continuationMemberCount = m_compiler->GetContinuationMemberCount();
-    layout->ContinuationMemberOffsets.reserve(continuationMemberCount);
-    for (size_t i = 0; i < continuationMemberCount; i++)
-    {
-        layout->ContinuationMemberOffsets.push_back(UINT_MAX);
-    }
+    layout->ContinuationMemberOffsets.resize(continuationMemberCount, UINT_MAX);
 
     for (unsigned lclNum : m_locals)
     {
@@ -1648,9 +1641,9 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
         ret.Offset   = allocLayout(ret.HeapAlignment(), ret.Size);
     }
 
-    for (int i = 0; i < continuationMemberOffsets.Height(); i++)
+    for (GenTree* memberOffsetNode : continuationMemberOffsets.BottomUpOrder())
     {
-        size_t memberIndex = continuationMemberOffsets.Bottom(i)->AsVal()->gtVal1;
+        size_t memberIndex = memberOffsetNode->AsVal()->gtVal1;
         assert(memberIndex < continuationMemberCount);
         if (layout->ContinuationMemberOffsets[memberIndex] != UINT_MAX)
         {
@@ -1716,13 +1709,11 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
 
     for (size_t i = 0; i < layout->ContinuationMemberOffsets.size(); i++)
     {
-        if (layout->ContinuationMemberOffsets[i] == UINT_MAX)
+        if (layout->ContinuationMemberOffsets[i] != UINT_MAX)
         {
-            continue;
+            bitmapBuilder.SetType(layout->ContinuationMemberOffsets[i], TYP_STRUCT,
+                                  m_compiler->GetContinuationMember(i).GetCustomAwaiterLayout());
         }
-
-        bitmapBuilder.SetType(layout->ContinuationMemberOffsets[i], TYP_STRUCT,
-                              m_compiler->GetContinuationMember(i).GetCustomAwaiterLayout());
     }
 
 #ifdef DEBUG
