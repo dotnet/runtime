@@ -105,9 +105,38 @@ namespace Microsoft.Extensions.Hosting.Internal
                     }
                     else
                     {
+                        // Run every registered async startup validator so multiple IAsyncStartupValidator instances
+                        // all participate, aggregating their validation failures.
+                        List<Exception>? validationFailures = null;
                         foreach (IAsyncStartupValidator asyncValidator in Services.GetServices<IAsyncStartupValidator>())
                         {
-                            await asyncValidator.ValidateAsync(cancellationToken).ConfigureAwait(false);
+                            try
+                            {
+                                await asyncValidator.ValidateAsync(cancellationToken).ConfigureAwait(false);
+                            }
+                            catch (OptionsValidationException ex)
+                            {
+                                (validationFailures ??= new()).Add(ex);
+                            }
+                            catch (AggregateException ex) when (ex.InnerExceptions.All(static e => e is OptionsValidationException))
+                            {
+                                // A validator (e.g. the built-in one) may itself aggregate multiple failing
+                                // option instances; flatten so every failure is reported together.
+                                (validationFailures ??= new()).AddRange(ex.InnerExceptions);
+                            }
+                        }
+
+                        if (validationFailures is not null)
+                        {
+                            if (validationFailures.Count == 1)
+                            {
+                                ExceptionDispatchInfo.Capture(validationFailures[0]).Throw();
+                            }
+
+                            if (validationFailures.Count > 1)
+                            {
+                                throw new AggregateException(validationFailures);
+                            }
                         }
                     }
 
