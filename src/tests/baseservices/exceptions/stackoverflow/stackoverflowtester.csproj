@@ -2,6 +2,8 @@
   <PropertyGroup>
     <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible, SuperPMICollectIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- TODO: Re-enable when browser OOP host actions can run crashing child processes and import their results.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <Optimize>false</Optimize>
     <!-- Fails in many GCStress jobs. https://github.com/dotnet/runtime/issues/46279 -->

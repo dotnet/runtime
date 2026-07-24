@@ -2,6 +2,8 @@
   <PropertyGroup>
     <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible, UnloadabilityIncompatible, NativeAotIncompatible, CLRTestEnvironmentVariable -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- TODO: Re-enable when browser diagnostics exposes the required interpreter or JIT debug maps.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
