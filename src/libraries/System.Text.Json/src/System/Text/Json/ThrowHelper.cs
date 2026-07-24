@@ -384,7 +384,7 @@ namespace System.Text.Json
             return new JsonReaderException(message, lineNumber, bytePositionInLine);
         }
 
-        private static bool IsPrintable(byte value) => value >= 0x20 && value < 0x7F;
+        private static bool IsPrintable(byte value) => value is >= 0x20 and < 0x7F;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static string GetPrintableString(byte value)
@@ -612,7 +612,7 @@ namespace System.Text.Json
             switch (resource)
             {
                 case ExceptionResource.MismatchedObjectArray:
-                    Debug.Assert(token == JsonConstants.CloseBracket || token == JsonConstants.CloseBrace);
+                    Debug.Assert(token is JsonConstants.CloseBracket or JsonConstants.CloseBrace);
                     message = (tokenType == JsonTokenType.PropertyName) ?
                         SR.Format(SR.CannotWriteEndAfterProperty, (char)token) :
                         SR.Format(SR.MismatchedObjectArray, (char)token);

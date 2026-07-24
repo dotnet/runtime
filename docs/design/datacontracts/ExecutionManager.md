@@ -7,11 +7,10 @@ managed method corresponding to that address.
 ## APIs of contract
 
 ```csharp
-struct CodeBlockHandle
+public struct CodeBlockHandle
 {
     public readonly TargetPointer Address;
-    // no public constructor
-    internal CodeBlockHandle(TargetPointer address) => Address = address;
+    public CodeBlockHandle(TargetPointer address) => Address = address;
 }
 ```
 
@@ -22,9 +21,9 @@ struct CodeBlockHandle
     // Get the method descriptor corresponding to the given code block
     TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle);
     // Get the instruction pointer address of the start of the code block
-    TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle);
+    TargetPointer GetStartAddress(CodeBlockHandle codeInfoHandle);
     // Get the instruction pointer address of the start of the funclet containing the code block
-    TargetCodePointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle);
+    TargetPointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle);
     // Get the method region info (hot and cold code size, and cold code start address)
     void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
     // Attempt to get the method desc of an entrypoint
@@ -144,7 +143,8 @@ public enum CodeKind : uint
     MethodCallThunk = 10,
     Jitted = 11,
     ReadyToRun = 12,
-    Interpreter = 13
+    Interpreter = 13,
+    ThePreStub = 14
 }
 ```
 
@@ -155,119 +155,125 @@ The [range section map](#rangesectionmap) is used to partition the address space
 
 Within a range section fragment, a [nibble map](#nibblemap) structure is used to map arbitrary IP addresses back to the start of the method (and to the code header which immediately preceeeds the entrypoint to the code).
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `RangeSectionMap` | `TopLevelData` | Pointer to the outermost RangeSection |
-| `RangeSectionFragment`| `RangeBegin` | Begin address of the fragment |
-| `RangeSectionFragment`| `RangeEndOpen` | End address of the fragment |
-| `RangeSectionFragment`| `RangeSection` | Pointer to the corresponding `RangeSection` |
-| `RangeSectionFragment`| `Next` | Tagged pointer to the next fragment (bit 0 is the collectible flag; must be stripped to obtain the address) |
-| `RangeSection` | `RangeBegin` | Begin address of the range section |
-| `RangeSection` | `RangeEndOpen` | End address of the range section |
-| `RangeSection` | `NextForDelete` | Pointer to next range section for deletion |
-| `RangeSection` | `JitManager` | Pointer to the JIT manager |
-| `RangeSection` | `Flags` | Flags for the range section |
-| `RangeSection` | `HeapList` | Pointer to the heap list |
-| `RangeSection` | `R2RModule` | ReadyToRun module |
-| `RangeSection` | `RangeList` | Pointer to the `CodeRangeMapRangeList` associated with this range section |
-| `CodeRangeMapRangeList` | `RangeListType` | Integer identifying the stub code block kind for this range list |
-| `CodeHeapListNode` | `Next` | Next node |
-| `CodeHeapListNode` | `StartAddress` | Start address of the used portion of the code heap |
-| `CodeHeapListNode` | `EndAddress` | End address of the used portion of the code heap |
-| `CodeHeapListNode` | `MapBase` | Start of the map - start address rounded down based on OS page size |
-| `CodeHeapListNode` | `HeaderMap` | Bit array used to find the start of methods - relative to `MapBase` |
-| `CodeHeapListNode` | `Heap` | Pointer to the `CodeHeap` object managed by this node |
-| `CodeHeap` | `HeapType` | `uint8` discriminant identifying the concrete heap type |
-| `LoaderCodeHeap` | `LoaderHeap` | Offset of the embedded `ExplicitControlLoaderHeap` within the `LoaderCodeHeap` object; adding this to the object's base address yields the loader heap address |
-| `HostCodeHeap` | `BaseAddress` | Pointer to the base of the committed memory region |
-| `HostCodeHeap` | `CurrentAddress` | Pointer to the last available committed byte in the region |
-| `EEJitManager` | `StoreRichDebugInfo` | Boolean value determining if debug info associated with the JitManager contains rich info. |
-| `EEJitManager` | `AllCodeHeaps` | Pointer to the head of the linked list of all code heaps managed by the EEJitManager. |
-| `RealCodeHeader` | `MethodDesc` | Pointer to the corresponding `MethodDesc` |
-| `RealCodeHeader` | `NumUnwindInfos` | Number of Unwind Infos |
-| `RealCodeHeader` | `UnwindInfos` | Start address of Unwind Infos |
-| `RealCodeHeader` | `DebugInfo` | Pointer to the DebugInfo |
-| `RealCodeHeader` | `GCInfo` | Pointer to the GCInfo encoding |
-| `RealCodeHeader` | `EHInfo` | Pointer to the `EE_ILEXCEPTION` containing exception clauses |
-| `InterpreterRealCodeHeader` | `MethodDesc` | Pointer to the corresponding `MethodDesc` for interpreter code |
-| `InterpreterRealCodeHeader` | `DebugInfo` | Pointer to the DebugInfo for interpreter code |
-| `InterpreterRealCodeHeader` | `GCInfo` | Pointer to the GCInfo encoding for interpreter code |
-| `InterpreterRealCodeHeader` | `JitEHInfo` | Pointer to the `EE_ILEXCEPTION` containing exception clauses for interpreter code |
-| `Module` | `ReadyToRunInfo` | Pointer to the `ReadyToRunInfo` for the module |
-| `ReadyToRunInfo` | `ReadyToRunHeader` | Pointer to the ReadyToRunHeader |
-| `ReadyToRunInfo` | `CompositeInfo` | Pointer to composite R2R info - or itself for non-composite |
-| `ReadyToRunInfo` | `NumRuntimeFunctions` | Number of `RuntimeFunctions` |
-| `ReadyToRunInfo` | `RuntimeFunctions` | Pointer to an array of `RuntimeFunctions` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontyperuntimefunctions)|
-| `ReadyToRunInfo` | `NumHotColdMap` | Number of entries in the `HotColdMap` |
-| `ReadyToRunInfo` | `HotColdMap` | Pointer to an array of 32-bit integers - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
-| `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | Pointer to an `ImageDataDirectory` for the delay load method call thunks |
-| `ReadyToRunInfo` | `DebugInfo` | Pointer to an `ImageDataDirectory` for the debug info |
-| `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
-| `ReadyToRunInfo` | `LoadedImageBase` | Base address of the loaded R2R image |
-| `ReadyToRunInfo` | `Composite` | Pointer to the `ReadyToRunCoreInfo` used for section lookup |
-| `ReadyToRunInfo` | `ExceptionInfoSection` | Pointer to the `ImageDataDirectory` for R2R exception info section |
-| `ReadyToRunHeader` | `MajorVersion` | ReadyToRun major version |
-| `ReadyToRunHeader` | `MinorVersion` | ReadyToRun minor version |
-| `ImageDataDirectory` | `VirtualAddress` | Virtual address of the image data directory |
-| `ImageDataDirectory` | `Size` | Size of the data |
-| `RuntimeFunction` | `BeginAddress` | Begin address of the function. On ARM32, bit 0 (the Thumb bit) is set. |
-| `RuntimeFunction` | `EndAddress` | End address of the function. Only exists on some platforms |
-| `RuntimeFunction` | `UnwindData` | Pointer to the unwind info for the function |
-| `HashMap` | `Buckets` | Pointer to the buckets of a `HashMap` |
-| `Bucket` | `Keys` | Array of keys of `HashMapSlotsPerBucket` length |
-| `Bucket` | `Values` | Array of values of `HashMapSlotsPerBucket` length |
-| `UnwindInfo` | `FunctionLength` | Length of the associated function in bytes. Only exists on some platforms |
-| `PortableEntryPoint` | `MethodDesc` | Method desc of portable entrypoint (only defined if `FeaturePortableEntrypoints` is enabled) |
-| `EEILException` | `Clauses` | Start address of the inline array of `EE_ILEXCEPTION_CLAUSE` entries |
-| `EEExceptionClause` | `Flags` | Exception clause flags (`COR_ILEXCEPTION_CLAUSE_*` bit flags) |
-| `EEExceptionClause` | `TryStartPC` | Native offset of the start of the try block |
-| `EEExceptionClause` | `TryEndPC` | Native offset of the end of the try block |
-| `EEExceptionClause` | `HandlerStartPC` | Native offset of the start of the handler |
-| `EEExceptionClause` | `HandlerEndPC` | Native offset of the end of the handler |
-| `EEExceptionClause` | `TypeHandle` | Union field: TypeHandle (cached), ClassToken, or FilterOffset |
-| `R2RExceptionClause` | `Flags` | Exception clause flags |
-| `R2RExceptionClause` | `TryStartPC` | Native offset of the start of the try block |
-| `R2RExceptionClause` | `TryEndPC` | Native offset of the end of the try block |
-| `R2RExceptionClause` | `HandlerStartPC` | Native offset of the start of the handler |
-| `R2RExceptionClause` | `HandlerEndPC` | Native offset of the end of the handler |
-| `R2RExceptionClause` | `ClassToken` | Union field: ClassToken or FilterOffset |
-| `ReadyToRunCoreInfo` | `Header` | Pointer to the `READYTORUN_CORE_HEADER` |
-| `ReadyToRunCoreHeader` | `Flags` | ReadyToRun flags |
-| `ReadyToRunCoreHeader` | `NumberOfSections` | Number of sections following the header |
-| `ReadyToRunSection` | `Type` | Section type (`ReadyToRunSectionType`) |
-| `ReadyToRunSection` | `Section` | `IMAGE_DATA_DIRECTORY` for the section data |
-| `ExceptionLookupTableEntry` | `MethodStartRVA` | RVA of the method start |
-| `ExceptionLookupTableEntry` | `ExceptionInfoRVA` | RVA of the exception clause data |
+<!-- BEGIN GENERATED: usage contract=ExecutionManager version=c1 -->
+### Data descriptors used
 
-Global variables used:
-| Global Name | Type | Purpose |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `Bucket` | *(type size)* | `uint32` | Size of a hash map bucket in bytes |
+| `Bucket` | `Keys` | `pointer` | Array of keys of `HashMapSlotsPerBucket` length |
+| `Bucket` | `Values` | `pointer` | Array of values of `HashMapSlotsPerBucket` length |
+| `CodeHeap` | `HeapType` | `uint8` | `uint8` discriminant identifying the concrete heap type |
+| `CodeHeapListNode` | `EndAddress` | `pointer` | End address of the used portion of the code heap |
+| `CodeHeapListNode` | `HeaderMap` | `pointer` | Bit array used to find the start of methods - relative to `MapBase` |
+| `CodeHeapListNode` | `Heap` | `pointer` | Pointer to the `CodeHeap` object managed by this node |
+| `CodeHeapListNode` | `MapBase` | `pointer` | Start of the map - start address rounded down based on OS page size |
+| `CodeHeapListNode` | `Next` | `pointer` | Next node |
+| `CodeHeapListNode` | `StartAddress` | `pointer` | Start address of the used portion of the code heap |
+| `CodeRangeMapRangeList` | `RangeListType` | `int32` | Integer identifying the stub code block kind for this range list |
+| `EEExceptionClause` | *(type size)* | `uint32` | Size of an exception clause in bytes |
+| `EEExceptionClause` | `Flags` | `uint32` | Exception clause flags (`COR_ILEXCEPTION_CLAUSE_*` bit flags) |
+| `EEExceptionClause` | `HandlerEndPC` | `uint32` | Native offset of the end of the handler |
+| `EEExceptionClause` | `HandlerStartPC` | `uint32` | Native offset of the start of the handler |
+| `EEExceptionClause` | `TryEndPC` | `uint32` | Native offset of the end of the try block |
+| `EEExceptionClause` | `TryStartPC` | `uint32` | Native offset of the start of the try block |
+| `EEExceptionClause` | `TypeHandle` | `nuint` | Union field: TypeHandle (cached), ClassToken, or FilterOffset |
+| `EEILException` | `Clauses` | `pointer` | Start address of the inline array of `EE_ILEXCEPTION_CLAUSE` entries |
+| `EEJitManager` | `AllCodeHeaps` | `pointer` | Pointer to the head of the linked list of all code heaps managed by the EEJitManager. |
+| `EEJitManager` | `StoreRichDebugInfo` | `uint8` | Boolean value determining if debug info associated with the JitManager contains rich info. |
+| `ExceptionLookupTableEntry` | *(type size)* | `uint32` | Size of an exception lookup table entry in bytes |
+| `ExceptionLookupTableEntry` | `ExceptionInfoRVA` | `uint32` | RVA of the exception clause data |
+| `ExceptionLookupTableEntry` | `MethodStartRVA` | `uint32` | RVA of the method start |
+| `HashMap` | `Buckets` | `pointer` | Pointer to the buckets of a `HashMap` |
+| `HostCodeHeap` | `BaseAddress` | `pointer` | Pointer to the base of the committed memory region |
+| `HostCodeHeap` | `CurrentAddress` | `pointer` | Pointer to the last available committed byte in the region |
+| `ImageDataDirectory` | `Size` | `uint32` | Size of the data |
+| `ImageDataDirectory` | `VirtualAddress` | `uint32` | Virtual address of the image data directory |
+| `InterpreterRealCodeHeader` | `DebugInfo` | `pointer` | Pointer to the DebugInfo for interpreter code |
+| `InterpreterRealCodeHeader` | `GCInfo` | `pointer` | Pointer to the GCInfo encoding for interpreter code |
+| `InterpreterRealCodeHeader` | `JitEHInfo` | `pointer` | Pointer to the `EE_ILEXCEPTION` containing exception clauses for interpreter code |
+| `InterpreterRealCodeHeader` | `MethodDesc` | `pointer` | Pointer to the corresponding `MethodDesc` for interpreter code |
+| `LoaderCodeHeap` | `LoaderHeap` | `pointer` | Offset of the embedded `ExplicitControlLoaderHeap` within the `LoaderCodeHeap` object; adding this to the object's base address yields the loader heap address |
+| `Module` | `ReadyToRunInfo` | `pointer` | Pointer to the module's ReadyToRun information |
+| `PortableEntryPoint` | `MethodDesc` | `pointer` | Method desc of portable entrypoint (only defined if `FeaturePortableEntrypoints` is enabled) |
+| `R2RExceptionClause` | *(type size)* | `uint32` | Size of a ReadyToRun exception clause in bytes |
+| `R2RExceptionClause` | `ClassToken` | `uint32` | Union field: ClassToken or FilterOffset |
+| `R2RExceptionClause` | `Flags` | `uint32` | Exception clause flags |
+| `R2RExceptionClause` | `HandlerEndPC` | `uint32` | Native offset of the end of the handler |
+| `R2RExceptionClause` | `HandlerStartPC` | `uint32` | Native offset of the start of the handler |
+| `R2RExceptionClause` | `TryEndPC` | `uint32` | Native offset of the end of the try block |
+| `R2RExceptionClause` | `TryStartPC` | `uint32` | Native offset of the start of the try block |
+| `RangeSection` | `Flags` | `int32` | Flags for the range section |
+| `RangeSection` | `HeapList` | `pointer` | Pointer to the heap list |
+| `RangeSection` | `JitManager` | `pointer` | Pointer to the JIT manager |
+| `RangeSection` | `NextForDelete` | `pointer` | Pointer to next range section for deletion |
+| `RangeSection` | `R2RModule` | `pointer` | ReadyToRun module |
+| `RangeSection` | `RangeBegin` | `pointer` | Begin address of the range section |
+| `RangeSection` | `RangeList` | `pointer` | Pointer to the `CodeRangeMapRangeList` associated with this range section |
+| `RangeSectionFragment` | `Next` | `pointer` | Tagged pointer to the next fragment (bit 0 is the collectible flag; must be stripped to obtain the address) |
+| `RangeSectionFragment` | `RangeBegin` | `pointer` | Begin address of the fragment |
+| `RangeSectionFragment` | `RangeEndOpen` | `pointer` | End address of the fragment |
+| `RangeSectionFragment` | `RangeSection` | `pointer` | Pointer to the corresponding `RangeSection` |
+| `RangeSectionMap` | `TopLevelData` | `pointer` | Pointer to the outermost RangeSection |
+| `ReadyToRunCoreInfo` | `Header` | `pointer` | Pointer to the `READYTORUN_CORE_HEADER` |
+| `ReadyToRunHeader` | `MajorVersion` | `uint16` | ReadyToRun major version |
+| `ReadyToRunInfo` | `Composite` | `pointer` | Pointer to the `ReadyToRunCoreInfo` used for section lookup |
+| `ReadyToRunInfo` | `CompositeInfo` | `pointer` | Pointer to composite R2R info - or itself for non-composite |
+| `ReadyToRunInfo` | `DebugInfoSection` | `pointer` | Pointer to an `ImageDataDirectory` for the debug info |
+| `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | `pointer` | Pointer to an `ImageDataDirectory` for the delay load method call thunks |
+| `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
+| `ReadyToRunInfo` | `HotColdMap` | `pointer` | Pointer to an array of 32-bit integers - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
+| `ReadyToRunInfo` | `ImportSections` | `pointer` | Pointer to the array of ReadyToRun import sections |
+| `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
+| `ReadyToRunInfo` | `NumHotColdMap` | `uint32` | Number of entries in the `HotColdMap` |
+| `ReadyToRunInfo` | `NumImportSections` | `uint32` | Number of ReadyToRun import sections |
+| `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
+| `ReadyToRunInfo` | `ReadyToRunHeader` | `pointer` | Pointer to the ReadyToRunHeader |
+| `ReadyToRunInfo` | `RuntimeFunctions` | `pointer` | Pointer to an array of `RuntimeFunctions` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontyperuntimefunctions) |
+| `ReadyToRunSection` | `Section` | `ImageDataDirectory` | `IMAGE_DATA_DIRECTORY` for the section data |
+| `ReadyToRunSection` | `Type` | `uint32` | Section type (`ReadyToRunSectionType`) |
+| `RealCodeHeader` | `DebugInfo` | `pointer` | Pointer to the DebugInfo |
+| `RealCodeHeader` | `EHInfo` | `pointer` | Pointer to the `EE_ILEXCEPTION` containing exception clauses |
+| `RealCodeHeader` | `GCInfo` | `pointer` | Pointer to the GCInfo encoding |
+| `RealCodeHeader` | `MethodDesc` | `pointer` | Pointer to the corresponding `MethodDesc` |
+| `RealCodeHeader` | `NumUnwindInfos` | `uint32` | Number of Unwind Infos |
+| `RealCodeHeader` | `UnwindInfos` | `pointer` | Start address of Unwind Infos |
+| `RuntimeFunction` | *(type size)* | `uint32` | Size of a runtime function entry in bytes |
+| `RuntimeFunction` | `BeginAddress` | `uint32` | Begin address of the function. On ARM32, bit 0 (the Thumb bit) is set. |
+| `RuntimeFunction` | `EndAddress` | `uint32` | End address of the function. Only exists on some platforms |
+| `RuntimeFunction` | `UnwindData` | `uint32` | Pointer to the unwind info for the function |
+| `UnwindInfo` | `FunctionLength` | `uint32` | Length of the associated function in bytes. Only exists on some platforms |
+
+### Global variables used
+
+| Global | Type | Meaning |
 | --- | --- | --- |
-| `ExecutionManagerCodeRangeMapAddress` | TargetPointer | Pointer to the global RangeSectionMap |
-| `EEJitManagerAddress` | TargetPointer | Address of the global pointer to the EEJitManager instance (read a TargetPointer from this address to obtain the instance address) |
-| `StubCodeBlockLast` | uint8 | Maximum sentinel code header value indentifying a stub code block |
-| `HashMapSlotsPerBucket` | uint32 | Number of slots in each bucket of a `HashMap` |
-| `HashMapValueMask` | uint64 | Bitmask used when storing values in a `HashMap` |
-| `FeatureEHFunclets` | uint8 | 1 if EH funclets are enabled, 0 otherwise |
-| `GCInfoVersion` | uint32 | JITted code GCInfo version |
-| `FeatureOnStackReplacement` | uint8 | 1 if FEATURE_ON_STACK_REPLACEMENT is enabled, 0 otherwise |
-| `FeaturePortableEntrypoints` | uint8 | 1 if FEATURE_PORTABLE_ENTRYPOINTS is enabled, 0 otherwise |
-| `ObjectMethodTable` | TargetPointer | Pointer to the `System.Object` MethodTable, used for catch-all handler detection |
+| `EEJitManagerAddress` | `pointer` | Address of the global pointer to the EEJitManager instance (read a TargetPointer from this address to obtain the instance address) |
+| `ExecutionManagerCodeRangeMapAddress` | `pointer` | Pointer to the global RangeSectionMap |
+| `GCInfoVersion` | `uint32` | JITted code GCInfo version |
+| `HashMapSlotsPerBucket` | `uint32` | Number of slots in each bucket of a `HashMap` |
+| `HashMapValueMask` | `uint64` | Bitmask used when storing values in a `HashMap` |
+| `ObjectMethodTable` | `pointer` | Address of the global variable holding the System.Object MethodTable pointer |
+| `StubCodeBlockLast` | `uint8` | Maximum sentinel code header value indentifying a stub code block |
+| `ThePreStub` | `pointer` | Address of the global containing the prestub entrypoint |
+
+### Contracts used
+
+| Contract Name |
+| --- |
+| `FeatureFlags` |
+| `GCInfo` |
+| `Loader` |
+| `PlatformMetadata` |
+| `PrecodeStubs` |
+| `RuntimeInfo` |
+| `RuntimeTypeSystem` |
+<!-- END GENERATED: usage contract=ExecutionManager version=c1 -->
 
 Contract constants used:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `CachedClass` | `uint` | Bit flag to indicate exception clause contains a cached TypeHandle | `0x10000000` |
-
-Contracts used:
-| Contract Name |
-| --- |
-| `PlatformMetadata` |
-| `GCInfo` |
-| `Loader` |
-| `PrecodeStubs` |
-| `RuntimeInfo` |
-| `RuntimeTypeSystem` |
 
 The bulk of the work is done by the `GetCodeBlockHandle` API that maps a code pointer to information about the containing jitted method. This relies the [range section lookup](#rangesectionmap).
 
@@ -539,7 +545,7 @@ After obtaining the clause array bounds, the common iteration logic classifies e
 
 `IExecutionManager.IsGcSafe` returns whether a given instruction pointer is in managed code at a GC-safe point. First it resolves the instruction pointer to a `CodeBlockHandle` via `GetCodeBlockHandle`; if the pointer is not in managed code, it returns `false`. Otherwise it obtains the code block's relative offset and GC info, decodes the GC info via the `GCInfo` contract, and delegates to `GCInfo` `IsGcSafe`.
 
-`GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), ReadyToRun code, and interpreter code. Returns `Unknown` if the address cannot be classified. We depend on the values of the StubCodeBlockKind enum defined in codeman.h; for non-R2R code, we compare either the RangeList type or the code header against the values of this enum.
+`GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), ReadyToRun code, interpreter code, and the global prestub entrypoint. If no range section owns the address, it compares the address against the exposed prestub entrypoint. Returns `Unknown` if the address cannot be classified. We depend on the values of the StubCodeBlockKind enum defined in codeman.h; for non-R2R code, we compare either the RangeList type or the code header against the values of this enum.
 ### FindReadyToRunModule
 
 `FindReadyToRunModule` locates the ReadyToRun module whose PE image contains the given address. Unlike `GetCodeBlockHandle` (which only matches code regions), this API matches against the full PE image range - including data sections such as import tables. This is used in GCRefMap resolution as it requires finding the module that owns an import section indirection address, which is in the data section rather than the code section.
@@ -699,6 +705,20 @@ Now suppose we do a lookup for address 302 (0x12E)
 Version 2 of the contract depends the new `NibbleMapConstantLookup` algorithm which has O(1) lookup time compared to the `NibbleMapLinearLookup` O(n) lookup time.
 
 With the exception of the nibblemap change, version 2 is identical to version 1.
+
+<!-- BEGIN GENERATED: usage contract=ExecutionManager version=c2 diff-from=c1 -->
+### Data descriptor changes from `c1`
+
+_No changes._
+
+### Global variable changes from `c1`
+
+_No changes._
+
+### Contract dependency changes from `c1`
+
+_No changes._
+<!-- END GENERATED: usage contract=ExecutionManager version=c2 diff-from=c1 -->
 
 ### NibbleMap
 

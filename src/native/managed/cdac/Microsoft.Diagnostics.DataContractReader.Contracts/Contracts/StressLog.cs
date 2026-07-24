@@ -106,10 +106,10 @@ internal sealed class StressLogTraversal(Target target, IStressMessageReader mes
             Data.StressLog stressLog = target.ProcessedData.GetOrAdd<Data.StressLog>(pStressLog.Value);
             moduleTable = stressLog.Modules ?? throw new InvalidOperationException("StressLogModuleTable is not set and StressLog does not contain a ModuleTable offset, but StressLogHasModuleTable is set to 1.");
         }
-        uint moduleEntrySize = target.GetTypeInfo(DataType.StressLogModuleDesc).Size!.Value;
-        uint maxModules = target.ReadGlobal<uint>(Constants.Globals.StressLogMaxModules);
+        uint moduleEntrySize = Data.StressLogModuleDesc.GetSize(target);
+        TargetNUInt maxModules = new(target.ReadGlobalPointer(Constants.Globals.StressLogMaxModules).Value);
         ulong cumulativeOffset = 0;
-        for (uint i = 0; i < maxModules; ++i)
+        for (ulong i = 0; i < maxModules.Value; ++i)
         {
             Data.StressLogModuleDesc module = target.ProcessedData.GetOrAdd<Data.StressLogModuleDesc>(moduleTable.Value + i * moduleEntrySize);
             ulong relativeOffset = formatOffset - cumulativeOffset;
@@ -125,7 +125,7 @@ internal sealed class StressLogTraversal(Target target, IStressMessageReader mes
 
     public IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddress)
     {
-        uint stressMsgHeaderSize = target.GetTypeInfo(DataType.StressMsgHeader).Size!.Value;
+        uint stressMsgHeaderSize = Data.StressMsgHeader.GetSize(target);
         uint pointerSize = (uint)target.PointerSize;
 
         Data.ThreadStressLog threadLog = target.ProcessedData.GetOrAdd<Data.ThreadStressLog>(threadStressLogAddress);
@@ -215,7 +215,7 @@ internal sealed class StressLogTraversal(Target target, IStressMessageReader mes
 
     public bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer)
     {
-        ulong chunkSize = target.GetTypeInfo(DataType.StressLogChunk).Size!.Value;
+        ulong chunkSize = Data.StressLogChunk.GetSize(target);
         StressLogMemory stressLogMemory = target.ProcessedData.GetOrAdd<StressLogMemory>(stressLog.Logs);
         foreach (TargetPointer chunk in stressLogMemory.Chunks)
         {
@@ -230,7 +230,7 @@ internal sealed class StressLogTraversal(Target target, IStressMessageReader mes
 
     public IEnumerable<StressLogMemoryRange> GetStressLogMemoryRanges(StressLogData stressLog)
     {
-        ulong chunkSize = target.GetTypeInfo(DataType.StressLogChunk).Size!.Value;
+        ulong chunkSize = Data.StressLogChunk.GetSize(target);
         StressLogMemory stressLogMemory = target.ProcessedData.GetOrAdd<StressLogMemory>(stressLog.Logs);
         foreach (TargetPointer chunk in stressLogMemory.Chunks)
         {

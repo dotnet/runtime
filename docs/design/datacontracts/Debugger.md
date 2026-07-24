@@ -33,31 +33,41 @@ TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byt
 
 ## Version 1
 
-The contract depends on the following globals
+<!-- BEGIN GENERATED: usage contract=Debugger version=c1 -->
+### Data descriptors used
 
-| Global Name | Type | Description |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `Debugger` | `Defines` | `uint32` | Bitfield of compile-time debugger feature defines |
+| `Debugger` | `GCNotificationEventsEnabled` | `int32` | Whether GC notification events are enabled |
+| `Debugger` | `LeftSideInitialized` | `int32` | Whether the left-side debugger infrastructure is initialized |
+| `Debugger` | `MDStructuresVersion` | `uint32` | Version of metadata data structures |
+| `Debugger` | `RCThread` | `pointer` | Pointer to DebuggerRCThread |
+| `Debugger` | `RgHijackFunction` | `pointer` | Pointer to the runtime's array of hijack-stub address ranges. |
+| `Debugger` | `RSRequestedSync` | `int32` | Sync-at-event request flag |
+| `Debugger` | `SendExceptionsOutsideOfJMC` | `int32` | Exception delivery policy flag |
+| `DebuggerRCThread` | `DCB` | `pointer` | Pointer to DebuggerIPCControlBlock |
+| `MemoryRange` | *(type size)* | `uint32` | Size of the data descriptor layout |
+| `MemoryRange` | `Size` | `nuint` | Size of the range in bytes; the range covers [StartAddress, StartAddress + Size) |
+| `MemoryRange` | `StartAddress` | `pointer` | Inclusive start address of the range |
+
+### Global variables used
+
+| Global | Type | Meaning |
 | --- | --- | --- |
-| `Debugger` | TargetPointer | Address of the pointer to the Debugger instance (`&g_pDebugger`) |
-| `CLRJitAttachState` | TargetPointer | Pointer to the CLR JIT attach state flags |
-| `CORDebuggerControlFlags` | TargetPointer | Pointer to `g_CORDebuggerControlFlags` |
-| `MetadataUpdatesApplied` | TargetPointer | Pointer to the g_metadataUpdatesApplied flag |
-| `MaxHijackFunctions` | uint32 | Number of entries in the hijack function array. |
+| `CLRJitAttachState` | `pointer` | Pointer to the CLR JIT attach state flags |
+| `CORDebuggerControlFlags` | `pointer` | Pointer to g_CORDebuggerControlFlags |
+| `Debugger` | `pointer` | Address of the pointer to the Debugger instance (&g_pDebugger) |
+| `MaxHijackFunctions` | `uint32` | Number of entries in the hijack function array. |
+| `MetadataUpdatesApplied` | `pointer` | Pointer to the g_metadataUpdatesApplied flag |
 
-The contract additionally depends on these data descriptors
+### Contracts used
 
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `Debugger` | `LeftSideInitialized` | Whether the left-side debugger infrastructure is initialized |
-| `Debugger` | `Defines` | Bitfield of compile-time debugger feature defines |
-| `Debugger` | `MDStructuresVersion` | Version of metadata data structures |
-| `Debugger` | `RCThread` | Pointer to `DebuggerRCThread` |
-| `Debugger` | `RSRequestedSync` | Sync-at-event request flag |
-| `Debugger` | `SendExceptionsOutsideOfJMC` | Exception delivery policy flag |
-| `Debugger` | `GCNotificationEventsEnabled` | Whether GC notification events are enabled |
-| `Debugger` | `RgHijackFunction` | Pointer to the runtime's array of hijack-stub address ranges. |
-| `DebuggerRCThread` | `DCB` | Pointer to `DebuggerIPCControlBlock` |
-| `MemoryRange` | `StartAddress` | Inclusive start address of the range |
-| `MemoryRange` | `Size` | Size of the range in bytes; the range covers `[StartAddress, StartAddress + Size)` |
+| Contract Name |
+| --- |
+| `RuntimeInfo` |
+| `Thread` |
+<!-- END GENERATED: usage contract=Debugger version=c1 -->
 
 ### Contract Constants:
 | Name | Type | Purpose | Value |

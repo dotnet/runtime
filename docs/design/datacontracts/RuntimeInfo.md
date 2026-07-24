@@ -61,13 +61,25 @@ uint GetCurrentReaderVersion();
 
 ## Version 1
 
-Global variables used:
-| Global Name | Type | Purpose |
+<!-- BEGIN GENERATED: usage contract=RuntimeInfo version=c1 -->
+### Data descriptors used
+
+_None._
+
+### Global variables used
+
+| Global | Type | Meaning |
 | --- | --- | --- |
-| Architecture | string | Target architecture |
-| OperatingSystem | string | Target operating system |
-| RuntimeFlavor | string | Target runtime flavor |
-| RecommendedReaderVersion | uint32 | Incremented when an update to the latest contracts is recommended |
+| `Architecture` | `string` | Target architecture |
+| `OperatingSystem` | `string` | Target operating system |
+| `RecommendedReaderVersion` | `uint32` | Incremented when an update to the latest contracts is recommended |
+| `RuntimeFlavor` | `string` | Target runtime flavor |
+
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=RuntimeInfo version=c1 -->
+
 
 The contract implementation returns the architecture, operating system, and runtime flavor global
 values parsed as the respective enum case-insensitively. If these globals are not available, the
