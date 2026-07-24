@@ -65,8 +65,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         /// <summary>
         /// Order:
         ///  IHostLifetime.WaitForStartAsync
-        ///  Services.GetService{IStartupValidator}().Validate()
-        ///  Services.GetService{IAsyncStartupValidator}().ValidateAsync()
+        ///  Startup validation: a custom sync IStartupValidator (if any) via Validate(), otherwise every IAsyncStartupValidator via ValidateAsync()
         ///  IHostedLifecycleService.StartingAsync
         ///  IHostedService.Start
         ///  IHostedLifecycleService.StartedAsync
@@ -94,26 +93,27 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 try
                 {
+                    // Run startup validation before resolving hosted services so that invalid configuration
+                    // fails fast and a hosted service reading validated options in its constructor observes
+                    // the startup-validated instance.
+                    IStartupValidator? startupValidator = Services.GetService<IStartupValidator>();
+                    if (startupValidator is not null and not IAsyncStartupValidator)
+                    {
+                        // For back-compatibility, a custom IStartupValidator takes precedence and fully controls
+                        // startup validation, overriding any registered IAsyncStartupValidator instances,
+                        // including the one registered by ValidateOnStart.
+                        startupValidator.Validate();
+                    }
+                    else
+                    {
+                        foreach (IAsyncStartupValidator asyncValidator in Services.GetServices<IAsyncStartupValidator>())
+                        {
+                            await asyncValidator.ValidateAsync(cancellationToken).ConfigureAwait(false);
+                        }
+                    }
+
                     _hostedServices ??= Services.GetRequiredService<IEnumerable<IHostedService>>();
                     _hostedLifecycleServices = GetHostLifecycles(_hostedServices);
-
-                    // Two-stage startup validation:
-                    // Stage 1 (sync): Run IStartupValidator.Validate() — iterates _validators dictionary
-                    //   (or user's custom implementation if registered).
-                    //   If sync validation fails, skip async to avoid expensive I/O on invalid config.
-                    // Stage 2 (async): Run IAsyncStartupValidator.ValidateAsync() — iterates _asyncValidators
-                    //   dictionary (or user's custom implementation if registered).
-                    //
-                    // Each interface is resolved independently via DI. TryAddTransient semantics ensure
-                    // user-registered implementations replace the built-in for each interface separately.
-                    IStartupValidator? validator = Services.GetService<IStartupValidator>();
-                    validator?.Validate();
-
-                    IAsyncStartupValidator? asyncValidator = Services.GetService<IAsyncStartupValidator>();
-                    if (asyncValidator is not null)
-                    {
-                        await asyncValidator.ValidateAsync(cancellationToken).ConfigureAwait(false);
-                    }
                 }
                 catch (Exception ex)
                 {

@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.Options
 {
@@ -18,6 +20,7 @@ namespace Microsoft.Extensions.Options
         private readonly IConfigureOptions<TOptions>[] _setups;
         private readonly IPostConfigureOptions<TOptions>[] _postConfigures;
         private readonly IValidateOptions<TOptions>[] _validations;
+        private readonly bool _hasAsyncValidators;
 
         /// <summary>
         /// Initializes a new instance with the specified options configurations.
@@ -43,7 +46,21 @@ namespace Microsoft.Extensions.Options
             _setups = setups as IConfigureOptions<TOptions>[] ?? new List<IConfigureOptions<TOptions>>(setups).ToArray();
             _postConfigures = postConfigures as IPostConfigureOptions<TOptions>[] ?? new List<IPostConfigureOptions<TOptions>>(postConfigures).ToArray();
             _validations = validations as IValidateOptions<TOptions>[] ?? new List<IValidateOptions<TOptions>>(validations).ToArray();
+
+            foreach (IValidateOptions<TOptions> validation in _validations)
+            {
+                if (validation is IAsyncValidateOptions<TOptions>)
+                {
+                    _hasAsyncValidators = true;
+                    break;
+                }
+            }
         }
+
+        // True when at least one validator registered as IValidateOptions<TOptions> also implements
+        // IAsyncValidateOptions<TOptions>, so a synchronous Create may fail for a genuinely-asynchronous validator.
+        // Used by the options managers to prefer a startup-validated value over re-running synchronous validation.
+        internal bool HasAsyncValidators => _hasAsyncValidators;
 
         /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
@@ -53,6 +70,49 @@ namespace Microsoft.Extensions.Options
         /// <exception cref="OptionsValidationException">One or more <see cref="IValidateOptions{TOptions}"/> return failed <see cref="ValidateOptionsResult"/> when validating the <typeparamref name="TOptions"/> instance created.</exception>
         /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
         public TOptions Create(string name)
+        {
+            TOptions options = CreateAndConfigure(name);
+
+            if (_validations.Length > 0)
+            {
+                List<string>? failures = null;
+                foreach (IValidateOptions<TOptions> validate in _validations)
+                {
+                    CollectFailures(ref failures, validate.Validate(name, options));
+                }
+                ThrowIfValidationFailed(name, failures);
+            }
+
+            return options;
+        }
+
+        /// <summary>
+        /// Creates, configures, and asynchronously validates a <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
+        /// </summary>
+        internal async Task<TOptions> CreateAsync(string name, CancellationToken cancellationToken)
+        {
+            TOptions options = CreateAndConfigure(name);
+
+            if (_validations.Length > 0)
+            {
+                List<string>? failures = null;
+                foreach (IValidateOptions<TOptions> validate in _validations)
+                {
+                    // Dispatch in registration order depending on capability:
+                    // async validators are awaited, all others run synchronously.
+                    ValidateOptionsResult result = validate is IAsyncValidateOptions<TOptions> asyncValidate
+                        ? await asyncValidate.ValidateAsync(name, options, cancellationToken).ConfigureAwait(false)
+                        : validate.Validate(name, options);
+
+                    CollectFailures(ref failures, result);
+                }
+                ThrowIfValidationFailed(name, failures);
+            }
+
+            return options;
+        }
+
+        private TOptions CreateAndConfigure(string name)
         {
             TOptions options = CreateInstance(name);
             foreach (IConfigureOptions<TOptions> setup in _setups)
@@ -70,25 +130,23 @@ namespace Microsoft.Extensions.Options
             {
                 post.PostConfigure(name, options);
             }
-
-            if (_validations.Length > 0)
-            {
-                var failures = new List<string>();
-                foreach (IValidateOptions<TOptions> validate in _validations)
-                {
-                    ValidateOptionsResult result = validate.Validate(name, options);
-                    if (result is not null && result.Failed)
-                    {
-                        failures.AddRange(result.Failures);
-                    }
-                }
-                if (failures.Count > 0)
-                {
-                    throw new OptionsValidationException(name, typeof(TOptions), failures);
-                }
-            }
-
             return options;
+        }
+
+        private static void CollectFailures(ref List<string>? failures, ValidateOptionsResult? result)
+        {
+            if (result is not null && result.Failed)
+            {
+                (failures ??= new List<string>()).AddRange(result.Failures);
+            }
+        }
+
+        private static void ThrowIfValidationFailed(string name, List<string>? failures)
+        {
+            if (failures is { Count: > 0 })
+            {
+                throw new OptionsValidationException(name, typeof(TOptions), failures);
+            }
         }
 
         /// <summary>

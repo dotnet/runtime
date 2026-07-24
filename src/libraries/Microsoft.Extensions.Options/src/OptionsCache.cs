@@ -105,6 +105,31 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
+        /// Adds or replaces the cached options instance for the given name.
+        /// </summary>
+        /// <param name="name">The name of the options instance.</param>
+        /// <param name="options">The options instance to store.</param>
+        internal void AddOrReplace(string? name, TOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+
+            name ??= Options.DefaultName;
+
+            if (GetType() != typeof(OptionsCache<TOptions>))
+            {
+                TryRemove(name);
+                TryAdd(name, options);
+                return;
+            }
+
+            _cache[name] = new Lazy<TOptions>(
+#if !(NET || NETSTANDARD2_1)
+                () =>
+#endif
+                options);
+        }
+
+        /// <summary>
         /// Tries to remove an options instance.
         /// </summary>
         /// <param name="name">The name of the options instance.</param>
