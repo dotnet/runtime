@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
+#include "async.h"
 
 //------------------------------------------------------------------------
 // impGetInstParamArg: compute the hidden instantiation / generic-context argument
@@ -951,6 +952,53 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     }
 
     impPopCallArgs(sig, call->AsCall());
+
+    if (opts.OptimizationEnabled() && ((ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter) ||
+                                       (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter)))
+    {
+        CallArg* awaiterArg = call->AsCall()->gtArgs.GetUserArgByIndex(0);
+        if (varTypeIsStruct(awaiterArg->GetSignatureType()))
+        {
+            CORINFO_LOOKUP   newInstArgLookup;
+            CORINFO_SIG_INFO lookupSig = *sig;
+            if (pResolvedToken->pMethodSpec != nullptr)
+            {
+                lookupSig.pSig  = pResolvedToken->pMethodSpec;
+                lookupSig.cbSig = pResolvedToken->cbMethodSpec;
+                lookupSig.scope = pResolvedToken->tokenScope;
+            }
+            CORINFO_METHOD_HANDLE newMethod = info.compCompHnd->getAwaitAwaiterInContinuationCall(
+                info.compMethodHnd, &lookupSig,
+                ni == NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter, &exactContextHnd,
+                &newInstArgLookup);
+
+            methHnd                       = newMethod;
+            call->AsCall()->gtCallMethHnd = newMethod;
+            callInfo->hMethod             = newMethod;
+            callInfo->methodFlags         = info.compCompHnd->getMethodAttribs(newMethod);
+            info.compCompHnd->getMethodSig(newMethod, &callInfo->sig);
+
+            awaiterArg->SetWellKnownArg(WellKnownArg::AsyncAwaiter);
+            size_t memberIndex =
+                GetContinuationMemberIndex(ContinuationMember::CustomAwaiterOfLayout(awaiterArg->GetSignatureLayout()));
+            GenTree* offset = new (this, GT_CONTINUATION_MEMBER_OFFSET)
+                GenTreeVal(GT_CONTINUATION_MEMBER_OFFSET, TYP_INT, memberIndex);
+            call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(offset));
+
+            if (callInfo->sig.hasTypeArg())
+            {
+                instParam = impLookupToTree(&newInstArgLookup, GTF_ICON_METHOD_HDL, newMethod);
+                if (instParam == nullptr)
+                {
+                    return TYP_UNDEF;
+                }
+            }
+            else
+            {
+                instParam = nullptr;
+            }
+        }
+    }
 
     // Extra args
     if ((instParam != nullptr) || (asyncContinuation != nullptr) || (varArgsCookie != nullptr))

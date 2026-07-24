@@ -4935,6 +4935,7 @@ public:
     CORINFO_CLASS_HANDLE GetSignatureClassHandle() { return m_signatureLayout == nullptr ? NO_CLASS_HANDLE : m_signatureLayout->GetClassHandle(); }
     var_types GetSignatureType() { return m_signatureType; }
     WellKnownArg GetWellKnownArg() { return m_wellKnownArg; }
+    void SetWellKnownArg(WellKnownArg arg) { m_wellKnownArg = arg; }
     // clang-format on
 
     // Get the real argument node, i.e. not a setup or placeholder node.

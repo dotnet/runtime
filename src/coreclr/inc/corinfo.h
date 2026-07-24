@@ -3154,6 +3154,14 @@ public:
     // instantiation argument that must be passed to the await call.
     virtual CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg) = 0;
 
+    virtual CORINFO_METHOD_HANDLE getAwaitAwaiterInContinuationCall(
+        CORINFO_METHOD_HANDLE callerHandle,
+        CORINFO_SIG_INFO* callSig,
+        bool isUnsafe,
+        CORINFO_CONTEXT_HANDLE* contextHandle,
+        CORINFO_LOOKUP* instArg
+    ) = 0;
+
     /*********************************************************************************/
     //
     // Diagnostic methods

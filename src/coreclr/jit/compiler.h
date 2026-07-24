@@ -6240,6 +6240,7 @@ public:
 
     jitstd::vector<ContinuationMember>* m_asyncContinuationMembers = nullptr;
     size_t GetContinuationMemberIndex(const ContinuationMember& member);
+    size_t GetContinuationMemberCount() const;
     const ContinuationMember& GetContinuationMember(size_t index);
 
     PhaseStatus SaveAsyncContexts();

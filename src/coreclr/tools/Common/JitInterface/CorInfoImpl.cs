@@ -3674,6 +3674,62 @@ namespace Internal.JitInterface
             return ObjectToHandle(targetMethod);
         }
 
+        private CORINFO_METHOD_STRUCT_* getAwaitAwaiterInContinuationCall(
+            CORINFO_METHOD_STRUCT_* callerHandle,
+            CORINFO_SIG_INFO* callSig,
+            bool isUnsafe,
+            CORINFO_CONTEXT_STRUCT** contextHandle,
+            ref CORINFO_LOOKUP instArg)
+        {
+            Debug.Assert(callSig->sigInst.methInstCount == 1);
+
+            instArg.lookupKind.needsRuntimeLookup = false;
+            instArg.constLookup.accessType = InfoAccessType.IAT_VALUE;
+            instArg.constLookup.addr = null;
+
+            MethodDesc caller = HandleToObject(callerHandle);
+            TypeDesc awaiterType = HandleToObject(callSig->sigInst.methInst[0]);
+            CompilerTypeSystemContext context = _compilation.TypeSystemContext;
+            DefType asyncHelpers =
+                context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+            TypeDesc signatureVariable = context.GetSignatureVariable(0, method: true);
+            MethodSignature signature = new MethodSignature(
+                MethodSignatureFlags.Static,
+                1,
+                context.GetWellKnownType(WellKnownType.Void),
+                [signatureVariable, context.GetWellKnownType(WellKnownType.Int32)]);
+            MethodDesc result = asyncHelpers
+                .GetKnownMethod(
+                    isUnsafe ? "UnsafeAwaitAwaiterInContinuation"u8 : "AwaitAwaiterInContinuation"u8,
+                    signature)
+                .MakeInstantiatedMethod(awaiterType);
+            MethodDesc targetMethod = result.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            *contextHandle = contextFromMethod(result);
+
+            if (targetMethod.RequiresInstArg())
+            {
+#if READYTORUN
+                instArg.constLookup = CreateConstLookupToSymbol(
+                    _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                        ReadyToRunHelperId.MethodDictionary,
+                        new MethodWithToken(
+                            result,
+                            _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(
+                                result,
+                                allowDynamicallyCreatedReference: true,
+                                throwIfNotFound: true),
+                            constrainedType: null,
+                            unboxing: false,
+                            genericContextObject: caller)));
+#else
+                ComputeLookup(caller != MethodBeingCompiled, result, ReadyToRunHelperId.MethodDictionary, caller,
+                              ref instArg);
+#endif
+            }
+
+            return ObjectToHandle(targetMethod);
+        }
+
         private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
         {
             Debug.Assert(objRefsSize == (dataSize + (nuint)(PointerSize - 1)) / (nuint)PointerSize);

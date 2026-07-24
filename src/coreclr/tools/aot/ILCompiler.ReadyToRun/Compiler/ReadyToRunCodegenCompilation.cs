@@ -1042,6 +1042,7 @@ namespace ILCompiler
             MetadataType taskOfTType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8);
             MetadataType valueTaskOfTType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8);
             TypeDesc methodVar = TypeSystemContext.GetSignatureVariable(0, method: true);
+            TypeDesc intType = TypeSystemContext.GetWellKnownType(WellKnownType.Int32);
             MethodDesc[] requiredMethods =
             [
                 // For CorInfoImpl.getAsyncInfo
@@ -1064,6 +1065,8 @@ namespace ILCompiler
                 asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [valueTaskType])),
                 asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [taskOfTType.MakeInstantiatedType(methodVar)])),
                 asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [valueTaskOfTType.MakeInstantiatedType(methodVar)])),
+                asyncHelpers.GetKnownMethod("AwaitAwaiterInContinuation"u8, new MethodSignature(MethodSignatureFlags.Static, 1, voidType, [methodVar, intType])),
+                asyncHelpers.GetKnownMethod("UnsafeAwaitAwaiterInContinuation"u8, new MethodSignature(MethodSignatureFlags.Static, 1, voidType, [methodVar, intType])),
             ];
             var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);

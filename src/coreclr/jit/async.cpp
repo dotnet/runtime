@@ -48,9 +48,15 @@
 ContinuationMember ContinuationMember::CustomAwaiterOfLayout(ClassLayout* layout)
 {
     ContinuationMember member;
-    member.Type = ContinuationMemberType::CustomAwaiterOfLayout;
+    member.Type                  = ContinuationMemberType::CustomAwaiterOfLayout;
     member.m_customAwaiterLayout = layout;
     return member;
+}
+
+ClassLayout* ContinuationMember::GetCustomAwaiterLayout() const
+{
+    assert(Type == ContinuationMemberType::CustomAwaiterOfLayout);
+    return m_customAwaiterLayout;
 }
 
 bool ContinuationMember::AreCompatible(const ContinuationMember& a, const ContinuationMember& b)
@@ -62,10 +68,10 @@ bool ContinuationMember::AreCompatible(const ContinuationMember& a, const Contin
 
     switch (a.Type)
     {
-    case ContinuationMemberType::CustomAwaiterOfLayout:
-        return ClassLayout::AreCompatible(a.m_customAwaiterLayout, b.m_customAwaiterLayout);
-    default:
-        unreached();
+        case ContinuationMemberType::CustomAwaiterOfLayout:
+            return ClassLayout::AreCompatible(a.m_customAwaiterLayout, b.m_customAwaiterLayout);
+        default:
+            unreached();
     }
 }
 
@@ -74,11 +80,11 @@ void ContinuationMember::Print() const
 {
     switch (Type)
     {
-    case ContinuationMemberType::CustomAwaiterOfLayout:
-        printf("CustomAwaiter<%s>", m_customAwaiterLayout->GetClassName());
-        break;
-    default:
-        unreached();
+        case ContinuationMemberType::CustomAwaiterOfLayout:
+            printf("CustomAwaiter<%s>", m_customAwaiterLayout->GetClassName());
+            break;
+        default:
+            unreached();
     }
 }
 #endif
@@ -104,6 +110,11 @@ size_t Compiler::GetContinuationMemberIndex(const ContinuationMember& member)
 
     m_asyncContinuationMembers->push_back(member);
     return m_asyncContinuationMembers->size() - 1;
+}
+
+size_t Compiler::GetContinuationMemberCount() const
+{
+    return m_asyncContinuationMembers == nullptr ? 0 : m_asyncContinuationMembers->size();
 }
 
 const ContinuationMember& Compiler::GetContinuationMember(size_t index)
@@ -1430,6 +1441,13 @@ void ContinuationLayout::Dump(int indent)
         printf("%*s  +%03u Keep alive object\n", indent, "", KeepAliveOffset);
     }
 
+    for (size_t i = 0; i < ContinuationMemberOffsets.size(); i++)
+    {
+        printf("%*s  +%03u ", indent, "", ContinuationMemberOffsets[i]);
+        JitTls::GetCompiler()->GetContinuationMember(i).Print();
+        printf("\n");
+    }
+
     for (const LiveLocalInfo& inf : Locals)
     {
         printf("%*s  +%03u V%02u: %u bytes\n", indent, "", inf.Offset, inf.LclNum, inf.Size);
@@ -1484,6 +1502,7 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
 {
     ContinuationLayout* layout = new (m_compiler, CMK_Async) ContinuationLayout(m_compiler);
     layout->Locals.reserve(m_locals.size());
+    layout->ContinuationMemberOffsets.reserve(m_compiler->GetContinuationMemberCount());
 
     for (unsigned lclNum : m_locals)
     {
@@ -1574,6 +1593,17 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
         layout->OSRAddressOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
+    for (size_t i = 0; i < m_compiler->GetContinuationMemberCount(); i++)
+    {
+        ClassLayout* memberLayout = m_compiler->GetContinuationMember(i).GetCustomAwaiterLayout();
+        unsigned     alignment =
+            memberLayout->IsCustomLayout()
+                    ? (memberLayout->HasGCPtr() ? TARGET_POINTER_SIZE : 1)
+                    : m_compiler->info.compCompHnd->getClassAlignmentRequirement(memberLayout->GetClassHandle());
+        layout->ContinuationMemberOffsets.push_back(
+            allocLayout(std::min(alignment, (unsigned)TARGET_POINTER_SIZE), memberLayout->GetSize()));
+    }
+
     if (m_needsExecutionContext)
     {
         layout->ExecutionContextOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
@@ -1643,6 +1673,12 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
     for (ReturnInfo& ret : layout->Returns)
     {
         bitmapBuilder.SetType(ret.Offset, ret.Type.ReturnType, ret.Type.ReturnLayout);
+    }
+
+    for (size_t i = 0; i < layout->ContinuationMemberOffsets.size(); i++)
+    {
+        bitmapBuilder.SetType(layout->ContinuationMemberOffsets[i], TYP_STRUCT,
+                              m_compiler->GetContinuationMember(i).GetCustomAwaiterLayout());
     }
 
 #ifdef DEBUG
@@ -1987,7 +2023,7 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
         }
     }
 
-    static const WellKnownArg validateArgs[] = {WellKnownArg::AsyncExecutionContext,
+    static const WellKnownArg validateArgs[] = {WellKnownArg::AsyncAwaiter, WellKnownArg::AsyncExecutionContext,
                                                 WellKnownArg::AsyncSynchronizationContext};
     for (WellKnownArg arg : validateArgs)
     {
@@ -2039,7 +2075,7 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
 //
 void AsyncTransformation::HandleReusedSuspension(BasicBlock* callBlock, GenTreeCall* call)
 {
-    static const WellKnownArg argsToRemove[] = {WellKnownArg::AsyncExecutionContext,
+    static const WellKnownArg argsToRemove[] = {WellKnownArg::AsyncAwaiter, WellKnownArg::AsyncExecutionContext,
                                                 WellKnownArg::AsyncSynchronizationContext};
     for (WellKnownArg wka : argsToRemove)
     {
@@ -2271,8 +2307,73 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeFlags));
 
     FillInDataOnSuspension(layout, subLayout, suspendBB, mutatedSinceResumption, tailSaveSet);
+    StoreAsyncAwaiter(callBlock, call, suspendBB, layout);
 
     FinishContextHandlingAndSuspension(callBlock, call, suspendBB, layout, subLayout);
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::StoreAsyncAwaiter:
+//   Move the pseudo awaiter argument into its reserved continuation member.
+//
+void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
+                                            GenTreeCall*              call,
+                                            BasicBlock*               suspendBB,
+                                            const ContinuationLayout& layout)
+{
+    CallArg* awaiterArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncAwaiter);
+    if (awaiterArg == nullptr)
+    {
+        return;
+    }
+
+    ClassLayout* awaiterLayout = awaiterArg->GetSignatureLayout();
+    assert(awaiterLayout != nullptr);
+    size_t memberIndex =
+        m_compiler->GetContinuationMemberIndex(ContinuationMember::CustomAwaiterOfLayout(awaiterLayout));
+    assert(memberIndex < layout.ContinuationMemberOffsets.size());
+
+    GenTree* awaiter = awaiterArg->GetNode();
+    if (!awaiter->OperIs(GT_LCL_VAR))
+    {
+        LIR::Use use(LIR::AsRange(callBlock), &awaiterArg->NodeRef(), call);
+        use.ReplaceWithLclVar(m_compiler);
+        awaiter = use.Def();
+    }
+
+    LIR::AsRange(callBlock).Remove(awaiter);
+    call->gtArgs.RemoveUnsafe(awaiterArg);
+
+    GenTree* continuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    unsigned offset       = OFFSETOF__CORINFO_Continuation__data + layout.ContinuationMemberOffsets[memberIndex];
+    GenTree* offsetNode   = m_compiler->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
+    GenTree* address      = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, continuation, offsetNode);
+    GenTree* store        = m_compiler->gtNewStoreValueNode(awaiterLayout, address, awaiter, GTF_IND_NONFAULTING);
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::ReplaceContinuationMemberOffsets:
+//   Replace symbolic continuation member offsets with their final constants.
+//
+void AsyncTransformation::ReplaceContinuationMemberOffsets(const ContinuationLayout& layout)
+{
+    for (BasicBlock* block : m_compiler->Blocks())
+    {
+        for (GenTree* node : LIR::AsRange(block))
+        {
+            if (!node->OperIs(GT_CONTINUATION_MEMBER_OFFSET))
+            {
+                continue;
+            }
+
+            size_t memberIndex = node->AsVal()->gtVal1;
+            assert(memberIndex < layout.ContinuationMemberOffsets.size());
+            ssize_t offset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) +
+                             layout.ContinuationMemberOffsets[memberIndex];
+            node->BashToConst(offset, TYP_INT);
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3739,6 +3840,7 @@ void AsyncTransformation::CreateResumptionsAndSuspensions()
         ContinuationLayoutBuilder* sharedLayoutBuilder =
             ContinuationLayoutBuilder::CreateSharedLayout(m_compiler, m_states);
         sharedLayout = sharedLayoutBuilder->Create();
+        ReplaceContinuationMemberOffsets(*sharedLayout);
 
         unsigned numSharedSuspensionsWithContinuationContext    = 0;
         unsigned numSharedSuspensionsWithoutContinuationContext = 0;
@@ -3800,12 +3902,18 @@ void AsyncTransformation::CreateResumptionsAndSuspensions()
         }
     }
 
+    bool replacedContinuationMemberOffsets = sharedLayout != nullptr;
     JITDUMP("Creating suspensions and resumptions for %zu states\n", m_states.size());
     for (const AsyncState& state : m_states)
     {
         JITDUMP("State %u suspend @ " FMT_BB ", resume @ " FMT_BB "\n", state.Number, state.SuspensionBB->bbNum,
                 state.ResumptionBB->bbNum);
         ContinuationLayout* layout = sharedLayout == nullptr ? state.Layout->Create() : sharedLayout;
+        if (!replacedContinuationMemberOffsets)
+        {
+            ReplaceContinuationMemberOffsets(*layout);
+            replacedContinuationMemberOffsets = true;
+        }
         CreateSuspension(state.CallBlock, state.Call, state.SuspensionBB, state.Number, *layout, *state.Layout,
                          state.ResumeReachable, state.MutatedSincePreviousResumption);
         CreateResumption(state.CallBlock, state.Call, state.ResumptionBB, state.CallDefInfo, *layout, *state.Layout);

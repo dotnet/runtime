@@ -1649,6 +1649,7 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
 #endif // HAS_FIXED_REGISTER_SET
 
         case WellKnownArg::StackArrayLocal:
+        case WellKnownArg::AsyncAwaiter:
         case WellKnownArg::AsyncExecutionContext:
         case WellKnownArg::AsyncSynchronizationContext:
             // These are pseudo-args; they are not actual arguments, but we
@@ -14016,6 +14017,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             const ContinuationMember& member = GetContinuationMember(tree->AsVal()->gtVal1);
             member.Print();
             printf("\n");
+            break;
         }
 
         case GT_RET_EXPR:

@@ -255,6 +255,13 @@ struct Agnostic_GetAwaitReturnCallResult
     Agnostic_CORINFO_LOOKUP instArg;
 };
 
+struct Agnostic_GetAwaitAwaiterInContinuationCall
+{
+    DWORDLONG                callerHnd;
+    Agnostic_CORINFO_SIG_INFO callSig;
+    DWORD                    isUnsafe;
+};
+
 struct Agnostic_GetOSRInfo
 {
     DWORD index;

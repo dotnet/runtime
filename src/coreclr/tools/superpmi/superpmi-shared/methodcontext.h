@@ -563,6 +563,20 @@ public:
     void dmpGetAwaitReturnCall(DWORDLONG key, Agnostic_GetAwaitReturnCallResult& value);
     CORINFO_METHOD_HANDLE repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
 
+    void recGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE callerHnd,
+                                              CORINFO_SIG_INFO* callSig,
+                                              bool isUnsafe,
+                                              CORINFO_CONTEXT_HANDLE* contextHandle,
+                                              CORINFO_LOOKUP* instArg,
+                                              CORINFO_METHOD_HANDLE methHnd);
+    void dmpGetAwaitAwaiterInContinuationCall(const Agnostic_GetAwaitAwaiterInContinuationCall& key,
+                                              Agnostic_GetAwaitReturnCallResult& value);
+    CORINFO_METHOD_HANDLE repGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE callerHnd,
+                                                              CORINFO_SIG_INFO* callSig,
+                                                              bool isUnsafe,
+                                                              CORINFO_CONTEXT_HANDLE* contextHandle,
+                                                              CORINFO_LOOKUP* instArg);
+
     void recGetWasmWellKnownGlobals(const CORINFO_WASM_WELLKNOWN_GLOBALS* pBaseGlobals);
     void dmpGetWasmWellKnownGlobals(DWORD key, const Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS& value);
     void repGetWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut);
@@ -1224,6 +1238,7 @@ enum mcPackets
     Packet_GetAwaitReturnCall = 238,
     Packet_GetAddressAlignment = 239,
     Packet_GetWasmWellKnownGlobals = 240,
+    Packet_GetAwaitAwaiterInContinuationCall = 241,
 };
 
 void SetDebugDumpVariables();

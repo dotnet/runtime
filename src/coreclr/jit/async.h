@@ -15,8 +15,9 @@ private:
     ClassLayout* m_customAwaiterLayout;
 
 public:
+    ClassLayout*              GetCustomAwaiterLayout() const;
     static ContinuationMember CustomAwaiterOfLayout(ClassLayout* layout);
-    static bool AreCompatible(const ContinuationMember& a, const ContinuationMember& b);
+    static bool               AreCompatible(const ContinuationMember& a, const ContinuationMember& b);
 };
 
 struct ReturnTypeInfo
@@ -155,11 +156,13 @@ struct ContinuationLayout
     unsigned                      ExecutionContextOffset    = UINT_MAX;
     jitstd::vector<LiveLocalInfo> Locals;
     jitstd::vector<ReturnInfo>    Returns;
+    jitstd::vector<unsigned>      ContinuationMemberOffsets;
     CORINFO_CLASS_HANDLE          ClassHnd = NO_CLASS_HANDLE;
 
     ContinuationLayout(Compiler* comp)
         : Locals(comp->getAllocator(CMK_Async))
         , Returns(comp->getAllocator(CMK_Async))
+        , ContinuationMemberOffsets(comp->getAllocator(CMK_Async))
     {
     }
 
@@ -472,6 +475,11 @@ class AsyncTransformation
                                                                          const ContinuationLayoutBuilder& subLayout,
                                                                          SuspensionContextHelper          helper);
     void                    RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
+    void                    StoreAsyncAwaiter(BasicBlock*               callBlock,
+                                              GenTreeCall*              call,
+                                              BasicBlock*               suspendBB,
+                                              const ContinuationLayout& layout);
+    void                    ReplaceContinuationMemberOffsets(const ContinuationLayout& layout);
     void                    CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                            GenTreeCall*              call,
                                                            const CallDefinitionInfo& callDefInfo,

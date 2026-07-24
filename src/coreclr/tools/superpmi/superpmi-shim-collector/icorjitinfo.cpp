@@ -1396,6 +1396,20 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE
     return result;
 }
 
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitAwaiterInContinuationCall(
+    CORINFO_METHOD_HANDLE callerHandle,
+    CORINFO_SIG_INFO* callSig,
+    bool isUnsafe,
+    CORINFO_CONTEXT_HANDLE* contextHandle,
+    CORINFO_LOOKUP* instArg)
+{
+    mc->cr->AddCall("getAwaitAwaiterInContinuationCall");
+    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAwaitAwaiterInContinuationCall(
+        callerHandle, callSig, isUnsafe, contextHandle, instArg);
+    mc->recGetAwaitAwaiterInContinuationCall(callerHandle, callSig, isUnsafe, contextHandle, instArg, result);
+    return result;
+}
+
 /*********************************************************************************/
 //
 // Diagnostic methods
