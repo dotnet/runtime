@@ -259,7 +259,7 @@ LPCSTR CHECK::AllocateDynamicMessage(const SString &s)
     // Must copy that into our own field.
     size_t len = strlen(pMsg) + 1;
     char * p = new char[len];
-    strcpy(p, pMsg);
+    memcpy(p, pMsg, len);
 
     // But we'll keep counters of how much we're leaking for diagnostic purposes.
     s_cLeakedBytes += len;

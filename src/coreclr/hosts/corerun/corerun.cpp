@@ -474,15 +474,23 @@ static int run(const configuration& config)
         if (!core_libs.empty())
         {
             pal::string_utf8_t core_libs_utf8 = pal::convert_to_utf8(core_libs.c_str());
-            s_core_libs_path = (char*)::malloc(core_libs_utf8.length() + 1);
-            ::strcpy(s_core_libs_path, core_libs_utf8.c_str());
+            size_t len = core_libs_utf8.length();
+            s_core_libs_path = (char*)::malloc(len + 1);
+            if (s_core_libs_path != nullptr)
+            {
+                ::memcpy(s_core_libs_path, core_libs_utf8.c_str(), len + 1);
+            }
         }
 
         if (!core_root.empty())
         {
             pal::string_utf8_t core_root_utf8 = pal::convert_to_utf8(core_root.c_str());
-            s_core_root_path = (char*)::malloc(core_root_utf8.length() + 1);
-            ::strcpy(s_core_root_path, core_root_utf8.c_str());
+            size_t len = core_root_utf8.length();
+            s_core_root_path = (char*)::malloc(len + 1);
+            if (s_core_root_path != nullptr)
+            {
+                ::memcpy(s_core_root_path, core_root_utf8.c_str(), len + 1);
+            }
         }
     }
 

@@ -871,13 +871,14 @@ void PalPrintFatalError(const char* message)
 
 char* PalCopyTCharAsChar(const TCHAR* toCopy)
 {
-    NewArrayHolder<char> copy {new (nothrow) char[strlen(toCopy) + 1]};
+    size_t len = strlen(toCopy) + 1;
+    NewArrayHolder<char> copy {new (nothrow) char[len]};
     if (copy.IsNull())
     {
         return nullptr;
     }
 
-    strcpy(copy, toCopy);
+    memcpy(copy, toCopy, len);
     return copy.Extract();
 }
 
