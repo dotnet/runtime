@@ -103,7 +103,8 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
                     _target,
                     sb,
                     _typeHandle,
-                    TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
+                    TypeNameFormat.FormatNamespace,
+                    formatTypeHandleName: true);
             }
 
             OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, sb.ToString());
