@@ -1230,8 +1230,7 @@ private:
     static int g_cTotalMethodEnter;
 
     static bool BindPatch(DebuggerControllerPatch *patch,
-                          MethodDesc *fd,
-                          CORDB_ADDRESS_TYPE *startAddr);
+                          MethodDesc *fd);
     static bool ApplyPatch(DebuggerControllerPatch *patch);
     static bool UnapplyPatch(DebuggerControllerPatch *patch);
     static bool IsPatched(CORDB_ADDRESS_TYPE *address, BOOL native);
