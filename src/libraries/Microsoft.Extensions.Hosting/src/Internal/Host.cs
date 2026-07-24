@@ -97,11 +97,14 @@ namespace Microsoft.Extensions.Hosting.Internal
                     // fails fast and a hosted service reading validated options in its constructor observes
                     // the startup-validated instance.
                     IStartupValidator? startupValidator = Services.GetService<IStartupValidator>();
-                    if (startupValidator is not null and not IAsyncStartupValidator)
+                    IAsyncStartupValidator[] asyncValidators = Services.GetServices<IAsyncStartupValidator>().ToArray();
+
+                    // For back-compatibility, a custom IStartupValidator takes precedence and fully controls
+                    // startup validation, overriding any registered IAsyncStartupValidator instances,
+                    // including the one registered by ValidateOnStart.
+                    if (startupValidator is not null &&
+                        !asyncValidators.Any(asyncValidator => asyncValidator.GetType() == startupValidator.GetType()))
                     {
-                        // For back-compatibility, a custom IStartupValidator takes precedence and fully controls
-                        // startup validation, overriding any registered IAsyncStartupValidator instances,
-                        // including the one registered by ValidateOnStart.
                         startupValidator.Validate();
                     }
                     else
@@ -109,7 +112,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                         // Run every registered async startup validator so multiple IAsyncStartupValidator instances
                         // all participate, aggregating their validation failures.
                         List<Exception>? validationFailures = null;
-                        foreach (IAsyncStartupValidator asyncValidator in Services.GetServices<IAsyncStartupValidator>())
+                        foreach (IAsyncStartupValidator asyncValidator in asyncValidators)
                         {
                             try
                             {

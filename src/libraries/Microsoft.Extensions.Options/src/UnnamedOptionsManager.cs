@@ -45,11 +45,12 @@ namespace Microsoft.Extensions.Options
 
         private TOptions CreateValue()
         {
-            // For an async-validated type, prefer the value validated during startup (seeded into the shared cache) so a
-            // synchronous access returns the last validated value instead of re-running the throwing synchronous Validate.
-            if (_validatedCache is OptionsCache<TOptions> optionsCache && optionsCache.TryGetValue(Options.DefaultName, out TOptions? validated))
+            // For an async-validated type, read through the shared cache: when startup validation has seeded
+            // the validated instance it is returned as-is, otherwise it is created
+            // For a genuinely asynchronous validator the synchronous Create fails fast with an exception.
+            if (_validatedCache is not null)
             {
-                return validated;
+                return _validatedCache.GetOrAdd(Options.DefaultName, () => _factory.Create(Options.DefaultName));
             }
 
             return _factory.Create(Options.DefaultName);
