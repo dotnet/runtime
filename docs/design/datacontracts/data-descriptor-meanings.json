@@ -840,6 +840,7 @@
     "TearOffAddRef": "Address of Unknown_AddRef; identifies standard CCW interface pointers",
     "TearOffAddRefSimple": "Address of Unknown_AddRefSpecial; identifies SimpleComCallWrapper interface pointers",
     "TearOffAddRefSimpleInner": "Address of Unknown_AddRefInner; identifies inner SimpleComCallWrapper interface pointers",
+    "ThePreStub": "Address of the global containing the prestub entrypoint",
     "ThinlockThreadIdDispenser": "Pointer to the dispenser of thin-lock thread IDs",
     "ThreadStore": "Pointer to the runtime thread store",
     "TotalCpuCount": "Number of available processors",
