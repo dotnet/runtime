@@ -301,6 +301,36 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 
 #endif  // defined(TARGET_LINUX)
 
+int32_t SystemNative_SuppressWakePreemption(void)
+{
+#if defined(TARGET_LINUX)
+    struct sched_param suppressedParameters;
+    suppressedParameters.sched_priority = 0;
+
+    if (sched_setscheduler(0, SCHED_BATCH, &suppressedParameters) != 0)
+    {
+        return errno;
+    }
+#endif
+
+    return 0;
+}
+
+int32_t SystemNative_RestoreWakePreemption(void)
+{
+#if defined(TARGET_LINUX)
+    struct sched_param defaultParameters;
+    defaultParameters.sched_priority = 0;
+
+    if (sched_setscheduler(0, SCHED_OTHER, &defaultParameters) != 0)
+    {
+        return errno;
+    }
+#endif
+
+    return 0;
+}
+
 int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)
 {
     bool result = false;
