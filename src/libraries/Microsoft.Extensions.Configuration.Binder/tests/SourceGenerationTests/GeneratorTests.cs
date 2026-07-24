@@ -542,6 +542,40 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("IReadOnlyList")]
+        [InlineData("IReadOnlyCollection")]
+        [InlineData("IReadOnlySet")]
+        [InlineData("IEnumerable")]
+        public async Task SoleReadOnlyCollectionConstructorParameterIsBindable(string collectionType)
+        {
+            // Regression test: a type whose only member is a non-bindable, read-only collection
+            // constructor parameter (no other bindable property) used to make the generator emit a
+            // call to an Initialize method that was never generated, producing CS0103 at compile time.
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        Options options = config.Get<Options>();
+                    }
+                }
+
+                public record Options({{collectionType}}<string> Values);
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public async Task ComplexReadOnlyListConstructorParameterIsBindable()
         {
