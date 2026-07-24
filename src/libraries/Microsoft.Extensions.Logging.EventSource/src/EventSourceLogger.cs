@@ -295,10 +295,10 @@ namespace Microsoft.Extensions.Logging.EventSource
 
             if (stream.Capacity > MaxCachedBufferSize)
             {
-                // This event grew both the stream and the writer's internal buffer. Shrink the stream
-                // back down (its length must be reset before its capacity can be lowered) and drop the
-                // writer, whose internal buffer has no public API to shrink, so neither is retained at
-                // the larger size on this thread. Both are lazily recreated on the next event.
+                // This event grew the stream capacity and may also have grown the writer's internal buffer.
+                // Shrink the stream back down (its length must be reset before its capacity can be lowered)
+                // and drop the writer, whose internal buffer has no public API to shrink, so neither is
+                // retained at the larger size on this thread. Both are lazily recreated on the next event.
                 stream.SetLength(0);
                 stream.Capacity = MaxCachedBufferSize;
                 writer.Dispose();
