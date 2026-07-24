@@ -13,6 +13,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jitpch.h"
 #include "hwintrinsic.h"
 #include "simd.h"
+#include "async.h"
 
 #ifdef _MSC_VER
 #pragma hdrstop
@@ -14007,6 +14008,15 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_WASM_THROW_REF:
         case GT_WASM_JEXCEPT:
             break;
+
+        case GT_CONTINUATION_MEMBER_OFFSET:
+        {
+            printf(" index=%zu ", tree->AsVal()->gtVal1);
+
+            const ContinuationMember& member = GetContinuationMember(tree->AsVal()->gtVal1);
+            member.Print();
+            printf("\n");
+        }
 
         case GT_RET_EXPR:
         {

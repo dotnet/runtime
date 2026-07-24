@@ -45,6 +45,73 @@
 #include "jitstd/algorithm.h"
 #include "async.h"
 
+ContinuationMember ContinuationMember::CustomAwaiterOfLayout(ClassLayout* layout)
+{
+    ContinuationMember member;
+    member.Type = ContinuationMemberType::CustomAwaiterOfLayout;
+    member.m_customAwaiterLayout = layout;
+    return member;
+}
+
+bool ContinuationMember::AreCompatible(const ContinuationMember& a, const ContinuationMember& b)
+{
+    if (a.Type != b.Type)
+    {
+        return false;
+    }
+
+    switch (a.Type)
+    {
+    case ContinuationMemberType::CustomAwaiterOfLayout:
+        return ClassLayout::AreCompatible(a.m_customAwaiterLayout, b.m_customAwaiterLayout);
+    default:
+        unreached();
+    }
+}
+
+#ifdef DEBUG
+void ContinuationMember::Print() const
+{
+    switch (Type)
+    {
+    case ContinuationMemberType::CustomAwaiterOfLayout:
+        printf("CustomAwaiter<%s>", m_customAwaiterLayout->GetClassName());
+        break;
+    default:
+        unreached();
+    }
+}
+#endif
+
+size_t Compiler::GetContinuationMemberIndex(const ContinuationMember& member)
+{
+    if (m_asyncContinuationMembers == nullptr)
+    {
+        m_asyncContinuationMembers = new (this, CMK_Async) jitstd::vector<ContinuationMember>(getAllocator(CMK_Async));
+    }
+    else
+    {
+        for (size_t i = 0; i < m_asyncContinuationMembers->size(); i++)
+        {
+            const ContinuationMember& existingMember = m_asyncContinuationMembers->at(i);
+
+            if (ContinuationMember::AreCompatible(member, existingMember))
+            {
+                return i;
+            }
+        }
+    }
+
+    m_asyncContinuationMembers->push_back(member);
+    return m_asyncContinuationMembers->size() - 1;
+}
+
+const ContinuationMember& Compiler::GetContinuationMember(size_t index)
+{
+    assert(index < m_asyncContinuationMembers->size());
+    return m_asyncContinuationMembers->at(index);
+}
+
 //------------------------------------------------------------------------
 // Compiler::SaveAsyncContexts:
 //   Insert code in async methods that saves and restores contexts.
