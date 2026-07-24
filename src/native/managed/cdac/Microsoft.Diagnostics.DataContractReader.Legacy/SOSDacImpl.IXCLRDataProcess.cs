@@ -1475,22 +1475,15 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         int hr = HResults.S_FALSE;
         int hrLocal = HResults.S_OK;
         ulong legacyHandle = 0;
-#if DEBUG
-        bool validateWithLegacy = false;
-#endif
+        if (handle is null)
+            return HResults.E_POINTER;
 
         try
         {
-            if (handle is null)
-                throw new ArgumentNullException(nameof(handle));
-
             *handle = 0;
             if (_legacyProcess is not null)
             {
                 hrLocal = _legacyProcess.StartEnumMethodDefinitionsByAddress(address, &legacyHandle);
-#if DEBUG
-                validateWithLegacy = true;
-#endif
             }
 
             ILoader loader = _target.Contracts.Loader;
@@ -1530,7 +1523,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         }
 
 #if DEBUG
-        if (_legacyProcess is not null && validateWithLegacy)
+        if (_legacyProcess is not null)
         {
             Debug.ValidateHResult(hr, hrLocal);
         }
@@ -1658,7 +1651,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             int codeSize = HeaderReaderHelpers.GetCodeSize(_target, ilHeader);
             bool isTinyHeader = headerSize == sizeof(byte);
             uint codeStartOffset = isTinyHeader ? 0 : (uint)headerSize;
-            ClrDataAddress codeStart = new TargetPointer(ilHeader + codeStartOffset).ToClrDataAddress(_target);
+            ClrDataAddress codeStart = (ilHeader + codeStartOffset).ToClrDataAddress(_target);
             if (codeStart <= address && address - codeStart < (uint)codeSize)
             {
                 yield return new MethodDefinitionInfo(
