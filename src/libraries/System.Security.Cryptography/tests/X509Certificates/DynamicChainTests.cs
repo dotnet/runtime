@@ -528,7 +528,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_PermittedTree_Dns()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -544,7 +543,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_ExcludedTree_Dns()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -601,7 +599,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [ConditionalFact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_ExcludedTree_Upn()
         {
             if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)
@@ -639,6 +636,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string encoded = writer.Encode(Convert.ToHexString);
 
             TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
+                if (PlatformDetection.IsAndroid)
+                {
+                    // Android does not enforce UPN (OtherName) name constraints.
+                    Assert.True(result, "chain.Build");
+                    return;
+                }
+
                 Assert.False(result, "chain.Build");
 
                 if (PlatformDetection.IsWindows)
@@ -655,7 +659,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_PermittedTree_Upn()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -688,6 +691,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string encoded = writer.Encode(Convert.ToHexString);
 
             TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
+                if (PlatformDetection.IsAndroid)
+                {
+                    // Android does not enforce UPN (OtherName) name constraints.
+                    Assert.True(result, "chain.Build");
+                    return;
+                }
+
                 Assert.False(result, "chain.Build");
 
                 if (PlatformDetection.IsWindows)
@@ -1488,9 +1498,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
             else if (OperatingSystem.IsAndroid())
             {
-                // Android always validates name constraints as part of building a path
-                // so violations comes back as PartialChain with no elements.
-                flags = X509ChainStatusFlags.PartialChain;
+                // Android always validates name constraints as part of building a path,
+                // but reports DNS violations as InvalidNameConstraints and other unsupported
+                // forms as PartialChain with no elements.
+                flags = flags switch
+                {
+                    X509ChainStatusFlags.HasExcludedNameConstraint or X509ChainStatusFlags.HasNotPermittedNameConstraint =>
+                        X509ChainStatusFlags.InvalidNameConstraints,
+                    _ => X509ChainStatusFlags.PartialChain,
+                };
             }
 
             return flags;
