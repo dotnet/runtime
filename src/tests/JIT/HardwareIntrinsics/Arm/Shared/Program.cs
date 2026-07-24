@@ -25,6 +25,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.LogInformation($"  Sm4:       {Sm4.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  Sve:       {Sve.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  Sve2:      {Sve2.IsSupported}");
+            TestLibrary.TestFramework.LogInformation($"  SveAes:    {SveAes.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  SveSha3:   {SveSha3.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  SveSm4:    {SveSm4.IsSupported}");
             TestLibrary.TestFramework.LogInformation(string.Empty);

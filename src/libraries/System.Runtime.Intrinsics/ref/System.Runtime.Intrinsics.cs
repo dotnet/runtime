@@ -7325,6 +7325,26 @@ namespace System.Runtime.Intrinsics.Arm
     }
     [System.CLSCompliantAttribute(false)]
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public abstract partial class SveAes : System.Runtime.Intrinsics.Arm.ArmBase
+    {
+        internal SveAes() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Numerics.Vector<byte> Decrypt(System.Numerics.Vector<byte> value, System.Numerics.Vector<byte> roundKey) { throw null; }
+        public static System.Numerics.Vector<byte> Encrypt(System.Numerics.Vector<byte> value, System.Numerics.Vector<byte> roundKey) { throw null; }
+        public static System.Numerics.Vector<byte> InverseMixColumns(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<byte> MixColumns(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> PolynomialMultiplyWideningEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ushort> PolynomialMultiplyWideningOdd(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
+        {
+            internal Arm64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public abstract partial class SveSm4 : System.Runtime.Intrinsics.Arm.ArmBase
     {
         internal SveSm4() { }
