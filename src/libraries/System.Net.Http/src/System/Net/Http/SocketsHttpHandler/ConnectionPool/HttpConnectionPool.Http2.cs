@@ -21,8 +21,8 @@ namespace System.Net.Http
         private List<Http2Connection>? _availableHttp2Connections;
         /// <summary>The number of HTTP/2 connections associated with the pool, including in use, available, and pending.</summary>
         private int _associatedHttp2ConnectionCount;
-        /// <summary>Indicates whether an HTTP/2 connection is in the process of being established.</summary>
-        private bool _pendingHttp2Connection;
+        /// <summary>The number of HTTP/2 connections that are in the process of being established.</summary>
+        private int _pendingHttp2Connections;
         /// <summary>Queue of requests waiting for an HTTP/2 connection.</summary>
         private RequestQueue<Http2Connection?> _http2RequestQueue;
 
@@ -142,28 +142,73 @@ namespace System.Net.Http
 
             _http2RequestQueue.PruneCompletedRequestsFromHeadOfQueue(this);
 
-            // Determine if we can and should add a new connection to the pool.
+            // Determine if we can and should add new connections to the pool.
             int availableHttp2ConnectionCount = _availableHttp2Connections?.Count ?? 0;
-            bool willInject = availableHttp2ConnectionCount == 0 &&                         // No available connections
-                !_pendingHttp2Connection &&                                                 // Only allow one pending HTTP2 connection at a time
-                _http2RequestQueue.Count > 0 &&                                             // There are requests left on the queue
-                (_associatedHttp2ConnectionCount == 0 || EnableMultipleHttp2Connections) && // We allow multiple connections, or don't have a connection currently
-                _http2RequestQueue.RequestsWithoutAConnectionAttempt > 0;                   // There are requests we haven't issued a connection attempt for
+
+            int connectionsToInject = 0;
+
+            if (availableHttp2ConnectionCount == 0 &&                       // No available connections
+                _http2RequestQueue.RequestsWithoutAConnectionAttempt > 0)   // There are requests we haven't issued a connection attempt for
+            {
+                if (_associatedHttp2ConnectionCount == 0)
+                {
+                    // This is the first connection.
+                    // We start with just one even if multiple are allowed because we don't yet know the allowed concurrency of the server.
+                    connectionsToInject = 1;
+                }
+                else if (EnableMultipleHttp2Connections)
+                {
+                    uint concurrency = _lastSeenHttp2MaxConcurrentStreams;
+
+                    if (concurrency == 0)
+                    {
+                        // We don't yet know the server's concurrency limit, so only inject one connection at a time for now.
+                        connectionsToInject = 1;
+                    }
+                    else
+                    {
+                        // We have requests pending, and we know how many concurrent streams the server allows.
+                        // Inject enough connections to allow all pending requests to be issued.
+                        connectionsToInject = (int)((_http2RequestQueue.Count + concurrency - 1) / concurrency);
+
+                        // This step may be delayed until something else happened (e.g. a previous connection attempt completed / another request is queued),
+                        // so there can be a slight delay until we start agressively opening many connections in case of an initial burst of requests on a new connection pool.
+                        // This is okay since this is just a heuristic and we'll still be opening at least one extra connection in such cases.
+                    }
+
+                    // Subtract however many connection attempts are already in flight.
+                    // There may be more than we'd need if the requests queue has shrunk since the last time this method was called.
+                    connectionsToInject = Math.Max(0, connectionsToInject - _pendingHttp2Connections);
+
+                    // If RequestsWithoutAConnectionAttempt is low, then the request queue contains requests that have already been processed or canceled.
+                    connectionsToInject = Math.Min(connectionsToInject, _http2RequestQueue.RequestsWithoutAConnectionAttempt);
+
+                    // Don't exceed the maximum number of connections.
+                    connectionsToInject = Math.Min(connectionsToInject, _maxHttpConnections - _associatedHttp2ConnectionCount);
+                }
+            }
 
             if (NetEventSource.Log.IsEnabled())
             {
                 Trace($"Available HTTP/2.0 connections: {availableHttp2ConnectionCount}, " +
-                    $"Pending HTTP/2.0 connection: {_pendingHttp2Connection}, " +
+                    $"Pending HTTP/2.0 connections: {_pendingHttp2Connections}, " +
                     $"Requests in the queue: {_http2RequestQueue.Count}, " +
                     $"Requests without a connection attempt: {_http2RequestQueue.RequestsWithoutAConnectionAttempt}, " +
                     $"Total associated HTTP/2.0 connections: {_associatedHttp2ConnectionCount}, " +
-                    $"Will inject connection: {willInject}.");
+                    $"Last seen MAX_CONCURRENT_STREAMS: {_lastSeenHttp2MaxConcurrentStreams}, " +
+                    $"Connection limit: {_maxHttpConnections}, " +
+                    $"Connections to inject: {connectionsToInject}.");
             }
 
-            if (willInject)
+            Debug.Assert(connectionsToInject >= 0);
+
+            while (connectionsToInject-- > 0)
             {
                 _associatedHttp2ConnectionCount++;
-                _pendingHttp2Connection = true;
+                _pendingHttp2Connections++;
+
+                Debug.Assert(_associatedHttp2ConnectionCount <= _maxHttpConnections);
+                Debug.Assert(_associatedHttp2ConnectionCount >= _pendingHttp2Connections);
 
                 RequestQueue<Http2Connection?>.QueueItem queueItem = _http2RequestQueue.PeekNextRequestForConnectionAttempt();
                 _ = InjectNewHttp2ConnectionAsync(queueItem); // ignore returned task
@@ -278,10 +323,10 @@ namespace System.Net.Http
             lock (SyncObj)
             {
                 Debug.Assert(_associatedHttp2ConnectionCount > 0);
-                Debug.Assert(_pendingHttp2Connection);
+                Debug.Assert(_pendingHttp2Connections > 0);
 
                 _associatedHttp2ConnectionCount--;
-                _pendingHttp2Connection = false;
+                _pendingHttp2Connections--;
 
                 CheckForHttp2ConnectionInjection();
             }
@@ -307,15 +352,15 @@ namespace System.Net.Http
             HttpConnectionWaiter<Http2Connection?>? waiter = null;
             lock (SyncObj)
             {
-                Debug.Assert(_pendingHttp2Connection);
+                Debug.Assert(_pendingHttp2Connections > 0);
                 Debug.Assert(_associatedHttp2ConnectionCount > 0);
 
                 // Server does not support HTTP2. Disable further HTTP2 attempts.
                 _http2Enabled = false;
                 _associatedHttp2ConnectionCount--;
-                _pendingHttp2Connection = false;
+                _pendingHttp2Connections--;
 
-                if (_associatedHttp11ConnectionCount < _maxHttp11Connections)
+                if (_associatedHttp11ConnectionCount < _maxHttpConnections)
                 {
                     _associatedHttp11ConnectionCount++;
                     _pendingHttp11ConnectionCount++;
@@ -409,8 +454,8 @@ namespace System.Net.Http
 
                         if (isNewConnection)
                         {
-                            Debug.Assert(_pendingHttp2Connection);
-                            _pendingHttp2Connection = false;
+                            Debug.Assert(_pendingHttp2Connections > 0);
+                            _pendingHttp2Connections--;
                             isNewConnection = false;
                         }
 
@@ -492,7 +537,8 @@ namespace System.Net.Http
             }
             else
             {
-                // Since we only inject one connection at a time, we may want to inject another now.
+                // We hit the stream limit on an existing connection.
+                // Re-evaluate whether we should inject another one now in case we have many pending requests.
                 lock (SyncObj)
                 {
                     CheckForHttp2ConnectionInjection();
