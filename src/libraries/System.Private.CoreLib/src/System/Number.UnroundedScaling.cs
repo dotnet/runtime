@@ -166,21 +166,22 @@ namespace System
                 int odd;
                 int power;
 
-                // At a normal power of two, the lower neighbor uses the preceding binary
-                // exponent and is half as far away. Its lower midpoint is therefore only
-                // one quarter ulp below f.
-                if (((mantissa & ((1UL << 63) - 1)) == 0) && (exponent > minimumExponent))
+                if (exponent >= minimumExponent)
                 {
-                    power = -Skewed(exponent + zeroBits);
-                    minimum = mantissa - (1UL << (zeroBits - 2));
-                    maximum = mantissa + (1UL << (zeroBits - 1));
-                    odd = (int)((mantissa >> zeroBits) & 1);
-                }
-                // Other normal values have symmetric half-ulp boundaries.
-                else if (exponent >= minimumExponent)
-                {
-                    power = -Log10Pow2(exponent + zeroBits);
-                    minimum = mantissa - (1UL << (zeroBits - 1));
+                    // At a normal power of two, the lower neighbor uses the preceding binary
+                    // exponent and is half as far away. Its lower midpoint is therefore only
+                    // one quarter ulp below f.
+                    bool hasCloserLowerBoundary =
+                        ((mantissa & ((1UL << 63) - 1)) == 0)
+                        && (exponent > minimumExponent);
+
+                    power = hasCloserLowerBoundary
+                        ? -Skewed(exponent + zeroBits)
+                        : -Log10Pow2(exponent + zeroBits);
+
+                    minimum = mantissa
+                        - (1UL << (zeroBits - (hasCloserLowerBoundary ? 2 : 1)));
+
                     maximum = mantissa + (1UL << (zeroBits - 1));
                     odd = (int)((mantissa >> zeroBits) & 1);
                 }
