@@ -3153,6 +3153,22 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_TypeWithAliasedChoiceIdentifier()
+    {
+        var value = new TypeWithAliasedChoiceIdentifier()
+        {
+            Item = 42,
+            ChoiceType = AliasedChoiceType.NumberChoice
+        };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithAliasedChoiceIdentifier xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Number>42</Number></TypeWithAliasedChoiceIdentifier>"));
+
+        Assert.NotNull(actual);
+        Assert.Equal(value.Item, actual.Item);
+        Assert.Equal(value.ChoiceType, actual.ChoiceType);
+    }
+
+    [Fact]
     public static void Xml_XmlIncludedTypesInTypedCollection()
     {
         var value = new List<BaseClass>() {
