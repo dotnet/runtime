@@ -1962,6 +1962,17 @@ namespace ILLink.RoslynAnalyzer.Tests
             await CreateTest(source, fixedSource).RunAsync();
         }
 
+        [Fact]
+        public async Task GeneratedDocumentationMatchesFileLineEndings()
+        {
+            // Written with explicit line feeds: the generated documentation must not introduce carriage returns.
+            var source = "class B\n{\n    protected unsafe B() { }\n}\n\nclass C : B\n{\n    {|CS9362:public C() { }|}\n}\n";
+            var fixedSource = "class B\n{\n    protected unsafe B() { }\n}\n\nclass C : B\n{\n"
+                + "    /// <safety>TODO: Audit</safety>\n    public unsafe C() { }\n}\n";
+
+            await CreateTest(source, fixedSource).RunAsync();
+        }
+
         private static CSharpCodeFixVerifier<DynamicallyAccessedMembersAnalyzer, AddUnsafeContextCodeFixProvider>.Test CreateTest(
             string source,
             string fixedSource) =>

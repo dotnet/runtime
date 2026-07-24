@@ -43,14 +43,6 @@ namespace ILLink.CodeFix
         /// </summary>
         private const int MaxSafeStatementsBetweenMergedRegions = 1;
 
-        private static readonly CSharpParseOptions s_unsafeExpressionParseOptions =
-            new(LanguageVersion.Preview);
-
-        // The code fix compiles against a Roslyn version that predates unsafe expressions but runs inside whichever
-        // compiler the host loaded. Discover the syntax kind at run time and fall back to statement contexts when the
-        // host cannot parse 'unsafe(...)'.
-        private static readonly int s_unsafeExpressionRawKind = GetUnsafeExpressionRawKind();
-
         private static readonly SymbolDisplayFormat s_localTypeDisplayFormat =
             SymbolDisplayFormat.MinimallyQualifiedFormat.WithMiscellaneousOptions(
                 SymbolDisplayFormat.MinimallyQualifiedFormat.MiscellaneousOptions
@@ -334,11 +326,16 @@ namespace ILLink.CodeFix
                 return false;
             }
 
-            (ExpressionSyntax expression, ExpressionSyntax operand) = fix;
+            (ExpressionSyntax expression, ExpressionSyntax operand, ExpressionSyntax template) = fix;
             RegisterFix(
                 context,
                 title,
-                _ => Task.FromResult(ReplaceWithUnsafeExpression(context.Document, root, expression, operand)));
+                _ => Task.FromResult(ReplaceWithUnsafeExpression(
+                    context.Document,
+                    root,
+                    expression,
+                    operand,
+                    template)));
             return true;
         }
 
@@ -441,23 +438,20 @@ namespace ILLink.CodeFix
             return false;
         }
 
-        private static bool SupportsUnsafeExpressions => s_unsafeExpressionRawKind >= 0;
-
-        private static bool IsUnsafeExpression(SyntaxNode node) =>
-            SupportsUnsafeExpressions && node.RawKind == s_unsafeExpressionRawKind;
-
-        private static int GetUnsafeExpressionRawKind()
+        /// <summary>
+        /// Builds the unsafe expression template with the parse options of the document being fixed, so the generated
+        /// syntax matches the language mode the project compiles with. Returns <see langword="null"/> when that mode
+        /// cannot express an unsafe expression, or when the loaded compiler predates the syntax.
+        /// </summary>
+        private static ExpressionSyntax? TryParseUnsafeExpressionTemplate(SyntaxNode node)
         {
-            ExpressionSyntax probe = ParseUnsafeExpression(UnsafeExpressionPlaceholder);
-            return !probe.IsKind(SyntaxKind.IdentifierName) && TryFindPlaceholder(probe) is not null
-                ? probe.RawKind
-                : -1;
+            ExpressionSyntax template = SyntaxFactory.ParseExpression(
+                $"unsafe(/* SAFETY: Audit */ {UnsafeExpressionPlaceholder})",
+                options: node.SyntaxTree.Options as CSharpParseOptions);
+            return !template.ContainsDiagnostics && TryFindPlaceholder(template) is not null
+                ? template
+                : null;
         }
-
-        private static ExpressionSyntax ParseUnsafeExpression(string inner) =>
-            SyntaxFactory.ParseExpression(
-                $"unsafe(/* SAFETY: Audit */ {inner})",
-                options: s_unsafeExpressionParseOptions);
 
         private static IdentifierNameSyntax? TryFindPlaceholder(ExpressionSyntax expression) =>
             expression.DescendantNodesAndSelf()
@@ -468,28 +462,28 @@ namespace ILLink.CodeFix
         /// Builds the expression-level fix, or returns <see langword="null"/> when no semantics-preserving unsafe
         /// expression can be written for the reported operation.
         /// </summary>
-        private static (ExpressionSyntax Expression, ExpressionSyntax Operand)? TryGetUnsafeExpressionFix(
+        private static (ExpressionSyntax Expression, ExpressionSyntax Operand, ExpressionSyntax Template)? TryGetUnsafeExpressionFix(
             SyntaxNode targetNode,
             TextSpan diagnosticSpan,
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
-            if (!SupportsUnsafeExpressions
-                || TryGetUnsafeExpression(targetNode, diagnosticSpan) is not { } expression
-                || !CanUseUnsafeExpression(expression))
+            if (TryGetUnsafeExpression(targetNode, diagnosticSpan) is not { } expression
+                || !CanUseUnsafeExpression(expression)
+                || TryParseUnsafeExpressionTemplate(expression) is not { } template)
             {
                 return null;
             }
 
             // Reaching here from inside an unsafe expression means the compiler does not treat that expression as an
             // unsafe context for this operation, so wrapping it again would only nest without fixing anything.
-            if (expression.AncestorsAndSelf().Any(IsUnsafeExpression))
+            if (expression.AncestorsAndSelf().Any(node => node.RawKind == template.RawKind))
                 return null;
 
             if (TryGetUnsafeExpressionOperand(semanticModel, expression, cancellationToken) is not { } operand)
                 return null;
 
-            return (expression, operand);
+            return (expression, operand, template);
         }
 
         private static ExpressionSyntax? TryGetUnsafeExpression(SyntaxNode targetNode, TextSpan diagnosticSpan) =>
@@ -1190,9 +1184,9 @@ namespace ILLink.CodeFix
             Document document,
             SyntaxNode root,
             ExpressionSyntax expression,
-            ExpressionSyntax operand)
+            ExpressionSyntax operand,
+            ExpressionSyntax template)
         {
-            ExpressionSyntax template = ParseUnsafeExpression(UnsafeExpressionPlaceholder);
             IdentifierNameSyntax placeholder = TryFindPlaceholder(template)!;
             ExpressionSyntax replacement = template
                 .ReplaceNode(placeholder, operand)

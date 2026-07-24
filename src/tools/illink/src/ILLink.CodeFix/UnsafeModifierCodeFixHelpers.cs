@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
+using Microsoft.CodeAnalysis.Text;
 
 namespace ILLink.CodeFix
 {
@@ -166,7 +167,7 @@ namespace ILLink.CodeFix
             {
                 root = root.ReplaceNodes(
                     documentationTargets,
-                    static (_, target) => AddSafetyDocumentation(target));
+                    (_, target) => AddSafetyDocumentation(target, cancellationToken));
             }
 
             SyntaxNode[] annotated = root.GetAnnotatedNodes(s_safetyDocumentationAnnotation).ToArray();
@@ -210,7 +211,7 @@ namespace ILLink.CodeFix
                 ? declaration.Ancestors().OfType<BasePropertyDeclarationSyntax>().FirstOrDefault() ?? declaration
                 : declaration;
 
-        private static SyntaxNode AddSafetyDocumentation(SyntaxNode declaration)
+        private static SyntaxNode AddSafetyDocumentation(SyntaxNode declaration, CancellationToken cancellationToken)
         {
             SyntaxTriviaList leadingTrivia = declaration.GetLeadingTrivia();
             string indentation = leadingTrivia.LastOrDefault(static trivia =>
@@ -218,20 +219,28 @@ namespace ILLink.CodeFix
             SyntaxTriviaList documentation = SyntaxFactory.ParseLeadingTrivia(
                 $"/// <{UnsafeMigrationSyntaxHelpers.SafetyDocumentationElement}>{SafetyDocumentationText}"
                     + $"</{UnsafeMigrationSyntaxHelpers.SafetyDocumentationElement}>"
-                    + $"{GetEndOfLine(declaration)}{indentation}");
+                    + $"{GetEndOfLine(declaration, cancellationToken)}{indentation}");
             return declaration.WithLeadingTrivia(leadingTrivia.AddRange(documentation));
         }
 
         /// <summary>
-        /// Reuses the line ending already present around a declaration so generated documentation matches the file.
+        /// Reuses the line ending the file already uses so generated documentation does not mix line endings.
         /// </summary>
-        private static string GetEndOfLine(SyntaxNode declaration)
+        private static string GetEndOfLine(SyntaxNode declaration, CancellationToken cancellationToken)
         {
             SyntaxTrivia endOfLine = declaration.GetLeadingTrivia()
                 .FirstOrDefault(static trivia => trivia.IsKind(SyntaxKind.EndOfLineTrivia));
-            return endOfLine == default
-                ? SyntaxFactory.CarriageReturnLineFeed.ToFullString()
-                : endOfLine.ToFullString();
+            if (endOfLine != default)
+                return endOfLine.ToFullString();
+
+            SourceText text = declaration.SyntaxTree.GetText(cancellationToken);
+            foreach (TextLine line in text.Lines)
+            {
+                if (line.EndIncludingLineBreak > line.End)
+                    return text.ToString(TextSpan.FromBounds(line.End, line.EndIncludingLineBreak));
+            }
+
+            return SyntaxFactory.CarriageReturnLineFeed.ToFullString();
         }
 
         /// <summary>
@@ -362,3 +371,4 @@ namespace ILLink.CodeFix
     }
 }
 #endif
+
