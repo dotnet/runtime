@@ -280,6 +280,16 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void CopyToOverflowValidation()
+        {
+            ICollection<string> builder = ImmutableHashSet.Create("a").ToBuilder();
+            var array = new string[5];
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => builder.CopyTo(array, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => builder.CopyTo(array, -1));
+        }
+
+        [Fact]
         public void NullHandling()
         {
             ImmutableHashSet<string>.Builder builder = ImmutableHashSet<string>.Empty.ToBuilder();

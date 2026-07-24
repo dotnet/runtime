@@ -298,11 +298,6 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(list, nameof(list));
 
-            if (list.Count == 0 && startIndex == 0)
-            {
-                return -1;
-            }
-
             return list.LastIndexOf(item, startIndex, startIndex + 1, EqualityComparer<T>.Default);
         }
 
