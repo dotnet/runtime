@@ -17,7 +17,7 @@ namespace System.SpanTests
         private static readonly Mutex s_memoryLock = new Mutex();
         private static readonly TimeSpan s_waitTimeout = TimeSpan.FromSeconds(120);
 
-        public static bool TryAllocNative(IntPtr size, out IntPtr memory)
+        public static unsafe bool TryAllocNative(IntPtr size, out IntPtr memory)
         {
             memory = IntPtr.Zero;
 
@@ -26,22 +26,29 @@ namespace System.SpanTests
 
             try
             {
-                memory = Marshal.AllocHGlobal(size);
+                memory = (IntPtr)NativeMemory.Alloc((nuint)size);
             }
             catch (OutOfMemoryException)
             {
                 memory = IntPtr.Zero;
-                s_memoryLock.ReleaseMutex();
+            }
+            finally
+            {
+                // Only a successful allocation keeps the mutex; the matching ReleaseNative frees it.
+                // Any failure (OOM, a null result, or an unexpected throw) must release it here so a
+                // later large allocation doesn't hang waiting on a mutex that will never be freed.
+                if (memory == IntPtr.Zero)
+                    s_memoryLock.ReleaseMutex();
             }
 
             return memory != IntPtr.Zero;
         }
 
-        public static void ReleaseNative(ref IntPtr memory)
+        public static unsafe void ReleaseNative(ref IntPtr memory)
         {
             try
             {
-                Marshal.FreeHGlobal(memory);
+                NativeMemory.Free((void*)memory);
                 memory = IntPtr.Zero;
             }
             finally
