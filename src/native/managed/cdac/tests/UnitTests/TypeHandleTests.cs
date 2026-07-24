@@ -121,6 +121,7 @@ public class TypeHandleTests
         TargetTypeHandle int32Type = new(0x4000);
         TargetTypeHandle nestedType = new(0x5000);
         TargetTypeHandle arrayType = new(0x6000);
+        TargetTypeHandle rankOneArrayType = new(0x7000);
 
         TestRuntimeTypeSystem runtimeTypeSystem = new();
         runtimeTypeSystem.TypeDefTokens[rawNameType] = (uint)MetadataTokens.GetToken(rawNameTypeDef);
@@ -135,6 +136,9 @@ public class TypeHandleTests
         runtimeTypeSystem.ArrayRanks[arrayType] = 2;
         runtimeTypeSystem.ElementTypes[arrayType] = CorElementType.Array;
         runtimeTypeSystem.TypeParameters[arrayType] = int32Type;
+        runtimeTypeSystem.ArrayRanks[rankOneArrayType] = 1;
+        runtimeTypeSystem.ElementTypes[rankOneArrayType] = CorElementType.Array;
+        runtimeTypeSystem.TypeParameters[rankOneArrayType] = int32Type;
 
         TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem, reader);
 
@@ -142,6 +146,7 @@ public class TypeHandleTests
         Assert.Equal("Tests.Container`1[System.Int32]", containerType.GetName(target));
         Assert.Equal("Inner", nestedType.GetName(target));
         Assert.Equal("System.Int32[,]", arrayType.GetName(target));
+        Assert.Equal("System.Int32[*]", rankOneArrayType.GetName(target));
     }
 
     private static TestPlaceholderTarget CreateTarget(
