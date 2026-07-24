@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable and GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- DATAS heap-count adaptation is a CoreCLR Server GC behavior -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <!-- Timing-sensitive probe: its window won't behave under GCStress -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="GetTotalAllocatedBytesServerGC.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Multiple heaps + DATAS heap-count oscillation only happen under Server GC -->
+    <CLRTestEnvironmentVariable Include="DOTNET_gcServer" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_GCDynamicAdaptationMode" Value="1" />
+  </ItemGroup>
+</Project>
