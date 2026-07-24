@@ -22,6 +22,20 @@ public unsafe partial interface ICorDebugDataTarget
     int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, byte* pContext);
 }
 
+[GeneratedComInterface]
+[Guid("A1B8A756-3CB6-4CCB-979F-3DF999673A59")]
+public unsafe partial interface ICorDebugMutableDataTarget : ICorDebugDataTarget
+{
+    [PreserveSig]
+    int WriteVirtual(ulong address, byte* pBuffer, uint bytesRequested);
+
+    [PreserveSig]
+    int SetThreadContext(uint threadId, uint contextSize, byte* pContext);
+
+    [PreserveSig]
+    int ContinueStatusChanged(uint threadId, uint continueStatus);
+}
+
 [StructLayout(LayoutKind.Sequential)]
 public struct COR_TYPEID
 {

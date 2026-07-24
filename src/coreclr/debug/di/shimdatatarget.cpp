@@ -15,6 +15,11 @@
 
 #include "shimpriv.h"
 
+extern "C" bool TryGetSymbol(
+    ICorDebugDataTarget* dataTarget,
+    uint64_t baseAddress,
+    const char* symbolName,
+    uint64_t* symbolAddress);
 
 // Standard impl of IUnknown::QueryInterface
 HRESULT STDMETHODCALLTYPE ShimDataTarget::QueryInterface(
@@ -37,6 +42,14 @@ HRESULT STDMETHODCALLTYPE ShimDataTarget::QueryInterface(
     else if (InterfaceId == IID_ICorDebugDataTarget4)
     {
         *pInterface = static_cast<ICorDebugDataTarget4 *>(this);
+    }
+    else if (InterfaceId == IID_ICLRContractLocator)
+    {
+        *pInterface = static_cast<ICLRContractLocator *>(this);
+    }
+    else if (InterfaceId == IID_ICLRRuntimeLocator)
+    {
+        *pInterface = static_cast<ICLRRuntimeLocator *>(this);
     }
     else
     {
@@ -88,4 +101,41 @@ void ShimDataTarget::HookContinueStatusChanged(FPContinueStatusChanged fpContinu
 {
     m_fpContinueStatusChanged = fpContinueStatusChanged;
     m_pContinueStatusChangedUserData = pUserData;
+}
+
+void ShimDataTarget::SetRuntimeBase(CORDB_ADDRESS runtimeBase)
+{
+    m_runtimeBase = runtimeBase;
+}
+
+HRESULT STDMETHODCALLTYPE ShimDataTarget::GetContractDescriptor(CLRDATA_ADDRESS * contractAddress)
+{
+    if (contractAddress == NULL || m_runtimeBase == 0)
+    {
+        return E_INVALIDARG;
+    }
+
+    uint64_t address = 0;
+    if (!TryGetSymbol(
+            static_cast<ICorDebugDataTarget *>(this),
+            m_runtimeBase,
+            "DotNetRuntimeContractDescriptor",
+            &address))
+    {
+        return E_FAIL;
+    }
+
+    *contractAddress = address;
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE ShimDataTarget::GetRuntimeBase(CLRDATA_ADDRESS * baseAddress)
+{
+    if (baseAddress == NULL || m_runtimeBase == 0)
+    {
+        return E_INVALIDARG;
+    }
+
+    *baseAddress = m_runtimeBase;
+    return S_OK;
 }

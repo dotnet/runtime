@@ -80,6 +80,13 @@ typedef interface ICLRRuntimeLocator ICLRRuntimeLocator;
 #endif 	/* __ICLRRuntimeLocator_FWD_DEFINED__ */
 
 
+#ifndef __ICLRContractLocator_FWD_DEFINED__
+#define __ICLRContractLocator_FWD_DEFINED__
+typedef interface ICLRContractLocator ICLRContractLocator;
+
+#endif 	/* __ICLRContractLocator_FWD_DEFINED__ */
+
+
 #ifndef __ICLRMetadataLocator_FWD_DEFINED__
 #define __ICLRMetadataLocator_FWD_DEFINED__
 typedef interface ICLRMetadataLocator ICLRMetadataLocator;
@@ -146,7 +153,7 @@ extern RPC_IF_HANDLE __MIDL_itf_clrdata_0000_0000_v0_0_s_ifspec;
 #define __ICLRDataTarget_INTERFACE_DEFINED__
 
 /* interface ICLRDataTarget */
-/* [unique][uuid][local][object] */ 
+/* [unique][uuid][local][object] */
 
 
 EXTERN_C const IID IID_ICLRDataTarget;
@@ -922,6 +929,89 @@ EXTERN_C const IID IID_ICLRRuntimeLocator;
 #endif 	/* __ICLRRuntimeLocator_INTERFACE_DEFINED__ */
 
 
+#ifndef __ICLRContractLocator_INTERFACE_DEFINED__
+#define __ICLRContractLocator_INTERFACE_DEFINED__
+
+/* interface ICLRContractLocator */
+/* [unique][uuid][local][object] */
+
+
+EXTERN_C const IID IID_ICLRContractLocator;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+
+    MIDL_INTERFACE("17d5b8c6-34a9-407f-af4f-a930201d4e02")
+    ICLRContractLocator : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetContractDescriptor(
+            /* [out] */ CLRDATA_ADDRESS *contractAddress) = 0;
+
+    };
+
+
+#else 	/* C style interface */
+
+    typedef struct ICLRContractLocatorVtbl
+    {
+        BEGIN_INTERFACE
+
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+            ICLRContractLocator * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */
+            _COM_Outptr_  void **ppvObject);
+
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
+            ICLRContractLocator * This);
+
+        DECLSPEC_XFGVIRT(IUnknown, Release)
+        ULONG ( STDMETHODCALLTYPE *Release )(
+            ICLRContractLocator * This);
+
+        DECLSPEC_XFGVIRT(ICLRContractLocator, GetContractDescriptor)
+        HRESULT ( STDMETHODCALLTYPE *GetContractDescriptor )(
+            ICLRContractLocator * This,
+            /* [out] */ CLRDATA_ADDRESS *contractAddress);
+
+        END_INTERFACE
+    } ICLRContractLocatorVtbl;
+
+    interface ICLRContractLocator
+    {
+        CONST_VTBL struct ICLRContractLocatorVtbl *lpVtbl;
+    };
+
+
+#ifdef COBJMACROS
+
+
+#define ICLRContractLocator_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
+
+#define ICLRContractLocator_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) )
+
+#define ICLRContractLocator_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) )
+
+
+#define ICLRContractLocator_GetContractDescriptor(This,contractAddress)	\
+    ( (This)->lpVtbl -> GetContractDescriptor(This,contractAddress) )
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ICLRContractLocator_INTERFACE_DEFINED__ */
+
+
 #ifndef __ICLRMetadataLocator_INTERFACE_DEFINED__
 #define __ICLRMetadataLocator_INTERFACE_DEFINED__
 
@@ -1405,5 +1495,3 @@ EXTERN_C const IID IID_ICLRDataEnumMemoryRegions;
 #endif
 
 #endif
-
-

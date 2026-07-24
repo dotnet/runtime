@@ -570,6 +570,11 @@ CordbProcess::CreateDacDbiInterface()
         m_hDacModule = ShimProcess::GetDacModule(m_cordb->GetDacModulePath());
     }
 
+    if (m_pShim != NULL)
+    {
+        m_pShim->SetRuntimeBase(m_clrInstanceId);
+    }
+
     //
     // Get the access interface, passing our callback interfaces (data target, allocator and metadata lookup)
     //

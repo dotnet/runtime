@@ -11,21 +11,24 @@
 #ifndef SHIMDATATARGET_H_
 #define SHIMDATATARGET_H_
 
+#include <clrdata.h>
 
 // Function to invoke for
 typedef HRESULT (*FPContinueStatusChanged)(void * pUserData, DWORD dwThreadId, CORDB_CONTINUE_STATUS dwContinueStatus);
 
-
 //---------------------------------------------------------------------------------------
 // Data target for a live process. This is used by Shim.
 //
-class ShimDataTarget : public ICorDebugMutableDataTarget, ICorDebugDataTarget4
+class ShimDataTarget : public ICorDebugMutableDataTarget, ICorDebugDataTarget4, ICLRContractLocator, ICLRRuntimeLocator
 {
 public:
+    ShimDataTarget() : m_runtimeBase(0) {}
     virtual ~ShimDataTarget() {}
 
     // Allow hooking an implementation for ContinueStatusChanged.
     void HookContinueStatusChanged(FPContinueStatusChanged fpContinueStatusChanged, void * pUserData);
+
+    void SetRuntimeBase(CORDB_ADDRESS runtimeBase);
 
     // Release any resources. Also called by destructor.
     virtual void Dispose() = 0;
@@ -91,6 +94,20 @@ public:
     virtual HRESULT STDMETHODCALLTYPE VirtualUnwind(
         DWORD threadId, ULONG32 contextSize, PBYTE context) = 0;
 
+    //
+    // ICLRContractLocator.
+    //
+
+    virtual HRESULT STDMETHODCALLTYPE GetContractDescriptor(
+        CLRDATA_ADDRESS * contractAddress);
+
+    //
+    // ICLRRuntimeLocator.
+    //
+
+    virtual HRESULT STDMETHODCALLTYPE GetRuntimeBase(
+        CLRDATA_ADDRESS * baseAddress);
+
 protected:
     // Pid of the target process.
     DWORD m_processId;
@@ -101,6 +118,8 @@ protected:
 
     FPContinueStatusChanged m_fpContinueStatusChanged;
     void * m_pContinueStatusChangedUserData;
+
+    CORDB_ADDRESS m_runtimeBase;
 
     // Reference count.
     LONG m_ref;
@@ -129,4 +148,3 @@ HRESULT BuildPlatformSpecificDataTarget(MachineInfo machineInfo,
                                         ShimDataTarget ** ppDataTarget);
 
 #endif //  SHIMDATATARGET_H_
-
