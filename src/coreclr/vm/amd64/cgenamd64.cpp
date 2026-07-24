@@ -406,16 +406,23 @@ void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     }
     CONTRACTL_END;
 
-    // mov rax, 123456789abcdef0h       48 b8 xx xx xx xx xx xx xx xx
-    // jmp rax                          ff e0
+    if (g_IsJmpAbsAvailable)
+    {
+        // JMPABS (11 bytes) + NOP padding = 12 bytes
+        emitJmpAbsJump(pBufferRX, pBufferRW, target);
+        pBufferRW[11] = 0x90;  // NOP padding
+    }
+    else
+    {
+        // Fallback: mov rax, imm64; jmp rax (12 bytes)
+        pBufferRW[0]  = 0x48;
+        pBufferRW[1]  = 0xB8;
 
-    pBufferRW[0]  = 0x48;
-    pBufferRW[1]  = 0xB8;
+        SET_UNALIGNED_64(&pBufferRW[2], target);
 
-    SET_UNALIGNED_64(&pBufferRW[2], target);
-
-    pBufferRW[10] = 0xFF;
-    pBufferRW[11] = 0xE0;
+        pBufferRW[10] = 0xFF;
+        pBufferRW[11] = 0xE0;
+    }
 
     _ASSERTE(DbgIsExecutable(pBufferRX, 12));
 }
