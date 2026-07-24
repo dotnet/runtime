@@ -60,13 +60,13 @@ namespace LibraryImportGenerator.UnitTests
                 CodeSnippets.GeneratedComInterfaceWithOptions("ComInterfaceOptions.ComObjectWrapper"),
                 VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(1)
-                    .WithArguments(string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, entryPointType), "p"),
+                    .WithArguments(string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, entryPointType, SR.Format(SR.ManagedObjectWrapperNotSpecifiedReason, "MyInterfaceType")), "p"),
                 VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(2)
-                    .WithArguments(string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, entryPointType), "pIn"),
+                    .WithArguments(string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, entryPointType, SR.Format(SR.ManagedObjectWrapperNotSpecifiedReason, "MyInterfaceType")), "pIn"),
                 VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(3)
-                    .WithArguments(string.Format(SR.BidirectionalMissingRequiredMarshaller, entryPointType), "pRef"));
+                    .WithArguments(string.Format(SR.BidirectionalMissingRequiredMarshaller, entryPointType, SR.Format(SR.ManagedObjectWrapperNotSpecifiedReason, "MyInterfaceType")), "pRef"));
         }
 
         [Fact]
@@ -79,13 +79,13 @@ namespace LibraryImportGenerator.UnitTests
                 CodeSnippets.GeneratedComInterfaceWithOptions("ComInterfaceOptions.ManagedObjectWrapper"),
                 VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
                     .WithLocation(0)
-                    .WithArguments(string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, entryPointType), "Method"),
+                    .WithArguments(string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, entryPointType, SR.Format(SR.ComObjectWrapperNotSpecifiedReason, "MyInterfaceType")), "Method"),
                 VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(3)
-                    .WithArguments(string.Format(SR.BidirectionalMissingRequiredMarshaller, entryPointType), "pRef"),
+                    .WithArguments(string.Format(SR.BidirectionalMissingRequiredMarshaller, entryPointType, SR.Format(SR.ComObjectWrapperNotSpecifiedReason, "MyInterfaceType")), "pRef"),
                 VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(4)
-                    .WithArguments(string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, entryPointType), "pOut"));
+                    .WithArguments(string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, entryPointType, SR.Format(SR.ComObjectWrapperNotSpecifiedReason, "MyInterfaceType")), "pOut"));
         }
 
         public static IEnumerable<object[]> CodeSnippetsToCompile()

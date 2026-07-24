@@ -118,7 +118,13 @@ namespace Microsoft.Interop
                 builder[MarshalMode.ElementOut] = defaultData;
             }
 
-            return new CustomTypeMarshallers(builder.ToImmutable());
+            // Set a targeted reason string so ValidateCustomNativeTypeMarshallingSupported can emit
+            // a more informative diagnostic explaining which ComInterfaceOptions flag is missing.
+            string? reason = (!supportsComObjectWrapper)
+                ? SR.Format(SR.ComObjectWrapperNotSpecifiedReason, interfaceType.Name)
+                : SR.Format(SR.ManagedObjectWrapperNotSpecifiedReason, interfaceType.Name);
+
+            return new CustomTypeMarshallers(builder.ToImmutable(), reason);
         }
 
         private static void GetComInterfaceWrapperSupport(ITypeSymbol interfaceType, out bool supportsManagedObjectWrapper, out bool supportsComObjectWrapper)
