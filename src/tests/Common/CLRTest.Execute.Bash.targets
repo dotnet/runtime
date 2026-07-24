@@ -280,7 +280,7 @@ fi
            block below and the matching block in corerun.cpp. wasmtime
            is expected to already be on PATH (provisioned via
            wasi-provisioning.targets or installed manually). -->
-      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi'">wasmtime run -W exceptions=y --dir "$PWD::/" --dir "$CORE_ROOT::/core" --env CORE_ROOT=/core --env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true --env DOTNET_WASI_PRINT_EXIT_CODE=1 "$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
+      <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true' and '$(TargetOS)' == 'wasi'">wasmtime run -W exceptions=y -S http --dir "$PWD::/" --dir "$CORE_ROOT::/core" --env CORE_ROOT=/core --env DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true --env DOTNET_WASI_PRINT_EXIT_CODE=1 "$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
       <WatcherRunFile>"$CORE_ROOT/watchdog" $_WatcherTimeoutMins</WatcherRunFile>
       <!-- WASI has no watchdog binary in Core_Root (skipped in
            src/coreclr/CMakeLists.txt for wasm targets); use coreutils

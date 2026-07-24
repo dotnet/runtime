@@ -152,6 +152,12 @@ void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind);
 #ifndef FEATURE_PERFMAP
 inline void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
 {
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
 }
 #endif
 

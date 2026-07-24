@@ -40,6 +40,13 @@ public enum CLRDataByNameFlag : uint
     CLRDATA_BYNAME_CASE_INSENSITIVE = 1
 }
 
+public enum CLRDataAddressType : uint
+{
+    CLRDATA_ADDRESS_UNRECOGNIZED = 0,
+    CLRDATA_ADDRESS_MANAGED_METHOD = 1,
+    CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB = 6,
+}
+
 [Flags]
 public enum CLRDataMethodCodeNotification : uint
 {
@@ -201,7 +208,7 @@ public unsafe partial interface IXCLRDataProcess
     int SetDesiredExecutionState(uint state);
 
     [PreserveSig]
-    int GetAddressType(ClrDataAddress address, /*CLRDataAddressType*/ uint* type);
+    int GetAddressType(ClrDataAddress address, CLRDataAddressType* type);
 
     [PreserveSig]
     int GetRuntimeNameByAddress(
@@ -215,11 +222,11 @@ public unsafe partial interface IXCLRDataProcess
     [PreserveSig]
     int StartEnumAppDomains(ulong* handle);
     [PreserveSig]
-    int EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain);
+    int EnumAppDomain(ulong* handle, DacComNullableByRef<IXCLRDataAppDomain> appDomain);
     [PreserveSig]
     int EndEnumAppDomains(ulong handle);
     [PreserveSig]
-    int GetAppDomainByUniqueID(ulong id, /*IXCLRDataAppDomain*/ void** appDomain);
+    int GetAppDomainByUniqueID(ulong id, DacComNullableByRef<IXCLRDataAppDomain> appDomain);
 
     [PreserveSig]
     int StartEnumAssemblies(ulong* handle);

@@ -23,8 +23,7 @@ internal readonly struct AuxiliarySymbols_1 : IAuxiliarySymbols
         TargetPointer helperArrayPtr = _target.ReadGlobalPointer(Constants.Globals.AuxiliarySymbols);
         uint helperCount = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.AuxiliarySymbolCount));
 
-        Target.TypeInfo typeInfo = _target.GetTypeInfo(DataType.AuxiliarySymbolInfo);
-        uint entrySize = typeInfo.Size!.Value;
+        uint entrySize = Data.AuxiliarySymbolInfo.GetSize(_target);
 
         for (uint i = 0; i < helperCount; i++)
         {

@@ -67,6 +67,7 @@ internal sealed record MemberModel(
     string Name,
     MemberKind Kind,
     string DescriptorOrFieldName,
+    string? DescriptorNativeType,
     string PropertyOrReturnTypeFqn,
     FieldReadKind ReadKind,
     string? DataTypeArgumentFqn,

@@ -14,8 +14,7 @@ internal sealed partial class ComWrappersVtablePtrs : IData<ComWrappersVtablePtr
     [MemberNotNull(nameof(ComWrappersInterfacePointers))]
     partial void OnInit(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ComWrappersVtablePtrs);
-        int count = (int)(type.Size!.Value / (uint)target.PointerSize);
+        int count = (int)(GetSize(target) / (uint)target.PointerSize);
         List<TargetCodePointer> pointers = new(count);
         for (int i = 0; i < count; i++)
         {

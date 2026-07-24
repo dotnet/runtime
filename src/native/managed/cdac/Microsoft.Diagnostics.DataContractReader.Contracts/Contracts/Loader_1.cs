@@ -541,8 +541,7 @@ internal readonly struct Loader_1 : ILoader
     ModuleLookupTables ILoader.GetLookupTables(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        Target.TypeInfo lookupMapTypeInfo = _target.GetTypeInfo(DataType.ModuleLookupMap);
-        uint tableDataOffset = (uint)lookupMapTypeInfo.Fields[Constants.FieldNames.ModuleLookupMap.TableData].Offset;
+        uint tableDataOffset = (uint)Data.ModuleLookupMap.GetTableDataOffset(_target);
         return new ModuleLookupTables(
             module.FieldDefToDescMap,
             module.ManifestModuleReferencesMap,
@@ -716,6 +715,10 @@ internal readonly struct Loader_1 : ILoader
             Target.TypeInfo type = target.GetTypeInfo(DataType.DynamicILBlobTable);
             HashTable = sHashContract.CreateSHash(target, address, type, new DynamicILBlobTraits());
         }
+
+        [DataDescriptorDependency("Table", "pointer")]
+        [DataDescriptorDependency("TableSize", "uint32")]
+        [UsesDataDescriptorTypeSize]
         public ISHash<uint, DynamicILBlobEntry> HashTable { get; init; }
     }
 
