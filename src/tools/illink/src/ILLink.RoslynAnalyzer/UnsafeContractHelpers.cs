@@ -109,6 +109,7 @@ namespace ILLink.RoslynAnalyzer
 
                 if (member is IPropertySymbol property)
                 {
+                    yield return property;
                     if (property.GetMethod is not null)
                         yield return property.GetMethod;
                     if (property.SetMethod is not null)

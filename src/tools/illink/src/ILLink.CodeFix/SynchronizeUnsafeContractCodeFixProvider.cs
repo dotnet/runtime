@@ -348,6 +348,13 @@ namespace ILLink.CodeFix
                     if (solution.GetDocument(declaration.SyntaxTree) is null)
                         continue;
 
+                    if (declaration.AncestorsAndSelf().OfType<ParameterSyntax>()
+                        .Any(static parameter =>
+                            parameter.Parent?.Parent is RecordDeclarationSyntax))
+                    {
+                        return false;
+                    }
+
                     if (declaration is VariableDeclaratorSyntax
                         {
                             Parent.Parent: EventFieldDeclarationSyntax eventField,
@@ -363,8 +370,15 @@ namespace ILLink.CodeFix
                         continue;
                     }
 
-                    if (declaration is ArrowExpressionClauseSyntax
-                        || UnsafeModifierCodeFixHelpers.FindDeclaration(declaration) is not null)
+                    if (declaration is ArrowExpressionClauseSyntax)
+                    {
+                        hasEditableDeclaration = true;
+                        continue;
+                    }
+
+                    if (UnsafeModifierCodeFixHelpers.FindDeclaration(declaration)
+                        is { } editableDeclaration
+                        && editableDeclaration is not BaseTypeDeclarationSyntax)
                     {
                         hasEditableDeclaration = true;
                     }

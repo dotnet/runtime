@@ -104,6 +104,65 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public async Task CompilerPropertyFixPropagatesPropertyContract()
+        {
+            var source = """
+                interface I
+                {
+                    int Property { get; }
+                }
+
+                class UnsafeImplementation : I
+                {
+                    public unsafe int Property => {|CS9365:0|};
+                }
+
+                class OtherImplementation : I
+                {
+                    public int Property => 0;
+                }
+                """;
+            var fixedSource = """
+                interface I
+                {
+                    unsafe int Property { get; }
+                }
+
+                class UnsafeImplementation : I
+                {
+                    public unsafe int Property => 0;
+                }
+
+                class OtherImplementation : I
+                {
+                    public unsafe int Property => 0;
+                }
+                """;
+
+            await CreateCompilerTest(source, fixedSource).RunAsync();
+        }
+
+        [Fact]
+        public async Task NoFixWhenPropertyImplementationIsSynthesized()
+        {
+            var source = """
+                interface I
+                {
+                    int Property { get; }
+                }
+
+                class UnsafeImplementation : I
+                {
+                    public unsafe int Property => {|CS9365:0|};
+                }
+
+                record OtherImplementation(int Property) : I;
+                """;
+
+            await CreateCompilerTest(source).RunAsync();
+        }
+
+        [Fact]
         public async Task CompilerDefaultInterfaceFixPropagatesToBaseContract()
         {
             var source = """
