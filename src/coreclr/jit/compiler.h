@@ -7923,7 +7923,7 @@ protected:
     weight_t optCSEweight;         // The weight of the current block when we are doing PerformCSE
     CSE_HeuristicCommon* optCSEheuristic = nullptr; // CSE Heuristic to use for this method
 
-    bool optIsCSEcandidate(GenTree* tree, bool isReturn = false);
+    bool optIsCSEcandidate(GenTree* tree, bool isReturn = false, bool skipCostChecks = false);
 
     // lclNumIsTrueCSE returns true if the LclVar was introduced by the CSE phase of the compiler
     //
