@@ -678,7 +678,8 @@ PhaseStatus AsyncTransformation::Run()
     PhaseStatus             result = PhaseStatus::MODIFIED_NOTHING;
     ArrayStack<BasicBlock*> blocksWithNormalAwaits(m_compiler->getAllocator(CMK_Async));
     ArrayStack<BasicBlock*> blocksWithTailAwaits(m_compiler->getAllocator(CMK_Async));
-    AggregatedAwaitInfo     awaits = FindAwaits(blocksWithNormalAwaits, blocksWithTailAwaits);
+    ArrayStack<GenTree*>    continuationMemberOffsets(m_compiler->getAllocator(CMK_Async));
+    AggregatedAwaitInfo awaits = FindAwaits(blocksWithNormalAwaits, blocksWithTailAwaits, continuationMemberOffsets);
 
     if (awaits.NumNormalAwaits + awaits.NumTailAwaits > 1)
     {
@@ -698,7 +699,8 @@ PhaseStatus AsyncTransformation::Run()
             // This may have changed blocks, so refind the normal awaits.
             blocksWithNormalAwaits.Reset();
             blocksWithTailAwaits.Reset();
-            awaits = FindAwaits(blocksWithNormalAwaits, blocksWithTailAwaits);
+            continuationMemberOffsets.Reset();
+            awaits = FindAwaits(blocksWithNormalAwaits, blocksWithTailAwaits, continuationMemberOffsets);
         }
 
         result = PhaseStatus::MODIFIED_EVERYTHING;
@@ -708,6 +710,7 @@ PhaseStatus AsyncTransformation::Run()
 
     if (awaits.NumNormalAwaits <= 0)
     {
+        assert(continuationMemberOffsets.Empty());
         return result;
     }
 
@@ -822,11 +825,21 @@ PhaseStatus AsyncTransformation::Run()
         }
     }
 
-    CreateResumptionsAndSuspensions();
+    const ContinuationLayout* continuationLayout = CreateResumptionsAndSuspensions();
 
     // After transforming all async calls we have created resumption blocks;
     // create the resumption switch.
     CreateResumptionSwitch();
+
+    for (int i = 0; i < continuationMemberOffsets.Height(); i++)
+    {
+        GenTree* node        = continuationMemberOffsets.Bottom(i);
+        size_t   memberIndex = node->AsVal()->gtVal1;
+        assert(memberIndex < continuationLayout->ContinuationMemberOffsets.size());
+        ssize_t offset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) +
+                         continuationLayout->ContinuationMemberOffsets[memberIndex];
+        node->BashToConst(offset, TYP_INT);
+    }
 
     m_compiler->fgInvalidateDfsTree();
 
@@ -863,12 +876,14 @@ PhaseStatus AsyncTransformation::Run()
 // Parameters:
 //   blocksWithNormalAwaits - [out] Blocks with normal awaits are pushed onto this stack
 //   blocksWithTailAwaits   - [out] Blocks with tail awaits are pushed onto this stack
+//   continuationMemberOffsets - [out] Symbolic continuation member offset nodes
 //
 // Returns:
 //   Information about awaits in the function.
 //
 AggregatedAwaitInfo AsyncTransformation::FindAwaits(ArrayStack<BasicBlock*>& blocksWithNormalAwaits,
-                                                    ArrayStack<BasicBlock*>& blocksWithTailAwaits)
+                                                    ArrayStack<BasicBlock*>& blocksWithTailAwaits,
+                                                    ArrayStack<GenTree*>&    continuationMemberOffsets)
 {
     AggregatedAwaitInfo awaits;
     for (BasicBlock* block : m_compiler->Blocks())
@@ -877,6 +892,12 @@ AggregatedAwaitInfo AsyncTransformation::FindAwaits(ArrayStack<BasicBlock*>& blo
         bool hasTailAwait   = false;
         for (GenTree* tree : LIR::AsRange(block))
         {
+            if (tree->OperIs(GT_CONTINUATION_MEMBER_OFFSET))
+            {
+                continuationMemberOffsets.Push(tree);
+                continue;
+            }
+
             if (!tree->IsCall())
             {
                 continue;
@@ -2353,30 +2374,6 @@ void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
 }
 
 //------------------------------------------------------------------------
-// AsyncTransformation::ReplaceContinuationMemberOffsets:
-//   Replace symbolic continuation member offsets with their final constants.
-//
-void AsyncTransformation::ReplaceContinuationMemberOffsets(const ContinuationLayout& layout)
-{
-    for (BasicBlock* block : m_compiler->Blocks())
-    {
-        for (GenTree* node : LIR::AsRange(block))
-        {
-            if (!node->OperIs(GT_CONTINUATION_MEMBER_OFFSET))
-            {
-                continue;
-            }
-
-            size_t memberIndex = node->AsVal()->gtVal1;
-            assert(memberIndex < layout.ContinuationMemberOffsets.size());
-            ssize_t offset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) +
-                             layout.ContinuationMemberOffsets[memberIndex];
-            node->BashToConst(offset, TYP_INT);
-        }
-    }
-}
-
-//------------------------------------------------------------------------
 // AsyncTransformation::CreateAllocContinuationCall:
 //   Create a call to the JIT helper that allocates a continuation.
 //
@@ -3829,7 +3826,7 @@ void AsyncTransformation::InsertFinishContextHandlingCall(BasicBlock*           
 //   Walk all recorded async states and create the suspension and resumption
 //   IR, continuation layouts, and debug info for each one.
 //
-void AsyncTransformation::CreateResumptionsAndSuspensions()
+const ContinuationLayout* AsyncTransformation::CreateResumptionsAndSuspensions()
 {
     bool useSharedLayout = (m_states.size() > 1) && ReuseContinuations();
 
@@ -3840,7 +3837,6 @@ void AsyncTransformation::CreateResumptionsAndSuspensions()
         ContinuationLayoutBuilder* sharedLayoutBuilder =
             ContinuationLayoutBuilder::CreateSharedLayout(m_compiler, m_states);
         sharedLayout = sharedLayoutBuilder->Create();
-        ReplaceContinuationMemberOffsets(*sharedLayout);
 
         unsigned numSharedSuspensionsWithContinuationContext    = 0;
         unsigned numSharedSuspensionsWithoutContinuationContext = 0;
@@ -3902,18 +3898,27 @@ void AsyncTransformation::CreateResumptionsAndSuspensions()
         }
     }
 
-    bool replacedContinuationMemberOffsets = sharedLayout != nullptr;
+    const ContinuationLayout* continuationLayout = sharedLayout;
     JITDUMP("Creating suspensions and resumptions for %zu states\n", m_states.size());
     for (const AsyncState& state : m_states)
     {
         JITDUMP("State %u suspend @ " FMT_BB ", resume @ " FMT_BB "\n", state.Number, state.SuspensionBB->bbNum,
                 state.ResumptionBB->bbNum);
         ContinuationLayout* layout = sharedLayout == nullptr ? state.Layout->Create() : sharedLayout;
-        if (!replacedContinuationMemberOffsets)
+        if (continuationLayout == nullptr)
         {
-            ReplaceContinuationMemberOffsets(*layout);
-            replacedContinuationMemberOffsets = true;
+            continuationLayout = layout;
         }
+#ifdef DEBUG
+        else
+        {
+            assert(continuationLayout->ContinuationMemberOffsets.size() == layout->ContinuationMemberOffsets.size());
+            for (size_t i = 0; i < continuationLayout->ContinuationMemberOffsets.size(); i++)
+            {
+                assert(continuationLayout->ContinuationMemberOffsets[i] == layout->ContinuationMemberOffsets[i]);
+            }
+        }
+#endif
         CreateSuspension(state.CallBlock, state.Call, state.SuspensionBB, state.Number, *layout, *state.Layout,
                          state.ResumeReachable, state.MutatedSincePreviousResumption);
         CreateResumption(state.CallBlock, state.Call, state.ResumptionBB, state.CallDefInfo, *layout, *state.Layout);
@@ -3921,6 +3926,9 @@ void AsyncTransformation::CreateResumptionsAndSuspensions()
 
         JITDUMP("\n");
     }
+
+    assert(continuationLayout != nullptr);
+    return continuationLayout;
 }
 
 //------------------------------------------------------------------------

@@ -394,7 +394,8 @@ class AsyncTransformation
     unsigned m_sharedFinishContextHandlingSyncContextVar = BAD_VAR_NUM;
 
     AggregatedAwaitInfo FindAwaits(ArrayStack<BasicBlock*>& blocksWithNormalAwaits,
-                                   ArrayStack<BasicBlock*>& blocksWithTailAwaits);
+                                   ArrayStack<BasicBlock*>& blocksWithTailAwaits,
+                                   ArrayStack<GenTree*>&    continuationMemberOffsets);
 
     void        TransformTailAwaits(ArrayStack<BasicBlock*>& blocksWithTailAwaits);
     void        TransformTailAwait(BasicBlock* block, GenTreeCall* call, BasicBlock** remainder);
@@ -479,7 +480,6 @@ class AsyncTransformation
                                               GenTreeCall*              call,
                                               BasicBlock*               suspendBB,
                                               const ContinuationLayout& layout);
-    void                    ReplaceContinuationMemberOffsets(const ContinuationLayout& layout);
     void                    CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                            GenTreeCall*              call,
                                                            const CallDefinitionInfo& callDefInfo,
@@ -514,25 +514,25 @@ class AsyncTransformation
                                    var_types    storeType,
                                    GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
 
-    void        CreateDebugInfoForSuspensionPoint(const ContinuationLayout&        layout,
-                                                  const ContinuationLayoutBuilder& subLayout);
-    unsigned    GetReturnedContinuationVar();
-    unsigned    GetNewContinuationVar();
-    unsigned    GetResultBaseVar();
-    unsigned    GetExceptionVar();
-    void        CreateSharedReturnBB();
-    BasicBlock* CreateSharedFinishContextHandlingBB(SuspensionContextHelper   helper,
-                                                    const ContinuationLayout& layout,
-                                                    bool                      execContextMayVary,
-                                                    bool                      syncContextMayVary);
-    void        InsertFinishContextHandlingCall(BasicBlock*               block,
-                                                const ContinuationLayout& layout,
-                                                SuspensionContextHelper   helper,
-                                                GenTree*                  execContext,
-                                                GenTree*                  syncContext);
-    bool        ReuseContinuations();
-    void        CreateResumptionsAndSuspensions();
-    void        CreateResumptionSwitch();
+    void                      CreateDebugInfoForSuspensionPoint(const ContinuationLayout&        layout,
+                                                                const ContinuationLayoutBuilder& subLayout);
+    unsigned                  GetReturnedContinuationVar();
+    unsigned                  GetNewContinuationVar();
+    unsigned                  GetResultBaseVar();
+    unsigned                  GetExceptionVar();
+    void                      CreateSharedReturnBB();
+    BasicBlock*               CreateSharedFinishContextHandlingBB(SuspensionContextHelper   helper,
+                                                                  const ContinuationLayout& layout,
+                                                                  bool                      execContextMayVary,
+                                                                  bool                      syncContextMayVary);
+    void                      InsertFinishContextHandlingCall(BasicBlock*               block,
+                                                              const ContinuationLayout& layout,
+                                                              SuspensionContextHelper   helper,
+                                                              GenTree*                  execContext,
+                                                              GenTree*                  syncContext);
+    bool                      ReuseContinuations();
+    const ContinuationLayout* CreateResumptionsAndSuspensions();
+    void                      CreateResumptionSwitch();
 
 public:
     AsyncTransformation(Compiler* comp)
