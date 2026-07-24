@@ -1226,6 +1226,42 @@ BOOL Module::IsRuntimeMarshallingEnabled()
     return hr != S_OK;
 }
 
+BOOL Module::OptsIntoRefSafetyRulesV11()
+{
+    CONTRACTL
+    {
+        THROWS;
+        if (OptsIntoRefSafetyRulesV11Cached()) GC_NOTRIGGER; else GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    if (OptsIntoRefSafetyRulesV11Cached())
+    {
+        return !!(m_dwPersistedFlags & REF_SAFETY_RULES_V11);
+    }
+
+    bool optsIn = false;
+
+    const void *pVal;
+    ULONG       cbVal;
+    if (GetCustomAttribute(TokenFromRid(1, mdtModule), WellKnownAttribute::RefSafetyRules, &pVal, &cbVal) == S_OK)
+    {
+        // RefSafetyRulesAttribute(int version): a 2-byte prolog followed by the int32 version argument.
+        CustomAttributeParser cap(pVal, cbVal);
+        INT32 version;
+        if (SUCCEEDED(cap.SkipProlog()) && SUCCEEDED(cap.GetI4(&version)) && version >= 11)
+        {
+            optsIn = true;
+        }
+    }
+
+    InterlockedOr((LONG*)&m_dwPersistedFlags, REF_SAFETY_RULES_V11_IS_CACHED |
+        (optsIn ? REF_SAFETY_RULES_V11 : 0));
+
+    return optsIn;
+}
+
 //---------------------------------------------------------------------------------------
 //
 // Returns managed representation of the module (Module or ModuleBuilder).

@@ -21,6 +21,15 @@ bool WrapICorJitInfo::isIntrinsic(
     return temp;
 }
 
+bool WrapICorJitInfo::canValueClassInstancePointerEscape(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    API_ENTER(canValueClassInstancePointerEscape);
+    bool temp = wrapHnd->canValueClassInstancePointerEscape(ftn);
+    API_LEAVE(canValueClassInstancePointerEscape);
+    return temp;
+}
+
 bool WrapICorJitInfo::notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn)
 {

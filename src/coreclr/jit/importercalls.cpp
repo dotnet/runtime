@@ -9656,8 +9656,62 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                 CORINFO_SIG_INFO unboxedEntrySig;
                 info.compCompHnd->getMethodSig(unboxedEntryMethod, &unboxedEntrySig);
 
-                bool canUseUnboxedEntry = true;
+                bool     canUseUnboxedEntry = true;
+                bool     madeLocalCopy      = false;
+                GenTree* boxTypeHandle      = nullptr;
 
+                bool const needsClassTypeArg =
+                    unboxedEntrySig.hasTypeArg() &&
+                    (((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+
+                // If the 'this' object is a local box, and the unboxed entry provably keeps the receiver
+                // from escaping, replace the heap allocation with a stack-local copy of the boxed value.
+                //
+                if (thisObj->IsBoxedValue() &&
+                    !info.compCompHnd->canValueClassInstancePointerEscape(unboxedEntryMethod))
+                {
+                    // If the shared unboxed entry needs the exact class as a type arg, recover the type
+                    // handle statically from the box before it is bashed; the stack copy won't carry a
+                    // method table at runtime.
+                    //
+                    bool haveTypeArg = true;
+                    if (needsClassTypeArg)
+                    {
+                        boxTypeHandle = gtTryRemoveBoxUpstreamEffects(thisObj, BR_DONT_REMOVE_WANT_TYPE_HANDLE);
+                        haveTypeArg   = (boxTypeHandle != nullptr);
+                    }
+
+                    GenTree* localCopyThis =
+                        haveTypeArg ? gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY) : nullptr;
+
+                    if (localCopyThis != nullptr)
+                    {
+                        JITDUMP("Success! invoking unboxed entry point on local copy\n");
+                        assert(localCopyThis->IsLclVarAddr());
+                        assert(thisObj == thisArg->GetEarlyNode());
+                        thisArg->SetEarlyNode(localCopyThis);
+
+                        // We may end up inlining this call, so the local copy must be marked as "aliased",
+                        // making sure the inlinee importer will know when to spill references to its value.
+                        //
+                        lvaGetDesc(localCopyThis->AsLclFld())->lvHasLdAddrOp = true;
+                        madeLocalCopy                                        = true;
+
+#if FEATURE_TAILCALL_OPT
+                        if (call->IsImplicitTailCall())
+                        {
+                            // We just introduced a new address taken local variable, so clear the
+                            // implicit tail call flag.
+                            //
+                            JITDUMP("Clearing the implicit tail call flag\n");
+                            call->gtCallMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
+                        }
+#endif // FEATURE_TAILCALL_OPT
+                    }
+                }
+
+                // Compute the instantiation parameter the shared unboxed entry may need.
+                //
                 if (unboxedEntrySig.hasTypeArg())
                 {
                     if (((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
@@ -9668,10 +9722,17 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                         instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
                         JITDUMP("revising call to invoke unboxed entry with additional method desc arg\n");
                     }
+                    else if (madeLocalCopy)
+                    {
+                        // The exact class handle is known statically from the box.
+                        //
+                        assert(needsClassTypeArg && (boxTypeHandle != nullptr));
+                        instParam = boxTypeHandle;
+                        JITDUMP("revising call to invoke unboxed entry with additional method table arg from box\n");
+                    }
                     else
                     {
-                        assert(((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) ==
-                               CORINFO_CONTEXTFLAGS_CLASS);
+                        assert(needsClassTypeArg);
 
                         // Get the method table from the boxed object.
                         //
@@ -9699,16 +9760,20 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
 
                 if (canUseUnboxedEntry)
                 {
-                    // Rewrite the call to target the unboxed entry on the box payload. Keep the heap box,
-                    // since the callee may return an interior managed pointer into it; object stack allocation
-                    // can later promote the box to the stack when escape analysis proves the receiver does not
-                    // escape.
-                    //
-                    GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-                    GenTree* const boxPayload =
-                        gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
+                    if (!madeLocalCopy)
+                    {
+                        // Rewrite the call to target the unboxed entry on the box payload. Keep the heap box,
+                        // since the callee may return an interior managed pointer into it; object stack
+                        // allocation can later promote the box to the stack when escape analysis proves the
+                        // receiver does not escape.
+                        //
+                        GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+                        GenTree* const boxPayload =
+                            gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
 
-                    thisArg->SetEarlyNode(boxPayload);
+                        thisArg->SetEarlyNode(boxPayload);
+                    }
+
                     call->gtCallMethHnd = unboxedEntryMethod;
                     INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
 
@@ -9724,6 +9789,11 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
 
                     derivedMethod         = unboxedEntryMethod;
                     pDerivedResolvedToken = dcInfo->pUnboxedResolvedToken;
+
+                    if (madeLocalCopy)
+                    {
+                        Metrics.DevirtualizedCallRemovedBox++;
+                    }
                     Metrics.DevirtualizedCallUnboxedEntry++;
                 }
             }
