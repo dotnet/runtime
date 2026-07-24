@@ -294,8 +294,8 @@ namespace System.Net.Http.Functional.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public Task ActiveRequests_Success_Recorded()
         {
-            var serverTcs = new TaskCompletionSource();
-            var clientTcs = new TaskCompletionSource();
+            var serverTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var clientTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
@@ -687,10 +687,10 @@ namespace System.Net.Http.Functional.Tests
                 Handler.Credentials = credentialsMode == 1 ? new CredentialCache() : new CustomCredentials();
             }
 
-            var originalServerTcs = new TaskCompletionSource();
-            var redirectServerTcs = new TaskCompletionSource();
-            var clientTcs1 = new TaskCompletionSource();
-            var clientTcs2 = new TaskCompletionSource();
+            var originalServerTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var redirectServerTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var clientTcs1 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var clientTcs2 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             return LoopbackServerFactory.CreateServerAsync((originalServer, originalUri) =>
             {
@@ -1507,8 +1507,8 @@ namespace System.Net.Http.Functional.Tests
         {
             await RemoteExecutor.Invoke(static async Task () =>
             {
-                var serverTcs = new TaskCompletionSource();
-                var clientTcs = new TaskCompletionSource();
+                var serverTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var clientTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 using HttpMetricsTest_DefaultMeter test = new(null);
                 await test.LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
