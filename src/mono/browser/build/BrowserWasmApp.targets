@@ -32,6 +32,8 @@
 
     <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'false'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
     <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'false'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmRelaxedSimd.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableRelaxedSimd)' != 'true'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.NoWasmRelaxedSimd.xml"</_ExtraTrimmerArgs>
 
     <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
     <WasmClang>emcc</WasmClang>
@@ -39,6 +41,7 @@
     <_WasmDefaultFlags Condition="'$(WasmEnableExceptionHandling)' == 'false'">-fexceptions</_WasmDefaultFlags>
     <_WasmDefaultFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'">-fwasm-exceptions -s WASM_LEGACY_EXCEPTIONS=0</_WasmDefaultFlags>
     <_WasmDefaultFlags Condition="'$(WasmEnableSIMD)' == 'true'">$(_WasmDefaultFlags) -msimd128</_WasmDefaultFlags>
+    <_WasmDefaultFlags Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(_WasmDefaultFlags) -mrelaxed-simd</_WasmDefaultFlags>
 
     <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.native.wasm</_WasmOutputFileName>
 
@@ -250,6 +253,8 @@
       <EmscriptenEnvVars Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=0" Condition="'$(WasmEnableSIMD)' == 'false'" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_RELAXED_SIMD=1" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_RELAXED_SIMD=0" Condition="'$(WasmEnableRelaxedSimd)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EVENTPIPE=1" Condition="'$(EnableDiagnostics)' == 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EVENTPIPE=0" Condition="'$(EnableDiagnostics)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
@@ -319,10 +324,12 @@
       <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-js.a</_WasmEHLib>
       <_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-js.a</_WasmEHLibToExclude>
       <_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-wasm.a</_WasmEHLibToExclude>
-      <_WasmSIMDLib Condition="'$(WasmEnableSIMD)' == 'true'">libmono-wasm-simd.a</_WasmSIMDLib>
+      <_WasmSIMDLib Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' == 'true'">libmono-wasm-relaxed-simd.a</_WasmSIMDLib>
+      <_WasmSIMDLib Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' != 'true'">libmono-wasm-simd.a</_WasmSIMDLib>
       <_WasmSIMDLib Condition="'$(WasmEnableSIMD)' != 'true'">libmono-wasm-nosimd.a</_WasmSIMDLib>
-      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' != 'true'">libmono-wasm-simd.a</_WasmSIMDLibToExclude>
-      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true'">libmono-wasm-nosimd.a</_WasmSIMDLibToExclude>
+      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-simd.a;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-relaxed-simd.a</_WasmSIMDLibToExclude>
+      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-nosimd.a;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-relaxed-simd.a</_WasmSIMDLibToExclude>
+      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' == 'true'">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-nosimd.a;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-simd.a</_WasmSIMDLibToExclude>
       <_EmccExportedLibraryFunction>"[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]"</_EmccExportedLibraryFunction>
       <_EmccExportedRuntimeMethods>"[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
@@ -354,7 +361,7 @@
       <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLib)" />
       <_WasmNativeFileForLinking Condition="'$(_WasmSIMDLib)' != ''" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLib)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
-      <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLibToExclude)" />
+      <_WasmNativeFileForLinking Remove="$(_WasmSIMDLibToExclude)" />
 
       <_WasmExtraJSFile Include="@(Content)" Condition="'%(Content.Extension)' == '.js'" />
 

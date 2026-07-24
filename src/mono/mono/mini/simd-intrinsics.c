@@ -6495,9 +6495,25 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_get_IsSupported},
 };
 
+static SimdIntrinsic relaxedsimd_methods [] = {
+	{SN_ConvertToInt32},
+	{SN_ConvertToUInt32},
+	{SN_DotProduct, OP_XOP_X_X_X, INTRINS_WASM_RELAXED_DOT_I8X16_I7X16_SIGNED},
+	{SN_DotProductAdd, OP_XOP_X_X_X_X, INTRINS_WASM_RELAXED_DOT_I8X16_I7X16_ADD_SIGNED},
+	{SN_LaneSelect, OP_XOP_OVR_X_X_X_X, INTRINS_WASM_RELAXED_LANESELECT},
+	{SN_Max, OP_XOP_OVR_X_X_X, INTRINS_WASM_RELAXED_MAX},
+	{SN_Min, OP_XOP_OVR_X_X_X, INTRINS_WASM_RELAXED_MIN},
+	{SN_MultiplyAddEstimate, OP_XOP_OVR_X_X_X_X, INTRINS_WASM_RELAXED_MADD},
+	{SN_MultiplyAddNegatedEstimate, OP_XOP_OVR_X_X_X_X, INTRINS_WASM_RELAXED_NMADD},
+	{SN_MultiplyRoundedQ15, OP_XOP_X_X_X, INTRINS_WASM_RELAXED_Q15MULR_SIGNED},
+	{SN_Swizzle, OP_XOP_X_X_X, INTRINS_WASM_RELAXED_SWIZZLE},
+	{SN_get_IsSupported},
+};
+
 static const IntrinGroup supported_wasm_intrinsics [] = {
-	{ "PackedSimd", MONO_CPU_WASM_SIMD, packedsimd_methods, sizeof (packedsimd_methods) },
-	{ "WasmBase", MONO_CPU_WASM_BASE, wasmbase_methods, sizeof (wasmbase_methods) },
+	{ "PackedSimd",  MONO_CPU_WASM_SIMD,         packedsimd_methods,  sizeof (packedsimd_methods) },
+	{ "RelaxedSimd", MONO_CPU_WASM_RELAXED_SIMD, relaxedsimd_methods, sizeof (relaxedsimd_methods) },
+	{ "WasmBase",    MONO_CPU_WASM_BASE,         wasmbase_methods,    sizeof (wasmbase_methods) },
 };
 
 static const IntrinGroup supported_wasm_common_intrinsics [] = {
@@ -6861,6 +6877,26 @@ emit_wasm_supported_intrinsics (
 			 */
 			return NULL;
 		}
+		}
+
+		// default emit path for cases with op set
+		if (op != 0)
+			return emit_simd_ins_for_sig (cfg, klass, op, c0, arg0_type, fsig, args);
+	}
+
+	if (feature == MONO_CPU_WASM_RELAXED_SIMD) {
+		uint16_t op = info->default_op;
+		uint16_t c0 = info->default_instc0;
+
+		switch (id) {
+			case SN_ConvertToInt32:
+				op = OP_XOP_X_X;
+				c0 = arg0_type == MONO_TYPE_R8 ? INTRINS_WASM_RELAXED_TRUNC_SIGNED_ZERO : INTRINS_WASM_RELAXED_TRUNC_SIGNED;
+				break;
+			case SN_ConvertToUInt32:
+				op = OP_XOP_X_X;
+				c0 = arg0_type == MONO_TYPE_R8 ? INTRINS_WASM_RELAXED_TRUNC_UNSIGNED_ZERO : INTRINS_WASM_RELAXED_TRUNC_UNSIGNED;
+				break;
 		}
 
 		// default emit path for cases with op set

@@ -49,6 +49,9 @@ simd_disp = {
     "INTERP_WASM_SIMD_INTRINSIC_V_VI": simd_values_2,
     "INTERP_WASM_SIMD_INTRINSIC_V_VVV": simd_values_3,
     "INTERP_WASM_SIMD_INTRINSIC_V_C3": simd_values_3,
+    "INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V": simd_values_1,
+    "INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV": simd_values_2,
+    "INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV": simd_values_3,
 }
 
 for line in simd_header_lines:

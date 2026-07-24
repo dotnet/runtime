@@ -486,6 +486,16 @@ if(HOST_BROWSER OR HOST_WASI)
   target_link_libraries (mono-wasm-simd PRIVATE monoapi eglib_api)
   set_target_properties(mono-wasm-simd PROPERTIES COMPILE_FLAGS "-msimd128")
   install(TARGETS mono-wasm-simd LIBRARY)
+
+  # Relaxed-SIMD variant: same translation unit as mono-wasm-simd but compiled with
+  # -mrelaxed-simd and HOST_WASM_RELAXED_SIMD=1, so the relaxed-simd intrinsic
+  # wrappers in interp-simd.c expand to real emscripten builtins instead of stubs.
+  # The SDK ships both libs; the app build picks one based on WasmEnableRelaxedSimd.
+  add_library(mono-wasm-relaxed-simd STATIC interp/interp-simd.c)
+  target_link_libraries (mono-wasm-relaxed-simd PRIVATE monoapi eglib_api)
+  set_target_properties(mono-wasm-relaxed-simd PROPERTIES COMPILE_FLAGS "-msimd128 -mrelaxed-simd")
+  target_compile_definitions(mono-wasm-relaxed-simd PRIVATE HOST_WASM_RELAXED_SIMD=1)
+  install(TARGETS mono-wasm-relaxed-simd LIBRARY)
 endif()
 
 if(HOST_BROWSER OR HOST_WASI OR TARGET_WASM)
