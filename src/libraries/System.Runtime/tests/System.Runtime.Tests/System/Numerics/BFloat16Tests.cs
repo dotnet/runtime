@@ -1483,6 +1483,7 @@ namespace System.Numerics.Tests
         [Theory]
         [InlineData(0x0001, "G", "1E-40")]
         [InlineData(0x0001, "G9", "9.18354962E-41")]
+        [InlineData(0x8000, "R", "-0")]
         [InlineData(0x007F, "G", "1.17E-38")]
         [InlineData(0x007F, "G3", "1.17E-38")]
         [InlineData(0x3EAB, "G", "0.334")]

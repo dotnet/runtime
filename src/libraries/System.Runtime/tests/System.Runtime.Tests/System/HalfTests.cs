@@ -1477,6 +1477,7 @@ namespace System.Tests
         [Theory]
         [InlineData(0x0001, "G", "6E-08")]
         [InlineData(0x0001, "G9", "5.96046448E-08")]
+        [InlineData(0x8000, "R", "-0")]
         [InlineData(0x03FF, "G", "6.1E-05")]
         [InlineData(0x03FF, "G3", "6.1E-05")]
         [InlineData(0x3555, "G", "0.3333")]

@@ -971,7 +971,9 @@ namespace System
             // because we know we have enough digits to satisfy roundtrippability), we should validate
             // that the number actually roundtrips back to the original result.
 
-            Debug.Assert(((precision != -1) && (precision < TNumber.MaxRoundTripDigits)) || (TNumber.FloatToBits(value) == TNumber.FloatToBits(NumberToFloat<TNumber>(ref number))));
+            Debug.Assert(!isSignificantDigits
+                || ((precision != -1) && (precision < TNumber.MaxRoundTripDigits))
+                || (TNumber.FloatToBits(value) == TNumber.FloatToBits(NumberToFloat<TNumber>(ref number))));
 
             if (fmt != 0)
             {

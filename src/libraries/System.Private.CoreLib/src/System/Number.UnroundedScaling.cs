@@ -13,7 +13,6 @@ using System.Buffers.Text;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics.Arm;
 
 namespace System
 {
@@ -77,7 +76,7 @@ namespace System
                     return false;
                 }
 
-                TNumber v = TNumber.IsNegative(value) ? -value : value;
+                TNumber v = TNumber.Abs(value);
 
                 Debug.Assert(v > TNumber.Zero);
                 Debug.Assert(TNumber.IsFinite(v));
@@ -122,15 +121,16 @@ namespace System
                 Scaler scaler = Prescale(exponent, power);
                 ulong unrounded = UScale(mantissa, in scaler);
 
-                if (unrounded >= Unmin(UInt64Pow10[digitCount]))
+                if (unrounded >= ((ulong.PowersOf10[digitCount] << 2) - 2))
                 {
-                    // Divide before rounding to avoid double rounding. Divide preserves
-                    // the half and sticky information needed by the final Round.
-                    unrounded = Divide(unrounded, 10);
+                    // Divide before rounding to avoid double rounding. Preserve prior
+                    // inexactness and fold any new remainder into the sticky bit.
+                    (ulong quotient, ulong remainder) = Math.DivRem(unrounded, 10);
+                    unrounded = quotient | (unrounded & 1) | (remainder != 0 ? 1UL : 0UL);
                     power--;
                 }
 
-                return (Round(unrounded), -power);
+                return ((unrounded + 1 + ((unrounded >> 2) & 1)) >> 2, -power);
             }
 
             // Computes the shortest decimal form of f = mantissa * 2^exponent that rounds
@@ -169,7 +169,7 @@ namespace System
                 // At a normal power of two, the lower neighbor uses the preceding binary
                 // exponent and is half as far away. Its lower midpoint is therefore only
                 // one quarter ulp below f.
-                if ((mantissa == (1UL << 63)) && (exponent > minimumExponent))
+                if (((mantissa & ((1UL << 63) - 1)) == 0) && (exponent > minimumExponent))
                 {
                     power = -Skewed(exponent + zeroBits);
                     minimum = mantissa - (1UL << (zeroBits - 2));
@@ -201,30 +201,22 @@ namespace System
                 // IEEE 754 midpoint ties round to the value with an even mantissa. An
                 // even input therefore includes exact boundaries; an odd input excludes
                 // them. Nudging by odd before ceiling/floor implements that distinction.
-                ulong minimumDigits = Ceiling(UScale(minimum, in scaler) + (uint)odd);
-                ulong maximumDigits = Floor(UScale(maximum, in scaler) - (uint)odd);
+                ulong minimumUnrounded = UScale(minimum, in scaler) + (uint)odd;
+                ulong maximumUnrounded = UScale(maximum, in scaler) - (uint)odd;
+                ulong minimumDigits = (minimumUnrounded + 3) >> 2;
+                ulong maximumDigits = maximumUnrounded >> 2;
 
                 // The selected scale makes the interval span at least one and at most
                 // ten integers. If it contains a multiple of ten, dropping that zero
                 // immediately yields a representation with one fewer decimal digit.
+                Debug.Assert(maximumDigits >= minimumDigits);
+                Debug.Assert((maximumDigits - minimumDigits) < 10);
+
                 ulong digits = maximumDigits / 10;
 
                 if ((digits * 10) >= minimumDigits)
                 {
-                    int decimalExponent = 1 - power;
-
-                    if (typeof(TNumber) == typeof(double))
-                    {
-                        (ulong quotient, ulong remainder) = Math.DivRem(digits, 100_000_000);
-
-                        if (remainder == 0)
-                        {
-                            digits = quotient;
-                            decimalExponent += 8;
-                        }
-                    }
-
-                    return (digits, decimalExponent);
+                    return (digits, 1 - power);
                 }
 
                 // With one valid integer there is no choice. With multiple valid
@@ -232,7 +224,8 @@ namespace System
                 digits = minimumDigits;
                 if (digits < maximumDigits)
                 {
-                    digits = Round(UScale(mantissa, in scaler));
+                    ulong unrounded = UScale(mantissa, in scaler);
+                    digits = (unrounded + 1 + ((unrounded >> 2) & 1)) >> 2;
                 }
 
                 return (digits, -power);
@@ -245,18 +238,13 @@ namespace System
                 Debug.Assert(digits != 0);
 
                 int digitCount = FormattingHelpers.CountDigits(digits);
-                byte* destination = number.DigitsPtr;
-                byte* start = UInt64ToDecChars(destination + digitCount, digits);
-                Debug.Assert(start == destination);
+                Span<byte> destination = new(number.DigitsPtr, digitCount);
+                byte* start = UInt64ToDecChars(number.DigitsPtr + digitCount, digits);
+                Debug.Assert(start == number.DigitsPtr);
 
                 number.Scale = digitCount + decimalExponent;
-
-                while ((digitCount > 0) && (destination[digitCount - 1] == (byte)'0'))
-                {
-                    digitCount--;
-                }
-
-                destination[digitCount] = (byte)'\0';
+                digitCount = destination.LastIndexOfAnyExcept((byte)'0') + 1;
+                number.DigitsPtr[digitCount] = (byte)'\0';
                 number.DigitsCount = digitCount;
             }
 
@@ -274,8 +262,7 @@ namespace System
                 Debug.Assert((decimalExponent >= Pow10Min) && (decimalExponent <= Pow10Max));
 
                 int index = (decimalExponent - Pow10Min) * 2;
-                ReadOnlySpan<ulong> power = Pow10Tab.Slice(index, 2);
-                return new Scaler(power[0], power[1], -(binaryExponent + Log2Pow10(decimalExponent) + 3));
+                return new Scaler(Pow10Tab[index], Pow10Tab[index + 1], -(binaryExponent + Log2Pow10(decimalExponent) + 3));
             }
 
             // Multiplies value by the cached power high * 2^64 - low and returns the
@@ -290,52 +277,24 @@ namespace System
             //
             // If bits discarded from the high word already prove the result inexact, the
             // lower correction cannot affect the retained bits and the sticky bit can be
-            // set immediately. On Arm64, where the high and low halves require separate
-            // instructions, defer the low half until the exactness path needs it.
+            // set immediately.
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static ulong UScale(ulong value, in Scaler scaler)
             {
-                ulong middle = 0;
-                ulong high = ArmBase.Arm64.IsSupported
-                    ? ArmBase.Arm64.MultiplyHigh(value, scaler.PowerHigh)
-                    : Math.BigMul(value, scaler.PowerHigh, out middle);
+                ulong high = Math.BigMul(value, scaler.PowerHigh, out ulong middle);
                 int shift = scaler.Shift;
 
                 Debug.Assert((uint)shift < 64);
 
-                if ((high >> shift << shift) != high)
+                if ((high & ((1UL << shift) - 1)) != 0)
                 {
                     return (high >> shift) | 1;
-                }
-
-                if (ArmBase.Arm64.IsSupported)
-                {
-                    middle = value * scaler.PowerHigh;
                 }
 
                 ulong middle2 = Math.BigMul(value, scaler.PowerLow, out _);
                 high -= middle < middle2 ? 1UL : 0UL;
                 return (high >> shift) | ((middle - middle2) > 1 ? 1UL : 0UL);
             }
-
-            // Divides an unrounded value while preserving prior inexactness and folding
-            // any new remainder into the sticky bit.
-            private static ulong Divide(ulong value, ulong divisor)
-            {
-                (ulong quotient, ulong remainder) = Math.DivRem(value, divisor);
-                return quotient | (value & 1) | (remainder != 0 ? 1UL : 0UL);
-            }
-
-            // For the even powers of ten used by FixedWidthFloat, this is the exact
-            // midpoint below value and therefore the smallest encoding that rounds up.
-            private static ulong Unmin(ulong value) => (value << 2) - 2;
-
-            // Interpret the two low bits of an unrounded value as half and sticky.
-            private static ulong Floor(ulong value) => value >> 2;
-
-            private static ulong Round(ulong value) => (value + 1 + ((value >> 2) & 1)) >> 2;
-
-            private static ulong Ceiling(ulong value) => (value + 3) >> 2;
 
             // These fixed-point approximations are exact after flooring throughout the
             // binary and decimal exponent ranges supported by float and double.
@@ -362,15 +321,6 @@ namespace System
                     Shift = shift;
                 }
             }
-
-            private static ReadOnlySpan<ulong> UInt64Pow10 =>
-            [
-                1UL, 10UL, 100UL, 1000UL, 10000UL, 100000UL, 1000000UL,
-                10000000UL, 100000000UL, 1000000000UL, 10000000000UL,
-                100000000000UL, 1000000000000UL, 10000000000000UL,
-                100000000000000UL, 1000000000000000UL, 10000000000000000UL,
-                100000000000000000UL, 1000000000000000000UL,
-            ];
         }
     }
 }

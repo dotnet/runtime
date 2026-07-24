@@ -1141,6 +1141,7 @@ namespace System.Tests
             Assert.Equal("1.1754942E-38", largestSubnormal.ToString("R", inv));
             Assert.Equal("1.1754944E-38", smallestNormal.ToString("R", inv));
             Assert.Equal("1E-45", float.Epsilon.ToString("R", inv));
+            Assert.Equal("0.000000000", largestSubnormal.ToString("F9", inv));
         }
 
         [Fact]
