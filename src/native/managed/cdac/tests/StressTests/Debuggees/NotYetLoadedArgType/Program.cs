@@ -11,8 +11,8 @@ using NotYetLoadedArgLib;
 namespace NotYetLoadedArgTypeDebuggee;
 
 /// <summary>
-/// Reproduces David's cDAC GC-stack-map hole for an argument whose type is not
-/// yet loaded when the containing method is scanned.
+/// Reproduces a cDAC GC-stack-map stress scenario where an argument's type is
+/// not yet fully loaded when the containing method is scanned.
 ///
 /// Scenario (a managed analogue of the NoPIA / EmbedInteropTypes case):
 ///   * <see cref="NotYetLoadedArg"/> is a reference type defined in a *separate*
