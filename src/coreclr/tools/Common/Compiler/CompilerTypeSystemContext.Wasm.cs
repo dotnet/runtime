@@ -29,7 +29,7 @@ namespace ILCompiler
         {
             // All v128 types share the same wasm ABI (16-byte aligned), so any one round-trips the
             // 'V' encoding identically; a smaller alignment would change raised signatures silently.
-            Debug.Assert(((DefType)type).InstanceFieldAlignment.AsInt == 16,
+            Debug.Assert(type is DefType defType && defType.InstanceFieldAlignment.AsInt == 16,
                 $"v128 type {type} must be 16-byte aligned to be interchangeable in raised signatures");
 
             _cachedV128Type ??= type;
