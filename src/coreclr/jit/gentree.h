@@ -4548,6 +4548,12 @@ struct AsyncCallInfo
     // directly returns the callee's continuation to the caller.
     bool IsTailAwait = false;
 
+    // Some async helpers (e.g. AwaitAwaiter/UnsafeAwaitAwaiter/Suspend/
+    // TransparentSuspend) unconditionally suspend when called. For calls to
+    // these the JIT can skip the check for a null continuation after the call
+    // and suspend unconditionally.
+    bool AlwaysSuspends = false;
+
     bool NeedsToSaveAndRestoreExecutionContext() const
     {
         return true;
