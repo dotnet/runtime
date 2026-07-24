@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text.Json;
 using Microsoft.NET.Sdk.WebAssembly;
 using Xunit;
@@ -18,7 +19,7 @@ namespace Wasm.Build.Tests
         [Fact]
         public void ReadRuntimeConfigFiles_NullMainConfigPath_ReturnsNull()
         {
-            RuntimeConfigData? result = GenerateWasmBootJson.ReadRuntimeConfigFiles(null, null);
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(null, null);
 
             Assert.Null(result);
         }
@@ -28,7 +29,7 @@ namespace Wasm.Build.Tests
         {
             using var dir = new TempDirectory();
             string nonExistentPath = Path.Combine(dir.Path, "does-not-exist.runtimeconfig.json");
-            RuntimeConfigData? result = GenerateWasmBootJson.ReadRuntimeConfigFiles(nonExistentPath, null);
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(nonExistentPath, null);
 
             Assert.Null(result);
         }
@@ -51,7 +52,7 @@ namespace Wasm.Build.Tests
                 }
                 """);
 
-            RuntimeConfigData? result = GenerateWasmBootJson.ReadRuntimeConfigFiles(mainConfig, devConfigPath);
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(mainConfig, devConfigPath);
 
             Assert.NotNull(result?.runtimeOptions?.configProperties);
             Dictionary<string, object> props = result!.runtimeOptions!.configProperties!;
@@ -67,7 +68,7 @@ namespace Wasm.Build.Tests
             string mainConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.json",
                 configProperties: new() { ["key1"] = "value1", ["key2"] = "42" });
 
-            RuntimeConfigData? result = GenerateWasmBootJson.ReadRuntimeConfigFiles(mainConfig, null);
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(mainConfig, null);
 
             Assert.NotNull(result);
             Assert.NotNull(result.runtimeOptions?.configProperties);
@@ -83,7 +84,7 @@ namespace Wasm.Build.Tests
                 configProperties: new() { ["key1"] = "value1" });
             string devConfigPath = Path.Combine(dir.Path, "App.runtimeconfig.dev.json");
 
-            RuntimeConfigData? result = GenerateWasmBootJson.ReadRuntimeConfigFiles(mainConfig, devConfigPath);
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(mainConfig, devConfigPath);
 
             Assert.NotNull(result);
             Assert.Equal("value1", result.runtimeOptions?.configProperties?["key1"].ToString());
@@ -98,7 +99,7 @@ namespace Wasm.Build.Tests
             string devConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.dev.json",
                 configProperties: new() { ["key2"] = "value2" });
 
-            RuntimeConfigData? result = GenerateWasmBootJson.ReadRuntimeConfigFiles(mainConfig, devConfig);
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(mainConfig, devConfig);
 
             Assert.NotNull(result?.runtimeOptions?.configProperties);
             Assert.Equal("value1", result!.runtimeOptions!.configProperties!["key1"].ToString());
@@ -114,7 +115,7 @@ namespace Wasm.Build.Tests
             string devConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.dev.json",
                 configProperties: new() { ["System.Runtime.Feature"] = "true" });
 
-            RuntimeConfigData? result = GenerateWasmBootJson.ReadRuntimeConfigFiles(mainConfig, devConfig);
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(mainConfig, devConfig);
 
             Assert.NotNull(result?.runtimeOptions?.configProperties);
             Assert.Equal("true", result!.runtimeOptions!.configProperties!["System.Runtime.Feature"].ToString());
@@ -129,7 +130,7 @@ namespace Wasm.Build.Tests
             string devConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.dev.json",
                 configProperties: new() { ["System.HotReload.Enable"] = "true" });
 
-            RuntimeConfigData? result = GenerateWasmBootJson.ReadRuntimeConfigFiles(mainConfig, devConfig);
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(mainConfig, devConfig);
 
             Assert.NotNull(result?.runtimeOptions?.configProperties);
             Assert.Equal("true", result!.runtimeOptions!.configProperties!["System.HotReload.Enable"].ToString());
@@ -144,7 +145,7 @@ namespace Wasm.Build.Tests
             string devConfig = WriteRuntimeConfig(dir.Path, "App.runtimeconfig.dev.json",
                 configProperties: new());
 
-            RuntimeConfigData? result = GenerateWasmBootJson.ReadRuntimeConfigFiles(mainConfig, devConfig);
+            RuntimeConfigData? result = InvokeReadRuntimeConfigFiles(mainConfig, devConfig);
 
             Assert.NotNull(result?.runtimeOptions?.configProperties);
             Assert.Single(result!.runtimeOptions!.configProperties!);
@@ -172,6 +173,23 @@ namespace Wasm.Build.Tests
             writer.WriteEndObject();
             writer.WriteEndObject();
             return path;
+        }
+
+        private static RuntimeConfigData? InvokeReadRuntimeConfigFiles(string? mainConfigPath, string? devConfigPath)
+        {
+            MethodInfo? method = typeof(GenerateWasmBootJson).GetMethod(
+                "ReadRuntimeConfigFiles",
+                BindingFlags.Static | BindingFlags.NonPublic);
+
+            if (method is null)
+            {
+                throw new InvalidOperationException(
+                    $"{nameof(GenerateWasmBootJson)}.{nameof(InvokeReadRuntimeConfigFiles)} could not find private method " +
+                    "'ReadRuntimeConfigFiles(string?, string?)'. The production method signature may have changed.");
+            }
+
+            object? result = method.Invoke(null, new object?[] { mainConfigPath, devConfigPath });
+            return (RuntimeConfigData?)result;
         }
 
         private sealed class TempDirectory : IDisposable
