@@ -1,0 +1,259 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Moq;
+using Xunit;
+
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
+
+public class TypeHandleTests
+{
+    private const ulong ModuleAddress = 0x1000;
+
+    public static IEnumerable<object[]> TypeDescNames()
+    {
+        foreach (object[] architecture in new MockTarget.StdArch())
+        {
+            yield return [.. architecture, CorElementType.Void, "System.Void"];
+            yield return [.. architecture, CorElementType.I4, "System.Int32"];
+            yield return [.. architecture, CorElementType.String, "System.String"];
+            yield return [.. architecture, CorElementType.TypedByRef, "System.TypedReference"];
+            yield return [.. architecture, CorElementType.I, "System.IntPtr"];
+            yield return [.. architecture, CorElementType.Object, "System.Object"];
+            yield return [.. architecture, CorElementType.ValueType, ""];
+            yield return [.. architecture, CorElementType.FnPtr, "FNPTR"];
+        }
+    }
+
+    public static IEnumerable<object[]> ModifierTypeDescNames()
+    {
+        foreach (object[] architecture in new MockTarget.StdArch())
+        {
+            yield return [.. architecture, CorElementType.Byref, 0u, "System.Int32&"];
+            yield return [.. architecture, CorElementType.Ptr, 0u, "System.Int32*"];
+            yield return [.. architecture, CorElementType.SzArray, 1u, "System.Int32[]"];
+            yield return [.. architecture, CorElementType.Array, 0u, "System.Int32[]"];
+            yield return [.. architecture, CorElementType.Array, 1u, "System.Int32[*]"];
+            yield return [.. architecture, CorElementType.Array, 3u, "System.Int32[,,]"];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TypeDescNames))]
+    public void GetName_TypeDescMatchesNative(MockTarget.Architecture architecture, CorElementType kind, string expected)
+    {
+        TargetTypeHandle typeHandle = new(0x2002);
+        TestRuntimeTypeSystem runtimeTypeSystem = new();
+        runtimeTypeSystem.TypeDescs.Add(typeHandle);
+        runtimeTypeSystem.ElementTypes[typeHandle] = kind;
+        TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem);
+
+        Assert.Equal(expected, typeHandle.GetName(target));
+    }
+
+    [Theory]
+    [MemberData(nameof(ModifierTypeDescNames))]
+    public void GetName_ModifierTypeDescMatchesNative(MockTarget.Architecture architecture, CorElementType kind, uint rank, string expected)
+    {
+        TargetTypeHandle typeHandle = new(0x2002);
+        TargetTypeHandle elementType = new(0x3002);
+        TestRuntimeTypeSystem runtimeTypeSystem = new();
+        runtimeTypeSystem.TypeDescs.Add(typeHandle);
+        runtimeTypeSystem.TypeDescs.Add(elementType);
+        runtimeTypeSystem.ElementTypes[typeHandle] = kind;
+        runtimeTypeSystem.ElementTypes[elementType] = CorElementType.I4;
+        runtimeTypeSystem.TypeParameters[typeHandle] = elementType;
+        if (kind is CorElementType.Array or CorElementType.SzArray)
+        {
+            runtimeTypeSystem.ArrayRanks[typeHandle] = rank;
+        }
+        TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem);
+
+        Assert.Equal(expected, typeHandle.GetName(target));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetName_GenericVariablesUseIndex(MockTarget.Architecture architecture)
+    {
+        MetadataBuilder metadataBuilder = CreateMetadataBuilder();
+        TypeDefinitionHandle owner = AddTypeDefinition(metadataBuilder, "Tests", "Owner");
+        GenericParameterHandle genericParameter = metadataBuilder.AddGenericParameter(
+            owner,
+            GenericParameterAttributes.None,
+            metadataBuilder.GetOrAddString("T"),
+            index: 7);
+        using MetadataReaderProvider provider = CreateMetadataReader(metadataBuilder, out MetadataReader reader);
+
+        TargetTypeHandle typeVariable = new(0x2002);
+        TargetTypeHandle methodVariable = new(0x3002);
+        TestRuntimeTypeSystem runtimeTypeSystem = new();
+        runtimeTypeSystem.TypeDescs.Add(typeVariable);
+        runtimeTypeSystem.TypeDescs.Add(methodVariable);
+        runtimeTypeSystem.ElementTypes[typeVariable] = CorElementType.Var;
+        runtimeTypeSystem.ElementTypes[methodVariable] = CorElementType.MVar;
+        runtimeTypeSystem.GenericVariables[typeVariable] = (ModuleAddress, (uint)MetadataTokens.GetToken(genericParameter));
+        runtimeTypeSystem.GenericVariables[methodVariable] = (ModuleAddress, (uint)MetadataTokens.GetToken(genericParameter));
+        TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem, reader);
+
+        Assert.Equal("!7", typeVariable.GetName(target));
+        Assert.Equal("!!7", methodVariable.GetName(target));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetName_MethodTablesMatchNative(MockTarget.Architecture architecture)
+    {
+        MetadataBuilder metadataBuilder = CreateMetadataBuilder();
+        TypeDefinitionHandle rawNameTypeDef = AddTypeDefinition(metadataBuilder, "Name,Space", "Type+Name");
+        TypeDefinitionHandle containerTypeDef = AddTypeDefinition(metadataBuilder, "Tests", "Container`1");
+        TypeDefinitionHandle int32TypeDef = AddTypeDefinition(metadataBuilder, "System", "Int32");
+        TypeDefinitionHandle nestedTypeDef = AddTypeDefinition(metadataBuilder, "", "Inner", TypeAttributes.NestedPublic);
+        TypeDefinitionHandle enclosingTypeDef = AddTypeDefinition(metadataBuilder, "Tests", "Outer");
+        metadataBuilder.AddNestedType(nestedTypeDef, enclosingTypeDef);
+        using MetadataReaderProvider provider = CreateMetadataReader(metadataBuilder, out MetadataReader reader);
+
+        TargetTypeHandle rawNameType = new(0x2000);
+        TargetTypeHandle containerType = new(0x3000);
+        TargetTypeHandle int32Type = new(0x4000);
+        TargetTypeHandle nestedType = new(0x5000);
+        TargetTypeHandle arrayType = new(0x6000);
+
+        TestRuntimeTypeSystem runtimeTypeSystem = new();
+        runtimeTypeSystem.TypeDefTokens[rawNameType] = (uint)MetadataTokens.GetToken(rawNameTypeDef);
+        runtimeTypeSystem.TypeDefTokens[containerType] = (uint)MetadataTokens.GetToken(containerTypeDef);
+        runtimeTypeSystem.TypeDefTokens[int32Type] = (uint)MetadataTokens.GetToken(int32TypeDef);
+        runtimeTypeSystem.TypeDefTokens[nestedType] = (uint)MetadataTokens.GetToken(nestedTypeDef);
+        runtimeTypeSystem.TypeModules[rawNameType] = ModuleAddress;
+        runtimeTypeSystem.TypeModules[containerType] = ModuleAddress;
+        runtimeTypeSystem.TypeModules[int32Type] = ModuleAddress;
+        runtimeTypeSystem.TypeModules[nestedType] = ModuleAddress;
+        runtimeTypeSystem.Instantiations[containerType] = [int32Type];
+        runtimeTypeSystem.ArrayRanks[arrayType] = 2;
+        runtimeTypeSystem.ElementTypes[arrayType] = CorElementType.Array;
+        runtimeTypeSystem.TypeParameters[arrayType] = int32Type;
+
+        TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem, reader);
+
+        Assert.Equal("Name,Space.Type+Name", rawNameType.GetName(target));
+        Assert.Equal("Tests.Container`1[System.Int32]", containerType.GetName(target));
+        Assert.Equal("Inner", nestedType.GetName(target));
+        Assert.Equal("System.Int32[,]", arrayType.GetName(target));
+    }
+
+    private static TestPlaceholderTarget CreateTarget(
+        MockTarget.Architecture architecture,
+        TestRuntimeTypeSystem runtimeTypeSystem,
+        MetadataReader? metadataReader = null)
+    {
+        TestPlaceholderTarget.Builder builder = new TestPlaceholderTarget.Builder(architecture)
+            .AddMockContract<IRuntimeTypeSystem>(runtimeTypeSystem);
+
+        if (metadataReader is MetadataReader reader)
+        {
+            Contracts.ModuleHandle module = new(ModuleAddress);
+            Mock<ILoader> loader = new();
+            loader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(ModuleAddress))).Returns(module);
+            Mock<IEcmaMetadata> ecmaMetadata = new();
+            ecmaMetadata.Setup(e => e.GetMetadata(module)).Returns(reader);
+            builder.AddMockContract(loader);
+            builder.AddMockContract(ecmaMetadata);
+        }
+
+        return builder.Build();
+    }
+
+    private static MetadataBuilder CreateMetadataBuilder()
+    {
+        MetadataBuilder builder = new();
+        builder.AddModule(0, builder.GetOrAddString("M"), builder.GetOrAddGuid(Guid.NewGuid()), default, default);
+        builder.AddAssembly(builder.GetOrAddString("Asm"), new Version(1, 0, 0, 0), default, default, default, AssemblyHashAlgorithm.Sha1);
+        AddTypeDefinition(builder, "", "<Module>");
+        return builder;
+    }
+
+    private static TypeDefinitionHandle AddTypeDefinition(
+        MetadataBuilder builder,
+        string typeNamespace,
+        string name,
+        TypeAttributes attributes = TypeAttributes.Public | TypeAttributes.Class)
+        => builder.AddTypeDefinition(
+            attributes,
+            builder.GetOrAddString(typeNamespace),
+            builder.GetOrAddString(name),
+            default,
+            MetadataTokens.FieldDefinitionHandle(1),
+            MetadataTokens.MethodDefinitionHandle(1));
+
+    private static MetadataReaderProvider CreateMetadataReader(MetadataBuilder metadataBuilder, out MetadataReader reader)
+    {
+        BlobBuilder blob = new();
+        new MetadataRootBuilder(metadataBuilder).Serialize(blob, methodBodyStreamRva: 0, mappedFieldDataStreamRva: 0);
+        MetadataReaderProvider provider = MetadataReaderProvider.FromMetadataImage(ImmutableArray.Create(blob.ToArray()));
+        reader = provider.GetMetadataReader();
+        return provider;
+    }
+
+    private sealed class TestRuntimeTypeSystem : IRuntimeTypeSystem
+    {
+        public HashSet<ITypeHandle> TypeDescs { get; } = [];
+        public Dictionary<ITypeHandle, CorElementType> ElementTypes { get; } = [];
+        public Dictionary<ITypeHandle, ITypeHandle> TypeParameters { get; } = [];
+        public Dictionary<ITypeHandle, uint> ArrayRanks { get; } = [];
+        public Dictionary<ITypeHandle, uint> TypeDefTokens { get; } = [];
+        public Dictionary<ITypeHandle, TargetPointer> TypeModules { get; } = [];
+        public Dictionary<ITypeHandle, ITypeHandle[]> Instantiations { get; } = [];
+        public Dictionary<ITypeHandle, (TargetPointer Module, uint Token)> GenericVariables { get; } = [];
+
+        public bool IsTypeDesc(ITypeHandle typeHandle) => TypeDescs.Contains(typeHandle);
+
+        public CorElementType GetInternalCorElementType(ITypeHandle typeHandle) => ElementTypes[typeHandle];
+
+        public CorElementType GetSignatureCorElementType(ITypeHandle typeHandle) => ElementTypes[typeHandle];
+
+        public ITypeHandle GetTypeParam(ITypeHandle typeHandle) => TypeParameters[typeHandle];
+
+        public bool HasTypeParam(ITypeHandle typeHandle) => TypeParameters.ContainsKey(typeHandle);
+
+        public bool IsArray(ITypeHandle typeHandle, out uint rank) => ArrayRanks.TryGetValue(typeHandle, out rank);
+
+        public uint GetTypeDefToken(ITypeHandle typeHandle) => TypeDefTokens.GetValueOrDefault(typeHandle);
+
+        public TargetPointer GetModule(ITypeHandle typeHandle) => TypeModules.GetValueOrDefault(typeHandle);
+
+        public ReadOnlySpan<ITypeHandle> GetInstantiation(ITypeHandle typeHandle)
+            => Instantiations.TryGetValue(typeHandle, out ITypeHandle[]? instantiation) ? instantiation : [];
+
+        public bool IsGenericTypeDefinition(ITypeHandle typeHandle) => false;
+
+        public bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token)
+        {
+            if (GenericVariables.TryGetValue(typeHandle, out (TargetPointer Module, uint Token) genericVariable))
+            {
+                module = genericVariable.Module;
+                token = genericVariable.Token;
+                return true;
+            }
+
+            module = TargetPointer.Null;
+            token = 0;
+            return false;
+        }
+
+        public bool IsFunctionPointer(ITypeHandle typeHandle, out ReadOnlySpan<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv)
+        {
+            retAndArgTypes = [];
+            callConv = SignatureCallingConvention.Default;
+            return false;
+        }
+    }
+}
