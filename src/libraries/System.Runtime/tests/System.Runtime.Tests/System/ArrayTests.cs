@@ -4916,9 +4916,13 @@ namespace System.Tests
         // paths in Copy/Clear. byte elements keep the allocation to ~2 GB.
         private const int Dim1Length = (int.MaxValue / 2) + 2;
 
-        // Returned by the child when it can't allocate the array, so the parent
-        // can skip rather than fail on memory pressure.
+        // Reported by the child when the allocation throws, so the parent can skip.
+        // RemoteExecutor rethrows an escaping exception regardless of CheckExitCode,
+        // so this has to be caught in the child to be distinguishable from a failure.
         private const int OutOfMemoryExitCode = 3;
+
+        // 128 + SIGKILL, as reported for a child terminated by the Unix OOM killer.
+        private const int SigKillExitCode = 128 + 9;
 
         [OuterLoop] // Allocates large array
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -4994,9 +4998,10 @@ namespace System.Tests
             handle.Process.WaitForExit();
             int exitCode = handle.Process.ExitCode;
 
-            // OutOfMemoryExitCode: the child caught a managed OutOfMemoryException.
-            // 137 == 128 + SIGKILL: the OOM killer terminated the child (Unix).
-            if (exitCode == OutOfMemoryExitCode || exitCode == 137)
+            // Memory pressure surfaces differently per OS: Windows fails the commit and
+            // throws a catchable OutOfMemoryException, where-as Linux overcommits and the
+            // OOM killer SIGKILLs the child once the pages are touched, with no exception.
+            if (exitCode == OutOfMemoryExitCode || exitCode == SigKillExitCode)
             {
                 throw new SkipTestException($"Ran out of memory allocating the large array. Exit code {exitCode}.");
             }
