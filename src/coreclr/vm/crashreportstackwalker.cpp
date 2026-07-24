@@ -260,7 +260,7 @@ FrameCallbackAdapter(
 
     Module* pModule = pMD->GetModule();
 
-    uint32_t nativeOffset = pCF->HasFaulted() ? 0 : pCF->GetRelOffset();
+    uint32_t nativeOffset = (pCF->HasFaulted() || !pCF->IsFrameless()) ? 0 : pCF->GetRelOffset();
     uint32_t ilOffset = 0;
     PCODE ip = (PCODE)0;
     TADDR stackPointer = (TADDR)0;
