@@ -62,6 +62,44 @@ namespace ILCompiler
             return ResolveVirtualMethod(declMethod, implType.GetClosestDefType(), out devirtualizationDetail);
         }
 
+#if READYTORUN
+        private static bool IsImplicitInterfaceOfSZArray(TypeDesc interfaceType)
+        {
+            Debug.Assert(interfaceType.IsInterface);
+
+            if (!interfaceType.HasInstantiation)
+            {
+                return false;
+            }
+
+            // Is target interface IList<T> or one of its ancestors, or IReadOnlyList<T>?
+            if ((interfaceType.Context.GetWellKnownType(WellKnownType.IEnumerableGeneric, throwIfNotFound: false) is { } enumerableInterface && interfaceType.HasSameTypeDefinition(enumerableInterface)) ||
+                (interfaceType.Context.GetWellKnownType(WellKnownType.IListGeneric, throwIfNotFound: false) is { } listInterface && interfaceType.HasSameTypeDefinition(listInterface)) ||
+                (interfaceType.Context.GetWellKnownType(WellKnownType.IReadOnlyListGeneric, throwIfNotFound: false) is { } readOnlyListInterface && interfaceType.HasSameTypeDefinition(readOnlyListInterface)) ||
+                (interfaceType.Context.GetWellKnownType(WellKnownType.ICollectionGeneric, throwIfNotFound: false) is { } collectionInterface && interfaceType.HasSameTypeDefinition(collectionInterface)) ||
+                (interfaceType.Context.GetWellKnownType(WellKnownType.IReadOnlyCollectionGeneric, throwIfNotFound: false) is { } readOnlyCollectionInterface && interfaceType.HasSameTypeDefinition(readOnlyCollectionInterface)))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static MethodDesc GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(MethodDesc declMethod, TypeDesc typeParam)
+        {
+            MethodDesc genericImplementor = declMethod.Context.GetWellKnownType(WellKnownType.SZArrayHelper).GetMethod(declMethod.Name, null);
+            Debug.Assert(genericImplementor != null);
+            // OPTIMIZATION: For any method other than GetEnumerator(), we can safely substitute
+            // "Object" for reference-type theT's. This causes fewer methods to be instantiated.
+            if (genericImplementor.Name != "GetEnumerator"u8 && !typeParam.IsValueType)
+            {
+                typeParam = declMethod.Context.GetWellKnownType(WellKnownType.Object);
+            }
+            MethodDesc actualImplementor = genericImplementor.MakeInstantiatedMethod(new Instantiation(typeParam));
+            return actualImplementor;
+        }
+#endif
+
         protected virtual MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
         {
             devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
@@ -71,6 +109,28 @@ namespace ILCompiler
 
             if (declMethod.OwningType.IsInterface)
             {
+#if READYTORUN
+                if (implType.IsWellKnownType(WellKnownType.Array) && declMethod.Context.GetWellKnownType(WellKnownType.SZArrayHelper, throwIfNotFound: false) is not null)
+                {
+                    if (declMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    {
+                        devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                        return null;
+                    }
+
+                    bool isArrayImplicitInterface = declMethod.OwningType.HasInstantiation && IsImplicitInterfaceOfSZArray(declMethod.OwningType);
+                    if (isArrayImplicitInterface)
+                    {
+                        // The instantiation we want is based on the interface element type, not the
+                        // array element type.
+                        TypeDesc resultElemType = declMethod.OwningType.Instantiation[0];
+                        // We should have ruled this out above.
+                        Debug.Assert(!resultElemType.IsCanonicalSubtype(CanonicalFormKind.Any));
+                        return GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(declMethod, resultElemType);
+                    }
+                }
+#endif
+
                 if (declMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any) || implType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
                     DefType[] implTypeRuntimeInterfaces = implType.RuntimeInterfaces;
