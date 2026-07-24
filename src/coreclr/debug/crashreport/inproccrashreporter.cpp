@@ -18,6 +18,9 @@
 
 #include <fcntl.h>
 #include <errno.h>
+#if HAVE_POLL
+#include <poll.h>
+#endif
 #include <stdlib.h>
 #include <new>
 #include <unistd.h>
@@ -131,9 +134,8 @@ static void CacheSysctlString(const char* sysctlName, char* buffer, size_t buffe
 // ``(in <name>) `` so the frame stays self-describing — overflow is lossless,
 // just less compact for that frame.
 //
-// Single-instance because at most one report (signal-path or on-demand) runs at
-// a time, enforced by the m_reportInFlight guard in CreateReport. It is Reset()
-// at the start of each report so on-demand reports stay re-runnable.
+// Single-instance shared by signal-path and on-demand reports. Per-report state
+// is Reset() at the start of each report.
 
 static constexpr int MAX_MODULES_IN_TABLE = 256;
 
@@ -357,7 +359,8 @@ public:
     // Signal-path report generation, invoked by the PAL fatal-signal dispatcher.
     bool CreateReport(
         int signal,
-        void* context);
+        void* context,
+        bool serialize);
 
     // On-demand report generation. Runs the same emit core as the signal path
     // but without the watchdog or lifecycle/file management, routing the selected
@@ -381,12 +384,6 @@ private:
     InProcCrashReporter() = default;
     InProcCrashReporter(const InProcCrashReporter&) = delete;
     InProcCrashReporter& operator=(const InProcCrashReporter&) = delete;
-
-    enum ReportInFlightState : LONG
-    {
-        ReportNotInFlight = 0,
-        ReportInFlight = 1,
-    };
 
     void EmitSynthesizedCrashThread(
         void* context,
@@ -420,7 +417,7 @@ private:
     InProcCrashReportEnumerateThreadsCallback m_enumerateThreadsCallback = nullptr;
     InProcCrashReportModuleInfoCallback m_moduleInfoCallback = nullptr;
     volatile LONG m_crashKind = static_cast<LONG>(InProcCrashReportCrashKind::Unknown);
-    volatile LONG m_reportInFlight = ReportNotInFlight;
+    volatile LONGLONG m_reportInFlightThreadId = 0;
     uint32_t m_frameLimitPerThread = 0;
     InProcCrashReportLifecycle m_lifecycle;
     char m_reportFilePath[CRASHREPORT_PATH_BUFFER_SIZE];
@@ -583,11 +580,37 @@ public:
 bool
 InProcCrashReporter::CreateReport(
     int signal,
-    void* context)
+    void* context,
+    bool serialize)
 {
-    if (InterlockedCompareExchange(&m_reportInFlight, ReportInFlight, ReportNotInFlight) != ReportNotInFlight)
+    if (!serialize)
     {
+        minipal_log_write_fatal("The in-proc crash reporter does not support recurrent invocations, so it is disabled for paths that may continue execution after signal handling, such as SIGTERM.\n");
         return false;
+    }
+
+    LONGLONG currentThreadId = static_cast<LONGLONG>(minipal_get_current_thread_id());
+    LONGLONG previousThreadId = InterlockedCompareExchange64(&m_reportInFlightThreadId, currentThreadId, 0);
+    if (previousThreadId != 0)
+    {
+        if (previousThreadId == currentThreadId)
+        {
+            return false;
+        }
+
+#if HAVE_POLL
+        // INFTIM is not defined when including pal.h; -1 is the equivalent poll() "wait forever" timeout.
+        const int PollWaitForever = -1;
+#endif
+        while (true)
+        {
+#if HAVE_POLL
+            poll(nullptr, 0, PollWaitForever);
+#else
+            // fakepoll uses select() and is not suitable for this signal-handler path.
+            pause();
+#endif
+        }
     }
 
     CrashReportWatchdogScope watchdogScope;
@@ -649,7 +672,8 @@ InProcCrashReporter::CreateReport(
         return false;
     }
 
-    if (InterlockedCompareExchange(&m_reportInFlight, ReportInFlight, ReportNotInFlight) != ReportNotInFlight)
+    LONGLONG currentThreadId = static_cast<LONGLONG>(minipal_get_current_thread_id());
+    if (InterlockedCompareExchange64(&m_reportInFlightThreadId, currentThreadId, 0) != 0)
     {
         return false;
     }
@@ -684,7 +708,7 @@ InProcCrashReporter::CreateReport(
     m_jsonWriter.SetOutputSink(SignalSafeJsonWriter::DropAllOutputSink());
     m_moduleTable.Reset();
 
-    InterlockedExchange(&m_reportInFlight, ReportNotInFlight);
+    InterlockedExchange64(&m_reportInFlightThreadId, 0);
     return reportSucceeded;
 }
 
@@ -750,6 +774,7 @@ InProcCrashReporter::InitializeInstance(
     }
 
     reporter->Initialize(settings);
+
     if (InterlockedCompareExchangePointer(&s_reporter, reporter, nullptr) != nullptr)
     {
         delete reporter;
@@ -885,7 +910,7 @@ InProcCrashReporter::EndStackOverflowTrace()
 }
 
 void
-InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context)
+InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context, bool serialize)
 {
     (void)siginfo;
 
@@ -897,7 +922,7 @@ InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context)
 
     // Preserve the interrupted context's errno before the crash reporter uses syscalls.
     int savedErrno = errno;
-    reporter->CreateReport(signal, context);
+    reporter->CreateReport(signal, context, serialize);
     errno = savedErrno;
 }
 
