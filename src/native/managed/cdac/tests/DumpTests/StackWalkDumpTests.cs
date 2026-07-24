@@ -197,6 +197,18 @@ public class StackWalkDumpTests : DumpTestBase
         hr = methodDefinition.GetTokenAndScope(&definitionToken, nullModule);
         AssertHResult(HResults.S_OK, hr);
         Assert.Equal(instanceToken, definitionToken);
+
+        uint nameLength;
+        hr = methodDefinition.GetName(0, 0, &nameLength, null);
+        AssertHResult(HResults.S_OK, hr);
+
+        char[] name = new char[nameLength];
+        fixed (char* namePtr = name)
+        {
+            hr = methodDefinition.GetName(0, nameLength, &nameLength, namePtr);
+        }
+        AssertHResult(HResults.S_OK, hr);
+        Assert.Contains("MethodC", new string(name, 0, (int)nameLength - 1));
     }
 
     [ConditionalTheory]
