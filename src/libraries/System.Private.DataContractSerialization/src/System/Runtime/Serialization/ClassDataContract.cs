@@ -1133,7 +1133,11 @@ namespace System.Runtime.Serialization.DataContracts
                     {
                         if (method.ReturnType != Globals.TypeOfVoid)
                             DataContract.ThrowInvalidDataContractException(SR.Format(SR.CallbackMustReturnVoid, DataContract.GetClrTypeFullName(method.DeclaringType), method), method.DeclaringType);
-                        if (parameters == null || parameters.Length != 1 || parameters[0].ParameterType != Globals.TypeOfStreamingContext)
+                        if (parameters is not null && parameters.Length switch { // If 'parameters' is null, then assume there are no parameters.
+                                0 => false,
+                                1 => parameters[0].ParameterType != Globals.TypeOfStreamingContext,
+                                _ => true
+                            })
                             DataContract.ThrowInvalidDataContractException(SR.Format(SR.CallbackParameterInvalid, DataContract.GetClrTypeFullName(method.DeclaringType), method, Globals.TypeOfStreamingContext), method.DeclaringType);
 
                         prevAttributeType = attributeType;
