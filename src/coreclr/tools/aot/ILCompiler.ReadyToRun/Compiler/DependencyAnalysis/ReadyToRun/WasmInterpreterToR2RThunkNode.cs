@@ -36,8 +36,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override string LookupString => "M" + _wasmSignature.SignatureString;
 
         private static WasmSignature sigForInterpToR2RThunks = new WasmSignature(new WasmFuncType(new WasmResultType(new WasmValueType[]{WasmValueType.I32, WasmValueType.I32, WasmValueType.I32}), new WasmResultType(Array.Empty<WasmValueType>())), "viii");
-        private static WasmSignature sigForAsyncInterpToR2RThunks = new WasmSignature(new WasmFuncType(new WasmResultType(new WasmValueType[]{WasmValueType.I32, WasmValueType.I32, WasmValueType.I32, WasmValueType.I32}), new WasmResultType(Array.Empty<WasmValueType>())), "viiii");
-        MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(HasAsyncContinuation ? sigForAsyncInterpToR2RThunks : sigForInterpToR2RThunks, _context);
+        MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(sigForInterpToR2RThunks, _context);
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
         bool INodeWithTypeSignature.IsAsyncCall => false;
         bool INodeWithTypeSignature.HasGenericContextArg => false;
@@ -113,13 +112,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Debug.Assert(!instructionEncoder.Is64Bit);
 
             ISymbolNode targetTypeIndex = _targetTypeNode;
+            bool hasAsyncContinuation = HasAsyncContinuation;
 
             MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
-            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
+            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context, methodIsAsyncCall: hasAsyncContinuation);
 
             bool hasRetBuffArg = _wasmSignature.SignatureString[0] == 'S';
             bool hasThis = !methodSignature.IsStatic;
-            bool hasAsyncContinuation = HasAsyncContinuation;
             bool hasGenericContextBeforeAsync = HasGenericContextBeforeAsync;
 
             // Gather explicit-arg offsets and indirectness from ArgIterator.
@@ -146,13 +145,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             //   local 0: portableEntryPoint (I32)
             //   local 1: pArgs (I32)
             //   local 2: pRet (I32)
-            //   local 3: pContinuationRet (I32, async thunks only)
-            //   local 3/4: savedSp (I32) - save/restore SP global
+            //   local 3: savedSp (I32) - save/restore SP global
             const int LocalPortableEntrypoint = 0;
             const int LocalPArgs = 1;
             const int LocalPRet = 2;
-            const int LocalPContinuationRet = 3;
-            int localSavedSp = hasAsyncContinuation ? 4 : 3;
+            int localSavedSp = 3;
 
             const int FrameSize = 16; // 16-byte aligned allocation for framePointer
 
@@ -209,8 +206,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (hasAsyncContinuation && !hasGenericContextBeforeAsync)
             {
-                expressions.Add(Local.Get(LocalPContinuationRet));
-                expressions.Add(I32.Load(0));
+                expressions.Add(I32.Const(0));
                 targetParamIndex++;
             }
 
@@ -262,8 +258,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 if (hasAsyncContinuation && hasGenericContextBeforeAsync && (i == 0))
                 {
-                    expressions.Add(Local.Get(LocalPContinuationRet));
-                    expressions.Add(I32.Load(0));
+                    expressions.Add(I32.Const(0));
                     targetParamIndex++;
                 }
             }
@@ -305,13 +300,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            if (hasAsyncContinuation)
-            {
-                expressions.Add(Local.Get(LocalPContinuationRet));
-                expressions.Add(Global.Get(WasmObjectWriter.AsyncContinuationGlobalIndex));
-                expressions.Add(I32.Store(0));
-            }
-
             // For struct returns via retbuf: the R2R function has already written the struct
             // into pRet. Zero-pad to the appropriate alignment boundary.
             if (hasRetBuffArg)
@@ -335,7 +323,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(Local.Get(localSavedSp));
             expressions.Add(Global.Set(WasmObjectWriter.StackPointerGlobalIndex));
 
-            instructionEncoder.FunctionBody = new WasmFunctionBody((hasAsyncContinuation ? sigForAsyncInterpToR2RThunks : sigForInterpToR2RThunks).FuncType,
+            instructionEncoder.FunctionBody = new WasmFunctionBody(
+                sigForInterpToR2RThunks.FuncType,
                 new[] { WasmValueType.I32 },
                 expressions.ToArray());
         }

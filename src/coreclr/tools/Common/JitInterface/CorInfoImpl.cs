@@ -4396,6 +4396,8 @@ namespace Internal.JitInterface
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset);
 
+        partial void TryUseWasmMethodCodeStoreFixup(void* target, CorInfoReloc fRelocType, BlockType locationBlock, int relocOffset, int addlDelta, ref bool handled);
+
         private ref ArrayBuilder<Relocation> findRelocBlock(BlockType blockType, out int length)
         {
             switch (blockType)
@@ -4463,6 +4465,17 @@ namespace Internal.JitInterface
             int relocOffset;
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
+
+            // On WebAssembly a direct code pointer to a compiled method cannot be materialized at
+            // build time. When such a reference lands in the method's read-only data blob, replace
+            // the relocation with a method-load-time fixup that stores the target's runtime
+            // MultiCallableAddrOfCode into the location.
+            bool handledByCodeStoreFixup = false;
+            TryUseWasmMethodCodeStoreFixup(target, fRelocType, locationBlock, relocOffset, addlDelta, ref handledByCodeStoreFixup);
+            if (handledByCodeStoreFixup)
+            {
+                return;
+            }
 
             int length;
             ref ArrayBuilder<Relocation> sourceBlock = ref findRelocBlock(locationBlock, out length);

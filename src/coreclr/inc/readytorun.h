@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 25
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MINOR_VERSION 0x0001
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 25
 
@@ -65,6 +65,7 @@
 // R2R Version 23 changes delegate layout to have target before methodPtr
 // R2R Version 24 changes ARM32 virtual stub dispatch hidden parameter register to R12
 // R2R Version 25 renames runtime async infrastructure members, makes thunk-used members NonVersionable, and frees up a flag in CorInfoContinuationFlags
+// R2R Version 25.1 adds READYTORUN_FIXUP_StoreMultiCallableAddrOfCode for storing a method's MultiCallableAddrOfCode into a location in the R2R image (used on WebAssembly)
 
 struct READYTORUN_CORE_HEADER
 {
@@ -320,6 +321,8 @@ enum ReadyToRunFixupKind
     READYTORUN_FIXUP_ResumptionStubEntryPoint   = 0x38, /* Entry point of an async method resumption stub */
 
     READYTORUN_FIXUP_InjectStringThunks         = 0x39, /* Inject pregenerated string-to-code thunk mappings into the global lookup table */
+
+    READYTORUN_FIXUP_StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
 
     READYTORUN_FIXUP_ModuleOverride             = 0x80, /* followed by sig-encoded UInt with assemblyref index into either the assemblyref table of the MSIL metadata of the master context module for the signature or */
                                                         /* into the extra assemblyref table in the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the MSIL). */

@@ -289,6 +289,7 @@ fixup kind, the rest of the signature varies based on the fixup kind.
 | READYTORUN_FIXUP_ContinuationLayout             |  0x37 | Layout of an async method continuation type, followed by typespec signature
 | READYTORUN_FIXUP_ResumptionStubEntryPoint       |  0x38 | Entry point of an async method resumption stub
 | READYTORUN_FIXUP_InjectStringThunks             |  0x39 | Inject pregenerated string-to-code thunk mappings. See [InjectStringThunks signatures](#injectstringthunks-signatures) for details.
+| READYTORUN_FIXUP_StoreMultiCallableAddrOfCode   |  0x3A | Store the runtime multi-callable code address of a method into a location embedded in the R2R image. See [StoreMultiCallableAddrOfCode signatures](#storemulticallableaddrofcode-signatures) for details.
 | READYTORUN_FIXUP_ModuleOverride                 |  0x80 | When or-ed to the fixup ID, the fixup byte in the signature is followed by an encoded uint with assemblyref index, either within the MSIL metadata of the master context module for the signature or within the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the input MSIL).
 
 #### Method Signatures
@@ -348,6 +349,21 @@ The signature following the fixup kind byte is a series of elements:
 The series terminates when the null-terminated string is the empty string (a single `0x00` byte). There is no trailing RVA after the terminal empty string.
 
 At runtime, the entries are merged into a global hash table. Strings already present in the table from previously loaded modules take precedence over new entries. The table can be queried via `LookupPregeneratedThunkByString`.
+
+#### StoreMultiCallableAddrOfCode signatures
+
+The `READYTORUN_FIXUP_StoreMultiCallableAddrOfCode` fixup is placed in a precode import section and is processed at method load time (when the fixups for the associated method are resolved). It records the runtime multi-callable code address of a target method into a location embedded in the R2R image (for example, a slot in a compiled method's read-only data blob). This is required on platforms where a callable code pointer is not simply `imageBase + RVA` and is therefore only known at runtime (such as WebAssembly, where a callable pointer is a runtime-allocated portable entry point rather than a compile-time function table index).
+
+The signature following the fixup kind byte is:
+
+| Field | Size | Description
+|:------|-----:|:-----------
+| TargetCodeRVA | 4 bytes | An RVA identifying the target method's code. On WebAssembly platforms, this is an I32 function table index instead. This is encoded identically to the target of a `READYTORUN_FIXUP_ResumptionStubEntryPoint` fixup so the resulting entry point value matches the one that fixup registers.
+| LocationRVA | 4 bytes | An `IMAGE_REL_BASED_ADDR32NB` RVA identifying the location within the R2R image where the resolved code address is to be stored.
+
+At runtime, the fixup resolves the target entry point to its `MethodDesc` (using the entry-point-to-`MethodDesc` mapping populated by the `READYTORUN_FIXUP_ResumptionStubEntryPoint` fixup), computes `GetMultiCallableAddrOfCode`, and stores the resulting pointer at the location identified by `LocationRVA`.
+
+Because this fixup depends on the target entry point already being registered, it must be ordered after the corresponding `READYTORUN_FIXUP_ResumptionStubEntryPoint` fixup within the method's precode fixup list.
 
 ### READYTORUN_IMPORT_SECTIONS::AuxiliaryData
 

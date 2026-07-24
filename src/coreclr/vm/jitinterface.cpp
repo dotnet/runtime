@@ -14566,6 +14566,40 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
+    case READYTORUN_FIXUP_StoreMultiCallableAddrOfCode:
+        {
+            // Signature: [target code RVA (4 bytes)][location RVA (4 bytes)].
+            // Resolve the target method's runtime MultiCallableAddrOfCode and store it into the
+            // location (a slot embedded in the R2R image, e.g. a compiled method's read-only data).
+            ReadyToRunInfo * pR2RInfo = currentModule->GetReadyToRunInfo();
+
+            DWORD targetRVA = GET_UNALIGNED_VAL32(pBlob);
+            pBlob += sizeof(DWORD);
+            DWORD locationRVA = GET_UNALIGNED_VAL32(pBlob);
+            pBlob += sizeof(DWORD);
+
+#ifdef TARGET_WASM
+            // Wasm code is a function-table index, not imageBase+RVA; but what we actually need is the virtual ip
+            PCODE targetEntryPoint = pR2RInfo->R2RRelativeFunctionIndexToVirtualIP(targetRVA);
+#else
+            PCODE targetEntryPoint = dac_cast<TADDR>(pR2RInfo->GetImage()->GetBase()) + targetRVA;
+#endif // TARGET_WASM
+
+            // The target entry point must already have been registered (e.g. by the
+            // READYTORUN_FIXUP_ResumptionStubEntryPoint fixup, which is ordered before this one).
+            MethodDesc * pTargetMD = pR2RInfo->GetMethodDescForEntryPoint(targetEntryPoint);
+            _ASSERTE(pTargetMD != NULL);
+            if (pTargetMD == NULL)
+                return FALSE;
+
+            void * pCodeAddr = (void*)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
+            void ** pLocation = (void**)currentModule->GetReadyToRunImage()->GetRvaData(locationRVA);
+            SET_UNALIGNED_PTR(pLocation, (TADDR)pCodeAddr);
+
+            result = 1;
+        }
+        break;
+
     case READYTORUN_FIXUP_Check_FieldOffset:
         {
             DWORD dwExpectedOffset = CorSigUncompressData(pBlob);
