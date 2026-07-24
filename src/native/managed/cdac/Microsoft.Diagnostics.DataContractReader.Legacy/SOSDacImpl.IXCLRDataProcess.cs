@@ -1652,7 +1652,8 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             TargetPointer ilHeader = loader.GetILAddr(peAssembly, methodDefinition.RelativeVirtualAddress);
             int headerSize = HeaderReaderHelpers.GetHeaderSize(_target, ilHeader);
             int codeSize = HeaderReaderHelpers.GetCodeSize(_target, ilHeader);
-            ClrDataAddress codeStart = new TargetPointer(ilHeader + (uint)headerSize).ToClrDataAddress(_target);
+            uint addressFilterHeaderSize = headerSize == 1 ? 0 : (uint)headerSize;
+            ClrDataAddress codeStart = new TargetPointer(ilHeader + addressFilterHeaderSize).ToClrDataAddress(_target);
             if (codeStart <= address && address - codeStart < (uint)codeSize)
             {
                 yield return new MethodDefinitionInfo(

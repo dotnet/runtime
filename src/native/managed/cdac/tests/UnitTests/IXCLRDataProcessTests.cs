@@ -210,7 +210,8 @@ public unsafe class IXCLRDataProcessTests
         const ulong PeAssemblyAddress = 0x3000;
         const ulong FirstHeaderAddress = 0x5000;
         const ulong SecondHeaderAddress = 0x6000;
-        const uint ExpectedToken = 0x06000002;
+        const uint FirstToken = 0x06000002;
+        const uint SecondToken = 0x06000003;
 
         byte[] metadataBytes = BuildMethodDefinitionMetadata();
         fixed (byte* metadata = metadataBytes)
@@ -234,6 +235,10 @@ public unsafe class IXCLRDataProcessTests
             Mock<IEcmaMetadata> ecmaMetadata = new(MockBehavior.Strict);
             ecmaMetadata.Setup(e => e.GetMetadata(module)).Returns(reader);
 
+            byte[] secondHeader = new byte[14];
+            secondHeader[0] = 0x13;
+            secondHeader[1] = 0x30;
+            secondHeader[arch.IsLittleEndian ? 4 : 7] = 2;
             MockMemorySpace.HeapFragment[] memory =
             [
                 new()
@@ -245,7 +250,7 @@ public unsafe class IXCLRDataProcessTests
                 new()
                 {
                     Address = SecondHeaderAddress,
-                    Data = [0x0a, 0, 0],
+                    Data = secondHeader,
                     Name = nameof(SecondHeaderAddress),
                 },
             ];
@@ -259,7 +264,7 @@ public unsafe class IXCLRDataProcessTests
             Assert.Equal(HResults.E_POINTER, process.StartEnumMethodDefinitionsByAddress(FirstHeaderAddress + 1, null));
 
             ulong handle;
-            int hr = process.StartEnumMethodDefinitionsByAddress(FirstHeaderAddress + 2, &handle);
+            int hr = process.StartEnumMethodDefinitionsByAddress(FirstHeaderAddress, &handle);
             Assert.Equal(HResults.S_OK, hr);
             Assert.NotEqual(0ul, handle);
 
@@ -276,7 +281,7 @@ public unsafe class IXCLRDataProcessTests
                 uint token;
                 DacComNullableByRef<IXCLRDataModule> nullModule = new(isNullRef: true);
                 Assert.Equal(HResults.S_OK, method.GetTokenAndScope(&token, nullModule));
-                Assert.Equal(ExpectedToken, token);
+                Assert.Equal(FirstToken, token);
 
                 DacComNullableByRef<IXCLRDataMethodDefinition> endOut = new(isNullRef: false);
                 Assert.Equal(HResults.S_FALSE, process.EnumMethodDefinitionByAddress(&handle, endOut));
@@ -286,7 +291,26 @@ public unsafe class IXCLRDataProcessTests
                 Assert.Equal(HResults.S_OK, process.EndEnumMethodDefinitionsByAddress(handle));
             }
 
-            hr = process.StartEnumMethodDefinitionsByAddress(ImageBase + 1, &handle);
+            hr = process.StartEnumMethodDefinitionsByAddress(SecondHeaderAddress + 12, &handle);
+            Assert.Equal(HResults.S_OK, hr);
+            try
+            {
+                DacComNullableByRef<IXCLRDataMethodDefinition> methodOut = new(isNullRef: false);
+                hr = process.EnumMethodDefinitionByAddress(&handle, methodOut);
+                Assert.Equal(HResults.S_OK, hr);
+                IXCLRDataMethodDefinition method = Assert.IsType<ClrDataMethodDefinition>(methodOut.Interface);
+
+                uint token;
+                DacComNullableByRef<IXCLRDataModule> nullModule = new(isNullRef: true);
+                Assert.Equal(HResults.S_OK, method.GetTokenAndScope(&token, nullModule));
+                Assert.Equal(SecondToken, token);
+            }
+            finally
+            {
+                Assert.Equal(HResults.S_OK, process.EndEnumMethodDefinitionsByAddress(handle));
+            }
+
+            hr = process.StartEnumMethodDefinitionsByAddress(FirstHeaderAddress + 3, &handle);
             Assert.Equal(HResults.S_OK, hr);
             try
             {
