@@ -370,9 +370,83 @@ namespace System.Net.Security.Tests
             }
         }
 
-        private bool VerifyOutput(byte[] actualBuffer, byte[] expectedBuffer)
+        // Regression test for buffer-pool reuse on the encrypted write path
+        // (SslStreamPal.*.EncryptMessage -> ProtocolToken.SetPayload).
+        // Exercises many back-to-back writes of varying sizes -- including sizes much larger
+        // than typical, to exercise pooled payload buffers of different rented sizes -- and
+        // verifies data integrity across pooled-buffer reuse, so any accidental data bleed
+        // between reused rented buffers, truncation, or double-return corruption would be caught.
+        [Fact]
+        public async Task SslStream_StreamToStream_RepeatedVariableSizeWrites_RoundTripsCorrectly()
         {
-            return expectedBuffer.SequenceEqual(actualBuffer);
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new SslStream(stream1, false, AllowAnyServerCertificate))
+            using (var server = new SslStream(stream2, false, delegate { return true; }))
+            {
+                await DoHandshake(client, server);
+
+                int[] sizes = { 1, 2, 7, 64, 255, 1024, 4096, 16 * 1024, 64 * 1024, 3, 1, 65 * 1024 };
+                var rng = new Random(12345);
+
+                foreach (int size in sizes)
+                {
+                    byte[] expected = new byte[size];
+                    rng.NextBytes(expected);
+
+                    await WriteAsync(client, expected, 0, expected.Length);
+
+                    byte[] actual = new byte[size];
+                    int totalRead = 0;
+                    while (totalRead < size)
+                    {
+                        int n = await ReadAsync(server, actual, totalRead, size - totalRead);
+                        Assert.True(n > 0, "Unexpected EOF while reading round-tripped data.");
+                        totalRead += n;
+                    }
+
+                    Assert.Equal(expected, actual);
+                }
+            }
+        }
+
+        // Regression test for buffer-pool reuse on the handshake output path
+        // (SslStreamPal.*.HandshakeInternal -> ProtocolToken.SetPayload). Runs several
+        // independent handshakes (each on its own SslStream/connection pair) back-to-back so
+        // that rented handshake-token buffers are returned and re-rented across connections,
+        // and verifies each handshake still round-trips application data correctly afterward --
+        // catching any accidental cross-connection data bleed or premature pool-return/reuse
+        // corruption of handshake buffers.
+        [Fact]
+        public async Task SslStream_RepeatedIndependentHandshakes_RoundTripCorrectlyAfterEach()
+        {
+            const int HandshakeCount = 8;
+            var rng = new Random(54321);
+
+            for (int i = 0; i < HandshakeCount; i++)
+            {
+                (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+                using (var client = new SslStream(stream1, false, AllowAnyServerCertificate))
+                using (var server = new SslStream(stream2, false, delegate { return true; }))
+                {
+                    await DoHandshake(client, server);
+
+                    byte[] expected = new byte[4096];
+                    rng.NextBytes(expected);
+
+                    await WriteAsync(client, expected, 0, expected.Length);
+
+                    byte[] actual = new byte[expected.Length];
+                    int totalRead = 0;
+                    while (totalRead < actual.Length)
+                    {
+                        int n = await ReadAsync(server, actual, totalRead, actual.Length - totalRead);
+                        Assert.True(n > 0, "Unexpected EOF while reading round-tripped data.");
+                        totalRead += n;
+                    }
+
+                    Assert.Equal(expected, actual);
+                }
+            }
         }
 
         protected bool AllowAnyServerCertificate(
