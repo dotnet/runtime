@@ -260,9 +260,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void EmitBindCoreMethod(ComplexTypeSpec type)
             {
                 string objParameterExpression = $"ref {type.TypeRef.FullyQualifiedName} {Identifier.instance}";
-                EmitStartBlock(@$"public static void {nameof(MethodsToGen_CoreBindingHelper.BindCore)}({Identifier.IConfiguration} {Identifier.configuration}, {objParameterExpression}, bool defaultValueIfNotFound, {Identifier.BinderOptions}? {Identifier.binderOptions})");
-
                 ComplexTypeSpec effectiveType = (ComplexTypeSpec)_typeIndex.GetEffectiveTypeSpec(type);
+
+                // Objects created through a parameterized constructor need an extra parameter that tells BindCore
+                // whether the instance was created through that constructor. When it was, properties that are bound
+                // by a matching constructor parameter must not be bound again (see EmitBindCoreImplForObject).
+                string boundThroughConstructorParam = ShouldEmitBoundThroughConstructorParameter(effectiveType)
+                    ? $", bool {Identifier.boundThroughConstructor} = false"
+                    : string.Empty;
+
+                EmitStartBlock(@$"public static void {nameof(MethodsToGen_CoreBindingHelper.BindCore)}({Identifier.IConfiguration} {Identifier.configuration}, {objParameterExpression}, bool defaultValueIfNotFound, {Identifier.BinderOptions}? {Identifier.binderOptions}{boundThroughConstructorParam})");
 
                 switch (effectiveType)
                 {
@@ -819,11 +826,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                                 if (_typeIndex.CanInstantiate(complexElementType))
                                 {
+                                    // A reference-type element created through a parameterized constructor must not have
+                                    // its constructor-bound properties bound again. Since the element is only constructed
+                                    // when it isn't already present, track that at run time and forward it to BindCore.
+                                    // Value-type elements are always (re)constructed through the InitializationKind.None
+                                    // path below, so they don't need a separate flag.
+                                    string? constructedExpr = null;
+                                    if (!isValueType && ShouldEmitBoundThroughConstructorParameter(complexElementType))
+                                    {
+                                        constructedExpr = GetIncrementalIdentifier(Identifier.boundThroughConstructor);
+                                        _writer.WriteLine($"bool {constructedExpr} = false;");
+                                    }
+
                                     EmitStartBlock($"if (!({conditionToUseExistingElement}))");
                                     EmitObjectInit(complexElementType, Identifier.element, InitializationKind.SimpleAssignment, Identifier.section);
+                                    if (constructedExpr is not null)
+                                    {
+                                        _writer.WriteLine($"{constructedExpr} = true;");
+                                    }
                                     EmitEndBlock();
 
-                                    EmitBindingLogic();
+                                    EmitBindingLogic(constructedExpr);
                                 }
                                 else
                                 {
@@ -832,14 +855,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     EmitEndBlock();
                                 }
 
-                                void EmitBindingLogic()
+                                void EmitBindingLogic(string? constructedExpr = null)
                                 {
                                     this.EmitBindingLogic(
                                         complexElementType,
                                         Identifier.element,
                                         Identifier.section,
                                         InitializationKind.None,
-                                        ValueDefaulting.None);
+                                        ValueDefaulting.None,
+                                        constructedExpr: constructedExpr);
 
                                     _writer.WriteLine($"{instanceIdentifier}[{parsedKeyExpr}] = {Identifier.element};");
                                 }
@@ -859,19 +883,87 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string validateMethodCallExpr = $"{Identifier.ValidateConfigurationKeys}(typeof({type.TypeRef.FullyQualifiedName}), {keyCacheFieldName}, {Identifier.configuration}, {Identifier.binderOptions});";
                 _writer.WriteLine(validateMethodCallExpr);
 
+                List<PropertySpec>? ctorMatchedProperties = null;
+
                 foreach (PropertySpec property in type.Properties!)
                 {
-                    if (_typeIndex.ShouldBindTo(property))
+                    if (!_typeIndex.ShouldBindTo(property))
                     {
-                        string containingTypeRef = property.IsStatic ? type.TypeRef.FullyQualifiedName : Identifier.instance;
-                        EmitBindImplForMember(
-                            property,
-                            memberAccessExpr: $"{containingTypeRef}.{property.Name}",
-                            GetSectionPathFromConfigurationExpression(property.ConfigurationKeyName),
-                            canSet: property.CanSet,
-                            canGet: property.CanGet,
-                            InitializationKind.Declaration);
+                        continue;
                     }
+
+                    // A property that is bound through a matching constructor parameter is already populated when the
+                    // instance is created through that constructor. Binding it again here would append to collections
+                    // that the constructor already filled, duplicating their items.
+                    // Defer such properties into a block guarded by !boundThroughConstructor so they are only bound when
+                    // the instance was not created through the constructor (e.g. Bind(existingInstance)), matching the
+                    // reflection binder.
+                    if (property.MatchingCtorParam is not null && IsPropertyReboundInBindCore(property))
+                    {
+                        (ctorMatchedProperties ??= new()).Add(property);
+                        continue;
+                    }
+
+                    EmitBindImplForProperty(property);
+                }
+
+                if (ctorMatchedProperties is not null)
+                {
+                    EmitStartBlock($"if (!{Identifier.boundThroughConstructor})");
+                    foreach (PropertySpec property in ctorMatchedProperties)
+                    {
+                        EmitBindImplForProperty(property);
+                    }
+                    EmitEndBlock();
+                }
+
+                void EmitBindImplForProperty(PropertySpec property)
+                {
+                    string containingTypeRef = property.IsStatic ? type.TypeRef.FullyQualifiedName : Identifier.instance;
+                    EmitBindImplForMember(
+                        property,
+                        memberAccessExpr: $"{containingTypeRef}.{property.Name}",
+                        GetSectionPathFromConfigurationExpression(property.ConfigurationKeyName),
+                        canSet: property.CanSet,
+                        canGet: property.CanGet,
+                        InitializationKind.Declaration);
+                }
+            }
+
+            /// <summary>
+            /// Whether <paramref name="type"/> is an object created through a parameterized constructor that has at
+            /// least one property bound through a matching constructor parameter which would otherwise be re-bound in
+            /// its <c>BindCore</c> method. Such types receive an extra <c>boundThroughConstructor</c> parameter.
+            /// </summary>
+            private bool ShouldEmitBoundThroughConstructorParameter(ComplexTypeSpec type) =>
+                type is ObjectSpec { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor, Properties: { } properties } &&
+                properties.Any(property =>
+                    property.MatchingCtorParam is not null &&
+                    _typeIndex.ShouldBindTo(property) &&
+                    IsPropertyReboundInBindCore(property));
+
+            /// <summary>
+            /// Whether binding <paramref name="property"/> in a <c>BindCore</c> method emits code that reads from or
+            /// writes to the property. This mirrors the cases in <see cref="EmitBindImplForMember(MemberSpec, string, string, bool, bool, InitializationKind)"/>
+            /// that actually emit binding logic; get-only value/string properties, for example, are never re-bound.
+            /// </summary>
+            private bool IsPropertyReboundInBindCore(PropertySpec property)
+            {
+                switch (_typeIndex.GetEffectiveTypeSpec(property.TypeRef))
+                {
+                    case ParsableFromStringSpec:
+                        return property.CanGet && property.CanSet;
+                    case ConfigurationSectionSpec:
+                        return property.CanSet;
+                    case ComplexTypeSpec complexType:
+                        // EmitBindImplForMember skips a complex member only when it is a
+                        // parameterized-constructor object with no bindable members. Every other complex member is bound.
+                        return _typeIndex.HasBindableMembers(complexType) ||
+                            complexType.IsValueType ||
+                            complexType is CollectionSpec ||
+                            complexType is not ObjectSpec { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor };
+                    default:
+                        return false;
                 }
             }
 
@@ -959,7 +1051,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         {
                             // Early detection of types we cannot bind to and skip it.
                             if (!_typeIndex.HasBindableMembers(complexType) &&
-                                !_typeIndex.GetEffectiveTypeSpec(complexType).IsValueType &&
+                                !complexType.IsValueType &&
                                 complexType is not CollectionSpec &&
                                 ((ObjectSpec)complexType).InstantiationStrategy == ObjectInstantiationStrategy.ParameterizedConstructor)
                             {
@@ -1090,7 +1182,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string configArgExpr,
                 InitializationKind initKind,
                 ValueDefaulting valueDefaulting,
-                Action<string, string?>? writeOnSuccess = null)
+                Action<string, string?>? writeOnSuccess = null,
+                string? constructedExpr = null)
             {
                 if (!_typeIndex.HasBindableMembers(type))
                 {
@@ -1127,13 +1220,39 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 void EmitBindingLogic(string instanceToBindExpr, InitializationKind initKind, string? tempIdentifierStoringExpr = null)
                 {
-                    string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, defaultValueIfNotFound: {FormatDefaultValueIfNotFound()}, {Identifier.binderOptions});";
+                    string boundThroughConstructorArg = string.Empty;
 
                     if (_typeIndex.CanInstantiate(type))
                     {
                         if (initKind is not InitializationKind.None)
                         {
+                            // The instance is (re)created here. If it goes through a parameterized constructor, tell
+                            // BindCore not to bind the properties that the constructor already bound. For a null-check
+                            // assignment the constructor only runs when the existing value was null, so the decision
+                            // has to be made at run time.
+                            if (ShouldEmitBoundThroughConstructorParameter(type))
+                            {
+                                if (initKind is InitializationKind.AssignmentWithNullCheck)
+                                {
+                                    string wasNullIdentifier = GetIncrementalIdentifier(Identifier.wasNull);
+                                    _writer.WriteLine($"bool {wasNullIdentifier} = {instanceToBindExpr} is null;");
+                                    boundThroughConstructorArg = $", {Identifier.boundThroughConstructor}: {wasNullIdentifier}";
+                                }
+                                else
+                                {
+                                    boundThroughConstructorArg = $", {Identifier.boundThroughConstructor}: true";
+                                }
+                            }
+
                             EmitObjectInit(type, instanceToBindExpr, initKind, configArgExpr);
+                        }
+                        else if (constructedExpr is not null)
+                        {
+                            // The caller instantiated the instance separately and provides a run-time flag telling
+                            // whether it was created through its constructor (e.g. dictionary element binding). The
+                            // caller only passes it for types that emit the parameter.
+                            Debug.Assert(ShouldEmitBoundThroughConstructorParameter(type));
+                            boundThroughConstructorArg = $", {Identifier.boundThroughConstructor}: {constructedExpr}";
                         }
 
                         EmitBindCoreCall();
@@ -1154,6 +1273,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     void EmitBindCoreCall()
                     {
+                        string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, defaultValueIfNotFound: {FormatDefaultValueIfNotFound()}, {Identifier.binderOptions}{boundThroughConstructorArg});";
                         _writer.WriteLine(bindCoreCall);
                         writeOnSuccess?.Invoke(instanceToBindExpr, tempIdentifierStoringExpr);
                     }

@@ -62,6 +62,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private static class Identifier
             {
                 public const string binderOptions = nameof(binderOptions);
+                public const string boundThroughConstructor = nameof(boundThroughConstructor);
                 public const string config = nameof(config);
                 public const string configureBinder = nameof(configureBinder);
                 public const string configureOptions = nameof(configureOptions);
@@ -86,6 +87,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string typedObj = nameof(typedObj);
                 public const string validateKeys = nameof(validateKeys);
                 public const string value = nameof(value);
+                public const string wasNull = nameof(wasNull);
 
                 public const string Add = nameof(Add);
                 public const string AddSingleton = nameof(AddSingleton);
