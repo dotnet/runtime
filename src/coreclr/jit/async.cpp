@@ -2384,7 +2384,18 @@ void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
     unsigned offset       = OFFSETOF__CORINFO_Continuation__data + layout.ContinuationMemberOffsets[memberIndex];
     GenTree* offsetNode   = m_compiler->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
     GenTree* address      = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, continuation, offsetNode);
-    GenTree* store        = m_compiler->gtNewStoreValueNode(awaiterLayout, address, awaiter, GTF_IND_NONFAULTING);
+    GenTree* store;
+    if (varTypeIsStruct(awaiter))
+    {
+        store = m_compiler->gtNewStoreValueNode(awaiterLayout, address, awaiter, GTF_IND_NONFAULTING);
+    }
+    else
+    {
+        var_types storeType =
+            m_compiler->getPrimitiveTypeForStruct(awaiterLayout->GetSize(), awaiterLayout->GetClassHandle());
+        assert(storeType != TYP_UNKNOWN);
+        store = m_compiler->gtNewStoreValueNode(storeType, address, awaiter, GTF_IND_NONFAULTING);
+    }
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
 }
 

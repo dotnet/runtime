@@ -3692,12 +3692,11 @@ namespace Internal.JitInterface
             CompilerTypeSystemContext context = _compilation.TypeSystemContext;
             DefType asyncHelpers =
                 context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
-            TypeDesc signatureVariable = context.GetSignatureVariable(0, method: true);
             MethodSignature signature = new MethodSignature(
                 MethodSignatureFlags.Static,
                 1,
                 context.GetWellKnownType(WellKnownType.Void),
-                [signatureVariable, context.GetWellKnownType(WellKnownType.Int32)]);
+                [context.GetWellKnownType(WellKnownType.Int32)]);
             MethodDesc result = asyncHelpers
                 .GetKnownMethod(
                     isUnsafe ? "UnsafeAwaitAwaiterInContinuation"u8 : "AwaitAwaiterInContinuation"u8,

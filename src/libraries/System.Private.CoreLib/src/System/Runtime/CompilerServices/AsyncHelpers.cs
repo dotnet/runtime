@@ -39,7 +39,7 @@ namespace System.Runtime.CompilerServices
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         [StackTraceHidden]
-        private static unsafe void AwaitAwaiterInContinuation<TAwaiter>(TAwaiter awaiter, int offset)
+        private static unsafe void AwaitAwaiterInContinuation<TAwaiter>(int offset)
             where TAwaiter : INotifyCompletion
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
@@ -54,8 +54,7 @@ namespace System.Runtime.CompilerServices
             Continuation headContinuation, int offset, Action continuation)
             where TAwaiter : INotifyCompletion
         {
-            Continuation awaiterContinuation = headContinuation.Next!;
-            ref byte data = ref RuntimeHelpers.GetRawData(awaiterContinuation);
+            ref byte data = ref RuntimeHelpers.GetRawData(headContinuation);
             TAwaiter awaiter = Unsafe.As<byte, TAwaiter>(ref Unsafe.Add(ref data, offset));
             awaiter.OnCompleted(continuation);
         }
@@ -97,7 +96,7 @@ namespace System.Runtime.CompilerServices
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         [StackTraceHidden]
-        private static unsafe void UnsafeAwaitAwaiterInContinuation<TAwaiter>(TAwaiter awaiter, int offset)
+        private static unsafe void UnsafeAwaitAwaiterInContinuation<TAwaiter>(int offset)
             where TAwaiter : ICriticalNotifyCompletion
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
@@ -118,8 +117,7 @@ namespace System.Runtime.CompilerServices
                 return;
             }
 
-            Continuation awaiterContinuation = headContinuation.Next!;
-            ref byte data = ref RuntimeHelpers.GetRawData(awaiterContinuation);
+            ref byte data = ref RuntimeHelpers.GetRawData(headContinuation);
             TAwaiter awaiter = Unsafe.As<byte, TAwaiter>(ref Unsafe.Add(ref data, offset));
             awaiter.UnsafeOnCompleted(continuation);
         }
