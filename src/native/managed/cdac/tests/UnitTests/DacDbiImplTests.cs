@@ -37,6 +37,43 @@ public unsafe class DacDbiImplTests
         return (dacDbi, target);
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsThreadSuspendedOrHijacked_NullOutput_ReturnsEPointer(MockTarget.Architecture arch)
+    {
+        var mockThread = new Mock<IThread>();
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(mockThread)
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null);
+
+        int hr = dacDbi.IsThreadSuspendedOrHijacked(0, null);
+
+        Assert.Equal(System.HResults.E_POINTER, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsThreadSuspendedOrHijacked_ContractFailure_InitializesOutput(MockTarget.Architecture arch)
+    {
+        const ulong ThreadAddress = 0x1000;
+        InvalidOperationException exception = new();
+        var mockThread = new Mock<IThread>();
+        mockThread
+            .Setup(t => t.GetThreadData(new TargetPointer(ThreadAddress)))
+            .Throws(exception);
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(mockThread)
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        Interop.BOOL result = Interop.BOOL.TRUE;
+
+        int hr = dacDbi.IsThreadSuspendedOrHijacked(ThreadAddress, &result);
+
+        Assert.Equal(exception.HResult, hr);
+        Assert.Equal(Interop.BOOL.FALSE, result);
+    }
+
     [Fact]
     public void DacSetTargetConsistencyChecks_Standalone_ReturnsSuccess()
     {
