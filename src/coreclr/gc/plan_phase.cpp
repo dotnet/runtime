@@ -2139,18 +2139,14 @@ BOOL gc_heap::loh_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* allo
         alloc_limit,
         (alloc_limit - alloc_pointer)));
 
-    size_t pad = uoh_alignment_pad (alloc_pointer, AlignQword (loh_padding_obj_size));
-
     // If it's at the end, we don't need to allocate the tail padding
-    if (!end_p)
-    {
-        pad += AlignQword (loh_padding_obj_size);
-    }
+    size_t pad = 1 + (end_p ? 0 : 1);
+    pad *= AlignQword (loh_padding_obj_size);
 
     return ((alloc_pointer + pad + size) <= alloc_limit);
 }
 
-uint8_t* gc_heap::loh_allocate_in_condemned (size_t size, size_t* alignment_pad)
+uint8_t* gc_heap::loh_allocate_in_condemned (size_t size)
 {
     generation* gen = large_object_generation;
     dprintf (1235, ("E: p:%p, l:%p, s: %zd",
@@ -2201,8 +2197,7 @@ retry:
                 else
                 {
                     if (loh_size_fit_p (size, generation_allocation_pointer (gen), heap_segment_reserved (seg), true) &&
-                        (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size +
-                            uoh_alignment_pad (generation_allocation_pointer (gen), AlignQword (loh_padding_obj_size))))))
+                        (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size + AlignQword (loh_padding_obj_size)))))
                     {
                         dprintf (1235, ("growing seg from %p to %p\n", heap_segment_committed (seg),
                                          (generation_allocation_pointer (gen) + size)));
@@ -2273,11 +2268,7 @@ retry:
         assert (generation_allocation_pointer (gen)>=
                 heap_segment_mem (generation_allocation_segment (gen)));
         uint8_t* result = generation_allocation_pointer (gen);
-        size_t base_pad = AlignQword (loh_padding_obj_size);
-        size_t loh_pad = uoh_alignment_pad (result, base_pad);
-
-        // compact_loh can't recompute this, so it is remembered with the object.
-        *alignment_pad = loh_pad - base_pad;
+        size_t loh_pad = AlignQword (loh_padding_obj_size);
 
         generation_allocation_pointer (gen) += size + loh_pad;
         assert (generation_allocation_pointer (gen) <= generation_allocation_limit (gen));
@@ -2375,8 +2366,6 @@ BOOL gc_heap::plan_loh()
             size_t size = AlignQword (size (o));
             dprintf (1235, ("%p(%zd) M", o, size));
 
-            size_t alignment_pad = 0;
-
             if (pinned (o))
             {
                 // We don't clear the pinned bit yet so we can check in
@@ -2391,10 +2380,10 @@ BOOL gc_heap::plan_loh()
             }
             else
             {
-                new_address = loh_allocate_in_condemned (size, &alignment_pad);
+                new_address = loh_allocate_in_condemned (size);
             }
 
-            loh_set_node_relocation_distance (o, (new_address - o), alignment_pad);
+            loh_set_node_relocation_distance (o, (new_address - o));
             dprintf (1235, ("lobj %p-%p -> %p-%p (%zd)", o, (o + size), new_address, (new_address + size), (new_address - o)));
 
             o = o + size;

@@ -1214,45 +1214,42 @@ size_t AlignQword (size_t nbytes)
 #endif // FEATURE_STRUCTALIGN
 }
 
-// Objects on the LOH and the POH are padded so that their data - sizeof(ArrayBase) into
-// the object, where the elements of an array start - is aligned on this boundary.
-// 0 disables the padding.
-extern size_t uoh_data_alignment;
+// Objects on the POH are padded so that their data - sizeof(ArrayBase) into the object,
+// where the elements of an array start - is aligned on this boundary. 0 disables it.
+extern size_t poh_data_alignment;
 
-// Bounded by the 3 bits loh_set_node_relocation_distance has to remember the padding.
-const size_t max_uoh_data_alignment = 64;
+// Capped so that the padding of a single object can't waste much memory.
+const size_t max_poh_data_alignment = 64;
 
-inline size_t uoh_data_offset()
+inline size_t poh_data_offset()
 {
     return sizeof (ArrayBase);
 }
 
 // Padding to insert at alloc_start so that the object placed after it has aligned data.
-// min_pad is what the caller needs there anyway (the LOH keeps a relocation distance in
-// front of every object). The result is >= min_pad and, unless 0, can be a free object.
-inline size_t uoh_alignment_pad (uint8_t* alloc_start, size_t min_pad)
+// It is either 0 or big enough to be formatted as a free object.
+inline size_t poh_alignment_pad (uint8_t* alloc_start)
 {
-    size_t alignment = uoh_data_alignment;
+    size_t alignment = poh_data_alignment;
     if (alignment == 0)
     {
-        return min_pad;
+        return 0;
     }
 
     assert (AlignQword (alignment) == alignment);
 
-    size_t pad = min_pad;
-    size_t misaligned = ((size_t)alloc_start + pad + uoh_data_offset()) & (alignment - 1);
-    if (misaligned != 0)
+    size_t misaligned = ((size_t)alloc_start + poh_data_offset()) & (alignment - 1);
+    if (misaligned == 0)
     {
-        pad += alignment - misaligned;
+        return 0;
     }
 
-    if ((pad != 0) && (pad < AlignQword (min_obj_size)))
+    size_t pad = alignment - misaligned;
+    if (pad < AlignQword (min_obj_size))
     {
         pad += alignment;
     }
 
-    assert (pad >= min_pad);
     return pad;
 }
 
@@ -3442,29 +3439,17 @@ size_t node_gap_size (uint8_t* node)
     return ((plug_and_gap*)node)[-1].gap;
 }
 
-// The distance is always a multiple of 8, so the low 3 bits keep the extra padding
-// plan_loh reserved in front of the object to align its data, in 8 byte units.
 inline
 ptrdiff_t loh_node_relocation_distance(uint8_t* node)
 {
-    return ((((loh_obj_and_pad*)node)[-1].reloc) & ~(ptrdiff_t)7);
+    return (((loh_obj_and_pad*)node)[-1].reloc);
 }
 
 inline
-size_t loh_node_alignment_pad(uint8_t* node)
+void loh_set_node_relocation_distance(uint8_t* node, ptrdiff_t val)
 {
-    return (size_t)((((loh_obj_and_pad*)node)[-1].reloc) & 7) * 8;
-}
-
-inline
-void loh_set_node_relocation_distance(uint8_t* node, ptrdiff_t val, size_t alignment_pad)
-{
-    assert ((val & 7) == 0);
-    assert ((alignment_pad & 7) == 0);
-    assert ((alignment_pad / 8) <= 7);
-
     ptrdiff_t* place = &(((loh_obj_and_pad*)node)[-1].reloc);
-    *place = val | (ptrdiff_t)(alignment_pad / 8);
+    *place = val;
 }
 
 inline

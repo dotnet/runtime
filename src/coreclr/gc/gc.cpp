@@ -33,7 +33,7 @@ BOOL bgc_heap_walk_for_etw_p = FALSE;
 uint32_t yp_spin_count_unit = 0;
 uint32_t original_spin_count_unit = 0;
 size_t loh_size_threshold = LARGE_OBJECT_SIZE;
-size_t uoh_data_alignment = 0;
+size_t poh_data_alignment = 0;
 
 #ifdef GC_CONFIG_DRIVEN
 int compact_ratio = 0;

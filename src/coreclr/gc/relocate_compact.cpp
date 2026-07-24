@@ -190,18 +190,12 @@ void gc_heap::compact_loh()
             }
             else
             {
-                // plan_loh may have reserved more than the fixed padding to align the
-                // data of the object at its new address.
-                loh_pad = AlignQword (loh_padding_obj_size) + loh_node_alignment_pad (o);
+                loh_pad = AlignQword (loh_padding_obj_size);
 
                 reloc += loh_node_relocation_distance (o);
-                assert ((uoh_data_alignment == 0) ||
-                        ((((size_t)reloc + uoh_data_offset()) & (uoh_data_alignment - 1)) == 0));
-
                 gcmemcopy (reloc, o, size, TRUE);
             }
 
-            // the gap has to stay walkable, so it is made into a free object
             thread_gap ((reloc - loh_pad), loh_pad, gen);
 
             o = o + size;
