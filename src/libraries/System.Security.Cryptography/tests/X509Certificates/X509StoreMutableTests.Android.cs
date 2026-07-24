@@ -52,5 +52,43 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => store.Add(cert));
             }
         }
+
+        [Fact]
+        public static void AndroidKeyStoreRsaPrivateKey_PublicExport()
+        {
+            using (X509Store store = new(StoreName.My, StoreLocation.CurrentUser))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.RsaCertificate, TestData.RsaPkcs8Key))
+            using (X509Certificate2 certOnly = new(cert.RawData))
+            {
+                store.Open(OpenFlags.ReadWrite);
+                store.Remove(certOnly);
+
+                try
+                {
+                    store.Add(cert);
+
+                    using (ImportedCollection coll = new ImportedCollection(store.Certificates))
+                    {
+                        byte[] thumbprint = certOnly.GetCertHash(HashAlgorithmName.SHA256);
+                        X509Certificate2 storeCert = Assert.Single(
+                            coll.Collection.FindByThumbprint(HashAlgorithmName.SHA256, thumbprint));
+
+                        Assert.True(storeCert.HasPrivateKey);
+
+                        using RSA rsa = storeCert.GetRSAPrivateKey();
+                        Assert.NotNull(rsa);
+                        RSAParameters publicParameters = rsa.ExportParameters(false);
+                        Assert.NotNull(publicParameters.Modulus);
+                        Assert.NotNull(publicParameters.Exponent);
+
+                        Assert.Throws<CryptographicException>(() => rsa.ExportParameters(true));
+                    }
+                }
+                finally
+                {
+                    store.Remove(certOnly);
+                }
+            }
+        }
     }
 }
