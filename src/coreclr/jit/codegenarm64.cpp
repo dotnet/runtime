@@ -5990,7 +5990,7 @@ void CodeGen::genPoisonUnknownSizeVariable(int varNum, char poisonVal)
         GetEmitter()->emitIns_R_R(INS_sve_dup, EA_8BYTE, REG_SCRATCH_V, REG_SCRATCH, INS_OPTS_SCALABLE_D);
         // ptrue p4.b
         GetEmitter()->emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE, REG_SCRATCH_P, INS_OPTS_SCALABLE_B,
-                                       SVE_PATTERN_ALL);
+                                        SVE_PATTERN_ALL);
         // cmpne p4.b, p4/z, z9.b, #0
         GetEmitter()->emitIns_R_R_R_I(INS_sve_cmpne, EA_SCALABLE, REG_SCRATCH_P, REG_SCRATCH_P, REG_SCRATCH_V, 0,
                                       INS_OPTS_SCALABLE_B);
