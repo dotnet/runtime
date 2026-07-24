@@ -16,6 +16,8 @@ enum host_mode_t
 
     apphost,        // Invoked as <appname>.exe from the application base; this is the renamed "apphost.exe".
 
+    // split_fx = 3, // Formerly used for split-framework mode; value 3 is reserved/unused
+
     libhost = 4,    // Invoked from a non-exe scenario (e.g. COM Activation or self-hosting native application)
 };
 
