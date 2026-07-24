@@ -9825,6 +9825,11 @@ bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, 
     bool       isScalar = false;
     genTreeOps oper     = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(intrinsicId, simdBaseType, &isScalar);
 
+    if (!isScalar && GenTree::OperIsCmpCompare(oper))
+    {
+        return genTypeSize(intrinsicSimdBaseType) >= genTypeSize(simdBaseType);
+    }
+
     switch (oper)
     {
         case GT_AND:

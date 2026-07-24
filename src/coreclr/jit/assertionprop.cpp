@@ -80,6 +80,68 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
     return Limit(Limit::keUnknown);
 }
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
+//----------------------------------------------------------------------------------------------
+// optAssertionProp_HWIntrinsic: Propagate VN-derived facts to local var metadata.
+//
+// Arguments:
+//    comp - The compiler instance
+//    tree - The hwintrinsic node
+//
+static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tree)
+{
+    NamedIntrinsic intrinsic = tree->GetHWIntrinsicId();
+
+    if ((intrinsic != NI_Vector64_ExtractMostSignificantBits) && (intrinsic != NI_Vector128_ExtractMostSignificantBits))
+    {
+        return;
+    }
+
+    assert(tree->GetOperandCount() == 1);
+
+    GenTree* op1 = tree->Op(1);
+
+    if (!op1->OperIs(GT_LCL_VAR))
+    {
+        return;
+    }
+
+    LclVarDsc* varDsc = comp->lvaGetDesc(op1->AsLclVar());
+
+    if (!varDsc->lvSingleDef)
+    {
+        return;
+    }
+
+    ValueNum op1VN = comp->vnStore->VNConservativeNormalValue(op1->gtVNPair);
+
+    auto vnVisitor = [comp, tree](ValueNum vn) -> ValueNumStore::VNVisit {
+        if (vn == ValueNumStore::NoVN)
+        {
+            return ValueNumStore::VNVisit::Abort;
+        }
+
+        vn                 = comp->vnStore->VNNormalValue(vn);
+        var_types type     = comp->vnStore->TypeOfVN(vn);
+        unsigned  simdSize = tree->GetSimdSize();
+
+        if (!varTypeIsSIMD(type) || (genTypeSize(type) != simdSize))
+        {
+            return ValueNumStore::VNVisit::Abort;
+        }
+
+        return comp->vnStore->IsVectorPerElementMask(vn, tree->GetSimdBaseType(), simdSize)
+                   ? ValueNumStore::VNVisit::Continue
+                   : ValueNumStore::VNVisit::Abort;
+    };
+
+    if (comp->vnStore->VNVisitReachingVNs(op1VN, vnVisitor) == ValueNumStore::VNVisit::Continue)
+    {
+        varDsc->SetIsVectorPerElementMask(tree->GetSimdBaseType());
+    }
+}
+#endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
+
 //------------------------------------------------------------------------
 // SymbolicToRealValue: Convert a symbolic value to a 64-bit signed integer.
 //
@@ -5841,6 +5903,12 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
         case GT_CALL:
             return optAssertionProp_Call(assertions, tree->AsCall(), stmt);
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
+        case GT_HWINTRINSIC:
+            optAssertionProp_HWIntrinsic(this, tree->AsHWIntrinsic());
+            return nullptr;
+#endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
 
         case GT_EQ:
         case GT_NE:

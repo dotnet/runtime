@@ -2538,6 +2538,7 @@ public:
 
     bool IsInvariant() const;
     bool IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) const;
+    bool IsVectorPerElementMask(class Compiler* comp, var_types simdBaseType, unsigned simdSize) const;
 
     bool IsNeverNegative(Compiler* comp) const;
     bool IsNeverNegativeOne(Compiler* comp) const;
