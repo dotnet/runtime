@@ -24,7 +24,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
     }
 
     int IXCLRDataTask.GetProcess(/*IXCLRDataProcess*/ void** process)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetProcess(process) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataTask.GetCurrentAppDomain(DacComNullableByRef<IXCLRDataAppDomain> appDomain)
     {
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
@@ -54,17 +54,17 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
         return hr;
     }
     int IXCLRDataTask.GetUniqueID(ulong* id)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetUniqueID(id) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataTask.GetFlags(uint* flags)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFlags(flags) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataTask.IsSameObject(IXCLRDataTask* task)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.IsSameObject(task) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataTask.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetManagedObject(value) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataTask.GetDesiredExecutionState(uint* state)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetDesiredExecutionState(state) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataTask.SetDesiredExecutionState(uint state)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.SetDesiredExecutionState(state) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataTask.CreateStackWalk(uint flags, DacComNullableByRef<IXCLRDataStackWalk> stackWalk)
     {
@@ -87,11 +87,11 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
     }
 
     int IXCLRDataTask.GetOSThreadID(uint* id)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetOSThreadID(id) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataTask.GetContext(uint contextFlags, uint contextBufSize, uint* contextSize, byte* contextBuffer)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetContext(contextFlags, contextBufSize, contextSize, contextBuffer) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataTask.SetContext(uint contextSize, byte* context)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.SetContext(contextSize, context) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataTask.GetCurrentExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception)
     {
@@ -114,7 +114,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
             else
             {
                 Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(_address);
-                exception.Interface = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT, thrownObjectHandle, threadData.FirstNestedException, legacyExceptionState);
+                exception.Interface = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT, TargetPointer.Null, thrownObjectHandle, threadData.FirstNestedException, legacyExceptionState);
             }
         }
         catch (System.Exception ex)
@@ -133,7 +133,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
     int IXCLRDataTask.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
     int IXCLRDataTask.GetName(uint bufLen, uint* nameLen, char* nameBuffer)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetName(bufLen, nameLen, nameBuffer) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataTask.GetLastExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception)
     {
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
@@ -155,7 +155,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
             }
             else
             {
-                exception.Interface = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_PARTIAL, thrownObjectHandle, TargetPointer.Null, legacyExceptionState);
+                exception.Interface = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_PARTIAL, TargetPointer.Null, thrownObjectHandle, TargetPointer.Null, legacyExceptionState);
             }
         }
         catch (System.Exception ex)

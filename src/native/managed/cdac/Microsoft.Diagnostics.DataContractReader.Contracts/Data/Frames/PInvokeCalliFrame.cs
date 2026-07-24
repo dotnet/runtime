@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.PInvokeCalliFrame))]
 internal partial class PInvokeCalliFrame : IData<PInvokeCalliFrame>
 {
-    [Field] public TargetPointer VASigCookiePtr { get; }
+    [Field] public partial TargetPointer VASigCookiePtr { get; }
 }

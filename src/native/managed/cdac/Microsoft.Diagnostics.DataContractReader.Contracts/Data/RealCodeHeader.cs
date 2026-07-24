@@ -6,12 +6,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.RealCodeHeader))]
 internal sealed partial class RealCodeHeader : IData<RealCodeHeader>
 {
-    [Field] public TargetPointer MethodDesc { get; }
-    [Field] public TargetPointer DebugInfo { get; }
-    [Field] public TargetPointer EHInfo { get; }
-    [Field] public TargetPointer GCInfo { get; }
-    [Field] public uint NumUnwindInfos { get; }
+    [Field] public partial TargetPointer MethodDesc { get; }
+    [Field] public partial TargetPointer DebugInfo { get; }
+    [Field] public partial TargetPointer EHInfo { get; }
+    [Field] public partial TargetPointer GCInfo { get; }
+    [Field] public partial uint NumUnwindInfos { get; }
 
     [FieldAddress]
-    public TargetPointer UnwindInfos { get; }
+    public partial TargetPointer UnwindInfos { get; }
 }

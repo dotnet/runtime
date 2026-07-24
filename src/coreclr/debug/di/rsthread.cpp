@@ -8261,7 +8261,6 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
                 case IDacDbiInterface::kArchArm:
                     hr = E_NOTIMPL;
                     break;
-                case IDacDbiInterface::kArchArm64:
                 case IDacDbiInterface::kArchLoongArch64:
                 case IDacDbiInterface::kArchRiscV64:
                     hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg, type, ppValue);
@@ -8269,6 +8268,12 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
                 case IDacDbiInterface::kArchAMD64:
                     hr = m_nativeFrame->GetLocalFloatingPointValue(
                         ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlReg.vlrReg) - REGISTER_AMD64_XMM0,
+                        type,
+                        ppValue);
+                    break;
+                case IDacDbiInterface::kArchArm64:
+                    hr = m_nativeFrame->GetLocalFloatingPointValue(
+                        ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlReg.vlrReg) - REGISTER_ARM64_V0,
                         type,
                         ppValue);
                     break;
@@ -8302,7 +8307,7 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
         break;
 
     case ICorDebugInfo::VLT_REG_REG:
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         {
             const ICorDebugInfo::RegNum lowReg  = pNativeVarInfo->loc.vlRegReg.vlrrReg1;
             const ICorDebugInfo::RegNum highReg = pNativeVarInfo->loc.vlRegReg.vlrrReg2;
@@ -8311,9 +8316,9 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
 
             if (lowIsFloat || highIsFloat)
             {
-                // AMD64 extends RegNum with XMM registers, so VLT_REG_REG can
-                // represent mixed int/fp pairs. Other targets still require
-                // dedicated encodings for FP-containing multi-register values.
+                // AMD64/ARM64 extend RegNum with FP registers (XMM/V), so
+                // VLT_REG_REG can represent mixed int/fp pairs. FP register
+                // indices for GetLocalTwoRegisterValue are 0-based.
                 hr = m_nativeFrame->GetLocalTwoRegisterValue(
                     lowIsFloat ? lowReg - ICorDebugInfo::REGNUM_FP_FIRST
                                : ConvertRegNumToCorDebugRegister(lowReg),

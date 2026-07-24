@@ -16,4 +16,6 @@ public static class CorDbgHResults
     public const int CORDBG_E_NON_MATCHING_CONTEXT = unchecked((int)0x80131327);
     public const int CORDBG_E_UNSUPPORTED_DELEGATE = unchecked((int)0x80131c68);
     public const int CORDBG_E_ENC_HANGING_FIELD = unchecked((int)0x80131342);
+    public const int CLDB_E_FILE_CORRUPT = unchecked((int)0x8013110e);
+    public const int CORDBG_E_MISSING_METADATA = unchecked((int)0x80131c35);
 }

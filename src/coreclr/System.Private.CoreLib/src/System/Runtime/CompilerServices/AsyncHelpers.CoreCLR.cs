@@ -1596,6 +1596,8 @@ namespace System.Runtime.CompilerServices
                 info.CurrentTask = task;
                 AsyncProfiler.InitInfo(ref info.AsyncProfilerInfo);
 
+                info.AsyncProfilerInfo.DispatcherId = (ulong)task.Id;
+
                 if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
                 {
                     if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))

@@ -40,6 +40,9 @@ public:
     };
 
     FCDECL0(static INT32,       GetOptimalMaxSpinWaitsPerSpinIteration);
+#ifdef TARGET_WASM
+    FCDECL0(static void*,       GetThreadStaticsBaseNative);
+#endif
     FCDECL1(static void,        Finalize, ThreadBaseObject* pThis);
     FCDECL0(static FC_BOOL_RET, CatchAtSafePoint);
     FCDECL0(static FC_BOOL_RET, CurrentThreadIsFinalizerThread);

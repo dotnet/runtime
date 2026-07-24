@@ -2330,6 +2330,18 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
             _ASSERTE(!pInlinedFrame || adr);
 
+#ifdef TARGET_WASM
+            if ((pInlinedFrame != NULL) && (adr == (PCODE)INLINED_PINVOKE_FROM_R2R))
+            {
+                adr = GetWasmVirtualIPFromStackPointer(dac_cast<TADDR>(((InlinedCallFrame*)pInlinedFrame)->GetCallSiteSP()));
+                if (adr == (PCODE)NULL)
+                {
+                    retVal = SWA_FAILED;
+                    goto Cleanup;
+                }
+            }
+#endif // TARGET_WASM
+
             if (adr)
             {
                 ProcessIp(adr);

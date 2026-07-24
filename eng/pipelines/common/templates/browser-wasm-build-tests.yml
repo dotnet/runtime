@@ -61,13 +61,12 @@ jobs:
 
         preBuildSteps:
           # Download single threaded runtime packs, and tasks needed to build WBT
-          - task: DownloadBuildArtifacts@0
+          - task: DownloadPipelineArtifact@2
             displayName: Download built nugets for singlethreaded runtime
             inputs:
               buildType: current
               artifactName: 'BuildArtifacts_browser_wasm_$(_hostedOs)_Release_SingleThreaded_BuildOnly'
-              downloadType: single
-              downloadPath: '$(Build.SourcesDirectory)/artifacts'
+              targetPath: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_SingleThreaded_BuildOnly'
 
           - task: CopyFiles@2
             displayName: Copy single threaded assets
@@ -77,13 +76,12 @@ jobs:
               CleanTargetFolder: false
 
           # Download for multi-threaded
-          - task: DownloadBuildArtifacts@0
+          - task: DownloadPipelineArtifact@2
             displayName: Download built nugets for multi-threaded runtime
             inputs:
               buildType: current
               artifactName: BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly
-              downloadType: single
-              downloadPath: '$(Build.SourcesDirectory)/artifacts'
+              targetPath: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_MultiThreaded_BuildOnly'
 
           - task: CopyFiles@2
             displayName: Copy multithreading runtime pack
@@ -97,13 +95,12 @@ jobs:
           # the CoreCLR browser-wasm runtime pack, so installing the workload for testing
           # requires the pack to be present in the local package feed.
           - ${{ if eq(parameters.includeCoreClrRuntimePack, true) }}:
-            - task: DownloadBuildArtifacts@0
+            - task: DownloadPipelineArtifact@2
               displayName: Download built nugets for CoreCLR runtime
               inputs:
                 buildType: current
                 artifactName: BuildArtifacts_browser_wasm_$(_hostedOs)_Release_CoreCLR
-                downloadType: single
-                downloadPath: '$(Build.SourcesDirectory)/artifacts'
+                targetPath: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_CoreCLR'
 
             - task: CopyFiles@2
               displayName: Copy CoreCLR runtime pack
@@ -114,13 +111,12 @@ jobs:
                 CleanTargetFolder: false
 
           # Download WBT
-          - task: DownloadBuildArtifacts@0
+          - task: DownloadPipelineArtifact@2
             displayName: Download Wasm.Build.Tests
             inputs:
               buildType: current
               artifactName: WasmBuildTests_$(_hostedOs)_SingleThreaded_BuildOnly
-              downloadType: single
-              downloadPath: '$(Build.SourcesDirectory)/artifacts'
+              targetPath: '$(Build.SourcesDirectory)/artifacts/WasmBuildTests_$(_hostedOs)_SingleThreaded_BuildOnly'
 
           - task: CopyFiles@2
             displayName: Copy Wasm.Build.Tests archive

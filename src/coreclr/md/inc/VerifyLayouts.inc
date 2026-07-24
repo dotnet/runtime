@@ -200,6 +200,7 @@ ALIGN_FIELD(CMiniMdRW, m_bSortable, sizeof(BYTE)*TBL_COUNT, sizeof(BYTE))
 FIELD(CMiniMdRW, dbg_m_pLock, sizeof(void*))
 #endif
 FIELD(CMiniMdRW, m_fMinimalDelta, 4)
+FIELD(CMiniMdRW, m_fAll4ByteColumns, 4)
 FIELD(CMiniMdRW, m_rENCRecs, sizeof(void*))
 END_TYPE(CMiniMdRW, 8)
 

@@ -193,7 +193,7 @@ namespace System.Diagnostics
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
-        public static System.Diagnostics.ProcessExitStatus Run(string fileName, System.Collections.Generic.IList<string>? arguments = null, bool silent = false, System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
+        public static System.Diagnostics.ProcessExitStatus Run(string fileName, System.Collections.Generic.IEnumerable<string>? arguments = null, bool silent = false, System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
@@ -201,7 +201,7 @@ namespace System.Diagnostics
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
-        public static System.Diagnostics.ProcessTextOutput RunAndCaptureText(string fileName, System.Collections.Generic.IList<string>? arguments = null, System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
+        public static System.Diagnostics.ProcessTextOutput RunAndCaptureText(string fileName, System.Collections.Generic.IEnumerable<string>? arguments = null, System.TimeSpan? timeout = default(System.TimeSpan?)) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
@@ -209,7 +209,7 @@ namespace System.Diagnostics
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
-        public static System.Threading.Tasks.Task<System.Diagnostics.ProcessTextOutput> RunAndCaptureTextAsync(string fileName, System.Collections.Generic.IList<string>? arguments = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<System.Diagnostics.ProcessTextOutput> RunAndCaptureTextAsync(string fileName, System.Collections.Generic.IEnumerable<string>? arguments = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
@@ -217,7 +217,7 @@ namespace System.Diagnostics
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
-        public static System.Threading.Tasks.Task<System.Diagnostics.ProcessExitStatus> RunAsync(string fileName, System.Collections.Generic.IList<string>? arguments = null, bool silent = false, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<System.Diagnostics.ProcessExitStatus> RunAsync(string fileName, System.Collections.Generic.IEnumerable<string>? arguments = null, bool silent = false, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")] // this needs to come after the ios attribute due to limitations in the platform analyzer
@@ -251,7 +251,7 @@ namespace System.Diagnostics
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")] // this needs to come after the ios attribute due to limitations in the platform analyzer
-        public static int StartAndForget(string fileName, System.Collections.Generic.IList<string>? arguments = null) { throw null; }
+        public static int StartAndForget(string fileName, System.Collections.Generic.IEnumerable<string>? arguments = null) { throw null; }
         public override string ToString() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]

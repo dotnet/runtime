@@ -165,6 +165,16 @@ extends:
           - wasi_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
 
+      # CoreCLR library-test smoke leg run on wasmtime via Helix
+      # (wasi_wasm queue). Starts with a single-library smoke set; see
+      # https://github.com/dotnet/runtime/issues/130129.
+      - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-library-tests.yml
+        parameters:
+          platforms:
+          - wasi_wasm
+          shouldRunSmokeOnly: true
+          alwaysRun: ${{ variables.isRollingBuild }}
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -186,7 +196,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
                   displayName: Build Assets
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -195,7 +205,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
               - template: /eng/pipelines/common/wasm-post-build-steps.yml
                 parameters:
                   publishArtifactsForWorkload: true
@@ -233,7 +243,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
                   displayName: Build Assets
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -242,7 +252,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
               - template: /eng/pipelines/common/wasm-post-build-steps.yml
                 parameters:
                   publishArtifactsForWorkload: true
@@ -681,6 +691,7 @@ extends:
           - freebsd_x64
           - linux_riscv64
           - linux_loongarch64
+          - openbsd_x64
           jobParameters:
             testScope: innerloop
             nameSuffix: CoreCLR_Bootstrapped
@@ -1775,7 +1786,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
             unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
             extraBuildArgs: -os browser -p:HostConfiguration=Release
             condition: >-

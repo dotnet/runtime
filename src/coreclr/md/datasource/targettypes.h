@@ -292,6 +292,7 @@ public:
     BYTE m_bSortable[TBL_COUNT];
     CORDB_ADDRESS dbg_m_pLock;
     BOOL m_fMinimalDelta;
+    BOOL m_fAll4ByteColumns;
     CORDB_ADDRESS m_rENCRecs;
 };
 

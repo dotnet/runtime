@@ -119,6 +119,62 @@ public class StackWalkDumpTests : DumpTestBase
             .Verify();
     }
 
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public unsafe void MethodInstance_EnumExtents_ReturnsSingleRangeContainingInstructionPointer(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+
+        foreach (IStackDataFrameHandle frame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
+        {
+            TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
+            if (methodDescPtr == TargetPointer.Null)
+                continue;
+
+            MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescPtr);
+            if (DumpTestHelpers.GetMethodName(Target, methodDesc) is not "MethodC")
+                continue;
+
+            IXCLRDataMethodInstance methodInstance = new ClrDataMethodInstance(
+                Target, methodDesc, TargetPointer.Null, legacyImpl: null);
+            ulong handle = 0;
+            int hr = methodInstance.StartEnumExtents(&handle);
+
+            try
+            {
+                AssertHResult(HResults.S_OK, hr);
+                Assert.NotEqual(0ul, handle);
+
+                ClrDataAddressRange extent;
+                hr = methodInstance.EnumExtent(&handle, &extent);
+                AssertHResult(HResults.S_OK, hr);
+                Assert.True(extent.endAddress.Value > extent.startAddress.Value);
+
+                ClrDataAddress instructionPointer = stackWalk.GetInstructionPointer(frame).ToClrDataAddress(Target);
+                Assert.InRange(instructionPointer.Value, extent.startAddress.Value, extent.endAddress.Value - 1);
+
+                hr = methodInstance.EnumExtent(&handle, &extent);
+                AssertHResult(HResults.S_FALSE, hr);
+            }
+            finally
+            {
+                if (handle != 0)
+                {
+                    hr = methodInstance.EndEnumExtents(handle);
+                    AssertHResult(HResults.S_OK, hr);
+                }
+            }
+
+            return;
+        }
+
+        Assert.Fail("MethodC not found on the crashing thread's stack");
+    }
+
     // ========== PInvokeStub debuggee ==========
 
     [ConditionalTheory]

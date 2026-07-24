@@ -250,6 +250,9 @@ DEFINE_METHOD(DELEGATE,       CTOR_COLLECTIBLE_CLOSED_STATIC,     CtorCollectibl
 DEFINE_METHOD(DELEGATE,       CTOR_COLLECTIBLE_OPEN,              CtorCollectibleOpen,                   NoSig)
 DEFINE_METHOD(DELEGATE,       CTOR_COLLECTIBLE_VIRTUAL_DISPATCH,  CtorCollectibleVirtualDispatch,        NoSig)
 
+DEFINE_CLASS(DELEGATEWRAPPER, System,             Delegate+Wrapper)
+DEFINE_FIELD(DELEGATEWRAPPER, VALUE,              Value)
+
 DEFINE_CLASS(INT128,               System,                 Int128)
 DEFINE_CLASS(UINT128,              System,                 UInt128)
 
