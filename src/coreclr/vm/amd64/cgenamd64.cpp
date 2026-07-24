@@ -394,40 +394,6 @@ BOOL GetAnyThunkTarget (CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
 
 #ifndef DACCESS_COMPILE
 
-void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-
-        PRECONDITION(CheckPointer(pBuffer));
-    }
-    CONTRACTL_END;
-
-    // mov r10, pv                      49 ba xx xx xx xx xx xx xx xx
-
-    pBuffer[0]  = 0x49;
-    pBuffer[1]  = 0xBA;
-
-    SET_UNALIGNED_64(&pBuffer[2], pv);
-
-    // mov rax, pTarget                 48 b8 xx xx xx xx xx xx xx xx
-
-    pBuffer[10] = 0x48;
-    pBuffer[11] = 0xB8;
-
-    SET_UNALIGNED_64(&pBuffer[12], pTarget);
-
-    // jmp rax                          ff e0
-
-    pBuffer[20] = 0xFF;
-    pBuffer[21] = 0xE0;
-
-    _ASSERTE(DbgIsExecutable(pBuffer, 22));
-}
-
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     CONTRACTL
