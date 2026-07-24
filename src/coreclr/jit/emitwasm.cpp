@@ -6,6 +6,7 @@
 #pragma hdrstop
 #endif
 
+#include <inttypes.h>
 #include "codegen.h"
 
 // clang-format off
@@ -1252,7 +1253,7 @@ void emitter::emitDispIns(
         case IF_GLOBALIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %llu", (uint64_t)imm);
+            printf(" %" PRIu64, (uint64_t)imm);
             dispJumpTargetIfAny();
             dispHandleIfAny();
             dispLclVarInfoIfAny();
@@ -1262,14 +1263,14 @@ void emitter::emitDispIns(
         case IF_CALL_INDIRECT:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %llu 0", (uint64_t)imm);
+            printf(" %" PRIu64 " 0", (uint64_t)imm);
             dispHandleIfAny();
         }
         break;
         case IF_MEMIDX_MEMIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %llu %llu", (uint64_t)imm, (uint64_t)imm);
+            printf(" %" PRIu64 " %" PRIu64, (uint64_t)imm, (uint64_t)imm);
         }
         break;
         case IF_LOCAL_DECL:
@@ -1304,7 +1305,7 @@ void emitter::emitDispIns(
         case IF_SLEB128:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %lli", (int64_t)imm);
+            printf(" %" PRId64, (int64_t)imm);
             dispLclVarInfoIfAny();
         }
         break;
@@ -1313,7 +1314,7 @@ void emitter::emitDispIns(
         case IF_FUNCLETIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf("funclet %lli", (int64_t)imm);
+            printf("funclet %lli", static_cast<long long>(imm));
             dispLclVarInfoIfAny();
         }
         break;
@@ -1332,7 +1333,7 @@ void emitter::emitDispIns(
         {
             unsigned       log2align = emitGetAlignHintLog2(id);
             cnsval_ssize_t offset    = emitGetInsSC(id);
-            printf(" %u %llu", log2align, (uint64_t)offset);
+            printf(" %u %" PRIu64, log2align, (uint64_t)offset);
             dispLclVarInfoIfAny();
         }
         break;
@@ -1406,7 +1407,7 @@ void emitter::emitDispIns(
         {
             unsigned       log2align = emitGetAlignHintLog2(id);
             cnsval_ssize_t offset    = emitGetInsSC(id);
-            printf(" %u %llu", log2align, (uint64_t)offset);
+            printf(" %u %llu", log2align, static_cast<unsigned long long>(offset));
             dispLclVarInfoIfAny();
 
             uint8_t lane = emitGetLaneImmValue(id);

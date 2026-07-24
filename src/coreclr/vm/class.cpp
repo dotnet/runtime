@@ -2802,7 +2802,7 @@ MethodTable::DebugDumpGCDesc(
             {
                 if (fDebug)
                 {
-                    ssBuff.Printf("   offset %5d (%d w/o Object), size %5d (%5d w/o BaseSize subtr)\n",
+                    ssBuff.Printf("   offset %5zu (%zu w/o Object), size %5zu (%5zu w/o BaseSize subtr)\n",
                         pSeries->GetSeriesOffset(),
                         pSeries->GetSeriesOffset() - OBJECT_SIZE,
                         pSeries->GetSeriesSize(),
@@ -2812,7 +2812,7 @@ MethodTable::DebugDumpGCDesc(
                 else
                 {
                     //LF_ALWAYS allowed here because this is controlled by special env var ShouldDumpOnClassLoad
-                    LOG((LF_ALWAYS, LL_ALWAYS, "   offset %5d (%d w/o Object), size %5d (%5d w/o BaseSize subtr)\n",
+                    LOG((LF_ALWAYS, LL_ALWAYS, "   offset %5zu (%zu w/o Object), size %5zu (%5zu w/o BaseSize subtr)\n",
                          pSeries->GetSeriesOffset(),
                          pSeries->GetSeriesOffset() - OBJECT_SIZE,
                          pSeries->GetSeriesSize(),

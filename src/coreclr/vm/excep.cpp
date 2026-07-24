@@ -1142,7 +1142,7 @@ EHRangeTree::EHRangeTree(IJitManager* pIJM,
         }
     }
 
-    LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: m_ehcount:0x%x, m_rgClauses:0%x\n",
+    LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: m_ehcount:0x%x, m_rgClauses:%p\n",
          m_EHCount, m_rgClauses));
 
     m_rgNodes = new (nothrow) EHRangeTreeNode[m_EHCount+1];
@@ -1156,7 +1156,7 @@ EHRangeTree::EHRangeTree(IJitManager* pIJM,
     m_root = &(m_rgNodes[m_EHCount]);
     m_root->MarkAsRoot(methodSize + 1);
 
-    LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: rgNodes:0x%x\n", m_rgNodes));
+    LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: rgNodes:%p\n", m_rgNodes));
 
     if (m_EHCount ==0)
     {
@@ -1175,10 +1175,10 @@ EHRangeTree::EHRangeTree(IJitManager* pIJM,
 
         pIJM->GetNextEHClause(&pEnumState, pEHClause);
 
-        LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: EHRTT_JIT_MANAGER got clause\n", i));
+        LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: EHRTT_JIT_MANAGER got clause\n"));
 
         LOG((LF_CORDB, LL_INFO10000, "EHRT::CC: clause 0x%x,"
-                    "addrof:0x%x\n", i, pEHClause ));
+                "addrof:%p\n", i, pEHClause ));
 
         _ASSERTE(pEHClause->HandlerEndPC != (DWORD) -1);  // <TODO> remove, only protects against a deprecated convention</TODO>
 
@@ -1926,7 +1926,7 @@ ReplaceExceptionContextRecord(CONTEXT *pTarget, CONTEXT *pSource)
         memcpy(pTarget, pSource, offsetof(CONTEXT, ExtendedRegisters));
     }
     STRESS_LOG3(LF_SYNC, LL_INFO1000, "ReSet thread context EIP = %p ESP = %p EBP = %p\n",
-        GetIP((CONTEXT*)pTarget), GetSP((CONTEXT*)pTarget), GetFP((CONTEXT*)pTarget));
+        (void*)GetIP((CONTEXT*)pTarget), (void*)GetSP((CONTEXT*)pTarget), (void*)GetFP((CONTEXT*)pTarget));
 
 #else // !CONTEXT_EXTENDED_REGISTERS
 
@@ -2573,7 +2573,8 @@ void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UIN
     BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
     pCurTES->ResetRaisingForeignException();
 
-    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
+    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", (void*)currentIP,
+        (void*)currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
 
     // Do not save stacktrace to preallocated exception.  These are shared.
     if (CLRException::IsPreallocatedExceptionObject(pThrowable))
@@ -6836,8 +6837,9 @@ LONG NotifyOfCHFFilterWrapper(
         if (pThread)
         {
             LOG((LF_EH, LL_INFO1000, ", Thread SP: %p, Exception SP: %p",
-                 pThread->GetExceptionState()->GetContextRecord() ? GetSP(pThread->GetExceptionState()->GetContextRecord()) : (TADDR)NULL,
-                 pExceptionInfo->ContextRecord ? GetSP(pExceptionInfo->ContextRecord) : (TADDR)NULL ));
+                 (void*)(pThread->GetExceptionState()->GetContextRecord() ?
+                     GetSP(pThread->GetExceptionState()->GetContextRecord()) : (TADDR)NULL),
+                 (void*)(pExceptionInfo->ContextRecord ? GetSP(pExceptionInfo->ContextRecord) : (TADDR)NULL) ));
         }
         LOG((LF_EH, LL_INFO1000, "\n"));
         return ret;

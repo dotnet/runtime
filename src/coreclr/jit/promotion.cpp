@@ -645,7 +645,7 @@ public:
 
             if (agg->Replacements.size() >= PHYSICAL_PROMOTION_MAX_PROMOTIONS_PER_STRUCT)
             {
-                JITDUMP("  Promoted %zu fields in V%02u; will not promote more\n", agg->Replacements.size());
+                JITDUMP("  Promoted %zu fields in V%02u; will not promote more\n", agg->Replacements.size(), lclNum);
                 break;
             }
         }

@@ -15,6 +15,7 @@ Module Name:
 
 #include "gcinterface.h"
 #include "env/gcenv.os.h"
+#include <minipal/types.h>
 
 #include "gchandletableimpl.h"
 
@@ -394,7 +395,7 @@ inline bool IsServerHeap()
 
 HRESULT initialize_log_file();
 void flush_gc_log (bool);
-void GCLog (const char *fmt, ... );
+void GCLog (const char *fmt, ... ) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
 #define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
 #define SIMPLE_DPRINTF_ARG(x) , x
 
@@ -482,7 +483,7 @@ void GCLog (const char *fmt, ... );
 FILE* CreateLogFile(const GCConfigStringHolder& temp_logfile_name, bool is_config);
 #endif //TRACE_GC || GC_CONFIG_DRIVEN
 
-void log_init_error_to_host (const char* format, ...);
+void log_init_error_to_host (const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
 
 uint64_t GetHighPrecisionTimeStamp();
 

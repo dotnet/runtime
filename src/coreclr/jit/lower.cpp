@@ -2454,7 +2454,7 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
     if (lengthArg->IsIntegralConst())
     {
         ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
-        JITDUMP("Size=%ld.. ", (LONG)cnsSize);
+        JITDUMP("Size=%zd.. ", cnsSize);
         // TODO-CQ: drop the whole thing in case of 0
         if ((cnsSize > 0) && (cnsSize <= (ssize_t)m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
         {
@@ -2544,7 +2544,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
     if (lengthArg->IsIntegralConst())
     {
         ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
-        JITDUMP("Size=%ld.. ", (LONG)cnsSize);
+        JITDUMP("Size=%zd.. ", cnsSize);
         // The case of 0 has been handled earlier with VN
         if (cnsSize > 0)
         {
@@ -7800,12 +7800,12 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     DISPNODE(base);
     if (index != nullptr)
     {
-        JITDUMP("  + Index * %u + %d\n    ", scale, offset);
+        JITDUMP("  + Index * %u + %zd\n    ", scale, offset);
         DISPNODE(index);
     }
     else
     {
-        JITDUMP("  + %d\n", offset);
+        JITDUMP("  + %zd\n", offset);
     }
 
     // Save the (potentially) unused operands before changing the address to LEA.
@@ -11421,7 +11421,7 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         // Later stores must overwrite any overlapping bytes from earlier stores.
         uint64_t currBitsMask = (currMask << currShift) & newMask;
         uint64_t val          = (prevBits & ~currBitsMask) | currBits;
-        JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
+        JITDUMP("Coalesced two stores into a single store with value %lld\n", (long long)(int64_t)val);
 
         assert(currData.value->OperIs(GT_CNS_INT));
         auto* intCon = currData.value->AsIntCon();

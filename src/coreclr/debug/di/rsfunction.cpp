@@ -797,7 +797,7 @@ HRESULT CordbFunction::GetILCodeAndSigToken()
                 currentEnCVersion = m_pModule->LookupFunctionLatestVersion(m_MDToken)->m_dwEnCVersionNumber;
             }
 
-            LOG((LF_CORDB,LL_INFO10000,"R:CF::GICAST: looking for IL code, version 0x%x\n", currentEnCVersion));
+            LOG((LF_CORDB,LL_INFO10000,"R:CF::GICAST: looking for IL code, version 0x%zx\n", currentEnCVersion));
 
             if (m_pILCode == NULL)
             {

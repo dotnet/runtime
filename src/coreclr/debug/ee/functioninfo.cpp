@@ -43,7 +43,7 @@ static void _dumpVarNativeInfo(ICorDebugInfo::NativeVarInfo* vni)
 {
     WRAPPER_NO_CONTRACT;
 
-    LOG((LF_CORDB, LL_INFO1000000, "Var %02d: 0x%04x-0x%04x vlt=",
+    LOG((LF_CORDB, LL_INFO1000000, "Var %02d: 0x%04x-0x%04x vlt=%d, ",
             vni->varNumber,
             vni->startOffset, vni->endOffset,
             vni->loc.vlType));
@@ -517,7 +517,7 @@ SIZE_T DebuggerJitInfo::MapSpecialToNative(CorDebugMappingResult mapping,
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO10000, "DJI::MSTN map:0x%x which:0x%x\n", mapping, which));
+    LOG((LF_CORDB, LL_INFO10000, "DJI::MSTN map:0x%x which:0x%zx\n", mapping, which));
 
     bool fFound;
     SIZE_T  cFound = 0;
@@ -645,7 +645,7 @@ void DebuggerJitInfo::MapILRangeToMapEntryRange(SIZE_T startOffset,
     CONTRACTL_END;
 
     LOG((LF_CORDB, LL_INFO1000000,
-         "DJI::MIRTMER: IL 0x%04x-0x%04x\n",
+         "DJI::MIRTMER: IL 0x%04zx-0x%04zx\n",
          startOffset, endOffset));
 
     if (GetSequenceMapCount() == 0)
@@ -683,7 +683,7 @@ void DebuggerJitInfo::MapILRangeToMapEntryRange(SIZE_T startOffset,
 
 
     LOG((LF_CORDB, LL_INFO1000000,
-         "DJI::MIRTMER: IL 0x%04x-0x%04x --> 0x%04x 0x%08x-0x%08x\n"
+         "DJI::MIRTMER: IL 0x%04zx-0x%04zx --> 0x%04x 0x%08x-0x%08x\n"
          "                               --> 0x%04x 0x%08x-0x%08x\n",
          startOffset, endOffset,
          (*start)->ilOffset,
@@ -1226,12 +1226,12 @@ void DebuggerJitInfo::Init(TADDR newAddress)
          "Code from %p to %p "
          "varCount=%u  seqCount=%u\n",
          this, this->m_encVersion,
-         this->m_codeRegionInfo.getAddrOfHotCode(),
-         this->m_codeRegionInfo.getAddrOfHotCode() + this->m_codeRegionInfo.getSizeOfHotCode(),
-         this->m_codeRegionInfo.getAddrOfColdCode(),
-         this->m_codeRegionInfo.getAddrOfColdCode() + this->m_codeRegionInfo.getSizeOfColdCode(),
-         this->m_addrOfCode,
-         this->m_addrOfCode+(ULONG)this->m_sizeOfCode,
+         (void*)this->m_codeRegionInfo.getAddrOfHotCode(),
+         (void*)(this->m_codeRegionInfo.getAddrOfHotCode() + this->m_codeRegionInfo.getSizeOfHotCode()),
+         (void*)this->m_codeRegionInfo.getAddrOfColdCode(),
+         (void*)(this->m_codeRegionInfo.getAddrOfColdCode() + this->m_codeRegionInfo.getSizeOfColdCode()),
+         (void*)this->m_addrOfCode,
+         (void*)(this->m_addrOfCode+(ULONG)this->m_sizeOfCode),
          this->GetVarNativeInfoCount(),
          this->GetSequenceMapCount()));
 
@@ -1264,7 +1264,7 @@ ICorDebugInfo::SourceTypes DebuggerJitInfo::GetSrcTypeFromILOffset(SIZE_T ilOffs
     BOOL exact = FALSE;
     DebuggerILToNativeMap *pMap = MapILOffsetToMapEntry(ilOffset, &exact);
 
-    LOG((LF_CORDB, LL_INFO100000, "DJI::GSTFILO: for il 0x%x, got entry 0x%p,"
+    LOG((LF_CORDB, LL_INFO100000, "DJI::GSTFILO: for il 0x%zx, got entry 0x%p,"
         "(il 0x%x) nat 0x%x to 0x%x, SourceTypes 0x%x, exact:%x\n", ilOffset, pMap,
         pMap->ilOffset, pMap->nativeStartOffset, pMap->nativeEndOffset, pMap->source,
         exact));
@@ -1673,7 +1673,7 @@ DebuggerJitInfo *DebuggerMethodInfo::CreateInitAndAddJitInfo(NativeCodeVersion n
 
             m_latestJitInfo = dji;
 
-            LOG((LF_CORDB,LL_INFO10000,"DMI:CAAJI: DJI version 0x%04x for %s\n",
+            LOG((LF_CORDB,LL_INFO10000,"DMI:CAAJI: DJI version 0x%04zx for %s\n",
                  GetCurrentEnCVersion(),
                  dji->m_nativeCodeVersion.GetMethodDesc()->m_pszDebugMethodName));
         }
@@ -1716,7 +1716,7 @@ void DebuggerMethodInfo::DeleteJitInfo(DebuggerJitInfo *dji)
 
     Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
 
-    LOG((LF_CORDB,LL_INFO10000,"DMI:DJI: dji:0x%08x\n", dji));
+    LOG((LF_CORDB,LL_INFO10000,"DMI:DJI: dji:0x%p\n", dji));
 
     DebuggerJitInfo *djiPrev = dji->m_prevJitInfo;
 
@@ -2052,7 +2052,7 @@ void DebuggerMethodInfo::CreateDJIsForMethodDesc(MethodDesc * pMethodDesc)
             // Some versions may not be compiled yet - skip those for now
             // if they compile later the JitCompiled callback will add a DJI to our cache at that time
             PCODE codeAddr = GetInterpreterCodeFromEntryPointIfPresent(itr->GetNativeCode());
-            LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD (%d) Native code for DJI - %p\n", ++count, codeAddr));
+            LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD (%d) Native code for DJI - %p\n", ++count, (void*)codeAddr));
             if (codeAddr)
             {
                 // The DJI may already be populated in the cache, if so CreateInitAndAdd is
@@ -2218,7 +2218,7 @@ void DebuggerMethodInfoTable::ClearMethodsOfModule(Module *pModule)
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
-    LOG((LF_CORDB, LL_INFO1000000, "CMOM:mod:0x%x (%s)\n", pModule
+    LOG((LF_CORDB, LL_INFO1000000, "CMOM:mod:0x%p (%s)\n", pModule
         ,pModule->GetDebugName()));
 
     HASHFIND info;

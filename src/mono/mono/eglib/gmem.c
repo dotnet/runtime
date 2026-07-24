@@ -108,7 +108,7 @@ gpointer g_realloc (gpointer obj, gsize size)
 	ptr = G_REALLOC_INTERNAL (obj, size);
 	if (ptr)
 		return ptr;
-	g_error ("Could not allocate %i bytes", size);
+	g_error ("Could not allocate %zu bytes", size);
 }
 
 gpointer
@@ -120,7 +120,7 @@ g_malloc (gsize x)
 	ptr = G_MALLOC_INTERNAL (x);
 	if (ptr)
 		return ptr;
-	g_error ("Could not allocate %i bytes", x);
+	g_error ("Could not allocate %zu bytes", x);
 }
 
 gpointer g_calloc (gsize n, gsize x)
@@ -131,7 +131,7 @@ gpointer g_calloc (gsize n, gsize x)
 	ptr = G_CALLOC_INTERNAL (n, x);
 	if (ptr)
 		return ptr;
-	g_error ("Could not allocate %i (%i * %i) bytes", x*n, n, x);
+	g_error ("Could not allocate %zu (%zu * %zu) bytes", x*n, n, x);
 }
 gpointer g_malloc0 (gsize x)
 {

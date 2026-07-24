@@ -405,7 +405,7 @@ respin:
 
                     if (dwJoinWait != WAIT_OBJECT_0)
                     {
-                        STRESS_LOG1 (LF_GC, LL_FATALERROR, "joined event wait failed with code: %zx", dwJoinWait);
+                        STRESS_LOG1 (LF_GC, LL_FATALERROR, "joined event wait failed with code: %x", dwJoinWait);
                         FATAL_GC_ERROR ();
                     }
                 }
@@ -414,7 +414,7 @@ respin:
                 if (color == join_struct.lock_color.LoadWithoutBarrier())
                 {
                     dprintf (9999, ("---h%d %d j%d %d - respin!!! (c:%d-%d)",
-                        gch->heap_number, join_id, join_struct.n_threads, color, join_struct.lock_color.LoadWithoutBarrier()));
+                        gch->heap_number, flavor, join_id, join_struct.n_threads, color, join_struct.lock_color.LoadWithoutBarrier()));
                     goto respin;
                 }
 
@@ -485,7 +485,7 @@ respin:
                 uint32_t dwJoinWait = join_struct.joined_event[first_thread_arrived].Wait(INFINITE, FALSE);
                 if (dwJoinWait != WAIT_OBJECT_0)
                 {
-                    STRESS_LOG1 (LF_GC, LL_FATALERROR, "joined event wait failed with code: %zx", dwJoinWait);
+                    STRESS_LOG1 (LF_GC, LL_FATALERROR, "joined event wait failed with code: %x", dwJoinWait);
                     FATAL_GC_ERROR ();
                 }
             }
@@ -2351,8 +2351,8 @@ void gc_heap::set_region_plan_gen_num (heap_segment* region, int plan_gen_num, b
     }
 
     planned_regions_per_gen[plan_gen_num]++;
-    dprintf (REGIONS_LOG, ("h%d g%d %zx(%zx) -> g%d (total %d region planned in g%d)",
-        heap_number, heap_segment_gen_num (region), (size_t)region, heap_segment_mem (region), plan_gen_num, planned_regions_per_gen[plan_gen_num], plan_gen_num));
+    dprintf (REGIONS_LOG, ("h%d g%d %p(%p) -> g%d (total %d region planned in g%d)",
+        heap_number, heap_segment_gen_num (region), region, heap_segment_mem (region), plan_gen_num, planned_regions_per_gen[plan_gen_num], plan_gen_num));
 
     heap_segment_plan_gen_num (region) = plan_gen_num;
 
@@ -3036,7 +3036,7 @@ size_t gc_heap::generation_unusable_fragmentation (generation* inst, int hn)
             unusable_frag = fo_space + (condemned_allocated * generation_free_list_space (inst) / total_plan_allocated);
         }
 
-        dprintf (3, ("h%d g%d FLa: %Id, ESa: %Id, Ca: %Id | FO: %Id, FL %Id, fl effi %.3f, unusable fl is %Id",
+        dprintf (3, ("h%d g%d FLa: %zu, ESa: %zu, Ca: %zu | FO: %zu, FL %zu, fl effi %.3f, unusable fl is %zu",
             hn, inst->gen_num,
             generation_free_list_allocated (inst), generation_end_seg_allocated (inst), (size_t)condemned_allocated,
             fo_space, generation_free_list_space (inst),
@@ -3794,7 +3794,7 @@ extern uint32_t bgc_alloc_spin;
 
 #define check_msl_status(msg, size) if (msl_status == msl_retry_different_heap) \
     { \
-        dprintf (5555, ("h%d RETRY %s(%Id)", heap_number, msg, size)); \
+        dprintf (5555, ("h%d RETRY %s(%zu)", heap_number, msg, size)); \
         return a_state_retry_allocate; \
     }
 

@@ -684,9 +684,9 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
 #ifdef DEBUG
 /* static */ void IntegralRange::Print(IntegralRange range)
 {
-    printf("[%lld", SymbolicToRealValue(range.m_lowerBound));
+    printf("[%lld", (long long)SymbolicToRealValue(range.m_lowerBound));
     printf("..");
-    printf("%lld]", SymbolicToRealValue(range.m_upperBound));
+    printf("%lld]", (long long)SymbolicToRealValue(range.m_upperBound));
 }
 #endif // DEBUG
 
@@ -947,7 +947,7 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
                 ssize_t iconVal = curAssertion.GetOp2().GetIntConstant();
                 if (IsAot())
                 {
-                    printf("MT(%p)", dspPtr(iconVal));
+                    printf("MT(%p)", (void*)(size_t)dspPtr(iconVal));
                 }
                 else
                 {
@@ -960,11 +960,11 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
             }
             else if (curAssertion.GetOp2().HasIconFlag())
             {
-                printf("[%p]", dspPtr(curAssertion.GetOp2().GetIntConstant()));
+                printf("[%p]", (void*)(size_t)dspPtr(curAssertion.GetOp2().GetIntConstant()));
             }
             else
             {
-                printf("%lld", (int64_t)curAssertion.GetOp2().GetIntConstant());
+                printf("%lld", (long long)curAssertion.GetOp2().GetIntConstant());
             }
             break;
 
@@ -1043,11 +1043,11 @@ void Compiler::optDumpAssertionIndices(const char* header, ASSERT_TP assertions,
     Compiler* compiler = JitTls::GetCompiler();
     if (compiler->verbose)
     {
-        printf(header);
+        printf("%s", header);
         compiler->optPrintAssertionIndices(assertions);
         if (footer != nullptr)
         {
-            printf(footer);
+            printf("%s", footer);
         }
     }
 #endif // DEBUG
@@ -4623,7 +4623,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             }
             else if (op1->TypeIs(TYP_LONG))
             {
-                printf("%lld\n", vnStore->ConstantValue<INT64>(vnCns));
+                printf("%lld\n", (long long)vnStore->ConstantValue<INT64>(vnCns));
             }
             else if (op1->TypeIs(TYP_DOUBLE))
             {
@@ -4642,12 +4642,13 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 }
                 else
                 {
-                    printf("%d (gcref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
+                    printf("%zd (gcref)\n",
+                           (ssize_t) static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
                 }
             }
             else if (op1->TypeIs(TYP_BYREF))
             {
-                printf("%d (byref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
+                printf("%zd (byref)\n", (ssize_t) static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
             }
             else
             {

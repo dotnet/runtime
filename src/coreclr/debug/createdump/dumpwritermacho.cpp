@@ -58,7 +58,7 @@ DumpWriter::WriteDump()
     if (alignment > 0)
     {
         if (alignment > sizeof(m_tempBuffer)) {
-            printf_error("Internal error: segment alignment %llu > sizeof(m_tempBuffer)\n", alignment);
+            printf_error("Internal error: segment alignment %" PRIu64 " > sizeof(m_tempBuffer)\n", alignment);
             return false;
         }
         memset(m_tempBuffer, 0, alignment);
@@ -209,7 +209,7 @@ DumpWriter::WriteHeader(uint64_t* pFileOffset)
 bool
 DumpWriter::WriteSegments()
 {
-    TRACE("Writing %" PRIu64 " memory regions to core file\n", m_segmentLoadCommands.size());
+    TRACE("Writing %zu memory regions to core file\n", m_segmentLoadCommands.size());
 
     // Read from target process and write memory regions to core
     uint64_t total = 0;
