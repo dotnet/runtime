@@ -1475,7 +1475,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         int hr = HResults.S_FALSE;
         int hrLocal = HResults.S_OK;
         ulong legacyHandle = 0;
+#if DEBUG
         bool validateWithLegacy = false;
+#endif
 
         try
         {
@@ -1486,7 +1488,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             if (_legacyProcess is not null)
             {
                 hrLocal = _legacyProcess.StartEnumMethodDefinitionsByAddress(address, &legacyHandle);
+#if DEBUG
                 validateWithLegacy = true;
+#endif
             }
 
             ILoader loader = _target.Contracts.Loader;
