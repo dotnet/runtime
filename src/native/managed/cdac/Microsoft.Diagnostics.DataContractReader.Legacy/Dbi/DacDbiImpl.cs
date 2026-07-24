@@ -4216,7 +4216,35 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsThreadSuspendedOrHijacked(vmThread, pResult) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pResult is null)
+                throw new NullReferenceException();
+
+            *pResult = Interop.BOOL.FALSE;
+            Contracts.ThreadState threadState = _target.Contracts.Thread.GetThreadData(vmThread).State;
+            *pResult = (threadState & (Contracts.ThreadState.DebugSyncSuspended | Contracts.ThreadState.Hijacked)) != 0
+                        ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL resultLocal = Interop.BOOL.FALSE;
+            Interop.BOOL* resultLocalPtr = pResult is null ? null : &resultLocal;
+            int hrLocal = _legacy.IsThreadSuspendedOrHijacked(vmThread, resultLocalPtr);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pResult == resultLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int CreateHeapWalk(nuint* pHandle)
     {
