@@ -145,6 +145,7 @@ private:
         char *hierarchy_root = nullptr;
         char *cgroup_path_relative_to_mount = nullptr;
         size_t common_path_prefix_len;
+        size_t hierarchy_mount_len = 0;
 
         FindHierarchyMount(is_subsystem, &hierarchy_mount, &hierarchy_root);
         if (hierarchy_mount == nullptr || hierarchy_root == nullptr)
@@ -154,8 +155,8 @@ private:
         if (cgroup_path_relative_to_mount == nullptr)
             goto done;
 
-        size_t hierarchy_mount_len = strlen(hierarchy_mount);
-        cgroup_path = (char*)malloc(strlen(hierarchy_mount) + strlen(cgroup_path_relative_to_mount) + 1);
+        hierarchy_mount_len = strlen(hierarchy_mount);
+        cgroup_path = (char*)malloc(hierarchy_mount_len + strlen(cgroup_path_relative_to_mount) + 1);
         if (cgroup_path == nullptr)
            goto done;
 
