@@ -140,7 +140,7 @@ public:
 
     static bool Equals(const ContinuationLayoutBuilder& a, const ContinuationLayoutBuilder& b);
 
-    struct ContinuationLayout* Create();
+    struct ContinuationLayout* Create(ArrayStack<GenTree*>& continuationMemberOffsets);
 
     static ContinuationLayoutBuilder* CreateSharedLayout(Compiler*                                comp,
                                                          const jitstd::vector<struct AsyncState>& states);
@@ -531,7 +531,7 @@ class AsyncTransformation
                                                               GenTree*                  execContext,
                                                               GenTree*                  syncContext);
     bool                      ReuseContinuations();
-    const ContinuationLayout* CreateResumptionsAndSuspensions();
+    const ContinuationLayout* CreateResumptionsAndSuspensions(ArrayStack<GenTree*>& continuationMemberOffsets);
     void                      CreateResumptionSwitch();
 
 public:

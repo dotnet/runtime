@@ -825,7 +825,7 @@ PhaseStatus AsyncTransformation::Run()
         }
     }
 
-    const ContinuationLayout* continuationLayout = CreateResumptionsAndSuspensions();
+    const ContinuationLayout* continuationLayout = CreateResumptionsAndSuspensions(continuationMemberOffsets);
 
     // After transforming all async calls we have created resumption blocks;
     // create the resumption switch.
@@ -836,6 +836,7 @@ PhaseStatus AsyncTransformation::Run()
         GenTree* node        = continuationMemberOffsets.Bottom(i);
         size_t   memberIndex = node->AsVal()->gtVal1;
         assert(memberIndex < continuationLayout->ContinuationMemberOffsets.size());
+        assert(continuationLayout->ContinuationMemberOffsets[memberIndex] != UINT_MAX);
         ssize_t offset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) +
                          continuationLayout->ContinuationMemberOffsets[memberIndex];
         node->BashToConst(offset, TYP_INT);
@@ -1464,6 +1465,11 @@ void ContinuationLayout::Dump(int indent)
 
     for (size_t i = 0; i < ContinuationMemberOffsets.size(); i++)
     {
+        if (ContinuationMemberOffsets[i] == UINT_MAX)
+        {
+            continue;
+        }
+
         printf("%*s  +%03u ", indent, "", ContinuationMemberOffsets[i]);
         JitTls::GetCompiler()->GetContinuationMember(i).Print();
         printf("\n");
@@ -1519,11 +1525,16 @@ const ReturnInfo* ContinuationLayout::FindReturn(Compiler* comp, GenTreeCall* ca
 //   The finalized ContinuationLayout with computed offsets and a class
 //   handle for the continuation type.
 //
-ContinuationLayout* ContinuationLayoutBuilder::Create()
+ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& continuationMemberOffsets)
 {
     ContinuationLayout* layout = new (m_compiler, CMK_Async) ContinuationLayout(m_compiler);
     layout->Locals.reserve(m_locals.size());
-    layout->ContinuationMemberOffsets.reserve(m_compiler->GetContinuationMemberCount());
+    size_t continuationMemberCount = m_compiler->GetContinuationMemberCount();
+    layout->ContinuationMemberOffsets.reserve(continuationMemberCount);
+    for (size_t i = 0; i < continuationMemberCount; i++)
+    {
+        layout->ContinuationMemberOffsets.push_back(UINT_MAX);
+    }
 
     for (unsigned lclNum : m_locals)
     {
@@ -1614,17 +1625,6 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
         layout->OSRAddressOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
-    for (size_t i = 0; i < m_compiler->GetContinuationMemberCount(); i++)
-    {
-        ClassLayout* memberLayout = m_compiler->GetContinuationMember(i).GetCustomAwaiterLayout();
-        unsigned     alignment =
-            memberLayout->IsCustomLayout()
-                    ? (memberLayout->HasGCPtr() ? TARGET_POINTER_SIZE : 1)
-                    : m_compiler->info.compCompHnd->getClassAlignmentRequirement(memberLayout->GetClassHandle());
-        layout->ContinuationMemberOffsets.push_back(
-            allocLayout(std::min(alignment, (unsigned)TARGET_POINTER_SIZE), memberLayout->GetSize()));
-    }
-
     if (m_needsExecutionContext)
     {
         layout->ExecutionContextOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
@@ -1646,6 +1646,24 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
         // All returns must be pointer aligned because of the offset encoding in Continuation::Flags.
         layout->Size = roundUp(layout->Size, TARGET_POINTER_SIZE);
         ret.Offset   = allocLayout(ret.HeapAlignment(), ret.Size);
+    }
+
+    for (int i = 0; i < continuationMemberOffsets.Height(); i++)
+    {
+        size_t memberIndex = continuationMemberOffsets.Bottom(i)->AsVal()->gtVal1;
+        assert(memberIndex < continuationMemberCount);
+        if (layout->ContinuationMemberOffsets[memberIndex] != UINT_MAX)
+        {
+            continue;
+        }
+
+        ClassLayout* memberLayout = m_compiler->GetContinuationMember(memberIndex).GetCustomAwaiterLayout();
+        unsigned     alignment =
+            memberLayout->IsCustomLayout()
+                    ? (memberLayout->HasGCPtr() ? TARGET_POINTER_SIZE : 1)
+                    : m_compiler->info.compCompHnd->getClassAlignmentRequirement(memberLayout->GetClassHandle());
+        layout->ContinuationMemberOffsets[memberIndex] =
+            allocLayout(std::min(alignment, (unsigned)TARGET_POINTER_SIZE), memberLayout->GetSize());
     }
 
     if (m_needsKeepAlive)
@@ -1698,6 +1716,11 @@ ContinuationLayout* ContinuationLayoutBuilder::Create()
 
     for (size_t i = 0; i < layout->ContinuationMemberOffsets.size(); i++)
     {
+        if (layout->ContinuationMemberOffsets[i] == UINT_MAX)
+        {
+            continue;
+        }
+
         bitmapBuilder.SetType(layout->ContinuationMemberOffsets[i], TYP_STRUCT,
                               m_compiler->GetContinuationMember(i).GetCustomAwaiterLayout());
     }
@@ -2353,6 +2376,7 @@ void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
     size_t memberIndex =
         m_compiler->GetContinuationMemberIndex(ContinuationMember::CustomAwaiterOfLayout(awaiterLayout));
     assert(memberIndex < layout.ContinuationMemberOffsets.size());
+    assert(layout.ContinuationMemberOffsets[memberIndex] != UINT_MAX);
 
     GenTree* awaiter = awaiterArg->GetNode();
     if (!awaiter->OperIs(GT_LCL_VAR))
@@ -3826,7 +3850,8 @@ void AsyncTransformation::InsertFinishContextHandlingCall(BasicBlock*           
 //   Walk all recorded async states and create the suspension and resumption
 //   IR, continuation layouts, and debug info for each one.
 //
-const ContinuationLayout* AsyncTransformation::CreateResumptionsAndSuspensions()
+const ContinuationLayout* AsyncTransformation::CreateResumptionsAndSuspensions(
+    ArrayStack<GenTree*>& continuationMemberOffsets)
 {
     bool useSharedLayout = (m_states.size() > 1) && ReuseContinuations();
 
@@ -3836,7 +3861,7 @@ const ContinuationLayout* AsyncTransformation::CreateResumptionsAndSuspensions()
         JITDUMP("Creating shared layout:\n");
         ContinuationLayoutBuilder* sharedLayoutBuilder =
             ContinuationLayoutBuilder::CreateSharedLayout(m_compiler, m_states);
-        sharedLayout = sharedLayoutBuilder->Create();
+        sharedLayout = sharedLayoutBuilder->Create(continuationMemberOffsets);
 
         unsigned numSharedSuspensionsWithContinuationContext    = 0;
         unsigned numSharedSuspensionsWithoutContinuationContext = 0;
@@ -3898,24 +3923,33 @@ const ContinuationLayout* AsyncTransformation::CreateResumptionsAndSuspensions()
         }
     }
 
-    const ContinuationLayout* continuationLayout = sharedLayout;
+    const ContinuationLayout* firstLayout              = sharedLayout;
+    const ContinuationLayout* continuationMemberLayout = sharedLayout;
     JITDUMP("Creating suspensions and resumptions for %zu states\n", m_states.size());
     for (const AsyncState& state : m_states)
     {
         JITDUMP("State %u suspend @ " FMT_BB ", resume @ " FMT_BB "\n", state.Number, state.SuspensionBB->bbNum,
                 state.ResumptionBB->bbNum);
-        ContinuationLayout* layout = sharedLayout == nullptr ? state.Layout->Create() : sharedLayout;
-        if (continuationLayout == nullptr)
+        ContinuationLayout* layout =
+            sharedLayout == nullptr ? state.Layout->Create(continuationMemberOffsets) : sharedLayout;
+        if (firstLayout == nullptr)
         {
-            continuationLayout = layout;
+            firstLayout = layout;
+        }
+
+        bool hasContinuationMember = state.Call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncAwaiter) != nullptr;
+        if (hasContinuationMember && (continuationMemberLayout == nullptr))
+        {
+            continuationMemberLayout = layout;
         }
 #ifdef DEBUG
-        else
+        else if (hasContinuationMember)
         {
-            assert(continuationLayout->ContinuationMemberOffsets.size() == layout->ContinuationMemberOffsets.size());
-            for (size_t i = 0; i < continuationLayout->ContinuationMemberOffsets.size(); i++)
+            assert(continuationMemberLayout->ContinuationMemberOffsets.size() ==
+                   layout->ContinuationMemberOffsets.size());
+            for (size_t i = 0; i < continuationMemberLayout->ContinuationMemberOffsets.size(); i++)
             {
-                assert(continuationLayout->ContinuationMemberOffsets[i] == layout->ContinuationMemberOffsets[i]);
+                assert(continuationMemberLayout->ContinuationMemberOffsets[i] == layout->ContinuationMemberOffsets[i]);
             }
         }
 #endif
@@ -3927,8 +3961,9 @@ const ContinuationLayout* AsyncTransformation::CreateResumptionsAndSuspensions()
         JITDUMP("\n");
     }
 
-    assert(continuationLayout != nullptr);
-    return continuationLayout;
+    assert(firstLayout != nullptr);
+    assert((continuationMemberOffsets.Height() == 0) || (continuationMemberLayout != nullptr));
+    return continuationMemberLayout != nullptr ? continuationMemberLayout : firstLayout;
 }
 
 //------------------------------------------------------------------------
