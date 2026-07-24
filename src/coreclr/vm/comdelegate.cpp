@@ -910,7 +910,7 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 
     MethodDesc *pMD = pClass->GetInvokeMethod();
 
-#if defined(FEATURE_PORTABLE_SHUFFLE_THUNKS) || defined(TARGET_X86)
+#if 0
     // We haven't already setup a shuffle thunk, go do it now (which will cache the result automatically).
     StackSArray<ShuffleEntry> rShuffleEntryArray;
     if (GenerateShuffleArray(pMD, pTargetMeth, &rShuffleEntryArray))
