@@ -92,15 +92,23 @@ namespace Microsoft.Extensions.Configuration
             IEnumerable<string> earlierKeys,
             string? parentPath)
         {
+            SortedChildKeys accumulator = earlierKeys is SortedChildKeys existing ? existing : new(earlierKeys);
+            if (_config is IConfigurationRoot root)
+            {
+                // Aggregate the chained root's own child keys from an empty seed, then merge them into the outer
+                // accumulator. Providers inside the chained root therefore never observe the outer providers' keys and
+                // cannot filter, reorder, or drop them, preserving the chaining boundary that existed before.
+                accumulator.UnionWith(root.GetChildKeysImplementation(parentPath));
+                return accumulator;
+            }
+
             IConfiguration section = parentPath == null ? _config : _config.GetSection(parentPath);
-            var keys = new List<string>();
             foreach (IConfigurationSection child in section.GetChildren())
             {
-                keys.Add(child.Key);
+                accumulator.AddSegment(child.Key, 0, child.Key.Length);
             }
-            keys.AddRange(earlierKeys);
-            keys.Sort(ConfigurationKeyComparer.Comparison);
-            return keys;
+
+            return accumulator;
         }
 
         /// <inheritdoc />
