@@ -383,8 +383,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         if (outOfProcessTestCount != 0)
         {
-            builder.AppendLine("string outOfProcessPlanFile = TestLibrary.OutOfProcessTest.OutOfProcessPlanFile;");
-            builder.AppendLine("if (outOfProcessPlanFile is not null)");
+            builder.AppendLine("if (TestLibrary.OutOfProcessTest.OutOfProcessPlanFile is string outOfProcessPlanFile)");
             using (builder.NewBracesScope())
             {
                 builder.AppendLine("using (System.IO.StreamWriter unusedWriter = new(System.IO.Stream.Null))");

@@ -57,8 +57,14 @@ namespace TestLibrary
             }
         }
 
-        public static string OutOfProcessPlanFile =>
-            Environment.GetEnvironmentVariable(OutOfProcessPlanFileEnvironmentVariable);
+        public static string? OutOfProcessPlanFile
+        {
+            get
+            {
+                string? planFile = Environment.GetEnvironmentVariable(OutOfProcessPlanFileEnvironmentVariable);
+                return String.IsNullOrEmpty(planFile) ? null : planFile;
+            }
+        }
 
         public static bool IsUsingPrecomputedResults =>
             !String.IsNullOrEmpty(Environment.GetEnvironmentVariable(OutOfProcessResultTokenEnvironmentVariable));
