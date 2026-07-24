@@ -16,8 +16,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstance
 {
-    private const uint EpilogILOffset = unchecked((uint)-3);
-
     private sealed class EnumMethodExtents : IEnum<ClrDataAddressRange>
     {
         public IEnumerator<ClrDataAddressRange> Enumerator { get; }
@@ -256,7 +254,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             uint hits = 0;
             for (int i = 0; i < map.Count; i++)
             {
-                bool isEpilog = map[i].ILOffset == EpilogILOffset;
+                bool isEpilog = map[i].ILOffset == (uint)CLRDataILOffsetMarker.CLRDATA_IL_OFFSET_EPILOG;
                 bool lastValue = i == map.Count - 1;
                 uint nativeEndOffset = lastValue ? 0 : map[i + 1].NativeOffset;
                 if (codeOffset >= map[i].NativeOffset && (((isEpilog || lastValue) && nativeEndOffset == 0) || codeOffset < nativeEndOffset))
@@ -356,7 +354,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 {
                     uint nativeEndOffset = i == map.Count - 1 ? 0 : map[i + 1].NativeOffset;
                     ranges[hits].startAddress = new TargetPointer(codeStart + entry.NativeOffset).ToClrDataAddress(_target);
-                    ranges[hits].endAddress = entry.ILOffset == EpilogILOffset && nativeEndOffset == 0
+                    ranges[hits].endAddress = entry.ILOffset == (uint)CLRDataILOffsetMarker.CLRDATA_IL_OFFSET_EPILOG && nativeEndOffset == 0
                         ? default
                         : new TargetPointer(codeStart + nativeEndOffset).ToClrDataAddress(_target);
                 }
