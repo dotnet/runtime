@@ -100,12 +100,14 @@ To build an individual test, follow the instructions for compiling an individual
  * For the build `build[.cmd|.sh]` script, add the `nativeaot`/`-nativeaot` command line parameter such as `.\src\tests\build.cmd nativeaot test ...` or `./src/tests/build.sh -nativeaot test ...`
  * For the `dotnet build` workflow, add `-t:BuildNativeAot -p:TestBuildMode=nativeaot`
 
-To run an individual test (after it was built), navigate to the `artifacts\tests\coreclr\[windows|linux|osx[.x64.[Debug|Release]\$path_to_test` directory. `$path_to_test` matches the subtree of `src\tests`. You should see a `[.cmd|.sh]` file there. This file is a script that will compile and launch the individual test for you. Before invoking the script, set the following environment variables:
+To run an individual test (after it was built), navigate to the `artifacts\tests\coreclr\[windows|linux|osx].x64.[Debug|Release]\$path_to_test` directory. `$path_to_test` matches the subtree of `src\tests`. You should see a `[.cmd|.sh]` file there. This file is a script that will compile and launch the individual test for you. Before invoking the script, set the following environment variables:
 
 * CORE_ROOT=$repo_root\artifacts\tests\coreclr\[windows|linux|osx].x64.[Debug|Release]\Tests\Core_Root
 * CLRCustomTestLauncher=$repo_root\src\tests\Common\scripts\nativeaottest[.cmd|.sh]
 
 `$repo_root` is the root of your clone of the repo.
+
+Some test projects (e.g., `Interop.csproj`) compile many test files into a single native executable. To run only specific tests (filter by namespace, class, method, etc.), pass a filter string to the `[.cmd|.sh]` script, e.g. `$TestName[.cmd|.sh] LayoutClass`.
 
 Sometimes it's handy to be able to rebuild the managed test manually or run the compilation under a debugger. A response file that was used to invoke the ahead of time compiler can be found in `$repo_root\artifacts\tests\coreclr\obj\[windows|linux|osx].x64.[Debug|Release]\Managed`.
 
