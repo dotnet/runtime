@@ -22,6 +22,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     private readonly EEJitManager _eeJitManager;
     private readonly ReadyToRunJitManager _r2rJitManager;
     private readonly InterpreterJitManager _interpreterJitManager;
+    private readonly TargetPointer _thePreStub;
 
     private Data.RangeSectionMap _topRangeSectionMap
         => _target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(_topRangeSectionMapAddress);
@@ -35,6 +36,9 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
         _interpreterJitManager = new InterpreterJitManager(_target, nibbleMap);
+        _thePreStub = _target.TryReadGlobalPointer(Constants.Globals.ThePreStub, out TargetPointer? thePreStubPtr)
+            ? _target.ReadPointer(thePreStubPtr.Value)
+            : TargetPointer.Null;
     }
 
     public void Flush(FlushScope scope)
@@ -625,7 +629,13 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     {
         RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeAddress);
         if (range.Data == null)
+        {
+            TargetPointer address = new(codeAddress.Value);
+            if (address == _thePreStub && _thePreStub != TargetPointer.Null)
+                return CodeKind.ThePreStub;
+
             return CodeKind.Unknown;
+        }
 
         // check if this is a stub
         JitManager? jitManager = GetJitManager(range);
