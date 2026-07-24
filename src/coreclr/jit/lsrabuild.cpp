@@ -469,6 +469,17 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
                 checkConflictingDefUse(rp);
                 rp->lastUse = true;
             }
+
+            if (theInterval->isConstant && RefTypeIsDef(rp->refType))
+            {
+                // A later definition of the same constant shares this interval.
+                // Keep its preceding value live through that definition.
+                RefPosition* const prevRP = theInterval->recentRefPosition;
+                if ((prevRP != nullptr) && (prevRP->bbNum == rp->bbNum) && RefTypeIsUse(prevRP->refType))
+                {
+                    prevRP->lastUse = false;
+                }
+            }
         }
 
         RefPosition* prevRP = theReferent->recentRefPosition;
@@ -1705,6 +1716,12 @@ int LinearScan::ComputeAvailableSrcCount(GenTree* node)
 //
 void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc)
 {
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (tree->OperIs(GT_CALL))
+    {
+        clearReusableSveMaskIntervals();
+    }
+#endif
 #ifdef DEBUG
     if (VERBOSE)
     {
@@ -2451,6 +2468,13 @@ void LinearScan::buildIntervals()
         }
 
         LIR::Range& blockRange = LIR::AsRange(block);
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+        if ((prevBlock == nullptr) || (block->GetUniquePred(m_compiler) != prevBlock) ||
+            blockInfo[block->bbNum].hasEHBoundaryIn || blockInfo[prevBlock->bbNum].hasEHBoundaryOut)
+        {
+            clearReusableSveMaskIntervals();
+        }
+#endif
         for (GenTree* node : blockRange)
         {
             // We increment the location of each tree node by 2 so that the node definition, if any,
@@ -3002,7 +3026,29 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
         needToKillFloatRegs               = true;
     }
 
-    Interval* interval = newInterval(type);
+    Interval* interval = nullptr;
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+    bool isSveMaskConstant = tryGetReusableSveMaskInterval(tree, &interval);
+#else
+    bool isSveMaskConstant = false;
+#endif
+    bool reuseSveMaskConstant = interval != nullptr;
+    if (interval == nullptr)
+    {
+        interval = newInterval(type);
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+        if (isSveMaskConstant)
+        {
+            assert(reusableSveMaskIntervals->interval == nullptr);
+            reusableSveMaskIntervals->interval = interval;
+        }
+#endif
+    }
+
+    if (isSveMaskConstant)
+    {
+        interval->isConstant = true;
+    }
     if (tree->GetRegNum() != REG_NA)
     {
         if (!tree->IsMultiRegNode() || (multiRegIdx == 0))
@@ -3033,6 +3079,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
     }
     RefPosition* defRefPosition =
         newRefPosition(interval, currentLoc + 1, RefTypeDef, tree, dstCandidates, multiRegIdx);
+    defRefPosition->reuseConstantValue = reuseSveMaskConstant;
     if (tree->IsUnusedValue())
     {
         defRefPosition->isLocalDefUse = true;

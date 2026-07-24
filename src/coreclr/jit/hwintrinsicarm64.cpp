@@ -1035,6 +1035,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 int64_t    pattern = op1->AsIntConCommon()->IntegralValue();
                 simdmask_t simdVal;
 
+                if (pattern == SveMaskPatternLargestPowerOf2)
+                {
+                    pattern = SveMaskPatternAll;
+                    op1     = gtNewIconNode(pattern);
+                }
+
                 if (EvaluateSimdPatternToMask<simd16_t>(simdBaseType, &simdVal, (SveMaskPattern)pattern))
                 {
                     GenTreeMskCon* mskCon = gtNewMskConNode(retType);
