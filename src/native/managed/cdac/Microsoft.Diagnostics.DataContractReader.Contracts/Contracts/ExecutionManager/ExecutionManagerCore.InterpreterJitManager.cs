@@ -123,7 +123,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             TargetNUInt numEHInfos = Target.ReadNUInt(realCodeHeader.JitEHInfo.Address - (ulong)Target.PointerSize);
             startAddr = realCodeHeader.JitEHInfo.Clauses;
-            endAddr = startAddr + numEHInfos.Value * Target.GetTypeInfo(DataType.EEExceptionClause).Size!.Value;
+            endAddr = startAddr + numEHInfos.Value * Data.EEExceptionClause.GetSize(Target);
         }
 
         private TargetPointer FindMethodCode(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)

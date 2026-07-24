@@ -221,7 +221,7 @@ internal struct GC_1 : IGC
     private List<GCGenerationData> GetGenerationData(TargetPointer generationTableArrayStart)
     {
         uint generationTableLength = _target.ReadGlobal<uint>(Constants.Globals.TotalGenerationCount);
-        uint generationSize = _target.GetTypeInfo(DataType.Generation).Size ?? throw new InvalidOperationException("Type Generation has no size");
+        uint generationSize = Data.Generation.GetSize(_target);
         List<Data.Generation> generationTable = [];
         for (uint i = 0; i < generationTableLength; i++)
         {
@@ -799,8 +799,7 @@ internal struct GC_1 : IGC
         if (_target.TryReadGlobal<uint>(Constants.Globals.CountFreeRegionKinds, out uint? freeRegionKindsValue))
         {
             countFreeRegionKinds = Math.Min((int)freeRegionKindsValue.Value, 16);
-            regionFreeListSize = _target.GetTypeInfo(DataType.RegionFreeList).Size
-                ?? throw new InvalidOperationException("RegionFreeList type has no size");
+            regionFreeListSize = Data.RegionFreeList.GetSize(_target);
         }
 
         // Global free huge regions
@@ -887,8 +886,7 @@ internal struct GC_1 : IGC
         Data.TableSegment tableSegment = _target.ProcessedData.GetOrAdd<Data.TableSegment>(segmentBase);
 
         // The RgValue offset within the segment equals the header size.
-        Target.TypeInfo typeInfo = _target.GetTypeInfo(DataType.TableSegment);
-        uint rgValueOffset = (uint)typeInfo.Fields[nameof(Data.TableSegment.RgValue)].Offset;
+        uint rgValueOffset = (uint)Data.TableSegment.GetRgValueOffset(_target);
 
         // Compute the handle index within the segment's value area.
         uint handleIndex = (uint)((ulong)(handle - segmentBase) - rgValueOffset) / (uint)_target.PointerSize;

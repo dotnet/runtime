@@ -22,9 +22,20 @@ internal sealed partial class ReadyToRunInfo : IData<ReadyToRunInfo>
     // WASM-only: base virtual IP for this module's R2R function table (m_minVirtualIP).
     [Field] public partial TargetPointer? MinVirtualIP { get; }
 
+    [DataDescriptorDependency(nameof(NumRuntimeFunctions), "uint32")]
+    [DataDescriptorDependency(nameof(RuntimeFunctions), "pointer")]
     public TargetPointer RuntimeFunctions { get; private set; }
+
+    [DataDescriptorDependency(nameof(NumHotColdMap), "uint32")]
+    [DataDescriptorDependency(nameof(HotColdMap), "pointer")]
     public TargetPointer HotColdMap { get; private set; }
+
+    [DataDescriptorDependency(nameof(NumImportSections), "uint32")]
+    [DataDescriptorDependency(nameof(ImportSections), "pointer")]
     public TargetPointer ImportSections { get; private set; }
+
+    [DataDescriptorDependency(nameof(CompositeInfo), "pointer")]
+    [DataDescriptorDependency(nameof(EntryPointToMethodDescMap), "HashMap")]
     public TargetPointer EntryPointToMethodDescMap { get; private set; }
 
     partial void OnInit(Target target, TargetPointer address)

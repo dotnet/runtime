@@ -510,97 +510,163 @@ static class RuntimeTypeSystem_1_Helpers
 }
 ```
 
-The contract depends on the following globals
+<!-- BEGIN GENERATED: usage contract=RuntimeTypeSystem version=c1 -->
+### Data descriptors used
 
-| Global name | Meaning |
-| --- | --- |
-| `ContinuationMethodTable` | A pointer to the address of the base `Continuation` `MethodTable`, or null if no continuations have been created
-| `ContinuationSingletonEEClass` | A pointer to the address of the singleton `EEClass` shared by continuation subtypes that have no metadata of their own
-| `FreeObjectMethodTable` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
-| `MulticastDelegateMethodTable` | A pointer to the address of the `System.MulticastDelegate` `MethodTable` (`g_pMulticastDelegateClass`)
-| `ObjectMethodTable` | A pointer to the address of the `System.Object` `MethodTable` (`g_pObjectClass`)
-| `StringMethodTable` | A pointer to the address of the `System.String` `MethodTable` (`g_pStringClass`)
-| `ObjectArrayMethodTable` | A pointer to the address of the `object[]` `MethodTable` (`g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT]`)
-| `ExceptionMethodTable` | A pointer to the address of the `System.Exception` `MethodTable` (`g_pExceptionClass`)
-| `CanonMethodTable` | A pointer to the address of the canonical `MethodTable` used for shared generics (`System.__Canon`)
-| `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
-| `ArrayBaseSize` | The base size of an array object; used to compute multidimensional array rank from `MethodTable::BaseSize`
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `ArrayMethodDesc` | *(type size)* | `uint32` | Base size for mcArray classification |
+| `AsyncMethodData` | *(type size)* | `uint32` | Size of the async method data, added when HasAsyncMethodData flag is set |
+| `AsyncMethodData` | `Flags` | `uint32` | Flags classifying the async method, including its calling convention, return shape, and whether it is a thunk |
+| `AsyncMethodData` | `Signature` | `Signature` | The async variant's signature (see `Signature`) |
+| `CLRToCOMCallMethodDesc` | *(type size)* | `uint32` | Base size for mcComInterOp classification |
+| `CoreLibBinder` | `Classes` | `pointer` | Pointer to the array of core library type handles indexed by CorElementType |
+| `DynamicMethodDesc` | *(type size)* | `uint32` | Base size for mcDynamic classification |
+| `DynamicMethodDesc` | `MethodName` | `pointer` | Pointer to Null-terminated UTF8 string describing the Method desc |
+| `DynamicStaticsInfo` | *(type size)* | `uint32` | Size of the data |
+| `DynamicStaticsInfo` | `GCStatics` | `pointer` | Pointer to the GC statics |
+| `DynamicStaticsInfo` | `NonGCStatics` | `pointer` | Pointer to non-GC statics |
+| `EEClass` | `BaseSizePadding` | `uint8` | Trailing padding included in MethodTable.BaseSize but not occupied by instance fields |
+| `EEClass` | `CorTypeAttr` | `uint32` | Various flags |
+| `EEClass` | `FieldDescList` | `pointer` | A list of fields in the type |
+| `EEClass` | `InternalCorElementType` | `uint8` | An InternalCorElementType uses the enum values of a CorElementType to indicate some of the information about the type of the type which uses the EEClass In particular, all reference types are CorElementType.Class, Enums are the element type of their underlying type and ValueTypes which can exactly be represented as an element type are represented as such, all other values types are represented as CorElementType.ValueType. |
+| `EEClass` | `MethodDescChunk` | `pointer` | Pointer to the first MethodDescChunk of the EEClass |
+| `EEClass` | `MethodTable` | `pointer` | Pointer to the canonical MethodTable of this type |
+| `EEClass` | `NumInstanceFields` | `uint16` | Count of instance fields of the EEClass |
+| `EEClass` | `NumMethods` | `uint16` | Count of methods attached to the EEClass |
+| `EEClass` | `NumNonVirtualSlots` | `uint16` | Count of non-virtual slots for the EEClass |
+| `EEClass` | `NumStaticFields` | `uint16` | Count of static fields of the EEClass |
+| `EEClass` | `NumThreadStaticFields` | `uint16` | Count of threadstatic fields of the EEClass |
+| `EEClass` | `OptionalFields` | `pointer` | Pointer to the `EEClassOptionalFields` for this type, or null if it has none |
+| `EEClassOptionalFields` | `EightByteRegistersInfo` | `SystemVEightByteRegistersInfo` | Inline `SystemVEightByteRegistersInfo` describing the SystemV AMD64 register-passing classification (only populated on UNIX_AMD64_ABI builds) |
+| `EEImplMethodDesc` | *(type size)* | `uint32` | Base size for mcEEImpl classification |
+| `FCallMethodDesc` | *(type size)* | `uint32` | Base size for mcFCall classification |
+| `FieldDesc` | *(type size)* | `uint32` | Size in bytes of each FieldDesc entry in a type's field descriptor list |
+| `FieldDesc` | `DWord1` | `uint32` | The FD's flags and token |
+| `FieldDesc` | `DWord2` | `uint32` | Packed flags and offset word containing the field's offset; the FieldOffsetNewEnc sentinel identifies an EnC-added field without assigned storage |
+| `FieldDesc` | `MTOfEnclosingClass` | `pointer` | Pointer to method table of enclosing class |
+| `FnPtrTypeDesc` | `CallConv` | `uint32` | Lower 8 bits is the calling convention bit as extracted by the signature that defines this TypeDesc |
+| `FnPtrTypeDesc` | `LoaderModule` | `pointer` | Loader module associated with the function-pointer type |
+| `FnPtrTypeDesc` | `NumArgs` | `uint32` | Number of arguments to the function described by the TypeDesc |
+| `FnPtrTypeDesc` | `RetAndArgTypes` | `pointer` | Pointer to an array of TypeHandle addresses. This length of this is 1 more than NumArgs |
+| `GCCoverageInfo` | `SavedCode` | `pointer` | Pointer to the GCCover saved code copy, if supported |
+| `GenericsDictInfo` | `NumDicts` | `uint16` | Number of instantiation dictionaries, including inherited ones, in this GenericsDictInfo |
+| `GenericsDictInfo` | `NumTypeArgs` | `uint16` | Number of type arguments in the type or method instantiation described by this GenericsDictInfo |
+| `InstantiatedMethodDesc` | *(type size)* | `uint32` | Base size for mcInstantiated classification |
+| `InstantiatedMethodDesc` | `Flags2` | `uint16` | Flags for the InstantiatedMethodDesc |
+| `InstantiatedMethodDesc` | `NumGenericArgs` | `uint16` | How many generic args the method has |
+| `InstantiatedMethodDesc` | `PerInstInfo` | `pointer` | The pointer to the method's type arguments |
+| `LoaderAllocator` | `CreationNumber` | `uint64` | Monotonically-increasing creation number assigned to each collectible LoaderAllocator. |
+| `LoaderAllocator` | `DynamicHelpersStubHeap` | `pointer` | Dynamic-helper stub heap (optional, present when ReadyToRun dynamic-helper stubs are enabled) |
+| `LoaderAllocator` | `ExecutableHeap` | `pointer` | Executable-code heap |
+| `LoaderAllocator` | `FixupPrecodeHeap` | `pointer` | Fixup-precode heap (optional, present when fixup precodes are supported) |
+| `LoaderAllocator` | `HighFrequencyHeap` | `pointer` | High-frequency allocation heap |
+| `LoaderAllocator` | `IsCollectible` | `uint8` | Non-zero if the LoaderAllocator is collectible. |
+| `LoaderAllocator` | `LowFrequencyHeap` | `pointer` | Low-frequency allocation heap |
+| `LoaderAllocator` | `NewStubPrecodeHeap` | `pointer` | New-stub-precode heap (optional, absent with portable entry points) |
+| `LoaderAllocator` | `ObjectHandle` | `ObjectHandle` | Handle to the managed loader allocator object |
+| `LoaderAllocator` | `ReferenceCount` | `uint32` | Reference count of the loader allocator |
+| `LoaderAllocator` | `StaticsHeap` | `pointer` | Heap containing statics-related allocations |
+| `LoaderAllocator` | `StubHeap` | `pointer` | Heap containing runtime stubs |
+| `LoaderAllocator` | `VirtualCallStubManager` | `pointer` | Pointer to the virtual-call stub manager |
+| `MethodDesc` | *(type size)* | `uint32` | Base size for mcIL classification |
+| `MethodDesc` | `ChunkIndex` | `uint8` | Offset of this MethodDesc relative to the end of its containing MethodDescChunk - in multiples of MethodDescAlignment |
+| `MethodDesc` | `CodeData` | `pointer` | Pointer to per-method code data containing entry-point and code-versioning state |
+| `MethodDesc` | `EntryPointFlags` | `uint8` | Flags describing entry-point state, including whether a temporary entry point has been assigned |
+| `MethodDesc` | `Flags` | `uint16` | The method's flags |
+| `MethodDesc` | `Flags3AndTokenRemainder` | `uint16` | More flags for the method, and the low bits of the method's token's RID |
+| `MethodDesc` | `GCCoverageInfo` | `pointer` | The method's GCCover debug info, if supported |
+| `MethodDesc` | `Slot` | `uint16` | The method's slot |
+| `MethodDescChunk` | *(type size)* | `uint32` | Size of the data descriptor layout |
+| `MethodDescChunk` | `Count` | `uint8` | The number of MethodDesc entries in this chunk, minus 1. |
+| `MethodDescChunk` | `FlagsAndTokenRange` | `uint16` | MethodDescChunk flags, and the upper bits of the method token's RID |
+| `MethodDescChunk` | `MethodTable` | `pointer` | The method table set of methods belongs to |
+| `MethodDescChunk` | `Next` | `pointer` | The next chunk of methods |
+| `MethodDescChunk` | `Size` | `uint8` | The size of this MethodDescChunk  following this MethodDescChunk header, minus 1. In multiples of MethodDescAlignment |
+| `MethodDescCodeData` | `OptimizationTier` | `uint32` | Optimization tier of the method's current native code |
+| `MethodDescCodeData` | `TemporaryEntryPoint` | `CodePointer` | Temporary code entry point used before the method has a stable entry point |
+| `MethodDescCodeData` | `VersioningState` | `pointer` | The IL versioning state associated with a method descriptor |
+| `MethodImpl` | *(type size)* | `uint32` | Size of the MethodImpl data, added when HasMethodImpl flag is set |
+| `MethodTable` | *(type size)* | `uint32` | Size in bytes of the fixed MethodTable structure before its vtable indirections |
+| `MethodTable` | `AuxiliaryData` | `pointer` | Pointer to the AuxiliaryData of a method table |
+| `MethodTable` | `BaseSize` | `uint32` | BaseSize of a MethodTable |
+| `MethodTable` | `EEClassOrCanonMT` | `pointer` | Path to both EEClass and canonical MethodTable of a MethodTable |
+| `MethodTable` | `Module` | `pointer` | Module for MethodTable |
+| `MethodTable` | `MTFlags` | `uint32` | One of the flags fields on MethodTable |
+| `MethodTable` | `MTFlags2` | `uint32` | One of the flags fields on MethodTable |
+| `MethodTable` | `NumInterfaces` | `uint16` | Number of interfaces of MethodTable |
+| `MethodTable` | `NumVirtuals` | `uint16` | Number of virtual methods in MethodTable |
+| `MethodTable` | `ParentMethodTable` | `pointer` | Parent type pointer of MethodTable |
+| `MethodTable` | `PerInstInfo` | `pointer` | Either the array element type, or pointer to generic information for MethodTable |
+| `MethodTableAuxiliaryData` | `Flags` | `uint32` | Flags of MethodTableAuxiliaryData |
+| `MethodTableAuxiliaryData` | `LoaderModule` | `pointer` | The loader module associated with a method table |
+| `MethodTableAuxiliaryData` | `OffsetToNonVirtualSlots` | `int16` | Offset from the auxiliary data address to the array of non-virtual slots |
+| `NativeCodeSlot` | *(type size)* | `uint32` | Size of the native code slot, added when HasNativeCodeSlot flag is set |
+| `NonVtableSlot` | *(type size)* | `uint32` | Size of the non-vtable slot, added when HasNonVtableSlot flag is set |
+| `Object` | *(type size)* | `uint32` | Size in bytes of the fixed Object portion through its MethodTable pointer |
+| `Object` | `m_pMethTab` | `pointer` | Method table for the object |
+| `ParamTypeDesc` | `TypeArg` | `pointer` | Associated type argument |
+| `PInvokeMethodDesc` | *(type size)* | `uint32` | Base size for mcPInvoke classification |
+| `Signature` | `SignatureLength` | `uint32` | Length in bytes of the raw signature blob. |
+| `Signature` | `SignaturePointer` | `pointer` | Target address of the raw signature blob. |
+| `StoredSigMethodDesc` | `cSig` | `uint32` | Count of bytes in the metadata signature |
+| `StoredSigMethodDesc` | `ExtendedFlags` | `uint32` | Flags field for the StoredSigMethodDesc |
+| `StoredSigMethodDesc` | `Sig` | `pointer` | Pointer to a metadata signature |
+| `SystemVEightByteRegistersInfo` | `EightByteClassification0` | `uint8` | Register classification of the first eightbyte |
+| `SystemVEightByteRegistersInfo` | `EightByteClassification1` | `uint8` | Register classification of the second eightbyte |
+| `SystemVEightByteRegistersInfo` | `EightByteSize0` | `uint8` | Byte size of the first eightbyte |
+| `SystemVEightByteRegistersInfo` | `EightByteSize1` | `uint8` | Byte size of the second eightbyte |
+| `SystemVEightByteRegistersInfo` | `NumEightBytes` | `uint8` | Number of eightbyte slots used to pass the value type in registers (0 if not passed in registers) |
+| `ThreadStaticsInfo` | *(type size)* | `uint32` | Size in bytes of the thread-statics information stored immediately before MethodTable auxiliary data |
+| `ThreadStaticsInfo` | `GCTlsIndex` | `pointer` | Pointer to GC thread local storage index |
+| `ThreadStaticsInfo` | `NonGCTlsIndex` | `pointer` | Pointer to non-GC thread local storage index |
+| `TypedByRef` | `Data` | `pointer` | Managed pointer (the byref) stored in a System.TypedReference value |
+| `TypedByRef` | `Type` | `pointer` | Raw TypeHandle pointer of the referent type |
+| `TypeDesc` | `TypeAndFlags` | `uint32` | The lower 8 bits are the CorElementType of the TypeDesc, the upper 24 bits are reserved for flags |
+| `TypeVarTypeDesc` | `Module` | `pointer` | Pointer to module which defines the type variable |
+| `TypeVarTypeDesc` | `Token` | `uint32` | Token of the type variable |
 
-The contract additionally depends on these data descriptors
+### Global variables used
 
-| Data Descriptor Name | Field | Meaning |
+| Global | Type | Meaning |
 | --- | --- | --- |
-| `MethodTable` | `MTFlags` | One of the flags fields on `MethodTable` |
-| `MethodTable` | `MTFlags2` | One of the flags fields on `MethodTable` |
-| `MethodTable` | `BaseSize` | BaseSize of a `MethodTable` |
-| `MethodTable` | `EEClassOrCanonMT` | Path to both EEClass and canonical MethodTable of a MethodTable |
-| `MethodTable` | `Module` | Module for `MethodTable` |
-| `MethodTable` | `ParentMethodTable` | Parent type pointer of `MethodTable` |
-| `MethodTable` | `NumInterfaces` | Number of interfaces of `MethodTable` |
-| `MethodTable` | `NumVirtuals` | Number of virtual methods in `MethodTable` |
-| `MethodTable` | `PerInstInfo` | Either the array element type, or pointer to generic information for `MethodTable` |
-| `MethodTableAuxiliaryData` | `Flags` | Flags of `MethodTableAuxiliaryData` |
-| `MethodTable` | `AuxiliaryData` | Pointer to the AuxiliaryData of a method table |
-| `DynamicStaticsInfo` | `NonGCStatics` | Pointer to non-GC statics |
-| `DynamicStaticsInfo` | `GCStatics` | Pointer to the GC statics |
-| `DynamicStaticsInfo` | `Size` | Size of the data |
-| `ThreadStaticsInfo` | `GCTlsIndex` | Pointer to GC thread local storage index |
-| `ThreadStaticsInfo` | `NonGCTlsIndex` | Pointer to non-GC thread local storage index |
-| `EEClass` | `InternalCorElementType` | An InternalCorElementType uses the enum values of a CorElementType to indicate some of the information about the type of the type which uses the EEClass In particular, all reference types are CorElementType.Class, Enums are the element type of their underlying type and ValueTypes which can exactly be represented as an element type are represented as such, all other values types are represented as CorElementType.ValueType. |
-| `EEClass` | `MethodTable` | Pointer to the canonical MethodTable of this type |
-| `EEClass` | `MethodDescChunk` | Pointer to the first MethodDescChunk of the EEClass |
-| `EEClass` | `NumMethods` | Count of methods attached to the EEClass |
-| `EEClass` | `NumNonVirtualSlots` | Count of non-virtual slots for the EEClass |
-| `EEClass` | `CorTypeAttr` | Various flags |
-| `EEClass` | `NumInstanceFields` | Count of instance fields of the EEClass |
-| `EEClass` | `NumStaticFields` | Count of static fields of the EEClass |
-| `EEClass` | `NumThreadStaticFields` | Count of threadstatic fields of the EEClass |
-| `EEClass` | `FieldDescList` | A list of fields in the type |
-| `EEClass` | `OptionalFields` | Pointer to the `EEClassOptionalFields` for this type, or null if it has none |
-| `EEClassOptionalFields` | `EightByteRegistersInfo` | Inline `SystemVEightByteRegistersInfo` describing the SystemV AMD64 register-passing classification (only populated on UNIX_AMD64_ABI builds) |
-| `SystemVEightByteRegistersInfo` | `NumEightBytes` | Number of eightbyte slots used to pass the value type in registers (0 if not passed in registers) |
-| `SystemVEightByteRegistersInfo` | `EightByteClassification0` | Register classification of the first eightbyte |
-| `SystemVEightByteRegistersInfo` | `EightByteClassification1` | Register classification of the second eightbyte |
-| `SystemVEightByteRegistersInfo` | `EightByteSize0` | Byte size of the first eightbyte |
-| `SystemVEightByteRegistersInfo` | `EightByteSize1` | Byte size of the second eightbyte |
-| `TypeDesc` | `TypeAndFlags` | The lower 8 bits are the CorElementType of the `TypeDesc`, the upper 24 bits are reserved for flags |
-| `ParamTypeDesc` | `TypeArg` | Associated type argument |
-| `TypeVarTypeDesc` | `Module` | Pointer to module which defines the type variable |
-| `TypeVarTypeDesc` | `Token` | Token of the type variable |
-| `FnPtrTypeDesc` | `NumArgs` | Number of arguments to the function described by the `TypeDesc` |
-| `FnPtrTypeDesc` | `CallConv` | Lower 8 bits is the calling convention bit as extracted by the signature that defines this `TypeDesc` |
-| `FnPtrTypeDesc` | `RetAndArgTypes` | Pointer to an array of TypeHandle addresses. This length of this is 1 more than `NumArgs` |
-| `GenericsDictInfo` | `NumDicts` | Number of instantiation dictionaries, including inherited ones, in this `GenericsDictInfo` |
-| `GenericsDictInfo` | `NumTypeArgs` | Number of type arguments in the type or method instantiation described by this `GenericsDictInfo` |
-| `LoaderAllocator` | `IsCollectible` | Non-zero if the `LoaderAllocator` is collectible. |
-| `LoaderAllocator` | `CreationNumber` | Monotonically-increasing creation number assigned to each collectible `LoaderAllocator`. |
-| `TypedByRef` | `Data` | Managed pointer (the byref) stored in a `System.TypedReference` value |
-| `TypedByRef` | `Type` | Raw `ITypeHandle` pointer of the referent type |
+| `ArrayBaseSize` | `uint32` | The base size of an array object; used to compute multidimensional array rank from MethodTable::BaseSize |
+| `CanonMethodTable` | `pointer` | A pointer to the address of the canonical MethodTable used for shared generics (System.__Canon) |
+| `ContinuationMethodTable` | `pointer` | A pointer to the address of the base Continuation MethodTable, or null if no continuations have been created |
+| `ContinuationSingletonEEClass` | `pointer` | A pointer to the address of the singleton EEClass shared by continuation subtypes that have no metadata of their own |
+| `CoreLib` | `pointer` | Pointer to the CoreLibBinder data containing well-known core library type handles |
+| `ExceptionMethodTable` | `pointer` | A pointer to the address of the System.Exception MethodTable (g_pExceptionClass) |
+| `FieldOffsetBigRVA` | `uint32` | Sentinel value of FieldDesc::DWord2 indicating the field is an RVA static whose offset is too large to encode in the bitfield; the real offset must be read from the field's metadata (FieldDefinition.GetRelativeVirtualAddress). |
+| `FieldOffsetDynamicRVA` | `uint32` | Sentinel FieldDesc offset for an EnC-added RVA field whose enclosing type is not yet loaded |
+| `FreeObjectMethodTable` | `pointer` | A pointer to the address of a MethodTable used by the GC to indicate reclaimed memory |
+| `MethodDescAlignment` | `uint64` | MethodDescChunk trailing data is allocated in multiples of this constant.  The size (in bytes) of each MethodDesc (or subclass) instance is a multiple of this constant. |
+| `MethodDescTokenRemainderBitCount` | `uint8` | Number of bits in the token remainder in MethodDesc |
+| `MulticastDelegateMethodTable` | `pointer` | A pointer to the address of the System.MulticastDelegate MethodTable (g_pMulticastDelegateClass) |
+| `ObjectArrayMethodTable` | `pointer` | A pointer to the address of the object[] MethodTable (g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT]) |
+| `ObjectMethodTable` | `pointer` | Address of the global variable holding the System.Object MethodTable pointer |
+| `StaticsPointerMask` | `pointer` | For masking out a bit of DynamicStaticsInfo pointer fields |
+| `StringMethodTable` | `pointer` | Pointer to the method table for `System.String` |
 
-The value of the `NativeCodeVersionNode::OptimizationTier` field is one of:
-```csharp
-private enum OptimizationTier_1 : uint
-{
-    OptimizationTier0 = 0,
-    OptimizationTier1 = 1,
-    OptimizationTier1OSR = 2,
-    OptimizationTierOptimized = 3,
-    OptimizationTier0Instrumented = 4,
-    OptimizationTier1Instrumented = 5,
-    OptimizationTierUnknown = 0xFFFFFFFF
-}
-```
+### Contracts used
 
-Contracts used:
 | Contract Name |
 | --- |
+| `CodeVersions` |
+| `EcmaMetadata` |
+| `ExecutionManager` |
+| `Loader` |
+| `PlatformMetadata` |
+| `PrecodeStubs` |
+| `ReJIT` |
+| `RuntimeInfo` |
+| `Signature` |
 | `Thread` |
+<!-- END GENERATED: usage contract=RuntimeTypeSystem version=c1 -->
 
 ### Contract Constants:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `TYPE_MASK_OFFSET` | int | The number of bits the type is shifted left in the field desc flags2 | `27` |
-
 
 ```csharp
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables;

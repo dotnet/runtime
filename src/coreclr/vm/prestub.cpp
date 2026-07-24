@@ -45,6 +45,10 @@
 
 EXTERN_C void STDCALL ThePreStubPatch();
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+const TADDR g_cdacThePreStub = GetEEFuncEntryPoint(ThePreStub);
+#endif
+
 #if defined(HAVE_GCCOVER)
 CrstStatic MethodDesc::m_GCCoverCrst;
 
