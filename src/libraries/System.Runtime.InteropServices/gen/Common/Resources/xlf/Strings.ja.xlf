@@ -567,6 +567,16 @@
         <target state="translated">'LibraryImportAttribute' でマークされたメソッドは、'static'、'partial'、非ジェネリックである必要があります。P/Invoke ソース生成では、非 'static'、非 'partial'、ジェネリックであるメソッドは無視されます。</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidAttributedMethodMissingSafetyModifierDescriptionLibraryImport">
+        <source>Methods marked with 'LibraryImportAttribute' must be explicitly marked 'unsafe' or 'safe' when using the updated memory safety rules.</source>
+        <target state="new">Methods marked with 'LibraryImportAttribute' must be explicitly marked 'unsafe' or 'safe' when using the updated memory safety rules.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodMissingSafetyModifierMessageLibraryImport">
+        <source>Method '{0}' must be explicitly marked 'unsafe' or 'safe' when using the updated memory safety rules. P/Invoke source generation will ignore method '{0}'.</source>
+        <target state="new">Method '{0}' must be explicitly marked 'unsafe' or 'safe' when using the updated memory safety rules. P/Invoke source generation will ignore method '{0}'.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidAttributedMethodSignatureMessageCom">
         <source>Method '{0}' should be non-generic when on interfaces marked with the 'GeneratedComInterfaceAttribute'. COM source generation will ignore method '{0}'.</source>
         <target state="translated">'GeneratedComInterfaceAttribute' でマークされたインターフェイスでは、メソッド '{0}' は非ジェネリックである必要があります。COM ソース生成はメソッド '{0}' を無視します。</target>

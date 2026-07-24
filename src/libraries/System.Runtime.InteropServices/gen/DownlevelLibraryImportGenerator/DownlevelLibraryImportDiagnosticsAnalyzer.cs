@@ -24,6 +24,7 @@ namespace Microsoft.Interop.Analyzers
             ImmutableArray.Create(
                 GeneratorDiagnostics.InvalidAttributedMethodSignature,
                 GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers,
+                GeneratorDiagnostics.InvalidAttributedMethodMissingSafetyModifier,
                 GeneratorDiagnostics.InvalidStringMarshallingConfiguration,
                 GeneratorDiagnostics.ParameterTypeNotSupported,
                 GeneratorDiagnostics.ReturnTypeNotSupported,
@@ -166,7 +167,7 @@ namespace Microsoft.Interop.Analyzers
             // the analysis (CalculateDiagnostics) to catch other issues.
             if (!skipInvalidMethodCheck)
             {
-                DiagnosticInfo? invalidMethodDiagnostic = GetDiagnosticIfInvalidMethodForGeneration(methodSyntax, method);
+                DiagnosticInfo? invalidMethodDiagnostic = methodSyntax.GetDiagnosticIfInvalidMethodForGeneration(method);
                 if (invalidMethodDiagnostic is not null)
                 {
                     context.ReportDiagnostic(invalidMethodDiagnostic.ToDiagnostic());
@@ -313,37 +314,6 @@ namespace Microsoft.Interop.Analyzers
             {
                 EntryPoint = entryPoint,
             }.WithValuesFromNamedArguments(namedArguments);
-        }
-
-        /// <summary>
-        /// Checks if a method is invalid for generation and returns a diagnostic if so.
-        /// </summary>
-        /// <returns>A diagnostic if the method is invalid, null otherwise.</returns>
-        internal static DiagnosticInfo? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
-        {
-            // Verify the method has no generic types or defined implementation
-            // and is marked static and partial.
-            if (methodSyntax.TypeParameterList is not null
-                || methodSyntax.Body is not null
-                || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
-                || !methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
-            {
-                return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, methodSyntax.Identifier.GetLocation(), method.Name);
-            }
-
-            // Verify that the types the method is declared in are marked partial.
-            if (methodSyntax.Parent is TypeDeclarationSyntax typeDecl && !typeDecl.IsInPartialContext(out var nonPartialIdentifier))
-            {
-                return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers, methodSyntax.Identifier.GetLocation(), method.Name, nonPartialIdentifier);
-            }
-
-            // Verify the method does not have a ref return
-            if (method.ReturnsByRef || method.ReturnsByRefReadonly)
-            {
-                return DiagnosticInfo.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, methodSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
-            }
-
-            return null;
         }
     }
 }

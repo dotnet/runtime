@@ -480,6 +480,12 @@
   <data name="InvalidAttributedMethodDescriptionLibraryImport" xml:space="preserve">
     <value>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</value>
   </data>
+  <data name="InvalidAttributedMethodMissingSafetyModifierDescriptionLibraryImport" xml:space="preserve">
+    <value>Methods marked with 'LibraryImportAttribute' must be explicitly marked 'unsafe' or 'safe' when using the updated memory safety rules.</value>
+  </data>
+  <data name="InvalidAttributedMethodMissingSafetyModifierMessageLibraryImport" xml:space="preserve">
+    <value>Method '{0}' must be explicitly marked 'unsafe' or 'safe' when using the updated memory safety rules. P/Invoke source generation will ignore method '{0}'.</value>
+  </data>
   <data name="InvalidAttributedMethodDescriptionCom" xml:space="preserve">
     <value>Methods on interfaces marked with 'GeneratedComInterfaceAttribute' should be non-generic. COM source generation will ignore methods that are generic.</value>
   </data>

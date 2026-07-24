@@ -567,6 +567,16 @@
         <target state="translated">'LibraryImportAttribute' ile işaretlenmiş metotlar 'static', 'partial' ve genel olmayan özellikte olmalıdır. P/Invoke kaynak oluşturma 'static', 'partial' ve genel olmayan özellikteki metotlar dışında kalan metotları yok sayar.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidAttributedMethodMissingSafetyModifierDescriptionLibraryImport">
+        <source>Methods marked with 'LibraryImportAttribute' must be explicitly marked 'unsafe' or 'safe' when using the updated memory safety rules.</source>
+        <target state="new">Methods marked with 'LibraryImportAttribute' must be explicitly marked 'unsafe' or 'safe' when using the updated memory safety rules.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodMissingSafetyModifierMessageLibraryImport">
+        <source>Method '{0}' must be explicitly marked 'unsafe' or 'safe' when using the updated memory safety rules. P/Invoke source generation will ignore method '{0}'.</source>
+        <target state="new">Method '{0}' must be explicitly marked 'unsafe' or 'safe' when using the updated memory safety rules. P/Invoke source generation will ignore method '{0}'.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidAttributedMethodSignatureMessageCom">
         <source>Method '{0}' should be non-generic when on interfaces marked with the 'GeneratedComInterfaceAttribute'. COM source generation will ignore method '{0}'.</source>
         <target state="translated">'GeneratedComInterfaceAttribute' ile işaretlenmiş arabirimlerde '{0}' metodu genel olmamalıdır. COM kaynak üretimi, '{0}' metodunu yok sayar.</target>

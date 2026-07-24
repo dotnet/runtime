@@ -82,7 +82,7 @@ namespace Microsoft.Interop
                         : null)
                 .Where(
                     static modelData => modelData is not null
-                        && Analyzers.DownlevelLibraryImportDiagnosticsAnalyzer.GetDiagnosticIfInvalidMethodForGeneration(modelData.Syntax, modelData.Symbol) is null);
+                        && modelData.Syntax.GetDiagnosticIfInvalidMethodForGeneration(modelData.Symbol) is null);
 
             IncrementalValueProvider<StubEnvironment> stubEnvironment = context.CreateStubEnvironmentProvider();
 
