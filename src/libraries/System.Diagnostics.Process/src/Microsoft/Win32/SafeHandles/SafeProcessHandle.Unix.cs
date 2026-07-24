@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
@@ -218,7 +219,7 @@ namespace Microsoft.Win32.SafeHandles
             string filename;
             string[] argv;
 
-            IDictionary<string, string?> env = startInfo.Environment;
+            IDictionary<string, string?>? env = GetEnvironmentVariables(startInfo);
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
             bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
@@ -356,7 +357,7 @@ namespace Microsoft.Win32.SafeHandles
         private static SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle,
             SafeFileHandle? stderrHandle, out ProcessWaitState.Holder? waitStateHolder)
         {
-            IDictionary<string, string?> env = startInfo.Environment;
+            IDictionary<string, string?>? env = GetEnvironmentVariables(startInfo);
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
             bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
@@ -425,9 +426,15 @@ namespace Microsoft.Win32.SafeHandles
         private static bool UsesTerminal(SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle)
             => ProcessUtils.IsTerminal(stdinHandle) || ProcessUtils.IsTerminal(stdoutHandle) || ProcessUtils.IsTerminal(stderrHandle);
 
+        private static IDictionary<string, string?>? GetEnvironmentVariables(ProcessStartInfo startInfo)
+            => GetHasEnvironmentVariablesBeenModified(null) ? startInfo.Environment : startInfo._environmentVariables;
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_HasEnvironmentVariablesBeenModified")]
+        private static extern bool GetHasEnvironmentVariablesBeenModified([UnsafeAccessorType("System.Environment, System.Private.CoreLib")] object? _);
+
         private static SafeProcessHandle ForkAndExecProcess(
             ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
-            IDictionary<string, string?> env, string? cwd, bool setCredentials, uint userId,
+            IDictionary<string, string?>? env, string? cwd, bool setCredentials, uint userId,
             uint groupId, uint[]? groups,
             SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
             bool usesTerminal, SafeHandle[]? inheritedHandles, out ProcessWaitState.Holder? waitStateHolder, bool throwOnNoExec = true)
