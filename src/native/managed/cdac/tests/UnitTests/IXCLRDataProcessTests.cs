@@ -215,6 +215,7 @@ public unsafe class IXCLRDataProcessTests
         const byte TinyFormat = 0x2;
         const byte FatFormat = 0x3;
         const byte FatHeaderDwords = 3;
+        const int TinyHeaderSize = sizeof(byte);
         const int TinyCodeSize = 3;
         const int FatCodeSize = 2;
         const int FatCodeSizeOffset = 4;
@@ -271,7 +272,9 @@ public unsafe class IXCLRDataProcessTests
             Assert.Equal(HResults.E_POINTER, process.StartEnumMethodDefinitionsByAddress(FirstHeaderAddress + 1, null));
 
             ulong handle;
-            int hr = process.StartEnumMethodDefinitionsByAddress(FirstHeaderAddress, &handle);
+            int hr = process.StartEnumMethodDefinitionsByAddress(
+                FirstHeaderAddress + TinyHeaderSize + TinyCodeSize - 1,
+                &handle);
             Assert.Equal(HResults.S_OK, hr);
             Assert.NotEqual(0ul, handle);
 
@@ -317,7 +320,7 @@ public unsafe class IXCLRDataProcessTests
                 Assert.Equal(HResults.S_OK, process.EndEnumMethodDefinitionsByAddress(handle));
             }
 
-            hr = process.StartEnumMethodDefinitionsByAddress(FirstHeaderAddress + 3, &handle);
+            hr = process.StartEnumMethodDefinitionsByAddress(FirstHeaderAddress, &handle);
             Assert.Equal(HResults.S_OK, hr);
             try
             {
