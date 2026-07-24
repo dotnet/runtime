@@ -35,6 +35,8 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
     private readonly CodePointerFlags _codePointerFlags;
     internal readonly Data.PrecodeMachineDescriptor MachineDescriptor;
 
+    protected Target Target => _target;
+
     internal abstract class ValidPrecode
     {
         public TargetPointer InstrPointer { get; }
@@ -186,27 +188,6 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
         return new TargetPointer(entryPointAddress);
     }
 
-    TargetCodePointer IPrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(TargetCodePointer entryPoint)
-    {
-        try
-        {
-            TargetPointer instrPointer = CodePointerReadableInstrPointer(entryPoint);
-            if (!IsAlignedInstrPointer(instrPointer))
-                return entryPoint;
-
-            if (TryGetKnownPrecodeType(instrPointer) is not KnownPrecodeType.Interpreter)
-                return entryPoint;
-
-            TargetPointer dataAddr = instrPointer + MachineDescriptor.StubCodePageSize;
-            Data.InterpreterPrecodeData precodeData = _target.ProcessedData.GetOrAdd<Data.InterpreterPrecodeData>(dataAddr);
-            if (precodeData.ByteCodeAddr == TargetPointer.Null)
-                return entryPoint;
-
-            return new TargetCodePointer(precodeData.ByteCodeAddr);
-        }
-        catch (VirtualReadException)
-        {
-            return entryPoint;
-        }
-    }
+    public virtual TargetCodePointer GetInterpreterCodeFromInterpreterPrecodeIfPresent(
+        TargetCodePointer entryPoint) => entryPoint;
 }

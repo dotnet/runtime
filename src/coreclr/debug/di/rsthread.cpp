@@ -7587,11 +7587,11 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
     case ICorDebugInfo::VLT_REG_FP:
 #if defined(TARGET_ARM) // @ARMTODO
         hr = E_NOTIMPL;
-#elif defined(TARGET_AMD64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
+        // AMD64/ARM64 enumerate the FP registers in the debug RegNum enum
+        // (XMM0-15 / V0-31), so g_JITToCorDbgReg maps vlrReg directly to the
+        // corresponding CorDebugRegister.
         hr = m_nativeFrame->GetLocalFloatingPointValue(ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlReg.vlrReg),
-                                                       type, ppValue);
-#elif defined(TARGET_ARM64)
-        hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_ARM64_V0,
                                                        type, ppValue);
 #elif defined(TARGET_LOONGARCH64)
         hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_LOONGARCH64_F0,
@@ -7628,7 +7628,7 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
         break;
 
     case ICorDebugInfo::VLT_REG_REG:
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         {
             const ICorDebugInfo::RegNum lowReg  = pNativeVarInfo->loc.vlRegReg.vlrrReg1;
             const ICorDebugInfo::RegNum highReg = pNativeVarInfo->loc.vlRegReg.vlrrReg2;
@@ -7637,9 +7637,9 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
 
             if (lowIsFloat || highIsFloat)
             {
-                // AMD64 extends RegNum with XMM registers, so VLT_REG_REG can
-                // represent mixed int/fp pairs. Other targets still require
-                // dedicated encodings for FP-containing multi-register values.
+                // AMD64/ARM64 extend RegNum with FP registers (XMM/V), so
+                // VLT_REG_REG can represent mixed int/fp pairs. FP register
+                // indices for GetLocalTwoRegisterValue are 0-based.
                 hr = m_nativeFrame->GetLocalTwoRegisterValue(
                     lowIsFloat ? (CorDebugRegister)(REGISTER_AMD64_XMM0 + (lowReg - ICorDebugInfo::REGNUM_FP_FIRST))
                                : ConvertRegNumToCorDebugRegister(lowReg),

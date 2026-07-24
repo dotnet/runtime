@@ -9,8 +9,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.FunctionTableIndexRangeSection))]
 internal sealed partial class FunctionTableIndexRangeSection : IData<FunctionTableIndexRangeSection>
 {
-    [Field] public uint MinFunctionTableIndex { get; }
-    [Field] public uint NumRuntimeFunctions { get; }
-    [Field] public TargetPointer R2RModule { get; }
-    [Field] public TargetPointer Next { get; }
+    [Field] public partial uint MinFunctionTableIndex { get; }
+    [Field] public partial uint NumRuntimeFunctions { get; }
+    [Field] public partial TargetPointer R2RModule { get; }
+    [Field] public partial TargetPointer Next { get; }
 }

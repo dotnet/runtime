@@ -8,7 +8,7 @@ internal sealed partial class PEImage : IData<PEImage>
 {
     // The flat image layout (m_pLayouts[IMAGE_FLAT]). Present since the field was added to the
     // descriptor; nullable so older descriptors that predate it simply read as null.
-    [Field] public TargetPointer? FlatImageLayout { get; }
-    [Field] public TargetPointer LoadedImageLayout { get; }
-    [Field] public ProbeExtensionResult ProbeExtensionResult { get; }
+    [Field] public partial TargetPointer? FlatImageLayout { get; }
+    [Field] public partial TargetPointer LoadedImageLayout { get; }
+    [Field] public partial ProbeExtensionResult ProbeExtensionResult { get; }
 }

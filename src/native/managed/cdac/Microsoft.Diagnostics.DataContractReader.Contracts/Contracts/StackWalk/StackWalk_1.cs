@@ -1091,8 +1091,7 @@ internal partial class StackWalk_1 : IStackWalk
                 // This can't be handled in the GetMethodDescPtr(TargetPointer) because it relies on
                 // the state of the stack walk (SkippedFrame) which is not available there.
                 // The MethodDesc pointer immediately follows the InlinedCallFrame
-                TargetPointer methodDescPtr = framePtr + _target.GetTypeInfo(DataType.InlinedCallFrame).Size
-                    ?? throw new InvalidOperationException("InlinedCallFrame type size is not defined.");
+                TargetPointer methodDescPtr = framePtr + Data.InlinedCallFrame.GetSize(_target);
                 return _target.ReadPointer(methodDescPtr);
             }
             else
