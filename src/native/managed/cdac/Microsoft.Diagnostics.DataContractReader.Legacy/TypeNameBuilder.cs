@@ -330,7 +330,7 @@ public struct TypeNameBuilder
     // Append a square-bracket-enclosed, comma-separated list of n type parameters in inst to the string s
     // and enclose each parameter in square brackets to disambiguate the commas
     // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
-    private static void AppendInst(Target target, StringBuilder stringBuilder, ReadOnlySpan<ITypeHandle> inst, TypeNameFormat format)
+    internal static void AppendInst(Target target, StringBuilder stringBuilder, ReadOnlySpan<ITypeHandle> inst, TypeNameFormat format)
     {
         TypeNameBuilder tnb = new(stringBuilder, target, format, initialStateIsName: true);
         AppendInst(ref tnb, inst, format);
