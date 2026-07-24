@@ -433,6 +433,14 @@ HRESULT GCHeap::Initialize()
     loh_size_threshold = (size_t)GCConfig::GetLOHThreshold();
     loh_size_threshold = max (loh_size_threshold, LARGE_OBJECT_SIZE);
 
+    // Objects on the LOH are padded so that their data is aligned on this boundary. Only
+    // powers of 2 that are bigger than the alignment the heap already provides are
+    // meaningful, everything else disables the padding.
+    size_t loh_alignment = (size_t)GCConfig::GetLOHDataAlignment();
+    loh_data_alignment = (((loh_alignment & (loh_alignment - 1)) == 0) &&
+                          (loh_alignment > AlignQword (1)) &&
+                          (loh_alignment <= max_loh_data_alignment)) ? loh_alignment : 0;
+
 #ifdef USE_REGIONS
     gc_heap::enable_special_regions_p = (bool)GCConfig::GetGCEnableSpecialRegions();
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();

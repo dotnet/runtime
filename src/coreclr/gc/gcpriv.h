@@ -2589,7 +2589,7 @@ private:
 
     PER_HEAP_METHOD void adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
                            alloc_context* acontext, uint32_t flags, heap_segment* seg,
-                           int align_const, int gen_number);
+                           int align_const, int gen_number, size_t uoh_pad = 0);
     PER_HEAP_METHOD void  leave_allocation_segment (generation* gen);
 
     PER_HEAP_METHOD void init_free_and_plug();
@@ -2952,7 +2952,7 @@ private:
 
     PER_HEAP_METHOD BOOL loh_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* alloc_limit, bool end_p);
 
-    PER_HEAP_METHOD uint8_t* loh_allocate_in_condemned (size_t size);
+    PER_HEAP_METHOD uint8_t* loh_allocate_in_condemned (size_t size, size_t* alignment_pad);
 
     PER_HEAP_ISOLATED_METHOD BOOL loh_object_p (uint8_t* o);
 
