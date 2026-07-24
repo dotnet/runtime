@@ -212,6 +212,12 @@ public unsafe class IXCLRDataProcessTests
         const ulong SecondHeaderAddress = 0x6000;
         const uint FirstToken = 0x06000002;
         const uint SecondToken = 0x06000003;
+        const byte TinyFormat = 0x2;
+        const byte FatFormat = 0x3;
+        const byte FatHeaderDwords = 3;
+        const int TinyCodeSize = 3;
+        const int FatCodeSize = 2;
+        const int FatCodeSizeOffset = 4;
 
         byte[] metadataBytes = BuildMethodDefinitionMetadata();
         fixed (byte* metadata = metadataBytes)
@@ -236,15 +242,16 @@ public unsafe class IXCLRDataProcessTests
             ecmaMetadata.Setup(e => e.GetMetadata(module)).Returns(reader);
 
             byte[] secondHeader = new byte[14];
-            secondHeader[0] = 0x13;
-            secondHeader[1] = 0x30;
-            secondHeader[arch.IsLittleEndian ? 4 : 7] = 2;
+            secondHeader[0] = FatFormat;
+            secondHeader[1] = FatHeaderDwords << 4;
+            int codeSizeByteOffset = FatCodeSizeOffset + (arch.IsLittleEndian ? 0 : sizeof(uint) - 1);
+            secondHeader[codeSizeByteOffset] = FatCodeSize;
             MockMemorySpace.HeapFragment[] memory =
             [
                 new()
                 {
                     Address = FirstHeaderAddress,
-                    Data = [0x0e, 0, 0, 0],
+                    Data = [(byte)((TinyCodeSize << 2) | TinyFormat), 0, 0, 0],
                     Name = nameof(FirstHeaderAddress),
                 },
                 new()
