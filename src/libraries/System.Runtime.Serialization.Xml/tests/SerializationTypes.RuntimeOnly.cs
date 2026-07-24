@@ -4642,3 +4642,24 @@ public class PrimiveAttributeTestDerived : PrimiveAttributeTestBase
     [XmlText]
     public int Number { get; set; }
 }
+
+public class TypeWithBuiltInTypedMembers
+{
+    public string StringMember;
+    public int IntMember;
+    public int? NullableIntMember;
+    public List<string> ListMember;
+    public int[] ArrayMember;
+}
+
+public class TypeWithNullableBuiltInTypedMembers
+{
+    [XmlElement(IsNullable = true)]
+    public string StringMember;
+
+    public int? NullableIntMember;
+
+    public int[] ArrayMember;
+
+    public List<string> ListMember;
+}

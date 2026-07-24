@@ -2115,6 +2115,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.True(b);
     }
 
+#if !XMLSERIALIZERGENERATORTESTS
     [Fact]
     public static void XmlUnknownAttributeOnBuiltInTypedMembersTest()
     {
@@ -2189,6 +2190,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         // mapped to structs behave, where a nil element returns before its attributes are inspected.
         Assert.Empty(unknownAttributes);
     }
+#endif
 
     private static Stream GetStreamFromString(string s)
     {
@@ -3554,25 +3556,4 @@ internal sealed class XmlSerializerAppContextSwitchScope : IDisposable
         }
         throw new ArgumentException($"Cannot guess cached field name from switch name '{name}'");
     }
-}
-
-public class TypeWithBuiltInTypedMembers
-{
-    public string StringMember;
-    public int IntMember;
-    public int? NullableIntMember;
-    public List<string> ListMember;
-    public int[] ArrayMember;
-}
-
-public class TypeWithNullableBuiltInTypedMembers
-{
-    [XmlElement(IsNullable = true)]
-    public string StringMember;
-
-    public int? NullableIntMember;
-
-    public int[] ArrayMember;
-
-    public List<string> ListMember;
 }
