@@ -14,7 +14,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 public unsafe class ExceptionStateTests
 {
     private const ulong ExceptionObjectSize = 0x40;
-    private static readonly TargetPointer s_exceptionObjectAddress = new(0x5000);
+    private static readonly TargetPointer s_exceptionObjectAddress = new(0xAA00_0000);
 
     private static (TestPlaceholderTarget Target, TargetPointer ThrownObjectHandle) CreateTargetWithException(
         MockTarget.Architecture arch,
@@ -284,6 +284,25 @@ public unsafe class ExceptionStateTests
             (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
             TargetPointer.Null,
             new TargetPointer(0x2000),
+            TargetPointer.Null,
+            null);
+        DacComNullableByRef<IXCLRDataValue> value = new(isNullRef: false);
+
+        int hr = exceptionState.GetManagedObject(value);
+
+        Assert.Equal(HResults.E_INVALIDARG, hr);
+        Assert.Null(value.Interface);
+    }
+
+    [Fact]
+    public void GetManagedObject_NullHandle()
+    {
+        IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
+            null!,
+            new TargetPointer(0x1000),
+            (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            TargetPointer.Null,
+            TargetPointer.Null,
             TargetPointer.Null,
             null);
         DacComNullableByRef<IXCLRDataValue> value = new(isNullRef: false);
