@@ -31,7 +31,7 @@ internal static class TypeHandleExtensions
         if (runtimeTypeSystem.IsArray(typeHandle, out uint rank))
         {
             AppendName(runtimeTypeSystem.GetTypeParam(typeHandle), target, result);
-            AppendConstructedName(result, runtimeTypeSystem.GetInternalCorElementType(typeHandle), rank);
+            AddNameSuffix(result, runtimeTypeSystem.GetInternalCorElementType(typeHandle), rank);
         }
         else
         {
@@ -77,10 +77,10 @@ internal static class TypeHandleExtensions
             rank = index;
         }
 
-        AppendConstructedName(result, kind, rank);
+        AddNameSuffix(result, kind, rank);
     }
 
-    private static void AppendConstructedName(StringBuilder result, CorElementType kind, uint rank)
+    private static void AddNameSuffix(StringBuilder result, CorElementType kind, uint rank)
     {
         switch (kind)
         {
