@@ -375,27 +375,8 @@ namespace
             return host_mode_t::apphost;
         }
 
-        if (coreclr_exists_in_dir(host_info.dotnet_root))
-        {
-            // Detect between standalone apphost and muxer mode
-
-            pal::string_t deps_in_dotnet_root = host_info.dotnet_root;
-            pal::string_t deps_filename = host_info.get_app_name() + _X(".deps.json");
-            append_path(&deps_in_dotnet_root, deps_filename.c_str());
-            bool deps_exists = pal::file_exists(deps_in_dotnet_root);
-
-            trace::info(_X("Detecting mode... CoreCLR present in dotnet root [%s] and checking if [%s] file present=[%d]"),
-                host_info.dotnet_root.c_str(), deps_filename.c_str(), deps_exists);
-
-            // Name of runtimeconfig file; since no path is included here the check is in the current working directory
-            pal::string_t config_in_cwd = host_info.get_app_name() + _X(".runtimeconfig.json");
-
-            return (deps_exists || !pal::file_exists(config_in_cwd)) && pal::file_exists(host_info.app_path) ? host_mode_t::apphost : host_mode_t::muxer;
-        }
-
         if (pal::file_exists(host_info.app_path))
         {
-            // Framework-dependent apphost
             return host_mode_t::apphost;
         }
 
