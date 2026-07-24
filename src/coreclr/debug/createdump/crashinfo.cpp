@@ -307,12 +307,44 @@ CrashInfo::InitializeDAC(DumpType dumpType)
     PFN_CLRDataCreateInstance pfnCLRDataCreateInstance = nullptr;
     PFN_DLLMAIN pfnDllMain = nullptr;
     bool result = false;
+    bool useCdacLite = false;
     HRESULT hr = S_OK;
 
-    // We assume that the DAC is in the same location as the libcoreclr.so module
+    // cdac-lite: when DOTNET_DbgUseCdacLite=1 (and this isn't a full dump), load the small native
+    // cdac-lite component instead of the legacy DAC to select managed memory. cdac-lite implements
+    // ICLRDataEnumMemoryRegions (the memory-enumeration path below) but not IXCLRDataProcess, so
+    // managed module enumeration and managed stack unwinding -- both already guarded on
+    // m_pClrDataProcess -- are skipped.
+    if (dumpType != DumpType::Full)
+    {
+        CLRConfigNoCache cdacLiteConfig = CLRConfigNoCache::Get("DbgUseCdacLite", /* noprefix */ false, &getenv);
+        DWORD enabled = 0;
+        useCdacLite = cdacLiteConfig.IsSet() && cdacLiteConfig.TryAsInteger(10, enabled) && enabled == 1;
+    }
+
+    // We assume that the DAC (or cdac-lite) is in the same location as the libcoreclr.so module,
+    // unless an explicit cdac-lite path is provided via DOTNET_DbgCdacLitePath.
     std::string dacPath;
-    dacPath.append(m_coreclrPath);
-    dacPath.append(MAKEDLLNAME_A("mscordaccore"));
+    if (useCdacLite)
+    {
+        CLRConfigNoCache cdacLitePath = CLRConfigNoCache::Get("DbgCdacLitePath", /* noprefix */ false, &getenv);
+        if (cdacLitePath.IsSet())
+        {
+            dacPath.append(cdacLitePath.AsString());
+        }
+        else
+        {
+            dacPath.append(m_coreclrPath);
+            dacPath.append(MAKEDLLNAME_A("cdaclite"));
+        }
+        printf_status("cdac-lite: collecting managed memory (DOTNET_DbgUseCdacLite=1, %s tier)\n",
+            dumpType == DumpType::Heap ? "heap" : "normal");
+    }
+    else
+    {
+        dacPath.append(m_coreclrPath);
+        dacPath.append(MAKEDLLNAME_A("mscordaccore"));
+    }
 
     // Load and initialize the DAC. We don't use the LoadLibraryA here because the PAL may not be
     // initialized properly in the forked process for the statically linked single-file scenario.
@@ -357,11 +389,16 @@ CrashInfo::InitializeDAC(DumpType dumpType)
         printf_error("InitializeDAC: CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %s (%08x)\n", GetHResultString(hr), hr);
         goto exit;
     }
-    hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&m_pClrDataProcess);
-    if (FAILED(hr))
+    // cdac-lite provides only ICLRDataEnumMemoryRegions; the legacy DAC additionally provides
+    // IXCLRDataProcess (used for managed module and managed thread enumeration).
+    if (!useCdacLite)
     {
-        printf_error("InitializeDAC: CLRDataCreateInstance(IXCLRDataProcess) FAILED %s (%08x)\n", GetHResultString(hr), hr);
-        goto exit;
+        hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&m_pClrDataProcess);
+        if (FAILED(hr))
+        {
+            printf_error("InitializeDAC: CLRDataCreateInstance(IXCLRDataProcess) FAILED %s (%08x)\n", GetHResultString(hr), hr);
+            goto exit;
+        }
     }
     result = true;
 exit:

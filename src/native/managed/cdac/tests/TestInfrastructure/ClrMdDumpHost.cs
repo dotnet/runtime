@@ -24,8 +24,21 @@ public sealed class ClrMdDumpHost : IDisposable
 
     private readonly DataTarget _dataTarget;
     private readonly string[] _searchPaths;
+    private readonly List<ResolvedModule> _modules = new();
 
     public string DumpPath { get; }
+
+    /// <summary>
+    /// Describes a managed module's loaded image mapping, sourced from the cDAC Loader contract:
+    /// the loaded image base, the image size, whether that layout is mapped (loaded/converted) or
+    /// flat (file layout), the on-disk assembly path, and the PE identity key (COFF
+    /// <c>TimeDateStamp</c> and optional-header <c>SizeOfImage</c>) used to verify that the on-disk
+    /// file matches the module captured in the dump.
+    /// </summary>
+    public readonly record struct ManagedModuleImage(ulong Base, ulong Size, bool IsMapped, string FileName, uint TimeStamp, uint ImageSize);
+
+    /// <summary>A module mapping whose on-disk file has already been located and key-verified.</summary>
+    private readonly record struct ResolvedModule(ulong Base, ulong Size, bool IsMapped, string? FilePath);
 
     private ClrMdDumpHost(string dumpPath, DataTarget dataTarget, string[] searchPaths)
     {
@@ -61,32 +74,75 @@ public sealed class ClrMdDumpHost : IDisposable
             if (bytesRead == buffer.Length)
                 return 0; // success
 
-            // If we couldn't read the full buffer, maybe it's in a PE image
-            ModuleInfo? info = GetModuleForAddress(address);
-            if (info is null || info.FileName is null)
+            // The dump didn't fully cover the range. Serve the remaining bytes from the owning
+            // module's on-disk image -- exactly as the legacy DAC and dotnet-dump do for PE/COR
+            // headers and ECMA metadata, which heap/mini dumps do not capture. Module ownership is
+            // resolved solely from the cDAC Loader contract (see RegisterManagedModules); ClrMD's
+            // raw module list is deliberately not consulted, because it registers managed R2R
+            // modules at their flat/file base and cannot represent the separate loaded mapping.
+            ResolvedModule? module = FindModule(address + (ulong)bytesRead);
+            if (module is null || module.Value.FilePath is null)
             {
                 return -1;
             }
 
-            string? foundFile = FindFileOnDisk(info.FileName);
-            if (foundFile is null)
+            return FillFromImage(module.Value.FilePath, module.Value.Base, module.Value.IsMapped, address, buffer, bytesRead);
+        }
+        catch
+        {
+            return -1;
+        }
+    }
+
+    private ResolvedModule? FindModule(ulong address)
+    {
+        foreach (ResolvedModule module in _modules)
+        {
+            if (address >= module.Base && address < module.Base + module.Size)
+                return module;
+        }
+        return null;
+    }
+
+    private static int FillFromImage(string foundFile, ulong moduleBase, bool isMapped, ulong address, Span<byte> buffer, int bytesRead)
+    {
+        using FileStream fs = File.OpenRead(foundFile);
+        using PEReader peReader = new PEReader(fs);
+        PEMemoryBlock wholeImage = peReader.GetEntireImage();
+
+        int filled = bytesRead;
+        ulong current = address + (ulong)bytesRead;
+        while (filled < buffer.Length)
+        {
+            long offsetLong = (long)(current - moduleBase);
+            if (offsetLong < 0 || offsetLong > int.MaxValue)
             {
                 return -1;
             }
+            int offset = (int)offsetLong;
 
-            using FileStream fs = File.OpenRead(foundFile);
-            using PEReader peReader = new PEReader(fs);
-
-            int filled = bytesRead;
-            ulong current = address + (ulong)bytesRead;
-            while (filled < buffer.Length)
+            if (!isMapped)
             {
-                PEMemoryBlock block = peReader.GetSectionData((int)(current - info.ImageBase));
-                if (block.Length == 0)
-                {
+                // Flat (file) layout: the runtime reports addresses as base + file offset, so the
+                // computed offset is already a file offset into the raw image -- read it directly.
+                if (offset >= wholeImage.Length)
                     return -1;
+                int toCopy = Math.Min(wholeImage.Length - offset, buffer.Length - filled);
+                unsafe
+                {
+                    new ReadOnlySpan<byte>(wholeImage.Pointer + offset, toCopy).CopyTo(buffer.Slice(filled));
                 }
+                filled += toCopy;
+                current += (ulong)toCopy;
+                continue;
+            }
 
+            // Mapped (loaded/converted) layout: the offset is a virtual RVA. GetSectionData maps it
+            // to the raw section bytes in the on-disk file.
+            int sizeOfHeaders = peReader.PEHeaders.PEHeader?.SizeOfHeaders ?? 0;
+            PEMemoryBlock block = peReader.GetSectionData(offset);
+            if (block.Length > 0)
+            {
                 int toCopy = Math.Min(block.Length, buffer.Length - filled);
                 unsafe
                 {
@@ -95,12 +151,44 @@ public sealed class ClrMdDumpHost : IDisposable
                 filled += toCopy;
                 current += (ulong)toCopy;
             }
-
-            return 0;
+            else if (offset >= 0 && offset < sizeOfHeaders)
+            {
+                // PE header region (before the first section): GetSectionData doesn't cover it, and
+                // in a loaded image the headers sit at file offset == RVA, so serve from the raw image.
+                int available = Math.Min(sizeOfHeaders, wholeImage.Length) - offset;
+                int toCopy = Math.Min(available, buffer.Length - filled);
+                if (toCopy <= 0)
+                    return -1;
+                unsafe
+                {
+                    new ReadOnlySpan<byte>(wholeImage.Pointer + offset, toCopy).CopyTo(buffer.Slice(filled));
+                }
+                filled += toCopy;
+                current += (ulong)toCopy;
+            }
+            else
+            {
+                return -1;
+            }
         }
-        catch
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Registers managed module images sourced from the cDAC Loader contract so that reads of
+    /// loaded-layout addresses (e.g. ECMA metadata, which heap/mini dumps do not capture) resolve
+    /// to the on-disk assembly. Mirrors dotnet/diagnostics' ManagedModuleService, which sources
+    /// loaded bases from the runtime rather than from ClrMD's raw module list. Each module's
+    /// on-disk file is located and verified against its PE identity key (TimeDateStamp +
+    /// SizeOfImage) here, once, so a stale or mismatched same-named assembly is never used.
+    /// </summary>
+    public void RegisterManagedModules(IEnumerable<ManagedModuleImage> modules)
+    {
+        _modules.Clear();
+        foreach (ManagedModuleImage module in modules)
         {
-            return -1;
+            _modules.Add(new ResolvedModule(module.Base, module.Size, module.IsMapped, ResolveFile(module)));
         }
     }
 
@@ -113,14 +201,52 @@ public sealed class ClrMdDumpHost : IDisposable
         return _dataTarget.DataReader.GetThreadContext(threadId, contextFlags, buffer) ? 0 : -1;
     }
 
-    private ModuleInfo? GetModuleForAddress(ulong address)
+    /// <summary>
+    /// Locates the on-disk file for a module and verifies it matches the module captured in the
+    /// dump via its PE identity key (COFF TimeDateStamp + optional-header SizeOfImage) -- the same
+    /// key dotnet-dump/ClrMD use for symbol-store lookups. Searches the module's recorded path
+    /// first, then the configured symbol paths, and returns the first candidate whose key matches.
+    /// Returns null if no matching file is found.
+    /// </summary>
+    private string? ResolveFile(ManagedModuleImage module)
     {
-        foreach (ModuleInfo module in _dataTarget.DataReader.EnumerateModules())
+        foreach (string candidate in EnumerateCandidatePaths(module.FileName))
         {
-            if (address >= module.ImageBase && address < module.ImageBase + (ulong)module.ImageSize)
-                return module;
+            if (File.Exists(candidate) && KeyMatches(candidate, module.TimeStamp, module.ImageSize))
+                return candidate;
         }
         return null;
+    }
+
+    private IEnumerable<string> EnumerateCandidatePaths(string modulePath)
+    {
+        // The path recorded in the runtime (may be absolute; only meaningful on the collecting host).
+        yield return modulePath;
+
+        int lastSep = Math.Max(modulePath.LastIndexOf('/'), modulePath.LastIndexOf('\\'));
+        string fileName = lastSep >= 0 ? modulePath[(lastSep + 1)..] : modulePath;
+        foreach (string searchPath in _searchPaths)
+            yield return Path.Combine(searchPath, fileName);
+    }
+
+    private static bool KeyMatches(string path, uint expectedTimeStamp, uint expectedImageSize)
+    {
+        // A zero key means the module didn't report identity info; accept a name match in that case.
+        if (expectedTimeStamp == 0 && expectedImageSize == 0)
+            return true;
+        try
+        {
+            using FileStream fs = File.OpenRead(path);
+            using PEReader peReader = new PEReader(fs);
+            PEHeaders headers = peReader.PEHeaders;
+            uint actualTimeStamp = (uint)headers.CoffHeader.TimeDateStamp;
+            uint actualImageSize = (uint)(headers.PEHeader?.SizeOfImage ?? 0);
+            return actualTimeStamp == expectedTimeStamp && actualImageSize == expectedImageSize;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -157,24 +283,6 @@ public sealed class ClrMdDumpHost : IDisposable
         }
 
         throw new InvalidOperationException("Could not find DotNetRuntimeContractDescriptor export in any runtime module in the dump.");
-    }
-
-    private string? FindFileOnDisk(string modulePath)
-    {
-        // for local runs
-        if (File.Exists(modulePath))
-            return modulePath;
-        int lastSep = Math.Max(modulePath.LastIndexOf('/'), modulePath.LastIndexOf('\\'));
-        string fileName = lastSep >= 0 ? modulePath[(lastSep + 1)..] : modulePath;
-
-        foreach (string searchPath in _searchPaths)
-        {
-            string candidate = Path.Combine(searchPath, fileName);
-            if (File.Exists(candidate))
-                return candidate;
-        }
-
-        return null;
     }
 
     private static bool IsRuntimeModule(string fileName)

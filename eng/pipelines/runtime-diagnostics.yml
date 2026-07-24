@@ -65,6 +65,10 @@ parameters:
   values:
     - single-leg
     - xplat
+- name: cdacUseCdacLite
+  displayName: Use cdac-lite for dump generation (Windows only)
+  type: boolean
+  default: false
 - name: cdacStressPlatforms
   displayName: cDAC Stress Test Platforms
   type: object
@@ -262,8 +266,9 @@ extends:
             platforms: ${{ parameters.cdacDumpPlatforms }}
             prepareParameters:
               cdacTestConfig: Debug
+              useCdacLite: ${{ parameters.cdacUseCdacLite }}
             sendDisplayName: 'Send cDAC Dump Tests to Helix'
-            sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacHelixQueue)" /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
+            sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacHelixQueue)" /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /p:UseCdacLite=${{ parameters.cdacUseCdacLite }} /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
             failErrorMessage: 'One or more cDAC dump test failures were detected. Failing the job.'
             publishDumpsArtifactName: CdacDumps_$(osGroup)_$(archType)
 

@@ -66,7 +66,7 @@ internal sealed class ThreadsCommand : Command
             try
             {
                 ThreadData td = threadContract.GetThreadData(threadAddr);
-                Console.WriteLine($"Thread {idx}: OS ID=0x{td.OSId:x}, State=0x{(uint)td.State:x}, Addr={threadAddr}");
+                Console.WriteLine($"Thread {idx}: OS ID=0x{td.OSId.Value:x}, State=0x{(uint)td.State:x}, Addr={threadAddr}");
                 threadAddr = td.NextThread;
             }
             catch (Exception ex)

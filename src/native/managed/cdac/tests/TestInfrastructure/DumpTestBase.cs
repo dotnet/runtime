@@ -119,6 +119,7 @@ public abstract class DumpTestBase : IDisposable
             out _target);
 
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
+        RegisterManagedModules();
     }
 
     /// <summary>
@@ -145,6 +146,7 @@ public abstract class DumpTestBase : IDisposable
             out _target);
 
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
+        RegisterManagedModules();
     }
 
     public void Dispose()
@@ -154,14 +156,64 @@ public abstract class DumpTestBase : IDisposable
     }
 
     /// <summary>
+    /// Enumerates managed modules via the cDAC Loader contract and registers their loaded image
+    /// mappings (loaded base + size + on-disk path + PE identity key) with the dump host. This
+    /// lets reads of loaded-layout addresses (e.g. ECMA metadata, which heap/mini dumps do not
+    /// capture) resolve to the on-disk assembly, mirroring dotnet/diagnostics' ManagedModuleService
+    /// which sources loaded bases from the runtime rather than from ClrMD's raw module list.
+    /// </summary>
+    private void RegisterManagedModules()
+    {
+        if (_host is null || _target is null)
+            return;
+
+        ILoader loader = _target.Contracts.Loader;
+        TargetPointer appDomain = loader.GetAppDomain();
+        if (appDomain == TargetPointer.Null)
+            return;
+
+        List<ClrMdDumpHost.ManagedModuleImage> modules = new();
+        foreach (var handle in loader.GetModuleHandles(appDomain, AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+        {
+            try
+            {
+                if (loader.IsDynamic(handle))
+                    continue;
+                if (!loader.TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out uint size, out uint imageFlags)
+                    || baseAddress == TargetPointer.Null || size == 0)
+                    continue;
+                bool isMapped = (imageFlags & 0x1) != 0; // FLAG_MAPPED
+
+                string fileName = loader.GetPath(handle);
+                if (string.IsNullOrEmpty(fileName))
+                    fileName = loader.GetFileName(handle);
+                if (string.IsNullOrEmpty(fileName))
+                    continue;
+
+                // PE identity key (COFF TimeDateStamp + optional-header SizeOfImage) used to
+                // verify the on-disk file matches the module captured in the dump.
+                loader.GetFileHeadersInfo(handle, out uint timeStamp, out uint imageSize);
+
+                modules.Add(new ClrMdDumpHost.ManagedModuleImage(baseAddress, size, isMapped, fileName, timeStamp, imageSize));
+            }
+            catch (System.Exception)
+            {
+                // Skip modules the Loader contract can't fully describe (e.g. in-memory/dynamic).
+            }
+        }
+
+        _host.RegisterManagedModules(modules);
+    }
+
+    /// <summary>
     /// Checks the calling test method for skip attributes and throws
     /// <see cref="SkipTestException"/> if the current configuration matches.
     /// </summary>
     private void EvaluateSkipAttributes(TestConfiguration config, string callerName, string? dumpType = null)
     {
-        if (config.RuntimeVersion is "net10.0" && (dumpType ?? DumpType) == "heap")
+        if (config.RuntimeVersion is "net10.0" && ((dumpType ?? DumpType) is "heap" or "mini"))
         {
-            throw new SkipTestException($"[net10.0] Skipping heap dump tests due to outdated dump generation.");
+            throw new SkipTestException($"[net10.0] Skipping {dumpType ?? DumpType} dump tests due to outdated dump generation.");
         }
 
         MethodInfo? method = GetType().GetMethod(callerName, BindingFlags.Public | BindingFlags.Instance);
