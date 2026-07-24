@@ -155,6 +155,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task DelegateDataFlow()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task DynamicDependencyDataflow()
         {
             return RunTest(nameof(DynamicDependencyDataflow));
