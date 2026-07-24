@@ -152,10 +152,6 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
 
     HRESULT hr = S_OK;
 
-    CONTRACT_VIOLATION(GCViolation);    // ComHolderAnyMode goes to preemptive mode, which will trigger a GC
-    ComHolderAnyMode<IMDInternalImportENC> pIMDInternalImportENC;
-    ComHolderAnyMode<IMetaDataEmit> pEmitter;
-
     // Apply the changes. Note that ApplyEditAndContinue() requires read/write metadata. If the metadata is
     // not already RW, then ApplyEditAndContinue() will perform the conversion, invalidate the current
     // metadata importer, and return us a new one.  We can't let that happen. Other parts of the system are
@@ -191,9 +187,11 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     }
 
     // get the delta interface
+    ReleaseHolder<IMDInternalImportENC> pIMDInternalImportENC;
     IfFailRet(pMDImport->QueryInterface(IID_IMDInternalImportENC, (void **)&pIMDInternalImportENC));
 
     // get an emitter interface
+    ReleaseHolder<IMetaDataEmit> pEmitter;
     IfFailRet(GetMDPublicInterfaceFromInternal(pMDImport, IID_IMetaDataEmit, (void **)&pEmitter));
 
     // Copy the delta IL into our RVA-able IL memory

@@ -806,8 +806,10 @@ public:
 
     T *Append()
     {
-        CONTRACTL {
+        CONTRACTL
+        {
             NOTHROW;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         // The array should grow, if we can't fit one more element into the array.
@@ -818,8 +820,10 @@ public:
 
     T *AppendThrowing()
     {
-        CONTRACTL {
+        CONTRACTL
+        {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         // The array should grow, if we can't fit one more element into the array.

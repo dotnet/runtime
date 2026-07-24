@@ -439,6 +439,24 @@ struct cdac_data<PEAssembly>
 #endif
 };
 
-typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;
+struct PEAssemblyHolderTraits final
+{
+    using Type = PEAssembly*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_ANY;
+        } CONTRACTL_END;
+
+        if (value != NULL)
+            value->Release();
+    }
+};
+
+typedef LifetimeHolder<PEAssemblyHolderTraits> PEAssemblyHolder;
 
 #endif  // PEASSEMBLY_H_
