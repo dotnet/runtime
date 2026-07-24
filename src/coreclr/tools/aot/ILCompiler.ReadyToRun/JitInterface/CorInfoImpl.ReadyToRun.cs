@@ -2324,16 +2324,15 @@ namespace Internal.JitInterface
                 {
                     if (pResult->exactContextNeedsRuntimeLookup)
                     {
-                        throw new RequiresRuntimeJitException("EmbedGenericHandle currently doesn't support propagation of RUNTIME_LOOKUP or pConstrainedResolvedToken from ComputeRuntimeLookupForSharedGenericToken");
-                        // ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind.DispatchStubAddrSlot, ref pResolvedToken, pConstrainedResolvedToken, originalMethod, ref pResult->codePointerOrStubLookup);
-                        // useInstantiatingStub = false;
+                        pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+                        ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind.ConstrainedMethodEntrySlot, ref pResolvedToken, pConstrainedResolvedToken, originalMethod, HandleToObject(callerHandle), ref pResult->codePointerOrStubLookup);
+                        useInstantiatingStub = true;
                     }
                     else
                     {
                         throw new RequiresRuntimeJitException("CanInline currently doesn't support propagation of constrained type so that we cannot reliably tell whether a SVM call can be inlined");
                         // Even if we decided to support SVMs unresolved at compile time, we'd still need to force the use of instantiating stub
                         // as we can't tell in advance whether the method will be runtime-resolved to a canonical representation.
-                        // useInstantiatingStub = true;
                     }
                 }
             }
