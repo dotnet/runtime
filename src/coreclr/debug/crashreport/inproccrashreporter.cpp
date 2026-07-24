@@ -66,10 +66,10 @@ static const char CRASHREPORT_ARCHITECTURE_NAME[] = "unknown";
 //                                                                      (blank between sections)
 //   --- thread 0xTID [(crashed)] ---                                   (BeginConsoleThreadBlock)
 //     managed exception: <Type> (0x<HRESULT>)                          (only if EE provided one)
-//     #NN [<moduleIndex>] Class.Method + 0xILOFFSET (token=0xTOKEN)    (managed frame; WriteFrameToConsole)
-//     #NN (in <name>) Class.Method + 0xILOFFSET (token=0xTOKEN)        (overflow form: module didn't fit the table)
-//     #NN [<moduleIndex>] 0xIP (module + 0xOFFSET)                     (native frame; WriteFrameToConsole)
-//     #NN 0xIP (module + 0xOFFSET)                                     (native frame not in module table)
+//     #NN [<moduleIndex>] 0xTOKEN 0xILOFFSET                           (managed frame; deferred symbolication)
+//     #NN [<moduleIndex>] 0xTOKEN                                      (managed frame; IL offset unavailable)
+//     #NN (in <name>) 0xTOKEN 0xILOFFSET                               (overflow form: module didn't fit the table)
+//     #NN [<moduleIndex>] 0xIP                                         (no method token: raw IP fallback)
 //     (no managed frames) | ... +N more frames                         (EndConsoleThreadBlock)
 //                                                                      (blank between threads)
 //   modules:                                                           (EndConsoleReport)
@@ -473,15 +473,10 @@ public:
 
     static void WriteFrameToConsole(
         SignalSafeConsoleWriter* consoleWriter,
-        char* methodNameBuffer,
-        size_t methodNameBufferSize,
         uint32_t frameIndex,
         int moduleIndex,
         uint64_t ip,
-        const char* methodName,
-        const char* className,
         const char* fallbackModuleName,
-        uint32_t nativeOffset,
         uint32_t token,
         uint32_t ilOffset);
 
@@ -1265,7 +1260,7 @@ CrashReportHelpers::WriteFrameToJson(
         if (methodName != nullptr || token != 0)
         {
             writer->WriteHexAsString("token", token);
-            writer->WriteHexAsString("il_offset", ilOffset);
+            writer->WriteHexAsString("il_offset", ilOffset == CRASHREPORT_NO_IL_OFFSET ? 0u : ilOffset);
         }
         if (HasModuleName(moduleName))
         {
@@ -1302,15 +1297,10 @@ CrashReportHelpers::WriteFrameToJson(
 void
 CrashReportHelpers::WriteFrameToConsole(
     SignalSafeConsoleWriter* consoleWriter,
-    char* methodNameBuffer,
-    size_t methodNameBufferSize,
     uint32_t frameIndex,
     int moduleIndex,
     uint64_t ip,
-    const char* methodName,
-    const char* className,
     const char* fallbackModuleName,
-    uint32_t nativeOffset,
     uint32_t token,
     uint32_t ilOffset)
 {
@@ -1327,53 +1317,56 @@ CrashReportHelpers::WriteFrameToConsole(
     consoleWriter->AppendDecimal(static_cast<uint64_t>(frameIndex));
     consoleWriter->AppendChar(' ');
 
+    // Module reference: index into the trailing "modules:" table (which maps the
+    // index to a name + MVID). When the module didn't fit the table, fall back to
+    // the inline "(in <name>)" form so the frame is still attributable.
     if (moduleIndex >= 0)
     {
         consoleWriter->AppendChar('[');
         consoleWriter->AppendDecimal(static_cast<uint64_t>(moduleIndex));
         consoleWriter->AppendStr("] ");
     }
-    else if ((methodName != nullptr || (token != 0 && HasModuleName(fallbackModuleName))) && HasModuleName(fallbackModuleName))
+    else if (HasModuleName(fallbackModuleName))
     {
         consoleWriter->AppendStr("(in ");
         consoleWriter->AppendStr(GetFilename(fallbackModuleName));
         consoleWriter->AppendStr(") ");
     }
 
-    if (methodName != nullptr)
+    if (token != 0)
     {
-        const char* fullMethodName = methodName;
-        if (methodNameBuffer != nullptr && methodNameBufferSize != 0)
+        // Deferred symbolication: emit only the stable keys an offline tool needs
+        // (module MVID from the trailing table + method token + IL offset) and
+        // leave the Namespace.Class.Method resolution to that tool. The resolved
+        // name is still recorded in the JSON report.
+        //
+        // The grammar is intentionally terse to conserve logcat bytes: after the
+        // module reference, the first "0x" hex is always the MethodDef token and
+        // the second "0x" hex, when present, is the IL offset. An offline tool
+        // validates the first value against the module's MethodDef table (method
+        // tokens live in the 0x06xxxxxx range) to tell it apart from the raw-IP
+        // fallback form below.
+        //
+        // The JIT instruction pointer and the native code offset are intentionally
+        // omitted: both are process-dynamic addresses absent from any PDB, so
+        // neither aids off-device symbolication. When the IL offset cannot be
+        // resolved the line simply stops after the token.
+        consoleWriter->AppendStr("0x");
+        consoleWriter->AppendHex(static_cast<uint64_t>(token));
+        if (ilOffset != CRASHREPORT_NO_IL_OFFSET)
         {
-            BuildMethodName(methodNameBuffer, methodNameBufferSize, className, methodName);
-            fullMethodName = methodNameBuffer;
+            consoleWriter->AppendStr(" 0x");
+            consoleWriter->AppendHex(static_cast<uint64_t>(ilOffset));
         }
-        consoleWriter->AppendStr(fullMethodName);
-        consoleWriter->AppendStr(" + 0x");
-        consoleWriter->AppendHex(static_cast<uint64_t>(ilOffset));
-        consoleWriter->AppendStr(" (token=0x");
-        consoleWriter->AppendHex(static_cast<uint64_t>(token));
-        consoleWriter->AppendChar(')');
-    }
-    else if (token != 0 && HasModuleName(fallbackModuleName))
-    {
-        consoleWriter->AppendStr("token=0x");
-        consoleWriter->AppendHex(static_cast<uint64_t>(token));
-        consoleWriter->AppendStr(" + 0x");
-        consoleWriter->AppendHex(static_cast<uint64_t>(ilOffset));
     }
     else
     {
+        // No managed method token (e.g. certain dynamic methods / stubs): there is
+        // nothing to defer-symbolicate, so fall back to the raw instruction
+        // pointer to keep the frame locatable in-process. The native offset is
+        // dropped for the same reason as above: it is useless off-device.
         consoleWriter->AppendStr("0x");
         consoleWriter->AppendHex(ip);
-        if (HasModuleName(fallbackModuleName))
-        {
-            consoleWriter->AppendStr(" (");
-            consoleWriter->AppendStr(GetFilename(fallbackModuleName));
-            consoleWriter->AppendStr(" + 0x");
-            consoleWriter->AppendHex(static_cast<uint64_t>(nativeOffset));
-            consoleWriter->AppendChar(')');
-        }
     }
     consoleWriter->EndLine();
 }
@@ -1634,10 +1627,8 @@ CrashReportHelpers::WriteFrameToReport(
             }
         }
         WriteFrameToConsole(consoleWriter,
-            methodNameBuffer,
-            methodNameBufferSize,
-            frameIndex, moduleIndex, ip, methodName, className, moduleName,
-            nativeOffset, token, ilOffset);
+            frameIndex, moduleIndex, ip, moduleName,
+            token, ilOffset);
     }
     else if (currentThreadDroppedCount != nullptr)
     {

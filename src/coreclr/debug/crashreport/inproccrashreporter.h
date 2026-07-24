@@ -21,6 +21,12 @@ static constexpr size_t CRASHREPORT_PATH_BUFFER_SIZE = 1024;
 static constexpr size_t CRASHREPORT_STRING_BUFFER_SIZE = 256;
 static constexpr int32_t CRASHREPORT_DEFAULT_MAX_FILE_COUNT = 32;
 
+// IL-offset sentinel: ilOffset starts here and is overwritten only on a
+// successful native->IL mapping, so a real IL offset of 0 stays distinct from
+// "unavailable". Matches ICorDebugInfo::NO_MAPPING (0xffffffff is not a valid
+// IL offset).
+static constexpr uint32_t CRASHREPORT_NO_IL_OFFSET = 0xFFFFFFFFu;
+
 #if defined(__ANDROID__)
 static const char CRASHREPORT_LOG_TAG[] = "DOTNET_CRASH";
 #endif
