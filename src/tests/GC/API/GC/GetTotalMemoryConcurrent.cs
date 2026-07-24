@@ -49,6 +49,7 @@ public class GetTotalMemoryConcurrent
         long probes = 0;
         long minObserved = long.MaxValue;
         long negative = 0;
+        bool allStopped = true;
         var sw = Stopwatch.StartNew();
         try
         {
@@ -73,12 +74,16 @@ public class GetTotalMemoryConcurrent
             s_stop = true;
             foreach (Thread t in threads)
             {
-                t.Join(TimeSpan.FromSeconds(5));
+                if (!t.Join(TimeSpan.FromSeconds(5)))
+                {
+                    allStopped = false;
+                }
             }
         }
 
         Console.WriteLine($"probes={probes}, min observed={minObserved}, negative={negative}");
         Assert.True(negative >= 0, $"GC.GetTotalMemory(false) returned a negative value: {negative}");
+        Assert.True(allStopped, "A worker thread did not stop within the join timeout.");
     }
 
     // Keeps a large ring of pinned tiny objects alive, refreshing the oldest one each iteration, and
