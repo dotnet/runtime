@@ -143,3 +143,4 @@ jobs:
               extraHelixArguments: /p:BrowserHost=$(_hostedOs) /maxcpucount:8
               scenarios:
               - buildwasmapps
+              useHelixMonitor: true

@@ -7,6 +7,7 @@ parameters:
   platforms: []
   shouldContinueOnError: false
   extraBuildArgs: ''
+  useHelixMonitor: false
   # The wasm-tools workload manifest includes the CoreCLR browser-wasm runtime pack, so
   # installing the workload for testing requires that pack in the local feed. Only pipelines
   # that build the CoreCLR browser-wasm runtime (e.g. runtime.yml) can stage it here.
@@ -157,3 +158,4 @@ jobs:
               extraHelixArguments: /p:BrowserHost=$(_hostedOs) /maxcpucount:8
               scenarios:
               - buildwasmapps
+              useHelixMonitor: ${{ parameters.useHelixMonitor }}

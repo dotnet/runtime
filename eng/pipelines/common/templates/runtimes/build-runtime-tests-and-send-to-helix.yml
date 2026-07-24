@@ -13,6 +13,7 @@ parameters:
   nativeAotTest: false
   runtimeFlavor: 'mono'
   runtimeVariant: 'monointerpreter'
+  useHelixMonitor: false
   llvmAotStepContainer: ''
   scenarios:
     - normal
@@ -115,6 +116,7 @@ steps:
           helixType: 'test/functional/cli/'
 
         helixQueues: ${{ parameters.helixQueues }}
+        useHelixMonitor: ${{ parameters.useHelixMonitor }}
         # This tests whether an array is empty
         ${{ if eq(join('', parameters.helixQueues), '') }}:
           condition: false
