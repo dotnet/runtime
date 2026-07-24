@@ -398,12 +398,12 @@ assembly_update_supported (MonoImage *image_base, MonoError *error)
 		{
 			mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is not set", image_base->name);
 		} else {
-			mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is set to '%s', not 'Debug'", image_base->name, invalid_env_val);
+			mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is set to '%s', not 'debug'", image_base->name, invalid_env_val);
 		}
 		g_free (invalid_env_val);
 		return FALSE;
 	} else if (modifiable == MONO_MODIFIABLE_ASSM_NONE) {
-		mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is set to 'none', not 'Debug'", image_base->name);
+		mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is set to 'none', not 'debug'", image_base->name);
 		return FALSE;
 	} else if (!mono_assembly_is_jit_optimizer_disabled (image_base->assembly)) {
 		mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because it does not have a System.Diagnostics.DebuggableAttribute with the DebuggingModes.DisableOptimizations flag (editing Release build assemblies is not supported)", image_base->name);

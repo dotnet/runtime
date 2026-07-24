@@ -1442,8 +1442,7 @@ extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported()
     BEGIN_QCALL;
 
 #ifdef FEATURE_METADATA_UPDATER
-    result = (g_pConfig->ModifiableAssemblies() != MODIFIABLE_ASSM_NONE) &&
-             (CORDebuggerAttached() || g_pConfig->ModifiableAssemblies() == MODIFIABLE_ASSM_DEBUG);
+    result = g_pConfig->ModifiableAssemblies() == MODIFIABLE_ASSM_DEBUG;
 #endif
 
     END_QCALL;
