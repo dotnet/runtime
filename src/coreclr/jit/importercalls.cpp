@@ -129,6 +129,79 @@ GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 }
 
 //------------------------------------------------------------------------
+// impTryOptimizeAwaitAwaiter:
+//   Rewrite a struct AwaitAwaiter or UnsafeAwaitAwaiter call to use the
+//   corresponding helper that reads the awaiter from the continuation.
+//
+void Compiler::impTryOptimizeAwaitAwaiter(GenTreeCall*            call,
+                                          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                          CORINFO_SIG_INFO*       sig,
+                                          CORINFO_CALL_INFO*      callInfo,
+                                          CORINFO_METHOD_HANDLE*  methHnd,
+                                          CORINFO_CONTEXT_HANDLE* exactContextHnd,
+                                          GenTree**               instParam,
+                                          NamedIntrinsic          ni)
+{
+    CallArg* awaiterArg = call->gtArgs.GetUserArgByIndex(0);
+    if (!varTypeIsStruct(awaiterArg->GetSignatureType()))
+    {
+        return;
+    }
+
+    CORINFO_LOOKUP   newInstArgLookup;
+    CORINFO_SIG_INFO lookupSig = *sig;
+    if (pResolvedToken->pMethodSpec != nullptr)
+    {
+        lookupSig.pSig  = pResolvedToken->pMethodSpec;
+        lookupSig.cbSig = pResolvedToken->cbMethodSpec;
+        lookupSig.scope = pResolvedToken->tokenScope;
+    }
+
+    bool                   isUnsafe = ni == NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter;
+    CORINFO_CONTEXT_HANDLE newExactContextHnd;
+    CORINFO_METHOD_HANDLE  newMethod =
+        info.compCompHnd->getAwaitAwaiterInContinuationCall(info.compMethodHnd, &lookupSig, isUnsafe,
+                                                            &newExactContextHnd, &newInstArgLookup);
+
+    CORINFO_SIG_INFO newSig;
+    info.compCompHnd->getMethodSig(newMethod, &newSig);
+
+    GenTree* newInstParam = nullptr;
+    if (newSig.hasTypeArg())
+    {
+        newInstParam = impLookupToTree(&newInstArgLookup, GTF_ICON_METHOD_HDL, newMethod);
+        if (newInstParam == nullptr)
+        {
+            JITDUMP("Failed to optimize awaiter call [%06u] because its replacement lookup could not be created\n",
+                    dspTreeID(call));
+            return;
+        }
+    }
+
+    JITDUMP("Optimizing awaiter call [%06u] to read its struct awaiter from the continuation\n", dspTreeID(call));
+
+    *methHnd              = newMethod;
+    *exactContextHnd      = newExactContextHnd;
+    call->gtCallMethHnd   = newMethod;
+    callInfo->hMethod     = newMethod;
+    callInfo->methodFlags = info.compCompHnd->getMethodAttribs(newMethod);
+    callInfo->sig         = newSig;
+    *instParam            = newInstParam;
+
+    GenTree*     awaiter       = awaiterArg->GetNode();
+    var_types    awaiterType   = awaiterArg->GetSignatureType();
+    ClassLayout* awaiterLayout = awaiterArg->GetSignatureLayout();
+    call->gtArgs.Remove(awaiterArg);
+    call->gtArgs
+        .PushFront(this, NewCallArg::Struct(awaiter, awaiterType, awaiterLayout).WellKnown(WellKnownArg::AsyncAwaiter));
+
+    size_t   memberIndex = GetContinuationMemberIndex(ContinuationMember::CustomAwaiterOfLayout(awaiterLayout));
+    GenTree* offset =
+        new (this, GT_CONTINUATION_MEMBER_OFFSET) GenTreeVal(GT_CONTINUATION_MEMBER_OFFSET, TYP_INT, memberIndex);
+    call->gtArgs.PushBack(this, NewCallArg::Primitive(offset));
+}
+
+//------------------------------------------------------------------------
 // impImportCall: import a call-inspiring opcode
 //
 // Arguments:
@@ -956,48 +1029,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     if (opts.OptimizationEnabled() && ((ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter) ||
                                        (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter)))
     {
-        CallArg* awaiterArg = call->AsCall()->gtArgs.GetUserArgByIndex(0);
-        if (varTypeIsStruct(awaiterArg->GetSignatureType()))
-        {
-            CORINFO_LOOKUP   newInstArgLookup;
-            CORINFO_SIG_INFO lookupSig = *sig;
-            if (pResolvedToken->pMethodSpec != nullptr)
-            {
-                lookupSig.pSig  = pResolvedToken->pMethodSpec;
-                lookupSig.cbSig = pResolvedToken->cbMethodSpec;
-                lookupSig.scope = pResolvedToken->tokenScope;
-            }
-            CORINFO_METHOD_HANDLE newMethod = info.compCompHnd->getAwaitAwaiterInContinuationCall(
-                info.compMethodHnd, &lookupSig,
-                ni == NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter, &exactContextHnd,
-                &newInstArgLookup);
-
-            methHnd                       = newMethod;
-            call->AsCall()->gtCallMethHnd = newMethod;
-            callInfo->hMethod             = newMethod;
-            callInfo->methodFlags         = info.compCompHnd->getMethodAttribs(newMethod);
-            info.compCompHnd->getMethodSig(newMethod, &callInfo->sig);
-
-            awaiterArg->SetWellKnownArg(WellKnownArg::AsyncAwaiter);
-            size_t memberIndex =
-                GetContinuationMemberIndex(ContinuationMember::CustomAwaiterOfLayout(awaiterArg->GetSignatureLayout()));
-            GenTree* offset = new (this, GT_CONTINUATION_MEMBER_OFFSET)
-                GenTreeVal(GT_CONTINUATION_MEMBER_OFFSET, TYP_INT, memberIndex);
-            call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(offset));
-
-            if (callInfo->sig.hasTypeArg())
-            {
-                instParam = impLookupToTree(&newInstArgLookup, GTF_ICON_METHOD_HDL, newMethod);
-                if (instParam == nullptr)
-                {
-                    return TYP_UNDEF;
-                }
-            }
-            else
-            {
-                instParam = nullptr;
-            }
-        }
+        impTryOptimizeAwaitAwaiter(call->AsCall(), pResolvedToken, sig, callInfo, &methHnd, &exactContextHnd,
+                                   &instParam, ni);
     }
 
     // Extra args
