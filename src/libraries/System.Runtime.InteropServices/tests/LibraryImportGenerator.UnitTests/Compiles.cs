@@ -394,6 +394,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateless.NativeToManagedFinallyOnlyReturnValue<int>() };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateless.NestedMarshallerParametersAndModifiers<int>() };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateless.NonBlittableElementByValue };
+            yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateless.NonBlittableElementWithFreeByValue };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateless.NonBlittableElementParametersAndModifiers };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateless.NonBlittableElementNativeToManagedOnlyOutParameter };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateless.NonBlittableElementNativeToManagedFinallyOnlyOutParameter };
@@ -432,6 +433,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateful.NativeToManagedOnlyReturnValue<int>() };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateful.NativeToManagedFinallyOnlyReturnValue<int>() };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateful.NonBlittableElementByValue };
+            yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateful.NonBlittableElementWithFreeByValue };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateful.NonBlittableElementParametersAndModifiers };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateful.NonBlittableElementNativeToManagedOnlyOutParameter };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateful.NonBlittableElementNativeToManagedFinallyOnlyOutParameter };
