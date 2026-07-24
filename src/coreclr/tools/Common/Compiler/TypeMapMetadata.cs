@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using ILCompiler.DependencyAnalysis;
 using Internal.Text;
@@ -41,7 +42,7 @@ namespace ILCompiler
 
         internal interface IExternalTypeMap
         {
-            IReadOnlyDictionary<string, (TypeDesc type, TypeDesc trimmingType)> TypeMap { get; }
+            IReadOnlyDictionary<string, (TypeDesc type, List<TypeDesc> trimmingTargets)> TypeMap { get; }
             MethodDesc ThrowingMethodStub { get; }
         }
 
@@ -96,7 +97,7 @@ namespace ILCompiler
             }
 
             private readonly Dictionary<TypeDesc, TypeDesc> _associatedTypeMap = [];
-            private readonly Dictionary<string, (TypeDesc type, TypeDesc trimmingTarget)> _externalTypeMap = [];
+            private readonly Dictionary<string, (TypeDesc type, List<TypeDesc> trimmingTargets)> _externalTypeMap = [];
             private readonly List<ModuleDesc> _targetModules = [];
             private ThrowingMethodStub _externalTypeMapExceptionStub;
             private ThrowingMethodStub _associatedTypeMapExceptionStub;
@@ -125,9 +126,21 @@ namespace ILCompiler
             }
             public void AddExternalTypeMapEntry(string typeName, TypeDesc type, TypeDesc trimmingTarget)
             {
-                if (!_externalTypeMap.TryAdd(typeName, (type, trimmingTarget)))
+                if (_externalTypeMap.TryGetValue(typeName, out var currentValue))
                 {
-                    ThrowHelper.ThrowBadImageFormatException();
+                    if (currentValue.type != type)
+                    {
+                        // Conflicting type map entry
+                        ThrowHelper.ThrowBadImageFormatException();
+                    }
+                    else
+                    {
+                        currentValue.trimmingTargets.Add(trimmingTarget);
+                    }
+                }
+                else
+                {
+                    _externalTypeMap[typeName] = (type, [trimmingTarget]);
                 }
             }
 
@@ -195,9 +208,12 @@ namespace ILCompiler
                     {
                         try
                         {
-                            foreach (KeyValuePair<string, (TypeDesc type, TypeDesc trimmingTarget)> kvp in pendingMap._externalTypeMap)
+                            foreach (KeyValuePair<string, (TypeDesc type, List<TypeDesc> trimmingTargets)> kvp in pendingMap._externalTypeMap)
                             {
-                                AddExternalTypeMapEntry(kvp.Key, kvp.Value.type, kvp.Value.trimmingTarget);
+                                foreach (TypeDesc trimmingTarget in kvp.Value.trimmingTargets)
+                                {
+                                    AddExternalTypeMapEntry(kvp.Key, kvp.Value.type, trimmingTarget);
+                                }
                             }
                         }
                         catch (TypeSystemException ex)
@@ -227,7 +243,7 @@ namespace ILCompiler
             /// </summary>
             public IReadOnlyList<ModuleDesc> TargetModules => _targetModules;
 
-            IReadOnlyDictionary<string, (TypeDesc type, TypeDesc trimmingType)> IExternalTypeMap.TypeMap => _externalTypeMap;
+            IReadOnlyDictionary<string, (TypeDesc type, List<TypeDesc> trimmingTargets)> IExternalTypeMap.TypeMap => _externalTypeMap;
 
             MethodDesc IExternalTypeMap.ThrowingMethodStub => _externalTypeMapExceptionStub;
 
