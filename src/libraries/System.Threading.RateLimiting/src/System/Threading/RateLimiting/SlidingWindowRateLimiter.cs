@@ -35,6 +35,10 @@ namespace System.Threading.RateLimiting
         private static readonly RateLimitLease SuccessfulLease = new SlidingWindowLease(true, null);
         private static readonly RateLimitLease FailedLease = new SlidingWindowLease(false, null);
 
+        // System.Threading.Timer truncates its period to whole milliseconds; a sub-millisecond period
+        // becomes 0 and disables periodic firing. This is the minimum period used for the replenishment timer.
+        private static readonly TimeSpan s_minTimerPeriod = TimeSpan.FromMilliseconds(1);
+
         /// <inheritdoc />
         public override TimeSpan? IdleDuration => RateLimiterHelper.GetElapsedTime(_idleSince);
 
@@ -89,7 +93,12 @@ namespace System.Threading.RateLimiting
 
             if (_options.AutoReplenishment)
             {
-                _renewTimer = new Timer(Replenish, this, ReplenishmentPeriod, ReplenishmentPeriod);
+                // ReplenishmentPeriod is derived as Window / SegmentsPerWindow, so it can be sub-millisecond even
+                // when Window is not. System.Threading.Timer truncates the period to whole milliseconds, so a
+                // sub-millisecond period becomes 0 and the timer never fires periodically, silently stopping
+                // replenishment. Clamp the timer period to a 1ms floor so auto-replenishment keeps running.
+                TimeSpan timerPeriod = ReplenishmentPeriod < s_minTimerPeriod ? s_minTimerPeriod : ReplenishmentPeriod;
+                _renewTimer = new Timer(Replenish, this, timerPeriod, timerPeriod);
             }
         }
 
