@@ -140,6 +140,7 @@ namespace Mono.Linker
 
             TypeDefinition? GetSimpleTypeFromModule(TypeName typeName, ModuleDefinition module)
             {
+                int initialResolutionRecordCount = typeResolutionRecords.Count;
                 TypeDefinition? resolvedType;
                 if (typeName.IsNested)
                 {
@@ -155,7 +156,13 @@ namespace Mono.Linker
                 }
 
                 if (resolvedType != null)
+                {
                     typeResolutionRecords.Add(new(module.Assembly, resolvedType));
+                }
+                else if (typeResolutionRecords.Count != initialResolutionRecordCount)
+                {
+                    typeResolutionRecords.RemoveRange(initialResolutionRecordCount, typeResolutionRecords.Count - initialResolutionRecordCount);
+                }
 
                 return resolvedType;
             }
