@@ -1762,7 +1762,7 @@ void gc_heap::check_batch_mark_array_bits (uint8_t* start, uint8_t* end)
 
 void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
                                 alloc_context* acontext, uint32_t flags,
-                                heap_segment* seg, int align_const, int gen_number, size_t poh_pad)
+                                heap_segment* seg, int align_const, int gen_number)
 {
     bool uoh_p = (gen_number > 0);
     GCSpinLock* msl = uoh_p ? &more_space_lock_uoh : &more_space_lock_soh;
@@ -1857,7 +1857,7 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
 #ifdef BACKGROUND_GC
     else if (seg)
     {
-        uint8_t* old_allocated = heap_segment_allocated (seg) - plug_skew - limit_size - poh_pad;
+        uint8_t* old_allocated = heap_segment_allocated (seg) - plug_skew - limit_size;
 #ifdef FEATURE_LOH_COMPACTION
         if (gen_number == loh_generation)
         {
@@ -2501,9 +2501,6 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
     size_t loh_pad = (gen_number == loh_generation) ? Align (loh_padding_obj_size, align_const) : 0;
 #endif //FEATURE_LOH_COMPACTION
 
-    // Gap to leave in front of a POH object so that its data ends up aligned.
-    size_t poh_pad = 0;
-
 #ifdef BACKGROUND_GC
     int cookie = -1;
 #endif //BACKGROUND_GC
@@ -2518,12 +2515,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
 
             size_t free_list_size = unused_array_size(free_list);
 
-            if (gen_number == poh_generation)
-            {
-                poh_pad = poh_alignment_pad (free_list);
-            }
-
-            ptrdiff_t diff = free_list_size - size - poh_pad;
+            ptrdiff_t diff = free_list_size - size;
 
 #ifdef FEATURE_LOH_COMPACTION
             diff -= loh_pad;
@@ -2545,7 +2537,7 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                 remove_gen_free (gen_number, free_list_size);
 
                 // Subtract min obj size because limit_from_size adds it. Not needed for LOH
-                size_t limit = limit_from_size (size + poh_pad - Align(min_obj_size, align_const), flags, free_list_size,
+                size_t limit = limit_from_size (size - Align(min_obj_size, align_const), flags, free_list_size,
                                                 gen_number, align_const);
                 dd_new_allocation (dynamic_data_of (gen_number)) -= limit;
 
@@ -2560,15 +2552,6 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                     free_list_size -= loh_pad;
                 }
 #endif //FEATURE_LOH_COMPACTION
-
-                if (poh_pad)
-                {
-                    make_unused_array (free_list, poh_pad);
-                    generation_free_obj_space (gen) += poh_pad;
-                    limit -= poh_pad;
-                    free_list += poh_pad;
-                    free_list_size -= poh_pad;
-                }
 
                 uint8_t*  remain = (free_list + limit);
                 size_t remain_size = (free_list_size - limit);
@@ -2645,17 +2628,11 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
     }
 #endif //FEATURE_LOH_COMPACTION
 
-    // Gap to leave in front of a POH object so that its data ends up aligned. It is part
-    // of this allocation, hence alloc_size.
-    size_t poh_pad = (gen_number == poh_generation) ? poh_alignment_pad (allocated) : 0;
-    size_t alloc_size = size + poh_pad;
-    pad += poh_pad;
-
     uint8_t* end = heap_segment_committed (seg) - pad;
 
-    if (a_size_fit_p (alloc_size, allocated, end, align_const))
+    if (a_size_fit_p (size, allocated, end, align_const))
     {
-        limit = limit_from_size (alloc_size,
+        limit = limit_from_size (size,
                                  flags,
                                  (end - allocated),
                                  gen_number, align_const);
@@ -2664,9 +2641,9 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
 
     end = heap_segment_reserved (seg) - pad;
 
-    if ((heap_segment_reserved (seg) != heap_segment_committed (seg)) && (a_size_fit_p (alloc_size, allocated, end, align_const)))
+    if ((heap_segment_reserved (seg) != heap_segment_committed (seg)) && (a_size_fit_p (size, allocated, end, align_const)))
     {
-        limit = limit_from_size (alloc_size,
+        limit = limit_from_size (size,
                                  flags,
                                  (end - allocated),
                                  gen_number, align_const);
@@ -2721,14 +2698,6 @@ found_fit:
     }
 #endif //FEATURE_LOH_COMPACTION
 
-    if (poh_pad)
-    {
-        make_unused_array (allocated, poh_pad);
-        generation_free_obj_space (generation_of (gen_number)) += poh_pad;
-        allocated += poh_pad;
-        limit -= poh_pad;
-    }
-
 #if defined (VERIFY_HEAP) && defined (_DEBUG)
     // we are responsible for cleaning the syncblock and we will do it later
     // as a part of cleanup routine and when not holding the heap lock.
@@ -2781,7 +2750,7 @@ found_fit:
 #endif
 
         allocated += limit;
-        adjust_limit_clr (old_alloc, limit, size, acontext, flags, seg, align_const, gen_number, poh_pad);
+        adjust_limit_clr (old_alloc, limit, size, acontext, flags, seg, align_const, gen_number);
     }
 
     return TRUE;
@@ -5829,8 +5798,6 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
 
     assert (obj != 0);
     assert ((size_t)obj == Align ((size_t)obj, align_const));
-    assert ((gen_number != poh_generation) || (poh_data_alignment == 0) ||
-            ((((size_t)obj + poh_data_offset()) & (poh_data_alignment - 1)) == 0));
 
     return obj;
 }

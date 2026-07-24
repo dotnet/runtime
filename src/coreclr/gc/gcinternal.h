@@ -1214,45 +1214,6 @@ size_t AlignQword (size_t nbytes)
 #endif // FEATURE_STRUCTALIGN
 }
 
-// Objects on the POH are padded so that their data - sizeof(ArrayBase) into the object,
-// where the elements of an array start - is aligned on this boundary. 0 disables it.
-extern size_t poh_data_alignment;
-
-// Capped so that the padding of a single object can't waste much memory.
-const size_t max_poh_data_alignment = 64;
-
-inline size_t poh_data_offset()
-{
-    return sizeof (ArrayBase);
-}
-
-// Padding to insert at alloc_start so that the object placed after it has aligned data.
-// It is either 0 or big enough to be formatted as a free object.
-inline size_t poh_alignment_pad (uint8_t* alloc_start)
-{
-    size_t alignment = poh_data_alignment;
-    if (alignment == 0)
-    {
-        return 0;
-    }
-
-    assert (AlignQword (alignment) == alignment);
-
-    size_t misaligned = ((size_t)alloc_start + poh_data_offset()) & (alignment - 1);
-    if (misaligned == 0)
-    {
-        return 0;
-    }
-
-    size_t pad = alignment - misaligned;
-    if (pad < AlignQword (min_obj_size))
-    {
-        pad += alignment;
-    }
-
-    return pad;
-}
-
 inline
 BOOL Aligned (size_t n)
 {

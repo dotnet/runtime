@@ -2589,7 +2589,7 @@ private:
 
     PER_HEAP_METHOD void adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
                            alloc_context* acontext, uint32_t flags, heap_segment* seg,
-                           int align_const, int gen_number, size_t poh_pad = 0);
+                           int align_const, int gen_number);
     PER_HEAP_METHOD void  leave_allocation_segment (generation* gen);
 
     PER_HEAP_METHOD void init_free_and_plug();
