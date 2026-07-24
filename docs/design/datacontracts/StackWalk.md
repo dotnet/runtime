@@ -75,7 +75,7 @@ TargetPointer GetMethodDescPtr(TargetPointer framePtr);
 TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle);
 
 // Gets the instruction pointer from the current frame's context.
-TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle);
+TargetCodePointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle);
 
 // Walks the Thread's explicit (capital "F") Frame chain and yields a StackFrameData per Frame.
 IEnumerable<StackFrameData> GetFrames(TargetPointer threadPointer);
@@ -90,7 +90,9 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress);
 
 // Walks the stack and returns all GC references found on each frame.
 // This is the primary API for GC reference enumeration, used by SOSDacImpl.GetStackReferences.
-IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData);
+IReadOnlyList<StackReferenceData> WalkStackReferences(
+    ThreadData threadData,
+    bool resolveInteriorPointers);
 
 // Returns a context for the thread, trying (in order): the debugger filter context,
 // the OS thread context, or a context derived from the explicit Frame chain.
@@ -222,6 +224,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `ExecutionManager` |
 | `GC` |
 | `GCInfo` |
+| `Object` |
 | `PlatformMetadata` |
 | `RuntimeInfo` |
 | `RuntimeTypeSystem` |
@@ -640,7 +643,7 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress)
 
 `GetInstructionPointer` returns the instruction pointer (IP) from the current frame's context. This is the address of the instruction being executed (or about to be executed) in the method associated with this frame.
 ```csharp
-TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)
+TargetCodePointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)
 ```
 
 `GetRuntimeFramePointer` returns the debugger frame pointer that uniquely identifies the current frame. On x64 it is the current stack pointer. On ARM, ARM64, RISCV64, and LoongArch64 it is the caller stack pointer. On x86, frameless managed methods use the unwound stack pointer minus the callee-popped argument size and one pointer, while runtime-unwindable native markers use the return-address slot from the recovered hijacked context.
@@ -663,10 +666,12 @@ TargetPointer GetContextFramePointer(IStackDataFrameHandle stackDataFrameHandle)
 
 Each `IStackDataFrameHandle` also exposes `IsInterrupted` and `HasFaulted`. `IsInterrupted` is true when the current managed frame was reached through an exception Frame. `HasFaulted` is true when that exception Frame is a `FaultingExceptionFrame` whose saved context still has `CONTEXT_EXCEPTION_ACTIVE` set.
 
-`WalkStackReferences` walks the entire managed stack and enumerates all live GC references at each frame. It returns a list of `StackReferenceData` describing each GC-tracked slot (its address, whether it's an interior pointer, and the register/stack location). This API is the primary consumer for `SOSDacImpl.GetStackReferences`.
+`WalkStackReferences` walks the entire managed stack and enumerates all live GC references at each frame. It returns a list of `StackReferenceData` describing each GC-tracked slot (its address, whether it's an interior pointer, and the register/stack location). When `resolveInteriorPointers` is true, interior references are resolved to their containing objects. This API is the primary consumer for `SOSDacImpl.GetStackReferences`.
 
 ```csharp
-IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData)
+IReadOnlyList<StackReferenceData> WalkStackReferences(
+    ThreadData threadData,
+    bool resolveInteriorPointers)
 ```
 
 The implementation uses the same stack walk algorithm as `CreateStackWalk`, but integrates the GC-aware `Filter` directly (rather than consuming pre-generated frames) and performs GC reference enumeration at each frame. See [GC Stack Reference Scanning](#gc-stack-reference-scanning) for details.

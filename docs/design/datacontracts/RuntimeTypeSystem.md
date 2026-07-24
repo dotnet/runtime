@@ -75,9 +75,6 @@ partial interface IRuntimeTypeSystem : IContract
     // Returns the address of one of the runtime's well-known singleton MethodTables, or
     // TargetPointer.Null if the runtime has not yet initialized that global.
     public virtual TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind);
-    // Returns the address of one of the runtime's well-known singleton MethodDescs, or
-    // TargetPointer.Null if the runtime has not yet initialized that global.
-    public virtual TargetPointer GetWellKnownMethodDesc(WellKnownMethodDesc kind);
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(ITypeHandle typeHandle);
     // True if the MethodTable represents a byref-like value type (Span<T>, ReadOnlySpan<T>, any ref struct).
@@ -205,6 +202,16 @@ public enum GenericContextLoc
     ThisPtr,
 }
 
+[Flags]
+public enum AsyncMethodFlags : uint
+{
+    None = 0,
+    AsyncCall = 0x1,
+    IsAsyncVariant = 0x2,
+    Thunk = 0x4,
+    ReturnDroppingThunk = 0x8,
+}
+
 // Identifies one of the runtime's well-known singleton MethodTables, each addressable
 // via a dedicated global pointer (e.g. g_pObjectClass, g_pStringClass, g_pFreeObjectMethodTable).
 public enum WellKnownMethodTable
@@ -302,7 +309,7 @@ partial interface IRuntimeTypeSystem : IContract
     // Returns true if the method is eligible for tiered compilation
     public virtual bool IsEligibleForTieredCompilation(MethodDescHandle methodDesc);
 
-    // Returns the Runtime Async flags recorded for the method (native AsyncMethodFlags),
+    // Returns the normalized cDAC async flags for the method,
     // or AsyncMethodFlags.None if the method has no async method data.
     public virtual AsyncMethodFlags GetAsyncMethodFlags(MethodDescHandle methodDesc);
 
@@ -1532,13 +1539,13 @@ And the following enumeration definitions
     }
 
     [Flags]
-    internal enum AsyncMethodFlags : uint
+    internal enum AsyncMethodFlags_1 : uint
     {
         None = 0,
         AsyncCall = 0x1,
-        IsAsyncVariant = 0x2,
-        Thunk = 0x4,
-        ReturnDroppingThunk = 0x8,
+        IsAsyncVariant = 0x4,
+        Thunk = 0x10,
+        ReturnDroppingThunk = 0x20,
     }
 
     [Flags]
@@ -1975,10 +1982,17 @@ Reading a method's Runtime Async flags:
         if (!md.HasAsyncMethodData)
             return AsyncMethodFlags.None;
 
-        // Read and return the raw AsyncMethodFlags from the async method data optional slot.
-        // Callers test individual bits (e.g. Thunk, ReturnDroppingThunk, IsAsyncVariant), since a
-        // method may carry several simultaneously.
-        return (AsyncMethodFlags)/* AsyncMethodData.Flags */;
+        AsyncMethodFlags_1 raw = (AsyncMethodFlags_1)/* AsyncMethodData.Flags */;
+        AsyncMethodFlags result = AsyncMethodFlags.None;
+        if ((raw & AsyncMethodFlags_1.AsyncCall) != 0)
+            result |= AsyncMethodFlags.AsyncCall;
+        if ((raw & AsyncMethodFlags_1.IsAsyncVariant) != 0)
+            result |= AsyncMethodFlags.IsAsyncVariant;
+        if ((raw & AsyncMethodFlags_1.Thunk) != 0)
+            result |= AsyncMethodFlags.Thunk;
+        if ((raw & AsyncMethodFlags_1.ReturnDroppingThunk) != 0)
+            result |= AsyncMethodFlags.ReturnDroppingThunk;
+        return result;
     }
 ```
 
