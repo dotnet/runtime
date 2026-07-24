@@ -9556,6 +9556,16 @@ GenTreeVecCon* Compiler::gtNewVconNode(var_types type)
 
 GenTreeVecCon* Compiler::gtNewVconNode(var_types type, const void* data)
 {
+#if defined(TARGET_ARM64)
+    if (type == TYP_SIMD)
+    {
+        // Call the scalable version
+        simdscalable_t scalableData;
+        memcpy(&scalableData, data, sizeof(scalableData));
+        return gtNewSimdVconNode(type, &scalableData);
+    }
+#endif // TARGET_ARM64
+
     GenTreeVecCon* vecCon = new (this, GT_CNS_VEC) GenTreeVecCon(type);
     memcpy(&vecCon->gtSimdVal, data, genTypeSize(type));
     return vecCon;
