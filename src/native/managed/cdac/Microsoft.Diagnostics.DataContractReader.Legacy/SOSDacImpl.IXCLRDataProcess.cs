@@ -1475,6 +1475,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         int hr = HResults.S_FALSE;
         int hrLocal = HResults.S_OK;
         ulong legacyHandle = 0;
+        bool validateWithLegacy = false;
 
         try
         {
@@ -1485,6 +1486,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             if (_legacyProcess is not null)
             {
                 hrLocal = _legacyProcess.StartEnumMethodDefinitionsByAddress(address, &legacyHandle);
+                validateWithLegacy = true;
             }
 
             ILoader loader = _target.Contracts.Loader;
@@ -1501,7 +1503,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                     continue;
 
                 MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(module)
-                    ?? throw new InvalidOperationException("Failed to get metadata reader");
+                    ?? throw new InvalidOperationException($"Failed to get metadata reader for module {module.Address}");
                 ProcessEnum<MethodDefinitionInfo> methodDefinitions = new(
                     EnumerateMethodDefinitionsByAddress(loader, module, reader, address),
                     (nuint)legacyHandle);
@@ -1524,7 +1526,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         }
 
 #if DEBUG
-        if (_legacyProcess is not null)
+        if (_legacyProcess is not null && validateWithLegacy)
         {
             Debug.ValidateHResult(hr, hrLocal);
         }
@@ -1547,7 +1549,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
             GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
             if (gcHandle.Target is not ProcessEnum<MethodDefinitionInfo> methodDefinitionsLocal)
-                throw new ArgumentException();
+                throw new ArgumentException("Invalid enumeration handle", nameof(handle));
 
             methodDefinitions = methodDefinitionsLocal;
         }
@@ -1606,11 +1608,11 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         try
         {
             if (handle == 0)
-                throw new ArgumentException();
+                throw new ArgumentException("Invalid enumeration handle", nameof(handle));
 
             GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)handle);
             if (gcHandle.Target is not ProcessEnum<MethodDefinitionInfo> methodDefinitionsLocal)
-                throw new ArgumentException();
+                throw new ArgumentException("Invalid enumeration handle", nameof(handle));
 
             methodDefinitions = methodDefinitionsLocal;
             ((IEnum<MethodDefinitionInfo>)methodDefinitions).Dispose();
