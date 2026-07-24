@@ -10,72 +10,6 @@
 #include <ShlObj.h>
 #include <ctime>
 
-void pal::file_vprintf(FILE* f, const pal::char_t* format, va_list vl)
-{
-    // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
-    // In order to properly print UTF-8 and GB18030 characters, we need to use the version of vfwprintf that takes a locale.
-    _locale_t loc = _create_locale(LC_ALL, ".utf8");
-    ::_vfwprintf_l(f, format, loc, vl);
-    ::fputwc(_X('\n'), f);
-    _free_locale(loc);
-}
-
-namespace
-{
-    void file_printf(FILE* fallbackFileHandle, const pal::char_t* format, ...)
-    {
-        va_list args;
-        va_start(args, format);
-        pal::file_vprintf(fallbackFileHandle, format, args);
-        va_end(args);
-    }
-    
-    void print_line_to_handle(const pal::char_t* message, HANDLE handle, FILE* fallbackFileHandle) {
-        // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
-        // In order to properly print UTF-8 and GB18030 characters to the console without requiring the user to use chcp to a compatible locale, we use WriteConsoleW.
-        // However, WriteConsoleW will fail if the output is redirected to a file - in that case we will write to the fallbackFileHandle
-        DWORD output;
-        // GetConsoleMode returns FALSE when the output is redirected to a file, and we need to output to the fallback file handle.
-        BOOL isConsoleOutput = ::GetConsoleMode(handle, &output);
-        if (isConsoleOutput == FALSE)
-        {
-            // We use file_vprintf to handle UTF-8 formatting. The WriteFile api will output the bytes directly with Unicode bytes,
-            // while pal::file_vprintf will convert the characters to UTF-8.
-            file_printf(fallbackFileHandle, _X("%s"), message);
-        }
-        else {
-            ::WriteConsoleW(handle, message, (int)pal::strlen(message), NULL, NULL);
-            ::WriteConsoleW(handle, _X("\n"), 1, NULL, NULL);
-        }
-    }
-}
-
-void pal::err_print_line(const pal::char_t* message)
-{
-    // Forward to helper to handle UTF-8 formatting and redirection
-    print_line_to_handle(message, ::GetStdHandle(STD_ERROR_HANDLE), stderr);
-}
-
-void pal::out_vprint_line(const pal::char_t* format, va_list vl)
-{
-    va_list vl_copy;
-    va_copy(vl_copy, vl);
-    // Get the length of the formatted string + 1 for null terminator
-    int len = 1 + pal::strlen_vprintf(format, vl_copy);
-    if (len < 0)
-    {
-        return;
-    }
-    std::vector<pal::char_t> buffer(len);
-    int written = pal::str_vprintf(&buffer[0], len, format, vl);
-    if (written != len - 1)
-    {
-        return;
-    }
-    // Forward to helper to handle UTF-8 formatting and redirection
-    print_line_to_handle(&buffer[0], ::GetStdHandle(STD_OUTPUT_HANDLE), stdout);
-}
-
 namespace
 {
     typedef DWORD(WINAPI *get_temp_path_func_ptr)(DWORD buffer_len, LPWSTR buffer);
@@ -266,69 +200,17 @@ bool pal::get_loaded_library(
 
 bool pal::load_library(const string_t* in_path, dll_t* dll)
 {
-    string_t path = *in_path;
-
-    // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR:
-    //   In framework-dependent apps, coreclr would come from another directory than the host,
-    //   so make sure coreclr dependencies can be resolved from coreclr.dll load dir.
-
-    if (LongFile::IsPathNotFullyQualified(path))
-    {
-        if (!pal::fullpath(&path))
-        {
-            trace::error(_X("Failed to load [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(GetLastError()));
-            return false;
-        }
-    }
-
-    //Adding the assert to ensure relative paths which are not just filenames are not used for LoadLibrary Calls
-    assert(!LongFile::IsPathNotFullyQualified(path) || !LongFile::ContainsDirectorySeparator(path));
-
-    *dll = ::LoadLibraryExW(path.c_str(), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
-    if (*dll == nullptr)
-    {
-        int error_code = ::GetLastError();
-        trace::error(_X("Failed to load [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(error_code));
-        if (error_code == ERROR_BAD_EXE_FORMAT)
-        {
-            trace::error(_X("  - Ensure the library matches the current process architecture: ") _STRINGIFY(CURRENT_ARCH_NAME));
-        }
-
-        return false;
-    }
-
-    // Pin the module
-    HMODULE dummy_module;
-    if (!::GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, path.c_str(), &dummy_module))
-    {
-        trace::error(_X("Failed to pin library [%s] in [%s]"), path.c_str(), _STRINGIFY(__FUNCTION__));
-        return false;
-    }
-
-    if (trace::is_enabled())
-    {
-        string_t buf;
-        GetModuleFileNameWrapper(*dll, &buf);
-        trace::info(_X("Loaded library from %s"), buf.c_str());
-    }
-
-    return true;
+    return pal_load_library(in_path->c_str(), dll);
 }
 
-pal::proc_t pal::get_symbol(dll_t library, const char* name)
+pal_proc_t pal::get_symbol(dll_t library, const char* name)
 {
-    auto result = ::GetProcAddress(library, name);
-    if (result == nullptr)
-    {
-        trace::info(_X("Probed for and did not resolve library symbol %S"), name);
-    }
-
-    return result;
+    return pal_get_symbol(library, name);
 }
 
 void pal::unload_library(dll_t library)
 {
-    // No-op. On windows, we pin the library, so it can't be unloaded.
+    pal_unload_library(library);
 }
 
 static
@@ -688,15 +570,7 @@ bool pal::is_path_rooted(const string_t& path)
 
 bool pal::is_path_fully_qualified(const string_t& path)
 {
-    if (path.length() < 2)
-        return false;
-
-    // Check for UNC and DOS device paths
-    if (is_directory_separator(path[0]))
-        return path[1] == L'?' || is_directory_separator(path[1]);
-
-    // Check for drive absolute path - for example C:\.
-    return path.length() >= 3 && path[1] == L':' && is_directory_separator(path[2]);
+    return pal_is_path_fully_qualified(path.c_str());
 }
 
 // Returns true only if an env variable can be read successfully to be non-empty.
@@ -828,20 +702,6 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     return fullpath(&extraction_dir);
 }
 
-static bool wchar_convert_helper(DWORD code_page, const char* cstr, size_t len, pal::string_t* out)
-{
-    out->clear();
-
-    // No need of explicit null termination, so pass in the actual length.
-    size_t size = ::MultiByteToWideChar(code_page, 0, cstr, static_cast<uint32_t>(len), nullptr, 0);
-    if (size == 0)
-    {
-        return false;
-    }
-    out->resize(size, '\0');
-    return ::MultiByteToWideChar(code_page, 0, cstr, static_cast<uint32_t>(len), &(*out)[0], static_cast<uint32_t>(out->size())) != 0;
-}
-
 size_t pal::pal_utf8string(const pal::string_t& str, char* out_buffer, size_t len)
 {
     // Pass -1 as we want explicit null termination in the char buffer.
@@ -874,7 +734,19 @@ bool pal::pal_clrstring(const pal::string_t& str, std::vector<char>* out)
 
 bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 {
-    return wchar_convert_helper(CP_UTF8, cstr, ::strlen(cstr), out);
+    out->clear();
+
+    // Pass the explicit input length (excluding the terminating NUL) so the
+    // conversion writes only the content characters into the string's buffer.
+    // An empty input yields a length of 0, which MultiByteToWideChar reports as a
+    // failure - preserving the historical contract that empty input fails.
+    int len = static_cast<int>(::strlen(cstr));
+    int size = ::MultiByteToWideChar(CP_UTF8, 0, cstr, len, nullptr, 0);
+    if (size == 0)
+        return false;
+
+    out->resize(static_cast<size_t>(size));
+    return ::MultiByteToWideChar(CP_UTF8, 0, cstr, len, &(*out)[0], size) != 0;
 }
 
 typedef std::unique_ptr<std::remove_pointer<HANDLE>::type, decltype(&::CloseHandle)> SmartHandle;

@@ -52,17 +52,20 @@ typedef char pal_char_t;
 #include <windows.h>
 #include <share.h>
 
+typedef HMODULE pal_dll_t;
+typedef FARPROC pal_proc_t;
+
 #define DIR_SEPARATOR L'\\'
 #define DIR_SEPARATOR_STR L"\\"
 #define PATH_SEPARATOR L';'
 #define PATH_MAX MAX_PATH
 
-// String operation macros (pal_char_t-based). Equivalent to the corresponding
-// pal:: namespace inline functions, but usable from C source files.
+// String operation macros (pal_char_t-based).
 #define pal_strlen(s) wcslen(s)
 #define pal_strchr(s, c) wcschr(s, c)
 #define pal_strrchr(s, c) wcsrchr(s, c)
 #define pal_strncmp(a, b, n) wcsncmp(a, b, n)
+#define pal_strncasecmp(a, b, n) _wcsnicmp(a, b, n)
 #define pal_strtoul(s, e, b) wcstoul(s, e, b)
 #define pal_str_vprintf(buf, count, fmt, args) _vsnwprintf_s(buf, count, _TRUNCATE, fmt, args)
 #define pal_strlen_vprintf(fmt, args) _vscwprintf(fmt, args)
@@ -76,6 +79,10 @@ typedef char pal_char_t;
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <strings.h> // strncasecmp
+
+typedef void* pal_dll_t;
+typedef void* pal_proc_t;
 
 #define DIR_SEPARATOR '/'
 #define DIR_SEPARATOR_STR "/"
@@ -96,6 +103,7 @@ typedef char pal_char_t;
 #define pal_strchr(s, c) strchr(s, c)
 #define pal_strrchr(s, c) strrchr(s, c)
 #define pal_strncmp(a, b, n) strncmp(a, b, n)
+#define pal_strncasecmp(a, b, n) strncasecmp(a, b, n)
 #define pal_strtoul(s, e, b) strtoul(s, e, b)
 #define pal_str_vprintf(buf, count, fmt, args) vsnprintf(buf, (size_t)(count), fmt, args)
 #define pal_strlen_vprintf(fmt, args) vsnprintf(NULL, 0, fmt, args)
@@ -129,7 +137,7 @@ pal_char_t* pal_get_own_executable_path(void);
 
 bool pal_directory_exists(const pal_char_t* path);
 
-// Returns true if the file or directory exists. Equivalent to pal::file_exists.
+// Returns true if the file or directory exists.
 bool pal_file_exists(const pal_char_t* path);
 
 // Returns a heap-allocated, null-terminated copy of the given string, or
@@ -203,12 +211,30 @@ pal_char_t* pal_get_default_installation_dir(void);
 // on Windows, file path on Unix). Caller should free() the returned pointer.
 pal_char_t* pal_get_dotnet_self_registered_config_location(void);
 
-// Handle to a loaded dynamic library.
-#if defined(_WIN32)
-typedef HMODULE pal_dll_t;
-#else
-typedef void* pal_dll_t;
-#endif
+// Returns true if path is fully qualified (absolute).
+bool pal_is_path_fully_qualified(const pal_char_t* path);
+
+// Load the dynamic library at path. On success, stores the library handle in
+// *dll and returns true; returns false on failure.
+bool pal_load_library(const pal_char_t* path, pal_dll_t* dll);
+
+// Unload a library previously loaded with pal_load_library.
+void pal_unload_library(pal_dll_t library);
+
+// Resolve an exported symbol from a loaded library, or NULL if not found.
+pal_proc_t pal_get_symbol(pal_dll_t library, const char* name);
+
+// Convert a UTF-8 string into the platform character type
+bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len);
+
+// Write message followed by a newline to stderr.
+void pal_err_print_line(const pal_char_t* message);
+
+// Format and write to stdout followed by a newline.
+void pal_out_vprint_line(const pal_char_t* format, va_list vl);
+
+// Format and write to the file f followed by a newline.
+void pal_file_vprintf(FILE* f, const pal_char_t* format, va_list vl);
 
 // Find a library named library_name that is already loaded into the current
 // process (without loading it if it is not). symbol_name is used to obtain an
@@ -318,7 +344,6 @@ namespace pal
     typedef std::wstringstream stringstream_t;
     typedef HRESULT hresult_t;
     typedef HMODULE dll_t;
-    typedef FARPROC proc_t;
 
     // Lockable object backed by CRITICAL_SECTION such that it does not pull in ConcRT.
     class mutex_t
@@ -350,10 +375,6 @@ namespace pal
     inline size_t strlen(const char_t* str) { return ::wcslen(str); }
 
     inline FILE* file_open(const string_t& path, const char_t* mode) { return ::_wfsopen(path.c_str(), mode, _SH_DENYNO); }
-
-    void file_vprintf(FILE* f, const char_t* format, va_list vl);
-    void err_print_line(const char_t* message);
-    void out_vprint_line(const char_t* format, va_list vl);
 
     inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf_s(buffer, count, _TRUNCATE, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::_vscwprintf(format, vl); }
@@ -409,7 +430,6 @@ namespace pal
     typedef std::stringstream stringstream_t;
     typedef int hresult_t;
     typedef void* dll_t;
-    typedef void* proc_t;
     typedef std::mutex mutex_t;
 
     inline const pal::char_t* exe_suffix() { return nullptr; }
@@ -424,9 +444,6 @@ namespace pal
 
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
     inline FILE* file_open(const string_t& path, const char_t* mode) { return fopen(path.c_str(), mode); }
-    inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfprintf(f, format, vl); ::fputc('\n', f); }
-    inline void err_print_line(const char_t* message) { ::fputs(message, stderr); ::fputc(_X('\n'), stderr); }
-    inline void out_vprint_line(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
     inline int str_vprintf(char_t* str, size_t size, const char_t* format, va_list vl) { return ::vsnprintf(str, size, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::vsnprintf(nullptr, 0, format, vl); }
 
@@ -560,7 +577,7 @@ namespace pal
 
     bool get_loaded_library(const char_t* library_name, const char* symbol_name, /*out*/ dll_t* dll, /*out*/ string_t* path);
     bool load_library(const string_t* path, dll_t* dll);
-    proc_t get_symbol(dll_t library, const char* name);
+    pal_proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);
 
     bool is_running_in_wow64();

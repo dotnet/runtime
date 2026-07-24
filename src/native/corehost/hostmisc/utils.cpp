@@ -32,20 +32,12 @@ bool coreclr_exists_in_dir(const pal::string_t& candidate)
 
 bool utils::starts_with(const pal::string_t& value, const pal::char_t* prefix, size_t prefix_len, bool match_case)
 {
-    // Cannot start with an empty string.
-    if (prefix_len == 0)
-        return false;
-
-    auto cmp = match_case ? pal::strncmp : pal::strncasecmp;
-    return (value.size() >= prefix_len) &&
-        cmp(value.c_str(), prefix, prefix_len) == 0;
+    return utils_starts_with(value.c_str(), value.size(), prefix, prefix_len, match_case);
 }
 
 bool utils::ends_with(const pal::string_t& value, const pal::char_t* suffix, size_t suffix_len, bool match_case)
 {
-    auto cmp = match_case ? pal::strcmp : pal::strcasecmp;
-    return (value.size() >= suffix_len) &&
-        cmp(value.c_str() + value.size() - suffix_len, suffix) == 0;
+    return utils_ends_with(value.c_str(), value.size(), suffix, suffix_len, match_case);
 }
 
 void append_path(pal::string_t* path1, const pal::char_t* path2)
