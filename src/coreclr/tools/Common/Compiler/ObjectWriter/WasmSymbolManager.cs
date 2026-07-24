@@ -38,8 +38,6 @@ internal sealed class WasmSymbolManager
     private readonly int[] _definitionCounts = new int[(int)WasmIndexSpace.Count];
     private readonly bool[] _importsFrozen = new bool[(int)WasmIndexSpace.Count];
 
-    public int Count => _entries.Count;
-
     public void AddImport(Utf8String name, WasmIndexSpace indexSpace, int? expectedIndex = null)
     {
         int spaceIndex = GetSpaceIndex(indexSpace);
@@ -105,9 +103,6 @@ internal sealed class WasmSymbolManager
         return true;
     }
 
-    public int GetImportCount(WasmIndexSpace indexSpace) =>
-        _importCounts[GetSpaceIndex(indexSpace)];
-
     public int GetImportCount() => _importCounts.Sum();
 
     public int GetDefinitionCount(WasmIndexSpace indexSpace) =>
@@ -128,18 +123,6 @@ internal sealed class WasmSymbolManager
         }
 
         symbols.Sort(static (left, right) => left.Index.CompareTo(right.Index));
-        return symbols;
-    }
-
-    public IReadOnlyList<WasmSymbol> GetSymbols()
-    {
-        var symbols = new List<WasmSymbol>(_entries.Count);
-        foreach (Entry entry in _entries.Values)
-        {
-            _importsFrozen[(int)entry.IndexSpace] = true;
-            symbols.Add(Resolve(entry));
-        }
-
         return symbols;
     }
 
