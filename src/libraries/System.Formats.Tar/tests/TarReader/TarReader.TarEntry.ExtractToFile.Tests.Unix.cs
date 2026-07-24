@@ -9,37 +9,40 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarReader_TarEntry_ExtractToFile_Tests : TarTestsBase
     {
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotPrivilegedProcess))]
+        [MemberData(nameof(GetBooleanData))]
         [SkipOnPlatform(TestPlatforms.tvOS, "https://github.com/dotnet/runtime/issues/68360")]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "Not supported on Bionic")]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotPrivilegedProcess))]
-        public void SpecialFile_Unelevated_Throws()
+        public async Task SpecialFile_Unelevated_Throws(bool async)
         {
             using TempDirectory root = new TempDirectory();
             using MemoryStream ms = GetTarMemoryStream(CompressionMethod.Uncompressed, TestTarFormat.ustar, "specialfiles");
 
-            using (TarReader reader = new TarReader(ms))
+            TarReader reader = CreateTarReader(ms, leaveOpen: false);
+            try
             {
                 string path = Path.Join(root.Path, "output");
 
-                // Block device requires elevation for writing
-                PosixTarEntry blockDevice = reader.GetNextEntry() as PosixTarEntry;
+                PosixTarEntry blockDevice = await GetNextEntry(reader, async: async) as PosixTarEntry;
                 Assert.NotNull(blockDevice);
-                Assert.Throws<UnauthorizedAccessException>(() => blockDevice.ExtractToFile(path, overwrite: false));
+                await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ExtractToFile(blockDevice, path, overwrite: false, async));
                 Assert.False(File.Exists(path));
 
-                // Character device requires elevation for writing
-                PosixTarEntry characterDevice = reader.GetNextEntry() as PosixTarEntry;
+                PosixTarEntry characterDevice = await GetNextEntry(reader, async: async) as PosixTarEntry;
                 Assert.NotNull(characterDevice);
-                Assert.Throws<UnauthorizedAccessException>(() => characterDevice.ExtractToFile(path, overwrite: false));
+                await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ExtractToFile(characterDevice, path, overwrite: false, async));
                 Assert.False(File.Exists(path));
 
-                // Fifo does not require elevation, should succeed
-                PosixTarEntry fifo = reader.GetNextEntry() as PosixTarEntry;
+                PosixTarEntry fifo = await GetNextEntry(reader, async: async) as PosixTarEntry;
                 Assert.NotNull(fifo);
-                fifo.ExtractToFile(path, overwrite: false);
+                await ExtractToFile(fifo, path, overwrite: false, async);
                 Assert.True(File.Exists(path));
 
-                Assert.Null(reader.GetNextEntry());
+                Assert.Null(await GetNextEntry(reader, async: async));
+            }
+            finally
+            {
+                await DisposeTarReader(reader, async);
             }
         }
     }
