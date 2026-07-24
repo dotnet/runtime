@@ -30,26 +30,27 @@ namespace System.Text.Json.Serialization.Converters
             return ReadAsPropertyNameCore(ref reader, typeToConvert, options);
         }
 
-        private protected static JsonSchema GetSchemaForNumericType(JsonSchemaType schemaType, JsonNumberHandling numberHandling, bool isIeeeFloatingPoint = false)
+        private protected static JsonSchema GetSchemaForNumericType(JsonSchemaType schemaType, JsonNumberHandling numberHandling, bool supportsExponentNotation = false)
         {
             Debug.Assert(schemaType is JsonSchemaType.Integer or JsonSchemaType.Number);
-            Debug.Assert(!isIeeeFloatingPoint || schemaType is JsonSchemaType.Number);
-#if NET
-            Debug.Assert(isIeeeFloatingPoint == (typeof(T) == typeof(double) || typeof(T) == typeof(float) || typeof(T) == typeof(Half)));
-#endif
+            Debug.Assert(!supportsExponentNotation || schemaType is JsonSchemaType.Number);
             string? pattern = null;
 
             if ((numberHandling & (JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)) != 0)
             {
                 pattern = schemaType is JsonSchemaType.Integer
                     ? @"^-?(?:0|[1-9]\d*)$"
-                    : isIeeeFloatingPoint
+                    : supportsExponentNotation
                         ? @"^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$"
                         : @"^-?(?:0|[1-9]\d*)(?:\.\d+)?$";
 
                 schemaType |= JsonSchemaType.String;
             }
 
+            bool isIeeeFloatingPoint = typeof(T) == typeof(double) || typeof(T) == typeof(float);
+#if NET
+            isIeeeFloatingPoint = isIeeeFloatingPoint || typeof(T) == typeof(Half);
+#endif
             if (isIeeeFloatingPoint && (numberHandling & JsonNumberHandling.AllowNamedFloatingPointLiterals) != 0)
             {
                 return new JsonSchema
