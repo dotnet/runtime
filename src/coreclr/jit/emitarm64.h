@@ -808,22 +808,6 @@ static bool isValidUimm_MultipleOf(ssize_t value)
     return isValidUimm<bits>(value / mod) && (value % mod == 0);
 }
 
-// Returns true if 'value' is a legal signed immediate with 'bits' number of bits.
-template <const size_t bits>
-static bool isValidSimm(ssize_t value)
-{
-    constexpr ssize_t max = 1 << (bits - 1);
-    return (-max <= value) && (value < max);
-}
-
-// Returns true if 'value' is a legal signed multiple of 'mod' immediate with 'bits' number of bits.
-template <const size_t bits, const ssize_t mod>
-static bool isValidSimm_MultipleOf(ssize_t value)
-{
-    static_assert(mod != 0);
-    return isValidSimm<bits>(value / mod) && (value % mod == 0);
-}
-
 // Returns true if 'imm' is a valid broadcast immediate for some SVE DUP variants
 static bool isValidBroadcastImm(ssize_t imm, emitAttr laneSize)
 {
@@ -1085,6 +1069,32 @@ static bool canEncodeByteShiftedImm(INT64 imm, emitAttr size, bool allow_MSL, em
 
 // true if 'immDbl' can be encoded using a 'float immediate', also returns the encoding if wbFPI is non-null
 static bool canEncodeFloatImm8(double immDbl, emitter::floatImm8* wbFPI = nullptr);
+
+// Returns true if 'value' is a legal signed immediate with 'bits' number of bits.
+template <const size_t bits>
+static bool isValidSimm(ssize_t value)
+{
+    constexpr size_t ssize_t_bits = sizeof(ssize_t) * BITS_PER_BYTE;
+    static_assert(bits > 0);
+    static_assert(bits <= ssize_t_bits);
+    if constexpr (bits == ssize_t_bits)
+    {
+        return true;
+    }
+    else
+    {
+        constexpr size_t max = size_t{1} << (bits - 1);
+        return (-static_cast<ssize_t>(max) <= value) && (value < static_cast<ssize_t>(max));
+    }
+}
+
+// Returns true if 'value' is a legal signed multiple of 'mod' immediate with 'bits' number of bits.
+template <const size_t bits, const ssize_t mod>
+static bool isValidSimm_MultipleOf(ssize_t value)
+{
+    static_assert(mod != 0);
+    return isValidSimm<bits>(value / mod) && (value % mod == 0);
+}
 
 // Returns the number of bits used by the given 'size'.
 inline static unsigned getBitWidth(emitAttr size)

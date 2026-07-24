@@ -102,11 +102,14 @@ inline bool genExactlyOneBit(T value)
 inline regMaskTP genFindLowestBit(regMaskTP value)
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    // If we ever need to use this method for predicate
-    // registers, then handle it.
-    assert(value.getHigh() == RBM_NONE);
-#endif
+    if (value.getLow() != RBM_NONE)
+    {
+        return regMaskTP(genFindLowestBit(value.getLow()));
+    }
+    return regMaskTP(RBM_NONE, genFindLowestBit(value.getHigh()));
+#else
     return regMaskTP(genFindLowestBit(value.getLow()));
+#endif
 }
 
 /*****************************************************************************
@@ -117,11 +120,18 @@ inline regMaskTP genFindLowestBit(regMaskTP value)
 inline bool genMaxOneBit(regMaskTP value)
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    // If we ever need to use this method for predicate
-    // registers, then handle it.
-    assert(value.getHigh() == RBM_NONE);
-#endif
+    if (value.getLow() == RBM_NONE)
+    {
+        return genMaxOneBit(value.getHigh());
+    }
+    if (value.getHigh() == RBM_NONE)
+    {
+        return genMaxOneBit(value.getLow());
+    }
+    return false;
+#else
     return genMaxOneBit(value.getLow());
+#endif
 }
 
 /*****************************************************************************
