@@ -510,7 +510,8 @@ extern jmethodID g_DotnetProxyTrustManagerCtor;
 
 // net/dot/android/crypto/DotnetX509KeyManager
 extern jclass    g_DotnetX509KeyManager;
-extern jmethodID g_DotnetX509KeyManagerCtor;
+extern jmethodID g_DotnetX509KeyManagerPrivateKeyEntryCtor;
+extern jmethodID g_DotnetX509KeyManagerProxyCtor;
 
 // net/dot/android/crypto/PalPbkdf2
 extern jclass    g_PalPbkdf2;
