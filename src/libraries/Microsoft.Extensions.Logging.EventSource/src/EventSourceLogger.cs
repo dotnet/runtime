@@ -259,10 +259,20 @@ namespace Microsoft.Extensions.Logging.EventSource
             return Array.Empty<KeyValuePair<string, string?>>();
         }
 
+        [ThreadStatic]
+        private static MemoryStream? t_jsonStream;
+        [ThreadStatic]
+        private static Utf8JsonWriter? t_jsonWriter;
+
         private static string ToJson(IReadOnlyList<KeyValuePair<string, string?>> keyValues)
         {
-            using var stream = new MemoryStream();
-            using var writer = new Utf8JsonWriter(stream);
+            // Reuse a per-thread stream and writer to avoid allocating a MemoryStream, a Utf8JsonWriter,
+            // and their backing buffers on every logged event.
+            MemoryStream stream = t_jsonStream ??= new MemoryStream();
+            Utf8JsonWriter writer = t_jsonWriter ??= new Utf8JsonWriter(stream);
+
+            stream.SetLength(0);
+            writer.Reset(stream);
 
             writer.WriteStartObject();
             foreach (KeyValuePair<string, string?> keyValue in keyValues)
@@ -273,12 +283,11 @@ namespace Microsoft.Extensions.Logging.EventSource
 
             writer.Flush();
 
-            if (!stream.TryGetBuffer(out ArraySegment<byte> buffer))
-            {
-                buffer = new ArraySegment<byte>(stream.ToArray());
-            }
+            string result = stream.TryGetBuffer(out ArraySegment<byte> buffer)
+                ? Encoding.UTF8.GetString(buffer.Array!, buffer.Offset, buffer.Count)
+                : Encoding.UTF8.GetString(stream.ToArray());
 
-            return Encoding.UTF8.GetString(buffer.Array!, buffer.Offset, buffer.Count);
+            return result;
         }
     }
 }
