@@ -561,6 +561,32 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.False(custom.AsyncValidated);
         }
 
+        [Fact]
+        public async Task ValidateOnStart_SyncOnlyValidatorPresent_DoesNotResolveAsyncValidators()
+        {
+            bool asyncResolved = false;
+            var custom = new TrackingStartupValidator();
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                services.AddSingleton<IStartupValidator>(custom);
+                services.AddSingleton<IAsyncStartupValidator>(_ =>
+                {
+                    asyncResolved = true;
+                    return new TrackingAsyncStartupValidator();
+                });
+            });
+
+            using (var host = hostBuilder.Build())
+            {
+                await host.StartAsync();
+            }
+
+            // A sync-only IStartupValidator fully controls startup validation, so the async validators are never
+            // resolved: their factories/constructors (and any side effects) do not run.
+            Assert.True(custom.Validated);
+            Assert.False(asyncResolved);
+        }
+
         private sealed class TrackingStartupValidator : IStartupValidator
         {
             public bool Validated { get; private set; }
