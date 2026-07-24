@@ -119,6 +119,7 @@ public abstract class DumpTestBase : IDisposable
             out _target);
 
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
+        RegisterManagedModules();
     }
 
     /// <summary>
@@ -145,12 +146,65 @@ public abstract class DumpTestBase : IDisposable
             out _target);
 
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
+        RegisterManagedModules();
     }
 
     public void Dispose()
     {
         _host?.Dispose();
         System.GC.SuppressFinalize(this);
+    }
+
+    private void RegisterManagedModules()
+    {
+        if (_host is null || _target is null)
+            return;
+
+        ILoader loader = _target.Contracts.Loader;
+        TargetPointer appDomain = loader.GetAppDomain();
+        if (appDomain == TargetPointer.Null)
+            return;
+
+        _host.RegisterManagedModules(EnumerateManagedModules(loader, appDomain));
+    }
+
+    private static IEnumerable<ClrMdDumpHost.ManagedModuleImage> EnumerateManagedModules(ILoader loader, TargetPointer appDomain)
+    {
+        foreach (Contracts.ModuleHandle handle in loader.GetModuleHandles(appDomain, AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+        {
+            ClrMdDumpHost.ManagedModuleImage? image = TryDescribeModule(loader, handle);
+            if (image is not null)
+                yield return image.Value;
+        }
+    }
+
+    private static ClrMdDumpHost.ManagedModuleImage? TryDescribeModule(ILoader loader, Contracts.ModuleHandle handle)
+    {
+        try
+        {
+            if (loader.IsDynamic(handle))
+                return null;
+            if (!loader.TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out uint size, out _)
+                || baseAddress == TargetPointer.Null || size == 0)
+                return null;
+
+            string fileName = loader.GetPath(handle);
+            if (string.IsNullOrEmpty(fileName))
+                fileName = loader.GetFileName(handle);
+            if (string.IsNullOrEmpty(fileName))
+                return null;
+
+            // PE identity key (COFF TimeDateStamp + optional-header SizeOfImage) used to
+            // verify the on-disk file matches the module captured in the dump.
+            loader.GetFileHeadersInfo(handle, out uint timeStamp, out uint imageSize);
+
+            return new ClrMdDumpHost.ManagedModuleImage(baseAddress, size, fileName, timeStamp, imageSize);
+        }
+        catch (System.Exception)
+        {
+            // Skip modules the Loader contract can't fully describe (e.g. in-memory/dynamic).
+            return null;
+        }
     }
 
     /// <summary>
