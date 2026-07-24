@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
@@ -894,9 +895,93 @@ namespace Microsoft.Extensions.Options.Tests
             }
         }
 
+        [Fact]
+        public async Task AsyncValidatedOptions_IOptionsValue_ServedFromCustomCache()
+        {
+            var customCache = new DelegatingOptionsCache<FakeOptions>();
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "validated")
+                .Validate(async (FakeOptions o, CancellationToken ct) => await Task.FromResult(true), "async fail")
+                .ValidateOnStart();
+            services.AddSingleton<IOptionsMonitorCache<FakeOptions>>(customCache);
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
+
+            // Startup seeded the value into a custom IOptionsMonitorCache<T>. A synchronous read must serve it through
+            // the cache contract instead of re-creating (which would run the async validator's throwing sync Validate).
+            FakeOptions fromOptions = sp.GetRequiredService<IOptions<FakeOptions>>().Value;
+            Assert.Equal("validated", fromOptions.Message);
+            Assert.True(customCache.TryGetValue(Options.DefaultName, out FakeOptions? seeded));
+            Assert.Same(seeded, fromOptions);
+        }
+
+        [Fact]
+        public async Task AsyncValidatedOptions_ValidateOnStart_DerivedCacheReplace_RetriesPastConcurrentInsert()
+        {
+            var raceCache = new RaceInjectingOptionsCache<FakeOptions>(() => new FakeOptions { Message = "competing" });
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "validated")
+                .Validate(async (FakeOptions o, CancellationToken ct) => await Task.FromResult(true), "async fail")
+                .ValidateOnStart();
+            services.AddSingleton<IOptionsMonitorCache<FakeOptions>>(raceCache);
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
+
+            // Seeding a derived cache emulates an atomic replace with TryRemove + TryAdd. The cache injects a
+            // concurrent insert into the gap on the first attempt so TryAdd is a no-op; the bounded retry must run
+            // again and let the validated value win rather than dropping it for the competing (unvalidated) value.
+            Assert.True(raceCache.RaceInjected);
+            Assert.Equal("validated", sp.GetRequiredService<IOptionsMonitor<FakeOptions>>().CurrentValue.Message);
+        }
+
         private class CustomSyncOnlyValidator : IStartupValidator
         {
             public void Validate() { }
+        }
+
+        private sealed class RaceInjectingOptionsCache<T> : OptionsCache<T> where T : class
+        {
+            private readonly Func<T> _competingValueFactory;
+
+            public RaceInjectingOptionsCache(Func<T> competingValueFactory) => _competingValueFactory = competingValueFactory;
+
+            public bool RaceInjected { get; private set; }
+
+            public override bool TryAdd(string? name, T options)
+            {
+                if (!RaceInjected)
+                {
+                    RaceInjected = true;
+
+                    // Simulate a concurrent GetOrAdd winning the gap between AddOrReplace's TryRemove and TryAdd:
+                    // a competing value is already present, so this add becomes a no-op and returns false.
+                    base.TryAdd(name, _competingValueFactory());
+                    return base.TryAdd(name, options);
+                }
+
+                return base.TryAdd(name, options);
+            }
+        }
+
+        private sealed class DelegatingOptionsCache<T> : IOptionsMonitorCache<T> where T : class
+        {
+            private readonly ConcurrentDictionary<string, T> _cache = new(StringComparer.Ordinal);
+
+            public T GetOrAdd(string? name, Func<T> createOptions) =>
+                _cache.GetOrAdd(name ?? Options.DefaultName, _ => createOptions());
+
+            public bool TryGetValue(string? name, out T options) =>
+                _cache.TryGetValue(name ?? Options.DefaultName, out options!);
+
+            public bool TryAdd(string? name, T options) => _cache.TryAdd(name ?? Options.DefaultName, options);
+
+            public bool TryRemove(string? name) => _cache.TryRemove(name ?? Options.DefaultName, out _);
+
+            public void Clear() => _cache.Clear();
         }
 
         private sealed class TrackingAsyncStartupValidator : IAsyncStartupValidator

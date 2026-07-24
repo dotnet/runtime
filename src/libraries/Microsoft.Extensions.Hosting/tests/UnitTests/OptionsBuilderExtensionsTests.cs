@@ -518,6 +518,49 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.True(second.Validated);
         }
 
+        [Fact]
+        public async Task ValidateOnStart_DualInterfaceValidatorRegisteredOnlyAsSync_RunsSyncValidate()
+        {
+            var custom = new TrackingDualStartupValidator();
+            var hostBuilder = CreateHostBuilder(services => services.AddSingleton<IStartupValidator>(custom));
+
+            using (var host = hostBuilder.Build())
+            {
+                await host.StartAsync();
+            }
+
+            // A validator that implements both interfaces but is registered only as IStartupValidator must not be
+            // silently skipped: it is absent from the IAsyncStartupValidator collection, so its synchronous
+            // Validate() runs instead of the async branch finding nothing to do.
+            Assert.True(custom.SyncValidated);
+            Assert.False(custom.AsyncValidated);
+        }
+
+        [Fact]
+        public async Task ValidateOnStart_DualInterfaceValidatorRegisteredOnlyAsSync_TakesPrecedenceOverBuiltInAsync()
+        {
+            var custom = new TrackingDualStartupValidator();
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                services.AddSingleton<IStartupValidator>(custom);
+                services.AddOptions<ComplexOptions>()
+                    .Configure(o => o.Boolean = false)
+                    .Validate(o => o.Boolean, "should not run")
+                    .ValidateOnStart();
+            });
+
+            using (var host = hostBuilder.Build())
+            {
+                // The custom validator is matched by type (not reference) against the async collection, which holds
+                // only the built-in transient validator. It is not present, so its synchronous Validate() takes
+                // precedence and the failing ValidateOnStart (async) validation never runs and the host starts.
+                await host.StartAsync();
+            }
+
+            Assert.True(custom.SyncValidated);
+            Assert.False(custom.AsyncValidated);
+        }
+
         private sealed class TrackingStartupValidator : IStartupValidator
         {
             public bool Validated { get; private set; }
@@ -532,6 +575,20 @@ namespace Microsoft.Extensions.Hosting.Tests
             public Task ValidateAsync(CancellationToken cancellationToken = default)
             {
                 Validated = true;
+                return Task.CompletedTask;
+            }
+        }
+
+        private sealed class TrackingDualStartupValidator : IStartupValidator, IAsyncStartupValidator
+        {
+            public bool SyncValidated { get; private set; }
+            public bool AsyncValidated { get; private set; }
+
+            public void Validate() => SyncValidated = true;
+
+            public Task ValidateAsync(CancellationToken cancellationToken = default)
+            {
+                AsyncValidated = true;
                 return Task.CompletedTask;
             }
         }

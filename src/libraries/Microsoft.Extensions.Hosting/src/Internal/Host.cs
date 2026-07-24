@@ -96,11 +96,16 @@ namespace Microsoft.Extensions.Hosting.Internal
                     // Run startup validation before resolving hosted services so a hosted service that
                     // reads validated options in its constructor observes the validated instance.
                     IStartupValidator? startupValidator = Services.GetService<IStartupValidator>();
-                    if (startupValidator is not null && startupValidator is not IAsyncStartupValidator)
+                    IAsyncStartupValidator[] asyncValidators = Services.GetServices<IAsyncStartupValidator>().ToArray();
+
+                    // A custom IStartupValidator that is not also registered as an IAsyncStartupValidator takes
+                    // precedence and fully controls startup validation, overriding any registered async validators
+                    // (including the one ValidateOnStart registers) for back-compatibility. Match by runtime type
+                    // rather than reference: the built-in validator is registered transient under both interfaces,
+                    // so the resolved IStartupValidator and the async enumerable are distinct instances of one type.
+                    if (startupValidator is not null &&
+                        !asyncValidators.Any(asyncValidator => asyncValidator.GetType() == startupValidator.GetType()))
                     {
-                        // A custom IStartupValidator takes precedence for back-compatibility and fully controls
-                        // startup validation, overriding any registered IAsyncStartupValidator instances
-                        // (including the one registered by ValidateOnStart).
                         startupValidator.Validate();
                     }
                     else
@@ -108,7 +113,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                         // Run every registered async startup validator so multiple IAsyncStartupValidator instances
                         // all participate, aggregating their validation failures.
                         List<Exception>? validationFailures = null;
-                        foreach (IAsyncStartupValidator asyncValidator in Services.GetServices<IAsyncStartupValidator>())
+                        foreach (IAsyncStartupValidator asyncValidator in asyncValidators)
                         {
                             try
                             {

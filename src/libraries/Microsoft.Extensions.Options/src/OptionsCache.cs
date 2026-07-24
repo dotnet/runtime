@@ -17,6 +17,9 @@ namespace Microsoft.Extensions.Options
     {
         private readonly ConcurrentDictionary<string, Lazy<TOptions>> _cache = new ConcurrentDictionary<string, Lazy<TOptions>>(concurrencyLevel: 1, capacity: 31, StringComparer.Ordinal); // 31 == default capacity
 
+        // Bounded number of TryRemove + TryAdd attempts used to emulate an atomic replace on a derived cache.
+        private const int DerivedCacheReplaceAttempts = 3;
+
         /// <summary>
         /// Clears all options instances from the cache.
         /// </summary>
@@ -117,8 +120,19 @@ namespace Microsoft.Extensions.Options
 
             if (GetType() != typeof(OptionsCache<TOptions>))
             {
-                TryRemove(name);
-                TryAdd(name, options);
+                // A derived cache only guarantees the public IOptionsMonitorCache<TOptions> surface, which has no
+                // atomic replace. Emulate one with TryRemove + TryAdd, retrying a bounded number of times: a
+                // concurrent GetOrAdd can insert into the gap between the two calls and make TryAdd a no-op, which
+                // would otherwise drop the value being seeded.
+                for (int attempt = 0; attempt < DerivedCacheReplaceAttempts; attempt++)
+                {
+                    TryRemove(name);
+                    if (TryAdd(name, options))
+                    {
+                        return;
+                    }
+                }
+
                 return;
             }
 
