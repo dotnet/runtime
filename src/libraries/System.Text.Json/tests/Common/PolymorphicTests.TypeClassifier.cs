@@ -832,7 +832,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128765", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsMonoRuntime))]
         public void MetadataServices_NullPolymorphismOptions_DoesNotActivateAttributeClassifier()
         {
             JsonTypeInfo<AttrClassifiedAnimal> typeInfo = JsonMetadataServices.CreateObjectInfo(
@@ -843,18 +842,9 @@ namespace System.Text.Json.Serialization.Tests
                 });
 
             JsonPolymorphismOptions options = Assert.IsType<JsonPolymorphismOptions>(typeInfo.PolymorphismOptions);
-            Assert.Collection(
-                options.DerivedTypes,
-                derivedType =>
-                {
-                    Assert.Equal(typeof(AttrClassifiedDog), derivedType.DerivedType);
-                    Assert.Equal("dog", derivedType.TypeDiscriminator);
-                },
-                derivedType =>
-                {
-                    Assert.Equal(typeof(AttrClassifiedCat), derivedType.DerivedType);
-                    Assert.Equal("cat", derivedType.TypeDiscriminator);
-                });
+            Assert.Equal(2, options.DerivedTypes.Count);
+            Assert.Contains(options.DerivedTypes, dt => dt.DerivedType == typeof(AttrClassifiedDog) && dt.TypeDiscriminator is "dog");
+            Assert.Contains(options.DerivedTypes, dt => dt.DerivedType == typeof(AttrClassifiedCat) && dt.TypeDiscriminator is "cat");
 
             Assert.Null(typeInfo.TypeClassifier);
         }
