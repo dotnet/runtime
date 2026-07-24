@@ -77,13 +77,10 @@ public class R2RTestSuites
                 new(nameof(WasmWebcilModule), [new CrossgenAssembly(wasmWebcilModule)])
                 {
                     OutputFileExtension = ".wasm",
-                    AdditionalArgs =
-                    {
-                        "--targetarch",
-                        "wasm",
-                        "--targetos",
-                        "browser",
-                    },
+                    // Reference the real browser-wasm framework assemblies when they are available
+                    // (e.g. the wasm tools-test job downloads them); otherwise the runner falls back
+                    // to host references so this test still runs everywhere.
+                    TargetRid = TargetRid.BrowserWasm,
                     Validate = Validate,
                 },
             ]));
@@ -235,7 +232,7 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.ArmOnHostOSSupported))]
     public void ArmThumbBitRelocationTargets()
     {
         var inlineableLib = new CompiledAssembly
@@ -259,7 +256,7 @@ public class R2RTestSuites
                     new CrossgenAssembly(inlineableLib) { Kind = Crossgen2InputKind.Reference },
                 ])
                 {
-                    Options = [Crossgen2Option.TargetArchArm],
+                    TargetRid = TargetRid.HostArm,
                     Validate = Validate,
                 },
             ]));
@@ -272,7 +269,7 @@ public class R2RTestSuites
     }
 
     // JitStressProcedureSplitting is only available in Debug/Checked JIT builds.
-    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotReleaseCoreCLR))]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotReleaseCoreCLR), nameof(TestPaths.ArmOnHostOSSupported))]
     public void ArmThumbBitHotColdRuntimeFunctions()
     {
         var hotColdSplitting = new CompiledAssembly
@@ -286,9 +283,9 @@ public class R2RTestSuites
             [
                 new(nameof(ArmThumbBitHotColdRuntimeFunctions), [new CrossgenAssembly(hotColdSplitting)])
                 {
+                    TargetRid = TargetRid.HostArm,
                     Options =
                     [
-                        Crossgen2Option.TargetArchArm,
                         Crossgen2Option.Optimize,
                         Crossgen2Option.HotColdSplitting,
                     ],

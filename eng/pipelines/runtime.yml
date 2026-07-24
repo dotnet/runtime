@@ -223,6 +223,7 @@ extends:
                 eq(variables['wasmDarcDependenciesChanged'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -882,6 +883,53 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdac.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: checked
+          platforms:
+          - linux_x64
+          jobParameters:
+            dependsOn:
+            - build_browser_wasm_linux_checked_CoreCLR_ReleaseLibraries
+            - build_linux_arm_checked_CoreCLR_ReleaseLibraries
+            - build_linux_x64_checked_CoreCLR_ReleaseLibraries
+            timeoutInMinutes: 120
+            nameSuffix: CLR_R2R_Tests
+            buildArgs: -s clr.r2rtests -lc Release -c $(_BuildConfig) -test /p:RequireTargetArchRuntimePack=true
+            enablePublishTestResults: true
+            testResultsFormat: 'xunit'
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_browser_wasm_linux_Checked
+                  artifactFileName: CoreCLR_ReleaseLibraries_BuildArtifacts_browser_wasm_linux_Checked$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  cleanUnpackFolder: false
+                  overwriteExistingFiles: true
+                  displayName: Download browser-wasm artifacts
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_linux_arm_Checked
+                  artifactFileName: CoreCLR_ReleaseLibraries_BuildArtifacts_linux_arm_Checked$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  cleanUnpackFolder: false
+                  overwriteExistingFiles: true
+                  displayName: Download linux-arm artifacts
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_linux_x64_Checked
+                  artifactFileName: CoreCLR_ReleaseLibraries_BuildArtifacts_linux_x64_Checked$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  cleanUnpackFolder: false
+                  overwriteExistingFiles: true
+                  displayName: Download linux-x64 artifacts
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
       #
       # Build CrossDacs
       #
