@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 
 using Internal.Reflection.Augments;
@@ -26,6 +28,181 @@ namespace System
 
     internal static class RuntimeExceptionHelpers
     {
+        // Matches the FatalErrorProperty enum defined in src/native/public/FatalErrorHandling.h.
+        // The values must be kept in sync with the native header.
+        private enum FatalErrorProperty
+        {
+            FatalErrorLogFunc = 0x1,
+            Address = 0x2,
+            WindowsExceptionRecord = 0x3,
+            WindowsContextRecord = 0x4,
+            UContext = 0x5,
+            PosixSigInfo = 0x6,
+            MachExceptionInfo = 0x7,
+        }
+
+        // The crash address surfaced to the handler through the property getter,
+        // captured immediately before the handler is invoked.
+        private static unsafe void* s_fatalErrorAddress;
+
+        // Live platform-native fault structures for a genuinely-unmanaged fatal
+        // exception, non-null only for the duration of the native fatal path
+        // (InvokeFatalErrorHandlerForNativeException). Data0/Data1 are the Windows
+        // EXCEPTION_RECORD/CONTEXT or the Unix siginfo_t/ucontext_t.
+        private static unsafe void* s_fatalErrorPlatformData0;
+        private static unsafe void* s_fatalErrorPlatformData1;
+
+        // The composed crash-log text for the current fatal error. It is built once on the
+        // crashing thread in FailFast and replayed on demand by GetFatalErrorLog (for the
+        // handler callback) or WriteCrashLogToStdErr (for the default RunDefaultHandler path).
+        // A single managed string avoids a fixed-size UTF-8 buffer and eliminates truncation.
+        [ThreadStatic]
+        private static string? t_crashLog;
+
+        /// <summary>
+        /// Writes the stored crash-log text to stderr. Called after the fatal
+        /// error handler when the default crash output is not suppressed.
+        /// </summary>
+        private static void WriteCrashLogToStdErr()
+        {
+            string? crashLog = t_crashLog;
+            if (string.IsNullOrEmpty(crashLog))
+                return;
+
+            try
+            {
+                Internal.Console.Error.Write(crashLog);
+            }
+            catch
+            {
+                // Never fail on the crash path.
+            }
+        }
+
+        /// <summary>
+        /// Callback invoked by the user's fatal error handler to retrieve crash log text.
+        /// Encodes the stored crash-log text to UTF-8 and calls pfnLogAction with
+        /// null-terminated chunks. Matches the native FatalErrorLogFunc signature.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        private static unsafe void GetFatalErrorLog(
+            delegate* unmanaged<byte*, void*, void> pfnLogAction,
+            void* userContext)
+        {
+            string? crashLog = t_crashLog;
+            if (string.IsNullOrEmpty(crashLog) || pfnLogAction == null)
+                return;
+
+            try
+            {
+                // Use a stack buffer for UTF-8 encoding. Large text is sent in
+                // multiple chunks — the header documents that pfnLogAction may be
+                // called multiple times with fragments.
+                const int ChunkSize = 1024;
+                Span<byte> buffer = stackalloc byte[ChunkSize];
+
+                Encoder encoder = Encoding.UTF8.GetEncoder();
+                ReadOnlySpan<char> remaining = crashLog.AsSpan();
+                while (remaining.Length > 0)
+                {
+                    // Reserve last byte for null terminator. Flush only on the
+                    // final iteration to avoid corrupting surrogate pairs split
+                    // across chunk boundaries. Encoder.Convert ignores flush until
+                    // the entire input is consumed, so a prematurely-true flush is a
+                    // no-op (Convert reports completed: false and the remaining chars
+                    // are handled on the next iteration).
+                    bool flush = remaining.Length <= ChunkSize - 1;
+                    encoder.Convert(remaining, buffer[..^1], flush: flush, out int charsUsed, out int bytesUsed, out _);
+                    buffer[bytesUsed] = 0;
+                    fixed (byte* pBuffer = buffer)
+                    {
+                        pfnLogAction(pBuffer, userContext);
+                    }
+                    remaining = remaining.Slice(charsUsed);
+                }
+            }
+            catch
+            {
+                // This is called during fatal error handling — swallow any exceptions
+                // (e.g., OOM) to avoid crashing during log retrieval.
+            }
+        }
+
+        /// <summary>
+        /// Property getter passed to the user's fatal error handler. Surfaces the crash
+        /// address and the crash-log entry point on demand. Matches the native
+        /// FatalErrorPropertyGetter signature: returns a nonzero value when the requested
+        /// property is available (and <paramref name="value"/> is written), or 0.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        private static unsafe int GetFatalErrorProperty(int prop, void** value)
+        {
+            if (value == null)
+                return 0;
+
+            switch ((FatalErrorProperty)prop)
+            {
+                case FatalErrorProperty.FatalErrorLogFunc:
+                    *value = (void*)(delegate* unmanaged<delegate* unmanaged<byte*, void*, void>, void*, void>)&GetFatalErrorLog;
+                    return 1;
+
+                case FatalErrorProperty.Address:
+                    if (s_fatalErrorAddress == null)
+                        return 0;
+                    *value = s_fatalErrorAddress;
+                    return 1;
+
+                case FatalErrorProperty.WindowsExceptionRecord when OperatingSystem.IsWindows():
+                case FatalErrorProperty.PosixSigInfo when !OperatingSystem.IsWindows():
+                    if (s_fatalErrorPlatformData0 == null)
+                        return 0;
+                    *value = s_fatalErrorPlatformData0;
+                    return 1;
+
+                case FatalErrorProperty.WindowsContextRecord when OperatingSystem.IsWindows():
+                case FatalErrorProperty.UContext when !OperatingSystem.IsWindows():
+                    if (s_fatalErrorPlatformData1 == null)
+                        return 0;
+                    *value = s_fatalErrorPlatformData1;
+                    return 1;
+
+                default:
+                    // The remaining platform-native records not applicable to the
+                    // current platform (and Mach thread state) are surfaced by other
+                    // fatal paths and are not available here.
+                    return 0;
+            }
+        }
+
+        /// <summary>
+        /// Bridge invoked by the native fatal choke points for a genuinely-unmanaged fatal
+        /// exception (one whose faulting instruction pointer is not managed code, so it is
+        /// never translated to a managed exception). Forwards the live, untransformed
+        /// platform-native fault structures to the user's fatal error handler.
+        /// </summary>
+        [UnmanagedCallersOnly]
+        internal static unsafe int InvokeFatalErrorHandlerForNativeException(
+            int errorCode, void* faultAddress, void* pPlatformData0, void* pPlatformData1)
+        {
+            IntPtr fatalHandler = Volatile.Read(ref ExceptionHandling.s_fatalErrorHandler);
+            if (fatalHandler == IntPtr.Zero)
+                return 0; // RunDefaultHandler: no handler registered, leave the native path unchanged.
+
+            s_fatalErrorAddress = faultAddress;
+            s_fatalErrorPlatformData0 = pPlatformData0;
+            s_fatalErrorPlatformData1 = pPlatformData1;
+
+            // Invoke the user-installed fatal error handler.
+            // See src/native/public/FatalErrorHandling.h for the handler contract.
+            int handlerResult = ((delegate* unmanaged<int, delegate* unmanaged<int, void**, int>, int>)fatalHandler)(errorCode, &GetFatalErrorProperty);
+
+            s_fatalErrorAddress = null;
+            s_fatalErrorPlatformData0 = null;
+            s_fatalErrorPlatformData1 = null;
+
+            return handlerResult;
+        }
+
         //------------------------------------------------------------------------------------------------------------
         // @TODO: this function is related to throwing exceptions out of Rtm. If we did not have to throw
         // out of Rtm, then we would note have to have the code below to get a classlib exception object given
@@ -41,7 +218,7 @@ namespace System
         // needs to throw an exception back to a method in a non-runtime module. The classlib is expected
         // to convert every code in the ExceptionIDs enum to an exception object.
         [RuntimeExport("GetRuntimeException")]
-        public static Exception? GetRuntimeException(ExceptionIDs id)
+        public static Exception? GetRuntimeException(ExceptionIDs id, IntPtr faultingIP)
         {
             if (!SafeToPerformRichExceptionSupport)
                 return null;
@@ -96,19 +273,19 @@ namespace System
                         return new NullReferenceException();
 
                     case ExceptionIDs.AccessViolation:
-                        FailFast("Access Violation: Attempted to read or write protected memory. This is often an indication that other memory is corrupt. The application will be terminated since this platform does not support throwing an AccessViolationException.");
+                        FailFast("Access Violation: Attempted to read or write protected memory. This is often an indication that other memory is corrupt. The application will be terminated since this platform does not support throwing an AccessViolationException.", pExAddress: faultingIP);
                         return null;
 
                     case ExceptionIDs.IllegalInstruction:
-                        FailFast("Illegal instruction: Attempted to execute an instruction code not defined by the processor.");
+                        FailFast("Illegal instruction: Attempted to execute an instruction code not defined by the processor.", pExAddress: faultingIP);
                         return null;
 
                     case ExceptionIDs.PrivilegedInstruction:
-                        FailFast("Privileged instruction: Attempted to execute an instruction code that cannot be executed in user mode.");
+                        FailFast("Privileged instruction: Attempted to execute an instruction code that cannot be executed in user mode.", pExAddress: faultingIP);
                         return null;
 
                     case ExceptionIDs.InPageError:
-                        FailFast("In page error: Attempted to access a memory page that is not present, and the system is unable to load the page. For example, this exception might occur if a network connection is lost while running a program over a network.");
+                        FailFast("In page error: Attempted to access a memory page that is not present, and the system is unable to load the page. For example, this exception might occur if a network connection is lost while running a program over a network.", pExAddress: faultingIP);
                         return null;
 
                     case ExceptionIDs.DataMisaligned:
@@ -247,48 +424,48 @@ namespace System
                 {
                     // Minimal OOM fail-fast path: avoid heap allocations as much as possible, but still
                     // report that OOM is the reason for the crash.
-                    try
-                    {
-                        // Try to print the same short message CoreCLR prints.
-                        Internal.Console.Error.Write("Out of memory.");
-                        Internal.Console.Error.WriteLine();
-                    }
-                    catch { }
+                    t_crashLog = "Out of memory.\n";
                 }
                 else
                 {
-                    Internal.Console.Error.Write(((exception == null) || (reason is RhFailFastReason.EnvironmentFailFast or RhFailFastReason.AssertionFailure)) ?
-                        "Process terminated. " : "Unhandled exception. ");
+                    // Compose the crash-log text on this (the crashing) thread. The stack trace must be
+                    // captured eagerly here because it reflects the live stack at the point of failure;
+                    // it cannot be regenerated later from the handler callback.
+                    var crashLog = new StringBuilder();
+
+                    string header = ((exception == null) || (reason is RhFailFastReason.EnvironmentFailFast or RhFailFastReason.AssertionFailure)) ?
+                        "Process terminated. " : "Unhandled exception. ";
+                    crashLog.Append(header);
 
                     if (errorSource != null)
                     {
-                        Internal.Console.Error.Write(errorSource);
-                        Internal.Console.Error.WriteLine();
+                        crashLog.Append(errorSource);
+                        crashLog.Append('\n');
                     }
 
                     if (message != null)
                     {
-                        Internal.Console.Error.Write(message);
-                        Internal.Console.Error.WriteLine();
+                        crashLog.Append(message);
+                        crashLog.Append('\n');
                     }
 
                     if (errorSource == null && message == null && (exception == null || reason is RhFailFastReason.EnvironmentFailFast))
                     {
-                        Internal.Console.Error.Write(GetStringForFailFastReason(reason));
-                        Internal.Console.Error.WriteLine();
+                        crashLog.Append(GetStringForFailFastReason(reason));
+                        crashLog.Append('\n');
                     }
 
                     if (reason is RhFailFastReason.EnvironmentFailFast)
                     {
-                        Internal.Console.Error.Write(new StackTrace().ToString());
+                        crashLog.Append(new StackTrace().ToString());
                     }
 
                     if ((exception != null) && (reason is not RhFailFastReason.AssertionFailure))
                     {
                         try
                         {
-                            Internal.Console.Error.Write(exception.ToString());
-                            Internal.Console.Error.WriteLine();
+                            crashLog.Append(exception.ToString());
+                            crashLog.Append('\n');
                         }
                         catch
                         {
@@ -296,12 +473,15 @@ namespace System
                             try
                             {
                                 // Use an allocation-free MethodTable comparison.
-                                Internal.Console.Error.Write(exception.GetMethodTable() == Internal.Runtime.MethodTable.Of<OutOfMemoryException>() ? "Out of memory." : exception.GetType().FullName);
-                                Internal.Console.Error.WriteLine();
+                                string? typeName = exception.GetMethodTable() == Internal.Runtime.MethodTable.Of<OutOfMemoryException>() ? "Out of memory." : exception.GetType().FullName;
+                                crashLog.Append(typeName);
+                                crashLog.Append('\n');
                             }
                             catch { }
                         }
                     }
+
+                    t_crashLog = crashLog.ToString();
 
 #if TARGET_WINDOWS
                     if (EventReporter.ShouldLogInEventLog)
@@ -351,6 +531,31 @@ namespace System
                     Thread.Sleep(int.MaxValue);
                 }
             }
+
+            // Invoke the user's fatal error handler, if one was registered.
+            bool skipDefault = false;
+            IntPtr fatalHandler = Volatile.Read(ref ExceptionHandling.s_fatalErrorHandler);
+            if (fatalHandler != IntPtr.Zero)
+            {
+                s_fatalErrorAddress = (void*)pExAddress;
+
+                int handlerResult = ((delegate* unmanaged<int, delegate* unmanaged<int, void**, int>, int>)fatalHandler)(errorCode, &GetFatalErrorProperty);
+                skipDefault = (handlerResult == 1);
+            }
+
+            if (skipDefault)
+            {
+                // The handler took ownership of the failure and asked the runtime to skip its
+                // default handling.
+#if TARGET_WINDOWS
+                Interop.Kernel32.TerminateProcess(Interop.Kernel32.GetCurrentProcess(), errorCode);
+#else
+                Interop.Sys.Abort();
+#endif
+            }
+
+            // Write the crash log to stderr as part of the runtime's default handling.
+            WriteCrashLogToStdErr();
 
             EXCEPTION_RECORD exceptionRecord;
             // STATUS_STACK_BUFFER_OVERRUN is a "transport" exception code required by Watson to trigger the proper analyzer/provider for bucketing

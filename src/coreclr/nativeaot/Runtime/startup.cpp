@@ -38,6 +38,7 @@ uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
 
 #ifdef HOST_WINDOWS
 LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
+void RhpInstallFatalErrorUnhandledExceptionFilter();
 #else
 int32_t RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
 #endif
@@ -117,6 +118,7 @@ static bool InitDLL(HANDLE hPalInstance)
 #if !defined(FEATURE_PORTABLE_HELPERS)
 #ifdef HOST_WINDOWS
     AddVectoredExceptionHandler(1, RhpVectoredExceptionHandler);
+    RhpInstallFatalErrorUnhandledExceptionFilter();
 #else
     PalSetHardwareExceptionHandler(RhpHardwareExceptionHandler);
 #endif

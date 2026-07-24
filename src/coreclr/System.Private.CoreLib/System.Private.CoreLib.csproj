@@ -219,6 +219,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\ExceptionIDs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Runtime.Base\src\System\Runtime\StackFrameIterator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\AsmOffsets.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionHandling.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\InternalCalls.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.CoreCLR.cs" />
