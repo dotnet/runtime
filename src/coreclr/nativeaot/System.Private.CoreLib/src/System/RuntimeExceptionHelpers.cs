@@ -188,6 +188,26 @@ namespace System
             if (fatalHandler == IntPtr.Zero)
                 return 0; // RunDefaultHandler: no handler registered, leave the native path unchanged.
 
+            // Serialize concurrent fatal errors so the handler is invoked on only the first
+            // crashing thread. This shares the crashing-thread gate with FailFast, so the handler
+            // runs at most once whether the fatal error arrives through the managed FailFast path
+            // or a native fault, and is never entered by more than one thread at a time.
+            ulong currentThreadId = Thread.CurrentOSThreadId;
+            ulong previousThreadId = Interlocked.CompareExchange(ref s_crashingThreadId, currentThreadId, 0);
+            if (previousThreadId != 0)
+            {
+                if (previousThreadId == currentThreadId)
+                {
+                    // Reentrancy: this thread already owns fatal handling.
+                    // Do not invoke the handler again and let default handling proceed.
+                    return 0;
+                }
+
+                // The first thread owns fatal handling and is terminating the process. Block any
+                // other thread that faults so it does not race with it.
+                Thread.Sleep(int.MaxValue);
+            }
+
             s_fatalErrorAddress = faultAddress;
             s_fatalErrorPlatformData0 = pPlatformData0;
             s_fatalErrorPlatformData1 = pPlatformData1;

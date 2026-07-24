@@ -831,6 +831,37 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
     if (pfnHandler == NULL)
         return false;
 
+    // Serialize concurrent fatal errors so the user handler is invoked on only the first
+    // crashing thread. If several threads take a fatal error at the same time, the first one
+    // runs the handler and rips the process down while the others park here. This mirrors the
+    // serialization in LogInfoForFatalError and the crash-dump paths, and guarantees the handler
+    // is never entered by more than one thread at a time.
+    static size_t s_fatalErrorHandlerThreadID;
+
+    size_t currentThreadID;
+#ifndef TARGET_UNIX
+    currentThreadID = GetCurrentThreadId();
+#else
+    currentThreadID = PAL_GetCurrentOSThreadId();
+#endif
+
+    size_t previousThreadID = InterlockedCompareExchangeT<size_t>(&s_fatalErrorHandlerThreadID, currentThreadID, 0);
+    if (previousThreadID != 0)
+    {
+        if (previousThreadID == currentThreadID)
+        {
+            // Reentrancy: this thread already owns fatal handling.
+            // Do not invoke the handler again and let default handling proceed.
+            return false;
+        }
+
+        // A different thread is already running the handler and terminating the process. Switch
+        // to preemptive mode to avoid blocking that thread (it may suspend the runtime for GC
+        // while reporting) and wait here until the process exits.
+        GCX_PREEMP();
+        ClrSleepEx(INFINITE, /*bAlertable*/ FALSE);
+    }
+
     // Capture the crash address for the property getter.
     t_crashAddress = reinterpret_cast<void*>(address);
 

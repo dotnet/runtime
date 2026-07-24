@@ -64,6 +64,9 @@ namespace System.Runtime.ExceptionServices
         /// Only a single registration is supported per process. The handler executes as
         /// unmanaged code on the failing thread immediately before the runtime begins its
         /// own fatal-error handling.
+        /// If multiple fatal errors occur concurrently, the runtime invokes the handler on only
+        /// the first failing thread. Any other failing threads are blocked while the process
+        /// terminates, so the handler is never entered by more than one thread at a time.
         /// On some fatal errors (for example, stack overflow), the runtime may have already emitted
         /// some output before invoking the handler.
         /// </remarks>

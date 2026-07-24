@@ -5,6 +5,11 @@
 // ExceptionHandling.SetFatalErrorHandler API. A native fatal error handler
 // receives an HRESULT and a property-getter callback through which it can
 // request additional crash information on demand.
+//
+// The runtime invokes the handler on at most one thread. If multiple fatal
+// errors occur concurrently, only the first failing thread invokes the handler.
+// Any other failing threads are blocked while the process terminates, so the
+// handler is never entered by more than one thread at a time.
 
 #ifndef FATAL_ERROR_HANDLING_H
 #define FATAL_ERROR_HANDLING_H
