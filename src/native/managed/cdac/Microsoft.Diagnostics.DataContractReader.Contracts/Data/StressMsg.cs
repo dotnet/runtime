@@ -12,3 +12,8 @@ internal sealed partial class StressMsg : IData<StressMsg>
     [FieldAddress]
     public partial TargetPointer Args { get; }
 }
+
+[CdacType(nameof(DataType.StressMsgHeader))]
+internal sealed partial class StressMsgHeader : IData<StressMsgHeader>
+{
+}

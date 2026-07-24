@@ -20,7 +20,7 @@ internal sealed partial class RCW : IData<RCW>
     [Field] public partial TargetPointer CreatorThread { get; }
     [Field] public partial uint RefCount { get; }
     [Field] public partial TargetPointer UnknownPointer { get; }
-
+    [DataDescriptorDependency(nameof(InterfaceEntries), "pointer")]
     public IReadOnlyList<Data.InterfaceEntry> InterfaceEntries { get; private set; } = [];
 
     [MemberNotNull(nameof(InterfaceEntries))]
@@ -30,8 +30,7 @@ internal sealed partial class RCW : IData<RCW>
         TargetPointer interfaceEntriesAddr = address + (ulong)type.Fields[nameof(InterfaceEntries)].Offset;
 
         uint cacheSize = target.ReadGlobal<uint>(Constants.Globals.RCWInterfaceCacheSize);
-        Target.TypeInfo entryTypeInfo = target.GetTypeInfo(DataType.InterfaceEntry);
-        uint entrySize = entryTypeInfo.Size!.Value;
+        uint entrySize = InterfaceEntry.GetSize(target);
 
         List<Data.InterfaceEntry> entries = new((int)cacheSize);
         for (uint i = 0; i < cacheSize; i++)

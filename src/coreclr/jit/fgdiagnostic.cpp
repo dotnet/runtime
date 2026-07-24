@@ -3643,9 +3643,16 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
     }
     else if (actualFlags & ~expectedFlags)
     {
-        // We can't/don't consider these flags (GTF_GLOB_REF or GTF_ORDER_SIDEEFF) as being "extra" flags
+        // We can't/don't consider GTF_GLOB_REF as being "extra" flags
         //
-        GenTreeFlags flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
+        GenTreeFlags flagsToCheck = ~GTF_GLOB_REF;
+
+        // GTF_ORDER_SIDEEFF is stale if set on a node whose oper does not support it,
+        // and whose children do not have it set
+        if (tree->OperSupportsOrderingSideEffect())
+        {
+            flagsToCheck &= ~GTF_ORDER_SIDEEFF;
+        }
 
         if (tree->isIndir() && tree->AsIndir()->Addr()->IsIconHandle(GTF_ICON_FTN_ADDR))
         {

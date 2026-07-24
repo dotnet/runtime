@@ -22,6 +22,7 @@ namespace System.Net.Http
             Disposed = 4,
             AuthDisabled = 8,
             ConnectionIdSet = 16,
+            DoNotPartitionConnectionPoolBySni = 32,
         }
 
         private MessageFlags _flags;
@@ -244,6 +245,12 @@ namespace System.Net.Http
         internal void DisableAuth() => _flags |= MessageFlags.AuthDisabled;
 
         internal bool IsAuthDisabled() => _flags.HasFlag(MessageFlags.AuthDisabled);
+
+        internal bool IsConnectionPoolPartitioningBySniDisabled() => _flags.HasFlag(MessageFlags.DoNotPartitionConnectionPoolBySni);
+
+        // Experimental opt-in accessed via UnsafeAccessor from System.Net.Http tests. There is no product code path
+        // that sets this flag today, so it is preserved from the trimmer via ILLink.Descriptors.LibraryBuild.xml.
+        internal void ExperimentalDangerousDoNotPartitionConnectionPoolBySni() => _flags |= MessageFlags.DoNotPartitionConnectionPoolBySni;
 
         private bool Disposed
         {

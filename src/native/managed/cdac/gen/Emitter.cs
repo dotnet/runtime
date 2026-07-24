@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -72,6 +73,16 @@ internal static class Emitter
             sb.AppendLine();
         }
 
+        if (model.Names.Count > 0)
+        {
+            sb.AppendLine("    [UsesDataDescriptorTypeSize]");
+            sb.AppendLine($"    public static uint GetSize({Target} target)");
+            sb.AppendLine("        => checked((uint)LayoutSet.Resolve(target, _typeNames).InstanceSize);");
+            sb.AppendLine();
+        }
+
+        EmitFieldOffsetMethods(sb, model);
+
         sb.AppendLine($"    public {TargetPointer} Address {{ get; }}");
         sb.AppendLine();
 
@@ -125,6 +136,32 @@ internal static class Emitter
         return sb.ToString();
     }
 
+    private static void EmitFieldOffsetMethods(StringBuilder sb, CdacTypeModel model)
+    {
+        foreach (MemberModel member in model.Members)
+        {
+            if (member.Kind is not (MemberKind.Field or MemberKind.FieldAddress))
+                continue;
+
+            if (member.RawOffset is null)
+                EmitDataDescriptorDependencyAttribute(sb, member);
+            sb.AppendLine($"    public static int Get{member.Name}Offset({Target} target)");
+            if (member.RawOffset is int offset)
+            {
+                sb.AppendLine($"        => {offset};");
+            }
+            else
+            {
+                sb.AppendLine("    {");
+                sb.AppendLine("        LayoutSet layouts = LayoutSet.Resolve(target, _typeNames);");
+                sb.AppendLine($"        layouts.Select(default, out var type, out _, out var name, {NameArgs(member)});");
+                sb.AppendLine("        return type.Fields[name].Offset;");
+                sb.AppendLine("    }");
+            }
+            sb.AppendLine();
+        }
+    }
+
     /// <summary>
     /// Emits a <c>Write{Name}(T value)</c> method for each settable
     /// <c>[Field]</c> property. Uses the captured <c>_target</c> field.
@@ -154,6 +191,7 @@ internal static class Emitter
     {
         string propType = Shorten(member.PropertyOrReturnTypeFqn)!;
 
+        EmitDataDescriptorDependencyAttribute(sb, member);
         sb.AppendLine($"    public void Write{member.Name}({propType} value)");
         sb.AppendLine("    {");
         sb.AppendLine($"        _layouts.Select(Address, out var t, out var b, out var n, {NameArgs(member)});");
@@ -279,6 +317,7 @@ internal static class Emitter
 
         sb.AppendLine($"    private {propType} {valueField} = default!;");
         sb.AppendLine($"    private bool {readFlag};");
+        EmitDataDescriptorDependencyAttribute(sb, member);
         sb.AppendLine($"    public partial {propType} {member.Name}");
         sb.AppendLine("    {");
         sb.AppendLine("        get");
@@ -303,6 +342,20 @@ internal static class Emitter
         sb.AppendLine();
     }
 
+    private static void EmitDataDescriptorDependencyAttribute(StringBuilder sb, MemberModel member)
+    {
+        if (member.Kind == MemberKind.InstanceDataStart)
+        {
+            sb.AppendLine("    [UsesDataDescriptorTypeSize]");
+        }
+        else if (member.RawOffset is null)
+        {
+            Debug.Assert(member.DescriptorNativeType is not null);
+            sb.AppendLine(
+                $"    [DataDescriptorDependency(\"{member.DescriptorOrFieldName}\", \"{member.DescriptorNativeType}\")]");
+        }
+    }
+
     /// <summary>
     /// Emits the <see cref="Data.IReadableData.EnsureAllFieldsRead"/> implementation,
     /// which touches every lazily-read member so a caller can eagerly force a full
@@ -310,6 +363,7 @@ internal static class Emitter
     /// </summary>
     private static void EmitEnsureAllFieldsRead(StringBuilder sb, CdacTypeModel model)
     {
+        EmitEnsureAllFieldsReadDependencyAttributes(sb, model);
         sb.AppendLine("    void global::Microsoft.Diagnostics.DataContractReader.Data.IReadableData.EnsureAllFieldsRead()");
         sb.AppendLine("    {");
         foreach (MemberModel member in model.Members)
@@ -323,6 +377,32 @@ internal static class Emitter
         }
         sb.AppendLine("    }");
         sb.AppendLine();
+    }
+
+    private static void EmitEnsureAllFieldsReadDependencyAttributes(StringBuilder sb, CdacTypeModel model)
+    {
+        (string FieldName, string NativeType)[] fields = model.Members
+            .Where(member =>
+                member.Kind is MemberKind.Field or MemberKind.FieldAddress &&
+                member.RawOffset is null)
+            .Select(DescriptorDependency)
+            .Distinct()
+            .ToArray();
+        bool usesTypeSize = model.Members.Any(member => member.Kind == MemberKind.InstanceDataStart);
+
+        foreach ((string fieldName, string nativeType) in fields)
+        {
+            sb.AppendLine(
+                $"    [DataDescriptorDependency(\"{fieldName}\", \"{nativeType}\")]");
+        }
+        if (usesTypeSize)
+            sb.AppendLine("    [UsesDataDescriptorTypeSize]");
+    }
+
+    private static (string FieldName, string NativeType) DescriptorDependency(MemberModel member)
+    {
+        Debug.Assert(member.DescriptorNativeType is not null);
+        return (member.DescriptorOrFieldName, member.DescriptorNativeType!);
     }
 
     private static string ReadExpression(MemberModel member, string baseVar, string typeVar, string nameVar, string? typeArg)

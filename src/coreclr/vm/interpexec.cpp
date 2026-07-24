@@ -3235,8 +3235,9 @@ SWITCH_OPCODE:
                     {
                         // miss, resolve the virtual method and cache it
                         targetMethod = CallWithSEHWrapper(
-                            [&pMD, &pThisArg]() {
-                                return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
+                            [&pMD, &pThisArg, pObjMT]() {
+                                GCX_PREEMP();
+                                return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pObjMT, pMD->GetMethodTable());
                             });
                         g_InterpDispatchCache.Insert(dispatchToken, pObjMT, targetMethod, (uint16_t)dispatchTokenHash);
                     }
@@ -3402,7 +3403,9 @@ SWITCH_OPCODE:
                             NULL_CHECK(*pThisArg);
                             targetMethod = CallWithSEHWrapper(
                                 [&targetMethod, &pThisArg]() {
-                                    return targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, targetMethod->GetMethodTable());
+                                    MethodTable* pMT = (*pThisArg)->GetMethodTable();
+                                    GCX_PREEMP();
+                                    return targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, pMT, targetMethod->GetMethodTable());
                                 });
                         }
                         else
