@@ -28,7 +28,7 @@ void MethodSet::initialize(const char* listFromConfig)
     }
 
     m_listFromConfig = static_cast<const char*>(malloc(configSize + 1));
-    strcpy(const_cast<char*>(m_listFromConfig), listFromConfig);
+    memcpy(const_cast<char*>(m_listFromConfig), listFromConfig, configSize + 1);
 
     auto commitPattern = [this](const char* start, const char* end) {
         if (end <= start)

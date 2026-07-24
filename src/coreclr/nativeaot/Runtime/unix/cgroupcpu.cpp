@@ -120,11 +120,12 @@ private:
         if (cgroup_path_relative_to_mount == nullptr)
             goto done;
 
-        cgroup_path = (char*)malloc(strlen(hierarchy_mount) + strlen(cgroup_path_relative_to_mount) + 1);
+        size_t hierarchy_mount_len = strlen(hierarchy_mount);
+        cgroup_path = (char*)malloc(hierarchy_mount_len + strlen(cgroup_path_relative_to_mount) + 1);
         if (cgroup_path == nullptr)
            goto done;
 
-        strcpy(cgroup_path, hierarchy_mount);
+        memcpy(cgroup_path, hierarchy_mount, hierarchy_mount_len);
         // For a host cgroup, we need to append the relative path.
         // The root and cgroup path can share a common prefix of the path that should not be appended.
         // Example 1 (docker):
@@ -148,7 +149,10 @@ private:
 
         assert((cgroup_path_relative_to_mount[common_path_prefix_len] == '/') || (cgroup_path_relative_to_mount[common_path_prefix_len] == '\0'));
 
-        strcat(cgroup_path, cgroup_path_relative_to_mount + common_path_prefix_len);
+        // Replace strcat with memcpy (+1 handles the final null terminator)
+        const char* append_src = cgroup_path_relative_to_mount + common_path_prefix_len;
+        size_t append_len = strlen(append_src);
+        memcpy(cgroup_path + hierarchy_mount_len, append_src, append_len + 1);
 
 
     done:

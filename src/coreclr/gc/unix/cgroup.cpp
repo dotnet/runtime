@@ -154,11 +154,13 @@ private:
         if (cgroup_path_relative_to_mount == nullptr)
             goto done;
 
+        size_t hierarchy_mount_len = strlen(hierarchy_mount);
         cgroup_path = (char*)malloc(strlen(hierarchy_mount) + strlen(cgroup_path_relative_to_mount) + 1);
         if (cgroup_path == nullptr)
            goto done;
 
-        strcpy(cgroup_path, hierarchy_mount);
+        memcpy(cgroup_path, hierarchy_mount, hierarchy_mount_len);
+        cgroup_path[hierarchy_mount_len] = '\0';
         // For a host cgroup, we need to append the relative path.
         // The root and cgroup path can share a common prefix of the path that should not be appended.
         // Example 1 (docker):
@@ -444,7 +446,7 @@ private:
         free(mem_limit_filename);
         return result;
     }
-    
+
     static bool GetCGroupMemoryLimitV2(uint64_t *val)
     {
         if (s_memory_cgroup_path == nullptr)
@@ -490,7 +492,7 @@ private:
 
             cgroupPathLength = parent_directory_end - mem_limit_filename;
 
-            strcpy(parent_directory_end, CGROUP2_MEMORY_LIMIT_FILENAME);
+            memcpy(parent_directory_end, CGROUP2_MEMORY_LIMIT_FILENAME, strlen(CGROUP2_MEMORY_LIMIT_FILENAME) + 1);
         }
         while (true);
 
