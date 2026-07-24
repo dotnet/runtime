@@ -420,6 +420,29 @@ void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     _ASSERTE(DbgIsExecutable(pBufferRX, 12));
 }
 
+void emitJmpAbsJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+
+        PRECONDITION(CheckPointer(pBufferRX));
+        PRECONDITION(g_IsJmpAbsAvailable);  // Caller must check APX availability
+    }
+    CONTRACTL_END;
+
+    // JMPABS instruction (APX):    D5 00 A1 xx xx xx xx xx xx xx xx
+    pBufferRW[0]  = 0xD5;  // APX prefix
+    pBufferRW[1]  = 0x00;  // Map select
+    pBufferRW[2]  = 0xA1;  // JMPABS opcode
+
+    SET_UNALIGNED_64(&pBufferRW[3], target);  // 64-bit absolute address
+
+    _ASSERTE(DbgIsExecutable(pBufferRX, 11));
+}
+
 INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,
     LoaderAllocator *pLoaderAllocator /* = NULL */, bool throwOnOutOfMemoryWithinRange /*= true*/)
 {
