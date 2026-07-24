@@ -252,21 +252,10 @@ private:
         return m_compiler->gtNewPhysRegNode(reg, type);
     }
 
-    GenTree* ThisReg(GenTreeCall* call)
-    {
-        return PhysReg(m_compiler->codeGen->genGetThisArgReg(call), TYP_REF);
-    }
-
     GenTree* Offset(GenTree* base, unsigned offset)
     {
         var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
         return new (m_compiler, GT_LEA) GenTreeAddrMode(resultType, base, nullptr, 0, offset);
-    }
-
-    GenTree* OffsetByIndex(GenTree* base, GenTree* index)
-    {
-        var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
-        return new (m_compiler, GT_LEA) GenTreeAddrMode(resultType, base, index, 0, 0);
     }
 
     GenTree* OffsetByIndexWithScale(GenTree* base, GenTree* index, unsigned scale)
@@ -523,6 +512,7 @@ private:
 #elif defined(TARGET_WASM)
     GenTree* LowerHWIntrinsicCompareUnsignedLong(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node);
+    void     LowerHWIntrinsicSwizzle(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types type,
                                                  GenTree*  op1,

@@ -105,8 +105,8 @@ if (CLR_CMAKE_TARGET_WIN32)
   # objects archived into Runtime.WorkstationGC/Runtime.ServerGC would otherwise
   # reference a vc140.pdb that is absent when these static libs are statically
   # linked by the AOT compiler publish projects, producing LNK4099.
-  target_compile_options(Runtime.GC.Workstation PRIVATE /Z7)
-  target_compile_options(Runtime.GC.Server PRIVATE /Z7)
+  set_target_properties(Runtime.GC.Workstation PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+  set_target_properties(Runtime.GC.Server PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library(Runtime.WorkstationGC STATIC

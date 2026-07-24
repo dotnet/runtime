@@ -290,10 +290,209 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(result.GeneratedSource);
             Assert.Empty(result.Diagnostics);
 
-            // Ensure the generated code can be compiled.
-            // If there is any compilation error, exception will be thrown with the list of the errors in the exception message.
-            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
-            Assert.NotNull(emittedAssemblyImage);
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        // Required, settable property whose value flows through a constructor marked [SetsRequiredMembers]
+        // whose parameter name differs only in casing from the property.
+        [InlineData("""
+            [method: SetsRequiredMembers]
+            public class GreetSettings(string name)
+            {
+                public string Greeting { get; set; } = "Hello";
+                public required string Name { get; set; } = name;
+            }
+            """)]
+        // Same as above, but the constructor parameter name matches the property name exactly.
+        [InlineData("""
+            [method: SetsRequiredMembers]
+            public class GreetSettings(string Name)
+            {
+                public string Greeting { get; set; } = "Hello";
+                public required string Name { get; set; } = Name;
+            }
+            """)]
+        // Required property set via a constructor parameter, but the constructor does not set required
+        // members, so the property must still be assigned through the object initializer.
+        [InlineData("""
+            public class GreetSettings(string name)
+            {
+                public string Greeting { get; set; } = "Hello";
+                public required string Name { get; set; } = name;
+            }
+            """)]
+        public async Task RequiredPropertyWithMatchingConstructorParameter(string greetSettingsType)
+        {
+            string source = $$"""
+                using System.Diagnostics.CodeAnalysis;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        GreetSettings settings = config.GetSection("Settings").Get<GreetSettings>()!;
+                    }
+                }
+
+                {{greetSettingsType}}
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task ListOfTupleWithComplexElementInInternalPropertyTest()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        ExampleOptions options = new();
+                        config.Bind(options);
+                    }
+                }
+
+                public class ExampleOptions
+                {
+                    public List<string> ExampleCollection { get; set; } = new();
+
+                    internal List<(string, ICollection<string>?)> UsesCollection =>
+                        [
+                            ("Label-1", ExampleCollection)
+                        ];
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("IReadOnlyList")]
+        [InlineData("IReadOnlyCollection")]
+        [InlineData("IReadOnlySet")]
+        [InlineData("IEnumerable")]
+        public async Task ReadOnlyCollectionConstructorParameterIsBindable(string collectionType)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        Options options = config.Get<Options>();
+                    }
+                }
+
+                public record Options(string Name, {{collectionType}}<string> Values);
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            // The collection type is only reachable through a read-only property, so its BindCore
+            // helper must still be generated for the constructor parameter.
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task ComplexReadOnlyListConstructorParameterIsBindable()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        Options options = config.Get<Options>();
+                    }
+                }
+
+                public class Child
+                {
+                    public string Value { get; set; }
+                }
+
+                public record Options(string Name, IReadOnlyList<Child> Items);
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task TypeReachableOnlyThroughNonBindablePropertyIsNotEmitted()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        ExampleOptions options = new();
+                        config.Bind(options);
+                    }
+                }
+
+                public class ExampleOptions
+                {
+                    public List<string> ExampleCollection { get; set; } = new();
+
+                    // Non-bindable internal property. UnreachableChild is only reachable through it,
+                    // so the generator must not emit any binding code that references it.
+                    internal List<UnreachableChild> UsesCollection => new();
+                }
+
+                public class UnreachableChild
+                {
+                    public string Value { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            // The type is reachable only through a non-bindable property, so the generator must
+            // not register or emit any binding code that references it.
+            Assert.DoesNotContain("UnreachableChild", result.GeneratedSource.Value.SourceText.ToString());
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
         [Fact]
@@ -322,10 +521,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(result.GeneratedSource);
             Assert.Empty(result.Diagnostics);
 
-            // Ensure the generated code can be compiled.
-            // If there is any compilation error, exception will be thrown with the list of the errors in the exception message.
-            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
-            Assert.NotNull(emittedAssemblyImage);
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
         /// <summary>

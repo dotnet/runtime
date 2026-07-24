@@ -251,6 +251,10 @@ DEFINE_DACVAR(bool, dac__g_metadataUpdatesApplied, ::g_metadataUpdatesApplied)
 
 DEFINE_DACVAR(PTR_WSTR, dac__g_EntryAssemblyPath, ::g_EntryAssemblyPath)
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+DEFINE_DACVAR(TADDR, dac__g_cdacThePreStub, ::g_cdacThePreStub)
+#endif
+
 DEFINE_DACVAR(CDacPlatformMetadata, dac__g_cdacPlatformMetadata, ::g_cdacPlatformMetadata)
 
 #undef DEFINE_DACVAR

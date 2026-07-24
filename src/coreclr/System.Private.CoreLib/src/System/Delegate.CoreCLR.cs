@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -19,7 +20,7 @@ namespace System
         private const nint UnmanagedMarker = -1;
 
         // This is set under 3 circumstances
-        // 1. Multicast delegates - object[]
+        // 1. Multicast delegates - Wrapper[]
         // 2. Method cache - MethodInfo
         // 3. Collectible delegates - LoaderAllocator and such
         private object? _helperObject;
@@ -45,11 +46,11 @@ namespace System
 
         private bool IsClosed => _methodPtrAux == 0;
 
-        public partial bool HasSingleTarget => _helperObject is null || _helperObject.GetType() != typeof(object[]);
+        public partial bool HasSingleTarget => _helperObject is null || _helperObject.GetType() != typeof(Wrapper[]);
 
         public object? Target =>
-            TryGetInvocations(out ReadOnlySpan<object> invocations)
-                ? ((Delegate)invocations[^1]).Target
+            TryGetInvocations(out ReadOnlySpan<Wrapper> invocations)
+                ? invocations[^1].Value!.Target
                 : IsClosed ? _target : null;
 
         private unsafe MethodDesc* MethodDesc
@@ -112,7 +113,7 @@ namespace System
         // This method returns the Invocation list of this multicast delegate.
         public Delegate[] GetInvocationList()
         {
-            if (!TryGetInvocations(out ReadOnlySpan<object> invocations))
+            if (!TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
             {
                 return [this];
             }
@@ -120,13 +121,13 @@ namespace System
             Delegate[] invocationList = new Delegate[invocations.Length];
             for (int i = 0; i < invocations.Length; i++)
             {
-                invocationList[i] = (Delegate)invocations[i];
+                invocationList[i] = invocations[i].Value!;
             }
             return invocationList;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryGetInvocations(out ReadOnlySpan<object> invocations)
+        private bool TryGetInvocations(out ReadOnlySpan<Wrapper> invocations)
         {
             if (HasSingleTarget)
             {
@@ -134,24 +135,24 @@ namespace System
                 return false;
             }
 
-            Debug.Assert(_helperObject is object[]);
-            object[] invocationList = (object[])_helperObject;
+            Debug.Assert(_helperObject is Wrapper[]);
+            Wrapper[] invocationList = (Wrapper[])_helperObject;
 
             Debug.Assert(invocationList.Length > 1);
             Debug.Assert((uint)invocationList.Length >= (nuint)_extraData);
-            Debug.Assert(invocationList[0] is MulticastDelegate);
+            Debug.Assert(invocationList[0].Value is not null);
 
-            invocations = new ReadOnlySpan<object>(invocationList, 0, (int)_extraData);
+            invocations = new ReadOnlySpan<Wrapper>(invocationList, 0, (int)_extraData);
             return true;
         }
 
         // Used by delegate invocation list enumerator
         private Delegate? TryGetAt(int index)
         {
-            if (TryGetInvocations(out ReadOnlySpan<object> invocations))
+            if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
             {
                 if ((uint)index < (uint)invocations.Length)
-                    return (Delegate)invocations[index];
+                    return invocations[index].Value;
             }
             else if (index == 0)
             {
@@ -205,26 +206,12 @@ namespace System
                     return false;
 
                 // multicast
-                if (TryGetInvocations(out ReadOnlySpan<object> invocations))
-                {
-                    if (!other.TryGetInvocations(out ReadOnlySpan<object> otherInvocations) || invocations.Length != otherInvocations.Length)
-                        return false;
-
-                    for (int i = 0; i < invocations.Length; i++)
-                    {
-                        if (!invocations[i].Equals(otherInvocations[i]))
-                            return false;
-                    }
-
-                    return true;
-                }
+                if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
+                    return other.TryGetInvocations(out ReadOnlySpan<Wrapper> otherInvocations) && invocations.SequenceEqual(otherInvocations);
 
                 // unmanaged
                 if (IsUnmanagedFunctionPtr)
-                {
-                    return other.IsUnmanagedFunctionPtr &&
-                           _methodPtrAux == other._methodPtrAux;
-                }
+                    return other.IsUnmanagedFunctionPtr && _methodPtrAux == other._methodPtrAux;
 
                 // Under cached interface dispatch we might see the shared CID_VirtualOpenDelegateDispatch stub.
                 // Fallback to desc comparison in such case for correctness.
@@ -242,12 +229,12 @@ namespace System
 
         public sealed override unsafe int GetHashCode()
         {
-            if (TryGetInvocations(out ReadOnlySpan<object> invocations))
+            if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
             {
                 int hash = 0;
-                foreach (MulticastDelegate multicastDelegate in invocations)
+                foreach (ref readonly Wrapper wrapper in invocations)
                 {
-                    hash = hash * 33 + multicastDelegate.GetHashCode();
+                    hash = hash * 33 + wrapper.GetHashCode();
                 }
                 return hash;
             }
@@ -271,8 +258,8 @@ namespace System
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            return TryGetInvocations(out ReadOnlySpan<object> invocations)
-                ? ((Delegate)invocations[^1]).Method
+            return TryGetInvocations(out ReadOnlySpan<Wrapper> invocations)
+                ? invocations[^1].Value!.Method
                 : _helperObject as MethodInfo ?? GetMethodImplUncached();
         }
 
@@ -507,27 +494,82 @@ namespace System
             Justification = "The parameter 'methodType' is passed by ref to QCallTypeHandle")]
         private bool BindToMethodName(object? target, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] RuntimeType methodType, string method, DelegateBindingFlags flags)
         {
-            Delegate d = this;
-            return BindToMethodName(ObjectHandleOnStack.Create(ref d), ObjectHandleOnStack.Create(ref target),
-                new QCallTypeHandle(ref methodType), method, flags);
+            bool ret;
+            BindToMethodDetails bindToMethodDetails;
+
+            unsafe
+            {
+                ret = BindToMethodName(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
+                new QCallTypeHandle(ref methodType), method, flags, ObjectHandleOnStack.Create(ref target), out bindToMethodDetails);
+            }
+
+            if (ret)
+            {
+                // Apply the results of the QCall to the delegate instance.
+                _methodPtr = bindToMethodDetails.methodPtr;
+                _methodPtrAux = bindToMethodDetails.methodPtrAux;
+                _extraData = bindToMethodDetails.extraData;
+                if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
+                {
+                    _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;
+                    GC.KeepAlive(methodType);
+                }
+
+                if (bindToMethodDetails.selfReferentialTarget != 0)
+                    _target = this;
+                else
+                    _target = target;
+            }
+            return ret;
+        }
+
+        private struct BindToMethodDetails
+        {
+            public int selfReferentialTarget; // Whether the delegate's target object is the same as the first argument of the method to bind to. Only meaningful for open instance delegates.
+            public IntPtr methodPtr;
+            public IntPtr methodPtrAux;
+            public IntPtr extraData;
+            public GCHandle loaderAllocatorGCHandle; // The loader allocator needed if the delegate needs to keep it alive
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodName", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool BindToMethodName(ObjectHandleOnStack d, ObjectHandleOnStack target, QCallTypeHandle methodType, string method, DelegateBindingFlags flags);
+        private static partial bool BindToMethodName(MethodTable* pDelegateMT, MethodTable *pTargetMT, QCallTypeHandle methodType, string method, DelegateBindingFlags flags, ObjectHandleOnStack targetParameter, out BindToMethodDetails bindToMethodDetails);
 
         private bool BindToMethodInfo(object? target, IRuntimeMethodInfo method, RuntimeType methodType, DelegateBindingFlags flags)
         {
-            Delegate d = this;
-            bool ret = BindToMethodInfo(ObjectHandleOnStack.Create(ref d), ObjectHandleOnStack.Create(ref target),
-                method.Value, new QCallTypeHandle(ref methodType), flags);
-            GC.KeepAlive(method);
+            bool ret;
+            BindToMethodDetails bindToMethodDetails;
+
+            unsafe
+            {
+                ret = BindToMethodInfo(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
+                    IRuntimeMethodInfo.GetValue(method), new QCallTypeHandle(ref methodType), flags, ObjectHandleOnStack.Create(ref target), out bindToMethodDetails);
+            }
+
+            if (ret)
+            {
+                // Apply the results of the QCall to the delegate instance.
+                _methodPtr = bindToMethodDetails.methodPtr;
+                _methodPtrAux = bindToMethodDetails.methodPtrAux;
+                _extraData = bindToMethodDetails.extraData;
+                if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
+                {
+                    _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;
+                    GC.KeepAlive(method);
+                }
+
+                if (bindToMethodDetails.selfReferentialTarget != 0)
+                    _target = this;
+                else
+                    _target = target;
+            }
             return ret;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodInfo")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool BindToMethodInfo(ObjectHandleOnStack d, ObjectHandleOnStack target, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags);
+        private static partial bool BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags, ObjectHandleOnStack targetParameter, out BindToMethodDetails bindToMethodDetails);
 
         private static Delegate InternalAlloc(RuntimeType type)
         {
@@ -535,28 +577,25 @@ namespace System
             return Unsafe.As<Delegate>(RuntimeTypeHandle.InternalAlloc(type));
         }
 
-        internal static unsafe Delegate InternalAlloc(MethodTable* type)
+        private static unsafe Delegate InternalAlloc(MethodTable* type)
         {
             Debug.Assert(RuntimeTypeHandle.GetRuntimeType(type).IsAssignableTo(typeof(Delegate)));
             return Unsafe.As<Delegate>(RuntimeTypeHandle.InternalAllocNoChecks(type));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe bool InternalEqualTypes(object a, object b)
+        private static unsafe bool InternalEqualTypes(object a, object b)
         {
             if (a.GetType() == b.GetType())
                 return true;
+
 #if FEATURE_TYPEEQUIVALENCE
             MethodTable* pMTa = RuntimeHelpers.GetMethodTable(a);
             MethodTable* pMTb = RuntimeHelpers.GetMethodTable(b);
 
-            bool ret;
-
-            // only use QCall to check the type equivalence scenario
-            if (pMTa->HasTypeEquivalence && pMTb->HasTypeEquivalence)
-                ret = RuntimeHelpers.AreTypesEquivalent(pMTa, pMTb);
-            else
-                ret = false;
+            bool ret = pMTa->HasTypeEquivalence && pMTb->HasTypeEquivalence &&
+                // only use QCall to check the type equivalence scenario
+                RuntimeHelpers.AreTypesEquivalent(pMTa, pMTb);
 
             GC.KeepAlive(a);
             GC.KeepAlive(b);
@@ -578,12 +617,31 @@ namespace System
                 throw new ArgumentNullException(nameof(method));
             }
 
-            Delegate _this = this;
-            Construct(ObjectHandleOnStack.Create(ref _this), ObjectHandleOnStack.Create(ref target), method);
+            BindToMethodDetails bindToMethodDetails;
+
+            unsafe
+            {
+                Construct(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
+                    method, out bindToMethodDetails);
+            }
+
+            // Apply the results of the QCall to the delegate instance.
+            _methodPtr = bindToMethodDetails.methodPtr;
+            _methodPtrAux = bindToMethodDetails.methodPtrAux;
+            _extraData = bindToMethodDetails.extraData;
+            if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
+            {
+                _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;
+            }
+
+            if (bindToMethodDetails.selfReferentialTarget != 0)
+                _target = this;
+            else
+                _target = target;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_Construct")]
-        private static partial void Construct(ObjectHandleOnStack _this, ObjectHandleOnStack target, IntPtr method);
+        private static partial void Construct(MethodTable* pDelegateMT, MethodTable* pTargetMT, IntPtr method, out BindToMethodDetails bindToMethodDetails);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void* GetMulticastInvoke(MethodTable* pMT);
@@ -591,7 +649,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMulticastInvokeSlow")]
         private static unsafe partial void* GetMulticastInvokeSlow(MethodTable* pMT);
 
-        internal unsafe IntPtr GetMulticastInvoke()
+        private unsafe IntPtr GetMulticastInvoke()
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
             void* ptr = GetMulticastInvoke(pMT);
@@ -608,7 +666,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void* GetInvokeMethod(MethodTable* pMT);
 
-        internal unsafe IntPtr GetInvokeMethod()
+        private unsafe IntPtr GetInvokeMethod()
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
             void* ptr = GetInvokeMethod(pMT);
@@ -616,7 +674,7 @@ namespace System
             return (IntPtr)ptr;
         }
 
-        internal static unsafe IRuntimeMethodInfo CreateMethodInfo(MethodDesc* methodDesc)
+        private static unsafe IRuntimeMethodInfo CreateMethodInfo(MethodDesc* methodDesc)
         {
             IRuntimeMethodInfo? methodInfo = null;
             CreateMethodInfo(methodDesc, ObjectHandleOnStack.Create(ref methodInfo));
@@ -636,29 +694,34 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMethodDesc")]
         private static unsafe partial MethodDesc* GetMethodDesc(ObjectHandleOnStack instance);
 
-        private static bool TrySetSlot(object?[] a, int index, object o)
+        internal struct Wrapper(Delegate? value) : IEquatable<Wrapper>
         {
-            if (a[index] == null && Interlocked.CompareExchange(ref a[index], o, null) == null)
+            internal Delegate? Value = value;
+
+            public readonly bool Equals(Wrapper other)
             {
-                return true;
+                // we should never get null here
+                Debug.Assert(Value is not null);
+                Debug.Assert(other.Value is not null);
+                return Value.Equals(other.Value);
             }
 
-            // The slot may be already set because we have added and removed the same method before.
-            // Optimize this case, because it's cheaper than copying the array.
-            object? previous = a[index];
-            if (previous is null)
+            public override readonly bool Equals(object? obj)
             {
-                return false;
+                // we should never get another type here
+                Debug.Assert(obj is Wrapper);
+                return Equals((Wrapper)obj);
             }
 
-            MulticastDelegate d = (MulticastDelegate)o;
-            MulticastDelegate dd = (MulticastDelegate)previous;
-            return dd._methodPtr == d._methodPtr &&
-                   dd._methodPtrAux == d._methodPtrAux &&
-                   dd._target == d._target;
+            public override readonly int GetHashCode()
+            {
+                // we should never get null here
+                Debug.Assert(Value is not null);
+                return Value.GetHashCode();
+            }
         }
 
-        private unsafe Delegate NewMulticastDelegate(object[] invocationList, int invocationCount, bool thisIsMultiCastAlready = false)
+        private unsafe Delegate NewMulticastDelegate(Wrapper[] invocationList, int invocationCount, bool thisIsMultiCastAlready = false)
         {
             // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
             Delegate result = InternalAlloc(RuntimeHelpers.GetMethodTable(this));
@@ -682,6 +745,23 @@ namespace System
             return result;
         }
 
+        private static bool TrySetSlot(ref Delegate? d, Delegate o)
+        {
+            Delegate? previous = d;
+            if (previous is null)
+            {
+                previous = Interlocked.CompareExchange(ref d, o, null);
+                if (previous == null)
+                    return true;
+            }
+
+            // The slot may be already set because we have added and removed the same method before.
+            // Optimize this case, because it's cheaper than copying the array.
+            return previous._methodPtr == o._methodPtr &&
+                   previous._methodPtrAux == o._methodPtrAux &&
+                   previous._target == o._target;
+        }
+
         // This method will combine this delegate with the passed delegate
         //    to form a new delegate.
         protected Delegate CombineImpl(Delegate? d)
@@ -693,109 +773,54 @@ namespace System
             if (!InternalEqualTypes(this, d))
                 throw new ArgumentException(SR.Arg_DlgtTypeMis);
 
-            MulticastDelegate dFollow = (MulticastDelegate)d;
-            object[]? resultList;
-            int followCount = 1;
-            object[]? followList = dFollow._helperObject as object[];
-            if (followList != null)
-                followCount = (int)dFollow._extraData;
+            Wrapper wrapper = new Wrapper(d);
+            ReadOnlySpan<Wrapper> followList = d.TryGetInvocations(out ReadOnlySpan<Wrapper> span) ? span : new ReadOnlySpan<Wrapper>(ref wrapper);
 
-            int resultCount;
-            if (_helperObject is not object[] invocationList)
+            if (!TryGetInvocations(out ReadOnlySpan<Wrapper> invocationList))
             {
-                resultCount = 1 + followCount;
-                resultList = new object[resultCount];
-                resultList[0] = this;
-                if (followList == null)
-                {
-                    resultList[1] = dFollow;
-                }
-                else
-                {
-                    for (int i = 0; i < followCount; i++)
-                        resultList[1 + i] = followList[i];
-                }
-                return NewMulticastDelegate(resultList, resultCount);
+                int newResultCount = 1 + followList.Length;
+                Wrapper[] newResultList = new Wrapper[newResultCount];
+                newResultList[0] = new Wrapper(this);
+                followList.CopyTo(new Span<Wrapper>(newResultList, 1, followList.Length));
+                return NewMulticastDelegate(newResultList, newResultCount);
             }
 
-            int invocationCount = (int)_extraData;
-            resultCount = invocationCount + followCount;
-            resultList = null;
-            if (resultCount <= invocationList.Length)
+            int resultCount = invocationList.Length + followList.Length;
+            Wrapper[]? resultList = (Wrapper[])_helperObject!;
+            if (resultList.Length < resultCount)
             {
-                resultList = invocationList;
-                if (followList == null)
+                resultList = null;
+            }
+            else
+            {
+                Span<Wrapper> newInvocations = resultList.AsSpan(invocationList.Length, followList.Length);
+                for (int i = 0; i < followList.Length; i++)
                 {
-                    if (!TrySetSlot(resultList, invocationCount, dFollow))
-                        resultList = null;
-                }
-                else
-                {
-                    for (int i = 0; i < followCount; i++)
-                    {
-                        if (TrySetSlot(resultList, invocationCount + i, followList[i]))
-                        {
-                            continue;
-                        }
+                    if (TrySetSlot(ref newInvocations[i].Value, followList[i].Value!))
+                        continue;
 
-                        resultList = null;
-                        break;
-                    }
+                    resultList = null;
+                    break;
                 }
             }
 
             if (resultList == null)
             {
-                int allocCount = invocationList.Length;
-                while (allocCount < resultCount)
-                    allocCount *= 2;
-
-                resultList = new object[allocCount];
-
-                for (int i = 0; i < invocationCount; i++)
-                    resultList[i] = invocationList[i];
-
-                if (followList == null)
-                {
-                    resultList[invocationCount] = dFollow;
-                }
-                else
-                {
-                    for (int i = 0; i < followCount; i++)
-                        resultList[invocationCount + i] = followList[i];
-                }
+                resultList = new Wrapper[BitOperations.RoundUpToPowerOf2((uint)resultCount)];
+                invocationList.CopyTo(resultList);
+                followList.CopyTo(resultList.AsSpan(invocationList.Length));
             }
             return NewMulticastDelegate(resultList, resultCount, true);
         }
 
-        private object[] DeleteFromInvocationList(object[] invocationList, int invocationCount, int deleteIndex, int deleteCount)
+        private static Wrapper[] DeleteFromInvocationList(ReadOnlySpan<Wrapper> invocationList, int deleteIndex, int deleteCount)
         {
-            Debug.Assert(_helperObject is object[]);
-            object[] thisInvocationList = (object[])_helperObject;
+            Wrapper[] newInvocationList = new Wrapper[BitOperations.RoundUpToPowerOf2((uint)(invocationList.Length - deleteCount))];
 
-            int allocCount = thisInvocationList.Length;
-            while (allocCount / 2 >= invocationCount - deleteCount)
-                allocCount /= 2;
-
-            object[] newInvocationList = new object[allocCount];
-
-            for (int i = 0; i < deleteIndex; i++)
-                newInvocationList[i] = invocationList[i];
-
-            for (int i = deleteIndex + deleteCount; i < invocationCount; i++)
-                newInvocationList[i - deleteCount] = invocationList[i];
+            invocationList.Slice(0, deleteIndex).CopyTo(newInvocationList);
+            invocationList.Slice(deleteIndex + deleteCount).CopyTo(newInvocationList.AsSpan(deleteIndex));
 
             return newInvocationList;
-        }
-
-        private static bool EqualInvocationLists(object[] a, object[] b, int start, int count)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                if (!a[start + i].Equals(b[i]))
-                    return false;
-            }
-            return true;
         }
 
         // This method currently looks backward on the invocation list
@@ -807,86 +832,63 @@ namespace System
         {
             // There is a special case were we are removing using a delegate as
             //    the value we need to check for this case
-            //
-            MulticastDelegate? v = (MulticastDelegate?)d;
-            if (v == null)
+            if (d is null)
                 return this;
 
-            if (v.HasSingleTarget)
+            bool isMulticast = TryGetInvocations(out ReadOnlySpan<Wrapper> invocationList);
+
+            if (!d.TryGetInvocations(out ReadOnlySpan<Wrapper> otherInvocations))
             {
-                if (_helperObject is not object[] invocationList)
-                {
-                    // they are both not real Multicast
-                    if (Equals(v))
-                        return null;
-                }
-                else
-                {
-                    int invocationCount = (int)_extraData;
-                    for (int i = invocationCount; --i >= 0;)
-                    {
-                        if (!v.Equals(invocationList[i]))
-                        {
-                            continue;
-                        }
+                // they are both not real Multicast
+                if (!isMulticast)
+                    return Equals(d) ? null : this;
 
-                        if (invocationCount == 2)
-                        {
-                            // Special case - only one value left, either at the beginning or the end
-                            return (Delegate)invocationList[1 - i];
-                        }
+                int index = invocationList.LastIndexOf(new Wrapper(d));
+                if (index < 0)
+                    return this;
 
-                        object[] list = DeleteFromInvocationList(invocationList, invocationCount, i, 1);
-                        return NewMulticastDelegate(list, invocationCount - 1, true);
-                    }
-                }
-            }
-            else if (_helperObject is object[] invocationList)
-            {
-                int invocationCount = (int)_extraData;
-                int vInvocationCount = (int)v._extraData;
-                object[] vInvocationList = (object[])v._helperObject!;
-                for (int i = invocationCount - vInvocationCount; i >= 0; i--)
-                {
-                    if (!EqualInvocationLists(invocationList, vInvocationList, i, vInvocationCount))
-                    {
-                        continue;
-                    }
+                // Special case - only one value left, either at the beginning or the end
+                if (invocationList.Length == 2)
+                    return invocationList[1 - index].Value;
 
-                    switch (invocationCount - vInvocationCount)
-                    {
-                        case 0:
-                            // Special case - no values left
-                            return null;
-                        case 1:
-                            // Special case - only one value left, either at the beginning or the end
-                            return (Delegate)invocationList[i != 0 ? 0 : invocationCount - 1];
-                        default:
-                        {
-                            object[] list = DeleteFromInvocationList(invocationList, invocationCount, i,
-                                vInvocationCount);
-                            return NewMulticastDelegate(list, invocationCount - vInvocationCount, true);
-                        }
-                    }
-                }
+                Wrapper[] list = DeleteFromInvocationList(invocationList, index, 1);
+                return NewMulticastDelegate(list, invocationList.Length - 1, true);
             }
 
-            return this;
+            if (!isMulticast)
+                return this;
+
+            int i = invocationList.LastIndexOf(otherInvocations);
+            if (i < 0)
+                return this;
+
+            int newCount = invocationList.Length - otherInvocations.Length;
+            switch (newCount)
+            {
+                case 0:
+                    // Special case - no values left
+                    return null;
+                case 1:
+                    // Special case - only one value left, either at the beginning or the end
+                    return invocationList[i == 0 ? ^1 : 0].Value;
+                default:
+                    Wrapper[] list = DeleteFromInvocationList(invocationList, i, otherInvocations.Length);
+                    return NewMulticastDelegate(list, newCount, true);
+            }
         }
-
-        // this should help inlining
-        [DoesNotReturn]
-        [DebuggerNonUserCode]
-        private static void ThrowNullThisInDelegateToInstance() =>
-            throw new ArgumentException(SR.Arg_DlgtNullInst);
 
         internal static IntPtr AdjustTarget(object target, IntPtr methodPtr)
         {
-            return AdjustTarget(ObjectHandleOnStack.Create(ref target), methodPtr);
+            unsafe
+            {
+                IntPtr result = AdjustTarget(RuntimeHelpers.GetMethodTable(target), methodPtr);
+                GC.KeepAlive(target);
+                return result;
+            }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_AdjustTarget")]
-        private static partial IntPtr AdjustTarget(ObjectHandleOnStack target, IntPtr methodPtr);
+        private static partial IntPtr AdjustTarget(MethodTable* targetMT, IntPtr methodPtr);
 
         internal void InitializeVirtualCallStub(IntPtr methodPtr)
         {
@@ -896,6 +898,11 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InitializeVirtualCallStub")]
         private static partial void InitializeVirtualCallStub(ObjectHandleOnStack d, IntPtr methodPtr);
+
+        [DoesNotReturn]
+        [DebuggerNonUserCode]
+        private static void ThrowNullThisInDelegateToInstance() =>
+            throw new ArgumentException(SR.Arg_DlgtNullInst);
 
 #pragma warning disable IDE0060
         [DebuggerNonUserCode]

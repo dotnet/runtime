@@ -1966,6 +1966,7 @@ public:
     inline bool IsMaskZero() const;
     inline bool IsMaskAllBitsSet() const;
     inline bool IsTrueMask(var_types simdBaseType) const;
+    inline bool IsZeroForSelect() const;
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
 
@@ -6375,6 +6376,23 @@ public:
         return m_operands + startIndex;
     }
 
+    // Re-point "m_operands" into this node after its raw bytes were copied from
+    // "src" (e.g. by GenTree::ReplaceWith). When a MultiOp stores its operands
+    // inline, "m_operands" points into the node's own storage, so a byte copy
+    // leaves it aliasing "src". A heap operand array lives outside "src" and is
+    // left untouched.
+    void RelocateInlineOperandsFrom(GenTree* src)
+    {
+        char* srcBegin = reinterpret_cast<char*>(src);
+        char* srcEnd   = srcBegin + src->GetNodeSize();
+        char* operands = reinterpret_cast<char*>(m_operands);
+
+        if ((operands >= srcBegin) && (operands < srcEnd))
+        {
+            m_operands = reinterpret_cast<GenTree**>(reinterpret_cast<char*>(this) + (operands - srcBegin));
+        }
+    }
+
 protected:
     // Reconfigures the operand array, leaving it in a "dirty" state.
     void ResetOperandArray(size_t    newOperandCount,
@@ -9873,6 +9891,22 @@ inline bool GenTree::IsTrueMask(var_types simdBaseType) const
 #endif
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// IsZeroForSelect: Is the given node a zero value for the purposes of
+//               conditional selection. ConditionalSelect can operate on all
+//               vectors or all masks.
+//
+// Returns true if the node is an all false mask node or a zero vector node.
+//
+// If such a node is used in op3 of ConditionalSelect, it will result in a
+// simple filtering operation on the vector or mask node in op2, using the mask
+// provided in op1.
+//
+inline bool GenTree::IsZeroForSelect() const
+{
+    return IsVectorZero() || IsMaskZero();
 }
 
 //-------------------------------------------------------------------

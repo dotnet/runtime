@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 namespace System.Net.Security.Tests
 {
     [ConditionalClass(typeof(KerberosExecutor), nameof(KerberosExecutor.IsSupported))]
-    public class NegotiateAuthenticationKerberosTest
+    public partial class NegotiateAuthenticationKerberosTest
     {
         private readonly ITestOutputHelper _testOutputHelper;
 

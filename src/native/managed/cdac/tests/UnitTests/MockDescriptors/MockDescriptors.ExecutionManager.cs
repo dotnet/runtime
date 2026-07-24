@@ -398,6 +398,7 @@ internal sealed class MockReadyToRunInfo : TypedView
 
     private const string ImportSectionsFieldName = "ImportSections";
     private const string NumImportSectionsFieldName = "NumImportSections";
+    private const string MinVirtualIPFieldName = "MinVirtualIP";
 
     public static Layout<MockReadyToRunInfo> CreateLayout(MockTarget.Architecture architecture, int hashMapStride)
         => new SequentialLayoutBuilder("ReadyToRunInfo", architecture)
@@ -415,6 +416,8 @@ internal sealed class MockReadyToRunInfo : TypedView
             .AddField(EntryPointToMethodDescMapFieldName, hashMapStride)
             .AddPointerField(LoadedImageBaseFieldName)
             .AddPointerField(CompositeFieldName)
+            // WASM-only: base virtual IP for the module's ReadyToRun functions (nullable field).
+            .AddPointerField(MinVirtualIPFieldName)
             .Build<MockReadyToRunInfo>();
 
     public ulong CompositeInfo
@@ -460,6 +463,18 @@ internal sealed class MockReadyToRunInfo : TypedView
     }
 
     public ulong EntryPointToMethodDescMapAddress => GetFieldAddress(EntryPointToMethodDescMapFieldName);
+
+    public ulong LoadedImageBase
+    {
+        get => ReadPointerField(LoadedImageBaseFieldName);
+        set => WritePointerField(LoadedImageBaseFieldName, value);
+    }
+
+    public ulong MinVirtualIP
+    {
+        get => ReadPointerField(MinVirtualIPFieldName);
+        set => WritePointerField(MinVirtualIPFieldName, value);
+    }
 }
 
 internal sealed class MockImageDataDirectory : TypedView
@@ -921,7 +936,7 @@ internal sealed class MockExecutionManagerBuilder
         return jittedMethodLayout.Create(methodFragment);
     }
 
-    private ulong AddPointerGlobal(ulong value, string name)
+    internal ulong AddPointerGlobal(ulong value, string name)
     {
         MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)Builder.TargetTestHelpers.PointerSize, name);
         Builder.TargetTestHelpers.WritePointer(fragment.Data, value);
