@@ -929,7 +929,9 @@ namespace Internal.CallingConvention
                         int align;
                         if (isValueType)
                         {
-                            align = Math.Clamp(_argTypeHandle.GetFieldAlignment(), 8, 16);
+                            align = _argTypeHandle.RequiresAlign16OnWasm()
+                                ? 16
+                                : Math.Clamp(_argTypeHandle.GetFieldAlignment(), 8, 16);
                         }
                         else
                         {

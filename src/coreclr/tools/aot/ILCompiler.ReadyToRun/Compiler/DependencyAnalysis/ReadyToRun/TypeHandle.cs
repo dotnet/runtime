@@ -66,6 +66,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _type.RequiresAlign8();
         }
 
+        public bool RequiresAlign16OnWasm()
+        {
+            // On wasm, Vector128<T> / 128-bit Vector<T> arguments must be 16-byte aligned to match
+            // the interpreter and runtime ArgIterator (getClassAlignmentRequirement). The crossgen
+            // type system under-reports their field alignment as 8 (pointer-sized), so detect the
+            // SIMD v128 types explicitly rather than relying on GetFieldAlignment.
+            return _type.Context.Target.Architecture == TargetArchitecture.Wasm32
+                && !_isByRef
+                && WasmLowering.IsWasmV128Type(_type);
+        }
+
         public bool IsHomogeneousAggregate()
         {
             TargetArchitecture targetArch = _type.Context.Target.Architecture;

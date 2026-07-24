@@ -113,7 +113,7 @@ namespace Internal.JitInterface
         /// and non-primitive instantiations (e.g. the shared <c>__Canon</c> form) are not ABI
         /// primitives and continue to use the generic struct ABI.
         /// </summary>
-        private static bool IsWasmV128Type(TypeDesc type)
+        internal static bool IsWasmV128Type(TypeDesc type)
         {
             if (!type.IsIntrinsic ||
                 type.Instantiation.Length != 1 ||

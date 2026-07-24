@@ -84,6 +84,11 @@ partial interface IRuntimeTypeSystem : IContract
     // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
     // src/coreclr/vm/class.cpp.
     public virtual bool TryGetHFAElementSize(ITypeHandle typeHandle, out int elementSize);
+    // Returns the intrinsic SIMD vector element size derived from type metadata: 16 for
+    // Vector128<T>, 8 for Vector64<T>, and 8 or 16 for System.Numerics.Vector<T> (based on its
+    // instance size); 0 for non-vector types. Unlike TryGetHFAElementSize this is not gated on
+    // FEATURE_HFA, so it is valid on wasm, where ArgIterator uses it to 16-byte align v128 args.
+    public virtual int GetVectorElementSize(ITypeHandle typeHandle);
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     public virtual bool RequiresAlign8(ITypeHandle typeHandle);
     // Returns the cached SystemV AMD64 eightbyte register-passing classification for a value type
@@ -826,6 +831,10 @@ static class RuntimeTypeSystem_1_Helpers
     //       if !CorIsNumericalType(GetInstantiation(mt)[0]): return 0
     //       return elem
     public bool TryGetHFAElementSize(ITypeHandle typeHandle, out int elementSize) { ... }
+
+    // Exposes the metadata-derived intrinsic vector element size (see GetVectorHFAElementSize
+    // above) without FEATURE_HFA gating, so it is usable on wasm.
+    public int GetVectorElementSize(ITypeHandle typeHandle) => GetVectorHFAElementSize(typeHandle);
 
     public bool RequiresAlign8(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
 

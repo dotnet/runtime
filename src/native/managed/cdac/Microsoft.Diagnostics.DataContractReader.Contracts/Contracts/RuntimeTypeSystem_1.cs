@@ -735,6 +735,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return false;
     }
 
+    // Public contract entry point: exposes the metadata-derived intrinsic vector element size
+    // (see GetVectorHFAElementSize) independent of FEATURE_HFA gating. Used by ArgIterator on
+    // wasm to 16-byte align v128 arguments.
+    public int GetVectorElementSize(ITypeHandle typeHandle) => GetVectorHFAElementSize(typeHandle);
+
     // Mirrors MethodTable::GetVectorHFA in src/coreclr/vm/class.cpp. Any
     // metadata decode failure returns 0 (treated as "not an HVA").
     private int GetVectorHFAElementSize(ITypeHandle typeHandle)
