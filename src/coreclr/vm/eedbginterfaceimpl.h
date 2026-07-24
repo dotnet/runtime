@@ -83,9 +83,6 @@ public:
                               bool fStrongNewRef,
                               AppDomain *pAppDomain);
 
-    void DbgDestroyHandle(OBJECTHANDLE oh,
-                          bool fStrongNewRef);
-
     OBJECTHANDLE GetThreadException(Thread *pThread);
 
     bool IsThreadExceptionNull(Thread *pThread);

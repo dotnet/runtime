@@ -205,30 +205,6 @@ OBJECTHANDLE EEDbgInterfaceImpl::GetHandleFromObject(void *obj,
     return oh;
 }
 
-void EEDbgInterfaceImpl::DbgDestroyHandle(OBJECTHANDLE oh,
-                                          bool fStrongNewRef)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Destroyed given handle 0x%x,"
-        "fStrong: 0x%x!\n", oh, fStrongNewRef));
-
-    if (fStrongNewRef)
-    {
-        DestroyStrongHandle(oh);
-    }
-    else
-    {
-        DestroyLongWeakHandle(oh);
-    }
-}
-
-
 OBJECTHANDLE EEDbgInterfaceImpl::GetThreadException(Thread *pThread)
 {
     CONTRACTL

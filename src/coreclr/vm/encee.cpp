@@ -1469,20 +1469,22 @@ void EnCSyncBlockInfo::Cleanup()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
     // Walk our linked list of all the fields that were added
     EnCAddedField *pEntry = m_pList;
-    while (pEntry)
     {
-        // Clean up the handle we created in EnCAddedField::Allocate
-        DestroyDependentHandle(*(OBJECTHANDLE*)&pEntry->m_FieldData);
+        while (pEntry)
+        {
+            // Clean up the handle we created in EnCAddedField::Allocate
+            DestroyDependentHandle(*(OBJECTHANDLE*)&pEntry->m_FieldData);
 
-        // Delete this list entry and move onto the next
-        EnCAddedField *next = pEntry->m_pNext;
-        delete pEntry;
-        pEntry = next;
+            // Delete this list entry and move onto the next
+            EnCAddedField *next = pEntry->m_pNext;
+            delete pEntry;
+            pEntry = next;
+        }
     }
 
     // Finally, delete the sync block info itself
