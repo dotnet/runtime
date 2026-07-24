@@ -45,9 +45,28 @@ public class ExecutionManagerTests
 
     internal static Target CreateTarget(
         MockExecutionManagerBuilder emBuilder,
-        RuntimeInfoOperatingSystem operatingSystem = RuntimeInfoOperatingSystem.Windows,
-        RuntimeInfoArchitecture? targetArchitecture = null,
         params (string Name, ulong Value)[] additionalGlobals)
+        => CreateTarget(
+            emBuilder,
+            RuntimeInfoOperatingSystem.Windows,
+            targetArchitecture: null,
+            additionalGlobals);
+
+    internal static Target CreateTarget(
+        MockExecutionManagerBuilder emBuilder,
+        RuntimeInfoOperatingSystem operatingSystem = RuntimeInfoOperatingSystem.Windows,
+        RuntimeInfoArchitecture? targetArchitecture = null)
+        => CreateTarget(
+            emBuilder,
+            operatingSystem,
+            targetArchitecture,
+            []);
+
+    private static Target CreateTarget(
+        MockExecutionManagerBuilder emBuilder,
+        RuntimeInfoOperatingSystem operatingSystem,
+        RuntimeInfoArchitecture? targetArchitecture,
+        (string Name, ulong Value)[] additionalGlobals)
     {
         var arch = emBuilder.Builder.TargetTestHelpers.Arch;
         RuntimeInfoArchitecture architecture = targetArchitecture ?? (arch.Is64Bit

@@ -164,6 +164,7 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `Bucket` | `Keys` | `pointer` | Array of keys of `HashMapSlotsPerBucket` length |
 | `Bucket` | `Values` | `pointer` | Array of values of `HashMapSlotsPerBucket` length |
 | `CodeHeap` | `HeapType` | `uint8` | `uint8` discriminant identifying the concrete heap type |
+| `CodeHeapListNode` | `CLRPersonalityRoutine` | `pointer` | Address of the CLR personality routine; when non-null, this is the module base for a Windows dynamic function table |
 | `CodeHeapListNode` | `EndAddress` | `pointer` | End address of the used portion of the code heap |
 | `CodeHeapListNode` | `HeaderMap` | `pointer` | Bit array used to find the start of methods - relative to `MapBase` |
 | `CodeHeapListNode` | `Heap` | `pointer` | Pointer to the `CodeHeap` object managed by this node |
@@ -171,6 +172,8 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `CodeHeapListNode` | `Next` | `pointer` | Next node |
 | `CodeHeapListNode` | `StartAddress` | `pointer` | Start address of the used portion of the code heap |
 | `CodeRangeMapRangeList` | `RangeListType` | `int32` | Integer identifying the stub code block kind for this range list |
+| `DynamicFunctionTable` | `Context` | `pointer` | Tagged pointer to the owning `EEJitManager`; low bits are flags |
+| `DynamicFunctionTable` | `MinimumAddress` | `pointer` | Module base address covered by the dynamic function table |
 | `EEExceptionClause` | *(type size)* | `uint32` | Size of an exception clause in bytes |
 | `EEExceptionClause` | `Flags` | `uint32` | Exception clause flags (`COR_ILEXCEPTION_CLAUSE_*` bit flags) |
 | `EEExceptionClause` | `HandlerEndPC` | `uint32` | Native offset of the end of the handler |

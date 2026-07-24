@@ -63,11 +63,11 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             if (buffer is null || bufferSize < totalBytes)
                 return HResults.S_FALSE;
 
-            Span<byte> destination = new(buffer, checked((int)totalBytes));
             int entrySize = checked((int)runtimeFunctionSize);
             for (int i = 0; i < functionEntries.Count; i++)
             {
-                _target.ReadBuffer(functionEntries[i].Value, destination.Slice(i * entrySize, entrySize));
+                Span<byte> destination = new(buffer + ((nint)i * entrySize), entrySize);
+                _target.ReadBuffer(functionEntries[i].Value, destination);
             }
 
             return HResults.S_OK;
