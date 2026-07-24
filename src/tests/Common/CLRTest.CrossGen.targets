@@ -127,7 +127,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo -o:"$__OutputFile" >> "$__ResponseFile"
         echo -O >> "$__ResponseFile"
         echo --targetarch:$(TargetArchitecture) >> "$__ResponseFile"
-        echo --targetos:$(TargetOS) >> "$__ResponseFile"
+        echo --targetos:$(PortableOS) >> "$__ResponseFile"
         echo --verify-type-and-field-layout >> "$__ResponseFile"
         echo --method-layout:random >> "$__ResponseFile"
         if [ "$(CrossGen2OutputFormat)" == "wasm" ]; then
@@ -340,7 +340,7 @@ if defined RunCrossGen2 (
     echo -O>>!__ResponseFile!
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
-    echo --targetos:$(TargetOS)>>!__ResponseFile!
+    echo --targetos:$(PortableOS)>>!__ResponseFile!
     echo --verify-type-and-field-layout>>!__ResponseFile!
     echo --method-layout:random>>!__ResponseFile!
     if "$(CrossGen2OutputFormat)"=="wasm" (
