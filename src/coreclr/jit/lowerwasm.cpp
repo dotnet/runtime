@@ -1362,9 +1362,9 @@ GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
     }
 
     // If the shuffle mask is not a constant vector or the mask is not in range, we will need to rewrite the shuffle
-    // into two swizzles: 1 to handle elements from the first vector, and 1 to handle elements from the second vector.
-    // The two swizzles will then be or'd together to produce the final result. We will be constructing IR like the
-    // following:
+    // into a BOUNDS_CHECK around the mask, and two swizzles: 1 to handle elements from the first vector, and 1 to
+    // handle elements from the second vector. The two swizzles will then be or'd together to produce the final result.
+    // We will be constructing IR like the following:
     //  op1             = ...
     //  op2             = ...
     //                  /--* op2
@@ -1395,6 +1395,14 @@ GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
     //                   /--*  tmp1 simd
     //                   +--*  tmp3 simd
     //   res       =  *  HWINTRINSIC   simd   byte    PackedSimd.Or
+    //
+    // This is roughly equivalent to the following C#:
+    // ...
+    // if (GreaterThanAny(originalMask, 31)) { throw new ArrayIndexOutOfBoundsException(); }
+    // tmp1 = PackedSimd.Swizzle(op1, originalMask);
+    // tmp2 = PackedSimd.Swizzle(op2, PackedSimd.Subtract(originalMask, PackedSimd.Splat(0x10)));
+    // result  = PackedSimd.Or(tmp1, tmp2);
+    //...
 
     // op2 needs to be moved, replace with a local, but don't immediately reload
     LIR::Use op2Use(BlockRange(), &node->Op(2), node);
