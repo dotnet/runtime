@@ -229,18 +229,19 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
         }
     }
 
-    // Only used by ArgIterator on WASM32 for stack alignment of value types.
+    // Only used by ArgIterator on WASM32 for stack alignment of value types. Vector128<T> /
+    // 128-bit Vector<T> must be 16-byte aligned to match the runtime and interpreter ArgIterator;
+    // the crossgen type system under-reports their field alignment as 8, so report 16 for the wasm
+    // v128 SIMD types here. Non-v128 value types are not yet reconstructed by the cDAC reader.
     public int GetFieldAlignment()
     {
+        if (_typeHandle is not null && Rts.GetVectorElementSize(_typeHandle) == 16)
+        {
+            return 16;
+        }
+
         throw new NotImplementedException("Field alignment is not yet implemented.");
     }
-
-    // Only used by ArgIterator on WASM32 for 16-byte (v128) stack alignment of value types.
-    // Vector128<T> / 128-bit Vector<T> must be 16-byte aligned to match the runtime and
-    // interpreter ArgIterator; the crossgen type system under-reports their field alignment as
-    // 8, so the shared ArgIterator relies on this predicate instead of GetFieldAlignment.
-    public bool RequiresAlign16OnWasm()
-        => _typeHandle is not null && Rts.GetVectorElementSize(_typeHandle) == 16;
 
     /// <summary>
     /// Maps cDAC CorElementType (short names like I4) to the shared CorElementType

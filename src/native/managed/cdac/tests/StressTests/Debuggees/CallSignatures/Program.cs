@@ -532,7 +532,7 @@ internal static unsafe class Program
 
     // --- HVA shapes (intrinsic Vector types). On non-FEATURE_HFA targets
     //     these go through the regular struct path; on ARM64 they hit the
-    //     GetVectorHFAElementSize TypeDef-name match (Vector64/128 in
+    //     GetVectorElementSize TypeDef-name match (Vector64/128 in
     //     System.Runtime.Intrinsics, Vector<T> in System.Numerics). ---
     [MethodImpl(MethodImplOptions.NoInlining)] private static void Vec64FloatArg(Vector64<float> v) { AllocBurst(); GC.KeepAlive((object)v.GetElement(0)); }
     [MethodImpl(MethodImplOptions.NoInlining)] private static void Vec128FloatArg(Vector128<float> v) { AllocBurst(); GC.KeepAlive((object)v.GetElement(0)); }

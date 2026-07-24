@@ -26,14 +26,6 @@ namespace Internal.CallingConvention
         CorElementType GetCorElementType();
         bool RequiresAlign8();
 
-        // Wasm: reports whether a value type argument must be 16-byte aligned (wasm v128).
-        // Vector128<T> / 128-bit Vector<T> require 16-byte alignment to match the runtime's
-        // getClassAlignmentRequirement, but the crossgen type system under-reports their field
-        // alignment as 8 (pointer-sized), so the ArgIterator wasm case cannot rely on
-        // GetFieldAlignment alone. Named in the RequiresAlignN family for parity with
-        // RequiresAlign8; on non-wasm targets this is always false.
-        bool RequiresAlign16OnWasm();
-
         // HFA - ARM/ARM64
         bool IsHomogeneousAggregate();
         int GetHomogeneousAggregateElementSize();
@@ -47,7 +39,9 @@ namespace Internal.CallingConvention
         // x86 - trivial pointer-sized struct check for register passing
         bool IsTrivialPointerSizedStruct();
 
-        // LoongArch64/Wasm alignment
+        // LoongArch64/Wasm alignment. On wasm this also reports 16 for Vector128<T> / 128-bit
+        // Vector<T> (whose InstanceFieldAlignment under-reports as 8) so the Wasm32 ArgIterator
+        // 16-aligns v128 arguments to match the runtime and interpreter.
         int GetFieldAlignment();
 
         private static readonly int[] s_elemSizes = new int[]
