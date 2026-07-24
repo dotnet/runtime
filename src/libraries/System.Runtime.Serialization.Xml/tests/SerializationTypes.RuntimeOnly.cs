@@ -3107,6 +3107,27 @@ class PersonV2 : IExtensibleDataObject
     }
 }
 
+[DataContract(Name = "CdataVersioned", Namespace = "http://example.com/cdata")]
+class CdataVersionedV1 : IExtensibleDataObject
+{
+    [DataMember(Order = 0)]
+    public string Prop1 { get; set; }
+
+    public ExtensionDataObject ExtensionData { get; set; }
+}
+
+[DataContract(Name = "CdataVersioned", Namespace = "http://example.com/cdata")]
+class CdataVersionedV2 : IExtensibleDataObject
+{
+    [DataMember(Order = 0)]
+    public string Prop1 { get; set; }
+
+    [DataMember(Order = 1)]
+    public string Prop2 { get; set; }
+
+    public ExtensionDataObject ExtensionData { get; set; }
+}
+
 [DataContract]
 public class Name
 {
