@@ -23,10 +23,6 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     private readonly ReadyToRunJitManager _r2rJitManager;
     private readonly InterpreterJitManager _interpreterJitManager;
     private readonly TargetPointer _thePreStub;
-    private readonly TargetPointer _varargPInvokeStub;
-    private readonly TargetPointer _varargPInvokeStubRetBuffArg;
-    private readonly TargetPointer _genericPInvokeCalliHelper;
-    private readonly TargetPointer _jitTailCall;
 
     private Data.RangeSectionMap _topRangeSectionMap
         => _target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(_topRangeSectionMapAddress);
@@ -40,17 +36,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
         _interpreterJitManager = new InterpreterJitManager(_target, nibbleMap);
-        _thePreStub = ReadGlobalStub(Constants.Globals.ThePreStub);
-        _varargPInvokeStub = ReadGlobalStub(Constants.Globals.VarargPInvokeStub);
-        _varargPInvokeStubRetBuffArg = ReadGlobalStub(Constants.Globals.VarargPInvokeStub_RetBuffArg);
-        _genericPInvokeCalliHelper = ReadGlobalStub(Constants.Globals.GenericPInvokeCalliHelper);
-        _jitTailCall = ReadGlobalStub(Constants.Globals.TailCallJitHelper);
-    }
-
-    private TargetPointer ReadGlobalStub(string name)
-    {
-        return _target.TryReadGlobalPointer(name, out TargetPointer? ptr)
-            ? ptr.Value
+        _thePreStub = _target.TryReadGlobalPointer(Constants.Globals.ThePreStub, out TargetPointer? thePreStubPtr)
+            ? _target.ReadPointer(thePreStubPtr.Value)
             : TargetPointer.Null;
     }
 
@@ -645,15 +632,6 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             TargetPointer address = new(codeAddress.Value);
             if (address == _thePreStub && _thePreStub != TargetPointer.Null)
                 return CodeKind.ThePreStub;
-            if ((address == _varargPInvokeStub && _varargPInvokeStub != TargetPointer.Null)
-                || (address == _varargPInvokeStubRetBuffArg && _varargPInvokeStubRetBuffArg != TargetPointer.Null))
-            {
-                return CodeKind.VarargPInvokeStub;
-            }
-            if (address == _genericPInvokeCalliHelper && _genericPInvokeCalliHelper != TargetPointer.Null)
-                return CodeKind.GenericPInvokeCalliHelper;
-            if (address == _jitTailCall && _jitTailCall != TargetPointer.Null)
-                return CodeKind.JIT_TailCall;
 
             return CodeKind.Unknown;
         }

@@ -58,10 +58,7 @@ public enum CodeKind : uint
     Jitted = 11,
     ReadyToRun = 12,
     Interpreter = 13,
-    ThePreStub = 14,
-    VarargPInvokeStub = 15,
-    GenericPInvokeCalliHelper = 16,
-    JIT_TailCall = 17
+    ThePreStub = 14
 }
 
 public interface ICodeHeapInfo

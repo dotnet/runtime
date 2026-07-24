@@ -157,9 +157,6 @@ public unsafe class IXCLRDataProcessTests
             (CodeKind.StubPrecode, CLRDataAddressType.CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB),
             (CodeKind.VSD_DispatchStub, CLRDataAddressType.CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB),
             (CodeKind.ThePreStub, CLRDataAddressType.CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB),
-            (CodeKind.VarargPInvokeStub, CLRDataAddressType.CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB),
-            (CodeKind.GenericPInvokeCalliHelper, CLRDataAddressType.CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB),
-            (CodeKind.JIT_TailCall, CLRDataAddressType.CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB),
         ];
 
         foreach ((CodeKind kind, CLRDataAddressType expected) in cases)

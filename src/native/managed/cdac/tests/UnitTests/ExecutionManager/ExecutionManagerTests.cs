@@ -672,20 +672,16 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetStubKind_GlobalStubs(string version, MockTarget.Architecture arch)
+    public void GetStubKind_GlobalStub(string version, MockTarget.Architecture arch)
     {
         (string Name, ulong Address, CodeKind Kind)[] stubs =
         [
             (Constants.Globals.ThePreStub, 0x00aa_1000, CodeKind.ThePreStub),
-            (Constants.Globals.VarargPInvokeStub, 0x00aa_2000, CodeKind.VarargPInvokeStub),
-            (Constants.Globals.VarargPInvokeStub_RetBuffArg, 0x00aa_3000, CodeKind.VarargPInvokeStub),
-            (Constants.Globals.GenericPInvokeCalliHelper, 0x00aa_4000, CodeKind.GenericPInvokeCalliHelper),
-            (Constants.Globals.TailCallJitHelper, 0x00aa_5000, CodeKind.JIT_TailCall),
         ];
         MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
         Target target = CreateTarget(
             emBuilder,
-            stubs.Select(stub => (stub.Name, stub.Address)).ToArray());
+            stubs.Select(stub => (stub.Name, emBuilder.AddPointerGlobal(stub.Address, stub.Name))).ToArray());
 
         foreach ((_, ulong address, CodeKind kind) in stubs)
         {

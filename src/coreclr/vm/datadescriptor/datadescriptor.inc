@@ -1609,16 +1609,8 @@ CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
 CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
-CDAC_GLOBAL_POINTER(ThePreStub, &ThePreStub)
+CDAC_GLOBAL_POINTER(ThePreStub, &g_cdacThePreStub)
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
-CDAC_GLOBAL_POINTER(GenericPInvokeCalliHelper, &GenericPInvokeCalliHelper)
-CDAC_GLOBAL_POINTER(VarargPInvokeStub, &VarargPInvokeStub)
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-CDAC_GLOBAL_POINTER(VarargPInvokeStub_RetBuffArg, &VarargPInvokeStub_RetBuffArg)
-#endif
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
-CDAC_GLOBAL_POINTER(TailCallJitHelper, &JIT_TailCall)
-#endif // TARGET_X86 && !UNIX_X86_ABI
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
