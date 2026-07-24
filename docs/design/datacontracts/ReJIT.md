@@ -26,26 +26,28 @@ IEnumerable<TargetNUInt> GetRejitIds(TargetPointer methodDesc)
 
 ## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| ProfControlBlock | GlobalEventMask | an `ICorProfiler` `COR_PRF_MONITOR` value |
-| ProfControlBlock | RejitOnAttachEnabled | cached value of the `ProfAPI_RejitOnAttach` configuration knob |
-| ProfControlBlock | MainProfilerProfInterface | pointer to the main profiler's `ICorProfilerCallback` interface, non-null means a main profiler is attached |
-| ProfControlBlock | NotificationProfilerCount | number of notification-only profilers currently attached |
-| ILCodeVersionNode | VersionId | `ILCodeVersion` ReJIT ID
-| ILCodeVersionNode | RejitState | a `RejitFlags` value |
-| ILCodeVersionNode | Deoptimized | whether this IL code version has been deoptimized |
+<!-- BEGIN GENERATED: usage contract=ReJIT version=c1 -->
+### Data descriptors used
 
-Global variables used:
-| Global Name | Type | Purpose |
-| --- | --- | --- |
-|ProfilerControlBlock | TargetPointer | pointer to the `ProfControlBlock` |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `ILCodeVersionNode` | `Deoptimized` | `uint32` | whether this IL code version has been deoptimized |
+| `ILCodeVersionNode` | `RejitState` | `uint32` | a RejitFlags value |
+| `ILCodeVersionNode` | `VersionId` | `nuint` | ReJIT ID of the IL code version node |
+| `ProfControlBlock` | `GlobalEventMask` | `uint64` | an ICorProfiler COR_PRF_MONITOR value |
+| `ProfControlBlock` | `RejitOnAttachEnabled` | `uint8` | cached value of the ProfAPI_RejitOnAttach configuration knob |
 
-Contracts used:
-| Contract Name |
-| --- |
-| CodeVersions |
+### Global variables used
+
+| Global | Type | Meaning |
+| --- | --- | --- |
+| `ProfilerControlBlock` | `pointer` | pointer to the ProfControlBlock |
+
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=ReJIT version=c1 -->
+
 
 ```csharp
 // see src/coreclr/inc/corprof.idl

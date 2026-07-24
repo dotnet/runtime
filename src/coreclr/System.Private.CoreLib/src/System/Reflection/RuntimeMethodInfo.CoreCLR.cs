@@ -69,8 +69,6 @@ namespace System.Reflection
         #endregion
 
         #region Private Methods
-        RuntimeMethodHandleInternal IRuntimeMethodInfo.Value => new RuntimeMethodHandleInternal(m_handle);
-
         private RuntimeType ReflectedTypeInternal => m_reflectedTypeCache.GetRuntimeType();
 
         private ParameterInfo[] FetchNonReturnParameters() =>

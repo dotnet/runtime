@@ -3358,6 +3358,14 @@ public:
     GenTreeCall* gtNewHelperCallNode(
         unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr, GenTree* arg4 = nullptr);
 
+#ifdef TARGET_WASM
+    // On wasm these helpers return void* (InitHelpers.InitClass/InitInstantiatedClass). Model them as
+    // value-returning so the call_indirect signature matches the compiled managed helper; the value is unused.
+    static constexpr var_types HelperInitClassRetType = TYP_I_IMPL;
+#else
+    static constexpr var_types HelperInitClassRetType = TYP_VOID;
+#endif // TARGET_WASM
+
     GenTreeCall* gtNewVirtualFunctionLookupHelperCallNode(
         unsigned helper, var_types type, GenTree* thisPtr, GenTree* methHnd, GenTree* clsHnd = nullptr);
 
@@ -4142,7 +4150,6 @@ public:
     void gtDispLclVarStructType(unsigned lclNum);
     void gtDispSsaName(unsigned lclNum, unsigned ssaNum, bool isDef);
     void gtDispClassLayout(ClassLayout* layout, var_types type);
-    void gtDispILLocation(const ILLocation& loc);
     void gtDispStmt(Statement* stmt, const char* msg = nullptr);
     void gtDispBlockStmts(BasicBlock* block);
     void gtPrintArgPrefix(GenTreeCall* call, CallArg* arg, char** bufp, unsigned* bufLength);
@@ -6647,9 +6654,6 @@ public:
         GCPOLL_INLINE
     };
 
-    // Initialize the per-block variable sets (used for liveness analysis).
-    void fgInitBlockVarSets();
-
     PhaseStatus StressSplitTree();
     void SplitTreesRandomly();
     void SplitTreesRemoveCommas();
@@ -6864,7 +6868,6 @@ public:
     PhaseStatus fgFindOperOrder();
 
 #ifdef TARGET_WASM
-    FlowGraphDfsTree* fgWasmDfs();
     PhaseStatus fgWasmEhFlow();
     void fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks, unsigned regionIndex, unsigned catchRetIndexLocalNum);
     PhaseStatus fgWasmControlFlow();
@@ -6902,9 +6905,6 @@ public:
 
     bool fgCastNeeded(GenTree* tree, var_types toType);
     bool fgCastRequiresHelper(var_types fromType, var_types toType, bool overflow = false);
-
-    void fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB);
-    void fgLoopCallMark();
 
     unsigned fgGetCodeEstimate(BasicBlock* block);
 
@@ -7187,10 +7187,6 @@ private:
 
     hashBv*               fgAvailableOutgoingArgTemps;
     ArrayStack<unsigned>* fgUsedSharedTemps = nullptr;
-
-    void fgSetRngChkTarget(GenTree* tree, bool delay = true);
-
-    BasicBlock* fgSetRngChkTargetInner(SpecialCodeKind kind, bool delay);
 
 #if REARRANGE_ADDS
     void fgMoveOpsLeft(GenTree* tree);
@@ -7500,10 +7496,6 @@ private:
 #endif
 
     PhaseStatus fgPromoteStructs();
-    void fgMorphLocalField(GenTree* tree, GenTree* parent);
-
-    // Reset the refCount for implicit byrefs.
-    void fgResetImplicitByRefRefCount();
 
     // Identify all candidates for last-use copy omission.
     PhaseStatus fgMarkImplicitByRefCopyOmissionCandidates();
@@ -8266,7 +8258,6 @@ public:
     GenTree*    optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth);
     GenTree*    optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind);
     GenTree*    optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
-    bool        optDoEarlyPropForBlock(BasicBlock* block);
     bool        optDoEarlyPropForFunc();
     PhaseStatus optEarlyProp();
     bool        optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
@@ -9222,7 +9213,6 @@ public:
 
     // Assertion Gen functions.
     void           optAssertionGen(GenTree* tree);
-    AssertionIndex optAssertionGenCast(GenTreeCast* cast);
     AssertionInfo  optCreateJTrueBoundsAssertion(GenTree* tree);
     AssertionInfo  optAssertionGenJtrue(GenTree* tree);
     AssertionIndex optCreateJtrueAssertions(GenTree* op1, GenTree* op2, bool equals);
@@ -9235,8 +9225,6 @@ public:
 
     // Assertion creation functions.
     AssertionIndex optCreateAssertion(GenTree* op1, GenTree* op2, bool equals);
-
-    bool optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange);
 
     void optCreateComplementaryAssertion(AssertionIndex assertionIndex);
 
@@ -9911,6 +9899,7 @@ public:
     void         funSetCurrentFunc(unsigned funcIdx);
     FuncInfoDsc* funGetFunc(unsigned funcIdx);
     unsigned int funGetFuncIdx(BasicBlock* block);
+    bool         bbIsInSameFunclet(BasicBlock* block1, BasicBlock* block2);
 
     // LIVENESS
 
@@ -12120,11 +12109,6 @@ public:
 
     CORINFO_CONST_LOOKUP compGetHelperFtn(CorInfoHelpFunc ftnNum);
 
-    // Several JIT/EE interface functions return a CorInfoType, and also return a
-    // class handle as an out parameter if the type is a value class.  Returns the
-    // size of the type these describe.
-    unsigned compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd);
-
 #ifdef DEBUG
     // Components used by the compiler may write unit test suites, and
     // have them run within this method.  They will be run only once per process, and only
@@ -12160,7 +12144,6 @@ public:
     unsigned m_totalHoistedExpressions     = 0;
 
     void AddLoopHoistStats();
-    void PrintPerMethodLoopHoistStats();
 
     static CritSecObject s_loopHoistStatsLock; // This lock protects the data structures below.
     static unsigned      s_loopsConsidered;
@@ -12233,11 +12216,7 @@ public:
 
     const char* compLocalVarName(unsigned varNum, unsigned offs);
     VarName     compVarName(regNumber reg, bool isFloatReg = false);
-    const char* compFPregVarName(unsigned fpReg, bool displayVar = false);
-    void        compDspSrcLinesByNativeIP(UNATIVE_OFFSET curIP);
-    void        compDspSrcLinesByLineNum(unsigned line, bool seek = false);
 #endif // DEBUG
-    const char* compRegNameForSize(regNumber reg, size_t size);
     const char* compRegVarName(regNumber reg, bool displayVar = false, bool isFloatReg = false);
 
     //-------------------------------------------------------------------------
@@ -12585,10 +12564,6 @@ public:
     // Returns the set (i.e., the domain of the result map) of nodes that are keys in m_nodeTestData, and
     // currently occur in the AST graph.
     NodeToIntMap* FindReachableNodesInNodeTestData();
-
-    // Node "from" is being eliminated, and being replaced by node "to".  If "from" had any associated
-    // test data, associate that data with "to".
-    void TransferTestDataToNode(GenTree* from, GenTree* to);
 
     // These are the methods that test that the various conditions implied by the
     // test attributes are satisfied.

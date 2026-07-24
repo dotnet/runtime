@@ -429,7 +429,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
 
         TargetPointer mtAddr = rts.GetMethodTable(mdh);
-        TypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
+        ITypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
         TargetPointer modulePtr = rts.GetModule(typeHandle);
         moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
 
@@ -742,7 +742,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             try
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-                ReadOnlySpan<TypeHandle> methodInst = rts.GetGenericMethodInstantiation(mdh);
+                ReadOnlySpan<ITypeHandle> methodInst = rts.GetGenericMethodInstantiation(mdh);
                 return ResolveGenericParam(rts, methodInst[index]);
             }
             catch (System.Exception) { return ((uint)ClrDataValueFlag.DEFAULT, -1); }
@@ -754,14 +754,14 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                 TargetPointer mtAddr = rts.GetMethodTable(mdh);
-                TypeHandle declaringType = rts.GetTypeHandle(mtAddr);
-                ReadOnlySpan<TypeHandle> typeInst = rts.GetInstantiation(declaringType);
+                ITypeHandle declaringType = rts.GetTypeHandle(mtAddr);
+                ReadOnlySpan<ITypeHandle> typeInst = rts.GetInstantiation(declaringType);
                 return ResolveGenericParam(rts, typeInst[index]);
             }
             catch (System.Exception) { return ((uint)ClrDataValueFlag.DEFAULT, -1); }
         }
 
-        private static (uint Flags, int Size) ResolveGenericParam(IRuntimeTypeSystem rts, TypeHandle resolvedType)
+        private static (uint Flags, int Size) ResolveGenericParam(IRuntimeTypeSystem rts, ITypeHandle resolvedType)
         {
             CorElementType elementType = rts.GetSignatureCorElementType(resolvedType);
             (uint flags, int size) = MapCorElementTypeToFlags(elementType);
@@ -946,14 +946,31 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         if (context.TryReadRegister((int)registerNumber, out TargetNUInt value))
             return value.Value;
 
-        // REGNUM_AMBIENT_SP is beyond the normal register range on every architecture.
-        // It represents the entry-time SP, not necessarily the current SP.
-        // Map it to the stack pointer as a best-effort approximation (see util.cpp).
-        int spRegisterNumber = GetStackPointerRegisterNumber(target);
-        if (spRegisterNumber >= 0 && context.TryReadRegister(spRegisterNumber, out value))
-            return value.Value;
+        if (registerNumber == GetAmbientStackPointerRegisterNumber(target))
+        {
+            // REGNUM_AMBIENT_SP represents the entry-time SP, not necessarily the
+            // current SP. Map it to SP as a best-effort approximation (see util.cpp).
+            int spRegisterNumber = GetStackPointerRegisterNumber(target);
+            if (spRegisterNumber >= 0 && context.TryReadRegister(spRegisterNumber, out value))
+                return value.Value;
+        }
 
         return 0;
+    }
+
+    private static uint GetAmbientStackPointerRegisterNumber(Target target)
+    {
+        RuntimeInfoArchitecture arch = target.Contracts.RuntimeInfo.GetTargetArchitecture();
+        return arch switch
+        {
+            RuntimeInfoArchitecture.X64 => 33,
+            RuntimeInfoArchitecture.X86 => 9,
+            RuntimeInfoArchitecture.Arm64 => 66,
+            RuntimeInfoArchitecture.Arm => 17,
+            RuntimeInfoArchitecture.LoongArch64 => 34,
+            RuntimeInfoArchitecture.RiscV64 => 34,
+            _ => uint.MaxValue,
+        };
     }
 
     private static int GetStackPointerRegisterNumber(Target target)
