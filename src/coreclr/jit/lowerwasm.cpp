@@ -921,6 +921,11 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicWithImm(node);
         }
 
+        case NI_PackedSimd_Shuffle:
+        {
+            return LowerHWIntrinsicNativeShuffle(node);
+        }
+
         case NI_PackedSimd_LoadScalarAndSplatVector128:
         case NI_PackedSimd_LoadScalarVector128:
         case NI_PackedSimd_LoadWideningVector128:
@@ -1316,6 +1321,141 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     return LowerNode(node);
 }
 
+// --------------------------------------------------------------------------------
+// LowerHWIntrinsicNativeShuffle: Lowers a PackedSimd Shuffle call with a possibly non-constant mask
+//
+// Arguments:
+//    node - The hardware intrinsic node.
+//
+// Notes:
+//  If the shuffle mask is a constant vector, it can be contained as an immediate and emitted. Otherwise,
+//  the shuffle is rewritten into two swizzles for the upper and lower input vectors and combined into the final result.
+GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
+{
+    assert(node->GetHWIntrinsicId() == NI_PackedSimd_Shuffle);
+
+    GenTree*  op1         = node->Op(1);
+    GenTree*  shuffleMask = node->Op(3);
+    var_types resultType  = node->TypeGet();
+
+    // No extra work to do if the shuffle is an in-range constant vector, it can be contained as an immediate and
+    // emitted.
+    if (shuffleMask->IsCnsVec())
+    {
+        const simd_t& mask       = shuffleMask->AsVecCon()->gtSimdVal;
+        bool          allInRange = true;
+        for (int i = 0; i < 16; i++)
+        {
+            if (mask.u8[i] >= 32)
+            {
+                allInRange = false;
+                break;
+            }
+        }
+        if (allInRange)
+        {
+            ContainCheckHWIntrinsic(node);
+            return node->gtNext;
+        }
+    }
+
+    // If the shuffle mask is not a constant vector or the mask is not in range, we will need to rewrite the shuffle
+    // into two swizzles: 1 to handle elements from the first vector, and 1 to handle elements from the second vector.
+    // The two swizzles will then be or'd together to produce the final result. We will be constructing IR like the
+    // following:
+    //  op1             = ...
+    //  op2             = ...
+    //                  /--* op2
+    //                  /--* LCL_VAR op2Tmp
+    //                  STORE_LCL_VAR op2Tmp
+    // originalMask     = ...
+    //                  /--* originalMask
+    //                  /--* LCL_VAR originalMaskTmp
+    //                  STORE_LCL_VAR originalMaskTmp
+    //  m0        = *   LCL_VAR originalMaskTmp
+    //                  /--*  op1 simd
+    //                  +--*  m0  simd
+    //   tmp1      = *  HWINTRINSIC   simd   byte    PackedSimd.Swizzle
+    //   op2Reload = *  LCL_VAR op2tmp
+    //   m1        = *  LCL_VAR originalMaskTmp
+    //   upperBnd  = *  CNS_VEC      simd   byte    <0x10, 0x10, ...>
+    //                   /--*  m1 simd
+    //                   +--*  upperBnd simd
+    //   upperMask = *  HWINTRINSIC   simd    byte    PackedSimd.Subtract
+    //                   /--*  op2Reload simd
+    //                   +--*  upperMask simd
+    //   tmp3      = *  HWINTRINSIC   simd   byte    PackedSimd.Swizzle
+    //                   /--*  tmp1 simd
+    //                   +--*  tmp3 simd
+    //   res       =  *  HWINTRINSIC   simd   byte    PackedSimd.Or
+
+    // op2 needs to be moved, replace with a local, but don't immediately reload
+    LIR::Use op2Use(BlockRange(), &node->Op(2), node);
+    op2Use.ReplaceWithLclVar(m_compiler);
+    GenTree* op2Reload = node->Op(2);
+    BlockRange().Remove(op2Reload);
+
+    // Shuffle mask will be used twice, replace with a local
+    LIR::Use     shuffleMaskUse(BlockRange(), &node->Op(3), node);
+    unsigned int shuffleMaskTmp = shuffleMaskUse.ReplaceWithLclVar(m_compiler);
+
+    // Do a swizzle of the first vector with the original shuffle mask (now loaded from a local), which will produce a
+    // vector with the elements from the first vector in the correct order, and zero's for all elements which correspond
+    // to the second vector.
+    GenTree* maskReload = node->Op(3);
+    GenTree* swizzle1 =
+        m_compiler->gtNewSimdHWIntrinsicNode(resultType, op1, maskReload, NI_PackedSimd_Swizzle, TYP_BYTE, 16);
+    BlockRange().InsertBefore(node, swizzle1);
+    LowerNode(swizzle1);
+
+    // Re-load op2
+    BlockRange().InsertBefore(node, op2Reload);
+    LowerNode(op2Reload);
+
+    // Re-load the original shuffle mask
+    GenTreeLclVar* maskReload2 = m_compiler->gtNewLclVarNode(shuffleMaskTmp, shuffleMask->TypeGet());
+    BlockRange().InsertBefore(node, maskReload2);
+    LowerNode(maskReload2);
+
+    // Create constant upper bound vector of <16, 16, ..., 16>
+    GenTreeVecCon* upperBound = m_compiler->gtNewVconNode(shuffleMask->TypeGet());
+    upperBound->EvaluateBroadcastInPlace(TYP_BYTE, static_cast<int64_t>(16));
+    BlockRange().InsertBefore(node, upperBound);
+    LowerNode(upperBound);
+
+    // Use the above to subtract 16 from each mask element to mark each element which corresponds to the lower vector as
+    // unused, leading to a zero in the result of the swizzle.
+    GenTree* upperMask = m_compiler->gtNewSimdHWIntrinsicNode(shuffleMask->TypeGet(), maskReload2, upperBound,
+                                                              NI_PackedSimd_Subtract, TYP_BYTE, 16);
+    BlockRange().InsertBefore(node, upperMask);
+    LowerNode(upperMask);
+
+    GenTree* swizzle2 =
+        m_compiler->gtNewSimdHWIntrinsicNode(resultType, op2Reload, upperMask, NI_PackedSimd_Swizzle, TYP_BYTE, 16);
+    BlockRange().InsertBefore(node, swizzle2);
+    LowerNode(swizzle2);
+
+    // Since we've left zero's for all the elements which correspond to the upper vector, we can just or the two
+    // swizzles together to get the final result.
+    GenTreeHWIntrinsic* result =
+        m_compiler->gtNewSimdHWIntrinsicNode(resultType, swizzle1, swizzle2, NI_PackedSimd_Or, TYP_BYTE, 16);
+    BlockRange().InsertBefore(node, result);
+
+    LIR::Use use;
+    if (BlockRange().TryGetUse(node, &use))
+    {
+        use.ReplaceWith(result);
+    }
+    else
+    {
+        result->SetUnusedValue();
+    }
+
+    BlockRange().Remove(node);
+
+    return LowerNode(result);
+}
+
 //----------------------------------------------------------------------------------------------
 // ContainCheckHWIntrinsic: Perform containment analysis for a hardware intrinsic node.
 //
@@ -1325,10 +1465,13 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-    if (HWIntrinsicInfo::HasImmediateOperand(intrinsicId))
+    if (HWIntrinsicInfo::HasImmediateOperand(intrinsicId) || node->GetHWIntrinsicId() == NI_PackedSimd_Shuffle)
     {
         GenTree* immOp = node->GetImmOp();
-        if (immOp->IsCnsIntOrI())
+        // An immediate operand for SIMD should either be:
+        // - An integer lane index OR
+        // - A constant vector (for example, for a shuffle)
+        if (immOp->IsCnsIntOrI() || immOp->IsCnsVec())
         {
             MakeSrcContained(node, immOp);
         }

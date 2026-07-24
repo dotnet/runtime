@@ -26,9 +26,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    // emitIns_Lane
-    // emitIns_Memarg_Lane
-
     const HWIntrinsic info(node);
     genConsumeMultiOpOperands(node);
 
@@ -40,7 +37,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             case HW_Category_SIMD:
             {
-                if ((info.id == NI_PackedSimd_Swizzle) && node->Op(2)->isContained())
+                if (info.id == NI_PackedSimd_Shuffle)
+                {
+                    simd16_t shuffleMask = info.GetImmediateVecOperand();
+                    GetEmitter()->emitIns_V128Imm(ins, shuffleMask.u8);
+                }
+                else if ((info.id == NI_PackedSimd_Swizzle) && node->Op(2)->isContained())
                 {
                     // A constant, fully in-range mask was lowered to an immediate i8x16.shuffle.
                     // prior codegen left the source on the value stack once (the mask

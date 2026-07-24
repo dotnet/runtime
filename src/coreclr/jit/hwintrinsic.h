@@ -1345,6 +1345,12 @@ struct HWIntrinsicInfo
                 *imm1Pos = 3;
                 break;
             }
+            case NI_PackedSimd_Shuffle:
+            {
+                // (v128, v128, shuffle_mask)
+                *imm1Pos = 3;
+                break;
+            }
             default:
             {
                 unreached();
@@ -1507,6 +1513,13 @@ struct HWIntrinsic final
         assert(FitsIn<uint8_t>(lane));
 
         return static_cast<uint8_t>(lane);
+    }
+
+    simd16_t GetImmediateVecOperand() const
+    {
+        GenTree* immOp = m_node->GetImmOp();
+        assert(immOp->IsCnsVec());
+        return immOp->AsVecCon()->gtSimdVal;
     }
 
     NamedIntrinsic      id;
