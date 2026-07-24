@@ -237,10 +237,7 @@ public class StackWalkDumpTests : DumpTestBase
         Assert.Equal((uint)expectedMaps.Length, rangesNeeded);
 
         ClrDataAddressRange[] ranges = new ClrDataAddressRange[rangesNeeded];
-        fixed (ClrDataAddressRange* rangesPtr = ranges)
-        {
-            hr = methodInstance.GetAddressRangesByILOffset(selectedMap.ilOffset, rangesNeeded, &rangesNeeded, rangesPtr);
-        }
+        hr = methodInstance.GetAddressRangesByILOffset(selectedMap.ilOffset, rangesNeeded, &rangesNeeded, ranges);
         AssertHResult(HResults.S_OK, hr);
         Assert.Equal((uint)expectedMaps.Length, rangesNeeded);
 

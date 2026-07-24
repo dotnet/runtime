@@ -322,7 +322,11 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         return hr;
     }
 
-    int IXCLRDataMethodInstance.GetAddressRangesByILOffset(uint ilOffset, uint rangesLen, uint* rangesNeeded, void* addressRanges)
+    int IXCLRDataMethodInstance.GetAddressRangesByILOffset(
+        uint ilOffset,
+        uint rangesLen,
+        uint* rangesNeeded,
+        [In, Out, MarshalUsing(CountElementName = nameof(rangesLen))] ClrDataAddressRange[]? addressRanges)
     {
         int hr = HResults.S_OK;
 
@@ -341,7 +345,6 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 out uint _);
 
             List<OffsetMapping> map = [.. mapEnumerable];
-            ClrDataAddressRange* ranges = (ClrDataAddressRange*)addressRanges;
             uint hits = 0;
 
             for (int i = 0; i < map.Count; i++)
@@ -350,11 +353,11 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 if (entry.ILOffset != ilOffset)
                     continue;
 
-                if (hits < rangesLen && ranges is not null)
+                if (addressRanges is not null && hits < addressRanges.Length)
                 {
                     uint nativeEndOffset = i == map.Count - 1 ? 0 : map[i + 1].NativeOffset;
-                    ranges[hits].startAddress = new TargetPointer(codeStart + entry.NativeOffset).ToClrDataAddress(_target);
-                    ranges[hits].endAddress = entry.ILOffset == (uint)CLRDataILOffsetMarker.CLRDATA_IL_OFFSET_EPILOG && nativeEndOffset == 0
+                    addressRanges[hits].startAddress = new TargetPointer(codeStart + entry.NativeOffset).ToClrDataAddress(_target);
+                    addressRanges[hits].endAddress = entry.ILOffset == (uint)CLRDataILOffsetMarker.CLRDATA_IL_OFFSET_EPILOG && nativeEndOffset == 0
                         ? default
                         : new TargetPointer(codeStart + nativeEndOffset).ToClrDataAddress(_target);
                 }
@@ -379,35 +382,30 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         {
             bool validateRangesNeeded = rangesNeeded is not null;
             uint rangesNeededLocal = 0;
-            bool validateAddressRanges = addressRanges is not null;
-            ClrDataAddressRange[] addressRangesLocal = new ClrDataAddressRange[rangesLen];
+            ClrDataAddressRange[]? addressRangesLocal = rangesLen > 0 ? new ClrDataAddressRange[rangesLen] : null;
 
-            fixed (ClrDataAddressRange* addressRangesLocalPtr = addressRangesLocal)
+            int hrLocal = _legacyImpl.GetAddressRangesByILOffset(
+                ilOffset,
+                rangesLen,
+                validateRangesNeeded ? &rangesNeededLocal : null,
+                addressRangesLocal);
+
+            Debug.ValidateHResult(hr, hrLocal);
+
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
             {
-                int hrLocal = _legacyImpl.GetAddressRangesByILOffset(
-                    ilOffset,
-                    rangesLen,
-                    validateRangesNeeded ? &rangesNeededLocal : null,
-                    validateAddressRanges ? addressRangesLocalPtr : null);
-
-                Debug.ValidateHResult(hr, hrLocal);
-
-                if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+                if (validateRangesNeeded)
                 {
-                    if (validateRangesNeeded)
-                    {
-                        Debug.Assert(rangesNeededLocal == *rangesNeeded, $"cDAC: {*rangesNeeded:x}, DAC: {rangesNeededLocal:x}");
-                    }
+                    Debug.Assert(rangesNeededLocal == *rangesNeeded, $"cDAC: {*rangesNeeded:x}, DAC: {rangesNeededLocal:x}");
+                }
 
-                    if (validateAddressRanges)
+                if (addressRangesLocal is not null && addressRanges is not null)
+                {
+                    int countToCheck = Math.Min(addressRangesLocal.Length, (int)rangesNeededLocal);
+                    for (int i = 0; i < countToCheck; i++)
                     {
-                        ClrDataAddressRange* ranges = (ClrDataAddressRange*)addressRanges;
-                        int countToCheck = Math.Min(addressRangesLocal.Length, (int)rangesNeededLocal);
-                        for (int i = 0; i < countToCheck; i++)
-                        {
-                            Debug.Assert(addressRangesLocal[i].startAddress == ranges[i].startAddress, $"StartAddress - cDAC: {ranges[i].startAddress:x}, DAC: {addressRangesLocal[i].startAddress:x}");
-                            Debug.Assert(addressRangesLocal[i].endAddress == ranges[i].endAddress, $"EndAddress - cDAC: {ranges[i].endAddress:x}, DAC: {addressRangesLocal[i].endAddress:x}");
-                        }
+                        Debug.Assert(addressRangesLocal[i].startAddress == addressRanges[i].startAddress, $"StartAddress - cDAC: {addressRanges[i].startAddress:x}, DAC: {addressRangesLocal[i].startAddress:x}");
+                        Debug.Assert(addressRangesLocal[i].endAddress == addressRanges[i].endAddress, $"EndAddress - cDAC: {addressRanges[i].endAddress:x}, DAC: {addressRangesLocal[i].endAddress:x}");
                     }
                 }
             }

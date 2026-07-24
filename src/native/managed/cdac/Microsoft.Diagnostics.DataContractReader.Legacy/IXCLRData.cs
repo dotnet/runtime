@@ -618,7 +618,7 @@ public unsafe partial interface IXCLRDataMethodInstance
         uint ilOffset,
         uint rangesLen,
         uint* rangesNeeded,
-        /*CLRDATA_ADDRESS_RANGE* */ void* addressRanges);
+        [In, Out, MarshalUsing(CountElementName = nameof(rangesLen))] ClrDataAddressRange[]? addressRanges);
 
     [PreserveSig]
     int GetILAddressMap(
