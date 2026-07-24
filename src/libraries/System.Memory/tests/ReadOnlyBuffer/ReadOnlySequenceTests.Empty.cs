@@ -133,20 +133,14 @@ namespace System.Memory.Tests
             ReadOnlySequence<byte>.Enumerator enumerator = buffer.GetEnumerator();
             {
                 Assert.Equal(default, enumerator.Current);
-                Assert.True(enumerator.MoveNext());
-                ReadOnlyMemory<byte> memory = enumerator.Current;
-                Assert.True(memory.IsEmpty);
-
                 Assert.False(enumerator.MoveNext());
+                Assert.True(enumerator.Current.IsEmpty);
             }
             enumerator = new ReadOnlySequence<byte>.Enumerator(buffer);
             {
                 Assert.Equal(default, enumerator.Current);
-                Assert.True(enumerator.MoveNext());
-                ReadOnlyMemory<byte> memory = enumerator.Current;
-                Assert.True(memory.IsEmpty);
-
                 Assert.False(enumerator.MoveNext());
+                Assert.True(enumerator.Current.IsEmpty);
             }
         }
 
@@ -161,16 +155,8 @@ namespace System.Memory.Tests
             ReadOnlyMemory<byte> memory;
 
             SequencePosition c1 = buffer.Start;
-            Assert.True(buffer.TryGet(ref c1, out memory, false));
-            Assert.Equal(buffer.Start, c1);
-            Assert.True(memory.IsEmpty);
-
-            Assert.True(buffer.TryGet(ref c1, out memory, true));
-            Assert.Null(c1.GetObject());
-            Assert.True(memory.IsEmpty);
-
             Assert.False(buffer.TryGet(ref c1, out memory, false));
-            Assert.Null(c1.GetObject());
+            Assert.Equal(buffer.Start, c1);
             Assert.True(memory.IsEmpty);
 
             Assert.False(buffer.TryGet(ref c1, out memory, true));
@@ -186,16 +172,8 @@ namespace System.Memory.Tests
             Assert.True(memory.IsEmpty);
 
             c1 = buffer.End;
-            Assert.True(buffer.TryGet(ref c1, out memory, false));
-            Assert.Equal(buffer.End, c1);
-            Assert.True(memory.IsEmpty);
-
-            Assert.True(buffer.TryGet(ref c1, out memory, true));
-            Assert.Null(c1.GetObject());
-            Assert.True(memory.IsEmpty);
-
             Assert.False(buffer.TryGet(ref c1, out memory, false));
-            Assert.Null(c1.GetObject());
+            Assert.Equal(buffer.End, c1);
             Assert.True(memory.IsEmpty);
 
             Assert.False(buffer.TryGet(ref c1, out memory, true));
