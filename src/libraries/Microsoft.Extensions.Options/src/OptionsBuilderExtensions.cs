@@ -33,18 +33,29 @@ namespace Microsoft.Extensions.DependencyInjection
             optionsBuilder.Services.TryAddTransient<IStartupValidator, StartupValidator>();
             optionsBuilder.Services.TryAddEnumerable(ServiceDescriptor.Transient<IAsyncStartupValidator, StartupValidator>());
             optionsBuilder.Services.AddOptions<StartupValidatorOptions>()
-                .Configure<IOptionsMonitor<TOptions>, IOptionsFactory<TOptions>>((vo, monitor, factory) =>
+                .Configure<IOptionsMonitor<TOptions>, IOptionsFactory<TOptions>, IOptionsMonitorCache<TOptions>>((vo, monitor, factory, cache) =>
                 {
                     // Sync path (custom sync-only IStartupValidator): force evaluation through the monitor,
                     // which runs every validator, including an async validator's fail-fast synchronous Validate.
                     vo._validators[(typeof(TOptions), name)] = () => monitor.Get(name);
 
-                    // Async path: run the complete validation (both sync and async validators) for this (type, name).
+                    // Async path: run the complete validation (both sync and async validators) for this (type, name)
+                    // and seed the monitor cache with the validated instance so the first synchronous access after
+                    // startup returns it instead of re-running the throwing synchronous Validate.
                     vo._asyncValidators[(typeof(TOptions), name)] = async (CancellationToken ct) =>
                     {
                         if (factory is OptionsFactory<TOptions> asyncFactory)
                         {
-                            await asyncFactory.CreateAsync(name, ct).ConfigureAwait(false);
+                            TOptions validated = await asyncFactory.CreateAsync(name, ct).ConfigureAwait(false);
+                            if (cache is OptionsCache<TOptions> optionsCache)
+                            {
+                                optionsCache.AddOrReplace(name, validated);
+                            }
+                            else
+                            {
+                                cache.TryRemove(name);
+                                cache.TryAdd(name, validated);
+                            }
                         }
                         else
                         {

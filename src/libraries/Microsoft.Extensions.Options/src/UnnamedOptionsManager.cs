@@ -11,10 +11,21 @@ namespace Microsoft.Extensions.Options
         where TOptions : class
     {
         private readonly IOptionsFactory<TOptions> _factory;
+        private readonly IOptionsMonitorCache<TOptions>? _validatedCache;
         private object? _syncObj;
         private volatile TOptions? _value;
 
         public UnnamedOptionsManager(IOptionsFactory<TOptions> factory) => _factory = factory;
+
+        public UnnamedOptionsManager(IOptionsFactory<TOptions> factory, IOptionsMonitorCache<TOptions> cache)
+        {
+            _factory = factory;
+
+            if (factory is OptionsFactory<TOptions> optionsFactory && optionsFactory.HasAsyncValidators)
+            {
+                _validatedCache = cache;
+            }
+        }
 
         public TOptions Value
         {
@@ -27,9 +38,21 @@ namespace Microsoft.Extensions.Options
 
                 lock (_syncObj ?? Interlocked.CompareExchange(ref _syncObj, new object(), null) ?? _syncObj)
                 {
-                    return _value ??= _factory.Create(Options.DefaultName);
+                    return _value ??= CreateValue();
                 }
             }
+        }
+
+        private TOptions CreateValue()
+        {
+            // For an async-validated type, prefer the value validated during startup (seeded into the shared cache) so a
+            // synchronous access returns the last validated value instead of re-running the throwing synchronous Validate.
+            if (_validatedCache is OptionsCache<TOptions> optionsCache && optionsCache.TryGetValue(Options.DefaultName, out TOptions? validated))
+            {
+                return validated;
+            }
+
+            return _factory.Create(Options.DefaultName);
         }
     }
 }

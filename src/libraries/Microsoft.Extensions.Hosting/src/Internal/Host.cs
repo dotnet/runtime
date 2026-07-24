@@ -93,8 +93,9 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 try
                 {
-                    // Run startup validation before resolving hosted services so that invalid
-                    // configuration fails fast, before any hosted service is constructed.
+                    // Run startup validation before resolving hosted services so that invalid configuration
+                    // fails fast and a hosted service reading validated options in its constructor observes
+                    // the startup-validated instance.
                     IStartupValidator? startupValidator = Services.GetService<IStartupValidator>();
                     if (startupValidator is not null and not IAsyncStartupValidator)
                     {
