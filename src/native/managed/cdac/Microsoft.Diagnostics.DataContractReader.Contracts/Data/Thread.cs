@@ -30,8 +30,11 @@ internal sealed partial class Thread : IData<Thread>
     [Field] public partial uint InteropDebuggingHijacked { get; }
     [Field] public partial ObjectHandle CurrentCustomDebuggerNotification { get; }
 
+    [DataDescriptorDependency(nameof(RuntimeThreadLocals), "pointer")]
     public RuntimeThreadLocals? RuntimeThreadLocals { get; private set; }
+
     // Descriptor-optional: not present on all platforms.
+    [DataDescriptorDependency(nameof(ThreadHandle), "pointer")]
     public TargetPointer ThreadHandle { get; private set; }
 
     partial void OnInit(Target target, TargetPointer address)

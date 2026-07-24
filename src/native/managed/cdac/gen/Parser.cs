@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -218,6 +219,7 @@ internal static class Parser
                 Name: prop.Name,
                 Kind: MemberKind.Field,
                 DescriptorOrFieldName: prop.Name,
+                DescriptorNativeType: null,
                 PropertyOrReturnTypeFqn: fqnType,
                 ReadKind: readKind,
                 DataTypeArgumentFqn: dataTypeArg,
@@ -263,6 +265,7 @@ internal static class Parser
                 Name: prop.Name,
                 Kind: MemberKind.Field,
                 DescriptorOrFieldName: descriptorName,
+                DescriptorNativeType: GetDescriptorNativeType(prop.Type, readKind, boolUnderlyingType),
                 PropertyOrReturnTypeFqn: fqnType,
                 ReadKind: readKind,
                 DataTypeArgumentFqn: dataTypeArg,
@@ -291,6 +294,7 @@ internal static class Parser
                 Name: prop.Name,
                 Kind: MemberKind.FieldAddress,
                 DescriptorOrFieldName: descriptorName,
+                DescriptorNativeType: "pointer",
                 PropertyOrReturnTypeFqn: prop.Type.ToDisplayString(s_propertyTypeFormat),
                 ReadKind: FieldReadKind.Pointer,
                 DataTypeArgumentFqn: null,
@@ -310,6 +314,7 @@ internal static class Parser
                 Name: prop.Name,
                 Kind: MemberKind.InstanceDataStart,
                 DescriptorOrFieldName: prop.Name,
+                DescriptorNativeType: null,
                 PropertyOrReturnTypeFqn: prop.Type.ToDisplayString(s_propertyTypeFormat),
                 ReadKind: FieldReadKind.Pointer,
                 DataTypeArgumentFqn: null,
@@ -353,6 +358,7 @@ internal static class Parser
             Name: method.Name,
             Kind: kind,
             DescriptorOrFieldName: fieldName,
+            DescriptorNativeType: null,
             PropertyOrReturnTypeFqn: method.ReturnType.ToDisplayString(s_propertyTypeFormat),
             ReadKind: FieldReadKind.Pointer,
             DataTypeArgumentFqn: null,
@@ -405,6 +411,76 @@ internal static class Parser
             _ => (FieldReadKind.Primitive, fqn, isNullable),
         };
     }
+
+    private static string GetDescriptorNativeType(
+        ITypeSymbol type,
+        FieldReadKind readKind,
+        string? boolUnderlyingType)
+    {
+        if (type is INamedTypeSymbol named &&
+            named.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T &&
+            named.TypeArguments.Length == 1)
+        {
+            type = named.TypeArguments[0];
+        }
+
+        return readKind switch
+        {
+            FieldReadKind.Bool => NativeTypeNameFromKeyword(boolUnderlyingType ?? "byte"),
+            FieldReadKind.Pointer or FieldReadKind.DataPointer => "pointer",
+            FieldReadKind.NUInt => "nuint",
+            FieldReadKind.NInt => "nint",
+            FieldReadKind.CodePointer => "CodePointer",
+            FieldReadKind.Primitive or FieldReadKind.DataInPlace => NativeTypeNameFromType(type),
+            _ => throw new InvalidOperationException($"Unsupported descriptor field read kind '{readKind}'."),
+        };
+    }
+
+    private static string NativeTypeNameFromType(ITypeSymbol type)
+    {
+        if (type.TypeKind == TypeKind.Enum &&
+            type is INamedTypeSymbol { EnumUnderlyingType: ITypeSymbol underlyingType })
+        {
+            type = underlyingType;
+        }
+
+        if (type is IArrayTypeSymbol array)
+            return $"{NativeTypeNameFromType(array.ElementType)}[]";
+
+        return type.SpecialType switch
+        {
+            SpecialType.System_Boolean => "uint8",
+            SpecialType.System_SByte => "int8",
+            SpecialType.System_Byte => "uint8",
+            SpecialType.System_Char => "uint16",
+            SpecialType.System_Int16 => "int16",
+            SpecialType.System_UInt16 => "uint16",
+            SpecialType.System_Int32 => "int32",
+            SpecialType.System_UInt32 => "uint32",
+            SpecialType.System_Int64 => "int64",
+            SpecialType.System_UInt64 => "uint64",
+            SpecialType.System_IntPtr => "nint",
+            SpecialType.System_UIntPtr => "nuint",
+            SpecialType.System_String => "string",
+            _ => type.Name,
+        };
+    }
+
+    private static string NativeTypeNameFromKeyword(string type) =>
+        type switch
+        {
+            "bool" or "byte" => "uint8",
+            "sbyte" => "int8",
+            "char" or "ushort" => "uint16",
+            "short" => "int16",
+            "uint" => "uint32",
+            "int" => "int32",
+            "ulong" => "uint64",
+            "long" => "int64",
+            "nuint" => "nuint",
+            "nint" => "nint",
+            _ => throw new InvalidOperationException($"Unsupported boolean descriptor storage type '{type}'."),
+        };
 
     private static bool ImplementsIData(ITypeSymbol type)
     {

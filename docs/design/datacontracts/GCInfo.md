@@ -120,15 +120,22 @@ public record struct GcSlotEnumerationOptions
 
 ## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| _none_ |  | |
+<!-- BEGIN GENERATED: usage contract=GCInfo version=c1 -->
+### Data descriptors used
 
-Contracts used:
+_None._
+
+### Global variables used
+
+_None._
+
+### Contracts used
+
 | Contract Name |
 | --- |
-| _none_ |
+| `RuntimeInfo` |
+<!-- END GENERATED: usage contract=GCInfo version=c1 -->
+
 
 Constants:
 | Constant Name | Meaning | Value |

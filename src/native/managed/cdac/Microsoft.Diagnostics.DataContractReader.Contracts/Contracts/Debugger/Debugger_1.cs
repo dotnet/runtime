@@ -139,8 +139,7 @@ internal readonly struct Debugger_1 : IDebugger
         if (maxHijackFunctions == 0)
             return HijackKind.None;
 
-        Target.TypeInfo memoryRangeTypeInfo = _target.GetTypeInfo(DataType.MemoryRange);
-        uint stride = memoryRangeTypeInfo.Size!.Value;
+        uint stride = Data.MemoryRange.GetSize(_target);
 
         for (uint i = 0; i < maxHijackFunctions; i++)
         {
@@ -178,7 +177,7 @@ internal readonly struct Debugger_1 : IDebugger
         if (index >= maxHijackFunctions)
             return false;
 
-        uint stride = _target.GetTypeInfo(DataType.MemoryRange).Size!.Value;
+        uint stride = Data.MemoryRange.GetSize(_target);
         TargetPointer entryAddress = debugger.RgHijackFunction + (ulong)(index * stride);
         range = _target.ProcessedData.GetOrAdd<Data.MemoryRange>(entryAddress);
         return true;
