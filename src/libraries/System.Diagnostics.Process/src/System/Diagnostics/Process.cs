@@ -1786,7 +1786,7 @@ namespace System.Diagnostics
             }
 
             CheckDisposed();
-            EnsureState(State.HaveId);
+            EnsureState(State.HaveId | State.IsLocal);
 
             if (TryGetExitStatus(out ProcessExitStatus? exitStatus))
             {
@@ -1806,7 +1806,7 @@ namespace System.Diagnostics
             }
 
             // Check the cached exit status one last time, in case the process exited between the previous check and the handle open attempt.
-            return TryGetExitStatus(out exitStatus) ? exitStatus : throw new InvalidOperationException(SR.ProcessHasExited);
+            return TryGetExitStatus(out exitStatus) ? exitStatus : throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId.ToString()));
         }
 
         /// <inheritdoc cref="SafeProcessHandle.TryWaitForExit(TimeSpan, out ProcessExitStatus?)"/>
@@ -1821,7 +1821,7 @@ namespace System.Diagnostics
             }
 
             CheckDisposed();
-            EnsureState(State.HaveId);
+            EnsureState(State.HaveId | State.IsLocal);
             _ = ProcessUtils.ToTimeoutMilliseconds(timeout);
 
             if (TryGetExitStatus(out exitStatus))
@@ -1841,7 +1841,7 @@ namespace System.Diagnostics
                 }
             }
 
-            return TryGetExitStatus(out exitStatus) ? true : throw new InvalidOperationException(SR.ProcessHasExited);
+            return TryGetExitStatus(out exitStatus) ? true : throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId.ToString()));
         }
 
         /// <inheritdoc cref="SafeProcessHandle.WaitForExitAsync(CancellationToken)"/>
@@ -1856,7 +1856,7 @@ namespace System.Diagnostics
             }
 
             CheckDisposed();
-            EnsureState(State.HaveId);
+            EnsureState(State.HaveId | State.IsLocal);
 
             if (TryGetExitStatus(out ProcessExitStatus? exitStatus))
             {
@@ -1876,7 +1876,7 @@ namespace System.Diagnostics
             }
 
             // Check the cached exit status one last time, in case the process exited between the previous check and the handle open attempt.
-            return TryGetExitStatus(out exitStatus) ? exitStatus : throw new InvalidOperationException(SR.ProcessHasExited);
+            return TryGetExitStatus(out exitStatus) ? exitStatus : throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId.ToString()));
         }
 
         /// <devdoc>
