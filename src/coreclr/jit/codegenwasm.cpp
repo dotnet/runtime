@@ -116,6 +116,28 @@ void CodeGen::genBeginFnProlog()
         GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
         localsCount += decl.Count;
     }
+
+    genInitImageBaseLocal(func);
+}
+
+//------------------------------------------------------------------------
+// genInitImageBaseLocal: initialize the wasm local caching the image base, if this
+//   function has one.
+//
+// Arguments:
+//   func - the function or funclet whose prolog is being generated
+//
+// Notes:
+//   Emitted in the prolog, which dominates every use. The imageBase global is immutable,
+//   so the cached value never needs refreshing.
+//
+void CodeGen::genInitImageBaseLocal(FuncInfoDsc* func)
+{
+    if (func->funWasmImageBaseLocalIndex != UINT_MAX)
+    {
+        GetEmitter()->emitImageBaseGlobal();
+        GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, func->funWasmImageBaseLocalIndex);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -442,6 +464,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
         localsCount += decl.Count;
     }
+
+    genInitImageBaseLocal(func);
 
     // All the funclet params are used from their home registers, so nothing
     // needs homing here.
