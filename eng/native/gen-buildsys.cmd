@@ -14,17 +14,23 @@ set "__repoRoot=%~dp0..\.."
 for %%i in ("%__repoRoot%") do set "__repoRoot=%%~fi"
 
 :: Set up the EMSDK environment before setlocal so that it propagates to the caller.
-if /i "%__Os%" == "browser" (
-    if "%EMSDK_PATH%" == "" (
-        if not exist "%__repoRoot%\src\mono\browser\emsdk" (
-            echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
-            exit /B 1
-        )
-        set "EMSDK_QUIET=1" && call "%__repoRoot%\src\mono\browser\emsdk\emsdk_env.cmd"
-    ) else (
-        set "EMSDK_QUIET=1" && call "%EMSDK_PATH%\emsdk_env.cmd"
-    )
+:: Written without a parenthesized block so that %WASM_TOOL_CACHE_RESULT% expands without
+:: delayed expansion, which cannot be enabled here without discarding emsdk_env's variables.
+if /i not "%__Os%" == "browser" goto :AfterEmsdkEnv
+if not "%EMSDK_PATH%" == "" goto :CallEmsdkEnv
+
+call "%__repoRoot%\eng\wasm\wasm-tool-cache.cmd" emscripten "%__repoRoot%\src\mono\browser\emscripten-version.txt" "%__repoRoot%"
+if "%WASM_TOOL_CACHE_RESULT%" == "" (
+    echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
+    exit /B 1
 )
+set "EMSDK_PATH=%WASM_TOOL_CACHE_RESULT%"
+
+:CallEmsdkEnv
+set "EMSDK_QUIET=1"
+call "%EMSDK_PATH%\emsdk_env.cmd"
+
+:AfterEmsdkEnv
 
 setlocal enabledelayedexpansion
 

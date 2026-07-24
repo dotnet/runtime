@@ -83,8 +83,8 @@
           Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'"
           BeforeTargets="CoreTest"
           DependsOnTargets="ProvisionWasmtime"
-          Inputs="$(WasmtimeDir)\.stamp-wasmtime-version.txt"
-          Outputs="$(WasmtimeDirForHelixPayload)\.stamp-wasmtime-version.txt">
+          Inputs="$(WasmtimeStampFile)"
+          Outputs="$(WasmtimeDirForHelixPayload)wasmtime.stamp">
     <ItemGroup>
       <_WasmtimeFilesToStage Include="$(WasmtimeDir)**\*" />
     </ItemGroup>
@@ -92,6 +92,7 @@
     <Copy SourceFiles="@(_WasmtimeFilesToStage)"
           DestinationFiles="@(_WasmtimeFilesToStage->'$(WasmtimeDirForHelixPayload)%(RecursiveDir)%(FileName)%(Extension)')"
           SkipUnchangedFiles="true" />
+    <Touch Files="$(WasmtimeDirForHelixPayload)wasmtime.stamp" AlwaysCreate="true" />
   </Target>
   <PropertyGroup>
     <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>

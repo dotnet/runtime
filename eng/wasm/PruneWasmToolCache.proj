@@ -1,0 +1,56 @@
+<!--
+  Prunes the shared wasm tool cache described in eng/wasm/WasmToolCache.props, removing every
+  entry that the current checkout does not reference. Because entries are keyed by version,
+  stale versions accumulate as the pinned versions move forward.
+
+  Run with: ./build.sh -s clean.wasmtools
+  Add /p:PruneAllWasmTools=true to remove the cache entirely.
+-->
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
+
+  <Target Name="PruneWasmToolCache" BeforeTargets="Build">
+    <ItemGroup>
+      <!-- Everything the current checkout can use, by directory and by sentinel. -->
+      <_WasmToolInUse Include="$(EmscriptenSdkCacheDir);$(EmscriptenSdkStampFile)" />
+      <_WasmToolInUse Include="$(WasiSdkCacheDir);$(WasiSdkStampFile)" />
+      <_WasmToolInUse Include="$(WasmtimeCacheDir);$(WasmtimeStampFile)" />
+      <_WasmToolInUse Include="$(ChromeDir);$(ChromeStampFile)" Condition="'$(ChromeVersion)' != ''" />
+      <_WasmToolInUse Include="$(ChromeDriverDir);$(ChromeDriverStampFile)" Condition="'$(ChromeVersion)' != ''" />
+      <_WasmToolInUse Include="$(V8Dir);$(V8StampFile)" Condition="'$(V8Version)' != ''" />
+      <_WasmToolInUse Include="$(FirefoxDir);$(FirefoxStampFile)" Condition="'$(FirefoxRevision)' != ''" />
+      <_WasmToolInUse Include="$(GeckoDriverDir);$(GeckoDriverStampFile)" Condition="'$(FirefoxRevision)' != ''" />
+
+      <_WasmToolCacheEntry Include="$([System.IO.Directory]::GetDirectories('$(WasmToolCacheDir)'))"
+                           Condition="Exists('$(WasmToolCacheDir)')" />
+    </ItemGroup>
+
+    <!-- One level down from the cache root is <tool>/, two levels down are the entries. -->
+    <ItemGroup>
+      <_WasmToolCacheItem Include="$([System.IO.Directory]::GetFileSystemEntries('%(_WasmToolCacheEntry.Identity)'))" />
+      <_WasmToolInUseNormalized Include="@(_WasmToolInUse->'%(Identity)'->TrimEnd('\/'))" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(PruneAllWasmTools)' != 'true'">
+      <_WasmToolToPrune Include="@(_WasmToolCacheItem)"
+                        Exclude="@(_WasmToolInUseNormalized)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(PruneAllWasmTools)' == 'true'">
+      <_WasmToolToPrune Include="@(_WasmToolCacheItem)" />
+    </ItemGroup>
+
+    <Message Importance="High" Condition="'@(_WasmToolToPrune)' == ''"
+             Text="Nothing to prune in '$(WasmToolCacheDir)'." />
+    <Message Importance="High" Condition="'@(_WasmToolToPrune)' != ''"
+             Text="Pruning stale wasm tool cache entry '%(_WasmToolToPrune.Identity)'" />
+
+    <Delete Files="@(_WasmToolToPrune)" ContinueOnError="true" />
+    <RemoveDir Directories="@(_WasmToolToPrune)" ContinueOnError="true" />
+  </Target>
+
+</Project>

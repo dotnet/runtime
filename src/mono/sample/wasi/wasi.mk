@@ -9,7 +9,8 @@ endif
 CONFIG?=Release
 
 WASM_DEFAULT_BUILD_ARGS?=/p:TargetArchitecture=wasm /p:TargetOS=wasi /p:Configuration=$(CONFIG)
-WASMTIME_PROV_DIR=$(realpath $(TOP)/artifacts/obj/wasmtime)
+# Resolve wasmtime from the shared wasm tool cache (see eng/wasm/WasmToolCache.props).
+WASMTIME_PROV_DIR=$(shell . $(TOP)/eng/wasm/wasm-tool-cache.sh && wasm_tool_cache_dir wasmtime $(TOP)/src/mono/wasi/wasmtime-version.txt $(TOP))
 WASMTIME_PROV_PATH=${WASMTIME_PROV_DIR}/wasmtime
 
 all: publish
