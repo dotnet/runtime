@@ -2272,9 +2272,22 @@ void CodeGen::genRangeCheck(GenTree* tree)
     assert(tree->OperIs(GT_BOUNDS_CHECK));
     GenTreeBoundsChk* boundsCheck = tree->AsBoundsChk();
     genConsumeOperands(boundsCheck);
-    GetEmitter()->emitIns(INS_I_ge_u);
+#ifdef FEATURE_SIMD
+    if (varTypeIsSIMD(boundsCheck->GetIndex()->TypeGet()))
+    {
+        GetEmitter()->emitIns(INS_i8x16_splat);
+        GetEmitter()->emitIns(INS_i8x16_ge_u);
+        GetEmitter()->emitIns(INS_v128_any_true);
+    }
+    else
+#endif
+    {
+        GetEmitter()->emitIns(INS_I_ge_u);
+    }
+
     genJumpToThrowHlpBlk(boundsCheck->gtThrowKind);
 }
+
 
 //------------------------------------------------------------------------
 // genCodeForIndexAddr: Produce code for a GT_INDEX_ADDR node.

@@ -39,9 +39,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 if (info.id == NI_PackedSimd_Shuffle)
                 {
-                    assert(node->Op(3)->IsCnsVec());
-                    simd16_t shuffleMask = node->Op(3)->AsVecCon()->gtSimdVal;
-                    GetEmitter()->emitIns_V128Imm(ins, shuffleMask.u8);
+                    JITDUMP("Lowered to a native shuffle instruction, so the mask is encoded as an immediate");
+                    assert(node->Op(3)->isContained());
+                    GetEmitter()->emitIns_V128Imm(ins, node->Op(3)->AsVecCon()->gtSimdVal.u8);
                 }
                 else if ((info.id == NI_PackedSimd_Swizzle) && node->Op(2)->isContained())
                 {

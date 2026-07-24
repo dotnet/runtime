@@ -1375,13 +1375,18 @@ GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
     //                  /--* LCL_VAR originalMaskTmp
     //                  STORE_LCL_VAR originalMaskTmp
     //  m0        = *   LCL_VAR originalMaskTmp
+    //  b0        = *   CNS_INT       int    31
+    //                  /--* m0 simd
+    //                  +--* b0  int
+    //                  GT_BOUNDS_CHECK RNG_CHK_FAIL
+    //  m1        = *   LCL_VAR originalMaskTmp
     //                  /--*  op1 simd
-    //                  +--*  m0  simd
+    //                  +--*  m1  simd
     //   tmp1      = *  HWINTRINSIC   simd   byte    PackedSimd.Swizzle
     //   op2Reload = *  LCL_VAR op2tmp
-    //   m1        = *  LCL_VAR originalMaskTmp
+    //   m2        = *  LCL_VAR originalMaskTmp
     //   upperBnd  = *  CNS_VEC      simd   byte    <0x10, 0x10, ...>
-    //                   /--*  m1 simd
+    //                   /--*  m2 simd
     //                   +--*  upperBnd simd
     //   upperMask = *  HWINTRINSIC   simd    byte    PackedSimd.Subtract
     //                   /--*  op2Reload simd
@@ -1397,16 +1402,30 @@ GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
     GenTree* op2Reload = node->Op(2);
     BlockRange().Remove(op2Reload);
 
-    // Shuffle mask will be used twice, replace with a local
+    // Shuffle mask will be used several times, replace with a local
     LIR::Use     shuffleMaskUse(BlockRange(), &node->Op(3), node);
     unsigned int shuffleMaskTmp = shuffleMaskUse.ReplaceWithLclVar(m_compiler);
+    GenTree* maskReloadForChk = node->Op(3);
+
+    // Insert a bounds check for the shuffle mask. A bounds check against a simd value will be handled by codegen as a
+    // GreaterThanAny(vec, bound) type operation.
+    GenTree* bound = m_compiler->gtNewIconNode(32);
+    BlockRange().InsertBefore(node, bound);
+    LowerNode(bound);
+
+    GenTree* boundsCheck = new (m_compiler, GT_BOUNDS_CHECK) GenTreeBoundsChk(maskReloadForChk, bound, SCK_RNGCHK_FAIL);
+    BlockRange().InsertBefore(node, boundsCheck);
+    LowerNode(boundsCheck);
 
     // Do a swizzle of the first vector with the original shuffle mask (now loaded from a local), which will produce a
     // vector with the elements from the first vector in the correct order, and zero's for all elements which correspond
     // to the second vector.
-    GenTree* maskReload = node->Op(3);
+    GenTree* maskReload1 = m_compiler->gtNewLclVarNode(shuffleMaskTmp, shuffleMask->TypeGet());
+    BlockRange().InsertBefore(node, maskReload1);
+    LowerNode(maskReload1);
+
     GenTree* swizzle1 =
-        m_compiler->gtNewSimdHWIntrinsicNode(resultType, op1, maskReload, NI_PackedSimd_Swizzle, TYP_BYTE, 16);
+        m_compiler->gtNewSimdHWIntrinsicNode(resultType, op1, maskReload1, NI_PackedSimd_Swizzle, TYP_BYTE, 16);
     BlockRange().InsertBefore(node, swizzle1);
     LowerNode(swizzle1);
 
