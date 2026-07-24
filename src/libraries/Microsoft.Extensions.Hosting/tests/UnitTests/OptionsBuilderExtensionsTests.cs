@@ -494,6 +494,30 @@ namespace Microsoft.Extensions.Hosting.Tests
             }
         }
 
+        [Fact]
+        public async Task ValidateOnStart_MultipleFailingAsyncStartupValidators_RunAllAndAggregateFailures()
+        {
+            var first = new CountingThrowingAsyncStartupValidator("first failed");
+            var second = new CountingThrowingAsyncStartupValidator("second failed");
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                services.AddSingleton<IAsyncStartupValidator>(first);
+                services.AddSingleton<IAsyncStartupValidator>(second);
+            });
+
+            using (var host = hostBuilder.Build())
+            {
+                AggregateException error = await Assert.ThrowsAsync<AggregateException>(async () => await host.StartAsync());
+
+                // Every validator runs (no short-circuit on the first failure) and all failures are reported.
+                Assert.Equal(2, error.InnerExceptions.Count);
+                Assert.All(error.InnerExceptions, e => Assert.IsType<OptionsValidationException>(e));
+            }
+
+            Assert.True(first.Validated);
+            Assert.True(second.Validated);
+        }
+
         private sealed class TrackingStartupValidator : IStartupValidator
         {
             public bool Validated { get; private set; }
@@ -522,6 +546,21 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             public Task ValidateAsync(CancellationToken cancellationToken = default) =>
                 throw new OptionsValidationException("name", typeof(object), new[] { "async startup validation failed" });
+        }
+
+        private sealed class CountingThrowingAsyncStartupValidator : IAsyncStartupValidator
+        {
+            private readonly string _failure;
+
+            public CountingThrowingAsyncStartupValidator(string failure) => _failure = failure;
+
+            public bool Validated { get; private set; }
+
+            public Task ValidateAsync(CancellationToken cancellationToken = default)
+            {
+                Validated = true;
+                throw new OptionsValidationException("name", typeof(object), new[] { _failure });
+            }
         }
 
         private static void ValidateFailure(Type type, OptionsValidationException e, int count = 1, params string[] errorsToMatch)
