@@ -264,6 +264,12 @@ namespace Microsoft.Extensions.Logging.EventSource
         [ThreadStatic]
         private static Utf8JsonWriter? t_jsonWriter;
 
+        // Upper bound for the per-thread buffers we keep cached between events. A single unusually
+        // large event (e.g. a huge property value) must not permanently inflate steady-state memory
+        // on long-lived thread-pool threads. This mirrors ConsoleLogger, which caps its thread-static
+        // StringBuilder at the same size.
+        private const int MaxCachedBufferSize = 1024;
+
         private static string ToJson(IReadOnlyList<KeyValuePair<string, string?>> keyValues)
         {
             // Reuse a per-thread stream and writer to avoid allocating a MemoryStream, a Utf8JsonWriter,
@@ -286,6 +292,18 @@ namespace Microsoft.Extensions.Logging.EventSource
             string result = stream.TryGetBuffer(out ArraySegment<byte> buffer)
                 ? Encoding.UTF8.GetString(buffer.Array!, buffer.Offset, buffer.Count)
                 : Encoding.UTF8.GetString(stream.ToArray());
+
+            if (stream.Capacity > MaxCachedBufferSize)
+            {
+                // This event grew both the stream and the writer's internal buffer. Shrink the stream
+                // back down (its length must be reset before its capacity can be lowered) and drop the
+                // writer, whose internal buffer has no public API to shrink, so neither is retained at
+                // the larger size on this thread. Both are lazily recreated on the next event.
+                stream.SetLength(0);
+                stream.Capacity = MaxCachedBufferSize;
+                writer.Dispose();
+                t_jsonWriter = null;
+            }
 
             return result;
         }
