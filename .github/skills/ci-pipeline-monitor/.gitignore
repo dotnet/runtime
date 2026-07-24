@@ -13,3 +13,4 @@ temp/
 # Intermediate JSON output files (piped between scripts)
 failing_builds.json
 failed_tests.json
+cached_labels.json

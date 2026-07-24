@@ -18,6 +18,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+LABELS_API_ENDPOINT = "https://api.github.com/repos/dotnet/runtime/labels"
+LABELS_CACHE_FILE = os.path.join(__file__, "..", "cached_labels.json")
 
 def check(name, passed, detail="", warn_only=False):
     if not passed and warn_only:
@@ -574,6 +576,61 @@ def main():
         if not ok:
             failures += 1
 
+    # 16h. Every failure's suggested labels are valid labels on the dotnet/runtime repo
+    # Otherwise, update_github will fail to file the issue
+
+    total += 1
+    all_label_names = set()
+    try:
+        # TODO: If dotnet/runtime ever has more than 999 labels, increase this page limit. At time of script authoring
+        #  we have around 300 so this is more than enough.
+        for page_index in range(1, 11):
+            req = urllib.request.Request(f"{LABELS_API_ENDPOINT}?per_page=100&page={page_index}", headers={
+                "Accept": "application/vnd.github+json",
+                "User-Agent": "ci-pipeline-monitor-validator",
+            })
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read())
+                page_label_names = set([item["name"] for item in data])
+                # Don't bother querying additional empty pages after this one.
+                if len(page_label_names) <= 0:
+                    break
+
+                for name in page_label_names:
+                    all_label_names.add(name.lower())
+
+        with open(LABELS_CACHE_FILE, "w") as f:
+            f.write(json.dumps(sorted(all_label_names)))
+    except urllib.error.HTTPError:
+        print("  [WARN] Failed to fetch labels list from GitHub due to an HTTP error. Loading cached labels list.")
+        with open(LABELS_CACHE_FILE) as f:
+            labels_json = f.read()
+            labels_list = json.loads(labels_json)
+            all_label_names = set(labels_list)
+
+    all_failure_rows = conn.execute("""
+        SELECT id, labels FROM failures
+    """).fetchall()
+    bad_labels = []
+    for failure_row in all_failure_rows:
+        raw_labels = failure_row["labels"]
+        failure_labels = raw_labels.split(',') if raw_labels else []
+        for failure_label in failure_labels:
+            failure_label = failure_label.strip().lower()
+            if not failure_label:
+                continue
+            if not (failure_label in all_label_names):
+                print(f"  [FAIL] Invalid label '{failure_label}' for failure {failure_row['id']}")
+                bad_labels.append(failure_row)
+
+    ok = check("All failure labels are valid labels from dotnet/runtime repo",
+            len(bad_labels) == 0,
+            f"{len(bad_labels)} label(s) were invalid (see above)" if len(bad_labels) else "")
+    if not ok:
+        print("Full set of valid labels follows:")
+        print(", ".join(sorted(all_label_names)))
+        failures += 1
+
     # Report checks (only if --report provided)
     if args.report:
         print("\n=== Report Sanity ===")
@@ -736,10 +793,10 @@ def main():
     warn_str = f", {warnings} warnings" if warnings else ""
     print(f"Results: {passed}/{total} passed, {failures} failed{warn_str}")
     if failures:
-        print("❌ VALIDATION FAILED — fix issues before publishing report")
+        print("/!\\ VALIDATION FAILED — fix issues before publishing report /!\\")
         sys.exit(1)
     else:
-        print("✅ ALL CHECKS PASSED")
+        print("ALL CHECKS PASSED")
         sys.exit(0)
 
 
