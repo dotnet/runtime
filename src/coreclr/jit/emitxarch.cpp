@@ -12999,6 +12999,15 @@ void emitter::emitDispIns(
                         break;
                 }
 
+                if ((ins == INS_bts) || (ins == INS_btr) || (ins == INS_btc))
+                {
+                    // The BT-family reg,reg encoding stores its operands reversed. Display them in
+                    // the normal `dest, index` order.
+                    printf("%s", emitRegName(id->idReg2(), tgtAttr));
+                    printf(", %s", emitRegName(id->idReg1(), srcAttr));
+                    break;
+                }
+
                 printf("%s", emitRegName(id->idReg1(), tgtAttr));
                 printf(", %s", emitRegName(id->idReg2(), srcAttr));
                 break;

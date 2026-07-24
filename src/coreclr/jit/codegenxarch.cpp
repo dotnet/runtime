@@ -1130,6 +1130,51 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genCodeForBitOp: Generate code for a GT_BIT_SET/GT_BIT_CLEAR/GT_BIT_INVERT operation, i.e. the
+// value-producing `bts`/`btr`/`btc` instructions which set, reset, or complement a single bit of op1
+// selected by op2.
+//
+// Arguments:
+//    treeNode - the node to generate the code for
+//
+void CodeGen::genCodeForBitOp(GenTreeOp* treeNode)
+{
+    assert(treeNode->OperIs(GT_BIT_SET, GT_BIT_CLEAR, GT_BIT_INVERT));
+
+    GenTree* op1 = treeNode->gtGetOp1(); // value (read-modify-write destination)
+    GenTree* op2 = treeNode->gtGetOp2(); // bit index
+
+    genConsumeOperands(treeNode);
+
+    regNumber targetReg  = treeNode->GetRegNum();
+    var_types targetType = genActualType(treeNode);
+    emitAttr  size       = emitTypeSize(targetType);
+    emitter*  emit       = GetEmitter();
+
+    assert((targetType == TYP_INT) || (targetType == TYP_LONG));
+    assert(op1->isUsedFromReg() && op2->isUsedFromReg());
+
+    instruction ins = treeNode->OperIs(GT_BIT_SET) ? INS_bts : treeNode->OperIs(GT_BIT_CLEAR) ? INS_btr : INS_btc;
+
+    // These are read-modify-write: the `mov` below loads op1 (the value) into the destination and
+    // then `bts`/`btr`/`btc` reads the bit index from op2. LSRA marks op2 as delayFree except when
+    // op2 shares op1's interval and it's their last use -- i.e. `x <op> (1 << x)`, where op1 and op2
+    // are the same value (see AddDelayFreeUses). So the destination can only alias op2 when op1 and
+    // op2 hold the same value, in which case the `mov` writes that same value back into op2's
+    // register and nothing is clobbered before the bit-test reads it. When the operands are distinct
+    // values, delayFree guarantees the destination and op2 use different registers.
+
+    // These are read-modify-write: the destination register also supplies the value operand.
+    inst_Mov(targetType, targetReg, op1->GetRegNum(), /* canSkip */ true);
+
+    // The BT-family reg,reg encoding places the destination in the r/m slot and the bit index in
+    // the reg slot, so the operands are passed reversed (see the note in instrsxarch.h).
+    emit->emitIns_R_R(ins, size, op2->GetRegNum(), targetReg);
+
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
 // genCodeForMul: Generate code for a MUL operation.
 //
 // Arguments:
@@ -1890,6 +1935,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_ADD:
         case GT_SUB:
             genCodeForBinary(treeNode->AsOp());
+            break;
+
+        case GT_BIT_SET:
+        case GT_BIT_CLEAR:
+        case GT_BIT_INVERT:
+            genCodeForBitOp(treeNode->AsOp());
             break;
 
         case GT_MUL:
