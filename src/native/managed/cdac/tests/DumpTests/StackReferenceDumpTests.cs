@@ -22,6 +22,7 @@ public class StackReferenceDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    [SkipOnArch("arm", "https://github.com/dotnet/runtime/issues/128292 - VirtualReadException reading ExceptionLookupTableEntry on arm")]
     public void WalkStackReferences_ReturnsWithoutThrowing(TestConfiguration config)
     {
         InitializeDumpTest(config, "StackWalk", "heap");
@@ -36,6 +37,7 @@ public class StackReferenceDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    [SkipOnArch("arm", "https://github.com/dotnet/runtime/issues/128292 - VirtualReadException reading ExceptionLookupTableEntry on arm")]
     public void WalkStackReferences_RefsHaveValidSourceInfo(TestConfiguration config)
     {
         InitializeDumpTest(config, "StackWalk", "heap");
