@@ -1,0 +1,6 @@
+<Project>
+    <PropertyGroup>
+        <FeatureMultithreading Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(WasmEnableThreads)' == 'true'">true</FeatureMultithreading>
+        <_ClrFeatureMultithreadingPropsImported>true</_ClrFeatureMultithreadingPropsImported>
+    </PropertyGroup>
+</Project>
