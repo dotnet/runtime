@@ -38,6 +38,7 @@
 #include "sstring.h"
 #include "array.h"
 #include "eepolicy.h"
+#include "crashreportstackwalker.h"
 #include <minipal/cpuid.h>
 
 #ifdef FEATURE_COMINTEROP
@@ -472,7 +473,19 @@ extern "C" CLR_BOOL QCALLTYPE ExceptionHandling_TrySetFatalErrorHandler(void* ha
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    return InterlockedCompareExchangeT(&s_fatalErrorHandler, handler, NULL) == NULL;
+    bool set = InterlockedCompareExchangeT(&s_fatalErrorHandler, handler, NULL) == NULL;
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+    if (set)
+    {
+        // Bring up the in-proc crash reporter with only its VM callbacks (no signal-path
+        // services) so the handler can request on-demand diagnostic data through
+        // FEP_DiagnosticDataFunc, independently of the env-gated crash-dump configuration.
+        CrashReportInitialize();
+    }
+#endif // FEATURE_INPROC_CRASHREPORT
+
+    return set;
 }
 
 FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)

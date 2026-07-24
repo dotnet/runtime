@@ -76,6 +76,10 @@ enum FatalErrorProperty : int32_t
     // Value: Mach thread state for the current architecture
     // (arm_thread_state64_t* on arm64, x86_thread_state64_t* on x64).
     FEP_MachExceptionInfo = 0x7,
+
+    // Value: DiagnosticDataFunc. Entry point for producing diagnostic data
+    // on demand, streamed back to the handler through a caller-provided sink.
+    FEP_DiagnosticDataFunc = 0x8,
 };
 
 // Property-getter callback passed to the fatal error handler. The handler
@@ -87,5 +91,68 @@ enum FatalErrorProperty : int32_t
 // Returns a nonzero value if the property is available (and *value has been
 // written), or 0 if the property is not available.
 typedef int32_t (DOTNET_CALLCONV *FatalErrorPropertyGetter)(FatalErrorProperty prop, const void** value);
+
+// Types of diagnostic data that can be produced on demand through the
+// DiagnosticDataFunc entry point. Each type has an associated configuration
+// struct (see below) whose first member is a DiagnosticDataConfig.
+enum DiagnosticDataType : int32_t
+{
+    // Crash report serialized as JSON. Streamed as length-delimited UTF-8
+    // fragments that are NOT NUL-terminated; use the length passed to the sink.
+    JsonCrashReport = 0,
+
+    // Crash report serialized as human-readable text. Streamed as UTF-8
+    // fragments that ARE NUL-terminated (each fragment is a valid C string);
+    // the length passed to the sink excludes the terminator.
+    LogCrashReport = 1,
+};
+
+// Callback that receives diagnostic data. The runtime invokes it one or more
+// times, each time passing a fragment of the requested data. 'data' points to
+// 'length' bytes and is valid only for the duration of the call; the callback
+// must copy anything it needs to retain. For text types the data is UTF-8; for
+// binary types (for example memory/core dumps) it is raw bytes. Returns true to
+// continue, or false to abort.
+typedef bool (DOTNET_CALLCONV *DiagnosticDataOutputFunc)(const char* data, size_t length, void* userContext);
+
+// Base configuration shared by every diagnostic data type. Each concrete
+// configuration struct embeds this as its first member, so a pointer to any
+// concrete configuration can be treated as a pointer to DiagnosticDataConfig
+// and, after validating 'type', cast back to the concrete type.
+//
+//   type        - the DiagnosticDataType being requested; selects the concrete
+//                 configuration struct.
+//   size        - sizeof the concrete configuration struct.
+//   pfnOutput   - sink that receives the produced data (must not be NULL).
+//   userContext - opaque value forwarded to pfnOutput (can be NULL).
+struct DiagnosticDataConfig
+{
+    int32_t                  type;
+    uint32_t                 size;
+    DiagnosticDataOutputFunc pfnOutput;
+    void*                    userContext;
+};
+
+// Configuration for DiagnosticDataType::JsonCrashReport.
+struct JsonCrashReportConfig
+{
+    DiagnosticDataConfig base;
+};
+
+// Configuration for DiagnosticDataType::LogCrashReport.
+struct LogCrashReportConfig
+{
+    DiagnosticDataConfig base;
+};
+
+// Function pointer retrieved through the property getter as the value of
+// FEP_DiagnosticDataFunc. It produces the diagnostic data described by 'config'
+// and streams it to config->pfnOutput. Returns true on success, or false if
+// config is NULL, config->size is smaller than sizeof(DiagnosticDataConfig),
+// config->type is unrecognized, config->pfnOutput is NULL, or the sink aborts
+// or an error occurs while producing the data.
+//
+// The function pointer must not be cached or invoked after the handler returns.
+typedef bool (DOTNET_CALLCONV *DiagnosticDataFunc)(const DiagnosticDataConfig* config);
 
 #endif // FATAL_ERROR_HANDLING_H

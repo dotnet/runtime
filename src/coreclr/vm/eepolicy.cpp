@@ -788,6 +788,39 @@ static void DOTNET_CALLCONV GetFatalErrorLogFunc(FatalErrorLogAction pfnLogActio
     EmitCrashInfo(writer, t_crashExitCode, t_crashMessage, t_crashExceptionInfo, t_crashErrorSource, t_crashExceptionString);
 }
 
+#ifdef FEATURE_INPROC_CRASHREPORT
+// Produces the on-demand diagnostic data described by 'config' and streams it to
+// config->pfnOutput. Surfaced to the fatal error handler as the value of
+// FEP_DiagnosticDataFunc. See src/native/public/FatalErrorHandling.h.
+static bool DOTNET_CALLCONV DiagnosticDataFuncImpl(const DiagnosticDataConfig* config)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (config == nullptr || config->size < sizeof(DiagnosticDataConfig) || config->pfnOutput == nullptr)
+        return false;
+
+    InProcCrashReportOutputFormat format;
+    switch (static_cast<DiagnosticDataType>(config->type))
+    {
+    case JsonCrashReport:
+        format = InProcCrashReportOutputFormat::Json;
+        break;
+    case LogCrashReport:
+        format = InProcCrashReportOutputFormat::Log;
+        break;
+    default:
+        return false;
+    }
+
+    return InProcCrashReportCreateReport(
+        format,
+        SIGABRT,
+        /*context*/ nullptr,
+        config->pfnOutput,
+        config->userContext);
+}
+#endif // FEATURE_INPROC_CRASHREPORT
+
 // Property getter passed to the user's fatal error handler. Surfaces the crash-log
 // entry point and stored crash address. On Windows the live EXCEPTION_RECORD/CONTEXT are
 // additionally surfaced for a genuinely-unmanaged fatal fault (Path B); they are unavailable
@@ -825,6 +858,12 @@ static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(FatalErrorProperty p
         *value = t_crashContextRecord;
         return 1;
 #endif // TARGET_WINDOWS
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+    case FEP_DiagnosticDataFunc:
+        *value = reinterpret_cast<const void*>(reinterpret_cast<uintptr_t>(DiagnosticDataFuncImpl));
+        return 1;
+#endif // FEATURE_INPROC_CRASHREPORT
 
     default:
         return 0;
