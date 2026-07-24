@@ -513,6 +513,113 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task AlreadyImplementedAsync()
+    {
+        var (diagnostics, _) = await RunGenerator(@"
+            public class FirstModel
+            {
+                [Required]
+                public string One { get; set; } = string.Empty;
+            }
+
+            [OptionsValidator]
+            public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+            {
+                public System.Threading.Tasks.Task<ValidateOptionsResult> ValidateAsync(string? name, FirstModel options, System.Threading.CancellationToken cancellationToken = default)
+                    => System.Threading.Tasks.Task.FromResult(ValidateOptionsResult.Success);
+            }
+        ");
+
+        _ = Assert.Single(diagnostics);
+        Assert.Equal(DiagDescriptors.AlreadyImplementsValidateAsyncMethod.Id, diagnostics[0].Id);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task AlreadyImplementedAsyncExplicitInterface()
+    {
+        var (diagnostics, _) = await RunGenerator(@"
+            public class FirstModel
+            {
+                [Required]
+                public string One { get; set; } = string.Empty;
+            }
+
+            [OptionsValidator]
+            public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+            {
+                System.Threading.Tasks.Task<ValidateOptionsResult> IAsyncValidateOptions<FirstModel>.ValidateAsync(string? name, FirstModel options, System.Threading.CancellationToken cancellationToken)
+                    => System.Threading.Tasks.Task.FromResult(ValidateOptionsResult.Success);
+            }
+        ");
+
+        _ = Assert.Single(diagnostics);
+        Assert.Equal(DiagDescriptors.AlreadyImplementsValidateAsyncMethod.Id, diagnostics[0].Id);
+    }
+
+#if NET
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task AsyncValidateMethodWithNoAwaitedWorkIsNotAsync()
+    {
+        // The model validates only synchronously (IValidatableObject, no attributes, no async children) but is validated
+        // by an IAsyncValidateOptions<T> validator, so the generated ValidateAsync body contains no await and must be
+        // emitted as a non-async method returning Task.FromResult(...) (avoids CS1998).
+        var (diagnostics, generatedSources) = await RunGenerator(@"
+            using System.Collections.Generic;
+
+            public class SyncSelfModel : IValidatableObject
+            {
+                public string? Name { get; set; }
+                public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+                {
+                    yield break;
+                }
+            }
+
+            [OptionsValidator]
+            public partial class SyncSelfModelValidator : IAsyncValidateOptions<SyncSelfModel>
+            {
+            }
+        ");
+
+        Assert.Empty(diagnostics);
+        _ = Assert.Single(generatedSources);
+        string emitted = generatedSources[0].SourceText.ToString();
+
+        // Task.FromResult(...) is emitted only on the no-await branch; the awaited branch returns builder.Build() directly.
+        Assert.Contains("global::System.Threading.Tasks.Task.FromResult", emitted);
+        // A non-async ValidateAsync contains neither the async modifier nor any await.
+        Assert.DoesNotContain("await ", emitted);
+    }
+#endif // NET
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task AsyncValidationRequiresNet11Diagnostic()
+    {
+        // A validator implementing IAsyncValidateOptions<T> (available on every TFM) needs the async DataAnnotations
+        // APIs (IAsyncValidatableObject / Validator.TryValidateValueAsync), which are only present on .NET 11+.
+        var (diagnostics, _) = await RunGenerator(@"
+            public class FirstModel
+            {
+                [Required]
+                public string One { get; set; } = string.Empty;
+            }
+
+            [OptionsValidator]
+            public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+            {
+            }
+        ");
+
+#if NET
+        // .NET 11+: the async symbols are available, so no downlevel diagnostic is produced.
+        Assert.DoesNotContain(diagnostics, d => d.Id == DiagDescriptors.AsyncValidationRequiresNet11.Id);
+#else
+        // Downlevel (async symbols absent): the generator reports SYSLIB1218 instead of emitting code that fails to compile.
+        Assert.Contains(diagnostics, d => d.Id == DiagDescriptors.AsyncValidationRequiresNet11.Id);
+#endif // NET
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldNotProduceInfoWhenTheClassHasABaseClass()
     {
         var (diagnostics, _) = await RunGenerator(@"

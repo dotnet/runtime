@@ -417,6 +417,213 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
                     Assert.True(result.Succeeded);
                 }, TaskCreationOptions.LongRunning)).ToArray());
         }
+
+#if NET
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task TestAsyncValidationSucceeds()
+        {
+            AsyncOptions options = new()
+            {
+                Name = "Valid",
+                Age = 30,
+                Nested = new()
+                {
+                    Level = 5,
+                    Id = "1",
+                    Children = new() { new AsyncChildOptions { Name = "C1" } }
+                }
+            };
+
+            AsyncOptionsValidator validator = new();
+
+            ValidateOptionsResult asyncResult = await validator.ValidateAsync("AsyncOptions", options, default);
+            Assert.True(asyncResult.Succeeded);
+
+            // The generated ValidateAsync must agree with the synchronous Validate for the same input.
+            ValidateOptionsResult syncResult = validator.Validate("AsyncOptions", options);
+            Assert.True(syncResult.Succeeded);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task TestAsyncValidationFailures()
+        {
+            AsyncOptions options = new()
+            {
+                Name = "Invalid", // trips self-validation
+                Age = 0,          // out of [Range(1, 100)]
+                Nested = new()
+                {
+                    Level = 50,   // out of [Range(0, 10)]
+                    Id = null,    // [Required]
+                    Children = new() { new AsyncChildOptions { Name = null } } // [Required] on enumerated item
+                }
+            };
+
+            AsyncOptionsValidator validator = new();
+
+            ValidateOptionsResult asyncResult = await validator.ValidateAsync("AsyncOptions", options, default);
+            Assert.True(asyncResult.Failed);
+
+            // Attribute, nested object-member, enumerated-item failures, plus the async self-validation failure,
+            // are all surfaced. The self-validation entry ("Async self-validation failed.") proves the generated
+            // ValidateAsync dispatches to IAsyncValidatableObject.ValidateAsync (await foreach) rather than the
+            // synchronous IValidatableObject.Validate path.
+            Assert.Equal(new List<string>
+                        {
+                            "Age: The field AsyncOptions.Age must be between 1 and 100.",
+                            "Level: The field AsyncOptions.Nested.Level must be between 0 and 10.",
+                            "Id: The AsyncOptions.Nested.Id field is required.",
+                            "Name: The AsyncOptions.Nested.Children[0].Name field is required.",
+                            "Async self-validation failed.",
+                        },
+                        asyncResult.Failures);
+
+            // The synchronous Validate path uses the synchronous self-validation instead, confirming the two code
+            // paths are genuinely distinct and the async test would not pass if ValidateAsync silently ran the sync path.
+            ValidateOptionsResult syncResult = validator.Validate("AsyncOptions", options);
+            Assert.True(syncResult.Failed);
+            Assert.Contains("Sync self-validation failed.", syncResult.Failures);
+            Assert.DoesNotContain("Async self-validation failed.", syncResult.Failures);
+            Assert.DoesNotContain("Sync self-validation failed.", asyncResult.Failures);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task TestAsyncValidationWithSharedSynthesizedValidator()
+        {
+            // The async AsyncOptionsValidator and the synchronous SyncRootReusingNestedOptionsValidator both nest
+            // AsyncNestedOptions, so they share a single synthesized child validator. Exercise both roots to confirm the
+            // shared child validates correctly from an async caller and a sync caller alike.
+            AsyncOptions asyncOptions = new()
+            {
+                Name = "Valid",
+                Age = 30,
+                Nested = new() { Level = 50, Id = null, Children = new() { new AsyncChildOptions { Name = "C1" } } }
+            };
+
+            ValidateOptionsResult asyncResult = await new AsyncOptionsValidator().ValidateAsync("AsyncOptions", asyncOptions, default);
+            Assert.True(asyncResult.Failed);
+            Assert.Contains("Level: The field AsyncOptions.Nested.Level must be between 0 and 10.", asyncResult.Failures);
+            Assert.Contains("Id: The AsyncOptions.Nested.Id field is required.", asyncResult.Failures);
+
+            SyncRootReusingNestedOptions syncOptions = new()
+            {
+                Nested = new() { Level = 5, Id = "1", Children = new() { new AsyncChildOptions { Name = "C1" } } }
+            };
+
+            ValidateOptionsResult syncResult = new SyncRootReusingNestedOptionsValidator().Validate("SyncRoot", syncOptions);
+            Assert.True(syncResult.Succeeded);
+
+            // Finding 3 regression: AsyncNestedOptions self-validates asynchronously. The async root must run that
+            // nested async self-validation, while the synchronous root sharing the same nested model type must not.
+            // Keying synthesized validators by model type alone would let the async root reuse a synchronous-only
+            // child (depending on discovery order) and silently skip nested async self-validation.
+            AsyncOptions asyncSelfValidating = new()
+            {
+                Name = "Valid",
+                Age = 30,
+                Nested = new() { Level = 5, Id = "trigger-async", Children = new() { new AsyncChildOptions { Name = "C1" } } }
+            };
+
+            ValidateOptionsResult nestedAsyncResult = await new AsyncOptionsValidator().ValidateAsync("AsyncOptions", asyncSelfValidating, default);
+            Assert.True(nestedAsyncResult.Failed);
+            Assert.Contains("Nested async self-validation failed.", nestedAsyncResult.Failures);
+
+            SyncRootReusingNestedOptions syncSelfValidating = new()
+            {
+                Nested = new() { Level = 5, Id = "trigger-async", Children = new() { new AsyncChildOptions { Name = "C1" } } }
+            };
+
+            ValidateOptionsResult syncNestedResult = new SyncRootReusingNestedOptionsValidator().Validate("SyncRoot", syncSelfValidating);
+            Assert.True(syncNestedResult.Succeeded);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task TestExplicitTypeTransitiveAndEnumeratedAsyncValidatorsAreAwaited()
+        {
+            // Both the explicit-type transitive validator ([ValidateObjectMembers(typeof(...))]) and the explicit-type
+            // enumerated-items validator ([ValidateEnumeratedItems(typeof(...))]) implement IAsyncValidateOptions<T>, so
+            // the async parent must await their ValidateAsync. AsyncNestedOptions only self-validates asynchronously, so
+            // if either child were dispatched through its synchronous Validate the failure would be silently skipped.
+            var options = new ExplicitAsyncRootOptions
+            {
+                Nested = new AsyncNestedOptions { Level = 5, Id = "trigger-async" },
+                Items = new() { new AsyncNestedOptions { Level = 5, Id = "trigger-async" } }
+            };
+
+            ValidateOptionsResult result = await new ExplicitAsyncRootOptionsValidator().ValidateAsync("Root", options, default);
+
+            Assert.True(result.Failed);
+            Assert.Equal(2, result.Failures.Count(f => f.Contains("Nested async self-validation failed.")));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task TestGeneratedValidateAsyncPropagatesCancellationToken()
+        {
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            var validator = new CancellationObservingOptionsValidator();
+
+            // The generated ValidateAsync threads its CancellationToken into the validation sinks; with an already
+            // canceled token, validation observes it and throws. A future emitter change that dropped the token would
+            // make this complete normally.
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => validator.ValidateAsync("opt", new CancellationObservingOptions { Name = "valid" }, cts.Token));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task TestGeneratedValidateAsyncNoAwaitPathRunsSynchronously()
+        {
+            var validator = new SyncSelfValidatingOptionsValidator();
+
+            // The generated ValidateAsync for this model contains no await (non-async, returns Task.FromResult(...)).
+            // Its mere presence in this compiled assembly proves it compiles (no CS1998); assert it also runs correctly.
+            Task<ValidateOptionsResult> successTask = validator.ValidateAsync("opt", new SyncSelfValidatingOptions { Name = "ok" }, default);
+            Assert.True(successTask.IsCompletedSuccessfully);
+            Assert.True((await successTask).Succeeded);
+
+            ValidateOptionsResult failure = await validator.ValidateAsync("opt", new SyncSelfValidatingOptions { Name = "bad" }, default);
+            Assert.True(failure.Failed);
+            Assert.Contains(failure.Failures, f => f.Contains("Sync self-validation failed."));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task TestGeneratedValidateAsyncMatchesValidatorParity()
+        {
+            var validator = new AsyncParityOptionsValidator();
+
+            var valid = new AsyncParityOptions { Name = "ok", Age = 30 };
+            var validResults = new List<ValidationResult>();
+            bool validatorValid = await Validator.TryValidateObjectAsync(valid, new ValidationContext(valid), validResults, validateAllProperties: true);
+            ValidateOptionsResult generatedValid = await validator.ValidateAsync("AsyncParityOptions", valid, default);
+            Assert.True(validatorValid);
+            Assert.True(generatedValid.Succeeded);
+            Assert.Empty(validResults);
+
+            // Attribute-only failure (Age out of range, name is valid and not reserved). Note: Validator.TryValidateObjectAsync
+            // skips IAsyncValidatableObject.ValidateAsync once property validation fails, whereas the generated method always
+            // runs it; the two agree here only because the self-validation yields nothing for this input, so we deliberately
+            // avoid combining an attribute failure with a self-validation failure in one instance.
+            var attributeFailure = new AsyncParityOptions { Name = "ok", Age = 0 };
+            var attributeResults = new List<ValidationResult>();
+            bool validatorAttr = await Validator.TryValidateObjectAsync(attributeFailure, new ValidationContext(attributeFailure), attributeResults, validateAllProperties: true);
+            ValidateOptionsResult generatedAttr = await validator.ValidateAsync("AsyncParityOptions", attributeFailure, default);
+            Assert.False(validatorAttr);
+            Assert.True(generatedAttr.Failed);
+            Assert.Equal(attributeResults.Count, generatedAttr.Failures.Count());
+
+            // Self-validation-only failure (attributes pass, reserved name). Validator runs the async self-validation because
+            // property validation succeeds, so both report the same single failure.
+            var selfFailure = new AsyncParityOptions { Name = "reserved", Age = 30 };
+            var selfResults = new List<ValidationResult>();
+            bool validatorSelf = await Validator.TryValidateObjectAsync(selfFailure, new ValidationContext(selfFailure), selfResults, validateAllProperties: true);
+            ValidateOptionsResult generatedSelf = await validator.ValidateAsync("AsyncParityOptions", selfFailure, default);
+            Assert.False(validatorSelf);
+            Assert.True(generatedSelf.Failed);
+            Assert.Equal(selfResults.Count, generatedSelf.Failures.Count());
+            Assert.Contains(generatedSelf.Failures, f => f.Contains("Name is reserved."));
+        }
+#endif // NET
     }
 
     public class FakeCount(int count) { public int Count { get { return count; } } }
@@ -637,4 +844,195 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
     public partial class TimeSpanRangeAttributeValidator : IValidateOptions<OptionsWithTimeSpanRangeAttribute>
     {
     }
+
+#if NET
+    public class AsyncChildOptions
+    {
+        [Required]
+        public string? Name { get; set; }
+    }
+
+    public class AsyncNestedOptions : IAsyncValidatableObject
+    {
+        [Range(0, 10)]
+        public int Level { get; set; }
+
+        [Required]
+        public string? Id { get; set; }
+
+        [ValidateEnumeratedItems]
+        public List<AsyncChildOptions>? Children { get; set; }
+
+        public async IAsyncEnumerable<ValidationResult> ValidateAsync(
+            ValidationContext validationContext,
+            [global::System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await Task.Yield();
+            if (Id == "trigger-async")
+            {
+                yield return new ValidationResult("Nested async self-validation failed.");
+            }
+        }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            yield break;
+        }
+    }
+
+    public class AsyncOptions : IAsyncValidatableObject
+    {
+        [Required]
+        public string? Name { get; set; }
+
+        [Range(1, 100)]
+        public int Age { get; set; }
+
+        [ValidateObjectMembers]
+        public AsyncNestedOptions? Nested { get; set; }
+
+        public async IAsyncEnumerable<ValidationResult> ValidateAsync(
+            ValidationContext validationContext,
+            [global::System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await Task.Yield();
+            if (Name == "Invalid")
+            {
+                yield return new ValidationResult("Async self-validation failed.");
+            }
+        }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (Name == "Invalid")
+            {
+                yield return new ValidationResult("Sync self-validation failed.");
+            }
+        }
+    }
+
+    [OptionsValidator]
+    public partial class AsyncOptionsValidator : IValidateOptions<AsyncOptions>, IAsyncValidateOptions<AsyncOptions>
+    {
+    }
+
+    // Regression: a synchronous validator that nests the same type (AsyncNestedOptions) as the async
+    // AsyncOptionsValidator. Synthesized child validators are cached per model type and per capability
+    // (synchronous vs asynchronous), so the async root gets an async-capable child and the synchronous root gets a
+    // synchronous one regardless of discovery order. This guards against the async root emitting
+    // "await child.ValidateAsync(...)" against a synthesized child generated without a ValidateAsync method, and
+    // against the async root silently falling back to the synchronous child's Validate path.
+    public class SyncRootReusingNestedOptions
+    {
+        [ValidateObjectMembers]
+        public AsyncNestedOptions? Nested { get; set; }
+    }
+
+    [OptionsValidator]
+    public partial class SyncRootReusingNestedOptionsValidator : IValidateOptions<SyncRootReusingNestedOptions>
+    {
+    }
+
+    // An explicitly specified transitive/enumerated validator (typeof(...)) that implements
+    // IAsyncValidateOptions<T> must be dispatched through ValidateAsync by an async parent. Otherwise the parent calls
+    // the child's synchronous Validate and silently skips the child's async-only validation.
+    public class ExplicitAsyncRootOptions
+    {
+        [ValidateObjectMembers(typeof(ExplicitAsyncNestedValidator))]
+        public AsyncNestedOptions? Nested { get; set; }
+
+        [ValidateEnumeratedItems(typeof(ExplicitAsyncNestedValidator))]
+        public List<AsyncNestedOptions>? Items { get; set; }
+    }
+
+    [OptionsValidator]
+    public partial class ExplicitAsyncNestedValidator : IAsyncValidateOptions<AsyncNestedOptions>
+    {
+    }
+
+    [OptionsValidator]
+    public partial class ExplicitAsyncRootOptionsValidator : IAsyncValidateOptions<ExplicitAsyncRootOptions>
+    {
+    }
+
+    // Flat model whose async self-validation observes the cancellation token, used to prove the generated ValidateAsync
+    // threads its CancellationToken into the validation sinks (TryValidateValueAsync / IAsyncValidatableObject.ValidateAsync).
+    public class CancellationObservingOptions : IAsyncValidatableObject
+    {
+        [Required]
+        public string? Name { get; set; }
+
+        public async IAsyncEnumerable<ValidationResult> ValidateAsync(
+            ValidationContext validationContext,
+            [global::System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await Task.Yield();
+            yield break;
+        }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            yield break;
+        }
+    }
+
+    [OptionsValidator]
+    public partial class CancellationObservingOptionsValidator : IAsyncValidateOptions<CancellationObservingOptions>
+    {
+    }
+
+    // Model that validates only synchronously (IValidatableObject, no attributes, no async children) but is validated by
+    // an async validator, so the generated ValidateAsync body contains no await and must be emitted as a non-async
+    // method returning Task.FromResult(...) (avoids CS1998).
+    public class SyncSelfValidatingOptions : IValidatableObject
+    {
+        public string? Name { get; set; }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (Name == "bad")
+            {
+                yield return new ValidationResult("Sync self-validation failed.", new[] { nameof(Name) });
+            }
+        }
+    }
+
+    [OptionsValidator]
+    public partial class SyncSelfValidatingOptionsValidator : IAsyncValidateOptions<SyncSelfValidatingOptions>
+    {
+    }
+
+    // Flat model (attributes + async self-validation, no nested members) so the generated ValidateAsync can be compared
+    // for parity against Validator.TryValidateObjectAsync, which does not recurse into nested members.
+    public class AsyncParityOptions : IAsyncValidatableObject
+    {
+        [Required]
+        public string? Name { get; set; }
+
+        [Range(1, 100)]
+        public int Age { get; set; }
+
+        public async IAsyncEnumerable<ValidationResult> ValidateAsync(
+            ValidationContext validationContext,
+            [global::System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await Task.Yield();
+            if (Name == "reserved")
+            {
+                yield return new ValidationResult("Name is reserved.", new[] { nameof(Name) });
+            }
+        }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            yield break;
+        }
+    }
+
+    [OptionsValidator]
+    public partial class AsyncParityOptionsValidator : IAsyncValidateOptions<AsyncParityOptions>
+    {
+    }
+#endif // NET
 }

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,48 +26,75 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             ArgumentNullException.ThrowIfNull(optionsBuilder);
 
+            string name = optionsBuilder.Name;
+
+            // Register the built-in validator as a single IStartupValidator (for back-compatibility)
+            // and as an enumerable IAsyncStartupValidator so the host can run it alongside any custom async validators.
             optionsBuilder.Services.TryAddTransient<IStartupValidator, StartupValidator>();
-            optionsBuilder.Services.TryAddTransient<IAsyncStartupValidator, StartupValidator>();
+            optionsBuilder.Services.TryAddEnumerable(ServiceDescriptor.Transient<IAsyncStartupValidator, StartupValidator>());
             optionsBuilder.Services.AddOptions<StartupValidatorOptions>()
-                .Configure<IOptionsMonitor<TOptions>>((vo, options) =>
+                .Configure<IOptionsMonitor<TOptions>, IOptionsFactory<TOptions>, IOptionsMonitorCache<TOptions>>((vo, monitor, factory, cache) =>
                 {
-                    // This adds an action that resolves the options value to force evaluation
-                    // We don't care about the result as duplicates are not important
-                    vo._validators[(typeof(TOptions), optionsBuilder.Name)] = () => options.Get(optionsBuilder.Name);
-                });
+                    // Sync path (custom sync-only IStartupValidator): force evaluation through the
+                    // monitor, which runs every validator (including an async validator's fail-fast
+                    // synchronous Validate) and populates the cache.
+                    vo._validators[(typeof(TOptions), name)] = () => monitor.Get(name);
 
-            // Register async validator entries if any IAsyncValidateOptions<TOptions> are registered
-            optionsBuilder.Services.AddOptions<StartupValidatorOptions>()
-                .Configure<IOptionsMonitor<TOptions>, IEnumerable<IAsyncValidateOptions<TOptions>>>((vo, options, asyncValidators) =>
-                {
-                    // Materialize the validators into a list to check if any are registered
-                    var validators = new List<IAsyncValidateOptions<TOptions>>(asyncValidators);
-                    if (validators.Count > 0)
+                    // Async path: run the complete validation (both sync and async validators) for
+                    // this (type, name) and seed the monitor cache with the validated instance so the
+                    // first Get after startup returns it instead of re-running Create.
+                    vo._asyncValidators[(typeof(TOptions), name)] = async (CancellationToken ct) =>
                     {
-                        vo._asyncValidators[(typeof(TOptions), optionsBuilder.Name)] = async (CancellationToken ct) =>
+                        if (factory is OptionsFactory<TOptions> asyncFactory)
                         {
-                            // Retrieve the options value (already created by sync Validate() call)
-                            TOptions optionsValue = options.Get(optionsBuilder.Name);
-
-                            // Run async validators
-                            List<string>? failures = null;
-                            foreach (IAsyncValidateOptions<TOptions> validator in validators)
+                            TOptions validated = await asyncFactory.CreateAsync(name, ct).ConfigureAwait(false);
+                            if (cache is OptionsCache<TOptions> optionsCache)
                             {
-                                ValidateOptionsResult result = await validator.ValidateAsync(optionsBuilder.Name, optionsValue, ct).ConfigureAwait(false);
-                                if (result is not null && result.Failed)
-                                {
-                                    failures ??= new List<string>();
-                                    failures.AddRange(result.Failures);
-                                }
+                                optionsCache.AddOrReplace(name, validated);
                             }
-
-                            if (failures is not null && failures.Count > 0)
+                            else
                             {
-                                throw new OptionsValidationException(optionsBuilder.Name, typeof(TOptions), failures);
+                                cache.TryRemove(name);
+                                cache.TryAdd(name, validated);
                             }
-                        };
-                    }
+                        }
+                        else
+                        {
+                            // Custom IOptionsFactory<TOptions>: no async validation path is available,
+                            // so fall back to synchronous evaluation (also populates the cache).
+                            monitor.Get(name);
+                        }
+                    };
                 });
+
+            return optionsBuilder;
+        }
+
+        /// <summary>
+        /// Enables eager asynchronous revalidation of the options whenever their configuration reloads, instead of the
+        /// default lazy revalidation on next access.
+        /// </summary>
+        /// <typeparam name="TOptions">The type of options.</typeparam>
+        /// <param name="optionsBuilder">The <see cref="OptionsBuilder{TOptions}"/> to configure.</param>
+        /// <param name="behavior">How reads are served when revalidation of a reloaded configuration fails.</param>
+        /// <param name="onError">An optional callback invoked with the options name and the exception when revalidation of a reloaded configuration fails.</param>
+        /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that additional calls can be chained.</returns>
+        /// <remarks>
+        /// On reload the options are re-created and validated in the background (running every registered validator,
+        /// awaiting asynchronous ones); the last successfully validated value keeps being served until the new value
+        /// validates, at which point it is swapped in atomically. This does not run startup validation; combine it with
+        /// <see cref="ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> to also validate the initial value.
+        /// </remarks>
+        public static OptionsBuilder<TOptions> ValidateOnChange<TOptions>(
+            this OptionsBuilder<TOptions> optionsBuilder,
+            OptionsReloadValidationBehavior behavior = OptionsReloadValidationBehavior.KeepLastGood,
+            Action<string?, Exception>? onError = null)
+            where TOptions : class
+        {
+            ArgumentNullException.ThrowIfNull(optionsBuilder);
+
+            optionsBuilder.Services.AddOptions();
+            optionsBuilder.Services.AddSingleton(new ReloadValidationConfiguration<TOptions>(optionsBuilder.Name, behavior, onError));
 
             return optionsBuilder;
         }

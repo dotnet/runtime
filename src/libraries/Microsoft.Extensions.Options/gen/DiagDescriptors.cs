@@ -119,5 +119,17 @@ namespace Microsoft.Extensions.Options.Generators
             messageFormat: SR.TypeCannotBeUsedWithTheValidationAttributeMessage,
             category: Category,
             defaultSeverity: DiagnosticSeverity.Warning);
+
+        public static DiagnosticDescriptor AsyncValidationRequiresNet11 { get; } = Make(
+            id: "SYSLIB1218",
+            title: SR.AsyncValidationRequiresNet11Title,
+            messageFormat: SR.AsyncValidationRequiresNet11Message,
+            category: Category);
+
+        public static DiagnosticDescriptor AlreadyImplementsValidateAsyncMethod { get; } = Make(
+            id: "SYSLIB1219",
+            title: SR.AlreadyImplementsValidateAsyncMethodTitle,
+            messageFormat: SR.AlreadyImplementsValidateAsyncMethodMessage,
+            category: Category);
     }
 }

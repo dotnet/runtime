@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Options
@@ -20,6 +23,8 @@ namespace Microsoft.Extensions.Options
         private readonly IOptionsMonitorCache<TOptions> _cache;
         private readonly IOptionsFactory<TOptions> _factory;
         private readonly List<IDisposable> _registrations = new List<IDisposable>();
+        private readonly Dictionary<string, ReloadValidationConfiguration<TOptions>>? _reloadConfigs;
+        private readonly ConcurrentDictionary<string, EagerReloadState>? _eagerStates;
         internal event Action<TOptions, string>? _onChange;
 
         /// <summary>
@@ -29,9 +34,32 @@ namespace Microsoft.Extensions.Options
         /// <param name="sources">The sources used to listen for changes to the options instance.</param>
         /// <param name="cache">The cache used to store options.</param>
         public OptionsMonitor(IOptionsFactory<TOptions> factory, IEnumerable<IOptionsChangeTokenSource<TOptions>> sources, IOptionsMonitorCache<TOptions> cache)
+            : this(factory, sources, cache, reloadValidationConfigs: Array.Empty<ReloadValidationConfiguration<TOptions>>())
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="OptionsMonitor{TOptions}"/> with the specified factory, sources, cache, and reload-validation opt-ins.
+        /// </summary>
+        /// <param name="factory">The factory to use to create options.</param>
+        /// <param name="sources">The sources used to listen for changes to the options instance.</param>
+        /// <param name="cache">The cache used to store options.</param>
+        /// <param name="reloadValidationConfigs">The reload-validation opt-ins registered through the <c>ValidateOnChange</c> options-builder extension.</param>
+        public OptionsMonitor(IOptionsFactory<TOptions> factory, IEnumerable<IOptionsChangeTokenSource<TOptions>> sources, IOptionsMonitorCache<TOptions> cache, IEnumerable<ReloadValidationConfiguration<TOptions>> reloadValidationConfigs)
         {
             _factory = factory;
             _cache = cache;
+
+            foreach (ReloadValidationConfiguration<TOptions> config in reloadValidationConfigs)
+            {
+                // The last opt-in for a given name wins, mirroring the "greediest configuration wins" behavior elsewhere.
+                (_reloadConfigs ??= new Dictionary<string, ReloadValidationConfiguration<TOptions>>(StringComparer.Ordinal))[config.Name] = config;
+            }
+
+            if (_reloadConfigs is not null)
+            {
+                _eagerStates = new ConcurrentDictionary<string, EagerReloadState>(StringComparer.Ordinal);
+            }
 
             void RegisterSource(IOptionsChangeTokenSource<TOptions> source)
             {
@@ -64,9 +92,122 @@ namespace Microsoft.Extensions.Options
         private void InvokeChanged(string? name)
         {
             name ??= Options.DefaultName;
+
+            if (_reloadConfigs is not null && _reloadConfigs.TryGetValue(name, out ReloadValidationConfiguration<TOptions>? config))
+            {
+                // Eager revalidation: keep serving the last validated value while the reloaded configuration is
+                // re-created and validated in the background, then swap it in only if validation succeeds.
+                InvokeEagerReload(name, config);
+                return;
+            }
+
             _cache.TryRemove(name);
             TOptions options = Get(name);
             _onChange?.Invoke(options, name);
+        }
+
+        private void InvokeEagerReload(string name, ReloadValidationConfiguration<TOptions> config)
+        {
+            EagerReloadState state = _eagerStates!.GetOrAdd(name, static _ => new EagerReloadState());
+
+            int generation;
+            CancellationToken cancellationToken;
+            lock (state)
+            {
+                // Latest-wins: supersede any in-flight refresh for this name so only the newest reload publishes.
+                state.Cancel();
+                state.Cts = new CancellationTokenSource();
+                cancellationToken = state.Cts.Token;
+                generation = ++state.Generation;
+            }
+
+            _ = RefreshAsync(name, config, state, generation, cancellationToken);
+        }
+
+        private async Task RefreshAsync(string name, ReloadValidationConfiguration<TOptions> config, EagerReloadState state, int generation, CancellationToken cancellationToken)
+        {
+            TOptions? published = null;
+            try
+            {
+                TOptions validated = _factory is OptionsFactory<TOptions> asyncFactory
+                    ? await asyncFactory.CreateAsync(name, cancellationToken).ConfigureAwait(false)
+                    : _factory.Create(name);
+
+                lock (state)
+                {
+                    // Re-check under the lock and publish atomically so a superseded reload can never overwrite a newer
+                    // published value (the generation check and the cache write must not be interleaved with another reload).
+                    if (state.Generation != generation)
+                    {
+                        return;
+                    }
+
+                    if (_cache is OptionsCache<TOptions> optionsCache)
+                    {
+                        optionsCache.AddOrReplace(name, validated);
+                    }
+                    else
+                    {
+                        _cache.TryRemove(name);
+                        _cache.TryAdd(name, validated);
+                    }
+
+                    published = validated;
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // Our token was canceled: superseded by a newer reload (or disposal).
+                // A cancellation that does not originate from our token (e.g. a validator's own timeout) falls
+                // through to the general handler below and is treated as a genuine reload failure.
+                return;
+            }
+            catch (Exception ex)
+            {
+                lock (state)
+                {
+                    if (state.Generation != generation)
+                    {
+                        return;
+                    }
+
+                    if (config.Behavior == OptionsReloadValidationBehavior.FailReads)
+                    {
+                        // Drop the cached value so the next read re-creates and surfaces the failure.
+                        _cache.TryRemove(name);
+                    }
+                }
+
+                // Always surface the failure through the event source so a reload failure is observable even when no
+                // error callback was supplied. This is independent of the user callback below.
+                OptionsEventSource.Log.ReloadValidationFailed(name, typeof(TOptions), ex);
+
+                try
+                {
+                    config.OnError?.Invoke(name, ex);
+                }
+                catch
+                {
+                    // The error callback is user code. We catch here to prevent an unobserved task exception.
+                }
+
+                return;
+            }
+
+            if (published is not null)
+            {
+                try
+                {
+                    _onChange?.Invoke(published, name);
+                }
+                catch
+                {
+                    // Change listeners are user code. RefreshAsync runs as a fire-and-forget task, so a throwing
+                    // listener must be swallowed here to avoid faulting that task (an unobserved task exception).
+                    // A listener throwing is a listener bug and is not a reload failure, so it is not surfaced
+                    // through the failure channels above.
+                }
+            }
         }
 
         /// <summary>
@@ -125,6 +266,37 @@ namespace Microsoft.Extensions.Options
             }
 
             _registrations.Clear();
+
+            if (_eagerStates is not null)
+            {
+                // Cancel any in-flight eager revalidation and bump the generation so a refresh that ignores the
+                // cancellation token still fails the generation check and does not publish after disposal.
+                foreach (EagerReloadState state in _eagerStates.Values)
+                {
+                    lock (state)
+                    {
+                        state.Cancel();
+                        state.Generation++;
+                    }
+                }
+            }
+        }
+
+        private sealed class EagerReloadState
+        {
+            public int Generation;
+            public CancellationTokenSource? Cts;
+
+            public void Cancel()
+            {
+                CancellationTokenSource? cts = Cts;
+                if (cts is not null)
+                {
+                    cts.Cancel();
+                    cts.Dispose();
+                    Cts = null;
+                }
+            }
         }
 
         internal sealed class ChangeTrackerDisposable : IDisposable
