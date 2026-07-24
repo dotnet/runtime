@@ -19,25 +19,22 @@ namespace System.Net.Http.Metrics
         public readonly string? Scheme;
         public readonly string? Host;
         public readonly int Port;
-        public readonly bool HasUriTags;
         public readonly string Method;
         private readonly int _hashCode;
 
-        public ActiveRequestsTagKey(string? scheme, string? host, int port, bool hasUriTags, string method)
+        public ActiveRequestsTagKey(string? scheme, string? host, int port, string method)
         {
             Scheme = scheme;
             Host = host;
             Port = port;
-            HasUriTags = hasUriTags;
             Method = method;
-            _hashCode = HashCode.Combine(scheme, host, port, hasUriTags, method);
+            _hashCode = HashCode.Combine(scheme, host, port, method);
         }
 
         public bool Equals(ActiveRequestsTagKey other) =>
             Scheme == other.Scheme &&
             Host == other.Host &&
             Port == other.Port &&
-            HasUriTags == other.HasUriTags &&
             Method == other.Method;
 
         public override bool Equals(object? obj) => obj is ActiveRequestsTagKey other && Equals(other);
@@ -47,7 +44,7 @@ namespace System.Net.Http.Metrics
         public TagList ToTagList()
         {
             TagList tags = default;
-            if (HasUriTags)
+            if (Scheme is not null)
             {
                 tags.Add("url.scheme", Scheme);
                 tags.Add("server.address", Host);
@@ -56,6 +53,9 @@ namespace System.Net.Http.Metrics
             tags.Add("http.request.method", Method);
             return tags;
         }
+
+        public override string ToString() =>
+            $"{Method}{(Scheme is not null ? $" {Scheme}://{Host}:{Port}" : "")}";
     }
 
     /// <summary>
@@ -87,6 +87,7 @@ namespace System.Net.Http.Metrics
                 {
                     // Key doesn't exist, nothing to decrement.
                     // This shouldn't happen in normal operation but we handle it gracefully.
+                    Debug.Fail($"Decrement for non-existing request {key}");
                     return;
                 }
 
@@ -218,8 +219,6 @@ namespace System.Net.Http.Metrics
 
         private void RequestStop(HttpRequestMessage request, HttpResponseMessage? response, Exception? exception, long startTimestamp, bool recordCurrentRequests)
         {
-            TagList tags = InitializeCommonTags(request);
-
             if (recordCurrentRequests)
             {
                 _activeRequestsTracker.Decrement(CreateActiveRequestsTagKey(request));
@@ -230,6 +229,7 @@ namespace System.Net.Http.Metrics
                 return;
             }
 
+            TagList tags = InitializeCommonTags(request);
             if (response is not null)
             {
                 tags.Add("http.response.status_code", DiagnosticsHelper.GetBoxedInt32((int)response.StatusCode));
@@ -274,19 +274,17 @@ namespace System.Net.Http.Metrics
             string? scheme = null;
             string? host = null;
             int port = 0;
-            bool hasUriTags = false;
 
             if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
             {
                 scheme = requestUri.Scheme;
                 host = DiagnosticsHelper.GetServerAddress(request, _proxy);
                 port = requestUri.Port;
-                hasUriTags = true;
             }
 
             string method = (string)DiagnosticsHelper.GetMethodTag(request.Method, out _).Value!;
 
-            return new ActiveRequestsTagKey(scheme, host, port, hasUriTags, method);
+            return new ActiveRequestsTagKey(scheme, host, port, method);
         }
 
         private sealed class SharedMeter : Meter

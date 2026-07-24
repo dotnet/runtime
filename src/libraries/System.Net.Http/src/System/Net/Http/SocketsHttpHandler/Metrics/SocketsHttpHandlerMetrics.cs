@@ -58,6 +58,9 @@ namespace System.Net.Http.Metrics
             }
             return tags;
         }
+
+        public override string ToString() =>
+            $"HTTP/{ProtocolVersion} {Scheme}://{Host}:{Port} {(IsIdle ? "idle" : "active")}{(PeerAddress is not null ? $" {PeerAddress}" : "")}";
     }
 
     /// <summary>
@@ -89,6 +92,7 @@ namespace System.Net.Http.Metrics
                 {
                     // Key doesn't exist, nothing to decrement.
                     // This shouldn't happen in normal operation but we handle it gracefully.
+                    Debug.Fail($"Decrement for non-existing connection {key}");
                     return;
                 }
 

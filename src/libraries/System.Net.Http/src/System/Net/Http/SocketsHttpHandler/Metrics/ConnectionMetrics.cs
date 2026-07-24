@@ -53,23 +53,27 @@ namespace System.Net.Http.Metrics
         {
             if (_openConnectionsEnabled)
             {
-                _currentlyIdle = true;
-                _metrics.OpenConnectionsTracker.Increment(CreateTagKey(idle: true));
+                lock (this)
+                {
+                    _currentlyIdle = true;
+                    _metrics.OpenConnectionsTracker.Increment(CreateTagKey(idle: true));
+                }
             }
         }
 
         public void ConnectionClosed(long durationMs)
         {
-            TagList tags = GetTags();
-
             if (_metrics.ConnectionDuration.Enabled)
             {
-                _metrics.ConnectionDuration.Record(durationMs / 1000d, tags);
+                _metrics.ConnectionDuration.Record(durationMs / 1000d, GetTags());
             }
 
             if (_openConnectionsEnabled)
             {
-                _metrics.OpenConnectionsTracker.Decrement(CreateTagKey(idle: _currentlyIdle));
+                lock (this)
+                {
+                    _metrics.OpenConnectionsTracker.Decrement(CreateTagKey(idle: _currentlyIdle));
+                }
             }
         }
 
@@ -77,9 +81,12 @@ namespace System.Net.Http.Metrics
         {
             if (_openConnectionsEnabled && _currentlyIdle != idle)
             {
-                _currentlyIdle = idle;
-                _metrics.OpenConnectionsTracker.Decrement(CreateTagKey(idle: !idle));
-                _metrics.OpenConnectionsTracker.Increment(CreateTagKey(idle: idle));
+                lock (this)
+                {
+                    _currentlyIdle = idle;
+                    _metrics.OpenConnectionsTracker.Decrement(CreateTagKey(idle: !idle));
+                    _metrics.OpenConnectionsTracker.Increment(CreateTagKey(idle: idle));
+                }
             }
         }
     }
