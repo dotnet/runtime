@@ -269,90 +269,76 @@ public static partial class XmlSerializerTests
     public static void Xml_ReadOnlyCollection()
     {
         ReadOnlyCollection<string> roc = new ReadOnlyCollection<string>(new string[] { "one", "two" });
-
-#if ReflectionOnly
-        // Expect exception when _using_ the serializer
         var serializer = new XmlSerializer(typeof(ReadOnlyCollection<string>));
-        var ex = Assert.Throws<InvalidOperationException>(() => Serialize(roc, null, () => serializer));
-        Assert.Equal("There was an error generating the XML document.", ex.Message);
-        Assert.NotNull(ex.InnerException);
-        Assert.IsType<InvalidOperationException>(ex.InnerException);
-        Assert.StartsWith("To be XML serializable, types which inherit from ICollection must have an implementation of Add(System.String) at all levels of their inheritance hierarchy.", ex.InnerException.Message);
-#else
-        // Expect exception when _creating_ the serializer
-        var ex = Assert.Throws<InvalidOperationException>(() => new XmlSerializer(typeof(ReadOnlyCollection<string>)));
-        Assert.StartsWith("To be XML serializable, types which inherit from ICollection must have an implementation of Add(System.String) at all levels of their inheritance hierarchy.", ex.Message);
-#endif
+        string xml = Serialize(roc, null, () => serializer, skipStringCompare: true);
+        var rtt = (ReadOnlyCollection<string>)Deserialize(serializer, xml)!;
+        Assert.Equal(roc, rtt);
     }
 
     [Theory]
     [MemberData(nameof(Xml_ImmutableCollections_MemberData))]
-    public static void Xml_ImmutableCollections(Type type, object collection, Type createException, Type addException, string expectedXml, string exMsg = null)
+    public static void Xml_ImmutableCollections(Type type, object collection)
     {
-        XmlSerializer serializer;
-
-        // Some collections implement the required enumerator/Add combo (ImmutableList, ImmutableArray) and some don't (ImmutableStack,
-        // ImmutableQueue). If they do not, they will throw upon serializer construction in RefEmit mode. They should throw when
-        // first using the serializer in Reflection mode.
-#if ReflectionOnly
-        serializer = new XmlSerializer(type);
-        if (createException != null)
-        {
-            var ex = Assert.Throws(createException, () => Serialize(collection, expectedXml, () => serializer));
-            if (exMsg != null)
-                Assert.Contains(exMsg, $"{ex.Message} : {ex.InnerException?.Message}");
-            return;
-        }
-#else
-        if (createException != null)
-        {
-            var ex = Assert.Throws(createException, () => serializer = new XmlSerializer(type));
-            if (exMsg != null)
-                Assert.Contains(exMsg, $"{ex.Message} : {ex.InnerException?.Message}");
-            return;
-        }
-        serializer = new XmlSerializer(type);
-#endif
-
-        // If they do meet the signature requirement, they may succeed or fail depending on whether their Add/Indexer explicitly throw
-        // or not. (ImmutableArray throws. ImmutableList does not - it returns a new copy instead... which gets ignored and is thus
-        // essentially a silent failure.) Serializing out to a string first should work though.
-        string serializedValue = Serialize(collection, expectedXml, () => serializer);
-
-        if (addException != null)
-        {
-            var ex = Assert.Throws(addException, () => Deserialize(serializer, serializedValue));
-            if (exMsg != null)
-                Assert.Contains(exMsg, $"{ex.Message} : {ex.InnerException?.Message}");
-            return;
-        }
-
-        // In this case, we can execute everything without exception. But since our calls to '.Add()' do nothing, we end up
-        // with an empty collection
-        var rttCollection = Deserialize(serializer, serializedValue);
+        var serializer = new XmlSerializer(type);
+        string xml = Serialize(collection, null, () => serializer, skipStringCompare: true);
+        var rttCollection = Deserialize(serializer, xml);
         Assert.NotNull(rttCollection);
-        Assert.Empty((IEnumerable)rttCollection);
+        var originalItems = ((IEnumerable)collection).Cast<object?>().ToArray();
+        var rttItems = ((IEnumerable)rttCollection!).Cast<object?>().ToArray();
+        // ImmutableHashSet<T> does not guarantee enumeration order; compare as a set.
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ImmutableHashSet<>))
+            Assert.True(new HashSet<object?>(originalItems).SetEquals(rttItems));
+        else
+            Assert.Equal(originalItems, rttItems);
     }
+
     public static IEnumerable<object[]> Xml_ImmutableCollections_MemberData()
     {
-        string arrayOfInt = WithXmlHeader("<ArrayOfInt xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><int>42</int></ArrayOfInt>");
-        string arrayOfAny = WithXmlHeader("<ArrayOfAnyType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><anyType /></ArrayOfAnyType>");
+        // Reference type element from the original #66264 repro (nullable reference value type via ConsoleColor?
+        // that originally caused an AccessViolationException for ImmutableArray<T>).
+        ConsoleColor?[] colors = new ConsoleColor?[] { ConsoleColor.Red, null, ConsoleColor.Blue };
 
+        // ImmutableArray<T>
+        yield return new object[] { typeof(ImmutableArray<int>), ImmutableArray.Create(1, 2, 3) };
+        yield return new object[] { typeof(ImmutableArray<string>), ImmutableArray.Create("a", "b", "c") };
+        yield return new object[] { typeof(ImmutableArray<ConsoleColor?>), ImmutableArray.Create(colors) };
+
+        // ImmutableList<T> (previously silently deserialized empty)
+        yield return new object[] { typeof(ImmutableList<int>), ImmutableList.Create(1, 2, 3) };
+        yield return new object[] { typeof(ImmutableList<string>), ImmutableList.Create("a", "b", "c") };
+
+        // ImmutableHashSet<T> / ImmutableSortedSet<T> (no Add, but have [CollectionBuilder])
+        yield return new object[] { typeof(ImmutableHashSet<int>), ImmutableHashSet.Create(1, 2, 3) };
+        yield return new object[] { typeof(ImmutableSortedSet<int>), ImmutableSortedSet.Create(3, 1, 2) };
+
+        // ImmutableStack<T> / ImmutableQueue<T> (no Add, ordering preserved via reversal for Stack)
+        yield return new object[] { typeof(ImmutableStack<int>), ImmutableStack.CreateRange(new[] { 1, 2, 3 }) };
+        yield return new object[] { typeof(ImmutableQueue<int>), ImmutableQueue.CreateRange(new[] { 1, 2, 3 }) };
+    }
+
+    [Theory]
+    [MemberData(nameof(Xml_UnsupportedImmutableCollections_MemberData))]
+    public static void Xml_UnsupportedImmutableCollections(Type type, Type expectedException, string exMsg)
+    {
+        // IDictionary-implementing types are not supported by XmlSerializer at all.
 #if ReflectionOnly
-        yield return new object[] { typeof(ImmutableArray<int>), ImmutableArray.Create(42), null, typeof(InvalidOperationException), arrayOfInt, "Specified method is not supported." };
-        yield return new object[] { typeof(ImmutableArray<object>), ImmutableArray.Create(new object()), null, typeof(InvalidOperationException), arrayOfAny, "Specified method is not supported." };
-        yield return new object[] { typeof(ImmutableList<int>), ImmutableList.Create(42), null, typeof(InvalidOperationException), arrayOfInt, "Specified method is not supported." };
-        yield return new object[] { typeof(ImmutableStack<int>), ImmutableStack.Create(42), typeof(InvalidOperationException), null, arrayOfInt, "To be XML serializable, types which inherit from IEnumerable must have an implementation of Add" };
-        yield return new object[] { typeof(ImmutableQueue<int>), ImmutableQueue.Create(42), typeof(InvalidOperationException), null, arrayOfInt, "To be XML serializable, types which inherit from IEnumerable must have an implementation of Add" };
-        yield return new object[] { typeof(ImmutableDictionary<string, int>), new Dictionary<string, int>() { { "one", 1 } }.ToImmutableDictionary(), typeof(InvalidOperationException), null, null, "is not supported because it implements IDictionary." };
+        var serializer = new XmlSerializer(type);
+        var ex = Assert.Throws(expectedException, () => Serialize(new object(), null, () => serializer, skipStringCompare: true));
 #else
-        yield return new object[] { typeof(ImmutableArray<int>), ImmutableArray.Create(42), null, typeof(InvalidOperationException), arrayOfInt, "Parameterless constructor is required for collections and enumerators." };
-        yield return new object[] { typeof(ImmutableArray<object>), ImmutableArray.Create(new object()), null, typeof(InvalidOperationException), arrayOfAny, "Parameterless constructor is required for collections and enumerators." };
-        yield return new object[] { typeof(ImmutableList<int>), ImmutableList.Create(42), null, null, arrayOfInt };
-        yield return new object[] { typeof(ImmutableStack<int>), ImmutableStack.Create(42), typeof(InvalidOperationException), null, arrayOfInt, "To be XML serializable, types which inherit from IEnumerable must have an implementation of Add" };
-        yield return new object[] { typeof(ImmutableQueue<int>), ImmutableQueue.Create(42), typeof(InvalidOperationException), null, arrayOfInt, "To be XML serializable, types which inherit from IEnumerable must have an implementation of Add" };
-        // IDictionary types are denied right from the start with a NotSupportedExcpetion
-        yield return new object[] { typeof(ImmutableDictionary<string, int>), new Dictionary<string, int>() { { "one", 1 } }.ToImmutableDictionary(), typeof(NotSupportedException), null, null, "is not supported because it implements IDictionary." };
+        var ex = Assert.Throws(expectedException, () => new XmlSerializer(type));
+#endif
+        if (exMsg != null)
+            Assert.Contains(exMsg, $"{ex.Message} : {ex.InnerException?.Message}");
+    }
+
+    public static IEnumerable<object[]> Xml_UnsupportedImmutableCollections_MemberData()
+    {
+#if ReflectionOnly
+        yield return new object[] { typeof(ImmutableDictionary<string, int>), typeof(InvalidOperationException), "is not supported because it implements IDictionary." };
+        yield return new object[] { typeof(ImmutableSortedDictionary<string, int>), typeof(InvalidOperationException), "is not supported because it implements IDictionary." };
+#else
+        yield return new object[] { typeof(ImmutableDictionary<string, int>), typeof(NotSupportedException), "is not supported because it implements IDictionary." };
+        yield return new object[] { typeof(ImmutableSortedDictionary<string, int>), typeof(NotSupportedException), "is not supported because it implements IDictionary." };
 #endif
     }
 #endif  // !XMLSERIALIZERGENERATORTESTS
