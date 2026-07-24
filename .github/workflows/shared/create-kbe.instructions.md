@@ -61,6 +61,13 @@ best-match ranking can place noisier hits above the correct one.
    `Known Build Error` and area labels, so the label-scoped variations above
    skip over it.
 
+When a failure includes a complete test method identifier, search that
+identifier verbatim before deriving any shorter stem. Do not truncate
+underscore-delimited identifiers (for example, keep
+`CreateFileChangeToken_RootDeletedAndRecreated_TokenFiresWhenFileCreated`);
+GitHub search does not reliably prefix-match them. Only strip the specific
+platform, architecture, and type-width suffixes described in variation 6.
+
 Variations 4 and 5 catch sibling failures filed for the same test class on a
 different platform or runtime variant, plus pre-existing area-team trackers
 that lack the `Known Build Error` label. Variation 6 catches siblings at
