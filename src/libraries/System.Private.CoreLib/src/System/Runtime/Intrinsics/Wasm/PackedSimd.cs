@@ -201,7 +201,7 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static Vector128<int>    ReplaceScalar(Vector128<int>    vector, [ConstantExpected(Max = (byte)(3))] byte imm, int    value) => ReplaceScalar(vector, imm, value);   // takes ImmLaneIdx4
         /// <summary>
-        ///   <para>v128_t wasm_i32x4_replace_lane (v128_t a, int i, int32_t b)</para>
+        ///   <para>v128_t wasm_u32x4_replace_lane (v128_t a, int i, uint32_t b)</para>
         ///   <para>i32x4.replace_lane laneidx : [v128 i32] -> [v128]</para>
         /// </summary>
         [Intrinsic]
@@ -1782,7 +1782,8 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static Vector128<long>   CompareLessThan(Vector128<long>   left, Vector128<long>   right) => CompareLessThan(left, right);
         /// <summary>
-        ///   <para>i64x2.lt_u : [v128 v128] -> [v128]</para>
+        ///   <para>i64x2.lt_s : [v128 v128] -> [v128]</para>
+        ///   <para>No unsigned i64x2 comparison instruction exists; the sign bit of each operand is flipped before the signed comparison.</para>
         /// </summary>
         [Intrinsic]
         public static Vector128<ulong>  CompareLessThan(Vector128<ulong>  left, Vector128<ulong>  right) => CompareLessThan(left, right);
@@ -1854,7 +1855,8 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static Vector128<long>   CompareLessThanOrEqual(Vector128<long>   left, Vector128<long>   right) => CompareLessThanOrEqual(left, right);
         /// <summary>
-        ///   <para>i64x2.le_u : [v128 v128] -> [v128]</para>
+        ///   <para>i64x2.le_s : [v128 v128] -> [v128]</para>
+        ///   <para>No unsigned i64x2 comparison instruction exists; the sign bit of each operand is flipped before the signed comparison.</para>
         /// </summary>
         [Intrinsic]
         public static Vector128<ulong>  CompareLessThanOrEqual(Vector128<ulong>  left, Vector128<ulong>  right) => CompareLessThanOrEqual(left, right);
@@ -1926,7 +1928,8 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static Vector128<long>   CompareGreaterThan(Vector128<long>   left, Vector128<long>   right) => CompareGreaterThan(left, right);
         /// <summary>
-        ///   <para>i64x2.gt_u : [v128 v128] -> [v128]</para>
+        ///   <para>i64x2.gt_s : [v128 v128] -> [v128]</para>
+        ///   <para>No unsigned i64x2 comparison instruction exists; the sign bit of each operand is flipped before the signed comparison.</para>
         /// </summary>
         [Intrinsic]
         public static Vector128<ulong>  CompareGreaterThan(Vector128<ulong>  left, Vector128<ulong>  right) => CompareGreaterThan(left, right);
@@ -1992,14 +1995,14 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static Vector128<uint>   CompareGreaterThanOrEqual(Vector128<uint>   left, Vector128<uint>   right) => CompareGreaterThanOrEqual(left, right);
         /// <summary>
-        ///   <para>v128_t wasm_i32x4_ge (v128_t a, v128_t b)</para>
-        ///   <para>i32x4.ge_s : [v128 v128] -> [v128]</para>
+        ///   <para>v128_t wasm_i64x2_ge (v128_t a, v128_t b)</para>
+        ///   <para>i64x2.ge_s : [v128 v128] -> [v128]</para>
         /// </summary>
         [Intrinsic]
         public static Vector128<long>   CompareGreaterThanOrEqual(Vector128<long>   left, Vector128<long>   right) => CompareGreaterThanOrEqual(left, right);
         /// <summary>
-        ///   <para>v128_t wasm_i64x2_ge (v128_t a, v128_t b)</para>
         ///   <para>i64x2.ge_s : [v128 v128] -> [v128]</para>
+        ///   <para>No unsigned i64x2 comparison instruction exists; the sign bit of each operand is flipped before the signed comparison.</para>
         /// </summary>
         [Intrinsic]
         public static Vector128<ulong>  CompareGreaterThanOrEqual(Vector128<ulong>  left, Vector128<ulong>  right) => CompareGreaterThanOrEqual(left, right);
@@ -2200,8 +2203,8 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static unsafe Vector128<ulong>  LoadScalarAndSplatVector128(ulong*  address) => LoadScalarAndSplatVector128(address);
         /// <summary>
-        ///   <para>v128_t wasm_v128_load64_splat (const void *mem)</para>
-        ///   <para>v128.load64_splat memarg : [i32] -> [v128]</para>
+        ///   <para>v128_t wasm_v128_load32_splat (const void *mem)</para>
+        ///   <para>v128.load32_splat memarg : [i32] -> [v128]</para>
         /// </summary>
         [Intrinsic]
         public static unsafe Vector128<float>  LoadScalarAndSplatVector128(float*  address) => LoadScalarAndSplatVector128(address);
@@ -2212,14 +2215,14 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static unsafe Vector128<double> LoadScalarAndSplatVector128(double* address) => LoadScalarAndSplatVector128(address);
         /// <summary>
-        ///   <para>v128_t wasm_v128_load64_splat (const void *mem)</para>
-        ///   <para>v128.load64_splat memarg : [i32] -> [v128]</para>
+        ///   <para>v128_t wasm_v128_load32_splat (const void *mem)</para>
+        ///   <para>v128.load32_splat memarg : [i32] -> [v128]</para>
         /// </summary>
         [Intrinsic]
         public static unsafe Vector128<nint>   LoadScalarAndSplatVector128(nint*   address) => LoadScalarAndSplatVector128(address);
         /// <summary>
-        ///   <para>v128_t wasm_v128_load64_splat (const void *mem)</para>
-        ///   <para>v128.load64_splat memarg : [i32] -> [v128]</para>
+        ///   <para>v128_t wasm_v128_load32_splat (const void *mem)</para>
+        ///   <para>v128.load32_splat memarg : [i32] -> [v128]</para>
         /// </summary>
         [Intrinsic]
         public static unsafe Vector128<nuint>  LoadScalarAndSplatVector128(nuint*  address) => LoadScalarAndSplatVector128(address);
