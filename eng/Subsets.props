@@ -507,6 +507,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.toolstests+'))">
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.DependencyAnalysisFramework.Tests\ILCompiler.DependencyAnalysisFramework.Tests.csproj"
+      Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.TypeSystem.Tests\ILCompiler.TypeSystem.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Compiler.Tests\ILCompiler.Compiler.Tests.csproj"
