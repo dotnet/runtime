@@ -4358,6 +4358,15 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
     }
 #endif
 
+    // Reject CSE candidates that live across a call, have a non-trivial
+    // code footprint, and only a small (weighted) number of uses.
+    //
+    if ((CodeOptKind() != Compiler::SMALL_CODE) && candidate->LiveAcrossCall() && (candidate->Size() >= 8) &&
+        (candidate->UseCount() <= 3))
+    {
+        return false;
+    }
+
     /*
       Our calculation is based on the following cost estimate formula
 
