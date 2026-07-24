@@ -121,7 +121,8 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
 
                 AddEnvironmentVariablesToProcess(startInfo, DeploymentParameters.EnvironmentVariables);
 
-                var started = new TaskCompletionSource<object>();
+                var started = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var hostExitTokenSource = new CancellationTokenSource();
 
                 HostProcess = new Process() { StartInfo = startInfo };
                 HostProcess.EnableRaisingEvents = true;
@@ -134,7 +135,6 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
 
                     OutputReceived?.Invoke(sender, dataArgs);
                 };
-                var hostExitTokenSource = new CancellationTokenSource();
                 HostProcess.Exited += (sender, e) =>
                 {
                     Logger.LogInformation("host process ID {pid} shut down", HostProcess.Id);
@@ -151,7 +151,9 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
                 }
                 catch (Exception ex)
                 {
+                    // Surface the real launch failure instead of letting it be masked later during disposal.
                     Logger.LogError("Error occurred while starting the process. Exception: {exception}", ex.ToString());
+                    throw;
                 }
 
                 if (HostProcess.HasExited)
