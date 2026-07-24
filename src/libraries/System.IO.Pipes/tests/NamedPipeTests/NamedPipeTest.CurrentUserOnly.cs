@@ -38,7 +38,7 @@ namespace System.IO.Pipes.Tests
             {
                 using (var client = new NamedPipeClientStream(".", name, PipeDirection.InOut, PipeOptions.CurrentUserOnly))
                 {
-                    // Should not fail to connect since both, the server and client have the same owner.
+                    // Should not fail to connect since both the server and client are running under the same user.
                     client.Connect();
                 }
             }
@@ -124,7 +124,7 @@ namespace System.IO.Pipes.Tests
                     {
                         using (var client = new NamedPipeClientStream(".", name, PipeDirection.InOut, PipeOptions.CurrentUserOnly))
                         {
-                            // Should not fail to connect since both, the server and client have the same owner.
+                            // Should not fail to connect since both the server and client are running under the same user.
                             client.Connect();
                         }
                     }
