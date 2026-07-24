@@ -2078,20 +2078,7 @@ namespace System
                 sep0 = separators[0];
                 sep1 = separators.Length > 1 ? separators[1] : sep0;
                 sep2 = separators.Length > 2 ? separators[2] : sep1;
-                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
-                {
-                    MakeSeparatorListVectorized(source, ref sepListBuilder, sep0, sep1, sep2);
-                    return;
-                }
-
-                for (int i = 0; i < source.Length; i++)
-                {
-                    char c = source[i];
-                    if (c == sep0 || c == sep1 || c == sep2)
-                    {
-                        sepListBuilder.Append(i);
-                    }
-                }
+                MakeSeparatorListFewChars(source, ref sepListBuilder, sep0, sep1, sep2);
             }
 
             // Handle > 3 separators with a probabilistic map, ala IndexOfAny.
@@ -2111,14 +2098,22 @@ namespace System
             }
         }
 
-        private static void MakeSeparatorListVectorized(ReadOnlySpan<char> sourceSpan, ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
+        private static void MakeSeparatorListFewChars(ReadOnlySpan<char> sourceSpan, ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
         {
-            // Redundant test so we won't prejit remainder of this method
-            // on platforms where it is not supported
-            if (!Vector128.IsHardwareAccelerated)
+            if (!Vector128.IsHardwareAccelerated || (uint)sourceSpan.Length < (uint)Vector128<ushort>.Count*2)
             {
-                throw new PlatformNotSupportedException();
+                for (int i = 0; i < sourceSpan.Length; i++)
+                {
+                    char v = sourceSpan[i];
+                    if (v == c || v == c2 || v == c3)
+                    {
+                        sepListBuilder.Append(i);
+                    }
+                }
+
+                return;
             }
+
             Debug.Assert(sourceSpan.Length >= Vector128<ushort>.Count*2);
             int baseIndex = 0;
             ReadOnlySpan<ushort> sourceSpanUInt16 = MemoryMarshal.Cast<char, ushort>(sourceSpan);
@@ -2208,16 +2203,20 @@ namespace System
                 {
                     Vector512<ushort> vector = Vector512.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector512<ushort>.Count));
                     Vector512<byte> cmp = Vector512.Equals(vector, v1).AsByte() | Vector512.Equals(vector, v2).AsByte() | Vector512.Equals(vector, v3).AsByte();
-                    int finalIndex = sourceSpanUInt16.Length - Vector512<ushort>.Count;
-                    ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555 & ~((1UL << (Vector512<byte>.Count - remaining.Length * sizeof(char))) - 1);
-                    while (mask != 0)
+                    if (cmp != Vector512<byte>.Zero)
                     {
-                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                        sepListBuilder.Append(finalIndex + (int)bitPos);
-                        mask = BitOperations.ResetLowestSetBit(mask);
+                        int finalIndex = sourceSpanUInt16.Length - Vector512<ushort>.Count;
+                        ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555 & ~((1UL << (Vector512<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                        while (mask != 0)
+                        {
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            sepListBuilder.Append(finalIndex + (int)bitPos);
+                            mask = BitOperations.ResetLowestSetBit(mask);
+                        }
                     }
+
+                    return;
                 }
-                return;
             }
             else if (Vector256.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector256<ushort>.Count*2)
             {
@@ -2303,19 +2302,24 @@ namespace System
                 {
                     Vector256<ushort> vector = Vector256.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector256<ushort>.Count));
                     Vector256<byte> cmp = Vector256.Equals(vector, v1).AsByte() | Vector256.Equals(vector, v2).AsByte() | Vector256.Equals(vector, v3).AsByte();
-                    int finalIndex = sourceSpanUInt16.Length - Vector256<ushort>.Count;
-                    uint mask = cmp.ExtractMostSignificantBits() & 0x55555555 & ~((1u << (Vector256<byte>.Count - remaining.Length * sizeof(char))) - 1);
-                    while (mask != 0)
+                    if (cmp != Vector256<byte>.Zero)
                     {
-                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                        sepListBuilder.Append(finalIndex + (int)bitPos);
-                        mask = BitOperations.ResetLowestSetBit(mask);
+                        int finalIndex = sourceSpanUInt16.Length - Vector256<ushort>.Count;
+                        uint mask = cmp.ExtractMostSignificantBits() & 0x55555555 & ~((1u << (Vector256<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                        while (mask != 0)
+                        {
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            sepListBuilder.Append(finalIndex + (int)bitPos);
+                            mask = BitOperations.ResetLowestSetBit(mask);
+                        }
                     }
                 }
-                return;
             }
-            else if (Vector128.IsHardwareAccelerated)
+            else
             {
+                Debug.Assert(Vector128.IsHardwareAccelerated);
+                Debug.Assert(remaining.Length >= Vector128<ushort>.Count*2);
+
                 Vector128<ushort> v1 = Vector128.Create((ushort)c);
                 Vector128<ushort> v2 = Vector128.Create((ushort)c2);
                 Vector128<ushort> v3 = Vector128.Create((ushort)c3);
@@ -2398,19 +2402,19 @@ namespace System
                 {
                     Vector128<ushort> vector = Vector128.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector128<ushort>.Count));
                     Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
-                    int finalIndex = sourceSpanUInt16.Length - Vector128<ushort>.Count;
-                    uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
-                    while (mask != 0)
+                    if (cmp != Vector128<byte>.Zero)
                     {
-                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                        sepListBuilder.Append(finalIndex + (int)bitPos);
-                        mask = BitOperations.ResetLowestSetBit(mask);
+                        int finalIndex = sourceSpanUInt16.Length - Vector128<ushort>.Count;
+                        uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                        while (mask != 0)
+                        {
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            sepListBuilder.Append(finalIndex + (int)bitPos);
+                            mask = BitOperations.ResetLowestSetBit(mask);
+                        }
                     }
                 }
-                return;
             }
-
-            Debug.Fail("We should not be able to reach this point of MakeSeparatorListVectorized.");
         }
 
         /// <summary>
