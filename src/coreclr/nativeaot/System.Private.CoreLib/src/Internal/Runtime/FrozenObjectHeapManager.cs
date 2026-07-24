@@ -29,9 +29,14 @@ namespace Internal.Runtime
         private const nuint FOH_SEGMENT_DEFAULT_SIZE = 4 * 1024 * 1024;
         // Size to commit on demand in that reserved space
         private const nuint FOH_COMMIT_SIZE = 64 * 1024;
-        // The data of arrays at least this big is aligned on FOH_DATA_ALIGNMENT
-        private const nuint FOH_MIN_SIZE_TO_ALIGN = 512;
+        // The data of arrays at least this big is aligned on FOH_DATA_ALIGNMENT, which is
+        // the widest vector the platform can load from it.
+        private const nuint FOH_MIN_SIZE_TO_ALIGN = 128;
+#if TARGET_ARM64
+        private const nuint FOH_DATA_ALIGNMENT = 16;
+#else
         private const nuint FOH_DATA_ALIGNMENT = 64;
+#endif
 
         public T? TryAllocateObject<T>() where T : class
         {
@@ -205,7 +210,7 @@ namespace Internal.Runtime
                     // The gap has to stay walkable, so it is formatted as a free object.
                     HalfBakedObject* filler = (HalfBakedObject*)m_pCurrent;
                     filler->SetMethodTable(s_freeObjectMethodTable);
-                    filler->SetNumComponents((uint)(pad - ArrayBaseBaseSize));
+                    filler->SetNumComponents((uint)(pad - s_freeObjectMethodTable->BaseSize));
                     m_pCurrent += pad;
                 }
 
@@ -219,33 +224,25 @@ namespace Internal.Runtime
                 return obj;
             }
 
-            // Objects that only get accessed through their data (arrays) benefit from having
-            // that data start on a cache line, as long as they are big enough for the padding
-            // to pay off.
+            // Arrays are accessed through their data, so it pays off to have that start on a
+            // cache line as long as the array is big enough to make up for the gap we leave
+            // in front of it. Strings are not worth it: their characters sit at an offset
+            // that can never be aligned.
             private nuint GetAlignmentPadding(MethodTable* type, nuint objectSize)
             {
-                if ((objectSize < FOH_MIN_SIZE_TO_ALIGN) || !type->HasComponentSize)
+                if ((objectSize < FOH_MIN_SIZE_TO_ALIGN) || !type->IsArray)
                 {
                     return 0;
                 }
 
-                nuint dataAddr = (nuint)m_pCurrent + ArrayBaseSize;
-                nuint pad = (FOH_DATA_ALIGNMENT - (dataAddr & (FOH_DATA_ALIGNMENT - 1))) & (FOH_DATA_ALIGNMENT - 1);
+                // BaseSize includes the header, which is in front of the object.
+                nuint dataAddr = (nuint)m_pCurrent + type->BaseSize - (nuint)sizeof(ObjHeader);
+                nuint pad = (nuint)(-(nint)dataAddr) & (FOH_DATA_ALIGNMENT - 1);
 
-                // The gap is formatted as a free object so it can't be smaller than one.
-                if ((pad != 0) && (pad < ArrayBaseBaseSize))
-                {
-                    pad += FOH_DATA_ALIGNMENT;
-                }
-
-                return pad;
+                // The gap is formatted as a free object, so it can't be smaller than one.
+                nuint minFreeObjSize = s_freeObjectMethodTable->BaseSize;
+                return ((pad == 0) || (pad >= minFreeObjSize)) ? pad : (pad + FOH_DATA_ALIGNMENT);
             }
-
-            // Where the first element of an array sits relative to the object pointer, and
-            // the size of an element-less array including its header.
-            private static nuint ArrayBaseSize =>
-                ((nuint)(sizeof(IntPtr) + sizeof(int)) + (nuint)sizeof(IntPtr) - 1) & ~((nuint)sizeof(IntPtr) - 1);
-            private static nuint ArrayBaseBaseSize => ArrayBaseSize + (nuint)sizeof(ObjHeader);
         }
 
         [StructLayout(LayoutKind.Sequential)]

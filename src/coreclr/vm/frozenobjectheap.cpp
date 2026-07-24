@@ -8,9 +8,14 @@
 #define FOH_SEGMENT_DEFAULT_SIZE (4 * 1024 * 1024)
 // Size to commit on demand in that reserved space
 #define FOH_COMMIT_SIZE (64 * 1024)
-// The data of arrays at least this big is aligned on FOH_DATA_ALIGNMENT
-#define FOH_MIN_SIZE_TO_ALIGN 512
+// The data of arrays at least this big is aligned on FOH_DATA_ALIGNMENT, which is the
+// widest vector the platform can load from it.
+#define FOH_MIN_SIZE_TO_ALIGN 128
+#ifdef TARGET_ARM64
+#define FOH_DATA_ALIGNMENT 16
+#else
 #define FOH_DATA_ALIGNMENT 64
+#endif
 
 FrozenObjectHeapManager::FrozenObjectHeapManager():
     m_Crst(CrstFrozenObjectHeap, CRST_UNSAFE_ANYMODE),
@@ -250,7 +255,7 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
         // The gap has to stay walkable, so it is formatted as a free object.
         ArrayBase* filler = reinterpret_cast<ArrayBase*>(m_pCurrent);
         filler->SetMethodTable(g_pFreeObjectMethodTable);
-        filler->SetNumComponents((INT32)(pad - ARRAYBASE_BASESIZE));
+        filler->SetNumComponents((INT32)(pad - g_pFreeObjectMethodTable->GetBaseSize()));
         _ASSERT(filler->GetSize() == pad);
         m_pCurrent += pad;
     }
@@ -263,41 +268,42 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
     return object;
 }
 
-// Objects that only get accessed through their data (arrays) benefit from having that
-// data start on a cache line, as long as they are big enough for the padding to pay off.
+// Arrays are accessed through their data, so it pays off to have that start on a cache
+// line as long as the array is big enough to make up for the gap we leave in front of it.
+// Strings are not worth it: their characters sit at an offset that can never be aligned.
 size_t FrozenObjectSegment::GetAlignmentPadding(PTR_MethodTable type, size_t objectSize) const
 {
-    if ((objectSize < FOH_MIN_SIZE_TO_ALIGN) || !type->HasComponentSize())
+    if ((objectSize < FOH_MIN_SIZE_TO_ALIGN) || !type->IsArray())
     {
         return 0;
     }
 
-    const size_t dataAddr = (size_t)m_pCurrent + ARRAYBASE_SIZE;
-    size_t pad = ALIGN_UP(dataAddr, (size_t)FOH_DATA_ALIGNMENT) - dataAddr;
+    const size_t dataAddr = (size_t)m_pCurrent + ArrayBase::GetDataPtrOffset(type);
+    const size_t pad = ALIGN_UP(dataAddr, (size_t)FOH_DATA_ALIGNMENT) - dataAddr;
 
-    // The gap is formatted as a free object so it can't be smaller than one.
-    if ((pad != 0) && (pad < ARRAYBASE_BASESIZE))
+    // The gap is formatted as a free object, so it can't be smaller than one.
+    const size_t minFreeObjSize = g_pFreeObjectMethodTable->GetBaseSize();
+    return ((pad == 0) || (pad >= minFreeObjSize)) ? pad : (pad + FOH_DATA_ALIGNMENT);
+}
+
+// Returns obj, or the first real object after it. The gaps we leave to align array data
+// are formatted as free objects and are not something to hand out - gc_heap::walk_heap
+// skips them the same way. Returns nullptr once the end of the segment is reached.
+Object* FrozenObjectSegment::SkipFreeObjects(uint8_t* obj) const
+{
+    // FOH doesn't support objects with non-DATA_ALIGNMENT alignment yet.
+    while ((obj < m_pCurrent) &&
+           (reinterpret_cast<Object*>(obj)->GetGCSafeMethodTable() == g_pFreeObjectMethodTable))
     {
-        pad += FOH_DATA_ALIGNMENT;
+        obj += ALIGN_UP(reinterpret_cast<Object*>(obj)->GetSize(), DATA_ALIGNMENT);
     }
 
-    _ASSERT(IS_ALIGNED(pad, DATA_ALIGNMENT));
-    return pad;
+    return (obj < m_pCurrent) ? reinterpret_cast<Object*>(obj) : nullptr;
 }
 
 Object* FrozenObjectSegment::GetFirstObject() const
 {
-    if (m_pStart + sizeof(ObjHeader) == m_pCurrent)
-    {
-        // Segment is empty
-        return nullptr;
-    }
-    Object* firstObj = reinterpret_cast<Object*>(m_pStart + sizeof(ObjHeader));
-    if (firstObj->GetGCSafeMethodTable() == g_pFreeObjectMethodTable)
-    {
-        return GetNextObject(firstObj);
-    }
-    return firstObj;
+    return SkipFreeObjects(m_pStart + sizeof(ObjHeader));
 }
 
 Object* FrozenObjectSegment::GetNextObject(Object* obj) const
@@ -306,21 +312,5 @@ Object* FrozenObjectSegment::GetNextObject(Object* obj) const
     _ASSERT(obj != nullptr);
     _ASSERT((uint8_t*)obj >= m_pStart + sizeof(ObjHeader) && (uint8_t*)obj < m_pCurrent);
 
-    // FOH doesn't support objects with non-DATA_ALIGNMENT alignment yet.
-    uint8_t* nextObj = (reinterpret_cast<uint8_t*>(obj) + ALIGN_UP(obj->GetSize(), DATA_ALIGNMENT));
-
-    // Skip the free objects we use to align the data of large arrays.
-    while ((nextObj < m_pCurrent) &&
-           (reinterpret_cast<Object*>(nextObj)->GetGCSafeMethodTable() == g_pFreeObjectMethodTable))
-    {
-        nextObj += ALIGN_UP(reinterpret_cast<Object*>(nextObj)->GetSize(), DATA_ALIGNMENT);
-    }
-
-    if (nextObj < m_pCurrent)
-    {
-        return reinterpret_cast<Object*>(nextObj);
-    }
-
-    // Current object is the last one in the segment
-    return nullptr;
+    return SkipFreeObjects(reinterpret_cast<uint8_t*>(obj) + ALIGN_UP(obj->GetSize(), DATA_ALIGNMENT));
 }
