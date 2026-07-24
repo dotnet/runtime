@@ -25,6 +25,15 @@ namespace System.Xml.Serialization
         private readonly Dictionary<string, FieldBuilder> _idNameFields = new Dictionary<string, FieldBuilder>();
         private int _nextIdNumber;
 
+        // Static field emitted on the generated reader that holds the char[] separators used to split
+        // whitespace-separated list values ([XmlText]/[XmlAttribute] array-like members). It is
+        // initialized once in the generated type's static constructor (see GenerateEnd) from the
+        // UseLegacyXmlListSeparation switch: null for legacy behavior (String.Split's broader
+        // char.IsWhiteSpace() set) or the four characters the XML spec defines as whitespace (#x20,
+        // #x9, #xA, #xD) otherwise. The field lives on the generated subclass, not the public base,
+        // to avoid adding public API surface.
+        private FieldBuilder? _xmlListSeparatorsField;
+
         internal Dictionary<string, EnumMapping> Enums => field ??= new Dictionary<string, EnumMapping>();
 
         private static readonly string[] s_checkTypeString = new string[] { "checkType" };
@@ -255,10 +264,78 @@ namespace System.Xml.Serialization
             }
             ilg.EndMethod();
 
+            EmitXmlListSeparatorsInitializer();
+
             this.typeBuilder.DefineDefaultConstructor(
                 CodeGenerator.PublicMethodAttributes);
             Type readerType = this.typeBuilder.CreateType();
             CreatedTypes.Add(readerType.Name, readerType);
+        }
+
+        // Lazily defines the static char[] field that holds the list-value separators for the generated
+        // reader. See _xmlListSeparatorsField and EmitXmlListSeparatorsInitializer.
+        private FieldBuilder EnsureXmlListSeparatorsField() =>
+            _xmlListSeparatorsField ??= this.typeBuilder.DefineField(
+                "s_xmlListSeparators",
+                typeof(char[]),
+                FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly);
+
+        // If any list member was generated, emits the generated reader's static constructor to
+        // initialize s_xmlListSeparators from the UseLegacyXmlListSeparation switch. The switch is read
+        // once when the reader type loads (rather than baked in at generation time), so a caller's
+        // opt-out is honored even by pre-generated serializers. Legacy => null (String.Split's broader
+        // char.IsWhiteSpace() set); default => the four characters the XML spec defines as whitespace
+        // (#x20, #x9, #xA, #xD).
+        private void EmitXmlListSeparatorsInitializer()
+        {
+            if (_xmlListSeparatorsField is null)
+            {
+                return;
+            }
+
+            MethodInfo AppContext_TryGetSwitch = typeof(AppContext).GetMethod(
+                "TryGetSwitch",
+                CodeGenerator.StaticBindingFlags,
+                new Type[] { typeof(string), typeof(bool).MakeByRefType() }
+                )!;
+
+            ILGenerator cctorIL = this.typeBuilder.DefineTypeInitializer().GetILGenerator();
+            LocalBuilder useLegacy = cctorIL.DeclareLocal(typeof(bool));
+
+            // AppContext.TryGetSwitch returns false and leaves useLegacy false when the switch is unset,
+            // so the out value alone (ignoring the return) yields the default behavior unless the switch
+            // is explicitly set to true.
+            cctorIL.Emit(OpCodes.Ldstr, "Switch.System.Xml.Serialization.UseLegacyXmlListSeparation");
+            cctorIL.Emit(OpCodes.Ldloca_S, useLegacy);
+            cctorIL.Emit(OpCodes.Call, AppContext_TryGetSwitch);
+            cctorIL.Emit(OpCodes.Pop);
+
+            Label legacyLabel = cctorIL.DefineLabel();
+            Label endLabel = cctorIL.DefineLabel();
+            cctorIL.Emit(OpCodes.Ldloc, useLegacy);
+            cctorIL.Emit(OpCodes.Brtrue, legacyLabel);
+
+            // Default: s_xmlListSeparators = new char[] { ' ', '\t', '\n', '\r' };
+            ReadOnlySpan<char> xmlWhitespace = [' ', '\t', '\n', '\r'];
+            cctorIL.Emit(OpCodes.Ldc_I4, xmlWhitespace.Length);
+            cctorIL.Emit(OpCodes.Newarr, typeof(char));
+            for (int i = 0; i < xmlWhitespace.Length; i++)
+            {
+                cctorIL.Emit(OpCodes.Dup);
+                cctorIL.Emit(OpCodes.Ldc_I4, i);
+                cctorIL.Emit(OpCodes.Ldc_I4, (int)xmlWhitespace[i]);
+                cctorIL.Emit(OpCodes.Stelem_I2);
+            }
+            cctorIL.Emit(OpCodes.Stsfld, _xmlListSeparatorsField);
+            cctorIL.Emit(OpCodes.Br, endLabel);
+
+            // Legacy: s_xmlListSeparators = null;
+            cctorIL.MarkLabel(legacyLabel);
+            cctorIL.Emit(OpCodes.Ldnull);
+            cctorIL.Emit(OpCodes.Stsfld, _xmlListSeparatorsField);
+
+            cctorIL.MarkLabel(endLabel);
+            cctorIL.Emit(OpCodes.Ret);
         }
 
         internal string? GenerateElement(XmlMapping xmlMapping)
@@ -2065,7 +2142,10 @@ namespace System.Xml.Serialization
             {
                 if (attribute.IsList)
                 {
-                    LocalBuilder locListValues = ilg.DeclareOrGetLocal(typeof(string), "listValues");
+                    // Split the whitespace-separated attribute list into its items using the separator
+                    // set cached in the generated reader's static field (see GenerateEnd), which honors
+                    // UseLegacyXmlListSeparation. A null field value makes String.Split fall back to its
+                    // broader whitespace set (legacy behavior).
                     LocalBuilder locVals = ilg.DeclareOrGetLocal(typeof(string[]), "vals");
                     MethodInfo String_Split = typeof(string).GetMethod(
                         "Split",
@@ -2085,9 +2165,7 @@ namespace System.Xml.Serialization
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
                     ilg.Call(XmlReader_get_Value);
-                    ilg.Stloc(locListValues);
-                    ilg.Ldloc(locListValues);
-                    ilg.Load(null);
+                    ilg.LoadMember(EnsureXmlListSeparatorsField());
                     ilg.Call(String_Split);
                     ilg.Stloc(locVals);
                     LocalBuilder localI = ilg.DeclareOrGetLocal(typeof(int), "i");
@@ -2353,6 +2431,45 @@ namespace System.Xml.Serialization
             }
             else
             {
+                if (member.IsArrayLike && text.IsList)
+                {
+                    // The text content is a whitespace-separated list; split it and add each value to
+                    // the array-like member (mirrors [XmlAttribute] list handling) using the separator
+                    // set cached in the generated reader's static field (see GenerateEnd), which honors
+                    // UseLegacyXmlListSeparation. A null field value makes String.Split fall back to its
+                    // broader whitespace set (legacy behavior).
+                    LocalBuilder locVals = ilg.DeclareOrGetLocal(typeof(string[]), "vals");
+                    MethodInfo String_Split = typeof(string).GetMethod(
+                        "Split",
+                        CodeGenerator.InstanceBindingFlags,
+                        new Type[] { typeof(char[]), typeof(StringSplitOptions) }
+                        )!;
+                    MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
+                        "get_Reader",
+                        CodeGenerator.InstanceBindingFlags,
+                        Type.EmptyTypes
+                        )!;
+                    MethodInfo XmlReader_ReadContentAsString = typeof(XmlReader).GetMethod(
+                        "ReadContentAsString",
+                        CodeGenerator.InstanceBindingFlags,
+                        Type.EmptyTypes
+                        )!;
+                    ilg.Ldarg(0);
+                    ilg.Call(XmlSerializationReader_get_Reader);
+                    ilg.Call(XmlReader_ReadContentAsString);
+                    ilg.LoadMember(EnsureXmlListSeparatorsField());
+                    ilg.Ldc((int)StringSplitOptions.RemoveEmptyEntries);
+                    ilg.Call(String_Split);
+                    ilg.Stloc(locVals);
+                    LocalBuilder localI = ilg.DeclareOrGetLocal(typeof(int), "i");
+                    ilg.For(localI, 0, locVals);
+                    WriteSourceBegin(member.ArraySource);
+                    WritePrimitive(text.Mapping!, "vals[i]");
+                    WriteSourceEnd(member.ArraySource, text.Mapping!.TypeDesc!.Type!);
+                    ilg.EndFor();
+                    return;
+                }
+
                 if (member.IsArrayLike)
                 {
                     WriteSourceBegin(member.ArraySource);

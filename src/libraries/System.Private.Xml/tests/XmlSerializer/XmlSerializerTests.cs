@@ -814,14 +814,96 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void XML_TypeWithXmlTextAttributeOnArray()
     {
+        // By default an [XmlText] array is serialized as a space-separated list (matching [XmlAttribute]
+        // arrays and the XSD list type), and round-trips back to the original items.
         var original = new TypeWithXmlTextAttributeOnArray() { Text = new string[] { "val1", "val2" } };
 
         var actual = SerializeAndDeserialize<TypeWithXmlTextAttributeOnArray>(original,
-@"<?xml version=""1.0""?>
-<TypeWithXmlTextAttributeOnArray xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns=""http://schemas.xmlsoap.org/ws/2005/04/discovery"">val1val2</TypeWithXmlTextAttributeOnArray>");
+            WithXmlHeader(@"<TypeWithXmlTextAttributeOnArray xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns=""http://schemas.xmlsoap.org/ws/2005/04/discovery"">val1 val2</TypeWithXmlTextAttributeOnArray>"));
         Assert.NotNull(actual.Text);
-        Assert.Equal(1, actual.Text.Length);
-        Assert.Equal("val1val2", actual.Text[0]);
+        Assert.Equal(2, actual.Text.Length);
+        Assert.Equal("val1", actual.Text[0]);
+        Assert.Equal("val2", actual.Text[1]);
+    }
+
+    [Fact]
+    public static void XML_TypeWithXmlTextAttributeOnArray_ItemContainingSpaceIsSplitOnDeserialize()
+    {
+        // A space-separated list cannot preserve items that themselves contain whitespace: an item such as
+        // "val2 val3" is written as part of the space-separated content and read back as two separate items.
+        var original = new TypeWithXmlTextAttributeOnArray() { Text = new string[] { "val1", "val2 val3" } };
+
+        var actual = SerializeAndDeserialize<TypeWithXmlTextAttributeOnArray>(original,
+            WithXmlHeader(@"<TypeWithXmlTextAttributeOnArray xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns=""http://schemas.xmlsoap.org/ws/2005/04/discovery"">val1 val2 val3</TypeWithXmlTextAttributeOnArray>"));
+        Assert.NotNull(actual.Text);
+        Assert.Equal(3, actual.Text.Length);
+        Assert.Equal("val1", actual.Text[0]);
+        Assert.Equal("val2", actual.Text[1]);
+        Assert.Equal("val3", actual.Text[2]);
+    }
+
+    [Fact]
+    public static void XML_TypeWithXmlTextAttributeOnArray_NonXmlWhitespaceIsPreservedWithinItems()
+    {
+        // By default an [XmlText] array is split on only the four characters the XML spec defines as
+        // whitespace (#x20, #x9, #xA, #xD). A character such as NBSP (U+00A0) is not XML whitespace, so an
+        // item that contains one is preserved intact and round-trips, unlike a plain space.
+        var original = new TypeWithXmlTextAttributeOnArray() { Text = new string[] { "val1", "val2\u00A0val3" } };
+
+        var actual = SerializeAndDeserialize<TypeWithXmlTextAttributeOnArray>(original,
+            WithXmlHeader("<TypeWithXmlTextAttributeOnArray xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://schemas.xmlsoap.org/ws/2005/04/discovery\">val1 val2\u00A0val3</TypeWithXmlTextAttributeOnArray>"));
+        Assert.NotNull(actual.Text);
+        Assert.Equal(2, actual.Text.Length);
+        Assert.Equal("val1", actual.Text[0]);
+        Assert.Equal("val2\u00A0val3", actual.Text[1]);
+    }
+
+    public static IEnumerable<object[]> XmlTextArray_NullOrEmptyItemData()
+    {
+        // A null or empty middle item contributes no text but still gets a positional separator on either
+        // side, so the serialized content contains a double space. On read the empty token between the two
+        // spaces is discarded (XSD list whitespace normalization / RemoveEmptyEntries), so the value comes
+        // back as a two-item list. Empty/null items therefore cannot survive a round-trip.
+        yield return new object[] { new string[] { "val1", null, "val3" } };
+        yield return new object[] { new string[] { "val1", "", "val3" } };
+    }
+
+    [Theory]
+    [MemberData(nameof(XmlTextArray_NullOrEmptyItemData))]
+    public static void XML_TypeWithXmlTextAttributeOnArray_NullOrEmptyItemNormalizesOnDeserialize(string[] input)
+    {
+        var original = new TypeWithXmlTextAttributeOnArray() { Text = input };
+
+        var actual = SerializeAndDeserialize<TypeWithXmlTextAttributeOnArray>(original,
+            WithXmlHeader("<TypeWithXmlTextAttributeOnArray xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://schemas.xmlsoap.org/ws/2005/04/discovery\">val1  val3</TypeWithXmlTextAttributeOnArray>"));
+        Assert.NotNull(actual.Text);
+        Assert.Equal(2, actual.Text.Length);
+        Assert.Equal("val1", actual.Text[0]);
+        Assert.Equal("val3", actual.Text[1]);
+    }
+
+    [Theory]
+    [InlineData(">val1  val3<", 2)]        // double space between items (as produced by an empty middle item)
+    [InlineData(">val1   val3<", 2)]       // triple space collapses the same way
+    [InlineData(">  val1 val3  <", 2)]     // leading/trailing whitespace produces no empty items
+    public static void XML_TypeWithXmlTextAttributeOnArray_CollapsesRepeatedAndSurroundingWhitespaceOnDeserialize(string content, int expectedCount)
+    {
+        // Reading a whitespace-separated list normalizes whitespace: runs of separators collapse and
+        // leading/trailing whitespace is trimmed, so no empty items appear regardless of the input spacing.
+        // content starts with '>' and ends with '<'; splice it between the element's open and close tags.
+        string xml =
+            "<?xml version=\"1.0\"?>\r\n" +
+            "<TypeWithXmlTextAttributeOnArray xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://schemas.xmlsoap.org/ws/2005/04/discovery\"" +
+            content + "/TypeWithXmlTextAttributeOnArray>";
+
+        var serializer = new XmlSerializer(typeof(TypeWithXmlTextAttributeOnArray));
+        using var reader = new StringReader(xml);
+        var actual = (TypeWithXmlTextAttributeOnArray)serializer.Deserialize(reader);
+
+        Assert.NotNull(actual.Text);
+        Assert.Equal(expectedCount, actual.Text.Length);
+        Assert.Equal("val1", actual.Text[0]);
+        Assert.Equal("val3", actual.Text[^1]);
     }
 
     [Fact]
@@ -2913,6 +2995,179 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             var resultWithError = SerializeAndDeserialize(testObjectWithError,
                 expectedXml.Replace("TypeWithObsoleteProperty", "TypeWithObsoleteErrorProperty"), serializerFactory);
         }
+    }
+
+    [Fact]
+    public static void XmlTextArray_WithLegacyAppContextSwitch_ConcatenatesWithoutSeparator()
+    {
+        // The opt-out switch restores the legacy behavior where an [XmlText] array is concatenated with no
+        // separator and deserialized as a single item.
+        using (var compatSwitch = new XmlSerializerAppContextSwitchScope("Switch.System.Xml.Serialization.UseLegacyXmlListSeparation", true))
+        {
+            Assert.True(compatSwitch.CurrentValue);
+
+            // Use a different namespace so we don't pick up a serializer cached by another test under the
+            // default (new) behavior.
+            var cacheBustingNamespace = "http://tempuri.org/DoNotUseCachedSerializer/XmlTextArrayLegacy";
+            var original = new TypeWithXmlTextAttributeOnArray() { Text = new string[] { "val1", "val2" } };
+            var serializerFactory = () => new XmlSerializer(typeof(TypeWithXmlTextAttributeOnArray), cacheBustingNamespace);
+
+            var actual = SerializeAndDeserialize(original,
+                WithXmlHeader(@"<TypeWithXmlTextAttributeOnArray xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns=""http://schemas.xmlsoap.org/ws/2005/04/discovery"">val1val2</TypeWithXmlTextAttributeOnArray>"),
+                serializerFactory);
+
+            Assert.NotNull(actual.Text);
+            Assert.Equal(1, actual.Text.Length);
+            Assert.Equal("val1val2", actual.Text[0]);
+        }
+    }
+
+    [Fact]
+    public static void XmlTextArray_WithListOfStringMember_SerializesAsSpaceSeparatedListAndRoundTrips()
+    {
+        // The space-separated list behavior applies to any array-like [XmlText] member, not just arrays.
+        // A List<string> (an IList-backed collection) is written space-separated and round-trips.
+        var original = new TypeWithXmlTextOnListOfString() { Text = new List<string> { "val1", "val2" } };
+
+        var actual = SerializeAndDeserialize<TypeWithXmlTextOnListOfString>(original,
+            WithXmlHeader(@"<TypeWithXmlTextOnListOfString xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">val1 val2</TypeWithXmlTextOnListOfString>"));
+        Assert.NotNull(actual.Text);
+        Assert.Equal(2, actual.Text.Count);
+        Assert.Equal("val1", actual.Text[0]);
+        Assert.Equal("val2", actual.Text[1]);
+    }
+
+    [Fact]
+    public static void XmlTextArray_WithListOfStringMember_NullItemNormalizesOnDeserialize()
+    {
+        // A null middle item in a List<string> produces a double space and is dropped on read, exactly as
+        // for an array-backed member.
+        var original = new TypeWithXmlTextOnListOfString() { Text = new List<string> { "val1", null, "val3" } };
+
+        var actual = SerializeAndDeserialize<TypeWithXmlTextOnListOfString>(original,
+            WithXmlHeader(@"<TypeWithXmlTextOnListOfString xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">val1  val3</TypeWithXmlTextOnListOfString>"));
+        Assert.NotNull(actual.Text);
+        Assert.Equal(2, actual.Text.Count);
+        Assert.Equal("val1", actual.Text[0]);
+        Assert.Equal("val3", actual.Text[1]);
+    }
+
+    [Fact]
+    public static void XmlTextArray_WithLegacySwitch_NullItemConcatenatesToSingleValue()
+    {
+        // Under the legacy opt-out, [XmlText] arrays concatenate with no separators, so a null middle item
+        // simply contributes nothing and the whole value reads back as a single concatenated item (there is
+        // no separator whitespace to normalize).
+        using (var compatSwitch = new XmlSerializerAppContextSwitchScope("Switch.System.Xml.Serialization.UseLegacyXmlListSeparation", true))
+        {
+            Assert.True(compatSwitch.CurrentValue);
+
+            var cacheBustingNamespace = "http://tempuri.org/DoNotUseCachedSerializer/XmlTextArrayLegacyNull";
+            var original = new TypeWithXmlTextAttributeOnArray() { Text = new string[] { "val1", null, "val3" } };
+            var serializerFactory = () => new XmlSerializer(typeof(TypeWithXmlTextAttributeOnArray), cacheBustingNamespace);
+
+            var actual = SerializeAndDeserialize(original,
+                WithXmlHeader(@"<TypeWithXmlTextAttributeOnArray xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns=""http://schemas.xmlsoap.org/ws/2005/04/discovery"">val1val3</TypeWithXmlTextAttributeOnArray>"),
+                serializerFactory);
+
+            Assert.NotNull(actual.Text);
+            Assert.Equal(1, actual.Text.Length);
+            Assert.Equal("val1val3", actual.Text[0]);
+        }
+    }
+
+    [Fact]
+    public static void XmlAttributeArray_SerializesAsSpaceSeparatedListAndRoundTrips()
+    {
+        // An [XmlAttribute] array is serialized as a space-separated list per the XSD list type and round-trips
+        // back to the original items. This verifies the long-standing attribute behavior that the [XmlText]
+        // change is being aligned with.
+        var original = new TypeWithXmlAttributeOnArray() { Values = new string[] { "val1", "val2" } };
+
+        var actual = SerializeAndDeserialize<TypeWithXmlAttributeOnArray>(original,
+            WithXmlHeader(@"<TypeWithXmlAttributeOnArray xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" values=""val1 val2"" />"));
+        Assert.NotNull(actual.Values);
+        Assert.Equal(2, actual.Values.Length);
+        Assert.Equal("val1", actual.Values[0]);
+        Assert.Equal("val2", actual.Values[1]);
+    }
+
+    [Fact]
+    public static void XmlAttributeArray_NonXmlWhitespaceIsPreservedWithinItems()
+    {
+        // By default an [XmlAttribute] array is split on only the four XML whitespace characters, matching the
+        // [XmlText] behavior. NBSP (U+00A0) is not XML whitespace, so an item containing one is kept intact and
+        // round-trips.
+        var original = new TypeWithXmlAttributeOnArray() { Values = new string[] { "val1", "val2\u00A0val3" } };
+
+        var actual = SerializeAndDeserialize<TypeWithXmlAttributeOnArray>(original,
+            WithXmlHeader("<TypeWithXmlAttributeOnArray xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" values=\"val1 val2\u00A0val3\" />"));
+        Assert.NotNull(actual.Values);
+        Assert.Equal(2, actual.Values.Length);
+        Assert.Equal("val1", actual.Values[0]);
+        Assert.Equal("val2\u00A0val3", actual.Values[1]);
+    }
+
+    [Fact]
+    public static void XmlAttributeArray_WithLegacyListSeparationSwitch_SplitsOnNonXmlWhitespace()
+    {
+        // The opt-out switch also affects [XmlAttribute] lists, restoring the broader char.IsWhiteSpace()
+        // splitting so an item containing NBSP (U+00A0) is split into separate items on deserialize. (For
+        // [XmlText] arrays the same switch reverts to legacy concatenation, so that path no longer splits at
+        // all; see XmlTextArray_WithLegacyAppContextSwitch_ConcatenatesWithoutSeparator.)
+        using (var compatSwitch = new XmlSerializerAppContextSwitchScope("Switch.System.Xml.Serialization.UseLegacyXmlListSeparation", true))
+        {
+            Assert.True(compatSwitch.CurrentValue);
+
+            var cacheBustingNamespace = "http://tempuri.org/DoNotUseCachedSerializer/XmlAttributeListWhitespaceLegacy";
+            var original = new TypeWithXmlAttributeOnArray() { Values = new string[] { "val1", "val2\u00A0val3" } };
+            var serializerFactory = () => new XmlSerializer(typeof(TypeWithXmlAttributeOnArray), cacheBustingNamespace);
+
+            // The serialized form is unaffected by the whitespace switch (the writer always emits a single
+            // space) and is asserted by XmlAttributeArray_NonXmlWhitespaceIsPreservedWithinItems; here we only
+            // care about the deserialize-time split, so skip the exact string comparison.
+            var actual = SerializeAndDeserialize(original, null, serializerFactory, skipStringCompare: true);
+
+            Assert.NotNull(actual.Values);
+            Assert.Equal(3, actual.Values.Length);
+            Assert.Equal("val1", actual.Values[0]);
+            Assert.Equal("val2", actual.Values[1]);
+            Assert.Equal("val3", actual.Values[2]);
+        }
+    }
+
+    [Fact]
+    public static void XmlTextArray_WithMixedElementContent_PreservesTextRuns()
+    {
+        // When an array-like member combines [XmlText] with [XmlElement] (mixed content), the list
+        // (whitespace-separated) behavior must NOT apply: a text run that contains whitespace has to be
+        // preserved intact so the reader and writer stay consistent.
+        var original = new TypeWithMixedTextAndElementArray() { Items = new object[] { "hello world", 42 } };
+
+        var actual = SerializeAndDeserialize<TypeWithMixedTextAndElementArray>(original,
+            WithXmlHeader(@"<TypeWithMixedTextAndElementArray xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">hello world<num>42</num></TypeWithMixedTextAndElementArray>"));
+        Assert.NotNull(actual.Items);
+        Assert.Equal(2, actual.Items.Length);
+        Assert.Equal("hello world", actual.Items[0]);
+        Assert.Equal(42, actual.Items[1]);
+    }
+
+    [Fact]
+    public static void UseLegacyXmlListSeparationSwitch_DefaultsToFalse()
+    {
+        // The compatibility switch is opt-out: it defaults to false so the new, spec-conformant list
+        // behavior (space-separated [XmlText] arrays + 4-char XML whitespace splitting for both [XmlText]
+        // and [XmlAttribute]) is on by default. Per .NET AppContext guidance, false => new behavior and
+        // true => legacy behavior. The observable default behaviors are covered by the tests above; this
+        // test pins the default value itself so the opt-out polarity can't be flipped unnoticed.
+        bool isSet = AppContext.TryGetSwitch("Switch.System.Xml.Serialization.UseLegacyXmlListSeparation", out bool isEnabled);
+        Assert.False(isSet && isEnabled);
+
+        Type switchesType = Type.GetType("System.Xml.LocalAppContextSwitches, System.Private.Xml");
+        Assert.NotNull(switchesType);
+        PropertyInfo prop = switchesType.GetProperty("UseLegacyXmlListSeparation", BindingFlags.Public | BindingFlags.Static);
+        Assert.NotNull(prop);
+        Assert.False((bool)prop.GetValue(null));
     }
 #endif
 

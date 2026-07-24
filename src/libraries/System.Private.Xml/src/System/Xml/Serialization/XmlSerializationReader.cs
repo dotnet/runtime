@@ -2094,6 +2094,7 @@ namespace System.Xml.Serialization
         private readonly Hashtable _createMethods = new Hashtable();
         private int _nextCreateMethodNumber;
         private int _nextIdNumber;
+        private bool _usedXmlListSeparators;
 
         internal Hashtable Enums => field ??= new Hashtable();
 
@@ -2350,6 +2351,19 @@ namespace System.Xml.Serialization
                 Writer.Write("string ");
                 Writer.Write(idName);
                 Writer.WriteLine(";");
+            }
+
+            if (_usedXmlListSeparators)
+            {
+                // Separator set used to split whitespace-separated [XmlText]/[XmlAttribute] list content.
+                // By default this is the four characters the XML spec defines as whitespace (#x20, #x9,
+                // #xA, #xD), matching the XSD list/NMTOKENS definition. The UseLegacyXmlListSeparation
+                // switch restores the legacy behavior of splitting on .NET's broader char.IsWhiteSpace()
+                // set, which String.Split does when the separator array is null. The switch is read once
+                // when this reader type loads, so a caller's opt-out is honored even by pre-generated
+                // serializers (rather than baking the build machine's switch value into the assembly).
+                Writer.WriteLine();
+                Writer.WriteLine("static readonly char[] xmlListSeparators = System.AppContext.TryGetSwitch(\"Switch.System.Xml.Serialization.UseLegacyXmlListSeparation\", out bool useLegacyXmlListSeparation) && useLegacyXmlListSeparation ? null : new char[] { ' ', '\\t', '\\n', '\\r' };");
             }
 
             Writer.WriteLine();
@@ -3872,8 +3886,15 @@ namespace System.Xml.Serialization
             {
                 if (attribute.IsList)
                 {
+                    _usedXmlListSeparators = true;
                     Writer.WriteLine("string listValues = Reader.Value;");
-                    Writer.WriteLine("string[] vals = listValues.Split(null);");
+                    // Split the whitespace-separated attribute list into its items. By default we split
+                    // on exactly the four characters the XML spec defines as whitespace (#x20, #x9, #xA,
+                    // #xD), matching the XSD list/NMTOKENS definition and letting items contain other
+                    // Unicode whitespace. The xmlListSeparators field (initialized from the
+                    // UseLegacyXmlListSeparation switch when this reader type loads) is null in the
+                    // legacy case, which makes String.Split fall back to its broader whitespace set.
+                    Writer.WriteLine("string[] vals = listValues.Split(xmlListSeparators);");
                     Writer.WriteLine("for (int i = 0; i < vals.Length; i++) {");
                     Writer.Indent++;
 
@@ -4135,6 +4156,30 @@ namespace System.Xml.Serialization
             }
             else
             {
+                if (member.IsArrayLike && text.IsList)
+                {
+                    _usedXmlListSeparators = true;
+                    // The text content is a whitespace-separated list; split it and add each value to
+                    // the array-like member (mirrors [XmlAttribute] list handling). By default we split
+                    // on exactly the four characters the XML spec defines as whitespace (#x20, #x9, #xA,
+                    // #xD), matching the XSD list/NMTOKENS definition and letting items contain other
+                    // Unicode whitespace. The xmlListSeparators field (initialized from the
+                    // UseLegacyXmlListSeparation switch when this reader type loads) is null in the
+                    // legacy case, which makes String.Split fall back to its broader whitespace set.
+                    Writer.Write("string listValues = ");
+                    Writer.WriteLine(text.Mapping!.TypeDesc!.CollapseWhitespace ? "CollapseWhitespace(Reader.ReadString());" : "Reader.ReadString();");
+                    Writer.WriteLine("string[] vals = listValues.Split(xmlListSeparators, System.StringSplitOptions.RemoveEmptyEntries);");
+                    Writer.WriteLine("for (int i = 0; i < vals.Length; i++) {");
+                    Writer.Indent++;
+                    WriteSourceBegin(member.ArraySource);
+                    Writer.Write("vals[i]");
+                    WriteSourceEnd(member.ArraySource);
+                    Writer.WriteLine(";");
+                    Writer.Indent--;
+                    Writer.WriteLine("}");
+                    return;
+                }
+
                 if (member.IsArrayLike)
                 {
                     WriteSourceBegin(member.ArraySource);
