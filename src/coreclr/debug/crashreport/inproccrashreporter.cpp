@@ -385,12 +385,6 @@ private:
     InProcCrashReporter(const InProcCrashReporter&) = delete;
     InProcCrashReporter& operator=(const InProcCrashReporter&) = delete;
 
-    enum ReportInFlightState : LONG
-    {
-        ReportNotInFlight = 0,
-        ReportInFlight = 1,
-    };
-
     void EmitSynthesizedCrashThread(
         void* context,
         bool walkStack);
@@ -423,7 +417,7 @@ private:
     InProcCrashReportEnumerateThreadsCallback m_enumerateThreadsCallback = nullptr;
     InProcCrashReportModuleInfoCallback m_moduleInfoCallback = nullptr;
     volatile LONG m_crashKind = static_cast<LONG>(InProcCrashReportCrashKind::Unknown);
-    volatile LONG m_reportInFlight = ReportNotInFlight;
+    volatile LONGLONG m_reportInFlightThreadId = 0;
     uint32_t m_frameLimitPerThread = 0;
     InProcCrashReportLifecycle m_lifecycle;
     char m_reportFilePath[CRASHREPORT_PATH_BUFFER_SIZE];
@@ -595,8 +589,15 @@ InProcCrashReporter::CreateReport(
         return false;
     }
 
-    if (InterlockedCompareExchange(&m_reportInFlight, ReportInFlight, ReportNotInFlight) != ReportNotInFlight)
+    LONGLONG currentThreadId = static_cast<LONGLONG>(minipal_get_current_thread_id());
+    LONGLONG previousThreadId = InterlockedCompareExchange64(&m_reportInFlightThreadId, currentThreadId, 0);
+    if (previousThreadId != 0)
     {
+        if (previousThreadId == currentThreadId)
+        {
+            return false;
+        }
+
 #if HAVE_POLL
         // INFTIM is not defined when including pal.h; -1 is the equivalent poll() "wait forever" timeout.
         const int PollWaitForever = -1;
@@ -671,7 +672,8 @@ InProcCrashReporter::CreateReport(
         return false;
     }
 
-    if (InterlockedCompareExchange(&m_reportInFlight, ReportInFlight, ReportNotInFlight) != ReportNotInFlight)
+    LONGLONG currentThreadId = static_cast<LONGLONG>(minipal_get_current_thread_id());
+    if (InterlockedCompareExchange64(&m_reportInFlightThreadId, currentThreadId, 0) != 0)
     {
         return false;
     }
@@ -706,7 +708,7 @@ InProcCrashReporter::CreateReport(
     m_jsonWriter.SetOutputSink(SignalSafeJsonWriter::DropAllOutputSink());
     m_moduleTable.Reset();
 
-    InterlockedExchange(&m_reportInFlight, ReportNotInFlight);
+    InterlockedExchange64(&m_reportInFlightThreadId, 0);
     return reportSucceeded;
 }
 
