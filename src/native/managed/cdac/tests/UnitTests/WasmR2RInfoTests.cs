@@ -115,9 +115,11 @@ public class WasmR2RInfoTests
     [Fact]
     public void EmptyRangeList_ResolvesToNoSection()
     {
-        // The runtime registers virtual-IP ranges lazily, so the FunctionTableIndexRangeList head is
-        // null until the first managed stack walk. FindSection must treat an empty list as a clean
-        // "no R2R sections" answer rather than dereferencing the null head.
+        // An empty (null) FunctionTableIndexRangeList head is a legitimate runtime state. The list is
+        // populated per R2R module while running eager fixups at module load
+        // (Module::RunEagerFixupsUnlocked -> ReadyToRunInfo::RegisterVirtualIPRange), so it is empty
+        // in an interpreter-only process and before any ReadyToRun module has loaded. FindSection
+        // must treat that as a clean "no R2R sections" answer rather than dereferencing the null head.
         WasmR2RInfo info = new(CreateTarget(emptyList: true));
 
         Assert.False(info.TryGetVirtualIPBase(FunctionTableIndex, out _));
@@ -125,12 +127,13 @@ public class WasmR2RInfoTests
     }
 
     // Values captured from a live dispatching composite ReadyToRun WASM build (a merged CoreLib R2R
-    // image). The FunctionTableIndexRangeSection node read at runtime was
-    // { MinFunctionTableIndex = 6259, NumRuntimeFunctions = 45283, pNext = 0 } with the module's
-    // ReadyToRunInfo.MinVirtualIP = 0, and the injected function-table base (== MinFunctionTableIndex)
-    // was 6259. A dispatched System.Exception..ctor frame stored its function-table index (6259 + 1040)
-    // at frame+0 and its function-local virtual IP / 2 at frame+4. These constants anchor the reader's
-    // math to real runtime data.
+    // image). The FunctionTableIndexRangeSection node read from live memory was
+    // { MinFunctionTableIndex = 6259, NumRuntimeFunctions = 45283, pNext = 0 }, the module's
+    // ReadyToRunInfo.MinVirtualIP was 0, and the injected function-table base equalled
+    // MinFunctionTableIndex. The per-frame values come from disassembling that composite's R2R
+    // prolog for System.Exception..ctor: on entry it stores its function-table index (6259 + 1040)
+    // at frame+0 and its function-local virtual IP / 2 at frame+4. These constants anchor the
+    // reader's math to real runtime data.
     private const uint RealMinFunctionTableIndex = 6259;
     private const uint RealNumRuntimeFunctions = 45283;
     private const ulong RealMinVirtualIP = 0;
