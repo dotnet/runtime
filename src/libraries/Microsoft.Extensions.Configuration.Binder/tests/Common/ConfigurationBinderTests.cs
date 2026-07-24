@@ -1646,6 +1646,24 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("the color is Green", options.Color);
         }
 
+        [Fact]
+        public void CanBindOnParametersAndProperties_DifferentlyCasedConstructorParameter()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ClassWithMatchingParametersAndProperties_DifferentlyCasedCtorParam>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.ColorFromCtor);
+            Assert.Equal("the color is Green", options.Color);
+        }
+
         /// <summary>
         /// This test to ensure the binding of the constructor/property array is done once and not duplicating values in the array.
         /// </summary>

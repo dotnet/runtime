@@ -766,7 +766,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             break;
 
         case CORINFO_HELP_INITCLASS:
-            type = TYP_VOID;
+            type = HelperInitClassRetType;
             break;
 
         default:
@@ -3898,11 +3898,11 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
     if (ehGetDsc(hndIndex - 1)->InFilterRegionBBRange(blk))
     {
         *dsg = AcdKeyDesignator::KD_FLT;
-        return hndIndex | 0x80000000;
+        return hndIndex | AddCodeDscKey::AcdFilterFlag;
     }
 
     *dsg = AcdKeyDesignator::KD_HND;
-    return hndIndex | 0x40000000;
+    return hndIndex | AddCodeDscKey::AcdHandlerFlag;
 }
 
 //------------------------------------------------------------------------
@@ -3956,10 +3956,10 @@ Compiler::AddCodeDscKey::AddCodeDscKey(AddCodeDsc* add)
                 acdData = add->acdTryIndex;
                 break;
             case AcdKeyDesignator::KD_HND:
-                acdData = add->acdHndIndex | 0x40000000;
+                acdData = add->acdHndIndex | AcdHandlerFlag;
                 break;
             case AcdKeyDesignator::KD_FLT:
-                acdData = add->acdHndIndex | 0x80000000;
+                acdData = add->acdHndIndex | AcdFilterFlag;
                 break;
             default:
                 unreached();

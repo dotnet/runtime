@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 
@@ -45,6 +47,39 @@ public static class EcmaMetadataUtils
     {
         Debug.Assert((tokenParts & 0xff000000) == 0, $"Token type should not be set in {nameof(tokenParts)}");
         return (uint)TokenType.mdtFieldDef | tokenParts;
+    }
+
+    // ECMA-335 II.24.2.1 metadata root:
+    // Signature(4) | MajorVersion(2) | MinorVersion(2) | Reserved(4) | VersionLength(4) | Version[VersionLength]
+    private const ulong MetadataRootVersionLengthOffset = 12;
+    private const ulong MetadataRootVersionStringOffset = 16;
+    private const uint MaxMetadataVersionLength = 256;
+
+    // Reads the metadata version string from the metadata root (ECMA-335 II.24.2.1) at the given
+    // address. Returns an empty string when the address is null or no version string is present.
+    public static string ReadMetadataVersion(Target target, TargetPointer metadataRootAddress)
+    {
+        if (metadataRootAddress == TargetPointer.Null)
+        {
+            return string.Empty;
+        }
+
+        uint versionLength = target.Read<uint>(metadataRootAddress + MetadataRootVersionLengthOffset);
+        if (versionLength == 0)
+        {
+            return string.Empty;
+        }
+
+        int length = (int)Math.Min(versionLength, MaxMetadataVersionLength);
+        Span<byte> buffer = stackalloc byte[length];
+        target.ReadBuffer(metadataRootAddress + MetadataRootVersionStringOffset, buffer);
+        int terminator = buffer.IndexOf((byte)0);
+        if (terminator >= 0)
+        {
+            buffer = buffer[..terminator];
+        }
+
+        return Encoding.UTF8.GetString(buffer);
     }
 
     private static bool TryFindTopLevelTypeDef(MetadataReader reader, string @namespace, string name, out TypeDefinitionHandle result)
@@ -89,7 +124,7 @@ public static class EcmaMetadataUtils
     public static bool TryResolveTypeRef(
         ILoader loader,
         IEcmaMetadata ecmaMetadata,
-        ModuleHandle referencingModule,
+        Contracts.ModuleHandle referencingModule,
         uint typeRefToken,
         out TargetPointer targetAssembly,
         out uint targetTypeDef)
@@ -97,7 +132,7 @@ public static class EcmaMetadataUtils
         targetAssembly = TargetPointer.Null;
         targetTypeDef = 0;
 
-        if (!TryGetTypeRefScopeAndName(loader, ecmaMetadata, referencingModule, typeRefToken, out ModuleHandle foundModule, out List<(string Namespace, string Name)> nameChain))
+        if (!TryGetTypeRefScopeAndName(loader, ecmaMetadata, referencingModule, typeRefToken, out Contracts.ModuleHandle foundModule, out List<(string Namespace, string Name)> nameChain))
             return false;
 
         return TrySearchModulesForTypeDef(loader, ecmaMetadata, foundModule, nameChain, out targetAssembly, out targetTypeDef);
@@ -108,9 +143,9 @@ public static class EcmaMetadataUtils
     private static bool TryGetTypeRefScopeAndName(
         ILoader loader,
         IEcmaMetadata ecmaMetadata,
-        ModuleHandle referencingModule,
+        Contracts.ModuleHandle referencingModule,
         uint typeRefToken,
-        out ModuleHandle foundModule,
+        out Contracts.ModuleHandle foundModule,
         out List<(string Namespace, string Name)> nameChain)
     {
         foundModule = default;
@@ -160,7 +195,7 @@ public static class EcmaMetadataUtils
     private static bool TrySearchModulesForTypeDef(
         ILoader loader,
         IEcmaMetadata ecmaMetadata,
-        ModuleHandle module,
+        Contracts.ModuleHandle module,
         List<(string Namespace, string Name)> nameChain,
         out TargetPointer targetAssembly,
         out uint targetTypeDef)
@@ -188,7 +223,7 @@ public static class EcmaMetadataUtils
                 break;
             }
 
-            if (TryFindTopLevelExportedForwarder(loader, reader, module, topLevel.Namespace, topLevel.Name, out ModuleHandle nextModule))
+            if (TryFindTopLevelExportedForwarder(loader, reader, module, topLevel.Namespace, topLevel.Name, out Contracts.ModuleHandle nextModule))
             {
                 module = nextModule;
                 continue;
@@ -216,10 +251,10 @@ public static class EcmaMetadataUtils
     private static bool TryFindTopLevelExportedForwarder(
         ILoader loader,
         MetadataReader reader,
-        ModuleHandle module,
+        Contracts.ModuleHandle module,
         string @namespace,
         string name,
-        out ModuleHandle nextModule)
+        out Contracts.ModuleHandle nextModule)
     {
         foreach (ExportedTypeHandle handle in reader.ExportedTypes)
         {

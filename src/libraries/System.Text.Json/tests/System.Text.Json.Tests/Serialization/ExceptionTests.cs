@@ -642,7 +642,7 @@ namespace System.Text.Json.Serialization.Tests
             AssertThrowingMembersPropagateOriginalException();
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+#if NET
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ThrowingMembers_PropagateOriginalException_WithReflectionMemberAccessor()
         {
@@ -664,6 +664,7 @@ namespace System.Text.Json.Serialization.Tests
                 AssertThrowingMembersPropagateOriginalException();
             }, options).Dispose();
         }
+#endif
 
         private static void AssertThrowingMembersPropagateOriginalException()
         {

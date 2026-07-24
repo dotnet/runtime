@@ -413,6 +413,26 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
                 }
 
+                case NI_PRIMITIVE_SaturateToInt8:
+                {
+                    return {SymbolicIntegerValue::ByteMin, SymbolicIntegerValue::ByteMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToInt16:
+                {
+                    return {SymbolicIntegerValue::ShortMin, SymbolicIntegerValue::ShortMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToUInt8:
+                {
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UByteMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToUInt16:
+                {
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UShortMax};
+                }
+
                 case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
                 {
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};

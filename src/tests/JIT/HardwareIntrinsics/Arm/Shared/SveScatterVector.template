@@ -87,10 +87,10 @@ namespace {Namespace}._Sve
 
             public DataTable({Op1BaseType}[] inMask, {Op1BaseType}[] inData, {Op1BaseType}[] outArray, {Op3BaseType}[] inOffset, int alignment)
             {
-                int sizeOfInMask = inMask.Length * Unsafe.SizeOf<{Op1BaseType}>();
-                int sizeOfInData = inData.Length * Unsafe.SizeOf<{Op1BaseType}>();
-                int sizeOfOutArray = outArray.Length * Unsafe.SizeOf<{Op1BaseType}>();
-                int sizeOfInOffset = inOffset.Length * Unsafe.SizeOf<{Op3BaseType}>();
+                int sizeOfInMask = inMask.Length * sizeof({Op1BaseType});
+                int sizeOfInData = inData.Length * sizeof({Op1BaseType});
+                int sizeOfOutArray = outArray.Length * sizeof({Op1BaseType});
+                int sizeOfInOffset = inOffset.Length * sizeof({Op3BaseType});
 
                 if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfInMask || (alignment * 2) < sizeOfInOffset || (alignment * 2) < sizeOfInData)
                 {
@@ -179,9 +179,9 @@ namespace {Namespace}._Sve
                 MakeDistinct(_offsetArr);
 
                 testStruct._baseAddr = ({Op2BaseType}*) _dataTable.outArrayPtr;
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskArr[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._data), ref Unsafe.As<{Op1BaseType}, byte>(ref _dataArr[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3VectorType}<{Op3BaseType}>, byte>(ref testStruct._offset), ref Unsafe.As<{Op3BaseType}, byte>(ref _offsetArr[0]), (uint)Unsafe.SizeOf<{Op3VectorType}<{Op3BaseType}>>());
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskArr[0]), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._data), ref Unsafe.As<{Op1BaseType}, byte>(ref _dataArr[0]), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3VectorType}<{Op3BaseType}>, byte>(ref testStruct._offset), ref Unsafe.As<{Op3BaseType}, byte>(ref _offsetArr[0]), (uint)sizeof({Op3VectorType}<{Op3BaseType}>));
 
                 return testStruct;
             }
@@ -199,9 +199,9 @@ namespace {Namespace}._Sve
         // Values in address will point to locations within this buffer.
         private static readonly int OutElementCount = 1024;
         private static readonly bool isScatterIndices = {isScatterIndices};
-        private static readonly int MaskElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
-        private static readonly int DataElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
-        private static readonly int OffsetElementCount = Unsafe.SizeOf<{Op3VectorType}<{Op3BaseType}>>() / sizeof({Op3BaseType});
+        private static readonly int MaskElementCount = sizeof({Op1VectorType}<{Op1BaseType}>) / sizeof({Op1BaseType});
+        private static readonly int DataElementCount = sizeof({Op1VectorType}<{Op1BaseType}>) / sizeof({Op1BaseType});
+        private static readonly int OffsetElementCount = sizeof({Op3VectorType}<{Op3BaseType}>) / sizeof({Op3BaseType});
 
         private static {Op1BaseType}[] _maskArr = new {Op1BaseType}[MaskElementCount];
         private static {Op1BaseType}[] _dataArr = new {Op1BaseType}[DataElementCount];
@@ -229,13 +229,13 @@ namespace {Namespace}._Sve
             MakeDistinct(_offsetArr);
 
             for (var i = 0; i < DataElementCount; i++) { _falseData[i] = {NextValueOp4}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _falseFld), ref Unsafe.As<{Op1BaseType}, byte>(ref _falseData[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _falseFld), ref Unsafe.As<{Op1BaseType}, byte>(ref _falseData[0]), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
 
             _dataTable = new DataTable(_maskArr, _dataArr, new {Op1BaseType}[OutElementCount], _offsetArr, LargestVectorSize);
             _baseAddr = ({Op2BaseType}*) _dataTable.outArrayPtr;
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskArr[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _data), ref Unsafe.As<{Op1BaseType}, byte>(ref _dataArr[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3VectorType}<{Op3BaseType}>, byte>(ref _offset), ref Unsafe.As<{Op3BaseType}, byte>(ref _offsetArr[0]), (uint)Unsafe.SizeOf<{Op3VectorType}<{Op3BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskArr[0]), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _data), ref Unsafe.As<{Op1BaseType}, byte>(ref _dataArr[0]), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3VectorType}<{Op3BaseType}>, byte>(ref _offset), ref Unsafe.As<{Op3BaseType}, byte>(ref _offsetArr[0]), (uint)sizeof({Op3VectorType}<{Op3BaseType}>));
         }
 
         public bool IsSupported => {Isa}.IsSupported;
@@ -413,9 +413,9 @@ private void ValidateResult(void* mask, void* data, void* baseAddr, void* offset
     {Op1BaseType}[] dataArray = new {Op1BaseType}[DataElementCount];
     {Op3BaseType}[] offsetArray = new {Op3BaseType}[OffsetElementCount];
 
-    Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref maskArray[0]), ref Unsafe.AsRef<byte>(mask), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-    Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref dataArray[0]), ref Unsafe.AsRef<byte>(data), (uint)(Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>()));
-    Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3BaseType}, byte>(ref offsetArray[0]), ref Unsafe.AsRef<byte>(offset), (uint)(Unsafe.SizeOf<{Op3VectorType}<{Op3BaseType}>>()));
+    Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref maskArray[0]), ref Unsafe.AsRef<byte>(mask), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
+    Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref dataArray[0]), ref Unsafe.AsRef<byte>(data), (uint)(sizeof({Op1VectorType}<{Op1BaseType}>)));
+    Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3BaseType}, byte>(ref offsetArray[0]), ref Unsafe.AsRef<byte>(offset), (uint)(sizeof({Op3VectorType}<{Op3BaseType}>)));
 
     ValidateResult(maskArray, dataArray, ({Op2BaseType}*) baseAddr, offsetArray, method);
 }
@@ -437,7 +437,7 @@ private void ValidateResult({Op1BaseType}[] mask, {Op1BaseType}[] data, {Op2Base
 
     for (var i = 0; i < DataElementCount; i++)
     {
-        {Op1BaseType} expectedResult = mask[i] == 0 ? 0 : data[i];
+        {Op1BaseType} expectedResult = Helpers.IsMaskInactive(mask[i]) ? 0 : data[i];
         if (actualResult[i] != ({Op2BaseType})expectedResult)
         {
             succeeded = false;
@@ -474,8 +474,8 @@ private void ValidateZeroResult(void* data, void* baseAddr, void* offset, [Calle
     {Op1BaseType}[] dataArray = new {Op1BaseType}[DataElementCount];
     {Op3BaseType}[] offsetArray = new {Op3BaseType}[OffsetElementCount];
 
-    Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref dataArray[0]), ref Unsafe.AsRef<byte>(data), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-    Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3BaseType}, byte>(ref offsetArray[0]), ref Unsafe.AsRef<byte>(offset), (uint)(Unsafe.SizeOf<{Op3VectorType}<{Op3BaseType}>>()));
+    Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref dataArray[0]), ref Unsafe.AsRef<byte>(data), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
+    Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3BaseType}, byte>(ref offsetArray[0]), ref Unsafe.AsRef<byte>(offset), (uint)(sizeof({Op3VectorType}<{Op3BaseType}>)));
 
     ValidateZeroResult(dataArray, ({Op2BaseType}*) baseAddr, offsetArray, method);
 }

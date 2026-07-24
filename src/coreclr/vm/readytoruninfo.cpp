@@ -20,9 +20,7 @@
 #include "ilstubcache.h"
 #include "sigbuilder.h"
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #ifndef DACCESS_COMPILE
 extern "C" PCODE g_pMethodWithSlotAndModule;
@@ -537,7 +535,14 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
         return NULL;
 
     LPCUTF8 ownerCompositeExecutableName = NULL;
-    if (pLayout->IsMapped())
+    if (pLayout->IsWebcilFormat())
+    {
+        // Webcil is wasm-only and flat-mapped by construction (PointerToRawData == VirtualAddress),
+        // so this is equivalent to GetBase() + virtualAddress; use the decoder's GetRvaData as the
+        // format-correct idiom for resolving an RVA.
+        ownerCompositeExecutableName = (LPCUTF8)pLayout->GetRvaData(virtualAddress);
+    }
+    else if (pLayout->IsMapped())
     {
         ownerCompositeExecutableName = (LPCUTF8)pLayout->GetBase() + virtualAddress;
     }
@@ -2542,9 +2547,7 @@ PCODE CreateDynamicHelperPrecode(LoaderAllocator *pAllocator, AllocMemTracker *p
 
     FlushCacheForDynamicMappedStub(pPrecode, sizeof(StubPrecode));
 
-#ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)pPrecode, size, PerfMapStubType::IndividualWithinBlock);
-#endif
 
     return ((Precode*)pPrecode)->GetEntryPoint();
 }

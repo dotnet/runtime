@@ -641,7 +641,6 @@ export async function prefetchAllResources(extraVfs?: VfsAsset[]): Promise<void>
     // Data assets: fetch and discard
     if (resources.coreAssembly) resources.coreAssembly.forEach(a => enqueueAsset(a, "assembly"));
     if (resources.assembly) resources.assembly.forEach(a => enqueueAsset(a, "assembly"));
-    if (resources.coreVfs) resources.coreVfs.forEach(a => enqueueAsset(a, "vfs"));
     if (resources.vfs) resources.vfs.forEach(a => enqueueAsset(a, "vfs"));
     if (extraVfs) extraVfs.forEach(a => enqueueAsset(a, "vfs"));
     if (resources.icu) resources.icu.forEach(a => enqueueAsset(a, "icu"));

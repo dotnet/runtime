@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -79,6 +80,14 @@ namespace System.Diagnostics
 
                 handle.Kill();
             }
+        }
+
+        private bool SignalCore(PosixSignal signal)
+        {
+            using SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_TERMINATE | Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, throwIfExited: false);
+            return handle.IsInvalid
+                ? false // If the process has exited, the returned handle is invalid.
+                : handle.Signal(signal);
         }
 
         /// <summary>Discards any information about the associated process.</summary>
@@ -186,17 +195,26 @@ namespace System.Diagnostics
             }
         }
 
+        private bool TryGetExitStatus([NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            if (_exited)
+            {
+                // We pass canceled: false here because Process does not expose WaitForExitOrKill methods.
+                exitStatus = new ProcessExitStatus(_exitCode, canceled: false);
+                return true;
+            }
+
+            exitStatus = null;
+            return false;
+        }
+
         /// <summary>Gets the time that the associated process exited.</summary>
         private DateTime ExitTimeCore
         {
             get { return GetProcessTimes().ExitTime; }
         }
 
-        /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan PrivilegedProcessorTime
+        public partial TimeSpan PrivilegedProcessorTime
         {
             get => IsCurrentProcess ? Environment.CpuUsage.PrivilegedTime : GetProcessTimes().PrivilegedProcessorTime;
         }
@@ -207,27 +225,12 @@ namespace System.Diagnostics
             get { return GetProcessTimes().StartTime; }
         }
 
-        /// <summary>
-        /// Gets the amount of time the associated process has spent utilizing the CPU.
-        /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
-        /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan TotalProcessorTime
+        public partial TimeSpan TotalProcessorTime
         {
             get => IsCurrentProcess ? Environment.CpuUsage.TotalTime : GetProcessTimes().TotalProcessorTime;
         }
 
-        /// <summary>
-        /// Gets the amount of time the associated process has spent running code
-        /// inside the application portion of the process (not the operating system core).
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan UserProcessorTime
+        public partial TimeSpan UserProcessorTime
         {
             get => IsCurrentProcess ? Environment.CpuUsage.UserTime : GetProcessTimes().UserProcessorTime;
         }

@@ -50,7 +50,7 @@ typedef void* (*ChallengeCallback)(void* context, CFArrayRef acceptableIssuers);
 // Initializes global state
 PALEXPORT int32_t AppleCryptoNative_Init(StatusUpdateCallback statusFunc, WriteCallback writeFunc, ChallengeCallback challengeFunc);
 
-PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer, void* context, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength);
+PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer, void* context, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength, void* serverIdentity);
 PALEXPORT int32_t AppleCryptoNative_NwConnectionStart(nw_connection_t connection, void* context);
 PALEXPORT void AppleCryptoNative_NwConnectionSend(nw_connection_t connection, void* context, uint8_t* buffer, int length, CompletionCallback completionCallback);
 PALEXPORT void AppleCryptoNative_NwConnectionReceive(nw_connection_t connection, void* context, uint32_t length, ReadCompletionCallback readCompletionCallback);

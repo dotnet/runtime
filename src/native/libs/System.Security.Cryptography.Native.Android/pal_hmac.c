@@ -97,14 +97,25 @@ int32_t CryptoNative_HmacUpdate(jobject ctx, uint8_t* data, int32_t len)
 
 ARGS_NON_NULL_ALL static int32_t DoFinal(JNIEnv* env, jobject mac, uint8_t* data, int32_t* len)
 {
-    // mac.doFinal();
-    jbyteArray dataBytes = (jbyteArray)(*env)->CallObjectMethod(env, mac, g_MacDoFinal);
-    jsize dataBytesLen = (*env)->GetArrayLength(env, dataBytes);
-    *len = (int32_t)dataBytesLen;
-    (*env)->GetByteArrayRegion(env, dataBytes, 0, dataBytesLen, (jbyte*) data);
-    (*env)->DeleteLocalRef(env, dataBytes);
+    int32_t ret = FAIL;
+    jsize dataBytesLen = 0;
+    INIT_LOCALS(loc, dataBytes);
 
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+    *len = 0;
+
+    // mac.doFinal();
+    loc[dataBytes] = (jbyteArray)(*env)->CallObjectMethod(env, mac, g_MacDoFinal);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    dataBytesLen = (*env)->GetArrayLength(env, loc[dataBytes]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->GetByteArrayRegion(env, loc[dataBytes], 0, dataBytesLen, (jbyte*) data);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    *len = (int32_t)dataBytesLen;
+    ret = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t CryptoNative_HmacFinal(jobject ctx, uint8_t* data, int32_t* len)

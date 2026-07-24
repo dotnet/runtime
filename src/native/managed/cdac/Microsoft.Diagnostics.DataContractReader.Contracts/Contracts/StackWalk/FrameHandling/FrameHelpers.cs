@@ -116,7 +116,7 @@ internal sealed class FrameHelpers
                 else if (stubDispatchFrame.RepresentativeMTPtr != TargetPointer.Null)
                 {
                     IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-                    TypeHandle mtHandle = rtsContract.GetTypeHandle(stubDispatchFrame.RepresentativeMTPtr);
+                    ITypeHandle mtHandle = rtsContract.GetTypeHandle(stubDispatchFrame.RepresentativeMTPtr);
                     return rtsContract.GetMethodDescForSlot(mtHandle, (ushort)stubDispatchFrame.RepresentativeSlot);
                 }
                 else
@@ -367,6 +367,7 @@ internal sealed class FrameHelpers
             ContextHolder<ARM64Context> contextHolder => new ARM64FrameHandler(_target, contextHolder),
             ContextHolder<RISCV64Context> contextHolder => new RISCV64FrameHandler(_target, contextHolder),
             ContextHolder<LoongArch64Context> contextHolder => new LoongArch64FrameHandler(_target, contextHolder),
+            ContextHolder<WasmContext> contextHolder => new WasmFrameHandler(_target, contextHolder),
             _ => throw new InvalidOperationException("Unsupported context type"),
         };
     }
@@ -560,6 +561,7 @@ internal sealed class FrameHelpers
             RuntimeInfoArchitecture.X86 => "ecx",
             RuntimeInfoArchitecture.LoongArch64 => "a0",
             RuntimeInfoArchitecture.RiscV64 => "a0",
+            RuntimeInfoArchitecture.Wasm => WasmContext.InterpreterWalkFramePointerRegister,
             var arch => throw new NotSupportedException(
                 $"Unsupported architecture for first argument register: {arch}"),
         };

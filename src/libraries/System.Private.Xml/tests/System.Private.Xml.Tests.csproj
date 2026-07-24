@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <RootNamespace>System.Xml.Tests</RootNamespace>
     <!-- https://github.com/dotnet/runtime/issues/126862 -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
@@ -31,6 +32,7 @@
     <Compile Include="AllowDefaultResolverContext.cs" />
     <Compile Include="ExceptionVerifier.cs" />
     <Compile Include="$(CommonTestPath)\TestUtilities\System\DisableParallelizationPerAssembly.cs" Link="Common\TestUtilities\System\DisableParallelizationPerAssembly.cs" />
+    <Compile Include="Misc\AttributeReadingPerformanceTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

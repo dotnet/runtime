@@ -2151,17 +2151,18 @@ void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm(emitAttr       size,
                                                insFlags flags DEBUGARG(size_t targetHandle)
                                                    DEBUGARG(GenTreeFlags gtFlags))
 {
-    // If the imm values < 12 bits, we can use a single "add rsvd, reg2, #imm".
-    // Otherwise, use "mov rsvd, #imm", followed up "add rsvd, reg2, rsvd".
+    // If the immediate can be encoded by add/sub, use a single instruction.
+    // Otherwise, use "mov dstReg, #imm", followed by "add dstReg, baseReg, dstReg".
+    // Keep baseReg as the second operand in the fallback since it can be SP.
 
-    if (imm < 4096)
+    if (emitter::emitIns_valid_imm_for_add(imm, size))
     {
-        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, dstReg, baseReg, imm);
+        GetEmitter()->emitIns_R_R_I(INS_add, size, dstReg, baseReg, imm);
     }
     else
     {
         instGen_Set_Reg_To_Imm(size, dstReg, imm);
-        GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, dstReg, baseReg);
+        GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, baseReg, dstReg);
     }
 }
 

@@ -9,7 +9,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.HandleTableMap))]
 internal sealed partial class HandleTableMap : IData<HandleTableMap>
 {
-    [Field] public TargetPointer Next { get; }
+    [Field] public partial TargetPointer Next { get; }
+    [DataDescriptorDependency(nameof(BucketsPtr), "pointer")]
     public IReadOnlyList<TargetPointer> BucketsPtr { get; private set; } = [];
 
     [MemberNotNull(nameof(BucketsPtr))]

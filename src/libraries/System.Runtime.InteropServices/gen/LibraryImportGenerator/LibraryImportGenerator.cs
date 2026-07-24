@@ -153,12 +153,14 @@ namespace Microsoft.Interop
             SignatureContext stub,
             BlockSyntax stubCode)
         {
-            // Create stub function
+            // Create stub function. The generated body performs unmanaged operations (pointers, fixed,
+            // stackalloc, calling the extern local P/Invoke), so it is wrapped in an explicit unsafe block
+            // rather than relying on an unsafe modifier on the containing type.
             return MethodDeclaration(stub.StubReturnType, userDeclaredMethod.Identifier)
                 .AddAttributeLists(stub.AdditionalAttributes.ToArray())
                 .WithModifiers(StripTriviaFromModifiers(userDeclaredMethod.Modifiers))
                 .WithParameterList(ParameterList(SeparatedList(stub.StubParameters)))
-                .WithBody(stubCode);
+                .WithBody(Block(UnsafeStatement(stubCode)));
         }
 
         private static LibraryImportCompilationData? ProcessLibraryImportAttribute(AttributeData attrData)
@@ -330,7 +332,7 @@ namespace Microsoft.Interop
             dllImport = dllImport.WithLeadingTrivia(Comment("// Local P/Invoke"));
             code = code.AddStatements(dllImport);
 
-            return pinvokeStub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(PrintGeneratedSource(pinvokeStub.StubMethodSyntaxTemplate, pinvokeStub.SignatureContext, code));
+            return pinvokeStub.ContainingSyntaxContext.WrapMemberInContainingSyntax(PrintGeneratedSource(pinvokeStub.StubMethodSyntaxTemplate, pinvokeStub.SignatureContext, code));
         }
 
         private static MemberDeclarationSyntax PrintForwarderStub(ContainingSyntax userDeclaredMethod, IncrementalStubGenerationContext stub)
@@ -361,7 +363,7 @@ namespace Microsoft.Interop
                         SingletonSeparatedList(
                             CreateForwarderDllImport(pinvokeData))));
 
-            MemberDeclarationSyntax toPrint = stub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(stubMethod);
+            MemberDeclarationSyntax toPrint = stub.ContainingSyntaxContext.WrapMemberInContainingSyntax(stubMethod);
 
             return toPrint;
         }

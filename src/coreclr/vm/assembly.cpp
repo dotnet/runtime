@@ -1156,7 +1156,17 @@ static void RunMainInternal(Param* pParam)
     StrArgArray = *pParam->stringArgs;
 
     pParam->pFD->EnsureActive();
-    PCODE entryPoint = pParam->pFD->GetSingleCallableAddrOfCode();
+    PCODE entryPoint;
+    {
+        GCX_PREEMP();
+        entryPoint = pParam->pFD->GetSingleCallableAddrOfCode();
+    }
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // The entry point is invoked from R2R-compiled code (Environment.CallEntryPoint performs an
+    // indirect call through this address), so it must resolve to real code (native R2R or a
+    // correctly-typed interpreter thunk) rather than an uninitialized portable entry point.
+    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(entryPoint);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     BOOL hasReturnValue = !pParam->pFD->IsVoid();
     PTRARRAYREF* pArgument = (pParam->EntryType == EntryManagedMain) ? &StrArgArray : NULL;
@@ -1698,7 +1708,8 @@ void Assembly::AddType(
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
@@ -1724,7 +1735,8 @@ void Assembly::AddExportedType(mdExportedType cl)
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
@@ -1988,6 +2000,7 @@ void Assembly::SetError(Exception *ex)
             SetProfilerNotified();
 
 #ifdef PROFILING_SUPPORTED
+            GCX_PREEMP();
             // Only send errors for non-shared assemblies; other assemblies might be successfully completed
             // in another app domain later.
             m_pModule->NotifyProfilerLoadFinished(ex->GetHR());
