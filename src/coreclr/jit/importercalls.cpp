@@ -213,6 +213,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     bool checkForSmallType  = false;
     bool bIntrinsicImported = false;
 
+    NamedIntrinsic ni = NI_Illegal;
+
     CORINFO_SIG_INFO calliSig;
     GenTree*         varArgsCookie     = nullptr;
     GenTree*         instParam         = nullptr;
@@ -260,8 +262,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     }
     else // (opcode != CEE_CALLI)
     {
-        NamedIntrinsic ni = NI_Illegal;
-
         // Passing CORINFO_CALLINFO_ALLOWINSTPARAM indicates that this JIT is prepared to
         // supply the instantiation parameters necessary to make direct calls to underlying
         // shared generic code, rather than calling through instantiating stubs.  If the
@@ -521,7 +521,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (sig->isAsyncCall())
                 {
-                    impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, di);
+                    impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, ni, di);
 
                     if (compDonotInline())
                     {
@@ -843,7 +843,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, di);
+        impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, ni, di);
 
         if (compDonotInline())
         {
@@ -3493,6 +3493,19 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         // These are marked intrinsics simply to match them by name in
         // the Await pattern optimization. Make sure we keep pIntrinsicName assigned
         // (it would be overridden if we left this up to the rest of this function).
+        *pIntrinsicName = ni;
+        return nullptr;
+    }
+
+    if ((ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter) ||
+        (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter) ||
+        (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_Suspend) ||
+        (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_TransparentSuspend))
+    {
+        // These are marked intrinsics simply so that impSetupAsyncCall can
+        // recognize them by name as always-suspending helpers. Make sure we
+        // keep pIntrinsicName assigned (it would be overridden if we left this
+        // up to the rest of this function).
         *pIntrinsicName = ni;
         return nullptr;
     }
@@ -7272,12 +7285,31 @@ void Compiler::impCheckForPInvokeCall(
 //    methHnd     - Method handle being called
 //    opcode      - The IL opcode for the call
 //    prefixFlags - Flags containing context handling information from IL
+//    ni          - Named intrinsic recognized for the callee (or NI_Illegal)
 //    callDI      - Debug info for the async call
 //
-void Compiler::impSetupAsyncCall(
-    GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
+void Compiler::impSetupAsyncCall(GenTreeCall*          call,
+                                 CORINFO_METHOD_HANDLE methHnd,
+                                 OPCODE                opcode,
+                                 unsigned              prefixFlags,
+                                 NamedIntrinsic        ni,
+                                 const DebugInfo&      callDI)
 {
     AsyncCallInfo asyncInfo;
+
+    // Some async helpers always suspend when called. For these we can skip the
+    // check for a null continuation after the call and suspend unconditionally.
+    switch (ni)
+    {
+        case NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter:
+        case NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter:
+        case NI_System_Runtime_CompilerServices_AsyncHelpers_Suspend:
+        case NI_System_Runtime_CompilerServices_AsyncHelpers_TransparentSuspend:
+            asyncInfo.AlwaysSuspends = true;
+            break;
+        default:
+            break;
+    }
 
     if (compIsForInlining())
     {
@@ -11490,6 +11522,22 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             else if (strcmp(methodName, "TailAwait") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait;
+                            }
+                            else if (strcmp(methodName, "AwaitAwaiter") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter;
+                            }
+                            else if (strcmp(methodName, "UnsafeAwaitAwaiter") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter;
+                            }
+                            else if (strcmp(methodName, "Suspend") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_Suspend;
+                            }
+                            else if (strcmp(methodName, "TransparentSuspend") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_TransparentSuspend;
                             }
                         }
                         else if (strcmp(className, "StaticsHelpers") == 0)

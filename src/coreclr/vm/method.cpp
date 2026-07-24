@@ -406,7 +406,7 @@ LPCUTF8 MethodDesc::GetName()
             result = NULL;
         }
 
-        return(result);
+        return result;
     }
 }
 
@@ -1623,7 +1623,7 @@ BOOL MethodDesc::IsWrapperStub()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    return (IsUnboxingStub() || IsInstantiatingStub());
+    return IsUnboxingStub() || IsInstantiatingStub();
 }
 
 #ifndef DACCESS_COMPILE
@@ -1759,7 +1759,7 @@ BOOL MethodDesc::IsRuntimeMethodHandle()
     WRAPPER_NO_CONTRACT;
 
     // <TODO> Refine this check further for BoxedEntryPointStubs </TODO>
-    return (!HasMethodInstantiation() || !IsSharedByGenericMethodInstantiations());
+    return !HasMethodInstantiation() || !IsSharedByGenericMethodInstantiations();
 }
 
 //*******************************************************************************
@@ -1770,15 +1770,13 @@ BOOL MethodDesc::IsRuntimeMethodHandle()
 // C2.m2 -> C2.m2
 MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
-        POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(RETVAL->IsTypicalMethodDefinition());
     }
-    CONTRACT_END
+    CONTRACTL_END
 
 #ifndef DACCESS_COMPILE
     if (HasClassOrMethodInstantiation())
@@ -1798,12 +1796,13 @@ MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
         MethodDesc *resultMD = pMT->GetParallelMethodDesc(this);
         _ASSERTE(resultMD != NULL);
         resultMD->CheckRestore();
-        RETURN (resultMD);
+        _ASSERTE((resultMD)->IsTypicalMethodDefinition());
+        return resultMD;
     }
     else
 #endif // !DACCESS_COMPILE
     {
-        RETURN(this);
+        return this;
     }
 }
 
@@ -1872,29 +1871,28 @@ UINT MethodDesc::CbStackPop()
 // @todo check uses and clean this up
 MethodDesc* MethodDesc::StripMethodInstantiation()
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     if (!HasClassOrMethodInstantiation())
-        RETURN(this);
+        return this;
 
     MethodTable *pMT = GetMethodTable()->GetCanonicalMethodTable();
     MethodDesc *resultMD = pMT->GetParallelMethodDesc(this);
     _ASSERTE(resultMD->IsGenericMethodDefinition() || !resultMD->HasMethodInstantiation());
-    RETURN(resultMD);
+    return resultMD;
 }
 
 //*******************************************************************************
 MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDescCount,
     DWORD classification, BOOL fNonVtableSlot, BOOL fNativeCodeSlot, BOOL fAsyncMethodData, MethodTable *pInitialMT, AllocMemTracker *pamTracker, Module *pLoaderModule)
 {
-    CONTRACT(MethodDescChunk *)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
@@ -1904,9 +1902,8 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
         PRECONDITION(CheckPointer(pInitialMT));
         PRECONDITION(CheckPointer(pamTracker));
 
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SIZE_T oneSize = MethodDesc::GetBaseSize(classification);
 
@@ -1976,7 +1973,7 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
     }
     while (methodDescCount > 0);
 
-    RETURN pFirstChunk;
+    return pFirstChunk;
 }
 
 //--------------------------------------------------------------------
@@ -1996,7 +1993,7 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
 // handling of context proxies and other thunking layers.
 MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis, MethodTable* pMTOfThis)
 {
-    CONTRACT(MethodDesc *)
+    CONTRACTL
     {
         MODE_PREEMPTIVE;
         THROWS;
@@ -2005,10 +2002,8 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis, MethodTab
         PRECONDITION(IsVtableMethod());
         PRECONDITION(HasMethodInstantiation());
         PRECONDITION(!ContainsGenericVariables());
-        POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(RETVAL->HasMethodInstantiation());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // This is the static method descriptor describing the call.
     // It is not the destination of the call, which we must compute.
@@ -2039,7 +2034,7 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis, MethodTab
     // same as the static, i.e. the virtual method has not been overridden.
     if (!pTargetMT->IsSharedByGenericInstantiations() && !pTargetMT->IsValueType() &&
         pTargetMDBeforeGenericMethodArgs == pStaticMDWithoutGenericMethodArgs)
-        RETURN(pStaticMD);
+        return pStaticMD;
 
     if (pTargetMT->IsSharedByGenericInstantiations())
     {
@@ -2048,7 +2043,7 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis, MethodTab
                                                                   pTargetMDBeforeGenericMethodArgs->GetExactClassInstantiation(TypeHandle(pMTOfThis))).GetMethodTable();
     }
 
-    RETURN(MethodDesc::FindOrCreateAssociatedMethodDesc(
+    return(MethodDesc::FindOrCreateAssociatedMethodDesc(
         pTargetMDBeforeGenericMethodArgs,
         pTargetMT,
         (pTargetMT->IsValueType()), /* get unboxing entry point if a struct*/
@@ -2102,12 +2097,12 @@ PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, Meth
 
     PRECONDITION(IsVtableMethod());
 
-    
+
     if (HasMethodInstantiation())
     {
         CheckRestore();
         MethodDesc *pResultMD = ResolveGenericVirtualMethod(orThis, pMTOfThis);
-        
+
         // If we're remoting this call we can't call directly on the returned
         // method desc, we need to go through a stub that guarantees we end up
         // in the remoting handler. The stub we use below is normally just for
@@ -2115,22 +2110,22 @@ PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, Meth
         // where we could end up bypassing the remoting system), but it serves
         // our purpose here (basically pushes our correctly instantiated,
         // resolved method desc on the stack and calls the remoting code).
-        
+
         return pResultMD->GetSingleCallableAddrOfCode();
     }
-    
+
     if (IsInterface())
     {
         MethodDesc * pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH,this,orThis, pMTOfThis);
         return pTargetMD->GetSingleCallableAddrOfCode();
     }
-    
+
     return pMTOfThis->GetRestoredSlot(GetSlot());
 }
 
 MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         MODE_PREEMPTIVE;
         THROWS;
@@ -2138,9 +2133,8 @@ MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, Method
 
         PRECONDITION(IsVtableMethod());
         PRECONDITION(!staticTH.IsNull() || !IsInterface()); // If this is a non-interface method, staticTH may be null
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // This is the static method descriptor describing the call.
     // It is not the destination of the call, which we must compute.
@@ -2149,16 +2143,16 @@ MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, Method
     if (pStaticMD->HasMethodInstantiation())
     {
         CheckRestore();
-        RETURN(ResolveGenericVirtualMethod(orThis, pMTOfThis));
+        return ResolveGenericVirtualMethod(orThis, pMTOfThis);
     }
 
     if (pStaticMD->IsInterface())
     {
-        RETURN(MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, pStaticMD, orThis, pMTOfThis));
+        return MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, pStaticMD, orThis, pMTOfThis);
     }
 
     // Method table of target (might be instantiated)
-    RETURN(pMTOfThis->GetMethodDescForSlot(pStaticMD->GetSlot()));
+    return pMTOfThis->GetMethodDescForSlot(pStaticMD->GetSlot());
 }
 
 //*******************************************************************************
@@ -2167,17 +2161,16 @@ MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, Method
 // handling of context proxies and other thunking layers.
 PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
 {
-    CONTRACT(PCODE)
+    CONTRACTL
     {
         MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodDesc *pTargetMD = GetMethodDescOfVirtualizedCode(orThis, pMTOfThis, staticTH);
-    RETURN(pTargetMD->GetMultiCallableAddrOfCode());
+    return pTargetMD->GetMultiCallableAddrOfCode();
 }
 
 //*******************************************************************************
@@ -2828,12 +2821,12 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
 // static
 MethodDesc* MethodDesc::GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative /*=FALSE*/)
 {
-    CONTRACT(MethodDesc *)
+    CONTRACTL
     {
         GC_NOTRIGGER;
         NOTHROW;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodDesc* pMD = NULL;
 
@@ -2848,7 +2841,7 @@ MethodDesc* MethodDesc::GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative /
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-    RETURN(pMD);
+    return pMD;
 }
 
 //*******************************************************************************
@@ -3267,7 +3260,7 @@ bool MethodDesc::IsJitOptimizationDisabled()
 
 bool MethodDesc::IsJitOptimizationDisabledForSpecificMethod()
 {
-    return (!IsNoMetadata() && IsMiNoOptimization(GetImplAttrs()));
+    return !IsNoMetadata() && IsMiNoOptimization(GetImplAttrs());
 }
 
 bool MethodDesc::IsJitOptimizationLevelRequested()
@@ -4093,15 +4086,14 @@ MethodDescChunk::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 //*******************************************************************************
 MethodDesc *MethodDesc::GetInterfaceMD()
 {
-    CONTRACT (MethodDesc*) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         INSTANCE_CHECK;
         PRECONDITION(!IsInterface());
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    } CONTRACT_END;
+    } CONTRACTL_END;
     MethodTable *pMT = GetMethodTable();
-    RETURN(pMT->ReverseInterfaceMDLookup(GetSlot()));
+    return pMT->ReverseInterfaceMDLookup(GetSlot());
 }
 #endif // !DACCESS_COMPILE
 

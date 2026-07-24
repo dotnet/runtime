@@ -4940,8 +4940,6 @@ VOID MethodTableBuilder::TestOverRide(bmtMethodHandle hParentMethod,
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_REDUCEACCESS, hChildMethod.GetMethodSignature().GetToken());
     }
-
-    return;
 }
 
 //*******************************************************************************
@@ -5051,8 +5049,6 @@ VOID MethodTableBuilder::TestMethodImpl(
             BuildMethodTableThrowException(IDS_CLASSLOAD_MI_SEALED_DECL);
         }
     }
-
-    return;
 }
 
 
@@ -8963,7 +8959,7 @@ DWORD MethodTableBuilder::GetFieldSize(FieldDesc *pFD)
 
     if (pFD->IsByValue())
         return (DWORD)(DWORD_PTR&)(pFD->m_pMTOfEnclosingClass);
-    return (1 << (DWORD)(DWORD_PTR&)(pFD->m_pMTOfEnclosingClass));
+    return 1 << (DWORD)(DWORD_PTR&)(pFD->m_pMTOfEnclosingClass);
 }
 
 #ifdef UNIX_AMD64_ABI
@@ -10887,14 +10883,13 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         , AllocMemTracker *pamTracker
     )
 {
-    CONTRACT (MethodTable*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DWORD dwNonVirtualSlots = dwVtableSlots - dwVirtuals;
 
@@ -11113,7 +11108,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     pMT->m_pAuxiliaryData->m_dwLastVerifedGCCnt = (DWORD)-1;
 #endif // _DEBUG
 
-    RETURN(pMT);
+    return pMT;
 }
 
 
@@ -12877,15 +12872,13 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
     Instantiation     inst,
     AllocMemTracker * pamTracker)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(CheckPointer(pModule));
-        POSTCONDITION(!RETVAL.IsNull());
-        POSTCONDITION(CheckPointer(RETVAL.GetMethodTable()));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodTable * pMT = NULL;
 
@@ -13163,5 +13156,5 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
         parentInst,
         (WORD)cInterfaces);
 
-    RETURN(TypeHandle(pMT));
+    return TypeHandle(pMT);
 } // ClassLoader::CreateTypeHandleForTypeDefThrowing

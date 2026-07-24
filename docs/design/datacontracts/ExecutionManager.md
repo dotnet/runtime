@@ -143,7 +143,8 @@ public enum CodeKind : uint
     MethodCallThunk = 10,
     Jitted = 11,
     ReadyToRun = 12,
-    Interpreter = 13
+    Interpreter = 13,
+    ThePreStub = 14
 }
 ```
 
@@ -254,6 +255,7 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `HashMapValueMask` | `uint64` | Bitmask used when storing values in a `HashMap` |
 | `ObjectMethodTable` | `pointer` | Address of the global variable holding the System.Object MethodTable pointer |
 | `StubCodeBlockLast` | `uint8` | Maximum sentinel code header value indentifying a stub code block |
+| `ThePreStub` | `pointer` | Address of the global containing the prestub entrypoint |
 
 ### Contracts used
 
@@ -543,7 +545,7 @@ After obtaining the clause array bounds, the common iteration logic classifies e
 
 `IExecutionManager.IsGcSafe` returns whether a given instruction pointer is in managed code at a GC-safe point. First it resolves the instruction pointer to a `CodeBlockHandle` via `GetCodeBlockHandle`; if the pointer is not in managed code, it returns `false`. Otherwise it obtains the code block's relative offset and GC info, decodes the GC info via the `GCInfo` contract, and delegates to `GCInfo` `IsGcSafe`.
 
-`GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), ReadyToRun code, and interpreter code. Returns `Unknown` if the address cannot be classified. We depend on the values of the StubCodeBlockKind enum defined in codeman.h; for non-R2R code, we compare either the RangeList type or the code header against the values of this enum.
+`GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), ReadyToRun code, interpreter code, and the global prestub entrypoint. If no range section owns the address, it compares the address against the exposed prestub entrypoint. Returns `Unknown` if the address cannot be classified. We depend on the values of the StubCodeBlockKind enum defined in codeman.h; for non-R2R code, we compare either the RangeList type or the code header against the values of this enum.
 ### FindReadyToRunModule
 
 `FindReadyToRunModule` locates the ReadyToRun module whose PE image contains the given address. Unlike `GetCodeBlockHandle` (which only matches code regions), this API matches against the full PE image range - including data sections such as import tables. This is used in GCRefMap resolution as it requires finding the module that owns an import section indirection address, which is in the data section rather than the code section.
