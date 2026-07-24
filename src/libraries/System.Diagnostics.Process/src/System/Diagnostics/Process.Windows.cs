@@ -4,12 +4,14 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
@@ -79,6 +81,14 @@ namespace System.Diagnostics
 
                 handle.Kill();
             }
+        }
+
+        private bool SignalCore(PosixSignal signal)
+        {
+            using SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_TERMINATE | Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, throwIfExited: false);
+            return handle.IsInvalid
+                ? false // If the process has exited, the returned handle is invalid.
+                : handle.Signal(signal);
         }
 
         /// <summary>Discards any information about the associated process.</summary>
@@ -184,6 +194,19 @@ namespace System.Diagnostics
                 _exited = true;
                 _exitCode = localExitCode;
             }
+        }
+
+        private bool TryGetExitStatus([NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            if (_exited)
+            {
+                // We pass canceled: false here because Process does not expose WaitForExitOrKill methods.
+                exitStatus = new ProcessExitStatus(_exitCode, canceled: false);
+                return true;
+            }
+
+            exitStatus = null;
+            return false;
         }
 
         /// <summary>Gets the time that the associated process exited.</summary>

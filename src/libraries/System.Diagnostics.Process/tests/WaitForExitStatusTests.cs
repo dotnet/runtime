@@ -468,11 +468,11 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [SkipOnPlatform(TestPlatforms.Windows, "Signal property is Unix-specific")]
         [MemberData(nameof(TestTarget_UseAsync_Data))]
         public async Task WaitForExit_ProcessKilledBySignal_ReportsSignal(TestTarget testTarget, bool useAsync)
         {
-            const PosixSignal signal = PosixSignal.SIGTERM;
+            // On Windows, only SIGKILL is supported.
+            PosixSignal signal = OperatingSystem.IsWindows() ? PosixSignal.SIGKILL : PosixSignal.SIGTERM;
             using Process process = CreateProcess(static () =>
             {
                 Thread.Sleep(Timeout.Infinite);
@@ -519,8 +519,18 @@ namespace System.Diagnostics.Tests
 
             Assert.InRange(stopwatch.Elapsed, TimeSpan.Zero, TimeSpan.FromSeconds(5));
             Assert.NotEqual(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
-            Assert.NotNull(exitStatus.Signal);
-            Assert.Equal(signal, exitStatus.Signal);
+            Assert.Equal(OperatingSystem.IsWindows() ? null : signal, exitStatus.Signal);
+
+            // The process has exited, so the signal should not be delivered.
+            delivered = testTarget switch
+            {
+                TestTarget.StartedHandle => processHandle.Signal(signal),
+                TestTarget.StartedProcess => process.Signal(signal),
+                TestTarget.FetchedHandle => fetchedHandle.Signal(signal),
+                TestTarget.FetchedProcess => fetchedProcess.Signal(signal),
+                _ => throw new NotSupportedException($"Test target {testTarget} is not supported.")
+            };
+            Assert.False(delivered);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
@@ -61,15 +62,20 @@ namespace System.Diagnostics
 
             EnsureState(State.HaveId);
 
+            SignalCore(PosixSignal.SIGKILL);
+        }
+
+        private bool SignalCore(PosixSignal signal)
+        {
             // Check if we know the process has exited. This avoids us targeting another
             // process that has a recycled PID. This only checks our internal state, the Kill call below
             // actively checks if the process is still alive.
             if (GetHasExited(refresh: false))
             {
-                return;
+                return false;
             }
 
-            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
+            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSignalNumber(signal));
             if (killResult != 0)
             {
                 Interop.Error error = Interop.Sys.GetLastError();
@@ -77,11 +83,13 @@ namespace System.Diagnostics
                 // Don't throw if the process has exited.
                 if (error == Interop.Error.ESRCH)
                 {
-                    return;
+                    return false;
                 }
 
                 throw new Win32Exception(); // same exception as on Windows
             }
+
+            return true;
         }
 
         private bool GetHasExited(bool refresh)
@@ -271,6 +279,17 @@ namespace System.Diagnostics
             {
                 _exitCode = exitStatus.ExitCode;
             }
+        }
+
+        private bool TryGetExitStatus([NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            if (GetWaitState().GetExited(out exitStatus, refresh: false) && exitStatus is not null)
+            {
+                return true;
+            }
+
+            exitStatus = null;
+            return false;
         }
 
         /// <summary>Gets the time that the associated process exited.</summary>
