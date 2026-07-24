@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 
 namespace System
 {
@@ -157,6 +158,12 @@ namespace System
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(Half left, Half right)
         {
+            if (Avx2.IsSupported)
+            {
+                // (float)Half lowers to a hardware conversion here, so comparing as float is cheaper.
+                return (float)left < (float)right;
+            }
+
             if (IsNaN(left) || IsNaN(right))
             {
                 // IEEE defines that NaN is unordered with respect to everything, including itself.
@@ -185,6 +192,12 @@ namespace System
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(Half left, Half right)
         {
+            if (Avx2.IsSupported)
+            {
+                // (float)Half lowers to a hardware conversion here, so comparing as float is cheaper.
+                return (float)left <= (float)right;
+            }
+
             if (IsNaN(left) || IsNaN(right))
             {
                 // IEEE defines that NaN is unordered with respect to everything, including itself.
@@ -437,19 +450,10 @@ namespace System
         /// <returns>A value less than zero if this is less than <paramref name="other"/>, zero if this is equal to <paramref name="other"/>, or a value greater than zero if this is greater than <paramref name="other"/>.</returns>
         public int CompareTo(Half other)
         {
-            if (this < other)
+            if (Avx2.IsSupported)
             {
-                return -1;
-            }
-
-            if (this > other)
-            {
-                return 1;
-            }
-
-            if (this == other)
-            {
-                return 0;
+                // (float)Half lowers to a hardware conversion here, so comparing as float is cheaper.
+                return ((float)this).CompareTo((float)other);
             }
 
             if (IsNaN(this))
@@ -457,8 +461,20 @@ namespace System
                 return IsNaN(other) ? 0 : -1;
             }
 
-            Debug.Assert(IsNaN(other));
-            return 1;
+            if (IsNaN(other))
+            {
+                return 1;
+            }
+
+            // Neither value is NaN, so map the sign-magnitude bits to a monotonic ordering.
+            return GetCompareKey(_value) - GetCompareKey(other._value);
+        }
+
+        private static int GetCompareKey(ushort bits)
+        {
+            // Positive maps to 0x8000 + bits and negative maps to 0x8000 - magnitude, so both zeros
+            // collapse to 0x8000 while the ordering stays monotonic across the finite and infinite range.
+            return ((bits & SignMask) == 0) ? (SignMask + bits) : (SignMask - (bits & ~SignMask));
         }
 
         /// <summary>
