@@ -50,6 +50,44 @@ namespace LibraryImportGenerator.UnitTests
             [CallerFilePath] string? filePath = null)
             => TestUtils.GetFileLineName(lineNumber, filePath);
 
+        [Fact]
+        public Task GeneratedComInterfaceMissingManagedObjectWrapperFails()
+        {
+            // ComObjectWrapper-only interface (no CCW): cannot marshal managed -> unmanaged.
+            // Return value / out are unmanaged -> managed and remain valid; by-value / in / ref are not.
+            const string entryPointType = "global::System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller<global::MyInterfaceType>";
+            return VerifyAnalyzerCS.VerifyAnalyzerAsync(
+                CodeSnippets.GeneratedComInterfaceWithOptions("ComInterfaceOptions.ComObjectWrapper"),
+                VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(1)
+                    .WithArguments(string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, entryPointType), "p"),
+                VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(2)
+                    .WithArguments(string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, entryPointType), "pIn"),
+                VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(3)
+                    .WithArguments(string.Format(SR.BidirectionalMissingRequiredMarshaller, entryPointType), "pRef"));
+        }
+
+        [Fact]
+        public Task GeneratedComInterfaceMissingComObjectWrapperFails()
+        {
+            // ManagedObjectWrapper-only interface (no RCW): cannot marshal unmanaged -> managed.
+            // Return value, out, and ref parameters are invalid; by-value / in remain valid.
+            const string entryPointType = "global::System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller<global::MyInterfaceType>";
+            return VerifyAnalyzerCS.VerifyAnalyzerAsync(
+                CodeSnippets.GeneratedComInterfaceWithOptions("ComInterfaceOptions.ManagedObjectWrapper"),
+                VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, entryPointType), "Method"),
+                VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(3)
+                    .WithArguments(string.Format(SR.BidirectionalMissingRequiredMarshaller, entryPointType), "pRef"),
+                VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(4)
+                    .WithArguments(string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, entryPointType), "pOut"));
+        }
+
         public static IEnumerable<object[]> CodeSnippetsToCompile()
         {
             // Bug: https://github.com/dotnet/runtime/issues/117448

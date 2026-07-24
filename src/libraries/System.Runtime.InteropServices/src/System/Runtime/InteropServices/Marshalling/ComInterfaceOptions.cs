@@ -3,7 +3,7 @@
 using System;
 using System.ComponentModel;
 
-#if MICROSOFT_INTEROP_COMINTERFACEGENERATOR
+#if MICROSOFT_INTEROP_COMINTERFACEGENERATOR || MICROSOFT_INTEROP_SOURCEGENERATION
 namespace Microsoft.Interop
 #else
 namespace System.Runtime.InteropServices.Marshalling
