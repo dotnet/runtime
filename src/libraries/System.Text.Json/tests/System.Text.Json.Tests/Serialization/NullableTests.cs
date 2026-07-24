@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -488,6 +489,30 @@ namespace System.Text.Json.Serialization.Tests
         public struct RecursiveNullableStruct
         {
             public RecursiveNullableStruct?[] Next { get; set; } 
+        }
+
+        [Fact]
+        public static void NullableStructProperty_StreamWithContinuationAfterNullToken()
+        {
+            string json = """{"Value":{"Total":0,"a":null,"b":0}}""";
+            byte[] bytes = Encoding.UTF8.GetBytes(json);
+            var options = new JsonSerializerOptions { DefaultBufferSize = 32 };
+
+            using var stream = new MemoryStream(bytes);
+            var fromStream = JsonSerializer.Deserialize<MyPoco>(stream, options)!;
+            Assert.NotNull(fromStream);
+            Assert.NotNull(fromStream.Value);
+            Assert.Equal(0, fromStream.Value.Value.Total);
+        }
+
+        public class MyPoco
+        {
+            public MyStruct? Value { get; set; }
+        }
+
+        public struct MyStruct
+        {
+            public int Total { get; set; }
         }
     }
 }
