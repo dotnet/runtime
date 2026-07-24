@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -463,14 +464,24 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         // Only VAR/MVAR (generic parameters) require runtime type system resolution.
         uint valueFlags;
         int typeSize = -1;
+        ITypeHandle? typeHandle;
         if (isArg && sigIndex == 0 && methodHeader.IsInstance)
         {
             // 'this' parameter is always a reference
             valueFlags = (uint)ClrDataValueFlag.IS_REFERENCE;
+            typeHandle = _target.Contracts.RuntimeTypeSystem.GetTypeHandle(
+                _target.Contracts.RuntimeTypeSystem.GetMethodTable(mdh));
         }
         else
         {
             (valueFlags, typeSize) = ComputeFlagsFromSignature(isArg, sigIndex, methodHeader, mdh, moduleHandle);
+            typeHandle = GetTypeHandleFromSignature(isArg, sigIndex, methodHeader, mdh, moduleHandle);
+            if (typeHandle is null)
+            {
+                typeHandle = _target.Contracts.RuntimeTypeSystem.GetPrimitiveType(CorElementType.U8);
+                valueFlags = (uint)ClrDataValueFlag.DEFAULT;
+                typeSize = -1;
+            }
         }
 
         // Match native DAC (ValueFromDebugInfo in stack.cpp): for primitives with a
@@ -497,7 +508,10 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             ];
         }
 
-        return new ClrDataValue(_target, valueFlags, locations, legacyImpl);
+        ulong baseAddress = locations.Length == 1 && !locations[0].IsRegisterValue
+            ? locations[0].AddressOrValue
+            : 0;
+        return new ClrDataValue(_target, valueFlags, typeHandle, baseAddress, locations, legacyImpl);
     }
 
     // ========== Signature-based flag computation ==========
@@ -582,6 +596,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                 int paramIndex = methodHeader.IsInstance ? (int)sigIndex - 1 : (int)sigIndex;
                 return methodSig.ParameterTypes[paramIndex];
             }
+
             else
             {
                 BlobReader? localReader = GetLocalSignatureReader(mdh, moduleHandle, out _);
@@ -593,9 +608,44 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                 return localFlags[(int)sigIndex];
             }
         }
+
         catch (System.Exception)
         {
             return ((uint)ClrDataValueFlag.DEFAULT, -1);
+        }
+    }
+
+    private ITypeHandle? GetTypeHandleFromSignature(
+        bool isArg, uint sigIndex, SignatureHeader methodHeader,
+        MethodDescHandle mdh, Contracts.ModuleHandle moduleHandle)
+    {
+        try
+        {
+            MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle) ?? throw new NotImplementedException();
+            uint token = _target.Contracts.RuntimeTypeSystem.GetMethodToken(mdh);
+            MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(token)));
+            SignatureTypeProvider<MethodDescHandle> provider = new(_target, moduleHandle);
+            SignatureDecoder<ITypeHandle?, MethodDescHandle> decoder = new(provider, mdReader, mdh);
+
+            if (isArg)
+            {
+                BlobReader sigReader = mdReader.GetBlobReader(methodDef.Signature);
+                MethodSignature<ITypeHandle?> methodSig = decoder.DecodeMethodSignature(ref sigReader);
+                int paramIndex = methodHeader.IsInstance ? (int)sigIndex - 1 : (int)sigIndex;
+                return methodSig.ParameterTypes[paramIndex];
+            }
+
+            BlobReader? localReader = GetLocalSignatureReader(mdh, moduleHandle, out _);
+            if (localReader is null)
+                return null;
+
+            BlobReader localSigReader = localReader.Value;
+            ImmutableArray<ITypeHandle?> localTypes = decoder.DecodeLocalSignature(ref localSigReader);
+            return localTypes[(int)sigIndex];
+        }
+        catch (System.Exception)
+        {
+            return null;
         }
     }
 
