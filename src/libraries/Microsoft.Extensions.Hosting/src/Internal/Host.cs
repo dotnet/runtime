@@ -97,15 +97,32 @@ namespace Microsoft.Extensions.Hosting.Internal
                     // fails fast and a hosted service reading validated options in its constructor observes
                     // the startup-validated instance.
                     IStartupValidator? startupValidator = Services.GetService<IStartupValidator>();
-                    IAsyncStartupValidator[] asyncValidators = Services.GetServices<IAsyncStartupValidator>().ToArray();
+                    IAsyncStartupValidator[] asyncValidators = Array.Empty<IAsyncStartupValidator>();
+                    bool runSyncValidator;
 
-                    // For back-compatibility, a custom IStartupValidator takes precedence and fully controls
-                    // startup validation, overriding any registered IAsyncStartupValidator instances,
-                    // including the one registered by ValidateOnStart.
-                    if (startupValidator is not null &&
-                        !asyncValidators.Any(asyncValidator => asyncValidator.GetType() == startupValidator.GetType()))
+                    // A custom IStartupValidator that is not even async-capable takes precedence and fully controls
+                    // startup validation (back-compat). Because it cannot appear in the IAsyncStartupValidator
+                    // collection, run it without resolving that collection at all, avoiding instantiation (and any
+                    // constructor/DI side effects) of async validators that would never run.
+                    if (startupValidator is not null and not IAsyncStartupValidator)
                     {
-                        startupValidator.Validate();
+                        runSyncValidator = true;
+                    }
+                    else
+                    {
+                        asyncValidators = Services.GetServices<IAsyncStartupValidator>().ToArray();
+
+                        // A validator implementing both interfaces but registered only as IStartupValidator is absent
+                        // from the async collection, so it also takes precedence. Match by runtime type rather than
+                        // reference: the built-in validator is registered transient under both interfaces, so the
+                        // resolved IStartupValidator and the async enumerable are distinct instances of one type.
+                        runSyncValidator = startupValidator is not null &&
+                            !asyncValidators.Any(asyncValidator => asyncValidator.GetType() == startupValidator.GetType());
+                    }
+
+                    if (runSyncValidator)
+                    {
+                        startupValidator?.Validate();
                     }
                     else
                     {
