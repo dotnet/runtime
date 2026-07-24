@@ -60,6 +60,8 @@ namespace ILCompiler
             new("--scandgmllog") { Description = "Save result of scanner dependency analysis as DGML" };
         public Option<bool> GenerateFullScanDgmlLog { get; } =
             new("--scanfulllog") { Description = "Save detailed log of scanner dependency analysis" };
+        public Option<string> StdOutFileName { get; } =
+            new("--stdoutfilename") { Description = "Redirect stdout to specified file" };
         public Option<bool> IsVerbose { get; } =
             new("--verbose") { Description = "Enable verbose logging" };
         public Option<string> SystemModuleName { get; } =
@@ -214,6 +216,7 @@ namespace ILCompiler
             Options.Add(GenerateFullDgmlLog);
             Options.Add(ScanDgmlLogFileName);
             Options.Add(GenerateFullScanDgmlLog);
+            Options.Add(StdOutFileName);
             Options.Add(IsVerbose);
             Options.Add(SystemModuleName);
             Options.Add(Win32ResourceModuleName);
@@ -281,6 +284,14 @@ namespace ILCompiler
             this.SetAction(result =>
             {
                 Result = result;
+
+                string stdoutPath = result.GetValue(StdOutFileName);
+                using FileStream stdoutFile = stdoutPath == null ? null : new FileStream(stdoutPath, FileMode.Create, FileAccess.Write, FileShare.Read);
+                using StreamWriter stdoutWriter = stdoutFile == null ? null : new StreamWriter(stdoutFile);
+                if (stdoutWriter != null)
+                {
+                    Console.SetOut(stdoutWriter);
+                }
 
                 if (result.GetValue(OptimizeSpace))
                 {
