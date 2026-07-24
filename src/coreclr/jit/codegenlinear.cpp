@@ -1394,21 +1394,180 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
         }
         else
         {
-            // Here we may have a GT_RELOAD.
-            // The spill temp allocated for it is associated with the original tree that defined the
-            // register that it was spilled from.
-            // So we use 'unspillTree' to recover that spill temp.
-            TempDsc* t        = regSet.rsUnspillInPlace(unspillTree, unspillTree->GetRegNum());
-            emitAttr emitType = emitActualTypeSize(unspillTree->TypeGet());
-            // Reload into the register specified by 'tree' which may be a GT_RELOAD.
             regNumber dstReg = tree->GetRegNum();
-            GetEmitter()->emitIns_R_S(ins_Load(unspillTree->gtType), emitType, dstReg, t->tdTempNum(), 0);
-            regSet.tmpRlsTemp(t);
 
-            unspillTree->gtFlags &= ~GTF_SPILLED;
-            gcInfo.gcMarkRegPtrVal(dstReg, unspillTree->TypeGet());
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+            // A floating-point, SIMD, or mask constant is not spilled to the stack (see
+            // genProduceReg); rematerialize it directly into the reload target register rather
+            // than loading it from a spill temp that was never created.
+            if (isRematerializableConstant(unspillTree) && ((unspillTree->gtFlags & GTF_NOREG_AT_USE) == 0))
+            {
+#if defined(TARGET_XARCH)
+                // The GT_CNS_VEC and GT_CNS_MSK GenTree* overloads of genSetRegToConst materialize
+                // into the node's own register, so the explicit-register overloads are used to honor
+                // 'dstReg' (which may be a GT_RELOAD target register that differs from the original
+                // definition's register).
+                switch (unspillTree->OperGet())
+                {
+                    case GT_CNS_DBL:
+                        genSetRegToConst(dstReg, unspillTree->TypeGet(), unspillTree);
+                        break;
+                    case GT_CNS_VEC:
+                        genSetRegToConst(dstReg, unspillTree->TypeGet(), &unspillTree->AsVecCon()->gtSimdVal);
+                        break;
+                    case GT_CNS_MSK:
+                        genSetRegToConst(dstReg, unspillTree->TypeGet(), &unspillTree->AsMskCon()->gtSimdMaskVal);
+                        break;
+                    default:
+                        unreached();
+                }
+#else  // TARGET_ARM64
+       // The arm64 genSetRegToConst honors the explicit target register for every operator.
+                genSetRegToConst(dstReg, unspillTree->TypeGet(), unspillTree);
+#endif // TARGET_XARCH
+
+                unspillTree->gtFlags &= ~GTF_SPILLED;
+            }
+            else
+#endif // TARGET_XARCH || TARGET_ARM64
+            {
+                // Here we may have a GT_RELOAD.
+                // The spill temp allocated for it is associated with the original tree that defined the
+                // register that it was spilled from.
+                // So we use 'unspillTree' to recover that spill temp.
+                TempDsc* t        = regSet.rsUnspillInPlace(unspillTree, unspillTree->GetRegNum());
+                emitAttr emitType = emitActualTypeSize(unspillTree->TypeGet());
+                // Reload into the register specified by 'tree' which may be a GT_RELOAD.
+                GetEmitter()->emitIns_R_S(ins_Load(unspillTree->gtType), emitType, dstReg, t->tdTempNum(), 0);
+                regSet.tmpRlsTemp(t);
+
+                unspillTree->gtFlags &= ~GTF_SPILLED;
+                gcInfo.gcMarkRegPtrVal(dstReg, unspillTree->TypeGet());
+            }
         }
     }
+}
+
+//------------------------------------------------------------------------
+// isRematerializableConstant: Determine whether a spilled constant tree temp can be
+//    rematerialized at its reload point instead of being spilled to and reloaded
+//    from the stack.
+//
+// Arguments:
+//    tree - the node that defines the value
+//
+// Return Value:
+//    True if 'tree' is a floating-point, SIMD, or mask constant that this target can
+//    rematerialize without requiring a scratch register or GC bookkeeping.
+//
+// Notes:
+//    These constants have no GC liveness. On xarch every such constant can be
+//    rematerialized without a scratch register (zero via `xorps`, all-bits-set via
+//    `pcmpeqd`/`vpternlogd`, or a RIP-relative load from the constant's memory home),
+//    so all of them are eligible.
+//
+//    On arm64 only the subset that genSetRegToConst encodes directly into an instruction
+//    is eligible; the remaining values are loaded from the constant pool via `adrp`/`ldr`
+//    which needs a scratch address register that is not reserved at the reload point. The
+//    conditions below must therefore stay in sync with the direct-encoding fast paths in
+//    genSetRegToConst: 0.0/fmov-immediate for CNS_DBL, zero/all-bits-set/movi-broadcast for
+//    CNS_VEC, and every CNS_MSK (encoded via `pfalse`/`ptrue`, which never needs a scratch).
+//    Other targets can be enabled later for their own scratch-free subset.
+//
+bool CodeGen::isRematerializableConstant(GenTree* tree)
+{
+#if defined(TARGET_XARCH)
+    return tree->OperIs(GT_CNS_DBL, GT_CNS_VEC, GT_CNS_MSK);
+#elif defined(TARGET_ARM64)
+    switch (tree->OperGet())
+    {
+        case GT_CNS_DBL:
+        {
+            double constValue = tree->AsDblCon()->DconValue();
+            return (*(int64_t*)&constValue == 0) || emitter::emitIns_valid_imm_for_fmov(constValue);
+        }
+
+#if defined(FEATURE_SIMD)
+        case GT_CNS_VEC:
+        {
+            // genSetRegToConst only encodes SIMD8/12/16 constants without a scratch register; any
+            // wider type falls through to its 'unreached' path, so reject those up front (mirroring
+            // the type switch in genSetRegToConst).
+            if (!tree->TypeIs(TYP_SIMD8, TYP_SIMD12, TYP_SIMD16))
+            {
+                return false;
+            }
+
+            GenTreeVecCon* vecCon = tree->AsVecCon();
+
+            if (vecCon->IsAllBitsSet() || vecCon->IsZero())
+            {
+                return true;
+            }
+
+            const bool is8 = tree->TypeIs(TYP_SIMD8);
+            simd16_t   val = vecCon->gtSimd16Val;
+
+            return (ElementsAreSame(val.i32, is8 ? 2 : 4) &&
+                    emitter::emitIns_valid_imm_for_movi(val.i32[0], EA_4BYTE)) ||
+                   (ElementsAreSame(val.i16, is8 ? 4 : 8) &&
+                    emitter::emitIns_valid_imm_for_movi(val.i16[0], EA_2BYTE)) ||
+                   (ElementsAreSame(val.i8, is8 ? 8 : 16) && emitter::emitIns_valid_imm_for_movi(val.i8[0], EA_1BYTE));
+        }
+#endif // FEATURE_SIMD
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case GT_CNS_MSK:
+            return true;
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+        default:
+            return false;
+    }
+#else
+    return false;
+#endif // TARGET_XARCH
+}
+
+//------------------------------------------------------------------------
+// isRematerializedConstantSpill: Determine whether a constant that LSRA has marked to
+//    spill will instead be handled entirely by rematerialization, so that both its stack
+//    store and its register definition can be elided.
+//
+// Arguments:
+//    tree - the node that defines the value
+//
+// Return Value:
+//    True if 'tree' is a rematerializable constant whose definition is spilled immediately
+//    (GTF_SPILL) and whose value never needs to live in a stack spill temp, so both the store
+//    and the register definition can be elided.
+//
+// Notes:
+//    GTF_SPILL on a definition carries spill-after semantics: LSRA stores the value right
+//    after it is produced and frees the register, so there is no in-register use of the
+//    definition. When such a value is rematerializable, the stack store is skipped (see
+//    genProduceReg) and the definition itself only materializes a value into a register that
+//    is never read, so callers use this predicate to also elide the definition.
+//
+//    A reload that needs the value in a register rematerializes it (see genUnspillRegIfNeeded).
+//    A use that instead consumes the value directly from memory is marked GTF_NOREG_AT_USE; on
+//    xarch that memory operand can be the constant's data-section home (see genOperandDesc and
+//    emitInsBinary), so the definition and its spill store are still unnecessary. Targets that
+//    cannot encode the constant as a memory operand must materialize it into a register at the
+//    use, so there the definition and its store are retained for the GTF_NOREG_AT_USE case.
+//
+bool CodeGen::isRematerializedConstantSpill(GenTree* tree)
+{
+    if (((tree->gtFlags & GTF_SPILL) == 0) || !isRematerializableConstant(tree))
+    {
+        return false;
+    }
+
+#if defined(TARGET_XARCH)
+    return true;
+#else
+    return (tree->gtFlags & GTF_NOREG_AT_USE) == 0;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -2232,6 +2391,21 @@ void CodeGen::genProduceReg(GenTree* tree)
             }
             else
             {
+                // Floating-point, SIMD, and mask constants have no GC liveness and (on the targets
+                // for which isRematerializableConstant is enabled) can be rematerialized cheaply
+                // without a scratch register. Rather than spilling such a value to the stack, skip
+                // creating the spill temp and emitting the store; a reload rematerializes it into a
+                // register (see genUnspillRegIfNeeded) and, on xarch, a use that consumes it from
+                // memory reads the constant's data-section home directly (see genOperandDesc). The
+                // definition that produced this value is likewise elided at the definition site (see
+                // genCodeForTreeNode), so nothing reads the register here.
+                if (isRematerializedConstantSpill(tree))
+                {
+                    tree->gtFlags |= GTF_SPILLED;
+                    tree->gtFlags &= ~GTF_SPILL;
+                    return;
+                }
+
                 regSet.rsSpillTree(tree->GetRegNum(), tree);
                 gcInfo.gcMarkRegSetNpt(genRegMask(tree->GetRegNum()));
             }
