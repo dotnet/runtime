@@ -29,14 +29,11 @@ namespace Internal.Runtime
         private const nuint FOH_SEGMENT_DEFAULT_SIZE = 4 * 1024 * 1024;
         // Size to commit on demand in that reserved space
         private const nuint FOH_COMMIT_SIZE = 64 * 1024;
-        // The data of arrays at least this big is aligned on FOH_DATA_ALIGNMENT, which is
-        // the widest vector the platform can load from it.
-        private const nuint FOH_MIN_SIZE_TO_ALIGN = 128;
-#if TARGET_ARM64
-        private const nuint FOH_DATA_ALIGNMENT = 16;
-#else
+        // The data of arrays of at least FOH_MIN_SIZE_TO_ALIGN bytes is put on a cache
+        // line. The threshold keeps the gap we leave in front of an array small relative
+        // to the array.
         private const nuint FOH_DATA_ALIGNMENT = 64;
-#endif
+        private const nuint FOH_MIN_SIZE_TO_ALIGN = 512;
 
         public T? TryAllocateObject<T>() where T : class
         {
