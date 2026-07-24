@@ -222,7 +222,7 @@ public struct TypeNameBuilder
                     AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), default, format & ~TypeNameFormat.FormatAssembly);
                 }
             }
-            else if (typeSystemContract.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken))
+            else if (typeSystemContract.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken, out _))
             {
                 Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePointer);
                 MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module)!;
@@ -342,7 +342,7 @@ public struct TypeNameBuilder
         foreach (ITypeHandle arg in inst)
         {
             tnb.OpenGenericArgument();
-            if (format.HasFlag(TypeNameFormat.FormatFullInst) && !tnb.Target.Contracts.RuntimeTypeSystem.IsGenericVariable(arg, out _, out _))
+            if (format.HasFlag(TypeNameFormat.FormatFullInst) && !tnb.Target.Contracts.RuntimeTypeSystem.IsGenericVariable(arg, out _, out _, out _))
             {
                 AppendTypeCore(ref tnb, arg, default, format | TypeNameFormat.FormatNamespace | TypeNameFormat.FormatAssembly);
             }

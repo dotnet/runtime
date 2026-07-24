@@ -31,7 +31,7 @@ internal static class TypeHandleExtensions
         if (runtimeTypeSystem.IsArray(typeHandle, out uint rank))
         {
             AppendName(runtimeTypeSystem.GetTypeParam(typeHandle), target, result);
-            AppendParamTypeQualifier(result, runtimeTypeSystem.GetInternalCorElementType(typeHandle), rank);
+            AppendConstructedName(result, runtimeTypeSystem.GetInternalCorElementType(typeHandle), rank);
         }
         else
         {
@@ -67,60 +67,20 @@ internal static class TypeHandleExtensions
         if (kind is CorElementType.Byref or CorElementType.Ptr or CorElementType.SzArray or CorElementType.Array)
         {
             AppendName(runtimeTypeSystem.GetTypeParam(typeHandle), target, result);
-            AppendParamTypeQualifier(result, kind, rank: 0);
-            return;
         }
 
+        uint rank = 0;
         if (kind is CorElementType.Var or CorElementType.MVar)
         {
-            bool isGenericVariable = runtimeTypeSystem.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken);
+            bool isGenericVariable = runtimeTypeSystem.IsGenericVariable(typeHandle, out _, out _, out uint index);
             Debug.Assert(isGenericVariable);
-
-            Contracts.ModuleHandle module = target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePointer);
-            MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(module)!;
-            GenericParameter genericParameter = reader.GetGenericParameter((GenericParameterHandle)MetadataTokens.EntityHandle((int)genericParamToken));
-            result.Append(kind == CorElementType.Var ? "!" : "!!");
-            result.Append(genericParameter.Index);
-            return;
+            rank = index;
         }
 
-        if (kind == CorElementType.FnPtr)
-        {
-            result.Append("FNPTR");
-            return;
-        }
-
-        string? name = kind switch
-        {
-            CorElementType.Void => "Void",
-            CorElementType.Boolean => "Boolean",
-            CorElementType.Char => "Char",
-            CorElementType.I1 => "SByte",
-            CorElementType.U1 => "Byte",
-            CorElementType.I2 => "Int16",
-            CorElementType.U2 => "UInt16",
-            CorElementType.I4 => "Int32",
-            CorElementType.U4 => "UInt32",
-            CorElementType.I8 => "Int64",
-            CorElementType.U8 => "UInt64",
-            CorElementType.R4 => "Single",
-            CorElementType.R8 => "Double",
-            CorElementType.String => "String",
-            CorElementType.TypedByRef => "TypedReference",
-            CorElementType.I => "IntPtr",
-            CorElementType.U => "UIntPtr",
-            CorElementType.Object => "Object",
-            _ => null,
-        };
-
-        if (name is not null)
-        {
-            result.Append("System.");
-            result.Append(name);
-        }
+        AppendConstructedName(result, kind, rank);
     }
 
-    private static void AppendParamTypeQualifier(StringBuilder result, CorElementType kind, uint rank)
+    private static void AppendConstructedName(StringBuilder result, CorElementType kind, uint rank)
     {
         switch (kind)
         {
@@ -147,6 +107,48 @@ internal static class TypeHandleExtensions
                     }
                 }
                 result.Append(']');
+                break;
+            case CorElementType.Var:
+                result.Append('!');
+                result.Append(rank);
+                break;
+            case CorElementType.MVar:
+                result.Append("!!");
+                result.Append(rank);
+                break;
+            case CorElementType.FnPtr:
+                result.Clear();
+                result.Append("FNPTR");
+                break;
+            default:
+                string? name = kind switch
+                {
+                    CorElementType.Void => "Void",
+                    CorElementType.Boolean => "Boolean",
+                    CorElementType.Char => "Char",
+                    CorElementType.I1 => "SByte",
+                    CorElementType.U1 => "Byte",
+                    CorElementType.I2 => "Int16",
+                    CorElementType.U2 => "UInt16",
+                    CorElementType.I4 => "Int32",
+                    CorElementType.U4 => "UInt32",
+                    CorElementType.I8 => "Int64",
+                    CorElementType.U8 => "UInt64",
+                    CorElementType.R4 => "Single",
+                    CorElementType.R8 => "Double",
+                    CorElementType.String => "String",
+                    CorElementType.TypedByRef => "TypedReference",
+                    CorElementType.I => "IntPtr",
+                    CorElementType.U => "UIntPtr",
+                    CorElementType.Object => "Object",
+                    _ => null,
+                };
+
+                if (name is not null)
+                {
+                    result.Append("System.");
+                    result.Append(name);
+                }
                 break;
         }
     }

@@ -79,15 +79,6 @@ public class TypeHandleTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetName_GenericVariablesUseIndex(MockTarget.Architecture architecture)
     {
-        MetadataBuilder metadataBuilder = CreateMetadataBuilder();
-        TypeDefinitionHandle owner = AddTypeDefinition(metadataBuilder, "Tests", "Owner");
-        GenericParameterHandle genericParameter = metadataBuilder.AddGenericParameter(
-            owner,
-            GenericParameterAttributes.None,
-            metadataBuilder.GetOrAddString("T"),
-            index: 7);
-        using MetadataReaderProvider provider = CreateMetadataReader(metadataBuilder, out MetadataReader reader);
-
         TargetTypeHandle typeVariable = new(0x2002);
         TargetTypeHandle methodVariable = new(0x3002);
         TestRuntimeTypeSystem runtimeTypeSystem = new();
@@ -95,9 +86,9 @@ public class TypeHandleTests
         runtimeTypeSystem.TypeDescs.Add(methodVariable);
         runtimeTypeSystem.ElementTypes[typeVariable] = CorElementType.Var;
         runtimeTypeSystem.ElementTypes[methodVariable] = CorElementType.MVar;
-        runtimeTypeSystem.GenericVariables[typeVariable] = (ModuleAddress, (uint)MetadataTokens.GetToken(genericParameter));
-        runtimeTypeSystem.GenericVariables[methodVariable] = (ModuleAddress, (uint)MetadataTokens.GetToken(genericParameter));
-        TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem, reader);
+        runtimeTypeSystem.GenericVariables[typeVariable] = (ModuleAddress, 0, 7);
+        runtimeTypeSystem.GenericVariables[methodVariable] = (ModuleAddress, 0, 7);
+        TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem);
 
         Assert.Equal("!7", typeVariable.GetName(target));
         Assert.Equal("!!7", methodVariable.GetName(target));
@@ -211,7 +202,7 @@ public class TypeHandleTests
         public Dictionary<ITypeHandle, uint> TypeDefTokens { get; } = [];
         public Dictionary<ITypeHandle, TargetPointer> TypeModules { get; } = [];
         public Dictionary<ITypeHandle, ITypeHandle[]> Instantiations { get; } = [];
-        public Dictionary<ITypeHandle, (TargetPointer Module, uint Token)> GenericVariables { get; } = [];
+        public Dictionary<ITypeHandle, (TargetPointer Module, uint Token, uint Index)> GenericVariables { get; } = [];
 
         public bool IsTypeDesc(ITypeHandle typeHandle) => TypeDescs.Contains(typeHandle);
 
@@ -234,17 +225,19 @@ public class TypeHandleTests
 
         public bool IsGenericTypeDefinition(ITypeHandle typeHandle) => false;
 
-        public bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token)
+        public bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token, out uint index)
         {
-            if (GenericVariables.TryGetValue(typeHandle, out (TargetPointer Module, uint Token) genericVariable))
+            if (GenericVariables.TryGetValue(typeHandle, out (TargetPointer Module, uint Token, uint Index) genericVariable))
             {
                 module = genericVariable.Module;
                 token = genericVariable.Token;
+                index = genericVariable.Index;
                 return true;
             }
 
             module = TargetPointer.Null;
             token = 0;
+            index = 0;
             return false;
         }
 

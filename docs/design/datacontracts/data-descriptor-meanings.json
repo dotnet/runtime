@@ -677,6 +677,7 @@
     "type.Table": "Address of the SHash table",
     "type.TableSize": "Number of entries in the table",
     "TypeDesc.TypeAndFlags": "The lower 8 bits are the CorElementType of the TypeDesc, the upper 24 bits are reserved for flags",
+    "TypeVarTypeDesc.Index": "Zero-based index within the declaring type or method",
     "TypeVarTypeDesc.Module": "Pointer to module which defines the type variable",
     "TypeVarTypeDesc.Token": "Token of the type variable",
     "UnorderedArrayBase.Count": "Number of valid entries currently stored in the array.",
