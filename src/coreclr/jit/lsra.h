@@ -999,7 +999,10 @@ private:
     // Record variable locations at start/end of block
     void processBlockStartLocations(BasicBlock* current);
 
-    FORCEINLINE void handleDeadCandidates(SingleTypeRegSet deadCandidates, int regBase, VarToRegMap inVarToRegMap);
+    FORCEINLINE void handleDeadCandidates(SingleTypeRegSet deadCandidates,
+                                          int              regBase,
+                                          VarToRegMap      inVarToRegMap,
+                                          BasicBlock*      currentBlock);
     void             processBlockEndLocations(BasicBlock* current);
     void             resetAllRegistersState();
 
@@ -1168,6 +1171,14 @@ private:
     regNumber assignCopyRegMinimal(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
+    void setConstantReuse(RefPosition* refPosition, regNumber previousReg, regNumber assignedReg);
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+    bool tryGetReusableSveMaskInterval(GenTree* tree, Interval** interval);
+    void clearReusableSveMaskIntervals()
+    {
+        reusableSveMaskIntervals = nullptr;
+    }
+#endif
     bool isSpillCandidate(Interval* current, RefPosition* refPosition, RegRecord* physRegRecord);
     void checkAndAssignInterval(RegRecord* regRec, Interval* interval);
     void assignPhysReg(RegRecord* regRec, Interval* interval);
@@ -2134,6 +2145,17 @@ private:
     unsigned   availableRegCount;
     regNumber* regIndices;
 
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+    struct SveMaskIntervalEntry
+    {
+        GenTree*              tree;
+        Interval*             interval;
+        SveMaskIntervalEntry* next;
+    };
+
+    SveMaskIntervalEntry* reusableSveMaskIntervals = nullptr;
+#endif
+
     FORCEINLINE unsigned get_AVAILABLE_REG_COUNT() const
     {
         return this->availableRegCount;
@@ -2572,6 +2594,8 @@ public:
     unsigned char isPhysRegRef  : 1; // true if 'referent' points of a RegRecord, false if it points to an Interval
     unsigned char isFixedRegRef : 1;
     unsigned char isLocalDefUse : 1;
+    // The definition is equivalent to an earlier definition in this interval.
+    unsigned char reuseConstantValue : 1;
 
     // delayRegFree indicates that the register should not be freed right away, but instead wait
     // until the next Location after it would normally be freed.  This is used for the case of
@@ -2637,6 +2661,7 @@ public:
         , isPhysRegRef(false)
         , isFixedRegRef(false)
         , isLocalDefUse(false)
+        , reuseConstantValue(false)
         , delayRegFree(false)
         , outOfOrder(false)
 #ifdef DEBUG

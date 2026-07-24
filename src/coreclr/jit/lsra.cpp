@@ -2717,6 +2717,11 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
     GenTree* otherTreeNode = physRegRecord->assignedInterval->firstRefPosition->treeNode;
     noway_assert(otherTreeNode != nullptr);
 
+    if (refPosition->reuseConstantValue && (physRegRecord->assignedInterval == interval))
+    {
+        return true;
+    }
+
     if (refPosition->treeNode->OperGet() != otherTreeNode->OperGet())
     {
         return false;
@@ -2781,6 +2786,32 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// setConstantReuse: Mark a repeated constant definition as reusable when its
+//                   previous value survived allocation.
+//
+// Arguments:
+//    refPosition - The repeated constant definition
+//    previousReg - The register containing its previous value, if any
+//    assignedReg - The register selected for the definition
+//
+void LinearScan::setConstantReuse(RefPosition* refPosition, regNumber previousReg, regNumber assignedReg)
+{
+    if (!refPosition->reuseConstantValue)
+    {
+        return;
+    }
+
+    if (assignedReg == previousReg)
+    {
+        refPosition->treeNode->SetReuseRegVal();
+    }
+    else
+    {
+        refPosition->treeNode->ResetReuseRegVal();
+    }
 }
 
 //------------------------------------------------------------------------
@@ -4556,9 +4587,9 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
 
     // Only focus on actual registers present
     deadCandidates &= actualRegistersMask;
-    handleDeadCandidates(deadCandidates.getLow(), REG_LOW_BASE, inVarToRegMap);
+    handleDeadCandidates(deadCandidates.getLow(), REG_LOW_BASE, inVarToRegMap, currentBlock);
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    handleDeadCandidates(deadCandidates.getHigh(), REG_HIGH_BASE, inVarToRegMap);
+    handleDeadCandidates(deadCandidates.getHigh(), REG_HIGH_BASE, inVarToRegMap, currentBlock);
 #endif // HAS_MORE_THAN_64_REGISTERS
 #endif // TARGET_ARM
 }
@@ -4570,11 +4601,15 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
 //    deadCandidates - mask of registers.
 //    regBase - base register number.
 //    inVarToRegMap - variable to register map.
+//    currentBlock - block being entered.
 //
 // Return Value:
 //    None
 //
-void LinearScan::handleDeadCandidates(SingleTypeRegSet deadCandidates, int regBase, VarToRegMap inVarToRegMap)
+void LinearScan::handleDeadCandidates(SingleTypeRegSet deadCandidates,
+                                      int              regBase,
+                                      VarToRegMap      inVarToRegMap,
+                                      BasicBlock*      currentBlock)
 {
     while (deadCandidates != RBM_NONE)
     {
@@ -4587,6 +4622,16 @@ void LinearScan::handleDeadCandidates(SingleTypeRegSet deadCandidates, int regBa
         if (assignedInterval != nullptr)
         {
             assert(assignedInterval->isLocalVar || assignedInterval->isConstant || assignedInterval->IsUpperVector());
+
+            RefPosition* nextRefPosition = assignedInterval->getNextRefPosition();
+            if (assignedInterval->isConstant && (nextRefPosition != nullptr) && nextRefPosition->reuseConstantValue &&
+                (nextRefPosition->bbNum == currentBlock->bbNum))
+            {
+                // Keep the inactive constant associated with this available register so
+                // the definition in the successor can reuse it if it remains undisturbed.
+                setConstantReg(reg, assignedInterval->registerType);
+                continue;
+            }
 
             if (!assignedInterval->isConstant && assignedInterval->assignedReg == physRegRecord)
             {
@@ -5094,7 +5139,8 @@ void LinearScan::allocateRegistersMinimal()
         currentInterval = currentRefPosition.getInterval();
         assert(currentInterval != nullptr);
         assert(!currentInterval->isLocalVar);
-        assignedRegister = currentInterval->physReg;
+        assignedRegister           = currentInterval->physReg;
+        regNumber reuseConstantReg = currentRefPosition.reuseConstantValue ? assignedRegister : REG_NA;
 
         // Identify the special cases where we decide up-front not to allocate
         bool allocate = true;
@@ -5324,6 +5370,8 @@ void LinearScan::allocateRegistersMinimal()
         // If we allocated a register, record it
         if (assignedRegister != REG_NA)
         {
+            setConstantReuse(&currentRefPosition, reuseConstantReg, assignedRegister);
+
             assignedRegBit           = genSingleTypeRegMask(assignedRegister);
             SingleTypeRegSet regMask = getSingleTypeRegMask(assignedRegister, currentInterval->registerType);
             regsInUseThisLocation.AddRegsetForType(regMask, currentInterval->registerType);
@@ -5822,7 +5870,8 @@ void LinearScan::allocateRegisters()
         assert(currentRefPosition.isIntervalRef());
         currentInterval = currentRefPosition.getInterval();
         assert(currentInterval != nullptr);
-        assignedRegister = currentInterval->physReg;
+        assignedRegister           = currentInterval->physReg;
+        regNumber reuseConstantReg = currentRefPosition.reuseConstantValue ? assignedRegister : REG_NA;
 
         // Identify the special cases where we decide up-front not to allocate
         bool allocate = true;
@@ -6556,6 +6605,8 @@ void LinearScan::allocateRegisters()
         // If we allocated a register, record it
         if (assignedRegister != REG_NA)
         {
+            setConstantReuse(&currentRefPosition, reuseConstantReg, assignedRegister);
+
             assignedRegBit           = genSingleTypeRegMask(assignedRegister);
             SingleTypeRegSet regMask = getSingleTypeRegMask(assignedRegister, currentInterval->registerType);
             regsInUseThisLocation.AddRegsetForType(regMask, currentInterval->registerType);
