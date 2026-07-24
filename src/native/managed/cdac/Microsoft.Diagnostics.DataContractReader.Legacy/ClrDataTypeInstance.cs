@@ -64,7 +64,6 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
 
     int IXCLRDataTypeInstance.GetName(uint flags, uint bufLen, uint* nameLen, char* nameBuf)
     {
-        const int HResultErrorInsufficientBuffer = unchecked((int)0x8007007A);
         int hr = HResults.S_OK;
 
         try
@@ -82,7 +81,7 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
             OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, typeName.ToString());
             if (nameBuf is not null && bufLen < typeName.Length + 1)
             {
-                hr = HResultErrorInsufficientBuffer;
+                hr = CorDbgHResults.ERROR_INSUFFICIENT_BUFFER;
             }
         }
         catch (System.Exception ex)
