@@ -149,7 +149,9 @@ internal sealed class TestPaths
 
     public static string TargetArchitecture => GetRequiredConfig("R2RTest.TargetArchitecture");
     public static string TargetOS => GetRequiredConfig("R2RTest.TargetOS");
-    public static string Configuration => GetRequiredConfig("R2RTest.Configuration");
+    public static string CoreCLRConfiguration => GetRequiredConfig("R2RTest.CoreCLRConfiguration");
+    public static bool IsReleaseCoreCLR => string.Equals(CoreCLRConfiguration, "Release", StringComparison.OrdinalIgnoreCase);
+    public static bool IsNotReleaseCoreCLR => !IsReleaseCoreCLR;
 
     /// <summary>
     /// Path to the reference assembly pack (for Roslyn compilation).

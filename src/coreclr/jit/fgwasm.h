@@ -436,19 +436,30 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
     Compiler::AddCodeDscMap* const acdMap = comp->fgGetAddCodeDscMap();
     if (acdMap != nullptr)
     {
+        const bool isTrySideEntry = isGeneralizedTryEntry(block);
+
         // Behave as if these blocks have edges from their respective region entry blocks.
         //
-        if ((block == comp->fgFirstBB) || comp->bbIsFuncletBeg(block) || isGeneralizedTryEntry(block))
+        if ((block == comp->fgFirstBB) || comp->bbIsFuncletBeg(block) || isTrySideEntry)
         {
             Compiler::AcdKeyDesignator dsg;
             const unsigned             blockData = comp->bbThrowIndex(block, &dsg);
 
             for (const Compiler::AddCodeDscKey& key : Compiler::AddCodeDscMap::KeyIteration(acdMap))
             {
-                if (key.Data() == blockData)
+                const unsigned acdData = key.Data();
+                bool           matches = (acdData == blockData);
+
+                if (!matches && isTrySideEntry && (key.Designator() == Compiler::AcdKeyDesignator::KD_TRY))
                 {
-                    // This ACD refers to a throw helper block in the right region.
-                    // Make the block a successor.
+                    // Also add edges from all enclosing try regions
+                    matches = comp->bbInTryRegions(key.RegionIndex(), block);
+                }
+
+                if (matches)
+                {
+                    // This ACD refers to a throw helper block in this or an enclosed try region.
+                    // Make the throw helper block a successor of the try entry.
                     //
                     Compiler::AddCodeDsc* acd = nullptr;
                     acdMap->Lookup(key, &acd);
@@ -457,7 +468,18 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
                     //
                     if (acd->acdUsed)
                     {
-                        RETURN_ON_ABORT(func(acd->acdDstBlk));
+                        // bbThrowIndex / bbInTryRegions are purely lexical tests, so a match can
+                        // name a throw helper that lives in a different function region (funclet)
+                        // than this side-entry -- e.g. a main-method helper for an outer try whose
+                        // handler funclet merely nests inside that try. Attaching it here would pull
+                        // the helper into this funclet's layout, interleaving it with funclet blocks
+                        // and corrupting the emitted wasm. Only attach when the helper and the
+                        // side-entry share the same function region.
+                        //
+                        if (comp->bbIsInSameFunclet(block, acd->acdDstBlk))
+                        {
+                            RETURN_ON_ABORT(func(acd->acdDstBlk));
+                        }
                     }
                 }
             }

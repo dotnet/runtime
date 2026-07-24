@@ -39,6 +39,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
+            builder.RequireInitialAlignment(sizeof(uint));
             builder.AddSymbol(this);
             foreach (AssemblyHeaderNode assemblyHeader in _assemblyHeaders)
             {

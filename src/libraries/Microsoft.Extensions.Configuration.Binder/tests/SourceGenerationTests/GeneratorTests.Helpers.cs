@@ -183,9 +183,10 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         private static async Task<ConfigBindingGenRunResult> RunGeneratorAndUpdateCompilation(
             string source,
             LanguageVersion langVersion = LanguageVersion.CSharp12,
-            IEnumerable<Assembly>? assemblyReferences = null)
+            IEnumerable<Assembly>? assemblyReferences = null,
+            IEnumerable<MetadataReference>? metadataReferences = null)
         {
-            ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver(langVersion, assemblyReferences);
+            ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver(langVersion, assemblyReferences, metadataReferences);
             return await driver.RunGeneratorAndUpdateCompilation(source);
         }
 
@@ -206,17 +207,28 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             return assemblies;
         }
 
-        public static byte[] CreateAssemblyImage(Compilation compilation)
+        private static void AssertCanCreateAssemblyImage(Compilation compilation)
         {
-            MemoryStream ms = new MemoryStream();
-            var emitResult = compilation.Emit(ms);
+            var emitResult = compilation.Emit(Stream.Null);
             if (!emitResult.Success)
             {
                 // Explicit failures to include in the test output.
                 string errorMessage = string.Join(Environment.NewLine, emitResult.Diagnostics.Select(d => d.ToString()));
                 throw new InvalidOperationException(errorMessage);
             }
-            return ms.ToArray();
+        }
+
+        private static byte[] CreateAssemblyImage(Compilation compilation)
+        {
+            using MemoryStream stream = new();
+            var emitResult = compilation.Emit(stream);
+            if (!emitResult.Success)
+            {
+                // Explicit failures to include in the test output.
+                string errorMessage = string.Join(Environment.NewLine, emitResult.Diagnostics.Select(d => d.ToString()));
+                throw new InvalidOperationException(errorMessage);
+            }
+            return stream.ToArray();
         }
     }
 }

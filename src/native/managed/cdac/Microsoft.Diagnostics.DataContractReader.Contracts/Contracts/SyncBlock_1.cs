@@ -16,19 +16,19 @@ internal readonly struct SyncBlock_1 : ISyncBlock
 
     public TargetPointer GetSyncBlock(uint index)
     {
-        Data.SyncTableEntry ste = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + index * _target.GetTypeInfo(DataType.SyncTableEntry).Size!.Value);
+        Data.SyncTableEntry ste = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + index * Data.SyncTableEntry.GetSize(_target));
         return ste.SyncBlock?.Address ?? TargetPointer.Null;
     }
 
     public TargetPointer GetSyncBlockObject(uint index)
     {
-        Data.SyncTableEntry ste = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + index * _target.GetTypeInfo(DataType.SyncTableEntry).Size!.Value);
+        Data.SyncTableEntry ste = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + index * Data.SyncTableEntry.GetSize(_target));
         return ste.Object?.Address ?? TargetPointer.Null;
     }
 
     public bool IsSyncBlockFree(uint index)
     {
-        Data.SyncTableEntry ste = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + index * _target.GetTypeInfo(DataType.SyncTableEntry).Size!.Value);
+        Data.SyncTableEntry ste = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + index * Data.SyncTableEntry.GetSize(_target));
         return (ste.Object?.Address & 1) != 0;
     }
 

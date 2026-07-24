@@ -7,6 +7,7 @@ using System.Runtime;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
+using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
 
 namespace Internal.Runtime.Augments
@@ -21,7 +22,7 @@ namespace Internal.Runtime.Augments
         public abstract IntPtr GenericLookupFromContextAndSignature(IntPtr context, IntPtr signature, out IntPtr auxResult);
         public abstract RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, MethodHandle handle, RuntimeTypeHandle[] genericMethodArgs);
         public abstract IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle);
-        public abstract IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle targetTypeHandle, RuntimeMethodHandle declMethod);
+        public abstract unsafe IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle targetTypeHandle, RuntimeTypeHandle declaringTypeHandle, MethodHandle methodHandle, bool isAsyncVariant, void* methodInstantiation, bool isMethodInstantiationDataRelative);
         public abstract RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, FieldHandle handle);
         public abstract bool TryGetPointerTypeForTargetType(RuntimeTypeHandle pointeeTypeHandle, out RuntimeTypeHandle pointerTypeHandle);
         public abstract bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, bool isMdArray, int rank, out RuntimeTypeHandle arrayTypeHandle);

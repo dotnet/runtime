@@ -22,3 +22,15 @@ LEAF_ENTRY RhpInterfaceDispatch, _TEXT
         tail    C_FUNC(RhpUniversalTransitionTailCall)
 
 LEAF_END RhpInterfaceDispatch, _TEXT
+
+// Resolve helper for the standard calling convention.
+// a0 = object instance, a1 = indirection cell address, result in a0.
+LEAF_ENTRY RhpDispatchResolve, _TEXT
+
+        // Load the MethodTable from the object instance in a0.
+        // Trigger an AV if we're dispatching on a null this.
+        ld      t0, 0(a0)
+
+        tail    C_FUNC(RhpResolveInterfaceMethod)
+
+LEAF_END RhpDispatchResolve, _TEXT

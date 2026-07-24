@@ -29,11 +29,11 @@ public static class Runtime_100220
             Assert.Equal(16, ObjectSize<SubclassOfBaseWithGcSeq>());
 
             // Structs
-            Assert.Equal(16, Unsafe.SizeOf<MyStructAuto>());
-            Assert.Equal(16, Unsafe.SizeOf<MyStruct9Seq>());
-            Assert.Equal(16, Unsafe.SizeOf<MyStruct9Exp>());
-            Assert.Equal(16, Unsafe.SizeOf<MyStruct1000Seq>());
-            Assert.Equal(1000, Unsafe.SizeOf<MyStruct1000Exp>());
+            Assert.Equal(16, sizeof(MyStructAuto));
+            Assert.Equal(16, sizeof(MyStruct9Seq));
+            Assert.Equal(16, sizeof(MyStruct9Exp));
+            Assert.Equal(16, sizeof(MyStruct1000Seq));
+            Assert.Equal(1000, sizeof(MyStruct1000Exp));
         }
         else
         {
@@ -50,11 +50,11 @@ public static class Runtime_100220
             Assert.Equal(8, ObjectSize<SubclassOfBaseWithGcSeq>());
 
             // Structs
-            Assert.Equal(8, Unsafe.SizeOf<MyStructAuto>());
-            Assert.Equal(8, Unsafe.SizeOf<MyStruct9Seq>());
-            Assert.Equal(12, Unsafe.SizeOf<MyStruct9Exp>());
-            Assert.Equal(8, Unsafe.SizeOf<MyStruct1000Seq>());
-            Assert.Equal(1000, Unsafe.SizeOf<MyStruct1000Exp>());
+            Assert.Equal(8, sizeof(MyStructAuto));
+            Assert.Equal(8, sizeof(MyStruct9Seq));
+            Assert.Equal(12, sizeof(MyStruct9Exp));
+            Assert.Equal(8, sizeof(MyStruct1000Seq));
+            Assert.Equal(1000, sizeof(MyStruct1000Exp));
         }
 
         // Field offsets:
