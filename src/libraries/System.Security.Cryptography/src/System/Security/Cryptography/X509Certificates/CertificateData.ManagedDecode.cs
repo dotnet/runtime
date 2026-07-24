@@ -53,9 +53,9 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal byte[] SerialNumber => certificate.TbsCertificate.SerialNumber.ToArray();
 
-        internal DateTime NotBefore => certificate.TbsCertificate.Validity.NotBefore.GetValue().UtcDateTime;
+        internal DateTimeOffset NotBefore => certificate.TbsCertificate.Validity.NotBefore.GetValue();
 
-        internal DateTime NotAfter => certificate.TbsCertificate.Validity.NotAfter.GetValue().UtcDateTime;
+        internal DateTimeOffset NotAfter => certificate.TbsCertificate.Validity.NotAfter.GetValue();
 
         internal AlgorithmIdentifier PublicKeyAlgorithm => new AlgorithmIdentifier(certificate.TbsCertificate.SubjectPublicKeyInfo.Algorithm);
 

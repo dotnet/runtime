@@ -274,21 +274,21 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public DateTime NotAfter
+        public DateTimeOffset NotAfter
         {
             get
             {
                 EnsureCertData();
-                return _certData.NotAfter.ToLocalTime();
+                return _certData.NotAfter;
             }
         }
 
-        public DateTime NotBefore
+        public DateTimeOffset NotBefore
         {
             get
             {
                 EnsureCertData();
-                return _certData.NotBefore.ToLocalTime();
+                return _certData.NotBefore;
             }
         }
 
