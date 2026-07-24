@@ -65,12 +65,3 @@ exact loaded `ITypeHandle`, the generic type definition, and recursively
 decoded generic arguments. Unlike `ITypeHandle`, which represents an exact
 target-backed type, this representation preserves information about types that
 are not fully loaded.
-
-Contracts used:
-
-| Contract Name |
-| --- |
-| EcmaMetadata |
-| Loader |
-| RuntimeInfo |
-| RuntimeTypeSystem |
