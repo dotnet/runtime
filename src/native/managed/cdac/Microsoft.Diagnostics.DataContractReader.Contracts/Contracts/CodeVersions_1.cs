@@ -229,8 +229,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             NativeCodeVersionNode codeVersionNode = AsNode(codeVersionHandle);
             if (codeVersionNode.GCCoverageInfo is TargetPointer gcCoverageInfoAddr && gcCoverageInfoAddr != TargetPointer.Null)
             {
-                Target.TypeInfo gcCoverageInfoType = _target.GetTypeInfo(DataType.GCCoverageInfo);
-                return gcCoverageInfoAddr + (ulong)gcCoverageInfoType.Fields["SavedCode"].Offset;
+                return gcCoverageInfoAddr + (ulong)Data.GCCoverageInfo.GetSavedCodeOffset(_target);
             }
             return TargetPointer.Null;
         }

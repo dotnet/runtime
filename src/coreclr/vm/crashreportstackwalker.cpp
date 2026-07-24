@@ -260,7 +260,7 @@ FrameCallbackAdapter(
 
     Module* pModule = pMD->GetModule();
 
-    uint32_t nativeOffset = pCF->HasFaulted() ? 0 : pCF->GetRelOffset();
+    uint32_t nativeOffset = (pCF->HasFaulted() || !pCF->IsFrameless()) ? 0 : pCF->GetRelOffset();
     uint32_t ilOffset = 0;
     PCODE ip = (PCODE)0;
     TADDR stackPointer = (TADDR)0;
@@ -683,6 +683,31 @@ GetCrashReportTimeoutSeconds()
     return timeoutSeconds;
 }
 
+static InProcCrashReporterSettings
+GetDefaultInProcCrashReporterSettings()
+{
+    InProcCrashReporterSettings settings = {};
+    settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
+    settings.walkStackCallback = CrashReportWalkStack;
+    settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
+    settings.moduleInfoCallback = CrashReportGetModuleInfo;
+    settings.frameLimitPerThread = GetCrashReportFrameLimitPerThread();
+    return settings;
+}
+
+void
+CrashReportInitialize()
+{
+    if (!EnsureCrashReportStackWalkerState())
+    {
+        InProcCrashReportLogInitializationFailure(".NET crash report disabled: failed to allocate stack walker storage");
+        return;
+    }
+
+    InProcCrashReporterSettings settings = GetDefaultInProcCrashReporterSettings();
+    InProcCrashReportInitialize(settings);
+}
+
 void
 CrashReportConfigure()
 {
@@ -702,33 +727,26 @@ CrashReportConfigure()
         return;
     }
 
-    if (!EnsureCrashReportStackWalkerState())
-    {
-        InProcCrashReportLogInitializationFailure(".NET crash report disabled: failed to allocate stack walker storage");
-        return;
-    }
+    CrashReportInitialize();
 
     CLRConfigNoCache crashReportRootPathCfg = CLRConfigNoCache::Get("CrashReportRootPath", /*noprefix*/ false, &getenv);
     const char* crashReportRootPath = crashReportRootPathCfg.IsSet() ? crashReportRootPathCfg.AsString() : nullptr;
-    bool rootConfigured = crashReportRootPath != nullptr && crashReportRootPath[0] != '\0';
 
-    InProcCrashReporterSettings settings = {};
-    if (rootConfigured)
+    InProcCrashReporterServicesSettings settings = {};
+    settings.enableCreateCrashDump = true;
+    if (crashReportRootPath != nullptr && crashReportRootPath[0] != '\0')
     {
+        settings.enableLifecycle = true;
         settings.reportRootPath = crashReportRootPath;
         settings.maxFileCount = GetCrashReportMaxFileCount();
     }
 
+    settings.enableWatchdog = true;
     settings.timeoutSeconds = GetCrashReportTimeoutSeconds();
-    settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
-    settings.walkStackCallback = CrashReportWalkStack;
-    settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
-    settings.moduleInfoCallback = CrashReportGetModuleInfo;
-    settings.frameLimitPerThread = GetCrashReportFrameLimitPerThread();
 
-    // Initialize the reporter and register the PAL signal-path callback last
+    // Start the crash-dump services and register the PAL signal-path callback last
     // so PAL only observes the reporter after all VM callbacks are wired in.
-    InProcCrashReportInitialize(settings);
+    InProcCrashReportInitializeServices(settings);
 }
 
 #endif // FEATURE_INPROC_CRASHREPORT

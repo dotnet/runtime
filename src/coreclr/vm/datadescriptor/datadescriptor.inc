@@ -1672,6 +1672,9 @@ CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
 CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_GLOBAL_POINTER(ThePreStub, &g_cdacThePreStub)
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)

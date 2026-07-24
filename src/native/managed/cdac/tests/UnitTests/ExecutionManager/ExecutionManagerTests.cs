@@ -42,13 +42,16 @@ public class ExecutionManagerTests
         return types;
     }
 
-    private static Target CreateTarget(MockExecutionManagerBuilder emBuilder)
+    private static Target CreateTarget(
+        MockExecutionManagerBuilder emBuilder,
+        params (string Name, ulong Value)[] additionalGlobals)
     {
         var arch = emBuilder.Builder.TargetTestHelpers.Arch;
         return new TestPlaceholderTarget.Builder(arch)
             .UseReader(emBuilder.Builder.GetMemoryContext().ReadFromTarget)
             .AddTypes(CreateContractTypes(emBuilder))
             .AddGlobals(emBuilder.Globals)
+            .AddGlobals(additionalGlobals)
             .AddContract<IExecutionManager>(version: emBuilder.Version)
             .AddMockContract<IPlatformMetadata>(Mock.Of<IPlatformMetadata>())
             .Build();
@@ -713,6 +716,25 @@ public class ExecutionManagerTests
         IExecutionManager em = CreateExecutionManagerContract(version, arch);
 
         Assert.Equal(CodeKind.Unknown, em.GetCodeKind(new TargetCodePointer(0x00aa_9000)));
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetStubKind_GlobalStub(string version, MockTarget.Architecture arch)
+    {
+        (string Name, ulong Address, CodeKind Kind)[] stubs =
+        [
+            (Constants.Globals.ThePreStub, 0x00aa_1000, CodeKind.ThePreStub),
+        ];
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        Target target = CreateTarget(
+            emBuilder,
+            stubs.Select(stub => (stub.Name, emBuilder.AddPointerGlobal(stub.Address, stub.Name))).ToArray());
+
+        foreach ((_, ulong address, CodeKind kind) in stubs)
+        {
+            Assert.Equal(kind, target.Contracts.ExecutionManager.GetCodeKind(new TargetCodePointer(address)));
+        }
     }
 
     [Theory]

@@ -217,7 +217,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(m));
             }
 
-            InternalPrelink(((IRuntimeMethodInfo)rmi).Value);
+            InternalPrelink(IRuntimeMethodInfo.GetValue(rmi));
             GC.KeepAlive(rmi);
         }
 

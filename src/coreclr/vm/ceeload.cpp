@@ -214,8 +214,9 @@ void Module::UpdateNewlyAddedTypes()
 {
     CONTRACTL
     {
+        MODE_PREEMPTIVE;
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
@@ -278,7 +279,7 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM());
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -296,7 +297,6 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
         {
             BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
             {
-                GCX_PREEMP();
                 (&g_profControlBlock)->ModuleLoadFinished((ModuleID) this, hr);
 
                 if (SUCCEEDED(hr))
@@ -641,8 +641,8 @@ void Module::ApplyMetaData()
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -959,7 +959,7 @@ void Module::SetDynamicRvaField(mdToken token, TADDR blobAddress)
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -3934,7 +3934,7 @@ void ReflectionModule::Destruct()
 
     Module::Destruct();
 
-    delete (uint32_t*)m_pDynamicMetadata;
+    delete[] (uint8_t*)m_pDynamicMetadata;
     m_pDynamicMetadata = (TADDR)NULL;
 
     m_CrstLeafLock.Destroy();
@@ -4071,7 +4071,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     {
         CrstHolder ch(&m_CrstLeafLock);
 
-        delete (uint32_t*)m_pDynamicMetadata;
+        delete[] (uint8_t*)m_pDynamicMetadata;
 
         m_pDynamicMetadata = (TADDR)pBuffer.Extract();
         m_dwMetadataGeneration++;

@@ -200,7 +200,13 @@ private:
     // ------------------------------------------------------------
 
     BOOL HasReadyToRunHeader() const;
-    BOOL IsComponentAssembly() const { return FALSE; }
+    BOOL IsComponentAssembly() const
+    {
+        // A webcil composite's component assemblies carry the R2R COMPONENT flag; the flat FALSE
+        // default would make PEImageLayout::IsComponentAssembly() (routed here via DECODER_DISPATCH)
+        // report every webcil image as non-component, disabling composite R2R load.
+        return HasReadyToRunHeader() && (GetReadyToRunHeader()->CoreHeader.Flags & READYTORUN_FLAG_COMPONENT) != 0;
+    }
     READYTORUN_HEADER *GetReadyToRunHeader() const;
     BOOL IsNativeMachineFormat() const { return true; } // This can only be loaded on a Wasm runtime which matches the necessary load environment, which means these are always in the native machine format.
     PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize) const;
