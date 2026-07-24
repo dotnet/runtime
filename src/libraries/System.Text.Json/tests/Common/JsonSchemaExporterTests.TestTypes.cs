@@ -57,10 +57,10 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<byte[]>(
                 Value: [1, 2, 3],
                 AdditionalValues: [[]],
-                ExpectedJsonSchema: """{"type":["string","null"]}""");
+                ExpectedJsonSchema: """{"type":["string","null"],"contentEncoding":"base64"}""");
 
-            yield return new TestData<Memory<byte>>(new byte[] { 1, 2, 3 }, ExpectedJsonSchema: """{"type":"string"}""");
-            yield return new TestData<ReadOnlyMemory<byte>>(new byte[] { 1, 2, 3 }, ExpectedJsonSchema: """{"type":"string"}""");
+            yield return new TestData<Memory<byte>>(new byte[] { 1, 2, 3 }, ExpectedJsonSchema: """{"type":"string","contentEncoding":"base64"}""");
+            yield return new TestData<ReadOnlyMemory<byte>>(new byte[] { 1, 2, 3 }, ExpectedJsonSchema: """{"type":"string","contentEncoding":"base64"}""");
             yield return new TestData<DateTime>(
                 Value: new(2024, 06, 06, 21, 39, 42, DateTimeKind.Utc),
                 ExpectedJsonSchema: """{"type":"string","format":"date-time"}""");

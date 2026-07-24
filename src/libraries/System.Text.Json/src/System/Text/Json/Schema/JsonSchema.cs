@@ -23,6 +23,7 @@ namespace System.Text.Json.Schema
         internal const string AnyOfPropertyName = "anyOf";
         internal const string ConstPropertyName = "const";
         internal const string DefaultPropertyName = "default";
+        internal const string ContentEncodingPropertyName = "contentEncoding";
         internal const string MinLengthPropertyName = "minLength";
         internal const string MaxLengthPropertyName = "maxLength";
         internal const string DeprecatedPropertyName = "deprecated";
@@ -81,6 +82,8 @@ namespace System.Text.Json.Schema
 
         public bool? Deprecated { get; set { VerifyMutable(); field = value; } }
 
+        public string? ContentEncoding { get; set { VerifyMutable(); field = value; } }
+
         public JsonSchemaExporterContext? ExporterContext { get; set; }
 
         public int KeywordCount
@@ -111,6 +114,7 @@ namespace System.Text.Json.Schema
                 Count(MinLength is not null);
                 Count(MaxLength is not null);
                 Count(Deprecated is not null);
+                Count(ContentEncoding is not null);
 
                 return count;
 
@@ -245,6 +249,11 @@ namespace System.Text.Json.Schema
             if (Deprecated is { } deprecated)
             {
                 objSchema.Add(DeprecatedPropertyName, (JsonNode)deprecated);
+            }
+
+            if (ContentEncoding is not null)
+            {
+                objSchema.Add(ContentEncodingPropertyName, ContentEncoding);
             }
 
             return CompleteSchema(objSchema);
