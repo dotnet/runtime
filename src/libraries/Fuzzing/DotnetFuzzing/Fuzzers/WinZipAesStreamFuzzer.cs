@@ -3,9 +3,7 @@
 
 using System.Buffers;
 using System.IO.Compression;
-using System.Reflection;
 using System.Runtime.Versioning;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace DotnetFuzzing.Fuzzers;
@@ -15,118 +13,113 @@ internal sealed class WinZipAesStreamFuzzer : IFuzzer
 {
     public string[] TargetAssemblies { get; } = ["System.IO.Compression"];
     public string[] TargetCoreLibPrefixes => [];
-    public string Corpus => "winzipaesstream";
 
-    // AES-256 key size in bits; salt size = keySizeBits / 16 = 16 bytes.
-    private const int KeySizeBits = 256;
+    private const string Password = "fuzz-password";
+    private const string EntryName = "entry";
 
-    // ReadOnlySpan<char> is a ref struct and cannot be boxed for MethodInfo.Invoke,
-    // and CreateDelegate cannot handle struct-to-object return covariance.
-    // Use DynamicMethod to emit a wrapper that boxes the struct return value.
-    private delegate object CreateKeyDelegate(ReadOnlySpan<char> password, byte[]? salt, int keySizeBits);
-
-    private static readonly CreateKeyDelegate _createKey;
-    private static readonly MethodInfo _createMethod;
-
-    // The salt and password verifier properties are needed to prepend a valid header
-    // so the stream's ReadAndValidateHeaderCore succeeds and decryption logic is reached.
-    private static readonly PropertyInfo _saltProp;
-    private static readonly PropertyInfo _verifierProp;
-
-    // Pre-derive key material once with a fixed password and no salt so the fuzzer focuses
-    // on the stream's decryption/HMAC logic rather than key derivation.
-    private static readonly object s_keyMaterial;
-
-    // Cache the salt and password verifier bytes for prepending to the fuzz input.
-    private static readonly byte[] s_salt;
-    private static readonly byte[] s_verifier;
-
-    static WinZipAesStreamFuzzer()
-    {
-        Type winZipAesStreamType = Type.GetType("System.IO.Compression.WinZipAesStream, System.IO.Compression")!;
-        Type winZipAesKeyMaterialType = Type.GetType("System.IO.Compression.WinZipAesKeyMaterial, System.IO.Compression")!;
-
-#pragma warning disable IL3050 // RequiresDynamicCode: DynamicMethod is not AOT-compatible; fuzzers run under CoreCLR only.
-        _createKey = CreateBoxingDelegate(winZipAesKeyMaterialType);
-#pragma warning restore IL3050
-
-        _createMethod = winZipAesStreamType.GetMethod(
-            "Create",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
-            binder: null,
-            types: [typeof(Stream), winZipAesKeyMaterialType, typeof(long), typeof(bool), typeof(bool)],
-            modifiers: null)!;
-
-        _saltProp = winZipAesKeyMaterialType.GetProperty(
-            "Salt",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!;
-
-        _verifierProp = winZipAesKeyMaterialType.GetProperty(
-            "PasswordVerifier",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!;
-
-        s_keyMaterial = _createKey("fuzz", null, KeySizeBits);
-        s_salt = (byte[])_saltProp.GetValue(s_keyMaterial)!;
-        s_verifier = (byte[])_verifierProp.GetValue(s_keyMaterial)!;
-    }
-
-    private static CreateKeyDelegate CreateBoxingDelegate(Type winZipAesKeyMaterialType)
-    {
-        MethodInfo createKeyMethod = winZipAesKeyMaterialType.GetMethod(
-            "Create",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
-            binder: null,
-            types: [typeof(ReadOnlySpan<char>), typeof(byte[]), typeof(int)],
-            modifiers: null)!;
-
-        var dm = new System.Reflection.Emit.DynamicMethod(
-            "CreateKeyWrapper",
-            typeof(object),
-            [typeof(ReadOnlySpan<char>), typeof(byte[]), typeof(int)],
-            typeof(WinZipAesStreamFuzzer).Module,
-            skipVisibility: true);
-        var il = dm.GetILGenerator();
-        il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);
-        il.Emit(System.Reflection.Emit.OpCodes.Ldarg_1);
-        il.Emit(System.Reflection.Emit.OpCodes.Ldarg_2);
-        il.Emit(System.Reflection.Emit.OpCodes.Call, createKeyMethod);
-        il.Emit(System.Reflection.Emit.OpCodes.Box, winZipAesKeyMaterialType);
-        il.Emit(System.Reflection.Emit.OpCodes.Ret);
-        return dm.CreateDelegate<CreateKeyDelegate>();
-    }
-
-    // Minimum fuzz input: at least 1 byte of encrypted data beyond the header.
-    // The header (salt + verifier) is prepended by CreateStream, so the fuzz input
-    // only needs to supply encrypted data + the 10-byte auth code.
-    private const int MinInputLength = 11; // 1 byte data + 10 bytes HMAC
+    private static readonly ZipEncryptionMethod[] s_aesMethods =
+    [
+        ZipEncryptionMethod.Aes128,
+        ZipEncryptionMethod.Aes192,
+        ZipEncryptionMethod.Aes256,
+    ];
 
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
-        if (bytes.Length < MinInputLength)
+        // The encryption streams only produce ciphertext for non-empty content; an empty
+        // entry is stored unencrypted, so it does not exercise the WinZipAesStream at all.
+        if (bytes.IsEmpty)
         {
             return;
         }
 
-        TestStream(CopyToRentedArray(bytes), bytes.Length, async: false).GetAwaiter().GetResult();
-        TestStream(CopyToRentedArray(bytes), bytes.Length, async: true).GetAwaiter().GetResult();
+        // Use the first byte to select the AES key strength so all three variants get exercised.
+        ZipEncryptionMethod method = s_aesMethods[bytes[0] % s_aesMethods.Length];
+
+        byte[] content = CopyToRentedArray(bytes);
+        try
+        {
+            RoundTrip(content, bytes.Length, method, async: false).GetAwaiter().GetResult();
+            RoundTrip(content, bytes.Length, method, async: true).GetAwaiter().GetResult();
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(content);
+        }
     }
 
-    private static Stream CreateStream(byte[] bytes, int length)
+    private static async Task RoundTrip(byte[] content, int length, ZipEncryptionMethod method, bool async)
     {
-        // Prepend the valid salt + password verifier so ReadAndValidateHeaderCore passes,
-        // allowing the fuzzer to exercise the CTR decryption and HMAC validation paths.
-        int headerSize = s_salt.Length + s_verifier.Length;
-        int totalSize = headerSize + length;
-        byte[] combined = new byte[totalSize];
-        s_salt.CopyTo(combined, 0);
-        s_verifier.CopyTo(combined, s_salt.Length);
-        Buffer.BlockCopy(bytes, 0, combined, headerSize, length);
+        using var archiveStream = new MemoryStream();
 
-#pragma warning disable IL2072 // dynamic invocation
-        return (Stream)_createMethod.Invoke(
-            obj: null,
-            parameters: [new MemoryStream(combined), s_keyMaterial, (long)totalSize, /*encrypting*/ false, /*leaveOpen*/ false])!;
-#pragma warning restore IL2072
+        // Encrypt the fuzz input using WinZip AES, exercising the WinZipAesStream encryption + HMAC path.
+        ZipArchive writeArchive = async
+            ? await ZipArchive.CreateAsync(archiveStream, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: null)
+            : new ZipArchive(archiveStream, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: null);
+
+        ZipArchiveEntry writeEntry = writeArchive.CreateEntry(EntryName, Password.AsSpan(), method);
+
+        Stream entryWriteStream = async ? await writeEntry.OpenAsync() : writeEntry.Open();
+        if (async)
+        {
+            await entryWriteStream.WriteAsync(content.AsMemory(0, length));
+            await entryWriteStream.DisposeAsync();
+            await writeArchive.DisposeAsync();
+        }
+        else
+        {
+            entryWriteStream.Write(content, 0, length);
+            entryWriteStream.Dispose();
+            writeArchive.Dispose();
+        }
+
+        archiveStream.Position = 0;
+
+        // Decrypt with the correct password and verify the round-trip is lossless.
+        ZipArchive readArchive = async
+            ? await ZipArchive.CreateAsync(archiveStream, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding: null)
+            : new ZipArchive(archiveStream, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding: null);
+
+        ZipArchiveEntry readEntry = readArchive.GetEntry(EntryName)!;
+        Assert.True(readEntry.IsEncrypted);
+        Assert.Equal(method, readEntry.EncryptionMethod);
+
+        using (var decrypted = new MemoryStream())
+        {
+            Stream entryReadStream = async ? await readEntry.OpenAsync(Password.AsSpan()) : readEntry.Open(Password.AsSpan());
+            if (async)
+            {
+                await entryReadStream.CopyToAsync(decrypted);
+                await entryReadStream.DisposeAsync();
+            }
+            else
+            {
+                entryReadStream.CopyTo(decrypted);
+                entryReadStream.Dispose();
+            }
+
+            Assert.SequenceEqual(content.AsSpan(0, length), decrypted.ToArray());
+        }
+
+        // Decrypting with a wrong password must fail cleanly with InvalidDataException, never crash.
+        try
+        {
+            using Stream stream = readEntry.Open("wrong-password".AsSpan());
+            stream.CopyTo(Stream.Null);
+        }
+        catch (InvalidDataException)
+        {
+            // Expected: the AES password verifier / HMAC rejects the wrong key.
+        }
+
+        if (async)
+        {
+            await readArchive.DisposeAsync();
+        }
+        else
+        {
+            readArchive.Dispose();
+        }
     }
 
     private static byte[] CopyToRentedArray(ReadOnlySpan<byte> bytes)
@@ -134,38 +127,5 @@ internal sealed class WinZipAesStreamFuzzer : IFuzzer
         byte[] buffer = ArrayPool<byte>.Shared.Rent(bytes.Length);
         bytes.CopyTo(buffer);
         return buffer;
-    }
-
-    private async Task TestStream(byte[] buffer, int length, bool async)
-    {
-        try
-        {
-            using var stream = CreateStream(buffer, length);
-            if (async)
-            {
-                await stream.CopyToAsync(Stream.Null);
-            }
-            else
-            {
-                stream.CopyTo(Stream.Null);
-            }
-        }
-        catch (InvalidDataException)
-        {
-            // ignore, this exception is expected for invalid/corrupted data.
-        }
-        catch (CryptographicException)
-        {
-            // ignore, crypto failures are expected for random fuzz input.
-        }
-        catch (TargetInvocationException ex) when (ex.InnerException is InvalidDataException or CryptographicException)
-        {
-            // The reflected WinZipAesStream.Create call wraps exceptions
-            // in TargetInvocationException when header validation fails.
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
     }
 }

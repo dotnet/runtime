@@ -3,7 +3,6 @@
 
 using System.Buffers;
 using System.IO.Compression;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace DotnetFuzzing.Fuzzers;
@@ -12,81 +11,103 @@ internal sealed class ZipCryptoStreamFuzzer : IFuzzer
 {
     public string[] TargetAssemblies { get; } = ["System.IO.Compression"];
     public string[] TargetCoreLibPrefixes => [];
-    public string Corpus => "zipcryptostream";
+
+    private const string Password = "fuzz-password";
+    private const string EntryName = "entry";
 
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
-        // ZipCryptoStream.Create reads a 12-byte header from the stream and validates the
-        // last decrypted byte against the expected check byte. Require at least 13 bytes
-        // (1 check byte + 12 header bytes) so the fuzzer can reach past the header.
-        if (bytes.Length < 13)
+        // The encryption streams only produce ciphertext for non-empty content; an empty
+        // entry is stored unencrypted, so it does not exercise the ZipCryptoStream at all.
+        if (bytes.IsEmpty)
         {
             return;
         }
 
-        TestStream(CopyToRentedArray(bytes), bytes.Length, async: false).GetAwaiter().GetResult();
-        TestStream(CopyToRentedArray(bytes), bytes.Length, async: true).GetAwaiter().GetResult();
+        byte[] content = CopyToRentedArray(bytes);
+        try
+        {
+            RoundTrip(content, bytes.Length, async: false).GetAwaiter().GetResult();
+            RoundTrip(content, bytes.Length, async: true).GetAwaiter().GetResult();
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(content);
+        }
     }
 
-    // ReadOnlySpan<char> is a ref struct and cannot be boxed for MethodInfo.Invoke,
-    // and CreateDelegate cannot handle struct-to-object return covariance.
-    // Use DynamicMethod to emit a wrapper that boxes the struct return value.
-    private delegate object CreateKeyDelegate(ReadOnlySpan<char> password);
-
-    private static readonly CreateKeyDelegate _createKey;
-    private static readonly MethodInfo _createMethod;
-    private static readonly object s_keys;
-
-    static ZipCryptoStreamFuzzer()
+    private static async Task RoundTrip(byte[] content, int length, bool async)
     {
-        Type zipCryptoStreamType = Type.GetType("System.IO.Compression.ZipCryptoStream, System.IO.Compression")!;
-        Type zipCryptoKeysType = Type.GetType("System.IO.Compression.ZipCryptoKeys, System.IO.Compression")!;
+        using var archiveStream = new MemoryStream();
 
-#pragma warning disable IL3050 // RequiresDynamicCode: DynamicMethod is not AOT-compatible; fuzzers run under CoreCLR only.
-        _createKey = CreateBoxingDelegate(zipCryptoStreamType, zipCryptoKeysType);
-#pragma warning restore IL3050
+        // Encrypt the fuzz input using legacy ZipCrypto, exercising the ZipCryptoStream encryption path.
+        ZipArchive writeArchive = async
+            ? await ZipArchive.CreateAsync(archiveStream, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: null)
+            : new ZipArchive(archiveStream, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: null);
 
-        _createMethod = zipCryptoStreamType.GetMethod(
-            "Create",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
-            binder: null,
-            types: [typeof(Stream), zipCryptoKeysType, typeof(byte), typeof(bool), typeof(bool)],
-            modifiers: null)!;
+        ZipArchiveEntry writeEntry = writeArchive.CreateEntry(EntryName, Password.AsSpan(), ZipEncryptionMethod.ZipCrypto);
 
-        s_keys = _createKey("fuzz");
-    }
+        Stream entryWriteStream = async ? await writeEntry.OpenAsync() : writeEntry.Open();
+        if (async)
+        {
+            await entryWriteStream.WriteAsync(content.AsMemory(0, length));
+            await entryWriteStream.DisposeAsync();
+            await writeArchive.DisposeAsync();
+        }
+        else
+        {
+            entryWriteStream.Write(content, 0, length);
+            entryWriteStream.Dispose();
+            writeArchive.Dispose();
+        }
 
-    private static CreateKeyDelegate CreateBoxingDelegate(Type zipCryptoStreamType, Type zipCryptoKeysType)
-    {
-        MethodInfo createKeyMethod = zipCryptoStreamType.GetMethod(
-            "CreateKey",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)!;
+        archiveStream.Position = 0;
 
-        var dm = new System.Reflection.Emit.DynamicMethod(
-            "CreateKeyWrapper",
-            typeof(object),
-            [typeof(ReadOnlySpan<char>)],
-            typeof(ZipCryptoStreamFuzzer).Module,
-            skipVisibility: true);
-        var il = dm.GetILGenerator();
-        il.Emit(System.Reflection.Emit.OpCodes.Ldarg_0);
-        il.Emit(System.Reflection.Emit.OpCodes.Call, createKeyMethod);
-        il.Emit(System.Reflection.Emit.OpCodes.Box, zipCryptoKeysType);
-        il.Emit(System.Reflection.Emit.OpCodes.Ret);
-        return dm.CreateDelegate<CreateKeyDelegate>();
-    }
+        // Decrypt with the correct password and verify the round-trip is lossless.
+        ZipArchive readArchive = async
+            ? await ZipArchive.CreateAsync(archiveStream, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding: null)
+            : new ZipArchive(archiveStream, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding: null);
 
-    private static Stream CreateStream(byte[] bytes, int length)
-    {
-        // Use the first byte of the input as the "expected check byte" so that the
-        // header validation path is exercised with varying values.
-        byte expectedCheckByte = bytes[0];
-        var baseStream = new MemoryStream(bytes, 1, length - 1);
-#pragma warning disable IL2072 // dynamic invocation
-        return (Stream)_createMethod.Invoke(
-            obj: null,
-            parameters: [baseStream, s_keys, expectedCheckByte, /*encrypting*/ false, /*leaveOpen*/ false])!;
-#pragma warning restore IL2072
+        ZipArchiveEntry readEntry = readArchive.GetEntry(EntryName)!;
+        Assert.True(readEntry.IsEncrypted);
+        Assert.Equal(ZipEncryptionMethod.ZipCrypto, readEntry.EncryptionMethod);
+
+        using (var decrypted = new MemoryStream())
+        {
+            Stream entryReadStream = async ? await readEntry.OpenAsync(Password.AsSpan()) : readEntry.Open(Password.AsSpan());
+            if (async)
+            {
+                await entryReadStream.CopyToAsync(decrypted);
+                await entryReadStream.DisposeAsync();
+            }
+            else
+            {
+                entryReadStream.CopyTo(decrypted);
+                entryReadStream.Dispose();
+            }
+
+            Assert.SequenceEqual(content.AsSpan(0, length), decrypted.ToArray());
+        }
+
+        // Decrypting with a wrong password must fail cleanly with InvalidDataException, never crash.
+        try
+        {
+            using Stream stream = readEntry.Open("wrong-password".AsSpan());
+            stream.CopyTo(Stream.Null);
+        }
+        catch (InvalidDataException)
+        {
+            // Expected: the header password verifier rejects the wrong key.
+        }
+
+        if (async)
+        {
+            await readArchive.DisposeAsync();
+        }
+        else
+        {
+            readArchive.Dispose();
+        }
     }
 
     private static byte[] CopyToRentedArray(ReadOnlySpan<byte> bytes)
@@ -94,34 +115,5 @@ internal sealed class ZipCryptoStreamFuzzer : IFuzzer
         byte[] buffer = ArrayPool<byte>.Shared.Rent(bytes.Length);
         bytes.CopyTo(buffer);
         return buffer;
-    }
-
-    private async Task TestStream(byte[] buffer, int length, bool async)
-    {
-        try
-        {
-            using var stream = CreateStream(buffer, length);
-            if (async)
-            {
-                await stream.CopyToAsync(Stream.Null);
-            }
-            else
-            {
-                stream.CopyTo(Stream.Null);
-            }
-        }
-        catch (InvalidDataException)
-        {
-            // ignore, this exception is expected for invalid/corrupted data.
-        }
-        catch (TargetInvocationException ex) when (ex.InnerException is InvalidDataException)
-        {
-            // The reflected ZipCryptoStream.Create call wraps InvalidDataException
-            // (e.g. password mismatch, truncated header) in TargetInvocationException.
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
     }
 }
