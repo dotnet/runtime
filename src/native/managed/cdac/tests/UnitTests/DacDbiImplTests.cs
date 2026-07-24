@@ -1417,4 +1417,103 @@ public unsafe class DacDbiImplTests
         Assert.Equal(5u, nvi.loc.vlsBaseReg);
         Assert.Equal(-0x28, nvi.loc.vlsOffset);
     }
+
+    private static DacDbiImpl CreateDacDbiForModule(
+        MockTarget.Architecture arch,
+        ulong vmModule,
+        Contracts.ModuleHandle handle,
+        ModuleFlags flags,
+        Mock<IEcmaMetadata> mockEcmaMetadata)
+    {
+        var mockLoader = new Mock<ILoader>();
+        mockLoader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(vmModule))).Returns(handle);
+        mockLoader.Setup(l => l.GetFlags(handle)).Returns(flags);
+
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddMockContract(mockLoader)
+            .AddMockContract(mockEcmaMetadata)
+            .Build();
+        return new DacDbiImpl(target, legacyObj: null);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetMetadata_NonDynamicModule(MockTarget.Architecture arch)
+    {
+        ulong vmModule = 0x1000;
+        TargetPointer moduleAddr = new(0x1000);
+        TargetPointer metadataAddr = new(0xabc0);
+        uint metadataSize = 0x200;
+
+        Contracts.ModuleHandle handle = new(moduleAddr);
+        var mockEcmaMetadata = new Mock<IEcmaMetadata>();
+        mockEcmaMetadata.Setup(e => e.GetReadOnlyMetadataAddress(handle)).Returns(new TargetSpan(metadataAddr, metadataSize));
+
+        DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, (ModuleFlags)0, mockEcmaMetadata);
+
+        DacDbiTargetBuffer buffer;
+        int hr = dacDbi.GetMetadata(vmModule, &buffer);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(metadataAddr.Value, buffer.pAddress);
+        Assert.Equal(metadataSize, buffer.cbSize);
+        mockEcmaMetadata.Verify(e => e.GetReadWriteSavedMetadataAddress(It.IsAny<Contracts.ModuleHandle>()), Times.Never);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetMetadata_DynamicModule(MockTarget.Architecture arch)
+    {
+        ulong vmModule = 0x1000;
+        TargetPointer moduleAddr = new(0x1000);
+        TargetPointer metadataAddr = new(0xdef0);
+        uint metadataSize = 0x80;
+
+        Contracts.ModuleHandle handle = new(moduleAddr);
+        var mockEcmaMetadata = new Mock<IEcmaMetadata>();
+        mockEcmaMetadata.Setup(e => e.GetReadWriteSavedMetadataAddress(handle)).Returns(new TargetSpan(metadataAddr, metadataSize));
+
+        DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, ModuleFlags.ReflectionEmit, mockEcmaMetadata);
+
+        DacDbiTargetBuffer buffer;
+        int hr = dacDbi.GetMetadata(vmModule, &buffer);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(metadataAddr.Value, buffer.pAddress);
+        Assert.Equal(metadataSize, buffer.cbSize);
+        mockEcmaMetadata.Verify(e => e.GetReadOnlyMetadataAddress(It.IsAny<Contracts.ModuleHandle>()), Times.Never);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetMetadata_EmptyMetadata(MockTarget.Architecture arch)
+    {
+        ulong vmModule = 0x1000;
+        TargetPointer moduleAddr = new(0x1000);
+
+        Contracts.ModuleHandle handle = new(moduleAddr);
+        var mockEcmaMetadata = new Mock<IEcmaMetadata>();
+        mockEcmaMetadata.Setup(e => e.GetReadOnlyMetadataAddress(handle)).Returns(new TargetSpan(TargetPointer.Null, 0));
+
+        DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, (ModuleFlags)0, mockEcmaMetadata);
+
+        DacDbiTargetBuffer buffer;
+        int hr = dacDbi.GetMetadata(vmModule, &buffer);
+
+        Assert.Equal(CorDbgHResults.CORDBG_E_MISSING_METADATA, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetMetadata_NullBuffer(MockTarget.Architecture arch)
+    {
+        ulong vmModule = 0x1000;
+        Contracts.ModuleHandle handle = new(new TargetPointer(vmModule));
+        var mockEcmaMetadata = new Mock<IEcmaMetadata>();
+        DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, (ModuleFlags)0, mockEcmaMetadata);
+
+        int hr = dacDbi.GetMetadata(vmModule, null);
+        Assert.Equal(System.HResults.E_POINTER, hr);
+    }
 }
