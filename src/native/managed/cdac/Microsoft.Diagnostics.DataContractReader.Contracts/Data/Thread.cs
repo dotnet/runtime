@@ -6,32 +6,35 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.Thread))]
 internal sealed partial class Thread : IData<Thread>
 {
-    [Field] public uint Id { get; }
-    [Field] public TargetNUInt OSId { get; }
-    [Field] public uint State { get; }
-    [Field(Writable = true)] public uint DebuggerControlledThreadState { get; private set; }
-    [Field] public uint PreemptiveGCDisabled { get; }
-    [Field] public TargetPointer Frame { get; }
-    [Field] public TargetPointer GCFrame { get; }
-    [Field] public TargetPointer CachedStackBase { get; }
-    [Field] public TargetPointer CachedStackLimit { get; }
-    [Field] public ObjectHandle ExposedObject { get; }
-    [Field] public ObjectHandle LastThrownObject { get; }
-    [Field] public uint LastThrownObjectIsUnhandled { get; }
-    [Field] public TargetPointer LinkNext { get; }
+    [Field] public partial uint Id { get; }
+    [Field] public partial TargetNUInt OSId { get; }
+    [Field] public partial uint State { get; }
+    [Field(Writable = true)] public partial uint DebuggerControlledThreadState { get; private set; }
+    [Field] public partial uint PreemptiveGCDisabled { get; }
+    [Field] public partial TargetPointer Frame { get; }
+    [Field] public partial TargetPointer GCFrame { get; }
+    [Field] public partial TargetPointer CachedStackBase { get; }
+    [Field] public partial TargetPointer CachedStackLimit { get; }
+    [Field] public partial ObjectHandle ExposedObject { get; }
+    [Field] public partial ObjectHandle LastThrownObject { get; }
+    [Field] public partial uint LastThrownObjectIsUnhandled { get; }
+    [Field] public partial TargetPointer LinkNext { get; }
 
     [FieldAddress]
-    public TargetPointer ExceptionTracker { get; }
+    public partial TargetPointer ExceptionTracker { get; }
 
     // Descriptor-optional: not present on non-Windows platforms.
-    [Field] public TargetPointer? UEWatsonBucketTrackerBuckets { get; }
-    [Field] public TargetPointer ThreadLocalDataPtr { get; }
-    [Field] public TargetPointer DebuggerFilterContext { get; }
-    [Field] public uint InteropDebuggingHijacked { get; }
-    [Field] public ObjectHandle CurrentCustomDebuggerNotification { get; }
+    [Field] public partial TargetPointer? UEWatsonBucketTrackerBuckets { get; }
+    [Field] public partial TargetPointer ThreadLocalDataPtr { get; }
+    [Field] public partial TargetPointer DebuggerFilterContext { get; }
+    [Field] public partial uint InteropDebuggingHijacked { get; }
+    [Field] public partial ObjectHandle CurrentCustomDebuggerNotification { get; }
 
+    [DataDescriptorDependency(nameof(RuntimeThreadLocals), "pointer")]
     public RuntimeThreadLocals? RuntimeThreadLocals { get; private set; }
+
     // Descriptor-optional: not present on all platforms.
+    [DataDescriptorDependency(nameof(ThreadHandle), "pointer")]
     public TargetPointer ThreadHandle { get; private set; }
 
     partial void OnInit(Target target, TargetPointer address)

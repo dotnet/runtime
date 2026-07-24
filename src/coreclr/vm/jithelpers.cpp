@@ -731,9 +731,11 @@ extern "C" PCODE QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnSt
     }
     else
     {
+        MethodTable *pMTObjRef = objRef->GetMethodTable();
+        GCX_PREEMP();
         // This is the new way of resolving a virtual call, including generic virtual methods.
         // The code is now also used by reflection, remoting etc.
-        addr = pStaticMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, staticTH);
+        addr = pStaticMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, pMTObjRef, staticTH);
         _ASSERTE(addr);
     }
 
@@ -1114,7 +1116,7 @@ HRESULT EEToProfInterfaceImpl::SetEnterLeaveFunctionHooksForJit(FunctionEnter3 *
 // tailored to the post-pinvoke operations.
 extern "C" VOID JIT_PInvokeEndRarePath();
 
-void JIT_PInvokeEndRarePath()
+NOINLINE void JIT_PInvokeEndRarePath()
 {
     PreserveLastErrorHolder preserveLastError;
 

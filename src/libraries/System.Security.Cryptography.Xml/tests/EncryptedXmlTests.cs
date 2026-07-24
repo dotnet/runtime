@@ -15,6 +15,7 @@ namespace System.Security.Cryptography.Xml.Tests
     public static class EncryptedXmlTests
     {
         private const string AllowDangerousEncryptedXmlTransformsAppContextSwitch = "System.Security.Cryptography.Xml.AllowDangerousEncryptedXmlTransforms";
+        private const int DefaultMaxTransformsPerChain = 20;
         private const string MaxTransformsPerChainAppContextSwitch = "System.Security.Cryptography.Xml.MaxTransformsPerChain";
         private const string MalformedTransformsMessage = "Malformed element Transforms.";
 
@@ -1662,9 +1663,9 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public static void EncryptedXml_DecryptedEncodedDtd()
         {
-            // The payload contains more transforms than the default limit, so
-            // deserialization of the transform chain should fail.
-            Assert.True(GetEncodedDtdPayloadTransformCount() > 20);
+            // Keep the payload just above the default limit so deserialization fails
+            // without executing an unnecessarily expensive transform chain.
+            Assert.Equal(DefaultMaxTransformsPerChain + 1, GetEncodedDtdPayloadTransformCount());
 
             EncryptedXml encryptedXml = CreateEncryptedXmlWithEncodedDtdPayload();
             CryptographicException ex = Assert.Throws<CryptographicException>(() => encryptedXml.DecryptDocument());

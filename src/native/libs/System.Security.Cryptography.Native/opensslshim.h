@@ -327,6 +327,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(BIO_meth_set_destroy) \
     REQUIRED_FUNCTION(BIO_meth_set_read) \
     REQUIRED_FUNCTION(BIO_meth_set_write) \
+    REQUIRED_FUNCTION(BIO_method_type) \
     REQUIRED_FUNCTION(BIO_new) \
     REQUIRED_FUNCTION(BIO_new_file) \
     REQUIRED_FUNCTION(BIO_read) \
@@ -772,6 +773,7 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(SSL_set_ciphersuites) \
     REQUIRED_FUNCTION(SSL_set_connect_state) \
     REQUIRED_FUNCTION(SSL_set_ex_data) \
+    REQUIRED_FUNCTION(SSL_set_fd) \
     REQUIRED_FUNCTION(SSL_set_options) \
     REQUIRED_FUNCTION(SSL_set_session) \
     REQUIRED_FUNCTION(SSL_get_session) \
@@ -924,6 +926,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define BIO_meth_set_destroy BIO_meth_set_destroy_ptr
 #define BIO_meth_set_read BIO_meth_set_read_ptr
 #define BIO_meth_set_write BIO_meth_set_write_ptr
+#define BIO_method_type BIO_method_type_ptr
 #define BIO_new BIO_new_ptr
 #define BIO_new_file BIO_new_file_ptr
 #define BIO_read BIO_read_ptr
@@ -1374,6 +1377,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_set_ciphersuites SSL_set_ciphersuites_ptr
 #define SSL_set_connect_state SSL_set_connect_state_ptr
 #define SSL_set_ex_data SSL_set_ex_data_ptr
+#define SSL_set_fd SSL_set_fd_ptr
 #define SSL_set_options SSL_set_options_ptr
 #define SSL_set_session SSL_set_session_ptr
 #define SSL_get_session SSL_get_session_ptr

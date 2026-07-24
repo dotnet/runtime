@@ -9,6 +9,10 @@ using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
+    /// <summary>
+    /// Represents a decimal floating-point number that uses the IEEE 754 <c>decimal128</c> interchange format, providing 34 decimal digits of precision.
+    /// </summary>
+    /// <remarks>The IEEE 754 standard defines two interchange encodings for decimal floating-point: binary integer decimal (BID) and densely packed decimal (DPD). Which encoding is used is determined by the underlying ABI for the platform and defaults to BID where the ABI does not otherwise specify.</remarks>
     public readonly struct Decimal128
         : IComparable,
           IComparable<Decimal128>,
@@ -47,19 +51,35 @@ namespace System.Numerics
         private static UInt128 PiValue => new UInt128(0x2FFE_9AE4_7957_96A7, 0xBABE_5564_E6F3_9F8F);  // +3.141592653589793238462643383279503
         private static UInt128 TauValue => new UInt128(0x2FFF_35C8_F2AF_2D4F, 0x757C_AAC9_CDE7_3F1E); // +6.283185307179586476925286766559006
         private static UInt128 QuietNaNValue => new UInt128(0xFC00_0000_0000_0000, 0);
+        private static UInt128 NaNPayloadMask => new UInt128(0x0000_3FFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
 
         private const ulong SignMaskUpper = 0x8000_0000_0000_0000;
         private const ulong NaNMaskUpper = 0x7C00_0000_0000_0000;
+        private const ulong SNaNMaskUpper = 0x7E00_0000_0000_0000;
         private const ulong InfinityMaskUpper = 0x7800_0000_0000_0000;
 
+        /// <summary>Gets a value that represents positive <c>infinity</c>.</summary>
         public static Decimal128 PositiveInfinity => new Decimal128(PositiveInfinityValue);
+
+        /// <summary>Gets a value that represents negative <c>infinity</c>.</summary>
         public static Decimal128 NegativeInfinity => new Decimal128(NegativeInfinityValue);
+
+        /// <summary>Gets a value that represents <c>NaN</c>.</summary>
         public static Decimal128 NaN => new Decimal128(QuietNaNValue);
+
+        /// <summary>Gets a value that represents negative <c>zero</c>.</summary>
         public static Decimal128 NegativeZero => new Decimal128(NegativeZeroValue);
+
+        /// <summary>Gets the value <c>0</c> for the type.</summary>
         public static Decimal128 Zero => new Decimal128(ZeroValue);
+
+        /// <summary>Gets the minimum value of the current type.</summary>
         public static Decimal128 MinValue => new Decimal128(upper: 0xDFFF_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
+
+        /// <summary>Gets the maximum value of the current type.</summary>
         public static Decimal128 MaxValue => new Decimal128(upper: 0x5FFF_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
 
+        /// <summary>Gets the smallest value such that can be added to <c>0</c> that does not result in <c>0</c>.</summary>
         public static Decimal128 Epsilon => new Decimal128(upper: 0x0000_0000_0000_0000, lower: 0x0000_0000_0000_0001); // Smallest positive subnormal value, aka 1 * 10^-6176
 
         internal Decimal128(UInt128 value)
@@ -226,6 +246,30 @@ namespace System.Numerics
         {
             return Number.GetDecimalIeee754HashCode<Decimal128, UInt128>(new UInt128(_upper, _lower));
         }
+
+        /// <summary>Encodes a value as its IEEE 754 binary integer decimal (BID) representation.</summary>
+        /// <param name="x">The value to encode.</param>
+        /// <returns>The BID bit pattern of <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static UInt128 EncodeBinary(Decimal128 x) => new UInt128(x._upper, x._lower);
+
+        /// <summary>Decodes a value from its IEEE 754 binary integer decimal (BID) representation.</summary>
+        /// <param name="x">The BID bit pattern to decode.</param>
+        /// <returns>The value represented by the BID bit pattern <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static Decimal128 DecodeBinary(UInt128 x) => new Decimal128(x);
+
+        /// <summary>Encodes a value as its IEEE 754 densely packed decimal (DPD) representation.</summary>
+        /// <param name="x">The value to encode.</param>
+        /// <returns>The DPD bit pattern of <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static UInt128 EncodeDecimal(Decimal128 x) => Number.EncodeDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower));
+
+        /// <summary>Decodes a value from its IEEE 754 densely packed decimal (DPD) representation.</summary>
+        /// <param name="x">The DPD bit pattern to decode.</param>
+        /// <returns>The value represented by the DPD bit pattern <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static Decimal128 DecodeDecimal(UInt128 x) => new Decimal128(Number.DecodeDecimalIeee754<Decimal128, UInt128>(x));
 
         /// <summary>
         /// Returns a string representation of the current value.
@@ -937,6 +981,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(Decimal128 x) => Number.ILogBDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower));
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
+        public static Decimal128 Lerp(Decimal128 value1, Decimal128 value2, Decimal128 amount) => MultiplyAddEstimate(value1, One - amount, value2 * amount);
+
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
         public static Decimal128 Log(Decimal128 x) => new Decimal128(Number.LogDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
@@ -960,6 +1007,12 @@ namespace System.Numerics
 
         /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
         public static Decimal128 Pow(Decimal128 x, Decimal128 y) => new Decimal128(Number.PowDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower)));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        public static Decimal128 ReciprocalEstimate(Decimal128 x) => One / x;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        public static Decimal128 ReciprocalSqrtEstimate(Decimal128 x) => One / Sqrt(x);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
         public static Decimal128 RootN(Decimal128 x, int n) => new Decimal128(Number.RootNDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), n));
@@ -1011,13 +1064,13 @@ namespace System.Numerics
         /// <summary>Computes the quantum of a value: one unit in the last place sharing its exponent.</summary>
         /// <param name="x">The value whose quantum is returned.</param>
         /// <returns>The quantum of <paramref name="x" />.</returns>
-        public static Decimal128 Quantum(Decimal128 x) => new Decimal128(Number.QuantumDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
+        public static Decimal128 GetQuantum(Decimal128 x) => new Decimal128(Number.QuantumDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower)));
 
         /// <summary>Determines whether two values have the same quantum (exponent).</summary>
         /// <param name="x">The first value to compare.</param>
         /// <param name="y">The second value to compare.</param>
         /// <returns><c>true</c> if <paramref name="x" /> and <paramref name="y" /> have the same quantum; otherwise, <c>false</c>.</returns>
-        public static bool SameQuantum(Decimal128 x, Decimal128 y) => Number.SameQuantumDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower));
+        public static bool HaveSameQuantum(Decimal128 x, Decimal128 y) => Number.SameQuantumDecimalIeee754<Decimal128, UInt128>(new UInt128(x._upper, x._lower), new UInt128(y._upper, y._lower));
 
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>
@@ -1202,7 +1255,7 @@ namespace System.Numerics
         static int INumberBase<Decimal128>.Radix => 10;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
-        static bool INumberBase<Decimal128>.IsCanonical(Decimal128 value) => Number.IsCanonicalDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower), nanReservedMask: new UInt128(0x01FF_C000_0000_0000, 0x0000_0000_0000_0000), nanPayloadMask: new UInt128(0x0000_3FFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), maxNaNPayload: new UInt128(0x0000_314D_C644_8D93, 0x38C1_5B09_FFFF_FFFF));
+        static bool INumberBase<Decimal128>.IsCanonical(Decimal128 value) => Number.IsCanonicalDecimalIeee754<Decimal128, UInt128>(new UInt128(value._upper, value._lower), nanReservedMask: new UInt128(0x01FF_C000_0000_0000, 0x0000_0000_0000_0000), nanPayloadMask: NaNPayloadMask, maxNaNPayload: new UInt128(0x0000_314D_C644_8D93, 0x38C1_5B09_FFFF_FFFF));
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
         static bool INumberBase<Decimal128>.IsComplexNumber(Decimal128 value) => false;
@@ -1738,6 +1791,10 @@ namespace System.Numerics
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MostSignificantBitOfSignificandMask => new UInt128(0x0002_0000_0000_0000, 0);
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NaNMask => new UInt128(NaNMaskUpper, 0);
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.SNaNMask => new UInt128(SNaNMaskUpper, 0);
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NaNPayloadMask => NaNPayloadMask;
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.SignMask => new UInt128(SignMaskUpper, 0);
 

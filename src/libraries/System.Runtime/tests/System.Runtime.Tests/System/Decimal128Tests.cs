@@ -3041,7 +3041,7 @@ namespace System.Tests
         [InlineData(0xFC00000000000000UL, 0x0000000000000000UL, 0xFC00000000000000UL, 0x0000000000000000UL)] // quantum(-NaN) = -NaN (propagated)
         public static void QuantumTest(ulong valueUpper, ulong valueLower, ulong expectedUpper, ulong expectedLower)
         {
-            Decimal128 result = Decimal128.Quantum(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(valueUpper, valueLower)));
+            Decimal128 result = Decimal128.GetQuantum(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(valueUpper, valueLower)));
             Assert.Equal(new UInt128(expectedUpper, expectedLower), Unsafe.BitCast<Decimal128, UInt128>(result));
         }
 
@@ -3057,7 +3057,73 @@ namespace System.Tests
         {
             Decimal128 x = Unsafe.BitCast<UInt128, Decimal128>(new UInt128(xUpper, xLower));
             Decimal128 y = Unsafe.BitCast<UInt128, Decimal128>(new UInt128(yUpper, yLower));
-            Assert.Equal(expected, Decimal128.SameQuantum(x, y));
+            Assert.Equal(expected, Decimal128.HaveSameQuantum(x, y));
+        }
+
+        [Theory]
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL)] // +0
+        [InlineData(0xB040000000000000UL, 0x0000000000000000UL)] // -0
+        [InlineData(0x3040000000000000UL, 0x0000000000000001UL)] // +1
+        [InlineData(0x7800000000000000UL, 0x0000000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL)] // -Infinity
+        [InlineData(0x7C00000000000000UL, 0x0000000000000000UL)] // NaN
+        [InlineData(0x7DFFC00000000000UL, 0x00000000000004D2UL)] // NaN with reserved-bit garbage (binary copy preserves non-canonical bits)
+        public static void EncodeDecodeBinaryRoundTrips(ulong upper, ulong lower)
+        {
+            UInt128 bits = new UInt128(upper, lower);
+            Decimal128 value = Decimal128.DecodeBinary(bits);
+            Assert.Equal(bits, Decimal128.EncodeBinary(value));
+            Assert.Equal(bits, Unsafe.BitCast<Decimal128, UInt128>(value));
+        }
+
+        [Theory]
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL, 0x2208000000000000UL, 0x0000000000000000UL)] // +0
+        [InlineData(0x3040000000000000UL, 0x0000000000000001UL, 0x2208000000000000UL, 0x0000000000000001UL)] // +1
+        public static void EncodeDecimalKnownVectors(ulong bidUpper, ulong bidLower, ulong dpdUpper, ulong dpdLower)
+        {
+            UInt128 bid = new UInt128(bidUpper, bidLower);
+            UInt128 dpd = new UInt128(dpdUpper, dpdLower);
+            Assert.Equal(dpd, Decimal128.EncodeDecimal(Decimal128.DecodeBinary(bid)));
+            Assert.Equal(bid, Decimal128.EncodeBinary(Decimal128.DecodeDecimal(dpd)));
+        }
+
+        [Theory]
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL)] // +0
+        [InlineData(0xB040000000000000UL, 0x0000000000000000UL)] // -0
+        [InlineData(0x3040000000000000UL, 0x0000000000000001UL)] // +1
+        [InlineData(0x3041ED09BEAD87C0UL, 0x378D8E63FFFFFFFFUL)] // 34 nines (leading digit 9)
+        [InlineData(0x7800000000000000UL, 0x0000000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL)] // -Infinity
+        [InlineData(0x7C00000000000000UL, 0x0000000000000000UL)] // NaN
+        [InlineData(0x7C00000000000000UL, 0x00000000000004D2UL)] // NaN with payload
+        public static void EncodeDecodeDecimalRoundTrips(ulong upper, ulong lower)
+        {
+            UInt128 bits = new UInt128(upper, lower);
+            Decimal128 value = Decimal128.DecodeBinary(bits);
+            Assert.Equal(bits, Unsafe.BitCast<Decimal128, UInt128>(Decimal128.DecodeDecimal(Decimal128.EncodeDecimal(value))));
+        }
+
+        [Fact]
+        public static void CrossEncodingCanonicalizesNaN()
+        {
+            // The bits between the signaling bit and the payload are reserved; a cross-encoding conversion drops them.
+            UInt128 reservedMask = new UInt128(0x01FF_C000_0000_0000UL, 0x0000_0000_0000_0000UL);
+            UInt128 signalingBit = new UInt128(0x0200_0000_0000_0000UL, 0x0000_0000_0000_0000UL);
+            UInt128 canonicalNaN = new UInt128(0x7C00_0000_0000_0000UL, 0x0000_0000_0000_04D2UL);
+
+            // BID -> DPD drops reserved-bit garbage while preserving the sign, marker, signaling bit, and payload.
+            UInt128 canonicalDpd = Decimal128.EncodeDecimal(Decimal128.DecodeBinary(canonicalNaN));
+            UInt128 garbageDpd = Decimal128.EncodeDecimal(Decimal128.DecodeBinary(canonicalNaN | reservedMask));
+            Assert.Equal(canonicalDpd, garbageDpd);
+            Assert.Equal(UInt128.Zero, garbageDpd & reservedMask);
+
+            // DPD -> BID canonicalizes the same way.
+            Assert.Equal(canonicalNaN, Decimal128.EncodeBinary(Decimal128.DecodeDecimal(canonicalDpd | reservedMask)));
+
+            // The signaling bit is preserved both ways (IEEE 754 exceptions are treated as disabled, so sNaN is not quieted).
+            UInt128 signalingDpd = Decimal128.EncodeDecimal(Decimal128.DecodeBinary(canonicalNaN | signalingBit));
+            Assert.Equal(signalingBit, signalingDpd & signalingBit);
+            Assert.Equal(canonicalNaN | signalingBit, Decimal128.EncodeBinary(Decimal128.DecodeDecimal(signalingDpd)));
         }
 
 
@@ -3229,7 +3295,7 @@ namespace System.Tests
         [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128Quantum), MemberType = typeof(DecimalIeee754IntelTestData))]
         public static void Quantum_IntelReferenceVectors(UInt128 value, UInt128 expected)
         {
-            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(Decimal128.Quantum(Unsafe.BitCast<UInt128, Decimal128>(value))));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(Decimal128.GetQuantum(Unsafe.BitCast<UInt128, Decimal128>(value))));
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]

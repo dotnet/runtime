@@ -546,13 +546,14 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             return new List<ExceptionClauseInfo>();
         jitManager.GetExceptionClauses(range, codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr);
         bool isR2R = jitManager is ReadyToRunJitManager;
-        DataType clauseType = isR2R ? DataType.R2RExceptionClause : DataType.EEExceptionClause;
-        uint clauseSize = _target.GetTypeInfo(clauseType).Size!.Value;
+        uint clauseSize = isR2R
+            ? Data.R2RExceptionClause.GetSize(_target)
+            : Data.EEExceptionClause.GetSize(_target);
         TargetPointer methodDescPtr = ((IExecutionManager)this).GetMethodDesc(codeInfoHandle);
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
         TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
-        TypeHandle th = rts.GetTypeHandle(mtPtr);
+        ITypeHandle th = rts.GetTypeHandle(mtPtr);
         TargetPointer handleModuleAddr = rts.GetModule(th);
 
         List<ExceptionClauseInfo> exceptionClauses = new List<ExceptionClauseInfo>();
