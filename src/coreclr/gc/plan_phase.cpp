@@ -2981,7 +2981,18 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
 
         if (!heap_segment_swept_in_plan (current_region))
         {
-            heap_segment_plan_allocated (current_region) = generation_allocation_pointer (consing_gen);
+            // If the allocation region was swept in plan (SIP), heap_segment_non_sip above skipped
+            // it to land on this region. In that case the consing pointer belongs to the skipped
+            // region, not this one (and the skipped region may be at a higher or lower address, so
+            // the pointer can be below mem or above reserved). Either way this region is empty, so
+            // its plan_allocated is its mem.
+            uint8_t* plan_alloc = generation_allocation_pointer (consing_gen);
+            if ((plan_alloc < heap_segment_mem (current_region)) ||
+                (plan_alloc > heap_segment_reserved (current_region)))
+            {
+                plan_alloc = heap_segment_mem (current_region);
+            }
+            heap_segment_plan_allocated (current_region) = plan_alloc;
             dprintf (REGIONS_LOG, ("h%d setting alloc seg %p plan alloc to %p",
                 heap_number, heap_segment_mem (current_region),
                 heap_segment_plan_allocated (current_region)));
