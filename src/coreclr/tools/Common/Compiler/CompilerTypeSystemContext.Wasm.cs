@@ -18,20 +18,17 @@ namespace ILCompiler
 
         /// <summary>
         /// Gets the first SIMD v128 type encountered during lowering, or null if none has been seen.
-        /// Used by RaiseSignature to produce a roundtrippable type for the 'V' encoding. Any v128
-        /// type is usable there because all of them share the same wasm ABI (see CacheV128Type).
+        /// Used by RaiseSignature to produce a roundtrippable type for the 'V' encoding.
         /// </summary>
         public TypeDesc CachedV128Type => _cachedV128Type;
 
         /// <summary>
-        /// Caches a SIMD v128 type discovered during lowering. Only the first one is retained:
-        /// every type that lowers to a wasm <c>v128</c> is 16 bytes with 16-byte alignment, so they
-        /// are interchangeable for the signature round-trip that RaiseSignature performs. The assert
-        /// guards that invariant, since a v128 type with a smaller alignment would silently give
-        /// raised signatures a different argument layout depending on which type was lowered first.
+        /// Caches a SIMD v128 type discovered during lowering. Only the first one is retained.
         /// </summary>
         public void CacheV128Type(TypeDesc type)
         {
+            // All v128 types share the same wasm ABI (16-byte aligned), so any one round-trips the
+            // 'V' encoding identically; a smaller alignment would change raised signatures silently.
             Debug.Assert(((DefType)type).InstanceFieldAlignment.AsInt == 16,
                 $"v128 type {type} must be 16-byte aligned to be interchangeable in raised signatures");
 

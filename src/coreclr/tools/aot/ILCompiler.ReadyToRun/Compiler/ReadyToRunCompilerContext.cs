@@ -311,10 +311,7 @@ namespace ILCompiler
                 {
                     ByteCountUnaligned = layoutFromSimilarIntrinsicVector.ByteCountUnaligned,
                     ByteCountAlignment = layoutFromMetadata.ByteCountAlignment,
-                    // On wasm Vector<T> is passed as a v128, exactly like the similar intrinsic
-                    // vector, so it has to share that type's 16-byte alignment. Elsewhere Vector<T>
-                    // does not follow the intrinsic vector calling convention yet, and keeps the
-                    // alignment its metadata layout produces (see MATCHING_HARDWARE_VECTOR above).
+                    // On wasm Vector<T> is passed as a v128 and must share its 16-byte alignment.
                     FieldAlignment = type.Context.Target.Architecture == TargetArchitecture.Wasm32
                         ? layoutFromSimilarIntrinsicVector.FieldAlignment
                         : layoutFromMetadata.FieldAlignment,
