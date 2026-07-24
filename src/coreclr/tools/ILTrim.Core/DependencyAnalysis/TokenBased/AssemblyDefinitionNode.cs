@@ -14,19 +14,28 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public sealed class AssemblyDefinitionNode : TokenBasedNode
     {
+        private IReadOnlyCollection<CombinedDependencyListEntry> _conditionalDependencies = System.Array.Empty<CombinedDependencyListEntry>();
+
         public AssemblyDefinitionNode(EcmaModule module)
             : base(module, EntityHandle.AssemblyDefinition)
         {
         }
+
+        public override bool HasConditionalStaticDependencies => _conditionalDependencies.Count > 0;
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             DependencyList dependencies = null;
 
             AssemblyDefinition asmDef = _module.MetadataReader.GetAssemblyDefinition();
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, asmDef.GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToAssemblyCustomAttributes(ref dependencies, ref _conditionalDependencies, factory, _module, asmDef.GetCustomAttributes());
 
             return dependencies;
+        }
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            return _conditionalDependencies;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
