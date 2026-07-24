@@ -546,10 +546,8 @@ bool EvaluateSimdCvtScalableVectorToMask(var_types baseType, simdmaskscalable_t*
         return false;
     }
 
-    uint64_t allBitsSet = SimdAllBitsSetForElementType(baseType);
-
     maskCon->gtSimdMaskScalableBaseType = baseType;
-    maskCon->gtSimdMaskScalableIndex    = (vecCon.gtSimdScalableIndex == allBitsSet);
+    maskCon->gtSimdMaskScalableIndex    = (vecCon.gtSimdScalableIndex != 0);
     return true;
 }
 
