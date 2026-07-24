@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Linq;
+using System.Reflection;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using Microsoft.Diagnostics.DataContractReader.Data.GeneratorTests;
 using Xunit;
@@ -26,6 +28,81 @@ public class DataGeneratorTests
     private static T Materialize<T>(TestTarget target, ulong address) where T : IData<T>
         => target.ProcessedData.GetOrAdd<T>(new TargetPointer(address));
 
+    private static DataDescriptorDependencyAttribute[] Dependencies(MemberInfo member) =>
+        member.GetCustomAttributes<DataDescriptorDependencyAttribute>().ToArray();
+
+    private static bool UsesTypeSize(MemberInfo member) =>
+        member.GetCustomAttribute<UsesDataDescriptorTypeSizeAttribute>() is not null;
+
+    [Fact]
+    public void GeneratedPropertiesDeclareDescriptorDependencies()
+    {
+        PropertyInfo field = typeof(TestNative).GetProperty(nameof(TestNative.A))!;
+        Assert.Equal(
+            [(FieldName: "A", NativeType: "uint32")],
+            Dependencies(field).Select(attribute => (attribute.FieldName, attribute.NativeType)));
+        Assert.False(UsesTypeSize(field));
+
+        PropertyInfo alias = typeof(TestNativeAlias).GetProperty(nameof(TestNativeAlias.A))!;
+        Assert.Equal(
+            [(FieldName: "A", NativeType: "uint32")],
+            Dependencies(alias).Select(attribute => (attribute.FieldName, attribute.NativeType)));
+
+        PropertyInfo address = typeof(TestFieldAddr).GetProperty(nameof(TestFieldAddr.AnchorAddress))!;
+        Assert.Equal(
+            [(FieldName: "Anchor", NativeType: "pointer")],
+            Dependencies(address).Select(attribute => (attribute.FieldName, attribute.NativeType)));
+
+        PropertyInfo instanceData =
+            typeof(TestInstanceDataStart).GetProperty(nameof(TestInstanceDataStart.Data))!;
+        Assert.Empty(Dependencies(instanceData));
+        Assert.True(UsesTypeSize(instanceData));
+
+        PropertyInfo rawOffset = typeof(TestRawOffset).GetProperty(nameof(TestRawOffset.Value))!;
+        Assert.Empty(Dependencies(rawOffset));
+        Assert.False(UsesTypeSize(rawOffset));
+    }
+
+    [Fact]
+    public void GeneratedHelpersDeclareDescriptorDependencies()
+    {
+        MethodInfo getSize = typeof(TestNative).GetMethod(nameof(TestNative.GetSize))!;
+        Assert.Empty(Dependencies(getSize));
+        Assert.True(UsesTypeSize(getSize));
+
+        MethodInfo getOffset = typeof(TestNative).GetMethod(nameof(TestNative.GetAOffset))!;
+        Assert.Equal(
+            [(FieldName: "A", NativeType: "uint32")],
+            Dependencies(getOffset).Select(attribute => (attribute.FieldName, attribute.NativeType)));
+
+        MethodInfo write = typeof(TestWriteNative).GetMethod(nameof(TestWriteNative.WriteFlags))!;
+        Assert.Equal(
+            [(FieldName: "Flags", NativeType: "uint32")],
+            Dependencies(write).Select(attribute => (attribute.FieldName, attribute.NativeType)));
+
+        MethodInfo rawOffset =
+            typeof(TestRawOffset).GetMethod(nameof(TestRawOffset.GetValueOffset))!;
+        Assert.Empty(Dependencies(rawOffset));
+        Assert.False(UsesTypeSize(rawOffset));
+    }
+
+    [Fact]
+    public void EnsureAllFieldsReadDeclaresGeneratedPropertyDependencies()
+    {
+        InterfaceMapping map = typeof(TestNative).GetInterfaceMap(typeof(IReadableData));
+        int index = Array.IndexOf(map.InterfaceMethods, typeof(IReadableData).GetMethod(nameof(IReadableData.EnsureAllFieldsRead))!);
+        MethodInfo ensureAllFieldsRead = map.TargetMethods[index];
+
+        Assert.Equal(
+            [
+                (FieldName: "A", NativeType: "uint32"),
+                (FieldName: "B", NativeType: "pointer"),
+            ],
+            Dependencies(ensureAllFieldsRead)
+                .Select(attribute => (attribute.FieldName, attribute.NativeType)));
+        Assert.False(UsesTypeSize(ensureAllFieldsRead));
+    }
+
     // ================================================================
     // Single-source baselines
     // ================================================================
@@ -46,6 +123,57 @@ public class DataGeneratorTests
         Assert.Equal(42u, t.A);
         Assert.Equal((TargetPointer)0xDEAD_BEEFul, t.B);
         Assert.Equal((TargetPointer)InstanceAddr, t.Address);
+    }
+
+    [Fact]
+    public void GetSize_ReturnsFirstKnownLayoutSize()
+    {
+        var target = new TestTarget()
+            .AddNativeType("TestCross", size: 16, ("A", 0), ("B", 8))
+            .AddManagedType("Test.Cross", size: 32, ("A", 16), ("B", 20));
+
+        Assert.Equal(16u, TestCross.GetSize(target));
+    }
+
+    [Fact]
+    public void GetSize_ThrowsWhenNoLayoutHasSize()
+    {
+        var target = new TestTarget();
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => TestNative.GetSize(target));
+
+        Assert.Equal("No layout source has a known instance size.", exception.Message);
+    }
+
+    [Fact]
+    public void GetFieldOffset_UsesResolvedFieldName()
+    {
+        var target = new TestTarget()
+            .AddNativeType("TestNativeAlias", size: 4, ("A_old", 12));
+
+        Assert.Equal(12, TestNativeAlias.GetAOffset(target));
+    }
+
+    [Fact]
+    public void GetFieldOffset_UsesManagedFallback()
+    {
+        var target = new TestTarget()
+            .AddManagedType("Test.FieldAddr", size: 16, ("A", 4), ("Anchor", 8));
+
+        Assert.Equal(8, TestFieldAddr.GetAnchorAddressOffset(target));
+    }
+
+    [Fact]
+    public void GetFieldOffset_ThrowsWhenFieldIsMissing()
+    {
+        var target = new TestTarget()
+            .AddNativeType("TestNative", size: 16);
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+            () => TestNative.GetAOffset(target));
+
+        Assert.Equal("Field not found in any layout (names=[A]).", exception.Message);
     }
 
     [Fact]

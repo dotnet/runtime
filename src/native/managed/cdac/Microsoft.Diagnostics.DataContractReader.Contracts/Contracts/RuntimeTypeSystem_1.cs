@@ -256,28 +256,28 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             switch ((MethodClassification)(desc.Flags & (ushort)MethodDescFlags_1.MethodDescFlags.ClassificationMask))
             {
                 case MethodClassification.IL:
-                    baseSize = target.GetTypeInfo(DataType.MethodDesc).Size ?? throw new InvalidOperationException("MethodDesc type size must be known");
+                    baseSize = Data.MethodDesc.GetSize(target);
                     break;
                 case MethodClassification.FCall:
-                    baseSize = target.GetTypeInfo(DataType.FCallMethodDesc).Size ?? throw new InvalidOperationException("FCallMethodDesc type size must be known");
+                    baseSize = Data.FCallMethodDesc.GetSize(target);
                     break;
                 case MethodClassification.PInvoke:
-                    baseSize = target.GetTypeInfo(DataType.PInvokeMethodDesc).Size ?? throw new InvalidOperationException("PInvokeMethodDesc type size must be known");
+                    baseSize = Data.PInvokeMethodDesc.GetSize(target);
                     break;
                 case MethodClassification.EEImpl:
-                    baseSize = target.GetTypeInfo(DataType.EEImplMethodDesc).Size ?? throw new InvalidOperationException("EEImplMethodDesc type size must be known");
+                    baseSize = Data.EEImplMethodDesc.GetSize(target);
                     break;
                 case MethodClassification.Array:
-                    baseSize = target.GetTypeInfo(DataType.ArrayMethodDesc).Size ?? throw new InvalidOperationException("ArrayMethodDesc type size must be known");
+                    baseSize = Data.ArrayMethodDesc.GetSize(target);
                     break;
                 case MethodClassification.Instantiated:
-                    baseSize = target.GetTypeInfo(DataType.InstantiatedMethodDesc).Size ?? throw new InvalidOperationException("InstantiatedMethodDesc type size must be known");
+                    baseSize = Data.InstantiatedMethodDesc.GetSize(target);
                     break;
                 case MethodClassification.ComInterop:
-                    baseSize = target.GetTypeInfo(DataType.CLRToCOMCallMethodDesc).Size ?? throw new InvalidOperationException("CLRToCOMCallMethodDesc type size must be known");
+                    baseSize = Data.CLRToCOMCallMethodDesc.GetSize(target);
                     break;
                 case MethodClassification.Dynamic:
-                    baseSize = target.GetTypeInfo(DataType.DynamicMethodDesc).Size ?? throw new InvalidOperationException("DynamicMethodDesc type size must be known");
+                    baseSize = Data.DynamicMethodDesc.GetSize(target);
                     break;
                 default:
                     throw new InvalidOperationException("Invalid method classification");
@@ -285,16 +285,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
             MethodDescFlags_1.MethodDescFlags flags = (MethodDescFlags_1.MethodDescFlags)desc.Flags;
             if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot))
-                baseSize += target.GetTypeInfo(DataType.NonVtableSlot).Size ?? throw new InvalidOperationException("NonVtableSlot type size must be known");
+                baseSize += Data.NonVtableSlot.GetSize(target);
 
             if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasMethodImpl))
-                baseSize += target.GetTypeInfo(DataType.MethodImpl).Size ?? throw new InvalidOperationException("MethodImpl type size must be known");
+                baseSize += Data.MethodImpl.GetSize(target);
 
             if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot))
-                baseSize += target.GetTypeInfo(DataType.NativeCodeSlot).Size ?? throw new InvalidOperationException("NativeCodeSlot type size must be known");
+                baseSize += Data.NativeCodeSlot.GetSize(target);
 
             if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData))
-                baseSize += target.GetTypeInfo(DataType.AsyncMethodData).Size ?? throw new InvalidOperationException("AsyncMethodData type size must be known");
+                baseSize += Data.AsyncMethodData.GetSize(target);
 
             return baseSize;
         }
@@ -334,7 +334,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         {
             get
             {
-                ulong typeSize = _target.GetTypeInfo(DataType.MethodDescChunk).Size!.Value;
+                ulong typeSize = Data.MethodDescChunk.GetSize(_target);
                 ulong chunkSize = (ulong)(_chunk.Size + 1) * _target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
                 ulong extra = IsLoaderModuleAttachedToChunk ? (ulong)_target.PointerSize : 0;
                 return typeSize + chunkSize + extra;
@@ -934,7 +934,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private (TargetPointer ListStart, uint FieldDescSize, int TotalFields) GetFieldDescListLayout(ITypeHandle typeHandle)
     {
         TargetPointer fieldDescListPtr = GetClassData(typeHandle).FieldDescList;
-        uint fieldDescSize = _target.GetTypeInfo(DataType.FieldDesc).Size!.Value;
+        uint fieldDescSize = Data.FieldDesc.GetSize(_target);
 
         ushort numInstanceFields = GetNumInstanceFields(typeHandle);
         TargetPointer parentMT = GetParentMethodTable(typeHandle);
@@ -955,7 +955,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         MethodTable methodTable = _methodTables[typeHandle.Address];
         if (!methodTable.Flags.IsDynamicStatics)
             return default;
-        TargetPointer dynamicStaticsInfoSize = _target.GetTypeInfo(DataType.DynamicStaticsInfo).Size!.Value;
+        TargetPointer dynamicStaticsInfoSize = Data.DynamicStaticsInfo.GetSize(_target);
         TargetPointer dynamicStaticsInfoAddr = methodTable.AuxiliaryData - dynamicStaticsInfoSize;
         return dynamicStaticsInfoAddr;
     }
@@ -963,7 +963,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private Data.ThreadStaticsInfo GetThreadStaticsInfo(ITypeHandle typeHandle)
     {
         MethodTable methodTable = _methodTables[typeHandle.Address];
-        TargetPointer threadStaticsInfoSize = _target.GetTypeInfo(DataType.ThreadStaticsInfo).Size!.Value;
+        TargetPointer threadStaticsInfoSize = Data.ThreadStaticsInfo.GetSize(_target);
         TargetPointer threadStaticsInfoAddr = methodTable.AuxiliaryData - threadStaticsInfoSize;
         Data.ThreadStaticsInfo threadStaticsInfo = _target.ProcessedData.GetOrAdd<Data.ThreadStaticsInfo>(threadStaticsInfoAddr);
         return threadStaticsInfo;
@@ -1898,8 +1898,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private VtableIndirections GetVTableIndirections(TargetPointer methodTableAddress)
     {
-        var typeInfo = _target.GetTypeInfo(DataType.MethodTable);
-        return new VtableIndirections(_target, methodTableAddress + typeInfo.Size!.Value);
+        return new VtableIndirections(_target, methodTableAddress + Data.MethodTable.GetSize(_target));
     }
 
     private TargetPointer GetAddressOfSlot(ITypeHandle typeHandle, uint slotNum)
@@ -2217,8 +2216,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         MethodDesc md = _methodDescs[methodDesc.Address];
         if (md.GCCoverageInfo is TargetPointer gcCoverageInfoAddr && gcCoverageInfoAddr != TargetPointer.Null)
         {
-            Target.TypeInfo gcCoverageInfoType = _target.GetTypeInfo(DataType.GCCoverageInfo);
-            return gcCoverageInfoAddr + (ulong)gcCoverageInfoType.Fields["SavedCode"].Offset;
+            return gcCoverageInfoAddr + (ulong)Data.GCCoverageInfo.GetSavedCodeOffset(_target);
         }
         return TargetPointer.Null;
     }

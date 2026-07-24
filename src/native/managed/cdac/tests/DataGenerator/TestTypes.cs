@@ -159,3 +159,17 @@ internal sealed partial class MigrateMNStatic : IData<MigrateMNStatic>
     [StaticAddress("s_instance")]
     public static partial TargetPointer Instance(Target target);
 }
+
+[CdacType("TestInstanceDataStart")]
+internal sealed partial class TestInstanceDataStart : IData<TestInstanceDataStart>
+{
+    [InstanceDataStart]
+    public partial TargetPointer Data { get; }
+}
+
+[CdacType("TestRawOffset")]
+internal sealed partial class TestRawOffset : IData<TestRawOffset>
+{
+    [RawOffset(4)]
+    public partial uint Value { get; }
+}

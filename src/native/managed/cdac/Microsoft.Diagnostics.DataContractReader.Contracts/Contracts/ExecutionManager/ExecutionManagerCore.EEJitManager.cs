@@ -216,7 +216,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             Data.EEILException ehInfo = Target.ProcessedData.GetOrAdd<Data.EEILException>(realCodeHeader.EHInfo);
             TargetNUInt numEHInfos = Target.ReadNUInt(ehInfo.Address - (ulong)Target.PointerSize);
             startAddr = ehInfo.Clauses;
-            endAddr = startAddr + numEHInfos.Value * Target.GetTypeInfo(DataType.EEExceptionClause).Size!.Value;
+            endAddr = startAddr + numEHInfos.Value * Data.EEExceptionClause.GetSize(Target);
         }
     }
 }
