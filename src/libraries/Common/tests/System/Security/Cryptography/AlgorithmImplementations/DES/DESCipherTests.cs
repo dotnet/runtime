@@ -10,8 +10,10 @@ using Xunit;
 namespace System.Security.Cryptography.Encryption.Des.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static partial class DesCipherTests
+    public abstract partial class DesCipherTests
     {
+        protected abstract DESProvider DESFactory { get; }
+
         // These are the expected output of many decryptions. Changing these values requires re-generating test input.
         private static readonly string s_multiBlockString = new ASCIIEncoding().GetBytes(
             "This is a sentence that is longer than a block, it ensures that multi-block functions work.").ByteArrayToHex();
@@ -126,7 +128,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         }
 
         [Theory, MemberData(nameof(DesTestData))]
-        public static void DesRoundTrip(CipherMode cipherMode, PaddingMode paddingMode, string key, string iv, string textHex, string expectedDecrypted, string expectedEncrypted)
+        public void DesRoundTrip(CipherMode cipherMode, PaddingMode paddingMode, string key, string iv, string textHex, string expectedDecrypted, string expectedEncrypted)
         {
             byte[] expectedDecryptedBytes = expectedDecrypted == null ? textHex.HexToByteArray() : expectedDecrypted.HexToByteArray();
             byte[] expectedEncryptedBytes = expectedEncrypted.HexToByteArray();
@@ -149,7 +151,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         }
 
         [Fact]
-        public static void DesReuseEncryptorDecryptor()
+        public void DesReuseEncryptorDecryptor()
         {
             using (DES alg = DESFactory.Create())
             {
@@ -190,7 +192,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         }
 
         [Fact]
-        public static void DesExplicitEncryptorDecryptor_WithIV()
+        public void DesExplicitEncryptorDecryptor_WithIV()
         {
             using (DES alg = DESFactory.Create())
             {
@@ -209,7 +211,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         }
 
         [Fact]
-        public static void DesExplicitEncryptorDecryptor_NoIV()
+        public void DesExplicitEncryptorDecryptor_NoIV()
         {
             using (DES alg = DESFactory.Create())
             {
@@ -230,7 +232,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void EncryptWithLargeOutputBuffer(bool blockAlignedOutput)
+        public void EncryptWithLargeOutputBuffer(bool blockAlignedOutput)
         {
             using (DES alg = DESFactory.Create())
             using (ICryptoTransform xform = alg.CreateEncryptor())
@@ -257,7 +259,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_0(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_NoOrZeroPadding_0(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=0
             // used only key1, cipherBytes computed using openssl
@@ -275,7 +277,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_1(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_NoOrZeroPadding_1(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=1
             // used only key1, cipherBytes computed using openssl
@@ -293,7 +295,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_2(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_NoOrZeroPadding_2(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=2
             // used only key1, cipherBytes computed using openssl
@@ -312,7 +314,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [InlineData(CipherMode.CBC, 0)]
         [InlineData(CipherMode.CFB, 8)]
         [InlineData(CipherMode.ECB, 0)]
-        public static void EncryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        public void EncryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
         {
             // AppleCCCryptor does not allow calling Reset on CFB cipher.
             // this test validates that the behavior is taken into consideration.
@@ -341,7 +343,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [InlineData(CipherMode.CBC, 0)]
         [InlineData(CipherMode.CFB, 8)]
         [InlineData(CipherMode.ECB, 0)]
-        public static void DecryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        public void DecryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
         {
             // AppleCCCryptor does not allow calling Reset on CFB cipher.
             // this test validates that the behavior is taken into consideration.
@@ -374,7 +376,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_3(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_NoOrZeroPadding_3(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=3
             // used only key1, cipherBytes computed using openssl
@@ -390,7 +392,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB8_PKCS7_3()
+        public void VerifyKnownTransform_CFB8_PKCS7_3()
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=3
             // used only key1, cipherBytes computed using openssl
@@ -408,7 +410,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_4(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_NoOrZeroPadding_4(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=4
             // used only key1, cipherBytes computed using openssl
@@ -426,7 +428,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_5(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_NoOrZeroPadding_5(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=5
             // used only key1, cipherBytes computed using openssl
@@ -444,7 +446,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_6(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_NoOrZeroPadding_6(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=6
             // used only key1, cipherBytes computed using openssl
@@ -462,7 +464,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_7(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_NoOrZeroPadding_7(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=7
             // used only key1, cipherBytes computed using openssl
@@ -480,7 +482,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_8(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_NoOrZeroPadding_8(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=8
             // used only key1, cipherBytes computed using openssl
@@ -498,7 +500,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_9(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_NoOrZeroPadding_9(PaddingMode paddingMode)
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=9
             // used only key1, cipherBytes computed using openssl
@@ -513,7 +515,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        private static void TestDESTransformDirectKey(
+        private void TestDESTransformDirectKey(
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,
@@ -606,7 +608,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(false, false)]
-        public static void TransformWithTooShortOutputBuffer(bool encrypt, bool blockAlignedOutput)
+        public void TransformWithTooShortOutputBuffer(bool encrypt, bool blockAlignedOutput)
         {
             using (DES alg = DESFactory.Create())
             using (ICryptoTransform xform = encrypt ? alg.CreateEncryptor() : alg.CreateDecryptor())
@@ -627,7 +629,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void MultipleBlockDecryptTransform(bool blockAlignedOutput)
+        public void MultipleBlockDecryptTransform(bool blockAlignedOutput)
         {
             const string ExpectedOutput = "This is a test";
 
@@ -653,7 +655,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         }
 
         [Fact]
-        public static void SetKey_Sanity()
+        public void SetKey_Sanity()
         {
             using (DES one = DESFactory.Create())
             using (DES two = DESFactory.Create())

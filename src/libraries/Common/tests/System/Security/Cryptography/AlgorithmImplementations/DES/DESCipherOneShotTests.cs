@@ -10,8 +10,10 @@ using Xunit;
 namespace System.Security.Cryptography.Encryption.Des.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class DesCipherOneShotTests : SymmetricOneShotBase
+    public abstract class DesCipherOneShotTests : SymmetricOneShotBase
     {
+        protected abstract DESProvider DESFactory { get; }
+
         protected override byte[] Key => new byte[]
             {
                 0x74, 0x4B, 0x93, 0x3A, 0x96, 0x33, 0x61, 0xD6

@@ -5,20 +5,11 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
 {
     using RC2 = System.Security.Cryptography.RC2;
 
-    public interface IRC2Provider
+    public abstract class RC2Provider
     {
-        RC2 Create();
-        bool OneShotSupported { get; }
-    }
+        public abstract RC2 Create();
 
-    public static partial class RC2Factory
-    {
-        public static RC2 Create()
-        {
-            return s_provider.Create();
-        }
-
-        public static bool OneShotSupported => s_provider.OneShotSupported;
+        public abstract bool OneShotSupported { get; }
 
         public static bool IsSupported { get; } = Test.Cryptography.PlatformSupport.IsRC2Supported;
     }

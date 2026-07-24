@@ -5,7 +5,7 @@ using System.Text;
 
 namespace System.Security.Cryptography.Encryption.Aes.Tests
 {
-    public partial class AesCipherTests
+    public abstract partial class AesCipherTests
     {
         private static readonly Encoding s_asciiEncoding = new ASCIIEncoding();
         private static readonly byte[] s_helloBytes = s_asciiEncoding.GetBytes("Hello");

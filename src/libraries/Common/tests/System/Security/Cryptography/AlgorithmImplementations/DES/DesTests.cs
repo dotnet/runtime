@@ -8,15 +8,17 @@ using Xunit;
 namespace System.Security.Cryptography.Encryption.Des.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static partial class DesTests
+    public abstract partial class DesTests
     {
+        protected abstract DESProvider DESFactory { get; }
+
         private static readonly byte[] KnownWeakKey = "e0e0e0e0f1f1f1f1".HexToByteArray();
         private static readonly byte[] KnownSemiWeakKey = "1f011f010e010e01".HexToByteArray();
         private static readonly byte[] KnownGoodKey = "87FF0737F868378F".HexToByteArray();
         private static readonly byte[] KnownShortKey = "00".HexToByteArray();
 
         [Fact]
-        public static void DesDefaultCtor()
+        public void DesDefaultCtor()
         {
             using (DES des = DESFactory.Create())
             {
@@ -29,7 +31,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         }
 
         [Fact]
-        public static void DesKeysValidation()
+        public void DesKeysValidation()
         {
             Assert.True(DES.IsWeakKey(KnownWeakKey));
             Assert.False(DES.IsWeakKey(KnownGoodKey));
@@ -53,7 +55,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         }
 
         [Fact]
-        public static void DESKeySizeValidation()
+        public void DESKeySizeValidation()
         {
             using (DES des = DESFactory.Create())
             {
@@ -66,7 +68,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         }
 
         [Fact]
-        public static void DESBlockSizeValidation()
+        public void DESBlockSizeValidation()
         {
             using (DES des = DESFactory.Create())
             {
@@ -79,7 +81,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         }
 
         [Fact]
-        public static void DesTransformBlockValidation()
+        public void DesTransformBlockValidation()
         {
             using (DES des = DESFactory.Create())
             {

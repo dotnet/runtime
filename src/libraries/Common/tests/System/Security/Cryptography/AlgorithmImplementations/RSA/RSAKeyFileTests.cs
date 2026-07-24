@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     {
         protected abstract RSAProvider RSAFactory { get; }
 
-        public bool Supports384BitPrivateKeyAndRC2 => RSAFactory.Supports384PrivateKey && RC2Factory.IsSupported;
+        public bool Supports384BitPrivateKeyAndRC2 => RSAFactory.Supports384PrivateKey && RC2Provider.IsSupported;
         public bool SupportsLargeExponent => RSAFactory.SupportsLargeExponent;
 
         [Theory]
@@ -752,7 +752,7 @@ pgCJTk846cb+AizgZMeOsYpTOgu2UL6cQiLtsYNz7WpDK3iS7Agj9EoL2ao7QxA=";
                 TestData.RSA16384Params);
         }
 
-        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
+        [ConditionalFact(typeof(RC2Provider), nameof(RC2Provider.IsSupported))]
         public void ReadPbes2Rc2EncryptedDiminishedDP()
         {
             // PBES2: PBKDF2 + RC2-128
@@ -778,7 +778,7 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
+        [ConditionalFact(typeof(RC2Provider), nameof(RC2Provider.IsSupported))]
         public void ReadPbes2Rc2EncryptedDiminishedDP_PasswordBytes()
         {
             // PBES2: PBKDF2 + RC2-128

@@ -10,9 +10,11 @@ using Xunit;
 namespace System.Security.Cryptography.Encryption.RC2.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    [ConditionalClass(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
-    public class RC2CipherOneShotTests : SymmetricOneShotBase
+    [ConditionalClass(typeof(RC2Provider), nameof(RC2Provider.IsSupported))]
+    public abstract class RC2CipherOneShotTests : SymmetricOneShotBase
     {
+        protected abstract RC2Provider RC2Factory { get; }
+
         protected override byte[] Key => new byte[]
             {
                 0x83, 0x2F, 0x81, 0x1B, 0x61, 0x02, 0xCC, 0x8F,

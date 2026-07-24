@@ -12,10 +12,12 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
     using Aes = System.Security.Cryptography.Aes;
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public partial class AesCipherTests
+    public abstract partial class AesCipherTests
     {
+        protected abstract AesProvider AesFactory { get; }
+
         [Fact]
-        public static void RandomKeyRoundtrip_Default()
+        public void RandomKeyRoundtrip_Default()
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -24,7 +26,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void RandomKeyRoundtrip_128()
+        public void RandomKeyRoundtrip_128()
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -35,7 +37,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void RandomKeyRoundtrip_192()
+        public void RandomKeyRoundtrip_192()
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -46,7 +48,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void RandomKeyRoundtrip_256()
+        public void RandomKeyRoundtrip_256()
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -57,7 +59,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void DecryptKnownCBC256()
+        public void DecryptKnownCBC256()
         {
             byte[] encryptedBytes = new byte[]
             {
@@ -79,7 +81,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void DecryptKnownCFB128_256()
+        public void DecryptKnownCFB128_256()
         {
             byte[] encryptedBytes = new byte[]
             {
@@ -101,7 +103,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void DecryptKnownECB192()
+        public void DecryptKnownECB192()
         {
             byte[] encryptedBytes = new byte[]
             {
@@ -123,7 +125,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void DecryptKnownCFB128_192()
+        public void DecryptKnownCFB128_192()
         {
             byte[] encryptedBytes = new byte[]
             {
@@ -145,7 +147,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void DecryptKnownCFB128_128()
+        public void DecryptKnownCFB128_128()
         {
             byte[] encryptedBytes = new byte[]
             {
@@ -167,7 +169,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void SetKey_Sanity()
+        public void SetKey_Sanity()
         {
             using (Aes one = AesFactory.Create())
             using (Aes two = AesFactory.Create())
@@ -196,7 +198,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyInPlaceEncryption()
+        public void VerifyInPlaceEncryption()
         {
             byte[] expectedCipherText = new byte[]
             {
@@ -257,7 +259,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyInPlaceDecryption()
+        public void VerifyInPlaceDecryption()
         {
             byte[] key = "1ed2f625c187b993256a8b3ccf9dcbfa5b44b4795c731012f70e4e64732efd5d".HexToByteArray();
             byte[] iv = "47d1e060ba3c8643f9f8b65feeda4b30".HexToByteArray();
@@ -301,7 +303,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_ECB128_NoPadding()
+        public void VerifyKnownTransform_ECB128_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.ECB,
@@ -313,7 +315,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_ECB256_NoPadding()
+        public void VerifyKnownTransform_ECB256_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.ECB,
@@ -325,7 +327,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_ECB128_NoPadding_2()
+        public void VerifyKnownTransform_ECB128_NoPadding_2()
         {
             TestAesTransformDirectKey(
                 CipherMode.ECB,
@@ -337,7 +339,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_ECB128_NoPadding_3()
+        public void VerifyKnownTransform_ECB128_NoPadding_3()
         {
             TestAesTransformDirectKey(
                 CipherMode.ECB,
@@ -349,7 +351,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_ECB192_NoPadding()
+        public void VerifyKnownTransform_ECB192_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.ECB,
@@ -361,7 +363,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_ECB192_NoPadding_2()
+        public void VerifyKnownTransform_ECB192_NoPadding_2()
         {
             TestAesTransformDirectKey(
                 CipherMode.ECB,
@@ -373,7 +375,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB128_8_NoPadding()
+        public void VerifyKnownTransform_CFB128_8_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,
@@ -386,7 +388,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB128_128_NoPadding()
+        public void VerifyKnownTransform_CFB128_128_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,
@@ -399,7 +401,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CBC128_NoPadding()
+        public void VerifyKnownTransform_CBC128_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.CBC,
@@ -411,7 +413,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CBC256_NoPadding()
+        public void VerifyKnownTransform_CBC256_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.CBC,
@@ -423,7 +425,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB128_256_NoPadding()
+        public void VerifyKnownTransform_CFB128_256_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,
@@ -436,7 +438,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB8_256_NoPadding()
+        public void VerifyKnownTransform_CFB8_256_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,
@@ -449,7 +451,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CBC128_NoPadding_2()
+        public void VerifyKnownTransform_CBC128_NoPadding_2()
         {
             TestAesTransformDirectKey(
                 CipherMode.CBC,
@@ -461,7 +463,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB128_128_NoPadding_2()
+        public void VerifyKnownTransform_CFB128_128_NoPadding_2()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,
@@ -474,7 +476,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CBC128_NoPadding_3()
+        public void VerifyKnownTransform_CBC128_NoPadding_3()
         {
             TestAesTransformDirectKey(
                 CipherMode.CBC,
@@ -486,7 +488,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB128_128_NoPadding_3()
+        public void VerifyKnownTransform_CFB128_128_NoPadding_3()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,
@@ -499,7 +501,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CBC192_NoPadding()
+        public void VerifyKnownTransform_CBC192_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.CBC,
@@ -511,7 +513,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB128_192_NoPadding()
+        public void VerifyKnownTransform_CFB128_192_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,
@@ -524,7 +526,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB8_192_NoPadding()
+        public void VerifyKnownTransform_CFB8_192_NoPadding()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,
@@ -537,7 +539,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CBC192_NoPadding_2()
+        public void VerifyKnownTransform_CBC192_NoPadding_2()
         {
             TestAesTransformDirectKey(
                 CipherMode.CBC,
@@ -549,7 +551,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB128_192_NoPadding_2()
+        public void VerifyKnownTransform_CFB128_192_NoPadding_2()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,
@@ -562,7 +564,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void WrongKeyFailDecrypt()
+        public void WrongKeyFailDecrypt()
         {
             // The test:
             // Using the encrypted bytes from the AES-192-ECB test, try decrypting
@@ -608,7 +610,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void WrongKeyFailDecrypt_2()
+        public void WrongKeyFailDecrypt_2()
         {
             // The test:
             // Using the encrypted bytes from the AES-192-ECB test, try decrypting
@@ -658,7 +660,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB8_128_NoPadding_4()
+        public void VerifyKnownTransform_CFB8_128_NoPadding_4()
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT128.rsp, [ENCRYPT] COUNT=4
             // plaintext not extended
@@ -673,7 +675,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB128_128_NoPadding_4_Fails()
+        public void VerifyKnownTransform_CFB128_128_NoPadding_4_Fails()
         {
             Assert.Throws<CryptographicException>(() =>
                 TestAesTransformDirectKey(
@@ -688,7 +690,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB128_128_PKCS7_4()
+        public void VerifyKnownTransform_CFB128_128_PKCS7_4()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,
@@ -701,7 +703,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB8_128_PKCS7_4()
+        public void VerifyKnownTransform_CFB8_128_PKCS7_4()
         {
             TestAesTransformDirectKey(
                 CipherMode.CFB,
@@ -716,7 +718,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_128_NoOrZeroPadding_0_Extended(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_128_NoOrZeroPadding_0_Extended(PaddingMode paddingMode)
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT128.rsp, [ENCRYPT] COUNT=0
             // plaintext zero-extended to a full block, cipherBytes extended value
@@ -734,7 +736,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_128_NoOrZeroPadding_9_Extended(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_128_NoOrZeroPadding_9_Extended(PaddingMode paddingMode)
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT128.rsp, [ENCRYPT] COUNT=9
             // plaintext zero-extended to a full block, cipherBytes extended value
@@ -752,7 +754,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_192_NoOrZeroPadding_0_Extended(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_192_NoOrZeroPadding_0_Extended(PaddingMode paddingMode)
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT192.rsp, [ENCRYPT] COUNT=0
             // plaintext zero-extended to a full block, cipherBytes extended value
@@ -770,7 +772,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_192_NoOrZeroPadding_9_Extended(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_192_NoOrZeroPadding_9_Extended(PaddingMode paddingMode)
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT192.rsp, [ENCRYPT] COUNT=9
             // plaintext zero-extended to a full block, cipherBytes extended value
@@ -788,7 +790,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_256_NoOrZeroPadding_0_Extended(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_256_NoOrZeroPadding_0_Extended(PaddingMode paddingMode)
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT256.rsp, [ENCRYPT] COUNT=0
             // plaintext zero-extended to a full block, cipherBytes extended value
@@ -806,7 +808,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
-        public static void VerifyKnownTransform_CFB8_256_NoOrZeroPadding_9_Extended(PaddingMode paddingMode)
+        public void VerifyKnownTransform_CFB8_256_NoOrZeroPadding_9_Extended(PaddingMode paddingMode)
         {
             // NIST CAVP AESMMT.ZIP CFB8MMT256.rsp, [ENCRYPT] COUNT=9
             // plaintext zero-extended to a full block, cipherBytes extended value
@@ -822,7 +824,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB128_128_NoPadding_0()
+        public void VerifyKnownTransform_CFB128_128_NoPadding_0()
         {
             // NIST CAVP AESMMT.ZIP CFB128MMT128.rsp, [ENCRYPT] COUNT=0
             TestAesTransformDirectKey(
@@ -836,7 +838,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB128_128_NoPadding_1_Extended()
+        public void VerifyKnownTransform_CFB128_128_NoPadding_1_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB128MMT128.rsp, [ENCRYPT] COUNT=1
             TestAesTransformDirectKey(
@@ -850,7 +852,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB128_192_NoPadding_0_Extended()
+        public void VerifyKnownTransform_CFB128_192_NoPadding_0_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB128MMT192.rsp, [ENCRYPT] COUNT=0
             TestAesTransformDirectKey(
@@ -864,7 +866,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB128_192_NoPadding_1_Extended()
+        public void VerifyKnownTransform_CFB128_192_NoPadding_1_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB128MMT192.rsp, [ENCRYPT] COUNT=1
             TestAesTransformDirectKey(
@@ -882,7 +884,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [InlineData(CipherMode.CFB, 128)]
         [InlineData(CipherMode.CFB, 8)]
         [InlineData(CipherMode.ECB, 0)]
-        public static void EncryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        public void EncryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
         {
             // AppleCCCryptor does not allow calling Reset on CFB cipher.
             // this test validates that the behavior is taken into consideration.
@@ -912,7 +914,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [InlineData(CipherMode.CFB, 128)]
         [InlineData(CipherMode.CFB, 8)]
         [InlineData(CipherMode.ECB, 0)]
-        public static void DecryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        public void DecryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
         {
             // AppleCCCryptor does not allow calling Reset on CFB cipher.
             // this test validates that the behavior is taken into consideration.
@@ -943,7 +945,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB128_256_NoPadding_0_Extended()
+        public void VerifyKnownTransform_CFB128_256_NoPadding_0_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB128MMT256.rsp, [ENCRYPT] COUNT=0
             TestAesTransformDirectKey(
@@ -957,7 +959,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKnownTransform_CFB128_256_NoPadding_1_Extended()
+        public void VerifyKnownTransform_CFB128_256_NoPadding_1_Extended()
         {
             // NIST CAVP AESMMT.ZIP CFB128MMT256.rsp, [ENCRYPT] COUNT=1
             TestAesTransformDirectKey(
@@ -981,7 +983,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
         [Theory]
         [MemberData(nameof(AesZeroPadData))]
-        public static void AesZeroPad(CipherMode cipherMode)
+        public void AesZeroPad(CipherMode cipherMode)
         {
             byte[] decryptedBytes;
             byte[] expectedAnswer;
@@ -1026,7 +1028,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void StableEncryptDecrypt()
+        public void StableEncryptDecrypt()
         {
             byte[] encrypted;
             byte[] encrypted2;
@@ -1094,7 +1096,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             Assert.Equal(s_multiBlockBytes, decryptedBytes);
         }
 
-        private static void TestAesDecrypt(
+        private void TestAesDecrypt(
             CipherMode mode,
             byte[] key,
             byte[] iv,
@@ -1144,7 +1146,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
-        private static void TestAesTransformDirectKey(
+        private void TestAesTransformDirectKey(
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,
@@ -1232,7 +1234,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void EncryptWithLargeOutputBuffer(bool blockAlignedOutput)
+        public void EncryptWithLargeOutputBuffer(bool blockAlignedOutput)
         {
             using (Aes alg = AesFactory.Create())
             using (ICryptoTransform xform = alg.CreateEncryptor())
@@ -1261,7 +1263,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(false, false)]
-        public static void TransformWithTooShortOutputBuffer(bool encrypt, bool blockAlignedOutput)
+        public void TransformWithTooShortOutputBuffer(bool encrypt, bool blockAlignedOutput)
         {
             // The CreateDecryptor call reads the Key/IV property to initialize them, bypassing an
             // uninitialized state protection.
@@ -1284,7 +1286,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void MultipleBlockDecryptTransform(bool blockAlignedOutput)
+        public void MultipleBlockDecryptTransform(bool blockAlignedOutput)
         {
             const string ExpectedOutput = "This is a 128-bit block test";
 

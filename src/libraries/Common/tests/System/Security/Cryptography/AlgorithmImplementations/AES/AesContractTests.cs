@@ -10,10 +10,12 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
     using Aes = System.Security.Cryptography.Aes;
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class AesContractTests
+    public abstract class AesContractTests
     {
+        protected abstract AesProvider AesFactory { get; }
+
         [Fact]
-        public static void VerifyDefaults()
+        public void VerifyDefaults()
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -26,7 +28,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void LegalBlockSizes()
+        public void LegalBlockSizes()
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -44,7 +46,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void LegalKeySizes()
+        public void LegalKeySizes()
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -67,7 +69,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [InlineData(384, false)]       // too large
         // Skip on .NET Framework because change is not ported https://github.com/dotnet/runtime/issues/21236
         [InlineData(536870928, true)] // number of bits overflows and wraps around to a valid size
-        public static void InvalidKeySizes(int invalidKeySize, bool skipOnNetfx)
+        public void InvalidKeySizes(int invalidKeySize, bool skipOnNetfx)
         {
             if (skipOnNetfx && PlatformDetection.IsNetFramework)
                 return;
@@ -114,7 +116,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [InlineData(64, false)]
         [InlineData(256, true)]
         [InlineData(127, true)]
-        public static void InvalidCFBFeedbackSizes(int feedbackSize, bool discoverableInSetter)
+        public void InvalidCFBFeedbackSizes(int feedbackSize, bool discoverableInSetter)
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -146,7 +148,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(8)]
         [InlineData(128)]
-        public static void ValidCFBFeedbackSizes(int feedbackSize)
+        public void ValidCFBFeedbackSizes(int feedbackSize)
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -167,7 +169,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [InlineData(129, false)]       // larger than default BlockSize
         // Skip on .NET Framework because change is not ported https://github.com/dotnet/runtime/issues/21236
         [InlineData(536870928, true)] // number of bits overflows and wraps around to default BlockSize
-        public static void InvalidIVSizes(int invalidIvSize, bool skipOnNetfx)
+        public void InvalidIVSizes(int invalidIvSize, bool skipOnNetfx)
         {
             if (skipOnNetfx && PlatformDetection.IsNetFramework)
                 return;
@@ -198,7 +200,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void SetKey_SetsKey()
+        public void SetKey_SetsKey()
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -211,7 +213,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void SetKey_SetsKeySize()
+        public void SetKey_SetsKeySize()
         {
             Span<byte> bigKey = stackalloc byte[32];
             RandomNumberGenerator.Fill(bigKey);
@@ -232,7 +234,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public static void ReadKeyAfterDispose(bool setProperty)
+        public void ReadKeyAfterDispose(bool setProperty)
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -260,7 +262,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKeyGeneration_Default()
+        public void VerifyKeyGeneration_Default()
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -269,7 +271,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKeyGeneration_128()
+        public void VerifyKeyGeneration_128()
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -279,7 +281,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKeyGeneration_192()
+        public void VerifyKeyGeneration_192()
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -289,7 +291,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyKeyGeneration_256()
+        public void VerifyKeyGeneration_256()
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -299,7 +301,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void VerifyIVGeneration()
+        public void VerifyIVGeneration()
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -319,7 +321,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void ValidateEncryptorProperties()
+        public void ValidateEncryptorProperties()
         {
             using (Aes aes = AesFactory.Create())
             using (ICryptoTransform encryptor = aes.CreateEncryptor())
@@ -330,7 +332,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "In .NET Framework AesCryptoServiceProvider requires a set key and throws otherwise. See https://github.com/dotnet/runtime/issues/21393.")]
-        public static void ValidateDecryptorProperties()
+        public void ValidateDecryptorProperties()
         {
             using (Aes aes = AesFactory.Create())
             using (ICryptoTransform decryptor = aes.CreateDecryptor())
@@ -340,7 +342,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void CreateTransformExceptions()
+        public void CreateTransformExceptions()
         {
             byte[] key;
             byte[] iv;
@@ -394,7 +396,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void ValidateOffsetAndCount()
+        public void ValidateOffsetAndCount()
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -450,7 +452,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void Cfb8ModeCanDepadCfb128Padding()
+        public void Cfb8ModeCanDepadCfb128Padding()
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -472,7 +474,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [InlineData(128)]
         [InlineData(192)]
         [InlineData(256)]
-        public static void SetKeySize_MakesRandomKey(int keySize)
+        public void SetKeySize_MakesRandomKey(int keySize)
         {
             for (int i = 0; i < 2; i++)
             {
