@@ -77,7 +77,7 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
                 _target,
                 typeName,
                 _typeHandle,
-                TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
+                TypeNameFormat.FormatNamespace);
 
             OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, typeName.ToString());
             if (nameBuf is not null && bufLen < typeName.Length + 1)
