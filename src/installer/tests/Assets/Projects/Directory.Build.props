@@ -10,6 +10,15 @@
     <ArtifactsBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin'))</ArtifactsBinDir>
   </PropertyGroup>
 
+  <!-- Import Versions.props to get MajorVersion/MinorVersion for NetCoreAppCurrentVersion -->
+  <Import Project="$(RepositoryEngineeringDir)Versions.props" />
+
+  <!-- Define the target framework version these test assets should build against -->
+  <PropertyGroup>
+    <NetCoreAppCurrentVersion Condition="'$(NetCoreAppCurrentVersion)' == ''">$(MajorVersion).$(MinorVersion)</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
+  </PropertyGroup>
+
   <PropertyGroup>
     <MicrosoftNetCoreAppRefPackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.ref'))</MicrosoftNetCoreAppRefPackDir>
     <MicrosoftNetCoreAppRefPackRefDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'ref', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRefPackRefDir>
@@ -21,11 +30,7 @@
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
   </PropertyGroup>
 
-  <!-- Define the target framework version these test assets should build against -->
   <PropertyGroup>
-    <!-- This should match NetCoreAppCurrentVersion in the repo root Directory.Build.props -->
-    <NetCoreAppCurrentVersion>10.0</NetCoreAppCurrentVersion>
-    <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
     <!-- Allow nullable, but don't check for correctness -->
     <Nullable>annotations</Nullable>
     <RunAnalyzers>false</RunAnalyzers>
