@@ -316,7 +316,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 await server.AcceptConnectionAsync(async connection =>
                 {
-                    var requestData = await connection.ReadRequestDataAsync();
+                    await connection.ReadRequestDataAsync();
                     serverTcs.SetResult();
                     await clientTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
                     await connection.SendResponseAsync();

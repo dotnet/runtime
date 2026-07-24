@@ -5,7 +5,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using System.Threading;
 
 namespace System.Net.Http.Metrics
 {
@@ -30,7 +29,7 @@ namespace System.Net.Http.Metrics
             Port = port;
             IsIdle = isIdle;
             PeerAddress = peerAddress;
-            _hashCode = HashCode.Combine(protocolVersion, scheme, host, port, isIdle);
+            _hashCode = HashCode.Combine(protocolVersion, scheme, host, port, isIdle, peerAddress);
         }
 
         public bool Equals(OpenConnectionsTagKey other) =>
