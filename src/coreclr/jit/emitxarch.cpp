@@ -2208,15 +2208,16 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
         return true;
     }
 
-    if (ins >= INS_imul_16 && ins <= INS_imul_31)
-    {
-        // The instructions have implicit use of EGPRs.
-        return true;
-    }
-
     if (id->idIsApxPpxContextSet())
     {
         // The instruction uses PPX hint, and it requires REX2.
+        return true;
+    }
+
+    if ((ins >= INS_imul_16 && ins <= INS_imul_31) || (ins == INS_jmpabs))
+    {
+        // These instructions either have implicit use of EGPRs or in case on jmpabs,
+        // it is a special case that requires REX2 encoding.
         return true;
     }
 
@@ -7397,6 +7398,12 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val)
         case INS_push:
             sz = valInByte ? 2 : 5;
             break;
+
+#ifdef TARGET_AMD64
+        case INS_jmpabs:
+            sz = 9;
+            break;
+#endif // TARGET_AMD64
 
         default:
             NO_WAY("unexpected instruction");
@@ -17280,7 +17287,6 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
     emitAttr    size      = id->idOpSize();
     ssize_t     val       = emitGetInsSC(id);
     bool        valInByte = ((signed char)val == (target_ssize_t)val);
-
     // We would to update GC info correctly
     assert(!IsSSEInstruction(ins));
     assert(!IsSimdVexOrEvexEncodableInstruction(ins));
@@ -17356,6 +17362,19 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
                 }
             }
             break;
+
+#ifdef TARGET_AMD64
+        case INS_jmpabs:
+        {
+            assert(TakesRex2Prefix(id));
+            code = insCodeMI(ins);
+            code = AddRex2Prefix(ins, code);
+            dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
+            dst += emitOutputByte(dst, code);
+            dst += emitOutputSizeT(dst, val);
+        }
+        break;
+#endif // TARGET_AMD64
 
         default:
             assert(!"unexpected instruction");
