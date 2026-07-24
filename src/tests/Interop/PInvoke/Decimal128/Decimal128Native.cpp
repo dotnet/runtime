@@ -9,9 +9,11 @@
 
 // Decimal128 is treated here purely as a 16-byte, 16-byte-aligned blob of two uint64 halves.
 // This mirrors the native _Decimal128 ABI packing without requiring decimal arithmetic support
-// (which MSVC lacks), and lets us validate that the managed 16-byte alignment matches native.
+// (which MSVC and Clang lack), and lets us validate that the managed 16-byte alignment matches
+// native. ARM32 is excluded to match the managed rule, which keeps the natural 8-byte alignment
+// there as no _Decimal128 exists in its Procedure Call Standard.
 struct
-#if defined(_M_ARM64) || defined(_M_AMD64) || defined(_M_IX86)
+#if !defined(TARGET_ARM)
 alignas(16)
 #endif
 Decimal128 {
