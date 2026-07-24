@@ -535,11 +535,12 @@ PALEXPORT int32_t SystemNative_ChMod(const char* path, int32_t mode);
 PALEXPORT int32_t SystemNative_FChMod(intptr_t fd, int32_t mode);
 
 /**
- * Flushes all modified data and attribtues of the specified File Descriptor to the storage medium.
+ * Flushes all modified data and attributes of the specified File Descriptor to the storage medium.
+ * On macOS, attempts F_FULLFSYNC when useFullFSync is non-zero, falling back to fsync on failure.
  *
  * Returns 0 for success; on fail, -1 is returned and errno is set.
  */
-PALEXPORT int32_t SystemNative_FSync(intptr_t fd);
+PALEXPORT int32_t SystemNative_FSync(intptr_t fd, int32_t useFullFSync);
 
 /**
  * Changes the advisory lock status on a given File Descriptor

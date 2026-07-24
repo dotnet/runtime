@@ -787,21 +787,26 @@ int32_t SystemNative_FChMod(intptr_t fd, int32_t mode)
 #endif /* HAVE_FCHMOD */
 }
 
-int32_t SystemNative_FSync(intptr_t fd)
+int32_t SystemNative_FSync(intptr_t fd, int32_t useFullFSync)
 {
     int fileDescriptor = ToFileDescriptor(fd);
 
     int32_t result;
 #ifdef TARGET_OSX
-    while ((result = fcntl(fileDescriptor, F_FULLFSYNC)) < 0 && errno == EINTR);
-    if (result >= 0)
+    if (useFullFSync)
     {
-        return result;
-    }
+        while ((result = fcntl(fileDescriptor, F_FULLFSYNC)) < 0 && errno == EINTR);
+        if (result >= 0)
+        {
+            return result;
+        }
 
-    // F_FULLFSYNC is not supported on all file systems and handle types (e.g.,
-    // network file systems, read-only handles). Fall back to fsync.
-    // For genuine I/O errors (e.g., EIO), fsync will also fail and propagate the error.
+        // F_FULLFSYNC is not supported on all file systems and handle types (e.g.,
+        // network file systems, read-only handles). Fall back to fsync.
+        // For genuine I/O errors (e.g., EIO), fsync will also fail and propagate the error.
+    }
+#else
+    (void)useFullFSync;
 #endif
     while ((result = fsync(fileDescriptor)) < 0 && errno == EINTR);
     return result;

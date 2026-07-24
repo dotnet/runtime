@@ -39,7 +39,7 @@ namespace System.IO.Strategies
         /// <summary>Flushes the file's OS buffer.</summary>
         internal static void FlushToDisk(SafeFileHandle handle)
         {
-            if (Interop.Sys.FSync(handle) < 0)
+            if (Interop.Sys.FSync(handle, handle.UseFullFSync) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)

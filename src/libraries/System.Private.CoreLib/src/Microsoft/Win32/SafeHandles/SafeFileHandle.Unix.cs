@@ -41,8 +41,34 @@ namespace Microsoft.Win32.SafeHandles
         private NullableBool _canSeek /* = NullableBool.Undefined */;
         private NullableBool _supportsRandomAccess /* = NullableBool.Undefined */;
         private NullableBool _isAsync /* = NullableBool.Undefined */;
+        // Lazily initialized on Apple platforms (macOS, iOS, tvOS, Mac Catalyst).
+        // True = use F_FULLFSYNC.
+        // False = skip F_FULLFSYNC because the probe indicates the file system should avoid it
+        // (e.g., NFS/SMB/CIFS/SMB2, or when the probe fails).
+        // Stays Undefined until first queried; UseFullFSync treats Undefined as True.
+        // See https://github.com/dotnet/runtime/issues/124722.
+        private NullableBool _useFullFsync /* = NullableBool.Undefined */;
         private bool _deleteOnClose;
         private bool _isLocked;
+
+        // Returns true when F_FULLFSYNC should be attempted. Returns false when
+        // FileSystemSupportsLocking(LOCK_SH, accessWrite: true) reports the file system as unsupported
+        // for this probe, which includes known network file systems and probe failures.
+        // The value is only used on Apple platforms; native code ignores it on other platforms.
+        // Lazily computed and cached on first access to avoid a syscall for callers that never flush to disk.
+        internal bool UseFullFSync
+        {
+            get
+            {
+                NullableBool useFullFsync = _useFullFsync;
+                if (useFullFsync == NullableBool.Undefined && !IsClosed && OperatingSystem.IsApplePlatform())
+                {
+                    _useFullFsync = useFullFsync = Interop.Sys.FileSystemSupportsLocking(this, Interop.Sys.LockOperations.LOCK_SH, accessWrite: true)
+                        ? NullableBool.True : NullableBool.False;
+                }
+                return useFullFsync != NullableBool.False;
+            }
+        }
 
         public SafeFileHandle() : this(ownsHandle: true)
         {
@@ -461,6 +487,7 @@ namespace Microsoft.Win32.SafeHandles
                     return false;
                 }
             }
+
             // Enable DeleteOnClose when we've successfully locked the file.
             // On Windows, the locking happens atomically as part of opening the file.
             _deleteOnClose = (options & FileOptions.DeleteOnClose) != 0;
