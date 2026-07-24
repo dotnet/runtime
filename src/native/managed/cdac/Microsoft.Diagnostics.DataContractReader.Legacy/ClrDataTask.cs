@@ -157,7 +157,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            uint revisionLocal;
+            uint revisionLocal = 0;
             int hrLocal = _legacyImpl.Request(
                 reqCode,
                 inBufferSize,
