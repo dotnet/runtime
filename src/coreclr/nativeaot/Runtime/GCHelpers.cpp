@@ -774,6 +774,14 @@ EXTERN_C void QCALLTYPE RhUnregisterFrozenSegment(void* pSegmentHandle)
     GCHeapUtilities::GetGCHeap()->UnregisterFrozenSegment((segment_handle)pSegmentHandle);
 }
 
+// The MethodTable the GC uses to mark a range of memory as unused. It is needed to keep
+// the frozen object heap walkable when it pads objects to align their data.
+EXTERN_C void* QCALLTYPE RhGetFreeObjectMethodTable()
+{
+    ASSERT(g_pFreeObjectEEType != nullptr);
+    return g_pFreeObjectEEType;
+}
+
 FCIMPL1(uint32_t, RhGetGCDescSize, MethodTable* pMT)
 {
     if (!pMT->ContainsGCPointersOrCollectible())

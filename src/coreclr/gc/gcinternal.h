@@ -1214,36 +1214,25 @@ size_t AlignQword (size_t nbytes)
 #endif // FEATURE_STRUCTALIGN
 }
 
-// Objects on the large object heap are placed such that their data is aligned on this
-// boundary. The data of an object is where the payload of an array starts, i.e. it is
-// sizeof(ArrayBase) bytes into the object. 0 means the padding is disabled and objects
-// are only aligned the way the heap aligns everything else.
-//
-// Note that a string keeps its characters at a smaller offset than an array keeps its
-// data (4 bytes less on 64 bit) and objects are only aligned on a pointer boundary, so
-// the characters of a string end up that far short of the boundary.
-extern size_t loh_data_alignment;
+// Objects on the LOH and the POH are padded so that their data - sizeof(ArrayBase) into
+// the object, where the elements of an array start - is aligned on this boundary.
+// 0 disables the padding.
+extern size_t uoh_data_alignment;
 
-// The maximal value we accept for loh_data_alignment. Padding is inserted per object so
-// this directly limits how much memory an allocation on the LOH can waste. It is also
-// capped by the number of bits available to remember the padding of an object while the
-// LOH is being compacted, see loh_set_node_relocation_distance.
-const size_t max_loh_data_alignment = 64;
+// Bounded by the 3 bits loh_set_node_relocation_distance has to remember the padding.
+const size_t max_uoh_data_alignment = 64;
 
-// Where the data of an object starts, relative to the beginning of the object.
-inline size_t loh_data_offset()
+inline size_t uoh_data_offset()
 {
     return sizeof (ArrayBase);
 }
 
-// Returns the amount of padding to insert at alloc_start so that the object allocated
-// right after that padding has its data aligned on loh_data_alignment. min_pad is the
-// padding the caller needs in front of the object regardless of the alignment (LOH
-// compaction stores the relocation distance of an object in front of it). The result is
-// always >= min_pad and, when it's not 0, is big enough to be made into a free object.
-inline size_t loh_alignment_pad (uint8_t* alloc_start, size_t min_pad)
+// Padding to insert at alloc_start so that the object placed after it has aligned data.
+// min_pad is what the caller needs there anyway (the LOH keeps a relocation distance in
+// front of every object). The result is >= min_pad and, unless 0, can be a free object.
+inline size_t uoh_alignment_pad (uint8_t* alloc_start, size_t min_pad)
 {
-    size_t alignment = loh_data_alignment;
+    size_t alignment = uoh_data_alignment;
     if (alignment == 0)
     {
         return min_pad;
@@ -1252,13 +1241,12 @@ inline size_t loh_alignment_pad (uint8_t* alloc_start, size_t min_pad)
     assert (AlignQword (alignment) == alignment);
 
     size_t pad = min_pad;
-    size_t misaligned = ((size_t)alloc_start + pad + loh_data_offset()) & (alignment - 1);
+    size_t misaligned = ((size_t)alloc_start + pad + uoh_data_offset()) & (alignment - 1);
     if (misaligned != 0)
     {
         pad += alignment - misaligned;
     }
 
-    // The padding is formatted as a free object so it can't be smaller than one.
     if ((pad != 0) && (pad < AlignQword (min_obj_size)))
     {
         pad += alignment;
@@ -3454,10 +3442,8 @@ size_t node_gap_size (uint8_t* node)
     return ((plug_and_gap*)node)[-1].gap;
 }
 
-// The relocation distance of an object on the LOH is always a multiple of 8 (everything
-// on the LOH is 8 byte aligned) so the low 3 bits are used to remember how much padding,
-// on top of the padding every object on the LOH has in front of it, plan_loh reserved
-// before the object to align its data. This is what limits max_loh_data_alignment.
+// The distance is always a multiple of 8, so the low 3 bits keep the extra padding
+// plan_loh reserved in front of the object to align its data, in 8 byte units.
 inline
 ptrdiff_t loh_node_relocation_distance(uint8_t* node)
 {

@@ -1857,8 +1857,7 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
 #ifdef BACKGROUND_GC
     else if (seg)
     {
-        // uoh_pad is the padding we made in front of the object on a UOH, it's part of
-        // this allocation as well.
+        // uoh_pad is part of this allocation too.
         uint8_t* old_allocated = heap_segment_allocated (seg) - plug_skew - limit_size - uoh_pad;
 
         assert (heap_segment_used (seg) >= old_allocated);
@@ -2494,13 +2493,12 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
     allocator* allocator = generation_allocator (gen);
 
 #ifdef FEATURE_LOH_COMPACTION
-    // LOH compaction stores the relocation distance of an object right in front of it so
-    // we always leave this much space before an object on the LOH.
+    // LOH compaction keeps the relocation distance of an object right in front of it.
     size_t base_pad = (gen_number == loh_generation) ? Align (loh_padding_obj_size, align_const) : 0;
 #else
     size_t base_pad = 0;
 #endif //FEATURE_LOH_COMPACTION
-    size_t loh_pad = base_pad;
+    size_t uoh_pad = base_pad;
 
 #ifdef BACKGROUND_GC
     int cookie = -1;
@@ -2516,15 +2514,11 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
 
             size_t free_list_size = unused_array_size(free_list);
 
-            if (gen_number == loh_generation)
-            {
-                // Grow the padding so the data of the object we are about to allocate ends
-                // up aligned.
-                loh_pad = loh_alignment_pad (free_list, base_pad);
-            }
+            // Grow the padding so that the data of the object ends up aligned.
+            uoh_pad = uoh_alignment_pad (free_list, base_pad);
 
-            // size already accounts for base_pad, the alignment padding comes on top of it.
-            size_t alloc_size = size + (loh_pad - base_pad);
+            // size already accounts for base_pad, the alignment padding comes on top.
+            size_t alloc_size = size + (uoh_pad - base_pad);
 
             ptrdiff_t diff = free_list_size - alloc_size - base_pad;
 
@@ -2549,13 +2543,13 @@ BOOL gc_heap::a_fit_free_list_uoh_p (size_t size,
                 dd_new_allocation (dynamic_data_of (gen_number)) -= limit;
 
                 size_t saved_free_list_size = free_list_size;
-                if (loh_pad)
+                if (uoh_pad)
                 {
-                    make_unused_array (free_list, loh_pad);
-                    generation_free_obj_space (gen) += loh_pad;
-                    limit -= loh_pad;
-                    free_list += loh_pad;
-                    free_list_size -= loh_pad;
+                    make_unused_array (free_list, uoh_pad);
+                    generation_free_obj_space (gen) += uoh_pad;
+                    limit -= uoh_pad;
+                    free_list += uoh_pad;
+                    free_list_size -= uoh_pad;
                 }
 
                 uint8_t*  remain = (free_list + limit);
@@ -2626,23 +2620,22 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
     size_t pad = Align (min_obj_size, align_const);
 
 #ifdef FEATURE_LOH_COMPACTION
-    // LOH compaction stores the relocation distance of an object right in front of it so
-    // we always leave this much space before an object on the LOH.
-    size_t loh_pad = (gen_number == loh_generation) ? Align (loh_padding_obj_size, align_const) : 0;
+    // LOH compaction keeps the relocation distance of an object right in front of it.
+    size_t uoh_pad = (gen_number == loh_generation) ? Align (loh_padding_obj_size, align_const) : 0;
 #else
-    size_t loh_pad = 0;
+    size_t uoh_pad = 0;
 #endif //FEATURE_LOH_COMPACTION
 
-    // size already accounts for the base padding, the padding we may need to align the
-    // data of the object comes on top of it.
+    // size already accounts for the base padding, the padding needed to align the data of
+    // the object comes on top.
     size_t alloc_size = size;
 
-    if (gen_number == loh_generation)
+    if (gen_number >= uoh_start_generation)
     {
-        size_t aligned_loh_pad = loh_alignment_pad (allocated, loh_pad);
-        alloc_size += (aligned_loh_pad - loh_pad);
-        loh_pad = aligned_loh_pad;
-        pad += loh_pad;
+        size_t aligned_pad = uoh_alignment_pad (allocated, uoh_pad);
+        alloc_size += (aligned_pad - uoh_pad);
+        uoh_pad = aligned_pad;
+        pad += uoh_pad;
     }
 
     uint8_t* end = heap_segment_committed (seg) - pad;
@@ -2705,12 +2698,12 @@ found_fit:
     }
 #endif //BACKGROUND_GC
 
-    if (loh_pad != 0)
+    if (uoh_pad != 0)
     {
-        make_unused_array (allocated, loh_pad);
-        generation_free_obj_space (generation_of (gen_number)) += loh_pad;
-        allocated += loh_pad;
-        limit -= loh_pad;
+        make_unused_array (allocated, uoh_pad);
+        generation_free_obj_space (generation_of (gen_number)) += uoh_pad;
+        allocated += uoh_pad;
+        limit -= uoh_pad;
     }
 
 #if defined (VERIFY_HEAP) && defined (_DEBUG)
@@ -2765,7 +2758,7 @@ found_fit:
 #endif
 
         allocated += limit;
-        adjust_limit_clr (old_alloc, limit, size, acontext, flags, seg, align_const, gen_number, loh_pad);
+        adjust_limit_clr (old_alloc, limit, size, acontext, flags, seg, align_const, gen_number, uoh_pad);
     }
 
     return TRUE;
@@ -5813,8 +5806,8 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
 
     assert (obj != 0);
     assert ((size_t)obj == Align ((size_t)obj, align_const));
-    assert ((gen_number != loh_generation) || (loh_data_alignment == 0) ||
-            ((((size_t)obj + loh_data_offset()) & (loh_data_alignment - 1)) == 0));
+    assert ((uoh_data_alignment == 0) ||
+            ((((size_t)obj + uoh_data_offset()) & (uoh_data_alignment - 1)) == 0));
 
     return obj;
 }

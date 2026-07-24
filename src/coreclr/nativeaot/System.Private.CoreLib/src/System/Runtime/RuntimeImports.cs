@@ -150,6 +150,9 @@ namespace System.Runtime
         [LibraryImport(RuntimeLibrary)]
         internal static partial void RhUnregisterFrozenSegment(IntPtr pSegmentHandle);
 
+        [LibraryImport(RuntimeLibrary)]
+        internal static unsafe partial void* RhGetFreeObjectMethodTable();
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhRegisterForFullGCNotification")]
         internal static extern bool RhRegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold);

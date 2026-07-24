@@ -4,6 +4,7 @@
 using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 using Debug = System.Diagnostics.Debug;
@@ -19,10 +20,18 @@ namespace Internal.Runtime
         private readonly Lock m_Crst = new Lock(useTrivialWaits: true);
         private FrozenObjectSegment m_CurrentSegment;
 
+        // The MethodTable the GC uses to mark a range of memory as unused, it is what the
+        // gaps we leave to align the data of large arrays are formatted as.
+        private static readonly MethodTable* s_freeObjectMethodTable =
+            (MethodTable*)RuntimeImports.RhGetFreeObjectMethodTable();
+
         // Default size to reserve for a frozen segment
         private const nuint FOH_SEGMENT_DEFAULT_SIZE = 4 * 1024 * 1024;
         // Size to commit on demand in that reserved space
         private const nuint FOH_COMMIT_SIZE = 64 * 1024;
+        // The data of arrays at least this big is aligned on FOH_DATA_ALIGNMENT
+        private const nuint FOH_MIN_SIZE_TO_ALIGN = 512;
+        private const nuint FOH_DATA_ALIGNMENT = 64;
 
         public T? TryAllocateObject<T>() where T : class
         {
@@ -162,6 +171,10 @@ namespace Internal.Runtime
                 Debug.Assert(objectSize <= FOH_COMMIT_SIZE);
                 Debug.Assert(m_pCurrent >= m_pStart + sizeof(ObjHeader));
 
+                // Gap to leave in front of the object so that its data ends up aligned.
+                nuint pad = GetAlignmentPadding(type, objectSize);
+                nuint totalSize = pad + objectSize;
+
                 nuint spaceUsed = (nuint)(m_pCurrent - m_pStart);
                 nuint spaceLeft = m_Size - spaceUsed;
 
@@ -169,13 +182,13 @@ namespace Internal.Runtime
                 Debug.Assert(spaceLeft >= (nuint)sizeof(ObjHeader));
 
                 // Test if we have a room for the given object (including extra sizeof(ObjHeader) for next object)
-                if (spaceLeft - (nuint)sizeof(ObjHeader) < objectSize)
+                if (spaceLeft - (nuint)sizeof(ObjHeader) < totalSize)
                 {
                     return null;
                 }
 
                 // Check if we need to commit a new chunk
-                if (spaceUsed + objectSize + (nuint)sizeof(ObjHeader) > m_SizeCommitted)
+                while (spaceUsed + totalSize + (nuint)sizeof(ObjHeader) > m_SizeCommitted)
                 {
                     // Make sure we don't go out of bounds during this commit
                     Debug.Assert(m_SizeCommitted + FOH_COMMIT_SIZE <= m_Size);
@@ -187,6 +200,15 @@ namespace Internal.Runtime
                     m_SizeCommitted += FOH_COMMIT_SIZE;
                 }
 
+                if (pad != 0)
+                {
+                    // The gap has to stay walkable, so it is formatted as a free object.
+                    HalfBakedObject* filler = (HalfBakedObject*)m_pCurrent;
+                    filler->SetMethodTable(s_freeObjectMethodTable);
+                    filler->SetNumComponents((uint)(pad - ArrayBaseBaseSize));
+                    m_pCurrent += pad;
+                }
+
                 HalfBakedObject* obj = (HalfBakedObject*)m_pCurrent;
                 obj->SetMethodTable(type);
 
@@ -196,12 +218,43 @@ namespace Internal.Runtime
 
                 return obj;
             }
+
+            // Objects that only get accessed through their data (arrays) benefit from having
+            // that data start on a cache line, as long as they are big enough for the padding
+            // to pay off.
+            private nuint GetAlignmentPadding(MethodTable* type, nuint objectSize)
+            {
+                if ((objectSize < FOH_MIN_SIZE_TO_ALIGN) || !type->HasComponentSize)
+                {
+                    return 0;
+                }
+
+                nuint dataAddr = (nuint)m_pCurrent + ArrayBaseSize;
+                nuint pad = (FOH_DATA_ALIGNMENT - (dataAddr & (FOH_DATA_ALIGNMENT - 1))) & (FOH_DATA_ALIGNMENT - 1);
+
+                // The gap is formatted as a free object so it can't be smaller than one.
+                if ((pad != 0) && (pad < ArrayBaseBaseSize))
+                {
+                    pad += FOH_DATA_ALIGNMENT;
+                }
+
+                return pad;
+            }
+
+            // Where the first element of an array sits relative to the object pointer, and
+            // the size of an element-less array including its header.
+            private static nuint ArrayBaseSize =>
+                ((nuint)(sizeof(IntPtr) + sizeof(int)) + (nuint)sizeof(IntPtr) - 1) & ~((nuint)sizeof(IntPtr) - 1);
+            private static nuint ArrayBaseBaseSize => ArrayBaseSize + (nuint)sizeof(ObjHeader);
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         private struct HalfBakedObject
         {
             private MethodTable* _methodTable;
+            private uint _numComponents;
             public void SetMethodTable(MethodTable* methodTable) => _methodTable = methodTable;
+            public void SetNumComponents(uint numComponents) => _numComponents = numComponents;
         }
     }
 }

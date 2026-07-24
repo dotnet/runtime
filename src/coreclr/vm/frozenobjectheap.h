@@ -50,6 +50,7 @@ public:
 private:
     Object* GetFirstObject() const;
     Object* GetNextObject(Object* obj) const;
+    size_t GetAlignmentPadding(PTR_MethodTable type, size_t objectSize) const;
 
     // Start of the reserved memory, the first object starts at "m_pStart + sizeof(ObjHeader)" (its pMT)
     uint8_t* m_pStart;

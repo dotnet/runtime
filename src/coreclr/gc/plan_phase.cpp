@@ -2139,8 +2139,7 @@ BOOL gc_heap::loh_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* allo
         alloc_limit,
         (alloc_limit - alloc_pointer)));
 
-    // The padding in front of the object is what it takes to align its data.
-    size_t pad = loh_alignment_pad (alloc_pointer, AlignQword (loh_padding_obj_size));
+    size_t pad = uoh_alignment_pad (alloc_pointer, AlignQword (loh_padding_obj_size));
 
     // If it's at the end, we don't need to allocate the tail padding
     if (!end_p)
@@ -2203,7 +2202,7 @@ retry:
                 {
                     if (loh_size_fit_p (size, generation_allocation_pointer (gen), heap_segment_reserved (seg), true) &&
                         (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size +
-                            loh_alignment_pad (generation_allocation_pointer (gen), AlignQword (loh_padding_obj_size))))))
+                            uoh_alignment_pad (generation_allocation_pointer (gen), AlignQword (loh_padding_obj_size))))))
                     {
                         dprintf (1235, ("growing seg from %p to %p\n", heap_segment_committed (seg),
                                          (generation_allocation_pointer (gen) + size)));
@@ -2275,10 +2274,9 @@ retry:
                 heap_segment_mem (generation_allocation_segment (gen)));
         uint8_t* result = generation_allocation_pointer (gen);
         size_t base_pad = AlignQword (loh_padding_obj_size);
-        size_t loh_pad = loh_alignment_pad (result, base_pad);
+        size_t loh_pad = uoh_alignment_pad (result, base_pad);
 
-        // compact_loh needs to know how big the padding in front of the object is, the
-        // part of it that isn't the fixed padding is remembered with the object.
+        // compact_loh can't recompute this, so it is remembered with the object.
         *alignment_pad = loh_pad - base_pad;
 
         generation_allocation_pointer (gen) += size + loh_pad;

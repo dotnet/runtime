@@ -8,6 +8,9 @@
 #define FOH_SEGMENT_DEFAULT_SIZE (4 * 1024 * 1024)
 // Size to commit on demand in that reserved space
 #define FOH_COMMIT_SIZE (64 * 1024)
+// The data of arrays at least this big is aligned on FOH_DATA_ALIGNMENT
+#define FOH_MIN_SIZE_TO_ALIGN 512
+#define FOH_DATA_ALIGNMENT 64
 
 FrozenObjectHeapManager::FrozenObjectHeapManager():
     m_Crst(CrstFrozenObjectHeap, CRST_UNSAFE_ANYMODE),
@@ -213,6 +216,10 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
     _ASSERT(objectSize <= FOH_COMMIT_SIZE);
     _ASSERT(m_pCurrent >= m_pStart + sizeof(ObjHeader));
 
+    // Gap to leave in front of the object so that its data ends up aligned.
+    const size_t pad = GetAlignmentPadding(type, objectSize);
+    const size_t totalSize = pad + objectSize;
+
     const size_t spaceUsed = (size_t)(m_pCurrent - m_pStart);
     const size_t spaceLeft = m_Size - spaceUsed;
 
@@ -220,13 +227,13 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
     _ASSERT(spaceLeft >= sizeof(ObjHeader));
 
     // Test if we have a room for the given object (including extra sizeof(ObjHeader) for next object)
-    if (spaceLeft - sizeof(ObjHeader) < objectSize)
+    if (spaceLeft - sizeof(ObjHeader) < totalSize)
     {
         return nullptr;
     }
 
     // Check if we need to commit a new chunk
-    if (spaceUsed + objectSize + sizeof(ObjHeader) > m_SizeCommitted)
+    while (spaceUsed + totalSize + sizeof(ObjHeader) > m_SizeCommitted)
     {
         // Make sure we don't go out of bounds during this commit
         _ASSERT(m_SizeCommitted + FOH_COMMIT_SIZE <= m_Size);
@@ -238,12 +245,44 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
         m_SizeCommitted += FOH_COMMIT_SIZE;
     }
 
+    if (pad != 0)
+    {
+        // The gap has to stay walkable, so it is formatted as a free object.
+        ArrayBase* filler = reinterpret_cast<ArrayBase*>(m_pCurrent);
+        filler->SetMethodTable(g_pFreeObjectMethodTable);
+        filler->SetNumComponents((INT32)(pad - ARRAYBASE_BASESIZE));
+        _ASSERT(filler->GetSize() == pad);
+        m_pCurrent += pad;
+    }
+
     Object* object = reinterpret_cast<Object*>(m_pCurrent);
     object->SetMethodTable(type);
 
     m_pCurrent += objectSize;
 
     return object;
+}
+
+// Objects that only get accessed through their data (arrays) benefit from having that
+// data start on a cache line, as long as they are big enough for the padding to pay off.
+size_t FrozenObjectSegment::GetAlignmentPadding(PTR_MethodTable type, size_t objectSize) const
+{
+    if ((objectSize < FOH_MIN_SIZE_TO_ALIGN) || !type->HasComponentSize())
+    {
+        return 0;
+    }
+
+    const size_t dataAddr = (size_t)m_pCurrent + ARRAYBASE_SIZE;
+    size_t pad = ALIGN_UP(dataAddr, (size_t)FOH_DATA_ALIGNMENT) - dataAddr;
+
+    // The gap is formatted as a free object so it can't be smaller than one.
+    if ((pad != 0) && (pad < ARRAYBASE_BASESIZE))
+    {
+        pad += FOH_DATA_ALIGNMENT;
+    }
+
+    _ASSERT(IS_ALIGNED(pad, DATA_ALIGNMENT));
+    return pad;
 }
 
 Object* FrozenObjectSegment::GetFirstObject() const
@@ -253,7 +292,12 @@ Object* FrozenObjectSegment::GetFirstObject() const
         // Segment is empty
         return nullptr;
     }
-    return reinterpret_cast<Object*>(m_pStart + sizeof(ObjHeader));
+    Object* firstObj = reinterpret_cast<Object*>(m_pStart + sizeof(ObjHeader));
+    if (firstObj->GetGCSafeMethodTable() == g_pFreeObjectMethodTable)
+    {
+        return GetNextObject(firstObj);
+    }
+    return firstObj;
 }
 
 Object* FrozenObjectSegment::GetNextObject(Object* obj) const
@@ -264,6 +308,14 @@ Object* FrozenObjectSegment::GetNextObject(Object* obj) const
 
     // FOH doesn't support objects with non-DATA_ALIGNMENT alignment yet.
     uint8_t* nextObj = (reinterpret_cast<uint8_t*>(obj) + ALIGN_UP(obj->GetSize(), DATA_ALIGNMENT));
+
+    // Skip the free objects we use to align the data of large arrays.
+    while ((nextObj < m_pCurrent) &&
+           (reinterpret_cast<Object*>(nextObj)->GetGCSafeMethodTable() == g_pFreeObjectMethodTable))
+    {
+        nextObj += ALIGN_UP(reinterpret_cast<Object*>(nextObj)->GetSize(), DATA_ALIGNMENT);
+    }
+
     if (nextObj < m_pCurrent)
     {
         return reinterpret_cast<Object*>(nextObj);
