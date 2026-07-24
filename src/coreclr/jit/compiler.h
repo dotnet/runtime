@@ -9100,7 +9100,7 @@ public:
 
         // Create "i <relop> (bnd + cns)" assertion
         static AssertionDsc CreateCompareCheckedBound(
-            const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
+            const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns, bool isVNNeverNegative = false)
         {
             assert(op1VN != ValueNumStore::NoVN);
             assert(checkedBndVN != ValueNumStore::NoVN);
@@ -9112,7 +9112,7 @@ public:
             dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
             dsc.m_op2.m_vn                = checkedBndVN;
             dsc.m_op2.m_icon.m_iconVal    = cns;
-            dsc.m_op2.m_isVNNeverNegative = comp->vnStore->IsVNNeverNegative(checkedBndVN);
+            dsc.m_op2.m_isVNNeverNegative = isVNNeverNegative || comp->vnStore->IsVNNeverNegative(checkedBndVN);
             return dsc;
         }
 

@@ -423,6 +423,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_nextChunkBase(0)
     , m_fixedPointMapSels(alloc, 8)
     , m_checkedBoundVNs(alloc)
+    , m_checkedBoundIndexVNs(alloc)
     , m_chunks(alloc, 8)
     , m_intCnsMap(nullptr)
     , m_longCnsMap(nullptr)
@@ -7785,6 +7786,12 @@ bool ValueNumStore::IsVNCheckedBound(ValueNum vn)
     return false;
 }
 
+bool ValueNumStore::IsVNCheckedBoundIndex(ValueNum vn)
+{
+    bool dummy;
+    return m_checkedBoundIndexVNs.TryGetValue(vn, &dummy);
+}
+
 //----------------------------------------------------------------------------------
 // IsVNCastToULong: checks whether the given VN represents (ulong)op cast
 //
@@ -7812,14 +7819,14 @@ bool ValueNumStore::IsVNCastToULong(ValueNum vn, ValueNum* castedOp)
     return false;
 }
 
-void ValueNumStore::SetVNIsCheckedBound(ValueNum vn)
+void ValueNumStore::SetVNIsCheckedBound(ValueNum vn, bool isIndex)
 {
-    // This is meant to flag VNs for lengths that aren't known at compile time, so we can
+    // This is meant to flag VNs for bounds check operands that aren't known at compile time, so we can
     // form and propagate assertions about them.  Ensure that callers filter out constant
     // VNs since they're not what we're looking to flag, and assertion prop can reason
     // directly about constants.
     assert(!IsVNConstant(vn));
-    m_checkedBoundVNs.AddOrUpdate(vn, true);
+    (isIndex ? m_checkedBoundIndexVNs : m_checkedBoundVNs).AddOrUpdate(vn, true);
 }
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -13486,8 +13493,15 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         // next add the bounds check exception set for the current tree node
                         fgValueNumberAddExceptionSet(tree);
 
-                        // Record non-constant value numbers that are used as the length argument to bounds checks, so
-                        // that assertion prop will know that comparisons against them are worth analyzing.
+                        // Record non-constant value numbers that are used as arguments to bounds checks, so that
+                        // assertion prop will know that comparisons against them are worth analyzing.
+                        ValueNum indexVN =
+                            vnStore->VNNormalValue(tree->AsBoundsChk()->GetIndex()->gtVNPair.GetConservative());
+                        if ((indexVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(indexVN))
+                        {
+                            vnStore->SetVNIsCheckedBound(indexVN, true);
+                        }
+
                         ValueNum lengthVN =
                             vnStore->VNNormalValue(tree->AsBoundsChk()->GetArrayLength()->gtVNPair.GetConservative());
                         if ((lengthVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lengthVN))
