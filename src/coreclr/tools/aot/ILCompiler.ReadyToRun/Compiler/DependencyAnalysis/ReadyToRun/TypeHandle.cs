@@ -178,15 +178,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int GetFieldAlignment()
         {
-            // Vector128<T> / 128-bit Vector<T> arguments must be 16-byte aligned on wasm to match the
-            // interpreter and runtime ArgIterator (getClassAlignmentRequirement). The crossgen type
-            // system reports their InstanceFieldAlignment as 8 (pointer-sized), so pin the wasm v128
-            // SIMD types to 16 here; the ArgIterator wasm case is the sole caller of this method.
-            if (WasmLowering.IsWasmV128Type(_type))
-            {
-                return 16;
-            }
-
             return ((DefType)_type).InstanceFieldAlignment.AsInt;
         }
 

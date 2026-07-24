@@ -737,7 +737,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     // Metadata-derived intrinsic vector element size, independent of FEATURE_HFA gating so it is
     // usable on wasm (where ArgIterator uses it to 16-byte align v128 arguments) as well as by the
-    // HFA/HVA classification below. Returns 8 for Vector64<T> and 8-byte Vector<T>, 16 for
+    // HFA/HVA classification above. Returns 8 for Vector64<T> and 8-byte Vector<T>, 16 for
     // Vector128<T> and 16-byte Vector<T>, and 0 for anything else. Vector256<T>/Vector512<T> return
     // 0: they are never HVA elements and no caller needs their size. Mirrors
     // MethodTable::GetVectorHFA in src/coreclr/vm/class.cpp. Any metadata decode failure returns 0.

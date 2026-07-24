@@ -39,9 +39,7 @@ namespace Internal.CallingConvention
         // x86 - trivial pointer-sized struct check for register passing
         bool IsTrivialPointerSizedStruct();
 
-        // LoongArch64/Wasm alignment. On wasm this also reports 16 for Vector128<T> / 128-bit
-        // Vector<T> (whose InstanceFieldAlignment under-reports as 8) so the Wasm32 ArgIterator
-        // 16-aligns v128 arguments to match the runtime and interpreter.
+        // LoongArch64/Wasm alignment
         int GetFieldAlignment();
 
         private static readonly int[] s_elemSizes = new int[]
