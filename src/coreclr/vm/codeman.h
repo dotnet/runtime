@@ -417,6 +417,7 @@ class CodeHeapRequestInfo final
     bool         m_isCollectible;
     bool         m_isInterpreted;
     bool         m_throwOnOutOfMemoryWithinRange;
+    bool         m_isOptimizedCode;
 
 public:
     CodeHeapRequestInfo(MethodDesc* pMD);
@@ -435,6 +436,9 @@ public:
 
     bool   IsInterpreted()                      { return m_isInterpreted;      }
     void   SetInterpreted()                     { m_isInterpreted = true;      }
+
+    bool   IsOptimizedCode()                    { return m_isOptimizedCode;    }
+    void   SetOptimizedCode()                   { m_isOptimizedCode = true;    }
 
     size_t GetRequestSize()                     { return m_requestSize;        }
     void   SetRequestSize(size_t requestSize)   { m_requestSize = requestSize; }
@@ -537,6 +541,12 @@ struct HeapList
 #if defined(TARGET_64BIT)
     BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine, NULL if there is no personality routine (e.g. interpreter code heap)
 #endif
+
+    // Cached copy of the RANGE_SECTION_OPTIMIZEDCODE bit on the heap's
+    // RangeSection. Lets CanUseCodeHeap reject heap/request mismatches
+    // without a per-allocation FindCodeRange lookup. Set at heap creation
+    // time in NewCodeHeap; never changes afterwards.
+    bool                isOptimizedCode;
 
     TADDR GetModuleBase()
     {
@@ -737,6 +747,7 @@ struct RangeSection
         RANGE_SECTION_RANGELIST     = 0x4,
         RANGE_SECTION_INTERPRETER   = 0x8,
         RANGE_SECTION_VIRTUALIP     = 0x10, // This range section contains virtual IPs (e.g. for ReadyToRun code) instead of actual code addresses in linear memory
+        RANGE_SECTION_OPTIMIZEDCODE = 0x20,
     };
 
 #ifdef FEATURE_READYTORUN
