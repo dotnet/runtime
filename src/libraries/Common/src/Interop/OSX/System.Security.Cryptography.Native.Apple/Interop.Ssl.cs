@@ -136,6 +136,12 @@ internal static partial class Interop
         internal static partial PAL_TlsHandshakeState SslHandshake(SafeSslHandle sslHandle);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslSetError(
+            SafeSslHandle sslHandle,
+            TlsAlertMessage alertMessage,
+            out int pOSStatus);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SslSetAcceptClientCert(SafeSslHandle sslHandle);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetIoCallbacks")]
@@ -325,6 +331,25 @@ internal static partial class Interop
             }
 
             Debug.Fail($"AppleCryptoNative_SslSetBreakOnCertRequested returned {result}");
+            throw new SslException();
+        }
+
+        internal static void SslSetError(SafeSslHandle sslHandle, TlsAlertMessage alertMessage)
+        {
+            int osStatus;
+            int result = AppleCryptoNative_SslSetError(sslHandle, alertMessage, out osStatus);
+
+            if (result == 1)
+            {
+                return;
+            }
+
+            if (result == 0)
+            {
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            Debug.Fail($"AppleCryptoNative_SslSetError returned {result}");
             throw new SslException();
         }
 

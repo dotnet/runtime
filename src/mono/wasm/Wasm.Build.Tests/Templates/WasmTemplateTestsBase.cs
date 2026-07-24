@@ -188,7 +188,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     }
 
     /// <summary>
-    /// Installs the WASM browser/console templates from the built nugets path
+    /// Installs the WASM browser template from the built nugets path
     /// using <c>dotnet new install</c> if needed. This is a no-op when
     /// the workload is already installed (templates come with the workload).
     /// </summary>
@@ -392,7 +392,9 @@ public class WasmTemplateTestsBase : BuildTestBase
     protected void UpdateFile(string pathRelativeToProjectDir, Dictionary<string, string> replacements)
     {
         var path = Path.Combine(_projectDir, pathRelativeToProjectDir);
-        string text = File.ReadAllText(path);
+        // Normalize line endings so that replacement anchors containing '\n' match regardless of
+        // whether the file was checked out with LF or CRLF (e.g. on Windows).
+        string text = File.ReadAllText(path).Replace("\r\n", "\n");
         foreach (var replacement in replacements)
         {
             text = StringReplaceWithAssert(text, replacement.Key, replacement.Value);

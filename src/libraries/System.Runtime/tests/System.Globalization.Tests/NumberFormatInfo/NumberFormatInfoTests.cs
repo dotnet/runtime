@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Xunit;
 
@@ -136,19 +137,29 @@ namespace System.Globalization.Tests
             yield return new object[] { "ccp-Cakm-BD", new string[] { "\U00011136", "\U00011137", "\U00011138", "\U00011139", "\U0001113A", "\U0001113B", "\U0001113C", "\U0001113D", "\U0001113E", "\U0001113F" }};
             yield return new object[] { "ar-SA",  new string[] {"\u0660", "\u0661", "\u0662", "\u0663", "\u0664", "\u0665", "\u0666", "\u0667", "\u0668", "\u0669" }};
             yield return new object[] { "en-US",  new string[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" }};
-            // Apple ICU on Apple platforms 26+ returns Latin digits for ur-IN, diverging from upstream CLDR which specifies arabext
-            yield return new object[] { "ur-IN",  PlatformDetection.IsApplePlatform26OrLater
-                ? new string[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" }
-                : new string[] { "\u06F0", "\u06F1", "\u06F2", "\u06F3", "\u06F4", "\u06F5", "\u06F6", "\u06F7", "\u06F8", "\u06F9" }};
+            yield return new object[] { "ur-IN",  new string[] { "\u06F0", "\u06F1", "\u06F2", "\u06F3", "\u06F4", "\u06F5", "\u06F6", "\u06F7", "\u06F8", "\u06F9" }};
         }
 
-        public static bool FullICUPlatform => PlatformDetection.ICUVersion.Major >= 66 && PlatformDetection.IsNotBrowser;
+        public static bool FullICUPlatform => PlatformDetection.ICUVersion.Major >= 66 && !PlatformDetection.IsWasm;
 
         [ConditionalTheory(typeof(NumberFormatInfoMiscTests), nameof(FullICUPlatform))]
         [MemberData(nameof(NativeDigitTestData))]
         public void TestNativeDigits(string cultureName, string[] nativeDigits)
         {
-            Assert.Equal(nativeDigits, CultureInfo.GetCultureInfo(cultureName).NumberFormat.NativeDigits);
+            string[] actual = CultureInfo.GetCultureInfo(cultureName).NumberFormat.NativeDigits;
+
+            // The ur-IN numbering system depends on which ICU is loaded on Apple platforms. Apple's
+            // libicucore (used by CoreCLR on macOS) returns Latin digits, while the full ICU (used by
+            // Mono) returns the CLDR arabext digits. Both are valid, so accept either on Apple platforms.
+            if (cultureName == "ur-IN" && PlatformDetection.IsApplePlatform)
+            {
+                string[] latinDigits = new string[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+                Assert.True(actual.SequenceEqual(nativeDigits) || actual.SequenceEqual(latinDigits),
+                    $"Unexpected ur-IN NativeDigits: [{string.Join(", ", actual)}]");
+                return;
+            }
+
+            Assert.Equal(nativeDigits, actual);
         }
     }
 }

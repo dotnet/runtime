@@ -23,6 +23,7 @@ internal static partial class Interop
             return newHash;
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.BCrypt)]
         private static partial NTSTATUS BCryptDuplicateHash(
             SafeBCryptHashHandle hHash,

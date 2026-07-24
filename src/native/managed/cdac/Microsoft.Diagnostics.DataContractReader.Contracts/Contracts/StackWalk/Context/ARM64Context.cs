@@ -51,7 +51,7 @@ internal struct ARM64Context : IPlatformContext
         readonly get => new(Sp);
         set => Sp = value.Value;
     }
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Pc);
         set => Pc = value.Value;
@@ -69,6 +69,9 @@ internal struct ARM64Context : IPlatformContext
         ARM64Unwinder unwinder = new(target);
         unwinder.Unwind(ref this);
     }
+
+    // Clears the AArch64 hardware single-step flag (CPSR.SS, bit 0x00200000).
+    public void UnsetSingleStepFlag() => Cpsr &= ~0x00200000u;
 
     public bool TrySetRegister(string name, TargetNUInt value)
     {
@@ -196,6 +199,12 @@ internal struct ARM64Context : IPlatformContext
 
     public bool TryReadRegister(int number, out TargetNUInt value)
     {
+        if ((uint)(number - 33) < 32)
+        {
+            value = ReadVectorRegister(number - 33);
+            return true;
+        }
+
         switch (number)
         {
             case 0: value = new TargetNUInt(X0); return true;
@@ -233,6 +242,12 @@ internal struct ARM64Context : IPlatformContext
             case 32: value = new TargetNUInt(Pc); return true;
             default: value = default; return false;
         }
+    }
+
+    private readonly unsafe TargetNUInt ReadVectorRegister(int index)
+    {
+        // V indexes into the low 64 bits of each 128-bit register, so double the index.
+        return new TargetNUInt(V[index * 2]);
     }
 
     // Control flags

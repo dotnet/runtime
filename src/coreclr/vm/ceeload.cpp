@@ -214,8 +214,9 @@ void Module::UpdateNewlyAddedTypes()
 {
     CONTRACTL
     {
+        MODE_PREEMPTIVE;
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
@@ -278,7 +279,7 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM());
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -296,7 +297,6 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
         {
             BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
             {
-                GCX_PREEMP();
                 (&g_profControlBlock)->ModuleLoadFinished((ModuleID) this, hr);
 
                 if (SUCCEEDED(hr))
@@ -373,6 +373,7 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
 
     m_loaderAllocator = NULL;
     m_pDynamicMetadata = (TADDR)NULL;
+    m_dwMetadataGeneration = 0;
 
     m_pPEAssembly->AddRef();
 }
@@ -640,8 +641,8 @@ void Module::ApplyMetaData()
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -665,6 +666,7 @@ void Module::ApplyMetaData()
     // Ensure for MethodDef
     ulCount = GetMDImport()->GetCountWithTokenKind(mdtMethodDef) + 1;
     EnsureMethodDefCanBeStored(TokenFromRid(ulCount, mdtMethodDef));
+    m_dwMetadataGeneration++;
 }
 
 //
@@ -957,7 +959,7 @@ void Module::SetDynamicRvaField(mdToken token, TADDR blobAddress)
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -1668,7 +1670,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReaderNoThrow(void)
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACT_END;
 
@@ -1702,7 +1704,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         THROWS;
         WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACT_END;
 
@@ -1756,7 +1758,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         // where right now...</REVISIT_TODO>
         HRESULT hr = S_OK;
 
-        SafeComHolder<ISymUnmanagedBinder> pBinder;
+        ReleaseHolder<ISymUnmanagedBinder> pBinder;
 
         if (g_pDebugInterface == NULL)
         {
@@ -1784,11 +1786,11 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         // hard disk for files.
         ErrorModeHolder errorMode{};
 
-        SafeComHolder<ISymUnmanagedReader> pReader;
+        ReleaseHolder<ISymUnmanagedReader> pReader;
 
         if (fInMemorySymbols)
         {
-            SafeComHolder<IStream> pIStream( NULL );
+            ReleaseHolder<IStream> pIStream( NULL );
 
             // If debug stream is already specified, don't bother to go through fusion
             // This is the common case for case 2 (hosted modules) and case 3 (Ref.Emit).
@@ -1812,7 +1814,12 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             }
             if (SUCCEEDED(hr))
             {
-                hr = pBinder->GetReaderFromStream(GetRWImporter(), pIStream, &pReader);
+                // Hand the reader an inert importer rather than the module's real
+                // (RW) metadata interface: the reader only needs it to satisfy the
+                // binder, and producing the real importer would force this module's
+                // metadata to its locked RW backing store.
+                ReleaseHolder<IMetaDataImport2> pNoopImport = GetNoopMetaDataImport2();
+                hr = pBinder->GetReaderFromStream(pNoopImport, pIStream, &pReader);
             }
         }
         else
@@ -1820,13 +1827,12 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // The assembly is on disk, so try and load symbols based on the path to the assembly (case 1)
             const SString &path = m_pPEAssembly->GetPath();
 
-            // Call Fusion to ensure that any PDB's are shadow copied before
-            // trying to get a symbol reader. This has to be done once per
-            // Assembly.
-            ReleaseHolder<IUnknown> pUnk = NULL;
-            hr = GetReadablePublicMetaDataInterface(ofReadOnly, IID_IMetaDataImport, &pUnk);
-            if (SUCCEEDED(hr))
-                hr = pBinder->GetReaderForFile(pUnk, path, NULL, &pReader);
+            // Hand the reader an inert importer rather than a readable metadata
+            // interface for this module: the reader only needs it to satisfy the
+            // binder, and obtaining the real importer would force this module's
+            // metadata to its locked RW backing store.
+            ReleaseHolder<IMetaDataImport2> pNoopImport = GetNoopMetaDataImport2();
+            hr = pBinder->GetReaderForFile(pNoopImport, path, NULL, &pReader);
         }
 
         if (SUCCEEDED(hr))
@@ -1890,7 +1896,7 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     STANDARD_VM_CONTRACT;
 
     // Create a IStream from the memory for the syms.
-    SafeComHolder<CGrowableStream> pStream(new CGrowableStream());
+    ComHolderPreemp<CGrowableStream> pStream(new CGrowableStream());
 
     // Do not need to AddRef the CGrowableStream because the constructor set it to 1
     // ref count already. The Module will keep a copy for its own use.
@@ -2222,10 +2228,9 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
     }
     CONTRACTL_END;
 
-    BOOL fIs80Plus;
     DWORD dwCharCount;
     LPCWSTR pString;
-    if (FAILED(GetMDImport()->GetUserString(token, &dwCharCount, &fIs80Plus, &pString)) ||
+    if (FAILED(GetMDImport()->GetUserString(token, &dwCharCount, &pString)) ||
         (pString == NULL))
     {
         THROW_BAD_FORMAT(BFA_BAD_STRING_TOKEN_RANGE, this);
@@ -2245,12 +2250,7 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
     pstrData->SetStringBuffer(pSwapped);
 #endif // !!BIGENDIAN
 
-        // MD and String look at this bit in opposite ways.  Here's where we'll do the conversion.
-        // MD sets the bit to true if the string contains characters greater than 80.
-        // String sets the bit to true if the string doesn't contain characters greater than 80.
-
     pstrData->SetCharCount(dwCharCount);
-    pstrData->SetIsOnlyLowChars(!fIs80Plus);
 }
 
 
@@ -3739,7 +3739,7 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     LPCWSTR exePath = GetExePath();
     SIZE_T  commandLineLen = (u16_strlen(exePath) + 1);
 
-    // Append assembly path to approximate the command line for generic hosts like `dotnet`. 
+    // Append assembly path to approximate the command line for generic hosts like `dotnet`.
     // This isn't quite correct for apphost, as the app name will be duplicated.
     commandLineLen += (u16_strlen(pwzAssemblyPath) + 1);
 
@@ -3898,7 +3898,7 @@ void ReflectionModule::Destruct()
 
     Module::Destruct();
 
-    delete (uint32_t*)m_pDynamicMetadata;
+    delete[] (uint8_t*)m_pDynamicMetadata;
     m_pDynamicMetadata = (TADDR)NULL;
 
     m_CrstLeafLock.Destroy();
@@ -4035,9 +4035,10 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     {
         CrstHolder ch(&m_CrstLeafLock);
 
-        delete (uint32_t*)m_pDynamicMetadata;
+        delete[] (uint8_t*)m_pDynamicMetadata;
 
         m_pDynamicMetadata = (TADDR)pBuffer.Extract();
+        m_dwMetadataGeneration++;
     }
 
     //

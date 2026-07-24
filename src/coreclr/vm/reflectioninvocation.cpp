@@ -443,13 +443,18 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
 
     // This is duplicated logic from MethodDesc::GetCallTarget
     PCODE pTarget;
-    if (pMeth->IsVtableMethod())
     {
-        pTarget = pMeth->GetSingleCallableAddrOfVirtualizedCode(&gc.target, ownerType);
-    }
-    else
-    {
-        pTarget = pMeth->GetSingleCallableAddrOfCode();
+        if (pMeth->IsVtableMethod())
+        {
+            MethodTable *pMT = gc.target->GetMethodTable();
+            GCX_PREEMP();
+            pTarget = pMeth->GetSingleCallableAddrOfVirtualizedCode(&gc.target, pMT, ownerType);
+        }
+        else
+        {
+            GCX_PREEMP();
+            pTarget = pMeth->GetSingleCallableAddrOfCode();
+        }
     }
     callDescrData.pTarget = pTarget;
 
@@ -1304,6 +1309,13 @@ extern "C" void QCALLTYPE ReflectionInvocation_RunModuleConstructor(QCall::Modul
 static void PrepareMethodHelper(MethodDesc * pMD)
 {
     STANDARD_VM_CONTRACT;
+
+    // If a MethodImpl (.override) has remapped this method's vtable slot to a
+    // different method, prepare the method that actually owns the slot's code
+    // (the impl), not the decl. This mirrors getFunctionEntryPoint, which resolves
+    // direct calls the same way.
+    if (pMD->IsVtableSlot())
+        pMD = MethodTable::MapMethodDeclToMethodImpl(pMD);
 
     pMD->EnsureActive();
 

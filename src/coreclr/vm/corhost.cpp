@@ -430,7 +430,11 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
 
             UnmanagedCallersOnlyCaller executeInDefaultAppDomain(METHOD__ENVIRONMENT__EXECUTE_IN_DEFAULT_APP_DOMAIN);
             pMethodMD->EnsureActive();
-            PCODE entryPoint = pMethodMD->GetSingleCallableAddrOfCode();
+            PCODE entryPoint;
+            {
+                GCX_PREEMP();
+                entryPoint = pMethodMD->GetSingleCallableAddrOfCode();
+            }
 
             INT32 retval = executeInDefaultAppDomain.InvokeThrowing_Ret<INT32>(
                 static_cast<INT_PTR>(entryPoint),
@@ -614,6 +618,10 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             sPlatformResourceRoots,
             sAppPaths));
     }
+
+    // Initialize the InvariantCulture such that it can be safely used when creating
+    // stack traces under high memory pressure.
+    CoreLibBinder::GetClass(CLASS__CULTURE_INFO)->CheckRunClassInitThrowing();
 
 #if defined(TARGET_UNIX) && !defined(FEATURE_STATICALLY_LINKED)
     if (!g_coreclr_embedded)

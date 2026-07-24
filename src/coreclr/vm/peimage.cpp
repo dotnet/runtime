@@ -49,6 +49,10 @@ void PEImage::Startup()
     s_ijwFixupDataHash = ::new PtrHashMap;
     s_ijwFixupDataHash->Init(CompareIJWDataBase, FALSE, &ijwLock);
 
+#ifdef TARGET_WASM
+    PEImageLayout::Startup();
+#endif // TARGET_WASM
+
     RETURN;
 }
 
@@ -368,7 +372,7 @@ void PEImage::GetMVID(GUID *pMvid)
     if (pMeta == NULL)
         ThrowHR(COR_E_BADIMAGEFORMAT);
 
-    SafeComHolder<IMDInternalImport> pMDImport;
+    ComHolderAnyMode<IMDInternalImport> pMDImport;
 
     IfFailThrow(GetMDInternalInterface((void *) pMeta,
                                        cMeta,

@@ -685,7 +685,7 @@ void ILCodeVersionNode::SetJitFlags(DWORD flags)
     m_jitFlags.Store(flags);
 }
 
-void ILCodeVersionNode::SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap)
+void ILCodeVersionNode::SetInstrumentedILMap(UINT cMap, COR_IL_MAP * rgMap)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
@@ -1028,7 +1028,7 @@ void ILCodeVersion::SetJitFlags(DWORD flags)
     AsNode()->SetJitFlags(flags);
 }
 
-void ILCodeVersion::SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap)
+void ILCodeVersion::SetInstrumentedILMap(UINT cMap, COR_IL_MAP * rgMap)
 {
     LIMITED_METHOD_CONTRACT;
     AsNode()->SetInstrumentedILMap(cMap, rgMap);

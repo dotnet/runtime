@@ -111,4 +111,36 @@ internal struct PrecodeStubs_3_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
 internal sealed class PrecodeStubs_3 : PrecodeStubsCommon<PrecodeStubs_3_Impl, Data.StubPrecodeData_2>
 {
     public PrecodeStubs_3(Target target) : base(target) { }
+
+    public override TargetCodePointer GetInterpreterCodeFromInterpreterPrecodeIfPresent(
+        TargetCodePointer entryPoint)
+    {
+        try
+        {
+            TargetPointer instrPointer = CodePointerReadableInstrPointer(entryPoint);
+            if (!Target.IsAlignedToPointerSize(instrPointer))
+                return entryPoint;
+
+            if (PrecodeStubs_3_Impl.TryGetKnownPrecodeType(
+                    instrPointer,
+                    Target,
+                    MachineDescriptor) is not KnownPrecodeType.Interpreter)
+            {
+                return entryPoint;
+            }
+
+            TargetPointer dataAddress =
+                instrPointer + MachineDescriptor.StubCodePageSize;
+            Data.InterpreterPrecodeData precodeData =
+                Target.ProcessedData.GetOrAdd<Data.InterpreterPrecodeData>(
+                    dataAddress);
+            return precodeData.ByteCodeAddr == TargetPointer.Null
+                ? entryPoint
+                : new TargetCodePointer(precodeData.ByteCodeAddr);
+        }
+        catch (VirtualReadException)
+        {
+            return entryPoint;
+        }
+    }
 }

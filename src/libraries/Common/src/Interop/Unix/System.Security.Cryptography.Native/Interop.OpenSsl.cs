@@ -189,13 +189,13 @@ internal static partial class Interop
             return protocols;
         }
 
-        internal static SafeSslContextHandle GetOrCreateSslContextHandle(SslAuthenticationOptions sslAuthenticationOptions, bool allowCached)
+        internal static SafeSslContextHandle GetOrCreateSslContextHandle(SslAuthenticationOptions sslAuthenticationOptions, bool allowCached, bool enableResume)
         {
             SslProtocols protocols = CalculateEffectiveProtocols(sslAuthenticationOptions);
 
             if (!allowCached)
             {
-                return AllocateSslContext(sslAuthenticationOptions, protocols, allowCached);
+                return AllocateSslContext(sslAuthenticationOptions, protocols, enableResume);
             }
 
             bool hasAlpn = sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0;
@@ -208,9 +208,9 @@ internal static partial class Interop
                 sslAuthenticationOptions.CertificateContext);
             return s_sslContexts.GetOrCreate(key, static (args) =>
             {
-                var (sslAuthOptions, protocols, allowCached) = args;
-                return AllocateSslContext(sslAuthOptions, protocols, allowCached);
-            }, (sslAuthenticationOptions, protocols, allowCached));
+                var (sslAuthOptions, protocols, enableResume) = args;
+                return AllocateSslContext(sslAuthOptions, protocols, enableResume);
+            }, (sslAuthenticationOptions, protocols, enableResume));
         }
 
         // This essentially wraps SSL_CTX* aka SSL_CTX_new + setting
@@ -361,7 +361,16 @@ internal static partial class Interop
         internal static unsafe SafeSslHandle AllocateSslHandle(SslAuthenticationOptions sslAuthenticationOptions)
         {
             SafeSslHandle? sslHandle = null;
-            bool cacheSslContext = sslAuthenticationOptions.AllowTlsResume && !LocalAppContextSwitches.DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption && sslAuthenticationOptions.CipherSuitesPolicy == null;
+            // When a TlsContext owns a long-lived SSL_CTX (set via PreallocatedSslContext)
+            // we bypass the global SslContextCacheKey lookup and the TLS-resume cache hung
+            // off it: the TlsContext is the resume scope. The handle is borrowed here, not
+            // owned, so the conditional Dispose() in the finally below skips it.
+            SafeSslContextHandle? preallocatedSslCtx = sslAuthenticationOptions.PreallocatedSslContext;
+            bool cacheSslContext = preallocatedSslCtx is null
+                && sslAuthenticationOptions.AllowTlsResume
+                && !LocalAppContextSwitches.DisableTlsResume
+                && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption
+                && sslAuthenticationOptions.CipherSuitesPolicy == null;
 
             if (cacheSslContext)
             {
@@ -398,130 +407,142 @@ internal static partial class Interop
             // For uncached SafeSslContextHandles, the handle will be disposed and closed.
             // Cached SafeSslContextHandles are returned with increaset rent count so that
             // Dispose() here will not close the handle.
-            using SafeSslContextHandle sslCtxHandle = GetOrCreateSslContextHandle(sslAuthenticationOptions, cacheSslContext);
-
-            sslHandle = SafeSslHandle.Create(sslCtxHandle, sslAuthenticationOptions);
-            Debug.Assert(sslHandle != null, "Expected non-null return value from SafeSslHandle.Create");
-            if (sslHandle.IsInvalid)
+            // When a preallocated SSL_CTX is provided (TlsContext-owned), we borrow it
+            // for the duration of this method without disposing — the TlsContext keeps
+            // it alive across every TlsSession it produces.
+            SafeSslContextHandle sslCtxHandle = preallocatedSslCtx ?? GetOrCreateSslContextHandle(sslAuthenticationOptions, cacheSslContext, cacheSslContext);
+            try
             {
-                sslHandle.Dispose();
-                throw CreateSslException(SR.net_allocate_ssl_context_failed);
-            }
+                sslHandle = SafeSslHandle.Create(sslCtxHandle, sslAuthenticationOptions);
+                Debug.Assert(sslHandle != null, "Expected non-null return value from SafeSslHandle.Create");
+                if (sslHandle.IsInvalid)
+                {
+                    sslHandle.Dispose();
+                    throw CreateSslException(SR.net_allocate_ssl_context_failed);
+                }
 
-            if (cacheSslContext)
-            {
-                // For non-cached SSL_CTX instances, we free the `sslCtxHandle`
-                // after creating the SSL instance and don't use it again. We don't
-                // access it afterwards and OpenSSL has internal refcount which
-                // keeps it alive until the last SSL using it is freed.
-                //
-                // For cached SSL_CTX instances, we want to keep an outstanding
-                // up-ref to indicate that it is in use and does not get
-                // evicted from the cache.
-                //
-                // This call should always succeed because we already
-                // increased the rent count when getting the context from
-                // the cache.
-                bool success = sslCtxHandle.TryAddRentCount();
-                Debug.Assert(success);
-                sslHandle.SslContextHandle = sslCtxHandle;
-            }
+                if (cacheSslContext)
+                {
+                    // For non-cached SSL_CTX instances, we free the `sslCtxHandle`
+                    // after creating the SSL instance and don't use it again. We don't
+                    // access it afterwards and OpenSSL has internal refcount which
+                    // keeps it alive until the last SSL using it is freed.
+                    //
+                    // For cached SSL_CTX instances, we want to keep an outstanding
+                    // up-ref to indicate that it is in use and does not get
+                    // evicted from the cache.
+                    //
+                    // This call should always succeed because we already
+                    // increased the rent count when getting the context from
+                    // the cache.
+                    bool success = sslCtxHandle.TryAddRentCount();
+                    Debug.Assert(success);
+                    sslHandle.SslContextHandle = sslCtxHandle;
+                }
 
-            if (!sslAuthenticationOptions.AllowRsaPssPadding || !sslAuthenticationOptions.AllowRsaPkcs1Padding)
-            {
-                ConfigureSignatureAlgorithms(sslHandle, sslAuthenticationOptions.AllowRsaPssPadding, sslAuthenticationOptions.AllowRsaPkcs1Padding);
-            }
+                if (!sslAuthenticationOptions.AllowRsaPssPadding || !sslAuthenticationOptions.AllowRsaPkcs1Padding)
+                {
+                    ConfigureSignatureAlgorithms(sslHandle, sslAuthenticationOptions.AllowRsaPssPadding, sslAuthenticationOptions.AllowRsaPkcs1Padding);
+                }
 
-            if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
-            {
+                if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
+                {
+                    if (sslAuthenticationOptions.IsClient)
+                    {
+                        if (Interop.Ssl.SslSetAlpnProtos(sslHandle, sslAuthenticationOptions.ApplicationProtocols) != 0)
+                        {
+                            throw CreateSslException(SR.net_alpn_config_failed);
+                        }
+                    }
+                }
+
                 if (sslAuthenticationOptions.IsClient)
                 {
-                    if (Interop.Ssl.SslSetAlpnProtos(sslHandle, sslAuthenticationOptions.ApplicationProtocols) != 0)
+                    // Client side always verifies the server's certificate.
+                    Ssl.SslSetVerifyPeer(sslHandle, failIfNoPeerCert: false);
+
+                    if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !IPAddress.IsValid(sslAuthenticationOptions.TargetHost))
                     {
-                        throw CreateSslException(SR.net_alpn_config_failed);
-                    }
-                }
-            }
-
-            if (sslAuthenticationOptions.IsClient)
-            {
-                // Client side always verifies the server's certificate.
-                Ssl.SslSetVerifyPeer(sslHandle, failIfNoPeerCert: false);
-
-                if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !IPAddress.IsValid(sslAuthenticationOptions.TargetHost))
-                {
-                    // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
-                    if (!Ssl.SslSetTlsExtHostName(sslHandle, sslAuthenticationOptions.TargetHost))
-                    {
-                        Crypto.ErrClearError();
-                    }
-
-                    if (cacheSslContext)
-                    {
-                        sslCtxHandle.TrySetSession(sslHandle, sslAuthenticationOptions.TargetHost);
-                    }
-                }
-
-                // relevant to TLS 1.3 only: if user supplied a client cert or cert callback,
-                // advertise that we are willing to send the certificate post-handshake.
-                if (sslAuthenticationOptions.CertificateContext != null ||
-                    sslAuthenticationOptions.ClientCertificates?.Count > 0 ||
-                    sslAuthenticationOptions.CertSelectionDelegate != null)
-                {
-                    Ssl.SslSetPostHandshakeAuth(sslHandle, 1);
-                }
-
-                // Set client cert callback, this will interrupt the handshake with SecurityStatusPalErrorCode.CredentialsNeeded
-                // if server actually requests a certificate.
-                Ssl.SslSetClientCertCallback(sslHandle, 1);
-            }
-            else // sslAuthenticationOptions.IsServer
-            {
-                if (sslAuthenticationOptions.RemoteCertRequired)
-                {
-                    // When no user callback is registered, also set
-                    // SSL_VERIFY_FAIL_IF_NO_PEER_CERT so that OpenSSL sends the
-                    // appropriate TLS alert when the client doesn't provide a
-                    // certificate.  When a callback IS registered, the application
-                    // may choose to accept connections without a client certificate,
-                    // so we only set SSL_VERIFY_PEER and let managed code handle it.
-                    bool failIfNoPeerCert = sslAuthenticationOptions.CertValidationDelegate is null;
-                    Ssl.SslSetVerifyPeer(sslHandle, failIfNoPeerCert);
-                }
-
-                if (sslAuthenticationOptions.CertificateContext != null)
-                {
-                    if (sslAuthenticationOptions.CertificateContext.Trust?._sendTrustInHandshake == true)
-                    {
-                        SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
-                        X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
-
-                        Debug.Assert(certList != null);
-                        const int StackAllocCertLimit = 32;
-                        Span<IntPtr> handles = certList.Count <= StackAllocCertLimit ?
-                            stackalloc IntPtr[StackAllocCertLimit] :
-                            new IntPtr[certList.Count];
-
-                        for (int i = 0; i < certList.Count; i++)
+                        // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
+                        if (!Ssl.SslSetTlsExtHostName(sslHandle, sslAuthenticationOptions.TargetHost))
                         {
-                            handles[i] = certList[i].Handle;
+                            Crypto.ErrClearError();
                         }
 
-                        if (!Ssl.SslAddClientCAs(sslHandle, handles.Slice(0, certList.Count)))
+                        if (cacheSslContext)
                         {
-                            // The method can fail only when the number of cert names exceeds the maximum capacity
-                            // supported by STACK_OF(X509_NAME) structure, which should not happen under normal
-                            // operation.
-                            Debug.Fail("Failed to add issuer to trusted CA list.");
+                            sslCtxHandle.TrySetSession(sslHandle, sslAuthenticationOptions.TargetHost);
                         }
                     }
 
-                    byte[]? ocspResponse = sslAuthenticationOptions.CertificateContext.GetOcspResponseNoWaiting();
-
-                    if (ocspResponse != null)
+                    // relevant to TLS 1.3 only: if user supplied a client cert or cert callback,
+                    // advertise that we are willing to send the certificate post-handshake.
+                    if (sslAuthenticationOptions.CertificateContext != null ||
+                        sslAuthenticationOptions.ClientCertificates?.Count > 0 ||
+                        sslAuthenticationOptions.CertSelectionDelegate != null)
                     {
-                        Ssl.SslStapleOcsp(sslHandle, ocspResponse);
+                        Ssl.SslSetPostHandshakeAuth(sslHandle, 1);
                     }
+
+                    // Set client cert callback, this will interrupt the handshake with SecurityStatusPalErrorCode.CredentialsNeeded
+                    // if server actually requests a certificate.
+                    Ssl.SslSetClientCertCallback(sslHandle, 1);
+                }
+                else // sslAuthenticationOptions.IsServer
+                {
+                    if (sslAuthenticationOptions.RemoteCertRequired)
+                    {
+                        // When no user callback is registered, also set
+                        // SSL_VERIFY_FAIL_IF_NO_PEER_CERT so that OpenSSL sends the
+                        // appropriate TLS alert when the client doesn't provide a
+                        // certificate.  When a callback IS registered, the application
+                        // may choose to accept connections without a client certificate,
+                        // so we only set SSL_VERIFY_PEER and let managed code handle it.
+                        bool failIfNoPeerCert = sslAuthenticationOptions.CertValidationDelegate is null;
+                        Ssl.SslSetVerifyPeer(sslHandle, failIfNoPeerCert);
+                    }
+
+                    if (sslAuthenticationOptions.CertificateContext != null)
+                    {
+                        if (sslAuthenticationOptions.CertificateContext.Trust?._sendTrustInHandshake == true)
+                        {
+                            SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
+                            X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
+
+                            Debug.Assert(certList != null);
+                            const int StackAllocCertLimit = 32;
+                            Span<IntPtr> handles = certList.Count <= StackAllocCertLimit ?
+                                stackalloc IntPtr[StackAllocCertLimit] :
+                                new IntPtr[certList.Count];
+
+                            for (int i = 0; i < certList.Count; i++)
+                            {
+                                handles[i] = certList[i].Handle;
+                            }
+
+                            if (!Ssl.SslAddClientCAs(sslHandle, handles.Slice(0, certList.Count)))
+                            {
+                                // The method can fail only when the number of cert names exceeds the maximum capacity
+                                // supported by STACK_OF(X509_NAME) structure, which should not happen under normal
+                                // operation.
+                                Debug.Fail("Failed to add issuer to trusted CA list.");
+                            }
+                        }
+
+                        byte[]? ocspResponse = sslAuthenticationOptions.CertificateContext.GetOcspResponseNoWaiting();
+
+                        if (ocspResponse != null)
+                        {
+                            Ssl.SslStapleOcsp(sslHandle, ocspResponse);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                if (preallocatedSslCtx is null)
+                {
+                    sslCtxHandle.Dispose();
                 }
             }
 
@@ -670,7 +691,16 @@ internal static partial class Interop
             outputBuffer = Array.Empty<byte>();
             if (ret != 1)
             {
-                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, GetSslError(ret, errorCode));
+                Exception? ex = GetSslError(ret, errorCode);
+
+                SecurityStatusPalErrorCode palErrorCode = (ex?.HResult & 0X7FFFFF) switch
+                {
+                    279 /*SSL_R_EXTENSION_NOT_RECEIVED*/ or
+                    339 /*SSL_R_NO_RENEGOTIATION*/ => SecurityStatusPalErrorCode.NoRenegotiation,
+                    _ => SecurityStatusPalErrorCode.InternalError
+                };
+
+                return new SecurityStatusPal(palErrorCode, ex);
             }
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
@@ -724,6 +754,15 @@ internal static partial class Interop
                 if (errorCode == Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP)
                 {
                     return SecurityStatusPalErrorCode.CredentialsNeeded;
+                }
+
+                if (errorCode == Ssl.SslErrorCode.SSL_ERROR_WANT_RETRY_VERIFY)
+                {
+                    // OpenSSL 3.0+ retry-verify: the certificate verification
+                    // callback paused the handshake. The application owns
+                    // certificate validation and must resume the handshake
+                    // (by calling DoSslHandshake again) once it has a verdict.
+                    return SecurityStatusPalErrorCode.CertValidationNeeded;
                 }
 
                 if (errorCode == Ssl.SslErrorCode.SSL_ERROR_SSL && context.CertificateValidationException is Exception ex)
@@ -998,7 +1037,29 @@ internal static partial class Interop
                     .TryGetTarget(out SslAuthenticationOptions? options);
                 Debug.Assert(options != null, "Expected to get SslAuthenticationOptions from GCHandle");
 
-                sslHandle = (SafeSslHandle)options!.SslStream!._securityContext!;
+                sslHandle = options!.SafeSslHandle as SafeSslHandle;
+                Debug.Assert(sslHandle is not null, "Expected SslAuthenticationOptions.SafeSslHandle to be set by SafeSslHandle.Create");
+
+                // No in-callback validator (TlsSession path): accept the certificate here so
+                // the TLS handshake completes, then surface the peer cert to the caller via
+                // NeedsCertificateValidation on the next ProcessHandshake. Any subsequent
+                // Encrypt/Decrypt blocks until the caller posts a verdict.
+                //
+                // Ideally we would pause the handshake via SSL_set_retry_verify on OpenSSL 3.0+
+                // so a caller's reject can emit a fatal TLS alert to the peer mid-handshake.
+                // In practice SSL_set_retry_verify is not honored for peer-cert verification
+                // on either client or server SSLs in current upstream OpenSSL (the callback is
+                // not re-entered after SSL_do_handshake resumes). The native shim
+                // CryptoNative_SslSetRetryVerify, the SafeSslHandle.RetryVerifyAttempted /
+                // ExternalValidationAccepted fields, and TlsSession's PushExternalValidation-
+                // VerdictToPalIfRetryVerify are kept in place as dormant infrastructure; once
+                // upstream OpenSSL honors retry-verify, gate the SSL_set_retry_verify path in
+                // this branch behind a version check (or feature probe) to opt into it.
+                if (options.RemoteCertificateValidator is null)
+                {
+                    Ssl.X509StoreCtxSetError(storeCtx, (int)Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_OK);
+                    return 1;
+                }
 
                 // We need to note the number of certs in ExtraStore that were
                 // provided (by the user), we will add more from the received peer
@@ -1012,7 +1073,10 @@ internal static partial class Interop
                 try
                 {
                     ProtocolToken alertToken = default;
-                    if (options.SslStream!.VerifyRemoteCertificate(certificate, chain, options.CertificateContext?.Trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+                    SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
+                    SslAuthenticationOptions.VerifyRemoteCertificateCallback? validator = options.RemoteCertificateValidator;
+                    Debug.Assert(validator is not null, "Expected SslAuthenticationOptions.RemoteCertificateValidator to be set by SslStream or TlsSession");
+                    if (validator!(certificate, chain, options.CertificateContext?.Trust, ref alertToken, ref sslPolicyErrors, out X509ChainStatusFlags chainStatus))
                     {
                         Ssl.X509StoreCtxSetError(storeCtx, (int)Interop.Crypto.X509VerifyStatusCodeUniversal.X509_V_OK);
                         return 1;

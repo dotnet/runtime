@@ -133,10 +133,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = null;
+
             if (_fixupKind == ReadyToRunFixupKind.TypeHandle)
             {
                 TypeFixupSignature.AddDependenciesForAsyncStateMachineBox(ref dependencies, factory, _typeArgument);
+
+                // In shared generic code, newobj uses a generic dictionary lookup for the type handle
+                // rather than a direct READYTORUN_FIXUP_TypeHandle (TypeFixupSignature). Mirror the
+                // creation of InheritedVirtualMethodsNode as it is done in TypeFixupSignature, so we
+                // scan the virtual methods on this type for dependency analysis.
+                if (_typeArgument != null)
+                    factory.AddVirtualMethodDiscoveryDependencies(ref dependencies, _typeArgument);
             }
+
             return dependencies;
         }
 
