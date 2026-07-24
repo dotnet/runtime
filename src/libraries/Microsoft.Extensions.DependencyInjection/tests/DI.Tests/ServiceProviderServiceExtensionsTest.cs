@@ -183,6 +183,19 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [Fact]
+        public void GetServiceKeys_ReturnsNull_WhenProviderDoesNotSupportServiceKeys()
+        {
+            // Arrange
+            var serviceProvider = new RequiredServiceSupportingProvider();
+
+            // Act
+            var serviceKeys = serviceProvider.GetServiceKeys<IFoo>();
+
+            // Assert
+            Assert.Null(serviceKeys);
+        }
+
+        [Fact]
         public void GetServices_WithBuildServiceProvider_Returns_EmptyList_WhenNoServicesAvailable()
         {
             // Arrange
