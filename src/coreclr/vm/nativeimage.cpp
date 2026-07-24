@@ -138,7 +138,14 @@ namespace
             // Composite r2r PE image is not a part of anyone's identity.
             // We only need it to obtain the native image, which will be cached at AppDomain level.
             PEImageHolder pImage(PEImage::OpenImage(fullPath, MDInternalImport_NoCache, probeExtensionResult));
+#ifdef TARGET_WASM
+            // WebAssembly is flat-layout only (PEIMAGE_FLAT_LAYOUT_ONLY): a webcil composite has no
+            // OS-loadable/mapped layout, so requesting LAYOUT_LOADED yields no layout and trips the
+            // flat-suitability assert in GetOrCreateLayoutInternal. Request the flat layout explicitly.
+            PEImageLayout* loaded = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_FLAT);
+#else
             PEImageLayout* loaded = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_LOADED);
+#endif // TARGET_WASM
             // We will let pImage instance be freed after exiting this scope, but we will keep the layout,
             // thus the layout needs an AddRef, or it will be gone together with pImage.
             loaded->AddRef();
