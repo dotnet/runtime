@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -1756,6 +1755,128 @@ namespace System.Diagnostics
                     await _error.EOF.WaitAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
+        }
+
+        /// <inheritdoc cref="SafeProcessHandle.Signal(PosixSignal)"/>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public bool Signal(PosixSignal signal)
+        {
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            CheckDisposed();
+            EnsureState(State.HaveId);
+
+            return _processHandle?.Signal(signal) ?? SignalCore(signal);
+        }
+
+        /// <inheritdoc cref="SafeProcessHandle.WaitForExit()"/>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public ProcessExitStatus WaitForExitStatus()
+        {
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            CheckDisposed();
+            EnsureState(State.HaveId);
+
+            if (TryGetExitStatus(out ProcessExitStatus? exitStatus))
+            {
+                return exitStatus;
+            }
+            else if (_processHandle is not null)
+            {
+                return _processHandle.WaitForExit();
+            }
+
+            if (SafeProcessHandle.TryOpen(_processId, out SafeProcessHandle? processHandle))
+            {
+                using (processHandle)
+                {
+                    return processHandle.WaitForExit();
+                }
+            }
+
+            // Check the cached exit status one last time, in case the process exited between the previous check and the handle open attempt.
+            return TryGetExitStatus(out exitStatus) ? exitStatus : throw new InvalidOperationException(SR.ProcessHasExited);
+        }
+
+        /// <inheritdoc cref="SafeProcessHandle.TryWaitForExit(TimeSpan, out ProcessExitStatus?)"/>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public bool TryWaitForExitStatus(TimeSpan timeout, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            CheckDisposed();
+            EnsureState(State.HaveId);
+            _ = ProcessUtils.ToTimeoutMilliseconds(timeout);
+
+            if (TryGetExitStatus(out exitStatus))
+            {
+                return true;
+            }
+            else if (_processHandle is not null)
+            {
+                return _processHandle.TryWaitForExit(timeout, out exitStatus);
+            }
+
+            if (SafeProcessHandle.TryOpen(_processId, out SafeProcessHandle? processHandle))
+            {
+                using (processHandle)
+                {
+                    return processHandle.TryWaitForExit(timeout, out exitStatus);
+                }
+            }
+
+            return TryGetExitStatus(out exitStatus) ? true : throw new InvalidOperationException(SR.ProcessHasExited);
+        }
+
+        /// <inheritdoc cref="SafeProcessHandle.WaitForExitAsync(CancellationToken)"/>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public async Task<ProcessExitStatus> WaitForExitStatusAsync(CancellationToken cancellationToken = default)
+        {
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            CheckDisposed();
+            EnsureState(State.HaveId);
+
+            if (TryGetExitStatus(out ProcessExitStatus? exitStatus))
+            {
+                return exitStatus;
+            }
+            else if (_processHandle is not null)
+            {
+                return await _processHandle.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            if (SafeProcessHandle.TryOpen(_processId, out SafeProcessHandle? processHandle))
+            {
+                using (processHandle)
+                {
+                    return await processHandle.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            // Check the cached exit status one last time, in case the process exited between the previous check and the handle open attempt.
+            return TryGetExitStatus(out exitStatus) ? exitStatus : throw new InvalidOperationException(SR.ProcessHasExited);
         }
 
         /// <devdoc>
