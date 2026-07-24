@@ -98,7 +98,40 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     }
 
     int IXCLRDataProcess.GetTaskByUniqueID(ulong taskID, DacComNullableByRef<IXCLRDataTask> task)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetTaskByUniqueID(taskID, task) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        IXCLRDataTask? legacyTask = null;
+
+        if (_legacyProcess is not null)
+        {
+            DacComNullableByRef<IXCLRDataTask> legacyTaskOut = new(isNullRef: task.IsNullRef);
+            hrLocal = _legacyProcess.GetTaskByUniqueID(taskID, legacyTaskOut);
+            legacyTask = legacyTaskOut.Interface;
+        }
+
+        try
+        {
+            TargetPointer thread = _target.Contracts.Thread.IdToThread((uint)taskID);
+            if (thread == TargetPointer.Null)
+                throw new ArgumentException();
+
+            task.Interface = new ClrDataTask(thread, _target, legacyTask);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataProcess.GetFlags(uint* flags)
         => HResults.E_NOTIMPL;
@@ -115,8 +148,46 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.SetDesiredExecutionState(uint state)
         => HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.GetAddressType(ClrDataAddress address, /*CLRDataAddressType*/ uint* type)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetAddressType(address, type) : HResults.E_NOTIMPL;
+    int IXCLRDataProcess.GetAddressType(ClrDataAddress address, CLRDataAddressType* type)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (type is null)
+                throw new ArgumentNullException(nameof(type));
+
+            *type = CLRDataAddressType.CLRDATA_ADDRESS_UNRECOGNIZED;
+            TargetCodePointer codeAddress = address.ToTargetCodePointer(_target);
+            if (_target.TryRead(codeAddress, out byte _))
+            {
+                *type = _target.Contracts.ExecutionManager.GetCodeKind(codeAddress) switch
+                {
+                    CodeKind.Unknown => CLRDataAddressType.CLRDATA_ADDRESS_UNRECOGNIZED,
+                    CodeKind.Jitted or CodeKind.ReadyToRun or CodeKind.Interpreter => CLRDataAddressType.CLRDATA_ADDRESS_MANAGED_METHOD,
+                    _ => CLRDataAddressType.CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB,
+                };
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            CLRDataAddressType typeLocal = default;
+            int hrLocal = _legacyProcess.GetAddressType(address, type is null ? null : &typeLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr >= 0)
+            {
+                Debug.Assert(*type == typeLocal, $"cDAC: {*type}, DAC: {typeLocal}");
+            }
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataProcess.GetRuntimeNameByAddress(
         ClrDataAddress address,
@@ -229,24 +300,190 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
     private static string? GetStubName(Contracts.CodeKind codeKind)
     {
-        if (codeKind == Contracts.CodeKind.Unknown || codeKind == Contracts.CodeKind.Jitted || codeKind == Contracts.CodeKind.ReadyToRun)
+        if (codeKind is Contracts.CodeKind.Unknown
+            or Contracts.CodeKind.Jitted
+            or Contracts.CodeKind.ReadyToRun
+            or Contracts.CodeKind.ThePreStub)
+        {
             return null;
+        }
         if (codeKind == Contracts.CodeKind.StubPrecode || codeKind == Contracts.CodeKind.FixupPrecode)
             return "Prestub";
         return codeKind.ToString();
     }
 
-    int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.StartEnumAppDomains(handle) : HResults.E_NOTIMPL;
+    private sealed class ProcessEnum<T> : IEnum<T>
+    {
+        public IEnumerator<T> Enumerator { get; }
+        public nuint LegacyHandle { get; set; }
 
-    int IXCLRDataProcess.EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EnumAppDomain(handle, appDomain) : HResults.E_NOTIMPL;
+        public ProcessEnum(IEnumerable<T> values, nuint legacyHandle)
+        {
+            Enumerator = values.GetEnumerator();
+            LegacyHandle = legacyHandle;
+        }
+    }
+
+    int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        ulong legacyHandle = 0;
+
+        try
+        {
+            if (handle is null)
+                throw new ArgumentNullException(nameof(handle));
+
+            *handle = 0;
+            if (_legacyProcess is not null)
+            {
+                hrLocal = _legacyProcess.StartEnumAppDomains(&legacyHandle);
+            }
+
+            TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
+            ProcessEnum<TargetPointer> domains = new([appDomain], (nuint)legacyHandle);
+            *handle = (ulong)((IEnum<TargetPointer>)domains).GetHandle();
+            legacyHandle = 0;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+        finally
+        {
+            if (_legacyProcess is not null && legacyHandle != 0)
+            {
+                _legacyProcess.EndEnumAppDomains(legacyHandle);
+            }
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataProcess.EnumAppDomain(ulong* handle, DacComNullableByRef<IXCLRDataAppDomain> appDomain)
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        try
+        {
+            if (handle is null)
+                throw new ArgumentNullException(nameof(handle));
+            if (*handle == 0)
+                return HResults.S_FALSE;
+            if (appDomain.IsNullRef)
+                throw new NullReferenceException();
+
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+            if (gcHandle.Target is not ProcessEnum<TargetPointer> domains)
+                throw new ArgumentException();
+
+            IXCLRDataAppDomain? legacyAppDomain = null;
+            if (_legacyProcess is not null)
+            {
+                ulong legacyHandle = (ulong)domains.LegacyHandle;
+                DacComNullableByRef<IXCLRDataAppDomain> legacyAppDomainOut = new(isNullRef: false);
+                hrLocal = _legacyProcess.EnumAppDomain(&legacyHandle, legacyAppDomainOut);
+                legacyAppDomain = legacyAppDomainOut.Interface;
+                domains.LegacyHandle = (nuint)legacyHandle;
+            }
+
+            if (domains.Enumerator.MoveNext())
+            {
+                appDomain.Interface = new ClrDataAppDomain(_target, domains.Enumerator.Current, legacyAppDomain);
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataProcess.EndEnumAppDomains(ulong handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EndEnumAppDomains(handle) : HResults.E_NOTIMPL;
+    {
+        if (handle == 0)
+            return HResults.S_OK;
 
-    int IXCLRDataProcess.GetAppDomainByUniqueID(ulong id, /*IXCLRDataAppDomain*/ void** appDomain)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetAppDomainByUniqueID(id, appDomain) : HResults.E_NOTIMPL;
+        int hr = HResults.S_OK;
+        ProcessEnum<TargetPointer> domains;
+        try
+        {
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)handle);
+            if (gcHandle.Target is not ProcessEnum<TargetPointer> domainsLocal)
+                throw new ArgumentException();
+
+            domains = domainsLocal;
+            ((IEnum<TargetPointer>)domains).Dispose();
+            gcHandle.Free();
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        if (_legacyProcess is not null && domains.LegacyHandle != 0)
+        {
+            hr = _legacyProcess.EndEnumAppDomains((ulong)domains.LegacyHandle);
+        }
+
+        return hr;
+    }
+
+    int IXCLRDataProcess.GetAppDomainByUniqueID(ulong id, DacComNullableByRef<IXCLRDataAppDomain> appDomain)
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        IXCLRDataAppDomain? legacyAppDomain = null;
+
+        if (_legacyProcess is not null)
+        {
+            DacComNullableByRef<IXCLRDataAppDomain> legacyAppDomainOut = new(isNullRef: appDomain.IsNullRef);
+            hrLocal = _legacyProcess.GetAppDomainByUniqueID(id, legacyAppDomainOut);
+            legacyAppDomain = legacyAppDomainOut.Interface;
+        }
+
+        try
+        {
+            if (id != ClrDataAppDomain.DefaultAppDomainId)
+                throw new ArgumentException();
+
+            TargetPointer domain = _target.Contracts.Loader.GetAppDomain();
+            appDomain.Interface = new ClrDataAppDomain(_target, domain, legacyAppDomain);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataProcess.StartEnumAssemblies(ulong* handle)
         => HResults.E_NOTIMPL;
@@ -258,16 +495,182 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         => HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.StartEnumModules(ulong* handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.StartEnumModules(handle) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        ulong legacyHandle = 0;
+
+        try
+        {
+            if (handle is null)
+                throw new ArgumentNullException(nameof(handle));
+
+            *handle = 0;
+            if (_legacyProcess is not null)
+            {
+                hrLocal = _legacyProcess.StartEnumModules(&legacyHandle);
+            }
+
+            ILoader loader = _target.Contracts.Loader;
+            IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
+                loader.GetAppDomain(),
+                AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
+            ProcessEnum<Contracts.ModuleHandle> moduleEnum = new(modules, (nuint)legacyHandle);
+            *handle = (ulong)((IEnum<Contracts.ModuleHandle>)moduleEnum).GetHandle();
+            legacyHandle = 0;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+        finally
+        {
+            if (_legacyProcess is not null && legacyHandle != 0)
+            {
+                _legacyProcess.EndEnumModules(legacyHandle);
+            }
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataProcess.EnumModule(ulong* handle, DacComNullableByRef<IXCLRDataModule> mod)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EnumModule(handle, mod) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        try
+        {
+            if (handle is null)
+                throw new ArgumentNullException(nameof(handle));
+            if (*handle == 0)
+                return HResults.S_FALSE;
+            if (mod.IsNullRef)
+                throw new NullReferenceException();
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+            if (gcHandle.Target is not ProcessEnum<Contracts.ModuleHandle> modules)
+                throw new ArgumentException();
+
+            IXCLRDataModule? legacyModule = null;
+            if (_legacyProcess is not null)
+            {
+                ulong legacyHandle = (ulong)modules.LegacyHandle;
+                DacComNullableByRef<IXCLRDataModule> legacyModuleOut = new(isNullRef: false);
+                hrLocal = _legacyProcess.EnumModule(&legacyHandle, legacyModuleOut);
+                legacyModule = legacyModuleOut.Interface;
+                modules.LegacyHandle = (nuint)legacyHandle;
+            }
+
+            if (modules.Enumerator.MoveNext())
+            {
+                mod.Interface = new ClrDataModule(modules.Enumerator.Current.Address, _target, legacyModule);
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataProcess.EndEnumModules(ulong handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.EndEnumModules(handle) : HResults.E_NOTIMPL;
+    {
+        if (handle == 0)
+            return HResults.S_OK;
+
+        int hr = HResults.S_OK;
+        ProcessEnum<Contracts.ModuleHandle> modules;
+        try
+        {
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)handle);
+            if (gcHandle.Target is not ProcessEnum<Contracts.ModuleHandle> modulesLocal)
+                throw new ArgumentException();
+
+            modules = modulesLocal;
+            ((IEnum<Contracts.ModuleHandle>)modules).Dispose();
+            gcHandle.Free();
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        if (_legacyProcess is not null && modules.LegacyHandle != 0)
+        {
+            hr = _legacyProcess.EndEnumModules((ulong)modules.LegacyHandle);
+        }
+
+        return hr;
+    }
 
     int IXCLRDataProcess.GetModuleByAddress(ClrDataAddress address, DacComNullableByRef<IXCLRDataModule> mod)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetModuleByAddress(address, mod) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_FALSE;
+        int hrLocal = HResults.S_OK;
+        IXCLRDataModule? legacyModule = null;
+
+        if (_legacyProcess is not null)
+        {
+            DacComNullableByRef<IXCLRDataModule> legacyModuleOut = new(isNullRef: mod.IsNullRef);
+            hrLocal = _legacyProcess.GetModuleByAddress(address, legacyModuleOut);
+            legacyModule = legacyModuleOut.Interface;
+        }
+
+        try
+        {
+            if (mod.IsNullRef)
+                throw new NullReferenceException();
+
+            ILoader loader = _target.Contracts.Loader;
+            IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
+                loader.GetAppDomain(),
+                AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
+            foreach (Contracts.ModuleHandle module in modules)
+            {
+                if (!loader.TryGetLoadedImageContents(module, out TargetPointer baseAddress, out uint size, out _))
+                    continue;
+
+                ClrDataAddress imageBase = baseAddress.ToClrDataAddress(_target);
+                if (imageBase <= address && address - imageBase < size)
+                {
+                    mod.Interface = new ClrDataModule(module.Address, _target, legacyModule);
+                    hr = HResults.S_OK;
+                    break;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     internal sealed class EnumMethodInstances : IEnum<MethodDescHandle>
     {
@@ -624,7 +1027,19 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         char* nameBuf,
         DacComNullableByRef<IXCLRDataValue> value,
         ClrDataAddress* displacement)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.GetDataByAddress(address, flags, appDomain, tlsTask, bufLen, nameLen, nameBuf, value, displacement) : HResults.E_NOTIMPL;
+    {
+        int hr = flags == 0 ? HResults.E_NOTIMPL : HResults.E_INVALIDARG;
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            int hrLocal = _legacyProcess.GetDataByAddress(address, flags, appDomain, tlsTask, bufLen, nameLen, nameBuf, value, displacement);
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataProcess.GetExceptionStateByExceptionRecord(EXCEPTION_RECORD64* record, DacComNullableByRef<IXCLRDataExceptionState> exState)
         => HResults.E_NOTIMPL;
