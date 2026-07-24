@@ -25,4 +25,5 @@ clean:
 	rm -rf bin $(TOP)/artifacts/obj/mono/$(PROJECT_NAME:%.csproj=%)
 
 run-console:
+	@test -n "${WASMTIME_PROV_DIR}" || { echo "Error: wasmtime is not provisioned. Build a wasi target first, or set WASMTIME_PATH / DOTNET_WASM_TOOL_CACHE_DIR."; exit 1; }
 	cd bin/wasi-wasm/AppBundle && PATH="${WASMTIME_PROV_DIR}:${PATH}" ./run-wasmtime.sh $(ARGS)

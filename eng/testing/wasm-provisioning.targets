@@ -151,6 +151,12 @@ export __SCRIPT_DIR=%24( cd -- "%24( dirname -- "%24{BASH_SOURCE[0]}" )" &amp;> 
           AfterTargets="$(WasmProvisionAfterTarget)"
           Condition="'$(InstallChromeForTests)' == 'true' or '$(InstallFirefoxForTests)' == 'true' or '$(InstallV8ForTests)' == 'true'">
 
+    <!-- On Linux the Chrome/chromedriver/Firefox/geckodriver/V8 download URLs are x86_64-only, but
+         the cache entry is keyed by $(WasmToolHostRid). Fail fast rather than caching an x64 payload
+         under a linux-arm64 key. (macOS selects arm64/x64 URLs; Windows is x64.) -->
+    <Error Condition="$([MSBuild]::IsOSPlatform('linux')) and '$(BuildArchitecture)' != 'x64'"
+           Text="Browser and JS engine test tools are only available for x64 on Linux; provisioning them for '$(BuildArchitecture)' is not supported. Set InstallChromeForTests/InstallFirefoxForTests/InstallV8ForTests=false, or point the *_PATH_FOR_TESTS variables at a local install." />
+
     <Error Condition="'$(InstallChromeForTests)' == 'true' and '$(ChromeVersion)' == ''"
            Text="No %24(ChromeVersion) set. This can be set in eng/testing/BrowserVersions.props" />
     <Error Condition="'$(InstallV8ForTests)' == 'true' and '$(V8Version)' == ''"

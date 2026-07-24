@@ -17,7 +17,7 @@
 # relative gitdir (git relative-worktrees) or a normal clone falls back to the repo root, which is
 # resolved to an absolute path so callers that pass a relative repo root still get a usable value.
 # The anchoring rule matches eng/wasm/WasmToolCache.props exactly when a repo root is supplied,
-# which every caller does; the no-repo-root $HOME fallback below exists only as a last resort.
+# which every caller does.
 wasm_tool_anchor_root()
 {
     _repo_root="${1%/}"
@@ -37,12 +37,14 @@ wasm_tool_anchor_root()
 
 wasm_tool_cache_root()
 {
+    # DOTNET_WASM_TOOL_CACHE_DIR wins; otherwise anchor under the repo's main checkout, exactly as
+    # eng/wasm/WasmToolCache.props does. A repo root is always supplied by callers, so there is no
+    # further fallback -- an unresolved root yields an empty result and the caller reports the
+    # missing tool.
     if [ -n "${DOTNET_WASM_TOOL_CACHE_DIR:-}" ]; then
         printf '%s\n' "${DOTNET_WASM_TOOL_CACHE_DIR%/}"
     elif [ -n "${1:-}" ]; then
         printf '%s\n' "$(wasm_tool_anchor_root "$1")/.dotnet/wasm-tools"
-    elif [ -n "${HOME:-}" ]; then
-        printf '%s\n' "$HOME/.dotnet/wasm-tools"
     fi
 }
 
