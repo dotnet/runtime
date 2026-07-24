@@ -13,6 +13,7 @@ using System.Buffers.Text;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -68,7 +69,7 @@ namespace System
             /// representation) and 1..18 significant digits. Any other request returns
             /// <see langword="false"/> so the caller can fall back to Dragon4.
             /// </remarks>
-            public static bool TryRun<TNumber>(TNumber value, int requestedDigits, ref NumberBuffer number)
+            internal static bool TryRun<TNumber>(TNumber value, int requestedDigits, ref NumberBuffer number)
                 where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
             {
                 if ((requestedDigits < -1) || (requestedDigits == 0) || (requestedDigits > 18))
@@ -262,8 +263,9 @@ namespace System
             {
                 Debug.Assert((decimalExponent >= Pow10Min) && (decimalExponent <= Pow10Max));
 
-                int index = (decimalExponent - Pow10Min) * 2;
-                return new Scaler(Pow10Tab[index], Pow10Tab[index + 1], -(binaryExponent + Log2Pow10(decimalExponent) + 3));
+                ReadOnlySpan<CachedPower> cachedPowers = MemoryMarshal.Cast<ulong, CachedPower>(Pow10Tab);
+                CachedPower power = cachedPowers[decimalExponent - Pow10Min];
+                return new Scaler(power.High, power.Low, -(binaryExponent + Log2Pow10(decimalExponent) + 3));
             }
 
             // Multiplies value by the cached power high * 2^64 - low and returns the
@@ -308,6 +310,12 @@ namespace System
 
             // Floor(log10(3/4 * 2^x)).
             private static int Skewed(int value) => ((value * 631305) - 261663) >> 21;
+
+            private readonly struct CachedPower
+            {
+                public readonly ulong High;
+                public readonly ulong Low;
+            }
 
             private readonly struct Scaler
             {

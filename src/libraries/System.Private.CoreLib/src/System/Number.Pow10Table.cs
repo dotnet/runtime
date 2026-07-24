@@ -21,8 +21,8 @@ namespace System
         internal static partial class UnroundedScaling
         {
             // The smallest and largest decimal exponents present in the power-of-ten table.
-            public const int Pow10Min = -348;
-            public const int Pow10Max = 347;
+            private const int Pow10Min = -348;
+            private const int Pow10Max = 347;
 
             // Each adjacent pair contains the high and low words for one decimal exponent.
             private static ReadOnlySpan<ulong> Pow10Tab =>
