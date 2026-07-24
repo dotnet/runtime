@@ -94,6 +94,16 @@ public enum GenericContextLoc
     ThisPtr,
 }
 
+[Flags]
+public enum AsyncMethodFlags : uint
+{
+    None = 0,
+    AsyncCall = 0x1,
+    IsAsyncVariant = 0x2,
+    Thunk = 0x4,
+    ReturnDroppingThunk = 0x8,
+}
+
 public enum WellKnownMethodTable
 {
     Object,
@@ -316,11 +326,12 @@ public interface IRuntimeTypeSystem : IContract
 
     OptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
     bool IsEligibleForTieredCompilation(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
-
-    bool IsAsyncThunkMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    AsyncMethodFlags GetAsyncMethodFlags(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     bool IsWrapperStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
     bool IsUnboxingStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    bool IsVarArg(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
     #region FieldDesc inspection APIs
     TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer) => throw new NotImplementedException();

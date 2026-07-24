@@ -1728,19 +1728,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             if (handleData.IsValid)
             {
-                IStackWalk sw = _target.Contracts.StackWalk;
-                byte[] context = sw.GetRawContext(handleData.Current);
-
-                // See https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L184
-                RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
-                if (arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64)
-                {
-                    IPlatformAgnosticContext stripped = IPlatformAgnosticContext.GetContextForPlatform(_target);
-                    stripped.FillFromBuffer(context);
-                    stripped.RawContextFlags &= ~0x40u;
-                    context = stripped.GetBytes();
-                }
-
+                byte[] context = GetCurrentContextBytes(handleData.Current!);
                 context.AsSpan().CopyTo(new Span<byte>(pContext, context.Length));
             }
             else
@@ -1893,15 +1881,283 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, int* pRetVal)
+    public int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, FrameType* pRetVal)
     {
         if (pSFIHandle == 0)
             return HResults.E_INVALIDARG;
 
-        nuint legacyHandle = TryGetLegacyHandle(pSFIHandle);
-        return _legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0
-            ? _legacy.GetStackWalkCurrentFrameInfo(legacyHandle, pFrameData, pRetVal)
-            : HResults.E_NOTIMPL;
+        int hr = HResults.S_OK;
+        nuint legacyHandle = 0;
+        FrameType ftResult = FrameType.Invalid;
+#if DEBUG
+        bool haveFrameInfo = false;
+        bool isInterrupted = false;
+#endif
+        try
+        {
+            *pRetVal = FrameType.Invalid;
+            GCHandle gcHandle = GCHandle.FromIntPtr((nint)pSFIHandle);
+            if (gcHandle.Target is not StackWalkHandleData handleData)
+                throw new ArgumentException("Invalid stack walk handle", nameof(pSFIHandle));
+            legacyHandle = handleData.LegacyHandle;
+
+            if (!handleData.IsValid)
+            {
+                ftResult = FrameType.AtEndOfStack;
+            }
+            else
+            {
+                IStackDataFrameHandle handle = handleData.Current;
+                bool initFrameData = false;
+                switch (handle.State)
+                {
+                    case StackWalkState.Frameless:
+                        ftResult = FrameType.ManagedStackFrame;
+                        initFrameData = true;
+                        break;
+                    case StackWalkState.InitialNativeContext:
+                    case StackWalkState.NativeMarker:
+                        TargetCodePointer controlPC = _target.Contracts.StackWalk.GetInstructionPointer(handle);
+                        if (_target.Contracts.Debugger.GetHijackKind(controlPC) != HijackKind.None)
+                        {
+                            ftResult = FrameType.NativeRuntimeUnwindableStackFrame;
+                            initFrameData = true;
+                        }
+                        else
+                        {
+                            ftResult = FrameType.NativeStackFrame;
+                        }
+                        break;
+                    default:
+                        ftResult = FrameType.Invalid;
+                        break;
+                }
+
+                if (initFrameData && pFrameData != 0)
+                {
+#if DEBUG
+                    haveFrameInfo = true;
+                    isInterrupted = handle.IsInterrupted;
+#endif
+                    InitFrameData(handle, ftResult, pFrameData);
+                }
+            }
+
+            *pRetVal = ftResult;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null && legacyHandle != 0)
+        {
+            uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(_target).Size;
+            byte* pLegacyCtx = (byte*)NativeMemory.AlignedAlloc(contextSize, 16);
+            try
+            {
+                new Span<byte>(pLegacyCtx, (int)contextSize).Clear();
+                Debugger_STRData legacyData = default;
+                legacyData.ctx = (nuint)pLegacyCtx;
+                FrameType legacyRetVal = FrameType.Invalid;
+                int hrLocal = _legacy.GetStackWalkCurrentFrameInfo(legacyHandle, (nint)(&legacyData), &legacyRetVal);
+                Debug.ValidateHResult(hr, hrLocal);
+                if (hr == HResults.S_OK)
+                {
+                    Debug.Assert(ftResult == legacyRetVal, $"FrameType mismatch - cDAC: {ftResult}, DAC: {legacyRetVal}");
+                    if (haveFrameInfo && pFrameData != 0)
+                    {
+                        Debugger_STRData* pcdac = (Debugger_STRData*)pFrameData;
+                        Debug.Assert(pcdac->fp == legacyData.fp, $"fp mismatch - cDAC: 0x{pcdac->fp:x}, DAC: 0x{legacyData.fp:x}");
+                        Debug.Assert(pcdac->vmCurrentAppDomainToken == legacyData.vmCurrentAppDomainToken, $"appDomain mismatch - cDAC: 0x{pcdac->vmCurrentAppDomainToken:x}, DAC: 0x{legacyData.vmCurrentAppDomainToken:x}");
+                        Debug.Assert(pcdac->eType == legacyData.eType, $"eType mismatch - cDAC: {pcdac->eType}, DAC: {legacyData.eType}");
+
+                        if (pcdac->ctx != 0)
+                        {
+                            ReadOnlySpan<byte> cctx = new((byte*)pcdac->ctx, (int)contextSize);
+                            ReadOnlySpan<byte> lctx = new(pLegacyCtx, (int)contextSize);
+                            if (!cctx.SequenceEqual(lctx))
+                                Debug.Fail(DescribeContextDiff(cctx, lctx));
+                        }
+
+                        if (ftResult == FrameType.ManagedStackFrame)
+                        {
+                            DebuggerIPCE_STRData_MethodFrame cv = pcdac->v;
+                            DebuggerIPCE_STRData_MethodFrame lv = legacyData.v;
+                            Debug.Assert(cv.mapping == lv.mapping, $"mapping mismatch - cDAC: {cv.mapping}, DAC: {lv.mapping}");
+                            Debug.Assert(cv.fVarArgs == lv.fVarArgs, $"fVarArgs mismatch - cDAC: {cv.fVarArgs}, DAC: {lv.fVarArgs}");
+                            Debug.Assert(cv.fNoMetadata == lv.fNoMetadata, $"fNoMetadata mismatch - cDAC: {cv.fNoMetadata}, DAC: {lv.fNoMetadata}");
+                            Debug.Assert(cv.taAmbientESP == lv.taAmbientESP, $"taAmbientESP mismatch - cDAC: 0x{cv.taAmbientESP:x}, DAC: 0x{lv.taAmbientESP:x}");
+                            Debug.Assert(cv.exactGenericArgsToken == lv.exactGenericArgsToken, $"exactGenericArgsToken mismatch - cDAC: 0x{cv.exactGenericArgsToken:x}, DAC: 0x{lv.exactGenericArgsToken:x}");
+                            Debug.Assert(cv.dwExactGenericArgsTokenIndex == lv.dwExactGenericArgsTokenIndex, $"dwExactGenericArgsTokenIndex mismatch - cDAC: 0x{cv.dwExactGenericArgsTokenIndex:x}, DAC: 0x{lv.dwExactGenericArgsTokenIndex:x}");
+                            Debug.Assert(cv.funcData.funcMetadataToken == lv.funcData.funcMetadataToken, $"funcMetadataToken mismatch - cDAC: 0x{cv.funcData.funcMetadataToken:x}, DAC: 0x{lv.funcData.funcMetadataToken:x}");
+                            Debug.Assert(cv.funcData.vmAssembly == lv.funcData.vmAssembly, $"vmAssembly mismatch - cDAC: 0x{cv.funcData.vmAssembly:x}, DAC: 0x{lv.funcData.vmAssembly:x}");
+                            Debug.Assert(cv.jitFuncData.nativeStartAddressPtr == lv.jitFuncData.nativeStartAddressPtr, $"nativeStartAddressPtr mismatch - cDAC: 0x{cv.jitFuncData.nativeStartAddressPtr:x}, DAC: 0x{lv.jitFuncData.nativeStartAddressPtr:x}");
+                            Debug.Assert(cv.jitFuncData.nativeOffset == lv.jitFuncData.nativeOffset, $"nativeOffset mismatch - cDAC: 0x{cv.jitFuncData.nativeOffset:x}, DAC: 0x{lv.jitFuncData.nativeOffset:x}");
+                            Debug.Assert(cv.jitFuncData.vmNativeCodeMethodDescToken == lv.jitFuncData.vmNativeCodeMethodDescToken, $"vmNativeCodeMethodDescToken mismatch - cDAC: 0x{cv.jitFuncData.vmNativeCodeMethodDescToken:x}, DAC: 0x{lv.jitFuncData.vmNativeCodeMethodDescToken:x}");
+                            Debug.Assert(cv.jitFuncData.fIsFilterFrame == lv.jitFuncData.fIsFilterFrame, $"fIsFilterFrame mismatch - cDAC: {cv.jitFuncData.fIsFilterFrame}, DAC: {lv.jitFuncData.fIsFilterFrame}");
+                            Debug.Assert(cv.jitFuncData.isInstantiatedGeneric == lv.jitFuncData.isInstantiatedGeneric, $"isInstantiatedGeneric mismatch - cDAC: {cv.jitFuncData.isInstantiatedGeneric}, DAC: {lv.jitFuncData.isInstantiatedGeneric}");
+                            Debug.Assert(cv.jitFuncData.fpParentOrSelf == lv.jitFuncData.fpParentOrSelf, $"fpParentOrSelf mismatch - cDAC: 0x{cv.jitFuncData.fpParentOrSelf:x}, DAC: 0x{lv.jitFuncData.fpParentOrSelf:x}");
+                            Debug.Assert(cv.jitFuncData.parentNativeOffset == lv.jitFuncData.parentNativeOffset, $"parentNativeOffset mismatch - cDAC: 0x{cv.jitFuncData.parentNativeOffset:x}, DAC: 0x{lv.jitFuncData.parentNativeOffset:x}");
+                            if (isInterrupted)
+                                Debug.Assert(cv.jitFuncData.justAfterILThrow == lv.jitFuncData.justAfterILThrow, $"justAfterILThrow mismatch - cDAC: {cv.jitFuncData.justAfterILThrow}, DAC: {lv.jitFuncData.justAfterILThrow}");
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                NativeMemory.AlignedFree(pLegacyCtx);
+            }
+        }
+#endif
+        return hr;
+    }
+
+    private byte[] GetCurrentContextBytes(IStackDataFrameHandle handle)
+    {
+        IStackWalk sw = _target.Contracts.StackWalk;
+        byte[] context = sw.GetRawContext(handle);
+
+        // See https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L184
+        RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+        if (arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64)
+        {
+            IPlatformAgnosticContext stripped = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            stripped.FillFromBuffer(context);
+            stripped.RawContextFlags &= ~0x40u;
+            context = stripped.GetBytes();
+        }
+        return context;
+    }
+
+    private void WriteContext(IStackDataFrameHandle handle, nuint ctxPtr)
+    {
+        if (ctxPtr == 0)
+            return;
+        byte[] context = GetCurrentContextBytes(handle);
+        context.AsSpan().CopyTo(new Span<byte>((byte*)ctxPtr, context.Length));
+    }
+
+    private void InitFrameData(IStackDataFrameHandle handle, FrameType ft, nint pFrameData)
+    {
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+        TargetPointer currentAppDomain = _target.Contracts.Loader.GetAppDomain();
+
+        Debugger_STRData* pDest = (Debugger_STRData*)pFrameData;
+        nuint incomingCtx = pDest->ctx;
+
+        Debugger_STRData data = default;
+        data.ctx = incomingCtx;
+        data.fp = _target.Contracts.StackWalk.GetRuntimeFramePointer(handle).Value;
+        data.vmCurrentAppDomainToken = currentAppDomain.Value;
+        WriteContext(handle, incomingCtx);
+
+        if (ft == FrameType.NativeRuntimeUnwindableStackFrame)
+        {
+            data.eType = Debugger_STRData.EType.cRuntimeNativeFrame;
+        }
+        else
+        {
+            data.eType = Debugger_STRData.EType.cMethodFrame;
+
+            TargetPointer mdPtr = _target.Contracts.StackWalk.GetMethodDescPtr(handle);
+            MethodDescHandle md = rts.GetMethodDescHandle(mdPtr);
+
+            data.v.mapping = (int)CorDebugMappingResult.MAPPING_NO_INFO;
+            data.v.fVarArgs = (byte)(rts.IsVarArg(md) ? 1 : 0);
+            data.v.fNoMetadata = (byte)((rts.IsNoMetadataMethod(md, out _) || rts.IsILStub(md) || IsDiagnosticsHidden(rts.GetAsyncMethodFlags(md)) || rts.IsWrapperStub(md)) ? 1 : 0);
+            GenericContextLoc genericContextLoc = rts.GetGenericContextLoc(md);
+            if (genericContextLoc != GenericContextLoc.None)
+            {
+                try
+                {
+                    data.v.exactGenericArgsToken = _target.Contracts.StackWalk.GetExactGenericArgsToken(handle).Value;
+                }
+                catch (VirtualReadException)
+                {
+
+                }
+                data.v.dwExactGenericArgsTokenIndex = genericContextLoc == GenericContextLoc.ThisPtr ? 0u : unchecked((uint)IlNum.TYPECTXT_ILNUM);
+            }
+            else
+            {
+                data.v.dwExactGenericArgsTokenIndex = unchecked((uint)IlNum.MAX_ILNUM);
+            }
+
+            data.v.funcData.funcMetadataToken = rts.GetMethodToken(md);
+            TargetPointer vmAssembly = ResolveMethodAssembly(rts, md);
+            data.v.funcData.vmAssembly = vmAssembly.Value;
+
+            TargetCodePointer controlPC = _target.Contracts.StackWalk.GetInstructionPointer(handle);
+            ulong nativeOffset = 0;
+            CodeBlockHandle? codeBlockHandle = eman.GetCodeBlockHandle(controlPC);
+            if (codeBlockHandle is CodeBlockHandle cbh)
+            {
+                try
+                {
+                    data.v.jitFuncData.nativeStartAddressPtr = eman.GetStartAddress(cbh).Value;
+                }
+                catch (VirtualReadException)
+                {
+
+                }
+                nativeOffset = eman.GetRelativeOffset(cbh).Value;
+            }
+            data.v.jitFuncData.nativeHotSize = 0;
+            data.v.jitFuncData.nativeStartAddressColdPtr = 0;
+            data.v.jitFuncData.nativeColdSize = 0;
+            data.v.jitFuncData.nativeOffset = nativeOffset;
+            data.v.jitFuncData.vmNativeCodeMethodDescToken = mdPtr.Value;
+            data.v.taAmbientESP = GetAmbientSP(handle, codeBlockHandle, (uint)nativeOffset).Value;
+            data.v.jitFuncData.fIsFilterFrame = codeBlockHandle is CodeBlockHandle codeBlock && eman.IsFilterFunclet(codeBlock)
+                ? Interop.BOOL.TRUE
+                : Interop.BOOL.FALSE;
+            data.v.jitFuncData.fpParentOrSelf = _target.Contracts.StackWalk.GetFuncletRootId(handle, out uint parentNativeOffset).Value;
+            data.v.jitFuncData.parentNativeOffset = parentNativeOffset;
+            data.v.jitFuncData.isInstantiatedGeneric = HasClassOrMethodInstantiation(rts, md) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data.v.jitFuncData.justAfterILThrow = (handle.IsInterrupted && !handle.HasFaulted && nativeOffset != 0) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+
+        *pDest = data;
+    }
+
+    private TargetPointer GetAmbientSP(IStackDataFrameHandle handle, CodeBlockHandle? codeBlockHandle, uint nativeOffset)
+    {
+        if (codeBlockHandle is not CodeBlockHandle cbh)
+            return TargetPointer.Null;
+
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+        eman.GetGCInfo(cbh, out TargetPointer gcInfoAddress, out uint gcVersion);
+        IGCInfo gcInfo = _target.Contracts.GCInfo;
+        TargetCodePointer ip = _target.Contracts.StackWalk.GetInstructionPointer(handle);
+        CodeKind codeKind = eman.GetCodeKind(ip);
+        IGCInfoHandle gcInfoHandle = codeKind == CodeKind.Interpreter
+            ? gcInfo.DecodeInterpreterGCInfo(gcInfoAddress, gcVersion)
+            : gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddress, gcVersion);
+        IStackWalk stackWalk = _target.Contracts.StackWalk;
+        return gcInfo.GetAmbientSP(gcInfoHandle, nativeOffset, stackWalk.GetContextFramePointer(handle), stackWalk.GetStackPointer(handle));
+    }
+
+    private static bool IsDiagnosticsHidden(AsyncMethodFlags flags)
+        => flags.HasFlag(AsyncMethodFlags.Thunk)
+            && (flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk) || !flags.HasFlag(AsyncMethodFlags.IsAsyncVariant));
+
+    private static bool HasClassOrMethodInstantiation(IRuntimeTypeSystem rts, MethodDescHandle md)
+    {
+        try
+        {
+            TargetPointer mtAddr = rts.GetMethodTable(md);
+            ITypeHandle mt = rts.GetTypeHandle(mtAddr);
+            bool hasClassInstantiation = !rts.GetInstantiation(mt).IsEmpty;
+            bool hasMethodInstantiation = rts.IsGenericMethodDefinition(md) || !rts.GetGenericMethodInstantiation(md).IsEmpty;
+            return hasClassInstantiation || hasMethodInstantiation;
+        }
+        catch (VirtualReadException)
+        {
+            return false;
+        }
     }
 
     // Filter used by GetCountOfInternalFrames and EnumerateInternalFrames to decide
@@ -2049,18 +2305,29 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
         funcMetadataToken = rts.GetMethodToken(mdHandle);
+        vmAssembly = ResolveMethodAssembly(rts, mdHandle);
+    }
 
-        TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
-        if (mtPtr == TargetPointer.Null)
-            return;
-        ITypeHandle typeHandle = rts.GetTypeHandle(mtPtr);
-        TargetPointer modulePtr = rts.GetModule(typeHandle);
-        if (modulePtr == TargetPointer.Null)
-            return;
+    private TargetPointer ResolveMethodAssembly(IRuntimeTypeSystem rts, MethodDescHandle mdHandle)
+    {
+        try
+        {
+            TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
+            if (mtPtr == TargetPointer.Null)
+                return TargetPointer.Null;
+            ITypeHandle typeHandle = rts.GetTypeHandle(mtPtr);
+            TargetPointer modulePtr = rts.GetModule(typeHandle);
+            if (modulePtr == TargetPointer.Null)
+                return TargetPointer.Null;
 
-        ILoader loader = _target.Contracts.Loader;
-        Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
-        vmAssembly = loader.GetAssembly(moduleHandle);
+            ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+            return loader.GetAssembly(moduleHandle);
+        }
+        catch (VirtualReadException)
+        {
+            return TargetPointer.Null;
+        }
     }
 
     private static CorDebugInternalFrameType ToCorDebugInternalFrameType(Contracts.InternalFrameType frameType)
@@ -2207,7 +2474,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethodDesc));
-            if (rts.IsILStub(md) || rts.IsAsyncThunkMethod(md) || rts.IsWrapperStub(md))
+            if (rts.IsILStub(md) || IsDiagnosticsHidden(rts.GetAsyncMethodFlags(md)) || rts.IsWrapperStub(md))
             {
                 *pRetVal = (int)DynamicMethodType.kDiagnosticHidden;
             }
@@ -5674,7 +5941,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethod));
 
-            if (!rts.IsAsyncThunkMethod(md))
+            if (!rts.GetAsyncMethodFlags(md).HasFlag(Contracts.AsyncMethodFlags.Thunk))
             {
                 TargetCodePointer pCode;
                 if (codeAddr != 0)

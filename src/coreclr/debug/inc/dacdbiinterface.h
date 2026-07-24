@@ -1060,8 +1060,6 @@ public:
         kExplicitFrame,
         kNativeStackFrame,
         kNativeRuntimeUnwindableStackFrame,
-        kManagedExceptionHandlingCodeFrame,
-        kRuntimeEntryPointFrame,
         kAtEndOfStack,
     } FrameType;
 

@@ -9,6 +9,12 @@ public interface IStackDataFrameHandle
 {
     // Describes what the current Context/FrameIter of this handle represents.
     StackWalkState State { get; }
+
+    // True when the current managed frame was interrupted by an exception frame.
+    bool IsInterrupted { get; }
+
+    // True when the interrupting frame represents an active hardware fault.
+    bool HasFaulted { get; }
 }
 
 public enum StackWalkState
@@ -45,18 +51,19 @@ IEnumerable<IStackDataFrameHandle> CreateStackWalk(
     bool isFirst = true);
 
 // Gets the thread context at the given stack dataframe.
-byte[] GetRawContext(
-    IStackDataFrameHandle stackDataFrameHandle,
-    StackwalkFlag flags = StackwalkFlag.Default);
-
-[Flags]
-enum StackwalkFlag
-{
-    Default = 0,
-}
+byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
+
+// Gets the computed debugger frame pointer for the current stack dataframe.
+TargetPointer GetRuntimeFramePointer(IStackDataFrameHandle stackDataFrameHandle);
+
+// Gets the base pointer register from the current frame's context.
+TargetPointer GetContextFramePointer(IStackDataFrameHandle stackDataFrameHandle);
+
+// Gets the stack pointer from the current frame's context.
+TargetPointer GetStackPointer(IStackDataFrameHandle stackDataFrameHandle);
 
 // Gets the Frame name associated with the given Frame identifier. If no matching Frame name found returns an empty string.
 string GetFrameName(TargetPointer frameIdentifier);
@@ -91,6 +98,17 @@ byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint
 
 // Returns the saved TargetContext pointer carried by the head Frame, if applicable.
 TargetPointer GetRedirectedContextPointer(ThreadData threadData);
+
+// Returns an opaque identifier that represents the root of a funclet tree and
+// uniquely distinguishes it from any other tree. Every non-funclet frame is the root
+// of a tree which may have 0 or more child funclets in it.
+TargetPointer GetFuncletRootId(
+    IStackDataFrameHandle stackDataFrameHandle,
+    out uint parentNativeOffset);
+
+// Returns the exact generic instantiation context token for the current frameless managed frame,
+// or TargetPointer.Null if it can't be recovered.
+TargetPointer GetExactGenericArgsToken(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
 ## Version 1
@@ -508,9 +526,7 @@ The rest of the APIs convey state about the stack walk at a given point which fa
 
 This context is not guaranteed to be complete. Not all capital "F" Frames store the entire context, some only store the IP/SP/FP. Therefore, at points where the context is based on these Frames it will be incomplete.
 ```csharp
-byte[] GetRawContext(
-    IStackDataFrameHandle stackDataFrameHandle,
-    StackwalkFlag flags = StackwalkFlag.Default);
+byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
 `GetFrameAddress` gets the address of the current capital "F" Frame. This is only valid if the `IStackDataFrameHandle` is at a point where the context is based on a capital "F" Frame. For example, it is not valid when when the current context was created by using the stack frame unwinder.
@@ -627,6 +643,26 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress)
 TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)
 ```
 
+`GetRuntimeFramePointer` returns the debugger frame pointer that uniquely identifies the current frame. On x64 it is the current stack pointer. On ARM, ARM64, RISCV64, and LoongArch64 it is the caller stack pointer. On x86, frameless managed methods use the unwound stack pointer minus the callee-popped argument size and one pointer, while runtime-unwindable native markers use the return-address slot from the recovered hijacked context.
+
+```csharp
+TargetPointer GetRuntimeFramePointer(IStackDataFrameHandle stackDataFrameHandle)
+```
+
+`GetStackPointer` returns the stack pointer from the current frame's context.
+
+```csharp
+TargetPointer GetStackPointer(IStackDataFrameHandle stackDataFrameHandle)
+```
+
+`GetContextFramePointer` returns the base pointer register from the current frame's context: EBP on x86, RBP on x64, and the platform frame-pointer register on other architectures.
+
+```csharp
+TargetPointer GetContextFramePointer(IStackDataFrameHandle stackDataFrameHandle)
+```
+
+Each `IStackDataFrameHandle` also exposes `IsInterrupted` and `HasFaulted`. `IsInterrupted` is true when the current managed frame was reached through an exception Frame. `HasFaulted` is true when that exception Frame is a `FaultingExceptionFrame` whose saved context still has `CONTEXT_EXCEPTION_ACTIVE` set.
+
 `WalkStackReferences` walks the entire managed stack and enumerates all live GC references at each frame. It returns a list of `StackReferenceData` describing each GC-tracked slot (its address, whether it's an interior pointer, and the register/stack location). This API is the primary consumer for `SOSDacImpl.GetStackReferences`.
 
 ```csharp
@@ -643,6 +679,27 @@ If no Frame in the chain produces a usable context (thread is not running manage
 
 `GetRedirectedContextPointer` returns the saved `TargetContext` pointer carried by the head Frame when that Frame is a `RedirectedThreadFrame` (a `ResumableFrame`). Otherwise it returns `TargetPointer.Null`.
 
+`GetFuncletRootId` returns the caller stack pointer for a non-funclet frame and sets `parentNativeOffset` to zero. For a funclet, it performs a secondary stack walk that skips intervening funclets and returns the caller stack pointer and relative native offset of the parent method frame. If that parent cannot be located because it has already been unwound, the method returns the current frame's caller stack pointer and sets `parentNativeOffset` to zero.
+
+`GetExactGenericArgsToken` recovers the exact generic instantiation context for the current frameless managed frame, mirroring native `CrawlFrame::GetExactGenericArgsToken`. It returns `TargetPointer.Null` unless the frame is `Frameless`, has a `MethodDesc`, and that method is shared by generic instantiations (`GetGenericContextLoc != None`). When applicable it:
+
+1. Selects the platform GC-info decoder, or the interpreter GC-info decoder for `CodeKind.Interpreter`, and requests the location through `IGCInfo.TryGetGenericContextStorage`.
+2. Reads the returned location through one common path:
+   * `Register`: read the register identified by `RegisterName` or `RegisterNumber` and use its value directly.
+   * `StackPointerRelative`: read memory at SP plus the signed offset.
+   * `RegisterRelative`: read the base register identified by `RegisterName` or `RegisterNumber` and then memory at that value plus the signed offset.
+   * `InterpreterArgumentRelative`: read memory at `InterpMethodContextFrame.Stack` plus the signed offset. The stack walker exposes that argument-block base as the synthetic context frame pointer.
+3. For a `ThisPtr` context, treats the recovered value as the object reference and returns its `MethodTable`. For `InstArgMethodDesc` and `InstArgMethodTable`, the recovered value is already the exact token.
+
+The architecture-specific storage lookup preserves the native paths:
+
+* Non-x86 JIT code uses the generic-context stack slot decoded from GC info, relative to the decoded numeric stack-base register or SP.
+* x86 rejects prolog and epilog offsets. Explicit instantiation arguments use the named EBP-relative native `GetParamTypeArgOffset` calculation. Context-from-`this` replays the fully or partially interruptible transition stream to recover `thisPtrResult`; if a register currently describes `this`, its numeric x86 register identifier is returned. Otherwise, it uses the first untracked slot and the same EBP/ESP plus pushed-depth address calculation as `EECodeManager::GetInstance`.
+* Interpreted explicit contexts use the GC-info offset relative to the interpreter argument block. Context-from-`this` uses offset zero, matching `InterpreterCodeManager::GetInstance`'s `*(OBJECTREF*)frame->pStack`.
+
+Explicit runtime `FramedMethodFrame` recovery remains outside this API. Native uses `FramedMethodFrame::GetThis` / `GetParamTypeArg`, whose signature-dependent `ArgIterator` placement is not currently represented by the cDAC contracts.
+
+
 #### CreateStackWalk with a caller-provided CONTEXT
 
 `CreateStackWalk(ThreadData, byte[], bool isFirst)` seeds the walker from `contextBuffer` rather than from the thread's saved CONTEXT. `isFirst` (default `true`) is used to determine whether the walker starts with internal state `isFirst` set to true.
@@ -650,7 +707,7 @@ If no Frame in the chain produces a usable context (thread is not running manage
 1. Compute the caller SP by cloning the seed context and unwinding the clone.
 2. Iterate the explicit Frame chain; update context from the first Frame `>= callerSP` (on non-x86) or after the additional ReturnAddress/FP cross-check See [text](https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/vm/stackwalk.cpp#L1238). Do not update if no Frame meets these criteria.
 3. For every Frame whose `GetCurrentReturnAddress() == seedIP`, rewrite the seed context via `UpdateContextFromCurrentFrame` and record the matched Frame type.
-4. After the loop, if a match was found, override the first walker state `IsFirst` (true for `ResumableFrame`/`RedirectedThreadFrame`, and for `HijackFrame` on non-x86) and `IsInterrupted` (true for `FaultingExceptionFrame`/`SoftwareExceptionFrame`).
+4. After the loop, if a match was found, override the first walker state `IsFirst` (true for `ResumableFrame`/`RedirectedThreadFrame`, and for `HijackFrame` on non-x86), `IsInterrupted` (true for `FaultingExceptionFrame`/`SoftwareExceptionFrame`), and `HasFaulted` (true only for a `FaultingExceptionFrame` whose rewritten context still has `CONTEXT_EXCEPTION_ACTIVE` set).
 
 The frame iterator is left positioned at the first Frame `>= callerSP`, if such a frame exists.
 
