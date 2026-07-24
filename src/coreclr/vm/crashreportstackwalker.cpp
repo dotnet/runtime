@@ -32,6 +32,7 @@ struct CrashReportStackWalkerScratch
 {
     char crashExceptionType[CRASHREPORT_STRING_BUFFER_SIZE];
     char className[CRASHREPORT_STRING_BUFFER_SIZE];
+    char genericArgs[CRASHREPORT_STRING_BUFFER_SIZE];
     GUID moduleGuid;
     bool hasModuleGuid;
 };
@@ -96,6 +97,199 @@ static bool TryParseCrashReportConfigurationInteger(CLRConfigNoCache config, int
 // Parses configuration during CrashReportConfigure initialization. This is not
 // async-signal-safe and must not be called from the crash-reporting path.
 static int GetCrashReportTimeoutSeconds();
+
+// Cap on nested-generic expansion depth while building a frame's instantiation
+// string in the signal handler. Keeps the recursion (and output) bounded for
+// pathological types without risking the fixed scratch buffer.
+static constexpr int CRASHREPORT_GENERIC_MAX_DEPTH = 4;
+
+// Append a NUL-terminated string into a fixed buffer, advancing *index and
+// always leaving room for the terminator. No allocation; signal-safe.
+static void AppendUtf8(LPUTF8 buffer, size_t bufferSize, size_t& index, const char* text)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (text == nullptr)
+    {
+        return;
+    }
+    while (*text != '\0' && index + 1 < bufferSize)
+    {
+        buffer[index++] = *text++;
+    }
+}
+
+// Render a single instantiation argument TypeHandle into the buffer. Reads only
+// already-loaded metadata (NOTHROW/GC_NOTRIGGER/no lock/no alloc) so it is safe
+// from the crash signal handler. Unsupported or malformed shapes degrade to "?"
+// rather than risking an unsafe traversal.
+static void AppendTypeHandleName(LPUTF8 buffer, size_t bufferSize, size_t& index, TypeHandle th, int depth)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (index + 1 >= bufferSize)
+    {
+        return;
+    }
+    if (th.IsNull() || depth > CRASHREPORT_GENERIC_MAX_DEPTH)
+    {
+        AppendUtf8(buffer, bufferSize, index, "?");
+        return;
+    }
+
+    // byref / pointer / generic-var / function-pointer: not expected for the
+    // concrete instantiation args of a JITted frame; emit a sentinel rather than
+    // traverse TypeDesc state from the signal handler.
+    if (th.IsTypeDesc())
+    {
+        AppendUtf8(buffer, bufferSize, index, "?");
+        return;
+    }
+
+    if (th.IsArray())
+    {
+        AppendTypeHandleName(buffer, bufferSize, index, th.GetArrayElementTypeHandle(), depth + 1);
+        AppendUtf8(buffer, bufferSize, index, "[]");
+        return;
+    }
+
+    MethodTable* pMT = th.GetMethodTable();
+    if (pMT == nullptr)
+    {
+        AppendUtf8(buffer, bufferSize, index, "?");
+        return;
+    }
+
+    LPCUTF8 name = nullptr;
+    LPCUTF8 namespaceName = nullptr;
+    mdTypeDef cl = pMT->GetCl();
+    IMDInternalImport* pImport = pMT->GetMDImport();
+    if (pImport == nullptr || cl == mdTypeDefNil ||
+        FAILED(pImport->GetNameOfTypeDef(cl, &name, &namespaceName)))
+    {
+        AppendUtf8(buffer, bufferSize, index, "?");
+        return;
+    }
+
+    if (namespaceName != nullptr && *namespaceName != '\0')
+    {
+        AppendUtf8(buffer, bufferSize, index, namespaceName);
+        if (index + 1 < bufferSize)
+        {
+            buffer[index++] = '.';
+        }
+    }
+    AppendUtf8(buffer, bufferSize, index, name);
+
+    // Expand a nested generic instantiation (e.g. List`1 -> List`1<System.Int32>)
+    // using balanced angle brackets so an offline parser can recover nested args.
+    if (th.HasInstantiation())
+    {
+        Instantiation inst = th.GetInstantiation();
+        if (index + 1 < bufferSize)
+        {
+            buffer[index++] = '<';
+        }
+        for (DWORD i = 0; i < inst.GetNumArgs(); i++)
+        {
+            if (i != 0 && index + 1 < bufferSize)
+            {
+                buffer[index++] = ',';
+            }
+            AppendTypeHandleName(buffer, bufferSize, index, inst[i], depth + 1);
+        }
+        if (index + 1 < bufferSize)
+        {
+            buffer[index++] = '>';
+        }
+    }
+}
+
+// Build the frame's generic instantiation string as "<classArgs;methodArgs>"
+// (empty when the method is non-generic). Value-type args resolve exactly;
+// reference-type args collapse to System.__Canon under shared generics. The
+// runtime instantiation is not encoded in metadata, so this is the only place
+// it can be captured for the deferred-symbolication report.
+//
+// Async-signal-safe by construction, which is required because this runs from
+// the crash signal handler with other threads suspended:
+//  - NOTHROW/GC_NOTRIGGER/CANNOT_TAKE_LOCK: no exceptions, no GC, no locks, so it
+//    cannot deadlock against state the suspended threads may hold.
+//  - No heap allocation: output goes into the caller's fixed buffer and every
+//    write is bounds-guarded (index + 1 < bufferSize), so a small buffer simply
+//    truncates instead of overrunning.
+//  - Reads only already-loaded metadata via the LIMITED_METHOD(_DAC)_CONTRACT
+//    accessors on MethodDesc/TypeHandle/MethodTable (instantiation arrays, the
+//    TypeDef name); it never forces type loading or touches the live generic
+//    dictionary.
+//  - Bounded recursion (CRASHREPORT_GENERIC_MAX_DEPTH) and "?" degradation for
+//    TypeDesc/null/malformed shapes keep traversal away from unsafe state.
+static void BuildGenericArgs(LPUTF8 buffer, size_t bufferSize, MethodDesc* pMD)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (bufferSize == 0)
+    {
+        return;
+    }
+    buffer[0] = '\0';
+    if (pMD == nullptr)
+    {
+        return;
+    }
+
+    Instantiation classInst = pMD->GetClassInstantiation();
+    Instantiation methodInst = pMD->GetMethodInstantiation();
+    if (classInst.GetNumArgs() == 0 && methodInst.GetNumArgs() == 0)
+    {
+        return;
+    }
+
+    size_t index = 0;
+    if (index + 1 < bufferSize)
+    {
+        buffer[index++] = '<';
+    }
+    for (DWORD i = 0; i < classInst.GetNumArgs(); i++)
+    {
+        if (i != 0 && index + 1 < bufferSize)
+        {
+            buffer[index++] = ',';
+        }
+        AppendTypeHandleName(buffer, bufferSize, index, classInst[i], 0);
+    }
+    if (index + 1 < bufferSize)
+    {
+        buffer[index++] = ';';
+    }
+    for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
+    {
+        if (i != 0 && index + 1 < bufferSize)
+        {
+            buffer[index++] = ',';
+        }
+        AppendTypeHandleName(buffer, bufferSize, index, methodInst[i], 0);
+    }
+    if (index + 1 < bufferSize)
+    {
+        buffer[index++] = '>';
+    }
+    buffer[index] = '\0';
+}
 
 static
 void
@@ -258,6 +452,9 @@ FrameCallbackAdapter(
     scratch.className[0] = '\0';
     BuildTypeName(scratch.className, sizeof(scratch.className), namespaceName, className);
 
+    scratch.genericArgs[0] = '\0';
+    BuildGenericArgs(scratch.genericArgs, sizeof(scratch.genericArgs), pMD);
+
     Module* pModule = pMD->GetModule();
 
     uint32_t nativeOffset = pCF->HasFaulted() ? 0 : pCF->GetRelOffset();
@@ -313,6 +510,7 @@ FrameCallbackAdapter(
         &moduleSize);
 
     className = scratch.className[0] == '\0' ? nullptr : scratch.className;
+    const char* genericArgs = scratch.genericArgs[0] == '\0' ? nullptr : scratch.genericArgs;
     ctx->callback(
         static_cast<uint64_t>(ip),
         static_cast<uint64_t>(stackPointer),
@@ -326,6 +524,7 @@ FrameCallbackAdapter(
         nativeOffset,
         static_cast<uint32_t>(token),
         ilOffset,
+        genericArgs,
         ctx->userCtx);
     return SWA_CONTINUE;
 }
