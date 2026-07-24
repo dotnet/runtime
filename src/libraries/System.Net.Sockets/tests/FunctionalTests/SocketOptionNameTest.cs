@@ -73,15 +73,7 @@ namespace System.Net.Sockets.Tests
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
-            try
-            {
-                await MulticastInterface_Set_Helper(0);
-            }
-            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.HostUnreachable && PlatformDetection.IsApplePlatform)
-            {
-                // https://github.com/dotnet/runtime/issues/114450
-                throw new SkipTestException("HostUnreachable indicates missing local network permission; this test might pass or fail depending on the environment. Please verify manually.");
-            }
+            await MulticastInterface_Set_Helper(0);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
