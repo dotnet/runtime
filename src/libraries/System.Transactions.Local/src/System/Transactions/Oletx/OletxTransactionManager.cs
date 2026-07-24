@@ -56,7 +56,7 @@ internal sealed class OletxTransactionManager
     {
         // First we need to get the notification from the shim factory.
         object? enlistment2 = null;
-        ShimNotificationType shimNotificationType = ShimNotificationType.None;
+        Interop.Xolehlp.ShimNotificationType shimNotificationType = Interop.Xolehlp.ShimNotificationType.None;
         bool isSinglePhase;
         bool abortingHint;
 
@@ -129,13 +129,13 @@ internal sealed class OletxTransactionManager
                         }
                     }
 
-                    if (shimNotificationType != ShimNotificationType.None)
+                    if (shimNotificationType != Interop.Xolehlp.ShimNotificationType.None)
                     {
                         // Next, based on the notification type, cast the Handle accordingly and make
                         // the appropriate call on the enlistment.
                         switch (shimNotificationType)
                         {
-                            case ShimNotificationType.Phase0RequestNotify:
+                            case Interop.Xolehlp.ShimNotificationType.Phase0RequestNotify:
                                 {
                                     if (enlistment2 is OletxPhase0VolatileEnlistmentContainer ph0VolEnlistContainer)
                                     {
@@ -156,7 +156,7 @@ internal sealed class OletxTransactionManager
                                     break;
                                 }
 
-                            case ShimNotificationType.VoteRequestNotify:
+                            case Interop.Xolehlp.ShimNotificationType.VoteRequestNotify:
                                 {
                                     if (enlistment2 is OletxPhase1VolatileEnlistmentContainer ph1VolEnlistContainer)
                                     {
@@ -170,7 +170,7 @@ internal sealed class OletxTransactionManager
                                     break;
                                 }
 
-                            case ShimNotificationType.CommittedNotify:
+                            case Interop.Xolehlp.ShimNotificationType.CommittedNotify:
                                 {
                                     if (enlistment2 is OutcomeEnlistment outcomeEnlistment)
                                     {
@@ -191,7 +191,7 @@ internal sealed class OletxTransactionManager
                                     break;
                                 }
 
-                            case ShimNotificationType.AbortedNotify:
+                            case Interop.Xolehlp.ShimNotificationType.AbortedNotify:
                                 {
                                     if (enlistment2 is OutcomeEnlistment outcomeEnlistment)
                                     {
@@ -220,7 +220,7 @@ internal sealed class OletxTransactionManager
                                     break;
                                 }
 
-                            case ShimNotificationType.InDoubtNotify:
+                            case Interop.Xolehlp.ShimNotificationType.InDoubtNotify:
                                 {
                                     if (enlistment2 is OutcomeEnlistment outcomeEnlistment)
                                     {
@@ -241,7 +241,7 @@ internal sealed class OletxTransactionManager
                                     break;
                                 }
 
-                            case ShimNotificationType.PrepareRequestNotify:
+                            case Interop.Xolehlp.ShimNotificationType.PrepareRequestNotify:
                                 {
                                     bool enlistmentDone = true;
 
@@ -257,7 +257,7 @@ internal sealed class OletxTransactionManager
                                     break;
                                 }
 
-                            case ShimNotificationType.CommitRequestNotify:
+                            case Interop.Xolehlp.ShimNotificationType.CommitRequestNotify:
                                 {
                                     if (enlistment2 is OletxEnlistment enlistment)
                                     {
@@ -271,7 +271,7 @@ internal sealed class OletxTransactionManager
                                     break;
                                 }
 
-                            case ShimNotificationType.AbortRequestNotify:
+                            case Interop.Xolehlp.ShimNotificationType.AbortRequestNotify:
                                 {
                                     if (enlistment2 is OletxEnlistment enlistment)
                                     {
@@ -285,7 +285,7 @@ internal sealed class OletxTransactionManager
                                     break;
                                 }
 
-                            case ShimNotificationType.EnlistmentTmDownNotify:
+                            case Interop.Xolehlp.ShimNotificationType.EnlistmentTmDownNotify:
                                 {
                                     if (enlistment2 is OletxEnlistment enlistment)
                                     {
@@ -299,7 +299,7 @@ internal sealed class OletxTransactionManager
                                     break;
                                 }
 
-                            case ShimNotificationType.ResourceManagerTmDownNotify:
+                            case Interop.Xolehlp.ShimNotificationType.ResourceManagerTmDownNotify:
                                 {
                                     switch (enlistment2)
                                     {
@@ -337,7 +337,7 @@ internal sealed class OletxTransactionManager
                     }
                 }
             }
-            while (shimNotificationType != ShimNotificationType.None);
+            while (shimNotificationType != Interop.Xolehlp.ShimNotificationType.None);
         }
         finally
         {
@@ -439,7 +439,7 @@ internal sealed class OletxTransactionManager
         DtcTransactionManagerLock.AcquireReaderLock(-1);
         try
         {
-            OletxTransactionIsolationLevel oletxIsoLevel = ConvertIsolationLevel(properties.IsolationLevel);
+            Interop.Xolehlp.OletxTransactionIsolationLevel oletxIsoLevel = ConvertIsolationLevel(properties.IsolationLevel);
             uint oletxTimeout = DtcTransactionManager.AdjustTimeout(properties.Timeout);
 
             outcomeEnlistment = new OutcomeEnlistment();
@@ -640,27 +640,27 @@ internal sealed class OletxTransactionManager
         }
     }
 
-    internal static OletxTransactionIsolationLevel ConvertIsolationLevel(IsolationLevel isolationLevel)
+    internal static Interop.Xolehlp.OletxTransactionIsolationLevel ConvertIsolationLevel(IsolationLevel isolationLevel)
         => isolationLevel switch
         {
-            IsolationLevel.Serializable => OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE,
-            IsolationLevel.RepeatableRead => OletxTransactionIsolationLevel.ISOLATIONLEVEL_REPEATABLEREAD,
-            IsolationLevel.ReadCommitted => OletxTransactionIsolationLevel.ISOLATIONLEVEL_READCOMMITTED,
-            IsolationLevel.ReadUncommitted => OletxTransactionIsolationLevel.ISOLATIONLEVEL_READUNCOMMITTED,
-            IsolationLevel.Chaos => OletxTransactionIsolationLevel.ISOLATIONLEVEL_CHAOS,
-            IsolationLevel.Unspecified => OletxTransactionIsolationLevel.ISOLATIONLEVEL_UNSPECIFIED,
-            _ => OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE
+            IsolationLevel.Serializable => Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE,
+            IsolationLevel.RepeatableRead => Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_REPEATABLEREAD,
+            IsolationLevel.ReadCommitted => Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_READCOMMITTED,
+            IsolationLevel.ReadUncommitted => Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_READUNCOMMITTED,
+            IsolationLevel.Chaos => Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_CHAOS,
+            IsolationLevel.Unspecified => Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_UNSPECIFIED,
+            _ => Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE
         };
 
-    internal static IsolationLevel ConvertIsolationLevelFromProxyValue(OletxTransactionIsolationLevel proxyIsolationLevel)
+    internal static IsolationLevel ConvertIsolationLevelFromProxyValue(Interop.Xolehlp.OletxTransactionIsolationLevel proxyIsolationLevel)
         => proxyIsolationLevel switch
         {
-            OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE => IsolationLevel.Serializable,
-            OletxTransactionIsolationLevel.ISOLATIONLEVEL_REPEATABLEREAD => IsolationLevel.RepeatableRead,
-            OletxTransactionIsolationLevel.ISOLATIONLEVEL_READCOMMITTED => IsolationLevel.ReadCommitted,
-            OletxTransactionIsolationLevel.ISOLATIONLEVEL_READUNCOMMITTED => IsolationLevel.ReadUncommitted,
-            OletxTransactionIsolationLevel.ISOLATIONLEVEL_UNSPECIFIED => IsolationLevel.Unspecified,
-            OletxTransactionIsolationLevel.ISOLATIONLEVEL_CHAOS => IsolationLevel.Chaos,
+            Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE => IsolationLevel.Serializable,
+            Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_REPEATABLEREAD => IsolationLevel.RepeatableRead,
+            Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_READCOMMITTED => IsolationLevel.ReadCommitted,
+            Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_READUNCOMMITTED => IsolationLevel.ReadUncommitted,
+            Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_UNSPECIFIED => IsolationLevel.Unspecified,
+            Interop.Xolehlp.OletxTransactionIsolationLevel.ISOLATIONLEVEL_CHAOS => IsolationLevel.Chaos,
             _ => IsolationLevel.Serializable
         };
 

@@ -33,7 +33,7 @@ internal sealed partial class EnlistmentNotifyShim : NotificationShimBase, ITran
     internal void SetIgnoreSpuriousProxyNotifications()
         => _ignoreSpuriousProxyNotifications = true;
 
-    public void PrepareRequest(bool fRetaining, OletxXactRm grfRM, bool fWantMoniker, bool fSinglePhase)
+    public void PrepareRequest(bool fRetaining, Interop.Xolehlp.OletxXactRm grfRM, bool fWantMoniker, bool fSinglePhase)
     {
         ITransactionEnlistmentAsync? pEnlistmentAsync = Interlocked.Exchange(ref EnlistmentAsync, null);
 
@@ -49,13 +49,13 @@ internal sealed partial class EnlistmentNotifyShim : NotificationShimBase, ITran
 
         PrepareInfo = prepareInfoBuffer;
         IsSinglePhase = fSinglePhase;
-        NotificationType = ShimNotificationType.PrepareRequestNotify;
+        NotificationType = Interop.Xolehlp.ShimNotificationType.PrepareRequestNotify;
         ShimFactory.NewNotification(this);
     }
 
-    public void CommitRequest(OletxXactRm grfRM, IntPtr pNewUOW)
+    public void CommitRequest(Interop.Xolehlp.OletxXactRm grfRM, IntPtr pNewUOW)
     {
-        NotificationType = ShimNotificationType.CommitRequestNotify;
+        NotificationType = Interop.Xolehlp.ShimNotificationType.CommitRequestNotify;
         ShimFactory.NewNotification(this);
     }
 
@@ -64,14 +64,14 @@ internal sealed partial class EnlistmentNotifyShim : NotificationShimBase, ITran
         if (!_ignoreSpuriousProxyNotifications)
         {
             // Only create the notification if we have not already voted.
-            NotificationType = ShimNotificationType.AbortRequestNotify;
+            NotificationType = Interop.Xolehlp.ShimNotificationType.AbortRequestNotify;
             ShimFactory.NewNotification(this);
         }
     }
 
     public void TMDown()
     {
-        NotificationType = ShimNotificationType.ResourceManagerTmDownNotify;
+        NotificationType = Interop.Xolehlp.ShimNotificationType.ResourceManagerTmDownNotify;
         ShimFactory.NewNotification(this);
     }
 }
