@@ -1000,6 +1000,13 @@ inline BOOL MethodTable::IsInt128OrHasInt128Fields()
 }
 
 //==========================================================================================
+inline BOOL MethodTable::IsDecimalFloatingPointOrHasDecimalFloatingPointFields()
+{
+    LIMITED_METHOD_CONTRACT;
+    return HasLayout() && GetClass()->IsDecimalFloatingPointOrHasDecimalFloatingPointFields();
+}
+
+//==========================================================================================
 inline DWORD MethodTable::GetPerInstInfoSize()
 {
     LIMITED_METHOD_DAC_CONTRACT;

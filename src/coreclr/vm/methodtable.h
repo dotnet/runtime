@@ -1874,6 +1874,9 @@ public:
     // Only accurate on types which are not auto layout
     inline BOOL IsInt128OrHasInt128Fields();
 
+    // Only accurate on types which are not auto layout
+    inline BOOL IsDecimalFloatingPointOrHasDecimalFloatingPointFields();
+
     UINT32 GetNativeSize();
 
     DWORD           GetBaseSize()

@@ -2023,8 +2023,10 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
     parNode.hasSignificantPadding = pClass->HasExplicitFieldOffsetLayout() || pClass->HasExplicitSize();
 
     // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
-    // not care about since they are considered primitives by the JIT.
-    if (pMT->IsIntrinsicType())
+    // not care about since they are considered primitives by the JIT. The decimal
+    // floating-point types are also intrinsic and in System.Numerics, but are not
+    // SIMD and so still need their fields reported.
+    if (pMT->IsIntrinsicType() && !pMT->IsDecimalFloatingPointOrHasDecimalFloatingPointFields())
     {
         const char* nsName;
         pMT->GetFullyQualifiedNameInfo(&nsName);
