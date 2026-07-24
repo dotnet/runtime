@@ -508,7 +508,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public async Task ReloadOnChangeWorksAfterError()
         {
             _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue1""}");
@@ -520,18 +519,16 @@ IniKey1=IniValue2");
             Assert.Equal("JsonValue1", config["JsonKey1"]);
 
             // Introduce an error and make sure the old key is removed
-            _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ");
-
-            await WaitForChange(
+            await WaitForReload(
+                () => _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": "),
                 () => config["JsonKey1"] == null,
                 "Notification failed for loading after error.");
 
             Assert.Null(config["JsonKey1"]);
 
             // Update the file again to make sure the config is updated
-            _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue2""}");
-
-            await WaitForChange(
+            await WaitForReload(
+                () => _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue2""}"),
                 () => config["JsonKey1"] == "JsonValue2",
                 "Notification failed for updating after error.");
 
@@ -539,7 +536,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public async Task TouchingFileWillReload()
         {
             _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue1""}");
@@ -559,11 +555,13 @@ IniKey1=IniValue2");
             var token = config.GetReloadToken();
 
             // Update files
-            _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue2""}");
-            _fileSystem.WriteFile("reload.ini", @"IniKey1 = IniValue2");
-            _fileSystem.WriteFile("reload.xml", @"<settings XmlKey1=""XmlValue2""/>");
-
-            await WaitForChange(
+            await WaitForReload(
+                () =>
+                {
+                    _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue2""}");
+                    _fileSystem.WriteFile("reload.ini", @"IniKey1 = IniValue2");
+                    _fileSystem.WriteFile("reload.xml", @"<settings XmlKey1=""XmlValue2""/>");
+                },
                 () => config["JsonKey1"] == "JsonValue2"
                     && config["IniKey1"] == "IniValue2"
                     && config["XmlKey1"] == "XmlValue2",
@@ -910,7 +908,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public async Task TouchingFileWillReloadForUserSecrets()
         {
             string userSecretsId = "Test";
@@ -929,9 +926,8 @@ IniKey1=IniValue2");
             var token = config.GetReloadToken();
 
             // Update file
-            _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue2""}");
-
-            await WaitForChange(
+            await WaitForReload(
+                () => _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue2""}"),
                 () => config["UserSecretKey1"] == "UserSecretValue2",
                 "Reload failed after create-delete-create.");
 
@@ -1005,6 +1001,25 @@ IniKey1=IniValue2");
             }
         }
 
+        // A single file-change notification (inotify on Linux especially) can be dropped or arbitrarily
+        // delayed under load, so re-apply the file write on each attempt until the expected reload is
+        // observed instead of relying on one notification being delivered within the timeout.
+        private async Task WaitForReload(Action writeFiles, Func<bool> reloaded, string failureMessage, int multiplier = 1)
+        {
+            for (int attempt = 0; attempt < _retries * multiplier; attempt++)
+            {
+                writeFiles();
+                await Task.Delay(_msDelay);
+
+                if (reloaded())
+                {
+                    return;
+                }
+            }
+
+            throw new Exception(failureMessage);
+        }
+
         private sealed class MyOptions
         {
             public string CmdKey1 { get; set; }
@@ -1020,16 +1035,30 @@ IniKey1=IniValue2");
 
         private async Task WatchOverConfigJsonFileAndUpdateIt(string filePath)
         {
-            var builder = new ConfigurationBuilder().AddJsonFile(filePath, true, true).Build();
-            bool reloaded = false;
-            ChangeToken.OnChange(builder.GetReloadToken, () =>
+            var config = new ConfigurationBuilder().AddJsonFile(filePath, optional: true, reloadOnChange: true).Build();
+
+            var reloadedSignal = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using IDisposable subscription = ChangeToken.OnChange(config.GetReloadToken, () => reloadedSignal.TrySetResult(true));
+
+            // A relative path is watched relative to the default file provider root (AppContext.BaseDirectory),
+            // so write to that exact location instead of the raw relative path; otherwise the test would depend
+            // on the current working directory matching AppContext.BaseDirectory.
+            string watchedFilePath = Path.Combine(AppContext.BaseDirectory, Path.GetFileName(filePath));
+
+            // A single file-change notification (inotify on Linux) can be dropped or arbitrarily delayed under
+            // load, so re-write the file on each attempt until the reload is observed instead of relying on one
+            // notification being delivered within the timeout.
+            for (int attempt = 0; attempt < _retries; attempt++)
             {
-                reloaded = true;
-            });
-            File.WriteAllText(filePath, "{\"Prop2\":\"Value2\"}");
-            await WaitForChange(
-                () => reloaded,
-                "on file change event handler did not get executed");
+                File.WriteAllText(watchedFilePath, $"{{\"Prop2\":\"Value{attempt}\"}}");
+
+                if (await Task.WhenAny(reloadedSignal.Task, Task.Delay(_msDelay)) == reloadedSignal.Task)
+                {
+                    return;
+                }
+            }
+
+            throw new Exception("on file change event handler did not get executed");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
