@@ -486,9 +486,33 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Gets the amount of private memory, in bytes, allocated for the associated process.</summary>
+        /// <remarks>
+        /// The value returned reflects the most recently refreshed memory usage for the process. Call
+        /// <see cref="Refresh"/> first to get an up-to-date value.
+        /// <para>
+        /// On Windows, this corresponds to the Private Bytes performance counter for the process.
+        /// </para>
+        /// <para>
+        /// On Linux, this value is the size of the process's data segment, as reported by the VmData field
+        /// of /proc/[pid]/status - an approximation (roughly heap plus global/static data) rather than a
+        /// precise measurement of memory unshared with other processes.
+        /// </para>
+        /// <para>
+        /// On macOS, this value is the process's physical memory footprint - an accounting-based measurement,
+        /// the same value shown in Activity Monitor's Memory column - rather than a strict count of unshared
+        /// pages. If the footprint can't be retrieved for the specified process - for example, if the caller
+        /// lacks permission to query a process owned by another user, or the process has since exited - this
+        /// property returns 0.
+        /// </para>
+        /// </remarks>
         public long PrivateMemorySize64
             => GetProcessInfo().PrivateBytes;
 
+        /// <summary>Gets the amount of private memory, in bytes, allocated for the associated process.</summary>
+        /// <remarks>See <see cref="PrivateMemorySize64"/> for platform-specific remarks. This property is a lossy,
+        /// unchecked cast of that value to <see cref="int"/> and can be negative when the 64-bit value exceeds
+        /// <see cref="int.MaxValue"/>.</remarks>
         [Obsolete("Process.PrivateMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PrivateMemorySize64 instead.")]
         public int PrivateMemorySize
             => unchecked((int)GetProcessInfo().PrivateBytes);
