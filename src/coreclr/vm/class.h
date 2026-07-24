@@ -1969,6 +1969,10 @@ VOID InitPreStubManager();
 
 EXTERN_C void STDCALL ThePreStub();
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+extern const TADDR g_cdacThePreStub;
+#endif
+
 inline PCODE GetPreStubEntryPoint()
 {
     return GetEEFuncEntryPoint(ThePreStub);

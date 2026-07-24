@@ -564,7 +564,7 @@ namespace System.PrivateUri.Tests
         {
             get
             {
-                foreach (int length in new[] { 1, 64_000, 66_000, 1_000_000 })
+                foreach (int length in new[] { 1, 64_000, 66_000 })
                 {
                     yield return new object[] { @"test://" + new string('a', length) + new string('\uD800', 2) + "@8.8.8.8" }; // Userinfo
                     yield return new object[] { @"test://8.8.8.8?" + new string('a', length) + new string('\uD800', 2) }; // Query

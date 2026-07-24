@@ -2070,6 +2070,10 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         case TYP_DOUBLE:
             return INS_f64_load;
 #if defined(FEATURE_SIMD)
+        case TYP_SIMD8:
+            // SIMD8 (Vector2) lives as a v128 with the low 8 bytes populated. SIMD12 (Vector3) is
+            // handled at the callers since it needs a trailing lane load for the upper 4 bytes.
+            return INS_v128_load64_zero;
         case TYP_SIMD16:
             return INS_v128_load;
 #endif

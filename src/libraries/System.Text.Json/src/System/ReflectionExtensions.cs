@@ -45,7 +45,7 @@ namespace System.Text.Json.Reflection
             type.IsAssignableFromInternal(other) || other.IsAssignableFromInternal(type);
 
         private static bool HasJsonConstructorAttribute(ConstructorInfo constructorInfo)
-            => constructorInfo.GetCustomAttribute<JsonConstructorAttribute>() != null;
+            => constructorInfo.GetCustomAttribute<JsonConstructorAttribute>() is not null;
 
         public static bool HasRequiredMemberAttribute(this MemberInfo memberInfo)
         {

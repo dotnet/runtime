@@ -637,7 +637,7 @@ inline PTR_CVOID PEImageLayout::GetNativeManifestMetadata(COUNT_T *pSize) const
 inline BOOL PEImageLayout::IsComponentAssembly() const
 {
     WRAPPER_NO_CONTRACT;
-    PE_OR_WEBCIL(IsComponentAssembly(), FALSE)
+    DECODER_DISPATCH(IsComponentAssembly())
 }
 
 inline BOOL PEImageLayout::HasReadyToRunHeader() const

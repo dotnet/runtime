@@ -859,6 +859,38 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
     return funcIdx;
 }
 
+/*****************************************************************************
+ *  Are two blocks physically contained in the same function region (funclet)?
+ *  The main method is region 0. Unlike funGetFuncIdx, this works for an
+ *  arbitrary block (not just a funclet entry), distinguishing a filter
+ *  funclet (FUNC_FILTER) from its filter-handler. Only valid after funclets
+ *  are created.
+ *
+ */
+inline bool Compiler::bbIsInSameFunclet(BasicBlock* block1, BasicBlock* block2)
+{
+    assert(fgFuncletsCreated);
+
+    auto funcRegionOf = [this](BasicBlock* blk) -> unsigned {
+        if (!blk->hasHndIndex())
+        {
+            return 0;
+        }
+
+        EHblkDsc* const eh      = ehGetDsc(blk->getHndIndex());
+        unsigned        funcIdx = eh->ebdFuncIndex;
+
+        if (eh->HasFilter() && eh->InFilterRegionBBRange(blk))
+        {
+            // The filter is the funclet immediately preceding its filter-handler.
+            funcIdx--;
+        }
+
+        return funcIdx;
+    };
+
+    return funcRegionOf(block1) == funcRegionOf(block2);
+}
 #if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------------------------
 // genRegNumFromMask : Maps a single register mask to a register number.
@@ -3324,7 +3356,8 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 // IsValidLclAddr: Can the given local address be represented as "LCL_ADDR"?
 //
 // Local address nodes cannot point beyond the local and can only store
-// 16 bits worth of offset.
+// 16 bits worth of offset. Additionally, the emitter can only encode byte-sized
+// offsets for locals numbered 32768 or greater.
 //
 // Arguments:
 //    lclNum - The local's number
@@ -3341,6 +3374,16 @@ inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
         return (offset == 0);
     }
 #endif
+
+    // The emitter only supports byte-sized offsets for locals numbered 32768 or greater
+    // (see emitLclVarAddr::initLclVarAddr). Reject larger offsets here so such accesses are
+    // kept as explicit address computations instead of being folded into a LCL_FLD or a
+    // contained LCL_ADDR, both of which the emitter would be unable to encode.
+    if ((lclNum >= 32768) && (offset >= 256))
+    {
+        return false;
+    }
+
     return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
 }
 
