@@ -78,7 +78,7 @@ ITypeHandle? ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle
 
 ### Other consumers
 
-`RuntimeSignatureDecoder` is shared infrastructure within the cDAC. Other contracts construct their own decoder and provider directly when they need to decode method or local signatures rather than going through this contract. For example, the [StackWalk](./StackWalk.md) contract uses `RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext>` with a GC-specific provider to classify method parameters during signature-based GC reference scanning.
+`RuntimeSignatureDecoder` is shared infrastructure. Other contracts construct their own decoder and provider directly when they need to decode method or local signatures rather than going through this contract.
 
 ### Vararg call cookies
 
