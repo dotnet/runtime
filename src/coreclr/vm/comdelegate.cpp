@@ -1995,91 +1995,106 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
 
         MetaSig sig(pMD);
 
-        BOOL fReturnVal = !sig.IsReturnTypeVoid();
-
         SigTypeContext emptyContext;
         ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
 
         ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+        
+        TypeHandle wrapper(CoreLibBinder::GetClass(CLASS__DELEGATEWRAPPER));
+        LocalDesc wrapperRef(wrapper.MakeByRef());
+        DWORD dwCurrentRef = pCode->NewLocal(wrapperRef);
+        DWORD dwEndRef = pCode->NewLocal(wrapperRef);
+        
+        BOOL fReturns = !sig.IsReturnTypeVoid();
+        DWORD dwReturnNum = fReturns ? pCode->NewLocal(sig.GetRetTypeHandleNT()) : -1;
 
-        DWORD dwLoopCounterNum = pCode->NewLocal(ELEMENT_TYPE_I4);
+        // Load start and end refs
+        pCode->EmitLoadThis();
+        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__HELPER_OBJECT)));
+        
+        // We need GADR to get the start
+        MethodDesc* gadr = CoreLibBinder::GetMethod(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE);
+        gadr = MethodDesc::FindOrCreateAssociatedMethodDesc(gadr, gadr->GetMethodTable(), FALSE, Instantiation(&wrapper, 1), TRUE);
 
-        DWORD dwReturnValNum = -1;
-        if (fReturnVal)
-            dwReturnValNum = pCode->NewLocal(sig.GetRetTypeHandleNT());
+        // Create signature for the MethodSpec. See ECMA-335 - II.23.2.15
+        SigBuilder sigBuilder;
+        sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_GENERICINST);
+        sigBuilder.AppendData(1);
+        sigBuilder.AppendElementType(ELEMENT_TYPE_MVAR);
+        sigBuilder.AppendData(0);
+        uint32_t sigLen;
+        PCCOR_SIGNATURE gadrSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature((DWORD*)&sigLen);
+        mdToken methodSpecSigToken = pCode->GetSigToken(gadrSig, sigLen);
+        
+        // Get start ref
+        pCode->EmitCALL(pCode->GetToken(gadr, mdTokenNil, methodSpecSigToken), 1, 1);
+        pCode->EmitSTLOC(dwCurrentRef);
+
+        // Get end ref from adding count
+        pCode->EmitLDLOC(dwCurrentRef);
+        pCode->EmitLoadThis();
+        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__EXTRA_DATA)));
+        pCode->EmitLDC(wrapper.GetSize());
+        pCode->EmitMUL();
+        pCode->EmitADD();
+        pCode->EmitSTLOC(dwEndRef);
 
         ILCodeLabel *nextDelegate = pCode->NewCodeLabel();
-
-        // initialize counter
-        pCode->EmitLDC(0);
-        pCode->EmitSTLOC(dwLoopCounterNum);
-
-        //Label_nextDelegate:
+        // Label_nextDelegate:
         pCode->EmitLabel(nextDelegate);
 
 #ifdef DEBUGGING_SUPPORTED
-        ILCodeLabel *invokeTraceHelper = pCode->NewCodeLabel();
-        ILCodeLabel *debuggerCheckEnd = pCode->NewCodeLabel();
-
         // Call MulticastDebuggerTraceHelper only if we have a controller subscribing to the event
         pCode->EmitLDC((DWORD_PTR)&g_multicastDelegateTraceActiveCount);
-        pCode->EmitCONV_I();
-        pCode->EmitLDIND_I4();
-        // g_multicastDelegateTraceActiveCount != 0
+        pCode->EmitCONV_U();
+        pCode->EmitLDIND_U4();
+        // g_multicastDelegateTraceActiveCount == 0
         pCode->EmitLDC(0);
-        pCode->EmitCEQ();
-        pCode->EmitBRFALSE(invokeTraceHelper);
 
-        pCode->EmitLabel(debuggerCheckEnd);
+        ILCodeLabel *nextCall = pCode->NewCodeLabel();
+        pCode->EmitBEQ(nextCall);
+
+        // Call debugger tracing
+        pCode->EmitLoadThis();
+        pCode->EmitLDLOC(dwCurrentRef);
+        pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
+
+        // Label_nextCall:
+        pCode->EmitLabel(nextCall);
 #endif // DEBUGGING_SUPPORTED
 
-        // Load next delegate from array using LoopCounter as index
-        pCode->EmitLoadThis();
-        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__HELPER_OBJECT)));
-        pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitLDELEMA(pCode->GetToken(CoreLibBinder::GetClass(CLASS__DELEGATEWRAPPER)));
+        // Load the delegate
+        pCode->EmitLDLOC(dwCurrentRef);
         pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATEWRAPPER__VALUE)));
 
         // Load the arguments
-        for (UINT paramCount = 0; paramCount < sig.NumFixedArgs(); paramCount++)
-            pCode->EmitLDARG(paramCount);
+        for (UINT param = 0; param < sig.NumFixedArgs(); param++)
+            pCode->EmitLDARG(param);
 
-        // call the delegate
-        pCode->EmitCALL(pCode->GetToken(pMD), sig.NumFixedArgs(), fReturnVal);
+        // Call the delegate
+        pCode->EmitCALL(pCode->GetToken(pMD), sig.NumFixedArgs(), fReturns);
 
         // Save return value.
-        if (fReturnVal)
-            pCode->EmitSTLOC(dwReturnValNum);
+        if (fReturns)
+            pCode->EmitSTLOC(dwReturnNum);
 
-        // increment counter
-        pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitLDC(1);
+        // Increment the ref
+        pCode->EmitLDLOC(dwCurrentRef);
+        pCode->EmitLDC(wrapper.GetSize());
         pCode->EmitADD();
-        pCode->EmitSTLOC(dwLoopCounterNum);
+        pCode->EmitSTLOC(dwCurrentRef);
 
-        // compare LoopCounter with _extraData. If less then branch to nextDelegate
-        pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitLoadThis();
-        pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__EXTRA_DATA)));
+        // Compare start ref with end. If less than branch to nextDelegate
+        pCode->EmitLDLOC(dwCurrentRef);
+        pCode->EmitLDLOC(dwEndRef);
         pCode->EmitBLT(nextDelegate);
 
-        // load the return value. return value from the last delegate call is returned
-        if (fReturnVal)
-            pCode->EmitLDLOC(dwReturnValNum);
+        // Load the return value, return value from the last delegate call is returned
+        if (fReturns)
+            pCode->EmitLDLOC(dwReturnNum);
 
-        // return
+        // Return
         pCode->EmitRET();
-
-#ifdef DEBUGGING_SUPPORTED
-        // Emit debugging support at the end of the method for better perf
-        pCode->EmitLabel(invokeTraceHelper);
-
-        pCode->EmitLoadThis();
-        pCode->EmitLDLOC(dwLoopCounterNum);
-        pCode->EmitCALL(METHOD__STUBHELPERS__MULTICAST_DEBUGGER_TRACE_HELPER, 2, 0);
-
-        pCode->EmitBR(debuggerCheckEnd);
-#endif // DEBUGGING_SUPPORTED
 
         PCCOR_SIGNATURE pSig;
         DWORD cbSig;

@@ -2532,9 +2532,11 @@ namespace System.StubHelpers
         internal static IntPtr GetStubContext() => throw new UnreachableException(); // Unconditionally expanded intrinsic
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static void MulticastDebuggerTraceHelper(object o, int count)
+        internal static unsafe void MulticastDebuggerTraceHelper(MulticastDelegate d, ref Delegate.Wrapper position)
         {
-            MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack.Create(ref o), count);
+            nuint byteOffset = (nuint)Unsafe.ByteOffset(ref (((Delegate.Wrapper[])d._helperObject!))[0], ref position);
+            nuint count = byteOffset / (uint)sizeof(Delegate.Wrapper);
+            MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack.Create(ref d), (int)count);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MulticastDebuggerTraceHelper")]
