@@ -87,41 +87,40 @@
       <_MoveSource Condition="'$(WasmToolInnerDir)' == ''">$(_TempDir.TrimEnd('\/'))</_MoveSource>
       <_MoveSource Condition="'$(WasmToolInnerDir)' != ''">$([MSBuild]::NormalizePath('$(_TempDir)', '$(WasmToolInnerDir)'))</_MoveSource>
 
-      <!-- Another build on this machine may have published the same entry while this one was
-           downloading. Publishing over it would delete a directory that is potentially in use,
-           so discard this copy instead. -->
-      <_PublishThisCopy Condition="!Exists('$(WasmToolStampFile)')">true</_PublishThisCopy>
+      <!-- Publish only when nothing is at the final path yet. The staging-dir -> final-dir move is
+           a rename within the cache root (same filesystem), so it is atomic: a final directory that
+           already exists is therefore a complete tool, placed either by an earlier run or by a
+           concurrent build. We never delete it (that would pull the rug out from under another
+           build using it); we just make sure the sentinel is present, which also self-heals a
+           complete-but-unstamped directory left by a build that was killed between the move and the
+           Touch below. -->
+      <_MoveIntoPlace Condition="!Exists('$(_FinalDir)')">true</_MoveIntoPlace>
     </PropertyGroup>
 
-    <Message Condition="'$(_PublishThisCopy)' != 'true'"
+    <Message Condition="'$(_MoveIntoPlace)' != 'true'"
              Importance="High"
-             Text="$(WasmToolName) was provisioned concurrently; discarding this copy." />
+             Text="$(WasmToolName) is already present at '$(_FinalDir)'; using it." />
 
-    <!-- A directory without a stamp is a leftover from an interrupted acquisition. -->
-    <RemoveDir Condition="'$(_PublishThisCopy)' == 'true'" Directories="$(_FinalDir)" />
-
-    <Exec Condition="'$(_PublishThisCopy)' == 'true' and '$(HostOS)' != 'windows'"
+    <Exec Condition="'$(_MoveIntoPlace)' == 'true' and '$(HostOS)' != 'windows'"
           Command="mv &quot;$(_MoveSource)&quot; &quot;$(_FinalDir)&quot;"
           IgnoreStandardErrorWarningFormat="true" />
-    <Exec Condition="'$(_PublishThisCopy)' == 'true' and '$(HostOS)' == 'windows'"
+    <Exec Condition="'$(_MoveIntoPlace)' == 'true' and '$(HostOS)' == 'windows'"
           Command="move /Y &quot;$(_MoveSource)&quot; &quot;$(_FinalDir)&quot;"
           IgnoreStandardErrorWarningFormat="true" />
 
     <RemoveDir Directories="$(_TempDir);$(_DownloadDir)" />
 
-    <ItemGroup Condition="'$(_PublishThisCopy)' == 'true'">
+    <ItemGroup Condition="'$(_MoveIntoPlace)' == 'true'">
       <_ToolChmod Include="$(WasmToolChmod)" />
     </ItemGroup>
 
-    <Exec Condition="'$(_PublishThisCopy)' == 'true' and '$(HostOS)' != 'windows' and '@(_ToolChmod)' != ''"
+    <Exec Condition="'$(_MoveIntoPlace)' == 'true' and '$(HostOS)' != 'windows' and '@(_ToolChmod)' != ''"
           Command="chmod +x @(_ToolChmod->'&quot;%(Identity)&quot;', ' ')" />
 
-    <Error Condition="'$(_PublishThisCopy)' == 'true' and '$(WasmToolVerify)' != '' and !Exists('$(WasmToolVerify)')"
+    <Error Condition="'$(WasmToolVerify)' != '' and !Exists('$(WasmToolVerify)')"
            Text="Acquired $(WasmToolName) from $(WasmToolUrl) but '$(WasmToolVerify)' is missing." />
 
-    <Touch Condition="'$(_PublishThisCopy)' == 'true'"
-           Files="$(WasmToolStampFile)"
-           AlwaysCreate="true" />
+    <Touch Files="$(WasmToolStampFile)" AlwaysCreate="true" />
   </Target>
 
 </Project>

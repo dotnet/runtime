@@ -203,7 +203,10 @@ export __SCRIPT_DIR=%24( cd -- "%24( dirname -- "%24{BASH_SOURCE[0]}" )" &amp;> 
     </ItemGroup>
 
     <!-- V8 ships without a launcher, so stage one and let the acquisition publish it as part of
-         the cache entry rather than writing into an already-stamped directory. -->
+         the cache entry rather than writing into an already-stamped directory. The download
+         directory may not exist yet on a fresh checkout, so create it before writing. -->
+    <MakeDir Condition="'$(InstallV8ForTests)' == 'true' and !Exists('$(V8StampFile)')"
+             Directories="$(WasmToolDownloadDir)" />
     <WriteLinesToFile Condition="'$(InstallV8ForTests)' == 'true' and !Exists('$(V8StampFile)')"
                       File="$(WasmToolDownloadDir)$(V8BinaryName)"
                       Lines="$(_V8Script)"

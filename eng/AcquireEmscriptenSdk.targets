@@ -184,23 +184,25 @@ JS_ENGINES = [NODE_JS]
       Overwrite="true" />
 
     <!-- Publish the staged SDK under its final, version-keyed name and only then record it as
-         complete. If another build on this machine published the same entry while this one was
-         composing, discard this copy rather than deleting a directory that may be in use. -->
+         complete. The staging-dir -> final-dir move is a rename within the cache root (same
+         filesystem) and therefore atomic, so a final directory that already exists is a complete
+         SDK from an earlier or concurrent build: never delete it (another build may be using it),
+         just move ours in when the slot is free and always ensure the sentinel exists (which also
+         self-heals a complete-but-unstamped directory). -->
     <PropertyGroup>
-      <_PublishEmsdk Condition="!Exists('$(EmscriptenSdkStampFile)')">true</_PublishEmsdk>
+      <_MoveEmsdkIntoPlace Condition="!Exists('$(_EmsdkFinalDir)')">true</_MoveEmsdkIntoPlace>
     </PropertyGroup>
-    <Message Condition="'$(_PublishEmsdk)' != 'true'" Importance="High"
-             Text="Emscripten SDK $(EmscriptenVersion) was provisioned concurrently; discarding this copy." />
+    <Message Condition="'$(_MoveEmsdkIntoPlace)' != 'true'" Importance="High"
+             Text="Emscripten SDK $(EmscriptenVersion) is already present at '$(_EmsdkFinalDir)'; using it." />
 
-    <RemoveDir Condition="'$(_PublishEmsdk)' == 'true'" Directories="$(_EmsdkFinalDir)" />
-    <Exec Condition="'$(_PublishEmsdk)' == 'true' and '$(HostOS)' != 'windows'"
+    <Exec Condition="'$(_MoveEmsdkIntoPlace)' == 'true' and '$(HostOS)' != 'windows'"
           Command="mv &quot;$(_EmsdkStagingDir.TrimEnd('\/'))&quot; &quot;$(_EmsdkFinalDir)&quot;"
           IgnoreStandardErrorWarningFormat="true" />
-    <Exec Condition="'$(_PublishEmsdk)' == 'true' and '$(HostOS)' == 'windows'"
+    <Exec Condition="'$(_MoveEmsdkIntoPlace)' == 'true' and '$(HostOS)' == 'windows'"
           Command="move /Y &quot;$(_EmsdkStagingDir.TrimEnd('\/'))&quot; &quot;$(_EmsdkFinalDir)&quot;"
           IgnoreStandardErrorWarningFormat="true" />
-    <RemoveDir Condition="'$(_PublishEmsdk)' != 'true'" Directories="$(_EmsdkStagingDir)" />
-    <Touch Condition="'$(_PublishEmsdk)' == 'true'" Files="$(EmscriptenSdkStampFile)" AlwaysCreate="true" />
+    <RemoveDir Directories="$(_EmsdkStagingDir)" />
+    <Touch Files="$(EmscriptenSdkStampFile)" AlwaysCreate="true" />
 
     <PropertyGroup>
       <EMSDK_PATH>$(EmscriptenSdkCacheDir)</EMSDK_PATH>
