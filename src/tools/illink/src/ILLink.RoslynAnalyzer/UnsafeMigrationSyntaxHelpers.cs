@@ -14,7 +14,11 @@ namespace ILLink.RoslynAnalyzer
     /// </summary>
     internal static class UnsafeMigrationSyntaxHelpers
     {
-        // The analyzer builds against a Roslyn version that predates SyntaxKind.SafeKeyword.
+        internal const string SafetyDocumentationElement = "safety";
+
+        // This project compiles against MicrosoftCodeAnalysisVersion_LatestVS, which predates SyntaxKind.SafeKeyword,
+        // but it runs inside whichever compiler the host loaded, which may be newer. Resolve the kind at run time so
+        // the migration tooling works on both, and treats 'safe' as unsupported when the host cannot parse it.
         private static readonly SyntaxKind s_safeKeyword = SyntaxFacts.GetContextualKeywordKind("safe");
 
         internal static SyntaxTokenList GetModifiers(SyntaxNode declaration) =>
@@ -45,6 +49,16 @@ namespace ILLink.RoslynAnalyzer
 
             return default;
         }
+
+        /// <summary>
+        /// Determines whether a declaration carries a <c>&lt;safety&gt;</c> documentation element.
+        /// </summary>
+        internal static bool HasSafetyDocumentation(SyntaxNode declaration) =>
+            declaration.GetLeadingTrivia().Any(static trivia =>
+                trivia.GetStructure() is DocumentationCommentTriviaSyntax documentationComment
+                && documentationComment.DescendantNodes().Any(static node =>
+                    node is XmlElementSyntax { StartTag.Name.LocalName.ValueText: SafetyDocumentationElement }
+                        or XmlEmptyElementSyntax { Name.LocalName.ValueText: SafetyDocumentationElement }));
     }
 }
 #endif

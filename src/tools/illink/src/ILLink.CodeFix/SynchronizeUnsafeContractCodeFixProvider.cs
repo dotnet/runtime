@@ -15,7 +15,6 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
 
@@ -36,6 +35,12 @@ namespace ILLink.CodeFix
         private static LocalizableString UnsafeCodeFixTitle =>
             new LocalizableResourceString(
                 nameof(Resources.SynchronizeUnsafeContractCodeFixTitle),
+                Resources.ResourceManager,
+                typeof(Resources));
+
+        private static LocalizableString DiscardSafeCodeFixTitle =>
+            new LocalizableResourceString(
+                nameof(Resources.SynchronizeUnsafeContractDiscardingSafeCodeFixTitle),
                 Resources.ResourceManager,
                 typeof(Resources));
 
@@ -90,28 +95,29 @@ namespace ILLink.CodeFix
             if (!IsSupportedContractSymbol(symbol))
                 return;
 
-            HashSet<ISymbol> closure = await GetContractClosureAsync(
-                context.Document.Project.Solution,
-                symbol,
-                context.CancellationToken).ConfigureAwait(false);
+            HashSet<ISymbol> closure = GetContractClosure(symbol, context.CancellationToken);
+            Solution solution = context.Document.Project.Solution;
             if (!CanPropagateUnsafeContract(
-                context.Document.Project.Solution,
+                solution,
                 closure,
                 context.CancellationToken))
             {
                 return;
             }
 
-            string unsafeTitle = UnsafeCodeFixTitle.ToString();
+            // Replacing an explicit safe contract discards a deliberate audit, so it is offered under its own title.
+            string title = DiscardsExplicitSafeContract(solution, closure, context.CancellationToken)
+                ? DiscardSafeCodeFixTitle.ToString()
+                : UnsafeCodeFixTitle.ToString();
             context.RegisterCodeFix(
                 CodeAction.Create(
-                    unsafeTitle,
+                    title,
                     cancellationToken => ApplyModifierAsync(
-                        context.Document.Project.Solution,
+                        solution,
                         closure,
                         cancellationToken),
-                    unsafeTitle),
-                diagnostic);
+                    title),
+                context.Diagnostics);
         }
 
         private sealed class ContractFixAllProvider : FixAllProvider
@@ -170,10 +176,7 @@ namespace ILLink.CodeFix
                     continue;
                 }
 
-                HashSet<ISymbol> diagnosticClosure = await GetContractClosureAsync(
-                    solution,
-                    symbol,
-                    cancellationToken).ConfigureAwait(false);
+                HashSet<ISymbol> diagnosticClosure = GetContractClosure(symbol, cancellationToken);
                 if (CanPropagateUnsafeContract(
                     solution,
                     diagnosticClosure,
@@ -391,10 +394,14 @@ namespace ILLink.CodeFix
             return true;
         }
 
-        private static async Task<HashSet<ISymbol>> GetContractClosureAsync(
-            Solution solution,
-            ISymbol seed,
-            CancellationToken cancellationToken)
+        /// <summary>
+        /// Collects the declarations that must become caller-unsafe: the partial parts of the reported member and the
+        /// base and interface slots it overrides or implements, transitively.
+        /// Overrides and implementations that are not themselves marked unsafe are deliberately left alone; the
+        /// language permits a safe member to override or implement a caller-unsafe one, so widening them would grow
+        /// the audit surface and cascade an unsafe contract onto their callers for no compiler-mandated reason.
+        /// </summary>
+        private static HashSet<ISymbol> GetContractClosure(ISymbol seed, CancellationToken cancellationToken)
         {
             var closure = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
             var queue = new Queue<ISymbol>();
@@ -402,6 +409,7 @@ namespace ILLink.CodeFix
             Enqueue(seed);
             while (queue.Count > 0)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 ISymbol symbol = queue.Dequeue();
 
                 foreach (ISymbol part in UnsafeContractHelpers.GetPartialParts(symbol))
@@ -412,25 +420,6 @@ namespace ILLink.CodeFix
 
                 foreach (ISymbol interfaceMember in UnsafeContractHelpers.GetImplementedInterfaceMembers(symbol))
                     Enqueue(interfaceMember);
-
-                foreach (ISymbol overridingMember in await SymbolFinder.FindOverridesAsync(
-                    symbol,
-                    solution,
-                    cancellationToken: cancellationToken).ConfigureAwait(false))
-                {
-                    Enqueue(overridingMember);
-                }
-
-                if (symbol.ContainingType?.TypeKind == TypeKind.Interface)
-                {
-                    foreach (ISymbol implementation in await SymbolFinder.FindImplementationsAsync(
-                        symbol,
-                        solution,
-                        cancellationToken: cancellationToken).ConfigureAwait(false))
-                    {
-                        Enqueue(implementation);
-                    }
-                }
             }
 
             return closure;
@@ -441,6 +430,29 @@ namespace ILLink.CodeFix
                 if (closure.Add(symbol))
                     queue.Enqueue(symbol);
             }
+        }
+
+        /// <summary>
+        /// Determines whether propagation would replace a deliberate safe audit with an unsafe contract.
+        /// </summary>
+        private static bool DiscardsExplicitSafeContract(
+            Solution solution,
+            IEnumerable<ISymbol> symbols,
+            CancellationToken cancellationToken)
+        {
+            foreach (ISymbol symbol in symbols)
+            {
+                foreach (SyntaxNode declaration in UnsafeContractHelpers.GetDeclarations(symbol, cancellationToken))
+                {
+                    if (solution.GetDocument(declaration.SyntaxTree) is not null
+                        && UnsafeMigrationSyntaxHelpers.HasSafeModifier(declaration))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private static async Task<Solution> ApplyModifierAsync(
@@ -561,6 +573,9 @@ namespace ILLink.CodeFix
                         cancellationToken).ConfigureAwait(false);
                 }
 
+                document = await UnsafeModifierCodeFixHelpers.AddPendingSafetyDocumentationAsync(
+                    document,
+                    cancellationToken).ConfigureAwait(false);
                 solution = document.Project.Solution;
             }
 
@@ -584,6 +599,7 @@ namespace ILLink.CodeFix
                     IndexerDeclarationSyntax indexer => indexer.SemicolonToken,
                     _ => default,
                 });
+            getter = (AccessorDeclarationSyntax)UnsafeModifierCodeFixHelpers.MarkForSafetyDocumentation(getter);
 
             SyntaxNode replacement = expressionBody.Parent switch
             {
@@ -634,9 +650,11 @@ namespace ILLink.CodeFix
                 EventFieldDeclarationSyntax splitEvent = eventField
                     .WithDeclaration(eventField.Declaration.WithVariables(
                         SyntaxFactory.SingletonSeparatedList(variable)))
+                    // Later declarations rely on the line break that the preceding one already carries, so that
+                    // generated documentation does not introduce a blank line between them.
                     .WithLeadingTrivia(i == 0
                         ? eventField.GetLeadingTrivia()
-                        : SyntaxFactory.TriviaList(SyntaxFactory.ElasticCarriageReturnLineFeed))
+                        : default(SyntaxTriviaList))
                     .WithTrailingTrivia(i == variables.Count - 1
                         ? eventField.GetTrailingTrivia()
                         : variables.GetSeparator(i).LeadingTrivia
@@ -644,7 +662,15 @@ namespace ILLink.CodeFix
                             .Add(SyntaxFactory.ElasticCarriageReturnLineFeed));
 
                 if (eventNames.Contains(variable.Identifier.ValueText))
+                {
+                    bool wasUnsafe = UnsafeMigrationSyntaxHelpers.HasModifier(splitEvent, SyntaxKind.UnsafeKeyword);
                     splitEvent = SetEventFieldUnsafe(splitEvent);
+                    if (!wasUnsafe)
+                    {
+                        splitEvent = (EventFieldDeclarationSyntax)UnsafeModifierCodeFixHelpers
+                            .MarkForSafetyDocumentation(splitEvent);
+                    }
+                }
 
                 splitEvents.Add(splitEvent.WithAdditionalAnnotations(Formatter.Annotation));
             }

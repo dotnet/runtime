@@ -147,6 +147,9 @@
   <data name="SynchronizeUnsafeContractCodeFixTitle" xml:space="preserve">
     <value>Propagate unsafe contract</value>
   </data>
+  <data name="SynchronizeUnsafeContractDiscardingSafeCodeFixTitle" xml:space="preserve">
+    <value>Propagate unsafe contract (discards explicit 'safe')</value>
+  </data>
   <data name="UconditionalSuppressMessageCodeFixTitle" xml:space="preserve">
     <value>Add UnconditionalSuppressMessage attribute to parent method</value>
   </data>

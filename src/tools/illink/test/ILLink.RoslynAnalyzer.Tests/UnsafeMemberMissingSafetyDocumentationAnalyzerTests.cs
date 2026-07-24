@@ -109,6 +109,35 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public async Task GeneratedSafetyDocumentationSuppressesTheDiagnostic()
+        {
+            // Contracts introduced by the migration fixers carry this stub, so a later analysis pass does not remove
+            // the modifier they just added.
+            var source = """
+                class Base
+                {
+                    /// <safety>TODO: Audit</safety>
+                    public virtual unsafe void Method() { }
+                }
+
+                class B
+                {
+                    protected {|IL5005:unsafe|} B() { }
+                }
+
+                class C : B
+                {
+                    /// <safety>TODO: Audit</safety>
+                    public unsafe C() { }
+                }
+                """;
+
+            var test = UnsafeMigrationTestHelpers
+                .CreateAnalyzerTest<UnsafeMemberMissingSafetyDocumentationAnalyzer>(source);
+            await test.RunAsync();
+        }
+
+        [Fact]
         public async Task IgnoresDeclarationsThatCannotExposeUnsafeContracts()
         {
             var source = """

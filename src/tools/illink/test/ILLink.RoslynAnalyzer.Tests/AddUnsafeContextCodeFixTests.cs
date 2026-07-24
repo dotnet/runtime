@@ -1259,6 +1259,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                 class C : B
                 {
+                    /// <safety>TODO: Audit</safety>
                     public unsafe C() { }
                 }
                 """;
@@ -1278,6 +1279,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             var fixedSource = """
                 class C : LegacyBase
                 {
+                    /// <safety>TODO: Audit</safety>
                     public unsafe C(int* pointer) : base(pointer) { }
                 }
                 """;
@@ -1426,6 +1428,538 @@ namespace ILLink.RoslynAnalyzer.Tests
                     .CompilerError(AddUnsafeContextCodeFixProvider.UnsafeOperationDiagnosticId)
                     .WithSpan(5, 9, 5, 26));
             await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task UnsafePropertyReadUsesCastInsideUnsafeExpression()
+        {
+            var source = """
+                class Data
+                {
+                    public unsafe int Value { get; }
+                }
+
+                class C
+                {
+                    static Data s_data = new();
+                    static int Value = {|CS9362:s_data.Value|};
+                }
+                """;
+            var fixedSource = """
+                class Data
+                {
+                    public unsafe int Value { get; }
+                }
+
+                class C
+                {
+                    static Data s_data = new();
+                    static int Value = unsafe(/* SAFETY: Audit */ (int)s_data.Value);
+                }
+                """;
+
+            await CreateTest(source, fixedSource).RunAsync();
+        }
+
+        [Fact]
+        public async Task UnsafeIndexerReadUsesCastInsideUnsafeExpression()
+        {
+            var source = """
+                class Data
+                {
+                    public unsafe bool this[int index] => true;
+                }
+
+                class C
+                {
+                    static Data s_data = new();
+
+                    static void M()
+                    {
+                        try
+                        {
+                        }
+                        catch (System.Exception) when ({|CS9362:s_data[0]|})
+                        {
+                        }
+                    }
+                }
+                """;
+            var fixedSource = """
+                class Data
+                {
+                    public unsafe bool this[int index] => true;
+                }
+
+                class C
+                {
+                    static Data s_data = new();
+
+                    static void M()
+                    {
+                        try
+                        {
+                        }
+                        catch (System.Exception) when (unsafe(/* SAFETY: Audit */ (bool)s_data[0]))
+                        {
+                        }
+                    }
+                }
+                """;
+
+            await CreateTest(source, fixedSource).RunAsync();
+        }
+
+        [Fact]
+        public async Task MethodGroupConversionUsesCastInsideUnsafeExpression()
+        {
+            var source = """
+                class C
+                {
+                    static unsafe void Work() { }
+                    static System.Action s_action = {|CS9362:Work|};
+                }
+                """;
+            var fixedSource = """
+                class C
+                {
+                    static unsafe void Work() { }
+                    static System.Action s_action = unsafe(/* SAFETY: Audit */ (System.Action)Work);
+                }
+                """;
+
+            await CreateTest(source, fixedSource).RunAsync();
+        }
+
+        [Fact]
+        public async Task MethodGroupConversionInYieldReturnUsesCast()
+        {
+            var source = """
+                class C
+                {
+                    static unsafe void Work() { }
+
+                    static System.Collections.Generic.IEnumerable<System.Action> M()
+                    {
+                        yield return {|CS9362:Work|};
+                    }
+                }
+                """;
+            var fixedSource = """
+                class C
+                {
+                    static unsafe void Work() { }
+
+                    static System.Collections.Generic.IEnumerable<System.Action> M()
+                    {
+                        yield return unsafe(/* SAFETY: Audit */ (System.Action)Work);
+                    }
+                }
+                """;
+
+            await CreateTest(source, fixedSource).RunAsync();
+        }
+
+        [Fact]
+        public async Task DeconstructionUsesUnsafeStatement()
+        {
+            var source = """
+                class D
+                {
+                    public unsafe void Deconstruct(out int first, out int second)
+                    {
+                        first = 0;
+                        second = 0;
+                    }
+                }
+
+                class C
+                {
+                    static void M()
+                    {
+                        var (first, second) = {|CS9362:new D()|};
+                        System.Console.WriteLine(first + second);
+                    }
+                }
+                """;
+            var fixedSource = """
+                class D
+                {
+                    public unsafe void Deconstruct(out int first, out int second)
+                    {
+                        first = 0;
+                        second = 0;
+                    }
+                }
+
+                class C
+                {
+                    static void M()
+                    {
+                        unsafe
+                        {
+                            // SAFETY: Audit
+                            var (first, second) = new D();
+                            System.Console.WriteLine(first + second);
+                        }
+                    }
+                }
+                """;
+
+            await CreateTest(source, fixedSource).RunAsync();
+        }
+
+        [Fact]
+        public async Task NoFixWhenUnsafeExpressionIsAlreadyPresent()
+        {
+            var source = """
+                class Data
+                {
+                    public unsafe int Value { get; }
+                }
+
+                class C
+                {
+                    static Data s_data = new();
+                    static int Value = unsafe(/* SAFETY: Audit */ {|CS9362:s_data.Value|});
+                }
+                """;
+
+            var test = UnsafeMigrationTestHelpers
+                .CreateCodeFixTest<DynamicallyAccessedMembersAnalyzer, AddUnsafeContextCodeFixProvider>(
+                    source);
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task NoFixForUnsafePropertyAssignmentInAwaitStatement()
+        {
+            var source = """
+                class Data
+                {
+                    public unsafe int Value { get; set; }
+                }
+
+                class C
+                {
+                    static Data s_data = new();
+                    static async System.Threading.Tasks.Task<int> GetAsync() => 1;
+
+                    static async System.Threading.Tasks.Task M()
+                    {
+                        {|CS9362:{|CS9362:s_data.Value|}|} += await GetAsync();
+                    }
+                }
+                """;
+
+            var test = UnsafeMigrationTestHelpers
+                .CreateCodeFixTest<DynamicallyAccessedMembersAnalyzer, AddUnsafeContextCodeFixProvider>(
+                    source);
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task NoFixForRefReturningUnsafeProperty()
+        {
+            var source = """
+                class Data
+                {
+                    static int s_value;
+                    public unsafe ref int Value => ref s_value;
+                }
+
+                class C
+                {
+                    static Data s_data = new();
+                    static int Value = {|CS9362:s_data.Value|};
+                }
+                """;
+
+            var test = UnsafeMigrationTestHelpers
+                .CreateCodeFixTest<DynamicallyAccessedMembersAnalyzer, AddUnsafeContextCodeFixProvider>(
+                    source);
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task MergesAdjacentGeneratedUnsafeStatements()
+        {
+            var source = """
+                class C
+                {
+                    static unsafe void Work() { }
+
+                    static void M()
+                    {
+                        {|CS9362:Work()|};
+                        {|CS9362:Work()|};
+                    }
+                }
+                """;
+            var fixedSource = """
+                class C
+                {
+                    static unsafe void Work() { }
+
+                    static void M()
+                    {
+                        unsafe
+                        {
+                            // SAFETY: Audit
+                            Work();
+                            Work();
+                        }
+                    }
+                }
+                """;
+            // Fix all evaluates every diagnostic against the original document, so it cannot merge the regions that
+            // the individual fixes produce.
+            var batchFixedSource = """
+                class C
+                {
+                    static unsafe void Work() { }
+
+                    static void M()
+                    {
+                        unsafe
+                        {
+                            // SAFETY: Audit
+                            Work();
+                        }
+
+                        unsafe
+                        {
+                            // SAFETY: Audit
+                            Work();
+                        }
+                    }
+                }
+                """;
+
+            var test = CreateTest(source, fixedSource);
+            test.BatchFixedCode = batchFixedSource;
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task MergesGeneratedUnsafeStatementsSeparatedBySafeStatement()
+        {
+            var source = """
+                class C
+                {
+                    static unsafe void Work() { }
+
+                    static void M()
+                    {
+                        {|CS9362:Work()|};
+                        System.Console.WriteLine();
+                        {|CS9362:Work()|};
+                    }
+                }
+                """;
+            var fixedSource = """
+                class C
+                {
+                    static unsafe void Work() { }
+
+                    static void M()
+                    {
+                        unsafe
+                        {
+                            // SAFETY: Audit
+                            Work();
+                            System.Console.WriteLine();
+                            Work();
+                        }
+                    }
+                }
+                """;
+            var batchFixedSource = """
+                class C
+                {
+                    static unsafe void Work() { }
+
+                    static void M()
+                    {
+                        unsafe
+                        {
+                            // SAFETY: Audit
+                            Work();
+                        }
+
+                        System.Console.WriteLine();
+                        unsafe
+                        {
+                            // SAFETY: Audit
+                            Work();
+                        }
+                    }
+                }
+                """;
+
+            var test = CreateTest(source, fixedSource);
+            test.BatchFixedCode = batchFixedSource;
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task DoesNotMergeIntoAuditedUnsafeStatement()
+        {
+            var source = """
+                class C
+                {
+                    static unsafe void Work() { }
+
+                    static void M()
+                    {
+                        unsafe
+                        {
+                            // SAFETY: Reviewed by the runtime team.
+                            Work();
+                        }
+                        {|CS9362:Work()|};
+                    }
+                }
+                """;
+            var fixedSource = """
+                class C
+                {
+                    static unsafe void Work() { }
+
+                    static void M()
+                    {
+                        unsafe
+                        {
+                            // SAFETY: Reviewed by the runtime team.
+                            Work();
+                        }
+                        unsafe
+                        {
+                            // SAFETY: Audit
+                            Work();
+                        }
+                    }
+                }
+                """;
+
+            await CreateTest(source, fixedSource).RunAsync();
+        }
+
+        [Fact]
+        public async Task DoesNotMergeAcrossADeclaringStatement()
+        {
+            var source = """
+                class C
+                {
+                    static unsafe void Work() { }
+
+                    static void M()
+                    {
+                        {|CS9362:Work()|};
+                        int value = 5;
+                        {|CS9362:Work()|};
+                        System.Console.WriteLine(value);
+                    }
+                }
+                """;
+            var fixedSource = """
+                class C
+                {
+                    static unsafe void Work() { }
+
+                    static void M()
+                    {
+                        unsafe
+                        {
+                            // SAFETY: Audit
+                            Work();
+                        }
+
+                        int value = 5;
+                        unsafe
+                        {
+                            // SAFETY: Audit
+                            Work();
+                        }
+
+                        System.Console.WriteLine(value);
+                    }
+                }
+                """;
+
+            await CreateTest(source, fixedSource).RunAsync();
+        }
+
+        [Fact]
+        public async Task MergingKeepsCommentsFromTheAbsorbedRegion()
+        {
+            var source = """
+                class C
+                {
+                    static unsafe void Work() { }
+
+                    static void M()
+                    {
+                        unsafe
+                        {
+                            // SAFETY: Audit
+                            // Only the first call needs the pointer.
+                            Work();
+                        }
+                        {|CS9362:Work()|};
+                    }
+                }
+                """;
+            var fixedSource = """
+                class C
+                {
+                    static unsafe void Work() { }
+
+                    static void M()
+                    {
+                        // Only the first call needs the pointer.
+                        unsafe
+                        {
+                            // SAFETY: Audit
+                            Work();
+                            Work();
+                        }
+                    }
+                }
+                """;
+
+            await CreateTest(source, fixedSource).RunAsync();
+        }
+
+        [Fact]
+        public async Task ParenthesizesUnaryOperandOfInsertedCast()
+        {
+            var source = """
+                struct Ptr
+                {
+                    public static implicit operator Ptr(int value) => default;
+                }
+
+                class C
+                {
+                    static int* GetPointer() => null;
+                    static Ptr s_ptr = {|CS9360:*|}GetPointer();
+                }
+                """;
+            var fixedSource = """
+                struct Ptr
+                {
+                    public static implicit operator Ptr(int value) => default;
+                }
+
+                class C
+                {
+                    static int* GetPointer() => null;
+                    static Ptr s_ptr = unsafe(/* SAFETY: Audit */ (Ptr)(*GetPointer()));
+                }
+                """;
+
+            await CreateTest(source, fixedSource).RunAsync();
         }
 
         private static CSharpCodeFixVerifier<DynamicallyAccessedMembersAnalyzer, AddUnsafeContextCodeFixProvider>.Test CreateTest(

@@ -22,6 +22,11 @@ namespace ILLink.CodeFix
     /// </summary>
     internal static class UnsafeModifierCodeFixHelpers
     {
+        internal const string SafetyDocumentationText = "TODO: Audit";
+
+        private static readonly SyntaxAnnotation s_safetyDocumentationAnnotation =
+            new(nameof(s_safetyDocumentationAnnotation));
+
         /// <summary>
         /// Registers an add-unsafe action for a supported declaration that has no existing safety modifier.
         /// </summary>
@@ -98,17 +103,26 @@ namespace ILLink.CodeFix
 
         /// <summary>
         /// Replaces an explicit safe contract with unsafe, or adds unsafe when no safety modifier is present.
+        /// The declaration is annotated so that <see cref="AddPendingSafetyDocumentationAsync"/> can document the
+        /// new caller-unsafe contract, which also keeps <c>IL5005</c> from immediately removing the modifier again.
         /// </summary>
         internal static async Task<Document> SetUnsafeModifierAsync(
             Document document,
             SyntaxNode declaration,
             CancellationToken cancellationToken)
         {
-            SyntaxToken safeModifier = UnsafeMigrationSyntaxHelpers.GetSafeModifier(declaration);
-            if (safeModifier != default)
+            // Only contracts that this fix introduces are documented; a modifier the developer already wrote stays
+            // subject to the IL5005 rules.
+            if (UnsafeMigrationSyntaxHelpers.GetSafeModifier(declaration) != default)
             {
+                (document, declaration) = await AnnotateForSafetyDocumentationAsync(
+                    document,
+                    declaration,
+                    cancellationToken).ConfigureAwait(false);
+
                 var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-                if (root is null)
+                SyntaxToken safeModifier = UnsafeMigrationSyntaxHelpers.GetSafeModifier(declaration);
+                if (root is null || safeModifier == default)
                     return document;
 
                 SyntaxToken unsafeModifier = SyntaxFactory.Token(SyntaxKind.UnsafeKeyword)
@@ -119,7 +133,105 @@ namespace ILLink.CodeFix
             if (UnsafeMigrationSyntaxHelpers.HasModifier(declaration, SyntaxKind.UnsafeKeyword))
                 return document;
 
+            (document, declaration) = await AnnotateForSafetyDocumentationAsync(
+                document,
+                declaration,
+                cancellationToken).ConfigureAwait(false);
             return await AddUnsafeModifierAsync(document, declaration, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Marks a declaration so that <see cref="AddPendingSafetyDocumentationAsync"/> documents its new contract.
+        /// </summary>
+        internal static SyntaxNode MarkForSafetyDocumentation(SyntaxNode declaration) =>
+            declaration.WithAdditionalAnnotations(s_safetyDocumentationAnnotation);
+
+        /// <summary>
+        /// Documents every declaration that <see cref="SetUnsafeModifierAsync"/> marked as caller-unsafe.
+        /// </summary>
+        internal static async Task<Document> AddPendingSafetyDocumentationAsync(
+            Document document,
+            CancellationToken cancellationToken)
+        {
+            var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            if (root is null)
+                return document;
+
+            SyntaxNode[] documentationTargets = root.GetAnnotatedNodes(s_safetyDocumentationAnnotation)
+                .Select(GetSafetyDocumentationTarget)
+                .Distinct()
+                .Where(static target => !UnsafeMigrationSyntaxHelpers.HasSafetyDocumentation(target))
+                .ToArray();
+            if (documentationTargets.Length > 0)
+            {
+                root = root.ReplaceNodes(
+                    documentationTargets,
+                    static (_, target) => AddSafetyDocumentation(target));
+            }
+
+            SyntaxNode[] annotated = root.GetAnnotatedNodes(s_safetyDocumentationAnnotation).ToArray();
+            if (annotated.Length > 0)
+            {
+                root = root.ReplaceNodes(
+                    annotated,
+                    static (_, node) => node.WithoutAnnotations(s_safetyDocumentationAnnotation));
+            }
+
+            return document.WithSyntaxRoot(root);
+        }
+
+        private static async Task<(Document Document, SyntaxNode Declaration)> AnnotateForSafetyDocumentationAsync(
+            Document document,
+            SyntaxNode declaration,
+            CancellationToken cancellationToken)
+        {
+            if (declaration.HasAnnotation(s_safetyDocumentationAnnotation))
+                return (document, declaration);
+
+            var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            if (root is null)
+                return (document, declaration);
+
+            var annotation = new SyntaxAnnotation();
+            SyntaxNode annotatedDeclaration = declaration
+                .WithAdditionalAnnotations(s_safetyDocumentationAnnotation, annotation);
+            document = document.WithSyntaxRoot(root.ReplaceNode(declaration, annotatedDeclaration));
+
+            root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            return (document, root?.GetAnnotatedNodes(annotation).FirstOrDefault() ?? annotatedDeclaration);
+        }
+
+        /// <summary>
+        /// Finds the declaration that owns the documentation for a caller-unsafe contract.
+        /// Accessors cannot carry XML documentation, so their contract is documented on the containing member.
+        /// </summary>
+        private static SyntaxNode GetSafetyDocumentationTarget(SyntaxNode declaration) =>
+            declaration is AccessorDeclarationSyntax
+                ? declaration.Ancestors().OfType<BasePropertyDeclarationSyntax>().FirstOrDefault() ?? declaration
+                : declaration;
+
+        private static SyntaxNode AddSafetyDocumentation(SyntaxNode declaration)
+        {
+            SyntaxTriviaList leadingTrivia = declaration.GetLeadingTrivia();
+            string indentation = leadingTrivia.LastOrDefault(static trivia =>
+                trivia.IsKind(SyntaxKind.WhitespaceTrivia)).ToFullString();
+            SyntaxTriviaList documentation = SyntaxFactory.ParseLeadingTrivia(
+                $"/// <{UnsafeMigrationSyntaxHelpers.SafetyDocumentationElement}>{SafetyDocumentationText}"
+                    + $"</{UnsafeMigrationSyntaxHelpers.SafetyDocumentationElement}>"
+                    + $"{GetEndOfLine(declaration)}{indentation}");
+            return declaration.WithLeadingTrivia(leadingTrivia.AddRange(documentation));
+        }
+
+        /// <summary>
+        /// Reuses the line ending already present around a declaration so generated documentation matches the file.
+        /// </summary>
+        private static string GetEndOfLine(SyntaxNode declaration)
+        {
+            SyntaxTrivia endOfLine = declaration.GetLeadingTrivia()
+                .FirstOrDefault(static trivia => trivia.IsKind(SyntaxKind.EndOfLineTrivia));
+            return endOfLine == default
+                ? SyntaxFactory.CarriageReturnLineFeed.ToFullString()
+                : endOfLine.ToFullString();
         }
 
         /// <summary>

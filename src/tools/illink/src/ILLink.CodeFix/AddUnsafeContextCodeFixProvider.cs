@@ -32,7 +32,24 @@ namespace ILLink.CodeFix
         public const string UnsafeMemberOperationCompatDiagnosticId = "CS9363";
         public const string UnsafeConstructorConstraintDiagnosticId = "CS9376";
 
+        internal const string SafetyAuditComment = "// SAFETY: Audit";
+
         private const string UnsafeExpressionPlaceholder = "__unsafeExpression";
+
+        /// <summary>
+        /// How many audited-but-safe statements may be absorbed when merging a new unsafe region with an adjacent
+        /// generated one. Merging trades a slightly wider audit scope for far fewer unsafe blocks per member; keep
+        /// this small so that migration does not silently blanket unrelated code.
+        /// </summary>
+        private const int MaxSafeStatementsBetweenMergedRegions = 1;
+
+        private static readonly CSharpParseOptions s_unsafeExpressionParseOptions =
+            new(LanguageVersion.Preview);
+
+        // The code fix compiles against a Roslyn version that predates unsafe expressions but runs inside whichever
+        // compiler the host loaded. Discover the syntax kind at run time and fall back to statement contexts when the
+        // host cannot parse 'unsafe(...)'.
+        private static readonly int s_unsafeExpressionRawKind = GetUnsafeExpressionRawKind();
 
         private static readonly SymbolDisplayFormat s_localTypeDisplayFormat =
             SymbolDisplayFormat.MinimallyQualifiedFormat.WithMiscellaneousOptions(
@@ -65,9 +82,8 @@ namespace ILLink.CodeFix
             if (root is null)
                 return;
 
-            SyntaxNode targetNode = root.FindNode(
-                diagnostic.Location.SourceSpan,
-                getInnermostNodeForTie: true);
+            TextSpan diagnosticSpan = diagnostic.Location.SourceSpan;
+            SyntaxNode targetNode = root.FindNode(diagnosticSpan, getInnermostNodeForTie: true);
             string title = CodeFixTitle.ToString();
 
             // Attribute applications are deliberately not suppressible under the updated language rules.
@@ -76,27 +92,23 @@ namespace ILLink.CodeFix
 
             if (TryGetConstructorRequiringUnsafe(diagnostic, targetNode) is { } constructor)
             {
-                context.RegisterCodeFix(
-                    CodeAction.Create(
-                        title,
-                        cancellationToken => UnsafeModifierCodeFixHelpers.SetUnsafeModifierAsync(
-                            context.Document,
-                            constructor,
-                            cancellationToken),
-                        title),
-                    diagnostic);
+                RegisterFix(
+                    context,
+                    title,
+                    cancellationToken => MarkConstructorUnsafeAsync(
+                        context.Document,
+                        constructor,
+                        cancellationToken));
                 return;
             }
 
             if (diagnostic.Id == UnsafeConstructorConstraintDiagnosticId
                 && targetNode.AncestorsAndSelf().OfType<UsingDirectiveSyntax>().FirstOrDefault() is { } usingDirective)
             {
-                context.RegisterCodeFix(
-                    CodeAction.Create(
-                        title,
-                        _ => Task.FromResult(AddUnsafeToUsingDirective(context.Document, root, usingDirective)),
-                        title),
-                    diagnostic);
+                RegisterFix(
+                    context,
+                    title,
+                    _ => Task.FromResult(AddUnsafeToUsingDirective(context.Document, root, usingDirective)));
                 return;
             }
 
@@ -104,52 +116,34 @@ namespace ILLink.CodeFix
             if (semanticModel is null)
                 return;
 
-            if (IsExpressionOnlyContext(targetNode, diagnostic.Location.SourceSpan)
-                && TryGetUnsafeExpression(targetNode, diagnostic.Location.SourceSpan) is { } expressionOnly)
+            if (IsExpressionOnlyContext(targetNode, diagnosticSpan))
             {
-                RegisterExpressionFix(
-                    context,
-                    diagnostic,
-                    root,
-                    semanticModel,
-                    expressionOnly,
-                    title);
+                TryRegisterExpressionFix(context, root, semanticModel, targetNode, diagnosticSpan, title);
                 return;
             }
 
             ArrowExpressionClauseSyntax? arrowExpression = targetNode.AncestorsAndSelf()
                 .OfType<ArrowExpressionClauseSyntax>()
-                .FirstOrDefault(arrow => arrow.Expression.FullSpan.Contains(diagnostic.Location.SourceSpan));
+                .FirstOrDefault(arrow => arrow.Expression.FullSpan.Contains(diagnosticSpan));
             if (arrowExpression is not null)
             {
                 if (arrowExpression.Parent is AnonymousFunctionExpressionSyntax
                     || arrowExpression.Expression.DescendantNodesAndSelf().OfType<AwaitExpressionSyntax>().Any()
                     || HasDirectiveWithinSpan(arrowExpression))
                 {
-                    if (TryGetUnsafeExpression(targetNode, diagnostic.Location.SourceSpan) is { } expression)
-                    {
-                        RegisterExpressionFix(
-                            context,
-                            diagnostic,
-                            root,
-                            semanticModel,
-                            expression,
-                            title);
-                    }
+                    TryRegisterExpressionFix(context, root, semanticModel, targetNode, diagnosticSpan, title);
                 }
                 else
                 {
-                    context.RegisterCodeFix(
-                        CodeAction.Create(
-                            title,
-                            cancellationToken => ConvertExpressionBodyAsync(
-                                context.Document,
-                                root,
-                                semanticModel,
-                                arrowExpression,
-                                cancellationToken),
-                            title),
-                        diagnostic);
+                    RegisterFix(
+                        context,
+                        title,
+                        cancellationToken => ConvertExpressionBodyAsync(
+                            context.Document,
+                            root,
+                            semanticModel,
+                            arrowExpression,
+                            cancellationToken));
                 }
                 return;
             }
@@ -162,16 +156,7 @@ namespace ILLink.CodeFix
 
             if (containingStatement is null)
             {
-                if (TryGetUnsafeExpression(targetNode, diagnostic.Location.SourceSpan) is { } expression)
-                {
-                    RegisterExpressionFix(
-                        context,
-                        diagnostic,
-                        root,
-                        semanticModel,
-                        expression,
-                        title);
-                }
+                TryRegisterExpressionFix(context, root, semanticModel, targetNode, diagnosticSpan, title);
                 return;
             }
 
@@ -185,75 +170,38 @@ namespace ILLink.CodeFix
                     out LocalDeclarationStatementSyntax forwardDeclaration,
                     out StatementSyntax assignmentStatement))
                 {
-                    context.RegisterCodeFix(
-                        CodeAction.Create(
-                            title,
-                            _ => Task.FromResult(ReplaceStatementWithStatements(
-                                context.Document,
-                                root,
-                                localDeclaration,
-                                [forwardDeclaration, CreateUnsafeStatement(assignmentStatement)])),
-                            title),
-                        diagnostic);
+                    RegisterFix(
+                        context,
+                        title,
+                        _ => Task.FromResult(ReplaceStatementWithStatements(
+                            context.Document,
+                            root,
+                            localDeclaration,
+                            [forwardDeclaration, CreateUnsafeStatement(assignmentStatement)])));
                     return;
                 }
 
-                if (TryGetUnsafeExpression(targetNode, diagnostic.Location.SourceSpan) is { } localExpression
-                    && CanUseUnsafeExpression(localExpression))
-                {
-                    RegisterExpressionFix(
-                        context,
-                        diagnostic,
-                        root,
-                        semanticModel,
-                        localExpression,
-                        title);
+                if (TryRegisterExpressionFix(context, root, semanticModel, targetNode, diagnosticSpan, title))
                     return;
-                }
 
                 if (!localDeclaration.AwaitKeyword.IsKind(SyntaxKind.None))
                     return;
 
                 if (TryGetEnclosingSwitch(localDeclaration) is { } localSwitch)
                 {
-                    if (!ContainsAwaitOrYield(localSwitch))
-                    {
-                        context.RegisterCodeFix(
-                            CodeAction.Create(
-                                title,
-                                _ => Task.FromResult(ReplaceStatementWithStatements(
-                                    context.Document,
-                                    root,
-                                    localSwitch,
-                                    [CreateUnsafeStatement(localSwitch)])),
-                                title),
-                            diagnostic);
-                    }
+                    RegisterEnclosingSwitchFix(context, root, localSwitch, title);
                     return;
                 }
 
-                if (TryGetStatementRangeToWrap(
-                    localDeclaration,
-                    semanticModel,
-                    context.CancellationToken,
-                    forceThroughContainerEnd: IsUsingDeclaration(localDeclaration),
-                    out SyntaxNode localContainer,
-                    out int localStart,
-                    out int localEnd)
-                    && CanWrapStatementRange(
-                        localContainer,
-                        localStart,
-                        localEnd,
-                        semanticModel,
-                        context.CancellationToken))
+                if (StatementRange.TryCreateForStatement(localDeclaration, out StatementRange localRange, out int localIndex))
                 {
-                    RegisterStatementRangeFix(
+                    TryRegisterStatementRangeFix(
                         context,
-                        diagnostic,
                         root,
-                        localContainer,
-                        localStart,
-                        localEnd,
+                        semanticModel,
+                        localRange,
+                        localIndex,
+                        forceThroughContainerEnd: IsUsingDeclaration(localDeclaration),
                         title);
                 }
                 return;
@@ -283,47 +231,26 @@ namespace ILLink.CodeFix
                     context.CancellationToken);
 
             if ((cannotContainUnsafeStatement || preferExpression)
-                && TryGetUnsafeExpression(targetNode, diagnostic.Location.SourceSpan) is { } statementExpression
-                && CanUseUnsafeExpression(statementExpression))
+                && TryRegisterExpressionFix(context, root, semanticModel, targetNode, diagnosticSpan, title))
             {
-                RegisterExpressionFix(
-                    context,
-                    diagnostic,
-                    root,
-                    semanticModel,
-                    statementExpression,
-                    title);
                 return;
             }
 
-            if (topLevelScopeSensitive
-                && containingStatement.Parent is GlobalStatementSyntax
-                {
-                    Parent: CompilationUnitSyntax compilationUnit,
-                } globalStatement)
+            bool hasStatementList = StatementRange.TryCreateForStatement(
+                containingStatement,
+                out StatementRange statements,
+                out int statementIndex);
+
+            if (topLevelScopeSensitive && hasStatementList)
             {
-                GlobalStatementSyntax[] globalStatements = compilationUnit.Members
-                    .OfType<GlobalStatementSyntax>()
-                    .ToArray();
-                int start = System.Array.IndexOf(globalStatements, globalStatement);
-                int end = globalStatements.Length - 1;
-                if (start >= 0
-                    && CanWrapStatementRange(
-                        compilationUnit,
-                        start,
-                        end,
-                        semanticModel,
-                        context.CancellationToken))
-                {
-                    RegisterStatementRangeFix(
-                        context,
-                        diagnostic,
-                        root,
-                        compilationUnit,
-                        start,
-                        end,
-                        title);
-                }
+                TryRegisterStatementRangeFix(
+                    context,
+                    root,
+                    semanticModel,
+                    statements,
+                    statementIndex,
+                    forceThroughContainerEnd: true,
+                    title);
                 return;
             }
 
@@ -332,112 +259,128 @@ namespace ILLink.CodeFix
 
             if (preferExpression && TryGetEnclosingSwitch(containingStatement) is { } containingSwitch)
             {
-                if (!ContainsAwaitOrYield(containingSwitch))
-                {
-                    context.RegisterCodeFix(
-                        CodeAction.Create(
-                            title,
-                            _ => Task.FromResult(ReplaceStatementWithStatements(
-                                context.Document,
-                                root,
-                                containingSwitch,
-                                [CreateUnsafeStatement(containingSwitch)])),
-                            title),
-                        diagnostic);
-                }
+                RegisterEnclosingSwitchFix(context, root, containingSwitch, title);
+                return;
+            }
+
+            if (hasStatementList)
+            {
+                TryRegisterStatementRangeFix(
+                    context,
+                    root,
+                    semanticModel,
+                    statements,
+                    statementIndex,
+                    forceThroughContainerEnd: false,
+                    title);
                 return;
             }
 
             if (preferExpression)
-            {
-                if (TryGetStatementRangeToWrap(
-                        containingStatement,
-                        semanticModel,
-                        context.CancellationToken,
-                        forceThroughContainerEnd: topLevelScopeSensitive,
-                        out SyntaxNode container,
-                        out int start,
-                        out int end)
-                    && CanWrapStatementRange(
-                        container,
-                        start,
-                        end,
-                        semanticModel,
-                        context.CancellationToken))
-                {
-                    RegisterStatementRangeFix(context, diagnostic, root, container, start, end, title);
-                }
                 return;
-            }
 
-            if (TryGetStatementList(
+            // Embedded statements (such as the body of an 'if' without braces) have no statement list to extend.
+            RegisterFix(
+                context,
+                title,
+                _ => Task.FromResult(ReplaceStatementWithStatements(
+                    context.Document,
+                    root,
                     containingStatement,
-                    out SyntaxNode singleContainer,
-                    out _,
-                    out int singleIndex)
-                && !CanWrapStatementRange(
-                    singleContainer,
-                    singleIndex,
-                    singleIndex,
-                    semanticModel,
-                    context.CancellationToken))
-            {
-                return;
-            }
-
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title,
-                    _ => Task.FromResult(ReplaceStatementWithStatements(
-                        context.Document,
-                        root,
-                        containingStatement,
-                        [CreateUnsafeStatement(containingStatement)])),
-                    title),
-                diagnostic);
+                    [CreateUnsafeStatement(containingStatement)])));
         }
 
-        private static void RegisterExpressionFix(
+        private static void RegisterFix(
             CodeFixContext context,
-            Diagnostic diagnostic,
+            string title,
+            System.Func<CancellationToken, Task<Document>> createChangedDocument) =>
+            context.RegisterCodeFix(
+                CodeAction.Create(title, createChangedDocument, title),
+                context.Diagnostics);
+
+        private static void RegisterEnclosingSwitchFix(
+            CodeFixContext context,
+            SyntaxNode root,
+            SwitchStatementSyntax switchStatement,
+            string title)
+        {
+            if (ContainsAwaitOrYield(switchStatement))
+                return;
+
+            RegisterFix(
+                context,
+                title,
+                _ => Task.FromResult(ReplaceStatementWithStatements(
+                    context.Document,
+                    root,
+                    switchStatement,
+                    [CreateUnsafeStatement(switchStatement)])));
+        }
+
+        private static bool TryRegisterExpressionFix(
+            CodeFixContext context,
             SyntaxNode root,
             SemanticModel semanticModel,
-            ExpressionSyntax expression,
+            SyntaxNode targetNode,
+            TextSpan diagnosticSpan,
             string title)
         {
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title,
-                    _ => Task.FromResult(ReplaceWithUnsafeExpression(
-                        context.Document,
-                        root,
-                        semanticModel,
-                        expression,
-                        context.CancellationToken)),
-                    title),
-                diagnostic);
+            if (TryGetUnsafeExpressionFix(
+                targetNode,
+                diagnosticSpan,
+                semanticModel,
+                context.CancellationToken) is not { } fix)
+            {
+                return false;
+            }
+
+            (ExpressionSyntax expression, ExpressionSyntax operand) = fix;
+            RegisterFix(
+                context,
+                title,
+                _ => Task.FromResult(ReplaceWithUnsafeExpression(context.Document, root, expression, operand)));
+            return true;
         }
 
-        private static void RegisterStatementRangeFix(
+        private static bool TryRegisterStatementRangeFix(
             CodeFixContext context,
-            Diagnostic diagnostic,
             SyntaxNode root,
-            SyntaxNode container,
-            int start,
-            int end,
+            SemanticModel semanticModel,
+            in StatementRange statements,
+            int statementIndex,
+            bool forceThroughContainerEnd,
             string title)
         {
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title,
-                    _ => Task.FromResult(WrapStatementRange(
-                        context.Document,
-                        root,
-                        container,
-                        start,
-                        end)),
-                    title),
-                diagnostic);
+            if (!TryGetStatementRangeToWrap(
+                statements,
+                statementIndex,
+                semanticModel,
+                context.CancellationToken,
+                forceThroughContainerEnd,
+                out int start,
+                out int end))
+            {
+                return false;
+            }
+
+            (int mergedStart, int mergedEnd) = ExtendRangeOverGeneratedUnsafeStatements(statements, start, end);
+            if (mergedStart != start || mergedEnd != end)
+            {
+                if (CanWrapStatementRange(statements, mergedStart, mergedEnd, semanticModel, context.CancellationToken))
+                {
+                    (start, end) = (mergedStart, mergedEnd);
+                }
+            }
+
+            if (!CanWrapStatementRange(statements, start, end, semanticModel, context.CancellationToken))
+                return false;
+
+            StatementRange range = statements;
+            RegisterFix(
+                context,
+                title,
+                _ => Task.FromResult(WrapStatementRange(context.Document, root, range, start, end)));
+            return true;
         }
 
         private static ConstructorDeclarationSyntax? TryGetConstructorRequiringUnsafe(
@@ -463,6 +406,24 @@ namespace ILLink.CodeFix
             return null;
         }
 
+        /// <summary>
+        /// An unsafe constructor is the only way to establish an unsafe context for its initializer, so this widens
+        /// the constructor's own contract and is documented like any other caller-unsafe declaration.
+        /// </summary>
+        private static async Task<Document> MarkConstructorUnsafeAsync(
+            Document document,
+            ConstructorDeclarationSyntax constructor,
+            CancellationToken cancellationToken)
+        {
+            document = await UnsafeModifierCodeFixHelpers.SetUnsafeModifierAsync(
+                document,
+                constructor,
+                cancellationToken).ConfigureAwait(false);
+            return await UnsafeModifierCodeFixHelpers.AddPendingSafetyDocumentationAsync(
+                document,
+                cancellationToken).ConfigureAwait(false);
+        }
+
         private static bool IsExpressionOnlyContext(SyntaxNode targetNode, TextSpan diagnosticSpan)
         {
             if (targetNode.AncestorsAndSelf().OfType<CatchFilterClauseSyntax>()
@@ -478,6 +439,57 @@ namespace ILLink.CodeFix
             }
 
             return false;
+        }
+
+        private static bool SupportsUnsafeExpressions => s_unsafeExpressionRawKind >= 0;
+
+        private static bool IsUnsafeExpression(SyntaxNode node) =>
+            SupportsUnsafeExpressions && node.RawKind == s_unsafeExpressionRawKind;
+
+        private static int GetUnsafeExpressionRawKind()
+        {
+            ExpressionSyntax probe = ParseUnsafeExpression(UnsafeExpressionPlaceholder);
+            return !probe.IsKind(SyntaxKind.IdentifierName) && TryFindPlaceholder(probe) is not null
+                ? probe.RawKind
+                : -1;
+        }
+
+        private static ExpressionSyntax ParseUnsafeExpression(string inner) =>
+            SyntaxFactory.ParseExpression(
+                $"unsafe(/* SAFETY: Audit */ {inner})",
+                options: s_unsafeExpressionParseOptions);
+
+        private static IdentifierNameSyntax? TryFindPlaceholder(ExpressionSyntax expression) =>
+            expression.DescendantNodesAndSelf()
+                .OfType<IdentifierNameSyntax>()
+                .FirstOrDefault(static identifier => identifier.Identifier.ValueText == UnsafeExpressionPlaceholder);
+
+        /// <summary>
+        /// Builds the expression-level fix, or returns <see langword="null"/> when no semantics-preserving unsafe
+        /// expression can be written for the reported operation.
+        /// </summary>
+        private static (ExpressionSyntax Expression, ExpressionSyntax Operand)? TryGetUnsafeExpressionFix(
+            SyntaxNode targetNode,
+            TextSpan diagnosticSpan,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken)
+        {
+            if (!SupportsUnsafeExpressions
+                || TryGetUnsafeExpression(targetNode, diagnosticSpan) is not { } expression
+                || !CanUseUnsafeExpression(expression))
+            {
+                return null;
+            }
+
+            // Reaching here from inside an unsafe expression means the compiler does not treat that expression as an
+            // unsafe context for this operation, so wrapping it again would only nest without fixing anything.
+            if (expression.AncestorsAndSelf().Any(IsUnsafeExpression))
+                return null;
+
+            if (TryGetUnsafeExpressionOperand(semanticModel, expression, cancellationToken) is not { } operand)
+                return null;
+
+            return (expression, operand);
         }
 
         private static ExpressionSyntax? TryGetUnsafeExpression(SyntaxNode targetNode, TextSpan diagnosticSpan) =>
@@ -533,8 +545,150 @@ namespace ILLink.CodeFix
                     when forStatement.Initializers.Contains(expression)
                         || forStatement.Incrementors.Contains(expression) => false,
                 AttributeArgumentSyntax => false,
+                // An unsafe expression cannot be the target of an assignment or an increment, and wrapping the right
+                // side of a deconstruction does not put the generated Deconstruct call in an unsafe context.
+                AssignmentExpressionSyntax assignment =>
+                    assignment.Left != expression
+                    && assignment.Left is not (DeclarationExpressionSyntax or TupleExpressionSyntax),
+                PrefixUnaryExpressionSyntax prefix =>
+                    !prefix.IsKind(SyntaxKind.PreIncrementExpression)
+                    && !prefix.IsKind(SyntaxKind.PreDecrementExpression),
+                PostfixUnaryExpressionSyntax => false,
                 _ => true,
             });
+
+        /// <summary>
+        /// Produces the expression to place inside <c>unsafe(...)</c>. Conversions, property and indexer accessors,
+        /// and method group conversions are bound by the enclosing binder, so they only enter the unsafe context when
+        /// an explicit cast forces them inside it.
+        /// </summary>
+        private static ExpressionSyntax? TryGetUnsafeExpressionOperand(
+            SemanticModel semanticModel,
+            ExpressionSyntax expression,
+            CancellationToken cancellationToken)
+        {
+            ExpressionSyntax operand = expression.WithoutLeadingTrivia().WithoutTrailingTrivia();
+            if (TryGetRequiredCastType(semanticModel, expression, cancellationToken, out bool requiresCast) is { } castType)
+            {
+                if (TryParseTypeName(semanticModel, castType, expression.SpanStart) is not { } castTypeSyntax)
+                    return null;
+
+                if (NeedsParenthesesForCast(operand))
+                    operand = SyntaxFactory.ParenthesizedExpression(operand);
+
+                return SyntaxFactory.CastExpression(castTypeSyntax, operand);
+            }
+
+            return requiresCast ? null : operand;
+        }
+
+        private static ITypeSymbol? TryGetRequiredCastType(
+            SemanticModel semanticModel,
+            ExpressionSyntax expression,
+            CancellationToken cancellationToken,
+            out bool requiresCast)
+        {
+            requiresCast = true;
+            TypeInfo typeInfo = semanticModel.GetTypeInfo(expression, cancellationToken);
+
+            // A user-defined implicit conversion is applied to the result of the unsafe expression; casting to its
+            // result type also pulls any receiver evaluation inside, so it is checked first.
+            Conversion conversion = semanticModel.GetConversion(expression, cancellationToken);
+            if (conversion.IsUserDefined
+                && conversion.IsImplicit
+                && conversion.MethodSymbol is { } conversionOperator)
+            {
+                return GetUserDefinedConversionResultType(
+                    semanticModel,
+                    expression,
+                    conversionOperator,
+                    cancellationToken);
+            }
+
+            ISymbol? symbol = semanticModel.GetSymbolInfo(expression, cancellationToken).Symbol;
+            if (typeInfo.Type is null && symbol is IMethodSymbol)
+            {
+                return typeInfo.ConvertedType is INamedTypeSymbol { TypeKind: TypeKind.Delegate } delegateType
+                    ? delegateType
+                    : null;
+            }
+
+            if (symbol is IPropertySymbol property)
+            {
+                // A cast would drop the reference, so a ref-returning accessor cannot be fixed this way.
+                return property.RefKind == RefKind.None
+                    ? WithFlowNullability(typeInfo, property.Type)
+                    : null;
+            }
+
+            requiresCast = false;
+            return null;
+        }
+
+        private static ITypeSymbol WithFlowNullability(TypeInfo typeInfo, ITypeSymbol type) =>
+            typeInfo.Nullability.FlowState == NullableFlowState.NotNull && type.IsReferenceType
+                ? type.WithNullableAnnotation(NullableAnnotation.NotAnnotated)
+                : type;
+
+        private static bool NeedsParenthesesForCast(ExpressionSyntax expression) =>
+            expression is BinaryExpressionSyntax
+                or AssignmentExpressionSyntax
+                or ConditionalExpressionSyntax
+                or IsPatternExpressionSyntax
+                or SwitchExpressionSyntax
+                or AnonymousFunctionExpressionSyntax
+                or QueryExpressionSyntax
+                or RangeExpressionSyntax
+                or WithExpressionSyntax
+                or ThrowExpressionSyntax
+                // A cast followed by '&', '*', '+' or '-' is parsed as a binary operator when the cast type is also a
+                // valid expression, so unary operands always get parentheses.
+                or PrefixUnaryExpressionSyntax;
+
+        /// <summary>
+        /// Renders a type as source, returning <see langword="null"/> for types that cannot be named at that position.
+        /// </summary>
+        private static TypeSyntax? TryParseTypeName(
+            SemanticModel semanticModel,
+            ITypeSymbol type,
+            int position)
+        {
+            if (type is IErrorTypeSymbol || type.SpecialType == SpecialType.System_Void || ContainsAnonymousType(type))
+                return null;
+
+            string displayString = type.ToMinimalDisplayString(semanticModel, position, s_localTypeDisplayFormat);
+            TypeSyntax parsedType = SyntaxFactory.ParseTypeName(displayString);
+            return parsedType.ContainsDiagnostics || parsedType.ToFullString() != displayString
+                ? null
+                : parsedType;
+        }
+
+        private static ITypeSymbol GetUserDefinedConversionResultType(
+            SemanticModel semanticModel,
+            ExpressionSyntax expression,
+            IMethodSymbol conversionOperator,
+            CancellationToken cancellationToken)
+        {
+            ITypeSymbol resultType = conversionOperator.ReturnType;
+            ITypeSymbol? sourceType = semanticModel.GetTypeInfo(expression, cancellationToken).Type;
+            if (sourceType is INamedTypeSymbol sourceNamedType
+                && sourceNamedType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T
+                && sourceNamedType.TypeArguments.Length == 1
+                && conversionOperator.Parameters.Length == 1
+                && SymbolEqualityComparer.Default.Equals(
+                    sourceNamedType.TypeArguments[0],
+                    conversionOperator.Parameters[0].Type)
+                && resultType.IsValueType
+                && resultType.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T)
+            {
+                INamedTypeSymbol nullableType = semanticModel.Compilation.GetSpecialType(
+                    SpecialType.System_Nullable_T);
+                if (nullableType.TypeKind != TypeKind.Error)
+                    resultType = nullableType.Construct(resultType);
+            }
+
+            return resultType;
+        }
 
         private static bool TryCreateSplitLocalDeclaration(
             Diagnostic diagnostic,
@@ -583,11 +737,10 @@ namespace ILLink.CodeFix
             TypeSyntax type = localDeclaration.Declaration.Type;
             if (type.IsVar)
             {
-                type = SyntaxFactory.ParseTypeName(
-                    localSymbol.Type.ToMinimalDisplayString(
-                        semanticModel,
-                        localDeclaration.SpanStart,
-                        s_localTypeDisplayFormat));
+                if (TryParseTypeName(semanticModel, localSymbol.Type, localDeclaration.SpanStart) is not { } inferredType)
+                    return false;
+
+                type = inferredType;
             }
 
             if (localSymbol.Type.IsRefLikeType)
@@ -637,37 +790,51 @@ namespace ILLink.CodeFix
             if (analysis is null || !analysis.Succeeded)
                 return true;
 
-            ISymbol[] initializerVariables = analysis.VariablesDeclared
-                .Where(symbol => !SymbolEqualityComparer.Default.Equals(symbol, declaredLocal))
-                .ToArray();
-            if (initializerVariables.Length == 0
-                || !TryGetStatementList(
+            var initializerVariables = new HashSet<ISymbol>(
+                analysis.VariablesDeclared.Where(symbol => !SymbolEqualityComparer.Default.Equals(symbol, declaredLocal)),
+                SymbolEqualityComparer.Default);
+            if (initializerVariables.Count == 0
+                || !StatementRange.TryCreateForStatement(
                     localDeclaration,
-                    out SyntaxNode container,
-                    out SyntaxList<StatementSyntax> statements,
+                    out StatementRange statements,
                     out int statementIndex))
             {
                 return false;
             }
 
-            IEnumerable<StatementSyntax> laterStatements = Enumerable
-                .Range(statementIndex + 1, statements.Count - statementIndex - 1)
-                .Select(index => GetStatement(container, statements, index));
-            if (localDeclaration.Parent is SwitchSectionSyntax switchSection
-                && switchSection.Parent is SwitchStatementSyntax switchStatement)
-            {
-                int sectionIndex = switchStatement.Sections.IndexOf(switchSection);
-                laterStatements = laterStatements.Concat(
-                    switchStatement.Sections
-                        .Skip(sectionIndex + 1)
-                        .SelectMany(static section => section.Statements));
-            }
-
+            IEnumerable<StatementSyntax> laterStatements = GetLaterStatements(
+                statements,
+                statementIndex,
+                localDeclaration);
             return laterStatements.Any(statement => ReferencesAnySymbol(
                 statement,
                 initializerVariables,
                 semanticModel,
                 cancellationToken));
+        }
+
+        /// <summary>
+        /// Enumerates the statements that could observe declarations made by <paramref name="statement"/>, including
+        /// the remaining sections of an enclosing switch statement.
+        /// </summary>
+        private static IEnumerable<StatementSyntax> GetLaterStatements(
+            StatementRange statements,
+            int statementIndex,
+            StatementSyntax statement)
+        {
+            for (int index = statementIndex + 1; index < statements.Count; index++)
+                yield return statements[index];
+
+            if (statement.Parent is SwitchSectionSyntax switchSection
+                && switchSection.Parent is SwitchStatementSyntax switchStatement)
+            {
+                int sectionIndex = switchStatement.Sections.IndexOf(switchSection);
+                foreach (SwitchSectionSyntax laterSection in switchStatement.Sections.Skip(sectionIndex + 1))
+                {
+                    foreach (StatementSyntax laterStatement in laterSection.Statements)
+                        yield return laterStatement;
+                }
+            }
         }
 
         private static bool IsRefType(TypeSyntax type) =>
@@ -707,7 +874,7 @@ namespace ILLink.CodeFix
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
-            if (!TryGetStatementList(statement, out _, out SyntaxList<StatementSyntax> statements, out int statementIndex))
+            if (!StatementRange.TryCreateForStatement(statement, out StatementRange statements, out int statementIndex))
                 return false;
 
             DataFlowAnalysis? analysis = semanticModel.AnalyzeDataFlow(statement);
@@ -726,49 +893,32 @@ namespace ILLink.CodeFix
             if (declaredSymbols.Count == 0 && declaredNames.Count == 0)
                 return false;
 
-            IEnumerable<StatementSyntax> laterStatements = statements.Skip(statementIndex + 1);
-            if (statement.Parent is SwitchSectionSyntax switchSection
-                && switchSection.Parent is SwitchStatementSyntax switchStatement)
-            {
-                int sectionIndex = switchStatement.Sections.IndexOf(switchSection);
-                laterStatements = laterStatements.Concat(
-                    switchStatement.Sections
-                        .Skip(sectionIndex + 1)
-                        .SelectMany(static section => section.Statements));
-            }
-
-            return laterStatements.Any(laterStatement =>
+            return GetLaterStatements(statements, statementIndex, statement).Any(laterStatement =>
                 ReferencesAnySymbol(
                     laterStatement,
                     declaredSymbols,
                     semanticModel,
                     cancellationToken)
-                || ReferencesAnyName(laterStatement, declaredNames));
+                || ReferencesAnyUnresolvedName(laterStatement, declaredNames, semanticModel, cancellationToken));
         }
 
         private static bool TryGetStatementRangeToWrap(
-            StatementSyntax triggerStatement,
+            in StatementRange statements,
+            int triggerIndex,
             SemanticModel semanticModel,
             CancellationToken cancellationToken,
             bool forceThroughContainerEnd,
-            out SyntaxNode container,
             out int start,
             out int end)
         {
-            if (!TryGetStatementList(triggerStatement, out container, out SyntaxList<StatementSyntax> statements, out start))
-            {
-                end = -1;
-                return false;
-            }
-
-            end = forceThroughContainerEnd ? statements.Count - 1 : start;
+            start = triggerIndex;
+            end = forceThroughContainerEnd ? statements.Count - 1 : triggerIndex;
             if (forceThroughContainerEnd)
                 return true;
 
             while (true)
             {
                 HashSet<ISymbol>? declaredSymbols = GetDeclaredSymbols(
-                    container,
                     statements,
                     start,
                     end,
@@ -780,28 +930,26 @@ namespace ILLink.CodeFix
                     return true;
                 }
 
-                if (statements.Skip(start).Take(end - start + 1).OfType<LocalDeclarationStatementSyntax>()
-                    .Any(IsUsingDeclaration))
+                // A using declaration disposes at the end of its container, so its unsafe region must reach there.
+                for (int i = start; i <= end; i++)
                 {
-                    end = statements.Count - 1;
-                    return true;
+                    if (statements[i] is LocalDeclarationStatementSyntax declaration && IsUsingDeclaration(declaration))
+                    {
+                        end = statements.Count - 1;
+                        return true;
+                    }
                 }
 
-                int expandedEnd = end;
                 var selectedStatements = new List<StatementSyntax>(end - start + 1);
                 for (int i = start; i <= end; i++)
-                    selectedStatements.Add(GetStatement(container, statements, i));
+                    selectedStatements.Add(statements[i]);
                 HashSet<string> declaredNames = GetDeclaredNames(selectedStatements);
+
+                int expandedEnd = end;
                 for (int i = end + 1; i < statements.Count; i++)
                 {
-                    if (ReferencesAnySymbol(
-                        GetStatement(container, statements, i),
-                        declaredSymbols,
-                        semanticModel,
-                        cancellationToken)
-                        || ReferencesAnyName(
-                            GetStatement(container, statements, i),
-                            declaredNames))
+                    if (ReferencesAnySymbol(statements[i], declaredSymbols, semanticModel, cancellationToken)
+                        || ReferencesAnyUnresolvedName(statements[i], declaredNames, semanticModel, cancellationToken))
                     {
                         expandedEnd = i;
                     }
@@ -814,70 +962,122 @@ namespace ILLink.CodeFix
             }
         }
 
-        private static bool TryGetStatementList(
-            StatementSyntax statement,
-            out SyntaxNode container,
-            out SyntaxList<StatementSyntax> statements,
-            out int statementIndex)
+        /// <summary>
+        /// Grows a range so that it absorbs neighbouring unsafe regions that this fixer generated and has not yet been
+        /// audited, which keeps a migrated member from accumulating a long run of tiny unsafe blocks.
+        /// Statements between those regions are only absorbed when they declare nothing, because a declaration moved
+        /// into the merged block would no longer be visible to the statements that follow it.
+        /// </summary>
+        private static (int Start, int End) ExtendRangeOverGeneratedUnsafeStatements(
+            in StatementRange statements,
+            int start,
+            int end)
         {
-            switch (statement.Parent)
+            int gap = 0;
+            for (int index = start - 1; index >= 0; index--)
             {
-                case BlockSyntax block:
-                    container = block;
-                    statements = block.Statements;
-                    statementIndex = statements.IndexOf(statement);
-                    return statementIndex >= 0;
+                if (IsGeneratedUnsafeStatement(statements[index]))
+                {
+                    start = index;
+                    gap = 0;
+                    continue;
+                }
 
-                case SwitchSectionSyntax switchSection:
-                    container = switchSection;
-                    statements = switchSection.Statements;
-                    statementIndex = statements.IndexOf(statement);
-                    return statementIndex >= 0;
+                if (gap == MaxSafeStatementsBetweenMergedRegions || GetDeclaredNames(statements[index]).Count > 0)
+                    break;
 
-                case GlobalStatementSyntax
-                    {
-                        Parent: CompilationUnitSyntax compilationUnit,
-                    }:
-                    container = compilationUnit;
-                    statements = SyntaxFactory.List(
-                        compilationUnit.Members
-                            .OfType<GlobalStatementSyntax>()
-                            .Select(static globalStatement => globalStatement.Statement));
-                    statementIndex = statements.IndexOf(statement);
-                    return statementIndex >= 0;
-
-                default:
-                    container = null!;
-                    statements = default;
-                    statementIndex = -1;
-                    return false;
+                gap++;
             }
+
+            gap = 0;
+            for (int index = end + 1; index < statements.Count; index++)
+            {
+                if (IsGeneratedUnsafeStatement(statements[index]))
+                {
+                    end = index;
+                    gap = 0;
+                    continue;
+                }
+
+                if (gap == MaxSafeStatementsBetweenMergedRegions || GetDeclaredNames(statements[index]).Count > 0)
+                    break;
+
+                gap++;
+            }
+
+            return (start, end);
+        }
+
+        /// <summary>
+        /// Recognizes an unsafe statement that this fixer produced and that still carries the unaudited marker.
+        /// Blocks whose marker was replaced during review are left alone.
+        /// </summary>
+        private static bool IsGeneratedUnsafeStatement(StatementSyntax statement) =>
+            statement is UnsafeStatementSyntax unsafeStatement
+            && unsafeStatement.Block.Statements.Count > 0
+            && HasSafetyAuditMarker(unsafeStatement.Block.Statements[0]);
+
+        private static bool HasSafetyAuditMarker(SyntaxNode node) =>
+            node.GetLeadingTrivia().Any(static trivia =>
+                trivia.IsKind(SyntaxKind.SingleLineCommentTrivia)
+                && trivia.ToString() == SafetyAuditComment);
+
+        private static StatementSyntax RemoveSafetyAuditMarker(StatementSyntax statement)
+        {
+            SyntaxTriviaList leadingTrivia = statement.GetLeadingTrivia();
+            for (int index = 0; index < leadingTrivia.Count; index++)
+            {
+                if (!leadingTrivia[index].IsKind(SyntaxKind.SingleLineCommentTrivia)
+                    || leadingTrivia[index].ToString() != SafetyAuditComment)
+                {
+                    continue;
+                }
+
+                int count = index + 1 < leadingTrivia.Count && leadingTrivia[index + 1].IsKind(SyntaxKind.EndOfLineTrivia)
+                    ? 2
+                    : 1;
+                return statement.WithLeadingTrivia(
+                    leadingTrivia.Take(index).Concat(leadingTrivia.Skip(index + count)));
+            }
+
+            return statement;
+        }
+
+        /// <summary>
+        /// Replaces the line break that separated a flattened statement from its former closing brace with an elastic
+        /// one, so the formatter lays the merged block out instead of inheriting the nested indentation.
+        /// </summary>
+        private static StatementSyntax NormalizeTrailingEndOfLine(StatementSyntax statement)
+        {
+            SyntaxTriviaList trailingTrivia = statement.GetTrailingTrivia();
+            int count = trailingTrivia.Count;
+            while (count > 0 && trailingTrivia[count - 1].IsKind(SyntaxKind.EndOfLineTrivia))
+                count--;
+
+            return statement.WithTrailingTrivia(
+                trailingTrivia.Take(count).Concat([SyntaxFactory.ElasticCarriageReturnLineFeed]));
         }
 
         private static HashSet<ISymbol>? GetDeclaredSymbols(
-            SyntaxNode container,
-            SyntaxList<StatementSyntax> statements,
+            in StatementRange statements,
             int start,
             int end,
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
             var symbols = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
-            if (container is CompilationUnitSyntax)
+
+            // Top-level statements are separate members, so they can only be analyzed one at a time.
+            if (statements.IsTopLevel)
             {
                 for (int i = start; i <= end; i++)
                 {
-                    StatementSyntax statement = GetStatement(container, statements, i);
-                    DataFlowAnalysis? statementAnalysis = semanticModel.AnalyzeDataFlow(statement);
+                    DataFlowAnalysis? statementAnalysis = semanticModel.AnalyzeDataFlow(statements[i]);
                     if (statementAnalysis is null || !statementAnalysis.Succeeded)
                         return null;
 
                     symbols.UnionWith(statementAnalysis.VariablesDeclared);
-                    AddSyntacticallyDeclaredSymbols(
-                        statement,
-                        symbols,
-                        semanticModel,
-                        cancellationToken);
+                    AddSyntacticallyDeclaredSymbols(statements[i], symbols, semanticModel, cancellationToken);
                 }
 
                 return symbols;
@@ -889,13 +1089,8 @@ namespace ILLink.CodeFix
 
             symbols.UnionWith(analysis.VariablesDeclared);
             for (int i = start; i <= end; i++)
-            {
-                AddSyntacticallyDeclaredSymbols(
-                    GetStatement(container, statements, i),
-                    symbols,
-                    semanticModel,
-                    cancellationToken);
-            }
+                AddSyntacticallyDeclaredSymbols(statements[i], symbols, semanticModel, cancellationToken);
+
             return symbols;
         }
 
@@ -922,20 +1117,15 @@ namespace ILLink.CodeFix
 
         private static bool ReferencesAnySymbol(
             SyntaxNode node,
-            IEnumerable<ISymbol> symbols,
+            HashSet<ISymbol> symbols,
             SemanticModel semanticModel,
-            CancellationToken cancellationToken)
-        {
-            var symbolSet = new HashSet<ISymbol>(symbols, SymbolEqualityComparer.Default);
-            if (symbolSet.Count == 0)
-                return false;
-
-            return node.DescendantNodesAndSelf()
+            CancellationToken cancellationToken) =>
+            symbols.Count > 0
+            && node.DescendantNodesAndSelf()
                 .OfType<SimpleNameSyntax>()
                 .Any(name =>
                     semanticModel.GetSymbolInfo(name, cancellationToken).Symbol is { } symbol
-                    && symbolSet.Contains(symbol));
-        }
+                    && symbols.Contains(symbol));
 
         private static HashSet<string> GetDeclaredNames(SyntaxNode node) =>
             GetDeclaredNames([node]);
@@ -961,13 +1151,22 @@ namespace ILLink.CodeFix
             return names;
         }
 
-        private static bool ReferencesAnyName(
+        /// <summary>
+        /// Falls back to matching identifier text for names the semantic model cannot resolve. The document contains
+        /// compiler errors by definition here, so this keeps ranges conservative without widening them whenever an
+        /// unrelated member happens to share a local's name.
+        /// </summary>
+        private static bool ReferencesAnyUnresolvedName(
             SyntaxNode node,
-            HashSet<string> names) =>
+            HashSet<string> names,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken) =>
             names.Count > 0
             && node.DescendantNodesAndSelf()
                 .OfType<SimpleNameSyntax>()
-                .Any(name => names.Contains(name.Identifier.ValueText));
+                .Any(name =>
+                    names.Contains(name.Identifier.ValueText)
+                    && semanticModel.GetSymbolInfo(name, cancellationToken).Symbol is null);
 
         private static bool HasDirectiveWithinSpan(SyntaxNode node) =>
             node.DescendantTrivia(descendIntoTrivia: true)
@@ -990,93 +1189,28 @@ namespace ILLink.CodeFix
         private static Document ReplaceWithUnsafeExpression(
             Document document,
             SyntaxNode root,
-            SemanticModel semanticModel,
             ExpressionSyntax expression,
-            CancellationToken cancellationToken)
+            ExpressionSyntax operand)
         {
-            ExpressionSyntax operand = expression.WithoutLeadingTrivia().WithoutTrailingTrivia();
-            Conversion conversion = semanticModel.GetConversion(expression, cancellationToken);
-            if (conversion.IsUserDefined
-                && conversion.IsImplicit
-                && conversion.MethodSymbol is { } conversionOperator)
-            {
-                ITypeSymbol convertedType = GetUserDefinedConversionResultType(
-                    semanticModel,
-                    expression,
-                    conversionOperator,
-                    cancellationToken);
-                TypeSyntax convertedTypeSyntax = SyntaxFactory.ParseTypeName(
-                    convertedType.ToMinimalDisplayString(
-                        semanticModel,
-                        expression.SpanStart,
-                        s_localTypeDisplayFormat));
-                operand = SyntaxFactory.CastExpression(convertedTypeSyntax, operand);
-            }
-
-            ExpressionSyntax template = SyntaxFactory.ParseExpression(
-                $"unsafe(/* SAFETY: Audit */ {UnsafeExpressionPlaceholder})");
-            IdentifierNameSyntax placeholder = template.DescendantNodesAndSelf()
-                .OfType<IdentifierNameSyntax>()
-                .Single(identifier => identifier.Identifier.ValueText == UnsafeExpressionPlaceholder);
-
+            ExpressionSyntax template = ParseUnsafeExpression(UnsafeExpressionPlaceholder);
+            IdentifierNameSyntax placeholder = TryFindPlaceholder(template)!;
             ExpressionSyntax replacement = template
-                .ReplaceNode(
-                    placeholder,
-                    operand)
+                .ReplaceNode(placeholder, operand)
                 .WithLeadingTrivia(expression.GetLeadingTrivia())
                 .WithTrailingTrivia(expression.GetTrailingTrivia());
             return document.WithSyntaxRoot(root.ReplaceNode(expression, replacement));
         }
 
-        private static ITypeSymbol GetUserDefinedConversionResultType(
-            SemanticModel semanticModel,
-            ExpressionSyntax expression,
-            IMethodSymbol conversionOperator,
-            CancellationToken cancellationToken)
-        {
-            ITypeSymbol resultType = conversionOperator.ReturnType;
-            ITypeSymbol? sourceType = semanticModel.GetTypeInfo(expression, cancellationToken).Type;
-            if (sourceType is INamedTypeSymbol sourceNamedType
-                && sourceNamedType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T
-                && sourceNamedType.TypeArguments.Length == 1
-                && conversionOperator.Parameters.Length == 1
-                && SymbolEqualityComparer.Default.Equals(
-                    sourceNamedType.TypeArguments[0],
-                    conversionOperator.Parameters[0].Type)
-                && resultType.IsValueType
-                && resultType.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T)
-            {
-                INamedTypeSymbol nullableType = semanticModel.Compilation.GetSpecialType(
-                    SpecialType.System_Nullable_T);
-                if (nullableType.TypeKind != TypeKind.Error)
-                    resultType = nullableType.Construct(resultType);
-            }
-
-            return resultType;
-        }
-
         private static bool CanWrapStatementRange(
-            SyntaxNode container,
+            in StatementRange statements,
             int start,
             int end,
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
-            SyntaxList<StatementSyntax> statements = container switch
-            {
-                BlockSyntax block => block.Statements,
-                SwitchSectionSyntax switchSection => switchSection.Statements,
-                CompilationUnitSyntax compilationUnit => SyntaxFactory.List(
-                    compilationUnit.Members
-                        .OfType<GlobalStatementSyntax>()
-                        .Select(static globalStatement => globalStatement.Statement)),
-                _ => default,
-            };
-            IEnumerable<StatementSyntax> selectedStatements = statements
-                .Select((statement, index) => GetStatement(container, statements, index))
-                .Skip(start)
-                .Take(end - start + 1)
-                .ToArray();
+            var selectedStatements = new List<StatementSyntax>(end - start + 1);
+            for (int i = start; i <= end; i++)
+                selectedStatements.Add(statements[i]);
 
             if (selectedStatements.Any(ContainsAwaitOrYield))
                 return false;
@@ -1084,50 +1218,43 @@ namespace ILLink.CodeFix
             if (end > start && selectedStatements.Any(static statement => statement.ContainsDirectives))
                 return false;
 
-            ISymbol[] localFunctions = selectedStatements
-                .SelectMany(static statement => statement.DescendantNodesAndSelf().OfType<LocalFunctionStatementSyntax>())
-                .Select(localFunction => semanticModel.GetDeclaredSymbol(localFunction, cancellationToken))
-                .OfType<ISymbol>()
-                .ToArray();
-            if (localFunctions.Length > 0
-                && statements.Where((_, index) => index < start || index > end)
-                    .Any(statement => ReferencesAnySymbol(
-                        statement,
-                        localFunctions,
-                        semanticModel,
-                        cancellationToken)))
-            {
-                return false;
-            }
-
+            var localFunctions = new HashSet<ISymbol>(
+                selectedStatements
+                    .SelectMany(static statement => statement.DescendantNodesAndSelf().OfType<LocalFunctionStatementSyntax>())
+                    .Select(localFunction => semanticModel.GetDeclaredSymbol(localFunction, cancellationToken))
+                    .OfType<ISymbol>(),
+                SymbolEqualityComparer.Default);
             string[] labels = selectedStatements
                 .SelectMany(static statement => statement.DescendantNodesAndSelf().OfType<LabeledStatementSyntax>())
                 .Select(static label => label.Identifier.ValueText)
                 .Distinct()
                 .ToArray();
-            if (labels.Length > 0
-                && statements.Where((_, index) => index < start || index > end)
-                    .SelectMany(static statement => statement.DescendantNodesAndSelf().OfType<GotoStatementSyntax>())
-                    .Any(gotoStatement =>
+            if (localFunctions.Count == 0 && labels.Length == 0)
+                return true;
+
+            for (int i = 0; i < statements.Count; i++)
+            {
+                if (i >= start && i <= end)
+                    continue;
+
+                StatementSyntax statement = statements[i];
+
+                // Moving a local function into a nested block hides it from the rest of the container.
+                if (ReferencesAnySymbol(statement, localFunctions, semanticModel, cancellationToken))
+                    return false;
+
+                // A goto cannot jump into an unsafe block.
+                if (labels.Length > 0
+                    && statement.DescendantNodesAndSelf().OfType<GotoStatementSyntax>().Any(gotoStatement =>
                         gotoStatement.Expression is IdentifierNameSyntax identifier
                         && labels.Contains(identifier.Identifier.ValueText)))
-            {
-                return false;
+                {
+                    return false;
+                }
             }
 
             return true;
         }
-
-        private static StatementSyntax GetStatement(
-            SyntaxNode container,
-            SyntaxList<StatementSyntax> statements,
-            int index) =>
-            container is CompilationUnitSyntax compilationUnit
-                ? compilationUnit.Members
-                    .OfType<GlobalStatementSyntax>()
-                    .ElementAt(index)
-                    .Statement
-                : statements[index];
 
         private static SwitchStatementSyntax? TryGetEnclosingSwitch(StatementSyntax statement) =>
             statement.AncestorsAndSelf()
@@ -1276,7 +1403,7 @@ namespace ILLink.CodeFix
                 .WithoutLeadingTrivia()
                 .WithoutTrailingTrivia()
                 .WithLeadingTrivia(
-                    SyntaxFactory.Comment("// SAFETY: Audit"),
+                    SyntaxFactory.Comment(SafetyAuditComment),
                     SyntaxFactory.ElasticCarriageReturnLineFeed);
             return SyntaxFactory.UnsafeStatement(SyntaxFactory.Block(innerStatement))
                 .WithLeadingTrivia(statement.GetLeadingTrivia())
@@ -1327,78 +1454,140 @@ namespace ILLink.CodeFix
         private static Document WrapStatementRange(
             Document document,
             SyntaxNode root,
-            SyntaxNode container,
+            in StatementRange statements,
             int start,
             int end)
         {
-            SyntaxList<StatementSyntax> statements = container switch
+            var statementsToWrap = new List<StatementSyntax>(end - start + 1);
+            for (int i = start; i <= end; i++)
             {
-                BlockSyntax block => block.Statements,
-                SwitchSectionSyntax switchSection => switchSection.Statements,
-                CompilationUnitSyntax compilationUnit => SyntaxFactory.List(
-                    compilationUnit.Members
-                        .OfType<GlobalStatementSyntax>()
-                        .Select(static globalStatement => globalStatement.Statement)),
-                _ => default,
-            };
-            StatementSyntax[] statementsToWrap = statements
-                .Skip(start)
-                .Take(end - start + 1)
-                .ToArray();
+                StatementSyntax statement = statements[i];
+
+                // Merged regions are flattened so the result is one audit scope instead of nested unsafe blocks.
+                if (IsGeneratedUnsafeStatement(statement))
+                {
+                    UnsafeStatementSyntax generated = (UnsafeStatementSyntax)statement;
+                    StatementSyntax firstInnerStatement = RemoveSafetyAuditMarker(generated.Block.Statements[0]);
+                    statementsToWrap.Add(
+                        NormalizeTrailingEndOfLine(firstInnerStatement)
+                            .WithLeadingTrivia(generated.GetLeadingTrivia()
+                                .AddRange(firstInnerStatement.GetLeadingTrivia())));
+                    statementsToWrap.AddRange(generated.Block.Statements.Skip(1).Select(NormalizeTrailingEndOfLine));
+                    continue;
+                }
+
+                statementsToWrap.Add(statement);
+            }
 
             StatementSyntax firstStatement = statementsToWrap[0];
-            StatementSyntax firstInnerStatement = firstStatement
+            statementsToWrap[0] = firstStatement
                 .WithoutLeadingTrivia()
                 .WithLeadingTrivia(
-                    SyntaxFactory.Comment("// SAFETY: Audit"),
+                    SyntaxFactory.Comment(SafetyAuditComment),
                     SyntaxFactory.ElasticCarriageReturnLineFeed);
-            statementsToWrap[0] = firstInnerStatement;
 
             UnsafeStatementSyntax unsafeStatement = SyntaxFactory.UnsafeStatement(
                 SyntaxFactory.Block(statementsToWrap))
                 .WithLeadingTrivia(firstStatement.GetLeadingTrivia())
                 .WithAdditionalAnnotations(Formatter.Annotation);
 
-            var replacementList = new List<StatementSyntax>(statements.Count - (end - start));
-            for (int i = 0; i < statements.Count; i++)
-            {
-                if (i == start)
-                    replacementList.Add(unsafeStatement);
-                if (i < start || i > end)
-                    replacementList.Add(statements[i]);
-            }
-            SyntaxList<StatementSyntax> replacementStatements = SyntaxFactory.List(replacementList);
-            SyntaxNode replacementContainer = container switch
-            {
-                BlockSyntax block => block.WithStatements(replacementStatements),
-                SwitchSectionSyntax switchSection => switchSection.WithStatements(replacementStatements),
-                CompilationUnitSyntax compilationUnit => ReplaceGlobalStatements(
-                    compilationUnit,
-                    start,
-                    end,
-                    unsafeStatement),
-                _ => container,
-            };
-            return document.WithSyntaxRoot(root.ReplaceNode(container, replacementContainer));
+            SyntaxNode replacementContainer = statements.ReplaceRange(start, end, unsafeStatement);
+            return document.WithSyntaxRoot(root.ReplaceNode(statements.Container, replacementContainer));
         }
 
-        private static CompilationUnitSyntax ReplaceGlobalStatements(
-            CompilationUnitSyntax compilationUnit,
-            int start,
-            int end,
-            UnsafeStatementSyntax unsafeStatement)
+        /// <summary>
+        /// Provides uniform access to the statement list that contains a statement, including the top-level statement
+        /// list of a compilation unit, whose statements are wrapped in <see cref="GlobalStatementSyntax"/> members.
+        /// </summary>
+        private readonly struct StatementRange
         {
-            GlobalStatementSyntax[] globalStatements = compilationUnit.Members
-                .OfType<GlobalStatementSyntax>()
-                .ToArray();
-            int memberIndex = compilationUnit.Members.IndexOf(globalStatements[start]);
-            SyntaxList<MemberDeclarationSyntax> members = compilationUnit.Members;
-            for (int i = start; i <= end; i++)
-                members = members.RemoveAt(memberIndex);
+            private readonly ImmutableArray<StatementSyntax> _statements;
 
-            return compilationUnit.WithMembers(members.Insert(
-                memberIndex,
-                SyntaxFactory.GlobalStatement(unsafeStatement)));
+            private StatementRange(SyntaxNode container, ImmutableArray<StatementSyntax> statements)
+            {
+                Container = container;
+                _statements = statements;
+            }
+
+            internal SyntaxNode Container { get; }
+
+            internal int Count => _statements.Length;
+
+            internal StatementSyntax this[int index] => _statements[index];
+
+            internal bool IsTopLevel => Container is CompilationUnitSyntax;
+
+            internal static bool TryCreateForStatement(
+                StatementSyntax statement,
+                out StatementRange statements,
+                out int statementIndex)
+            {
+                switch (statement.Parent)
+                {
+                    case BlockSyntax block:
+                        statements = new StatementRange(block, [.. block.Statements]);
+                        break;
+
+                    case SwitchSectionSyntax switchSection:
+                        statements = new StatementRange(switchSection, [.. switchSection.Statements]);
+                        break;
+
+                    case GlobalStatementSyntax { Parent: CompilationUnitSyntax compilationUnit }:
+                        statements = new StatementRange(
+                            compilationUnit,
+                            [.. compilationUnit.Members.OfType<GlobalStatementSyntax>().Select(static global => global.Statement)]);
+                        break;
+
+                    default:
+                        statements = default;
+                        statementIndex = -1;
+                        return false;
+                }
+
+                statementIndex = statements._statements.IndexOf(statement);
+                return statementIndex >= 0;
+            }
+
+            /// <summary>
+            /// Replaces the statements in <c>[start, end]</c> with a single statement.
+            /// </summary>
+            internal SyntaxNode ReplaceRange(int start, int end, StatementSyntax replacement)
+            {
+                if (Container is CompilationUnitSyntax compilationUnit)
+                {
+                    SyntaxList<MemberDeclarationSyntax> members = compilationUnit.Members;
+                    GlobalStatementSyntax[] globalStatements = members.OfType<GlobalStatementSyntax>().ToArray();
+
+                    // Resolve every member index before editing: removing a member rebuilds the list, and top-level
+                    // statements are not guaranteed to be adjacent members.
+                    int[] memberIndices = new int[end - start + 1];
+                    for (int i = start; i <= end; i++)
+                        memberIndices[i - start] = members.IndexOf(globalStatements[i]);
+
+                    for (int i = memberIndices.Length - 1; i >= 0; i--)
+                        members = members.RemoveAt(memberIndices[i]);
+
+                    return compilationUnit.WithMembers(
+                        members.Insert(memberIndices[0], SyntaxFactory.GlobalStatement(replacement)));
+                }
+
+                var replacementStatements = new List<StatementSyntax>(Count - (end - start));
+                for (int i = 0; i < Count; i++)
+                {
+                    if (i == start)
+                        replacementStatements.Add(replacement);
+                    if (i < start || i > end)
+                        replacementStatements.Add(_statements[i]);
+                }
+
+                SyntaxList<StatementSyntax> statements = SyntaxFactory.List(replacementStatements);
+                return Container switch
+                {
+                    BlockSyntax block => block.WithStatements(statements),
+                    SwitchSectionSyntax switchSection => switchSection.WithStatements(statements),
+                    _ => Container,
+                };
+            }
         }
     }
 }

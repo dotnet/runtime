@@ -37,6 +37,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             var fixedSource = """
                 class Base
                 {
+                    /// <safety>TODO: Audit</safety>
                     public virtual unsafe void Method() { }
                 }
 
@@ -47,7 +48,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                 class Second : Base
                 {
-                    public override unsafe void Method() { }
+                    public override void Method() { }
                 }
                 """;
 
@@ -81,6 +82,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             var fixedSource = """
                 interface I
                 {
+                    /// <safety>TODO: Audit</safety>
                     unsafe void Method();
                 }
 
@@ -96,7 +98,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                 class Other : I
                 {
-                    public unsafe void Method() { }
+                    public void Method() { }
                 }
                 """;
 
@@ -125,6 +127,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             var fixedSource = """
                 interface I
                 {
+                    /// <safety>TODO: Audit</safety>
                     unsafe int Property { get; }
                 }
 
@@ -135,7 +138,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                 class OtherImplementation : I
                 {
-                    public unsafe int Property => 0;
+                    public int Property => 0;
                 }
                 """;
 
@@ -143,7 +146,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public async Task NoFixWhenPropertyImplementationIsSynthesized()
+        public async Task PropagatesToInterfaceEvenWhenOtherImplementationIsSynthesized()
         {
             var source = """
                 interface I
@@ -158,8 +161,22 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                 record OtherImplementation(int Property) : I;
                 """;
+            var fixedSource = """
+                interface I
+                {
+                    /// <safety>TODO: Audit</safety>
+                    unsafe int Property { get; }
+                }
 
-            await CreateCompilerTest(source).RunAsync();
+                class UnsafeImplementation : I
+                {
+                    public unsafe int Property => 0;
+                }
+
+                record OtherImplementation(int Property) : I;
+                """;
+
+            await CreateCompilerTest(source, fixedSource).RunAsync();
         }
 
         [Fact]
@@ -179,6 +196,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             var fixedSource = """
                 interface IBase
                 {
+                    /// <safety>TODO: Audit</safety>
                     unsafe void Method();
                 }
 
@@ -252,12 +270,15 @@ namespace ILLink.RoslynAnalyzer.Tests
             var fixedSource = """
                 partial class C
                 {
+                    /// <safety>TODO: Audit</safety>
                     public unsafe partial void Method();
                     public unsafe partial void Method() { }
                 }
                 """;
 
-            await CreateCompilerTest(source, fixedSource).RunAsync();
+            var test = CreateCompilerTest(source, fixedSource);
+            test.CodeActionEquivalenceKey = "Propagate unsafe contract";
+            await test.RunAsync();
         }
 
         [Fact]
@@ -274,6 +295,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 partial class C
                 {
                     public unsafe partial void Method();
+                    /// <safety>TODO: Audit</safety>
                     public unsafe extern partial void Method();
                 }
                 """;
@@ -294,12 +316,17 @@ namespace ILLink.RoslynAnalyzer.Tests
             var fixedSource = """
                 partial class C
                 {
+                    /// <safety>TODO: Audit</safety>
                     public unsafe partial void Method();
+                    /// <safety>TODO: Audit</safety>
                     public unsafe extern partial void Method();
                 }
                 """;
 
-            await CreateCompilerTest(source, fixedSource).RunAsync();
+            var test = CreateCompilerTest(source, fixedSource);
+            // Replacing a deliberate audit is offered under a title that says so.
+            test.CodeActionEquivalenceKey = "Propagate unsafe contract (discards explicit 'safe')";
+            await test.RunAsync();
         }
 
         [Fact]
@@ -323,6 +350,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             var fixedSource = """
                 class Base
                 {
+                    /// <safety>TODO: Audit</safety>
                     public virtual int Property { unsafe get; set; }
                 }
 
@@ -332,6 +360,42 @@ namespace ILLink.RoslynAnalyzer.Tests
                     {
                         unsafe get => 0;
                         set { }
+                    }
+                }
+                """;
+
+            await CreateCompilerTest(source, fixedSource).RunAsync();
+        }
+
+        [Fact]
+        public async Task ExpressionBodiedBaseGetterBecomesUnsafeAccessor()
+        {
+            var source = """
+                class Base
+                {
+                    public virtual int Property => 0;
+                }
+
+                class Derived : Base
+                {
+                    public override int Property
+                    {
+                        unsafe {|CS9364:get|} => 1;
+                    }
+                }
+                """;
+            var fixedSource = """
+                class Base
+                {
+                    /// <safety>TODO: Audit</safety>
+                    public virtual int Property { unsafe get => 0; }
+                }
+
+                class Derived : Base
+                {
+                    public override int Property
+                    {
+                        unsafe get => 1;
                     }
                 }
                 """;
@@ -374,6 +438,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """
                 class Base
                 {
+                    /// <safety>TODO: Audit</safety>
                     public virtual unsafe void Method() { }
                 }
                 """));
@@ -390,7 +455,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """
                 class Second : Base
                 {
-                    public override unsafe void Method() { }
+                    public override void Method() { }
                 }
                 """));
             test.SolutionTransforms.Add(UnsafeMigrationTestHelpers.SetOptions);
@@ -412,6 +477,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 partial class C
                 {
                     public partial int Property { unsafe get; }
+                    /// <safety>TODO: Audit</safety>
                     public partial int Property { unsafe get => 0; }
                 }
                 """;
@@ -441,6 +507,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                 interface I
                 {
+                    /// <safety>TODO: Audit</safety>
                     unsafe event System.Action First;
                     event System.Action Safe;
                 }
@@ -478,7 +545,31 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                 interface I
                 {
+                    /// <safety>TODO: Audit</safety>
                     unsafe event System.Action First;
+                    /// <safety>TODO: Audit</safety>
+                    unsafe event System.Action Second;
+                    event System.Action Safe;
+                }
+
+                class C : I
+                {
+                    public unsafe event System.Action First;
+                    public unsafe event System.Action Second;
+                    public event System.Action Safe;
+                }
+                """;
+            // Fix all computes both fixes against the original shared declaration, so the merged text keeps a blank
+            // line between the two declarations it split apart.
+            var batchFixedSource = """
+                #pragma warning disable CS0067
+
+                interface I
+                {
+                    /// <safety>TODO: Audit</safety>
+                    unsafe event System.Action First;
+
+                    /// <safety>TODO: Audit</safety>
                     unsafe event System.Action Second;
                     event System.Action Safe;
                 }
@@ -491,7 +582,9 @@ namespace ILLink.RoslynAnalyzer.Tests
                 }
                 """;
 
-            await CreateCompilerTest(source, fixedSource).RunAsync();
+            var test = CreateCompilerTest(source, fixedSource);
+            test.BatchFixedCode = batchFixedSource;
+            await test.RunAsync();
         }
 
         private static CSharpCodeFixVerifier<
