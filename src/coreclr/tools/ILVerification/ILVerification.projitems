@@ -1,6 +1,7 @@
 <Project>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)AccessVerificationHelpers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EcmaSignatureParser.ILVerify.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ILImporter.StackValue.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ILImporter.Verify.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ILVerifyTypeSystemContext.cs" />
@@ -13,6 +14,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)VerifierError.cs" />
   </ItemGroup>
   <PropertyGroup>
+    <DefineConstants>ILVERIFICATION;$(DefineConstants)</DefineConstants>
     <ToolsCommonPath>$(MSBuildThisFileDirectory)..\Common\</ToolsCommonPath>
   </PropertyGroup>
   <ItemGroup>
