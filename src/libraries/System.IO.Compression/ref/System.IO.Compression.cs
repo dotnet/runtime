@@ -175,10 +175,10 @@ namespace System.IO.Compression
         public void Delete() { }
         public System.IO.Stream Open() { throw null; }
         public System.IO.Stream Open(System.IO.FileAccess access) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.IO.Stream Open(System.IO.FileAccess access, System.ReadOnlySpan<char> password) { throw null; }
         public System.IO.Stream Open(System.ReadOnlySpan<char> password) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, System.ReadOnlySpan<char> password, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.ReadOnlySpan<char> password, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override string ToString() { throw null; }
@@ -203,6 +203,15 @@ namespace System.IO.Compression
         Aes128 = 2,
         Aes192 = 3,
         Aes256 = 4,
+    }
+    public sealed partial class ZipStreamReader : System.IAsyncDisposable, System.IDisposable
+    {
+        public ZipStreamReader(System.IO.Stream stream, bool leaveOpen = false) { }
+        public ZipStreamReader(System.IO.Stream stream, System.Text.Encoding? entryNameEncoding, bool leaveOpen = false) { }
+        public void Dispose() { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        public System.IO.Compression.ZipArchiveEntry? GetNextEntry(bool copyData = false) { throw null; }
+        public System.Threading.Tasks.ValueTask<System.IO.Compression.ZipArchiveEntry?> GetNextEntryAsync(bool copyData = false, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class ZLibCompressionOptions
     {

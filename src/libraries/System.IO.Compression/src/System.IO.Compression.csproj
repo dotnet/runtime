@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)</TargetFrameworks>
@@ -64,6 +64,7 @@
     <Compile Include="System\IO\Compression\ZLibStream.cs" />
     <Compile Include="System\IO\Compression\ZipCompressionMethod.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+    <Compile Include="System\IO\Compression\ZipStreamReader.cs" />
     <Compile Include="System\IO\Compression\ZipEncryptionMethod.cs" />
     <Compile Include="System\IO\Compression\ZipCryptoStream.cs" />
     <Compile Include="System\IO\Compression\WinZipAesStream.cs" />

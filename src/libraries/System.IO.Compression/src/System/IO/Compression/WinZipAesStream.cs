@@ -64,7 +64,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Creates a WinZipAesStream synchronously. Reads and validates the header for decryption.
         /// </summary>
-        internal static WinZipAesStream Create(Stream baseStream, WinZipAesKeyMaterial keyMaterial, long totalStreamSize, bool encrypting, bool leaveOpen = false)
+        internal static WinZipAesStream Create(Stream baseStream, WinZipAesKeyMaterial keyMaterial, long totalStreamSize, bool encrypting, bool leaveOpen = false, bool saltAlreadyRead = false)
         {
             if (OperatingSystem.IsBrowser())
             {
@@ -75,7 +75,7 @@ namespace System.IO.Compression
 
             if (!encrypting)
             {
-                ReadAndValidateHeaderCore(isAsync: false, baseStream, keyMaterial, CancellationToken.None).GetAwaiter().GetResult();
+                ReadAndValidateHeaderCore(isAsync: false, baseStream, keyMaterial, saltAlreadyRead, CancellationToken.None).GetAwaiter().GetResult();
             }
 
             return new WinZipAesStream(baseStream, keyMaterial, totalStreamSize, encrypting, leaveOpen);
@@ -84,7 +84,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Creates a WinZipAesStream asynchronously. Reads and validates the header for decryption.
         /// </summary>
-        internal static async Task<WinZipAesStream> CreateAsync(Stream baseStream, WinZipAesKeyMaterial keyMaterial, long totalStreamSize, bool encrypting, bool leaveOpen = false, CancellationToken cancellationToken = default)
+        internal static async Task<WinZipAesStream> CreateAsync(Stream baseStream, WinZipAesKeyMaterial keyMaterial, long totalStreamSize, bool encrypting, bool leaveOpen = false, bool saltAlreadyRead = false, CancellationToken cancellationToken = default)
         {
             if (OperatingSystem.IsBrowser())
             {
@@ -95,7 +95,7 @@ namespace System.IO.Compression
 
             if (!encrypting)
             {
-                await ReadAndValidateHeaderCore(isAsync: true, baseStream, keyMaterial, cancellationToken).ConfigureAwait(false);
+                await ReadAndValidateHeaderCore(isAsync: true, baseStream, keyMaterial, saltAlreadyRead, cancellationToken).ConfigureAwait(false);
             }
 
             return new WinZipAesStream(baseStream, keyMaterial, totalStreamSize, encrypting, leaveOpen);
@@ -103,49 +103,49 @@ namespace System.IO.Compression
 
         /// <summary>
         /// Reads and validates the WinZip AES header (salt + password verifier) from the stream.
+        /// When <paramref name="saltAlreadyRead"/> is <see langword="true"/>, the salt has already been
+        /// consumed from the stream by the caller (e.g. the forward-only reader, which must read it to
+        /// derive the key before this stream is created), so only the password verifier is read here.
         /// </summary>
-        private static async Task ReadAndValidateHeaderCore(bool isAsync, Stream baseStream, WinZipAesKeyMaterial keyMaterial, CancellationToken cancellationToken)
+        private static async Task ReadAndValidateHeaderCore(bool isAsync, Stream baseStream, WinZipAesKeyMaterial keyMaterial, bool saltAlreadyRead, CancellationToken cancellationToken)
         {
             if (OperatingSystem.IsBrowser())
             {
                 throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
             }
-            int saltSize = keyMaterial.SaltSize;
 
-            // Read salt from stream
-            byte[] fileSalt = new byte[saltSize];
-            if (isAsync)
+            if (!saltAlreadyRead)
             {
-                await baseStream.ReadExactlyAsync(fileSalt, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                baseStream.ReadExactly(fileSalt);
+                // Read and verify the salt. In WinZip AES the salt is stored in the archive header and
+                // is not secret; FixedTimeEquals is used here for consistency.
+                byte[] fileSalt = new byte[keyMaterial.SaltSize];
+                await ReadExactly(fileSalt).ConfigureAwait(false);
+
+                if (!CryptographicOperations.FixedTimeEquals(fileSalt, keyMaterial.Salt))
+                {
+                    throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+                }
             }
 
-            // Read the 2-byte password verifier from stream
+            // Read and compare the 2-byte password verifier. This is a weak check (only 2 bytes) used
+            // to fail fast on an obviously wrong password; it is not a security guarantee.
             byte[] verifier = new byte[2];
-            if (isAsync)
-            {
-                await baseStream.ReadExactlyAsync(verifier, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                baseStream.ReadExactly(verifier);
-            }
+            await ReadExactly(verifier).ConfigureAwait(false);
 
-            // Verify the salt matches. In WinZip AES, the salt is stored in the archive
-            // header and is not secret; FixedTimeEquals is used here for consistency.
-            if (!CryptographicOperations.FixedTimeEquals(fileSalt, keyMaterial.Salt))
-            {
-                throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
-            }
-
-            // Compare the 2-byte password verifier. This is a weak check (only 2 bytes) used to
-            // fail fast on an obviously wrong password; it is not a security guarantee.
             if (!CryptographicOperations.FixedTimeEquals(verifier, keyMaterial.PasswordVerifier))
             {
                 throw new InvalidDataException(SR.InvalidPassword);
+            }
+
+            ValueTask ReadExactly(byte[] buffer)
+            {
+                if (isAsync)
+                {
+                    return baseStream.ReadExactlyAsync(buffer, cancellationToken);
+                }
+
+                baseStream.ReadExactly(buffer);
+                return ValueTask.CompletedTask;
             }
         }
 
