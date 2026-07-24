@@ -5246,6 +5246,69 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
     return sz;
 }
 
+#if defined(TARGET_AMD64)
+//------------------------------------------------------------------------
+// emitIsSecondFramePtrCandidate: should this stack access be redirected through the secondary
+//    frame-pointer register (see JitConfig.JitSecondFramePtr)?
+//
+// Arguments:
+//    ins         -- the instruction
+//    EBPbased    -- whether the canonical access is frame-pointer (RBP) based
+//    dsp         -- the canonical (full effective) displacement off the base
+//    pAdjustedDsp - [out] the displacement off the secondary register
+//
+// Return Value:
+//    true if the access can use [REG_OPT_RSVD2 + disp8] instead of a disp32 form off the canonical
+//    base; false to keep the canonical base/displacement.
+//
+// Notes:
+//    Must be deterministic between size estimation and output. Redirects an access whose canonical
+//    displacement needs a disp32 but fits a disp8 once shifted by the secondary offset, and only when
+//    its base (RBP vs RSP) matches the base the secondary register shadows. Instructions with special
+//    displacement/encoding handling (EVEX, APX extended EVEX, SSE 0F38/0F3A, crc32) are excluded so the
+//    plain [reg+disp8] form always applies.
+//
+bool emitter::emitIsSecondFramePtrCandidate(instruction ins, bool EBPbased, int dsp, int* pAdjustedDsp)
+{
+    if (codeGen->genSecondFramePtrReg == REG_NA)
+    {
+        return false;
+    }
+
+    // Only redirect accesses whose canonical base matches the base the secondary register shadows
+    // (RBP for FP-based frames, RSP otherwise). Mixing bases would compute a wrong displacement.
+    if (EBPbased != codeGen->genSecondFramePtrFPbased)
+    {
+        return false;
+    }
+
+    // The secondary register holds (base - offset) for RBP frames (locals at negative offsets) and
+    // (base + offset) for RSP frames (locals at positive offsets); invert accordingly. Test the band
+    // first: it rejects the common in-window access cheaply, before the costlier instruction-class checks.
+    // Compute in ssize_t: JitSecondFramePtr is a release config and can be set arbitrarily, so an int
+    // add/subtract could overflow (UB) before the disp8 fit checks below.
+    const ssize_t adjusted = EBPbased ? ((ssize_t)dsp + codeGen->genSecondFramePtrOffset)
+                                      : ((ssize_t)dsp - codeGen->genSecondFramePtrOffset);
+    const bool    rawFits  = ((signed char)dsp == (ssize_t)dsp);
+    const bool    adjFits  = ((signed char)adjusted == adjusted);
+
+    if (rawFits || !adjFits)
+    {
+        return false;
+    }
+
+    // Instructions with special displacement/encoding handling cannot use the plain [reg+disp8] form.
+    if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins) || EncodedBySSE38orSSE3A(ins) ||
+        (ins == INS_crc32))
+    {
+        return false;
+    }
+
+    *pAdjustedDsp = (int)adjusted;
+    return true;
+}
+#endif // TARGET_AMD64
+
 //------------------------------------------------------------------------
 // emitInsSizeSVCalcDisp: Calculate instruction size.
 //
@@ -5270,6 +5333,16 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
 
     adr = m_compiler->lvaFrameAddress(var, &EBPbased);
     dsp = adr + id->idAddr()->iiaLclVar.lvaOffset();
+
+#if defined(TARGET_AMD64)
+    // A redirected access uses a [reg+disp8] form with no SIB byte, regardless of the EVEX/zero-disp
+    // handling below.
+    int secondDsp;
+    if (emitSecondFramePtrActive && emitIsSecondFramePtrCandidate(ins, EBPbased, dsp, &secondDsp))
+    {
+        return size + sizeof(char);
+    }
+#endif // TARGET_AMD64
 
     dspIsZero = (dsp == 0);
 
@@ -11795,10 +11868,10 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
  *  Display a stack frame reference.
  */
 
-void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
+void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm, instruction ins)
 {
-    int  addr;
-    bool bEBP;
+    int  addr = 0;
+    bool bEBP = false;
 
     printf("[");
 
@@ -11823,6 +11896,20 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
         }
     }
 
+#if defined(TARGET_AMD64)
+    // A redirected access is emitted as [REG_OPT_RSVD2 + disp8] rather than the canonical
+    // [rbp/rsp + disp]. Print what is actually encoded so the listing matches the bytes, then append
+    // the logical reference as a trailing comment.
+    bool secondRedirected = false;
+    int  secondDsp        = 0;
+    if (emitSecondFramePtrActive && (m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT) && asmfm)
+    {
+        bool bEBPcand    = false;
+        int  rawDsp      = m_compiler->lvaFrameAddress(varx, &bEBPcand) + disp;
+        secondRedirected = emitIsSecondFramePtrCandidate(ins, bEBPcand, rawDsp, &secondDsp);
+    }
+#endif // TARGET_AMD64
+
     if (m_compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT)
     {
         if (!asmfm)
@@ -11832,44 +11919,72 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
         addr = m_compiler->lvaFrameAddress(varx, &bEBP) + disp;
 
-        if (bEBP)
+#if defined(TARGET_AMD64)
+        if (secondRedirected)
         {
-            printf(STR_FPBASE);
+            printf("%s", emitRegName(codeGen->genSecondFramePtrReg, EA_PTRSIZE));
 
-            if (addr < 0)
+            if (secondDsp < 0)
             {
-                printf("-0x%02X", -addr);
+                printf("-0x%02X", -secondDsp);
             }
-            else if (addr > 0)
+            else if (secondDsp > 0)
             {
-                printf("+0x%02X", addr);
+                printf("+0x%02X", secondDsp);
             }
         }
         else
-        {
-            /* Adjust the offset by amount currently pushed on the stack */
-
-            printf(STR_SPBASE);
-
-            if (addr < 0)
+#endif // TARGET_AMD64
+            if (bEBP)
             {
-                printf("-0x%02X", -addr);
+                printf(STR_FPBASE);
+
+                if (addr < 0)
+                {
+                    printf("-0x%02X", -addr);
+                }
+                else if (addr > 0)
+                {
+                    printf("+0x%02X", addr);
+                }
             }
-            else if (addr > 0)
+            else
             {
-                printf("+0x%02X", addr);
-            }
+                /* Adjust the offset by amount currently pushed on the stack */
+
+                printf(STR_SPBASE);
+
+                if (addr < 0)
+                {
+                    printf("-0x%02X", -addr);
+                }
+                else if (addr > 0)
+                {
+                    printf("+0x%02X", addr);
+                }
 
 #if !FEATURE_FIXED_OUT_ARGS
 
-            if (emitCurStackLvl)
-                printf("+0x%02X", emitCurStackLvl);
+                if (emitCurStackLvl)
+                    printf("+0x%02X", emitCurStackLvl);
 
 #endif // !FEATURE_FIXED_OUT_ARGS
-        }
+            }
     }
 
     printf("]");
+
+#if defined(TARGET_AMD64)
+    if (secondRedirected)
+    {
+        // Defer the canonical frame reference to a trailing comment: operands may still follow the
+        // memory operand on the same line.
+        emitDispSecondFramePtrPending = true;
+        emitDispSecondFramePtrFPbased = bEBP;
+        emitDispSecondFramePtrAddr    = addr;
+    }
+#endif // TARGET_AMD64
+
 #ifdef DEBUG
     if ((varx >= 0) && m_compiler->opts.varNames && (((IL_OFFSET)offs) != BAD_IL_OFFSET))
     {
@@ -12340,6 +12455,10 @@ void emitter::emitDispIns(
 
     instruction ins = id->idIns();
 
+#if defined(TARGET_AMD64)
+    emitDispSecondFramePtrPending = false;
+#endif // TARGET_AMD64
+
 #ifdef DEBUG
     if (m_compiler->verbose)
     {
@@ -12733,7 +12852,7 @@ void emitter::emitDispIns(
 #endif
 
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
 
 #if !FEATURE_FIXED_OUT_ARGS
             if (ins == INS_pop)
@@ -12752,7 +12871,7 @@ void emitter::emitDispIns(
             printf("%s", sstr);
 
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbMasking(id);
 
             printf(", %s", emitRegName(id->idReg1(), attr));
@@ -12767,7 +12886,7 @@ void emitter::emitDispIns(
             printf("%s", sstr);
 
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbMasking(id);
             emitDispConstant(id);
             break;
@@ -12781,7 +12900,7 @@ void emitter::emitDispIns(
             printf("%s", sstr);
 
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbMasking(id);
 
             printf(", %s", emitRegName(id->idReg1(), attr));
@@ -12815,7 +12934,7 @@ void emitter::emitDispIns(
             emitDispEmbMasking(id);
             printf(", %s", sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbBroadcastCount(id);
 
             break;
@@ -12829,7 +12948,7 @@ void emitter::emitDispIns(
             emitDispEmbMasking(id);
             printf(", %s", sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbBroadcastCount(id);
             emitDispConstant(id);
             break;
@@ -12849,7 +12968,7 @@ void emitter::emitDispIns(
                 printf("%s", emitRegName(id->idReg1(), attr));
                 printf(", %s", sstr);
                 emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                                 id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                                 id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
                 printf(", %s", emitRegName(id->idReg2(), attr));
                 break;
             }
@@ -12858,7 +12977,7 @@ void emitter::emitDispIns(
             emitDispEmbMasking(id);
             printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbBroadcastCount(id);
             break;
         }
@@ -12869,7 +12988,7 @@ void emitter::emitDispIns(
             emitDispEmbMasking(id);
             printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbBroadcastCount(id);
             emitDispConstant(id);
             break;
@@ -12892,7 +13011,7 @@ void emitter::emitDispIns(
 
             printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbBroadcastCount(id);
 
             if (!hasMaskReg)
@@ -12911,7 +13030,7 @@ void emitter::emitDispIns(
             printf(", %s", sstr);
 
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbBroadcastCount(id);
             printf(", %s", emitRegName(id->idReg2(), attr));
             break;
@@ -12921,7 +13040,7 @@ void emitter::emitDispIns(
         {
             printf("%s", sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
-                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm, ins);
             emitDispEmbMasking(id);
             printf(", %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
             break;
@@ -13619,7 +13738,7 @@ void emitter::emitDispIns(
                 assert(id->idInsFmt() == IF_SWR_LABEL);
                 instrDescLbl* idlbl = (instrDescLbl*)id;
 
-                emitDispFrameRef(idlbl->dstLclVar.lvaVarNum(), idlbl->dstLclVar.lvaOffset(), 0, asmfm);
+                emitDispFrameRef(idlbl->dstLclVar.lvaVarNum(), idlbl->dstLclVar.lvaOffset(), 0, asmfm, ins);
 
                 printf(", ");
             }
@@ -13692,6 +13811,26 @@ void emitter::emitDispIns(
         printf(" (ECS:%d, ACS:%d)", id->idCodeSize(), sz);
     }
 #endif
+
+#if defined(TARGET_AMD64)
+    if (emitDispSecondFramePtrPending)
+    {
+        // The memory operand was emitted as [REG_OPT_RSVD2 + disp8]; show the canonical frame
+        // reference it stands in for as a trailing comment.
+        printf("      ; %s", emitDispSecondFramePtrFPbased ? STR_FPBASE : STR_SPBASE);
+
+        if (emitDispSecondFramePtrAddr < 0)
+        {
+            printf("-0x%02X", -emitDispSecondFramePtrAddr);
+        }
+        else if (emitDispSecondFramePtrAddr > 0)
+        {
+            printf("+0x%02X", emitDispSecondFramePtrAddr);
+        }
+
+        emitDispSecondFramePtrPending = false;
+    }
+#endif // TARGET_AMD64
 
     printf("\n");
 }
@@ -15276,98 +15415,112 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // for stack variables the dsp should never be a reloc
     assert(id->idIsDspReloc() == 0);
 
-    if (EBPbased)
+#if defined(TARGET_AMD64)
+    int secondDsp;
+    if (emitSecondFramePtrActive && emitIsSecondFramePtrCandidate(ins, EBPbased, dsp, &secondDsp))
     {
-        // EBP-based variable: does the offset fit in a byte?
-        if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+        // Redirect through the secondary frame pointer (a low callee-saved register, e.g. RBX):
+        // modrm mod=01, rm=base => low byte 0x40 | (reg & 7); no SIB byte and no REX.B since the
+        // register is < R8 and is not RSP/R12.
+        const regNumber secondReg = codeGen->genSecondFramePtrReg;
+        assert((unsigned)secondReg < 8);
+        dst += emitOutputWord(dst, code | (((0x40 | (secondReg & 0x07))) << 8));
+        dst += emitOutputByte(dst, secondDsp);
+    }
+    else
+#endif // TARGET_AMD64
+        if (EBPbased)
         {
-            if (dspInByte)
+            // EBP-based variable: does the offset fit in a byte?
+            if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
             {
-                dst += emitOutputByte(dst, code | 0x45);
+                if (dspInByte)
+                {
+                    dst += emitOutputByte(dst, code | 0x45);
+                    dst += emitOutputByte(dst, dsp);
+                }
+                else
+                {
+                    dst += emitOutputByte(dst, code | 0x85);
+                    dst += emitOutputLong(dst, dsp);
+                }
+            }
+            else if (dspInByte)
+            {
+                dst += emitOutputWord(dst, code | 0x4500);
                 dst += emitOutputByte(dst, dsp);
             }
             else
             {
-                dst += emitOutputByte(dst, code | 0x85);
+                dst += emitOutputWord(dst, code | 0x8500);
                 dst += emitOutputLong(dst, dsp);
             }
         }
-        else if (dspInByte)
-        {
-            dst += emitOutputWord(dst, code | 0x4500);
-            dst += emitOutputByte(dst, dsp);
-        }
         else
         {
-            dst += emitOutputWord(dst, code | 0x8500);
-            dst += emitOutputLong(dst, dsp);
-        }
-    }
-    else
-    {
 #if !FEATURE_FIXED_OUT_ARGS
-        // Adjust the offset by the amount currently pushed on the CPU stack
-        dsp += emitCurStackLvl;
+            // Adjust the offset by the amount currently pushed on the CPU stack
+            dsp += emitCurStackLvl;
 
-        if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
-        {
-            // We cannot reliably predict the encoding size up front so we shouldn't
-            // have encountered a scenario marked with compressed displacement. We
-            // did predict cases that could use the small encoding for VEX scenarios
+            if (IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
+            {
+                // We cannot reliably predict the encoding size up front so we shouldn't
+                // have encountered a scenario marked with compressed displacement. We
+                // did predict cases that could use the small encoding for VEX scenarios
 
-            assert(!HasCompressedDisplacement(id));
+                assert(!HasCompressedDisplacement(id));
 
-            if (!TakesEvexPrefix(id))
+                if (!TakesEvexPrefix(id))
+                {
+                    dspInByte = ((signed char)dsp == (ssize_t)dsp);
+                }
+            }
+            else
             {
                 dspInByte = ((signed char)dsp == (ssize_t)dsp);
             }
-        }
-        else
-        {
-            dspInByte = ((signed char)dsp == (ssize_t)dsp);
-        }
-        dspIsZero = (dsp == 0);
+            dspIsZero = (dsp == 0);
 #endif // !FEATURE_FIXED_OUT_ARGS
 
-        // Does the offset fit in a byte?
-        if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
-        {
-            if (dspIsZero)
+            // Does the offset fit in a byte?
+            if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
             {
-                dst += emitOutputByte(dst, code | 0x04);
+                if (dspIsZero)
+                {
+                    dst += emitOutputByte(dst, code | 0x04);
+                    dst += emitOutputByte(dst, 0x24);
+                }
+                else if (dspInByte)
+                {
+                    dst += emitOutputByte(dst, code | 0x44);
+                    dst += emitOutputByte(dst, 0x24);
+                    dst += emitOutputByte(dst, dsp);
+                }
+                else
+                {
+                    dst += emitOutputByte(dst, code | 0x84);
+                    dst += emitOutputByte(dst, 0x24);
+                    dst += emitOutputLong(dst, dsp);
+                }
+            }
+            else if (dspIsZero)
+            {
+                dst += emitOutputWord(dst, code | 0x0400);
                 dst += emitOutputByte(dst, 0x24);
             }
             else if (dspInByte)
             {
-                dst += emitOutputByte(dst, code | 0x44);
+                dst += emitOutputWord(dst, code | 0x4400);
                 dst += emitOutputByte(dst, 0x24);
                 dst += emitOutputByte(dst, dsp);
             }
             else
             {
-                dst += emitOutputByte(dst, code | 0x84);
+                dst += emitOutputWord(dst, code | 0x8400);
                 dst += emitOutputByte(dst, 0x24);
                 dst += emitOutputLong(dst, dsp);
             }
         }
-        else if (dspIsZero)
-        {
-            dst += emitOutputWord(dst, code | 0x0400);
-            dst += emitOutputByte(dst, 0x24);
-        }
-        else if (dspInByte)
-        {
-            dst += emitOutputWord(dst, code | 0x4400);
-            dst += emitOutputByte(dst, 0x24);
-            dst += emitOutputByte(dst, dsp);
-        }
-        else
-        {
-            dst += emitOutputWord(dst, code | 0x8400);
-            dst += emitOutputByte(dst, 0x24);
-            dst += emitOutputLong(dst, dsp);
-        }
-    }
 
     // Now generate the constant value, if present
     if (addc)

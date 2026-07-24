@@ -2630,7 +2630,7 @@ protected:
     void emitDispGCinfo();
     void emitDispJumpList();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
-    void emitDispFrameRef(int varx, int disp, int offs, bool asmfm);
+    void emitDispFrameRef(int varx, int disp, int offs, bool asmfm, instruction ins = INS_none);
     void emitDispInsAddr(const BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
