@@ -831,7 +831,7 @@ CrossLoaderAllocatorHash<TRAITS>::GetDependentTrackerForLoaderAllocator(LoaderAl
     }
 
     NewHolder<LADependentKeyToValuesHash> laDependentKeyToValuesHashHolder = new LADependentKeyToValuesHash();
-    LifetimeHolder<CrossLoaderAllocatorHash<TRAITS>::LAHashDependentHashTracker::HolderTraits> dependentTrackerHolder{
+    LifetimeHolder<typename CrossLoaderAllocatorHash<TRAITS>::LAHashDependentHashTracker::HolderTraits> dependentTrackerHolder{
         new LAHashDependentHashTracker(pLoaderAllocator, laDependentKeyToValuesHashHolder) };
     laDependentKeyToValuesHashHolder.SuppressRelease();
 
