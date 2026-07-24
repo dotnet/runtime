@@ -44,10 +44,24 @@ namespace System.IO.Compression
         /// <param name="bytesConsumed">When this method returns, the total number of bytes that were read from <paramref name="source"/>.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
         /// <returns>One of the enumeration values that describes the status with which the span-based operation finished.</returns>
+        /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
         {
             EnsureNotDisposed();
             return _deflateDecoder.Decompress(source, destination, out bytesConsumed, out bytesWritten);
+        }
+
+        /// <summary>
+        /// Resets the decoder to its initial state so the same instance can be reused for a new, independent decompression operation.
+        /// </summary>
+        /// <remarks>
+        /// After this method returns, any sliding-window history from a previous decompression is discarded.
+        /// </remarks>
+        /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
+        public void Reset()
+        {
+            EnsureNotDisposed();
+            _deflateDecoder.Reset();
         }
 
         /// <summary>

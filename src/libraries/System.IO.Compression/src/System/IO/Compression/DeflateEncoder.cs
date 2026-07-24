@@ -297,6 +297,22 @@ namespace System.IO.Compression
         }
 
         /// <summary>
+        /// Resets the encoder to its initial state so the same instance can be reused for a new, independent compression operation.
+        /// </summary>
+        /// <remarks>
+        /// The encoder keeps the compression quality and window size it was created with. Any pending output or unflushed input from a previous, unfinished compression is discarded.
+        /// </remarks>
+        /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
+        public void Reset()
+        {
+            EnsureNotDisposed();
+            Debug.Assert(_state is not null);
+
+            _state.DeflateReset();
+            _finished = false;
+        }
+
+        /// <summary>
         /// Tries to compress a source byte span into a destination span using the default quality.
         /// </summary>
         /// <param name="source">A read-only span of bytes containing the source data to compress.</param>

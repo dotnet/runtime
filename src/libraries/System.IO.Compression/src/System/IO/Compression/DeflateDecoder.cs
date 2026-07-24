@@ -13,6 +13,7 @@ namespace System.IO.Compression
     public sealed class DeflateDecoder : IDisposable
     {
         private ZLibNative.ZLibStreamHandle? _state;
+        private readonly int _windowBits;
         private bool _disposed;
         private bool _finished;
 
@@ -27,6 +28,7 @@ namespace System.IO.Compression
 
         internal DeflateDecoder(int windowBits)
         {
+            _windowBits = windowBits;
             _state = ZLibNative.ZLibStreamHandle.CreateForInflate(windowBits);
         }
 
@@ -53,6 +55,7 @@ namespace System.IO.Compression
         /// <param name="bytesConsumed">When this method returns, the total number of bytes that were read from <paramref name="source"/>.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
         /// <returns>One of the enumeration values that describes the status with which the span-based operation finished.</returns>
+        /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
         {
             EnsureNotDisposed();
@@ -104,6 +107,22 @@ namespace System.IO.Compression
                     return status;
                 }
             }
+        }
+
+        /// <summary>
+        /// Resets the decoder to its initial state so the same instance can be reused for a new, independent decompression operation.
+        /// </summary>
+        /// <remarks>
+        /// After this method returns, any sliding-window history from a previous decompression is discarded.
+        /// </remarks>
+        /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
+        public void Reset()
+        {
+            EnsureNotDisposed();
+            Debug.Assert(_state is not null);
+
+            _state.InflateReset2_(_windowBits);
+            _finished = false;
         }
 
         /// <summary>
