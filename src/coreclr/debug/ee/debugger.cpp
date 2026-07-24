@@ -8856,6 +8856,14 @@ void Debugger::ThreadStarted(Thread* pRuntimeThread)
     if (CORDBUnrecoverableError(this))
         return;
 
+    if (pRuntimeThread->HasThreadStateNC(Thread::TSNC_DebuggerThreadStartSent))
+    {
+        LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach already sent, skipping : ID=%#x\n",
+             GetThreadIdHelper(pRuntimeThread)));
+        return;
+    }
+    pRuntimeThread->SetThreadStateNC(Thread::TSNC_DebuggerThreadStartSent);
+
     LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach : ID=%#x AD:%#x\n",
          GetThreadIdHelper(pRuntimeThread), AppDomain::GetCurrentDomain()));
 
@@ -8902,6 +8910,9 @@ void Debugger::SendCreateThreadAtInterpreterEntry(Thread *pRuntimeThread)
         return;
 
     if (!CORDebuggerAttached())
+        return;
+
+    if (pRuntimeThread->HasThreadStateNC(Thread::TSNC_DebuggerThreadStartSent))
         return;
 
     {
