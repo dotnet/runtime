@@ -6,13 +6,13 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.MethodDescChunk))]
 internal sealed partial class MethodDescChunk : IData<MethodDescChunk>
 {
-    [Field] public TargetPointer MethodTable { get; }
-    [Field] public TargetPointer Next { get; }
-    [Field] public byte Size { get; }
-    [Field] public byte Count { get; }
-    [Field] public ushort FlagsAndTokenRange { get; }
+    [Field] public partial TargetPointer MethodTable { get; }
+    [Field] public partial TargetPointer Next { get; }
+    [Field] public partial byte Size { get; }
+    [Field] public partial byte Count { get; }
+    [Field] public partial ushort FlagsAndTokenRange { get; }
 
     // The first MethodDesc is at the end of the MethodDescChunk
     [InstanceDataStart]
-    public TargetPointer FirstMethodDesc { get; }
+    public partial TargetPointer FirstMethodDesc { get; }
 }

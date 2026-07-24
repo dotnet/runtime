@@ -353,6 +353,7 @@ Reflection.RunClassConstructor
 Reflection.TypeHierarchyLibraryModeSuppressions
 Reflection.TypeHierarchyReflectionWarnings
 Reflection.TypeMap
+Reflection.TypeMapAssemblyTargetRemovedWhenAllEntriesTrimmed
 Reflection.TypeUsedViaReflection
 Reflection.UnsafeAccessor
 RequiresCapability.BasicRequires
@@ -454,6 +455,7 @@ UnreachableBlock.InstanceMethodSubstitutions
 UnreachableBlock.MethodArgumentPropagation
 UnreachableBlock.MethodWithParametersSubstitutions
 UnreachableBlock.MultiStageRemoval
+UnreachableBlock.NestedFinallyInFinallyHandler
 UnreachableBlock.ReplacedJumpTarget
 UnreachableBlock.ReplacedReturns
 UnreachableBlock.ResultInliningNotPossible

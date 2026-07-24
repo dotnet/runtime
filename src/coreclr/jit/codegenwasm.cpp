@@ -103,18 +103,6 @@ void CodeGen::genMarkLabelsForCodegen()
 //
 void CodeGen::genBeginFnProlog()
 {
-    // SIMD (Vector2/3/4, Vector128) parameters are lowered to i32 in the wasm signature, so any
-    // vector operation performed on them produces an invalid module (e.g. a v128/f64 op with
-    // an i32 operand). Bail such methods to the interpreter until SIMD parameters are
-    // properly supported in the wasm calling convention.
-    for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
-    {
-        if (varTypeIsSIMD(m_compiler->lvaGetDesc(lclNum)->TypeGet()))
-        {
-            NYI_WASM_SIMD("SIMD parameter");
-        }
-    }
-
     GetEmitter()->emitIns(INS_code_size);
 
     FuncInfoDsc* const func = m_compiler->funGetFunc(ROOT_FUNC_IDX);
@@ -2592,11 +2580,6 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree);
     var_types  type   = tree->TypeGet();
 
-    if (type == TYP_SIMD16)
-    {
-        NYI_WASM_SIMD("SIMD16 local field load");
-    }
-
     if (type == TYP_SIMD12)
     {
         genLoadLclTypeSimd12(tree);
@@ -2863,13 +2846,6 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     else // A normal store, not a WriteBarrier store
     {
         var_types type = tree->TypeGet();
-        if (type == TYP_SIMD16)
-        {
-            // Storing a SIMD16 value emits v128.store, but the data operand is not
-            // materialized as a v128 (it comes through as an i32), producing an invalid
-            // module. Bail until SIMD16 store is properly supported.
-            NYI_WASM_SIMD("SIMD16 store indirect");
-        }
 
         // TODO-WASM: Memory barriers
 
@@ -2980,13 +2956,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             assert(seg.IsPassedInRegister());
             WasmValueType wvt = WasmRegToType(seg.GetRegister());
             assert(wvt < WasmValueType::Count);
-            if (wvt == WasmValueType::V128)
-            {
-                // Passing a 16-byte SIMD value by value through a call is not yet correctly
-                // implemented: the argument is materialized as an i32 (by-ref) while the call
-                // signature requires v128, producing an invalid module. Bail for now.
-                NYI_WASM_SIMD("SIMD16 call argument");
-            }
             typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
         }
     }
@@ -3911,10 +3880,6 @@ void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
 {
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
     var_types  type   = varDsc->GetRegisterType();
-    if (type == TYP_SIMD16)
-    {
-        NYI_WASM_SIMD("SIMD16 local load");
-    }
 
     GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
     GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), lclNum, 0);

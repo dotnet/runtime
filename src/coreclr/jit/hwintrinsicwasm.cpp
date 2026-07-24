@@ -25,7 +25,7 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
     {
         return InstructionSet_PackedSimd;
     }
-    else if (strcmp(className, "Vector128") == 0)
+    else if ((strcmp(className, "Vector128") == 0) || (strcmp(className, "Vector128`1") == 0))
     {
         return InstructionSet_Vector128;
     }
@@ -187,14 +187,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             retNode = gtNewSimdLoadNode(retType, op1, simdBaseType, simdSize);
-            break;
-        }
-
-        case NI_PackedSimd_LoadScalarVector128:
-        case NI_PackedSimd_LoadScalarAndSplatVector128:
-        case NI_PackedSimd_LoadScalarAndInsert:
-        case NI_PackedSimd_LoadWideningVector128:
-        {
             break;
         }
 

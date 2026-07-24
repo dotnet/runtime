@@ -14,6 +14,8 @@ Before making changes to a directory, search for `README.md` files in that direc
 
 If the changes are intended to improve performance, or if they could negatively impact performance, use the `performance-benchmark` skill to validate the impact before completing.
 
+When writing or reviewing SIMD / hardware-intrinsics code (anything using `Vector128`/`Vector256`/`Vector512`, `Vector<T>`, or the platform intrinsics in `System.Runtime.Intrinsics.*`), use the `vectorization` skill.
+
 You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
 
 In addition to the rules enforced by `.editorconfig`, you SHOULD:

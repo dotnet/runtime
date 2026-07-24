@@ -22,22 +22,16 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
     IGCInfoHandle IGCInfo.DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersion)
         => new GcInfoDecoder<InterpreterGCInfoTraits>(_target, gcInfoAddress, gcVersion);
 
+    GCInfoHeader IGCInfo.GetHeader(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetHeader();
+    }
+
     uint IGCInfo.GetCodeLength(IGCInfoHandle gcInfoHandle)
     {
         IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
         return handle.GetCodeLength();
-    }
-
-    uint IGCInfo.GetStackBaseRegister(IGCInfoHandle gcInfoHandle)
-    {
-        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
-        return handle.GetStackBaseRegister();
-    }
-
-    uint IGCInfo.GetSizeOfStackParameterArea(IGCInfoHandle gcInfoHandle)
-    {
-        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
-        return handle.GetSizeOfStackParameterArea();
     }
 
     uint IGCInfo.GetCalleePoppedArgumentsSize(IGCInfoHandle gcInfoHandle)
@@ -50,6 +44,18 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
     {
         IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
         return handle.GetInterruptibleRanges();
+    }
+
+    IReadOnlyList<uint> IGCInfo.GetSafePoints(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetSafePoints();
+    }
+
+    IReadOnlyList<GCSlotLifetime> IGCInfo.GetSlotLifetimes(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetSlotLifetimes();
     }
 
     IReadOnlyList<LiveSlot> IGCInfo.EnumerateLiveSlots(IGCInfoHandle gcInfoHandle, uint instructionOffset, GcSlotEnumerationOptions options)

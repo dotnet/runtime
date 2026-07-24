@@ -27,6 +27,25 @@ bool TryComputeArgGCRefMapBlob(MethodDescHandle methodDesc, out byte[] blob);
 ```
 
 ## Version 1
+<!-- BEGIN GENERATED: usage contract=CallingConvention version=c1 -->
+### Data descriptors used
+
+_None._
+
+### Global variables used
+
+_None._
+
+### Contracts used
+
+| Contract Name |
+| --- |
+| `EcmaMetadata` |
+| `Loader` |
+| `RuntimeInfo` |
+| `RuntimeTypeSystem` |
+<!-- END GENERATED: usage contract=CallingConvention version=c1 -->
+
 
 The single API is implemented by walking the shared `ArgIterator`
 (`src/coreclr/tools/Common/CallingConvention/ArgIterator.cs`) and feeding

@@ -95,6 +95,7 @@
     <Compile Include="JitBlue\Runtime_125169\Runtime_125169.cs" />
     <Compile Include="JitBlue\Runtime_125301\Runtime_125301.cs" />
     <Compile Include="JitBlue\Runtime_125328\Runtime_125328.cs" />
+    <Compile Include="JitBlue\Runtime_125431\Runtime_125431.cs" />
     <Compile Include="JitBlue\Runtime_126060\Runtime_126060.cs" />
     <Compile Include="JitBlue\Runtime_127260\Runtime_127260.cs" />
     <Compile Include="JitBlue\Runtime_127446\Runtime_127446.cs" />
@@ -116,6 +117,9 @@
     <Compile Include="JitBlue\Runtime_130286\Runtime_130286.cs" />
     <Compile Include="JitBlue\Runtime_130431\Runtime_130431.cs" />
     <Compile Include="JitBlue\Runtime_130425\Runtime_130425.cs" />
+    <Compile Include="JitBlue\Runtime_130830\Runtime_130830.cs" />
+    <Compile Include="JitBlue\Runtime_130831\Runtime_130831.cs" />
+    <Compile Include="JitBlue\Runtime_131137\Runtime_131137.cs" />
     <Compile Include="JitBlue\Runtime_10337\Runtime_10337.cs" />
     <Compile Include="JitBlue\Runtime_125160\Runtime_125160.cs" />
   </ItemGroup>

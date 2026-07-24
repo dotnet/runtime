@@ -6,8 +6,10 @@
     <DebugSymbols>true</DebugSymbols>
     <Optimize>false</Optimize>
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
-    <!-- Needed for StackTraceLineNumberSupport -->
+    <!-- Needed for StackTraceLineNumberSupport, IlasmRoundTripIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- ilasm does not support full PDBs -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     <!-- DIA isn't used under Native AOT at runtime, but ensure that ILC does create
      line number blobs from full PDB that can be used in runtime stack traces. -->
     <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
