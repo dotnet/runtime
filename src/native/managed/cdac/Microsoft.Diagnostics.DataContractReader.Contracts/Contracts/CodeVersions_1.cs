@@ -154,7 +154,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         if (rts.IsCollectibleMethod(md))
             return false;
         TargetPointer mtAddr = rts.GetMethodTable(md);
-        TypeHandle mt = rts.GetTypeHandle(mtAddr);
+        ITypeHandle mt = rts.GetTypeHandle(mtAddr);
         TargetPointer modAddr = rts.GetModule(mt);
         ILoader loader = _target.Contracts.Loader;
         ModuleHandle mod = loader.GetModuleHandleFromModulePtr(modAddr);
@@ -229,8 +229,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             NativeCodeVersionNode codeVersionNode = AsNode(codeVersionHandle);
             if (codeVersionNode.GCCoverageInfo is TargetPointer gcCoverageInfoAddr && gcCoverageInfoAddr != TargetPointer.Null)
             {
-                Target.TypeInfo gcCoverageInfoType = _target.GetTypeInfo(DataType.GCCoverageInfo);
-                return gcCoverageInfoAddr + (ulong)gcCoverageInfoType.Fields["SavedCode"].Offset;
+                return gcCoverageInfoAddr + (ulong)Data.GCCoverageInfo.GetSavedCodeOffset(_target);
             }
             return TargetPointer.Null;
         }
@@ -342,7 +341,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         MethodDescHandle md = rts.GetMethodDescHandle(methodDesc);
         TargetPointer mtAddr = rts.GetMethodTable(md);
-        TypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
+        ITypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
         module = rts.GetModule(typeHandle);
         methodDefToken = rts.GetMethodToken(md);
     }

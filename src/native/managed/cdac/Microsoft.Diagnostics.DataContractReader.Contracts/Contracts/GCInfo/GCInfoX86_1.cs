@@ -28,20 +28,23 @@ internal sealed class GCInfoX86_1 : IGCInfo
     IGCInfoHandle IGCInfo.DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersion)
         => new GcInfoDecoder<InterpreterGCInfoTraits>(_target, gcInfoAddress, gcVersion);
 
+    GCInfoHeader IGCInfo.GetHeader(IGCInfoHandle gcInfoHandle)
+        => AssertCorrectHandle(gcInfoHandle).GetHeader();
+
     uint IGCInfo.GetCodeLength(IGCInfoHandle gcInfoHandle)
         => AssertCorrectHandle(gcInfoHandle).GetCodeLength();
-
-    uint IGCInfo.GetStackBaseRegister(IGCInfoHandle gcInfoHandle)
-        => AssertCorrectHandle(gcInfoHandle).GetStackBaseRegister();
-
-    uint IGCInfo.GetSizeOfStackParameterArea(IGCInfoHandle gcInfoHandle)
-        => AssertCorrectHandle(gcInfoHandle).GetSizeOfStackParameterArea();
 
     uint IGCInfo.GetCalleePoppedArgumentsSize(IGCInfoHandle gcInfoHandle)
         => AssertCorrectHandle(gcInfoHandle).GetCalleePoppedArgumentsSize();
 
     IReadOnlyList<InterruptibleRange> IGCInfo.GetInterruptibleRanges(IGCInfoHandle gcInfoHandle)
         => AssertCorrectHandle(gcInfoHandle).GetInterruptibleRanges();
+
+    IReadOnlyList<uint> IGCInfo.GetSafePoints(IGCInfoHandle gcInfoHandle)
+        => AssertCorrectHandle(gcInfoHandle).GetSafePoints();
+
+    IReadOnlyList<GCSlotLifetime> IGCInfo.GetSlotLifetimes(IGCInfoHandle gcInfoHandle)
+        => AssertCorrectHandle(gcInfoHandle).GetSlotLifetimes();
 
     IReadOnlyList<LiveSlot> IGCInfo.EnumerateLiveSlots(IGCInfoHandle gcInfoHandle, uint instructionOffset, GcSlotEnumerationOptions options)
         => AssertCorrectHandle(gcInfoHandle).EnumerateLiveSlots(instructionOffset, options);

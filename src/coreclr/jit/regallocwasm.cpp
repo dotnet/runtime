@@ -662,6 +662,14 @@ void WasmRegAlloc::CollectReferencesForIndir(GenTreeIndir* node)
 {
     GenTree* const addr = node->Addr();
     ConsumeTemporaryRegForOperand(addr DEBUGARG("indirection address"));
+
+    if (node->OperIs(GT_STOREIND) && node->TypeIs(TYP_SIMD12))
+    {
+        // The SIMD12 store stashes the v128 value so it can re-push it for the trailing lane store.
+        regNumber internalReg = RequestInternalRegister(node, TYP_SIMD16);
+        regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
+        assert(releasedReg == internalReg);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -707,8 +715,12 @@ void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
 //    node - The GT_HWINTRINSIC node
 //
 // Notes:
-//   This is a no-op unless a hw intrinsic needs a jump table fallback, in which case we have to consume
-//    temporary registers for its operands.
+//   There are only 3 cases where we need to consume temporary registers for a hardware intrinsic:
+//   1) A swizzle with a contained mask (source operand multiply used)
+//   2) A hardware intrinsic with a non-constant immediate operand that requires a jump table fallback (all operands
+//   multiply used)
+//   3) A memory load/store hardware intrinsic that requires a null check of the address (address
+//   multiply used for null check)
 void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* node)
 {
     // A constant, in-range mask Swizzle is lowered to an immediate i8x16.shuffle, which reuses the
@@ -720,27 +732,37 @@ void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* nod
         return;
     }
 
-    // Only intrinsics with an immediate operand can need the jump-table fallback.
-    if (!HWIntrinsicInfo::HasImmediateOperand(node->GetHWIntrinsicId()))
+    bool needsJumpTableFallback = false;
+    if (HWIntrinsicInfo::HasImmediateOperand(node->GetHWIntrinsicId()))
     {
-        return;
+        GenTree* immOp = node->GetImmOp();
+        // Only intrinsics that have a non-constant immediate need a jump-table fallback, and mark operands
+        // MultiplyUsed during Lowering (see Lowering::LowerHWIntrinsic in lowerwasm.cpp).
+        if (!immOp->IsCnsIntOrI())
+        {
+            needsJumpTableFallback = true;
+        }
     }
 
-    GenTree* immOp = node->GetImmOp();
-
-    // Only intrinsics that have a non-constant immediate need a jump-table fallback, and mark operands
-    // MultiplyUsed during Lowering (see Lowering::LowerHWIntrinsic in lowerwasm.cpp).
-    if (immOp->IsCnsIntOrI())
+    if (needsJumpTableFallback)
     {
-        return;
+        // All operands are marked multiply used in this case, so we consume a temporary register for each operand
+        // in reverse (wasm stack) order.
+        int operandCount = static_cast<int>(node->GetOperandCount());
+        for (int i = operandCount; i >= 1; i--)
+        {
+            ConsumeTemporaryRegForOperand(node->Op(i) DEBUGARG("hardware intrinsic fallback"));
+        }
     }
-
-    // All operands are marked multiply used, so we consume a temporary register for each operand
-    // in reverse (wasm stack) order.
-    int operandCount = static_cast<int>(node->GetOperandCount());
-    for (int i = operandCount; i >= 1; i--)
+    else
     {
-        ConsumeTemporaryRegForOperand(node->Op(i) DEBUGARG("hardware intrinsic fallback"));
+        // We still need to consume a temporary register due to a null check of the address operand for memory
+        // load/store intrinsics.
+        GenTree* addr;
+        if (node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr))
+        {
+            ConsumeTemporaryRegForOperand(addr DEBUGARG("hardware intrinsic memory address null check"));
+        }
     }
 }
 
@@ -799,6 +821,16 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 
     LIR::ReadOnlyRange storeRange(store, store);
     m_compiler->GetLowering()->LowerRange(m_currentBlock, storeRange);
+
+    if (store->OperIs(GT_STOREIND) && store->TypeIs(TYP_SIMD12))
+    {
+        // genStoreIndTypeSimd12 tees the value into a v128 temporary to split the store into an 8-byte and a
+        // 4-byte lane store. The main collection walk does not revisit this freshly-introduced node, so request
+        // that internal register here. The re-materializable LCL_ADDR address needs no temporary.
+        regNumber internalReg = RequestInternalRegister(store, TYP_SIMD16);
+        regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
+        assert(releasedReg == internalReg);
+    }
 
     // FIXME-WASM: Should we be doing this here?
     // CollectReferencesForNode(store);

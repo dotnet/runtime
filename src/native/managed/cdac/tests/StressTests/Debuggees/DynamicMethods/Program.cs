@@ -13,9 +13,9 @@ using System.Runtime.CompilerServices;
 /// to walk the signature via MetaSig.
 ///
 /// Scenarios:
-/// - Simple object parameter (GcTypeKind.Ref)
+/// - Simple object-reference parameter
 /// - Multiple object parameters
-/// - Byref parameter (GcTypeKind.Interior)
+/// - Byref parameter
 /// - Mixed ref and primitive parameters
 /// - Method with 'this' (instance delegate)
 /// - Method returning object (tests return type parsing)

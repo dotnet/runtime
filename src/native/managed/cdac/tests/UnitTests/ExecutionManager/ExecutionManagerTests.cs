@@ -294,6 +294,54 @@ public class ExecutionManagerTests
         }
     }
 
+    // On WASM there are no native code pointers: a "code address" is a synthetic virtual IP
+    // (ExecutionManager::GetWasmVirtualIPFromStackPointer, base + function-local offset). R2R
+    // modules are registered in the RangeSectionMap by their virtual-IP range, so resolving a
+    // virtual IP to its MethodDesc uses the same generic RangeSection.Find ->
+    // ReadyToRunJitManager path as any other architecture -- there is no WASM-specific IP->MethodDesc
+    // code path (MinVirtualIP / FunctionTableIndexRangeSection are only consumed by the unwinder's
+    // function-table-index -> base-virtual-IP mapping). This verifies that resolution on a wasm32
+    // (32-bit little-endian) target, treating the code address as a virtual IP, and confirms the
+    // R2R classification.
+    [Theory]
+    [InlineData("c1")]
+    [InlineData("c2")]
+    public void GetMethodDesc_R2R_WasmVirtualIP(string version)
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+
+        const ulong virtualIPBase = 0x0050_0000u;   // R2R module base virtual IP
+        const uint virtualIPRangeSize = 0xc000u;
+        const ulong jitManagerAddress = 0x000b_ff00;
+        const ulong expectedMethodDescAddress = 0x0101_aaa0;
+
+        uint functionLocalVirtualIP = 0x100; // offset of the R2R function within the module
+
+        IExecutionManager em = CreateExecutionManagerContract(
+            version,
+            wasmArch,
+            emBuilder =>
+            {
+                var jittedCode = emBuilder.AllocateJittedCodeRange(virtualIPBase, virtualIPRangeSize);
+                MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([functionLocalVirtualIP], []);
+                MockHashMapBuilder hashMapBuilder = new(emBuilder.Builder);
+                hashMapBuilder.PopulatePtrMap(
+                    r2rInfo.EntryPointToMethodDescMapAddress,
+                    [(jittedCode.RangeStart + functionLocalVirtualIP, expectedMethodDescAddress)]);
+
+                MockLoaderModule r2rModule = emBuilder.AddReadyToRunModule(r2rInfo.Address);
+                MockRangeSection rangeSection = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule.Address);
+                _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+            });
+
+        TargetCodePointer virtualIP = new(virtualIPBase + functionLocalVirtualIP);
+
+        var handle = em.GetCodeBlockHandle(virtualIP);
+        Assert.NotNull(handle);
+        Assert.Equal(new TargetPointer(expectedMethodDescAddress), em.GetMethodDesc(handle.Value));
+        Assert.Equal(CodeKind.ReadyToRun, em.GetCodeKind(virtualIP));
+    }
+
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
     public void GetMethodDesc_R2R_MultipleRuntimeFunctions(string version, MockTarget.Architecture arch)
