@@ -35,7 +35,7 @@ public:
 
     ~RemoveDup();
 
-    bool CopyAndRemoveDups(const char* nameOfInput, HANDLE hFileOut);
+    bool CopyAndRemoveDups(const char* nameOfInput, FILE* fpOut);
 
 private:
 

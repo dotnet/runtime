@@ -118,7 +118,7 @@ bool RemoveDup::uniqueLegacy(MethodContext* mc)
     return true;
 }
 
-bool RemoveDup::CopyAndRemoveDups(const char* nameOfInput, HANDLE hFileOut)
+bool RemoveDup::CopyAndRemoveDups(const char* nameOfInput, FILE* fpOut)
 {
     MethodContextIterator mci(/* progressReport */ true);
     if (!mci.Initialize(nameOfInput))
@@ -138,7 +138,7 @@ bool RemoveDup::CopyAndRemoveDups(const char* nameOfInput, HANDLE hFileOut)
         {
             if (uniqueLegacy(mc))
             {
-                mc->saveToFile(hFileOut);
+                mc->saveToFile(fpOut);
                 savedCount++;
 
                 // In this case, for the legacy comparer, it has placed the 'mc' in the 'm_inFileLegacy' table, so we
@@ -153,7 +153,7 @@ bool RemoveDup::CopyAndRemoveDups(const char* nameOfInput, HANDLE hFileOut)
         {
             if (unique(mc))
             {
-                mc->saveToFile(hFileOut);
+                mc->saveToFile(fpOut);
                 savedCount++;
             }
             delete mc; // we no longer need this
