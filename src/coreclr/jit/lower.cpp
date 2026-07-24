@@ -5199,6 +5199,29 @@ struct LowerFieldListRegisterInfo
     }
 };
 
+#if defined(TARGET_XARCH)
+static bool IsFloatPairFieldListRegister(GenTreeFieldList::Use* use,
+                                         unsigned               regStart,
+                                         unsigned               regEnd,
+                                         var_types              regType)
+{
+    if ((regType != TYP_DOUBLE) || (use == nullptr) || (use->GetType() != TYP_FLOAT) || (use->GetOffset() != regStart))
+    {
+        return false;
+    }
+
+    GenTreeFieldList::Use* secondUse = use->GetNext();
+    if ((secondUse == nullptr) || (secondUse->GetType() != TYP_FLOAT) ||
+        (secondUse->GetOffset() != regStart + genTypeSize(TYP_FLOAT)))
+    {
+        return false;
+    }
+
+    GenTreeFieldList::Use* nextUse = secondUse->GetNext();
+    return (nextUse == nullptr) || (nextUse->GetOffset() >= regEnd);
+}
+#endif // TARGET_XARCH
+
 //----------------------------------------------------------------------------------------------
 // LowerRetFieldList:
 //   Lower a returned FIELD_LIST node.
@@ -5372,6 +5395,12 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
             return false;
         }
 
+#if defined(TARGET_XARCH)
+        bool supportsFloatPairInsertion = IsFloatPairFieldListRegister(use, regStart, regEnd, regType);
+#else
+        bool supportsFloatPairInsertion = false;
+#endif // TARGET_XARCH
+
         do
         {
             unsigned fieldStart = use->GetOffset();
@@ -5396,12 +5425,15 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
                 return false;
             }
 
-            // float -> float insertions are not yet supported
+            // A pair of floats can be directly reconstructed in an 8-byte floating-point register.
             if (varTypeUsesFloatReg(use->GetNode()) && varTypeUsesFloatReg(regType) && (fieldStart != regStart))
             {
-                JITDUMP("it is not; field [%06u] requires an insertion into register %u\n",
-                        Compiler::dspTreeID(use->GetNode()), i);
-                return false;
+                if (!supportsFloatPairInsertion)
+                {
+                    JITDUMP("it is not; field [%06u] requires an insertion into register %u\n",
+                            Compiler::dspTreeID(use->GetNode()), i);
+                    return false;
+                }
             }
 
             // int -> float is currently only supported if we can do it as a single bitcast (i.e. without insertions
@@ -5464,6 +5496,28 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
 
         GenTree* fieldListPrev = fieldList->gtPrev;
 
+#if defined(TARGET_XARCH)
+        if (IsFloatPairFieldListRegister(use, regStart, regEnd, regType))
+        {
+            GenTreeFieldList::Use* secondUse = use->GetNext();
+            GenTree* firstVector = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, use->GetNode(), TYP_FLOAT, 16);
+            GenTree* secondVector =
+                InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, secondUse->GetNode(), TYP_FLOAT, 16);
+
+            GenTree* value = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, firstVector, secondVector,
+                                                                  NI_X86Base_UnpackLow, TYP_FLOAT, 16);
+            BlockRange().InsertBefore(fieldList, value);
+
+            regEntry->SetNode(value);
+            regEntry->SetType(TYP_SIMD16);
+            regEntry->SetNext(secondUse->GetNext());
+            use = regEntry->GetNext();
+
+            LowerNode(value);
+
+            continue;
+        }
+#endif // TARGET_XARCH
         do
         {
             unsigned fieldStart = use->GetOffset();
@@ -9214,13 +9268,23 @@ void Lowering::FindInducedParameterRegisterLocals()
                 continue;
             }
 
-            // TODO-CQ: Float -> !float extractions are not supported
-            // TODO-CQ: Float -> float extractions with non-zero offset is not supported
+#ifdef FEATURE_SIMD
+            if (varTypeIsSIMD(segment.GetRegisterType()) &&
+                (varTypeIsSIMD(fld) ? (fld->GetLclOffs() != segment.Offset)
+                                    : (((fld->GetLclOffs() - segment.Offset) % genTypeSize(fld)) != 0)))
+            {
+                continue;
+            }
+#endif // FEATURE_SIMD
+
+#ifdef TARGET_ARM
+            // The scalar extraction below can require TYP_LONG nodes, which are not legal after decomposition.
             if (genIsValidFloatReg(segment.GetRegister()) &&
                 (!varTypeUsesFloatReg(fld) || (fld->GetLclOffs() != segment.Offset)))
             {
                 continue;
             }
+#endif // TARGET_ARM
 
             // Found a register segment this field is contained in
             regSegment = &segment;
@@ -9289,26 +9353,39 @@ void Lowering::FindInducedParameterRegisterLocals()
 
         GenTree* value = m_compiler->gtNewLclVarNode(remappedLclNum);
 
-#ifdef TARGET_WASM
-        if (varTypeIsSIMD(value) && !varTypeIsSIMD(fld))
-        {
-            // Unlike native targets, wasm cannot reinterpret a v128 local access as a scalar.
-            const unsigned laneOffset = fld->GetLclOffs() - regSegment->Offset;
-            const unsigned scalarSize = genTypeSize(fld);
-            assert((laneOffset % scalarSize) == 0);
+        bool useSimdGetElement = false;
+#ifdef FEATURE_SIMD
+        useSimdGetElement = varTypeIsSIMD(value) && !varTypeIsSIMD(fld);
 
-            const unsigned laneIndex = laneOffset / scalarSize;
-            value                    = m_compiler->gtNewSimdGetElementNode(fld->TypeGet(), value,
-                                                                           m_compiler->gtNewIconNode(static_cast<ssize_t>(laneIndex)),
-                                                                           fld->TypeGet(), genTypeSize(value));
+#ifndef TARGET_WASM
+        if (!useSimdGetElement && varTypeIsFloating(value) && varTypeIsFloating(fld) &&
+            (fld->GetLclOffs() != regSegment->Offset) &&
+            (((fld->GetLclOffs() - regSegment->Offset) % genTypeSize(fld)) == 0))
+        {
+            assert(value->TypeIs(TYP_DOUBLE));
+            assert(fld->TypeIs(TYP_FLOAT));
+            value->gtType     = TYP_SIMD8;
+            useSimdGetElement = true;
         }
-        else if (varTypeUsesFloatReg(value))
-#else
-        if (varTypeUsesFloatReg(value))
-#endif // TARGET_WASM
-        {
-            assert(fld->GetLclOffs() == regSegment->Offset);
+#endif // !TARGET_WASM
+#endif // FEATURE_SIMD
 
+        if (useSimdGetElement)
+        {
+#ifdef FEATURE_SIMD
+            unsigned laneOffset = fld->GetLclOffs() - regSegment->Offset;
+            assert((laneOffset % genTypeSize(fld)) == 0);
+
+            unsigned laneIndex = laneOffset / genTypeSize(fld);
+            value              = m_compiler->gtNewSimdGetElementNode(fld->TypeGet(), value,
+                                                                     m_compiler->gtNewIconNode((ssize_t)laneIndex), fld->TypeGet(),
+                                                                     genTypeSize(value));
+#else
+            unreached();
+#endif // FEATURE_SIMD
+        }
+        else if (varTypeUsesFloatReg(value) && varTypeUsesFloatReg(fld) && (fld->GetLclOffs() == regSegment->Offset))
+        {
             value->gtType = fld->TypeGet();
 
 #ifdef FEATURE_SIMD
@@ -9323,6 +9400,11 @@ void Lowering::FindInducedParameterRegisterLocals()
         }
         else
         {
+            if (varTypeUsesFloatReg(value))
+            {
+                value = m_compiler->gtNewBitCastNode(genTypeSize(value) == 8 ? TYP_LONG : TYP_INT, value);
+            }
+
             var_types registerType = value->TypeGet();
 
             if (fld->GetLclOffs() > regSegment->Offset)
