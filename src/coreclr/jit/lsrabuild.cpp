@@ -469,6 +469,29 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
                 checkConflictingDefUse(rp);
                 rp->lastUse = true;
             }
+
+            if (theInterval->isConstant && (regType(theInterval->registerType) != IntRegisterType))
+            {
+                // Only floating-point/SIMD/mask constants can be coalesced (see areSameConstantNodes),
+                // so integer constant intervals are never multi-ref and are skipped here.
+                //
+                // This may be a coalesced constant interval, where several identical
+                // floating-point/SIMD/mask constants share a single interval. Once another
+                // reference (a later use, or a later definition coalesced into the interval via
+                // getConstantIntervalForReuse) is added, any earlier use is no longer the last
+                // use, so clear its lastUse flag (mirroring the localVar handling above) to keep
+                // the interval a single continuous live range rather than freeing and re-using its
+                // register mid-range.
+                //
+                // This is checked for every reference (not just uses) because a RefTypeDef can
+                // follow a RefTypeUse when a third occurrence is coalesced after an earlier one has
+                // already been consumed.
+                RefPosition* const prevRP = theInterval->recentRefPosition;
+                if ((prevRP != nullptr) && RefTypeIsUse(prevRP->refType) && (prevRP->bbNum == rp->bbNum))
+                {
+                    prevRP->lastUse = false;
+                }
+            }
         }
 
         RefPosition* prevRP = theReferent->recentRefPosition;
@@ -2962,6 +2985,259 @@ void setTgtPref(Interval* interval, RefPosition* tgtPrefUse)
 #endif // !TARGET_ARM
 
 //------------------------------------------------------------------------
+// areSameConstantNodes: Determine whether two floating-point, SIMD, or mask
+//                       constant nodes represent an identical value that can
+//                       share a single register.
+//
+// Arguments:
+//    tree1 - The first constant node
+//    tree2 - The second constant node
+//
+// Return Value:
+//    True iff both nodes are the same kind of FP/SIMD/mask constant, have the
+//    same type, and hold a bitwise-identical value.
+//
+// Notes:
+//    Only GT_CNS_DBL, GT_CNS_VEC, and GT_CNS_MSK are considered. These constants
+//    have no GC liveness considerations, so they can be freely coalesced.
+//
+/* static */ bool LinearScan::areSameConstantNodes(GenTree* tree1, GenTree* tree2)
+{
+    if (tree1->OperGet() != tree2->OperGet())
+    {
+        return false;
+    }
+
+    if (tree1->TypeGet() != tree2->TypeGet())
+    {
+        return false;
+    }
+
+    switch (tree1->OperGet())
+    {
+        case GT_CNS_DBL:
+        {
+            // For floating point constants, the values must be identical, not simply compare
+            // equal. So we compare the bits.
+            return tree1->AsDblCon()->isBitwiseEqual(tree2->AsDblCon());
+        }
+
+#if defined(FEATURE_SIMD)
+        case GT_CNS_VEC:
+        {
+            return GenTreeVecCon::Equals(tree1->AsVecCon(), tree2->AsVecCon());
+        }
+#endif // FEATURE_SIMD
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case GT_CNS_MSK:
+        {
+            return GenTreeMskCon::Equals(tree1->AsMskCon(), tree2->AsMskCon());
+        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+        default:
+        {
+            return false;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// getConsumingNode: Find the non-contained node that ultimately consumes the
+//                   value produced by 'node' within the current block.
+//
+// Arguments:
+//    node - The node whose consumer is sought
+//
+// Return Value:
+//    The first non-contained user of 'node', walking through any contained
+//    intermediate users (e.g. a contained FIELD_LIST), or nullptr if no such
+//    user exists.
+//
+// Notes:
+//    The returned node identifies the LSRA location at which 'node' is used,
+//    since uses are built when the consuming (non-contained) node is processed.
+//    This is used to detect when two constants would be used at the same location.
+//
+GenTree* LinearScan::getConsumingNode(GenTree* node)
+{
+    LIR::Range& blockRange = LIR::AsRange(m_compiler->compCurBB);
+
+    LIR::Use use;
+    while (blockRange.TryGetUse(node, &use))
+    {
+        GenTree* user = use.User();
+
+        if ((user == nullptr) || !user->isContained())
+        {
+            return user;
+        }
+
+        node = user;
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// constantConsumerReusesOperandReg: Determine whether 'consumer' reads-modifies-writes
+//    one of its register operands, reusing that operand's register for its own result.
+//
+// Arguments:
+//    consumer - The non-contained node that consumes a constant value (or nullptr)
+//
+// Return Value:
+//    True if 'consumer' may reuse one of its source registers for its destination
+//    (read-modify-write), or if the consumer could not be determined.
+//
+// Notes:
+//    A coalesced (multi-reference) constant that feeds such a consumer is unsafe: when
+//    the shared register is reused for the consumer's result, it is clobbered at the very
+//    point of use, while later references of the coalesced interval still expect the
+//    constant value. Because a coalesced constant is spillable, the allocator may then
+//    store-spill the (already clobbered) register and reload that garbage for the later
+//    uses, producing incorrect results under register pressure.
+//
+//    This is intentionally conservative: it declines coalescing whenever any consumer is a
+//    read-modify-write operation, without distinguishing which operand is reused. The
+//    restriction can be relaxed once spilled floating-point/SIMD/mask constants are
+//    rematerialized rather than stored and reloaded.
+//
+bool LinearScan::constantConsumerReusesOperandReg(GenTree* consumer)
+{
+    if (consumer == nullptr)
+    {
+        // The consumer could not be determined, so conservatively assume the worst.
+        return true;
+    }
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (consumer->OperIsHWIntrinsic())
+    {
+        // Read-modify-write intrinsics (for example the fused-multiply-add family) reuse one
+        // of their source registers as the destination. This is the common cross-target case.
+        return consumer->isRMWHWIntrinsic(m_compiler);
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+#ifdef TARGET_XARCH
+    // Without VEX, a binary floating-point operation reuses op1's register as its destination.
+    // With VEX (the common case) such operations use the non-destructive three-operand form, so
+    // no register is reused; checking the ISA first lets us skip the operand/oper inspection.
+    if (!m_compiler->canUseVexEncoding() && consumer->OperIsBinary())
+    {
+        return isRMWRegOper(consumer);
+    }
+#endif // TARGET_XARCH
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// getConstantIntervalForReuse: If an identical floating-point/SIMD/mask constant
+//                              is still pending in the defList, return its interval
+//                              so the new definition can be coalesced into it.
+//
+// Arguments:
+//    tree - The constant node currently being defined
+//
+// Return Value:
+//    The existing constant Interval to reuse, or nullptr if none is available.
+//
+// Notes:
+//    A matching def still present in the defList means the earlier constant has
+//    not yet been consumed and therefore overlaps this definition. Coalescing the
+//    two into a single interval lets the allocator keep the value in one register
+//    and elide the redundant re-materialization.
+//
+//    Constants that are consumed by the same node are not coalesced, since that
+//    would require the shared interval to be in multiple registers at a single
+//    location (see below).
+//
+//    Only applied when optimizing. Constant nodes are single-use in LIR and the
+//    defList is per-block, so any match is guaranteed to be within the current block.
+//
+Interval* LinearScan::getConstantIntervalForReuse(GenTree* tree)
+{
+    assert(m_compiler->opts.OptimizationEnabled());
+    assert(!tree->IsMultiRegNode());
+    assert(tree->IsCnsFltOrDbl() || tree->IsCnsVec() || tree->IsCnsMsk());
+
+    // Only coalesce a plain, single-register definition that feeds a parent use.
+    if (!enregisterLocalVars || tree->IsUnusedValue() || (tree->GetRegNum() != REG_NA))
+    {
+        return nullptr;
+    }
+
+    // The consumer of 'tree' is computed lazily on the first matching candidate, since most
+    // definitions will not find one and we want to avoid the range walk otherwise.
+    GenTree*  treeConsumer    = nullptr;
+    bool      gotTreeConsumer = false;
+    Interval* candidate       = nullptr;
+
+    for (RefInfoListNode *listNode = defList.Begin(), *end = defList.End(); listNode != end;
+         listNode = listNode->Next())
+    {
+        GenTree* defNode = listNode->treeNode;
+
+        if (!areSameConstantNodes(tree, defNode))
+        {
+            continue;
+        }
+
+        Interval* interval = listNode->ref->getInterval();
+
+        if (!interval->isConstant)
+        {
+            continue;
+        }
+
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        // Values needing a partial callee-save may have their upper bits saved/restored
+        // around calls, so they can't be blindly reused.
+        if (Compiler::varTypeNeedsPartialCalleeSave(interval->registerType))
+        {
+            continue;
+        }
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+
+        // Two constants that are consumed by the same node must not be coalesced: doing so
+        // would force the single resulting interval to satisfy multiple uses at the same
+        // location, each of which may require a distinct fixed register (for example the
+        // operands of a FIELD_LIST feeding a multi-register return or call argument). A single
+        // interval cannot occupy several registers at once. Because an interval may already
+        // have earlier definitions coalesced into it, every matching pending definition is
+        // checked, and any conflict (or an undeterminable consumer) disables coalescing for
+        // this constant entirely so it is materialized independently.
+        if (!gotTreeConsumer)
+        {
+            treeConsumer    = getConsumingNode(tree);
+            gotTreeConsumer = true;
+
+            if ((treeConsumer == nullptr) || constantConsumerReusesOperandReg(treeConsumer))
+            {
+                return nullptr;
+            }
+        }
+
+        GenTree* defConsumer = getConsumingNode(defNode);
+
+        if ((defConsumer == nullptr) || (defConsumer == treeConsumer) || constantConsumerReusesOperandReg(defConsumer))
+        {
+            return nullptr;
+        }
+
+        if (candidate == nullptr)
+        {
+            candidate = interval;
+        }
+    }
+
+    return candidate;
+}
+
+//------------------------------------------------------------------------
 // BuildDef: Build one RefTypeDef RefPosition for the given node at given index
 //
 // Arguments:
@@ -2996,13 +3272,27 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
         type = tree->GetRegTypeByIndex(multiRegIdx);
     }
 
+    Interval* interval = nullptr;
+
     if (!varTypeUsesIntReg(type))
     {
         m_compiler->compFloatingPointUsed = true;
         needToKillFloatRegs               = true;
+
+        if (m_compiler->opts.OptimizationEnabled())
+        {
+            if (tree->IsCnsFltOrDbl() || tree->IsCnsVec() || tree->IsCnsMsk())
+            {
+                interval = getConstantIntervalForReuse(tree);
+            }
+        }
     }
 
-    Interval* interval = newInterval(type);
+    if (interval == nullptr)
+    {
+        interval = newInterval(type);
+    }
+
     if (tree->GetRegNum() != REG_NA)
     {
         if (!tree->IsMultiRegNode() || (multiRegIdx == 0))
@@ -3026,6 +3316,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
         assert(dstCandidates != RBM_NONE);
     }
 #endif // TARGET_X86
+
     if (pendingDelayFree)
     {
         interval->hasInterferingUses = true;

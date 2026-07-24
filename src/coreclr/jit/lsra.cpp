@@ -4151,6 +4151,14 @@ bool LinearScan::canRestorePreviousInterval(RegRecord* regRec, Interval* assigne
         (regRec->previousInterval != nullptr && regRec->previousInterval != assignedInterval &&
          regRec->previousInterval->assignedReg == regRec && regRec->previousInterval->getNextRefPosition() != nullptr);
 
+    // A constant interval that had its register borrowed by another definition no longer holds its
+    // value in that register, so it must not be restored (the value would need to be rematerialized).
+    // Restoring it would leave the register marked as holding a constant it no longer contains.
+    if (retVal && regRec->previousInterval->isConstant)
+    {
+        retVal = false;
+    }
+
 #ifdef TARGET_ARM
     if (retVal && regRec->previousInterval->registerType == TYP_DOUBLE)
     {
@@ -6308,6 +6316,17 @@ void LinearScan::allocateRegisters()
                             currentRefPosition.reload = true;
                         }
                     }
+                    else if (RefTypeIsDef(refType) && currentInterval->isConstant &&
+                             (currentRefPosition.treeNode != nullptr) &&
+                             isRegConstant(assignedRegister, currentInterval->registerType))
+                    {
+                        // This is a redefinition of a constant interval that is already
+                        // materialized in this register (an identical constant was coalesced
+                        // into this interval at build time). Reuse the value in place rather
+                        // than re-materializing it.
+                        assert(m_compiler->opts.OptimizationEnabled());
+                        currentRefPosition.treeNode->SetReuseRegVal();
+                    }
                     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, currentInterval, assignedRegister));
                 }
             }
@@ -7790,8 +7809,16 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
             }
             else if (refPosition->reload)
             {
-                assert(currentSpill[type] > 0);
-                currentSpill[type]--;
+                // A coalesced constant interval can be reloaded for one use and immediately
+                // re-spilled for a later use at the same refposition. The reload releases the
+                // spill temp while the re-spill reserves a new one, so the concurrent spill
+                // count is unchanged. Only a reload without a subsequent spill frees the temp.
+                // For all other (single-use) intervals reload and spillAfter never coincide.
+                if (!(interval->isConstant && refPosition->spillAfter))
+                {
+                    assert(currentSpill[type] > 0);
+                    currentSpill[type]--;
+                }
             }
             else if (refPosition->RegOptional() && refPosition->assignedReg() == REG_NA)
             {
@@ -7800,8 +7827,18 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                 // memory location.  To properly account max spill for typ we
                 // decrement spill count.
                 assert(RefTypeIsUse(refType));
-                assert(currentSpill[type] > 0);
-                currentSpill[type]--;
+
+                // A constant use that is not assigned a register reads its value directly from
+                // the read-only data section rather than from a spill temp, so there is no spill
+                // temp to release here. A constant def is only store-spilled when a later use
+                // needs the value in a register (i.e. that use is a reload), and the temp is
+                // released on that reload instead. For all other intervals the memory operand is
+                // the spill temp, which this use frees.
+                if (!interval->isConstant)
+                {
+                    assert(currentSpill[type] > 0);
+                    currentSpill[type]--;
+                }
             }
             JITDUMP("  Max spill for %s is %d\n", varTypeName(type), maxSpill[type]);
         }
