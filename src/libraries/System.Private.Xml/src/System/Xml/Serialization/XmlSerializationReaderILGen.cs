@@ -43,6 +43,7 @@ namespace System.Xml.Serialization
             private readonly MemberMapping _mapping;
             private readonly bool _isArray;
             private readonly bool _isList;
+            private bool _isBuilderBacked;
             private bool _isNullable;
             private int _fixupIndex = -1;
             private string? _paramsReadSource;
@@ -83,6 +84,18 @@ namespace System.Xml.Serialization
                         _arraySource = XmlSerializationReaderILGen.GetArraySource(mapping.TypeDesc, _arrayName, multiRef);
                     _isArray = mapping.TypeDesc.IsArray;
                     _isList = !_isArray;
+                    // Builder-backed immutable collections (e.g. ImmutableArray<T>, ImmutableList<T>,
+                    // ImmutableStack<T>) are accumulated into a T[] like real arrays and finalized with a
+                    // factory call in WriteMemberEnd. Treat them as array-like for source-string purposes.
+                    _isBuilderBacked = mapping.TypeDesc.UsesCollectionBuilder;
+                    if (_isBuilderBacked && arraySource == null)
+                    {
+                        string a = _arrayName;
+                        string c = $"c{a}";
+                        string elementTypeFullName = mapping.TypeDesc.ArrayElementTypeDesc!.CSharpName;
+                        string init = $"{a} = ({elementTypeFullName}[])EnsureArrayIndex({a}, {c}, {ReflectionAwareILGen.GetStringForTypeof(elementTypeFullName)});";
+                        _arraySource = init + ReflectionAwareILGen.GetStringForArrayMember(a, $"{c}++");
+                    }
                     if (mapping.ChoiceIdentifier != null)
                     {
                         _choiceArraySource = XmlSerializationReaderILGen.GetArraySource(mapping.TypeDesc, _choiceArrayName, multiRef);
@@ -131,6 +144,11 @@ namespace System.Xml.Serialization
             internal bool IsList
             {
                 get { return _isList; }
+            }
+
+            internal bool IsBuilderBacked
+            {
+                get { return _isBuilderBacked; }
             }
 
             internal bool IsArrayLike
@@ -1235,7 +1253,7 @@ namespace System.Xml.Serialization
                     }
                     else if (m is ArrayMapping arrayMapping)
                     {
-                        if (arrayMapping.TypeDesc!.HasDefaultConstructor)
+                        if (arrayMapping.TypeDesc!.HasDefaultConstructor || arrayMapping.TypeDesc.UsesCollectionBuilder)
                         {
                             ilg.InitElseIf();
                             WriteQNameEqual("xsiType", arrayMapping.TypeName, arrayMapping.Namespace);
@@ -2146,6 +2164,22 @@ namespace System.Xml.Serialization
                             ilg.Stloc(typeof(int), $"c{member.ChoiceArrayName}");
                         }
                     }
+                    else if (member.IsBuilderBacked)
+                    {
+                        // Accumulate items into a T[] rather than into a live instance of the target
+                        // collection. This deliberately mirrors the existing xml-array path (declared
+                        // just above) so we can reuse the well-established EnsureArrayIndex / ShrinkArray
+                        // machinery: element-writer IL appends to `a[c++]` via EnsureArrayIndex, which
+                        // geometrically grows the array as needed, and WriteMemberEnd trims it and passes
+                        // it to the [CollectionBuilder] factory. Using a List<T> here instead would still
+                        // require materializing a T[] to hand to the factory (whose signature is
+                        // `Create(T[])` or `Create(ReadOnlySpan<T>)`) and would fork the per-element IL
+                        // emission for no real benefit.
+                        TypeDesc elementTypeDesc = typeDesc.ArrayElementTypeDesc!;
+                        WriteArrayLocalDecl($"{elementTypeDesc.CSharpName}[]", a, "null", elementTypeDesc);
+                        ilg.Ldc(0);
+                        ilg.Stloc(typeof(int), c);
+                    }
                     else
                     {
                         if (member.Source.EndsWith('(') || member.Source.EndsWith('{'))
@@ -2661,6 +2695,66 @@ namespace System.Xml.Serialization
                             ilg.ConvertValue(XmlSerializationReader_ShrinkArray.ReturnType, member.Mapping.ChoiceIdentifier.Mapping.TypeDesc.Type!.MakeArrayType());
                             WriteSourceEnd(member.ChoiceSource!, member.Mapping.ChoiceIdentifier.Mapping.TypeDesc.Type!.MakeArrayType());
                         }
+                    }
+                    else if (member.IsBuilderBacked)
+                    {
+                        // Right-size the accumulator T[], optionally reverse for ImmutableStack to preserve
+                        // enumeration order on round-trip, then invoke the [CollectionBuilder] factory and
+                        // store the immutable result into the member.
+                        Debug.Assert(!soapRefs);
+
+                        string a = member.ArrayName;
+                        string c = $"c{a}";
+                        Type elementType = typeDesc.ArrayElementTypeDesc!.Type!;
+                        Type arrayType = elementType.MakeArrayType();
+                        MethodInfo factory = typeDesc.CollectionBuilderMethod!;
+                        bool isStack = typeDesc.Type!.IsGenericType &&
+                            typeDesc.Type.GetGenericTypeDefinition().FullName == "System.Collections.Immutable.ImmutableStack`1";
+
+                        MethodInfo XmlSerializationReader_ShrinkArray = typeof(XmlSerializationReader).GetMethod(
+                            "ShrinkArray",
+                            CodeGenerator.InstanceBindingFlags,
+                            new Type[] { typeof(Array), typeof(int), typeof(Type), typeof(bool) }
+                            )!;
+
+                        WriteSourceBegin(member.Source);
+
+                        // ShrinkArray trims the accumulator to its exact used length. The array-emitter
+                        // path (WriteMemberBegin above + EnsureArrayIndex on each append) geometrically
+                        // grows `a` so it typically ends up over-sized by up to 2x; ShrinkArray returns a
+                        // right-sized Array (or an empty singleton when count==0 and IsNullable is false).
+                        // We then cast back to T[] before passing it to the [CollectionBuilder] factory.
+                        ilg.Ldarg(0);
+                        ilg.Ldloc(ilg.GetLocal(a));
+                        ilg.Ldloc(ilg.GetLocal(c));
+                        ilg.Ldc(elementType);
+                        ilg.Ldc(member.IsNullable);
+                        ilg.Call(XmlSerializationReader_ShrinkArray);
+                        ilg.Castclass(arrayType);
+
+                        if (isStack)
+                        {
+                            // Array.Reverse(Array) is void; reverse in place then reload.
+                            LocalBuilder tmp = ilg.DeclareOrGetLocal(arrayType, $"tmp_{a}");
+                            ilg.Stloc(tmp);
+                            ilg.Ldloc(tmp);
+                            MethodInfo arrayReverse = typeof(Array).GetMethod("Reverse", new Type[] { typeof(Array) })!;
+                            ilg.Call(arrayReverse);
+                            ilg.Ldloc(tmp);
+                        }
+
+                        ParameterInfo[] factoryPars = factory.GetParameters();
+                        Type factoryParamType = factoryPars[0].ParameterType;
+                        if (factoryParamType.IsGenericType && factoryParamType.GetGenericTypeDefinition() == typeof(ReadOnlySpan<>))
+                        {
+                            // Convert T[] -> ReadOnlySpan<T> via the implicit conversion operator.
+                            MethodInfo op = factoryParamType.GetMethod("op_Implicit", BindingFlags.Public | BindingFlags.Static, new Type[] { arrayType })!;
+                            ilg.Call(op);
+                        }
+
+                        ilg.Call(factory);
+                        ilg.ConvertValue(factory.ReturnType, typeDesc.Type!);
+                        WriteSourceEnd(member.Source, typeDesc.Type!);
                     }
                     else if (typeDesc.IsValueType)
                     {
