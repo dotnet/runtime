@@ -38,6 +38,14 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetCrashInfoBuffer")]
         internal static extern unsafe byte* RhGetCrashInfoBuffer(out int cbMaxSize);
 
+        // Registers the class library callback that routes a genuinely-unmanaged fatal
+        // exception to a user-installed fatal error handler. Passing null (the default)
+        // leaves the runtime's default fatal handling unchanged.
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpRegisterFatalErrorHandlerForNativeException")]
+        internal static extern unsafe void RhpRegisterFatalErrorHandlerForNativeException(
+            delegate* unmanaged<int, void*, void*, void*, int> pCallback);
+
 #if TARGET_UNIX
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCreateCrashDumpIfEnabled")]

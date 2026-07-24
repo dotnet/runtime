@@ -17,6 +17,9 @@
 
 extern "C" UINT_PTR STDCALL GetCurrentIP();
 
+// The user-registered fatal error handler.
+extern void* s_fatalErrorHandler;
+
 // EEPolicy maintains actions for resource failure and timeout
 class EEPolicy
 {
