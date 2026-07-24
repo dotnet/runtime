@@ -9263,17 +9263,36 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber reg, regNum
     emitIns_R_ARX(ins, attr, reg, base, REG_NA, 1, disp);
 }
 
-void emitter::emitIns_R_AI(instruction  ins,
-                           emitAttr     attr,
-                           regNumber    ireg,
-                           ssize_t disp DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
+void emitter::emitIns_R_AI(instruction         ins,
+                           emitAttr            attr,
+                           regNumber           ireg,
+                           ssize_t             disp,
+                           int32_t relocOffset DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE) && (ireg != REG_NA));
     noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), ireg));
+    assert((relocOffset == 0) || EA_IS_DSP_RELOC(attr));
 
     UNATIVE_OFFSET sz;
-    instrDesc*     id  = emitNewInstrAmd(attr, disp);
-    insFormat      fmt = emitInsModeFormat(ins, IF_RRD_ARD);
+    instrDesc*     id;
+    if (relocOffset == 0)
+    {
+        id = emitNewInstrAmd(attr, disp);
+    }
+    else
+    {
+        // IF_RRD_ARD has no immediate, so use the large constant slot for the relocation addend.
+        instrDescCnsAmd* relocId = emitAllocInstrCnsAmd(attr);
+        relocId->idSetIsLargeCns();
+        relocId->idSetIsLargeDsp();
+#ifdef DEBUG
+        relocId->idAddr()->iiaAddrMode.amDisp = AM_DISP_BIG_VAL;
+#endif
+        relocId->idacCnsVal = relocOffset;
+        relocId->idacAmdVal = disp;
+        id                  = relocId;
+    }
+    insFormat fmt = emitInsModeFormat(ins, IF_RRD_ARD);
 
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -14425,7 +14444,7 @@ GOT_DSP:
                         dst += emitOutputWord(dst, code | 0x0500);
                     }
 
-                    INT32 addlDelta = 0;
+                    INT32 addlDelta = (addc == nullptr) ? emitGetInsAmdRelocOffset(id) : 0;
 #ifdef TARGET_AMD64
                     if (addc)
                     {

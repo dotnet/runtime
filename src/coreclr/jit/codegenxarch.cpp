@@ -235,7 +235,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
             {
                 // We will use lea so displacement and not immediate will be relocatable
                 size = EA_SET_FLG(EA_REMOVE_FLG(size, EA_CNS_RELOC_FLG), EA_DSP_RELOC_FLG);
-                GetEmitter()->emitIns_R_AI(INS_lea, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+                GetEmitter()->emitIns_R_AI(INS_lea, size, reg, imm, 0 DEBUGARG(targetHandle) DEBUGARG(gtFlags));
             }
             else
             {
@@ -496,8 +496,35 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 }
             }
 
-            instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
-                                   INS_FLAGS_DONT_CARE DEBUGARG(con->GetTargetHandle()) DEBUGARG(con->gtFlags));
+#ifdef TARGET_AMD64
+            if (con->IsIconHandle(GTF_ICON_RELOC_ADDR))
+            {
+                assert(m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+
+                if (m_compiler->opts.compReloc && genDataIndirAddrCanBeEncodedAsPCRelOffset(cnsVal))
+                {
+                    emitAttr leaAttr = EA_SET_FLG(EA_REMOVE_FLG(attr, EA_CNS_RELOC_FLG), EA_DSP_RELOC_FLG);
+                    GetEmitter()->emitIns_R_AI(INS_lea, leaAttr, targetReg, cnsVal,
+                                               con->GetRelocOffset() DEBUGARG(con->GetTargetHandle())
+                                                   DEBUGARG(con->gtFlags));
+                }
+                else
+                {
+                    instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
+                                           INS_FLAGS_DONT_CARE DEBUGARG(con->GetTargetHandle()) DEBUGARG(con->gtFlags));
+                    if (con->GetRelocOffset() != 0)
+                    {
+                        emitAttr addAttr = EA_IS_BYREF(attr) ? EA_BYREF : EA_PTRSIZE;
+                        GetEmitter()->emitIns_R_I(INS_add, addAttr, targetReg, con->GetRelocOffset());
+                    }
+                }
+            }
+            else
+#endif // TARGET_AMD64
+            {
+                instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
+                                       INS_FLAGS_DONT_CARE DEBUGARG(con->GetTargetHandle()) DEBUGARG(con->gtFlags));
+            }
             regSet.verifyRegUsed(targetReg);
         }
         break;

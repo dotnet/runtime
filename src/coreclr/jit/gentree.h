@@ -3431,6 +3431,7 @@ private:
        in AOT mode, the handle in that statement does not correspond to the compile
        time handle (rather it lets you get a handle at run-time).  In that case, we also
        need to store a compile time handle, which goes in this gtCompileTimeHandle field.
+       For GTF_ICON_RELOC_ADDR, this field instead stores the relocation addend.
     */
     ssize_t gtCompileTimeHandle;
 
@@ -3457,6 +3458,19 @@ public:
     void SetCompileTimeHandle(ssize_t compileTimeHandle)
     {
         gtCompileTimeHandle = compileTimeHandle;
+    }
+
+    int32_t GetRelocOffset() const
+    {
+        assert(IsIconHandle(GTF_ICON_RELOC_ADDR));
+        assert(FitsIn<int32_t>(gtCompileTimeHandle));
+        return static_cast<int32_t>(gtCompileTimeHandle);
+    }
+
+    void SetRelocOffset(int32_t offset)
+    {
+        assert(IsIconHandle(GTF_ICON_RELOC_ADDR));
+        gtCompileTimeHandle = offset;
     }
 
     // Accessors for the field sequence. See "gtFieldSeq" above.
