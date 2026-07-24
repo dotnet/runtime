@@ -4548,11 +4548,11 @@ void gc_heap::plan_phase (int condemned_gen_number)
         settings.loh_compaction = FALSE;
     }
 
-#ifdef MULTIPLE_HEAPS
 #ifndef USE_REGIONS
     new_heap_segment = NULL;
 #endif //!USE_REGIONS
 
+#ifdef MULTIPLE_HEAPS
     if (should_compact && should_expand)
         gc_policy = policy_expand;
     else if (should_compact)
@@ -4854,7 +4854,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         if (should_expand)
         {
 #ifndef MULTIPLE_HEAPS
-            heap_segment* new_heap_segment = soh_get_segment_to_expand();
+            new_heap_segment = soh_get_segment_to_expand();
 #endif //!MULTIPLE_HEAPS
             if (new_heap_segment)
             {

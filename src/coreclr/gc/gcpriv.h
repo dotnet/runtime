@@ -3555,6 +3555,14 @@ private:
     PER_HEAP_FIELD_SINGLE_GC heap_segment* new_heap_segment;
 #endif //USE_REGIONS
 #else //MULTIPLE_HEAPS
+#ifndef USE_REGIONS
+    // The expansion segment created by soh_get_segment_to_expand during a compacting GC.
+    // It is deliberately not threaded onto the segment chain until relocation/compaction
+    // completes, so a concurrent card-table grow cannot find it via the generation-list
+    // walk. Recording it here lets commit_new_mark_array re-commit its mark array on the
+    // new array during a grow (see issue #123490).
+    PER_HEAP_FIELD_SINGLE_GC heap_segment* new_heap_segment;
+#endif //USE_REGIONS
     PER_HEAP_FIELD_SINGLE_GC uint8_t* shigh; //keeps track of the highest marked object
     PER_HEAP_FIELD_SINGLE_GC uint8_t* slow; //keeps track of the lowest marked object
 #endif //MULTIPLE_HEAPS
