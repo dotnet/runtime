@@ -1404,8 +1404,8 @@ GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
 
     // Shuffle mask will be used several times, replace with a local
     LIR::Use     shuffleMaskUse(BlockRange(), &node->Op(3), node);
-    unsigned int shuffleMaskTmp = shuffleMaskUse.ReplaceWithLclVar(m_compiler);
-    GenTree* maskReloadForChk = node->Op(3);
+    unsigned int shuffleMaskTmp   = shuffleMaskUse.ReplaceWithLclVar(m_compiler);
+    GenTree*     maskReloadForChk = node->Op(3);
 
     // Insert a bounds check for the shuffle mask. A bounds check against a simd value will be handled by codegen as a
     // GreaterThanAny(vec, bound) type operation.
@@ -1497,8 +1497,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     else if (intrinsicId == NI_PackedSimd_Shuffle && node->Op(3)->IsCnsVec())
     {
         // Shuffle is a special case where the mask is a constant vector immediate
-        // which must be contained. If the mask is non-constant we will re-write the shuffle into a fallback equivalent operation.
-        // (see LowerHWIntrinsicNativeShuffle).
+        // which must be contained. If the mask is non-constant we will re-write the shuffle into a fallback equivalent
+        // operation. (see LowerHWIntrinsicNativeShuffle).
         MakeSrcContained(node, node->Op(3));
     }
 }

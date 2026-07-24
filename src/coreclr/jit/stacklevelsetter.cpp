@@ -277,7 +277,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
         case GT_HWINTRINSIC:
         {
             HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(node->AsHWIntrinsic()->GetHWIntrinsicId());
-            NamedIntrinsic     intrinsicId = node->AsHWIntrinsic()->GetHWIntrinsicId();
+            NamedIntrinsic      intrinsicId = node->AsHWIntrinsic()->GetHWIntrinsicId();
             if (category == HW_Category_MemoryLoad || category == HW_Category_MemoryStore)
             {
                 SetThrowHelperBlock(SCK_NULL_CHECK, block);
@@ -288,7 +288,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
                 if (hwIntrinsic->Op(3)->IsCnsVec())
                 {
                     // If we have an out of range constant shuffle mask, we will need to throw a range check exception.
-                    const simd_t& mask = hwIntrinsic->Op(3)->AsVecCon()->gtSimdVal;
+                    const simd_t& mask       = hwIntrinsic->Op(3)->AsVecCon()->gtSimdVal;
                     bool          allInRange = true;
 
                     for (int i = 0; i < 16; i++)

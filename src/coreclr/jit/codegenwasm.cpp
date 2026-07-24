@@ -2288,7 +2288,6 @@ void CodeGen::genRangeCheck(GenTree* tree)
     genJumpToThrowHlpBlk(boundsCheck->gtThrowKind);
 }
 
-
 //------------------------------------------------------------------------
 // genCodeForIndexAddr: Produce code for a GT_INDEX_ADDR node.
 //
