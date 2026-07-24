@@ -11,8 +11,8 @@ using Xunit;
 
 #nullable enable
 
-namespace Wasm.Build.Tests
-{
+namespace Wasm.Build.Tests;
+
     [TestCategory("no-workload")]
     public class GenerateWasmBootJsonTests
     {
@@ -215,5 +215,4 @@ namespace Wasm.Build.Tests
                 }
             }
         }
-    }
 }
