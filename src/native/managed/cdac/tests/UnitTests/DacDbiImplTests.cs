@@ -1259,7 +1259,6 @@ public unsafe class DacDbiImplTests
         rts.Setup(r => r.GetMethodDescHandle(methodDescPointer)).Returns(methodDesc);
         rts.SetupSequence(r => r.GetMethodTable(methodDesc))
             .Returns(methodTablePointer)
-            .Returns(methodTablePointer)
             .Throws<VirtualReadException>();
         rts.Setup(r => r.GetTypeHandle(methodTablePointer)).Returns(methodTable);
         rts.Setup(r => r.GetModule(methodTable)).Throws<VirtualReadException>();
