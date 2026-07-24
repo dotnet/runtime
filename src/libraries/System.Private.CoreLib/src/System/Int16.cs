@@ -8,6 +8,9 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -290,6 +293,29 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         public static short PopCount(short value) => (short)BitOperations.PopCount((ushort)value);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.ReverseBits(TSelf)"/>
+        public static short ReverseBits(short value)
+        {
+            if (Gfni.IsSupported)
+            {
+                Vector128<byte> vec = Vector128.CreateScalarUnsafe(value).AsByte();
+                vec = Gfni.GaloisFieldAffineTransform(vec, Vector128.Create(0x8040201008040201).AsByte(), 0);
+                return BinaryPrimitives.ReverseEndianness(vec.AsInt16().ToScalar());
+            }
+            else if (ArmBase.IsSupported)
+            {
+                int i = ArmBase.ReverseElementBits(value);
+                return (short)(i >>> 16);
+            }
+            else
+            {
+                value = (short)(((value & 0xF0F0) >>> 4) | ((value & 0x0F0F) << 4));
+                value = (short)(((value & 0xCCCC) >>> 2) | ((value & 0x3333) << 2));
+                value = (short)(((value & 0xAAAA) >>> 1) | ((value & 0x5555) << 1));
+                return BinaryPrimitives.ReverseEndianness(value);
+            }
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
         public static short RotateLeft(short value, int rotateAmount) => (short)((value << (rotateAmount & 15)) | ((ushort)value >> ((16 - rotateAmount) & 15)));

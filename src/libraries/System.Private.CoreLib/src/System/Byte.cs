@@ -6,6 +6,9 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -286,6 +289,29 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
         public static byte RotateRight(byte value, int rotateAmount) => (byte)((value >> (rotateAmount & 7)) | (value << ((8 - rotateAmount) & 7)));
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.ReverseBits(TSelf)"/>
+        public static byte ReverseBits(byte value)
+        {
+            if (Gfni.IsSupported)
+            {
+                Vector128<byte> vec = Vector128.CreateScalarUnsafe(value);
+                vec = Gfni.GaloisFieldAffineTransform(vec, Vector128.Create(0x8040201008040201).AsByte(), 0);
+                return vec.ToScalar();
+            }
+            else if (ArmBase.IsSupported)
+            {
+                int i = ArmBase.ReverseElementBits(value);
+                return (byte)(i >>> 24);
+            }
+            else
+            {
+                value = (byte)(((value & 0xF0) >>> 4) | ((value & 0x0F) << 4));
+                value = (byte)(((value & 0xCC) >>> 2) | ((value & 0x33) << 2));
+                value = (byte)(((value & 0xAA) >>> 1) | ((value & 0x55) << 1));
+                return value;
+            }
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
         public static byte TrailingZeroCount(byte value) => (byte)(BitOperations.TrailingZeroCount(value << 24) - 24);

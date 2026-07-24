@@ -7,6 +7,9 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -293,6 +296,29 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         public static sbyte PopCount(sbyte value) => (sbyte)BitOperations.PopCount((byte)value);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.ReverseBits(TSelf)"/>
+        public static sbyte ReverseBits(sbyte value)
+        {
+            if (Gfni.IsSupported)
+            {
+                Vector128<byte> vec = Vector128.CreateScalarUnsafe(value).AsByte();
+                vec = Gfni.GaloisFieldAffineTransform(vec, Vector128.Create(0x8040201008040201).AsByte(), 0);
+                return vec.AsSByte().ToScalar();
+            }
+            else if (ArmBase.IsSupported)
+            {
+                int i = ArmBase.ReverseElementBits(value);
+                return (sbyte)(i >>> 24);
+            }
+            else
+            {
+                value = (sbyte)(((value & 0xF0) >>> 4) | ((value & 0x0F) << 4));
+                value = (sbyte)(((value & 0xCC) >>> 2) | ((value & 0x33) << 2));
+                value = (sbyte)(((value & 0xAA) >>> 1) | ((value & 0x55) << 1));
+                return value;
+            }
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
         public static sbyte RotateLeft(sbyte value, int rotateAmount) => (sbyte)((value << (rotateAmount & 7)) | ((byte)value >> ((8 - rotateAmount) & 7)));
