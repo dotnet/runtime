@@ -74,6 +74,9 @@ static TADDR s_nextVirtualIP = 0x80000001;
 
 #ifndef DACCESS_COMPILE
 
+// Global flag set when APX instruction set is available (enables JMPABS)
+bool g_IsJmpAbsAvailable = false;
+
 CrstStatic ExecutionManager::m_JumpStubCrst;
 
 unsigned   ExecutionManager::m_normal_JumpStubLookup;
@@ -1590,6 +1593,7 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Apx) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAPX))
     {
         CPUCompileFlags.Set(InstructionSet_APX);
+        g_IsJmpAbsAvailable = true;
     }
 #endif  // TARGET_AMD64
 
