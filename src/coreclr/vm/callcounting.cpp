@@ -878,7 +878,7 @@ void CallCountingManager::StopAndDeleteAllCallCountingStubs()
         ~AutoRestartEE()
         {
             WRAPPER_NO_CONTRACT;
-            ThreadSuspend::RestartEE(false, true);
+            ThreadSuspend::RestartEE(true);
         }
     } autoRestartEE;
 
