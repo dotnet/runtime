@@ -56,7 +56,7 @@ static class Templates
 
     const string SimpleVecOpTest_ValidationLogicForCndSel = @"for (var i = 0; i < RetElementCount; i++)
                 {
-                    {RetBaseType} iterResult = (mask[i] != 0) ? {GetIterResult} : falseVal[i];
+                    {RetBaseType} iterResult = (Helpers.IsMaskActive(mask[i])) ? {GetIterResult} : falseVal[i];
                     if (iterResult != result[i])
                     {
                         succeeded = false;
@@ -76,8 +76,8 @@ static class Templates
 
     const string SimpleVecOpTest_ValidationLogicForCndSel_FalseValue = @"for (var i = 0; i < RetElementCount; i++)
                 {
-                    {RetBaseType} iterResult = (mask[i] != 0) ? trueVal[i] : {GetIterResult};
-                    if (mask[i] != 0)
+                    {RetBaseType} iterResult = (Helpers.IsMaskActive(mask[i])) ? trueVal[i] : {GetIterResult};
+                    if (Helpers.IsMaskActive(mask[i]))
                     {
                         // Pick the trueValue
                         if (iterResult != result[i])
@@ -95,8 +95,8 @@ static class Templates
 
     const string SimpleVecOpTest_ValidationLogicForCndSelForNarrowing = @"for (var i = 0; i < Op1ElementCount; i++)
                 {
-                    {RetBaseType} iterResult = (mask[i] != 0) ? {GetIterResult} : falseVal[i];
-                    if ({ConvertFunc}(iterResult) != {ConvertFunc}(result[i]))
+                    {RetBaseType} iterResult = (Helpers.IsMaskActive(mask[i])) ? {GetIterResult} : falseVal[i];
+                    if (!Helpers.BitwiseEqual(iterResult, result[i]))
                     {
                         succeeded = false;
                         break;
@@ -105,8 +105,8 @@ static class Templates
 
     const string SimpleVecOpTest_ValidationLogicForCndSelForNarrowing_FalseValue = @"for (var i = 0; i < Op1ElementCount; i++)
                 {
-                    {RetBaseType} iterResult = (mask[i] != 0) ? trueVal[i] : {GetIterResult};
-                    if (mask[i] != 0)
+                    {RetBaseType} iterResult = (Helpers.IsMaskActive(mask[i])) ? trueVal[i] : {GetIterResult};
+                    if (Helpers.IsMaskActive(mask[i]))
                     {
                         // Pick the trueValue
                         if ({ConvertFunc}(iterResult) != {ConvertFunc}(result[i]))
@@ -130,10 +130,10 @@ static class Templates
 
                     for (var i = 0; i < vectorResult.Length; i++)
                     {
-                        maskedVectorResult[i] = (mask[i] != 0) ? vectorResult[i] : falseVal[i];
+                        maskedVectorResult[i] = (Helpers.IsMaskActive(mask[i])) ? vectorResult[i] : falseVal[i];
                     }
 
-                    if (!result.SequenceEqual(maskedVectorResult))
+                    if (!Helpers.BitwiseEqual(result, maskedVectorResult))
                     {
                         succeeded = false;
                     }
@@ -146,11 +146,11 @@ static class Templates
 
                     for (var i = 0; i < vectorResult.Length; i++)
                     {
-                        {RetBaseType} iterResult = (mask[i] != 0) ? trueVal[i] : vectorResult[i];
-                        if (mask[i] != 0)
+                        {RetBaseType} iterResult = (Helpers.IsMaskActive(mask[i])) ? trueVal[i] : vectorResult[i];
+                        if (Helpers.IsMaskActive(mask[i]))
                         {
                             // Pick the trueValue
-                            if (iterResult != result[i])
+                            if (!Helpers.BitwiseEqual(iterResult, result[i]))
                             {
                                 succeeded = false;
                                 break;
@@ -166,8 +166,8 @@ static class Templates
 
     const string SimpleTernVecOpTest_ValidationLogicForCndSel = @"for (var i = 0; i < RetElementCount; i++)
                 {
-                    {RetBaseType} iterResult = (mask[i] != 0) ? {GetIterResult} : falseVal[i];
-                    if ({ConvertFunc}(iterResult) != {ConvertFunc}(result[i]))
+                    {RetBaseType} iterResult = (Helpers.IsMaskActive(mask[i])) ? {GetIterResult} : falseVal[i];
+                    if (!Helpers.BitwiseEqual(iterResult, result[i]))
                     {
                         succeeded = false;
                         break;
@@ -176,11 +176,11 @@ static class Templates
 
     const string SimpleTernVecOpTest_ValidationLogicForCndSel_FalseValue = @"for (var i = 0; i < RetElementCount; i++)
                 {
-                    {RetBaseType} iterResult = (mask[i] != 0) ? trueVal[i] : {GetIterResult};
-                    if (mask[i] != 0)
+                    {RetBaseType} iterResult = (Helpers.IsMaskActive(mask[i])) ? trueVal[i] : {GetIterResult};
+                    if (Helpers.IsMaskActive(mask[i]))
                     {
                         // Pick the trueValue
-                        if ({ConvertFunc}(iterResult) !=  {ConvertFunc}(result[i]))
+                        if (!Helpers.BitwiseEqual(iterResult, result[i]))
                         {
                             succeeded = false;
                             break;
@@ -217,7 +217,7 @@ static class Templates
 
     const string VecReduceUnOpTest_VectorValidationLogicForCndSel = @"
                 {
-                    var hasFailed = (mask[0] != 0) ? ({ValidateReduceOpResult}): (falseVal[0] != result[0]);
+                    var hasFailed = (Helpers.IsMaskActive(mask[0])) ? ({ValidateReduceOpResult}): (falseVal[0] != result[0]);
 
                     if (hasFailed)
                     {
@@ -227,7 +227,7 @@ static class Templates
                     {
                         for (var i = 1; i < RetElementCount; i++)
                         {
-                            hasFailed = (mask[i] != 0) ? ({ValidateRemainingResults}) : (falseVal[i] != result[i]);
+                            hasFailed = (Helpers.IsMaskActive(mask[i])) ? ({ValidateRemainingResults}) : (falseVal[i] != result[i]);
                             if (hasFailed)
                             {
                                 succeeded = false;
@@ -239,7 +239,7 @@ static class Templates
 
     const string VecReduceUnOpTest_VectorValidationLogicForCndSel_FalseValue = @"
                 {
-                    var hasFailed = (mask[0] != 0) ? (trueVal[0] != result[0]): ({ValidateReduceOpResult});
+                    var hasFailed = (Helpers.IsMaskActive(mask[0])) ? (trueVal[0] != result[0]): ({ValidateReduceOpResult});
                     if (hasFailed)
                     {
                         succeeded = false;
@@ -248,7 +248,7 @@ static class Templates
                     {
                         for (var i = 1; i < RetElementCount; i++)
                         {
-                            hasFailed = (mask[i] != 0) ? (trueVal[i] != result[i]) : ({ValidateRemainingResults});
+                            hasFailed = (Helpers.IsMaskActive(mask[i])) ? (trueVal[i] != result[i]) : ({ValidateRemainingResults});
                             if (hasFailed)
                             {
                                 succeeded = false;
@@ -412,5 +412,5 @@ static class Templates
     public static TemplateConfig VectorLookup_2Test = new TemplateConfig("VectorLookup_2Test.template");
     public static TemplateConfig VectorLookup_3Test = new TemplateConfig("VectorLookup_3Test.template");
     public static TemplateConfig VectorLookup_4Test = new TemplateConfig("VectorLookup_4Test.template");
-    public static TemplateConfig SveCreateWhileRWMaskTest = new TemplateConfig("SveCreateWhileRWMaskTest.template");
+    public static TemplateConfig SveCreateWhileDependencyMaskTest = new TemplateConfig("SveCreateWhileDependencyMaskTest.template");
 }

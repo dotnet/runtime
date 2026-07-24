@@ -17,7 +17,6 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.Blazor;
 
-[TestCategory("mono")]
 public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 {
     private static readonly string uploadPattern = "^[a-zA-Z0-9_]+\\.nettrace$";
@@ -28,10 +27,14 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
+
+    [Fact]
+    [TestCategory("native-mono")]
+    public Task BlazorEventPipeTestWithCpuSamplesAOT() => BlazorEventPipeTestWithCpuSamples(Configuration.Release, aot: true);
+
     [Theory]
     [InlineData(Configuration.Debug, false)]
     [InlineData(Configuration.Release, false)]
-    [InlineData(Configuration.Release, true)]
     public async Task BlazorEventPipeTestWithCpuSamples(Configuration config, bool aot)
     {
         string extraProperties = @"

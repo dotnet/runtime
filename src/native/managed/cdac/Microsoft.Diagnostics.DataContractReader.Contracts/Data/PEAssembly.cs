@@ -6,6 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.PEAssembly))]
 internal sealed partial class PEAssembly : IData<PEAssembly>
 {
-    [Field] public TargetPointer PEImage { get; }
-    [Field] public TargetPointer AssemblyBinder { get; }
+    [Field] public partial TargetPointer PEImage { get; }
+    [Field] public partial TargetPointer AssemblyBinder { get; }
+    [Field] public partial TargetPointer MDImport { get; }
 }

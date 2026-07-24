@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -374,6 +375,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [RequiresUnreferencedCode("Uses Activator.CreateInstance to construct non-generic collection types.")]
+        [RequiresDynamicCode("Uses Activator.CreateInstance to construct non-generic collection types.")]
         public async Task Number_AsCollectionElement_RoundTrip()
         {
             await RunAsCollectionElementTest(JsonNumberTestData.Bytes);
@@ -408,17 +411,15 @@ namespace System.Text.Json.Serialization.Tests
                 await RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
                 await RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
 #if NET
-                // https://github.com/dotnet/runtime/issues/119143
-                if (!PlatformDetection.IsBrowser)
-                {
-                    await RunAsCollectionElementTest(JsonNumberTestData.NullableInt128s);
-                    await RunAsCollectionElementTest(JsonNumberTestData.NullableUInt128s);
-                    await RunAsCollectionElementTest(JsonNumberTestData.NullableHalfs);
-                }
+                await RunAsCollectionElementTest(JsonNumberTestData.NullableInt128s);
+                await RunAsCollectionElementTest(JsonNumberTestData.NullableUInt128s);
+                await RunAsCollectionElementTest(JsonNumberTestData.NullableHalfs);
 #endif
             }
         }
 
+        [RequiresUnreferencedCode("Uses Activator.CreateInstance to construct non-generic collection types.")]
+        [RequiresDynamicCode("Uses Activator.CreateInstance to construct non-generic collection types.")]
         private async Task RunAsCollectionElementTest<T>(List<T> numbers)
         {
             StringBuilder jsonBuilder_NumbersAsNumbers = new StringBuilder();
@@ -548,6 +549,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.False(enumerator2.MoveNext());
         }
 
+        [RequiresUnreferencedCode("Uses Activator.CreateInstance to construct non-generic collection types.")]
+        [RequiresDynamicCode("Uses Activator.CreateInstance to construct non-generic collection types.")]
         private async Task RunAllCollectionsRoundTripTest<T>(string json)
         {
             foreach (Type type in CollectionTestTypes.DeserializableGenericEnumerableTypes<T>())
@@ -585,10 +588,13 @@ namespace System.Text.Json.Serialization.Tests
                 serialized = await Serializer.SerializeWrapper(list, s_optionReadAndWriteFromStr);
                 Assert.Equal(json, serialized);
 
-                // Serialize instance which is a collection of numbers (not JsonElements).
-                obj = Activator.CreateInstance(type, new[] { list });
-                serialized = await Serializer.SerializeWrapper(obj, s_optionReadAndWriteFromStr);
-                Assert.Equal(json, serialized);
+                if (PlatformDetection.IsNotNativeAot)
+                {
+                    // Serialize instance which is a collection of numbers (not JsonElements).
+                    obj = Activator.CreateInstance(type, new[] { list });
+                    serialized = await Serializer.SerializeWrapper(obj, s_optionReadAndWriteFromStr);
+                    Assert.Equal(json, serialized);
+                }
             }
         }
 
@@ -636,6 +642,8 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39674", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
+        [RequiresUnreferencedCode("Uses Activator.CreateInstance to construct non-generic dictionary types.")]
+        [RequiresDynamicCode("Uses Activator.CreateInstance to construct non-generic dictionary types.")]
         public async Task DictionariesRoundTrip()
         {
             await RunAllDictionariessRoundTripTest(JsonNumberTestData.ULongs);
@@ -643,6 +651,8 @@ namespace System.Text.Json.Serialization.Tests
             await RunAllDictionariessRoundTripTest(JsonNumberTestData.Doubles);
         }
 
+        [RequiresUnreferencedCode("Uses Activator.CreateInstance to construct non-generic dictionary types.")]
+        [RequiresDynamicCode("Uses Activator.CreateInstance to construct non-generic dictionary types.")]
         private async Task RunAllDictionariessRoundTripTest<T>(List<T> numbers)
         {
             StringBuilder jsonBuilder_NumbersAsStrings = new StringBuilder();
@@ -669,14 +679,17 @@ namespace System.Text.Json.Serialization.Tests
                 JsonTestHelper.AssertJsonEqual(jsonNumbersAsStrings, await Serializer.SerializeWrapper(obj, s_optionReadAndWriteFromStr));
             }
 
-            foreach (Type type in CollectionTestTypes.DeserializableNonGenericDictionaryTypes())
+            if (PlatformDetection.IsNotNativeAot)
             {
-                Dictionary<T, T> dict = await Serializer.DeserializeWrapper<Dictionary<T, T>>(jsonNumbersAsStrings, s_optionReadAndWriteFromStr);
+                foreach (Type type in CollectionTestTypes.DeserializableNonGenericDictionaryTypes())
+                {
+                    Dictionary<T, T> dict = await Serializer.DeserializeWrapper<Dictionary<T, T>>(jsonNumbersAsStrings, s_optionReadAndWriteFromStr);
 
-                // Serialize instance which is a dictionary of numbers (not JsonElements).
-                object obj = Activator.CreateInstance(type, new[] { dict });
-                string serialized = await Serializer.SerializeWrapper(obj, s_optionReadAndWriteFromStr);
-                JsonTestHelper.AssertJsonEqual(jsonNumbersAsStrings, serialized);
+                    // Serialize instance which is a dictionary of numbers (not JsonElements).
+                    object obj = Activator.CreateInstance(type, new[] { dict });
+                    string serialized = await Serializer.SerializeWrapper(obj, s_optionReadAndWriteFromStr);
+                    JsonTestHelper.AssertJsonEqual(jsonNumbersAsStrings, serialized);
+                }
             }
         }
 
@@ -2022,6 +2035,7 @@ namespace System.Text.Json.Serialization.Tests
                     s_optionReadFromStr));
         }
 
+#if !BUILDING_SOURCE_GENERATOR_TESTS
         [Fact]
         public void GetConverter_Int32_RespectsNumberHandling_AllowReadingFromString()
         {
@@ -2345,5 +2359,6 @@ namespace System.Text.Json.Serialization.Tests
             reader.Read(); reader.Read(); reader.Read();
             Assert.True(float.IsNaN(converter.Read(ref reader, typeof(float), options)));
         }
+#endif
     }
 }

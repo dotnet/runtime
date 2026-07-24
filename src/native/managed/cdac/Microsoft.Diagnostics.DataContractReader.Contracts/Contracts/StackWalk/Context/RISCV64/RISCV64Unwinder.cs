@@ -44,7 +44,7 @@ internal class RISCV64Unwinder(Target target)
 
     public bool Unwind(ref RISCV64Context context)
     {
-        if (_eman.GetCodeBlockHandle(context.InstructionPointer.Value) is not CodeBlockHandle cbh)
+        if (_eman.GetCodeBlockHandle(context.InstructionPointer) is not CodeBlockHandle cbh)
             return false;
 
         TargetPointer imageBase = _eman.GetUnwindInfoBaseAddress(cbh);

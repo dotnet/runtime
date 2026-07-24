@@ -529,3 +529,9 @@ End
 Crst PregeneratedStringThunks
     AcquiredBefore UnresolvedClassLock
 End
+
+// Guards the de-duplication set used when relocating host-probed webcil (WASM) R2R images.
+// It is a leaf that acquires no other Crst while held, so it is Unordered.
+Crst WebcilImageRelocation
+    Unordered
+End

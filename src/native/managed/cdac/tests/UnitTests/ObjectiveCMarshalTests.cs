@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -14,6 +15,9 @@ public class ObjectiveCMarshalTests
     private const uint SyncBlockIsHashOrSyncBlockIndex = 0x08000000;
     private const uint SyncBlockIsHashCode = 0x04000000;
     private const uint SyncBlockIndexMask = (1u << 26) - 1;
+
+    private const string ObjectiveCMarshalTypeName = "System.Runtime.InteropServices.ObjectiveC.ObjectiveCMarshal";
+    private const string ObjcTrackingInformationTypeName = "System.Runtime.InteropServices.ObjectiveC.ObjectiveCMarshal+ObjcTrackingInformation";
 
     private static TestPlaceholderTarget CreateObjectiveCMarshalTarget(
         MockTarget.Architecture arch,
@@ -31,6 +35,67 @@ public class ObjectiveCMarshalTests
             .AddContract<IObjectiveCMarshal>(version: "c1")
             .AddContract<IObject>(version: "c1")
             .AddContract<ISyncBlock>(version: "c1");
+
+        return targetBuilder.Build();
+    }
+
+    private static TestPlaceholderTarget CreateObjectiveCMarshalTargetWithCWT(
+        MockTarget.Architecture arch,
+        Mock<IConditionalWeakTable> mockCwt,
+        Action<MockDescriptors.MockObjectBuilder, MockMemorySpace.Builder> configure)
+    {
+        const ulong globalSlotAddress = 0x7000;
+        const ulong cwtAddress = 0x8000;
+
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(targetBuilder.MemoryBuilder);
+        MockDescriptors.MockObjectBuilder objectBuilder = new(rtsBuilder);
+
+        configure(objectBuilder, targetBuilder.MemoryBuilder);
+
+        var helpers = new TargetTestHelpers(arch);
+
+        // Allocate a heap fragment for the s_objects global slot and write the CWT address into it.
+        byte[] slotData = new byte[helpers.PointerSize];
+        helpers.WritePointer(slotData, cwtAddress);
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = globalSlotAddress,
+            Data = slotData,
+            Name = "ObjectiveCMarshal.s_objects slot"
+        });
+
+        var globals = new List<(string Name, ulong Value)>(CreateContractGlobals(objectBuilder))
+        {
+            (ObjectiveCMarshalTypeName + ".s_objects", globalSlotAddress)
+        };
+
+        // Register ObjcTrackingInformation type with a single pointer-sized _memory field at offset 0.
+        // The managed _memory field is an IntPtr, so the contract descriptor reports its type as "nint";
+        // model that here so the pointer read path is validated against the real descriptor type.
+        var trackingInfoType = new Target.TypeInfo
+        {
+            Size = (uint)helpers.PointerSize,
+            Fields = new Dictionary<string, Target.FieldInfo>
+            {
+                ["_memory"] = new Target.FieldInfo { Offset = 0, TypeName = "nint" }
+            }
+        };
+
+        var types = CreateContractTypes(objectBuilder);
+        var stringTypes = new Dictionary<string, Target.TypeInfo>
+        {
+            [ObjcTrackingInformationTypeName] = trackingInfoType
+        };
+
+        targetBuilder
+            .AddTypes(types)
+            .AddTypes(stringTypes)
+            .AddGlobals(globals.ToArray())
+            .AddContract<IObjectiveCMarshal>(version: "c1")
+            .AddContract<IObject>(version: "c1")
+            .AddContract<ISyncBlock>(version: "c1")
+            .AddMockContract(mockCwt);
 
         return targetBuilder.Build();
     }
@@ -60,13 +125,12 @@ public class ObjectiveCMarshalTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetTaggedMemory_NoSyncBlockIndex_ReturnsNull(MockTarget.Architecture arch)
+    public void GetTaggedMemory_NoTrackingTable_ReturnsNull(MockTarget.Architecture arch)
     {
         ulong testObjectAddress = 0;
         TestPlaceholderTarget target = CreateObjectiveCMarshalTarget(arch,
             objectBuilder =>
             {
-                // AddObject with only the ObjectHeader prefix but no sync block index
                 testObjectAddress = objectBuilder.AddObject(0, prefixSize: (uint)objectBuilder.ObjectHeaderLayout.Size);
             });
 
@@ -79,19 +143,18 @@ public class ObjectiveCMarshalTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetTaggedMemory_NullTaggedMemory_ReturnsNull(MockTarget.Architecture arch)
+    public void GetTaggedMemory_ObjectNotInTable_ReturnsNull(MockTarget.Architecture arch)
     {
         ulong testObjectAddress = 0;
-        TestPlaceholderTarget target = CreateObjectiveCMarshalTarget(arch,
-            objectBuilder =>
+        var mockCwt = new Mock<IConditionalWeakTable>();
+        mockCwt
+            .Setup(c => c.TryGetValue(It.IsAny<TargetPointer>(), It.IsAny<TargetPointer>(), out It.Ref<TargetPointer>.IsAny))
+            .Returns(false);
+
+        TestPlaceholderTarget target = CreateObjectiveCMarshalTargetWithCWT(arch, mockCwt,
+            (objectBuilder, _) =>
             {
-                testObjectAddress = objectBuilder.AddObjectWithSyncBlock(
-                    methodTable: 0,
-                    syncBlockIndex: 1,
-                    rcw: 0,
-                    ccw: 0,
-                    ccf: 0,
-                    taggedMemory: 0);
+                testObjectAddress = objectBuilder.AddObject(0, prefixSize: (uint)objectBuilder.ObjectHeaderLayout.Size);
             });
 
         IObjectiveCMarshal contract = target.Contracts.ObjectiveCMarshal;
@@ -103,26 +166,82 @@ public class ObjectiveCMarshalTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetTaggedMemory_HasTaggedMemory_ReturnsPointerAndSize(MockTarget.Architecture arch)
+    public void GetTaggedMemory_NullMemory_ReturnsNull(MockTarget.Architecture arch)
     {
         ulong testObjectAddress = 0;
-        const ulong expectedTaggedMemory = 0x5000;
-        TestPlaceholderTarget target = CreateObjectiveCMarshalTarget(arch,
-            objectBuilder =>
+        var helpers = new TargetTestHelpers(arch);
+
+        const ulong trackingInfoAddress = 0xA000;
+
+        var mockCwt = new Mock<IConditionalWeakTable>();
+
+        TestPlaceholderTarget target = CreateObjectiveCMarshalTargetWithCWT(arch, mockCwt,
+            (objectBuilder, memBuilder) =>
             {
-                testObjectAddress = objectBuilder.AddObjectWithSyncBlock(
-                    methodTable: 0,
-                    syncBlockIndex: 1,
-                    rcw: 0,
-                    ccw: 0,
-                    ccf: 0,
-                    taggedMemory: expectedTaggedMemory);
+                testObjectAddress = objectBuilder.AddObject(0, prefixSize: (uint)objectBuilder.ObjectHeaderLayout.Size);
+
+                // Write a zero pointer at the tracking info address (_memory field = 0)
+                byte[] trackingData = new byte[helpers.PointerSize];
+                helpers.WritePointer(trackingData, 0);
+                memBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+                {
+                    Address = trackingInfoAddress,
+                    Data = trackingData,
+                    Name = "ObjcTrackingInformation (null memory)"
+                });
             });
+
+        // Setup CWT mock to return the tracking info address for our object
+        TargetPointer trackingInfoOut = new TargetPointer(trackingInfoAddress);
+        mockCwt
+            .Setup(c => c.TryGetValue(It.IsAny<TargetPointer>(), new TargetPointer(testObjectAddress), out trackingInfoOut))
+            .Returns(true);
+
+        IObjectiveCMarshal contract = target.Contracts.ObjectiveCMarshal;
+        TargetPointer result = contract.GetTaggedMemory(testObjectAddress, out TargetNUInt size);
+
+        Assert.Equal(TargetPointer.Null, result);
+        Assert.Equal(default, size);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetTaggedMemory_HasMemory_ReturnsPointerAndSize(MockTarget.Architecture arch)
+    {
+        ulong testObjectAddress = 0;
+        var helpers = new TargetTestHelpers(arch);
+
+        const ulong trackingInfoAddress = 0xA000;
+        const ulong expectedTaggedMemory = 0x5000;
+
+        var mockCwt = new Mock<IConditionalWeakTable>();
+
+        TestPlaceholderTarget target = CreateObjectiveCMarshalTargetWithCWT(arch, mockCwt,
+            (objectBuilder, memBuilder) =>
+            {
+                testObjectAddress = objectBuilder.AddObject(0, prefixSize: (uint)objectBuilder.ObjectHeaderLayout.Size);
+
+                // Write the tagged memory pointer at the tracking info address (_memory field)
+                byte[] trackingData = new byte[helpers.PointerSize];
+                helpers.WritePointer(trackingData, expectedTaggedMemory);
+                memBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+                {
+                    Address = trackingInfoAddress,
+                    Data = trackingData,
+                    Name = "ObjcTrackingInformation (with memory)"
+                });
+            });
+
+        // Setup CWT mock to return the tracking info address for our object
+        TargetPointer trackingInfoOut = new TargetPointer(trackingInfoAddress);
+        mockCwt
+            .Setup(c => c.TryGetValue(It.IsAny<TargetPointer>(), new TargetPointer(testObjectAddress), out trackingInfoOut))
+            .Returns(true);
 
         IObjectiveCMarshal contract = target.Contracts.ObjectiveCMarshal;
         TargetPointer result = contract.GetTaggedMemory(testObjectAddress, out TargetNUInt size);
 
         Assert.Equal(expectedTaggedMemory, result.Value);
-        Assert.Equal(2ul * (ulong)target.PointerSize, size.Value);
+        Assert.Equal(2ul * (ulong)helpers.PointerSize, size.Value);
     }
 }

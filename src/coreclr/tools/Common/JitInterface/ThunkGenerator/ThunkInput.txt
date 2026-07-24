@@ -84,6 +84,7 @@ CORINFO_RESOLVED_TOKEN*,ref CORINFO_RESOLVED_TOKEN
 CORINFO_RESOLVED_TOKEN_PTR,CORINFO_RESOLVED_TOKEN*,CORINFO_RESOLVED_TOKEN*,CORINFO_RESOLVED_TOKEN*
 CORINFO_EE_INFO*,ref CORINFO_EE_INFO
 CORINFO_ASYNC_INFO*,ref CORINFO_ASYNC_INFO
+CORINFO_WASM_WELLKNOWN_GLOBALS*,ref CORINFO_WASM_WELLKNOWN_GLOBALS
 CORINFO_TAILCALL_HELPERS*,ref CORINFO_TAILCALL_HELPERS
 CORINFO_SWIFT_LOWERING*,ref CORINFO_SWIFT_LOWERING
 CORINFO_FPSTRUCT_LOWERING*,ref CORINFO_FPSTRUCT_LOWERING
@@ -156,6 +157,7 @@ CORINFO_CLASS_HANDLE*,CORINFO_CLASS_STRUCT_**
 CORINFO_ARG_LIST_HANDLE,CORINFO_ARG_LIST_STRUCT_*
 CORINFO_VARARGS_HANDLE,IntPtr
 CORINFO_CONTEXT_HANDLE,CORINFO_CONTEXT_STRUCT*
+CORINFO_CONTEXT_HANDLE*,CORINFO_CONTEXT_STRUCT**
 CORINFO_WASM_TYPE_SYMBOL_HANDLE,CORINFO_WASM_TYPE_SYMBOL_STRUCT_*
 SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*,SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*
 
@@ -190,8 +192,6 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getMethodClass(        CORINFO_METHOD_HANDLE       method        );
     void getMethodVTableOffset(        CORINFO_METHOD_HANDLE       method,        unsigned*                   offsetOfIndirection,        unsigned*                   offsetAfterIndirection, bool*                       isRelative);
     bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info);
-    CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
-    CORINFO_METHOD_HANDLE getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodArg, CORINFO_CLASS_HANDLE* classArg);
     CORINFO_METHOD_HANDLE getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk);
     CORINFO_CLASS_HANDLE getDefaultComparerClass(CORINFO_CLASS_HANDLE elemType);
     CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(CORINFO_CLASS_HANDLE elemType);
@@ -295,6 +295,7 @@ FUNCTIONS
     [ManualNativeWrapper] bool runWithSPMIErrorTrap(ICorJitInfo::errorTrapFunction function, void* parameter);
     void getEEInfo(CORINFO_EE_INFO* pEEInfoOut);
     void getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut);
+    CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
     mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod);
     size_t printMethodName(CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
     const char* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char **className, const char **namespaceName, const char **enclosingClassNames, size_t maxEnclosingClassNames);
@@ -303,6 +304,8 @@ FUNCTIONS
     void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
     void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
     CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd);
+    uint32_t getAddressAlignment(void* address);
+    void getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut);
     uint32_t getThreadTLSIndex(void                  **ppIndirection);
     int32_t * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);
     void getHelperFtn (CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE *pMethod);

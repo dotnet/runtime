@@ -19,6 +19,10 @@ c_static_assert(PAL_SSL_ERROR_WANT_READ == SSL_ERROR_WANT_READ);
 c_static_assert(PAL_SSL_ERROR_WANT_WRITE == SSL_ERROR_WANT_WRITE);
 c_static_assert(PAL_SSL_ERROR_SYSCALL == SSL_ERROR_SYSCALL);
 c_static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN);
+#ifndef SSL_ERROR_WANT_RETRY_VERIFY
+#define SSL_ERROR_WANT_RETRY_VERIFY 12
+#endif
+c_static_assert(PAL_SSL_ERROR_WANT_RETRY_VERIFY == SSL_ERROR_WANT_RETRY_VERIFY);
 c_static_assert(SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE == 65);
 c_static_assert(TLSEXT_STATUSTYPE_ocsp == 1);
 
@@ -441,7 +445,12 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
     {
         // Post-handshake auth reqires SSL_VERIFY_PEER to be set
         CryptoNative_SslSetVerifyPeer(ssl, 0);
-        return SSL_verify_client_post_handshake(ssl);
+        int ret = SSL_verify_client_post_handshake(ssl);
+        if (ret != 1)
+        {
+            *error = CryptoNative_SslGetError(ssl, ret);
+        }
+        return ret;
     }
 #endif
 
@@ -481,6 +490,20 @@ void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio)
 {
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
     SSL_set_bio(ssl, rbio, wbio);
+}
+
+int32_t CryptoNative_SslSetFd(SSL* ssl, intptr_t fd)
+{
+    ERR_clear_error();
+    return SSL_set_fd(ssl, (int)fd);
+}
+
+int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* errorCode)
+{
+    ERR_clear_error();
+    int32_t ret = SSL_do_handshake(ssl);
+    *errorCode = (ret <= 0) ? SSL_get_error(ssl, ret) : 0;
+    return ret;
 }
 
 int32_t CryptoNative_SslHandshake(
@@ -637,6 +660,22 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 {
     // No error queue impact.
     return SSL_is_init_finished(ssl);
+}
+
+int32_t CryptoNative_SslSetRetryVerify(SSL* ssl)
+{
+    // OpenSSL 3.0+ only. SSL_set_retry_verify is a macro that wraps SSL_ctrl with
+    // SSL_CTRL_SET_RETRY_VERIFY (=136). Calling this from inside the certificate
+    // verification callback (and returning -1 from the callback) suspends the
+    // handshake so the application can perform validation asynchronously and then
+    // resume by calling SSL_do_handshake again. On older OpenSSL versions the
+    // unknown control code returns 0 from SSL_ctrl, so the caller can fall back to
+    // inline validation.
+#ifndef SSL_CTRL_SET_RETRY_VERIFY
+#define SSL_CTRL_SET_RETRY_VERIFY 136
+#endif
+    long rc = SSL_ctrl(ssl, SSL_CTRL_SET_RETRY_VERIFY, 0, NULL);
+    return rc > 0 ? 1 : 0;
 }
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
@@ -1417,7 +1456,7 @@ int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
 
     if (evp != NULL)
     {
-        CryptoNative_EvpPkeyDestroy(evp, NULL);
+        CryptoNative_EvpPkeyDestroy(evp);
     }
 
     if (bio1)

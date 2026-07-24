@@ -1947,22 +1947,23 @@ extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodD
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    TypeHandle* inst = NULL;
+    DWORD ntypars = 0;
 
+    
     if (pMethod->IsAsyncVariantMethod())
     {
         // do not report async variants to reflection.
         pMethod = pMethod->GetOrdinaryVariant(/*allowInstParam*/ false);
     }
-
+    
     TypeHandle instType = declaringTypeHandle.AsTypeHandle();
-
-    TypeHandle* inst = NULL;
-    DWORD ntypars = 0;
-
+    
     // Construct TypeHandle array for instantiation.
-    if (methodInstantiation.Get() != NULL)
+    if (!methodInstantiation.IsNull())
     {
+        GCX_COOP();
+
         ntypars = ((PTRARRAYREF)methodInstantiation.Get())->GetNumComponents();
 
         size_t size = ntypars * sizeof(TypeHandle);
@@ -2005,6 +2006,33 @@ FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetMethodFromCanonical, MethodDesc *pM
 }
 FCIMPLEND
 
+extern "C" PCODE QCALLTYPE RuntimeMethodHandle_GetNativeCode(MethodDesc* pMethod)
+{
+    QCALL_CONTRACT;
+
+    PCODE result = (PCODE)NULL;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(pMethod != NULL);
+
+    while (pMethod->IsWrapperStub())
+    {
+        MethodDesc* pWrapped = pMethod->GetWrappedMethodDesc();
+        if (pWrapped == NULL || pWrapped == pMethod)
+        {
+            break;
+        }
+        pMethod = pWrapped;
+    }
+
+    result = GetInterpreterCodeFromEntryPointIfPresent(pMethod->GetNativeCodeAnyVersion());
+
+    END_QCALL;
+
+    return result;
+}
+
 extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod, QCall::TypeHandle pDeclaringType, QCall::ObjectHandleOnStack result)
 {
     QCALL_CONTRACT;
@@ -2037,7 +2065,10 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod,
     {
         MethodDesc* pMethodIL = pMethod;
         if (pMethod->IsWrapperStub())
+        {
+            GCX_PREEMP();
             pMethodIL = pMethod->GetWrappedMethodDesc();
+        }
 
         pILHeader = pMethodIL->GetILHeader();
     }

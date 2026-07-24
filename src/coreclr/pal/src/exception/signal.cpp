@@ -2,19 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     exception/signal.cpp
 
 Abstract:
-
     Signal handler implementation (map signals to exceptions)
-
-
-
 --*/
 
 #include "pal/dbgmsg.h"
@@ -379,7 +371,15 @@ bool IsRunningOnAlternateStack(void *context)
     {
         // Note: WSL doesn't return the alternate signal ranges in the uc_stack (the whole structure is zeroed no
         // matter whether the code is running on an alternate stack or not). So the check would always fail on WSL.
+#ifdef TARGET_OPENBSD
+        // OpenBSD's ucontext_t (struct sigcontext) doesn't carry the signal stack,
+        // so query the currently installed alternate stack directly.
+        stack_t signalStackStorage;
+        stack_t *signalStack = &signalStackStorage;
+        sigaltstack(NULL, signalStack);
+#else
         stack_t *signalStack = &((native_context_t *)context)->uc_stack;
+#endif
         // Check if the signalStack local variable address is within the alternate stack range. If it is not,
         // then either the alternate stack was not installed at all or the current method is not running on it.
         void* alternateStackEnd = (char *)signalStack->ss_sp + signalStack->ss_size;

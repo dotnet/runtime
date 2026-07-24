@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Microsoft.DotNet.XUnitExtensions;
@@ -270,6 +271,44 @@ public class DacDbiThreadDumpTests : DumpTestBase
             Assert.Equal((data.State & ThreadState.Stopped) != 0, userState.HasFlag(CorDebugUserState.USER_STOPPED));
             Assert.Equal((data.State & ThreadState.WaitSleepJoin) != 0, userState.HasFlag(CorDebugUserState.USER_WAIT_SLEEP_JOIN));
             Assert.Equal((data.State & ThreadState.ThreadPoolWorker) != 0, userState.HasFlag(CorDebugUserState.USER_THREADPOOL));
+
+            current = data.NextThread;
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void GetUserState_CrossValidateWithContract(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+
+        IThread threadContract = Target.Contracts.Thread;
+        IStackWalk stackWalkContract = Target.Contracts.StackWalk;
+        IExecutionManager emanContract = Target.Contracts.ExecutionManager;
+        ThreadStoreData storeData = threadContract.GetThreadStoreData();
+
+        TargetPointer current = storeData.FirstThread;
+        while (current != TargetPointer.Null)
+        {
+            int userState;
+            int hr = dbi.GetUserState(current, &userState);
+            Assert.Equal(System.HResults.S_OK, hr);
+
+            CorDebugUserState partialState;
+            int partialHr = dbi.GetPartialUserState(current, &partialState);
+            Assert.Equal(System.HResults.S_OK, partialHr);
+
+            // The full user state is the partial user state plus the GC-safe-point bit.
+            CorDebugUserState fullState = (CorDebugUserState)userState;
+            Assert.Equal(partialState, fullState & ~CorDebugUserState.USER_UNSAFE_POINT);
+
+            ThreadData data = threadContract.GetThreadData(current);
+            IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(Target);
+            byte[] contextBytes = stackWalkContract.GetContext(data, ThreadContextSource.Debugger, context.FullContextFlags);
+            context.FillFromBuffer(contextBytes);
+            bool atGCSafePlace = emanContract.IsGcSafe(context.InstructionPointer);
+            Assert.Equal(!atGCSafePlace, fullState.HasFlag(CorDebugUserState.USER_UNSAFE_POINT));
 
             current = data.NextThread;
         }

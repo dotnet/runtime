@@ -3,6 +3,14 @@
 Unit tests for the cDAC data contract reader. Tests use mock memory to simulate
 a target process without needing a real runtime.
 
+For integration tests that exercise the cDAC against a real runtime, see:
+
+- [DumpTests](../DumpTests/README.md) — validates cDAC contracts against crash dumps
+  produced by purpose-built debuggees.
+- [StressTests](../StressTests/README.md) — in-process GC stress verification that
+  compares cDAC stack-reference enumeration against the runtime's own GC root
+  scanning at every wired stress trigger point (currently managed allocation).
+
 ## Building and running
 
 ```bash

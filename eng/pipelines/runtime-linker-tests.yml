@@ -63,7 +63,7 @@ extends:
     - stage: Build
       jobs:
       #
-      # Build and Test ILLink with Debug tools in Release config vertical for Windows, Linux and OSX
+      # Build and Test ILLink with Debug tools in Release config vertical for Windows and Linux
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -71,13 +71,13 @@ extends:
           buildConfig: release
           platforms:
           - windows_x64
-          - osx_x64
           - linux_x64
           jobParameters:
             testGroup: innerloop
             enablePublishTestResults: true
+            testResultsFormat: 'xunit'
             timeoutInMinutes: 120
-            nameSuffix: ILLink_Runtime_Testing
+            nameSuffix: ILLink_Tests
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
@@ -87,9 +87,20 @@ extends:
             postBuildSteps:
             - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch $(archType) $(_osParameter) -s tools.illinktests -test -c $(_BuildConfig) $(crossArg) $(_officialBuildParameter) /p:ToolsConfiguration=Debug
               displayName: Run ILLink Tests
+            # The illink tools and tests build as Debug (ToolsConfiguration=Debug), so arcade writes
+            # their xUnit results to artifacts/TestResults/Debug. The publish step searches
+            # artifacts/TestResults/$(_BuildConfig) (Release), so copy the results across to get them
+            # published. Runs even on test failure so failures still surface in the Tests tab.
+            - task: CopyFiles@2
+              displayName: Copy ILLink test results for publishing
+              condition: succeededOrFailed()
+              inputs:
+                sourceFolder: $(Build.SourcesDirectory)/artifacts/TestResults/Debug
+                contents: '**/*.xml'
+                targetFolder: $(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)
 
       #
-      # Build Release config vertical for Windows, Linux, and OSX
+      # Build Release config vertical for Windows and Linux
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -97,7 +108,6 @@ extends:
           buildConfig: release
           platforms:
           - windows_x64
-          - osx_x64
           - linux_x64
           jobParameters:
             testGroup: innerloop

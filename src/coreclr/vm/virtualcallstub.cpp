@@ -98,11 +98,23 @@ struct CachedIndirectionCellBlockListNode
 
 BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, MethodDesc *pMD, LCGMethodResolver *pResolver)
 {
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
     return GenerateDispatchStubCellEntrySlot(pLoaderAllocator, ownerType, pMD->GetSlot(), pResolver);
 }
 
 BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, int methodSlot, LCGMethodResolver *pResolver)
 {
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
     VirtualCallStubManager * pMgr = pLoaderAllocator->GetVirtualCallStubManager();
 
     DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(ownerType, methodSlot);
@@ -992,7 +1004,7 @@ DispatchToken VirtualCallStubManager::GetTokenFromOwnerAndSlot(TypeHandle ownerT
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
@@ -1015,7 +1027,7 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, MethodDesc *pMD)
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(!pMD->IsInterface() || ownerType.GetMethodTable()->HasSameTypeDefAs(pMD->GetMethodTable()));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -1465,24 +1477,32 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransi
     if (pObj == NULL) {
         pSDFrame->SetForNullReferenceException();
         pSDFrame->Push(CURRENT_THREAD);
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
         COMPlusThrow(kNullReferenceException);
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         _ASSERTE(!"Throw returned");
     }
 
-    MethodDesc *pTargetMD = COMDelegate::GetMethodDescForOpenVirtualDelegate(delegateObj);
+    MethodDesc *pTargetMD = COMDelegate::GetMethodDescForOpenVirtualDelegate((DELEGATEREF)delegateObj);
     pSDFrame->SetFunction(pTargetMD);
 
     pSDFrame->Push(CURRENT_THREAD);
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
     GCStress<vsd_on_resolve>::MaybeTriggerAndProtect(pObj);
 
-    DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(TypeHandle(pTargetMD->GetMethodTable()), pTargetMD->GetSlot());
+    DispatchToken token;
+    
+    {
+        GCX_PREEMP();
+        token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(TypeHandle(pTargetMD->GetMethodTable()), pTargetMD->GetSlot());
+    }
     target = CachedInterfaceDispatchResolveWorker(NULL, protectedObj, token);
 
 #if _DEBUG
@@ -1495,6 +1515,7 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransi
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
     pSDFrame->Pop(CURRENT_THREAD);
 
     return target;
@@ -1545,11 +1566,13 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
     if (pObj == NULL) {
         pSDFrame->SetForNullReferenceException();
         pSDFrame->Push(CURRENT_THREAD);
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
         COMPlusThrow(kNullReferenceException);
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         _ASSERTE(!"Throw returned");
     }
 
@@ -1566,6 +1589,7 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
     pSDFrame->SetRepresentativeSlot(pRepresentativeMT, representativeToken.GetSlotNumber());
 
     pSDFrame->Push(CURRENT_THREAD);
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -1583,6 +1607,7 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
     pSDFrame->Pop(CURRENT_THREAD);
 
     return target;
@@ -1763,11 +1788,13 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
 
     if (pObj == NULL) {
         pSDFrame->Push(CURRENT_THREAD);
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
         COMPlusThrow(kNullReferenceException);
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         _ASSERTE(!"Throw returned");
     }
 

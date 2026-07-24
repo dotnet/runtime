@@ -14,44 +14,9 @@
 #define COMMON_TURNED_FPO_ON 1
 #endif
 
-#define USE_COM_CONTEXT_DEF
-
 #if defined(_DEBUG)
 #define DEBUG_REGDISPLAY
 #endif
-
-#ifdef _MSC_VER
-
-    // These don't seem useful, so turning them off is no big deal
-#pragma warning(disable:4201)   // nameless struct/union
-#pragma warning(disable:4512)   // can't generate assignment constructor
-#pragma warning(disable:4211)   // nonstandard extension used (char name[0] in structs)
-#pragma warning(disable:4268)   // 'const' static/global data initialized with compiler generated default constructor fills the object with zeros
-#pragma warning(disable:4238)   // nonstandard extension used : class rvalue used as lvalue
-#pragma warning(disable:4291)   // no matching operator delete found
-#pragma warning(disable:4345)   // behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
-
-    // Depending on the code base, you may want to not disable these
-#pragma warning(disable:4245)   // assigning signed / unsigned
-#pragma warning(disable:4127)   // conditional expression is constant
-#pragma warning(disable:4100)   // unreferenced formal parameter
-
-#pragma warning(1:4189)   // local variable initialized but not used
-
-#ifndef DEBUG
-#pragma warning(disable:4505)   // unreferenced local function has been removed
-#pragma warning(disable:4313)   // 'format specifier' in format string conflicts with argument %d of type 'type'
-#endif // !DEBUG
-
-    // CONSIDER put these back in
-#pragma warning(disable:4063)   // bad switch value for enum (only in Disasm.cpp)
-#pragma warning(disable:4710)   // function not inlined
-#pragma warning(disable:4527)   // user-defined destructor required
-#pragma warning(disable:4513)   // destructor could not be generated
-#endif // _MSC_VER
-
-#define _CRT_DEPENDENCY_   //this code depends on the crt file functions
-
 
 #include <stdint.h>
 #include <stddef.h>
@@ -215,13 +180,6 @@ FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len)
     return memcpy(dest, src, len);
 }
 
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-    // You should be using CopyValueClass if you are doing an memcpy
-    // in the GC heap.
-    extern "C" void *  __cdecl GCSafeMemCpy(void *, const void *, size_t);
-#define memcpy(dest, src, len) GCSafeMemCpy(dest, src, len)
-#endif // _DEBUG && !DACCESS_COMPILE
-
 namespace Loader
 {
     typedef enum
@@ -315,6 +273,7 @@ namespace Loader
 #include "dynamicmethod.h"
 
 #include "gcstress.h"
+#include "cdacstress.h"
 
 HRESULT EnsureRtlFunctions();
 
@@ -374,7 +333,6 @@ extern DummyGlobalContract ___contract;
 #include "object.inl"
 #include "clsload.inl"
 #include "method.inl"
-#include "syncblk.inl"
 #include "threads.inl"
 #include "eehash.inl"
 #include "eventtrace.inl"
