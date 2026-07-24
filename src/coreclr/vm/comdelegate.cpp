@@ -846,11 +846,16 @@ static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTarg
     ILStubLinker stubLinker(pModule, signature, &typeContext, pDelegateMD, flags);
     ILCodeStream *pCode = stubLinker.NewCodeStream(ILStubLinker::kDispatch);
 
+    // Store the function pointer into local variable to avoid unnecessary register usage by JIT
+    DWORD methodPtr = pCode->NewLocal(ELEMENT_TYPE_I);
+    pCode->EmitLoadThis();
+    pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR_AUX)));
+    pCode->EmitSTLOC(methodPtr);
+
     for (unsigned i = 0; i < sig.NumFixedArgs(); ++i)
         pCode->EmitLDARG(i);
 
-    pCode->EmitLoadThis();
-    pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR_AUX)));
+    pCode->EmitLDLOC(methodPtr);
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, sig.NumFixedArgs(), sig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
