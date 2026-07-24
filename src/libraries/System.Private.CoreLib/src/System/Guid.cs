@@ -1081,28 +1081,13 @@ namespace System
 
         // Returns true if and only if the guid represented
         //  by o is the same as this instance.
-        public override bool Equals([NotNullWhen(true)] object? o) => o is Guid g && EqualsCore(this, g);
+        public override bool Equals([NotNullWhen(true)] object? o) => o is Guid g && Equals(g);
 
-        public bool Equals(Guid g) => EqualsCore(this, g);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool EqualsCore(in Guid left, in Guid right)
-        {
-            if (Vector128.IsHardwareAccelerated)
-            {
-                return Unsafe.BitCast<Guid, Vector128<byte>>(left) == Unsafe.BitCast<Guid, Vector128<byte>>(right);
-            }
-
-            ref int rA = ref Unsafe.AsRef(in left._a);
-            ref int rB = ref Unsafe.AsRef(in right._a);
-
-            // Compare each element
-
-            return rA == rB
-                && Unsafe.Add(ref rA, 1) == Unsafe.Add(ref rB, 1)
-                && Unsafe.Add(ref rA, 2) == Unsafe.Add(ref rB, 2)
-                && Unsafe.Add(ref rA, 3) == Unsafe.Add(ref rB, 3);
-        }
+        // Field-wise so the runtime can prove Guid is bitwise-equatable (see RuntimeHelpers.IsBitwiseEquatable).
+        // Equality funnels through Equals; == and != defer to it so this stays the single canonical comparison.
+        public bool Equals(Guid g) =>
+            _a == g._a && _b == g._b && _c == g._c && _d == g._d && _e == g._e && _f == g._f &&
+            _g == g._g && _h == g._h && _i == g._i && _j == g._j && _k == g._k;
 
         private static int GetResult(uint me, uint them) => me < them ? -1 : 1;
 
@@ -1179,9 +1164,9 @@ namespace System
             return 0;
         }
 
-        public static bool operator ==(Guid a, Guid b) => EqualsCore(a, b);
+        public static bool operator ==(Guid a, Guid b) => a.Equals(b);
 
-        public static bool operator !=(Guid a, Guid b) => !EqualsCore(a, b);
+        public static bool operator !=(Guid a, Guid b) => !a.Equals(b);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int HexsToChars<TChar>(TChar* guidChars, int a, int b) where TChar : unmanaged, IUtfChar<TChar>

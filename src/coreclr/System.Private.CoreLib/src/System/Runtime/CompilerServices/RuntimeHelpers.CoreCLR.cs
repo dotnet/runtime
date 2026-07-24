@@ -352,6 +352,13 @@ namespace System.Runtime.CompilerServices
         /// <returns>true if given type is bitwise equatable (memcmp can be used for equality checking)</returns>
         /// <remarks>
         /// Only use the result of this for Equals() comparison, not for CompareTo() comparison.
+        /// <para>
+        /// A bitwise comparison may read the value using accesses wider than an individual field. Under an
+        /// unsynchronized concurrent mutation -- already a data race with undefined behavior -- this can observe
+        /// a torn value within a single field that a strictly field-wise comparison would not. A torn read cannot
+        /// fabricate an invalid managed reference; only the already-undefined total comparison result is affected. This is
+        /// acceptable for bitwise-based APIs such as <see cref="MemoryExtensions.SequenceEqual{T}(ReadOnlySpan{T}, ReadOnlySpan{T})"/>.
+        /// </para>
         /// </remarks>
         [Intrinsic]
         internal static bool IsBitwiseEquatable<T>()

@@ -90,7 +90,7 @@ namespace System
         /// <inheritdoc cref="IEquatable{T}.Equals(T)" />
         public bool Equals(UInt128 other)
         {
-            return this == other;
+            return (_lower == other._lower) && (_upper == other._upper);
         }
 
         /// <inheritdoc cref="object.GetHashCode()" />
@@ -1328,10 +1328,10 @@ namespace System
         //
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
-        public static bool operator ==(UInt128 left, UInt128 right) => (left._lower == right._lower) && (left._upper == right._upper);
+        public static bool operator ==(UInt128 left, UInt128 right) => left.Equals(right);
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
-        public static bool operator !=(UInt128 left, UInt128 right) => (left._lower != right._lower) || (left._upper != right._upper);
+        public static bool operator !=(UInt128 left, UInt128 right) => !left.Equals(right);
 
         //
         // IIncrementOperators
