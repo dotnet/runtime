@@ -1277,6 +1277,11 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
         sizeof(s_resumptionStubSig),
         &amTracker);
 
+#ifdef TARGET_WASM
+    // SetMethodDescForEntryPointInNativeImage needs to have the virtual IP
+    uint32_t id = stubEntryPoint - m_pCompositeInfo->GetMinFunctionTableIndex();
+    stubEntryPoint = R2RRelativeFunctionIndexToVirtualIP(id);
+#endif
     // Register the stub's entry point so GC can find it during stack walks.
     // SetMethodDescForEntryPointInNativeImage handles the race - if another thread
     // already registered a MethodDesc for this entry point, ours is simply discarded
@@ -1419,7 +1424,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     PCODE actualEntryPoint;
     actualEntryPoint = GetMinFunctionTableIndex() + id;
     PCODE virtualEntrypointIP;
-    virtualEntrypointIP = GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[id]);
+    virtualEntrypointIP = R2RRelativeFunctionIndexToVirtualIP(id);
     pEntryPoint = pMD->GetTemporaryEntryPoint();
     PortableEntryPoint::SetActualCode(pEntryPoint, actualEntryPoint);
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(virtualEntrypointIP, pMD);
@@ -1625,7 +1630,7 @@ MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc_NoRestore()
 
     _ASSERTE(id < m_pInfo->m_nRuntimeFunctions);
 #ifdef TARGET_WASM
-    PCODE pEntryPoint = m_pInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pInfo->m_pRuntimeFunctions[id]);
+    PCODE pEntryPoint = m_pInfo->R2RRelativeFunctionIndexToVirtualIP(id);
 #else
     PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->GetImage()->GetBase()) + RUNTIME_FUNCTION__BeginAddress(&m_pInfo->m_pRuntimeFunctions[id]);
 #endif

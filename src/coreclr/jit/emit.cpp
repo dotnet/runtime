@@ -8520,19 +8520,13 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 
                 // Async call may have been removed very late, after we have introduced suspension/resumption.
                 // In those cases just encode null.
-                BYTE* target = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
 #ifdef TARGET_WASM
-                // On Wasm, Resume is a function-table index (dispatched via call_indirect); DiagnosticIP
-                // has no Wasm equivalent so leave it null.
-                aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
-                aDstRW[i].DiagnosticIP = 0;
-
-                if (m_compiler->opts.compReloc)
-                {
-                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint,
-                                         CorInfoReloc::WASM_TABLE_INDEX_I32);
-                }
+                BYTE* target = nullptr; // On WASM if we wanted this to have meaning, we would need a reloc to the virtual ip of the location in the method
+                                        // but we both don't have a reloc to represent that, as well as we don't have modeling for virtual ips which is useful
+                                        // for diagnostic purposes at this time. So simply leave it null for now. This is a diagnostic value, so it is not critical to have it be correct.
 #else
+                BYTE* target = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
+#endif
                 aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
                 aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
 
@@ -8544,7 +8538,6 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
                         emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
                     }
                 }
-#endif // TARGET_WASM
 
                 JITDUMP("  Resume=%p, FinalResumeIP=%p\n", emitAsyncResumeStubEntryPoint, (void*)target);
             }

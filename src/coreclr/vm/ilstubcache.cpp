@@ -422,8 +422,13 @@ MethodDesc* ILStubCache::CreateR2RBackedILStub(
 
     pMD->SetStoredMethodSig((PCCOR_SIGNATURE)pSig, cbSig);
 
+#ifdef TARGET_WASM
+    PCODE pEntryPoint = pMD->GetTemporaryEntryPoint();
+    PortableEntryPoint::SetActualCode(pEntryPoint, r2rEntryPoint);
+#else
     // Set the native code directly - no precode needed since code already exists
     pMD->SetNativeCodeInterlocked(r2rEntryPoint);
+#endif // TARGET_WASM
 
     pChunk->DetermineAndSetIsEligibleForTieredCompilation();
 
