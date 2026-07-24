@@ -62,6 +62,7 @@ namespace ILCompiler
             return ResolveVirtualMethod(declMethod, implType.GetClosestDefType(), out devirtualizationDetail);
         }
 
+#if READYTORUN
         private static bool IsImplicitInterfaceOfSZArray(TypeDesc interfaceType)
         {
             Debug.Assert(interfaceType.IsInterface);
@@ -97,6 +98,7 @@ namespace ILCompiler
             MethodDesc actualImplementor = genericImplementor.MakeInstantiatedMethod(new Instantiation(typeParam));
             return actualImplementor;
         }
+#endif
 
         protected virtual MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
         {
@@ -107,6 +109,7 @@ namespace ILCompiler
 
             if (declMethod.OwningType.IsInterface)
             {
+#if READYTORUN
                 if (implType.IsWellKnownType(WellKnownType.Array) && declMethod.Context.GetWellKnownType(WellKnownType.SZArrayHelper, throwIfNotFound: false) is not null)
                 {
                     if (declMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
@@ -126,6 +129,7 @@ namespace ILCompiler
                         return GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(declMethod, resultElemType);
                     }
                 }
+#endif
 
                 if (declMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any) || implType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
