@@ -2843,8 +2843,102 @@ namespace System.Xml.Serialization
             throw Globals.NotSupported($"Unexpected: {source}");
         }
 
+        // Emits IL that walks the attributes on the current element and raises the
+        // UnknownNode/UnknownAttribute events for any non-namespace attribute. This mirrors the
+        // attribute handling that already happens for elements mapped to structs (via WriteAttributes),
+        // so that unknown attributes on elements mapped to primitives, arrays, and collections are
+        // surfaced consistently.
+        private void WriteHandleUnknownAttributes()
+        {
+            MethodInfo XmlSerializationReader_GetNullAttr = typeof(XmlSerializationReader).GetMethod(
+                "GetNullAttr",
+                CodeGenerator.InstanceBindingFlags,
+                Type.EmptyTypes
+                )!;
+            MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
+                "get_Reader",
+                CodeGenerator.InstanceBindingFlags,
+                Type.EmptyTypes
+                )!;
+            MethodInfo XmlReader_MoveToNextAttribute = typeof(XmlReader).GetMethod(
+                "MoveToNextAttribute",
+                CodeGenerator.InstanceBindingFlags,
+                Type.EmptyTypes
+                )!;
+            MethodInfo XmlReader_get_Name = typeof(XmlReader).GetMethod(
+                "get_Name",
+                CodeGenerator.InstanceBindingFlags,
+                Type.EmptyTypes
+                )!;
+            MethodInfo XmlSerializationReader_IsXmlnsAttribute = typeof(XmlSerializationReader).GetMethod(
+                "IsXmlnsAttribute",
+                CodeGenerator.InstanceBindingFlags,
+                new Type[] { typeof(string) }
+                )!;
+            MethodInfo XmlSerializationReader_UnknownNode = typeof(XmlSerializationReader).GetMethod(
+                "UnknownNode",
+                CodeGenerator.InstanceBindingFlags,
+                new Type[] { typeof(object) }
+                )!;
+            MethodInfo XmlReader_MoveToElement = typeof(XmlReader).GetMethod(
+                "MoveToElement",
+                CodeGenerator.InstanceBindingFlags,
+                Type.EmptyTypes
+                )!;
+
+            // When the element is marked xsi:nil, the nil marker (and the element itself) is consumed
+            // by the following ReadNull() call, so its attributes must not be surfaced as unknown. This
+            // also matches the struct path, where a nil element returns before its attributes are read.
+            // if (!GetNullAttr()) {
+            ilg.Ldarg(0);
+            ilg.Call(XmlSerializationReader_GetNullAttr);
+            ilg.Ldc(false);
+            ilg.If(Cmp.EqualTo);
+            {
+                // while (Reader.MoveToNextAttribute()) {
+                //     if (!IsXmlnsAttribute(Reader.Name)) {
+                //         UnknownNode(null);
+                //     }
+                // }
+                ilg.WhileBegin();
+                ilg.Ldarg(0);
+                ilg.Ldarg(0);
+                ilg.Call(XmlSerializationReader_get_Reader);
+                ilg.Call(XmlReader_get_Name);
+                ilg.Call(XmlSerializationReader_IsXmlnsAttribute);
+                ilg.Ldc(false);
+                ilg.If(Cmp.EqualTo);
+                {
+                    ilg.Ldarg(0);
+                    ilg.Load(null);
+                    ilg.Call(XmlSerializationReader_UnknownNode);
+                }
+                ilg.EndIf();
+                ilg.WhileBeginCondition();
+                {
+                    ilg.Ldarg(0);
+                    ilg.Call(XmlSerializationReader_get_Reader);
+                    ilg.Call(XmlReader_MoveToNextAttribute);
+                }
+                ilg.WhileEndCondition();
+                ilg.WhileEnd();
+
+                // Reader.MoveToElement();
+                ilg.Ldarg(0);
+                ilg.Call(XmlSerializationReader_get_Reader);
+                ilg.Call(XmlReader_MoveToElement);
+                ilg.Pop();
+            }
+            ilg.EndIf();
+        }
+
         private void WriteArray(string source, string? arrayName, ArrayMapping arrayMapping, bool readOnly, bool isNullable, int elementIndex)
         {
+            if (!arrayMapping.IsSoap)
+            {
+                WriteHandleUnknownAttributes();
+            }
+
             MethodInfo XmlSerializationReader_ReadNull = typeof(XmlSerializationReader).GetMethod(
                 "ReadNull",
                 CodeGenerator.InstanceBindingFlags,
@@ -2992,6 +3086,10 @@ namespace System.Xml.Serialization
             }
             else if (element.Mapping is PrimitiveMapping)
             {
+                if (!element.Mapping.IsSoap)
+                {
+                    WriteHandleUnknownAttributes();
+                }
                 bool doEndIf = false;
                 if (element.IsNullable)
                 {

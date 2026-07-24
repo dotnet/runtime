@@ -2114,6 +2114,82 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         bool b = grouplists.Contains("GroupType") && grouplists.Contains("GroupNumber") && grouplists.Contains("GroupBase");
         Assert.True(b);
     }
+
+    [Fact]
+    public static void XmlUnknownAttributeOnBuiltInTypedMembersTest()
+    {
+        var unknownAttributes = new List<string>();
+        XmlSerializer serializer = new XmlSerializer(typeof(TypeWithBuiltInTypedMembers));
+        serializer.UnknownAttribute += new XmlAttributeEventHandler((o, args) =>
+        {
+            unknownAttributes.Add(args.Attr.LocalName);
+        });
+
+        string xmlFileContent = WithXmlHeader(@"<TypeWithBuiltInTypedMembers xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+            <StringMember strayA=""1"">hello</StringMember>
+            <IntMember strayB=""2"">42</IntMember>
+            <NullableIntMember strayC=""3"">7</NullableIntMember>
+            <ListMember strayD=""4"">
+                <string strayE=""5"">a</string>
+                <string>b</string>
+            </ListMember>
+            <ArrayMember strayF=""6"">
+                <int strayG=""7"">1</int>
+                <int>2</int>
+            </ArrayMember>
+        </TypeWithBuiltInTypedMembers>");
+        var result = (TypeWithBuiltInTypedMembers)serializer.Deserialize(GetStreamFromString(xmlFileContent));
+
+        // The stray attributes must not disrupt deserialization of the element content.
+        Assert.NotNull(result);
+        Assert.Equal("hello", result.StringMember);
+        Assert.Equal(42, result.IntMember);
+        Assert.Equal(7, result.NullableIntMember);
+        Assert.Equal(2, result.ListMember.Count);
+        Assert.Equal("a", result.ListMember[0]);
+        Assert.Equal("b", result.ListMember[1]);
+        Assert.Equal(new int[] { 1, 2 }, result.ArrayMember);
+
+        // Prior to the fix, unknown attributes on elements mapped to primitives, arrays, and
+        // collection items were silently dropped and never surfaced through the event.
+        Assert.Equal(7, unknownAttributes.Count);
+        foreach (string name in new[] { "strayA", "strayB", "strayC", "strayD", "strayE", "strayF", "strayG" })
+        {
+            Assert.Contains(name, unknownAttributes);
+        }
+    }
+
+    [Fact]
+    public static void XmlNilAttributeOnBuiltInTypedMembersNotReportedTest()
+    {
+        var unknownAttributes = new List<string>();
+        XmlSerializer serializer = new XmlSerializer(typeof(TypeWithNullableBuiltInTypedMembers));
+        serializer.UnknownAttribute += new XmlAttributeEventHandler((o, args) =>
+        {
+            unknownAttributes.Add(args.Attr.LocalName);
+        });
+
+        string xmlFileContent = WithXmlHeader(@"<TypeWithNullableBuiltInTypedMembers xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+            <StringMember xsi:nil=""true"" />
+            <NullableIntMember xsi:nil=""true"" />
+            <ArrayMember xsi:nil=""true"" />
+            <ListMember xsi:nil=""true"" />
+        </TypeWithNullableBuiltInTypedMembers>");
+        var result = (TypeWithNullableBuiltInTypedMembers)serializer.Deserialize(GetStreamFromString(xmlFileContent));
+
+        Assert.NotNull(result);
+        Assert.Null(result.StringMember);
+        Assert.Null(result.NullableIntMember);
+        Assert.Null(result.ArrayMember);
+        Assert.NotNull(result.ListMember);
+        Assert.Empty(result.ListMember);
+
+        // xsi:nil is meaningful for these members (it drives the null result) and is consumed by the
+        // serializer, so it must not be surfaced as an unknown attribute. This matches how elements
+        // mapped to structs behave, where a nil element returns before its attributes are inspected.
+        Assert.Empty(unknownAttributes);
+    }
+
     private static Stream GetStreamFromString(string s)
     {
         MemoryStream stream = new MemoryStream();
@@ -3478,4 +3554,25 @@ internal sealed class XmlSerializerAppContextSwitchScope : IDisposable
         }
         throw new ArgumentException($"Cannot guess cached field name from switch name '{name}'");
     }
+}
+
+public class TypeWithBuiltInTypedMembers
+{
+    public string StringMember;
+    public int IntMember;
+    public int? NullableIntMember;
+    public List<string> ListMember;
+    public int[] ArrayMember;
+}
+
+public class TypeWithNullableBuiltInTypedMembers
+{
+    [XmlElement(IsNullable = true)]
+    public string StringMember;
+
+    public int? NullableIntMember;
+
+    public int[] ArrayMember;
+
+    public List<string> ListMember;
 }

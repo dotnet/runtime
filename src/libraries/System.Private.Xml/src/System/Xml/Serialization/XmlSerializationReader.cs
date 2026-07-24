@@ -4560,6 +4560,32 @@ namespace System.Xml.Serialization
                 Writer.Write("})");
         }
 
+        // Emits code that walks the attributes on the current element and raises the
+        // UnknownNode/UnknownAttribute events for any non-namespace attribute. This mirrors the
+        // attribute handling that already happens for elements mapped to structs (via WriteAttributes),
+        // so that unknown attributes on elements mapped to primitives, arrays, and collections are
+        // surfaced consistently.
+        private void WriteHandleUnknownAttributes()
+        {
+            // When the element is marked xsi:nil, the nil marker (and the element itself) is consumed
+            // by the following ReadNull() call, so its attributes must not be surfaced as unknown. This
+            // also matches the struct path, where a nil element returns before its attributes are read.
+            Writer.WriteLine("if (!GetNullAttr()) {");
+            Writer.Indent++;
+            Writer.WriteLine("while (Reader.MoveToNextAttribute()) {");
+            Writer.Indent++;
+            Writer.WriteLine("if (!IsXmlnsAttribute(Reader.Name)) {");
+            Writer.Indent++;
+            Writer.WriteLine("UnknownNode(null);");
+            Writer.Indent--;
+            Writer.WriteLine("}");
+            Writer.Indent--;
+            Writer.WriteLine("}");
+            Writer.WriteLine("Reader.MoveToElement();");
+            Writer.Indent--;
+            Writer.WriteLine("}");
+        }
+
         private void WriteArray(string source, string? arrayName, ArrayMapping arrayMapping, bool readOnly, bool isNullable, int fixupIndex)
         {
             if (arrayMapping.IsSoap)
@@ -4601,6 +4627,7 @@ namespace System.Xml.Serialization
             }
             else
             {
+                WriteHandleUnknownAttributes();
                 Writer.WriteLine("if (!ReadNull()) {");
                 Writer.Indent++;
 
@@ -4689,6 +4716,7 @@ namespace System.Xml.Serialization
             }
             else if (!element.Mapping!.IsSoap && (element.Mapping is PrimitiveMapping))
             {
+                WriteHandleUnknownAttributes();
                 if (element.IsNullable)
                 {
                     Writer.WriteLine("if (ReadNull()) {");
