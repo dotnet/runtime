@@ -4,6 +4,8 @@
 // VM-side implementation of the in-proc crash report thread callbacks.
 
 #include "common.h"
+#include "crashreportstackwalker.h"
+#include "inproccrashreporter.h"
 #include "codeman.h"
 #include "dbginterface.h"
 #include "method.hpp"
@@ -18,7 +20,6 @@
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
-#include "inproccrashreporter.h"
 #include "threadsuspend.h"
 #include "gcenv.h"
 
@@ -708,6 +709,45 @@ CrashReportInitialize()
     InProcCrashReportInitialize(settings);
 }
 
+#else // !FEATURE_INPROC_CRASHREPORT
+
+// The in-proc crash reporter is not compiled on this platform; CrashReportInitialize is a no-op.
+void
+CrashReportInitialize()
+{
+}
+
+// The VM fatal paths (excep.cpp / eepolicy.cpp) call these unconditionally; provide no-op
+// definitions so the reporter's absence does not require guarding the call sites.
+void
+InProcCrashReportSetCrashKind(InProcCrashReportCrashKind)
+{
+}
+
+void
+InProcCrashReportBeginStackOverflowTrace(uint64_t, uint32_t)
+{
+}
+
+void
+InProcCrashReportAddStackOverflowTraceFrame(
+    const char*,
+    uint32_t,
+    uint32_t)
+{
+}
+
+void
+InProcCrashReportEndStackOverflowTrace()
+{
+}
+
+#endif // FEATURE_INPROC_CRASHREPORT
+
+// CrashReportConfigure starts the env-gated crash-dump services and registers the PAL
+// signal-path callback so the in-proc reporter replaces createdump. It is only meaningful
+// where the reporter is compiled to replace createdump; elsewhere it is a no-op.
+#ifdef FEATURE_INPROC_CRASHREPORT_REPLACE_CREATEDUMP
 void
 CrashReportConfigure()
 {
@@ -748,5 +788,11 @@ CrashReportConfigure()
     // so PAL only observes the reporter after all VM callbacks are wired in.
     InProcCrashReportInitializeServices(settings);
 }
-
-#endif // FEATURE_INPROC_CRASHREPORT
+#else // !FEATURE_INPROC_CRASHREPORT_REPLACE_CREATEDUMP
+// The reporter (if included) is used only for on-demand reports, so the
+// automatic signal-path services and PAL callback are never configured.
+void
+CrashReportConfigure()
+{
+}
+#endif // FEATURE_INPROC_CRASHREPORT_REPLACE_CREATEDUMP

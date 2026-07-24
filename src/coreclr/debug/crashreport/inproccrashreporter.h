@@ -12,6 +12,28 @@
 #include <stddef.h>
 #include <stdint.h>
 
+enum class InProcCrashReportCrashKind : uint32_t
+{
+    Unknown = 0,
+    StackOverflow = 1,
+};
+
+// Records crash kind hints from VM fatal paths that later terminate through PAL
+// as a generic signal (for example stack overflow -> SIGABRT).
+void InProcCrashReportSetCrashKind(InProcCrashReportCrashKind crashKind);
+
+// Captures the compressed stack-overflow trace built by the runtime SO helper
+// thread so the later in-proc crash reporter can include the same managed stack
+// without trying to walk from the exhausted crashing stack.
+void InProcCrashReportBeginStackOverflowTrace(uint64_t crashingTid, uint32_t totalFrameCount);
+void InProcCrashReportAddStackOverflowTraceFrame(
+    const char* methodName,
+    uint32_t repeatCount,
+    uint32_t repeatSequenceLength);
+void InProcCrashReportEndStackOverflowTrace();
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+
 #include <minipal/guid.h>
 
 // Scratch-buffer sizes used throughout the in-proc crash reporter:
@@ -24,12 +46,6 @@ static constexpr int32_t CRASHREPORT_DEFAULT_MAX_FILE_COUNT = 32;
 #if defined(__ANDROID__)
 static const char CRASHREPORT_LOG_TAG[] = "DOTNET_CRASH";
 #endif
-
-enum class InProcCrashReportCrashKind : uint32_t
-{
-    Unknown = 0,
-    StackOverflow = 1,
-};
 
 using InProcCrashReportIsManagedThreadCallback = bool (*)();
 
@@ -121,16 +137,4 @@ bool InProcCrashReportCreateReport(
 // Emits initialization failures before crash-report storage exists.
 void InProcCrashReportLogInitializationFailure(const char* message);
 
-// Records crash kind hints from VM fatal paths that later terminate through PAL
-// as a generic signal (for example stack overflow -> SIGABRT).
-void InProcCrashReportSetCrashKind(InProcCrashReportCrashKind crashKind);
-
-// Captures the compressed stack-overflow trace built by the runtime SO helper
-// thread so the later in-proc crash reporter can include the same managed stack
-// without trying to walk from the exhausted crashing stack.
-void InProcCrashReportBeginStackOverflowTrace(uint64_t crashingTid, uint32_t totalFrameCount);
-void InProcCrashReportAddStackOverflowTraceFrame(
-    const char* methodName,
-    uint32_t repeatCount,
-    uint32_t repeatSequenceLength);
-void InProcCrashReportEndStackOverflowTrace();
+#endif // FEATURE_INPROC_CRASHREPORT

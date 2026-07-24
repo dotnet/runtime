@@ -208,9 +208,7 @@
 #include "gdbjit.h"
 #endif // FEATURE_GDBJIT
 
-#ifdef FEATURE_INPROC_CRASHREPORT
 #include "crashreportstackwalker.h"
-#endif // FEATURE_INPROC_CRASHREPORT
 
 #include "genanalysis.h"
 
@@ -718,9 +716,7 @@ void EEStartupHelper()
         PAL_SetLogManagedCallstackForSignalCallback(EEPolicy::LogManagedCallstackForSignal);
 #endif
 
-#ifdef FEATURE_INPROC_CRASHREPORT
         CrashReportConfigure();
-#endif // FEATURE_INPROC_CRASHREPORT
 
 #ifdef STRESS_LOG
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog()) != 0) {

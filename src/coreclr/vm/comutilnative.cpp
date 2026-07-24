@@ -475,15 +475,14 @@ extern "C" CLR_BOOL QCALLTYPE ExceptionHandling_TrySetFatalErrorHandler(void* ha
 
     bool set = InterlockedCompareExchangeT(&s_fatalErrorHandler, handler, NULL) == NULL;
 
-#ifdef FEATURE_INPROC_CRASHREPORT
     if (set)
     {
         // Bring up the in-proc crash reporter with only its VM callbacks (no signal-path
         // services) so the handler can request on-demand diagnostic data through
         // FEP_DiagnosticDataFunc, independently of the env-gated crash-dump configuration.
+        // A no-op where the reporter is not included.
         CrashReportInitialize();
     }
-#endif // FEATURE_INPROC_CRASHREPORT
 
     return set;
 }

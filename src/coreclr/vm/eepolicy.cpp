@@ -16,9 +16,7 @@
 
 #include "typestring.h"
 
-#ifdef FEATURE_INPROC_CRASHREPORT
 #include "inproccrashreporter.h"
-#endif
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -242,12 +240,10 @@ class CallStackLogger
         MethodDesc* pMD = m_frames[index];
         TypeString::AppendMethodInternal(frame, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
 
-#ifdef FEATURE_INPROC_CRASHREPORT
         if (m_captureStackOverflowTrace)
         {
             InProcCrashReportAddStackOverflowTraceFrame(frame.GetUTF8(), repeatCount, repeatSequenceLength);
         }
-#endif // FEATURE_INPROC_CRASHREPORT
 
         SString str(pWordAt);
         str.Append(frame);
@@ -350,12 +346,10 @@ public:
             largestCommonLength = 0;
         }
 
-#ifdef FEATURE_INPROC_CRASHREPORT
         if (m_captureStackOverflowTrace)
         {
             InProcCrashReportBeginStackOverflowTrace(crashingTid, static_cast<uint32_t>(m_frames.Count()));
         }
-#endif // FEATURE_INPROC_CRASHREPORT
 
         for (int i = 0; i < largestCommonStartOffset; i++)
         {
@@ -385,12 +379,10 @@ public:
             PrintFrame(i, pWordAt);
         }
 
-#ifdef FEATURE_INPROC_CRASHREPORT
         if (m_captureStackOverflowTrace)
         {
             InProcCrashReportEndStackOverflowTrace();
         }
-#endif // FEATURE_INPROC_CRASHREPORT
     }
 };
 
