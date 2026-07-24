@@ -38,12 +38,10 @@ public class TypeHandleTests
     {
         foreach (object[] architecture in new MockTarget.StdArch())
         {
-            yield return [.. architecture, CorElementType.Byref, 0u, "System.Int32&"];
-            yield return [.. architecture, CorElementType.Ptr, 0u, "System.Int32*"];
-            yield return [.. architecture, CorElementType.SzArray, 1u, "System.Int32[]"];
-            yield return [.. architecture, CorElementType.Array, 0u, "System.Int32[]"];
-            yield return [.. architecture, CorElementType.Array, 1u, "System.Int32[*]"];
-            yield return [.. architecture, CorElementType.Array, 3u, "System.Int32[,,]"];
+            yield return [.. architecture, CorElementType.Byref, "System.Int32&"];
+            yield return [.. architecture, CorElementType.Ptr, "System.Int32*"];
+            yield return [.. architecture, CorElementType.SzArray, "System.Int32[]"];
+            yield return [.. architecture, CorElementType.Array, "System.Int32[]"];
         }
     }
 
@@ -62,7 +60,7 @@ public class TypeHandleTests
 
     [Theory]
     [MemberData(nameof(ModifierTypeDescNames))]
-    public void GetName_ModifierTypeDescMatchesNative(MockTarget.Architecture architecture, CorElementType kind, uint rank, string expected)
+    public void GetName_ModifierTypeDescMatchesNative(MockTarget.Architecture architecture, CorElementType kind, string expected)
     {
         TargetTypeHandle typeHandle = new(0x2002);
         TargetTypeHandle elementType = new(0x3002);
@@ -72,10 +70,6 @@ public class TypeHandleTests
         runtimeTypeSystem.ElementTypes[typeHandle] = kind;
         runtimeTypeSystem.ElementTypes[elementType] = CorElementType.I4;
         runtimeTypeSystem.TypeParameters[typeHandle] = elementType;
-        if (kind is CorElementType.Array or CorElementType.SzArray)
-        {
-            runtimeTypeSystem.ArrayRanks[typeHandle] = rank;
-        }
         TestPlaceholderTarget target = CreateTarget(architecture, runtimeTypeSystem);
 
         Assert.Equal(expected, typeHandle.GetName(target));

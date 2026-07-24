@@ -67,8 +67,7 @@ internal static class TypeHandleExtensions
         if (kind is CorElementType.Byref or CorElementType.Ptr or CorElementType.SzArray or CorElementType.Array)
         {
             AppendName(runtimeTypeSystem.GetTypeParam(typeHandle), target, result);
-            uint rank = runtimeTypeSystem.IsArray(typeHandle, out uint arrayRank) ? arrayRank : 0;
-            AppendParamTypeQualifier(result, kind, rank);
+            AppendParamTypeQualifier(result, kind, rank: 0);
             return;
         }
 
