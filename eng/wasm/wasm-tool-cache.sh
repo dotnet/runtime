@@ -16,7 +16,8 @@
 # normal clone's is a DIRECTORY. Only an ABSOLUTE gitdir is trusted as the main checkout; a
 # relative gitdir (git relative-worktrees) or a normal clone falls back to the repo root, which is
 # resolved to an absolute path so callers that pass a relative repo root still get a usable value.
-# This exactly mirrors eng/wasm/WasmToolCache.props so provisioning and lookup never disagree.
+# The anchoring rule matches eng/wasm/WasmToolCache.props exactly when a repo root is supplied,
+# which every caller does; the no-repo-root $HOME fallback below exists only as a last resort.
 wasm_tool_anchor_root()
 {
     _repo_root="${1%/}"

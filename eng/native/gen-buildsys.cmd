@@ -68,12 +68,12 @@ if /i "%__Arch%" == "wasm" (
     )
     if /i "%__Os%" == "wasi" (
         if "%WASI_SDK_PATH%" == "" (
-            if not exist "%__repoRoot%\artifacts\wasi-sdk" (
+            call "%__repoRoot%\eng\wasm\wasm-tool-cache.cmd" wasi-sdk "%__repoRoot%\eng\wasm\wasi-sdk-version.txt" "%__repoRoot%"
+            if "!WASM_TOOL_CACHE_RESULT!" == "" (
                 echo Error: Should set WASI_SDK_PATH environment variable pointing to WASI SDK root.
                 exit /B 1
             )
-
-            set "WASI_SDK_PATH=%__repoRoot%\artifacts\wasi-sdk"
+            set "WASI_SDK_PATH=!WASM_TOOL_CACHE_RESULT!"
         )
         set __CmakeGenerator=Ninja
         set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=wasi "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk-p2.cmake"

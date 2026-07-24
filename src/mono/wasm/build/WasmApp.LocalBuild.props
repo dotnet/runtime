@@ -53,12 +53,17 @@
     <_WasiSdkVersionFile>$([MSBuild]::NormalizePath('$(RuntimeSrcDir)', 'eng', 'wasm', 'wasi-sdk-version.txt'))</_WasiSdkVersionFile>
     <_EmscriptenVersion Condition="Exists('$(_EmscriptenVersionFile)')">$([System.IO.File]::ReadAllText('$(_EmscriptenVersionFile)').Trim())</_EmscriptenVersion>
     <_WasiSdkVersion Condition="Exists('$(_WasiSdkVersionFile)')">$([System.IO.File]::ReadAllText('$(_WasiSdkVersionFile)').Trim())</_WasiSdkVersion>
+
+    <!-- Only adopt a cache path once its '.complete' sentinel exists, mirroring the in-tree props;
+         otherwise leave EMSDK_PATH/WASI_SDK_PATH empty so on-demand provisioning still triggers. -->
+    <_EmscriptenCacheStamp Condition="'$(_WasmToolCacheDir)' != '' and '$(_EmscriptenVersion)' != ''">$([MSBuild]::NormalizePath('$(_WasmToolCacheDir)', 'emscripten', '$(_EmscriptenVersion)-$(_WasmToolHostRid).complete'))</_EmscriptenCacheStamp>
+    <_WasiSdkCacheStamp Condition="'$(_WasmToolCacheDir)' != '' and '$(_WasiSdkVersion)' != ''">$([MSBuild]::NormalizePath('$(_WasmToolCacheDir)', 'wasi-sdk', '$(_WasiSdkVersion)-$(_WasmToolHostRid).complete'))</_WasiSdkCacheStamp>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeSrcDir)' != '' and '$(WasmBuildSupportDir)' == ''">
     <ArtifactsBinDir>$(RuntimeSrcDir)\artifacts\bin\</ArtifactsBinDir>
-    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(_WasmToolCacheDir)' != '' and '$(_EmscriptenVersion)' != ''">$([MSBuild]::NormalizeDirectory('$(_WasmToolCacheDir)', 'emscripten', '$(_EmscriptenVersion)-$(_WasmToolHostRid)'))</EMSDK_PATH>
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' and '$(_WasmToolCacheDir)' != '' and '$(_WasiSdkVersion)' != ''">$([MSBuild]::NormalizeDirectory('$(_WasmToolCacheDir)', 'wasi-sdk', '$(_WasiSdkVersion)-$(_WasmToolHostRid)'))</WASI_SDK_PATH>
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(_EmscriptenCacheStamp)' != '' and Exists('$(_EmscriptenCacheStamp)')">$([MSBuild]::NormalizeDirectory('$(_WasmToolCacheDir)', 'emscripten', '$(_EmscriptenVersion)-$(_WasmToolHostRid)'))</EMSDK_PATH>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' and '$(_WasiSdkCacheStamp)' != '' and Exists('$(_WasiSdkCacheStamp)')">$([MSBuild]::NormalizeDirectory('$(_WasmToolCacheDir)', 'wasi-sdk', '$(_WasiSdkVersion)-$(_WasmToolHostRid)'))</WASI_SDK_PATH>
 
     <MicrosoftNetCoreAppRuntimePackLocationToUse>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'microsoft.netcore.app.runtime.$(RuntimeIdentifier)', $(RuntimeConfig)))</MicrosoftNetCoreAppRuntimePackLocationToUse>
 

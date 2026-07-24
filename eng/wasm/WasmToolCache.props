@@ -1,5 +1,5 @@
 <!--
-  Shared, machine-level cache for externally acquired WebAssembly build and test tools
+  Shared cache for externally acquired WebAssembly build and test tools
   (emscripten, wasi-sdk, wasmtime, chrome, chromedriver, firefox, geckodriver, v8).
 
   Layout:
@@ -10,8 +10,10 @@
   construction. There is no staleness comparison to get wrong, switching between branches
   reuses both versions instead of re-downloading, and x64/arm64 payloads coexist.
 
-  The cache deliberately lives outside the repository so that it survives `clean`, is shared
-  by every clone and git worktree, and isn't tied to any one runtime flavor's source directory.
+  By default the cache is anchored under the repository's main checkout, in the gitignored
+  '.dotnet/wasm-tools' directory (outside 'artifacts/', so it survives `clean`). Anchoring at the
+  main checkout means every git worktree of the same clone shares one copy, yet the cache is
+  removed when the repository is deleted. Set DOTNET_WASM_TOOL_CACHE_DIR to relocate it.
 -->
 <Project>
   <PropertyGroup>

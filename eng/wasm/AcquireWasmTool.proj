@@ -42,6 +42,9 @@
       <_FinalDir>$(_ToolDir.TrimEnd('\/'))</_FinalDir>
       <_ParentDir>$([System.IO.Path]::GetDirectoryName($(_FinalDir)))</_ParentDir>
       <_TempDir>$([MSBuild]::EnsureTrailingSlash('$(_FinalDir).tmp-$([System.Guid]::NewGuid().ToString('N'))'))</_TempDir>
+      <!-- Per-invocation download directory so concurrent acquisitions of the same tool never
+           share (and delete out from under each other) one archive file. -->
+      <_DownloadDir>$([MSBuild]::NormalizeDirectory('$(WasmToolDownloadDir)', '$([System.Guid]::NewGuid().ToString('N'))'))</_DownloadDir>
       <_ExtractDir>$(_TempDir)</_ExtractDir>
       <_ExtractDir Condition="'$(WasmToolSubDir)' != ''">$([MSBuild]::NormalizeDirectory('$(_TempDir)', '$(WasmToolSubDir)'))</_ExtractDir>
       <_TarStrip Condition="'$(WasmToolStripComponents)' != ''">--strip-components=$(WasmToolStripComponents) </_TarStrip>
@@ -49,10 +52,10 @@
 
     <Message Importance="High" Text="Acquiring $(WasmToolName) into '$(_ToolDir)'" />
 
-    <MakeDir Directories="$(WasmToolDownloadDir);$(_ParentDir);$(_ExtractDir)" />
+    <MakeDir Directories="$(_DownloadDir);$(_ParentDir);$(_ExtractDir)" />
 
     <DownloadFile SourceUrl="$(WasmToolUrl)"
-                  DestinationFolder="$(WasmToolDownloadDir)"
+                  DestinationFolder="$(_DownloadDir)"
                   Retries="3"
                   SkipUnchangedFiles="true">
       <Output TaskParameter="DownloadedFile" PropertyName="_Archive" />
@@ -104,8 +107,7 @@
           Command="move /Y &quot;$(_MoveSource)&quot; &quot;$(_FinalDir)&quot;"
           IgnoreStandardErrorWarningFormat="true" />
 
-    <RemoveDir Directories="$(_TempDir)" />
-    <Delete Files="$(_Archive)" />
+    <RemoveDir Directories="$(_TempDir);$(_DownloadDir)" />
 
     <ItemGroup Condition="'$(_PublishThisCopy)' == 'true'">
       <_ToolChmod Include="$(WasmToolChmod)" />
