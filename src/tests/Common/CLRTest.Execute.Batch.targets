@@ -366,8 +366,62 @@ IF NOT DEFINED RunWithNodeJS (
     
     set "__RunCmd=node --experimental-wasm-exnref --stack-size=8192 "!__CoreRootWin!\corerun.js" -c "!__CoreRootUnix!" "!__ExePathUnix!" %CLRTestExecutionArguments%"
     ECHO Running: !__RunCmd!
-    call :RunWithTimeout !__TestTimeout!
-    set CLRTestExitCode=!ERRORLEVEL!
+
+    IF EXIST "$(AssemblyName).HasOutOfProcessTests" (
+        set "__OopPlanFile=$(AssemblyName).outofprocess-plan"
+        set "__OopResultToken=!RANDOM!-!RANDOM!-!RANDOM!"
+        del /q "!__OopPlanFile!" 2>NUL
+
+        set "__TestOutOfProcessPlanFile=!__OopPlanFile!"
+        call :RunWithTimeout !__TestTimeout!
+        set "__OopPlanExit=!ERRORLEVEL!"
+        set "__TestOutOfProcessPlanFile="
+
+        IF NOT "!__OopPlanExit!"=="!CLRTestExpectedExitCode!" (
+            ECHO Out-of-process test planning failed with exit code !__OopPlanExit!.
+            set CLRTestExitCode=!__OopPlanExit!
+        ) ELSE IF NOT EXIST "!__OopPlanFile!" (
+            ECHO Out-of-process test planning did not create "!__OopPlanFile!".
+            set CLRTestExitCode=1
+        ) ELSE (
+            set "__OopMergedExecutionArguments=!CLRTestExecutionArguments!"
+            set "__OopMergedTestHarnessStripe=!TEST_HARNESS_STRIPE_TO_EXECUTE!"
+            set "CLRTestExecutionArguments="
+            set "TEST_HARNESS_STRIPE_TO_EXECUTE="
+
+            for /F "usebackq delims=" %%P in ("!__OopPlanFile!") do (
+                for %%F in ("%%P") do set "__OopWrapper=%%~dpnF.cmd"
+                set "__OopResult=%%P.outofprocess-result"
+                set "__OopOutput=!__OopResult!.output.!RANDOM!"
+                set "__OopResultTemp=!__OopResult!.tmp.!RANDOM!"
+                del /q "!__OopResult!" "!__OopOutput!" "!__OopResultTemp!" 2>NUL
+
+                set "CORE_ROOT=!__CoreRootWin!"
+                "%ComSpec%" /D /S /C call "!__OopWrapper!" > "!__OopOutput!" 2>&1
+                set "__OopExit=!ERRORLEVEL!"
+                set "CORE_ROOT=!__CoreRootUnix!"
+
+                (
+                    ECHO 1
+                    ECHO !__OopResultToken!
+                    ECHO !__OopExit!
+                    TYPE "!__OopOutput!"
+                ) > "!__OopResultTemp!"
+                move /Y "!__OopResultTemp!" "!__OopResult!" >NUL
+                del /q "!__OopOutput!" 2>NUL
+            )
+
+            set "CLRTestExecutionArguments=!__OopMergedExecutionArguments!"
+            set "TEST_HARNESS_STRIPE_TO_EXECUTE=!__OopMergedTestHarnessStripe!"
+            set "__TestOutOfProcessResultToken=!__OopResultToken!"
+            call :RunWithTimeout !__TestTimeout!
+            set CLRTestExitCode=!ERRORLEVEL!
+            set "__TestOutOfProcessResultToken="
+        )
+    ) ELSE (
+        call :RunWithTimeout !__TestTimeout!
+        set CLRTestExitCode=!ERRORLEVEL!
+    )
 )
 
 if defined RunCrossGen2 (

@@ -26,4 +26,24 @@
       <AdditionalFiles Include="@(_ResolvedProjectReferenceFiles)" />
     </ItemGroup>
   </Target>
+
+  <Target Name="WriteHasOutOfProcessTestsMarker" AfterTargets="Build">
+    <PropertyGroup>
+      <_HasOutOfProcessTestsMarker>$(OutputPath)$(AssemblyName).HasOutOfProcessTests</_HasOutOfProcessTestsMarker>
+      <_ShouldWriteHasOutOfProcessTestsMarker
+        Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '@(OutOfProcessTests)' != '' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</_ShouldWriteHasOutOfProcessTestsMarker>
+    </PropertyGroup>
+    <WriteLinesToFile
+      File="$(_HasOutOfProcessTestsMarker)"
+      Lines="HasOutOfProcessTests"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true"
+      Condition="'$(_ShouldWriteHasOutOfProcessTestsMarker)' == 'true'" />
+    <Delete
+      Files="$(_HasOutOfProcessTestsMarker)"
+      Condition="Exists('$(_HasOutOfProcessTestsMarker)') and '$(_ShouldWriteHasOutOfProcessTestsMarker)' != 'true'" />
+    <ItemGroup Condition="'$(_ShouldWriteHasOutOfProcessTestsMarker)' == 'true'">
+      <FileWrites Include="$(_HasOutOfProcessTestsMarker)" />
+    </ItemGroup>
+  </Target>
 </Project>

@@ -465,15 +465,16 @@ run_with_timeout() {
   fi
 }
 
-if [ ! -z ${RunCrossGen2+x} ]%3B then
-  TakeLock
-fi
-
-if [ -z ${RunWithNodeJS+x} ] ; then
-    cd WasmApp
-    ./run-v8.sh
-else
-    if [ -z ${__TestTimeout+x} ]; then
+run_browser_test() {
+  if [ -z ${RunWithNodeJS+x} ]
+  then
+    (
+      cd WasmApp
+      ./run-v8.sh
+    )
+  else
+    if [ -z ${__TestTimeout+x} ]
+    then
       __TestTimeout=300000
     fi
 
@@ -486,6 +487,94 @@ else
     cmd=( node --experimental-wasm-exnref --stack-size=8192 "${CORE_ROOT}/corerun.js" -c "${CORE_ROOT}" "${PWD}/${ExePath}" "${CLRTestExecutionArguments[@]}" )
     echo Running: "${cmd[@]}"
     run_with_timeout $__TestTimeout "${cmd[@]}"
+  fi
+}
+
+run_out_of_process_tests() {
+  local oop_plan_file="${PWD}/$(AssemblyName).outofprocess-plan"
+  local oop_result_token="$$-${RANDOM}-%24(date +%s)"
+  local -a oop_merged_execution_arguments=("${CLRTestExecutionArguments[@]}")
+  local oop_test_harness_stripe="${TEST_HARNESS_STRIPE_TO_EXECUTE-}"
+  local oop_test_harness_stripe_was_set="${TEST_HARNESS_STRIPE_TO_EXECUTE+x}"
+  local oop_plan_exit
+
+  rm -f "$oop_plan_file"
+  export __TestOutOfProcessPlanFile="$oop_plan_file"
+  run_browser_test
+  oop_plan_exit=$?
+  unset __TestOutOfProcessPlanFile
+
+  if [ "$oop_plan_exit" -ne "$CLRTestExpectedExitCode" ]
+  then
+    echo "Out-of-process test planning failed with exit code $oop_plan_exit."
+    return "$oop_plan_exit"
+  fi
+
+  if [ ! -f "$oop_plan_file" ]
+  then
+    echo "Out-of-process test planning did not create '$oop_plan_file'."
+    return 1
+  fi
+
+  unset CLRTestExecutionArguments
+  unset TEST_HARNESS_STRIPE_TO_EXECUTE
+  while IFS= read -r oop_assembly
+  do
+    if [ -z "$oop_assembly" ]
+    then
+      continue
+    fi
+
+    oop_assembly="${oop_assembly//%5C%5C//}"
+    local oop_wrapper="${oop_assembly%.*}.sh"
+    local oop_result="${oop_assembly}.outofprocess-result"
+    local oop_output="${oop_result}.output.$$"
+    local oop_result_tmp="${oop_result}.tmp.$$"
+    local oop_exit
+
+    rm -f "$oop_result" "$oop_output" "$oop_result_tmp"
+    /usr/bin/env bash "$oop_wrapper" < /dev/null > "$oop_output" 2>&1
+    oop_exit=$?
+
+    {
+      echo 1
+      echo "$oop_result_token"
+      echo "$oop_exit"
+      cat "$oop_output"
+    } > "$oop_result_tmp"
+
+    if [ $? -eq 0 ]
+    then
+      mv -f "$oop_result_tmp" "$oop_result"
+    else
+      echo "Failed to write out-of-process result '$oop_result'."
+      rm -f "$oop_result_tmp"
+    fi
+    rm -f "$oop_output"
+  done < "$oop_plan_file"
+
+  CLRTestExecutionArguments=("${oop_merged_execution_arguments[@]}")
+  if [ -n "$oop_test_harness_stripe_was_set" ]
+  then
+    export TEST_HARNESS_STRIPE_TO_EXECUTE="$oop_test_harness_stripe"
+  fi
+
+  export __TestOutOfProcessResultToken="$oop_result_token"
+  run_browser_test
+  local oop_test_exit=$?
+  unset __TestOutOfProcessResultToken
+  return "$oop_test_exit"
+}
+
+if [ ! -z ${RunCrossGen2+x} ]%3B then
+  TakeLock
+fi
+
+if [ -f "$(AssemblyName).HasOutOfProcessTests" ]
+then
+  run_out_of_process_tests
+else
+  run_browser_test
 fi
 CLRTestExitCode=$?
 
