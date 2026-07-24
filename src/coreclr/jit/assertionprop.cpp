@@ -5655,6 +5655,15 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
         // has to throw DivideByZeroException anyway - no special handling needed.
         return dropBoundsCheck(INDEBUG("a[X u% a.Length] is always within bounds"));
     }
+    else if (vnStore->IsVNBinFunc(vnCurIdx, VNF_MOD, &idxOp0, &idxOp1) && (idxOp1 == vnCurLen))
+    {
+        Range idxRng = GetRange(this, arrBndsChkIdx, block, assertions, /*fast*/ true);
+
+        if (idxRng.LowerLimit().IsConstant() && idxRng.LowerLimit().GetConstant() >= 0)
+        {
+            return dropBoundsCheck(INDEBUG("a[X % a.Length] is always within bounds when X is known to be >= 0"));
+        }
+    }
 
     if (getIdxRng().IsConstantRange() && getLenRng().IsConstantRange())
     {
