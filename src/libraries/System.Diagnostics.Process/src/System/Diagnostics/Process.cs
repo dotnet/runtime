@@ -1820,6 +1820,10 @@ namespace System.Diagnostics
                 throw new PlatformNotSupportedException();
             }
 
+            CheckDisposed();
+            EnsureState(State.HaveId);
+            _ = ProcessUtils.ToTimeoutMilliseconds(timeout);
+
             if (TryGetExitStatus(out exitStatus))
             {
                 return true;

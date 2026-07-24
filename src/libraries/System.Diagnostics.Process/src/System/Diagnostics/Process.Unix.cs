@@ -75,7 +75,13 @@ namespace System.Diagnostics
                 return false;
             }
 
-            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.GetPlatformSignalNumber(signal));
+            int signalNumber = Interop.Sys.GetPlatformSignalNumber(signal);
+            if (signalNumber == 0)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            int killResult = Interop.Sys.Kill(_processId, signalNumber);
             if (killResult != 0)
             {
                 Interop.Error error = Interop.Sys.GetLastError();
