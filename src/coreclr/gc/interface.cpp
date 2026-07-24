@@ -2090,7 +2090,8 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
     gen0_size = current_alloc_allocated - heap_segment_mem (current_eph_seg);
 #endif //USE_REGIONS
 
-    totsize = gen0_size - gen0_frag;
+    // Defense-in-depth clamp: gen0_frag is updated by the allocator under a different lock, so a lock-free read must never underflow to a negative.
+    totsize = (gen0_size > gen0_frag) ? (gen0_size - gen0_frag) : 0;
 
     int stop_gen_index = max_generation;
 
