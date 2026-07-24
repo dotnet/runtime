@@ -235,6 +235,299 @@ public unsafe partial class TargetTests
         Assert.Equal(expected, actual);
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void Create_InvalidDescriptorJson_ThrowsFormatException(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        byte[] descriptor = new byte[ContractDescriptorHelpers.Size(targetTestHelpers.Arch.Is64Bit)];
+        byte[] descriptorJson = "{ invalid json"u8.ToArray();
+        ContractDescriptorHelpers.Fill(descriptor, targetTestHelpers.Arch, descriptorJson.Length, 0xdddddddd, 0, 0xeeeeeeee);
+
+        FormatException ex = Assert.Throws<FormatException>(() => builder.CreateTargetFromRawDescriptor(descriptor, descriptorJson, []));
+        Assert.IsType<System.Text.Json.JsonException>(ex.InnerException);
+        Assert.Equal(CdacHResults.CDAC_E_DESCRIPTOR_MALFORMED, ex.HResult);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void Create_InvalidMagic_ThrowsDescriptorNotFound(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        byte[] descriptor = new byte[ContractDescriptorHelpers.Size(targetTestHelpers.Arch.Is64Bit)];
+        byte[] descriptorJson = "{}"u8.ToArray();
+        ContractDescriptorHelpers.Fill(descriptor, targetTestHelpers.Arch, descriptorJson.Length, 0xdddddddd, 0, 0xeeeeeeee);
+        // Corrupt the magic so the bytes at the descriptor address are not a recognized contract descriptor.
+        descriptor[0] ^= 0xFF;
+
+        FormatException ex = Assert.Throws<FormatException>(() => builder.CreateTargetFromRawDescriptor(descriptor, descriptorJson, []));
+        Assert.Equal(CdacHResults.CDAC_E_DESCRIPTOR_NOT_FOUND, ex.HResult);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void Create_InvalidPointerDataIndex_ThrowsFormatException(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetGlobals([("invalid", null, (uint?)1, null, "pointer")])
+            .SetIndirectValues([0]);
+
+        FormatException ex = Assert.Throws<FormatException>(() => builder.CreateTarget(descriptorBuilder));
+        Assert.Equal(CdacHResults.CDAC_E_DESCRIPTOR_MALFORMED, ex.HResult);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryCreateTarget_InvalidPointerDataIndex_ReturnsFalse(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetGlobals([("invalid", null, (uint?)1, null, "pointer")])
+            .SetIndirectValues([0]);
+
+        Assert.False(builder.TryCreateTarget(descriptorBuilder, out _));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetContract_MissingContract_ThrowsContractMissingException(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetContracts([]);
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        ContractMissingException ex = Assert.Throws<ContractMissingException>(() => target.Contracts.RuntimeInfo);
+        Assert.Equal("RuntimeInfo", ex.ContractName);
+        Assert.Null(ex.ContractVersion);
+        Assert.Equal(unchecked((int)0x80004001), ex.HResult);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetContract_UnrecognizedVersion_ThrowsContractUnrecognizedException(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetContracts(new Dictionary<string, string> { ["RuntimeInfo"] = "unsupported-version" });
+
+        Assert.True(builder.TryCreateTarget(
+            descriptorBuilder,
+            out ContractDescriptorTarget? target));
+
+        ContractUnrecognizedException ex = Assert.Throws<ContractUnrecognizedException>(() => target.Contracts.RuntimeInfo);
+        Assert.Equal("RuntimeInfo", ex.ContractName);
+        Assert.Equal("unsupported-version", ex.ContractVersion);
+        Assert.Equal(unchecked((int)0x80004001), ex.HResult);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetContract_ObsoleteVersion_ThrowsContractObsoleteException(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetContracts(new Dictionary<string, string> { ["RuntimeInfo"] = "obsolete-version" });
+
+        Assert.True(builder.TryCreateTarget(
+            descriptorBuilder,
+            out ContractDescriptorTarget? target,
+            registry => registry.RegisterUnsupported<Contracts.IRuntimeInfo>("obsolete-version")));
+
+        ContractObsoleteException ex = Assert.Throws<ContractObsoleteException>(() => target.Contracts.RuntimeInfo);
+        Assert.Equal("RuntimeInfo", ex.ContractName);
+        Assert.Equal("obsolete-version", ex.ContractVersion);
+        Assert.Equal(unchecked((int)0x80004001), ex.HResult);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetContract_UnrecognizedVersion_ReturnsContractUnrecognizedException(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetContracts(new Dictionary<string, string> { ["RuntimeInfo"] = "unsupported-version" });
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        Assert.False(target.Contracts.TryGetContract<Contracts.IRuntimeInfo>(out _, out System.Exception? failureException));
+        ContractUnrecognizedException ex = Assert.IsType<ContractUnrecognizedException>(failureException);
+        Assert.Equal("RuntimeInfo", ex.ContractName);
+        Assert.Equal("unsupported-version", ex.ContractVersion);
+    }
+
+    // The contracts required by the data-access interfaces, advertised at the versions
+    // CoreCLRContracts registers. Mirrors CoreCLRContracts.ValidateForDataAccess.
+    private static readonly string[] s_requiredDataAccessContracts =
+    [
+        "AuxiliarySymbols", "BuiltInCOM", "CodeNotifications", "CodeVersions", "ComWrappers",
+        "ConditionalWeakTable", "DacStreams", "Debugger", "EcmaMetadata", "Exception",
+        "ExecutionManager", "GC", "GCInfo", "Loader", "Notifications", "Object", "PlatformMetadata",
+        "PrecodeStubs", "ReJIT", "RuntimeInfo", "RuntimeTypeSystem", "SHash", "Signature",
+        "StackWalk", "StressLog", "SyncBlock", "Thread",
+    ];
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryValidate_RegisteredVersion_ReturnsTrue(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetContracts(new Dictionary<string, string> { ["RuntimeInfo"] = "c1" });
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        Assert.True(target.Contracts.TryValidate<Contracts.IRuntimeInfo>(out System.Exception? failure));
+        Assert.Null(failure);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryValidate_DoesNotInstantiateContract(MockTarget.Architecture arch)
+    {
+        // GCInfo's creator reads RuntimeInfo from target memory. Advertise GCInfo but omit RuntimeInfo:
+        // TryValidate must succeed (a creator is registered) without invoking it, whereas a real
+        // GetContract would chain into RuntimeInfo and fail.
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetContracts(new Dictionary<string, string> { ["GCInfo"] = "c1" });
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        Assert.True(target.Contracts.TryValidate<Contracts.IGCInfo>(out System.Exception? failure));
+        Assert.Null(failure);
+        Assert.Throws<ContractMissingException>(() => target.Contracts.GCInfo);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryValidate_MissingContract_ReturnsContractMissingException(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetContracts([]);
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        Assert.False(target.Contracts.TryValidate<Contracts.IRuntimeInfo>(out System.Exception? failure));
+        Assert.IsType<ContractMissingException>(failure);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_AllRequiredPresent_DoesNotThrow(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetContracts(s_requiredDataAccessContracts);
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_MissingRequiredContract_ThrowsNotAdvertised(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetContracts(s_requiredDataAccessContracts.Where(static c => c != "RuntimeInfo").ToArray());
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        ContractValidationException ex = Assert.Throws<ContractValidationException>(
+            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts));
+        Assert.Equal(CdacHResults.CDAC_E_CONTRACT_NOT_ADVERTISED, ex.HResult);
+        Assert.Equal("RuntimeInfo", ex.ContractName);
+        Assert.IsType<ContractMissingException>(ex.InnerException);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_MissingTransitiveContract_ThrowsNotAdvertised(MockTarget.Architecture arch)
+    {
+        string[] transitiveDependencies = ["ConditionalWeakTable", "Debugger", "SHash"];
+
+        foreach (string missingContract in transitiveDependencies)
+        {
+            TargetTestHelpers targetTestHelpers = new(arch);
+            ContractDescriptorBuilder builder = new(targetTestHelpers);
+            ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+            descriptorBuilder.SetContracts(s_requiredDataAccessContracts.Where(c => c != missingContract).ToArray());
+
+            Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+            ContractValidationException ex = Assert.Throws<ContractValidationException>(
+                () => Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts));
+            Assert.Equal(CdacHResults.CDAC_E_CONTRACT_NOT_ADVERTISED, ex.HResult);
+            Assert.Equal(missingContract, ex.ContractName);
+            Assert.IsType<ContractMissingException>(ex.InnerException);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_UnrecognizedRequiredVersion_ThrowsUnrecognized(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        Dictionary<string, string> contracts = s_requiredDataAccessContracts.ToDictionary(static c => c, static _ => "c1");
+        contracts["RuntimeInfo"] = "version-from-the-future";
+        descriptorBuilder.SetContracts(contracts);
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        ContractValidationException ex = Assert.Throws<ContractValidationException>(
+            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts));
+        Assert.Equal(CdacHResults.CDAC_E_CONTRACT_UNRECOGNIZED, ex.HResult);
+        Assert.Equal("RuntimeInfo", ex.ContractName);
+        Assert.Equal("version-from-the-future", ex.ContractVersion);
+        Assert.IsType<ContractUnrecognizedException>(ex.InnerException);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_DeprecatedContractReference_ThrowsUnsupported(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        Dictionary<string, string> contracts = s_requiredDataAccessContracts.ToDictionary(static c => c, static _ => "c1");
+        contracts["RuntimeInfo"] = "deprecated-version";
+        descriptorBuilder.SetContracts(contracts);
+
+        // Model a target descriptor that still references a contract version this cDAC recognizes
+        // as deprecated. Production registrations can use the same mechanism when a version retires.
+        Assert.True(builder.TryCreateTarget(
+            descriptorBuilder,
+            out ContractDescriptorTarget? target,
+            registry => registry.RegisterUnsupported<Contracts.IRuntimeInfo>("deprecated-version")));
+
+        ContractValidationException ex = Assert.Throws<ContractValidationException>(
+            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts));
+        Assert.Equal(CdacHResults.CDAC_E_CONTRACT_UNSUPPORTED, ex.HResult);
+        Assert.Equal("RuntimeInfo", ex.ContractName);
+        Assert.Equal("deprecated-version", ex.ContractVersion);
+        Assert.IsType<ContractObsoleteException>(ex.InnerException);
+    }
+
     private static void ValidateGlobals(
         ContractDescriptorTarget target,
         (string Name, ulong Value, string? Type)[] globals,

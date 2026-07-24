@@ -19,6 +19,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
 
     private readonly Dictionary<Type, IContract> _contracts = [];
     private readonly Dictionary<(Type, string), Func<Target, IContract>> _creators = [];
+    private readonly HashSet<(Type, string)> _unsupportedVersions = [];
     private readonly Target _target;
     private readonly TryGetContractVersionDelegate _tryGetContractVersion;
 
@@ -38,28 +39,23 @@ internal sealed class CachingContractRegistry : ContractRegistry
         _creators[(typeof(TContract), version)] = t => creator(t);
     }
 
-    public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, out string? failureReason)
+    public override void RegisterUnsupported<TContract>(string version)
+    {
+        _unsupportedVersions.Add((typeof(TContract), version));
+    }
+
+    public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, [NotNullWhen(false)] out System.Exception? failureException)
     {
         contract = default!;
-        failureReason = null;
+        failureException = null;
         if (_contracts.TryGetValue(typeof(TContract), out IContract? cached))
         {
             contract = (TContract)cached;
             return true;
         }
 
-        Func<Target, IContract>? creator;
-        if (_tryGetContractVersion(TContract.Name, out string? version))
+        if (!TryResolveCreator(typeof(TContract), TContract.Name, out Func<Target, IContract>? creator, out failureException))
         {
-            if (!_creators.TryGetValue((typeof(TContract), version), out creator))
-            {
-                failureReason = $"Target supports contract '{typeof(TContract).Name}' version {version}, but no implementation is registered for that version.";
-                return false;
-            }
-        }
-        else if (!_creators.TryGetValue((typeof(TContract), string.Empty), out creator))
-        {
-            failureReason = $"Target does not support contract '{typeof(TContract).Name}'.";
             return false;
         }
 
@@ -70,6 +66,57 @@ internal sealed class CachingContractRegistry : ContractRegistry
         }
 
         contract = (TContract)_contracts[typeof(TContract)];
+        return true;
+    }
+
+    public override bool TryValidate<TContract>([NotNullWhen(false)] out System.Exception? failureException)
+    {
+        failureException = null;
+
+        // An already-instantiated contract is, by definition, supported.
+        if (_contracts.ContainsKey(typeof(TContract)))
+        {
+            return true;
+        }
+
+        // Resolve only — never invoke the creator. Invoking it would read target memory and may
+        // chain into other contracts, which must not happen during eager validation.
+        return TryResolveCreator(typeof(TContract), TContract.Name, out _, out failureException);
+    }
+
+    /// <summary>
+    /// Classifies whether a registered creator exists for the target-advertised version of a
+    /// contract, without invoking it. Shared by <see cref="TryGetContract{TContract}(out TContract, out System.Exception?)"/>
+    /// and <see cref="TryValidate{TContract}(out System.Exception?)"/>.
+    /// </summary>
+    private bool TryResolveCreator(
+        Type contractType,
+        string contractName,
+        [NotNullWhen(true)] out Func<Target, IContract>? creator,
+        [NotNullWhen(false)] out System.Exception? failureException)
+    {
+        creator = null;
+        failureException = null;
+
+        if (!_tryGetContractVersion(contractName, out string? version))
+        {
+            if (_creators.TryGetValue((contractType, string.Empty), out creator))
+            {
+                return true;
+            }
+
+            failureException = new ContractMissingException(contractName);
+            return false;
+        }
+
+        if (!_creators.TryGetValue((contractType, version), out creator))
+        {
+            failureException = _unsupportedVersions.Contains((contractType, version))
+                ? new ContractObsoleteException(contractName, version)
+                : new ContractUnrecognizedException(contractName, version);
+            return false;
+        }
+
         return true;
     }
 

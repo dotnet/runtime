@@ -80,4 +80,70 @@ public static class CoreCLRContracts
 
         registry.Register<IRuntimeMutableTypeSystem>("c1", static t => new RuntimeMutableTypeSystem_1(t));
     }
+
+    /// <summary>
+    /// Eagerly validates that every contract required by the cDAC data-access interfaces can be
+    /// provided for the target, without instantiating any of them. This is intended to run at
+    /// interface-creation time so that an unsupported target fails fast with a distinct
+    /// <see cref="CdacHResults"/> code instead of failing lazily inside a later data-access call.
+    /// </summary>
+    /// <param name="registry">The contract registry for the target being validated.</param>
+    /// <exception cref="ContractValidationException">
+    /// Thrown for the first required contract that cannot be provided. The exception's
+    /// <see cref="ContractValidationException.HResult"/> is
+    /// <see cref="CdacHResults.CDAC_E_CONTRACT_NOT_ADVERTISED"/> if the target does not advertise the
+    /// contract, <see cref="CdacHResults.CDAC_E_CONTRACT_UNRECOGNIZED"/> if the advertised version is
+    /// unknown to this cDAC, or <see cref="CdacHResults.CDAC_E_CONTRACT_UNSUPPORTED"/> if the advertised
+    /// version is recognized but intentionally unimplemented.
+    /// </exception>
+    public static void ValidateForDataAccess(ContractRegistry registry)
+    {
+        // Direct contract accesses from SOSDacImpl.cs and SOSDacImpl.IXCLRDataProcess.cs.
+        // IObjectiveCMarshal is optional because SOS uses TryGetContract for Apple-only support.
+        Validate<IAuxiliarySymbols>(registry);
+        Validate<IBuiltInCOM>(registry);
+        Validate<ICodeNotifications>(registry);
+        Validate<ICodeVersions>(registry);
+        Validate<IComWrappers>(registry);
+        Validate<IDacStreams>(registry);
+        Validate<IEcmaMetadata>(registry);
+        Validate<IException>(registry);
+        Validate<IExecutionManager>(registry);
+        Validate<IGC>(registry);
+        Validate<IGCInfo>(registry);
+        Validate<ILoader>(registry);
+        Validate<INotifications>(registry);
+        Validate<IObject>(registry);
+        Validate<IPrecodeStubs>(registry);
+        Validate<IReJIT>(registry);
+        Validate<IRuntimeInfo>(registry);
+        Validate<IRuntimeTypeSystem>(registry);
+        Validate<ISignature>(registry);
+        Validate<IStackWalk>(registry);
+        Validate<IStressLog>(registry);
+        Validate<ISyncBlock>(registry);
+        Validate<IThread>(registry);
+
+        // Transitive contract accesses from the implementations above.
+        Validate<IConditionalWeakTable>(registry); // IComWrappers: ComWrappers_1.cs
+        Validate<IDebugger>(registry);             // IStackWalk: StackWalk_1.cs
+        Validate<IPlatformMetadata>(registry);     // IAuxiliarySymbols/IPrecodeStubs: CodePointerUtils.cs, PrecodeStubs_Common.cs
+        Validate<ISHash>(registry);                // ILoader: Loader_1.cs
+
+        static void Validate<TContract>(ContractRegistry registry) where TContract : IContract
+        {
+            if (registry.TryValidate<TContract>(out System.Exception? failure))
+            {
+                return;
+            }
+
+            throw failure switch
+            {
+                ContractObsoleteException obsolete => new ContractValidationException(CdacHResults.CDAC_E_CONTRACT_UNSUPPORTED, obsolete),
+                ContractUnrecognizedException unrecognized => new ContractValidationException(CdacHResults.CDAC_E_CONTRACT_UNRECOGNIZED, unrecognized),
+                ContractNotAvailableException notAvailable => new ContractValidationException(CdacHResults.CDAC_E_CONTRACT_NOT_ADVERTISED, notAvailable),
+                _ => failure,
+            };
+        }
+    }
 }
