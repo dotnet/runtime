@@ -3310,11 +3310,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     CORINFO_CLASS_HANDLE typeArgHnd;
                     CorInfoType          simdBaseJitType;
-                    unsigned             simdSize;
 
                     typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
                     simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
-                    simdSize        = info.compCompHnd->getClassSize(clsHnd);
 
                     switch (simdBaseJitType)
                     {
@@ -3331,15 +3329,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         case CORINFO_TYPE_NATIVEINT:
                         case CORINFO_TYPE_NATIVEUINT:
                         {
-                            var_types      simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-                            unsigned       elementSize  = genTypeSize(simdBaseType);
-                            GenTreeIntCon* countNode    = gtNewIconNode(simdSize / elementSize, TYP_INT);
-
-#if defined(FEATURE_SIMD)
-                            countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
-#endif // FEATURE_SIMD
-
-                            return countNode;
+                            return evalVectorCount(clsHnd, JitType2PreciseVarType(simdBaseJitType));
                         }
 
                         default:
@@ -11266,7 +11256,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                 }
                             }
 
-                            uint32_t size = getVectorTByteLength();
+                            uint32_t size = getCompileTimeVectorTByteLength();
 #ifdef TARGET_ARM64
                             assert((size == 16) || (size == SIZE_UNKNOWN));
 #else
@@ -12392,6 +12382,31 @@ GenTree* Compiler::impUnsupportedNamedIntrinsic(unsigned              helper,
     {
         return nullptr;
     }
+}
+
+//-------------------------------------------------------------------------
+// evalVectorCount: Evaluate the Count property of a vector intrinsic class using
+//                  EE metadata.
+//
+// Arguments:
+//     vectorHandle -- handle to the vector class to query for size
+//     simdBaseType -- base type, whose size to use as the divisor
+//
+// Returns:
+//     The number of elements in the vector with this base type, expressed as a constant
+//     signed integer IR node.
+GenTree* Compiler::evalVectorCount(CORINFO_CLASS_HANDLE vectorHandle, var_types simdBaseType)
+{
+    unsigned simdSize = info.compCompHnd->getClassSize(vectorHandle);
+
+    unsigned       elementSize = genTypeSize(simdBaseType);
+    GenTreeIntCon* countNode   = gtNewIconNode(simdSize / elementSize, TYP_INT);
+
+#if defined(FEATURE_SIMD)
+    countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
+#endif // FEATURE_SIMD
+
+    return countNode;
 }
 
 //------------------------------------------------------------------------
