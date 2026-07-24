@@ -9,6 +9,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Object_1 : IObject
 {
+    private const long UnmanagedMarker = -1;
+
     private readonly Target _target;
     private readonly ulong _methodTableOffset;
     private readonly byte _objectToMethodTableUnmask;
@@ -21,7 +23,7 @@ internal readonly struct Object_1 : IObject
     internal Object_1(Target target)
     {
         _target = target;
-        _methodTableOffset = (ulong)target.GetTypeInfo(DataType.Object).Fields["m_pMethTab"].Offset;
+        _methodTableOffset = (ulong)Data.Object.GetMethodTableOffset(target);
         _objectToMethodTableUnmask = target.ReadGlobal<byte>(Constants.Globals.ObjectToMethodTableUnmask);
         _stringMethodTable = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
         _syncBlockIsHashOrSyncBlockIndex = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex);
@@ -72,7 +74,7 @@ internal readonly struct Object_1 : IObject
         if (mt == TargetPointer.Null)
             throw new ArgumentException("Address represents a set-free object");
         Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
-        TypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
+        ITypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
         uint rank;
         if (!typeSystemContract.IsArray(typeHandle, out rank))
             throw new ArgumentException("Address does not represent an array object", nameof(address));
@@ -80,7 +82,6 @@ internal readonly struct Object_1 : IObject
         Data.Array array = _target.ProcessedData.GetOrAdd<Data.Array>(address);
         count = array.NumComponents;
 
-        Target.TypeInfo arrayTypeInfo = _target.GetTypeInfo(DataType.Array);
         CorElementType corType = typeSystemContract.GetSignatureCorElementType(typeHandle);
         Debug.Assert(corType is CorElementType.Array or CorElementType.SzArray);
         if (corType == CorElementType.Array)
@@ -90,18 +91,18 @@ internal readonly struct Object_1 : IObject
             //   << fields that are part of the array type info >>
             //   int32_t bounds[rank];
             //   int32_t lowerBounds[rank];
-            boundsStart = address + (ulong)arrayTypeInfo.Size!;
+            boundsStart = address + Data.Array.GetSize(_target);
             lowerBounds = boundsStart + (rank * sizeof(int));
         }
         else
         {
             // Single-dimensional, zero-based - doesn't have bounds
-            boundsStart = address + (ulong)arrayTypeInfo.Fields[Constants.FieldNames.Array.NumComponents].Offset;
+            boundsStart = address + (ulong)Data.Array.GetNumComponentsOffset(_target);
             lowerBounds = _target.ReadGlobalPointer(Constants.Globals.ArrayBoundsZero);
         }
 
         // Sync block is before `this` pointer, so substract the object header size
-        ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - Data.ObjectHeader.GetSize(_target);
         return address + dataOffset;
     }
 
@@ -120,7 +121,7 @@ internal readonly struct Object_1 : IObject
 
     int IObject.TryGetHashCode(TargetPointer address)
     {
-        ulong objectHeaderSize = _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        ulong objectHeaderSize = Data.ObjectHeader.GetSize(_target);
         Data.ObjectHeader header = _target.ProcessedData.GetOrAdd<Data.ObjectHeader>(address - objectHeaderSize);
         uint syncBlockValue = header.SyncBlockValue;
 
@@ -146,7 +147,7 @@ internal readonly struct Object_1 : IObject
 
     public TargetPointer GetSyncBlockAddress(TargetPointer address)
     {
-        ulong objectHeaderSize = _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        ulong objectHeaderSize = Data.ObjectHeader.GetSize(_target);
         Data.ObjectHeader header = _target.ProcessedData.GetOrAdd<Data.ObjectHeader>(address - objectHeaderSize);
         uint syncBlockValue = header.SyncBlockValue;
 
@@ -163,17 +164,22 @@ internal readonly struct Object_1 : IObject
     {
         Data.Delegate del = _target.ProcessedData.GetOrAdd<Data.Delegate>(address);
 
-        // Classify by invocation count first:
-        // anything other than 0 indicates a multicast/wrapper/special-sig delegate
-        // that this API does not interpret further. Only when invocationCount==0
-        // do MethodPtr/MethodPtrAux unambiguously identify a closed/open delegate.
-        DelegateType delegateType = DelegateType.Unknown;
-        if (del.InvocationCount.Value == 0)
+        // Check for multicast and unmanaged first.
+        bool isMulticast = false;
+        if (del.HelperObject != TargetPointer.Null)
         {
-            if (del.MethodPtrAux == TargetCodePointer.Null)
-                delegateType = DelegateType.Closed;
-            else
-                delegateType = DelegateType.Open;
+            IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
+
+            TargetPointer mt = GetMethodTableAddress(del.HelperObject);
+            Debug.Assert(mt != TargetPointer.Null);
+
+            isMulticast = typeSystemContract.IsArray(typeSystemContract.GetTypeHandle(mt), out _);
+        }
+
+        DelegateType delegateType = DelegateType.Unknown;
+        if (!isMulticast && del.ExtraData.Value != UnmanagedMarker)
+        {
+            delegateType = del.MethodPtrAux == TargetCodePointer.Null ? DelegateType.Closed : DelegateType.Open;
         }
 
         (TargetPointer targetObject, TargetCodePointer targetMethodPtr) = delegateType switch
@@ -189,13 +195,25 @@ internal readonly struct Object_1 : IObject
             DelegateType: delegateType);
     }
 
+    public ContinuationInfo GetContinuationInfo(TargetPointer address)
+    {
+        Data.ContinuationObject cont = _target.ProcessedData.GetOrAdd<Data.ContinuationObject>(address);
+        TargetPointer diagnosticIP = cont.ResumeInfo != TargetPointer.Null
+            ? _target.ProcessedData.GetOrAdd<Data.AsyncResumeInfo>(cont.ResumeInfo).DiagnosticIP
+            : TargetPointer.Null;
+        return new ContinuationInfo(
+            Next: cont.Next,
+            DiagnosticIP: diagnosticIP,
+            State: (uint)cont.State);
+    }
+
     public ulong GetSize(TargetPointer address)
     {
         TargetPointer mt = GetMethodTableAddress(address);
         if (mt == TargetPointer.Null)
             throw new ArgumentException("Address represents a free object");
         Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
-        TypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
+        ITypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
 
         ulong size = typeSystemContract.GetBaseSize(typeHandle);
         uint componentSize = typeSystemContract.GetComponentSize(typeHandle);

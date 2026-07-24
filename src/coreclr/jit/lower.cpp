@@ -53,7 +53,7 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
 
         if (!isSafeToContainMem)
         {
-            JITDUMP("** Unsafe mem containment of [%06u] in [%06u}\n", m_compiler->dspTreeID(childNode),
+            JITDUMP("** Unsafe mem containment of [%06u] in [%06u]\n", m_compiler->dspTreeID(childNode),
                     m_compiler->dspTreeID(parentNode));
             assert(isSafeToContainMem);
         }
@@ -82,7 +82,7 @@ void Lowering::MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const
 
     if (!isSafeToMarkRegOptional)
     {
-        JITDUMP("** Unsafe regOptional of [%06u] in [%06u}\n", m_compiler->dspTreeID(childNode),
+        JITDUMP("** Unsafe regOptional of [%06u] in [%06u]\n", m_compiler->dspTreeID(childNode),
                 m_compiler->dspTreeID(parentNode));
         assert(isSafeToMarkRegOptional);
     }
@@ -1306,15 +1306,17 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 bool           profileInconsistent = false;
                 for (unsigned i = 0; i < targetCnt; i++)
                 {
-                    FlowEdge* const edge          = uniqueSuccs[i];
-                    weight_t const  oldEdgeWeight = edge->getLikelyWeight();
+                    FlowEdge* const edge = uniqueSuccs[i];
                     edge->setLikelihood(newLikelihood * edge->getDupCount());
-                    weight_t const newEdgeWeight = edge->getLikelyWeight();
 
                     if (afterDefaultCondBlock->hasProfileWeight())
                     {
+                        // Recompute the target's weight from its incoming edges rather than adjusting
+                        // it incrementally: the earlier default-peel scaled afterDefaultCondBlock's
+                        // weight but left the switch targets' weights stale, so an incremental update
+                        // would accumulate on top of a stale value (see #130785).
                         BasicBlock* const targetBlock = edge->getDestinationBlock();
-                        targetBlock->increaseBBProfileWeight(newEdgeWeight - oldEdgeWeight);
+                        targetBlock->setBBProfileWeight(targetBlock->computeIncomingWeight());
                         profileInconsistent |= (targetBlock->NumSucc() > 0);
                     }
                 }
@@ -1717,7 +1719,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
 
     if (arg->OperIsFieldList())
     {
-        JITDUMP("Argument is a FIELD_LIST\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a FIELD_LIST\n");
 
         GenTreeFieldList::Use* splitPoint = nullptr;
         // Split the field list into its register and stack parts.
@@ -1740,7 +1742,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
 
         if (splitPoint == nullptr)
         {
-            JITDUMP("No clean split point found, spilling FIELD_LIST\n", splitPoint->GetOffset());
+            JITDUMP("No clean split point found, spilling FIELD_LIST\n");
 
             unsigned int newLcl =
                 StoreFieldListToNewLocal(m_compiler->typGetObjLayout(callArg->GetSignatureClassHandle()),
@@ -1779,7 +1781,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
     }
     else if (arg->OperIs(GT_BLK))
     {
-        JITDUMP("Argument is a BLK\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a BLK\n");
 
         GenTree*       blkAddr = arg->AsBlk()->Addr();
         target_ssize_t offset  = 0;
@@ -1794,12 +1796,12 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
             !m_compiler->lvaGetDesc(addrUse.Def()->AsLclVarCommon())->IsAddressExposed() &&
             IsInvariantInRange(addrUse.Def(), arg))
         {
-            JITDUMP("Reusing LCL_VAR\n", numRegs, stackSeg.Size);
+            JITDUMP("Reusing LCL_VAR\n");
             addrLcl = addrUse.Def()->AsLclVarCommon()->GetLclNum();
         }
         else
         {
-            JITDUMP("Spilling address\n", numRegs, stackSeg.Size);
+            JITDUMP("Spilling address\n");
             addrLcl = addrUse.ReplaceWithLclVar(m_compiler);
         }
 
@@ -1841,7 +1843,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
     {
         assert(arg->OperIsLocalRead());
 
-        JITDUMP("Argument is a local\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a local\n");
 
         GenTreeLclVarCommon* lcl = arg->AsLclVarCommon();
 
@@ -2112,7 +2114,7 @@ void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_H
     GenTree* srcPlaceholder  = m_compiler->gtNewZeroConNode(src->TypeGet());
 
     GenTreeCall* call =
-        m_compiler->gtNewCallNode(CT_USER_FUNC, m_compiler->info.compCompHnd->getSpecialCopyHelper(argType), TYP_VOID);
+        m_compiler->gtNewUserCallNode(m_compiler->info.compCompHnd->getSpecialCopyHelper(argType), TYP_VOID);
 
     call->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(destPlaceholder));
     call->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(srcPlaceholder));
@@ -2559,7 +2561,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
             }
             else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                // We need AVX2 for NI_Vector256_op_Equality, fallback to Vector128 if only AVX is available
+                // We need AVX2 for TYP_SIMD32 based op_Equality, fallback to Vector128 if only AVX is available
                 MaxUnrollSize = 64;
             }
             else
@@ -4089,8 +4091,9 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
                     value++;
                     loValue = value & UINT32_MAX;
                     hiValue = (value >> 32) & UINT32_MAX;
-                    loSrc2->AsIntCon()->SetIconValue(loValue);
-                    hiSrc2->AsIntCon()->SetIconValue(hiValue);
+                    // Sign-extend (not zero-extend) so the stored value matches across host pointer sizes.
+                    loSrc2->AsIntCon()->SetValueTruncating(static_cast<int32_t>(loValue));
+                    hiSrc2->AsIntCon()->SetValueTruncating(static_cast<int32_t>(hiValue));
 
                     condition = cmp->OperIs(GT_LE) ? GT_LT : GT_GE;
                     mustSwap  = false;
@@ -4312,6 +4315,50 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 BlockRange().Remove(cast);
             }
         }
+#ifdef TARGET_XARCH
+        else if ((castToType == TYP_BYTE) && FitsIn<INT8>(op2Value))
+        {
+            //
+            // Mirror the TYP_UBYTE case above for signed byte casts. Removing the cast lets
+            // codegen emit a single byte-sized `cmp` (e.g. `cmp cl, 0xC0`) instead of first
+            // sign-extending the operand with `movsx`. The compare stays signed because
+            // TYP_BYTE is a signed small type, so LowerCompare's small-unsigned promotion
+            // does not apply.
+            //
+            // Bail out for `x < 0` / `x >= 0` against a zero constant: codegen has a
+            // sign-bit-shift optimization (`mov + shr`) that assumes the operand is
+            // sign-extended to the full register width. After narrowing the operand to
+            // TYP_BYTE, the register no longer carries that sign extension and the shift
+            // amount would be wrong (it uses `emitActualTypeSize` which is still 4 for
+            // TYP_BYTE). Letting the cast survive keeps that path correct.
+            //
+            const bool isSignBitTest = (op2Value == 0) && cmp->OperIs(GT_LT, GT_GE);
+            bool       removeCast    = !isSignBitTest && (castOp->OperIs(GT_LCL_VAR, GT_CALL, GT_OR, GT_XOR, GT_AND) ||
+                                                 IsContainableMemoryOp(castOp));
+
+            if (removeCast)
+            {
+                assert(!castOp->gtOverflowEx()); // Must not be an overflow checking operation
+
+                castOp->gtType = castToType;
+                op2->gtType    = castToType;
+
+                // If we have any contained memory ops on castOp, they must now not be contained.
+                castOp->ClearContained();
+
+                if (castOp->OperIs(GT_OR, GT_XOR, GT_AND))
+                {
+                    castOp->gtGetOp1()->ClearContained();
+                    castOp->gtGetOp2()->ClearContained();
+                    ContainCheckBinary(castOp->AsOp());
+                }
+
+                cmp->AsOp()->gtOp1 = castOp;
+
+                BlockRange().Remove(cast);
+            }
+        }
+#endif // TARGET_XARCH
     }
     else if (op1->OperIs(GT_AND) && cmp->OperIs(GT_EQ, GT_NE))
     {
@@ -4811,6 +4858,11 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                                             GenCondition* cond,
                                             bool          allowMultipleFlagsChecks)
 {
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+    // These architectures have no status/flag register.
+    return false;
+#else
+
     JITDUMP("Lowering condition:\n");
     DISPTREERANGE(BlockRange(), condition);
     JITDUMP("\n");
@@ -4841,9 +4893,6 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
         }
 #endif
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
-        // TODO-Cleanup: this ifdef look suspect, we should never get here on architectures without a status register,
-        // i. e. the right thing is to ifdef the whole function.
         // TODO-Cleanup: introduce a "has CPU flags" target define.
         if (!allowMultipleFlagsChecks)
         {
@@ -4854,7 +4903,6 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
                 return false;
             }
         }
-#endif
 
         relop->gtType = TYP_VOID;
         relop->gtFlags |= GTF_SET_FLAGS;
@@ -4930,6 +4978,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
     }
 
     return false;
+#endif
 }
 
 //----------------------------------------------------------------------------------------------
@@ -5644,8 +5693,17 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         {
             assert(src->IsIntegralConst(0) && "expected an INIT_VAL for non-zero init.");
 
+            bool retypeZeroToRegType = false;
 #ifdef FEATURE_SIMD
-            if (varTypeIsSIMD(lclRegType))
+            // A SIMD struct is zero-initialized from a properly-typed SIMD zero.
+            retypeZeroToRegType = varTypeIsSIMD(lclRegType);
+#endif // FEATURE_SIMD
+#ifdef TARGET_WASM
+            // A Wasm struct is zero-initialized from a properly-typed zero.
+            retypeZeroToRegType |= (lclRegType != src->TypeGet());
+#endif // TARGET_WASM
+
+            if (retypeZeroToRegType)
             {
                 GenTree* zeroCon = m_compiler->gtNewZeroConNode(lclRegType);
 
@@ -5655,7 +5713,6 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                 src             = zeroCon;
                 lclStore->gtOp1 = src;
             }
-#endif // FEATURE_SIMD
 
             convertToStoreObj = false;
         }
@@ -6188,6 +6245,17 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
             regType = call->TypeGet();
         }
 #endif
+
+#if defined(TARGET_WASM)
+        CORINFO_CLASS_HANDLE clsHnd = layout->GetClassHandle();
+        if (clsHnd != NO_CLASS_HANDLE)
+        {
+            CorInfoWasmType wasmAbiType = m_compiler->info.compCompHnd->getWasmLowering(clsHnd);
+            assert(wasmAbiType != CORINFO_WASM_TYPE_VOID);
+            regType = WasmClassifier::ToJitType(wasmAbiType);
+        }
+#endif // TARGET_WASM
+
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);
         LowerStoreIndirCommon(store->AsStoreInd());
@@ -8054,16 +8122,14 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
 {
     assert(divMod->OperIs(GT_UDIV, GT_UMOD));
 
-#if defined(USE_HELPERS_FOR_INT_DIV)
-    if (!varTypeIsIntegral(divMod->TypeGet()))
-    {
-        assert(!"unreachable: integral GT_UDIV/GT_UMOD should get morphed into helper calls");
-    }
-    assert(varTypeIsFloating(divMod->TypeGet()));
+#if USE_HELPERS_FOR_INT_DIV
+    assert(varTypeIsFloating(divMod->TypeGet()) &&
+           "unreachable: integral GT_UDIV/GT_UMOD should get morphed into helper calls");
 #endif // USE_HELPERS_FOR_INT_DIV
-#if defined(TARGET_ARM64)
+
+#if defined(TARGET_ARMARCH)
     assert(!divMod->OperIs(GT_UMOD));
-#endif // TARGET_ARM64
+#endif // TARGET_ARMARCH
 
     GenTree* dividend = divMod->gtGetOp1();
     GenTree* divisor  = divMod->gtGetOp2();
@@ -8371,9 +8437,10 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
     const var_types type = divMod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
 
-#if defined(USE_HELPERS_FOR_INT_DIV)
+#if USE_HELPERS_FOR_INT_DIV
     assert(!"unreachable: integral GT_DIV/GT_MOD should get morphed into helper calls");
 #endif // USE_HELPERS_FOR_INT_DIV
+
 #if defined(TARGET_ARM64)
     if (divMod->OperIs(GT_MOD) && divisor->IsIntegralConstPow2())
     {
@@ -8381,8 +8448,11 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         *nextNode = node->gtNext;
         return true;
     }
-    assert(!node->OperIs(GT_MOD));
 #endif // TARGET_ARM64
+
+#if defined(TARGET_ARMARCH)
+    assert(!node->OperIs(GT_MOD));
+#endif // TARGET_ARMARCH
 
 #if defined(TARGET_WASM)
     // TODO-Wasm: evaluate if this is worth doing for Wasm, since some cases will increase
@@ -9190,7 +9260,7 @@ void Lowering::FindInducedParameterRegisterLocals()
             // accesses larger to generate smaller code.
 
 #ifdef TARGET_WASM
-            var_types fullWidthType = TYP_LONG;
+            var_types fullWidthType = genActualType(regSegment->GetRegisterType());
 #else
             var_types fullWidthType = TYP_I_IMPL;
 #endif
@@ -9219,7 +9289,23 @@ void Lowering::FindInducedParameterRegisterLocals()
 
         GenTree* value = m_compiler->gtNewLclVarNode(remappedLclNum);
 
+#ifdef TARGET_WASM
+        if (varTypeIsSIMD(value) && !varTypeIsSIMD(fld))
+        {
+            // Unlike native targets, wasm cannot reinterpret a v128 local access as a scalar.
+            const unsigned laneOffset = fld->GetLclOffs() - regSegment->Offset;
+            const unsigned scalarSize = genTypeSize(fld);
+            assert((laneOffset % scalarSize) == 0);
+
+            const unsigned laneIndex = laneOffset / scalarSize;
+            value                    = m_compiler->gtNewSimdGetElementNode(fld->TypeGet(), value,
+                                                                           m_compiler->gtNewIconNode(static_cast<ssize_t>(laneIndex)),
+                                                                           fld->TypeGet(), genTypeSize(value));
+        }
+        else if (varTypeUsesFloatReg(value))
+#else
         if (varTypeUsesFloatReg(value))
+#endif // TARGET_WASM
         {
             assert(fld->GetLclOffs() == regSegment->Offset);
 
@@ -9420,7 +9506,11 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
 
 #ifdef FEATURE_SIMD
         case GT_HWINTRINSIC:
+            // TODO-WASM: SIMD12 is still maintained through lowering.
+            // Fix the below once we've determined our lowering path for SIMD12.
+#ifndef TARGET_WASM
             assert(!node->TypeIs(TYP_SIMD12));
+#endif
             break;
 #endif // FEATURE_SIMD
 
@@ -9446,6 +9536,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
         {
             const GenTreeLclVarCommon* lclVarAddr = node->AsLclVarCommon();
             const LclVarDsc*           varDsc     = compiler->lvaGetDesc(lclVarAddr);
+#if !defined(TARGET_WASM)
             if (((lclVarAddr->gtFlags & GTF_VAR_DEF) != 0) && varDsc->HasGCPtr())
             {
                 // Emitter does not correctly handle live updates for LCL_ADDR
@@ -9458,6 +9549,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
                 assert(lclVarAddr->isContained() || !varDsc->lvTracked || varTypeIsStruct(varDsc));
                 // TODO: support this assert for uses, see https://github.com/dotnet/runtime/issues/51900.
             }
+#endif // !TARGET_WASM
 
             assert(varDsc->lvDoNotEnregister);
             break;
@@ -10262,21 +10354,24 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
 #if !defined(JIT32_GCENCODER)
     if (doCpObj && isNotHeap)
     {
-        // No write barriers are needed if the destination is known to be outside of the GC heap.
-        // If the layout contains a byref, then we know it must live on the stack.
-        doCpObj = false;
 #if !defined(TARGET_WASM)
+        // No write barriers are needed for a stack destination, but only take this shortcut when the
+        // copy is small enough to be unrolled into a single non-interruptible region. Otherwise it is
+        // lowered to CORINFO_HELP_MEMCPY (Memmove), a GC-safe point that could observe torn GC pointers
+        // in the partially-written, GC-reported destination; larger copies stay on the CpObj path.
         if (size <= unrollLimit)
         {
-            // If the size is small enough to unroll then we need to mark the block as non-interruptible
-            // to actually allow unrolling. The generated code does not report GC references loaded in the
-            // temporary register(s) used for copying. This is not supported for the JIT32_GCENCODER, so
-            // on that target we keep doCpObj=true above and stay on the GC-aware CpObj path; the lowering
-            // heuristics in TryDecomposeBlockStoreAsIndirs then choose between per-slot decomposition and
-            // the bulk write-barrier helper.
+            doCpObj = false;
+
+            // Mark the block non-interruptible so it can be unrolled: the copy does not report the GC
+            // references held in its temporary register(s).
             blkNode->gtBlkOpGcUnsafe = true;
         }
-#endif
+#else  // TARGET_WASM
+       // WASM lowers this to a single `memory.copy` opcode (not a GC-safe point), so it is safe for
+       // any size.
+        doCpObj = false;
+#endif // TARGET_WASM
     }
 #endif // !JIT32_GCENCODER
 
@@ -10396,7 +10491,13 @@ void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
         return;
     }
 
-    if (blkNode->IsZeroingGcPointersOnHeap())
+    // Zeroing a GC-pointer struct must not use the CORINFO_HELP_MEMSET/MEMZERO helper: it is a
+    // GC-safe point that could observe a torn GC pointer in the partially-written, GC-reported
+    // destination. Use the atomic pointer-sized loop for both stack and heap destinations.
+    const bool isZeroingGcPointers =
+        blkNode->OperIs(GT_STORE_BLK) && src->IsIntegralConst(0) && blkNode->ContainsReferences();
+
+    if (isZeroingGcPointers)
     {
         blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
 #if FEATURE_HAS_ZERO_REG
@@ -10682,6 +10783,17 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
             data->lclNum = base->AsLclVar()->GetLclNum();
         }
     }
+    else if (ind->Addr()->IsCnsIntOrI() && !ind->Addr()->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+    {
+        // Absolute constant address (e.g. the address of a non-GC static field). We treat the
+        // constant value itself as the offset from a common (null) base so that adjacent
+        // constant-address stores can be recognized and coalesced. Relocatable constants are
+        // excluded because their runtime value isn't known at compile time.
+        data->baseAddr = nullptr;
+        data->index    = nullptr;
+        data->scale    = 1;
+        data->offset   = ind->Addr()->AsIntCon()->IconValue();
+    }
     else if (IsStoreCoalescingInvariantNode(m_compiler, ind->Addr(), true))
     {
         // Address is just a local, no offset, scale is 1
@@ -10787,9 +10899,9 @@ bool Lowering::LowerCheckCoalescedStoreAtomicity(GenTree*                       
     // IND<byte> is always fine (and all IND<X> created here from such)
     // IND<simd> is not required to be atomic per our Memory Model
     bool     allowsNonAtomic = currData.AllowsNonAtomic() && prevData.AllowsNonAtomic();
-    int      minOffset       = min(prevData.offset, currData.offset);
-    int      maxEndOffset    = max(prevData.offset + static_cast<int>(prevData.accessSize),
-                                   currData.offset + static_cast<int>(currData.accessSize));
+    ssize_t  minOffset       = min(prevData.offset, currData.offset);
+    ssize_t  maxEndOffset    = max(prevData.offset + static_cast<ssize_t>(prevData.accessSize),
+                                   currData.offset + static_cast<ssize_t>(currData.accessSize));
     unsigned combinedSize    = static_cast<unsigned>(maxEndOffset - minOffset);
 
     if (!allowsNonAtomic && (m_compiler->info.compRetBuffArg != BAD_VAR_NUM) &&
@@ -10833,15 +10945,17 @@ bool Lowering::LowerCheckCoalescedStoreAtomicity(GenTree*                       
             return false;
         }
 
-        // Base address being TYP_REF gives us a hint that data is pointer-aligned.
-        if (!currData.baseAddr->TypeIs(TYP_REF))
+        // A null base address means the store targets a known absolute constant address, so its
+        // alignment is fully determined by minOffset (the absolute address) below. Otherwise, a
+        // TYP_REF base gives us a hint that data is pointer-aligned.
+        if ((currData.baseAddr != nullptr) && !currData.baseAddr->TypeIs(TYP_REF))
         {
             return false;
         }
 
         // Check whether the combined indir is still aligned.
         bool isCombinedIndirAtomic =
-            (combinedSize <= TARGET_POINTER_SIZE) && ((minOffset % static_cast<int>(combinedSize)) == 0);
+            (combinedSize <= TARGET_POINTER_SIZE) && ((minOffset % static_cast<ssize_t>(combinedSize)) == 0);
 
         if (combinedSize == 2 * TARGET_POINTER_SIZE)
         {
@@ -10852,8 +10966,9 @@ bool Lowering::LowerCheckCoalescedStoreAtomicity(GenTree*                       
             //
             // Thus, we can allow 2xLONG -> SIMD, same for TYP_REF (for value being null), and assume TYP_LONG/TYP_REF
             // are already 64-bit aligned. Otherwise the existing load/store sequence would not have atomicity
-            // guarantees either.
-            isCombinedIndirAtomic = true;
+            // guarantees either. For a known constant address we must verify the 64-bit alignment explicitly.
+            isCombinedIndirAtomic =
+                (currData.baseAddr != nullptr) || ((minOffset % static_cast<ssize_t>(TARGET_POINTER_SIZE)) == 0);
 #endif
         }
         else if (combinedSize > TARGET_POINTER_SIZE)
@@ -10940,11 +11055,11 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
             return;
         }
 
-        bool const allowOverlapOptimization = node->OperIs(GT_STORE_LCL_FLD);
-        int const  prevEndOffset            = prevData.offset + static_cast<int>(prevData.accessSize);
-        int const  currEndOffset            = currData.offset + static_cast<int>(currData.accessSize);
-        bool const storesOverlap            = (currData.offset < prevEndOffset) && (prevData.offset < currEndOffset);
-        bool const sameLocation =
+        bool const    allowOverlapOptimization = node->OperIs(GT_STORE_LCL_FLD);
+        ssize_t const prevEndOffset            = prevData.offset + static_cast<ssize_t>(prevData.accessSize);
+        ssize_t const currEndOffset            = currData.offset + static_cast<ssize_t>(currData.accessSize);
+        bool const    storesOverlap            = (currData.offset < prevEndOffset) && (prevData.offset < currEndOffset);
+        bool const    sameLocation =
             currData.IsAddressEqual(prevData, /*ignoreOffset*/ true, allowOverlapOptimization && storesOverlap);
 
         if (!sameLocation)
@@ -10995,21 +11110,31 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
             return;
         }
 
-        if (node->OperIs(GT_STOREIND, GT_STORE_BLK) && !node->AsIndir()->Addr()->OperIs(GT_LEA))
+        if (node->OperIs(GT_STOREIND, GT_STORE_BLK) && !node->AsIndir()->Addr()->OperIs(GT_LEA) &&
+            !(node->AsIndir()->Addr()->IsCnsIntOrI() &&
+              !node->AsIndir()->Addr()->AsIntCon()->ImmedValNeedsReloc(m_compiler)))
         {
             return;
         }
 
-        var_types  oldType             = node->TypeGet();
-        var_types  newType             = TYP_UNDEF;
-        bool       tryReusingPrevValue = false;
-        int const  minOffset           = min(prevData.offset, currData.offset);
-        int const  maxEndOffset        = max(prevEndOffset, currEndOffset);
-        int const  combinedSize        = maxEndOffset - minOffset;
-        bool const prevContainsCurr    = (prevData.offset <= currData.offset) && (prevEndOffset >= currEndOffset);
-        bool const currContainsPrev    = (currData.offset <= prevData.offset) && (currEndOffset >= prevEndOffset);
-        bool const storesAreAdjacent   = (prevEndOffset == currData.offset) || (currEndOffset == prevData.offset);
-        bool const storesHaveSameSize  = prevData.accessSize == currData.accessSize;
+        var_types     oldType             = node->TypeGet();
+        var_types     newType             = TYP_UNDEF;
+        bool          tryReusingPrevValue = false;
+        ssize_t const minOffset           = min(prevData.offset, currData.offset);
+        ssize_t const maxEndOffset        = max(prevEndOffset, currEndOffset);
+
+        ssize_t const combinedSpan = maxEndOffset - minOffset;
+        if (!FitsIn<int>(combinedSpan))
+        {
+            // Offsets are too far apart (e.g. unrelated constant-address stores).
+            return;
+        }
+
+        int const  combinedSize       = static_cast<int>(combinedSpan);
+        bool const prevContainsCurr   = (prevData.offset <= currData.offset) && (prevEndOffset >= currEndOffset);
+        bool const currContainsPrev   = (currData.offset <= prevData.offset) && (currEndOffset >= prevEndOffset);
+        bool const storesAreAdjacent  = (prevEndOffset == currData.offset) || (currEndOffset == prevData.offset);
+        bool const storesHaveSameSize = prevData.accessSize == currData.accessSize;
 
         if (allowOverlapOptimization && currContainsPrev)
         {
@@ -11053,7 +11178,12 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
                 return;
             }
 
-            if (abs(prevData.offset - currData.offset) != static_cast<int>(prevData.accessSize))
+            // accessSize is a small store width (1..16 bytes), so casting it to ssize_t is
+            // value-preserving and negating the result cannot overflow.
+            assert(FitsIn<ssize_t>(prevData.accessSize));
+            ssize_t const offsetDelta = prevData.offset - currData.offset;
+            if ((offsetDelta != static_cast<ssize_t>(prevData.accessSize)) &&
+                (offsetDelta != -static_cast<ssize_t>(prevData.accessSize)))
             {
                 return;
             }
@@ -11172,8 +11302,22 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
             BlockRange().Remove(prevData.rangeStart, prevData.rangeEnd);
 
             ind->Data()->ClearContained();
-            GenTreeAddrMode* addr = ind->Addr()->AsAddrMode();
-            addr->SetOffset(min(prevData.offset, currData.offset));
+            if (ind->Addr()->OperIs(GT_LEA))
+            {
+                // In the LEA path both offsets come from GenTreeAddrMode::Offset() (an int), and a
+                // constant-address store never shares a location with a LEA store (their base nodes
+                // differ), so the min is guaranteed to be within int range.
+                GenTreeAddrMode* addr = ind->Addr()->AsAddrMode();
+                assert(FitsIn<int>(min(prevData.offset, currData.offset)));
+                addr->SetOffset(static_cast<int>(min(prevData.offset, currData.offset)));
+            }
+            else
+            {
+                // Constant absolute address: keep the lower of the two addresses. offset is ssize_t
+                // and SetIconValue takes ssize_t, so no truncation occurs here.
+                assert(ind->Addr()->IsCnsIntOrI());
+                ind->Addr()->AsIntCon()->SetIconValue(min(prevData.offset, currData.offset));
+            }
 
             ind->gtType         = newType;
             ind->Data()->gtType = newType;
@@ -11188,7 +11332,10 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
             lclStore->Data()->gtType = newType;
             if (lclStore->OperIs(GT_STORE_LCL_FLD))
             {
-                lclStore->AsLclFld()->SetLclOffs(min(prevData.offset, currData.offset));
+                // Local field offsets are non-negative and uint16_t-range (see SetLclOffs), so the
+                // min fits in unsigned without truncation.
+                assert(FitsIn<unsigned>(min(prevData.offset, currData.offset)));
+                lclStore->AsLclFld()->SetLclOffs(static_cast<unsigned>(min(prevData.offset, currData.offset)));
             }
         }
 
@@ -12903,19 +13050,30 @@ void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
 
 #if defined(FEATURE_HW_INTRINSICS)
 //----------------------------------------------------------------------------------------------
-// Lowering::InsertNewSimdCreateScalarUnsafeNode: Inserts a new simd CreateScalarUnsafe node
+// Lowering::InsertNewSimdCreateScalarUnsafeNode: Inserts a new simd CreateScalarUnsafe node,
+//    eliding it where it is a pure reinterpret
 //
 //  Arguments:
 //    simdType        - The return type of SIMD node being created
 //    op1             - The value of the lowest element of the simd value
-//    simdBaseJitType - the base JIT type of SIMD type of the intrinsic
+//    simdBaseType    - the base type of the SIMD type of the intrinsic
 //    simdSize        - the size of the SIMD type of the intrinsic
 //
 // Returns:
-//    The inserted CreateScalarUnsafe node
+//    The node the consuming intrinsic should use as its operand. This is the newly created and
+//    lowered CreateScalarUnsafe node, or - where CreateScalarUnsafe is a pure reinterpret - the
+//    bare scalar op1 itself.
 //
 // Remarks:
-//    If the created node is a vector constant, op1 will be removed from the block range
+//    On targets where a floating-point scalar already occupies the lowest element of a SIMD
+//    register (with the upper elements undefined, matching the "Unsafe" contract), a non-constant
+//    floating-point CreateScalarUnsafe is a no-op reinterpret. In that case the bare scalar is
+//    returned and the consuming intrinsic reads it directly, avoiding a redundant node.
+//
+//    Integral scalars still require a real movd/movq (or ins/dup) to move the value into a SIMD
+//    register, and a constant is materialized so it can fold to a vector constant, so those cases
+//    create, lower, and return a real CreateScalarUnsafe node. If that node is a vector constant,
+//    op1 is removed from the block range.
 //
 GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types simdType,
                                                        GenTree*  op1,
@@ -12924,6 +13082,13 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types simdType,
 {
     assert(varTypeIsSIMD(simdType));
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    if (varTypeIsFloating(simdBaseType) && !op1->IsCnsFltOrDbl())
+    {
+        return op1;
+    }
+#endif // TARGET_XARCH || TARGET_ARM64
+
     GenTree* result = m_compiler->gtNewSimdCreateScalarUnsafeNode(simdType, op1, simdBaseType, simdSize);
     BlockRange().InsertAfter(op1, result);
 
@@ -12931,6 +13096,8 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types simdType,
     {
         BlockRange().Remove(op1);
     }
+
+    LowerNode(result);
     return result;
 }
 

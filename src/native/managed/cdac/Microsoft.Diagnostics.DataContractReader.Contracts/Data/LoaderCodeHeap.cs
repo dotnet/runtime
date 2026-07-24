@@ -8,5 +8,5 @@ internal sealed partial class LoaderCodeHeap : IData<LoaderCodeHeap>
 {
     /// <summary>Address of the embedded ExplicitControlLoaderHeap within this LoaderCodeHeap object.</summary>
     [FieldAddress]
-    public TargetPointer LoaderHeap { get; }
+    public partial TargetPointer LoaderHeap { get; }
 }

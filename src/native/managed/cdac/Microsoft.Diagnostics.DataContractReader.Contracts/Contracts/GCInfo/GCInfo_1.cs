@@ -22,22 +22,22 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
     IGCInfoHandle IGCInfo.DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersion)
         => new GcInfoDecoder<InterpreterGCInfoTraits>(_target, gcInfoAddress, gcVersion);
 
+    GCInfoHeader IGCInfo.GetHeader(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetHeader();
+    }
+
     uint IGCInfo.GetCodeLength(IGCInfoHandle gcInfoHandle)
     {
         IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
         return handle.GetCodeLength();
     }
 
-    uint IGCInfo.GetStackBaseRegister(IGCInfoHandle gcInfoHandle)
+    uint IGCInfo.GetCalleePoppedArgumentsSize(IGCInfoHandle gcInfoHandle)
     {
         IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
-        return handle.GetStackBaseRegister();
-    }
-
-    uint IGCInfo.GetSizeOfStackParameterArea(IGCInfoHandle gcInfoHandle)
-    {
-        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
-        return handle.GetSizeOfStackParameterArea();
+        return handle.GetCalleePoppedArgumentsSize();
     }
 
     IReadOnlyList<InterruptibleRange> IGCInfo.GetInterruptibleRanges(IGCInfoHandle gcInfoHandle)
@@ -46,10 +46,28 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
         return handle.GetInterruptibleRanges();
     }
 
+    IReadOnlyList<uint> IGCInfo.GetSafePoints(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetSafePoints();
+    }
+
+    IReadOnlyList<GCSlotLifetime> IGCInfo.GetSlotLifetimes(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetSlotLifetimes();
+    }
+
     IReadOnlyList<LiveSlot> IGCInfo.EnumerateLiveSlots(IGCInfoHandle gcInfoHandle, uint instructionOffset, GcSlotEnumerationOptions options)
     {
         IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
         return handle.EnumerateLiveSlots(instructionOffset, options);
+    }
+
+    bool IGCInfo.IsGcSafe(IGCInfoHandle gcInfoHandle, uint instructionOffset)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.IsGcSafe(instructionOffset);
     }
 
     private static IGCInfoDecoder AssertCorrectHandle(IGCInfoHandle gcInfoHandle)

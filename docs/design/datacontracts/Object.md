@@ -17,6 +17,12 @@ public readonly record struct DelegateInfo(
     TargetCodePointer TargetMethodPtr,
     DelegateType DelegateType);
 
+// DiagnosticIP is TargetPointer.Null when the continuation has no ResumeInfo.
+public readonly record struct ContinuationInfo(
+    TargetPointer Next,
+    TargetPointer DiagnosticIP,
+    uint State);
+
 // Get the method table address for the object
 TargetPointer GetMethodTableAddress(TargetPointer address);
 
@@ -42,46 +48,64 @@ TargetPointer GetSyncBlockAddress(TargetPointer address);
 
 DelegateInfo GetDelegateInfo(TargetPointer address);
 
+// Get the linked-list / diagnostic-IP / state triple for a runtime-async continuation object.
+ContinuationInfo GetContinuationInfo(TargetPointer address);
 // Returns the logical size of the object in bytes (base size plus any variable-size component data).
 ulong GetSize(TargetPointer address);
 ```
 
 ## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `Array` | `m_NumComponents` | Number of items in the array |
-| `Object` | `m_pMethTab` | Method table for the object |
-| `String` | `m_FirstChar` | First character of the string - `m_StringLength` can be used to read the full string (encoded in UTF-16) |
-| `String` | `m_StringLength` | Length of the string in characters (encoded in UTF-16) |
-| `SyncTableEntry` | `SyncBlock` | `SyncBlock` corresponding to the entry |
-| `ObjectHeader` | `SyncBlockValue` | Sync block value from the object header |
-| `SyncBlock` | `HashCode` | Hash code stored in the sync block |
-| `Delegate` | `Target` | Bound `this` reference for closed delegates |
-| `Delegate` | `MethodPtr` | Primary method pointer |
-| `Delegate` | `MethodPtrAux` | Auxiliary method pointer |
-| `Delegate` | `InvocationCount` | Invocation count (non-zero for multicast/wrapper/unmanaged/special delegates) |
+<!-- BEGIN GENERATED: usage contract=Object version=c1 -->
+### Data descriptors used
 
-Global variables used:
-| Global Name | Type | Purpose |
-| --- | --- | --- |
-| `ArrayBoundsZero` | TargetPointer | Known value for single dimensional, zero-lower-bound array |
-| `ObjectHeaderSize` | uint32 | Size of the object header (sync block and alignment) |
-| `ObjectToMethodTableUnmask` | uint8 | Bits to clear for converting to a method table address |
-| `StringMethodTable` | TargetPointer | The method table for System.String |
-| `SyncTableEntries` | TargetPointer | The `SyncTableEntry` list |
-| `SyncBlockValueToObjectOffset` | uint16 | Offset from the sync block value (in the object header) to the object itself |
-| `SyncBlockIsHashOrSyncBlockIndex` | uint32 | Check bit indicating that the sync block value represents either a hash code or a sync block index rather than a thin-lock state. |
-| `SyncBlockIsHashCode` | uint32 | Check bit that, when `SyncBlockIsHashOrSyncBlockIndex` is set, specifies that the remaining bits hold the hash code; when clear, the remaining bits hold the sync block index. |
-| `SyncBlockHashCodeMask` | uint32 | Mask for extracting the hash code from the sync block value. |
-| `SyncBlockIndexMask` | uint32 | The mask for sync block index field. |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `Array` | *(type size)* | `uint32` | Size of the fixed portion of an array object |
+| `Array` | `m_NumComponents` | `uint32` | Number of items in the array |
+| `AsyncResumeInfo` | `DiagnosticIP` | `pointer` | Native IP into the resumed method used for diagnostics (may be null) |
+| `ContinuationObject` | `Next` | `pointer` | Pointer to the next continuation in the linked list |
+| `ContinuationObject` | `ResumeInfo` | `pointer` | Pointer to the `ResumeInfo` for this suspension point (may be null) |
+| `ContinuationObject` | `State` | `int32` | State index identifying the suspension point within the resumed method |
+| `Delegate` | `ExtraData` | `nint` | Invocation count for multicast, UnmanagedMarker for unmanaged, MethodDesc otherwise |
+| `Delegate` | `HelperObject` | `pointer` | Invocation list for multicast, MethodInfo otherwise |
+| `Delegate` | `MethodPtr` | `CodePointer` | Primary method pointer |
+| `Delegate` | `MethodPtrAux` | `CodePointer` | Auxiliary method pointer |
+| `Delegate` | `Target` | `pointer` | Bound `this` reference for closed delegates |
+| `Object` | `m_pMethTab` | `pointer` | Method table for the object |
+| `ObjectHeader` | *(type size)* | `uint32` | Size of the object header |
+| `ObjectHeader` | `SyncBlockValue` | `uint32` | Sync block value from the object header |
+| `String` | `m_FirstChar` | `pointer` | Address of the first UTF-16 character in the string |
+| `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
+| `SyncBlock` | `EnCInfo` | `pointer` | Pointer to Edit-and-Continue added-field information for the object; optional when Edit and Continue is not configured |
+| `SyncBlock` | `HashCode` | `uint32` | Hash code stored in the sync block |
+| `SyncBlock` | `InteropInfo` | `pointer` | Pointer to optional COM interop data associated with the sync block |
+| `SyncBlock` | `Lock` | `ObjectHandle` | Object handle referring to the System.Threading.Lock used for the object's monitor |
 
-Contracts used:
+### Global variables used
+
+| Global | Type | Meaning |
+| --- | --- | --- |
+| `ArrayBoundsZero` | `pointer` | Known value for a single-dimensional, zero-lower-bound array |
+| `ObjectToMethodTableUnmask` | `uint8` | Bits to clear when converting an object header value to a method table address |
+| `StringMethodTable` | `pointer` | Pointer to the method table for `System.String` |
+| `SyncBlockHashCodeMask` | `uint32` | Mask for extracting the hash code from the sync block value |
+| `SyncBlockIndexMask` | `uint32` | Mask for extracting the sync block index |
+| `SyncBlockIsHashCode` | `uint32` | Bit indicating that the remaining sync block value contains a hash code |
+| `SyncBlockIsHashOrSyncBlockIndex` | `uint32` | Bit indicating that the sync block value contains a hash code or sync block index |
+
+### Contracts used
+
 | Contract Name |
 | --- |
 | `RuntimeTypeSystem` |
 | `SyncBlock` |
+<!-- END GENERATED: usage contract=Object version=c1 -->
+
+Contract Constants:
+| Name | Type | Purpose | Value |
+| --- | --- | --- | --- |
+| `UnmanagedMarker` | nint | Sentinel value for detecting unmanaged pointer delegates. | `-1` |
 
 ``` csharp
 TargetPointer GetMethodTableAddress(TargetPointer address)
@@ -208,14 +232,25 @@ DelegateInfo GetDelegateInfo(TargetPointer address)
 {
     Data.Delegate del = new Data.Delegate(target, address);
 
-    // Classify the delegate from its invocation count and auxiliary pointer.
-    DelegateType delegateType = target.ReadNInt(address + /* Delegate::InvocationCount offset */) switch
+    // Check for multicast and unmanaged first.
+    bool isMulticast = false;
+    TargetPointer helperObject = target.ReadPointer(address + /* Delegate::HelperObject offset */);
+    if (helperObject != TargetPointer.Null)
     {
-        0  => del.MethodPtrAux == TargetCodePointer.Null
-                ? DelegateType.Closed
-                : DelegateType.Open,
-        _  => DelegateType.Unknown,
-    };
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer mt = GetMethodTableAddress(helperObject);
+        Debug.Assert(mt != TargetPointer.Null);
+
+        isMulticast = rts.IsArray(rts.GetTypeHandle(mt), out _);
+    }
+
+    const nint UnmanagedMarker = -1;
+    DelegateType delegateType = DelegateType.Unknown;
+    if (!isMulticast && target.ReadNInt(address + /* Delegate::ExtraData offset */) != UnmanagedMarker)
+    {
+        delegateType = del.MethodPtrAux == TargetCodePointer.Null ? DelegateType.Closed : DelegateType.Open;
+    }
 
     // Pick the bound object and primary entry point based on the classification.
     // For Closed delegates the target is the bound `this` and MethodPtr is invoked on it.
@@ -229,6 +264,23 @@ DelegateInfo GetDelegateInfo(TargetPointer address)
     };
 
     return new DelegateInfo(targetObject, targetMethodPtr, delegateType);
+}
+
+ContinuationInfo GetContinuationInfo(TargetPointer address)
+{
+    TargetPointer next       = target.ReadPointer(address + /* ContinuationObject::Next offset */);
+    TargetPointer resumeInfo = target.ReadPointer(address + /* ContinuationObject::ResumeInfo offset */);
+    uint state               = (uint)target.Read<int>(address + /* ContinuationObject::State offset */);
+
+    // ResumeInfo may be null
+    TargetPointer diagnosticIP = resumeInfo != TargetPointer.Null
+        ? target.ReadPointer(resumeInfo + /* AsyncResumeInfo::DiagnosticIP offset */)
+        : TargetPointer.Null;
+
+    return new ContinuationInfo(
+        Next: next,
+        DiagnosticIP: diagnosticIP,
+        State: state);
 }
 
 ulong GetSize(TargetPointer address)

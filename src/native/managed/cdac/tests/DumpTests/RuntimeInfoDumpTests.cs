@@ -61,4 +61,16 @@ public class RuntimeInfoDumpTests : DumpTestBase
 
         Assert.Equal(expected, os);
     }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeInfo_RuntimeFlavorIsCoreclr(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+
+        IRuntimeInfo runtimeInfo = Target.Contracts.RuntimeInfo;
+        RuntimeInfoRuntimeFlavor flavor = runtimeInfo.GetRuntimeFlavor();
+
+        Assert.Equal(RuntimeInfoRuntimeFlavor.Coreclr, flavor);
+    }
 }

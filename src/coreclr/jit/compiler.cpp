@@ -398,7 +398,7 @@ Compiler::Compiler(ArenaAllocator*       arena,
     // check that HelperCallProperties are initialized
     assert(s_helperCallProperties.IsPure(CORINFO_HELP_GET_GCSTATIC_BASE));
 
-    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo();
 
     // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
     //
@@ -984,7 +984,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 
                 // TODO-SVE: For now, we always pass Vector<T> by reference. Support passing Vector<T> in Z registers.
                 unsigned simdSize = 0;
-                if (structSizeMightRepresentSIMDType(structSize) &&
+                if (structMightRepresentSIMDType(clsHnd) &&
                     (getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize) != TYP_UNDEF) && (simdSize == SIZE_UNKNOWN))
                 {
                     howToReturnStruct = SPK_ByReference;
@@ -1724,18 +1724,6 @@ CORINFO_CONST_LOOKUP Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum)
     return lookup;
 }
 
-unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
-{
-    var_types sigType = genActualType(JITtype2varType(cit));
-    unsigned  sigSize;
-    sigSize = genTypeSize(sigType);
-    if (cit == CORINFO_TYPE_VALUECLASS)
-    {
-        sigSize = info.compCompHnd->getClassSize(clsHnd);
-    }
-    return sigSize;
-}
-
 #ifdef DEBUG
 static bool DidComponentUnitTests = false;
 
@@ -1875,46 +1863,6 @@ const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloa
     return getRegName(reg);
 }
 
-const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
-{
-#if CPU_HAS_BYTE_REGS
-    if (size == 1 || size == 2)
-    {
-        // clang-format off
-        static const char* sizeNames[][2] =
-        {
-            { "al", "ax" },
-            { "cl", "cx" },
-            { "dl", "dx" },
-            { "bl", "bx" },
-    #ifdef TARGET_AMD64
-            {  "spl",   "sp" }, // ESP
-            {  "bpl",   "bp" }, // EBP
-            {  "sil",   "si" }, // ESI
-            {  "dil",   "di" }, // EDI
-            {  "r8b",  "r8w" },
-            {  "r9b",  "r9w" },
-            { "r10b", "r10w" },
-            { "r11b", "r11w" },
-            { "r12b", "r12w" },
-            { "r13b", "r13w" },
-            { "r14b", "r14w" },
-            { "r15b", "r15w" },
-    #endif // TARGET_AMD64
-        };
-        // clang-format on
-
-        assert(isByteReg(reg));
-        assert(genRegMask(reg) & RBM_BYTE_REGS);
-        assert(size == 1 || size == 2);
-
-        return sizeNames[reg][size - 1];
-    }
-#endif // CPU_HAS_BYTE_REGS
-
-    return compRegVarName(reg, true);
-}
-
 #ifdef DEBUG
 const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
 {
@@ -2023,6 +1971,13 @@ void Compiler::compSetProcessor()
 
     // Add virtual vector ISAs. These are both supported as part of the required baseline.
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+#elif defined(TARGET_WASM)
+    // Ensure required baseline ISAs are supported in JIT code, even if not passed in by the VM.
+    instructionSetFlags.AddInstructionSet(InstructionSet_WasmBase);
+    instructionSetFlags.AddInstructionSet(InstructionSet_PackedSimd);
+
+    // Add virtual vector ISA. Vector128 is part of the required Wasm SIMD baseline.
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
 #endif // TARGET_ARM64
 
@@ -2981,6 +2936,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compScopeInfo = opts.compDbgInfo;
 
+#ifdef TARGET_WASM
+    // Wasm uses virtual registers that cannot be encoded in the
+    // ICorDebugInfo register scheme, and there is no native debugger
+    // to consume scope info, so disable it entirely.
+    opts.compScopeInfo = false;
+#endif
+
 #ifdef LATE_DISASM
     codeGen->getDisAssembler().disOpenForLateDisAsm(info.compMethodName, info.compClassName,
                                                     info.compMethodInfo->args.pSig);
@@ -3137,6 +3099,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (compIsAsync())
         {
             printf("OPTIONS: compilation is an async state machine\n");
+        }
+
+        if (compIsAsyncVersion())
+        {
+            printf(
+                "OPTIONS: compilation is for an async version of a synchronous method; IL belongs to synchronous method\n");
         }
     }
 #endif
@@ -4561,6 +4529,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
+    // Unpin pinned locals whose value is provably non-movable.
+    //
+    DoPhase(this, PHASE_UNPIN_LOCALS, &Compiler::fgUnpinNonMovableLocals);
+
     // Expose candidates for implicit byref last-use copy elision.
     DoPhase(this, PHASE_IMPBYREF_COPY_OMISSION, &Compiler::fgMarkImplicitByRefCopyOmissionCandidates);
 
@@ -4931,6 +4903,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Remove empty try regions (try/catch/fault)
     //
     DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_3, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
+
+    // Remove unreachable try regions
+    //
+    DoPhase(this, PHASE_REMOVE_UNREACHABLE_TRY, &Compiler::fgRemoveUnreachableTry);
 
     // Create funclets from the EH handlers.
     //
@@ -6042,6 +6018,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_Crc32);
         }
 
+        if (JitConfig.EnableArm64Cssc() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Cssc);
+        }
+
         if (JitConfig.EnableArm64Dp() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Dp);
@@ -6224,6 +6205,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableRiscV64Zbb() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Zbb);
+        }
+
+        if (JitConfig.EnableRiscV64Zicond() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Zicond);
         }
 #endif
 
@@ -8075,54 +8061,8 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
     return reachable;
 }
 
-void Compiler::TransferTestDataToNode(GenTree* from, GenTree* to)
-{
-    TestLabelAndNum tlAndN;
-    // We can't currently associate multiple annotations with a single node.
-    // If we need to, we can fix this...
-
-    // If the table is null, don't create it just to do the lookup, which would fail...
-    if (m_nodeTestData != nullptr && GetNodeTestData()->Lookup(from, &tlAndN))
-    {
-        assert(!GetNodeTestData()->Lookup(to, &tlAndN));
-        // We can't currently associate multiple annotations with a single node.
-        // If we need to, we can fix this...
-        TestLabelAndNum tlAndNTo;
-        assert(!GetNodeTestData()->Lookup(to, &tlAndNTo));
-
-        GetNodeTestData()->Remove(from);
-        GetNodeTestData()->Set(to, tlAndN);
-    }
-}
-
 #endif // DEBUG
 
-/*
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX                          jvc                                              XX
-XX                                                                           XX
-XX  Functions for the stand-alone version of the JIT .                       XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
-/*****************************************************************************/
-void codeGeneratorCodeSizeBeg()
-{
-}
-
-/*****************************************************************************
- *
- *  Used for counting pointer assignments.
- */
-
-/*****************************************************************************/
-void codeGeneratorCodeSizeEnd()
-{
-}
 /*****************************************************************************
  *
  *  Gather statistics - mainly used for the standalone
@@ -9108,23 +9048,6 @@ void Compiler::AddLoopHoistStats()
     s_totalHoistedExpressions += m_totalHoistedExpressions;
 }
 
-void Compiler::PrintPerMethodLoopHoistStats()
-{
-    double pctWithHoisted = 0.0;
-    if (m_loopsConsidered > 0)
-    {
-        pctWithHoisted = 100.0 * (double(m_loopsWithHoistedExpressions) / double(m_loopsConsidered));
-    }
-    double exprsPerLoopWithExpr = 0.0;
-    if (m_loopsWithHoistedExpressions > 0)
-    {
-        exprsPerLoopWithExpr = double(m_totalHoistedExpressions) / double(m_loopsWithHoistedExpressions);
-    }
-    printf("Considered %d loops.  Of these, we hoisted expressions out of %d (%5.2f%%).\n", m_loopsConsidered,
-           m_loopsWithHoistedExpressions, pctWithHoisted);
-    printf("  A total of %d expressions were hoisted, an average of %5.2f per loop-with-hoisted-expr.\n",
-           m_totalHoistedExpressions, exprsPerLoopWithExpr);
-}
 #endif // LOOP_HOIST_STATS
 
 //------------------------------------------------------------------------

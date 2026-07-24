@@ -221,7 +221,7 @@ internal struct GC_1 : IGC
     private List<GCGenerationData> GetGenerationData(TargetPointer generationTableArrayStart)
     {
         uint generationTableLength = _target.ReadGlobal<uint>(Constants.Globals.TotalGenerationCount);
-        uint generationSize = _target.GetTypeInfo(DataType.Generation).Size ?? throw new InvalidOperationException("Type Generation has no size");
+        uint generationSize = Data.Generation.GetSize(_target);
         List<Data.Generation> generationTable = [];
         for (uint i = 0; i < generationTableLength; i++)
         {
@@ -549,11 +549,12 @@ internal struct GC_1 : IGC
             HandleType.Dependent,
             HandleType.WeakInteriorPointer
         ];
-        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0 || _target.ReadGlobal<byte>(Constants.Globals.FeatureComWrappers) != 0 || _target.ReadGlobal<byte>(Constants.Globals.FeatureObjCMarshal) != 0)
+        IFeatureFlags featureFlags = _target.Contracts.FeatureFlags;
+        if (featureFlags.IsEnabled(RuntimeFeature.COMInterop) || featureFlags.IsEnabled(RuntimeFeature.ComWrappers) || featureFlags.IsEnabled(RuntimeFeature.ObjCMarshal))
         {
             supportedTypes.Add(HandleType.RefCounted);
         }
-        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureJavaMarshal) != 0)
+        if (featureFlags.IsEnabled(RuntimeFeature.JavaMarshal))
         {
             supportedTypes.Add(HandleType.CrossReference);
         }
@@ -643,8 +644,6 @@ internal struct GC_1 : IGC
         HandleData handleData = default;
         handleData.Handle = handleAddress;
         handleData.Type = GetInternalHandleType(type);
-        handleData.JupiterRefCount = 0;
-        handleData.IsPegged = false;
         handleData.StrongReference = IsStrongReference(type);
         if (HasSecondary(type))
         {
@@ -662,7 +661,7 @@ internal struct GC_1 : IGC
             handleData.Secondary = 0;
         }
 
-        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0 && IsRefCounted(type))
+        if (_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.COMInterop) && IsRefCounted(type))
         {
             IObject obj = _target.Contracts.Object;
             TargetPointer handle = _target.ReadPointer(handleAddress);
@@ -800,8 +799,7 @@ internal struct GC_1 : IGC
         if (_target.TryReadGlobal<uint>(Constants.Globals.CountFreeRegionKinds, out uint? freeRegionKindsValue))
         {
             countFreeRegionKinds = Math.Min((int)freeRegionKindsValue.Value, 16);
-            regionFreeListSize = _target.GetTypeInfo(DataType.RegionFreeList).Size
-                ?? throw new InvalidOperationException("RegionFreeList type has no size");
+            regionFreeListSize = Data.RegionFreeList.GetSize(_target);
         }
 
         // Global free huge regions
@@ -888,8 +886,7 @@ internal struct GC_1 : IGC
         Data.TableSegment tableSegment = _target.ProcessedData.GetOrAdd<Data.TableSegment>(segmentBase);
 
         // The RgValue offset within the segment equals the header size.
-        Target.TypeInfo typeInfo = _target.GetTypeInfo(DataType.TableSegment);
-        uint rgValueOffset = (uint)typeInfo.Fields[nameof(Data.TableSegment.RgValue)].Offset;
+        uint rgValueOffset = (uint)Data.TableSegment.GetRgValueOffset(_target);
 
         // Compute the handle index within the segment's value area.
         uint handleIndex = (uint)((ulong)(handle - segmentBase) - rgValueOffset) / (uint)_target.PointerSize;

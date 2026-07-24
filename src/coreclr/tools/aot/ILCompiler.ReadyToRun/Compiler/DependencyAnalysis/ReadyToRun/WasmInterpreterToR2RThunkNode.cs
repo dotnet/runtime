@@ -5,6 +5,7 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
+using Internal.CallingConvention;
 using Internal.Text;
 using Internal.TypeSystem;
 using System;
@@ -84,7 +85,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ISymbolNode targetTypeIndex = _targetTypeNode;
 
             MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
-            (ArgIterator argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
+            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
 
             bool hasRetBuffArg = _wasmSignature.SignatureString[0] == 'S';
             bool hasThis = !methodSignature.IsStatic;
@@ -207,6 +208,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             break;
                         case WasmValueType.F64:
                             expressions.Add(F64.Load((ulong)interpOffsets[i]));
+                            break;
+                        case WasmValueType.V128:
+                            expressions.Add(V128.Load((ulong)interpOffsets[i]));
                             break;
                         default:
                             throw new Exception("Unexpected wasm type for interpreter-to-R2R arg");

@@ -32,10 +32,68 @@ public sealed class CdacTypeAttribute : Attribute
 
     /// <summary>
     /// When <c>true</c>, the generator emits a <c>TypeHandle(Target)</c>
-    /// accessor that resolves the runtime <c>TypeHandle</c> by trying each
-    /// candidate name against <c>IManagedTypeSource</c>.
+    /// accessor returning an <c>ITypeHandle</c> by trying each candidate name
+    /// against <c>IManagedTypeSource</c>.
     /// </summary>
     public bool HasTypeHandle { get; set; }
+}
+
+/// <summary>
+/// Declares a data descriptor field used by an <c>IData&lt;T&gt;</c>
+/// property or method.
+/// </summary>
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
+public sealed class DataDescriptorDependencyAttribute : Attribute
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DataDescriptorDependencyAttribute"/> class.
+    /// </summary>
+    /// <param name="fieldName">The descriptor field name used by the member.</param>
+    /// <param name="nativeType">The native type of the descriptor field.</param>
+    /// <param name="typeName">
+    /// The cDAC descriptor type containing the field. When omitted, the declaring
+    /// <c>IData&lt;T&gt;</c> type is used.
+    /// </param>
+    public DataDescriptorDependencyAttribute(string fieldName, string nativeType, string? typeName = null)
+    {
+        FieldName = fieldName;
+        NativeType = nativeType;
+        TypeName = typeName;
+    }
+
+    /// <summary>Gets the descriptor field name used by the member.</summary>
+    /// <value>The descriptor field name used by the member.</value>
+    public string FieldName { get; }
+
+    /// <summary>Gets the native type of the descriptor field.</summary>
+    /// <value>The native type of the descriptor field.</value>
+    public string NativeType { get; }
+
+    /// <summary>Gets the cDAC descriptor type containing the field, if it differs from the declaring type.</summary>
+    public string? TypeName { get; }
+}
+
+/// <summary>
+/// Declares that an <c>IData&lt;T&gt;</c> property or method uses the
+/// data descriptor type size.
+/// </summary>
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
+public sealed class UsesDataDescriptorTypeSizeAttribute : Attribute
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UsesDataDescriptorTypeSizeAttribute"/> class.
+    /// </summary>
+    /// <param name="typeName">
+    /// The cDAC descriptor type whose size is used. When omitted, the declaring
+    /// <c>IData&lt;T&gt;</c> type is used.
+    /// </param>
+    public UsesDataDescriptorTypeSizeAttribute(string? typeName = null)
+    {
+        TypeName = typeName;
+    }
+
+    /// <summary>Gets the cDAC descriptor type whose size is used, if it differs from the declaring type.</summary>
+    public string? TypeName { get; }
 }
 
 /// <summary>

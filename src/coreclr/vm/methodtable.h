@@ -921,6 +921,18 @@ public:
         _ASSERTE(index < NumEightBytes);
         return EightByteSizes[index];
     }
+
+    friend struct ::cdac_data<SystemVEightByteRegistersInfo>;
+};
+
+template<> struct cdac_data<SystemVEightByteRegistersInfo>
+{
+    static constexpr size_t NumEightBytes = offsetof(SystemVEightByteRegistersInfo, NumEightBytes);
+    static constexpr size_t EightByteClassification0 = offsetof(SystemVEightByteRegistersInfo, EightByteClassifications) + 0 * sizeof(SystemVClassificationType);
+    static constexpr size_t EightByteClassification1 = offsetof(SystemVEightByteRegistersInfo, EightByteClassifications) + 1 * sizeof(SystemVClassificationType);
+    static constexpr size_t EightByteSize0 = offsetof(SystemVEightByteRegistersInfo, EightByteSizes) + 0;
+    static constexpr size_t EightByteSize1 = offsetof(SystemVEightByteRegistersInfo, EightByteSizes) + 1;
+    static_assert(CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS == 2, "cdac descriptor exposes exactly two eightbyte slots");
 };
 #endif
 
@@ -1590,6 +1602,17 @@ public:
 
         return *GetSlotPtrRaw(slotNumber);
     }
+
+#ifndef DACCESS_COMPILE
+    PCODE GetSlotForVirtualVolatileLoadWithoutBarrier(UINT32 slotNum)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        CONSISTENCY_CHECK(slotNum < GetNumVirtuals());
+        // Virtual slots live in chunks pointed to by vtable indirections
+        return VolatileLoadWithoutBarrier(GetVtableIndirections()[GetIndexOfVtableIndirection(slotNum)] + GetIndexAfterVtableIndirection(slotNum));
+    }
+#endif // DACCESS_COMPILE
 
     // Special-case for when we know that the slot number corresponds
     // to a virtual method.
@@ -2459,7 +2482,7 @@ public:
     //
 
     // get the method desc given the interface method desc
-    static MethodDesc *GetMethodDescForInterfaceMethodAndServer(TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer);
+    static MethodDesc *GetMethodDescForInterfaceMethodAndServer(TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer, MethodTable* pServerMT);
 
 #ifdef FEATURE_COMINTEROP
     // get the method desc given the interface method desc on a COM implemented server
@@ -3404,6 +3427,7 @@ protected:
             { LIMITED_METHOD_CONTRACT; CONSISTENCY_CHECK(i < GetNumMethods()); return GetEntryData() + i; }
 
         void FillEntryDataForAncestor(MethodTable *pMT);
+        void SetEntryDataForSlotIfNotYetSet(UINT32 i, MethodDesc *pMD);
 
         //
         // At the end of this object is an array
@@ -3701,7 +3725,7 @@ private:
         // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORECT FLAGS.
-        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of enum_flag_GenericsMask, enum_flag_GenericsMask_NonGeneric, and enum_flag_GenericsMask_TypicalInst.
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of enum_flag_GenericsMask, enum_flag_GenericsMask_NonGeneric, enum_flag_GenericsMask_SharedInst, and enum_flag_GenericsMask_TypicalInst.
 
         // We are overloading the low 2 bytes of m_dwFlags to be a component size for Strings
         // and Arrays and some set of flags which we can be assured are of a specified state

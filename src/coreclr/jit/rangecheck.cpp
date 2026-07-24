@@ -23,26 +23,27 @@ PhaseStatus Compiler::rangeCheckPhase()
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
+// Max stack depth (path length) in walking the UD chain.
+static const int MAX_SEARCH_DEPTH = 100;
+
+// Max nodes to visit in the UD chain for the current method being compiled.
+static const int MAX_VISIT_BUDGET = 8192;
+
 //------------------------------------------------------------------------
 // GetRangeCheck: get the RangeCheck instance
 //
 // Returns:
 //    The range check object
 //
-RangeCheck* Compiler::GetRangeCheck()
+RangeCheck* Compiler::GetRangeCheck(int customBudget)
 {
     if (optRangeCheck == nullptr)
     {
         optRangeCheck = new (this, CMK_Generic) RangeCheck(this);
     }
+    optRangeCheck->SetBudget(customBudget > 0 ? customBudget : MAX_VISIT_BUDGET);
     return optRangeCheck;
 }
-
-// Max stack depth (path length) in walking the UD chain.
-static const int MAX_SEARCH_DEPTH = 100;
-
-// Max nodes to visit in the UD chain for the current method being compiled.
-static const int MAX_VISIT_BUDGET = 8192;
 
 // RangeCheck constructor.
 RangeCheck::RangeCheck(Compiler* pCompiler)
@@ -259,11 +260,9 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
 
     ValueNum arrLenVn = m_compiler->optConservativeNormalVN(bndsChk->GetArrayLength());
 
-    m_preferredBound = arrLenVn;
-
     // Get the range for this index.
     Range range = Range(Limit(Limit::keUndef));
-    if (!TryGetRange(block, treeIndex, &range))
+    if (!TryGetRange(block, treeIndex, &range, arrLenVn))
     {
         JITDUMP("Failed to get range\n");
         return;
@@ -314,7 +313,7 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
 
 bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
 {
-    assert(binop->OperIs(GT_ADD, GT_MUL, GT_LSH));
+    assert(binop->OperIs(GT_ADD));
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
@@ -322,8 +321,8 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     JITDUMP("[RangeCheck::IsBinOpMonotonicallyIncreasing] [%06d], [%06d]\n", Compiler::dspTreeID(op1),
             Compiler::dspTreeID(op2));
 
-    // Check if we have a var + const or var * const.
-    if (binop->OperIs(GT_ADD, GT_MUL) && op2->OperIs(GT_LCL_VAR))
+    // Canonicalize to (lclVar + {lclVar|const}).
+    if (op2->OperIs(GT_LCL_VAR))
     {
         std::swap(op1, op2);
     }
@@ -336,8 +335,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     switch (op2->OperGet())
     {
         case GT_LCL_VAR:
-            // When adding/multiplying/shifting two local variables, we also must ensure that any constant is
-            // non-negative.
+            // When adding two local variables, we also must ensure that any constant is non-negative.
             return IsMonotonicallyIncreasing(op1, true) && IsMonotonicallyIncreasing(op2, true);
 
         case GT_CNS_INT:
@@ -405,7 +403,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
         LclSsaVarDsc* ssaDef = GetSsaDefStore(expr->AsLclVarCommon());
         return (ssaDef != nullptr) && IsMonotonicallyIncreasing(ssaDef->GetDefNode()->Data(), rejectNegativeConst);
     }
-    else if (expr->OperIs(GT_ADD, GT_MUL, GT_LSH))
+    else if (expr->OperIs(GT_ADD))
     {
         return IsBinOpMonotonicallyIncreasing(expr->AsOp());
     }
@@ -437,6 +435,14 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
 // Given a lclvar use, try to find the lclvar's defining store and its containing block.
 LclSsaVarDsc* RangeCheck::GetSsaDefStore(GenTreeLclVarCommon* lclUse)
 {
+    // RangeCheck does not understand reads through LCL_FLD nodes: a LCL_FLD use reads a
+    // sub-range of the local (a different offset and/or a narrower type), so the value
+    // produced by the (full-width) definition does not describe the value being read.
+    if (lclUse->OperIs(GT_LCL_FLD))
+    {
+        return nullptr;
+    }
+
     unsigned ssaNum = lclUse->GetSsaNum();
 
     if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
@@ -523,6 +529,30 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_V
 
     ValueNumStore::SmallValueNumSet set;
     return GetRangeFromAssertionsWorker(comp, num, assertions, budget, &set);
+}
+
+//------------------------------------------------------------------------
+// GetRangeFromAssertions: Cheaper version of TryGetRange that is based purely on assertions
+//    and does not require a full range analysis based on SSA.
+//
+// Arguments:
+//    comp             - the compiler instance
+//    vn               - the value number to analyze range for
+//    assertions       - the assertions to use
+//    budget           - the remaining budget for recursive analysis
+//
+// Return Value:
+//    The computed range
+//
+Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum vn, ASSERT_VALARG_TP assertions, int budget)
+{
+    if (vn == ValueNumStore::NoVN)
+    {
+        return Limit(Limit::keUnknown);
+    }
+
+    ValueNumStore::SmallValueNumSet set;
+    return GetRangeFromAssertionsWorker(comp, vn, assertions, budget, &set);
 }
 
 //------------------------------------------------------------------------
@@ -626,7 +656,25 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 
                 var_types castFromType = srcIsUnsigned ? varTypeToUnsigned(arg0Typ) : arg0Typ;
 
-                if (genTypeSize(castFromType) < genTypeSize(castToType))
+                // A zero-extending cast (srcIsUnsigned) of a signed sub-int source is unsound to bound by the
+                // small unsigned type: small signed types are held sign-extended in their int-width stack slot,
+                // so the zero-extension applies to that wider value. E.g. (uint)(sbyte)(-1) == 0xFFFFFFFF, which
+                // is far outside the [0..255] range of the unsigned small type. Use the unsigned form of the
+                // actual (int) source width so we fall back to an unknown range instead of an unsound one.
+                if (srcIsUnsigned && varTypeIsSigned(arg0Typ) && (genTypeSize(arg0Typ) < genTypeSize(TYP_INT)))
+                {
+                    castFromType = varTypeToUnsigned(genActualType(arg0Typ));
+                }
+
+                // Widening preserves the source value (so we can reuse the source range) UNLESS we widen a
+                // signed source into a smaller-than-int unsigned type (e.g. (ushort)(sbyte)). There, negative
+                // source values are zero-extended into large positive values (e.g. (ushort)(-1) == 65535), so
+                // the source range no longer bounds the result.
+                bool widensToSmallUnsigned = varTypeIsUnsigned(castToType) &&
+                                             (genTypeSize(castToType) < genTypeSize(TYP_INT)) &&
+                                             varTypeIsSigned(castFromType);
+
+                if ((genTypeSize(castFromType) < genTypeSize(castToType)) && !widensToSmallUnsigned)
                 {
                     // We're going from a small type to a large type
                     // and so regardless of whether we zero or sign-extend
@@ -868,17 +916,13 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
             }
 
 #if defined(FEATURE_HW_INTRINSICS)
+            case VNF_HWI_Vector_ExtractMostSignificantBits:
 #if defined(TARGET_XARCH)
-            case VNF_HWI_Vector256_ExtractMostSignificantBits:
-            case VNF_HWI_Vector512_ExtractMostSignificantBits:
             case VNF_HWI_X86Base_MoveMask:
             case VNF_HWI_AVX_MoveMask:
             case VNF_HWI_AVX2_MoveMask:
             case VNF_HWI_AVX512_MoveMask:
-#elif defined(TARGET_ARM64)
-            case VNF_HWI_Vector64_ExtractMostSignificantBits:
 #endif
-            case VNF_HWI_Vector128_ExtractMostSignificantBits:
             {
                 // We have 1 bit per element, remaining upper bits are 0
 
@@ -2249,6 +2293,11 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             range = Limit(Limit::keUnknown);
         }
     }
+    // If this value IS the caller-provided preferred bound, represent it as [bound, bound]
+    else if ((m_preferredBound != ValueNumStore::NoVN) && (vn == m_preferredBound))
+    {
+        range = Range(Limit(Limit::keBinOpArray, m_preferredBound, 0));
+    }
     // If local, find the definition from the def map and evaluate the range for rhs.
     else if (expr->IsLocal())
     {
@@ -2295,18 +2344,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     }
     else if (expr->OperIs(GT_ARR_LENGTH))
     {
-        ValueNum arrLenVN = m_compiler->optConservativeNormalVN(expr);
-        if ((arrLenVN != ValueNumStore::NoVN) && (arrLenVN == m_preferredBound))
-        {
-            // If the ARR_LENGTH VN matches the bounds check's length VN, represent it symbolically
-            // so the PHI merge can combine it with other symbolic ranges referencing the same bound.
-            range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keBinOpArray, arrLenVN, 0));
-        }
-        else
-        {
-            // Better than keUnknown
-            range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, CORINFO_Array_MaxLength));
-        }
+        range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, CORINFO_Array_MaxLength));
     }
     else
     {
@@ -2333,15 +2371,25 @@ void Indent(int indent)
 // TryGetRange: Try to obtain the range of an expression.
 //
 // Arguments:
-//    block  - the block that contains `expr`;
-//    expr   - expression to compute the range for;
-//    pRange - [Out] range of the expression;
+//    block            - the block that contains `expr`;
+//    expr             - expression to compute the range for;
+//    pRange           - [Out] range of the expression;
+//    preferredBoundVN - a value number of the preferred bound.
 //
 // Return Value:
 //    false if the range is unknown or determined to overflow.
 //
-bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange)
+bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange, ValueNum preferredBoundVN)
 {
+    // Fast path for constants
+    if (expr->IsIntCnsFitsInI32())
+    {
+        *pRange = Limit(Limit::keConstant, (int)expr->AsIntCon()->IconValue());
+        return true;
+    }
+
+    m_preferredBound = preferredBoundVN;
+
     // Reset the maps.
     ClearRangeMap();
     ClearSearchPath();
@@ -2398,7 +2446,7 @@ Range RangeCheck::GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncre
         JITDUMP("[RangeCheck::GetRangeWorker] " FMT_BB " ", block->bbNum);
         m_compiler->gtDispTree(expr);
         Indent(indent);
-        JITDUMP("{\n", expr);
+        JITDUMP("{\n");
     }
 #endif
 
@@ -2413,7 +2461,7 @@ Range RangeCheck::GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncre
         JITDUMP("   %s Range [%06d] => %s\n", (pRange == nullptr) ? "Computed" : "Cached", Compiler::dspTreeID(expr),
                 range.ToString(m_compiler));
         Indent(indent);
-        JITDUMP("}\n", expr);
+        JITDUMP("}\n");
     }
 #endif
     return range;

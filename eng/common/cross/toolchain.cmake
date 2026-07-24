@@ -160,8 +160,6 @@ if(TIZEN)
     find_toolchain_dir("${CROSS_ROOTFS}/usr/lib64/gcc/${TIZEN_TOOLCHAIN}")
   endif()
 
-  message(STATUS "TIZEN_TOOLCHAIN_PATH set to: ${TIZEN_TOOLCHAIN_PATH}")
-
   include_directories(SYSTEM ${TIZEN_TOOLCHAIN_PATH}/include/c++)
   include_directories(SYSTEM ${TIZEN_TOOLCHAIN_PATH}/include/c++/${TIZEN_TOOLCHAIN})
 endif()

@@ -29,7 +29,7 @@ public class StackReferenceDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread);
+        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread, false);
         Assert.NotNull(refs);
     }
 
@@ -43,7 +43,7 @@ public class StackReferenceDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread);
+        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread, false);
         foreach (StackReferenceData r in refs)
         {
             Assert.True(r.Source != TargetPointer.Null, "Stack reference should have a non-null Source (IP or Frame address)");
@@ -56,7 +56,6 @@ public class StackReferenceDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
-    [SkipOnArch("x86", "GCInfo decoder does not support x86")]
     public void GCRoots_WalkStackReferences_FindsRefs(TestConfiguration config)
     {
         InitializeDumpTest(config, "GCRoots", "full");
@@ -64,7 +63,7 @@ public class StackReferenceDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
 
-        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread);
+        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread, false);
         Assert.NotNull(refs);
         Assert.True(refs.Count > 0,
             "Expected GCRoots Main thread to have at least one stack reference (objects kept alive via GC.KeepAlive)");
@@ -73,7 +72,6 @@ public class StackReferenceDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
-    [SkipOnArch("x86", "GCInfo decoder does not support x86")]
     public void GCRoots_RefsPointToValidObjects(TestConfiguration config)
     {
         InitializeDumpTest(config, "GCRoots", "full");
@@ -81,7 +79,7 @@ public class StackReferenceDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
 
-        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread);
+        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread, false);
 
         int validObjectCount = 0;
         foreach (StackReferenceData r in refs)
@@ -110,7 +108,6 @@ public class StackReferenceDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
-    [SkipOnArch("x86", "GCInfo decoder does not support x86")]
     public void NestedException_InFlightExceptionsReportedAsRoots(TestConfiguration config)
     {
         InitializeDumpTest(config, "NestedException", "full");
@@ -143,7 +140,7 @@ public class StackReferenceDumpTests : DumpTestBase
         // WalkStackReferences must surface every in-flight exception object as a stack reference,
         // reported with the Other source type (the ExInfo node is not a capital-F Frame).
         HashSet<ulong> reported = new();
-        foreach (StackReferenceData r in stackWalk.WalkStackReferences(crashingThread))
+        foreach (StackReferenceData r in stackWalk.WalkStackReferences(crashingThread, false))
         {
             if (r.Object == TargetPointer.Null)
                 continue;
@@ -162,7 +159,6 @@ public class StackReferenceDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
-    [SkipOnArch("x86", "GCInfo decoder does not support x86")]
     public void GCProtect_GCFrameRootsAreReported(TestConfiguration config)
     {
         InitializeDumpTest(config, "GCProtect", "full");
@@ -174,7 +170,7 @@ public class StackReferenceDumpTests : DumpTestBase
         // holding a GCPROTECT frame over the requesting Assembly reference. WalkStackReferences reports
         // each GCFrame-protected object with the GCFrame node address as its Source; the test walks the
         // thread's GCFrame chain and asserts a reported root's Source matches a node in that chain.
-        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread);
+        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread, false);
 
         // Enumerate the thread's GCFrame chain node addresses; each reported GCFrame root carries the
         // GCFrame node address as its Source (UpdateScanContext(frame: pGCFrame)).
@@ -232,7 +228,7 @@ public class StackReferenceDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "MethodWithStackRefs");
 
-        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread);
+        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread, false);
         Assert.True(refs.Count > 0, "Expected at least one stack reference from MethodWithStackRefs");
 
         bool foundMarker = false;
@@ -272,7 +268,7 @@ public class StackReferenceDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "MethodWithStackRefs");
 
-        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread);
+        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread, false);
         Assert.True(refs.Count > 0, "Expected at least one stack reference from MethodWithStackRefs");
 
         // Look for the int[] { 1, 2, 3, 4, 5 } array using the Object contract.
@@ -322,7 +318,7 @@ public class StackReferenceDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
 
-        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread);
+        IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread, false);
         Assert.NotNull(refs);
     }
 }

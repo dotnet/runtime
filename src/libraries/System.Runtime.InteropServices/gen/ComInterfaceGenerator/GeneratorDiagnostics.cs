@@ -304,16 +304,49 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.MethodNotDeclaredInAttributedInterfaceDescription)));
 
-        /// <inheritdoc cref="SR.InstancePropertyDeclaredInInterfaceMessage"/>
-        public static readonly DiagnosticDescriptor InstancePropertyDeclaredInInterface =
+        /// <inheritdoc cref="SR.InvalidPropertyDeclarationOnGeneratedComInterfaceMessage"/>
+        public static readonly DiagnosticDescriptor InvalidPropertyDeclarationOnGeneratedComInterface =
             DiagnosticDescriptorHelper.Create(
                 Ids.MemberWillNotBeSourceGenerated,
-                GetResourceString(nameof(SR.InstancePropertyDeclaredInInterfaceTitle)),
-                GetResourceString(nameof(SR.InstancePropertyDeclaredInInterfaceMessage)),
+                GetResourceString(nameof(SR.InvalidPropertyDeclarationOnGeneratedComInterfaceTitle)),
+                GetResourceString(nameof(SR.InvalidPropertyDeclarationOnGeneratedComInterfaceMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.InstancePropertyDeclaredInInterfaceDescription)));
+                description: GetResourceString(nameof(SR.InvalidPropertyDeclarationOnGeneratedComInterfaceDescription)));
+
+        /// <inheritdoc cref="SR.PropertyAccessorsMustBeAllOrNothingMessage"/>
+        public static readonly DiagnosticDescriptor PropertyAccessorsMustBeAllOrNothing =
+            DiagnosticDescriptorHelper.Create(
+                Ids.MemberWillNotBeSourceGenerated,
+                GetResourceString(nameof(SR.PropertyAccessorsMustBeAllOrNothingTitle)),
+                GetResourceString(nameof(SR.PropertyAccessorsMustBeAllOrNothingMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.PropertyAccessorsMustBeAllOrNothingDescription)));
+
+        /// <inheritdoc cref="SR.MarshalAttributeOnDefaultImplementedComInterfaceMemberMessage"/>
+        public static readonly DiagnosticDescriptor MarshalAttributeOnDefaultImplementedComInterfaceMember =
+            DiagnosticDescriptorHelper.Create(
+                Ids.MemberWillNotBeSourceGenerated,
+                GetResourceString(nameof(SR.MarshalAttributeOnDefaultImplementedComInterfaceMemberTitle)),
+                GetResourceString(nameof(SR.MarshalAttributeOnDefaultImplementedComInterfaceMemberMessage)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.MarshalAttributeOnDefaultImplementedComInterfaceMemberDescription)));
+
+        /// <inheritdoc cref="SR.MarshalUsingOnPropertyAccessorMustSpecifyTypeMessage"/>
+        public static readonly DiagnosticDescriptor MarshalUsingOnPropertyAccessorMustSpecifyType =
+            DiagnosticDescriptorHelper.Create(
+                Ids.InvalidGeneratedComInterfaceAttributeUsage,
+                GetResourceString(nameof(SR.MarshalUsingOnPropertyAccessorMustSpecifyTypeTitle)),
+                GetResourceString(nameof(SR.MarshalUsingOnPropertyAccessorMustSpecifyTypeMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.MarshalUsingOnPropertyAccessorMustSpecifyTypeDescription)));
 
         /// <inheritdoc cref="SR.InstanceEventDeclaredInInterfaceMessage"/>
         public static readonly DiagnosticDescriptor InstanceEventDeclaredInInterface =

@@ -26,6 +26,15 @@ enum class ShuffleComputationType
 };
 BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst, SArray<ShuffleEntry> * pShuffleEntryArray, ShuffleComputationType shuffleType);
 
+struct BindToMethodDetails
+{
+    BOOL selfReferentialTarget; // Whether the delegate's target object is the same as the first argument of the method to bind to. Only meaningful for open instance delegates.
+    PCODE methodPtr;
+    PCODE methodPtrAux;
+    INT_PTR extraData;
+    OBJECTHANDLE loaderAllocatorGCHandle; // The loader allocator needed if the delegate needs to keep it alive
+};
+
 // This class represents the native methods for the Delegate class
 class COMDelegate
 {
@@ -36,11 +45,6 @@ public:
     // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
     FCDECL1(static PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
     FCDECL1(static MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
-    static PCODE GetWrapperInvoke(MethodDesc* pMD);
-    // determines where the delegate needs to be wrapped for non-security reason
-    static BOOL NeedsWrapperDelegate(MethodDesc* pTargetMD);
-    // on entry delegate points to the delegate to wrap
-    static DELEGATEREF CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc* pTargetMD);
 
     // Marshals a delegate to a unmanaged callback.
     static LPVOID ConvertToCallback(OBJECTREF pDelegate);
@@ -60,17 +64,13 @@ public:
     // Decides if pcls derives from Delegate.
     static BOOL IsDelegate(MethodTable *pMT);
 
-    // Decides if this is a wrapper delegate
-    static BOOL IsWrapperDelegate(DELEGATEREF dRef);
-
     // Get the cpu stub for a delegate invoke.
     static Stub* GetInvokeMethodStub(EEImplMethodDesc* pMD);
 
-    static MethodDesc * __fastcall GetMethodDesc(OBJECTREF obj);
-    static MethodDesc* GetMethodDescForOpenVirtualDelegate(OBJECTREF orDelegate);
-    static OBJECTREF GetTargetObject(OBJECTREF obj);
+    static MethodDesc* GetMethodDesc(OBJECTREF obj);
+    static MethodDesc* GetMethodDescForOpenVirtualDelegate(DELEGATEREF delegate);
 
-    static BOOL IsTrueMulticastDelegate(OBJECTREF delegate);
+    static BOOL HasSingleTarget(DELEGATEREF delegate);
 
     // Throw if the method violates any usage restrictions
     // for UnmanagedCallersOnlyAttribute.
@@ -88,18 +88,20 @@ public:
                                        bool        *pfIsOpenDelegate);
     static MethodDesc* GetDelegateCtor(TypeHandle delegateType, MethodDesc *pTargetMethod, DelegateCtorArgs *pCtorData);
 
-    static void BindToMethod(DELEGATEREF   *pRefThis,
-                             OBJECTREF     *pRefFirstArg,
+    static void BindToMethod(MethodTable* pDelegateMT,
+                             MethodTable   *pTargetMT,
                              MethodDesc    *pTargetMethod,
                              MethodTable   *pExactMethodType,
-                             BOOL           fIsOpenDelegate);
+                             BOOL           fIsOpenDelegate,
+                             QCall::ObjectHandleOnStack targetParameter,
+                             BindToMethodDetails *pBindToMethodDetails);
 };
 
-extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, QCall::ObjectHandleOnStack target, PCODE method);
+extern "C" void QCALLTYPE Delegate_Construct(MethodTable* pDelegateMT, MethodTable* pTargetMT, PCODE method, BindToMethodDetails *pBindToMethodDetails);
 
 extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegateMT);
 
-extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(QCall::ObjectHandleOnStack target, PCODE method);
+extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(MethodTable* pMTTarg, PCODE method);
 
 extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method);
 
@@ -116,16 +118,15 @@ enum DelegateBindingFlags
     DBF_RelaxedSignature    =   0x00000040, // Allow relaxed signature matching (co/contra variance)
 };
 
-extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
-    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags);
+extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, MethodTable *pTargetMT,
+    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails);
 
-extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
-    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags);
+extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT,
+    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails);
 
-extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack retMethodInfo);
+extern "C" void QCALLTYPE Delegate_CreateMethodInfo(MethodDesc* methodDesc, QCall::ObjectHandleOnStack retMethodInfo);
 
-extern "C" BOOL QCALLTYPE Delegate_InternalEqualMethodHandles(QCall::ObjectHandleOnStack left, QCall::ObjectHandleOnStack right);
-
+extern "C" MethodDesc* QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnStack instance);
 
 void DistributeEvent(OBJECTREF *pDelegate,
                      OBJECTREF *pDomain);

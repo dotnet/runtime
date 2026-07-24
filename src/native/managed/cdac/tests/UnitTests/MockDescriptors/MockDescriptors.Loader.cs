@@ -64,6 +64,7 @@ internal sealed class MockLoaderModule : TypedView
     private const string FlagsFieldName = "Flags";
     private const string LoaderAllocatorFieldName = "LoaderAllocator";
     private const string DynamicMetadataFieldName = "DynamicMetadata";
+    private const string MetadataGenerationFieldName = "MetadataGeneration";
     private const string SimpleNameFieldName = "SimpleName";
     private const string PathFieldName = "Path";
     private const string FileNameFieldName = "FileName";
@@ -80,14 +81,16 @@ internal sealed class MockLoaderModule : TypedView
     private const string MethodDefToILCodeVersioningStateMapFieldName = "MethodDefToILCodeVersioningStateMap";
     private const string DynamicILBlobTableFieldName = "DynamicILBlobTable";
 
-    public static Layout<MockLoaderModule> CreateLayout(MockTarget.Architecture architecture)
-        => new SequentialLayoutBuilder("Module", architecture)
+    public static Layout<MockLoaderModule> CreateLayout(MockTarget.Architecture architecture, bool includeCodeVersioning = true)
+    {
+        SequentialLayoutBuilder builder = new SequentialLayoutBuilder("Module", architecture)
             .AddPointerField(AssemblyFieldName)
             .AddPointerField(PEAssemblyFieldName)
             .AddPointerField(BaseFieldName)
             .AddUInt32Field(FlagsFieldName)
             .AddPointerField(LoaderAllocatorFieldName)
             .AddPointerField(DynamicMetadataFieldName)
+            .AddUInt32Field(MetadataGenerationFieldName)
             .AddPointerField(SimpleNameFieldName)
             .AddPointerField(PathFieldName)
             .AddPointerField(FileNameFieldName)
@@ -100,10 +103,20 @@ internal sealed class MockLoaderModule : TypedView
             .AddPointerField(MemberRefToDescMapFieldName)
             .AddPointerField(MethodDefToDescMapFieldName)
             .AddPointerField(TypeDefToMethodTableMapFieldName)
-            .AddPointerField(TypeRefToMethodTableMapFieldName)
-            .AddPointerField(MethodDefToILCodeVersioningStateMapFieldName)
+            .AddPointerField(TypeRefToMethodTableMapFieldName);
+
+        // MethodDefToILCodeVersioningStateMap is only emitted when the target was built with
+        // code versioning (FEATURE_CODE_VERSIONING). Builds where it is disabled (e.g. WASM)
+        // omit it from the Module layout entirely.
+        if (includeCodeVersioning)
+        {
+            builder = builder.AddPointerField(MethodDefToILCodeVersioningStateMapFieldName);
+        }
+
+        return builder
             .AddPointerField(DynamicILBlobTableFieldName)
             .Build<MockLoaderModule>();
+    }
 
     public ulong Assembly
     {
@@ -240,14 +253,14 @@ internal sealed class MockLoaderBuilder
     {
     }
 
-    public MockLoaderBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+    public MockLoaderBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange, bool includeCodeVersioning = true)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
         Builder = builder;
         _allocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
 
-        ModuleLayout = MockLoaderModule.CreateLayout(builder.TargetTestHelpers.Arch);
+        ModuleLayout = MockLoaderModule.CreateLayout(builder.TargetTestHelpers.Arch, includeCodeVersioning);
         AssemblyLayout = MockLoaderAssembly.CreateLayout(builder.TargetTestHelpers.Arch);
         EEConfigLayout = MockEEConfig.CreateLayout(builder.TargetTestHelpers.Arch);
         LoaderHeapLayout = MockLoaderHeap.CreateLayout(builder.TargetTestHelpers.Arch);
@@ -272,10 +285,10 @@ internal sealed class MockLoaderBuilder
     }
 
     internal MockLoaderModule AddModule(
-        string? path = null,
         string? fileName = null,
         string? simpleName = null,
         byte[]? simpleNameBytes = null,
+        string? path = null,
         uint flags = 0)
     {
         MockLoaderModule module = ModuleLayout.Create(_allocator.Allocate((ulong)ModuleLayout.Size, "Module"));
@@ -285,15 +298,15 @@ internal sealed class MockLoaderBuilder
             module.Flags = flags;
         }
 
+        if (path is not null)
+        {
+            module.Path = AddUtf16String(path, $"Module path = {path}");
+        }
+
         byte[]? rawSimpleName = simpleName is not null ? Encoding.UTF8.GetBytes(simpleName) : simpleNameBytes;
         if (rawSimpleName is not null)
         {
             module.SimpleName = AddNullTerminatedUtf8(rawSimpleName, "Module simple name");
-        }
-
-        if (path is not null)
-        {
-            module.Path = AddUtf16String(path, $"Module path = {path}");
         }
 
         if (fileName is not null)

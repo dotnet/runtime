@@ -9,20 +9,31 @@ public enum RuntimeInfoArchitecture : uint
 {
     Unknown = 0,
     X86,
-    Arm32,
     X64,
+    Arm,
     Arm64,
+    Wasm,
+    S390x,
     LoongArch64,
-    RISCV,
+    Armv6,
+    Ppc64le,
+    RiscV64,
 }
 
 public enum RuntimeInfoOperatingSystem : uint
 {
     Unknown = 0,
-    Win,
+    Windows,
     Unix,
     Browser,
     Apple,
+}
+
+public enum RuntimeInfoRuntimeFlavor : uint
+{
+    Unknown = 0,
+    Coreclr,
+    NativeAot,
 }
 ```
 
@@ -33,6 +44,14 @@ RuntimeInfoArchitecture GetTargetArchitecture();
 // Gets the targets operating system. If this information is not available returns Unknown.
 RuntimeInfoOperatingSystem GetTargetOperatingSystem();
 
+// Gets the target's runtime flavor. If this information is not
+// available returns Unknown. This is intended to be descriptive information for
+// users and provides no guarantees how the underlying runtime works. Over time
+// implementation details may change dramatically. For determining what features or 
+// invariants a given runtime implementation supports look at which contracts are 
+// implemented or call contract APIs that probe for specific capabilities.
+RuntimeInfoRuntimeFlavor GetRuntimeFlavor();
+
 // Returns the runtime's RecommendedReaderVersion global. Returns 0 if the global is absent.
 uint GetRecommendedReaderVersion();
 
@@ -42,15 +61,29 @@ uint GetCurrentReaderVersion();
 
 ## Version 1
 
-Global variables used:
-| Global Name | Type | Purpose |
-| --- | --- | --- |
-| Architecture | string | Target architecture |
-| OperatingSystem | string | Target operating system |
-| RecommendedReaderVersion | uint32 | Incremented when an update to the latest contracts is recommended |
+<!-- BEGIN GENERATED: usage contract=RuntimeInfo version=c1 -->
+### Data descriptors used
 
-The contract implementation returns the architecture and operating system global values parsed as the
-respective enum case-insensitively. If these globals are not available, the contract returns Unknown.
+_None._
+
+### Global variables used
+
+| Global | Type | Meaning |
+| --- | --- | --- |
+| `Architecture` | `string` | Target architecture |
+| `OperatingSystem` | `string` | Target operating system |
+| `RecommendedReaderVersion` | `uint32` | Incremented when an update to the latest contracts is recommended |
+| `RuntimeFlavor` | `string` | Target runtime flavor |
+
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=RuntimeInfo version=c1 -->
+
+
+The contract implementation returns the architecture, operating system, and runtime flavor global
+values parsed as the respective enum case-insensitively. If these globals are not available, the
+contract returns Unknown.
 
 `Apple` covers all Apple platforms (macOS, iOS, tvOS, MacCatalyst) — i.e. any target where the
 runtime is compiled with `TARGET_APPLE` defined. It is distinct from `Unix` so that consumers which

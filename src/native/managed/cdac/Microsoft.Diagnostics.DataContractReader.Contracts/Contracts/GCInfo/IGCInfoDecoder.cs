@@ -9,9 +9,18 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 internal interface IGCInfoDecoder : IGCInfoHandle
 {
+    GCInfoHeader GetHeader();
+
     uint GetCodeLength();
-    uint GetStackBaseRegister();
-    uint GetSizeOfStackParameterArea();
+
+    // Default 0; mirrors native EECodeManager::GetStackParameterSize, which only
+    // returns non-zero on x86 (where managed code uses __stdcall, callee-popped args).
+    uint GetCalleePoppedArgumentsSize() => 0;
+
     IReadOnlyList<InterruptibleRange> GetInterruptibleRanges();
+    IReadOnlyList<uint> GetSafePoints();
+    IReadOnlyList<GCSlotLifetime> GetSlotLifetimes();
+
     IReadOnlyList<LiveSlot> EnumerateLiveSlots(uint instructionOffset, GcSlotEnumerationOptions options);
+    bool IsGcSafe(uint instructionOffset);
 }

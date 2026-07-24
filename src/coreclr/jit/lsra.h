@@ -587,15 +587,6 @@ inline bool leafInRange(GenTree* leaf, int lower, int upper, int multiple)
     return true;
 }
 
-inline bool leafAddInRange(GenTree* leaf, int lower, int upper, int multiple = 1)
-{
-    if (!leaf->OperIs(GT_ADD))
-    {
-        return false;
-    }
-    return leafInRange(leaf->gtGetOp2(), lower, upper, multiple);
-}
-
 inline bool isCandidateVar(const LclVarDsc* varDsc)
 {
     return varDsc->lvLRACandidate;
@@ -955,15 +946,6 @@ private:
     bool spillAlways()
     {
         return false;
-    }
-    // In a retail build we support only the default traversal order
-    bool isTraversalLayoutOrder()
-    {
-        return false;
-    }
-    bool isTraversalPredFirstOrder()
-    {
-        return true;
     }
     bool getLsraExtendLifeTimes()
     {
@@ -1436,7 +1418,7 @@ private:
     FORCEINLINE RefPosition* getNextConsecutiveRefPosition(RefPosition* refPosition);
     FORCEINLINE regNumber    getNextFPRegWraparound(regNumber reg);
     SingleTypeRegSet         getOperandCandidates(GenTreeHWIntrinsic* intrinsicTree, HWIntrinsic intrin, size_t opNum);
-    GenTree*                 getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool embedded = false);
+    GenTree*                 getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, GenTreeHWIntrinsic* user = nullptr);
     GenTree*                 getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree);
     GenTree*                 getConsecutiveRegistersOperand(const HWIntrinsic intrin, bool* destIsConsecutive);
     GenTreeHWIntrinsic*      getEmbeddedMaskOperand(const HWIntrinsic intrin);
@@ -1896,11 +1878,6 @@ private:
     {
         regsBusyUntilKill.AddRegNum(reg, regType);
     }
-    void clearRegBusyUntilKill(regNumber reg)
-    {
-        regsBusyUntilKill.RemoveRegNumFromMask(reg);
-    }
-
     bool isRegInUse(regNumber reg, var_types regType)
     {
         return regsInUseThisLocation.IsRegNumPresent(reg, regType);
@@ -2078,6 +2055,9 @@ private:
     int  BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode = nullptr);
     void BuildConsecutiveRegistersForDef(GenTree* treeNode, int fieldCount);
     void BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, const HWIntrinsic intrin);
+    void BuildHWIntrinsicTempRegs(GenTreeHWIntrinsic* intrinsicTree,
+                                  const HWIntrinsic   intrin,
+                                  GenTreeHWIntrinsic* embeddedOp);
     int  BuildEmbeddedOperandUses(GenTreeHWIntrinsic* embeddedOpNode, GenTree* embeddedDelayFreeOp);
     int  BuildContainedCselUses(GenTreeHWIntrinsic* containedCselOpNode,
                                 GenTree*            delayFreeOp,
@@ -2360,14 +2340,6 @@ public:
         LclVarDsc* varDsc = getLocalVar(comp);
         assert(varDsc->lvTracked); // If this isn't true, we shouldn't be calling this function!
         return varDsc->lvVarIndex;
-    }
-
-    bool isAssignedTo(regNumber regNum)
-    {
-        // This uses regMasks to handle the case where a double actually occupies two registers
-        // TODO-Throughput: This could/should be done more cheaply.
-        return (physReg != REG_NA &&
-                (genSingleTypeRegMask(physReg, registerType) & genSingleTypeRegMask(regNum)) != RBM_NONE);
     }
 
     // Assign the related interval.

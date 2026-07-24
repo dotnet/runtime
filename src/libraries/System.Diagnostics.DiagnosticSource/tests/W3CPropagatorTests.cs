@@ -30,6 +30,9 @@ namespace System.Diagnostics.Tests
             // Simple case
             yield return new object[] { "state=1", "state=1", new[] { new KeyValuePair<string, string>("b1", "v1") }, "b1 = v1", new[] { new KeyValuePair<string, string>("b1", "v1") } };
 
+            // Trace state value can contain spaces.
+            yield return new object[] { "state=a b", "state=a b", null, null, null };
+
             // Invalid trace state
             yield return new object[] { "PassThroughW3CState=1", null, null, null, null }; // trace state key has to be lowercase or digit
 
@@ -39,17 +42,52 @@ namespace System.Diagnostics.Tests
             // valid trace state, the key can have digits https://www.w3.org/TR/trace-context-2/#key
             yield return new object[] { "123@456=1", "123@456=1", null, null, null }; // trace state key has to start with lowercase or digit
 
-            // Tabs is not allowed in trace state values. use only the valid entry
-            yield return new object[] { "start=1, end=\t1", "start=1", null, null, null }; // trace state key has to start with lowercase or digit
+            // valid trace state, the key can contain at signs after the first character
+            yield return new object[] { "foo@=1", "foo@=1", null, null, null };
+            yield return new object[] { "foo@@bar=1", "foo@@bar=1", null, null, null };
+            yield return new object[] { "foo@bar@baz=1", "foo@bar@baz=1", null, null, null };
+
+            // invalid trace state, the key cannot start with an at sign
+            yield return new object[] { "@vendor=1", null, null, null, null };
+
+            // Tabs are only allowed as optional whitespace around list members. The whole trace state is discarded when a member is invalid.
+            yield return new object[] { "start=1, end=\t1", null, null, null, null };
 
             // multiple trace states
-            yield return new object[] { "start=1, end=1", "start=1, end=1", null, null, null }; // trace state key has to start with lowercase or digit
+            yield return new object[] { "start=1, end=1", "start=1,end=1", null, null, null };
 
-            // trace state longer than the max limit
-            yield return new object[] { $"{new string('a', 255)}=1", null, null, null, null }; // trace state length max is 256
+            // Optional whitespace around trace state list members
+            yield return new object[] { " start=1 \t, \tend=1 ", "start=1,end=1", null, null, null };
+
+            // Trace state optional whitespace is not propagated.
+            yield return new object[] { $"{new string(' ', 252)}state=1{new string(' ', 253)}", "state=1", null, null, null };
+            yield return new object[] { $"{new string(' ', 253)}state=1{new string(' ', 253)}", "state=1", null, null, null };
+
+            // Trace state propagation is limited to 512 characters and truncates whole entries from the end.
+            string traceStateWith512Chars = $"{new string('a', 256)}={new string('b', 255)}";
+            yield return new object[] { traceStateWith512Chars, traceStateWith512Chars, null, null, null };
+            yield return new object[] { $"{traceStateWith512Chars},c=d", traceStateWith512Chars, null, null, null };
+            yield return new object[] { $"{new string('a', 256)}={new string('b', 256)}", null, null, null, null };
+
+            string traceStateWith32Members = string.Join(",", Enumerable.Range(0, 32).Select(i => $"k{i}=v"));
+            string traceStateWith33Members = string.Join(",", Enumerable.Range(0, 33).Select(i => $"k{i}=v"));
+            yield return new object[] { traceStateWith32Members, traceStateWith32Members, null, null, null };
+            yield return new object[] { traceStateWith33Members, traceStateWith32Members, null, null, null };
+
+            // Empty and whitespace-only trace state list members are allowed, but they count toward the list-member limit.
+            yield return new object[] { $"{string.Join(",", Enumerable.Repeat(" ", 31))},state=1", "state=1", null, null, null };
+            yield return new object[] { $"{string.Join(",", Enumerable.Repeat(" ", 32))},state=1", null, null, null, null };
+            yield return new object[] { "state=1,", "state=1", null, null, null };
+
+            string traceStateWith31Members = string.Join(",", Enumerable.Range(0, 31).Select(i => $"k{i}=v"));
+            yield return new object[] { $"{traceStateWith31Members},", traceStateWith31Members, null, null, null };
+            yield return new object[] { $"{traceStateWith32Members},", traceStateWith32Members, null, null, null };
+
+            // trace state key longer than the max limit
+            yield return new object[] { $"{new string('a', 257)}=1", null, null, null, null }; // trace state key length max is 256
 
             // trace state equal the max
-            yield return new object[] { $"{new string('a', 254)}=1", $"{new string('a', 254)}=1", null, null, null }; // trace state length max is 256
+            yield return new object[] { $"{new string('a', 256)}=1", $"{new string('a', 256)}=1", null, null, null }; // trace state key length max is 256
 
             // Invalid baggage key.
             yield return new object[] { null, null, new[]
@@ -399,6 +437,67 @@ namespace System.Diagnostics.Tests
             }, out string? traceId, out _);
 
             Assert.Equal(isValid, traceId is not null);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("00-00000000000000000000000000000000-b9c7c989f97918e1-01")]
+        public void ValidateTraceIdAndStateExtractionDiscardsTraceStateWithInvalidTraceParent(string? traceParent)
+        {
+            s_w3cPropagator.ExtractTraceIdAndState(null, (object carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues) =>
+            {
+                fieldValues = null;
+                fieldValue = null;
+
+                if (fieldName == PropagatorTests.TraceParent)
+                {
+                    fieldValue = traceParent;
+                    return;
+                }
+
+                if (fieldName == PropagatorTests.TraceState)
+                {
+                    fieldValue = "foo=1";
+                    return;
+                }
+            }, out string? traceId, out string? traceState);
+
+            Assert.Null(traceId);
+            Assert.Null(traceState);
+        }
+
+        [Fact]
+        public void ValidateTraceIdAndStateExtractionTrimsFutureVersionTraceParentExtensions()
+        {
+            s_w3cPropagator.ExtractTraceIdAndState(null, (object carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues) =>
+            {
+                fieldValues = null;
+                fieldValue = null;
+
+                if (fieldName == PropagatorTests.TraceParent)
+                {
+                    fieldValue = "cc-12345678901234567890123456789012-1234567890123456-01-what-the-future-will-be-like";
+                }
+            }, out string? traceId, out _);
+
+            Assert.Equal("cc-12345678901234567890123456789012-1234567890123456-01", traceId);
+        }
+
+        [Fact]
+        public void ValidateTraceIdAndStateExtractionRejectsFutureVersionTraceParentWithInvalidExtensionSeparator()
+        {
+            s_w3cPropagator.ExtractTraceIdAndState(null, (object carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues) =>
+            {
+                fieldValues = null;
+                fieldValue = null;
+
+                if (fieldName == PropagatorTests.TraceParent)
+                {
+                    fieldValue = "cc-12345678901234567890123456789012-1234567890123456-01.what-the-future-will-be-like";
+                }
+            }, out string? traceId, out string? _);
+
+            Assert.Null(traceId);
         }
 
         private static string? EncodeBaggage(IEnumerable<KeyValuePair<string, string>> baggageEntries)

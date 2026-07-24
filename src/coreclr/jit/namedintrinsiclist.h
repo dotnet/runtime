@@ -100,6 +100,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_op_Inequality,
     NI_System_Type_GetTypeFromHandle,
     NI_System_Type_GetGenericTypeDefinition,
+    NI_System_Activator_CreateInstance_T,
     NI_System_Array_Clone,
     NI_System_Array_GetLength,
     NI_System_Array_GetLowerBound,
@@ -123,6 +124,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier,
@@ -167,27 +169,30 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Interlocked_MemoryBarrier,
 
     NI_System_Threading_Tasks_Task_ConfigureAwait,
+    NI_System_Threading_Tasks_Task_FromResult,
+    NI_System_Threading_Tasks_Task_get_CompletedTask,
+
+    NI_System_Threading_Tasks_ValueTask_FromResult,
+    NI_System_Threading_Tasks_ValueTask_get_CompletedTask,
+    NI_System_Threading_Tasks_ValueTask__ctor,
+    NI_System_Threading_Tasks_ValueTask_AsTask,
+
+    NI_System_Threading_Tasks_ValueTask_1__ctor,
+    NI_System_Threading_Tasks_ValueTask_1_AsTask,
 
     // These two are special marker IDs so that we still get the inlining profitability boost
     NI_System_Numerics_Intrinsic,
     NI_System_Runtime_Intrinsics_Intrinsic,
 
-#ifdef FEATURE_HW_INTRINSICS
+#if defined(FEATURE_HW_INTRINSICS)
     NI_HW_INTRINSIC_START,
-#if defined(TARGET_XARCH)
-#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost,    \
-                           category, flag)                                                                             \
+
+    // clang-format off
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost, category, flag) \
     NI_##isa##_##name,
-#include "hwintrinsiclistxarch.h"
-#elif defined(TARGET_ARM64)
-#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)      \
-    NI_##isa##_##name,
-#include "hwintrinsiclistarm64.h"
-#elif defined(TARGET_WASM)
-#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)      \
-    NI_##isa##_##name,
-#include "hwintrinsiclistwasm.h"
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64) && !defined(TARGET_WASM)
+#include "hwintrinsiclist.h"
+    // clang-format on
+
     NI_HW_INTRINSIC_END,
 #endif // FEATURE_HW_INTRINSICS
 
@@ -265,6 +270,10 @@ enum NamedIntrinsic : unsigned short
     NI_PRIMITIVE_PopCount,
     NI_PRIMITIVE_RotateLeft,
     NI_PRIMITIVE_RotateRight,
+    NI_PRIMITIVE_SaturateToInt8,
+    NI_PRIMITIVE_SaturateToInt16,
+    NI_PRIMITIVE_SaturateToUInt8,
+    NI_PRIMITIVE_SaturateToUInt16,
     NI_PRIMITIVE_TrailingZeroCount,
 
     NI_PRIMITIVE_END,
