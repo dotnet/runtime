@@ -14,6 +14,11 @@
              Link="Common\src\Extensions\EmptyDisposable.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '9.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs"
+             Link="Common\src\System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj" />

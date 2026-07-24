@@ -75,6 +75,17 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
+        public void ResetReferenceEngine()
+        {
+            lock (_replaceProvidersLock)
+            {
+                if (!_disposed)
+                {
+                    _refCountedProviders.ResetReferenceEngine();
+                }
+            }
+        }
+
         public void Dispose()
         {
             ReferenceCountedProviders oldRefCountedProviders = _refCountedProviders;

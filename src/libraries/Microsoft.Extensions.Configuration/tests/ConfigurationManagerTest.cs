@@ -1290,14 +1290,16 @@ namespace Microsoft.Extensions.Configuration.Test
 
             public override bool TryGet(string key, out string? value)
             {
-                _readStartedTcs.SetResult(null);
+                // A single configuration read may probe the provider more than once (for example when references are
+                // resolved), so the "read started" latch must be idempotent.
+                _readStartedTcs.TrySetResult(null);
                 Assert.True(_mre.Wait(_timeout), "BlockReadOnMREProvider.TryGet() timed out.");
                 return base.TryGet(key, out value);
             }
 
             public override IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath)
             {
-                _readStartedTcs.SetResult(null);
+                _readStartedTcs.TrySetResult(null);
                 Assert.True(_mre.Wait(_timeout), "BlockReadOnMREProvider.GetChildKeys() timed out.");
                 return base.GetChildKeys(earlierKeys, parentPath);
             }

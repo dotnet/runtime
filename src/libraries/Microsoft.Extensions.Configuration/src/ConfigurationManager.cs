@@ -55,12 +55,22 @@ namespace Microsoft.Extensions.Configuration
             get
             {
                 using ReferenceCountedProviders reference = _providerManager.GetReference();
-                return ConfigurationRoot.GetConfiguration(reference.Providers, key);
+                if (ReferenceEngine.Disabled)
+                {
+                    return ConfigurationRoot.GetConfiguration(reference.Providers, key);
+                }
+
+                // Read the engine once and resolve against its own providers. AddProvider swaps this generation's
+                // provider list and engine in place, so reading the two separately could pair an old list with a newer
+                // engine (or the reverse) and resolve the key against the wrong providers.
+                reference.ReferenceEngine!.TryRead(key, out string? value);
+                return value;
             }
             set
             {
                 using ReferenceCountedProviders reference = _providerManager.GetReference();
                 ConfigurationRoot.SetConfiguration(reference.Providers, key, value);
+                _providerManager.ResetReferenceEngine();
             }
         }
 
@@ -116,6 +126,7 @@ namespace Microsoft.Extensions.Configuration
 
         private void RaiseChanged()
         {
+            _providerManager.ResetReferenceEngine();
             var previousToken = Interlocked.Exchange(ref _changeToken, new ConfigurationReloadToken());
             previousToken.OnReload();
         }
