@@ -121,14 +121,6 @@ IF "%DOTNET_TieredCompilation%"=="0" goto :TieredCompilationDisabledCorrectly
   Exit /b 0
 :TieredCompilationDisabledCorrectly
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
-      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(HeapVerifyIncompatible)' == 'true'"><![CDATA[
-$(BatchCLRTestEnvironmentCompatibilityCheck)
-IF NOT "%DOTNET_HeapVerify%"=="" (
-  ECHO SKIPPING EXECUTION BECAUSE DOTNET_HeapVerify IS SET
-  popd
-  Exit /b 0
-)
-      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(IlasmRoundTripIncompatible)' == 'true'"><![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 IF NOT "%RunningIlasmRoundTrip%"=="" (

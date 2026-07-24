@@ -1,15 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible -->
+    <!-- Needed for CLRTestTargetUnsupported -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Consider enable it for Mono whenever the implementation is ready -->
     <!-- https://github.com/dotnet/runtime/issues/73167 -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
-    <!--
-        This test requires the test case to perform exactly 1 GC right at the spot, so it won't run
-        correctly under GCStress.
-     -->
-    <GCStressIncompatible>true</GCStressIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
@@ -17,5 +12,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GetTotalPauseDuration.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

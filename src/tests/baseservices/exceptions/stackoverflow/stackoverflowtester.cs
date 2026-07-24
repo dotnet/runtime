@@ -91,6 +91,7 @@ namespace TestStackOverflow
         [ActiveIssue("https://github.com/dotnet/runtime/issues/84911", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
         [ActiveIssue("Specific to CoreCLR", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/110173", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX64Process))]
+        [SkipOnCoreClr("Fails in many GC stress jobs. See https://github.com/dotnet/runtime/issues/46279.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void TestStackOverflowSmallFrameMainThread()
         {
@@ -125,6 +126,7 @@ namespace TestStackOverflow
         [ActiveIssue("https://github.com/dotnet/runtime/issues/84911", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
         [ActiveIssue("Specific to CoreCLR", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/110173", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX64Process))]
+        [SkipOnCoreClr("Fails in many GC stress jobs. See https://github.com/dotnet/runtime/issues/46279.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void TestStackOverflowLargeFrameMainThread()
         {
@@ -172,6 +174,7 @@ namespace TestStackOverflow
         [ActiveIssue("https://github.com/dotnet/runtime/issues/84911", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
         [ActiveIssue("Specific to CoreCLR", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/110173", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX64Process))]
+        [SkipOnCoreClr("Fails in many GC stress jobs. See https://github.com/dotnet/runtime/issues/46279.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void TestStackOverflowSmallFrameSecondaryThread()
         {
@@ -201,6 +204,7 @@ namespace TestStackOverflow
         [ActiveIssue("https://github.com/dotnet/runtime/issues/84911", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
         [ActiveIssue("Specific to CoreCLR", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/110173", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX64Process))]
+        [SkipOnCoreClr("Fails in many GC stress jobs. See https://github.com/dotnet/runtime/issues/46279.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void TestStackOverflowLargeFrameSecondaryThread()
         {
@@ -242,6 +246,7 @@ namespace TestStackOverflow
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/84911", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX86Process))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/110173", typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsX64Process))]
+        [SkipOnCoreClr("Fails in many GC stress jobs. See https://github.com/dotnet/runtime/issues/46279.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static void TestStackOverflow3()
         {

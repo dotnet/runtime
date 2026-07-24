@@ -103,6 +103,7 @@ public class Delegates
     static int RunTest0() => DoTest0(100);
 
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
+    [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
     [Fact]
     public static int Test0() 
     {
@@ -130,6 +131,7 @@ public class Delegates
     static int RunTest1() => DoTest1(s_a);
 
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
+    [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
     [Fact]
     public static int Test1()
     {
@@ -149,6 +151,7 @@ public class Delegates
     static int RunTest2() => RunTest2Inner(-1);
 
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
+    [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
     [Fact]
     public static int Test2()
     {
