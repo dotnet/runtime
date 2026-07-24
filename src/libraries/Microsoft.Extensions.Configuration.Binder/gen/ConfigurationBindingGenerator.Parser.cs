@@ -711,6 +711,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 Dictionary<string, PropertySpec>? properties = null;
+                HashSet<string>? reportedUnsupportedProperties = null;
 
                 INamedTypeSymbol? current = typeSymbol;
                 while (current is not null)
@@ -725,10 +726,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                             if (IsUnsupportedType(property.Type))
                             {
-                                // Gate the skip diagnostic on the same override/duplicate check used for supported
-                                // properties, so walking the base chain doesn't report SYSLIB1101 twice for an
-                                // overridden error-typed property.
-                                if (ContainsErrorType(property.Type) && !isDuplicateOrOverride)
+                                // Report the skip once per property name. The override/duplicate check covers an
+                                // error-typed property that is overridden or shadows an already-bound member, while
+                                // the name set covers a `new`-shadowed error-typed property: both the base and
+                                // derived copies are skipped (so neither lands in 'properties' to dedupe the other),
+                                // which would otherwise fire SYSLIB1101 twice for the same name.
+                                if (ContainsErrorType(property.Type) && !isDuplicateOrOverride &&
+                                    (reportedUnsupportedProperties ??= new(StringComparer.OrdinalIgnoreCase)).Add(propertyName))
                                 {
                                     RecordDiagnostic(DiagnosticDescriptors.PropertyNotSupported, typeParseInfo.BinderInvocation?.Location, [propertyName, typeParseInfo.FullName]);
                                 }
@@ -904,10 +908,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return SymbolEqualityComparer.Default.Equals(type, @interface);
             }
 
-            // A member type is unsupported when it, a nested array element, or a generic type argument is an
-            // error symbol — i.e. an unresolved or ambiguous metadata type from a reference that isn't available
-            // to the current compilation. Emitting binding code that names such a type produces uncompilable
-            // output (missing/ambiguous type errors), so callers skip these members instead.
+            // A member type is unsupported when it, a nested array element, a generic type argument, or an
+            // enclosing (containing) type is an error symbol — i.e. an unresolved or ambiguous metadata type
+            // from a reference that isn't available to the current compilation. Emitting binding code that names
+            // such a type produces uncompilable output (missing/ambiguous type errors), so callers skip these
+            // members instead.
             private static bool ContainsErrorType(ITypeSymbol type)
             {
                 if (type.TypeKind is TypeKind.Error)
@@ -929,6 +934,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             return true;
                         }
                     }
+                }
+
+                // A nested type (e.g. Outer<Missing>.Inner) carries the error symbol on its containing type rather
+                // than in its own type arguments, so inspect the enclosing type as well.
+                if (type.ContainingType is not null && ContainsErrorType(type.ContainingType))
+                {
+                    return true;
                 }
 
                 return false;

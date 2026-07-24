@@ -246,11 +246,17 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         public sealed class Wrapper<T>
                         {
                             public int Count { get; set; }
+
+                            public sealed class Inner
+                            {
+                                public int Value { get; set; }
+                            }
                         }
 
                         public class DstsOptionsBase
                         {
                             public virtual MissingTypes.HttpRequestMessage? OverriddenMessage { get; set; }
+                            public MissingTypes.HttpRequestMessage? ShadowedMessage { get; set; }
                         }
 
                         public sealed class DstsOptions : DstsOptionsBase
@@ -259,8 +265,10 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             public MissingTypes.HttpRequestMessage? HttpRequestMessage { get; set; }
                             public MissingTypes.CredentialDescription? CredentialDescription { get; set; }
                             public Wrapper<MissingTypes.HttpRequestMessage>? WrappedMessage { get; set; }
+                            public Wrapper<MissingTypes.HttpRequestMessage>.Inner? NestedInnerMessage { get; set; }
                             public System.Tuple<int, MissingTypes.CredentialDescription>? TupleMessage { get; set; }
                             public override MissingTypes.HttpRequestMessage? OverriddenMessage { get; set; }
+                            public new MissingTypes.HttpRequestMessage? ShadowedMessage { get; set; }
                             public int Value { get; set; }
                         }
                         """)
@@ -297,11 +305,13 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.DoesNotContain("HttpRequestMessage", result.GeneratedSource.Value.SourceText.ToString());
             Assert.DoesNotContain("CredentialDescription", result.GeneratedSource.Value.SourceText.ToString());
             Assert.DoesNotContain("WrappedMessage", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("NestedInnerMessage", result.GeneratedSource.Value.SourceText.ToString());
             Assert.DoesNotContain("TupleMessage", result.GeneratedSource.Value.SourceText.ToString());
             Assert.DoesNotContain("OverriddenMessage", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("ShadowedMessage", result.GeneratedSource.Value.SourceText.ToString());
 
             // Each skipped member surfaces a SYSLIB1101 warning so the incomplete binding is not silent.
-            foreach (string skippedProperty in new[] { "ValueTypeMessage", "HttpRequestMessage", "CredentialDescription", "WrappedMessage", "TupleMessage" })
+            foreach (string skippedProperty in new[] { "ValueTypeMessage", "HttpRequestMessage", "CredentialDescription", "WrappedMessage", "NestedInnerMessage", "TupleMessage" })
             {
                 Assert.Contains(result.Diagnostics, diagnostic =>
                     diagnostic.Id == "SYSLIB1101" &&
@@ -309,11 +319,14 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains($"'{skippedProperty}'"));
             }
 
-            // An overridden error-typed property must report SYSLIB1101 exactly once, not once per
-            // occurrence while walking the inheritance chain.
-            Assert.Equal(1, result.Diagnostics.Count(diagnostic =>
-                diagnostic.Id == "SYSLIB1101" &&
-                diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains("'OverriddenMessage'")));
+            // An error-typed property that is overridden or `new`-shadowed must report SYSLIB1101 exactly once,
+            // not once per occurrence while walking the inheritance chain.
+            foreach (string shadowedProperty in new[] { "OverriddenMessage", "ShadowedMessage" })
+            {
+                Assert.Equal(1, result.Diagnostics.Count(diagnostic =>
+                    diagnostic.Id == "SYSLIB1101" &&
+                    diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains($"'{shadowedProperty}'")));
+            }
 
             // The bindable member must still bind without a diagnostic.
             Assert.DoesNotContain(result.Diagnostics, diagnostic =>
