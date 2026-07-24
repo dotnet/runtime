@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.InteropServices.Tests.Common;
 using Xunit;
 
@@ -106,19 +107,12 @@ namespace System.Runtime.InteropServices.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetNativeVariantForObject_InvalidArrayType_TestData))]
-        public void GetNativeVariantForObject_InvalidArrayType_ThrowsInvalidCastException(object obj)
+        public unsafe void GetNativeVariantForObject_InvalidArrayType_ThrowsInvalidCastException(object obj)
         {
-            Variant v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
-            try
-            {
-                Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject(obj, pNative));
-                Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject<object>(obj, pNative));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(pNative);
-            }
+            ComVariant variant = default;
+
+            Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject(obj, (nint)(&variant)));
+            Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject<object>(obj, (nint)(&variant)));
         }
     }
 }
