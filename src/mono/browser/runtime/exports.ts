@@ -6,6 +6,7 @@ import BuildConfiguration from "consts:configuration";
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import WasmEnableSIMD from "consts:wasmEnableSIMD";
 import WasmEnableExceptionHandling from "consts:wasmEnableExceptionHandling";
+import BuildId from "consts:buildId";
 
 import { type RuntimeAPI } from "./types";
 
@@ -29,7 +30,7 @@ import { utf8ToString } from "./strings";
 
 export let runtimeList: RuntimeList;
 
-function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
+function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
     const module = Module;
     const globals = globalObjects;
     const globalThisAny = globalThis as any;
@@ -60,6 +61,7 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
         runtimeBuildInfo: {
             productVersion: ProductVersion,
             gitHash: runtimeHelpers.gitHash,
+            buildId: BuildId,
             buildConfiguration: BuildConfiguration,
             wasmEnableThreads: WasmEnableThreads,
             wasmEnableSIMD: WasmEnableSIMD,
@@ -82,7 +84,7 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
 class RuntimeList {
     private list: { [runtimeId: number]: WeakRef<RuntimeAPI> } = {};
 
-    public registerRuntime (api: RuntimeAPI): number {
+    public registerRuntime(api: RuntimeAPI): number {
         if (api.runtimeId === undefined) {
             api.runtimeId = Object.keys(this.list).length;
         }
@@ -91,7 +93,7 @@ class RuntimeList {
         return api.runtimeId;
     }
 
-    public getRuntime (runtimeId: number): RuntimeAPI | undefined {
+    public getRuntime(runtimeId: number): RuntimeAPI | undefined {
         const wr = this.list[runtimeId];
         return wr ? wr.deref() : undefined;
     }

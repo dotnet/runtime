@@ -14,6 +14,7 @@ const ENABLE_DEVTOOLS_PROFILER = process.env.ENABLE_DEVTOOLS_PROFILER === "1";
 const ENABLE_AOT_PROFILER = process.env.ENABLE_AOT_PROFILER === "1";
 const ENABLE_LOG_PROFILER = process.env.ENABLE_LOG_PROFILER === "1";
 const RUN_AOT_COMPILATION = process.env.RUN_AOT_COMPILATION === "1";
+const WASM_BUILD_ID = process.env.WASM_BUILD_ID || "";
 var methodIndexByName = undefined;
 var gitHash = undefined;
 
@@ -90,6 +91,7 @@ function injectDependencies() {
         `runAOTCompilation: ${RUN_AOT_COMPILATION}, ` +
         `wasmEnableThreads: ${!!PTHREADS}, ` +
         `gitHash: "${gitHash}", ` +
+        `buildId: "${WASM_BUILD_ID}", ` +
         `});`;
 
     autoAddDeps(DotnetSupportLib, "$DOTNET");

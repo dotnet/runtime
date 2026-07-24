@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\coreclr\tools\Common\Wasm\Webcil.cs" Link="Internal\Webcil\Webcil.cs" />
+    <Compile Include="..\..\coreclr\tools\Common\Wasm\WasmCustomSectionWriter.cs" Link="Internal\Webcil\WasmCustomSectionWriter.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

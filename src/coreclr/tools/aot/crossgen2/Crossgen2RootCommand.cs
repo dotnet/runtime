@@ -32,6 +32,8 @@ namespace ILCompiler
             new("--out", "-o") { Description = SR.OutputFilePath };
         public Option<ReadyToRunContainerFormat> OutputFormat { get; } =
             new("--obj-format", "-f") { CustomParser = MakeOutputFormat, DefaultValueFactory = MakeOutputFormat, Description = SR.OutputFormat, HelpName = "arg" };
+        public Option<string> WasmNativeBuildId { get; } =
+            new("--wasm-native-build-id") { Description = SR.WasmNativeBuildIdOption };
         public Option<string> CompositeRootPath { get; } =
             new("--compositerootpath", "--crp") { Description = SR.CompositeRootPath };
         public Option<bool> Optimize { get; } =
@@ -168,6 +170,7 @@ namespace ILCompiler
             Options.Add(MibcFilePaths);
             Options.Add(OutputFilePath);
             Options.Add(OutputFormat);
+            Options.Add(WasmNativeBuildId);
             Options.Add(CompositeRootPath);
             Options.Add(Optimize);
             Options.Add(OptimizeDisabled);

@@ -200,6 +200,7 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\CodeDataLayoutMode.cs" Link="Compiler\ObjectWriter\CodeDataLayoutMode.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WebcilEncoder.cs" Link="Compiler\ObjectWriter\WebcilEncoder.cs" />
     <Compile Include="..\..\Common\Wasm\Webcil.cs" Link="Internal\Webcil\Webcil.cs" />
+    <Compile Include="..\..\Common\Wasm\WasmCustomSectionWriter.cs" Link="Internal\Webcil\WasmCustomSectionWriter.cs" />
     <Compile Include="..\ILCompiler.Reflection.ReadyToRun\PEReaderExtensions.cs" Link="Reflection\PEReaderExtensions.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\ClosedAttribute.cs" Link="ILLink.Shared\ClosedAttribute.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" Link="ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" />

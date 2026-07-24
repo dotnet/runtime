@@ -66,9 +66,32 @@ namespace ILCompiler.ObjectWriter
         // 1 for the payload size, and the second for the payload itself.
         const int NumDataSegments = 2;
 
-        public WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
+        // Explicit build_id bytes (from the crossgen2 --wasm-native-build-id option); when null a
+        // content hash of the webcil payload is used instead.
+        private readonly byte[] _wasmNativeBuildId;
+
+        public WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder, string wasmNativeBuildId = null)
             : base(factory, options, outputInfoBuilder)
         {
+            _wasmNativeBuildId = ParseHexBuildId(wasmNativeBuildId);
+        }
+
+        private static byte[] ParseHexBuildId(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            string hex = value.Trim();
+            if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                hex = hex.Substring(2);
+
+            if (hex.Length == 0 || (hex.Length % 2) != 0)
+                throw new ArgumentException($"WasmNativeBuildId '{value}' is not a valid hex string.");
+
+            var bytes = new byte[hex.Length / 2];
+            for (int i = 0; i < bytes.Length; i++)
+                bytes[i] = byte.Parse(hex.AsSpan(i * 2, 2), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);
+            return bytes;
         }
 
         private void EmitWasmHeader(Stream outputFileStream)
@@ -771,6 +794,25 @@ namespace ILCompiler.ObjectWriter
             // Create combined data section and emit
             WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilContentsSegment], new Utf8String("data"), contentAlign: 4);
             dataSection.Emit(outputFileStream);
+
+            // Append the WebAssembly tool-conventions producers + build_id custom sections so the R2R
+            // webcil module is self-identifying, reusing the shared WasmCustomSectionWriter encoder.
+            // build_id is the explicit --wasm-native-build-id value when supplied, otherwise a content
+            // hash of the webcil payload.
+            byte[] webcilBuildId = _wasmNativeBuildId;
+            if (webcilBuildId == null)
+            {
+                using var sha = System.Security.Cryptography.SHA256.Create();
+                webcilStream.Position = 0;
+                webcilBuildId = sha.ComputeHash(webcilStream);
+            }
+            WasmCustomSectionWriter.ProducerValue[] producers =
+            [
+                new(WasmCustomSectionWriter.ProducersFieldLanguage, "C#", string.Empty),
+                new(WasmCustomSectionWriter.ProducersFieldProcessedBy, "WebCIL", string.Empty),
+                new(WasmCustomSectionWriter.ProducersFieldSdk, ".NET", string.Empty),
+            ];
+            WasmCustomSectionWriter.AppendMetadataSections(outputFileStream, producers, webcilBuildId);
 #endif
         }
 

@@ -307,6 +307,7 @@ namespace ILCompiler
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
         private readonly int _customPESectionAlignment;
+        private readonly string _wasmNativeBuildId;
         private readonly ReadyToRunContainerFormat _format;
 
         /// <summary>
@@ -344,7 +345,8 @@ namespace ILCompiler
             FileLayoutAlgorithm fileLayoutAlgorithm,
             int customPESectionAlignment,
             bool verifyTypeAndFieldLayout,
-            ReadyToRunContainerFormat format)
+            ReadyToRunContainerFormat format,
+            string wasmNativeBuildId = null)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -369,6 +371,7 @@ namespace ILCompiler
             _generateProfileFile = generateProfileFile;
             _customPESectionAlignment = customPESectionAlignment;
             _format = format;
+            _wasmNativeBuildId = wasmNativeBuildId;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             if (nodeFactory.InstrumentationDataTable != null)
                 nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
@@ -427,7 +430,8 @@ namespace ILCompiler
                     callChainProfile: _profileData.CallChainProfile,
                     _format,
                     _customPESectionAlignment,
-                    _logger);
+                    _logger,
+                    _wasmNativeBuildId);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
                 if (moduleGroup.IsCompositeBuildMode)
