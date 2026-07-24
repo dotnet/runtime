@@ -451,12 +451,21 @@ void InitializeCurrentProcessCpuCount()
 
     const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
     uint64_t configValue;
+    int cpuPresentCount;
 
     if (g_pRhConfig->ReadConfigValue("PROCESSOR_COUNT", &configValue, true /* decimal */) &&
         0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
     {
         count = configValue;
     }
+#ifdef HOST_ANDROID
+	// Android tries really hard to save power by powering off CPUs on SMP phones which
+	// means the normal way to query cpu count can underestimate the number of available CPUs.
+    else if ((cpuPresentCount = minipal_get_cpu_present_count()) > 0)
+    {
+        count = cpuPresentCount;
+    }
+#endif
     else
     {
 #if HAVE_SCHED_GETAFFINITY

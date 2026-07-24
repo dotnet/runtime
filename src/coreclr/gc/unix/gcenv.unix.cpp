@@ -143,8 +143,18 @@ bool GCToOSInterface::Initialize()
 
     g_pageSizeUnixInl = uint32_t((pageSize > 0) ? pageSize : 0x1000);
 
-    // Calculate and cache the number of processors on this machine
+#ifdef TARGET_ANDROID
+	// Android tries really hard to save power by powering off CPUs on SMP phones which
+	// means the normal way to query cpu count can underestimate the number of available CPUs.
+    int cpuCount = minipal_get_cpu_present_count();
+    if (cpuCount == -1)
+    {
+        cpuCount = sysconf(SYSCONF_GET_NUMPROCS);
+    }
+#else
     int cpuCount = sysconf(SYSCONF_GET_NUMPROCS);
+#endif
+
     if (cpuCount == -1)
     {
         return false;
@@ -171,7 +181,7 @@ bool GCToOSInterface::Initialize()
 
     InitializeCGroup();
 
-#if HAVE_SCHED_GETAFFINITY
+#if HAVE_SCHED_GETAFFINITY && !defined(TARGET_ANDROID)
 
     {
         // Use a dynamically allocated cpu_set_t to support systems with more than CPU_SETSIZE (typically 1024) CPUs.
