@@ -4916,41 +4916,67 @@ namespace System.Tests
         // paths in Copy/Clear. byte elements keep the allocation to ~2 GB.
         private const int Dim1Length = (int.MaxValue / 2) + 2;
 
+        // Returned by the child when it can't allocate the array, so the parent
+        // can skip rather than fail on memory pressure.
+        private const int OutOfMemoryExitCode = 3;
+
         [OuterLoop] // Allocates large array
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void Copy_LargeMultiDimensionalArray()
         {
-            // If this test is run in a 32-bit process, the large allocation will fail.
-            if (IntPtr.Size != sizeof(long))
+            InvokeAllocatingLargeArray(static () =>
             {
-                throw new SkipTestException("Unable to allocate enough memory");
-            }
+                try
+                {
+                    byte[,] a = new byte[2, Dim1Length];
+                    a[0, 1] = 42;
+                    Array.Copy(a, 1, a, int.MaxValue, 2);
+                    Assert.Equal(42, a[1, int.MaxValue - Dim1Length]);
 
-            if (memoryInfo.TotalAvailableMemoryBytes < 4_000_000_000)
-            {
-                // The array below is ~2 GB; require headroom so the OOM killer
-                // doesn't terminate the process before the test completes.
-                throw new SkipTestException($"Prone to OOM killer. {memoryInfo.TotalAvailableMemoryBytes} is available.");
-            }
-
-            // Allocate in a child process so that if the OOM killer does fire it
-            // fails just this test instead of taking down the whole test run.
-            RemoteExecutor.Invoke(static () =>
-            {
-                byte[,] a = new byte[2, Dim1Length];
-                a[0, 1] = 42;
-                Array.Copy(a, 1, a, int.MaxValue, 2);
-                Assert.Equal(42, a[1, int.MaxValue - Dim1Length]);
-
-                Array.Clear(a, int.MaxValue - 1, 3);
-                Assert.Equal(0, a[1, int.MaxValue - Dim1Length]);
-            }).Dispose();
+                    Array.Clear(a, int.MaxValue - 1, 3);
+                    Assert.Equal(0, a[1, int.MaxValue - Dim1Length]);
+                }
+                catch (OutOfMemoryException)
+                {
+                    return OutOfMemoryExitCode;
+                }
+                return RemoteExecutor.SuccessExitCode;
+            });
         }
 
         [OuterLoop] // Allocates large array
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void Clear_LargeMultiDimensionalArray()
         {
+            InvokeAllocatingLargeArray(static () =>
+            {
+                try
+                {
+                    byte[,] a = new byte[2, Dim1Length];
+
+                    // Test 1: use Array.Clear
+                    a[1, Dim1Length - 1] = 0x12;
+                    Array.Clear(a);
+                    Assert.Equal(0, a[1, Dim1Length - 1]);
+
+                    // Test 2: use IList.Clear
+                    a[1, Dim1Length - 1] = 0x12;
+                    ((IList)a).Clear();
+                    Assert.Equal(0, a[1, Dim1Length - 1]);
+                }
+                catch (OutOfMemoryException)
+                {
+                    return OutOfMemoryExitCode;
+                }
+                return RemoteExecutor.SuccessExitCode;
+            });
+        }
+
+        // Runs the large-array body in a child process so that memory pressure fails
+        // just this test instead of taking down the whole run, and translates an
+        // out-of-memory outcome into a skip rather than a failure.
+        private static void InvokeAllocatingLargeArray(Func<int> body)
+        {
             // If this test is run in a 32-bit process, the large allocation will fail.
             if (IntPtr.Size != sizeof(long))
             {
@@ -4959,27 +4985,23 @@ namespace System.Tests
 
             if (memoryInfo.TotalAvailableMemoryBytes < 4_000_000_000)
             {
-                // The array below is ~2 GB; require headroom so the OOM killer
-                // doesn't terminate the process before the test completes.
+                // The array is ~2 GB; require headroom so the OOM killer doesn't
+                // terminate the process before the test completes.
                 throw new SkipTestException($"Prone to OOM killer. {memoryInfo.TotalAvailableMemoryBytes} is available.");
             }
 
-            // Allocate in a child process so that if the OOM killer does fire it
-            // fails just this test instead of taking down the whole test run.
-            RemoteExecutor.Invoke(static () =>
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(body, new RemoteInvokeOptions { CheckExitCode = false });
+            handle.Process.WaitForExit();
+            int exitCode = handle.Process.ExitCode;
+
+            // OutOfMemoryExitCode: the child caught a managed OutOfMemoryException.
+            // 137 == 128 + SIGKILL: the OOM killer terminated the child (Unix).
+            if (exitCode == OutOfMemoryExitCode || exitCode == 137)
             {
-                byte[,] a = new byte[2, Dim1Length];
+                throw new SkipTestException($"Ran out of memory allocating the large array. Exit code {exitCode}.");
+            }
 
-                // Test 1: use Array.Clear
-                a[1, Dim1Length - 1] = 0x12;
-                Array.Clear(a);
-                Assert.Equal(0, a[1, Dim1Length - 1]);
-
-                // Test 2: use IList.Clear
-                a[1, Dim1Length - 1] = 0x12;
-                ((IList)a).Clear();
-                Assert.Equal(0, a[1, Dim1Length - 1]);
-            }).Dispose();
+            Assert.Equal(RemoteExecutor.SuccessExitCode, exitCode);
         }
     }
 }
