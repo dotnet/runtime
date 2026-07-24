@@ -38,6 +38,10 @@ class ComCallMethodDesc;
 #define SIZEOF_LOAD_AND_JUMP_THUNK              22   // # bytes to mov r10, X; jmp Z
 #define SIZEOF_LOAD2_AND_JUMP_THUNK             32   // # bytes to mov r10, X; mov r11, Y; jmp Z
 
+// JMPABS instruction sizes (APX)
+#define JMPABS_INSTRUCTION_SIZE                 11   // # bytes for JMPABS (D5 00 A1 + 8-byte immediate)
+#define JMPABS_WITH_PADDING_SIZE                12   // # bytes for JMPABS + 1-byte NOP for alignment
+
 #define HAS_PINVOKE_IMPORT_PRECODE              1
 #define HAS_FIXUP_PRECODE                       1
 
@@ -486,6 +490,9 @@ inline TADDR GetSecondArgReg(CONTEXT *context)
 
 extern "C" void* GetCurrentSP();
 
+// Global flag indicating JMPABS instruction availability (set when APX is detected)
+extern bool g_IsJmpAbsAvailable;
+
 // Emits:
 // Get Rel32 destination, emit jumpStub if necessary
 INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,
@@ -495,6 +502,10 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
 INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCODE jumpStubAddr, PCODE jumpStubAddrRW, bool emitJump);
 
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
+
+// Emits raw 11-byte JMPABS instruction (D5 00 A1 + 8-byte immediate)
+// Requires g_IsJmpAbsAvailable == true.
+void emitJmpAbsJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
 bool isBackToBackJump(PCODE pCode);
 PCODE decodeBackToBackJump(PCODE pCode);
