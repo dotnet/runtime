@@ -491,7 +491,7 @@ namespace Mono.Linker.Steps
                         break;
                     case ExportedType exportedType:
                         Annotations.SetProcessed(exportedType);
-                        // No additional processing is done for exported types.
+                        MarkingHelpers.MarkExportedTypeTarget(exportedType, pending.Value);
                         break;
                     default:
                         throw new NotImplementedException(pending.GetType().ToString());
