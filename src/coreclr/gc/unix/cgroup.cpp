@@ -21,10 +21,10 @@ Abstract:
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/resource.h>
 #include <sys/vfs.h>
 #include <errno.h>
 #include <limits>
+#include <minipal/vmlimit.h>
 
 #include "config.gc.h"
 
@@ -579,14 +579,9 @@ size_t GetRestrictedPhysicalMemoryLimit()
         return 0;
     }
 
-    struct rlimit curr_rlimit;
-    size_t rlimit_soft_limit = (size_t)RLIM_INFINITY;
-    if (getrlimit(RLIMIT_AS, &curr_rlimit) == 0)
-    {
-        rlimit_soft_limit = curr_rlimit.rlim_cur;
-    }
-    physical_memory_limit = (physical_memory_limit < rlimit_soft_limit) ?
-                            physical_memory_limit : rlimit_soft_limit;
+    size_t vm_limit = minipal_get_virtual_address_space_limit();
+    physical_memory_limit = (physical_memory_limit < vm_limit) ?
+                            physical_memory_limit : vm_limit;
 
     // Ensure that limit is not greater than real memory size
     long pages = sysconf(_SC_PHYS_PAGES);

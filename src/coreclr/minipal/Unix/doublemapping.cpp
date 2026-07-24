@@ -25,6 +25,7 @@
 #endif // TARGET_LINUX && !MFD_CLOEXEC
 #include "minipal.h"
 #include "minipal/cpufeatures.h"
+#include <minipal/vmlimit.h>
 
 #ifndef TARGET_APPLE
 #if !defined(TARGET_WASI)
@@ -109,19 +110,15 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
     // Clip the maximum double mapped memory size to 1/4 of the virtual address space limit.
     // When such a limit is set, GC reserves 1/2 of it, so we need to leave something
     // for the rest of the process.
-#ifdef RLIMIT_AS
-    // OpenBSD has no address-space rlimit (RLIMIT_AS), so this clipping is skipped there.
-    // WASI also has no RLIMIT_AS.
-    struct rlimit virtualAddressSpaceLimit;
-    if ((getrlimit(RLIMIT_AS, &virtualAddressSpaceLimit) == 0) && (virtualAddressSpaceLimit.rlim_cur != RLIM_INFINITY))
+    size_t virtualAddressSpaceLimit = minipal_get_virtual_address_space_limit();
+    if (virtualAddressSpaceLimit != SIZE_MAX)
     {
-        virtualAddressSpaceLimit.rlim_cur /= 4;
-        if (maxDoubleMappedMemorySize > virtualAddressSpaceLimit.rlim_cur)
+        virtualAddressSpaceLimit /= 4;
+        if (maxDoubleMappedMemorySize > virtualAddressSpaceLimit)
         {
-            maxDoubleMappedMemorySize = virtualAddressSpaceLimit.rlim_cur;
+            maxDoubleMappedMemorySize = virtualAddressSpaceLimit;
         }
     }
-#endif // RLIMIT_AS
 
     // Clip the maximum double mapped memory size to the file size limit
 #ifdef RLIMIT_FSIZE
