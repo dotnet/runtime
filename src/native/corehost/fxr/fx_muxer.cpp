@@ -377,7 +377,7 @@ namespace
 
         if (coreclr_exists_in_dir(host_info.dotnet_root))
         {
-            // Detect between standalone apphost or legacy split mode (specifying --depsfile and --runtimeconfig)
+            // Detect between standalone apphost and muxer mode
 
             pal::string_t deps_in_dotnet_root = host_info.dotnet_root;
             pal::string_t deps_filename = host_info.get_app_name() + _X(".deps.json");
@@ -390,7 +390,7 @@ namespace
             // Name of runtimeconfig file; since no path is included here the check is in the current working directory
             pal::string_t config_in_cwd = host_info.get_app_name() + _X(".runtimeconfig.json");
 
-            return (deps_exists || !pal::file_exists(config_in_cwd)) && pal::file_exists(host_info.app_path) ? host_mode_t::apphost : host_mode_t::split_fx;
+            return (deps_exists || !pal::file_exists(config_in_cwd)) && pal::file_exists(host_info.app_path) ? host_mode_t::apphost : host_mode_t::muxer;
         }
 
         if (pal::file_exists(host_info.app_path))
@@ -522,19 +522,10 @@ namespace
                 pal::getenv(_X("DOTNET_ADDITIONAL_DEPS"), &additional_deps_serialized);
             }
 
-            // If invoking using FX dotnet.exe, use own directory.
-            if (mode == host_mode_t::split_fx)
+            rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_settings, app_config, fx_definitions, mode == host_mode_t::muxer ? app_candidate.c_str() : host_info.host_path.c_str());
+            if (rc != StatusCode::Success)
             {
-                auto fx = new fx_definition_t(app_config.get_frameworks()[0].get_fx_name(), host_info.dotnet_root, pal::string_t(), pal::string_t());
-                fx_definitions.push_back(std::unique_ptr<fx_definition_t>(fx));
-            }
-            else
-            {
-                rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_settings, app_config, fx_definitions, mode == host_mode_t::muxer ? app_candidate.c_str() : host_info.host_path.c_str());
-                if (rc != StatusCode::Success)
-                {
-                    return rc;
-                }
+                return rc;
             }
         }
 
