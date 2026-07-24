@@ -84,12 +84,6 @@ partial interface IRuntimeTypeSystem : IContract
     // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
     // src/coreclr/vm/class.cpp.
     public virtual bool TryGetHFAElementSize(ITypeHandle typeHandle, out int elementSize);
-    // Returns the intrinsic SIMD vector element size derived from type metadata: 16 for
-    // Vector128<T>, 8 for Vector64<T>, and 8 or 16 for System.Numerics.Vector<T> (based on its
-    // instance size); 0 for non-vector types and for Vector256<T>/Vector512<T> (never HVA
-    // elements). Unlike TryGetHFAElementSize this is not gated on FEATURE_HFA, so it is valid on
-    // wasm, where ArgIterator uses it to 16-byte align v128 args.
-    public virtual int GetVectorElementSize(ITypeHandle typeHandle);
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     public virtual bool RequiresAlign8(ITypeHandle typeHandle);
     // Returns the cached SystemV AMD64 eightbyte register-passing classification for a value type
@@ -812,7 +806,7 @@ static class RuntimeTypeSystem_1_Helpers
     //       if targetArch is ARM:                         return (true, th.Flags.RequiresAlign8 ? 8 : 4)
     //       mt = th
     //       loop (bounded depth):
-    //           if (elem = GetVectorElementSize(mt)):      return (true, elem)
+    //           if (elem = GetVectorHFAElementSize(mt)):  return (true, elem)
     //           field = first non-static field of mt
     //           if field is null:                         return false
     //           switch field.ElementType:
@@ -821,21 +815,17 @@ static class RuntimeTypeSystem_1_Helpers
     //               ValueType: mt = GetFieldDescApproxTypeHandle(field); continue
     //               default:   return false
     //
-    //   GetVectorElementSize(mt):                         // detects HVA / SIMD vector shapes
+    //   GetVectorHFAElementSize(mt):                      // detects HVA shapes
     //       if !mt.Flags.IsIntrinsicType:                 return 0
     //       (ns, name) = typedef name+namespace via EcmaMetadata
     //       elem = match on (ns, name):
     //           "System.Numerics", "Vector`1":            NumInstanceFieldBytes (8 or 16, else 0)
     //           "System.Runtime.Intrinsics", "Vector128`1": 16
     //           "System.Runtime.Intrinsics", "Vector64`1":  8
-    //           _:                                          return 0    // incl. Vector256/512
+    //           _:                                          return 0
     //       if !CorIsNumericalType(GetInstantiation(mt)[0]): return 0
     //       return elem
     public bool TryGetHFAElementSize(ITypeHandle typeHandle, out int elementSize) { ... }
-
-    // Metadata-derived intrinsic vector element size, without FEATURE_HFA gating so it is usable
-    // on wasm (see GetVectorElementSize pseudocode above).
-    public int GetVectorElementSize(ITypeHandle typeHandle) { ... }
 
     public bool RequiresAlign8(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
 
