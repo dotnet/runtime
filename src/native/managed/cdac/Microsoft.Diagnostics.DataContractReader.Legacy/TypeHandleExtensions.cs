@@ -117,7 +117,6 @@ internal static class TypeHandleExtensions
                 result.Append(rank);
                 break;
             case CorElementType.FnPtr:
-                result.Clear();
                 result.Append("FNPTR");
                 break;
             default:
