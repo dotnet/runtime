@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <_RunInterpreterDirectly Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser' and '$(TargetArchitecture)' == 'wasm'">true</_RunInterpreterDirectly>
+    <_RunInterpreterDirectly Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser' and '$(TargetArchitecture)' == 'wasm'">true</_RunInterpreterDirectly>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
     <DisableProjectBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64' and '$(TargetArchitecture)' != 'riscv64' and '$(TargetArchitecture)' != 'loongarch64' and '$(TargetArchitecture)' != 'armel' and '$(_RunInterpreterDirectly)' != 'true'">true</DisableProjectBuild>

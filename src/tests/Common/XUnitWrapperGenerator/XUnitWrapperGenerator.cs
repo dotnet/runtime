@@ -636,7 +636,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 {
                     builder.AppendLine();
                     builder.AppendLine(@"string outOfProcessStatusFile = System.Environment.GetEnvironmentVariable(""__TestOutOfProcessStatusFile"");");
-                    builder.AppendLine($"if (outOfProcessStatusFile is not null && !{testExecutedIdentifier} && {skipReasonIdentifier} is not null)");
+                    builder.AppendLine($"if (!System.String.IsNullOrEmpty(outOfProcessStatusFile) && !{testExecutedIdentifier} && {skipReasonIdentifier} is not null)");
                     using (builder.NewBracesScope())
                     {
                         builder.AppendLine($"System.IO.File.WriteAllText(outOfProcessStatusFile, {skipReasonIdentifier} + System.Environment.NewLine);");
