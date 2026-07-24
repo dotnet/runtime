@@ -152,7 +152,6 @@ namespace System.Buffers.ArrayPool.Tests
 
         private static bool IsPreciseGcSupportedAndRemoteExecutorSupported => PlatformDetection.IsPreciseGcSupported && RemoteExecutor.IsSupported;
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/44037")]
         [ConditionalFact(typeof(CollectionTests), nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
         public void PollingEventFires()
         {
@@ -179,10 +178,15 @@ namespace System.Buffers.ArrayPool.Tests
                 Assert.False(pollEventFired, "collection isn't hooked up until the first item is returned");
                 ArrayPool<float>.Shared.Return(buffer);
 
+                // The poll event is emitted from a Gen2GcCallback finalizer, so a single gen2
+                // collection isn't guaranteed to run it. Retry until it fires or we give up.
                 RunWithListener(() =>
                 {
-                    GC.Collect(2);
-                    GC.WaitForPendingFinalizers();
+                    for (int i = 0; i < 10 && !pollEventFired; i++)
+                    {
+                        GC.Collect(2);
+                        GC.WaitForPendingFinalizers();
+                    }
                 },
                 EventLevel.Informational,
                 e =>
