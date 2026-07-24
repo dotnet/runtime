@@ -972,9 +972,18 @@ namespace System.StubHelpers
                 int allocSize = Marshal.SizeOfHelper((RuntimeType)_layoutType, false);
                 IntPtr pNative = Marshal.AllocCoTaskMem(allocSize);
 
-                if (IsIn(dwFlags))
+                try
                 {
-                    StubHelpers.LayoutTypeConvertToUnmanaged(managed, (byte*)pNative, ref _cleanupWorkList);
+                    if (IsIn(dwFlags))
+                    {
+                        StubHelpers.LayoutTypeConvertToUnmanaged(managed, (byte*)pNative, ref _cleanupWorkList);
+                    }
+                }
+                catch
+                {
+                    StubHelpers.DestroyCleanupList(ref _cleanupWorkList);
+                    Marshal.FreeCoTaskMem(pNative);
+                    throw;
                 }
 
                 return pNative;
