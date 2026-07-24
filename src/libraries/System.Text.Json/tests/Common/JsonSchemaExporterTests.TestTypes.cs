@@ -92,7 +92,10 @@ namespace System.Text.Json.Schema.Tests
             // Enum types
             yield return new TestData<IntEnum>(IntEnum.A, ExpectedJsonSchema: """{"type":"integer"}""");
             yield return new TestData<StringEnum>(StringEnum.A, ExpectedJsonSchema: """{"enum":["A","B","C"]}""");
-            yield return new TestData<FlagsStringEnum>(FlagsStringEnum.A, ExpectedJsonSchema: """{"type":"string"}""");
+            yield return new TestData<FlagsStringEnum>(FlagsStringEnum.A, ExpectedJsonSchema: """{"type":"string","pattern":"^(A|B|C)(\\w*,\\w*(A|B|C))*$"}""");
+            yield return new TestData<FlagsEnumWithNameAttributes>(
+                FlagsEnumWithNameAttributes.NormalFlag,
+                ExpectedJsonSchema: """{"type":"string","pattern":"^(A|\"\\.\\\\)(\\w*,\\w*(A|\"\\.\\\\))*$"}""");
             yield return new TestData<EnumWithNameAttributes>(
                 EnumWithNameAttributes.Value1,
                 AdditionalValues: [EnumWithNameAttributes.Value2],
@@ -1296,6 +1299,15 @@ namespace System.Text.Json.Schema.Tests
 
         [Flags, JsonConverter(typeof(JsonStringEnumConverter<FlagsStringEnum>))]
         public enum FlagsStringEnum { A = 1, B = 2, C = 4 };
+
+        [Flags, JsonConverter(typeof(JsonStringEnumConverter<FlagsEnumWithNameAttributes>))]
+        public enum FlagsEnumWithNameAttributes
+        {
+            [JsonStringEnumMemberName("A")]
+            NormalFlag = 1,
+            [JsonStringEnumMemberName("\".\\")]
+            StrangeFlag = 2,
+        }
 
         [JsonConverter(typeof(JsonStringEnumConverter<EnumWithNameAttributes>))]
         public enum EnumWithNameAttributes
