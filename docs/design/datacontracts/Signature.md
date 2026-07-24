@@ -83,6 +83,8 @@ ITypeHandle? ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle
 
 `RuntimeSignatureDecoder` is shared infrastructure. Other contracts construct their own decoder and provider directly when they need to decode method or local signatures rather than going through this contract.
 
+The [CallingConvention](./CallingConvention.md) contract uses the same decoder with a provider that keeps signature classification and generic shape separate from an optional exact loaded `ITypeHandle`.
+
 ### Vararg call cookies
 
 `GetVarArgArgsBase` and `GetVarArgSignature` decode a `VASigCookie*` slot pushed by a vararg call site.

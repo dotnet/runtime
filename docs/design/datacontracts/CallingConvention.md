@@ -58,3 +58,19 @@ yet. The cdacstress harness (`src/coreclr/vm/cdacstress.cpp`,
 `ARGITER` sub-check) uses byte-for-byte comparison of the returned blob
 against the runtime's `ComputeCallRefMap` output as its correctness
 oracle.
+
+Method and field signatures are decoded with `RuntimeSignatureDecoder` into an
+internal representation that retains the outermost element type, an optional
+exact loaded `ITypeHandle`, the generic type definition, and recursively
+decoded generic arguments. Unlike `ITypeHandle`, which represents an exact
+target-backed type, this representation preserves information about types that
+are not fully loaded.
+
+Contracts used:
+
+| Contract Name |
+| --- |
+| EcmaMetadata |
+| Loader |
+| RuntimeInfo |
+| RuntimeTypeSystem |
