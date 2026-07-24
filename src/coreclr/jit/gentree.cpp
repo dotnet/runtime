@@ -11758,6 +11758,15 @@ void Compiler::gtUpdateStmtSideEffects(Statement* stmt)
         {
             GenTree* tree = *use;
             tree->gtFlags &= ~(GTF_ASG | GTF_CALL | GTF_EXCEPT);
+
+            // Attempt to clear stale GTF_ORDER_SIDEEFF bits
+            // If this node does indeed need GTF_ORDER_SIDEEFF, then the bit will later be propagated up and re-set
+            // during the child's post-order visit
+            if (((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !tree->OperSupportsOrderingSideEffect())
+            {
+                tree->gtFlags &= ~GTF_ORDER_SIDEEFF;
+            }
+
             return WALK_CONTINUE;
         }
 
@@ -11809,7 +11818,7 @@ void Compiler::gtUpdateStmtSideEffects(Statement* stmt)
 //    tree            - Tree to update the side effects on
 //
 // Notes:
-//    This method currently only updates GTF_EXCEPT, GTF_ASG, and GTF_CALL flags.
+//    This method currently only updates GTF_EXCEPT, GTF_ASG, GTF_CALL, and GTF_ORDER_SIDEEFF flags.
 //    The other side effect flags may remain unnecessarily (conservatively) set.
 //    The caller of this method is expected to update the flags based on the children's flags.
 //
@@ -11845,6 +11854,13 @@ void Compiler::gtUpdateNodeOperSideEffects(GenTree* tree)
     {
         tree->gtFlags &= ~GTF_CALL;
     }
+
+    // Clear stale side effect flags here.  This is safe as
+    // callers are expected to recalculate this flag based on tree's children
+    if (((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !tree->OperSupportsOrderingSideEffect())
+    {
+        tree->gtFlags &= ~GTF_ORDER_SIDEEFF;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -11855,7 +11871,7 @@ void Compiler::gtUpdateNodeOperSideEffects(GenTree* tree)
 //    tree            - Tree to update the side effects on
 //
 // Notes:
-//    This method currently only updates GTF_EXCEPT, GTF_ASG, and GTF_CALL flags.
+//    This method currently only updates GTF_EXCEPT, GTF_ASG, GTF_CALL, and GTF_ORDER_SIDEEFF flags.
 //    The other side effect flags may remain unnecessarily (conservatively) set.
 //
 void Compiler::gtUpdateNodeSideEffects(GenTree* tree)

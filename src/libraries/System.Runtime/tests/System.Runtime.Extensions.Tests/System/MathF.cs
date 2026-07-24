@@ -998,6 +998,7 @@ namespace System.Tests
         [InlineData(0.0f, 2.0f, 0.0f, 0.0f)]
         [InlineData(0.0f, 3.0f, 0.0f, 0.0f)]
         [InlineData(0.0f, float.PositiveInfinity, 0.0f, 0.0f)]
+        [InlineData(float.Epsilon, 1.0f, float.Epsilon, 0.0f)]
         [InlineData(1.0f, float.NegativeInfinity, 1.0f, CrossPlatformMachineEpsilon * 10)]
         [InlineData(1.0f, -1.0f, 1.0f, CrossPlatformMachineEpsilon * 10)]
         [InlineData(1.0f, -0.0f, 1.0f, CrossPlatformMachineEpsilon * 10)]
