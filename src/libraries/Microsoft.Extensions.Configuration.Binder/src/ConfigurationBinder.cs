@@ -770,6 +770,8 @@ namespace Microsoft.Extensions.Configuration
             MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", DeclaredOnlyLookup)!;
             PropertyInfo indexerProperty = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
 
+            object?[]? indexerArguments = null;
+
             foreach (IConfigurationSection child in config.GetChildren())
             {
                 try
@@ -793,7 +795,9 @@ namespace Microsoft.Extensions.Configuration
                         true);
                     if (valueBindingPoint.HasNewValue)
                     {
-                        indexerProperty.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
+                        indexerArguments ??= new object?[1];
+                        indexerArguments[0] = key;
+                        indexerProperty.SetValue(dictionary, valueBindingPoint.Value, indexerArguments);
                     }
                 }
                 catch (Exception ex)
@@ -818,6 +822,7 @@ namespace Microsoft.Extensions.Configuration
             // ICollection<T> is guaranteed to have exactly one parameter
             Type itemType = collectionType.GenericTypeArguments[0];
             MethodInfo? addMethod = collectionType.GetMethod("Add", DeclaredOnlyLookup);
+            object?[]? addArguments = null;
 
             foreach (IConfigurationSection section in config.GetChildren())
             {
@@ -830,9 +835,11 @@ namespace Microsoft.Extensions.Configuration
                         config: section,
                         options: options,
                         true);
-                    if (itemBindingPoint.HasNewValue)
+                    if (itemBindingPoint.HasNewValue && addMethod is not null)
                     {
-                        addMethod?.Invoke(collection, new[] { itemBindingPoint.Value });
+                        addArguments ??= new object?[1];
+                        addArguments[0] = itemBindingPoint.Value;
+                        addMethod.Invoke(collection, addArguments);
                     }
                 }
                 catch (Exception ex)
