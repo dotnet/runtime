@@ -99,12 +99,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
             }
             else
             {
-                TypeNameBuilder.AppendType(
-                    _target,
-                    sb,
-                    _typeHandle,
-                    TypeNameFormat.FormatNamespace,
-                    formatTypeHandleName: true);
+                sb.Append(_typeHandle.GetName(_target));
             }
 
             OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, sb.ToString());

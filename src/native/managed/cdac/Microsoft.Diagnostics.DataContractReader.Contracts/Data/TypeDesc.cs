@@ -27,6 +27,7 @@ internal sealed partial class TypeVarTypeDesc : IData<TypeVarTypeDesc>
     public uint TypeAndFlags { get; private set; }
     [Field] public partial TargetPointer Module { get; }
     [Field] public partial uint Token { get; }
+    [Field] public partial uint Index { get; }
 
     partial void OnInit(Target target, TargetPointer address)
     {

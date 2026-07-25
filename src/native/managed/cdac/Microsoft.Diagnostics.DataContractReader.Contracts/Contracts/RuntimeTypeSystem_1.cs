@@ -546,7 +546,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             {
                 return GetModule(GetTypeParam(typeHandle));
             }
-            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _))
+            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _, out _))
             {
                 return genericParamModule;
             }
@@ -1448,10 +1448,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return GetTypeHandle(typeHandlePtr);
     }
 
-    public bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token)
+    public bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token, out uint index)
     {
         module = TargetPointer.Null;
         token = 0;
+        index = 0;
 
         if (!typeHandle.IsTypeDesc())
             return false;
@@ -1465,6 +1466,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 TypeVarTypeDesc typeVarTypeDesc = _target.ProcessedData.GetOrAdd<TypeVarTypeDesc>(typeHandle.TypeDescAddress());
                 module = typeVarTypeDesc.Module;
                 token = typeVarTypeDesc.Token;
+                index = typeVarTypeDesc.Index;
                 return true;
         }
         return false;
@@ -1516,7 +1518,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             {
                 return GetLoaderModule(GetTypeParam(typeHandle));
             }
-            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _))
+            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _, out _))
             {
                 return genericParamModule;
             }

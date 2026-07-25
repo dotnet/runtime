@@ -185,105 +185,15 @@ public struct TypeNameBuilder
         } while (true);
     }
 
-    public static void AppendType(
-        Target target,
-        StringBuilder stringBuilder,
-        ITypeHandle? typeHandle,
-        TypeNameFormat format,
-        bool formatTypeHandleName = false)
+    public static void AppendType(Target target, StringBuilder stringBuilder, ITypeHandle? typeHandle, TypeNameFormat format)
     {
-        AppendType(target, stringBuilder, typeHandle, default, format, formatTypeHandleName);
+        AppendType(target, stringBuilder, typeHandle, default, format);
     }
 
-    public static void AppendType(
-        Target target,
-        StringBuilder stringBuilder,
-        ITypeHandle? typeHandle,
-        ReadOnlySpan<ITypeHandle> typeInstantiation,
-        TypeNameFormat format,
-        bool formatTypeHandleName = false)
+    public static void AppendType(Target target, StringBuilder stringBuilder, ITypeHandle? typeHandle, ReadOnlySpan<ITypeHandle> typeInstantiation, TypeNameFormat format)
     {
         TypeNameBuilder builder = new(stringBuilder, target, format);
-        if (formatTypeHandleName)
-        {
-            AppendTypeHandleName(ref builder, typeHandle);
-        }
-        else
-        {
-            AppendTypeCore(ref builder, typeHandle, typeInstantiation, format);
-        }
-    }
-
-    private static void AppendTypeHandleName(ref TypeNameBuilder tnb, ITypeHandle? typeHandle)
-    {
-        if (typeHandle is null)
-        {
-            tnb.AddName("(null)");
-            return;
-        }
-
-        IRuntimeTypeSystem rts = tnb.Target.Contracts.RuntimeTypeSystem;
-        if (rts.IsTypeDesc(typeHandle))
-        {
-            CorElementType elementType = rts.GetInternalCorElementType(typeHandle);
-            if (rts.HasTypeParam(typeHandle) && elementType != CorElementType.ValueType)
-            {
-                AppendTypeHandleName(ref tnb, rts.GetTypeParam(typeHandle));
-                AppendParamTypeQualifier(ref tnb, elementType, rank: 0);
-            }
-            else if (rts.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken))
-            {
-                Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePointer);
-                MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module)!;
-                GenericParameterHandle handle = (GenericParameterHandle)MetadataTokens.Handle((int)genericParamToken);
-                GenericParameter genericParam = reader.GetGenericParameter(handle);
-                StringBuilder name = new(elementType == CorElementType.Var ? "!" : "!!");
-                name.Append(genericParam.Index);
-                tnb.AddNameNoEscaping(name);
-            }
-            else if (rts.IsFunctionPointer(typeHandle, out _, out _))
-            {
-                tnb.AddNameNoEscaping(new StringBuilder("FNPTR"));
-            }
-            else
-            {
-                tnb.AddNameNoEscaping(new StringBuilder());
-            }
-
-            return;
-        }
-
-        if (rts.IsArray(typeHandle, out uint rank))
-        {
-            AppendTypeHandleName(ref tnb, rts.GetTypeParam(typeHandle));
-            AppendParamTypeQualifier(ref tnb, rts.GetInternalCorElementType(typeHandle), rank);
-            return;
-        }
-
-        uint typeDefToken = rts.GetTypeDefToken(typeHandle);
-        if (MetadataTokens.EntityHandle((int)typeDefToken).IsNil)
-        {
-            if (rts.IsContinuationWithoutMetadata(typeHandle))
-            {
-                AppendContinuationName(ref tnb, rts, typeHandle);
-            }
-            else
-            {
-                tnb.AddName("(dynamicClass)");
-            }
-        }
-        else
-        {
-            Contracts.ModuleHandle module =
-                tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(rts.GetModule(typeHandle));
-            MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module)!;
-            TypeDefinitionHandle handle = (TypeDefinitionHandle)MetadataTokens.EntityHandle((int)typeDefToken);
-            AppendTypeDef(ref tnb, reader, reader.GetTypeDefinition(handle), TypeNameFormat.FormatNamespace);
-        }
-
-        ReadOnlySpan<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
-        if (instantiation.Length > 0)
-            AppendInst(ref tnb, instantiation, TypeNameFormat.FormatNamespace);
+        AppendTypeCore(ref builder, typeHandle, typeInstantiation, format);
     }
 
     private static void AppendTypeCore(ref TypeNameBuilder tnb, ITypeHandle? typeHandle, ReadOnlySpan<ITypeHandle> instantiation, TypeNameFormat format)
@@ -312,7 +222,7 @@ public struct TypeNameBuilder
                     AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), default, format & ~TypeNameFormat.FormatAssembly);
                 }
             }
-            else if (typeSystemContract.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken))
+            else if (typeSystemContract.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken, out _))
             {
                 Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePointer);
                 MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module)!;
@@ -420,7 +330,7 @@ public struct TypeNameBuilder
     // Append a square-bracket-enclosed, comma-separated list of n type parameters in inst to the string s
     // and enclose each parameter in square brackets to disambiguate the commas
     // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
-    private static void AppendInst(Target target, StringBuilder stringBuilder, ReadOnlySpan<ITypeHandle> inst, TypeNameFormat format)
+    internal static void AppendInst(Target target, StringBuilder stringBuilder, ReadOnlySpan<ITypeHandle> inst, TypeNameFormat format)
     {
         TypeNameBuilder tnb = new(stringBuilder, target, format, initialStateIsName: true);
         AppendInst(ref tnb, inst, format);
@@ -432,7 +342,7 @@ public struct TypeNameBuilder
         foreach (ITypeHandle arg in inst)
         {
             tnb.OpenGenericArgument();
-            if (format.HasFlag(TypeNameFormat.FormatFullInst) && !tnb.Target.Contracts.RuntimeTypeSystem.IsGenericVariable(arg, out _, out _))
+            if (format.HasFlag(TypeNameFormat.FormatFullInst) && !tnb.Target.Contracts.RuntimeTypeSystem.IsGenericVariable(arg, out _, out _, out _))
             {
                 AppendTypeCore(ref tnb, arg, default, format | TypeNameFormat.FormatNamespace | TypeNameFormat.FormatAssembly);
             }
