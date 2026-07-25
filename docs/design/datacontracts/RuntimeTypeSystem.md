@@ -202,6 +202,16 @@ public enum GenericContextLoc
     ThisPtr,
 }
 
+[Flags]
+public enum AsyncMethodFlags : uint
+{
+    None = 0,
+    AsyncCall = 0x1,
+    IsAsyncVariant = 0x2,
+    Thunk = 0x4,
+    ReturnDroppingThunk = 0x8,
+}
+
 // Identifies one of the runtime's well-known singleton MethodTables, each addressable
 // via a dedicated global pointer (e.g. g_pObjectClass, g_pStringClass, g_pFreeObjectMethodTable).
 public enum WellKnownMethodTable
@@ -299,8 +309,9 @@ partial interface IRuntimeTypeSystem : IContract
     // Returns true if the method is eligible for tiered compilation
     public virtual bool IsEligibleForTieredCompilation(MethodDescHandle methodDesc);
 
-    // Return true if the method is an async thunk method.
-    public virtual bool IsAsyncThunkMethod(MethodDescHandle methodDesc);
+    // Returns the normalized cDAC async flags for the method,
+    // or AsyncMethodFlags.None if the method has no async method data.
+    public virtual AsyncMethodFlags GetAsyncMethodFlags(MethodDescHandle methodDesc);
 
     // Return true if the method is a wrapper stub (unboxing or instantiating).
     public virtual bool IsWrapperStub(MethodDescHandle methodDesc);
@@ -308,6 +319,9 @@ partial interface IRuntimeTypeSystem : IContract
     // Return true if the method is an unboxing stub (a wrapper around a
     // value-type instance method that unboxes `this` before forwarding).
     public virtual bool IsUnboxingStub(MethodDescHandle methodDesc);
+
+    // Returns true if the method signature uses the vararg calling convention.
+    public virtual bool IsVarArg(MethodDescHandle methodDesc);
 
 }
 ```
@@ -1525,10 +1539,13 @@ And the following enumeration definitions
     }
 
     [Flags]
-    internal enum AsyncMethodFlags : uint
+    internal enum AsyncMethodFlags_1 : uint
     {
         None = 0,
-        Thunk = 16,
+        AsyncCall = 0x1,
+        IsAsyncVariant = 0x4,
+        Thunk = 0x10,
+        ReturnDroppingThunk = 0x20,
     }
 
     [Flags]
@@ -1956,19 +1973,26 @@ Determining if a method supports multiple code versions:
     }
 ```
 
-Determining if a method is an async thunk method:
+Reading a method's Runtime Async flags:
 
 ```csharp
-    public bool IsAsyncThunkMethod(MethodDescHandle methodDescHandle)
+    public AsyncMethodFlags GetAsyncMethodFlags(MethodDescHandle methodDescHandle)
     {
         MethodDesc md = _methodDescs[methodDescHandle.Address];
         if (!md.HasAsyncMethodData)
-        {
-            return false;
-        }
+            return AsyncMethodFlags.None;
 
-        Data.AsyncMethodData asyncData = // Read AsyncMethodData from the address of the async method data optional slot
-        return ((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.Thunk);
+        AsyncMethodFlags_1 raw = (AsyncMethodFlags_1)/* AsyncMethodData.Flags */;
+        AsyncMethodFlags result = AsyncMethodFlags.None;
+        if ((raw & AsyncMethodFlags_1.AsyncCall) != 0)
+            result |= AsyncMethodFlags.AsyncCall;
+        if ((raw & AsyncMethodFlags_1.IsAsyncVariant) != 0)
+            result |= AsyncMethodFlags.IsAsyncVariant;
+        if ((raw & AsyncMethodFlags_1.Thunk) != 0)
+            result |= AsyncMethodFlags.Thunk;
+        if ((raw & AsyncMethodFlags_1.ReturnDroppingThunk) != 0)
+            result |= AsyncMethodFlags.ReturnDroppingThunk;
+        return result;
     }
 ```
 
@@ -2051,6 +2075,20 @@ stored in `MethodDescFlags3` and surfaces as the `IsUnboxingStub` flag on
 ```csharp
     public bool IsUnboxingStub(MethodDescHandle methodDescHandle)
         => _methodDescs[methodDescHandle.Address].IsUnboxingStub;
+```
+
+Determining if a method uses the vararg calling convention:
+
+```csharp
+    public bool IsVarArg(MethodDescHandle methodDescHandle)
+    {
+        ReadOnlySpan<byte> signature = IsStoredSigMethodDesc(methodDescHandle)
+            ? GetStoredSignature(methodDescHandle)
+            : GetMetadataSignature(methodDescHandle);
+
+        return !signature.IsEmpty
+            && (SignatureCallingConvention)(signature[0] & 0x0F) == SignatureCallingConvention.VarArgs;
+    }
 ```
 
 Extracting a pointer to the `MethodDescVersioningState` data for a given method
