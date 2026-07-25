@@ -154,6 +154,13 @@ void RefInfoListNodePool::ReturnNode(RefInfoListNode* listNode)
 //
 Interval* LinearScan::newInterval(RegisterType theRegisterType)
 {
+    if (minOptsRegAlloc)
+    {
+        Interval* newInt = minOptsNewInterval();
+        new (newInt, jitstd::placement_t()) Interval(theRegisterType, allRegs(theRegisterType));
+        return newInt;
+    }
+
     intervals.emplace_back(theRegisterType, allRegs(theRegisterType));
     Interval* newInt = &intervals.back();
 
@@ -179,6 +186,16 @@ Interval* LinearScan::newInterval(RegisterType theRegisterType)
 //
 RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType)
 {
+    if (minOptsRegAlloc)
+    {
+        RefPosition* newRP = minOptsNewRefPosition();
+        new (newRP, jitstd::placement_t())
+            RefPosition(curBBNum, nodeLocation, treeNode, refType DEBUG_ARG(currBuildNode));
+        INDEBUG(currBuildNode = nullptr);
+        minOptsRecordNodeRefPosition(newRP);
+        return newRP;
+    }
+
     refPositions.emplace_back(curBBNum, nodeLocation, treeNode, refType DEBUG_ARG(currBuildNode));
     RefPosition* newRP = &refPositions.back();
 #ifdef DEBUG
@@ -448,26 +465,38 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
         {
             Interval* theInterval = rp->getInterval();
 
-            applyCalleeSaveHeuristics(rp);
-
-            if (theInterval->isLocalVar)
+            if (minOptsRegAlloc)
             {
-                if (RefTypeIsUse(rp->refType))
+                // Register preferences are not used by the MinOpts allocator, and the def/use
+                // register requirements are reconciled as part of allocation itself.
+                if (rp->refType == RefTypeUse)
                 {
-                    RefPosition* const prevRP = theInterval->recentRefPosition;
-                    if ((prevRP != nullptr) && (prevRP->bbNum == rp->bbNum))
-                    {
-                        prevRP->lastUse = false;
-                    }
+                    rp->lastUse = true;
                 }
-
-                rp->lastUse = (rp->refType != RefTypeExpUse) && (rp->refType != RefTypeParamDef) &&
-                              (rp->refType != RefTypeZeroInit) && !extendLifetimes();
             }
-            else if (rp->refType == RefTypeUse)
+            else
             {
-                checkConflictingDefUse(rp);
-                rp->lastUse = true;
+                applyCalleeSaveHeuristics(rp);
+
+                if (theInterval->isLocalVar)
+                {
+                    if (RefTypeIsUse(rp->refType))
+                    {
+                        RefPosition* const prevRP = theInterval->recentRefPosition;
+                        if ((prevRP != nullptr) && (prevRP->bbNum == rp->bbNum))
+                        {
+                            prevRP->lastUse = false;
+                        }
+                    }
+
+                    rp->lastUse = (rp->refType != RefTypeExpUse) && (rp->refType != RefTypeParamDef) &&
+                                  (rp->refType != RefTypeZeroInit) && !extendLifetimes();
+                }
+                else if (rp->refType == RefTypeUse)
+                {
+                    checkConflictingDefUse(rp);
+                    rp->lastUse = true;
+                }
             }
         }
 
@@ -575,7 +604,7 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
 
     bool isFixedRegister = isSingleRegister(mask);
     bool insertFixedRef  = false;
-    if (isFixedRegister)
+    if (isFixedRegister && !minOptsRegAlloc)
     {
         // Insert a RefTypeFixedReg for any normal def or use (not ParamDef or BB),
         // but not an internal use (it will already have a FixedRef for the def).
@@ -651,8 +680,11 @@ RefPosition* LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
 
     pos->killedRegisters = mask;
 
-    *killTail = pos;
-    killTail  = &pos->nextRefPosition;
+    if (!minOptsRegAlloc)
+    {
+        *killTail = pos;
+        killTail  = &pos->nextRefPosition;
+    }
 
     return pos;
 }
@@ -1117,16 +1149,19 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         }
 
         // Now update preferences of LIR edges to avoid the killed registers.
-        for (RefInfoListNode* cur = defList.Begin(); cur != defList.End(); cur = cur->Next())
+        if (!minOptsRegAlloc)
         {
-            Interval* interval = cur->ref->getInterval();
-            if (interval->isLocalVar)
+            for (RefInfoListNode* cur = defList.Begin(); cur != defList.End(); cur = cur->Next())
             {
-                // Handled via liveness above
-                continue;
-            }
+                Interval* interval = cur->ref->getInterval();
+                if (interval->isLocalVar)
+                {
+                    // Handled via liveness above
+                    continue;
+                }
 
-            updateIntervalPreferencesForKill(interval, killMask);
+                updateIntervalPreferencesForKill(interval, killMask);
+            }
         }
 
         insertedKills = true;

@@ -1033,6 +1033,20 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     pendingDelayFree = false;
     tgtPrefUse       = nullptr;
+
+    // MinOpts allocator state
+    minOptsRegAlloc                = false;
+    minOptsFreeRefPositions        = nullptr;
+    minOptsFreeIntervals           = nullptr;
+    minOptsNodeRefPositions        = nullptr;
+    minOptsNodeRefPositionCount    = 0;
+    minOptsNodeRefPositionCapacity = 0;
+    minOptsRegOrder[0]             = nullptr;
+    minOptsRegOrder[1]             = nullptr;
+    minOptsRegOrder[2]             = nullptr;
+    minOptsRegOrderSize[0]         = 0;
+    minOptsRegOrderSize[1]         = 0;
+    minOptsRegOrderSize[2]         = 0;
 }
 
 //------------------------------------------------------------------------
@@ -1342,6 +1356,11 @@ PhaseStatus LinearScan::doRegisterAllocation()
     if (enregisterLocalVars && (m_compiler->lvaTrackedCount == 0))
     {
         enregisterLocalVars = false;
+    }
+
+    if (canUseMinOptsRegAlloc())
+    {
+        return doRegisterAllocationMinOpts();
     }
 
     splitBBNumToTargetBBNumMap = nullptr;

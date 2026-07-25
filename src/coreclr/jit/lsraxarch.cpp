@@ -940,8 +940,12 @@ int LinearScan::BuildSelect(GenTreeOp* select)
     GenTree* trueVal  = select->gtOp1;
     GenTree* falseVal = select->gtOp2;
 
-    RefPositionIterator op1UsesPrev = refPositions.backPosition();
-    assert(op1UsesPrev != refPositions.end());
+    RefPositionIterator op1UsesPrev;
+    if (!minOptsRegAlloc)
+    {
+        op1UsesPrev = refPositions.backPosition();
+        assert(op1UsesPrev != refPositions.end());
+    }
 
     RefPosition* uncontainedTrueRP = nullptr;
     if (trueVal->isContained())
@@ -954,7 +958,11 @@ int LinearScan::BuildSelect(GenTreeOp* select)
         srcCount++;
     }
 
-    RefPositionIterator op2UsesPrev = refPositions.backPosition();
+    RefPositionIterator op2UsesPrev;
+    if (!minOptsRegAlloc)
+    {
+        op2UsesPrev = refPositions.backPosition();
+    }
 
     RefPosition* uncontainedFalseRP = nullptr;
     if (falseVal->isContained())
@@ -998,29 +1006,35 @@ int LinearScan::BuildSelect(GenTreeOp* select)
     // intervals for the ref positions we built above. It marks one of the uses
     // as delay freed when it finds interference (almost never).
     //
-    RefPositionIterator op1Use = op1UsesPrev;
-    while (op1Use != op2UsesPrev)
+    // Note that in MinOpts no local variable is enregistered, so every interval has
+    // exactly one use and interference between the two operands is impossible.
+    //
+    if (!minOptsRegAlloc)
     {
-        ++op1Use;
-
-        if (op1Use->refType != RefTypeUse)
+        RefPositionIterator op1Use = op1UsesPrev;
+        while (op1Use != op2UsesPrev)
         {
-            continue;
-        }
+            ++op1Use;
 
-        RefPositionIterator op2Use = op2UsesPrev;
-        ++op2Use;
-        while (op2Use != refPositions.end())
-        {
-            if (op2Use->refType == RefTypeUse)
+            if (op1Use->refType != RefTypeUse)
             {
-                if (op1Use->getInterval() == op2Use->getInterval())
-                {
-                    setDelayFree(&*op1Use);
-                    break;
-                }
+                continue;
+            }
 
-                ++op2Use;
+            RefPositionIterator op2Use = op2UsesPrev;
+            ++op2Use;
+            while (op2Use != refPositions.end())
+            {
+                if (op2Use->refType == RefTypeUse)
+                {
+                    if (op1Use->getInterval() == op2Use->getInterval())
+                    {
+                        setDelayFree(&*op1Use);
+                        break;
+                    }
+
+                    ++op2Use;
+                }
             }
         }
     }
