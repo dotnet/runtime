@@ -653,6 +653,7 @@ public:
     void buildIntervals();
 
     void buildInitialParamDef(const LclVarDsc* varDsc, regNumber paramReg);
+    void computeCalleeRegArgMaskLiveIn();
 
     // This is where the actual assignment is done for scenarios where
     // no local var enregistration is done.
@@ -668,53 +669,25 @@ public:
     // passes into a single walk over the LIR.
     //-----------------------------------------------------------------------
 
-    bool         canUseMinOptsRegAlloc();
-    PhaseStatus  doRegisterAllocationMinOpts();
-    void         allocateBlockMinOpts(BasicBlock* block);
-    void         allocateNodeMinOpts(BasicBlock* block, GenTree* node);
-    void         allocateDefMinOpts(RefPosition* refPosition);
-    void         allocateUseMinOpts(BasicBlock* block, RefPosition* refPosition);
-    void         minOptsUseDone(RefPosition* refPosition, Interval* interval, regNumber reg);
-    void         minOptsProcessKill(regMaskTP killedRegs);
-    void         minOptsSpillGCRefs(RefPosition* refPosition);
-    void         minOptsSpillInterval(Interval* interval);
-    regNumber    minOptsSelectReg(RefPosition* refPosition, SingleTypeRegSet candidates, RegisterType regType);
-    void         minOptsVacateReg(regNumber reg);
-    void         minOptsMarkModified(regNumber reg);
-    bool         minOptsTryRetarget(Interval* interval, SingleTypeRegSet candidates, regMaskTP conflicting);
-    void         minOptsMoveInterval(Interval* interval, regNumber newReg);
-    void         minOptsAssignReg(Interval* interval, regNumber reg);
-    void         minOptsFreeReg(Interval* interval);
-    RefPosition* minOptsNewRefPosition();
-    Interval*    minOptsNewInterval();
-    void         minOptsBuildRegOrder();
-    void         minOptsRecordNodeRefPosition(RefPosition* refPosition);
-
-    // Record that 'reg' has been free of any occupant since 'loc'. On ARM a TYP_DOUBLE
-    // occupies a register pair, so both halves have to be tracked.
-    void minOptsMarkRegFree(regNumber reg, RegisterType regType, LsraLocation loc)
-    {
-        minOptsRegFreeSince[reg] = loc;
-#ifdef TARGET_ARM
-        if (regType == TYP_DOUBLE)
-        {
-            minOptsRegFreeSince[REG_NEXT(reg)] = loc;
-        }
-#endif
-    }
-
-    // Get the location since which 'reg' has been free; for an ARM double this is the
-    // later of the two halves.
-    LsraLocation minOptsGetRegFreeSince(regNumber reg, RegisterType regType)
-    {
-#ifdef TARGET_ARM
-        if (regType == TYP_DOUBLE)
-        {
-            return max(minOptsRegFreeSince[reg], minOptsRegFreeSince[REG_NEXT(reg)]);
-        }
-#endif
-        return minOptsRegFreeSince[reg];
-    }
+    bool        canUseMinOptsRegAlloc();
+    PhaseStatus doRegisterAllocationMinOpts();
+    void        allocateBlockMinOpts(BasicBlock* block);
+    void        allocateNodeMinOpts(BasicBlock* block, GenTree* node);
+    void        allocateDefMinOpts(RefPosition* refPosition);
+    void        allocateUseMinOpts(BasicBlock* block, RefPosition* refPosition);
+    void        minOptsUseDone(RefPosition* refPosition, Interval* interval, regNumber reg);
+    void        minOptsProcessKill(regMaskTP killedRegs);
+    void        minOptsSpillGCRefs(RefPosition* refPosition);
+    void        minOptsSpillInterval(Interval* interval);
+    regNumber   minOptsSelectReg(RefPosition* refPosition, SingleTypeRegSet candidates, RegisterType regType);
+    void        minOptsVacateReg(regNumber reg);
+    void        minOptsMarkModified(regNumber reg);
+    bool        minOptsTryRetarget(Interval* interval, SingleTypeRegSet candidates, regMaskTP conflicting);
+    void        minOptsMoveInterval(Interval* interval, regNumber newReg);
+    void        minOptsAssignReg(Interval* interval, regNumber reg);
+    void        minOptsFreeReg(Interval* interval);
+    void        minOptsBuildRegOrder();
+    void        minOptsRecordNodeRefPosition(RefPosition* refPosition);
 
     static int minOptsRegOrderIndex(RegisterType regType)
     {
@@ -734,48 +707,6 @@ public:
     // True while the MinOpts allocator is running; used by the shared "Build" code to
     // elide bookkeeping that only the general allocator needs.
     bool minOptsRegAlloc;
-
-    //-----------------------------------------------------------------------
-    // Some target-specific build code needs to inspect the RefPositions it has just
-    // created. These helpers abstract over where those RefPositions are stored.
-    //-----------------------------------------------------------------------
-
-    struct BuildRefPositionMark
-    {
-        RefPositionIterator listPos;
-        unsigned            index;
-    };
-
-    BuildRefPositionMark MarkRefPositions()
-    {
-        BuildRefPositionMark mark;
-        mark.index = minOptsNodeRefPositionCount;
-        if (!minOptsRegAlloc)
-        {
-            mark.listPos = refPositions.backPosition();
-        }
-        return mark;
-    }
-
-    template <typename TFunc>
-    void ForEachRefPositionSince(const BuildRefPositionMark& mark, TFunc func)
-    {
-        if (minOptsRegAlloc)
-        {
-            for (unsigned i = mark.index; i < minOptsNodeRefPositionCount; i++)
-            {
-                func(minOptsNodeRefPositions[i]);
-            }
-        }
-        else
-        {
-            RefPositionIterator iter = mark.listPos;
-            for (iter++; iter != refPositions.end(); iter++)
-            {
-                func(&(*iter));
-            }
-        }
-    }
 
 // This is where the actual assignment is done
 #ifdef TARGET_ARM64
@@ -2335,14 +2266,9 @@ private:
     // whether the value could have lived in a different register all along.
     LsraLocation minOptsRegFreeSince[REG_COUNT];
 
-    // Register allocation order, by register type, as a list of single-register masks.
-    SingleTypeRegSet* minOptsRegOrder[3];
-    unsigned          minOptsRegOrderSize[3];
-
-    // RefPositions and Intervals are recycled while allocating, so that the working set
-    // stays small; these are the free lists.
-    RefPosition* minOptsFreeRefPositions;
-    Interval*    minOptsFreeIntervals;
+    // Register allocation order, by register file, in preference order.
+    const regNumber* minOptsRegOrder[3];
+    unsigned         minOptsRegOrderSize[3];
 
     // The RefPositions built for the node currently being processed.
     RefPosition** minOptsNodeRefPositions;

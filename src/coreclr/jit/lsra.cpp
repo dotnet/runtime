@@ -1036,17 +1036,9 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     // MinOpts allocator state
     minOptsRegAlloc                = false;
-    minOptsFreeRefPositions        = nullptr;
-    minOptsFreeIntervals           = nullptr;
     minOptsNodeRefPositions        = nullptr;
     minOptsNodeRefPositionCount    = 0;
     minOptsNodeRefPositionCapacity = 0;
-    minOptsRegOrder[0]             = nullptr;
-    minOptsRegOrder[1]             = nullptr;
-    minOptsRegOrder[2]             = nullptr;
-    minOptsRegOrderSize[0]         = 0;
-    minOptsRegOrderSize[1]         = 0;
-    minOptsRegOrderSize[2]         = 0;
 }
 
 //------------------------------------------------------------------------

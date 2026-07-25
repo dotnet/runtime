@@ -6,19 +6,15 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
 XX                    Fast register allocator for MinOpts                    XX
 XX                                                                           XX
-XX  When optimizations are disabled, no local variable is enregistered. That  XX
-XX  means every value that needs a register is a "tree temp": a value that    XX
-XX  is defined by a LIR node and consumed by exactly one later node in the    XX
-XX  same basic block. No value is ever live across a block boundary, so no    XX
-XX  dataflow, block sequencing heuristics, interval splitting or edge         XX
-XX  resolution is required.                                                   XX
-XX                                                                           XX
-XX  This allocator exploits that by fusing the three LSRA passes (build,      XX
-XX  allocate and resolve) into a single walk over the LIR. For each node we   XX
-XX  build its RefPositions (reusing the target specific `BuildNode` logic),   XX
-XX  immediately assign registers to them and immediately write the results    XX
-XX  back into the IR. RefPositions and Intervals are recycled as soon as they XX
-XX  die, so the working set stays tiny and cache resident.                    XX
+XX  When optimizations are disabled no local variable is enregistered, so     XX
+XX  every value that needs a register is a "tree temp": defined by a LIR      XX
+XX  node and consumed by exactly one later node in the same block. Nothing    XX
+XX  is live across a block boundary, so no dataflow, block sequencing         XX
+XX  heuristics, interval splitting or edge resolution is required. That lets  XX
+XX  the three LSRA passes (build, allocate, resolve) fuse into a single walk  XX
+XX  over the LIR: for each node we build its RefPositions (reusing the        XX
+XX  target-specific BuildNode logic), immediately assign registers and        XX
+XX  immediately write the results back into the IR.                          XX
 XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -34,11 +30,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //------------------------------------------------------------------------
 // canUseMinOptsRegAlloc: Determine whether the fast MinOpts allocator can be used.
 //
-// Return Value:
-//    True if the fast path is applicable for this method.
-//
 bool LinearScan::canUseMinOptsRegAlloc()
 {
+#ifdef TARGET_ARM
+    // On arm32 a TYP_DOUBLE occupies a register pair, which this allocator does not model.
+    return false;
+#else
     // The fast allocator relies on no value being live across a block boundary,
     // which is only guaranteed when no local variable is enregistered.
     if (enregisterLocalVars || m_compiler->opts.OptimizationEnabled())
@@ -65,64 +62,12 @@ bool LinearScan::canUseMinOptsRegAlloc()
 #endif // DEBUG
 
     return true;
-}
-
-//------------------------------------------------------------------------
-// minOptsNewRefPosition: Get a RefPosition from the recycling pool.
-//
-// Return Value:
-//    Uninitialized storage for a RefPosition.
-//
-RefPosition* LinearScan::minOptsNewRefPosition()
-{
-    RefPosition* result = minOptsFreeRefPositions;
-    if (result == nullptr)
-    {
-        const unsigned chunkSize = 32;
-        RefPosition*   chunk     = getAllocator(m_compiler).allocate<RefPosition>(chunkSize);
-        for (unsigned i = 1; i < chunkSize; i++)
-        {
-            chunk[i].nextRefPosition = minOptsFreeRefPositions;
-            minOptsFreeRefPositions  = &chunk[i];
-        }
-        return chunk;
-    }
-
-    minOptsFreeRefPositions = result->nextRefPosition;
-    return result;
-}
-
-//------------------------------------------------------------------------
-// minOptsNewInterval: Get an Interval from the recycling pool.
-//
-// Return Value:
-//    Uninitialized storage for an Interval.
-//
-Interval* LinearScan::minOptsNewInterval()
-{
-    Interval* result = minOptsFreeIntervals;
-    if (result == nullptr)
-    {
-        const unsigned chunkSize = 16;
-        Interval*      chunk     = getAllocator(m_compiler).allocate<Interval>(chunkSize);
-        for (unsigned i = 1; i < chunkSize; i++)
-        {
-            chunk[i].relatedInterval = minOptsFreeIntervals;
-            minOptsFreeIntervals     = &chunk[i];
-        }
-        return chunk;
-    }
-
-    minOptsFreeIntervals = result->relatedInterval;
-    return result;
+#endif // !TARGET_ARM
 }
 
 //------------------------------------------------------------------------
 // minOptsRecordNodeRefPosition: Remember a RefPosition that belongs to the node
-//    currently being processed, so that it can be recycled when the node is done.
-//
-// Arguments:
-//    refPosition - the RefPosition
+//    currently being processed.
 //
 void LinearScan::minOptsRecordNodeRefPosition(RefPosition* refPosition)
 {
@@ -142,71 +87,40 @@ void LinearScan::minOptsRecordNodeRefPosition(RefPosition* refPosition)
 }
 
 //------------------------------------------------------------------------
-// minOptsBuildRegOrder: Build the per-register-type allocation order used by the
-//    fast allocator. Each entry is a single register mask, in preference order.
+// minOptsBuildRegOrder: Set up the per-register-file allocation order.
 //
 void LinearScan::minOptsBuildRegOrder()
 {
-    static const regNumber minOptsIntOrder[] = {REG_VAR_ORDER};
-    static const regNumber minOptsFltOrder[] = {REG_VAR_ORDER_FLT};
-#if defined(TARGET_AMD64)
-    static const regNumber minOptsFltOrderEvex[] = {REG_VAR_ORDER_FLT_EVEX};
-#endif
-#if defined(TARGET_XARCH)
-    static const regNumber minOptsMskOrder[] = {REG_VAR_ORDER_MSK};
-#endif
+    static const regNumber intOrder[] = {REG_VAR_ORDER};
+    static const regNumber fltOrder[] = {REG_VAR_ORDER_FLT};
 
-    const regNumber* orders[3] = {};
-    unsigned         sizes[3]  = {};
-
-    orders[0] = minOptsIntOrder;
-    sizes[0]  = ArrLen(minOptsIntOrder);
+    minOptsRegOrder[0]     = intOrder;
+    minOptsRegOrderSize[0] = ArrLen(intOrder);
+    minOptsRegOrder[1]     = fltOrder;
+    minOptsRegOrderSize[1] = ArrLen(fltOrder);
+    minOptsRegOrder[2]     = nullptr;
+    minOptsRegOrderSize[2] = 0;
 
 #if defined(TARGET_AMD64)
     // x64 has additional float registers available when EVEX is supported, which changes
     // the preference order.
+    static const regNumber fltOrderEvex[] = {REG_VAR_ORDER_FLT_EVEX};
     if (getEvexIsSupported())
     {
-        orders[1] = minOptsFltOrderEvex;
-        sizes[1]  = ArrLen(minOptsFltOrderEvex);
+        minOptsRegOrder[1]     = fltOrderEvex;
+        minOptsRegOrderSize[1] = ArrLen(fltOrderEvex);
     }
-    else
 #endif
-    {
-        orders[1] = minOptsFltOrder;
-        sizes[1]  = ArrLen(minOptsFltOrder);
-    }
 
 #if defined(TARGET_XARCH)
-    orders[2] = minOptsMskOrder;
-    sizes[2]  = ArrLen(minOptsMskOrder);
+    static const regNumber mskOrder[] = {REG_VAR_ORDER_MSK};
+    minOptsRegOrder[2]                = mskOrder;
+    minOptsRegOrderSize[2]            = ArrLen(mskOrder);
 #endif
-
-    for (int i = 0; i < 3; i++)
-    {
-        minOptsRegOrderSize[i] = sizes[i];
-        if (sizes[i] == 0)
-        {
-            // No preference order for this register file; selection falls back to the
-            // lowest available register number.
-            minOptsRegOrder[i] = nullptr;
-            continue;
-        }
-
-        minOptsRegOrder[i] = getAllocator(m_compiler).allocate<SingleTypeRegSet>(sizes[i]);
-        for (unsigned j = 0; j < sizes[i]; j++)
-        {
-            minOptsRegOrder[i][j] = genSingleTypeRegMask(orders[i][j]);
-        }
-    }
 }
 
 //------------------------------------------------------------------------
 // minOptsAssignReg: Record that 'interval' now occupies 'reg'.
-//
-// Arguments:
-//    interval - the interval
-//    reg      - the register
 //
 void LinearScan::minOptsAssignReg(Interval* interval, regNumber reg)
 {
@@ -217,20 +131,10 @@ void LinearScan::minOptsAssignReg(Interval* interval, regNumber reg)
     minOptsLiveRegs.AddRegsetForType(regMask, regType);
     minOptsRegsInUse.AddRegsetForType(regMask, regType);
     minOptsRegToInterval[reg] = interval;
-
-#ifdef TARGET_ARM
-    if (regType == TYP_DOUBLE)
-    {
-        minOptsRegToInterval[REG_NEXT(reg)] = interval;
-    }
-#endif
 }
 
 //------------------------------------------------------------------------
 // minOptsMarkModified: Record that codegen will write to 'reg'.
-//
-// Arguments:
-//    reg - the register
 //
 // Notes:
 //    This is deliberately only done once a register assignment is final. A definition
@@ -245,10 +149,6 @@ void LinearScan::minOptsMarkModified(regNumber reg)
 //------------------------------------------------------------------------
 // minOptsMoveInterval: Retarget a definition that has not been spilled to a different
 //    register, rewriting the register recorded on the defining node.
-//
-// Arguments:
-//    interval - the interval; it must currently be in a register
-//    newReg   - the register to move it to
 //
 // Notes:
 //    This rewrites history: the value is treated as if it had been defined into 'newReg'
@@ -280,9 +180,6 @@ void LinearScan::minOptsMoveInterval(Interval* interval, regNumber newReg)
 //------------------------------------------------------------------------
 // minOptsCanRetarget: Can the definition of 'interval' be moved to another register?
 //
-// Arguments:
-//    interval - the interval
-//
 static bool minOptsCanRetarget(Interval* interval)
 {
     if (interval->isInternal || (interval->physReg == REG_NA))
@@ -310,14 +207,6 @@ static bool minOptsCanRetarget(Interval* interval)
 //------------------------------------------------------------------------
 // minOptsTryRetarget: Try to make the value of 'interval' available in one of 'candidates'
 //    without emitting a move, by retargeting its definition.
-//
-// Arguments:
-//    interval    - the interval whose value is needed
-//    candidates  - the acceptable registers
-//    conflicting - registers that this node needs for something else
-//
-// Return Value:
-//    True if the interval now lives in one of 'candidates'.
 //
 // Notes:
 //    A definition can be retargeted to a register that has been free for the whole
@@ -349,27 +238,21 @@ bool LinearScan::minOptsTryRetarget(Interval* interval, SingleTypeRegSet candida
     SingleTypeRegSet occupied    = minOptsLiveRegs.GetRegSetForType(regType);
     SingleTypeRegSet ownMask     = getSingleTypeRegMask(oldReg, regType);
 
-    const int               typeIndex = minOptsRegOrderIndex(regType);
-    const SingleTypeRegSet* order     = minOptsRegOrder[typeIndex];
-    const unsigned          orderSize = minOptsRegOrderSize[typeIndex];
+    const int        typeIndex = minOptsRegOrderIndex(regType);
+    const regNumber* order     = minOptsRegOrder[typeIndex];
+    const unsigned   orderSize = minOptsRegOrderSize[typeIndex];
 
     SingleTypeRegSet freeCandidates = candidates & ~(blocked | occupied);
-#ifdef TARGET_ARM
-    if (regType == TYP_DOUBLE)
-    {
-        freeCandidates &= ~(((blocked | occupied) & RBM_ALLDOUBLE_HIGH.GetFloatRegSet()) >> 1);
-    }
-#endif
 
     for (unsigned i = 0; (i < orderSize) && (freeCandidates != RBM_NONE); i++)
     {
-        if ((freeCandidates & order[i]) == RBM_NONE)
+        regNumber candidateReg = order[i];
+        if ((freeCandidates & genSingleTypeRegMask(candidateReg)) == RBM_NONE)
         {
             continue;
         }
 
-        regNumber candidateReg = genRegNumFromMask(order[i], regType);
-        if (minOptsGetRegFreeSince(candidateReg, regType) <= defLoc)
+        if (minOptsRegFreeSince[candidateReg] <= defLoc)
         {
             minOptsMoveInterval(interval, candidateReg);
             return true;
@@ -386,7 +269,7 @@ bool LinearScan::minOptsTryRetarget(Interval* interval, SingleTypeRegSet candida
         SingleTypeRegSet candidateBit = genSingleTypeRegMask(candidateReg);
         takenCandidates ^= candidateBit;
 
-        if (minOptsGetRegFreeSince(candidateReg, regType) > defLoc)
+        if (minOptsRegFreeSince[candidateReg] > defLoc)
         {
             continue;
         }
@@ -408,22 +291,16 @@ bool LinearScan::minOptsTryRetarget(Interval* interval, SingleTypeRegSet candida
         SingleTypeRegSet   occBlocked     = blockedMask.GetRegSetForType(occRegType);
         SingleTypeRegSet   occOccupied    = minOptsLiveRegs.GetRegSetForType(occRegType);
         SingleTypeRegSet   relocTargets   = occupant->registerPreferences & ~(occBlocked | occOccupied);
-#ifdef TARGET_ARM
-        if (occRegType == TYP_DOUBLE)
-        {
-            relocTargets &= ~(((occBlocked | occOccupied) & RBM_ALLDOUBLE_HIGH.GetFloatRegSet()) >> 1);
-        }
-#endif
 
         for (unsigned i = 0; (i < orderSize) && (relocTargets != RBM_NONE); i++)
         {
-            if ((relocTargets & order[i]) == RBM_NONE)
+            regNumber relocReg = order[i];
+            if ((relocTargets & genSingleTypeRegMask(relocReg)) == RBM_NONE)
             {
                 continue;
             }
 
-            regNumber relocReg = genRegNumFromMask(order[i], occRegType);
-            if (minOptsGetRegFreeSince(relocReg, occRegType) > occupantDefLoc)
+            if (minOptsRegFreeSince[relocReg] > occupantDefLoc)
             {
                 continue;
             }
@@ -440,9 +317,6 @@ bool LinearScan::minOptsTryRetarget(Interval* interval, SingleTypeRegSet candida
 //------------------------------------------------------------------------
 // minOptsFreeReg: Release the register held by 'interval'. The interval must be dead.
 //
-// Arguments:
-//    interval - the interval
-//
 void LinearScan::minOptsFreeReg(Interval* interval)
 {
     regNumber reg = interval->physReg;
@@ -450,20 +324,11 @@ void LinearScan::minOptsFreeReg(Interval* interval)
     assert(minOptsRegToInterval[reg] == interval);
 
     minOptsRegToInterval[reg] = nullptr;
-#ifdef TARGET_ARM
-    if (interval->registerType == TYP_DOUBLE)
-    {
-        minOptsRegToInterval[REG_NEXT(reg)] = nullptr;
-    }
-#endif
-    interval->physReg = REG_NA;
+    interval->physReg         = REG_NA;
 }
 
 //------------------------------------------------------------------------
 // minOptsSpillInterval: Spill the value held by 'interval' to its home stack location.
-//
-// Arguments:
-//    interval - the interval to spill; it must currently be in a register.
 //
 // Notes:
 //    This marks the defining node with GTF_SPILL. The consuming use will either
@@ -517,16 +382,13 @@ void LinearScan::minOptsSpillInterval(Interval* interval)
     minOptsLiveRegs.RemoveRegsetForType(regMask, regType);
     minOptsRegsToFree.RemoveRegsetForType(regMask, regType);
     minOptsDelayRegsToFree.RemoveRegsetForType(regMask, regType);
-    minOptsMarkRegFree(interval->physReg, regType, minOptsCurLoc);
+    minOptsRegFreeSince[interval->physReg] = minOptsCurLoc;
 
     minOptsFreeReg(interval);
 }
 
 //------------------------------------------------------------------------
 // minOptsProcessKill: Handle the registers killed by the current node.
-//
-// Arguments:
-//    killedRegs - the registers being killed
 //
 void LinearScan::minOptsProcessKill(regMaskTP killedRegs)
 {
@@ -552,9 +414,6 @@ void LinearScan::minOptsProcessKill(regMaskTP killedRegs)
 
 //------------------------------------------------------------------------
 // minOptsSpillGCRefs: Spill any GC values that are live in the given register set.
-//
-// Arguments:
-//    refPosition - the RefTypeKillGCRefs RefPosition
 //
 void LinearScan::minOptsSpillGCRefs(RefPosition* refPosition)
 {
@@ -589,9 +448,6 @@ void LinearScan::minOptsSpillGCRefs(RefPosition* refPosition)
 // minOptsVacateReg: Make 'reg' available, preferring to relocate the value that is in it
 //    over spilling it.
 //
-// Arguments:
-//    reg - the register to free up
-//
 void LinearScan::minOptsVacateReg(regNumber reg)
 {
     Interval* occupant = minOptsRegToInterval[reg];
@@ -615,15 +471,6 @@ void LinearScan::minOptsVacateReg(regNumber reg)
 //------------------------------------------------------------------------
 // minOptsSelectReg: Choose a register for the given RefPosition.
 //
-// Arguments:
-//    refPosition - the RefPosition being allocated
-//    candidates  - the acceptable registers
-//    regType     - the register type
-//
-// Return Value:
-//    The chosen register, or REG_NA if none could be found (only possible for
-//    RegOptional RefPositions).
-//
 // Notes:
 //    A free register is always preferred. Otherwise a currently live value is
 //    spilled to make room.
@@ -638,12 +485,6 @@ regNumber LinearScan::minOptsSelectReg(RefPosition* refPosition, SingleTypeRegSe
         // whatever is in it.
         regNumber fixedReg = genRegNumFromMask(candidates, regType);
         minOptsVacateReg(fixedReg);
-#ifdef TARGET_ARM
-        if (regType == TYP_DOUBLE)
-        {
-            minOptsVacateReg(REG_NEXT(fixedReg));
-        }
-#endif
         return fixedReg;
     }
 
@@ -671,24 +512,16 @@ regNumber LinearScan::minOptsSelectReg(RefPosition* refPosition, SingleTypeRegSe
     SingleTypeRegSet busy  = avoid | minOptsLiveRegs.GetRegSetForType(regType);
     SingleTypeRegSet free  = candidates & ~busy;
 
-#ifdef TARGET_ARM
-    if (regType == TYP_DOUBLE)
-    {
-        // A double needs an even register whose odd half is also available.
-        free &= ~((busy & RBM_ALLDOUBLE_HIGH.GetFloatRegSet()) >> 1);
-    }
-#endif
-
     if (free != RBM_NONE)
     {
-        const int               typeIndex = minOptsRegOrderIndex(regType);
-        const SingleTypeRegSet* order     = minOptsRegOrder[typeIndex];
-        const unsigned          count     = minOptsRegOrderSize[typeIndex];
+        const int        typeIndex = minOptsRegOrderIndex(regType);
+        const regNumber* order     = minOptsRegOrder[typeIndex];
+        const unsigned   count     = minOptsRegOrderSize[typeIndex];
         for (unsigned i = 0; i < count; i++)
         {
-            if ((free & order[i]) != RBM_NONE)
+            if ((free & genSingleTypeRegMask(order[i])) != RBM_NONE)
             {
-                return genRegNumFromMask(order[i], regType);
+                return order[i];
             }
         }
 
@@ -704,13 +537,6 @@ regNumber LinearScan::minOptsSelectReg(RefPosition* refPosition, SingleTypeRegSe
     // Nothing is free; spill a live value to make room.
     SingleTypeRegSet spillable = candidates & ~avoid;
 
-#ifdef TARGET_ARM
-    if (regType == TYP_DOUBLE)
-    {
-        spillable &= ~((avoid & RBM_ALLDOUBLE_HIGH.GetFloatRegSet()) >> 1);
-    }
-#endif
-
     noway_assert(spillable != RBM_NONE);
 
     regNumber spillReg = genRegNumFromMask(genFindLowestBit(spillable), regType);
@@ -720,27 +546,12 @@ regNumber LinearScan::minOptsSelectReg(RefPosition* refPosition, SingleTypeRegSe
         minOptsSpillInterval(toSpill);
     }
 
-#ifdef TARGET_ARM
-    if (regType == TYP_DOUBLE)
-    {
-        Interval* otherHalf = minOptsRegToInterval[REG_NEXT(spillReg)];
-        if (otherHalf != nullptr)
-        {
-            minOptsSpillInterval(otherHalf);
-        }
-    }
-#endif
-
     return spillReg;
 }
 
 //------------------------------------------------------------------------
 // allocateNodeMinOpts: Assign registers to the RefPositions that were just built
 //    for 'node', and write the assignments back into the IR.
-//
-// Arguments:
-//    block - the block containing the node
-//    node  - the node
 //
 void LinearScan::allocateNodeMinOpts(BasicBlock* block, GenTree* node)
 {
@@ -851,52 +662,11 @@ void LinearScan::allocateNodeMinOpts(BasicBlock* block, GenTree* node)
         minOptsRegFreeSince[freeReg] = loc + 2;
     }
 
-    // Recycle the RefPositions and Intervals that died while processing this node.
-    for (unsigned i = 0; i < count; i++)
-    {
-        RefPosition* refPosition = minOptsNodeRefPositions[i];
-        Interval*    interval    = refPosition->isPhysRegRef ? nullptr : refPosition->getInterval();
-
-        if (interval != nullptr)
-        {
-            RefPosition* defRefPosition = interval->firstRefPosition;
-
-            if ((refPosition->refType == RefTypeUse) && (defRefPosition->nodeLocation < loc))
-            {
-                // The definition of this value was built for an earlier node, so it is not in
-                // our array; recycle it (and its interval) here.
-                assert(!interval->isActive);
-                defRefPosition->nextRefPosition = minOptsFreeRefPositions;
-                minOptsFreeRefPositions         = defRefPosition;
-
-                interval->relatedInterval = minOptsFreeIntervals;
-                minOptsFreeIntervals      = interval;
-            }
-            else if (defRefPosition == refPosition)
-            {
-                if (interval->isActive)
-                {
-                    // This definition is still waiting for its use in a later node.
-                    continue;
-                }
-
-                interval->relatedInterval = minOptsFreeIntervals;
-                minOptsFreeIntervals      = interval;
-            }
-        }
-
-        refPosition->nextRefPosition = minOptsFreeRefPositions;
-        minOptsFreeRefPositions      = refPosition;
-    }
-
     minOptsNodeRefPositionCount = 0;
 }
 
 //------------------------------------------------------------------------
 // allocateDefMinOpts: Allocate a register for a definition.
-//
-// Arguments:
-//    refPosition - the RefTypeDef RefPosition
 //
 void LinearScan::allocateDefMinOpts(RefPosition* refPosition)
 {
@@ -942,22 +712,13 @@ void LinearScan::allocateDefMinOpts(RefPosition* refPosition)
     {
         // A dead definition: the register is free again immediately.
         minOptsMarkModified(reg);
-        interval->isActive = false;
         minOptsFreeReg(interval);
         minOptsRegsToFree.AddRegsetForType(getSingleTypeRegMask(reg, regType), regType);
-    }
-    else
-    {
-        interval->isActive = true;
     }
 }
 
 //------------------------------------------------------------------------
 // allocateUseMinOpts: Allocate a register for a use.
-//
-// Arguments:
-//    block       - the block containing the use
-//    refPosition - the RefTypeUse RefPosition
 //
 void LinearScan::allocateUseMinOpts(BasicBlock* block, RefPosition* refPosition)
 {
@@ -1033,7 +794,7 @@ void LinearScan::allocateUseMinOpts(BasicBlock* block, RefPosition* refPosition)
 
         // Release the old register and take the new one.
         minOptsLiveRegs.RemoveRegsetForType(getSingleTypeRegMask(assignedReg, regType), regType);
-        minOptsMarkRegFree(assignedReg, regType, minOptsCurLoc);
+        minOptsRegFreeSince[assignedReg] = minOptsCurLoc;
         minOptsFreeReg(interval);
 
         minOptsAssignReg(interval, copyReg);
@@ -1070,7 +831,6 @@ void LinearScan::allocateUseMinOpts(BasicBlock* block, RefPosition* refPosition)
         // this is its only use, it is cheaper to consume it directly from memory.
         defRefPosition->treeNode->gtFlags |= GTF_NOREG_AT_USE;
         refPosition->registerAssignment = RBM_NONE;
-        interval->isActive              = false;
         minOptsMarkModified(defRefPosition->assignedReg());
 
         JITDUMP("      Use of [%06u] from memory\n", Compiler::dspTreeID(defRefPosition->treeNode));
@@ -1099,11 +859,6 @@ void LinearScan::allocateUseMinOpts(BasicBlock* block, RefPosition* refPosition)
 //------------------------------------------------------------------------
 // minOptsUseDone: Common bookkeeping once a use has been given a register.
 //
-// Arguments:
-//    refPosition - the use RefPosition
-//    interval    - the interval being consumed
-//    reg         - the register the value is consumed from
-//
 void LinearScan::minOptsUseDone(RefPosition* refPosition, Interval* interval, regNumber reg)
 {
     RegisterType     regType = interval->registerType;
@@ -1118,7 +873,6 @@ void LinearScan::minOptsUseDone(RefPosition* refPosition, Interval* interval, re
 
     // The value dies here, but the register itself stays reserved until the end of the
     // current location (or, for delay-free uses, until the end of the node).
-    interval->isActive = false;
     minOptsFreeReg(interval);
 
     if (refPosition->delayRegFree)
@@ -1133,9 +887,6 @@ void LinearScan::minOptsUseDone(RefPosition* refPosition, Interval* interval, re
 
 //------------------------------------------------------------------------
 // allocateBlockMinOpts: Build RefPositions and allocate registers for one block.
-//
-// Arguments:
-//    block - the block
 //
 void LinearScan::allocateBlockMinOpts(BasicBlock* block)
 {
@@ -1181,6 +932,12 @@ void LinearScan::allocateBlockMinOpts(BasicBlock* block)
         m_compiler->codeGen->regSet.rsSetRegsModified(killed DEBUGARG(true));
     }
 
+    // Mark the block boundary, mirroring what buildIntervals does. Nothing is live across
+    // it, but some Build code assumes the RefPosition list is never empty.
+    newRefPosition((Interval*)nullptr, currentLoc, RefTypeBB, nullptr, RBM_NONE);
+    minOptsNodeRefPositionCount = 0;
+    currentLoc += 2;
+
     LIR::Range& blockRange = LIR::AsRange(block);
     for (GenTree* node : blockRange)
     {
@@ -1217,9 +974,6 @@ void LinearScan::allocateBlockMinOpts(BasicBlock* block)
 
 //------------------------------------------------------------------------
 // doRegisterAllocationMinOpts: The MinOpts register allocation phase.
-//
-// Return Value:
-//    The phase status.
 //
 PhaseStatus LinearScan::doRegisterAllocationMinOpts()
 {
@@ -1258,58 +1012,7 @@ PhaseStatus LinearScan::doRegisterAllocationMinOpts()
 
     curBBNum = 0;
 
-    // Compute the incoming parameter registers that are live into the method. The liveness is
-    // based on the locals we are expecting to store the registers into in the prolog.
-    regMaskTP* calleeRegArgMaskLiveIn = &m_compiler->codeGen->calleeRegArgMaskLiveIn;
-    *calleeRegArgMaskLiveIn           = RBM_NONE;
-
-    for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
-    {
-        LclVarDsc*                   lcl     = m_compiler->lvaGetDesc(lclNum);
-        const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
-        for (const ABIPassingSegment& seg : abiInfo.Segments())
-        {
-            if (!seg.IsPassedInRegister())
-            {
-                continue;
-            }
-
-            const ParameterRegisterLocalMapping* mapping =
-                m_compiler->FindParameterRegisterLocalMappingByRegister(seg.GetRegister());
-
-            bool isParameterLive = !lcl->lvTracked || m_compiler->compJmpOpUsed || (lcl->lvRefCnt() != 0);
-            bool isLive;
-            if (mapping != nullptr)
-            {
-                LclVarDsc* mappedLcl = m_compiler->lvaGetDesc(mapping->LclNum);
-                bool       isMappedLclLive =
-                    !mappedLcl->lvTracked || m_compiler->compJmpOpUsed || (mappedLcl->lvRefCnt() != 0);
-                if (mappedLcl->lvIsStructField)
-                {
-                    // Struct fields are not saved into their parameter local
-                    isLive = isMappedLclLive;
-                }
-                else
-                {
-                    isLive = isParameterLive || isMappedLclLive;
-                }
-            }
-            else
-            {
-                isLive = isParameterLive;
-            }
-
-            if (isLive)
-            {
-                *calleeRegArgMaskLiveIn |= seg.GetRegisterMask();
-            }
-        }
-    }
-
-    if (m_compiler->info.compPublishStubParam)
-    {
-        calleeRegArgMaskLiveIn->AddGprRegs(RBM_SECRET_STUB_PARAM.GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
-    }
+    computeCalleeRegArgMaskLiveIn();
 
     numPlacedArgLocals = 0;
     placedArgRegs      = RBM_NONE;
