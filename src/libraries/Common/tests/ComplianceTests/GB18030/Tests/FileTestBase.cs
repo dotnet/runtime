@@ -35,7 +35,7 @@ public abstract class FileTestBase : IDisposable
 
         var fileInfo = new FileInfo(gb18030Path);
         Assert.True(fileInfo.Exists);
-        Assert.Equal(fileInfo.Name, gb18030Line);
+        Assert.Equal(gb18030Line, fileInfo.Name);
     }
 
     [Theory]

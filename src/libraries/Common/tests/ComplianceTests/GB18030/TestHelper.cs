@@ -128,6 +128,13 @@ public static class TestHelper
         while (testFileBytes.Length > 0)
         {
             int start = testFileBytes.Span.IndexOf(startDelimiter);
+            if (start == -1)
+            {
+                // Every record is introduced by its start delimiter, so anything left here means the
+                // data file was modified unexpectedly. Fail loudly rather than silently running fewer cases.
+                throw new InvalidDataException($"Unexpected trailing content in '{TestDataFilePath}'; expected a '{{label}}:' record delimiter.");
+            }
+
             testFileBytes = testFileBytes.Slice(start + startDelimiter.Length);
 
             int end = testFileBytes.Span.IndexOf(endDelimiter);
