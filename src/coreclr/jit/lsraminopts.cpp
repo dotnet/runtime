@@ -900,10 +900,10 @@ void LinearScan::allocateBlockMinOpts(BasicBlock* block)
     minOptsRegsToFree      = RBM_NONE;
     minOptsDelayRegsToFree = RBM_NONE;
 
-    for (int i = 0; i < REG_COUNT; i++)
+    for (regNumber reg = REG_FIRST; reg < REG_COUNT; reg = REG_NEXT(reg))
     {
-        minOptsRegToInterval[i] = nullptr;
-        minOptsRegFreeSince[i]  = MinLocation;
+        minOptsRegToInterval[reg] = nullptr;
+        minOptsRegFreeSince[reg]  = MinLocation;
     }
 
     // State is not live across blocks, so the FP register kill switch is per block.
