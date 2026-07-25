@@ -155,7 +155,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
             int hrLocal = _legacyImpl.GetTokenAndScope(validateToken ? &tokenLocal : null, legacyModOut);
 
             Debug.ValidateHResult(hr, hrLocal);
-            if (validateToken)
+            if (validateToken && hr >= 0 && hrLocal >= 0)
                 Debug.Assert(tokenLocal == *token, $"cDAC: {*token:x}, DAC: {tokenLocal:x}");
         }
 #endif
