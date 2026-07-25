@@ -70,6 +70,7 @@ public unsafe partial class Decimal128Native
     private static UInt128 ToBits(Decimal128 value) => Unsafe.As<Decimal128, UInt128>(ref value);
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/69399", TestRuntimes.Mono)]
     public static void TestDecimal128FieldLayout()
     {
         // Validates that the 16-byte alignment of Decimal128 within a struct matches the native compiler.
@@ -103,6 +104,7 @@ public unsafe partial class Decimal128Native
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/69399", TestRuntimes.Mono)]
     public static void TestDecimal32And64MarshalRestriction()
     {
         // Decimal32/Decimal64 have no native calling convention either, so by-value marshaling is blocked.
