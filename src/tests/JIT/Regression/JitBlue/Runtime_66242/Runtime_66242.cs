@@ -8,6 +8,9 @@
 // Debug: Outputs 2
 // Release: Outputs 1
 
+
+namespace Runtime_66242;
+
 using System.Runtime.CompilerServices;
 using Xunit;
 

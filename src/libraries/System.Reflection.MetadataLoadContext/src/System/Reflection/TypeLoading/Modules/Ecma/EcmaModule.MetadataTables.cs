@@ -21,7 +21,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     _lazyTypeDefTable;
             }
         }
-        private volatile MetadataTable<EcmaDefinitionType, EcmaModule>? _lazyTypeDefTable;
+        private MetadataTable<EcmaDefinitionType, EcmaModule>? _lazyTypeDefTable;
 
         private void EnsureTypeDefTableFullyFilled()
         {

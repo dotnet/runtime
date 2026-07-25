@@ -8,43 +8,39 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(__OpenBSD__)
+#include <dirent.h>
+#include <limits.h>
+#include <stdlib.h>
+#endif
+
 #include "opensslshim.h"
 #include "pal_atomic.h"
 
 // Define pointers to all the used OpenSSL functions
 #define REQUIRED_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
-#define REQUIRED_FUNCTION_110(fn) TYPEOF(fn) fn##_ptr;
 #define LIGHTUP_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
 #define FALLBACK_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
 #define RENAMED_FUNCTION(fn,oldfn) TYPEOF(fn) fn##_ptr;
-#define LEGACY_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
 FOR_ALL_OPENSSL_FUNCTIONS
-#undef LEGACY_FUNCTION
 #undef RENAMED_FUNCTION
 #undef FALLBACK_FUNCTION
 #undef LIGHTUP_FUNCTION
-#undef REQUIRED_FUNCTION_110
 #undef REQUIRED_FUNCTION
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
 TYPEOF(OPENSSL_gmtime) OPENSSL_gmtime_ptr;
 #endif
 
 // x.x.x, considering the max number of decimal digits for each component
 #define MaxVersionStringLength 32
 
- static void* volatile libssl = NULL;
+static void* volatile libssl = NULL;
 
-#ifdef __APPLE__
-#define DYLIBNAME_PREFIX "libssl."
-#define DYLIBNAME_SUFFIX ".dylib"
-#define MAKELIB(v) DYLIBNAME_PREFIX v DYLIBNAME_SUFFIX
-#else
 #define LIBNAME "libssl.so"
 #define SONAME_BASE LIBNAME "."
 #define MAKELIB(v)  SONAME_BASE v
-#endif
 
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
 // We support ARM32 linux distros that have Y2038-compatible glibc (those which support _TIME_BITS).
 // Some such distros have not yet switched to _TIME_BITS=64 by default, so we may be running against an openssl
 // that expects 32-bit time_t even though our time_t is 64-bit.
@@ -64,6 +60,87 @@ static void DlOpen(const char* libraryName)
     }
 }
 
+#if defined(__OpenBSD__)
+// OpenBSD's base system ships LibreSSL, which does not implement the full
+// OpenSSL 3.x surface the shim requires. The OpenSSL ports install in parallel
+// under /usr/local/lib/eopenssl<NN>/, where <NN> is the OpenSSL version (e.g.
+// eopenssl35 for OpenSSL 3.5). Each directory ships libssl with its own SONAME
+// (for example libssl.so.37.0), bumped independently of the version number, so
+// the SONAME is discovered within the requested directory rather than hardcoded.
+// The library is opened by absolute path so the matching libcrypto resolves via
+// the library's RUNPATH.
+static void DlOpenEOpenSsl(const char* eopensslVersion)
+{
+    static const char libDirPrefix[] = "/usr/local/lib/eopenssl";
+    static const char sslPrefix[] = "libssl.so.";
+
+    char dirPath[PATH_MAX];
+    int written = snprintf(dirPath, sizeof(dirPath), "%s%s", libDirPrefix, eopensslVersion);
+    if (written < 0 || (size_t)written >= sizeof(dirPath))
+    {
+        return;
+    }
+
+    DIR* dir = opendir(dirPath);
+    if (dir == NULL)
+    {
+        return;
+    }
+
+    // Pick the highest libssl.so.<major>.<minor> in case more than one is present.
+    char libName[NAME_MAX + 1] = { 0 };
+    long bestMajor = -1;
+    long bestMinor = -1;
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (strncmp(entry->d_name, sslPrefix, sizeof(sslPrefix) - 1) != 0)
+        {
+            continue;
+        }
+
+        const char* version = entry->d_name + sizeof(sslPrefix) - 1;
+        char* end;
+        long major = strtol(version, &end, 10);
+        if (end == version)
+        {
+            continue;
+        }
+
+        long minor = (*end == '.') ? strtol(end + 1, &end, 10) : 0;
+        if (major > bestMajor || (major == bestMajor && minor > bestMinor))
+        {
+            bestMajor = major;
+            bestMinor = minor;
+            // Should a directory entry ever have a name longer than NAME_MAX,
+            // (such as NAME_MAX got raised after this module was compiled),
+            // we'll get a truncated version of the file name here, but the -1
+            // guarantees we're NUL-terminated.
+            //
+            // The expected result in such a case is that the DlOpen call fails,
+            // but if the truncation happens to land on another file in the same
+            // directory, well, things will happen.
+            strncpy(libName, entry->d_name, sizeof(libName) - 1);
+        }
+    }
+    closedir(dir);
+
+    if (libName[0] == '\0')
+    {
+        return;
+    }
+
+    char libPath[PATH_MAX];
+    written = snprintf(libPath, sizeof(libPath), "%s/%s", dirPath, libName);
+    if (written < 0 || (size_t)written >= sizeof(libPath))
+    {
+        return;
+    }
+
+    DlOpen(libPath);
+}
+#endif
+
 static void OpenLibraryOnce(void)
 {
     // If there is an override of the version specified using the DOTNET_OPENSSL_VERSION_OVERRIDE
@@ -74,19 +151,14 @@ static void OpenLibraryOnce(void)
 
     if ((versionOverride != NULL) && strnlen(versionOverride, MaxVersionStringLength + 1) <= MaxVersionStringLength)
     {
-#ifdef __APPLE__
-        char soName[sizeof(DYLIBNAME_PREFIX) + MaxVersionStringLength + sizeof(DYLIBNAME_SUFFIX)] =
-            DYLIBNAME_PREFIX;
-
-        strcat(soName, versionOverride);
-        strcat(soName, DYLIBNAME_SUFFIX);
+#if defined(__OpenBSD__)
+        // On OpenBSD the override selects the eopenssl<NN> ports directory.
+        DlOpenEOpenSsl(versionOverride);
 #else
         char soName[sizeof(SONAME_BASE) + MaxVersionStringLength] = SONAME_BASE;
-
         strcat(soName, versionOverride);
-#endif
-
         DlOpen(soName);
+#endif
     }
 
 #ifdef TARGET_ANDROID
@@ -95,41 +167,20 @@ static void OpenLibraryOnce(void)
         // Android OpenSSL has no soname
         DlOpen(LIBNAME);
     }
-#endif
-
-    if (libssl == NULL)
-    {
-        // Prefer OpenSSL 3.x
-        DlOpen(MAKELIB("3"));
-    }
-
-    if (libssl == NULL)
-    {
-        DlOpen(MAKELIB("1.1"));
-    }
-
-    if (libssl == NULL)
-    {
-        // Debian 9 has dropped support for SSLv3 and so they have bumped their soname. Let's try it
-        // before trying the version 1.0.0 to make it less probable that some of our other dependencies
-        // end up loading conflicting version of libssl.
-        DlOpen(MAKELIB("1.0.2"));
-    }
-
-    if (libssl == NULL)
-    {
-        // Now try the default versioned so naming as described in the OpenSSL doc
-        DlOpen(MAKELIB("1.0.0"));
-    }
-
-    if (libssl == NULL)
-    {
-        // Fedora derived distros use different naming for the version 1.0.0
-        DlOpen(MAKELIB("10"));
-    }
-
-#ifdef __FreeBSD__
+#elif defined(__FreeBSD__)
     // The ports version of OpenSSL is used over base where possible
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.5 from ports
+        DlOpen(MAKELIB("17"));
+    }
+
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.5 from base as found in FreeBSD 15.0
+        DlOpen(MAKELIB("35"));
+    }
+
     if (libssl == NULL)
     {
         // OpenSSL 3.0 from ports
@@ -152,8 +203,44 @@ static void OpenLibraryOnce(void)
     {
         DlOpen(MAKELIB("111"));
     }
+#elif defined(__OpenBSD__)
+    // OpenBSD base is LibreSSL; load the OpenSSL ports build from /usr/local/lib/eopenssl<NN>.
+    // Probe the known package directories explicitly, preferring 3.x and trying 4.0 last.
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.6 from ports
+        DlOpenEOpenSsl("36");
+    }
+
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.5 from ports
+        DlOpenEOpenSsl("35");
+    }
+
+    if (libssl == NULL)
+    {
+        // OpenSSL 4.0 from ports (probed but not preferred)
+        DlOpenEOpenSsl("40");
+    }
 #endif
 
+    if (libssl == NULL)
+    {
+        // Prefer OpenSSL 3.x
+        DlOpen(MAKELIB("3"));
+    }
+
+    if (libssl == NULL)
+    {
+        DlOpen(MAKELIB("1.1"));
+    }
+
+    // While it's still in alpha, OpenSSL 4 is probed, but not preferred.
+    if (libssl == NULL)
+    {
+        DlOpen(MAKELIB("4"));
+    }
 }
 
 static pthread_once_t g_openLibrary = PTHREAD_ONCE_INIT;
@@ -180,10 +267,6 @@ void InitializeOpenSSLShim(void)
         abort();
     }
 
-    // A function defined in libcrypto.so.1.0.0/libssl.so.1.0.0 that is not defined in
-    // libcrypto.so.1.1.0/libssl.so.1.1.0
-    const void* v1_0_sentinel = dlsym(libssl, "SSL_state");
-
     // Only permit a single assignment here so that two assemblies both triggering the initializer doesn't cause a
     // race where the fn_ptr is nullptr, then properly bound, then goes back to nullptr right before being used (then bound again).
     void* volatile tmp_ptr;
@@ -191,9 +274,6 @@ void InitializeOpenSSLShim(void)
     // Get pointers to all the functions that are needed
 #define REQUIRED_FUNCTION(fn) \
     if (!(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
-
-#define REQUIRED_FUNCTION_110(fn) \
-    if (!v1_0_sentinel && !(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
 
 #define LIGHTUP_FUNCTION(fn) \
     fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn));
@@ -207,17 +287,12 @@ void InitializeOpenSSLShim(void)
     if (!tmp_ptr && !(tmp_ptr = dlsym(libssl, #oldfn))) { fprintf(stderr, "Cannot get required symbol " #oldfn " from libssl\n"); abort(); } \
     fn##_ptr = (TYPEOF(fn))tmp_ptr;
 
-#define LEGACY_FUNCTION(fn) \
-    if (v1_0_sentinel && !(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
-
     FOR_ALL_OPENSSL_FUNCTIONS
-#undef LEGACY_FUNCTION
 #undef RENAMED_FUNCTION
 #undef FALLBACK_FUNCTION
 #undef LIGHTUP_FUNCTION
-#undef REQUIRED_FUNCTION_110
 #undef REQUIRED_FUNCTION
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
     if (!(OPENSSL_gmtime_ptr = (TYPEOF(OPENSSL_gmtime))(dlsym(libssl, "OPENSSL_gmtime")))) { fprintf(stderr, "Cannot get required symbol OPENSSL_gmtime from libssl\n"); abort(); }
 #endif
 
@@ -232,9 +307,9 @@ void InitializeOpenSSLShim(void)
         }
     }
 
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
     c_static_assert_msg(sizeof(time_t) == 8, "Build requires 64-bit time_t.");
-    
+
     // This value will represent a time in year 2038 if 64-bit time is used,
     // or 1901 if the lower 32 bits are interpreted as a 32-bit time_t value.
     time_t timeVal = (time_t)0x80000000U;

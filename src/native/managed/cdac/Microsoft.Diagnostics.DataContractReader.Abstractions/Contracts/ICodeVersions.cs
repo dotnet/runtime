@@ -16,6 +16,8 @@ public interface ICodeVersions : IContract
 
     public virtual IEnumerable<ILCodeVersionHandle> GetILCodeVersions(TargetPointer methodDesc) => throw new NotImplementedException();
 
+    public virtual IEnumerable<NativeCodeVersionHandle> GetNativeCodeVersions(TargetPointer methodDesc, ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
+
     public virtual NativeCodeVersionHandle GetNativeCodeVersionForIP(TargetCodePointer ip) => throw new NotImplementedException();
 
     public virtual NativeCodeVersionHandle GetActiveNativeCodeVersionForILCodeVersion(TargetPointer methodDesc, ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
@@ -25,6 +27,12 @@ public interface ICodeVersions : IContract
     public virtual TargetPointer GetGCStressCodeCopy(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 
     public virtual bool CodeVersionManagerSupportsMethod(TargetPointer methodDesc) => throw new NotImplementedException();
+
+    public virtual TargetPointer GetIL(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
+    public virtual bool HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle) => throw new NotImplementedException();
+    public virtual bool TryGetInstrumentedILMap(ILCodeVersionHandle ilCodeVersionHandle, out uint mapEntryCount, out TargetPointer mapEntries) => throw new NotImplementedException();
+
+    public virtual OptimizationTier GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 }
 
 public readonly struct ILCodeVersionHandle

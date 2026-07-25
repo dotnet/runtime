@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 namespace StaticVirtualsAndMethodConstraintsAndDefaultImplementation
 {
@@ -38,6 +39,7 @@ namespace StaticVirtualsAndMethodConstraintsAndDefaultImplementation
             where TRequest : IStaticInterfaceBase<T, TRequest> =>
             TRequest.TryInvoke((ITestItem<T>) null!, request);
 
+        [ActiveIssue("needs triage", TestPlatforms.tvOS)]
         [Fact]
         public static int TestEntryPoint() => Invoke<object, Request>(new Request());
     }

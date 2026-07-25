@@ -11,6 +11,9 @@ namespace System.Reflection.Emit
         {
         }
 
+        // An EnumBuilder represents an enum being built; it cannot itself be a Nullable<T>.
+        public override Type? GetNullableUnderlyingType() => null;
+
         public FieldBuilder UnderlyingField
             => UnderlyingFieldCore;
 
@@ -61,6 +64,11 @@ namespace System.Reflection.Emit
         {
             string s = GetRankString(rank);
             return SymbolType.FormCompoundType(s, this, 0)!;
+        }
+
+        public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+        {
+            return Type.MakeFunctionPointerSignatureType(this, parameterTypes, isUnmanaged);
         }
     }
 }

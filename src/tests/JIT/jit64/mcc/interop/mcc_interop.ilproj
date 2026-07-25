@@ -1,0 +1,72 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="mcc_interop.il" />
+    <Compile Include="mcc_i00.il" />
+    <Compile Include="mcc_i01.il" />
+    <Compile Include="mcc_i02.il" />
+    <Compile Include="mcc_i03.il" />
+    <Compile Include="mcc_i04.il" />
+    <Compile Include="mcc_i05.il" />
+    <Compile Include="mcc_i06.il" />
+    <Compile Include="mcc_i07.il" />
+    <Compile Include="mcc_i10.il" />
+    <Compile Include="mcc_i11.il" />
+    <Compile Include="mcc_i12.il" />
+    <Compile Include="mcc_i13.il" />
+    <Compile Include="mcc_i14.il" />
+    <Compile Include="mcc_i15.il" />
+    <Compile Include="mcc_i16.il" />
+    <Compile Include="mcc_i17.il" />
+    <Compile Include="mcc_i30.il" />
+    <Compile Include="mcc_i31.il" />
+    <Compile Include="mcc_i32.il" />
+    <Compile Include="mcc_i33.il" />
+    <Compile Include="mcc_i34.il" />
+    <Compile Include="mcc_i35.il" />
+    <Compile Include="mcc_i36.il" />
+    <Compile Include="mcc_i37.il" />
+    <Compile Include="mcc_i50.il" />
+    <Compile Include="mcc_i51.il" />
+    <Compile Include="mcc_i52.il" />
+    <Compile Include="mcc_i53.il" />
+    <Compile Include="mcc_i54.il" />
+    <Compile Include="mcc_i55.il" />
+    <Compile Include="mcc_i56.il" />
+    <Compile Include="mcc_i57.il" />
+    <Compile Include="mcc_i60.il" />
+    <Compile Include="mcc_i61.il" />
+    <Compile Include="mcc_i62.il" />
+    <Compile Include="mcc_i63.il" />
+    <Compile Include="mcc_i64.il" />
+    <Compile Include="mcc_i65.il" />
+    <Compile Include="mcc_i66.il" />
+    <Compile Include="mcc_i67.il" />
+    <Compile Include="mcc_i70.il" />
+    <Compile Include="mcc_i71.il" />
+    <Compile Include="mcc_i72.il" />
+    <Compile Include="mcc_i73.il" />
+    <Compile Include="mcc_i74.il" />
+    <Compile Include="mcc_i75.il" />
+    <Compile Include="mcc_i76.il" />
+    <Compile Include="mcc_i77.il" />
+    <Compile Include="mcc_i80.il" />
+    <Compile Include="mcc_i81.il" />
+    <Compile Include="mcc_i82.il" />
+    <Compile Include="mcc_i83.il" />
+    <Compile Include="mcc_i84.il" />
+    <Compile Include="mcc_i85.il" />
+    <Compile Include="mcc_i86.il" />
+    <Compile Include="mcc_i87.il" />
+    <Compile Include="..\common\common.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+</Project>

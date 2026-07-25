@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 using System;
 using Xunit;
 
+namespace box_unbox_null029;
 public class NullableTest
 {
     private static bool BoxUnboxToNQGen<T>(T o)
@@ -38,6 +39,7 @@ public class NullableTest
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         NotEmptyStructConstrainedGenA<int>? s = null;

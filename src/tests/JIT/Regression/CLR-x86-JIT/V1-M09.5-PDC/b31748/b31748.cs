@@ -3,7 +3,7 @@
 //
 
 using Xunit;
-namespace Test
+namespace b31748
 {
     using System;
 
@@ -31,6 +31,7 @@ namespace Test
                 } while ((uint)param1[2] < 0);
             }
         }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

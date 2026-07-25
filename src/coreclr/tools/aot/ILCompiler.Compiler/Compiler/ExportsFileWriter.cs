@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -25,8 +24,16 @@ namespace ILCompiler
             _methods = new List<EcmaMethod>();
         }
 
-        public void AddExportedMethods(IEnumerable<EcmaMethod> methods)
-            => _methods.AddRange(methods);
+        public void AddExportedMethods(IEnumerable<EcmaMethod> methods, CompilationResults compilationResults)
+        {
+            foreach (EcmaMethod method in methods)
+            {
+                // Some of the exported methods could be conditioned with UnmanagedCallersOnly.AssociatedSourceType
+                // so need to filter down to compiled methods.
+                if (compilationResults.IsMethodBodyCompiled(method))
+                    _methods.Add(method);
+            }
+        }
 
         public void EmitExportedMethods()
         {

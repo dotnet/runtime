@@ -4,13 +4,14 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
+using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
-    public sealed class EncryptDecrypt_Array : EncryptDecrypt
+    public abstract class EncryptDecrypt_Array : EncryptDecrypt
     {
         protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
             rsa.Encrypt(data, padding);
@@ -31,7 +32,9 @@ namespace System.Security.Cryptography.Rsa.Tests
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract class EncryptDecrypt
     {
-        public static bool SupportsSha2Oaep => RSAFactory.SupportsSha2Oaep;
+        public bool SupportsSha2Oaep => RSAFactory.SupportsSha2Oaep;
+
+        protected abstract RSAProvider RSAFactory { get; }
 
         protected abstract byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding);
         protected abstract byte[] Decrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding);
@@ -355,7 +358,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
-        [ConditionalFact(nameof(PlatformSupportsEmptyRSAEncryption))]
+        [ConditionalFact(typeof(EncryptDecrypt), nameof(PlatformSupportsEmptyRSAEncryption))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void RoundtripEmptyArray()
         {
@@ -473,9 +476,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsSha2Oaep))]
+        [ConditionalFact]
         public void RsaDecryptOaepWrongAlgorithm()
         {
+            SkipTestException.ThrowUnless(SupportsSha2Oaep);
+
             using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
                 byte[] data = TestData.HelloBytes;
@@ -644,9 +649,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
-        [Fact]
+        [ConditionalFact]
         public void LargeKeyCryptRoundtrip()
         {
+            SkipTestException.ThrowUnless(RSAFactory.Supports16384);
+
             byte[] output;
 
             using (RSA rsa = RSAFactory.Create())
@@ -691,19 +698,33 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         [Theory]
         [MemberData(nameof(OaepPaddingModes))]
-        public void NonPowerOfTwoKeySizeOaepRoundtrip(RSAEncryptionPadding oaepPaddingMode)
+        public void NonPowerOfTwoKeySizeOaepRoundtrip(
+            RSAEncryptionPadding oaepPaddingMode,
+            bool requiresSha2Oaep,
+            bool requiresSha3)
         {
-            byte[] crypt;
-            byte[] output;
-
-            using (RSA rsa = RSAFactory.Create(3072))
+            if ((requiresSha2Oaep && !RSAFactory.SupportsSha2Oaep) ||
+                (requiresSha3 && !RSAFactory.SupportsSha3))
             {
-                crypt = Encrypt(rsa, TestData.HelloBytes, oaepPaddingMode);
-                output = Decrypt(rsa, crypt, oaepPaddingMode);
+                return;
             }
 
-            Assert.NotEqual(crypt, output);
-            Assert.Equal(TestData.HelloBytes, output);
+            // Key generation can transiently fail on some platforms due to resource contention.
+            // Retry a few times before failing the test.
+            RetryHelper.Execute(() =>
+            {
+                byte[] crypt;
+                byte[] output;
+
+                using (RSA rsa = RSAFactory.Create(3072))
+                {
+                    crypt = Encrypt(rsa, TestData.HelloBytes, oaepPaddingMode);
+                    output = Decrypt(rsa, crypt, oaepPaddingMode);
+                }
+
+                Assert.NotEqual(crypt, output);
+                Assert.Equal(TestData.HelloBytes, output);
+            }, retryWhen: e => e is CryptographicException);
         }
 
         [Fact]
@@ -835,21 +856,15 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             get
             {
-                yield return new object[] { RSAEncryptionPadding.OaepSHA1 };
+                yield return new object[] { RSAEncryptionPadding.OaepSHA1, false, false };
 
-                if (RSAFactory.SupportsSha2Oaep)
-                {
-                    yield return new object[] { RSAEncryptionPadding.OaepSHA256 };
-                    yield return new object[] { RSAEncryptionPadding.OaepSHA384 };
-                    yield return new object[] { RSAEncryptionPadding.OaepSHA512 };
-                }
+                yield return new object[] { RSAEncryptionPadding.OaepSHA256, true, false };
+                yield return new object[] { RSAEncryptionPadding.OaepSHA384, true, false };
+                yield return new object[] { RSAEncryptionPadding.OaepSHA512, true, false };
 
-                if (RSAFactory.SupportsSha3)
-                {
-                    yield return new object[] { RSAEncryptionPadding.OaepSHA3_256 };
-                    yield return new object[] { RSAEncryptionPadding.OaepSHA3_384 };
-                    yield return new object[] { RSAEncryptionPadding.OaepSHA3_512 };
-                }
+                yield return new object[] { RSAEncryptionPadding.OaepSHA3_256, false, true };
+                yield return new object[] { RSAEncryptionPadding.OaepSHA3_384, false, true };
+                yield return new object[] { RSAEncryptionPadding.OaepSHA3_512, false, true };
             }
         }
 

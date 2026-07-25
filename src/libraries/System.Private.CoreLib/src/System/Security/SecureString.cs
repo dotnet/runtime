@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -438,6 +439,8 @@ namespace System.Security
                 {
                     return;
                 }
+
+                Debug.Assert(bytesLength <= destination.ByteLength);
 
                 byte* srcPtr = null, dstPtr = null;
                 try

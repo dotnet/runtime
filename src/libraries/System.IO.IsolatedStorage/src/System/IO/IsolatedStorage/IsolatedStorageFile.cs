@@ -360,7 +360,7 @@ namespace System.IO.IsolatedStorage
             }
             catch (DirectoryNotFoundException)
             {
-                throw new DirectoryNotFoundException(SR.Format(SR.PathNotFound_Path, sourceDirectoryName));
+                throw new DirectoryNotFoundException(SR.Format(SR.PathNotFound_Path, sourceDirectoryName), sourceDirectoryName);
             }
             catch (PathTooLongException)
             {

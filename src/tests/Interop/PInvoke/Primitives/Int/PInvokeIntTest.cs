@@ -4,6 +4,7 @@
 using System.Runtime.InteropServices;
 using System;
 using Xunit;
+using TestLibrary;
 
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class ClientPInvokeIntNativeTest
@@ -33,6 +34,10 @@ public class ClientPInvokeIntNativeTest
     private static extern int Marshal_InMany_InOutPointer([In]short i1, [In]short i2, [In]short i3, [In]short i4, [In]short i5, [In]short i6, [In]short i7, [In]short i8, [In]short i9, [In]short i10, [In]short i11, [In]byte i12, [In]byte i13, [In]int i14, [In]short i15, ref int pintValue);
 
 
+    [ActiveIssue("Needs coreclr build", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82859", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("missing assembly", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static int TestEntryPoint()
     {

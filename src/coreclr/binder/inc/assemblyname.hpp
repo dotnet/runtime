@@ -30,13 +30,11 @@ namespace BINDER_SPACE
             INCLUDE_VERSION             = 0x01,
             INCLUDE_ARCHITECTURE        = 0x02,
             INCLUDE_RETARGETABLE        = 0x04,
-            INCLUDE_CONTENT_TYPE        = 0x08,
             INCLUDE_PUBLIC_KEY_TOKEN    = 0x10,
             EXCLUDE_CULTURE             = 0x20,
             INCLUDE_ALL                 = INCLUDE_VERSION
                                             | INCLUDE_ARCHITECTURE
                                             | INCLUDE_RETARGETABLE
-                                            | INCLUDE_CONTENT_TYPE
                                             | INCLUDE_PUBLIC_KEY_TOKEN,
         } INCLUDE_FLAGS;
 
@@ -58,8 +56,6 @@ namespace BINDER_SPACE
         inline SBuffer &GetPublicKeyTokenBLOB();
         inline PEKIND GetArchitecture();
         inline void SetArchitecture(PEKIND kArchitecture);
-        inline AssemblyContentType GetContentType();
-        inline void SetContentType(AssemblyContentType kContentType);
         inline BOOL GetIsRetargetable();
         inline void SetIsRetargetable(BOOL fIsRetargetable);
         inline BOOL GetIsDefinition();

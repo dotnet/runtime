@@ -34,7 +34,7 @@ namespace System.Tests
             Verify(i, i);
         }
 
-        [ConditionalFact(nameof(Is64Bit))]
+        [ConditionalFact(typeof(IntPtrTests), nameof(Is64Bit))]
         public static void Ctor_Long()
         {
             long l = 0x0fffffffffffffff;
@@ -42,7 +42,7 @@ namespace System.Tests
             Verify(checked((nint)l), l);
         }
 
-        [ConditionalFact(nameof(Is64Bit))]
+        [ConditionalFact(typeof(IntPtrTests), nameof(Is64Bit))]
         public static unsafe void Ctor_VoidPointer_ToPointer()
         {
             void* pv = new nint(42).ToPointer();
@@ -50,7 +50,7 @@ namespace System.Tests
             Verify((nint)pv, 42);
         }
 
-        [ConditionalFact(nameof(Is64Bit))]
+        [ConditionalFact(typeof(IntPtrTests), nameof(Is64Bit))]
         public static unsafe void Size()
         {
             Assert.Equal(sizeof(void*), nint.Size);
@@ -65,7 +65,7 @@ namespace System.Tests
             yield return new object[] { unchecked((nint)0x7fffffffffffffff), 5, unchecked((long)0x8000000000000004) }; /// Add should not throw an OverflowException
         }
 
-        [ConditionalTheory(nameof(Is64Bit))]
+        [ConditionalTheory(typeof(IntPtrTests), nameof(Is64Bit))]
         [MemberData(nameof(Add_TestData))]
         public static void Add(nint value, int offset, long expected)
         {
@@ -87,7 +87,7 @@ namespace System.Tests
             yield return new object[] { (nint)38, -2, (long)40 };
         }
 
-        [ConditionalTheory(nameof(Is64Bit))]
+        [ConditionalTheory(typeof(IntPtrTests), nameof(Is64Bit))]
         [MemberData(nameof(Subtract_TestData))]
         public static void Subtract(nint value, int offset, long expected)
         {
@@ -127,7 +127,7 @@ namespace System.Tests
             Assert.Equal(value.GetHashCode(), value.GetHashCode());
         }
 
-        [ConditionalFact(nameof(Is64Bit))]
+        [ConditionalFact(typeof(IntPtrTests), nameof(Is64Bit))]
         public static unsafe void TestExplicitCast()
         {
             nint value = 42;
@@ -166,7 +166,7 @@ namespace System.Tests
             Assert.IsType<OverflowException>(ex);
         }
 
-        [ConditionalFact(nameof(Is64Bit))]
+        [ConditionalFact(typeof(IntPtrTests), nameof(Is64Bit))]
         public static void GetHashCodeRespectAllBits()
         {
             var value = unchecked((nint)0x123456FFFFFFFF);
@@ -1076,7 +1076,7 @@ namespace System.Tests
         public static void TryFormat(nint i, string format, IFormatProvider provider, string expected) =>
             NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);
 
-        [ConditionalTheory(nameof(Is32Bit))]
+        [ConditionalTheory(typeof(IntPtrTests), nameof(Is32Bit))]
         [InlineData(0, 0, "0000000000000000")]
         [InlineData(0, 1, "0000000000000000")]
         [InlineData(1, 0, "0000000000000000")]
@@ -1095,7 +1095,7 @@ namespace System.Tests
             Assert.Equal(result, $"{upper:X8}{lower:X8}");
         }
 
-        [ConditionalTheory(nameof(Is64Bit))]
+        [ConditionalTheory(typeof(IntPtrTests), nameof(Is64Bit))]
         [InlineData(0L, 0L, "00000000000000000000000000000000")]
         [InlineData(0L, 1L, "00000000000000000000000000000000")]
         [InlineData(1L, 0L, "00000000000000000000000000000000")]

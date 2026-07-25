@@ -3,13 +3,14 @@
 //
 
 using Xunit;
-namespace Test
+namespace b48872
 {
     using System;
 
     public class AA
     {
         static uint m_u;
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

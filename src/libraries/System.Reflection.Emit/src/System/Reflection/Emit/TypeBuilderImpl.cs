@@ -503,6 +503,7 @@ namespace System.Reflection.Emit
                 LayoutKind.Auto => TypeAttributes.AutoLayout,
                 LayoutKind.Explicit => TypeAttributes.ExplicitLayout,
                 LayoutKind.Sequential => TypeAttributes.SequentialLayout,
+                LayoutKind.Extended => TypeAttributes.ExtendedLayout,
                 _ => TypeAttributes.AutoLayout,
             };
 

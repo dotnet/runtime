@@ -5,6 +5,7 @@
   * [Dependency Graph View](#dependency-graph-view)
   * [Single Node Exploration](#single-node-exploration)
 * [Why DGML](#why-dgml)
+* [Dependency Graph EventSource](#dependency-graph-eventsource)
 
 The general technique is to identify what node is missing from the graph, or is erroneously present in the graph, and change the dependency analysis logic to adjust the graph. This document describes the various ways of debugging to identify what's happening.
 
@@ -55,3 +56,74 @@ The input to the tool is the DGML file and name of a node of interest. The outpu
 This tool located in folder `src/coreclr/tools/aot/WhyDgml`
 
 See <https://github.com/dotnet/corert/pull/7962> for example of usage and output.
+
+## Dependency Graph EventSource
+
+ILCompiler publishes its dependency graph through the `Microsoft-ILCompiler-DependencyGraph` EventSource. You can capture those events with `dotnet-trace`. The resulting `*.nettrace` file can be processed with the TraceEvent library. This can be useful for investigating ILCompiler issues on Linux, but note that it requires additional tooling to process the trace into a DGML file that can be used with the dependency graph viewer.
+
+1. Install or update the tool: `dotnet tool install --global dotnet-trace`.
+2. Start the collection, listening on a custom diagnostic port:
+   ```bash
+   dotnet-trace collect \
+    --diagnostic-port /tmp/ilc-depgraph.socket \
+    --providers Microsoft-ILCompiler-DependencyGraph:0x1:4
+   ```
+
+   The `0x1:4` keyword/level pair enables the dependency graph events at Informational verbosity.
+3. Ensure the `IlcGenerateDgmlFile` MSBuild property is **not** enabled (e.g., do not pass `/p:IlcGenerateDgmlFile=true` to the build); DGML generation suppresses these EventSource events.
+4. In another terminal, point ILCompiler at the same diagnostics port and run your build:
+   ```bash
+   export DOTNET_DiagnosticPorts=/tmp/ilc-depgraph.socket
+   ```
+
+   Then invoke the usual command (for example `ilc @path/to/ilc.rsp` or `dotnet publish`).
+5. When ILCompiler finishes, `dotnet-trace` finishes writing the trace file.
+
+Events emitted by the `Microsoft-ILCompiler-DependencyGraph` EventSource provider follow this schema:
+
+### Event Types
+
+#### Graph Event
+Declares a new graph instance.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | Unique graph identifier (allows multiple graphs in one trace) |
+| `name` | string | Human-readable graph name |
+
+Graph identifiers are stable within a trace: typically graph `1` corresponds to the dependency scanner graph and graph `2` corresponds to the code generation graph.
+
+#### Node Event
+Defines a node in the graph.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | Identifier of the graph this node belongs to |
+| `index` | int | Unique node identifier within the graph |
+| `name` | string | Display label for the node (if empty, shows "Node {index}") |
+
+#### Edge Event
+Creates a directed edge from a dependent node to its dependency.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | Identifier of the graph this edge belongs to |
+| `dependentIndex` | int | Source node (the one that depends on the target) |
+| `dependencyIndex` | int | Target node (the dependency) |
+| `reason` | string | Edge label describing why the dependency exists |
+
+#### ConditionalEdge Event
+Creates a conditional dependency where two nodes must both be present for the dependency to exist.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | Identifier of the graph this conditional edge belongs to |
+| `dependentIndex1` | int | First dependent node |
+| `dependentIndex2` | int | Second dependent node |
+| `dependencyIndex` | int | The dependency node |
+| `reason` | string | Edge label describing why the dependency exists |
+
+In the dependency graph viewer, this corresponds to a synthetic "AND" node representing `(dependent1, dependent2)` with three edges:
+- `dependent1 → combined` (labeled "Primary")
+- `dependent2 → combined` (labeled "Secondary")
+- `combined → dependency` (with the original reason)

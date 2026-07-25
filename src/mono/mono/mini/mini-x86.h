@@ -79,17 +79,10 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #define MONO_ARCH_CALLEE_REGS X86_CALLEE_REGS
 #define MONO_ARCH_CALLEE_SAVED_REGS X86_CALLER_REGS
 
-#ifdef TARGET_WIN32
 /* xmm7 is used as a scratch register */
 #define MONO_ARCH_CALLEE_FREGS 0x7f
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0
 #define MONO_ARCH_FP_SCRATCH_REG X86_XMM7
-#else
-/* xmm7 is used as a scratch register */
-#define MONO_ARCH_CALLEE_FREGS 0x7f
-#define MONO_ARCH_CALLEE_SAVED_FREGS 0
-#define MONO_ARCH_FP_SCRATCH_REG X86_XMM7
-#endif
 
 /* All registers are clobered by a call */
 #define MONO_ARCH_CALLEE_XREGS MONO_ARCH_CALLEE_FREGS

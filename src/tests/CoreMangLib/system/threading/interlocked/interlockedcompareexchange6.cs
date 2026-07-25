@@ -8,6 +8,7 @@ public class InterlockedCompareExchange6
 {
     private const int c_NUM_LOOPS = 100;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

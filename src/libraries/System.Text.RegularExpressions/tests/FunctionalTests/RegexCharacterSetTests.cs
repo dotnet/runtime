@@ -338,6 +338,68 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"\p{IsSpecials}", new[] { 0xFFF0, 0xFFFF } };
                 yield return new object[] { engine, @"\p{IsRunic}\p{IsHebrew}", new[] { 0x0590, 0x05FF, 0x16A0, 0x16FF } };
                 yield return new object[] { engine, @"abx-z\p{IsRunic}\p{IsHebrew}", new[] { 0x0590, 0x05FF, 0x16A0, 0x16FF, 'a', 'a', 'b', 'b', 'x', 'x', 'y', 'z' } };
+
+                if (!PlatformDetection.IsNetFramework)
+                {
+                    yield return new object[] { engine, @"\p{IsArabicSupplement}", new[] { 0x0750, 0x077F } };
+                    yield return new object[] { engine, @"\p{IsNKo}", new[] { 0x07C0, 0x07FF } };
+                    yield return new object[] { engine, @"\p{IsSamaritan}", new[] { 0x0800, 0x083F } };
+                    yield return new object[] { engine, @"\p{IsMandaic}", new[] { 0x0840, 0x085F } };
+                    yield return new object[] { engine, @"\p{IsSyriacSupplement}", new[] { 0x0860, 0x086F } };
+                    yield return new object[] { engine, @"\p{IsArabicExtended-B}", new[] { 0x0870, 0x089F } };
+                    yield return new object[] { engine, @"\p{IsArabicExtended-A}", new[] { 0x08A0, 0x08FF } };
+                    yield return new object[] { engine, @"\p{IsUnifiedCanadianAboriginalSyllabicsExtended}", new[] { 0x18B0, 0x18FF } };
+                    yield return new object[] { engine, @"\p{IsNewTaiLue}", new[] { 0x1980, 0x19DF } };
+                    yield return new object[] { engine, @"\p{IsBuginese}", new[] { 0x1A00, 0x1A1F } };
+                    yield return new object[] { engine, @"\p{IsTaiTham}", new[] { 0x1A20, 0x1AAF } };
+                    yield return new object[] { engine, @"\p{IsCombiningDiacriticalMarksExtended}", new[] { 0x1AB0, 0x1AFF } };
+                    yield return new object[] { engine, @"\p{IsBalinese}", new[] { 0x1B00, 0x1B7F } };
+                    yield return new object[] { engine, @"\p{IsSundanese}", new[] { 0x1B80, 0x1BBF } };
+                    yield return new object[] { engine, @"\p{IsBatak}", new[] { 0x1BC0, 0x1BFF } };
+                    yield return new object[] { engine, @"\p{IsLepcha}", new[] { 0x1C00, 0x1C4F } };
+                    yield return new object[] { engine, @"\p{IsOlChiki}", new[] { 0x1C50, 0x1C7F } };
+                    yield return new object[] { engine, @"\p{IsCyrillicExtended-C}", new[] { 0x1C80, 0x1C8F } };
+                    yield return new object[] { engine, @"\p{IsGeorgianExtended}", new[] { 0x1C90, 0x1CBF } };
+                    yield return new object[] { engine, @"\p{IsSundaneseSupplement}", new[] { 0x1CC0, 0x1CCF } };
+                    yield return new object[] { engine, @"\p{IsVedicExtensions}", new[] { 0x1CD0, 0x1CFF } };
+                    yield return new object[] { engine, @"\p{IsPhoneticExtensionsSupplement}", new[] { 0x1D80, 0x1DBF } };
+                    yield return new object[] { engine, @"\p{IsCombiningDiacriticalMarksSupplement}", new[] { 0x1DC0, 0x1DFF } };
+                    yield return new object[] { engine, @"\p{IsGlagolitic}", new[] { 0x2C00, 0x2C5F } };
+                    yield return new object[] { engine, @"\p{IsLatinExtended-C}", new[] { 0x2C60, 0x2C7F } };
+                    yield return new object[] { engine, @"\p{IsCoptic}", new[] { 0x2C80, 0x2CFF } };
+                    yield return new object[] { engine, @"\p{IsGeorgianSupplement}", new[] { 0x2D00, 0x2D2F } };
+                    yield return new object[] { engine, @"\p{IsTifinagh}", new[] { 0x2D30, 0x2D7F } };
+                    yield return new object[] { engine, @"\p{IsEthiopicExtended}", new[] { 0x2D80, 0x2DDF } };
+                    yield return new object[] { engine, @"\p{IsCyrillicExtended-A}", new[] { 0x2DE0, 0x2DFF } };
+                    yield return new object[] { engine, @"\p{IsSupplementalPunctuation}", new[] { 0x2E00, 0x2E7F } };
+                    yield return new object[] { engine, @"\p{IsCJKStrokes}", new[] { 0x31C0, 0x31EF } };
+                    yield return new object[] { engine, @"\p{IsLisu}", new[] { 0xA4D0, 0xA4FF } };
+                    yield return new object[] { engine, @"\p{IsVai}", new[] { 0xA500, 0xA63F } };
+                    yield return new object[] { engine, @"\p{IsCyrillicExtended-B}", new[] { 0xA640, 0xA69F } };
+                    yield return new object[] { engine, @"\p{IsBamum}", new[] { 0xA6A0, 0xA6FF } };
+                    yield return new object[] { engine, @"\p{IsModifierToneLetters}", new[] { 0xA700, 0xA71F } };
+                    yield return new object[] { engine, @"\p{IsLatinExtended-D}", new[] { 0xA720, 0xA7FF } };
+                    yield return new object[] { engine, @"\p{IsSylotiNagri}", new[] { 0xA800, 0xA82F } };
+                    yield return new object[] { engine, @"\p{IsCommonIndicNumberForms}", new[] { 0xA830, 0xA83F } };
+                    yield return new object[] { engine, @"\p{IsPhags-pa}", new[] { 0xA840, 0xA87F } };
+                    yield return new object[] { engine, @"\p{IsSaurashtra}", new[] { 0xA880, 0xA8DF } };
+                    yield return new object[] { engine, @"\p{IsDevanagariExtended}", new[] { 0xA8E0, 0xA8FF } };
+                    yield return new object[] { engine, @"\p{IsKayahLi}", new[] { 0xA900, 0xA92F } };
+                    yield return new object[] { engine, @"\p{IsRejang}", new[] { 0xA930, 0xA95F } };
+                    yield return new object[] { engine, @"\p{IsHangulJamoExtended-A}", new[] { 0xA960, 0xA97F } };
+                    yield return new object[] { engine, @"\p{IsJavanese}", new[] { 0xA980, 0xA9DF } };
+                    yield return new object[] { engine, @"\p{IsMyanmarExtended-B}", new[] { 0xA9E0, 0xA9FF } };
+                    yield return new object[] { engine, @"\p{IsCham}", new[] { 0xAA00, 0xAA5F } };
+                    yield return new object[] { engine, @"\p{IsMyanmarExtended-A}", new[] { 0xAA60, 0xAA7F } };
+                    yield return new object[] { engine, @"\p{IsTaiViet}", new[] { 0xAA80, 0xAADF } };
+                    yield return new object[] { engine, @"\p{IsMeeteiMayekExtensions}", new[] { 0xAAE0, 0xAAFF } };
+                    yield return new object[] { engine, @"\p{IsEthiopicExtended-A}", new[] { 0xAB00, 0xAB2F } };
+                    yield return new object[] { engine, @"\p{IsLatinExtended-E}", new[] { 0xAB30, 0xAB6F } };
+                    yield return new object[] { engine, @"\p{IsCherokeeSupplement}", new[] { 0xAB70, 0xABBF } };
+                    yield return new object[] { engine, @"\p{IsMeeteiMayek}", new[] { 0xABC0, 0xABFF } };
+                    yield return new object[] { engine, @"\p{IsHangulJamoExtended-B}", new[] { 0xD7B0, 0xD7FF } };
+                    yield return new object[] { engine, @"\p{IsVerticalForms}", new[] { 0xFE10, 0xFE1F } };
+                }
             }
         }
 

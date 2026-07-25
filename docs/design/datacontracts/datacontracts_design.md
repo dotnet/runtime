@@ -26,7 +26,7 @@ More details are provided in the [data descriptor spec](./data_descriptor.md).  
 
 #### Global Values
 
-Global values which can be either primitive integer constants or pointers.
+Global values which can be either primitive integer constants, pointers, or strings.
 All global values have a string describing their name, a type, and a value of one of the above types.
 
 #### Data Structure Layout
@@ -41,13 +41,17 @@ The determinate size of a structure may be larger than the sum of the sizes of t
 in the data descriptor (that is, the data descriptor does not include every field and may not
 include padding bytes).
 
+#### (Optional) Sub-descriptor pointers
+
+Sub-descriptors are special global values which contain a pointer to another data descriptor. These are used when data definitions are not known by the runtime at compile time but may be known by an external component. In that case the data descriptor defers to the external component to describe its data.
+
 ### Compatible Contract
 
-Each compatible contract is described by a string naming the contract, and a uint32 version. It is an ERROR if multiple versions of a contract are specified in the contract descriptor.
+Each compatible contract is described by a string naming the contract, and a string version identifier. It is an ERROR if multiple versions of a contract are specified in the contract descriptor.
 
 
 ## Versioning of contracts
-Contracts are described an integer version number. A higher version number is not more recent, it just means different. In order to avoid conflicts, all contracts should be documented in the main branch of the dotnet repository with a version number which does not conflict with any other. It is expected that every version of every contract describes the same functionality/data layout/set of global values.
+Contracts are described by a string version identifier. Different version identifiers represent different contract implementations. A "higher" identifier is not more recent, it just means different. In order to avoid conflicts, all contracts should be documented in the main branch of the dotnet repository with a version identifier which does not conflict with any other. It is expected that every version of every contract describes the same functionality/data layout/set of global values.
 
 ## Contract data model
 Logically a contract may refer to another contract. If it does so, it will typically refer to other contracts by names which do not include the contract version. This is to allow for version flexibility. Logically once the Data Contract Descriptor is fully processed, there is a single list of contracts that represents the set of contracts useable with whatever runtime instance is being processed.

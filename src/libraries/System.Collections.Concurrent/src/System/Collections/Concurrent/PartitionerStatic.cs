@@ -808,7 +808,7 @@ namespace System.Collections.Concurrent
 
                             // If the big buffer seems to be depleted, we will also fill that up while we are under the lock
                             // Note that this is the only place that _FillBufferCurrentPosition can be reset
-                            if (_sourceDepleted.Value == false && localFillBufferRef != null &&
+                            if (!_sourceDepleted.Value && localFillBufferRef != null &&
                                 _fillBufferCurrentPosition >= localFillBufferRef.Length)
                             {
                                 for (int i = 0; i < localFillBufferRef.Length; i++)

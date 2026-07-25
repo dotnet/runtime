@@ -6,6 +6,8 @@
     <CustomResourceTypesSupport Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">true</CustomResourceTypesSupport>
     <!-- some of the embeded resources have this assembly name hardcoded -->
     <AssemblyName>System.Resources.Extensions.Tests</AssemblyName>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>

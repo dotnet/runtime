@@ -3,7 +3,20 @@
 
 #include "datadescriptor.h"
 
+#ifndef DLLEXPORT
+#ifdef _MSC_VER
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT __attribute__ ((visibility ("default")))
+#endif // _MSC_VER
+#endif // DLLEXPORT
+
 // begin blob definition
+
+// In debug/checked builds, validate that TYPE() references match declared cDAC types.
+#ifdef _DEBUG
+#include "cdactypevalidation.inc"
+#endif
 
 extern "C"
 {
@@ -41,6 +54,12 @@ struct GlobalStringSpec
     uint32_t StringValue;
 };
 
+struct GlobalContractSpec
+{
+    uint32_t Name;
+    uint32_t Version;
+};
+
 #define CONCAT(token1,token2) token1 ## token2
 #define CONCAT4(token1, token2, token3, token4) token1 ## token2 ## token3 ## token4
 
@@ -48,11 +67,32 @@ struct GlobalStringSpec
 #define MAKE_FIELDLEN_NAME(tyname,membername) CONCAT4(cdac_string_pool_membername__, tyname, __, membername)
 #define MAKE_FIELDTYPELEN_NAME(tyname,membername) CONCAT4(cdac_string_pool_membertypename__, tyname, __, membername)
 #define MAKE_GLOBALLEN_NAME(globalname) CONCAT(cdac_string_pool_globalname__, globalname)
+#define MAKE_GLOBALCONTRACTLEN_NAME(globalname) CONCAT(cdac_string_pool_globalcontractname__, globalname)
+#define MAKE_GLOBALCONTRACTVALUELEN_NAME(globalname) CONCAT(cdac_string_pool_globalcontractvalue__, globalname)
 #define MAKE_GLOBALTYPELEN_NAME(globalname) CONCAT(cdac_string_pool_globaltypename__, globalname)
 #define MAKE_GLOBALVALUELEN_NAME(globalname) CONCAT(cdac_string_pool_globalvalue__, globalname)
 
 // used to stringify the result of a macros expansion
-#define STRINGIFY(x) #x
+// __VA_ARGS__ is the argument list comma separated
+#define STRINGIFY(...) #__VA_ARGS__
+
+// Double-indirection stringify: expands macros in x before stringifying.
+// This is needed because the T_* type annotation defines (T_UINT32, TYPE(GCHandle), etc.)
+// must be expanded before stringification. Direct #x does not expand macros.
+#define CDAC_STRINGIFY_IMPL(x) #x
+#define CDAC_STRINGIFY(x) CDAC_STRINGIFY_IMPL(x)
+
+// CDAC_STRINGIFY_TYPE stringifies a type annotation parameter.
+// Type defines always expand to real type names (e.g., T_UINT32 -> uint32).
+// In debug/checked builds, the type name is included in the blob string pool.
+// In release builds, "" is emitted instead to keep the blob compact.
+// To include type info in release builds, change this to use CDAC_STRINGIFY
+// unconditionally.
+#ifdef _DEBUG
+#define CDAC_STRINGIFY_TYPE(membertyname) CDAC_STRINGIFY(membertyname)
+#else
+#define CDAC_STRINGIFY_TYPE(membertyname) ""
+#endif
 
 // define a struct where the size of each field is the length of some string.  we will use offsetof to get
 // the offset of each struct element, which will be equal to the offset of the beginning of that string in the
@@ -64,12 +104,15 @@ struct CDacStringPoolSizes
 #define CDAC_BASELINE(name) DECL_LEN(cdac_string_pool_baseline_, (sizeof(name)))
 #define CDAC_TYPE_BEGIN(name) DECL_LEN(MAKE_TYPELEN_NAME(name), sizeof(#name))
 #define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) DECL_LEN(MAKE_FIELDLEN_NAME(tyname,membername), sizeof(#membername)) \
-    DECL_LEN(MAKE_FIELDTYPELEN_NAME(tyname,membername), sizeof(#membertyname))
+    DECL_LEN(MAKE_FIELDTYPELEN_NAME(tyname,membername), sizeof(CDAC_STRINGIFY_TYPE(membertyname)))
 #define CDAC_GLOBAL_STRING(name, stringval) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name)) \
     DECL_LEN(MAKE_GLOBALVALUELEN_NAME(name), sizeof(STRINGIFY(stringval)))
 #define CDAC_GLOBAL_POINTER(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
+#define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name))
+#define CDAC_GLOBAL_CONTRACT(name,value) DECL_LEN(MAKE_GLOBALCONTRACTLEN_NAME(name), sizeof(#name)) \
+    DECL_LEN(MAKE_GLOBALCONTRACTVALUELEN_NAME(name), sizeof(#value))
 #define CDAC_GLOBAL(name,tyname,value) DECL_LEN(MAKE_GLOBALLEN_NAME(name), sizeof(#name)) \
-    DECL_LEN(MAKE_GLOBALTYPELEN_NAME(name), sizeof(#tyname))
+    DECL_LEN(MAKE_GLOBALTYPELEN_NAME(name), sizeof(CDAC_STRINGIFY_TYPE(tyname)))
 #include "wrappeddatadescriptor.inc"
     char cdac_string_pool_trailing_nil;
 #undef DECL_LEN
@@ -80,6 +123,8 @@ struct CDacStringPoolSizes
 #define GET_FIELDTYPE_NAME(tyname,membername) offsetof(struct CDacStringPoolSizes, MAKE_FIELDTYPELEN_NAME(tyname,membername))
 #define GET_GLOBAL_NAME(globalname) offsetof(struct CDacStringPoolSizes, MAKE_GLOBALLEN_NAME(globalname))
 #define GET_GLOBALTYPE_NAME(globalname) offsetof(struct CDacStringPoolSizes, MAKE_GLOBALTYPELEN_NAME(globalname))
+#define GET_GLOBALCONTRACT_NAME(globalname) offsetof(struct CDacStringPoolSizes, MAKE_GLOBALCONTRACTLEN_NAME(globalname))
+#define GET_GLOBALCONTRACT_VALUE(globalname) offsetof(struct CDacStringPoolSizes, MAKE_GLOBALCONTRACTVALUELEN_NAME(globalname))
 #define GET_GLOBALSTRING_VALUE(globalname) offsetof(struct CDacStringPoolSizes, MAKE_GLOBALVALUELEN_NAME(globalname))
 
 // count the types
@@ -126,6 +171,24 @@ enum
     CDacBlobGlobalStringsCount =
 #define CDAC_GLOBALS_BEGIN() 0
 #define CDAC_GLOBAL_STRING(name,value) + 1
+#include "wrappeddatadescriptor.inc"
+};
+
+// count the global sub-descriptors
+enum
+{
+    CDacBlobGlobalSubDescriptorsCount =
+#define CDAC_GLOBALS_BEGIN() 0
+#define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) + 1
+#include "wrappeddatadescriptor.inc"
+};
+
+// count the contracts
+enum
+{
+    CDacBlobGlobalContractsCount =
+#define CDAC_GLOBALS_BEGIN() 0
+#define CDAC_GLOBAL_CONTRACT(name,value) + 1
 #include "wrappeddatadescriptor.inc"
 };
 
@@ -178,6 +241,7 @@ struct CDacGlobalPointerIndex
 #define DECL_LEN(membername) char membername;
 #define CDAC_GLOBALS_BEGIN() DECL_LEN(cdac_global_pointer_index_start_placeholder__)
 #define CDAC_GLOBAL_POINTER(name,value) DECL_LEN(CONCAT(cdac_global_pointer_index__, name))
+#define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) DECL_LEN(CONCAT(cdac_global_pointer_index__, name))
 #include "wrappeddatadescriptor.inc"
 #undef DECL_LEN
 };
@@ -204,6 +268,9 @@ struct BinaryBlobDataDescriptor
 
         uint32_t GlobalPointersStart;
         uint32_t GlobalStringValuesStart;
+
+        uint32_t GlobalSubDescriptorsStart;
+        uint32_t GlobalContractsStart;
         uint32_t NamesPoolStart;
 
         uint32_t TypeCount;
@@ -212,6 +279,8 @@ struct BinaryBlobDataDescriptor
         uint32_t GlobalLiteralValuesCount;
         uint32_t GlobalPointerValuesCount;
         uint32_t GlobalStringValuesCount;
+        uint32_t GlobalSubDescriptorsCount;
+        uint32_t GlobalContractsCount;
 
         uint32_t NamesPoolCount;
 
@@ -223,11 +292,14 @@ struct BinaryBlobDataDescriptor
     } Directory;
     uint32_t PlatformFlags;
     uint32_t BaselineName;
-    struct TypeSpec Types[CDacBlobTypesCount];
-    struct FieldSpec FieldsPool[CDacBlobFieldsPoolCount];
-    struct GlobalLiteralSpec GlobalLiteralValues[CDacBlobGlobalLiteralsCount];
-    struct GlobalPointerSpec GlobalPointerValues[CDacBlobGlobalPointersCount];
-    struct GlobalStringSpec GlobalStringValues[CDacBlobGlobalStringsCount];
+    // cpp does not allow zero-length arrays, so we add one extra element to allow having zero of a given type of descriptor
+    struct TypeSpec Types[CDacBlobTypesCount + 1];
+    struct FieldSpec FieldsPool[CDacBlobFieldsPoolCount + 1];
+    struct GlobalLiteralSpec GlobalLiteralValues[CDacBlobGlobalLiteralsCount + 1];
+    struct GlobalPointerSpec GlobalPointerValues[CDacBlobGlobalPointersCount + 1];
+    struct GlobalStringSpec GlobalStringValues[CDacBlobGlobalStringsCount + 1];
+    struct GlobalPointerSpec GlobalSubDescriptorValues[CDacBlobGlobalSubDescriptorsCount + 1];
+    struct GlobalContractSpec GlobalContractValues[CDacBlobGlobalContractsCount + 1];
     uint8_t NamesPool[sizeof(struct CDacStringPoolSizes)];
     uint8_t EndMagic[4];
 };
@@ -238,7 +310,7 @@ struct MagicAndBlob {
 };
 
 // we only support 32-bit and 64-bit right now
-static_assert_no_msg(sizeof(void*) == 4 || sizeof(void*) == 8);
+static_assert(sizeof(void*) == 4 || sizeof(void*) == 8);
 
 // C-style designated initializers are a C++20 feature.  Have to use plain old aggregate initialization instead.
 
@@ -253,12 +325,16 @@ struct MagicAndBlob BlobDataDescriptor = {
             /* .GlobalLiteralValuesStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalLiteralValues),
             /* .GlobalPointersStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalPointerValues),
             /* .GlobalStringValuesStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalStringValues),
+            /* .GlobalSubDescriptorsStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalSubDescriptorValues),
+            /* .GlobalContractsStart = */ offsetof(struct BinaryBlobDataDescriptor, GlobalContractValues),
             /* .NamesPoolStart = */ offsetof(struct BinaryBlobDataDescriptor, NamesPool),
             /* .TypeCount = */ CDacBlobTypesCount,
             /* .FieldsPoolCount = */ CDacBlobFieldsPoolCount,
             /* .GlobalLiteralValuesCount = */ CDacBlobGlobalLiteralsCount,
             /* .GlobalPointerValuesCount = */ CDacBlobGlobalPointersCount,
             /* .GlobalStringValuesCount = */ CDacBlobGlobalStringsCount,
+            /* .GlobalSubDescriptorsCount = */ CDacBlobGlobalSubDescriptorsCount,
+            /* .GlobalContractsCount = */ CDacBlobGlobalContractsCount,
             /* .NamesPoolCount = */ sizeof(struct CDacStringPoolSizes),
             /* .TypeSpecSize = */ sizeof(struct TypeSpec),
             /* .FieldSpecSize = */ sizeof(struct FieldSpec),
@@ -305,13 +381,25 @@ struct MagicAndBlob BlobDataDescriptor = {
 #include "wrappeddatadescriptor.inc"
         },
 
+        /* .GlobalSubDescriptorValues = */ {
+#define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) { /* .Name = */ GET_GLOBAL_NAME(name), /* .PointerDataIndex = */ GET_GLOBAL_POINTER_INDEX(name) },
+#include "wrappeddatadescriptor.inc"
+        },
+
+        /* .GlobalContractValues = */ {
+#define CDAC_GLOBAL_CONTRACT(name,value) { /* .Name = */ GET_GLOBALCONTRACT_NAME(name), /* .Version = */ GET_GLOBALCONTRACT_VALUE(name) },
+#include "wrappeddatadescriptor.inc"
+        },
+
         /* .NamesPool = */ ("\0" // starts with a nul
 #define CDAC_BASELINE(name) name "\0"
 #define CDAC_TYPE_BEGIN(name) #name "\0"
-#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) #membername "\0" #membertyname "\0"
+#define CDAC_TYPE_FIELD(tyname,membertyname,membername,offset) #membername "\0" CDAC_STRINGIFY_TYPE(membertyname) "\0"
 #define CDAC_GLOBAL_STRING(name,value) #name "\0" STRINGIFY(value) "\0"
 #define CDAC_GLOBAL_POINTER(name,value) #name "\0"
-#define CDAC_GLOBAL(name,tyname,value) #name "\0" #tyname "\0"
+#define CDAC_GLOBAL_SUB_DESCRIPTOR(name,value) #name "\0"
+#define CDAC_GLOBAL_CONTRACT(name,value) #name "\0" #value "\0"
+#define CDAC_GLOBAL(name,tyname,value) #name "\0" CDAC_STRINGIFY_TYPE(tyname) "\0"
 #include "wrappeddatadescriptor.inc"
                   ),
 

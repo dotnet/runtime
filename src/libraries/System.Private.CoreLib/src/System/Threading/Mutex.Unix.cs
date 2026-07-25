@@ -22,7 +22,7 @@ namespace System.Threading
             {
                 name = BuildNameForOptions(name, options);
 
-                SafeWaitHandle? safeWaitHandle = WaitSubsystem.CreateNamedMutex(initiallyOwned, name, out createdNew);
+                SafeWaitHandle? safeWaitHandle = WaitSubsystem.CreateNamedMutex(initiallyOwned, name, isUserScope: options.WasSpecified && options.CurrentUserOnly, out createdNew);
                 if (safeWaitHandle == null)
                 {
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
@@ -44,7 +44,7 @@ namespace System.Threading
 
             name = BuildNameForOptions(name, options);
 
-            OpenExistingResult status = WaitSubsystem.OpenNamedMutex(name, out SafeWaitHandle? safeWaitHandle);
+            OpenExistingResult status = WaitSubsystem.OpenNamedMutex(name, isUserScope: options.WasSpecified && options.CurrentUserOnly, out SafeWaitHandle? safeWaitHandle);
             result = status == OpenExistingResult.Success ? new Mutex(safeWaitHandle!) : null;
             return status;
         }
@@ -60,11 +60,6 @@ namespace System.Threading
                 name.Length > NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length)
             {
                 name = name.Substring(NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length);
-            }
-
-            if (options.WasSpecified && options.CurrentUserOnly)
-            {
-                name = @"User\" + name;
             }
 
             return name;

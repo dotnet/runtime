@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdint.h>
+#include <stddef.h>
+#include <minipal/descriptorlimit.h>
 
 #if defined(DEBUG) && defined(_WIN32)
 #include <process.h>
@@ -126,6 +128,7 @@ void* PalGetModuleHandleFromPointer(void* pointer);
 MANAGED_RUNTIME_EXPORT(GetRuntimeException)
 MANAGED_RUNTIME_EXPORT(RuntimeFailFast)
 MANAGED_RUNTIME_EXPORT(AppendExceptionStackFrame)
+MANAGED_RUNTIME_EXPORT(ResolveDispatch)
 MANAGED_RUNTIME_EXPORT(GetSystemArrayEEType)
 MANAGED_RUNTIME_EXPORT(OnFirstChanceException)
 MANAGED_RUNTIME_EXPORT(OnUnhandledException)
@@ -138,12 +141,18 @@ MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetUnhandledExceptionPropagationHandler)
 
 typedef void (MANAGED_RUNTIME_EXPORT_CALLCONV *pfn)();
 
+#if defined(_WIN32)
+extern "C" int ThreadEntryPoint(void* pContext);
+#else
+extern "C" size_t ThreadEntryPoint(void* pContext);
+#endif
+
 static const pfn c_classlibFunctions[] = {
     &MANAGED_RUNTIME_EXPORT_NAME(GetRuntimeException),
     &MANAGED_RUNTIME_EXPORT_NAME(RuntimeFailFast),
-    nullptr, // &UnhandledExceptionHandler,
+    (pfn)&ThreadEntryPoint,
     &MANAGED_RUNTIME_EXPORT_NAME(AppendExceptionStackFrame),
-    nullptr, // &CheckStaticClassConstruction,
+    &MANAGED_RUNTIME_EXPORT_NAME(ResolveDispatch),
     &MANAGED_RUNTIME_EXPORT_NAME(GetSystemArrayEEType),
     &MANAGED_RUNTIME_EXPORT_NAME(OnFirstChanceException),
     &MANAGED_RUNTIME_EXPORT_NAME(OnUnhandledException),
@@ -222,6 +231,8 @@ int main(int argc, char* argv[])
     int initval = InitializeRuntime();
     if (initval != 0)
         return initval;
+
+    minipal_increase_descriptor_limit();
 
 #if defined(DEBUG) && defined(_WIN32)
     // work around Debug UCRT shutdown issues: https://github.com/dotnet/runtime/issues/108640

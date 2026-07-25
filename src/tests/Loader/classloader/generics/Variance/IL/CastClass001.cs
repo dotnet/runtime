@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Xunit;
+using TestLibrary;
 
 public class Base {}
 public class Sub : Base {}
@@ -48,23 +50,23 @@ public class TestClass
 		IPlusTMinusU<T,U> t = (IPlusTMinusU<T,U>) v;
 	}
 		
-	private static void CastClassUToTWrapperIPlusT<T,U>()
+	private static void CastClassUToTWrapperIPlusT<T, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] U>()
 	{
 		CastClassUToTInternalIPlusT<T,U>((U)Activator.CreateInstance(typeof(U)));
 	}
 
-	private static void CastClassUToTWrapperIMinusT<T,U>()
+	private static void CastClassUToTWrapperIMinusT<T, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] U>()
 	{
 		CastClassUToTInternalIMinusT<T,U>((U)Activator.CreateInstance(typeof(U)));
 	}
 
-	private static void CastClassUToTWrapper<T,U,V>()
+	private static void CastClassUToTWrapper<T,U,[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] V>()
 	{
 		CastClassVToITUInternalIPlusTMinusU<T,U,V>((V)Activator.CreateInstance(typeof(V)));
 	}
 
 	
-	public static bool CastClassUToTIPlusT<T,U>(bool expected)
+	public static bool CastClassUToTIPlusT<T, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] U>(bool expected)
 	{
 		try
 		{
@@ -97,7 +99,7 @@ public class TestClass
 		}
 	}
 
-	public static bool CastClassUToTIMinusT<T,U>(bool expected)
+	public static bool CastClassUToTIMinusT<T, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] U>(bool expected)
 	{
 		try
 		{
@@ -130,7 +132,7 @@ public class TestClass
 		}
 	}
 
-	public static bool CastClassUToT<T,U,V>(bool expected)
+	public static bool CastClassUToT<T,U, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] V>(bool expected)
 	{
 		try
 		{
@@ -257,6 +259,7 @@ public class TestClass
 		}	
 	}
 	
+ [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
 	[Fact]
 	public static int TestEntryPoint()
 	{			

@@ -7,8 +7,8 @@ namespace System.Xml
 {
     internal static class DiagnosticsSwitches
     {
-        private static volatile BooleanSwitch? s_keepTempFiles;
-        private static volatile BooleanSwitch? s_nonRecursiveTypeLoading;
+        private static BooleanSwitch? s_keepTempFiles;
+        private static BooleanSwitch? s_nonRecursiveTypeLoading;
 
         public static BooleanSwitch KeepTempFiles =>
             s_keepTempFiles ??= new BooleanSwitch("XmlSerialization.Compilation", "Keep XmlSerialization generated (temp) files.");

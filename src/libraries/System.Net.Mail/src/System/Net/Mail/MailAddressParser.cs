@@ -69,6 +69,20 @@ namespace System.Net.Mail
             Debug.Assert(!string.IsNullOrEmpty(data));
             Debug.Assert(index >= 0 && index < data.Length, $"Index out of range: {index}, {data.Length}");
 
+            // Check for CR or LF characters which are not allowed in mail addresses.
+            // Only scan on the first call (index == data.Length - 1) to avoid repeated O(n) scans
+            // when parsing multiple addresses from the same string.
+            if (index == data.Length - 1 && MailBnfHelper.HasCROrLF(data))
+            {
+                if (throwExceptionIfFail)
+                {
+                    throw new FormatException(SR.MailAddressInvalidFormat);
+                }
+
+                parseAddressInfo = default;
+                return false;
+            }
+
             // Parsed components to be assembled as a MailAddress later
             string? displayName;
 

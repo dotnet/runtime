@@ -5,6 +5,11 @@
     <AutoGenerateSymbolPackages>false</AutoGenerateSymbolPackages>
   </PropertyGroup>
 
+  <!-- remove the manifest packages, they are built in the SDK repo now -->
+  <ItemGroup>
+    <Artifact Remove="$(ArtifactsShippingPackagesDir)*.Manifest-*.nupkg" />
+  </ItemGroup>
+
   <!-- The PGO runtime should always have External visibility, even if someone changes the default artifact visibility -->
   <ItemGroup>
     <Artifact Update="$(ArtifactsNonShippingPackagesDir)dotnet-runtime-pgo-*" Visibility="External" />

@@ -477,6 +477,11 @@
         <target state="translated">이 형식은 네이티브 HRESULT가 아니라 네이티브 서명의 구조체로 처리됩니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="IidParameterIndexUnsupportedConfigurationName">
+        <source>{0} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)</source>
+        <target state="translated">{0}([MarshalAs(UnmanagedType.Interface)] out object 매개 변수에만 지원됨)</target>
+        <note>Configuration name reported via the 'configuration not supported' diagnostic when 'MarshalAs.IidParameterIndex' is used on an unsupported parameter shape. {0} is the dotted attribute member name, e.g. 'MarshalAsAttribute.IidParameterIndex'.</note>
+      </trans-unit>
       <trans-unit id="InAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
         <target state="translated">'[In]' 특성은 배열 매개 변수에서만 지원됩니다. 값별 매개 변수는 기본적으로 읽기 전용으로 간주됩니다.</target>
@@ -507,11 +512,6 @@
         <target state="translated">'[In]' 및 '[Out]' 특성은 배열 매개 변수에서만 지원됩니다. 매개 변수를 변경 가능하게 만들려면 'ref' 키워드를 사용하는 것이 좋습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InOutAttributes">
-        <source>[In] and [Out] attributes</source>
-        <target state="translated">[In] 및 [Out] 속성</target>
-        <note />
-      </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
         <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
         <target state="translated">관리되지 않는 호출에서 관리되는 호출로의 VARIANT에서 'in' 매개 변수로 마샬링된 개체는 VARIANT가 VT_BYREF 변형인 경우에도 업데이트된 결과를 다시 전파하지 않습니다. 'in' 매개 변수 대신 'ref' 매개 변수를 사용하여 업데이트된 값을 호출자에게 다시 전파합니다.</target>
@@ -530,21 +530,6 @@
       <trans-unit id="InstanceEventDeclaredInInterfaceTitle">
         <source>Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
         <target state="translated">'GeneratedComInterfaceAttribute'를 사용하는 형식의 인스턴스 이벤트 선언은 지원되지 않습니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InstancePropertyDeclaredInInterfaceDescription">
-        <source>Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</source>
-        <target state="translated">속성은 COM의 개념이 아니므로 소스 생성 COM 인터페이스의 인스턴스 속성에 대해 interop 코드가 생성되지 않습니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InstancePropertyDeclaredInInterfaceMessage">
-        <source>The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</source>
-        <target state="translated">'GeneratedComInterfaceAttribute'가 적용된 '{1}' 인터페이스에서 '{0}' 인스턴스 속성이 선언되었습니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InstancePropertyDeclaredInInterfaceTitle">
-        <source>Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
-        <target state="translated">'GeneratedComInterfaceAttribute'를 사용하는 형식의 인스턴스 속성 선언은 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
@@ -707,6 +692,21 @@
         <target state="translated">'{0}'에 지정한 'ComInterfaceOptions'가 잘못되었습니다. {1}</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceDescription">
+        <source>Source-generated COM interface properties do not support the 'static', 'extern', 'required', or 'init' modifiers/accessors.</source>
+        <target state="translated">소스 생성 COM 인터페이스 속성은 'static', 'extern', 'required' 또는 'init' 한정자/접근자를 지원하지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceMessage">
+        <source>The property '{0}' on interface '{1}' uses '{2}', which is not supported on a source-generated COM interface property</source>
+        <target state="translated">인터페이스 '{1}'의 속성 '{0}'은(는) 소스 생성 COM 인터페이스 속성에서 지원되지 않는 '{2}'을(를) 사용합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceTitle">
+        <source>Property uses an unsupported modifier or accessor for a source-generated COM interface</source>
+        <target state="translated">속성에서 소스 생성 COM 인터페이스에 지원되지 않는 한정자 또는 접근자를 사용합니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
         <source>Marshaller type has incompatible method signatures</source>
         <target state="translated">마샬러 형식에 호환되지 않는 메서드 시그니처가 있습니다.</target>
@@ -847,9 +847,39 @@
         <target state="translated">메서드 '{1}'의 반환 값에 대해 지정된 'MarshalAsAttribute' 구성은 소스에서 생성된 P/Invokes에서 지원되지 않습니다. 지정된 구성이 필요한 경우 대신 일반 'DllImport'를 사용합니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberDescription">
+        <source>Marshalling attributes such as 'MarshalUsing' and 'MarshalAs' on a default-implemented (body-bearing) member of a source-generated COM interface have no effect. Default implementations are pure managed code that bypasses the COM marshalling pipeline and does not get a generated stub.</source>
+        <target state="translated">소스 생성 COM 인터페이스의 기본 구현(본문 포함) 멤버에서 'MarshalUsing' 및 'MarshalAs' 같은 마샬링 특성은 효과가 없습니다. 기본 구현은 COM 마샬링 파이프라인을 우회하고 생성된 스텁을 가져오지 않는 순수 관리 코드입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberMessage">
+        <source>The marshalling attribute on the default-implemented member '{0}' on interface '{1}' will be ignored because default implementations do not generate COM marshalling code</source>
+        <target state="translated">인터페이스 '{1}'의 기본 구현 멤버 '{0}'에 대한 마샬링 특성은 기본 구현에서 COM 마샬링 코드를 생성하지 않으므로 무시됩니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberTitle">
+        <source>Marshalling attribute on a default-implemented member of a source-generated COM interface has no effect</source>
+        <target state="translated">소스 생성 COM 인터페이스의 기본 구현 멤버에 대한 마샬링 특성은 영향을 주지 않습니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MarshalModeMustBeValidEnumValue">
         <source>The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of 'MarshalMode'.</source>
         <target state="translated">'CustomMarshallerAttribute'의 'marshalMode' 인수는 'MarshalMode'의 유효한 열거형 값이어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeDescription">
+        <source>When 'MarshalUsing' is applied to a source-generated COM interface property accessor (via '[return: MarshalUsing(...)]' on a getter or '[param: MarshalUsing(...)]' on a setter), it must supply a marshaller type via the constructor argument. Count-only or depth-only forms ('MarshalUsing(ConstantElementCount = ...)', 'MarshalUsing(CountElementName = ...)', or 'MarshalUsing(ElementIndirectionDepth = ...)' on an accessor) would silently override or partially conflict with a property-level 'MarshalUsing'. Combine the marshaller type and count information on a single 'MarshalUsing' attribute on the accessor. 'ConstantElementCount' and 'ElementIndirectionDepth' may also be supplied via a property-level 'MarshalUsing'; 'CountElementName' is not supported on property or indexer accessors because peer-parameter lookups are not available in that context.</source>
+        <target state="translated">'MarshalUsing'을 소스 생성 COM 인터페이스 속성 접근자에 적용하는 경우(getter의 '[return: MarshalUsing(...)]' 또는 setter의 '[param: MarshalUsing(...)]'을 통해) 생성자 인수를 통해 마샬러 형식을 제공해야 합니다. 접근자에서 개수만 지정하는 형식이나 깊이만 지정하는 형식('MarshalUsing(ConstantElementCount = ...)', 'MarshalUsing(CountElementName = ...)' 또는 'MarshalUsing(ElementIndirectionDepth = ...)')는 속성 수준 'MarshalUsing'을 자동으로 재정의거나 부분적으로 충돌합니다. 접근자에서 단일 'MarshalUsing' 특성에 마샬러 형식과 개수 정보를 결합합니다. 'ConstantElementCount' 및 'ElementIndirectionDepth'는 속성 수준 'MarshalUsing'을 통해서도 지정할 수 있습니다. 'CountElementName'은 해당 컨텍스트에서 피어 매개 변수 조회를 사용할 수 없으므로 속성 또는 인덱서 접근자에서는 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeMessage">
+        <source>The 'MarshalUsing' attribute on an accessor of property '{0}' on interface '{1}' must specify a marshaller type. Combine the marshaller type and count on a single 'MarshalUsing' on the accessor, or specify 'ConstantElementCount' or 'ElementIndirectionDepth' on the property declaration.</source>
+        <target state="translated">인터페이스 '{1}'의 속성 '{0}'에 있는 접근자의 'MarshalUsing' 특성에는 마샬러 형식을 지정해야 합니다. 접근자에서 마샬러 형식과 개수를 단일 'MarshalUsing'에 결합하거나, 속성 선언에서 'ConstantElementCount' 또는 'ElementIndirectionDepth'를 지정하세요.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeTitle">
+        <source>'MarshalUsing' applied to a source-generated COM interface property accessor must specify a marshaller type</source>
+        <target state="translated">소스 생성 COM 인터페이스 속성 접근자에 적용된 'MarshalUsing'은 마샬러 형식을 지정해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
@@ -980,6 +1010,21 @@
       <trans-unit id="PreferExplicitInOutAttributesOnArrays">
         <source>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</source>
         <target state="translated">배열 매개 변수에는 명시적인 '[In]' 및 '[Out]' 특성을 사용하는 것이 좋습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyAccessorsMustBeAllOrNothingDescription">
+        <source>On a source-generated COM interface, a property is either fully abstract (no accessor bodies, treated as a COM property occupying vtable slots) or fully default-implemented (every accessor has a body, treated as managed-only code that bypasses COM marshalling). Mixing the two shapes within a single property is not supported.</source>
+        <target state="translated">소스 생성 COM 인터페이스에서 속성은 완전히 추상적이거나, 아니면 완전히 기본 구현되어야 합니다. 완전히 추상적인 속성은 접근자 본문이 없으며 vtable 슬롯을 차지하는 COM 속성으로 처리됩니다. 완전히 기본 구현된 속성은 모든 접근자에 본문이 있고, COM 마샬링을 우회하는 관리 코드로만 처리됩니다. 하나의 속성에서 이 두 형태를 섞을 수는 없습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyAccessorsMustBeAllOrNothingMessage">
+        <source>The property '{0}' on interface '{1}' mixes abstract and default-implemented accessors. Either all accessors must have bodies or none must have bodies.</source>
+        <target state="translated">인터페이스 '{1}'의 속성 '{0}'은(는) 추상 접근자와 기본 구현 접근자를 함께 사용합니다. 모든 접근자에 본문이 있거나 모두 본문이 없어야 합니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyAccessorsMustBeAllOrNothingTitle">
+        <source>Property accessors on a source-generated COM interface must either all have bodies or none have bodies</source>
+        <target state="translated">소스 생성 COM 인터페이스의 속성 접근자는 모두 본문이 있거나 모두 본문이 없어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">

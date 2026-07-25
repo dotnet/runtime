@@ -2,7 +2,8 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="PBES2Params"
-  namespace="System.Security.Cryptography.Asn1">
+  namespace="System.Security.Cryptography.Asn1"
+  emitType="ref">
 
   <!--
     https://tools.ietf.org/html/rfc2898#appendix-A.4
@@ -12,6 +13,10 @@
         encryptionScheme AlgorithmIdentifier {{PBES2-Encs}}
     }
   -->
-  <asn:AsnType name="KeyDerivationFunc" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
-  <asn:AsnType name="EncryptionScheme" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+  <asn:AsnType
+    name="KeyDerivationFunc"
+    valueTypeName="System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn" />
+  <asn:AsnType
+    name="EncryptionScheme"
+    valueTypeName="System.Security.Cryptography.Asn1.ValueAlgorithmIdentifierAsn" />
 </asn:Sequence>

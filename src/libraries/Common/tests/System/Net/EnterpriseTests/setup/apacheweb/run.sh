@@ -19,4 +19,17 @@ fi
 
 ./setup-digest.sh
 
+# Start ProFTPD in the background for FTP/SSL testing
+echo "Starting ProFTPD..."
+/usr/sbin/proftpd
+sleep 1
+
+# Check if ProFTPD is running
+if ! pgrep -x proftpd > /dev/null; then
+    echo "ProFTPD failed to start, checking logs..."
+    cat /var/log/proftpd/proftpd.log 2>/dev/null || echo "No ProFTPD log found"
+    echo "ProFTPD not running"
+    exit 1
+fi
+
 exec /usr/sbin/apache2 -DFOREGROUND "$@"

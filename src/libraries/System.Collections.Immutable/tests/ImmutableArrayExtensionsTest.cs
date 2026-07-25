@@ -20,6 +20,14 @@ namespace System.Collections.Immutable.Tests
         private static readonly ImmutableArray<int>.Builder s_oneElementBuilder = ImmutableArray.Create<int>(1).ToBuilder();
         private static readonly ImmutableArray<int>.Builder s_manyElementsBuilder = ImmutableArray.Create<int>(1, 2, 3).ToBuilder();
 
+        private IEnumerable<T> ToEnumerable<T>(ImmutableArray<T> array)
+        {
+            foreach (T item in array)
+            {
+                yield return item;
+            }
+        }
+
         [Fact]
         public void Select()
         {
@@ -146,6 +154,11 @@ namespace System.Collections.Immutable.Tests
                 Assert.False(ImmutableArrayExtensions.SequenceEqual(s_manyElements, (IEnumerable<int>)s_manyElements.Add(1).ToArray(), comparer));
                 Assert.False(ImmutableArrayExtensions.SequenceEqual(s_manyElements.Add(1), s_manyElements.Add(2).ToArray(), comparer));
                 Assert.False(ImmutableArrayExtensions.SequenceEqual(s_manyElements.Add(1), (IEnumerable<int>)s_manyElements.Add(2).ToArray(), comparer));
+
+                Assert.True(ImmutableArrayExtensions.SequenceEqual(s_manyElements, ToEnumerable(s_manyElements), comparer));
+                Assert.False(ImmutableArrayExtensions.SequenceEqual(s_manyElements, ToEnumerable(s_oneElement), comparer));
+                Assert.False(ImmutableArrayExtensions.SequenceEqual(s_manyElements, ToEnumerable(s_manyElements.Add(1)), comparer));
+                Assert.False(ImmutableArrayExtensions.SequenceEqual(s_manyElements.Add(1), ToEnumerable(s_manyElements.Add(2)), comparer));
             }
 
             Assert.True(ImmutableArrayExtensions.SequenceEqual(s_manyElements, s_manyElements, (a, b) => true));
@@ -164,6 +177,9 @@ namespace System.Collections.Immutable.Tests
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => ImmutableArrayExtensions.SequenceEqual(s_oneElement, s_emptyDefault));
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => ImmutableArrayExtensions.SequenceEqual(s_emptyDefault, s_empty));
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => ImmutableArrayExtensions.SequenceEqual(s_emptyDefault, s_emptyDefault));
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => ImmutableArrayExtensions.SequenceEqual(s_oneElement, ToEnumerable(s_emptyDefault)));
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => ImmutableArrayExtensions.SequenceEqual(s_emptyDefault, ToEnumerable(s_empty)));
+            TestExtensionsMethods.ValidateDefaultThisBehavior(() => ImmutableArrayExtensions.SequenceEqual(s_emptyDefault, ToEnumerable(s_emptyDefault)));
             AssertExtensions.Throws<ArgumentNullException>("predicate", () => ImmutableArrayExtensions.SequenceEqual(s_emptyDefault, s_emptyDefault, (Func<int, int, bool>)null));
         }
 
@@ -173,8 +189,20 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentNullException>("items", () => ImmutableArrayExtensions.SequenceEqual(s_empty, (IEnumerable<int>)null));
             Assert.True(ImmutableArrayExtensions.SequenceEqual(s_empty, s_empty));
             Assert.True(ImmutableArrayExtensions.SequenceEqual(s_empty, s_empty.ToArray()));
+            Assert.True(ImmutableArrayExtensions.SequenceEqual(s_empty, ToEnumerable(s_empty)));
             Assert.True(ImmutableArrayExtensions.SequenceEqual(s_empty, s_empty, (a, b) => true));
             Assert.True(ImmutableArrayExtensions.SequenceEqual(s_empty, s_empty, (a, b) => false));
+        }
+
+        [Fact]
+        public void SequenceEqualSingleElement()
+        {
+            Assert.True(ImmutableArrayExtensions.SequenceEqual(s_oneElement, s_oneElement));
+            Assert.False(ImmutableArrayExtensions.SequenceEqual(s_oneElement, s_empty));
+            Assert.False(ImmutableArrayExtensions.SequenceEqual(s_oneElement, s_manyElements));
+            Assert.True(ImmutableArrayExtensions.SequenceEqual(s_oneElement, ToEnumerable(s_oneElement)));
+            Assert.False(ImmutableArrayExtensions.SequenceEqual(s_oneElement, ToEnumerable(s_empty)));
+            Assert.False(ImmutableArrayExtensions.SequenceEqual(s_oneElement, ToEnumerable(s_manyElements)));
         }
 
         [Fact]

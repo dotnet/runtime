@@ -6,8 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
-#pragma warning disable CS8500
-
 namespace Runtime_80086
 {
     public static unsafe class Test

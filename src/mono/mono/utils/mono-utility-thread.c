@@ -152,7 +152,7 @@ mono_utility_thread_send_sync (MonoUtilityThread *thread, gpointer message)
 	mono_os_sem_init (&sem, 0);
 
 	UtilityThreadQueueEntry *entry = (UtilityThreadQueueEntry*)mono_lock_free_alloc (&thread->message_allocator);
-	gboolean done;
+	gboolean done = FALSE;
 
 	entry->finished = &done;
 	entry->response_sem = &sem;

@@ -105,7 +105,7 @@ namespace System.Reflection.TypeLoading
                 Type typeArgument = typeArguments[i];
                 if (typeArgument == null)
                     throw new ArgumentNullException();
-                if (typeArgument.IsSignatureType())
+                if (typeArgument.IsSignatureType)
                 {
                     foundSigType = true;
                 }
@@ -117,7 +117,7 @@ namespace System.Reflection.TypeLoading
                 }
             }
             if (foundSigType)
-                return this.MakeSignatureGenericType(typeArguments);
+                return Type.MakeGenericSignatureType(this, typeArguments);
 
             // We are intentionally not validating constraints as constraint validation is an execution-time issue that does not block our
             // library and should not block a metadata inspection tool.
@@ -143,6 +143,9 @@ namespace System.Reflection.TypeLoading
             }
         }
 
+        private const TypeAttributes TypeAttributesExtendedLayout = (TypeAttributes)0x00000018; // TypeAttributes.ExtendedLayout
+        private const LayoutKind LayoutKindExtended = (LayoutKind)1;
+
         public sealed override StructLayoutAttribute? StructLayoutAttribute
         {
             get
@@ -158,6 +161,7 @@ namespace System.Reflection.TypeLoading
                     TypeAttributes.ExplicitLayout => LayoutKind.Explicit,
                     TypeAttributes.AutoLayout => LayoutKind.Auto,
                     TypeAttributes.SequentialLayout => LayoutKind.Sequential,
+                    TypeAttributesExtendedLayout => LayoutKindExtended,
                     _ => LayoutKind.Auto,
                 };
                 CharSet charSet = (attributes & TypeAttributes.StringFormatMask) switch

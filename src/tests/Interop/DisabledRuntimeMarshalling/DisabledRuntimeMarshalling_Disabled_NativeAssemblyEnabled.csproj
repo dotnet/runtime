@@ -11,6 +11,9 @@
     <Compile Include="RuntimeMarshallingDisabledAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="Native_Default/DisabledRuntimeMarshallingNative_Default.csproj" />
     <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>

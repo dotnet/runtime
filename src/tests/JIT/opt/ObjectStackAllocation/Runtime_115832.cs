@@ -12,6 +12,7 @@
 // 
 using System;
 using Xunit;
+using TestLibrary;
 
 public class C0
 {
@@ -62,6 +63,7 @@ public struct S5
 
 public class Runtime_115832
 {
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static void Problem()
     {

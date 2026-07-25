@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 /*
  * Issue description:

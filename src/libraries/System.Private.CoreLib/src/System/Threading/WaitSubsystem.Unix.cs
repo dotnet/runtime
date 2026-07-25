@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -43,9 +44,6 @@ namespace System.Threading
     /// ## Design goals
     ///
     /// Behave similarly to wait operations on Windows
-    ///   - The design is similar to the one used by CoreCLR's PAL, but much simpler due to there being no need for supporting
-    ///     process/thread waits, or cross-process multi-waits (which CoreCLR also does not support but there are many design
-    ///     elements specific to it)
     ///   - Waiting
     ///     - A waiter keeps an array of objects on which it is waiting (see <see cref="ThreadWaitInfo._waitedObjects"/>).
     ///     - The waiter registers a <see cref="ThreadWaitInfo.WaitedListNode"/> with each <see cref="WaitableObject"/>
@@ -144,7 +142,10 @@ namespace System.Threading
             }
         }
 
-        private static SafeWaitHandle NewHandle(WaitableObject waitableObject)
+#pragma warning disable CA1859 // Change type of parameter 'waitableObject' from 'System.Threading.IWaitableObject' to 'System.Threading.WaitableObject' for improved performance
+                               // Some platforms have more implementations of IWaitableObject than just WaitableObject.
+        private static SafeWaitHandle NewHandle(IWaitableObject waitableObject)
+#pragma warning restore CA1859 // Change type of parameter 'waitableObject' from 'System.Threading.IWaitableObject' to 'System.Threading.WaitableObject' for improved performance
         {
             var safeWaitHandle = new SafeWaitHandle();
 
@@ -188,12 +189,31 @@ namespace System.Threading
             // by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after all
             // possibilities for exceptions have been exhausted.
             ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
-            bool acquiredLock = waitableObject.Wait(waitInfo, timeoutMilliseconds: 0, interruptible: false, prioritize: false) == 0;
+            bool acquiredLock = waitableObject.Wait(waitInfo, timeoutMilliseconds: 0, interruptible: false) == 0;
             Debug.Assert(acquiredLock);
             return safeWaitHandle;
         }
 
-        public static SafeWaitHandle? CreateNamedMutex(bool initiallyOwned, string name, out bool createdNew)
+#if FEATURE_CROSS_PROCESS_MUTEX
+        public static SafeWaitHandle? CreateNamedMutex(bool initiallyOwned, string name, bool isUserScope, out bool createdNew)
+        {
+            NamedMutex? namedMutex = NamedMutex.CreateNamedMutex(name, isUserScope, initiallyOwned: initiallyOwned, out createdNew);
+            if (namedMutex == null)
+            {
+                return null;
+            }
+            SafeWaitHandle safeWaitHandle = NewHandle(namedMutex);
+            return safeWaitHandle;
+        }
+
+        public static OpenExistingResult OpenNamedMutex(string name, bool isUserScope, out SafeWaitHandle? result)
+        {
+            OpenExistingResult status = NamedMutex.OpenNamedMutex(name, isUserScope, out NamedMutex? mutex);
+            result = status == OpenExistingResult.Success ? NewHandle(mutex!) : null;
+            return status;
+        }
+#else
+        public static SafeWaitHandle? CreateNamedMutex(bool initiallyOwned, string name, bool isUserScope, out bool createdNew)
         {
             // For initially owned, newly created named mutexes, there is a potential race
             // between adding the mutex to the named object table and initially acquiring it.
@@ -202,6 +222,11 @@ namespace System.Threading
             LockHolder lockHolder = new LockHolder(s_lock);
             try
             {
+                if (isUserScope)
+                {
+                    name = $"User\\{name}";
+                }
+
                 WaitableObject? waitableObject = WaitableObject.CreateNamedMutex_Locked(name, out createdNew);
                 if (waitableObject == null)
                 {
@@ -217,7 +242,7 @@ namespace System.Threading
                 // by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after all
                 // possibilities for exceptions have been exhausted.
                 ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
-                int status = waitableObject.Wait_Locked(waitInfo, timeoutMilliseconds: 0, interruptible: false, prioritize: false, ref lockHolder);
+                int status = waitableObject.Wait_Locked(waitInfo, timeoutMilliseconds: 0, interruptible: false, ref lockHolder);
                 Debug.Assert(status == 0);
                 return safeWaitHandle;
             }
@@ -227,12 +252,18 @@ namespace System.Threading
             }
         }
 
-        public static OpenExistingResult OpenNamedMutex(string name, out SafeWaitHandle? result)
+        public static OpenExistingResult OpenNamedMutex(string name, bool isUserScope, out SafeWaitHandle? result)
         {
+            if (isUserScope)
+            {
+                name = $"User\\{name}";
+            }
+
             OpenExistingResult status = WaitableObject.OpenNamedMutex(name, out WaitableObject? mutex);
             result = status == OpenExistingResult.Success ? NewHandle(mutex!) : null;
             return status;
         }
+#endif
 
         public static void DeleteHandle(IntPtr handle)
         {
@@ -241,7 +272,7 @@ namespace System.Threading
 
         public static void SetEvent(IntPtr handle)
         {
-            SetEvent(HandleManager.FromHandle(handle));
+            SetEvent((WaitableObject)HandleManager.FromHandle(handle));
         }
 
         public static void SetEvent(WaitableObject waitableObject)
@@ -261,7 +292,7 @@ namespace System.Threading
 
         public static void ResetEvent(IntPtr handle)
         {
-            ResetEvent(HandleManager.FromHandle(handle));
+            ResetEvent((WaitableObject)HandleManager.FromHandle(handle));
         }
 
         public static void ResetEvent(WaitableObject waitableObject)
@@ -282,7 +313,7 @@ namespace System.Threading
         public static int ReleaseSemaphore(IntPtr handle, int count)
         {
             Debug.Assert(count > 0);
-            return ReleaseSemaphore(HandleManager.FromHandle(handle), count);
+            return ReleaseSemaphore((WaitableObject)HandleManager.FromHandle(handle), count);
         }
 
         public static int ReleaseSemaphore(WaitableObject waitableObject, int count)
@@ -306,14 +337,14 @@ namespace System.Threading
             ReleaseMutex(HandleManager.FromHandle(handle));
         }
 
-        public static void ReleaseMutex(WaitableObject waitableObject)
+        public static void ReleaseMutex(IWaitableObject waitableObject)
         {
             Debug.Assert(waitableObject != null);
 
             LockHolder lockHolder = new LockHolder(s_lock);
             try
             {
-                waitableObject.SignalMutex(ref lockHolder);
+                waitableObject.Signal(1, ref lockHolder);
             }
             finally
             {
@@ -328,15 +359,14 @@ namespace System.Threading
         }
 
         public static int Wait(
-            WaitableObject waitableObject,
+            IWaitableObject waitableObject,
             int timeoutMilliseconds,
-            bool interruptible = true,
-            bool prioritize = false)
+            bool interruptible = true)
         {
             Debug.Assert(waitableObject != null);
             Debug.Assert(timeoutMilliseconds >= -1);
 
-            return waitableObject.Wait(Thread.CurrentThread.WaitInfo, timeoutMilliseconds, interruptible, prioritize);
+            return waitableObject.Wait(Thread.CurrentThread.WaitInfo, timeoutMilliseconds, interruptible);
         }
 
         public static int Wait(
@@ -349,14 +379,30 @@ namespace System.Threading
             Debug.Assert(timeoutMilliseconds >= -1);
 
             ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
+
+#if FEATURE_CROSS_PROCESS_MUTEX
+            if (waitHandles.Length == 1 && HandleManager.FromHandle(waitHandles[0]) is NamedMutex namedMutex)
+            {
+                // Named mutexes don't participate in the wait subsystem fully.
+                return namedMutex.Wait(waitInfo, timeoutMilliseconds, interruptible: true);
+            }
+#endif
+
             WaitableObject?[] waitableObjects = waitInfo.GetWaitedObjectArray(waitHandles.Length);
             bool success = false;
+
             try
             {
                 for (int i = 0; i < waitHandles.Length; ++i)
                 {
                     Debug.Assert(waitHandles[i] != IntPtr.Zero);
-                    WaitableObject waitableObject = HandleManager.FromHandle(waitHandles[i]);
+                    IWaitableObject waitableObjectMaybe = HandleManager.FromHandle(waitHandles[i]);
+
+                    if (waitableObjectMaybe is not WaitableObject waitableObject)
+                    {
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSyncObjectWaitAnyWaitAll);
+                    }
+
                     if (waitForAll)
                     {
                         // Check if this is a duplicate, as wait-for-all does not support duplicates. Including the parent
@@ -392,7 +438,7 @@ namespace System.Threading
                 WaitableObject waitableObject = waitableObjects[0]!;
                 waitableObjects[0] = null;
                 return
-                    waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true, prioritize: false);
+                    waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true);
             }
 
             return
@@ -402,8 +448,7 @@ namespace System.Threading
                     waitForAll,
                     waitInfo,
                     timeoutMilliseconds,
-                    interruptible: true,
-                    prioritize: false);
+                    interruptible: true);
         }
 
         public static int SignalAndWait(
@@ -421,11 +466,10 @@ namespace System.Threading
         }
 
         public static int SignalAndWait(
-            WaitableObject waitableObjectToSignal,
-            WaitableObject waitableObjectToWaitOn,
+            IWaitableObject waitableObjectToSignal,
+            IWaitableObject waitableObjectToWaitOn,
             int timeoutMilliseconds,
-            bool interruptible = true,
-            bool prioritize = false)
+            bool interruptible = true)
         {
             Debug.Assert(waitableObjectToSignal != null);
             Debug.Assert(waitableObjectToWaitOn != null);
@@ -451,7 +495,7 @@ namespace System.Threading
                     s_lock.VerifyIsNotLocked();
                     throw new InvalidOperationException(SR.Threading_WaitHandleTooManyPosts, ex);
                 }
-                return waitableObjectToWaitOn.Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, prioritize, ref lockHolder);
+                return waitableObjectToWaitOn.Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, ref lockHolder);
             }
             finally
             {

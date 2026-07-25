@@ -7,6 +7,9 @@
     <Compile Include="InterfaceInheritanceTest2.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="VarInterfaceLib2.ilproj" />
   </ItemGroup>
 </Project>

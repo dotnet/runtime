@@ -21,12 +21,6 @@
 class CLRToCOMCall
 {
     public:
-        //---------------------------------------------------------
-        // Debugger helper function
-        //---------------------------------------------------------
-        static TADDR GetFrameCallIP(FramedMethodFrame *frame);
-
-        static MethodDesc* GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags);
         static PCODE       GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD);
 
         static CLRToCOMCallInfo *PopulateCLRToCOMCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags);

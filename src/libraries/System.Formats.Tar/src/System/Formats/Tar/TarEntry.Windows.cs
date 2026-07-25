@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.IO;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Formats.Tar
@@ -37,7 +38,25 @@ namespace System.Formats.Tar
             Debug.Assert(EntryType is TarEntryType.HardLink);
             Debug.Assert(!string.IsNullOrEmpty(targetFilePath));
             Debug.Assert(!string.IsNullOrEmpty(hardLinkFilePath));
-            Interop.Kernel32.CreateHardLink(hardLinkFilePath, targetFilePath);
+            File.CreateHardLink(hardLinkFilePath, targetFilePath);
+        }
+
+        // Best-effort attempt to mark the file as sparse on Windows so subsequent unwritten ranges
+        // remain real holes (unallocated extents) rather than being zero-filled on disk. The call
+        // is silently ignored if the underlying file system does not support sparse files
+        // (e.g. FAT/exFAT), in which case the extraction still produces correct content but the
+        // file occupies its full logical size on disk.
+        private static unsafe void TryMarkFileSparse(FileStream fs)
+        {
+            Interop.Kernel32.DeviceIoControl(
+                fs.SafeFileHandle,
+                Interop.Kernel32.FSCTL_SET_SPARSE,
+                null,
+                0,
+                null,
+                0,
+                out _,
+                IntPtr.Zero);
         }
 #pragma warning restore IDE0060
     }

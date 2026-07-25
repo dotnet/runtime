@@ -5,7 +5,7 @@
 It's possible to debug native code and managed code using the `BrowserDebugProxy` project.
 
 Steps:
-- Install [C/C++ DevTools Support (DWARF) extension](https://chrome.google.com/webstore/detail/cc%20%20-devtools-support-dwa/pdcpmagijalfljmkmjngeonclgbbannb) on chrome.
+- Install [C/C++ DevTools Support (DWARF) extension](https://goo.gle/wasm-debugging-extension) on chrome.
 - Enable DWARF support: Open DevTools, click on the settings, click on experiments and enable WebAssembly Debugging: Enable DWARF support.<br>
 ![image](https://user-images.githubusercontent.com/4503299/170745664-fc7d185c-469c-4443-9c57-545bd79588b8.png)
 - Start the WebAssembly App Without Debugging from VS, or `dotnet run` on command line.

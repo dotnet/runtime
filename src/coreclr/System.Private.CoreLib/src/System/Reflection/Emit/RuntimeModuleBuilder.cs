@@ -129,7 +129,7 @@ namespace System.Reflection.Emit
             Debug.Assert(method != null);
 
             RuntimeModuleBuilder thisModule = this;
-            int result = GetMemberRefOfMethodInfo(new QCallModule(ref thisModule), tr, ((IRuntimeMethodInfo)method).Value);
+            int result = GetMemberRefOfMethodInfo(new QCallModule(ref thisModule), tr, IRuntimeMethodInfo.GetValue(method));
             GC.KeepAlive(method);
             return result;
         }
@@ -139,7 +139,7 @@ namespace System.Reflection.Emit
             Debug.Assert(method != null);
 
             RuntimeModuleBuilder thisModule = this;
-            int result = GetMemberRefOfMethodInfo(new QCallModule(ref thisModule), tr, ((IRuntimeMethodInfo)method).Value);
+            int result = GetMemberRefOfMethodInfo(new QCallModule(ref thisModule), tr, IRuntimeMethodInfo.GetValue(method));
             GC.KeepAlive(method);
             return result;
         }
@@ -416,7 +416,7 @@ namespace System.Reflection.Emit
                 {
                     Debug.Assert(masmi != null);
 
-                    methDef = masmi.GetGenericMethodDefinition()!;
+                    methDef = masmi.GetGenericMethodDefinition();
                     methDef = methDef.Module.ResolveMethod(
                         methodBase.MetadataToken,
                         methDef.DeclaringType?.GetGenericArguments(),
@@ -1070,7 +1070,7 @@ namespace System.Reflection.Emit
 
                 if (!isGenericMethodDef)
                 {
-                    methodInfoUnbound = methodInfo.GetGenericMethodDefinition()!;
+                    methodInfoUnbound = methodInfo.GetGenericMethodDefinition();
                 }
 
                 if (!Equals(methodInfoUnbound.Module)

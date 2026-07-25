@@ -25,7 +25,6 @@
 
 #include "mbusafecrt_internal.h"
 
-#define _FUNC_PROLOGUE
 #define _FUNC_NAME wcscat_s
 #define _CHAR char16_t
 #define _DEST _Dst

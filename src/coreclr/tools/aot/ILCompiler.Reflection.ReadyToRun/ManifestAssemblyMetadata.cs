@@ -25,13 +25,26 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         private readonly MetadataReader _metadataReader;
 
-        public ManifestAssemblyMetadata(PEReader peReader, MetadataReader metadataReader)
+        public ManifestAssemblyMetadata(MetadataReader metadataReader)
         {
-            _peReader = peReader;
             _metadataReader = metadataReader;
         }
 
-        public PEReader ImageReader => _peReader;
+        public ManifestAssemblyMetadata(PEReader peReader, MetadataReader metadataReader)
+            : this(metadataReader)
+        {
+            _peReader = peReader;
+        }
+
+        public void GetSectionData(int relativeVirtualAddress, Action<BlobReader> action)
+        {
+            if (_peReader is null)
+            {
+                action(default);
+                return;
+            }
+            action(_peReader.GetSectionData(relativeVirtualAddress).GetReader());
+        }
 
         public MetadataReader MetadataReader => _metadataReader;
 

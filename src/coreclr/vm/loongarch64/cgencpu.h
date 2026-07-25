@@ -38,19 +38,9 @@
     CALLEE_SAVED_REGISTER(F[30]) \
     CALLEE_SAVED_REGISTER(F[31])
 
-EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
-EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
-
-
 class ComCallMethodDesc;
 
 extern PCODE GetPreStubEntryPoint();
-
-#define COMMETHOD_PREPAD                        24   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
-#ifdef FEATURE_COMINTEROP
-#define COMMETHOD_CALL_PRESTUB_SIZE             24
-#define COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET   16   // the offset of the call target address inside the prestub
-#endif // FEATURE_COMINTEROP
 
 #define STACK_ALIGN_SIZE                        16
 
@@ -211,7 +201,7 @@ inline TADDR GetReg(T_CONTEXT * context, int Regnum)
      return (TADDR)(&context->R0 + Regnum);
 }
 
-extern "C" LPVOID __stdcall GetCurrentSP();
+extern "C" void* GetCurrentSP();
 
 inline void SetSP(T_CONTEXT *context, TADDR sp) {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -282,18 +272,13 @@ inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
     return mem;
 }
 
-
-#ifdef FEATURE_COMINTEROP
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target);
-#endif // FEATURE_COMINTEROP
-
 inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
 {
     return FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
 }
 
 //------------------------------------------------------------------------
-inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
+inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     LIMITED_METHOD_CONTRACT;
     UINT32* pCode = (UINT32*)pBufferRW;
@@ -319,9 +304,9 @@ inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 }
 
 //------------------------------------------------------------------------
-//  Given the same pBuffer that was used by emitJump this method
+//  Given the same pBuffer that was used by emitBackToBackJump this method
 //  decodes the instructions and returns the jump target
-inline PCODE decodeJump(PCODE pCode)
+inline PCODE decodeBackToBackJump(PCODE pCode)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -329,21 +314,6 @@ inline PCODE decodeJump(PCODE pCode)
 
     return *dac_cast<PTR_PCODE>(pInstr + 16);
 }
-
-//------------------------------------------------------------------------
-inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
-{
-    WRAPPER_NO_CONTRACT;
-    emitJump(pBufferRX, pBufferRW, target);
-}
-
-//------------------------------------------------------------------------
-inline PCODE decodeBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    return decodeJump(pBuffer);
-}
-
 
 //----------------------------------------------------------------------
 
@@ -411,10 +381,7 @@ public:
     void EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect);
 
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
-
-#if defined(FEATURE_SHARE_GENERIC_CODE)
     void EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
-#endif // FEATURE_SHARE_GENERIC_CODE
 
     void EmitMovConstant(IntReg Rd, UINT64 constant);
     void EmitJumpRegister(IntReg regTarget);
@@ -445,6 +412,11 @@ struct HijackArgs
              DWORD64 A1;
          };
         size_t ReturnValue[2];
+    };
+    union
+    {
+        DWORD64 A2;
+        size_t AsyncRet;
     };
     union
     {

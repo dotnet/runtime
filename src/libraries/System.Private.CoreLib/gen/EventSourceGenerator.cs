@@ -16,7 +16,6 @@ namespace Generators
         // Example input:
         //
         //    [EventSource(Guid = "49592C0F-5A05-516D-AA4B-A64E02026C89", Name = "System.Runtime")]
-        //    [EventSourceAutoGenerate]
         //    internal sealed partial class RuntimeEventSource : EventSource
         //
         // Example generated output:
@@ -27,7 +26,7 @@ namespace Generators
         //     {
         //         partial class RuntimeEventSource
         //         {
-        //             private RuntimeEventSource() : base(new Guid(0x49592c0f,0x5a05,0x516d,0xaa,0x4b,0xa6,0x4e,0x02,0x02,0x6c,0x89), "System.Runtime") { }
+        //             private RuntimeEventSource() : base("System.Runtime", new Guid(0x49592c0f,0x5a05,0x516d,0xaa,0x4b,0xa6,0x4e,0x02,0x02,0x6c,0x89)) { }
         //
         //             private protected override ReadOnlySpan<byte> ProviderMetadata => new byte[] { 0x11, 0x0, 0x53, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x2e, 0x52, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x0, };
         //         }
@@ -35,11 +34,11 @@ namespace Generators
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            const string EventSourceAutoGenerateAttribute = "System.Diagnostics.Tracing.EventSourceAutoGenerateAttribute";
+            const string EventSourceAttribute = "System.Diagnostics.Tracing.EventSourceAttribute";
 
             IncrementalValuesProvider<EventSourceClass> eventSourceClasses =
                 context.SyntaxProvider.ForAttributeWithMetadataName(
-                    EventSourceAutoGenerateAttribute,
+                        EventSourceAttribute,
                     (node, _) => node is ClassDeclarationSyntax,
                     GetSemanticTargetForGeneration)
                 .Where(x => x is not null);
@@ -47,6 +46,12 @@ namespace Generators
             context.RegisterSourceOutput(eventSourceClasses, EmitSourceFile);
         }
 
-        private sealed record EventSourceClass(string Namespace, string ClassName, string SourceName, Guid Guid);
+        private sealed record EventSourceClass(
+            Diagnostic Diagnostic,
+            string Namespace,
+            string ClassName,
+            string SourceName,
+            Guid Guid,
+            bool HasProviderMetadataProperty);
     }
 }

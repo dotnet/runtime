@@ -13,7 +13,9 @@
 #include <glib.h>
 #include <mono/metadata/class-internals.h>
 
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <netdb.h>
@@ -61,6 +63,7 @@ create_socket (const char *hostname, const int port)
 
     if (connect (sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
         g_warning ("cfg_dump: Connect Failed: %s", strerror (errno));
+       	close(sockfd);
         return -2;
     }
 

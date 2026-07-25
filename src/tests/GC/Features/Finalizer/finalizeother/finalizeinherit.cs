@@ -6,6 +6,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 namespace One
 {
@@ -83,6 +84,7 @@ namespace Three {
 
     public class Test
     {
+        [ActiveIssue("PlatformDetection.IsPreciseGcSupported false on mono", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint()
         {

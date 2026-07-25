@@ -23,6 +23,7 @@
 #include <pthread.h>
 #endif
 
+#include <minipal/memorybarrierprocesswide.h>
 #include <minipal/guid.h>
 
 #include "CommonTypes.h"
@@ -237,7 +238,6 @@ HANDLE PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_B
 HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer);
 
 #ifdef TARGET_UNIX
-uint32_t PalGetOsPageSize();
 typedef int32_t (*PHARDWARE_EXCEPTION_HANDLER)(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
 void PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
 #endif
@@ -290,7 +290,6 @@ int32_t _stricmp(const char *string1, const char *string2);
 
 uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4);
 UInt32_BOOL PalCloseHandle(HANDLE arg1);
-void PalFlushProcessWriteBuffers();
 uint32_t PalGetCurrentProcessId();
 
 #ifdef UNICODE
@@ -302,8 +301,6 @@ uint32_t PalGetEnvironmentVariable(_In_opt_ LPCSTR lpName, _Out_writes_to_opt_(n
 UInt32_BOOL PalResetEvent(HANDLE arg1);
 UInt32_BOOL PalSetEvent(HANDLE arg1);
 uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3);
-
-void PalGetSystemTimeAsFileTime(FILETIME * arg1);
 
 void RuntimeThreadShutdown(void* thread);
 

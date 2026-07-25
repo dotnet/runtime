@@ -61,12 +61,12 @@ and the [compatible contracts](./datacontracts_design.md#Compatible_Contract).
 
 The compatible contracts are stored in the top-level key `"contracts"`.  The value will be a
 dictionary that contains each contract name as a key.  Each value is the version of the contract as
-a JSON integer constant.
+a JSON string.
 
 **Contract example**:
 
 ``` jsonc
-{"Thread":1,"GCHandle":1,...}
+{"Thread":"c1","GCHandle":"c1",...}
 ```
 
 **Complete in-memory data descriptor example**:
@@ -86,13 +86,17 @@ a JSON integer constant.
     "s_pThreadStore": [ 0 ], // indirect from pointer data offset 0
     "RuntimeID": "win-x64" // string value
   },
-  "contracts": {"Thread": 1, "GCHandle": 1, "ThreadStore": 1}
+  "sub-descriptors":
+  {
+    "GCDescriptor": [ 1 ]
+  },
+  "contracts": {"Thread": "c1", "GCHandle": "c1", "ThreadStore": "c1"}
 }
 ```
 
 ## Contract symbol
 
-To aid in discovery, the contract descriptor should be exported by the module hosting the .NET
+To aid in discovery, the main contract descriptor should be exported by the module hosting the .NET
 runtime with the name `DotNetRuntimeContractDescriptor` using the C symbol naming conventions of the
 target platform.
 

@@ -126,6 +126,7 @@ namespace Issue_4115
             } 
         }
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

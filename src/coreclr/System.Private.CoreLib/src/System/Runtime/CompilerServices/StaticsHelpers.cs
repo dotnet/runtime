@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Runtime.CompilerServices
@@ -140,7 +141,7 @@ namespace System.Runtime.CompilerServices
         {
             ByteRef result = default;
             GetThreadStaticsByIndex(ByteRefOnStack.Create(ref result), index, false);
-            return ref result.Get();
+            return ref result.Value;
         }
 
         [DebuggerHidden]
@@ -149,7 +150,7 @@ namespace System.Runtime.CompilerServices
         {
             ByteRef result = default;
             GetThreadStaticsByIndex(ByteRefOnStack.Create(ref result), index, true);
-            return ref result.Get();
+            return ref result.Value;
         }
 
         [DebuggerHidden]
@@ -158,7 +159,7 @@ namespace System.Runtime.CompilerServices
         {
             ByteRef result = default;
             GetThreadStaticsByMethodTable(ByteRefOnStack.Create(ref result), mt, false);
-            return ref result.Get();
+            return ref result.Value;
         }
 
         [DebuggerHidden]
@@ -167,7 +168,7 @@ namespace System.Runtime.CompilerServices
         {
             ByteRef result = default;
             GetThreadStaticsByMethodTable(ByteRefOnStack.Create(ref result), mt, true);
-            return ref result.Get();
+            return ref result.Value;
         }
 
         [DebuggerHidden]

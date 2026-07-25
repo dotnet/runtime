@@ -4,6 +4,9 @@
 // Found by Antigen
 // Reduced from 313.92 KB to 1.05 KB.
 
+
+namespace Runtime_115487;
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;

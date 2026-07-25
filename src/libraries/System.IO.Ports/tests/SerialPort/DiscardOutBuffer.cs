@@ -20,7 +20,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(DiscardOutBuffer), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void OutBufferFilled_Discard_Once()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -42,7 +42,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(DiscardOutBuffer), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void OutBufferFilled_Discard_Multiple()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -67,7 +67,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(DiscardOutBuffer), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void OutBufferFilled_Discard_Cycle()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -101,7 +101,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(DiscardOutBuffer), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void InAndOutBufferFilled_Discard()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

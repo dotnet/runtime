@@ -13,6 +13,7 @@ public class DllImportSearchPathsTest
 {
     private static string Subdirectory => Path.Combine(NativeLibraryToLoad.GetDirectory(), "subdirectory");
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82859", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoMiniJIT), nameof(TestLibrary.PlatformDetection.IsArm64Process))]
     [Fact]
     public static void AssemblyDirectory_NotFound()
     {
@@ -29,7 +30,7 @@ public class DllImportSearchPathsTest
         !OperatingSystem.IsBrowser() &&
         !OperatingSystem.IsWasi();
 
-    [ConditionalFact(nameof(CanLoadAssemblyInSubdirectory))]
+    [ConditionalFact(typeof(DllImportSearchPathsTest), nameof(CanLoadAssemblyInSubdirectory))]
     public static void AssemblyDirectory_InMemory_NotFound()
     {
         byte[] bytes = File.ReadAllBytes(Path.Combine(Subdirectory, $"{nameof(DllImportSearchPathsTest)}.dll"));
@@ -41,7 +42,7 @@ public class DllImportSearchPathsTest
         Assert.Equal(typeof(DllNotFoundException), ex.InnerException.GetType());
     }
 
-    [ConditionalFact(nameof(CanLoadAssemblyInSubdirectory))]
+    [ConditionalFact(typeof(DllImportSearchPathsTest), nameof(CanLoadAssemblyInSubdirectory))]
     public static void AssemblyDirectory_Found()
     {
         // Library should be found in the assembly directory
@@ -127,7 +128,7 @@ public class DllImportSearchPathsTest
         }
     }
 
-    [ConditionalFact(nameof(CanLoadAssemblyInSubdirectory))]
+    [ConditionalFact(typeof(DllImportSearchPathsTest), nameof(CanLoadAssemblyInSubdirectory))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void AssemblyDirectory_SearchFlags_WithDependency_Found()
     {
@@ -139,6 +140,31 @@ public class DllImportSearchPathsTest
         int sum = (int)method.Invoke(null, new object[] { 1, 2 });
         Assert.Equal(3, sum);
         Console.WriteLine("NativeLibraryWithDependency.Sum returned {0}", sum);
+    }
+
+    [Fact]
+    public static void DllImportResolver_SearchPathMatchesAttributes()
+    {
+        DllImportSearchPath? observedSearchPath = null;
+        NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), (libraryName, assembly, searchPath) =>
+        {
+            if (libraryName == SearchPathPInvoke.LibraryName)
+                observedSearchPath = searchPath;
+
+            return IntPtr.Zero;
+        });
+
+        Assert.Throws<DllNotFoundException>(() => SearchPathPInvoke.AssemblyDirectory());
+        Assert.Equal(DllImportSearchPath.AssemblyDirectory, observedSearchPath);
+
+        Assert.Throws<DllNotFoundException>(() => SearchPathPInvoke.System32());
+        Assert.Equal(DllImportSearchPath.System32, observedSearchPath);
+
+        Assert.Throws<DllNotFoundException>(() => SearchPathPInvoke.LegacyBehavior());
+        Assert.Equal(DllImportSearchPath.LegacyBehavior, observedSearchPath);
+
+        Assert.Throws<DllNotFoundException>(() => SearchPathPInvoke.NoFlags());
+        Assert.Null(observedSearchPath);
     }
 }
 
@@ -218,4 +244,25 @@ public class NativeLibraryWithDependency
     [DllImport(nameof(NativeLibraryWithDependency))]
     [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32)]
     static extern int CallDependencySum(int a, int b);
+}
+
+public class SearchPathPInvoke
+{
+    // Routed through the registered DllImportResolver, then fails the built-in search.
+    internal const string LibraryName = "DoesNotExist";
+
+    [DllImport(LibraryName)]
+    public static extern void NoFlags();
+
+    [DllImport(LibraryName)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
+    public static extern void AssemblyDirectory();
+
+    [DllImport(LibraryName)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    public static extern void System32();
+
+    [DllImport(LibraryName)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.LegacyBehavior)]
+    public static extern void LegacyBehavior();
 }

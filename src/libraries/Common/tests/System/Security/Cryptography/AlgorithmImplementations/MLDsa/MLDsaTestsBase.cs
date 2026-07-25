@@ -89,8 +89,7 @@ namespace System.Security.Cryptography.Tests
             SignAndVerifyExternalMu(mldsa, data, context);
         }
 
-        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116461", TestPlatforms.Windows)]
+        [Theory]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageNoContext(MLDsaAlgorithm algorithm)
         {
@@ -99,8 +98,7 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerify(mldsa, [], signature, []);
         }
 
-        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/116461", TestPlatforms.Windows)]
+        [Theory]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageWithContext(MLDsaAlgorithm algorithm)
         {
@@ -110,9 +108,7 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerify(mldsa, [], signature, context);
         }
 
-        [ConditionalTheory(
-            typeof(MLDsaTestHelpers),
-            [nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported), nameof(MLDsaTestHelpers.ExternalMuIsSupported)])]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.ExternalMuIsSupported))]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageExternalMuNoContext(MLDsaAlgorithm algorithm)
         {
@@ -120,9 +116,7 @@ namespace System.Security.Cryptography.Tests
             SignAndVerifyExternalMu(mldsa, [], []);
         }
 
-        [ConditionalTheory(
-            typeof(MLDsaTestHelpers),
-            [nameof(MLDsaTestHelpers.SigningEmptyDataIsSupported), nameof(MLDsaTestHelpers.ExternalMuIsSupported)])]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.ExternalMuIsSupported))]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyEmptyMessageExternalMuWithContext(MLDsaAlgorithm algorithm)
         {

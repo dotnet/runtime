@@ -66,6 +66,7 @@ typedef enum
     AddressFamily_AF_UNIX = 1,     // System.Net.AddressFamily.Unix
     AddressFamily_AF_INET = 2,     // System.Net.AddressFamily.InterNetwork
     AddressFamily_AF_INET6 = 23,   // System.Net.AddressFamily.InterNetworkV6
+    AddressFamily_AF_LINK = 13,       // System.Net.AddressFamily.DataLink
     AddressFamily_AF_PACKET = 65536,  // System.Net.AddressFamily.Packet
     AddressFamily_AF_CAN = 65537,     // System.Net.AddressFamily.ControllerAreaNetwork
 } AddressFamily;
@@ -404,7 +405,9 @@ PALEXPORT int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* avai
 
 PALEXPORT int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available);
 
-PALEXPORT int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry);
+PALEXPORT int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry, int32_t* socketType);
+
+PALEXPORT int32_t SystemNative_WasiSubscribeSocketPollable(int32_t kind, int32_t handle);
 
 PALEXPORT int32_t SystemNative_CreateSocketEventPort(intptr_t* port);
 

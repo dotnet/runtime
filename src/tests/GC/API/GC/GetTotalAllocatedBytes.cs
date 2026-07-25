@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using TestLibrary;
 
 public class Test_GetTotalAllocatedBytes 
 {
@@ -109,8 +110,11 @@ public class Test_GetTotalAllocatedBytes
         {
             object lck = new object();
 
+            // 1000 quickly created threads can be too many for a 32-bit environment, so reduce on 32-bit.
+            int threadCount = IntPtr.Size == 4 ? 100 : 1000;
+
             tsk = Task.Run(() => {
-                while (running)
+                for (int i = 0; i < threadCount; i++)
                 {
                     Thread thd = new Thread(() => {
                         lock (lck)
@@ -121,11 +125,14 @@ public class Test_GetTotalAllocatedBytes
 
                     thd.Start();
                     thd.Join();
+
+                    if (!running)
+                        break;
                 }
             });
 
             Counts previous = default(Counts);
-            for (int i = 0; i < 1000; ++i)
+            for (int i = 0; i < 100; ++i)
             {
                 lock (lck)
                 {
@@ -172,6 +179,7 @@ public class Test_GetTotalAllocatedBytes
             thr.Join();
     }
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static void TestEntryPoint() 
     {

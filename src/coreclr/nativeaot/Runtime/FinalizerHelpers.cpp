@@ -262,3 +262,9 @@ FCIMPL0(OBJECTREF, RhpGetNextFinalizableObject)
     }
 }
 FCIMPLEND
+
+FCIMPL0(FC_BOOL_RET, RhpCurrentThreadIsFinalizerThread)
+{
+    FC_RETURN_BOOL(ThreadStore::GetCurrentThread() == g_pFinalizerThread);
+}
+FCIMPLEND

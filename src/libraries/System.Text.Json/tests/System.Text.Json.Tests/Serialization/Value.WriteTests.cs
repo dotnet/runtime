@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Text.Encodings.Web;
+using Microsoft.DotNet.XUnitExtensions;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -20,6 +21,41 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonConvert.SerializeObject(inputString), actual);
             Assert.Equal(expected, actual);
             Assert.NotEqual(expected, JsonSerializer.Serialize(inputString));
+        }
+
+        // NOTE: WriteExtremelyLargeStrings test is constrained to run on Windows and MacOSX because it causes
+        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
+        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
+        //       time the memory is accessed which triggers the full memory allocation.
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [OuterLoop]
+        [InlineData(120_000_000)]
+        public static void WriteExtremelyLargeStrings(int strLength)
+        {
+            const char InputCharacter = '\u007F';
+            const string EscapedCharacter = "\\u007F";
+
+            try
+            {
+                string value = new string(InputCharacter, strLength);
+                string json = JsonSerializer.Serialize(value, JsonSerializerOptions.Default);
+
+                int expectedJsonLength = 2 + (strLength * EscapedCharacter.Length);
+                int middleSegmentStart = 1 + ((strLength / 2) * EscapedCharacter.Length);
+                int lastSegmentStart = 1 + ((strLength - 1) * EscapedCharacter.Length);
+
+                Assert.Equal(expectedJsonLength, json.Length);
+                Assert.Equal('"', json[0]);
+                Assert.Equal(EscapedCharacter, json.AsSpan(1, EscapedCharacter.Length).ToString());
+                Assert.Equal(EscapedCharacter, json.AsSpan(middleSegmentStart, EscapedCharacter.Length).ToString());
+                Assert.Equal(EscapedCharacter, json.AsSpan(lastSegmentStart, EscapedCharacter.Length).ToString());
+                Assert.Equal('"', json[^1]);
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException($"Insufficient memory to run {nameof(WriteExtremelyLargeStrings)} with length {strLength}.");
+            }
         }
 
         [Fact]
@@ -64,22 +100,30 @@ namespace System.Text.Json.Serialization.Tests
 
             {
                 string json = JsonSerializer.Serialize("Hello");
-                Assert.Equal(@"""Hello""", json);
+                Assert.Equal("""
+                    "Hello"
+                    """, json);
             }
 
             {
                 Span<byte> json = JsonSerializer.SerializeToUtf8Bytes("Hello");
-                Assert.Equal(Encoding.UTF8.GetBytes(@"""Hello"""), json.ToArray());
+                Assert.Equal(Encoding.UTF8.GetBytes("""
+                    "Hello"
+                    """), json.ToArray());
             }
 
             {
                 Uri uri = new Uri("https://domain/path");
-                Assert.Equal(@"""https://domain/path""", JsonSerializer.Serialize(uri));
+                Assert.Equal("""
+                    "https://domain/path"
+                    """, JsonSerializer.Serialize(uri));
             }
 
             {
                 Uri.TryCreate("~/path", UriKind.RelativeOrAbsolute, out Uri uri);
-                Assert.Equal(@"""~/path""", JsonSerializer.Serialize(uri));
+                Assert.Equal("""
+                    "~/path"
+                    """, JsonSerializer.Serialize(uri));
             }
 
             // The next two scenarios validate that we're NOT using Uri.ToString() for serializing Uri. The serializer
@@ -88,44 +132,60 @@ namespace System.Text.Json.Serialization.Tests
             {
                 // ToString would collapse the relative segment
                 Uri uri = new Uri("http://a/b/../c");
-                Assert.Equal(@"""http://a/b/../c""", JsonSerializer.Serialize(uri));
+                Assert.Equal("""
+                    "http://a/b/../c"
+                    """, JsonSerializer.Serialize(uri));
             }
 
             {
                 // "%20" gets turned into a space by Uri.ToString()
                 // https://coding.abel.nu/2014/10/beware-of-uri-tostring/
                 Uri uri = new Uri("http://localhost?p1=Value&p2=A%20B%26p3%3DFooled!");
-                Assert.Equal(@"""http://localhost?p1=Value\u0026p2=A%20B%26p3%3DFooled!""", JsonSerializer.Serialize(uri));
+                Assert.Equal("""
+                    "http://localhost?p1=Value\u0026p2=A%20B%26p3%3DFooled!"
+                    """, JsonSerializer.Serialize(uri));
             }
 
             {
                 Version version = new Version(1, 2);
-                Assert.Equal(@"""1.2""", JsonSerializer.Serialize(version));
+                Assert.Equal("""
+                    "1.2"
+                    """, JsonSerializer.Serialize(version));
             }
 
             {
                 Version version = new Version(1, 2, 3);
-                Assert.Equal(@"""1.2.3""", JsonSerializer.Serialize(version));
+                Assert.Equal("""
+                    "1.2.3"
+                    """, JsonSerializer.Serialize(version));
             }
 
             {
                 Version version = new Version(1, 2, 3, 4);
-                Assert.Equal(@"""1.2.3.4""", JsonSerializer.Serialize(version));
+                Assert.Equal("""
+                    "1.2.3.4"
+                    """, JsonSerializer.Serialize(version));
             }
 
             {
                 Version version = new Version(int.MaxValue, int.MaxValue);
-                Assert.Equal(@"""2147483647.2147483647""", JsonSerializer.Serialize(version));
+                Assert.Equal("""
+                    "2147483647.2147483647"
+                    """, JsonSerializer.Serialize(version));
             }
 
             {
                 Version version = new Version(int.MaxValue, int.MaxValue, int.MaxValue);
-                Assert.Equal(@"""2147483647.2147483647.2147483647""", JsonSerializer.Serialize(version));
+                Assert.Equal("""
+                    "2147483647.2147483647.2147483647"
+                    """, JsonSerializer.Serialize(version));
             }
 
             {
                 Version version = new Version(int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue);
-                Assert.Equal(@"""2147483647.2147483647.2147483647.2147483647""", JsonSerializer.Serialize(version));
+                Assert.Equal("""
+                    "2147483647.2147483647.2147483647.2147483647"
+                    """, JsonSerializer.Serialize(version));
             }
         }
 

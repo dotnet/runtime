@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
 {
     internal partial struct PfxAsn
     {
-        internal bool VerifyMac(
+        internal unsafe bool VerifyMac(
             ReadOnlySpan<char> macPassword,
             ReadOnlySpan<byte> authSafeContents)
         {

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -100,6 +100,9 @@
   <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
     <value>Access to the path '{0}' is denied.</value>
   </data>
+  <data name="IO_DirectoryNotAllowed" xml:space="preserve">
+    <value>The specified path '{0}' is a directory, which is not allowed in this operation.</value>
+  </data>
   <data name="ZipUnsupportedFile" xml:space="preserve">
     <value>The file type of '{0}' is not supported for zip archiving.</value>
   </data>
@@ -108,5 +111,8 @@
   </data>
   <data name="UnwritableStream" xml:space="preserve">
     <value>The stream is unwritable.</value>
+  </data>
+  <data name="EmptyPassword" xml:space="preserve">
+    <value>The password cannot be empty.</value>
   </data>
 </root>

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -8,12 +9,12 @@ namespace System.IO
 {
     public partial class FileLoadException
     {
-        // Do not delete: this is invoked from native code.
-        private FileLoadException(string? fileName, int hResult)
+        private FileLoadException(string? fileName, string? requestingAssemblyChain, int hResult)
             : base(null)
         {
             HResult = hResult;
             FileName = fileName;
+            _requestingAssemblyChain = requestingAssemblyChain;
             _message = FormatFileLoadExceptionMessage(FileName, HResult);
         }
 
@@ -36,5 +37,37 @@ namespace System.IO
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "FileLoadException_GetMessageForHR")]
         private static partial void GetMessageForHR(int hresult, StringHandleOnStack retString);
+
+        // See clrex.cpp for native version.
+        internal enum FileLoadExceptionKind
+        {
+            FileLoad,
+            BadImageFormat,
+            FileNotFound,
+            OutOfMemory
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void Create(FileLoadExceptionKind kind, char* pFileName, char* pRequestingAssemblyChain, int hresult, char* pDiagnosticInfo, object* pThrowable, Exception* pException)
+        {
+            try
+            {
+                string? fileName = pFileName is not null ? new string(pFileName) : null;
+                string? requestingAssemblyChain = pRequestingAssemblyChain is not null ? new string(pRequestingAssemblyChain) : null;
+                string? diagnosticInfo = pDiagnosticInfo is not null ? new string(pDiagnosticInfo) : null;
+                Debug.Assert(Enum.IsDefined(kind));
+                *pThrowable = kind switch
+                {
+                    FileLoadExceptionKind.BadImageFormat => new BadImageFormatException(fileName, requestingAssemblyChain, hresult),
+                    FileLoadExceptionKind.FileNotFound => new FileNotFoundException(fileName, requestingAssemblyChain, hresult, diagnosticInfo),
+                    FileLoadExceptionKind.OutOfMemory => new OutOfMemoryException(),
+                    _ /* FileLoadExceptionKind.FileLoad */ => new FileLoadException(fileName, requestingAssemblyChain, hresult),
+                };
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
 }

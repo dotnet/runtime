@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -119,7 +122,7 @@ namespace Internal.IL.Stubs
             return base.ComputeHashCode() ^ _targetSignature.GetHashCode();
         }
 
-        public override string Name => "DynamicInvoke";
+        public override Utf8Span Name => "DynamicInvoke"u8;
 
         public override string DiagnosticName => "DynamicInvoke";
 
@@ -142,7 +145,7 @@ namespace Internal.IL.Stubs
             if (_targetSignature.Length != 0)
             {
                 var fieldByReferenceValueToken = emitter.NewToken(
-                    Context.SystemModule.GetKnownType("System", "ByReference").GetKnownField("Value"));
+                    Context.SystemModule.GetKnownType("System"u8, "ByReference"u8).GetKnownField("Value"u8));
                 for (int i = 0; i < _targetSignature.Length; i++)
                 {
                     codeStream.EmitLdArg(3);

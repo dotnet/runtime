@@ -8,6 +8,9 @@
 // Debug: Outputs 1
 // Release: Outputs 0
 
+
+namespace Runtime_105683;
+
 using System;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
@@ -25,11 +28,9 @@ public class Runtime_105683
 {
     public static S0 s_1;
 
-    [Fact]
-    public static void TestEntyPoint()
+    [ConditionalFact(typeof(Bmi2.X64), nameof(Bmi2.X64.IsSupported))]
+    public static void TestEntryPoint()
     {
-        if (!Bmi2.X64.IsSupported)
-            return;
         var vr1 = M1();
         ulong vr2 = Bmi2.X64.ZeroHighBits(vr1, s_1.F1);
         if (vr2 == 0)

@@ -10,7 +10,7 @@ namespace System.Net.Sockets.Tests
     public sealed class SendReceiveUdpClient : MemberDatas
     {
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(LoopbacksAndUseMemory))]
         public async Task SendToRecvFromAsync_Datagram_UDP_UdpClient(IPAddress loopbackAddress, bool useMemoryOverload)
         {

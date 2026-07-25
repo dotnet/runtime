@@ -70,7 +70,7 @@ void NativeWalker::Decode()
 
     LOG((LF_CORDB, LL_INFO100000, "RiscV64Walker::Decode instruction at %p, opcode: %x\n", m_ip, opcode));
 
-    // TODO after "C" Standard Extension support implemented, add C.J, C.JAL, C.JR, C.JALR, C.BEQZ, C.BNEZ
+    // TODO-RISCV64-RVC: after "C" Standard Extension support implemented, add C.J, C.JAL, C.JR, C.JALR, C.BEQZ, C.BNEZ
 
     if ((opcode & 0x7f) == 0x6f) // JAL
     {

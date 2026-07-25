@@ -12,6 +12,7 @@ public class InterlockedCompareExchange1
     private const int c_MIN_STRING_LEN = 64;
     private const int c_MAX_STRING_LEN = 1024;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -76,29 +76,36 @@ namespace System.Tests
         [Fact]
         public static void PartialRoundtripWithPadding1()
         {
+            // "ab==" has non-zero unused bits and should be rejected per RFC 4648
+            // The valid encoding for the same byte should be "aQ=="
             string input = "ab==";
-            Verify(input, result =>
+            VerifyInvalidInput(input);
+
+            // Test the valid encoding instead
+            string validInput = "aQ==";
+            Verify(validInput, result =>
             {
                 Assert.Equal(1, result.Length);
-
                 string roundtrippedString = Convert.ToBase64String(result);
-                Assert.NotEqual(input, roundtrippedString);
-                Assert.Equal(input[0], roundtrippedString[0]);
+                Assert.Equal(validInput, roundtrippedString);
             });
         }
 
         [Fact]
         public static void PartialRoundtripWithPadding2()
         {
+            // "789=" has non-zero unused bits and should be rejected per RFC 4648
+            // The valid encoding for the same 2 bytes should be "788="
             string input = "789=";
-            Verify(input, result =>
+            VerifyInvalidInput(input);
+
+            // Test the valid encoding instead
+            string validInput = "788=";
+            Verify(validInput, result =>
             {
                 Assert.Equal(2, result.Length);
-
                 string roundtrippedString = Convert.ToBase64String(result);
-                Assert.NotEqual(input, roundtrippedString);
-                Assert.Equal(input[0], roundtrippedString[0]);
-                Assert.Equal(input[1], roundtrippedString[1]);
+                Assert.Equal(validInput, roundtrippedString);
             });
         }
 
@@ -265,6 +272,72 @@ namespace System.Tests
                 action(Convert.FromBase64CharArray(input.ToCharArray(), 0, input.Length));
                 action(Convert.FromBase64String(input));
             }
+        }
+
+        [Fact]
+        public static void RejectsInvalidUnusedBits_OnePadding()
+        {
+            // When there's one padding character (2 bytes output), the last 2 bits must be 0
+            // "QUI=" is valid (encodes "AB"), but variations with non-zero unused bits should fail
+            string validInput = "QUI=";
+            byte[] result = Convert.FromBase64String(validInput);
+            Assert.Equal(2, result.Length);
+            Assert.Equal(65, result[0]); // 'A'
+            Assert.Equal(66, result[1]); // 'B'
+
+            // These have non-zero unused bits and should be rejected
+            VerifyInvalidInput("QUJ="); // last 2 bits != 0
+            VerifyInvalidInput("QUK="); // last 2 bits != 0
+            VerifyInvalidInput("QUL="); // last 2 bits != 0
+        }
+
+        [Fact]
+        public static void RejectsInvalidUnusedBits_TwoPadding()
+        {
+            // When there are two padding characters (1 byte output), the last 4 bits must be 0
+            // "QQ==" is valid (encodes "A"), but variations with non-zero unused bits should fail
+            string validInput = "QQ==";
+            byte[] result = Convert.FromBase64String(validInput);
+            Assert.Equal(1, result.Length);
+            Assert.Equal(65, result[0]); // 'A'
+
+            // These have non-zero unused bits and should be rejected
+            VerifyInvalidInput("QR=="); // last 4 bits != 0
+            VerifyInvalidInput("QS=="); // last 4 bits != 0
+            VerifyInvalidInput("QT=="); // last 4 bits != 0
+            VerifyInvalidInput("QU=="); // last 4 bits != 0
+            VerifyInvalidInput("QV=="); // last 4 bits != 0
+            VerifyInvalidInput("QW=="); // last 4 bits != 0
+            VerifyInvalidInput("QX=="); // last 4 bits != 0
+            VerifyInvalidInput("QY=="); // last 4 bits != 0
+            VerifyInvalidInput("QZ=="); // last 4 bits != 0
+            VerifyInvalidInput("Qa=="); // last 4 bits != 0
+            VerifyInvalidInput("Qb=="); // last 4 bits != 0
+            VerifyInvalidInput("Qc=="); // last 4 bits != 0
+            VerifyInvalidInput("Qd=="); // last 4 bits != 0
+            VerifyInvalidInput("Qe=="); // last 4 bits != 0
+            VerifyInvalidInput("Qf=="); // last 4 bits != 0
+        }
+
+        [Fact]
+        public static void AcceptsValidUnusedBits()
+        {
+            // Valid cases with zero unused bits should continue to work
+            
+            // No padding - all bits used
+            string noPadding = "QUJD"; // "ABC"
+            byte[] result1 = Convert.FromBase64String(noPadding);
+            Assert.Equal(3, result1.Length);
+            
+            // One padding - last 2 bits are 0
+            string onePadding = "QUI="; // "AB"
+            byte[] result2 = Convert.FromBase64String(onePadding);
+            Assert.Equal(2, result2.Length);
+            
+            // Two padding - last 4 bits are 0
+            string twoPadding = "QQ=="; // "A"
+            byte[] result3 = Convert.FromBase64String(twoPadding);
+            Assert.Equal(1, result3.Length);
         }
     }
 }

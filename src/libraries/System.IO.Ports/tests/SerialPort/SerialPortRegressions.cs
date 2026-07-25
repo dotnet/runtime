@@ -10,7 +10,7 @@ namespace System.IO.Ports.Tests
 {
     public class SerialPortRegressions : PortsTest
     {
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(SerialPortRegressions), nameof(HasLoopbackOrNullModem))]
         public void UTF8Encoding()
         {
             VerifyReadExisting(new UTF8Encoding());

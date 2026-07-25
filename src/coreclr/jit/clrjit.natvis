@@ -271,4 +271,14 @@ Documentation for VS debugger format specifiers: https://learn.microsoft.com/vis
     </Expand>
   </Type>
 
+  <!-- RangeCheck -->
+
+  <Type Name="Limit">
+    <DisplayString Condition="type == Limit::LimitType::keConstant">const: {cns}</DisplayString>
+  </Type>
+
+  <Type Name="Range">
+    <DisplayString Condition="lLimit.type == Limit::LimitType::keConstant &amp;&amp; uLimit.type == Limit::LimitType::keConstant">const range: [{lLimit.cns}..{uLimit.cns}]</DisplayString>
+  </Type>
+
 </AutoVisualizer>

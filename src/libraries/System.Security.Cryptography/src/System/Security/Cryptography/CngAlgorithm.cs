@@ -205,7 +205,6 @@ namespace System.Security.Cryptography
         ///   A new <see cref="CngAlgorithm"/> object that specifies the Module-Lattice-Based Digital Signature
         ///   Algorithm (ML-DSA).
         /// </value>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngAlgorithm MLDsa => field ??= new CngAlgorithm("ML-DSA"); // BCRYPT_MLDSA_ALGORITHM
 
         /// <summary>
@@ -228,6 +227,17 @@ namespace System.Security.Cryptography
         /// </value>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngAlgorithm SlhDsa => field ??= new CngAlgorithm("SLH-DSA"); // BCRYPT_SLHDSA_ALGORITHM
+
+        /// <summary>
+        ///   Gets a new <see cref="CngAlgorithm"/> object that specifies the Composite Module-Lattice-Based
+        ///   Digital Signature Algorithm (Composite ML-DSA).
+        /// </summary>
+        /// <value>
+        ///   A new <see cref="CngAlgorithm"/> object that specifies the Composite Module-Lattice-Based
+        ///   Digital Signature Algorithm (Composite ML-DSA).
+        /// </value>
+        internal static CngAlgorithm CompositeMLDsa =>
+            field ??= new CngAlgorithm("Composite-ML-DSA"); // BCRYPT_COMPOSITE_MLDSA_ALGORITHM
 
         private static CngAlgorithm? s_ecdh;
         private static CngAlgorithm? s_ecdhp256;

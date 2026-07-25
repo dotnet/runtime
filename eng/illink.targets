@@ -255,7 +255,7 @@
       </_DependencyDirectoriesNoSlash>
       <_DependencyDirectories Remove="@(_DependencyDirectories)" />
       <_DependencyDirectories Include="%(_DependencyDirectoriesNoSlash.PathWithoutSlash)" />
-      <ILLinkTrimInputAssembly Include="$(ILLinkTrimInputPath)$(TargetName)$(TargetExt)">
+      <ILLinkTrimInputAssembly Include="$(TargetName)">
         <RootMode>library</RootMode>
       </ILLinkTrimInputAssembly>
     </ItemGroup>
@@ -264,7 +264,7 @@
       <ILLinkArgs Condition="@(_DependencyDirectories->Count()) > 0">$(ILLinkArgs) -d @(_DependencyDirectories->'"%(Identity)"', ' -d ')</ILLinkArgs>
     </PropertyGroup>
 
-    <ILLink AssemblyPaths=""
+    <ILLink AssemblyPaths="$(ILLinkTrimInputPath)$(TargetName)$(TargetExt)"
             RootAssemblyNames="@(ILLinkTrimInputAssembly)"
             OutputDirectory="$(ILLinkTrimOutputPath)"
             ExtraArgs="$(ILLinkArgs)"

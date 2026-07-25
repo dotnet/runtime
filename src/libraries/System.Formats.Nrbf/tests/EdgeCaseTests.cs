@@ -61,15 +61,20 @@ public class EdgeCaseTests : ReadTests
         }
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+    [ConditionalTheory]
     [InlineData(100)]
     [InlineData(64_001)]
     [InlineData(127_000)]
-#if RELEASE && NET // it takes a lot of time to execute
+#if RELEASE // We need the library to be optimized to be able to handle such a big array in a reasonable time.
     [InlineData(2147483591)] // Array.MaxLength
 #endif
     public void CanReadArrayOfAnySize(int length)
     {
+        if (length == 2147483591 && (!PlatformDetection.Is64BitProcess || !PlatformDetection.IsReleaseRuntime || !PlatformDetection.IsNetCore))
+        {
+            throw new SkipTestException("It would take too much time to execute.");
+        }
+
         try
         {
             byte[] input = new byte[length];

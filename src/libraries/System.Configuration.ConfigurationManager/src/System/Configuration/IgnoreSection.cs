@@ -7,7 +7,7 @@ namespace System.Configuration
 {
     public sealed class IgnoreSection : ConfigurationSection
     {
-        private static volatile ConfigurationPropertyCollection s_properties;
+        private static ConfigurationPropertyCollection s_properties;
         private bool _isModified;
 
         private string _rawXml = string.Empty;

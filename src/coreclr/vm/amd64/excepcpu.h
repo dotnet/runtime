@@ -26,17 +26,6 @@ EXTERN_C void RedirectForThrowControl();
 #define STATUS_CLR_GCCOVER_CODE         STATUS_PRIVILEGED_INSTRUCTION
 
 //
-// No FS:0, nothing to do.
-//
-#define INSTALL_EXCEPTION_HANDLING_RECORD(record)
-#define UNINSTALL_EXCEPTION_HANDLING_RECORD(record)
-
-//
-// On Win64, the COMPlusFrameHandler's work is done by our personality routine.
-//
-#define DECLARE_CPFH_EH_RECORD(pCurThread)
-
-//
 // Retrieves the redirected CONTEXT* from the stack frame of one of the
 // RedirectedHandledJITCaseForXXX_Stub's.
 //

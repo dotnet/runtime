@@ -167,6 +167,51 @@ namespace System.Runtime.Serialization.Schema.Tests
                 (XmlSchemaSet schemaSet, XmlQualifiedName typeName) = PrepareFormatVersioningTest(fvArg.type, fvArg.xpath, fvArg.xmlFrag);
                 yield return new object[] { (XsdDataContractImporter imp) => imp.Import(schemaSet, typeName) };
             }
+
+            // DateTime / DateOnly / TimeOnly primitive schema import verification
+            yield return new object[] { (XsdDataContractImporter imp) => {
+                // Construct a schema set with a complex type containing ms:dateOnly & ms:timeOnly plus an xsd:time element
+                string serNs = "http://schemas.microsoft.com/2003/10/Serialization/";
+                string testNs = "http://schemas.datacontract.org/2004/07/DateOnlyTimeOnlyImport";
+                string schema = $"""
+                    <?xml version='1.0'?>
+                    <xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' targetNamespace='{testNs}' elementFormDefault='qualified'>
+                        <xs:import namespace='{serNs}' />
+                        <xs:complexType name='DateOnlyTimeOnlyContainer'>
+                        <xs:sequence>
+                            <xs:element name='DateOnlyValue' type='ser:dateOnly' xmlns:ser='{serNs}' />
+                            <xs:element name='TimeOnlyValue' type='ser:timeOnly' xmlns:ser='{serNs}' />
+                            <xs:element name='XsdTimeValue' type='xs:time' />
+                            <xs:element name='XsdDateTimeValue' type='xs:dateTime' />
+                        </xs:sequence>
+                        </xs:complexType>
+                    </xs:schema>
+                    """;
+                // Add microsoft serialization schema subset for dateOnly/timeOnly pattern facets
+                var exporter = new XsdDataContractExporter();
+                exporter.Export(typeof(DateOnly));
+                exporter.Export(typeof(TimeOnly));
+                exporter.Export(typeof(DateTime));
+                XmlSchemaSet set = new XmlSchemaSet();
+                set.Add(XmlSchema.Read(new StringReader(schema), null));
+                foreach (XmlSchema s in exporter.Schemas.Schemas())
+                {
+                    set.Add(s); // contains dateOnly/timeOnly definitions
+                }
+                set.Compile();
+                // Import full set (will pick up the complex type)
+                imp.Import(set);
+                string code = SchemaUtils.DumpCode(imp.CodeCompileUnit);
+                // Should contain DateOnly and TimeOnly members in the generated container type
+                Assert.Contains("class DateOnlyTimeOnlyContainer : object", code);
+                Assert.Contains("System.DateOnly DateOnlyValueField;", code);
+                Assert.Contains("System.TimeOnly TimeOnlyValueField;", code);
+                // xs:time and xs:dateTime should continue to map to String and DateTime respectively.
+                // Added support for dateOnly/timeOnly does not change existing mappings, and there isn't any
+                // path in DCS to map xsd:time to TimeOnly.
+                Assert.Contains("string XsdTimeValueField;", code);
+                Assert.Contains("System.DateTime XsdDateTimeValueField;", code);
+            } };
         }
         static (XmlSchemaSet, XmlQualifiedName) PrepareFormatVersioningTest(Type type, string xpath, string xmlFrag)
         {

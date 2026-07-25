@@ -35,7 +35,7 @@ thread_local bool t_triedToCreateThreadStressLog;
    variable-speed CPUs (for power management), this is not accurate, but may
    be good enough.
 */
-__forceinline
+FORCEINLINE
 #ifdef HOST_WINDOWS
 __declspec(naked)
 #else
@@ -191,13 +191,13 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
     WCHAR logFilenameReplaced[MAX_PATH];
     ReplacePid(logFilename, logFilenameReplaced, MAX_PATH);
 
-    HandleHolder hFile = WszCreateFile(logFilenameReplaced,
+    HandleHolder hFile{ WszCreateFile(logFilenameReplaced,
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ,
         NULL,                 // default security descriptor
         CREATE_ALWAYS,
         FILE_ATTRIBUTE_NORMAL,
-        NULL);
+        NULL) };
 
     if (hFile == INVALID_HANDLE_VALUE)
     {
@@ -205,7 +205,7 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
     }
 
     size_t fileSize = maxBytesTotal;
-    HandleHolder hMap = CreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL);
+    HandleHolder hMap{ CreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL) };
     if (hMap == NULL)
     {
         return nullptr;
@@ -251,7 +251,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
 
     theLog.tickFrequency = getTickFrequency();
 
-    GetSystemTimeAsFileTime(&theLog.startTime);
+    theLog.startTime = minipal_get_system_time();
     theLog.startTimeStamp = getTimeStamp();
     theLog.moduleOffset = (SIZE_T)moduleBase;
 

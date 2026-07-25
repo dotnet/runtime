@@ -49,7 +49,7 @@ namespace System.Diagnostics.Metrics
     ///       o reportDeltas - If true, the histogram will report deltas instead of whole accumulated values. The default value is false.
     /// </summary>
     [EventSource(Name = "System.Diagnostics.Metrics")]
-    internal sealed class MetricsEventSource : EventSource
+    internal sealed partial class MetricsEventSource : EventSource
     {
         public static readonly MetricsEventSource Log = new();
 
@@ -95,8 +95,6 @@ namespace System.Diagnostics.Metrics
                 return _handler;
             }
         }
-
-        private MetricsEventSource() { }
 
         /// <summary>
         /// Used to send ad-hoc diagnostics to humans.
@@ -777,11 +775,7 @@ namespace System.Diagnostics.Metrics
 
                     if (spec.Equals("scale", StringComparison.OrdinalIgnoreCase))
                     {
-#if NET
                         if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int s) || s < -11 || s > 20)
-#else
-                        if (!int.TryParse(value.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int s) || s < -11 || s > 20)
-#endif // NET
                         {
                             Parent.Message($"Invalid scale value: {specString}");
                             continue;
@@ -793,11 +787,7 @@ namespace System.Diagnostics.Metrics
                     }
                     else if (spec.Equals("maxBuckets", StringComparison.OrdinalIgnoreCase))
                     {
-#if NET
                         if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int m) || m < 2)
-#else
-                        if (!int.TryParse(value.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out int m) || m < 2)
-#endif // NET
                         {
                             Parent.Message($"Invalid maxBuckets value: {specString}");
                             continue;

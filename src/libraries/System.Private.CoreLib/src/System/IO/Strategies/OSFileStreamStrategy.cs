@@ -93,7 +93,7 @@ namespace System.IO.Strategies
         internal sealed override bool IsClosed => _fileHandle.IsClosed;
 
         // Flushing is the responsibility of BufferedFileStreamStrategy
-        internal sealed override SafeFileHandle SafeFileHandle
+        internal override SafeFileHandle SafeFileHandle
         {
             get
             {
@@ -158,8 +158,8 @@ namespace System.IO.Strategies
             }
             else
             {
-                // keep throwing the same exception we did when seek was causing actual offset change
-                FileStreamHelpers.ThrowInvalidArgument(_fileHandle);
+                // keep throwing the same exception type we did when seek was causing actual offset change
+                throw new IOException(SR.IO_SeekBeforeBegin);
             }
 
             // Prevent users from overwriting data in a file that was opened in append mode.
@@ -241,8 +241,7 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
-            RandomAccess.WriteAtOffset(_fileHandle, buffer, _filePosition);
-            _filePosition += buffer.Length;
+            RandomAccess.WriteAtOffset(_fileHandle, buffer, ref _filePosition);
         }
 
         public sealed override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>

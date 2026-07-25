@@ -13,6 +13,7 @@
 using System;
 using System.Numerics;
 using Xunit;
+using TestLibrary;
 
 public class C1
 {
@@ -32,6 +33,7 @@ public struct S3
 public class Runtime_115831
 {
     public static S3 s_1;
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static void Problem()
     {

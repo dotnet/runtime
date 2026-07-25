@@ -3,7 +3,7 @@
 //
 
 using Xunit;
-namespace Test
+namespace b39224
 {
     using System;
 
@@ -11,6 +11,7 @@ namespace Test
     {
         static uint[] m_au = new uint[10];
         static void Method1(uint param1) { }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

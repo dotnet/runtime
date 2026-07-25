@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
     public static class DecryptorReusability
     {
         // See https://github.com/dotnet/runtime/issues/21354 for details
-        [ConditionalFact(nameof(ShouldDecryptorBeReusable))]
+        [ConditionalFact(typeof(DecryptorReusability), nameof(ShouldDecryptorBeReusable))]
         public static void TestDecryptorReusability()
         {
             byte[] expectedPlainText = new byte[]

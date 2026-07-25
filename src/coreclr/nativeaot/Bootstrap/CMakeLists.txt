@@ -2,15 +2,14 @@
 function(install_bootstrapper_object targetName destination)
   add_dependencies(nativeaot ${targetName})
   if (MSVC)
-    set_target_properties(${targetName} PROPERTIES COMPILE_PDB_NAME ${targetName})
+    set_target_properties(${targetName} PROPERTIES
+      COMPILE_PDB_NAME ${targetName}
+      COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>"
+    )
   endif()
   if (MSVC)
     install (FILES $<TARGET_OBJECTS:${targetName}> DESTINATION ${destination} COMPONENT nativeaot RENAME ${targetName}.obj)
-    if (CMAKE_GENERATOR MATCHES "Visual Studio")
-      install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION ${destination} COMPONENT nativeaot)
-    else()
-      install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${targetName}.pdb DESTINATION ${destination} COMPONENT nativeaot)
-    endif()
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION ${destination} COMPONENT nativeaot)
   else()
     install (FILES $<TARGET_OBJECTS:${targetName}> DESTINATION ${destination} COMPONENT nativeaot RENAME lib${targetName}.o)
   endif()

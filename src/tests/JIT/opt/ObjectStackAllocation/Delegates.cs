@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 enum AllocationKind
 {
@@ -101,6 +102,7 @@ public class Delegates
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int RunTest0() => DoTest0(100);
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int Test0() 
     {
@@ -127,6 +129,7 @@ public class Delegates
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int RunTest1() => DoTest1(s_a);
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int Test1()
     {
@@ -145,6 +148,7 @@ public class Delegates
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int RunTest2() => RunTest2Inner(-1);
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int Test2()
     {

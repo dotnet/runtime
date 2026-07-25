@@ -4531,6 +4531,218 @@ namespace System.Numerics.Tests
             }
         }
 
+        [Fact]
+        public void CreateGeometricSequenceInt32Test()
+        {
+            Vector<int> sequence = Vector.CreateGeometricSequence(1, 2);
+            int expected = 1;
+
+            for (int index = 0; index < Vector<int>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected *= 2;
+            }
+        }
+
+        [Fact]
+        public void CreateGeometricSequenceByteWrapsTest()
+        {
+            Vector<byte> sequence = Vector.CreateGeometricSequence((byte)200, (byte)2);
+            byte expected = 200;
+
+            for (int index = 0; index < Vector<byte>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected = unchecked((byte)(expected * 2));
+            }
+        }
+
+        [Fact]
+        public void CreateGeometricSequenceSingleNonConstantInitialTest()
+        {
+            const float multiplier = 1.0064822f;
+            float initial = GetNonConstant(1.0059024f);
+            Vector<float> sequence = Vector.CreateGeometricSequence(initial, multiplier);
+            for (int index = 0; index < Vector<float>.Count; index++)
+            {
+                float expected = initial * float.Pow(multiplier, index);
+                AssertExtensions.Equal(expected, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateGeometricSequenceDoubleNonConstantInitialTest()
+        {
+            const double multiplier = 1e-50;
+            double initial = GetNonConstant(1e-154);
+            Vector<double> sequence = Vector.CreateGeometricSequence(initial, multiplier);
+            for (int index = 0; index < Vector<double>.Count; index++)
+            {
+                double expected = initial * double.Pow(multiplier, index);
+                AssertExtensions.Equal(expected, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceInt32Test()
+        {
+            Vector<int> sequence = Vector.CreateAlternatingSequence(5, -5);
+
+            for (int index = 0; index < Vector<int>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 5 : -5, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceUInt32Test()
+        {
+            Vector<uint> sequence = Vector.CreateAlternatingSequence(5u, uint.MaxValue - 1u);
+
+            for (int index = 0; index < Vector<uint>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 5u : uint.MaxValue - 1u, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceDoubleTest()
+        {
+            Vector<double> sequence = Vector.CreateAlternatingSequence(1.5, -2.5);
+
+            for (int index = 0; index < Vector<double>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1.5 : -2.5, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceInt32Test()
+        {
+            Vector<int> sequence = Vector.CreateHarmonicSequence(1, 1);
+            int expected = 1;
+
+            for (int index = 0; index < Vector<int>.Count; index++)
+            {
+                Assert.Equal(1 / expected, sequence.GetElement(index));
+                expected += 1;
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceSingleTest()
+        {
+            Vector<float> sequence = Vector.CreateHarmonicSequence(1.0f, 1.0f);
+            float expected = 1.0f;
+
+            for (int index = 0; index < Vector<float>.Count; index++)
+            {
+                AssertExtensions.Equal(1.0f / expected, sequence.GetElement(index), 1e-6f);
+                expected += 1.0f;
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceDoubleTest()
+        {
+            Vector<double> sequence = Vector.CreateHarmonicSequence(1.0, 1.0);
+            double expected = 1.0;
+
+            for (int index = 0; index < Vector<double>.Count; index++)
+            {
+                AssertExtensions.Equal(1.0 / expected, sequence.GetElement(index), 1e-15);
+                expected += 1.0;
+            }
+        }
+
+        [Fact]
+        public void SignSequenceInt32Test()
+        {
+            Vector<int> sequence = Vector<int>.SignSequence;
+
+            for (int index = 0; index < Vector<int>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1 : -1, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void SignSequenceSingleTest()
+        {
+            Vector<float> sequence = Vector<float>.SignSequence;
+
+            for (int index = 0; index < Vector<float>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1.0f : -1.0f, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void SignSequenceDoubleTest()
+        {
+            Vector<double> sequence = Vector<double>.SignSequence;
+
+            for (int index = 0; index < Vector<double>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1.0 : -1.0, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void LaneOperationsInt32Test()
+        {
+            Vector<int> left = Vector.CreateSequence(0, 1);
+            Vector<int> right = Vector.CreateSequence(100, 1);
+            int count = Vector<int>.Count;
+            int lowerCount = (count + 1) / 2;
+            int upperStart = count - lowerCount;
+
+            AssertVectorEqual(CreateVector(index => ((index & 1) == 0) ? left.GetElement(index / 2) : right.GetElement(index / 2)), Vector.ZipLower(left, right));
+            AssertVectorEqual(CreateVector(index => ((index & 1) == 0) ? left.GetElement(upperStart + (index / 2)) : right.GetElement(upperStart + (index / 2))), Vector.ZipUpper(left, right));
+
+            (Vector<int> lower, Vector<int> upper) = Vector.Zip(left, right);
+            AssertVectorEqual(Vector.ZipLower(left, right), lower);
+            AssertVectorEqual(Vector.ZipUpper(left, right), upper);
+
+            AssertVectorEqual(left, Vector.UnzipEven(lower, upper));
+            AssertVectorEqual(right, Vector.UnzipOdd(lower, upper));
+
+            (Vector<int> even, Vector<int> odd) = Vector.Unzip(lower, upper);
+            AssertVectorEqual(left, even);
+            AssertVectorEqual(right, odd);
+
+            AssertVectorEqual(CreateVector(index => (index < lowerCount) ? left.GetElement(index) : right.GetElement(index - lowerCount)), Vector.ConcatLowerLower(left, right));
+            AssertVectorEqual(CreateVector(index => (index < lowerCount) ? left.GetElement(upperStart + index) : right.GetElement(index - lowerCount)), Vector.ConcatUpperLower(left, right));
+            AssertVectorEqual(CreateVector(index => (index < lowerCount) ? left.GetElement(upperStart + index) : right.GetElement(upperStart + index - lowerCount)), Vector.ConcatUpperUpper(left, right));
+            AssertVectorEqual(CreateVector(index => (index < lowerCount) ? left.GetElement(index) : right.GetElement(upperStart + index - lowerCount)), Vector.ConcatLowerUpper(left, right));
+
+            AssertVectorEqual(CreateVector(index => left.GetElement(count - 1 - index)), Vector.Reverse(left));
+        }
+
+        private static Vector<int> CreateVector(Func<int, int> elementSelector)
+        {
+            int[] values = new int[Vector<int>.Count];
+
+            for (int index = 0; index < values.Length; index++)
+            {
+                values[index] = elementSelector(index);
+            }
+
+            return new Vector<int>(values);
+        }
+
+        private static void AssertVectorEqual<T>(Vector<T> expected, Vector<T> actual)
+            where T : struct
+        {
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                Assert.Equal(expected.GetElement(index), actual.GetElement(index));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static T GetNonConstant<T>(T value) => value;
+
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.CosDouble), MemberType = typeof(GenericMathTestMemberData))]
         public void CosDoubleTest(double value, double expectedResult, double variance)
@@ -6079,5 +6291,113 @@ namespace System.Numerics.Tests
 
         [Fact]
         public void SubtractSaturateUIntPtrTest() => SubtractSaturateToMinTest<nuint>(1);
+
+        [Fact]
+        public void EDoubleTest() => TestConstant(Vector<double>.E, double.E);
+
+        [Fact]
+        public void ESingleTest() => TestConstant(Vector<float>.E, float.E);
+
+        [Fact]
+        public void EpsilonDoubleTest() => TestConstant(Vector<double>.Epsilon, double.Epsilon);
+
+        [Fact]
+        public void EpsilonSingleTest() => TestConstant(Vector<float>.Epsilon, float.Epsilon);
+
+        [Fact]
+        public void NaNDoubleTest() => TestConstant(Vector<double>.NaN, double.NaN);
+
+        [Fact]
+        public void NaNSingleTest() => TestConstant(Vector<float>.NaN, float.NaN);
+
+        [Fact]
+        public void NegativeInfinityDoubleTest() => TestConstant(Vector<double>.NegativeInfinity, double.NegativeInfinity);
+
+        [Fact]
+        public void NegativeInfinitySingleTest() => TestConstant(Vector<float>.NegativeInfinity, float.NegativeInfinity);
+
+        [Fact]
+        public void NegativeOneDoubleTest() => TestConstant(Vector<double>.NegativeOne, -1.0);
+
+        [Fact]
+        public void NegativeOneInt16Test() => TestConstant<short>(Vector<short>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneInt32Test() => TestConstant<int>(Vector<int>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneInt64Test() => TestConstant<long>(Vector<long>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneSByteTest() => TestConstant<sbyte>(Vector<sbyte>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneSingleTest() => TestConstant(Vector<float>.NegativeOne, -1.0f);
+
+        [Fact]
+        public void NegativeZeroDoubleTest() => TestConstant(Vector<double>.NegativeZero, double.NegativeZero);
+
+        [Fact]
+        public void NegativeZeroSingleTest() => TestConstant(Vector<float>.NegativeZero, float.NegativeZero);
+
+        [Fact]
+        public void PiDoubleTest() => TestConstant(Vector<double>.Pi, double.Pi);
+
+        [Fact]
+        public void PiSingleTest() => TestConstant(Vector<float>.Pi, float.Pi);
+
+        [Fact]
+        public void PositiveInfinityDoubleTest() => TestConstant(Vector<double>.PositiveInfinity, double.PositiveInfinity);
+
+        [Fact]
+        public void PositiveInfinitySingleTest() => TestConstant(Vector<float>.PositiveInfinity, float.PositiveInfinity);
+
+        [Fact]
+        public void TauDoubleTest() => TestConstant(Vector<double>.Tau, double.Tau);
+
+        [Fact]
+        public void TauSingleTest() => TestConstant(Vector<float>.Tau, float.Tau);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void TestConstant(Vector<double> actual, double expected)
+        {
+            for (int i = 0; i < Vector<double>.Count; i++)
+            {
+                if (double.IsNaN(expected))
+                {
+                    Assert.True(double.IsNaN(actual[i]));
+                }
+                else
+                {
+                    Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual[i]));
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void TestConstant(Vector<float> actual, float expected)
+        {
+            for (int i = 0; i < Vector<float>.Count; i++)
+            {
+                if (float.IsNaN(expected))
+                {
+                    Assert.True(float.IsNaN(actual[i]));
+                }
+                else
+                {
+                    Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(actual[i]));
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void TestConstant<T>(Vector<T> actual, T expected)
+            where T : IBinaryInteger<T>
+        {
+            for (int i = 0; i < Vector<T>.Count; i++)
+            {
+                Assert.Equal(expected, actual[i]);
+            }
+        }
     }
 }

@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private CancellationChangeToken? _changeToken;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="PollingWildCardChangeToken"/>.
+        /// Initializes a new instance of the <see cref="PollingWildCardChangeToken"/> class.
         /// </summary>
         /// <param name="root">The root of the file system.</param>
         /// <param name="pattern">The pattern to watch.</param>

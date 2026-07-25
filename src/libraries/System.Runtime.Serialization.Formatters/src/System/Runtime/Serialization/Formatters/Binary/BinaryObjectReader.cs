@@ -57,10 +57,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             set
             {
                 _topObject = value;
-                if (_objectManager != null)
-                {
-                    _objectManager.TopObject = value;
-                }
+                _objectManager?.TopObject = value;
             }
         }
 

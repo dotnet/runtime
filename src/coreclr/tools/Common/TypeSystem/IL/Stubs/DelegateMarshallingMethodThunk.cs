@@ -3,10 +3,13 @@
 
 using System;
 using System.Runtime.InteropServices;
+
+using Internal.Text;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Interop;
-using Debug = System.Diagnostics.Debug;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.Interop;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs
 {
@@ -64,7 +67,7 @@ namespace Internal.IL.Stubs
         {
             _owningType = owningType;
             _delegateType = delegateType;
-            _invokeMethod = delegateType.GetMethod("Invoke", null);
+            _invokeMethod = delegateType.GetMethod("Invoke"u8, null);
             _interopStateManager = interopStateManager;
             Kind = kind;
         }
@@ -136,6 +139,21 @@ namespace Internal.IL.Stubs
                             flags = ecmaType.GetDelegatePInvokeFlags();
                         }
 
+                        MethodSignatureFlags unmanagedCallingConvention = flags.UnmanagedCallingConvention;
+                        if (unmanagedCallingConvention == MethodSignatureFlags.None)
+                            unmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConvention;
+
+                        MethodSignature delegateSignature = _invokeMethod.Signature;
+                        if (!MarshalHelpers.IsRuntimeMarshallingEnabled(_delegateType.Module))
+                        {
+                            // When runtime marshalling is disabled, arguments and the return value are passed
+                            // through blittably, so the native signature matches the managed signature.
+                            var builder = new MethodSignatureBuilder(delegateSignature);
+                            builder.Flags = MethodSignatureFlags.Static | unmanagedCallingConvention;
+                            _signature = builder.ToSignature();
+                            return _signature;
+                        }
+
                         // Mirror CharSet normalization from Marshaller.CreateMarshaller
                         bool isAnsi = flags.CharSet switch
                         {
@@ -145,7 +163,6 @@ namespace Internal.IL.Stubs
                             _ => true
                         };
 
-                        MethodSignature delegateSignature = _invokeMethod.Signature;
                         TypeDesc[] nativeParameterTypes = new TypeDesc[delegateSignature.Length];
                         ParameterMetadata[] parameterMetadataArray = _invokeMethod.GetParameterMetadata();
                         int parameterIndex = 0;
@@ -189,10 +206,6 @@ namespace Internal.IL.Stubs
                             nativeParameterTypes[i] = isByRefType ? nativeType.MakePointerType() : nativeType;
                         }
 
-                        MethodSignatureFlags unmanagedCallingConvention = flags.UnmanagedCallingConvention;
-                        if (unmanagedCallingConvention == MethodSignatureFlags.None)
-                            unmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConvention;
-
                         _signature = new MethodSignature(MethodSignatureFlags.Static | unmanagedCallingConvention, 0, nativeReturnType, nativeParameterTypes);
                     }
                 }
@@ -218,30 +231,30 @@ namespace Internal.IL.Stubs
             }
         }
 
-        private string NamePrefix
+        private Utf8Span NamePrefix
         {
             get
             {
                 switch (Kind)
                 {
                     case DelegateMarshallingMethodThunkKind.ReverseOpenStatic:
-                        return "ReverseOpenStaticDelegateStub";
+                        return "ReverseOpenStaticDelegateStub"u8;
                     case DelegateMarshallingMethodThunkKind.ReverseClosed:
-                        return "ReverseDelegateStub";
+                        return "ReverseDelegateStub"u8;
                     case DelegateMarshallingMethodThunkKind.ForwardNativeFunctionWrapper:
-                        return "ForwardNativeFunctionWrapper";
+                        return "ForwardNativeFunctionWrapper"u8;
                     default:
                         Debug.Fail("Unexpected DelegateMarshallingMethodThunkKind.");
-                        return string.Empty;
+                        return Array.Empty<byte>();
                 }
             }
         }
 
-        public override string Name
+        public override Utf8Span Name
         {
             get
             {
-                return NamePrefix + "__" + DelegateType.Name;
+                return NamePrefix.Append("__"u8, DelegateType.Name);
             }
         }
 
@@ -249,7 +262,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return NamePrefix + "__" + DelegateType.DiagnosticName;
+                return GetName();
             }
         }
 

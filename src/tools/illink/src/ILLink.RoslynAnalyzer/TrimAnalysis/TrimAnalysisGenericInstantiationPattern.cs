@@ -3,7 +3,9 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using ILLink.RoslynAnalyzer.DataFlow;
+using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
 using Microsoft.CodeAnalysis;
 
@@ -45,24 +47,25 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         public void ReportDiagnostics(DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
         {
-            if (context.EnableTrimAnalyzer &&
-                !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
-                !FeatureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute))
+            var location = Operation.Syntax.GetLocation();
+            var typeNameResolver = new TypeNameResolver(context.Compilation);
+
+            foreach (var analyzer in context.EnabledRequiresAnalyzers)
             {
-                var location = Operation.Syntax.GetLocation();
-                var typeNameResolver = new TypeNameResolver(context.Compilation);
+                var genericArgumentDataFlow = new GenericArgumentDataFlow(analyzer, FeatureContext, typeNameResolver, OwningSymbol, location, reportDiagnostic);
+
                 switch (GenericInstantiation)
                 {
                     case INamedTypeSymbol type:
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, type, reportDiagnostic);
+                        genericArgumentDataFlow.ProcessGenericArgumentDataFlow(type);
                         break;
 
                     case IMethodSymbol method:
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, method, reportDiagnostic);
+                        genericArgumentDataFlow.ProcessGenericArgumentDataFlow(method);
                         break;
 
                     case IFieldSymbol field:
-                        GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(typeNameResolver, location, field, reportDiagnostic);
+                        genericArgumentDataFlow.ProcessGenericArgumentDataFlow(field);
                         break;
                 }
             }

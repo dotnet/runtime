@@ -61,7 +61,7 @@ namespace System
         public static bool SerializationGuard
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetCachedSwitchValue("Switch.System.Runtime.Serialization.SerializationGuard", ref s_serializationGuard);
+            get => GetCachedSwitchValue("Switch.System.Runtime.Serialization.SerializationGuard", ref s_serializationGuard, defaultValue: true);
         }
 
         private static int s_showILOffset;

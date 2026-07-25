@@ -18,6 +18,7 @@ namespace System.Formats.Tar
         private bool _isDisposed;
         private readonly bool _leaveOpen;
         private readonly Stream _archiveStream;
+        private readonly TarHardLinkMode _hardLinkMode;
         private int _nextGlobalExtendedAttributesEntryNumber;
 
         /// <summary>
@@ -60,21 +61,43 @@ namespace System.Formats.Tar
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
         /// <remarks>The <see cref="TarEntryFormat.Pax"/> format is the default for the other <see cref="TarWriter"/> constructors. This is the recommended format as it is the most flexible and POSIX compatible. This is the only format  with which <see cref="TarWriter"/> reads and stores <c>atime</c> and <c>ctime</c> when creating entries from filesystem entries.</remarks>
         public TarWriter(Stream archiveStream, TarEntryFormat format = TarEntryFormat.Pax, bool leaveOpen = false)
+            : this(archiveStream, CreateOptionsForFormat(format), leaveOpen)
+        {
+        }
+
+        private static TarWriterOptions CreateOptionsForFormat(TarEntryFormat format)
+        {
+            if (format is not TarEntryFormat.V7 and not TarEntryFormat.Ustar and not TarEntryFormat.Pax and not TarEntryFormat.Gnu)
+            {
+                throw new ArgumentOutOfRangeException(nameof(format));
+            }
+
+            return new TarWriterOptions() { Format = format };
+        }
+
+        /// <summary>
+        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream using the specified options,
+        /// and optionally leaves the stream open upon disposal of this instance.
+        /// </summary>
+        /// <param name="archiveStream">The stream to write to.</param>
+        /// <param name="options">The options that configure the behavior of the writer.</param>
+        /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed;
+        /// <see langword="true"/> to leave the stream open. The default is <see langword="false"/>.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="archiveStream"/> is unwritable.</exception>
+        public TarWriter(Stream archiveStream, TarWriterOptions options, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(archiveStream);
+            ArgumentNullException.ThrowIfNull(options);
 
             if (!archiveStream.CanWrite)
             {
                 throw new ArgumentException(SR.IO_NotSupported_UnwritableStream);
             }
 
-            if (format is not TarEntryFormat.V7 and not TarEntryFormat.Ustar and not TarEntryFormat.Pax and not TarEntryFormat.Gnu)
-            {
-                throw new ArgumentOutOfRangeException(nameof(format));
-            }
-
             _archiveStream = archiveStream;
-            Format = format;
+            Format = options.Format;
+            _hardLinkMode = options.HardLinkMode;
             _leaveOpen = leaveOpen;
             _isDisposed = false;
             _wroteEntries = false;
@@ -91,26 +114,18 @@ namespace System.Formats.Tar
         /// </summary>
         public void Dispose()
         {
-            if (!_isDisposed)
-            {
-                _isDisposed = true;
-
-                if (_wroteEntries)
-                {
-                    WriteFinalRecords();
-                }
-
-                if (!_leaveOpen)
-                {
-                    _archiveStream.Dispose();
-                }
-            }
+            ValueTask vt = DisposeCoreAsync<SyncReadWriteAdapter>();
+            Debug.Assert(vt.IsCompleted, "Synchronous Dispose completed asynchronously.");
+            vt.GetAwaiter().GetResult();
         }
 
         /// <summary>
         /// Asynchronously disposes the current <see cref="TarWriter"/> instance, and closes the archive stream if the <c>leaveOpen</c> argument was set to <see langword="false"/> in the constructor.
         /// </summary>
-        public async ValueTask DisposeAsync()
+        public ValueTask DisposeAsync() => DisposeCoreAsync<AsyncReadWriteAdapter>();
+
+        private async ValueTask DisposeCoreAsync<TAdapter>()
+            where TAdapter : IReadWriteAdapter
         {
             if (!_isDisposed)
             {
@@ -118,12 +133,12 @@ namespace System.Formats.Tar
 
                 if (_wroteEntries)
                 {
-                    await WriteFinalRecordsAsync().ConfigureAwait(false);
+                    await WriteFinalRecordsCoreAsync<TAdapter>().ConfigureAwait(false);
                 }
 
                 if (!_leaveOpen)
                 {
-                    await _archiveStream.DisposeAsync().ConfigureAwait(false);
+                    await TAdapter.DisposeAsync(_archiveStream).ConfigureAwait(false);
                 }
             }
         }
@@ -143,7 +158,9 @@ namespace System.Formats.Tar
         public void WriteEntry(string fileName, string? entryName)
         {
             (string fullPath, string actualEntryName) = ValidateWriteEntryArguments(fileName, entryName);
-            ReadFileFromDiskAndWriteToArchiveStreamAsEntry(fullPath, actualEntryName);
+            ValueTask vt = ReadFileFromDiskAndWriteToArchiveStreamAsEntryCoreAsync<SyncReadWriteAdapter>(fullPath, actualEntryName, FileOptions.None, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteEntry completed asynchronously.");
+            vt.GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -168,29 +185,21 @@ namespace System.Formats.Tar
             }
 
             (string fullPath, string actualEntryName) = ValidateWriteEntryArguments(fileName, entryName);
-            return ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(fullPath, actualEntryName, cancellationToken);
+            return ReadFileFromDiskAndWriteToArchiveStreamAsEntryCoreAsync<AsyncReadWriteAdapter>(fullPath, actualEntryName, FileOptions.Asynchronous, cancellationToken).AsTask();
         }
 
         // Reads an entry from disk and writes it into the archive stream.
-        private void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)
-        {
-            TarEntry entry = ConstructEntryForWriting(fullPath, entryName, FileOptions.None);
-
-            WriteEntry(entry);
-            entry._header._dataStream?.Dispose();
-        }
-
-        // Asynchronously reads an entry from disk and writes it into the archive stream.
-        private async Task ReadFileFromDiskAndWriteToArchiveStreamAsEntryAsync(string fullPath, string entryName, CancellationToken cancellationToken)
+        private async ValueTask ReadFileFromDiskAndWriteToArchiveStreamAsEntryCoreAsync<TAdapter>(string fullPath, string entryName, FileOptions fileOptions, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            TarEntry entry = ConstructEntryForWriting(fullPath, entryName, FileOptions.Asynchronous);
+            TarEntry entry = ConstructEntryForWriting(fullPath, entryName, fileOptions);
 
-            await WriteEntryAsync(entry, cancellationToken).ConfigureAwait(false);
+            await WriteEntryCoreAsync<TAdapter>(entry, cancellationToken).ConfigureAwait(false);
             if (entry._header._dataStream != null)
             {
-                await entry._header._dataStream.DisposeAsync().ConfigureAwait(false);
+                await TAdapter.DisposeAsync(entry._header._dataStream).ConfigureAwait(false);
             }
         }
 
@@ -238,7 +247,10 @@ namespace System.Formats.Tar
             ArgumentNullException.ThrowIfNull(entry);
             ValidateEntryLinkName(entry._header._typeFlag, entry._header._linkName);
             ValidateStreamsSeekability(entry);
-            WriteEntryInternal(entry);
+
+            ValueTask vt = WriteEntryCoreAsync<SyncReadWriteAdapter>(entry, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteEntry completed asynchronously.");
+            vt.GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -287,97 +299,55 @@ namespace System.Formats.Tar
             ArgumentNullException.ThrowIfNull(entry);
             ValidateEntryLinkName(entry._header._typeFlag, entry._header._linkName);
             ValidateStreamsSeekability(entry);
-            return WriteEntryAsyncInternal(entry, cancellationToken);
+            return WriteEntryCoreAsync<AsyncReadWriteAdapter>(entry, cancellationToken).AsTask();
         }
 
-        // Portion of the WriteEntry(entry) method that rents a buffer and writes to the archive.
-        private void WriteEntryInternal(TarEntry entry)
+        // Portion of the WriteEntry methods that rents a buffer and writes to the archive.
+        private async ValueTask WriteEntryCoreAsync<TAdapter>(TarEntry entry, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
-            Span<byte> buffer = stackalloc byte[TarHelpers.RecordSize];
-            buffer.Clear();
-
-            switch (entry.Format)
-            {
-                case TarEntryFormat.V7:
-                    entry._header.WriteAsV7(_archiveStream, buffer);
-                    break;
-
-                case TarEntryFormat.Ustar:
-                    entry._header.WriteAsUstar(_archiveStream, buffer);
-                    break;
-
-                case TarEntryFormat.Pax:
-                    if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
-                    {
-                        entry._header.WriteAsPaxGlobalExtendedAttributes(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++);
-                    }
-                    else
-                    {
-                        entry._header.WriteAsPax(_archiveStream, buffer);
-                    }
-                    break;
-
-                case TarEntryFormat.Gnu:
-                    entry._header.WriteAsGnu(_archiveStream, buffer);
-                    break;
-
-                default:
-                    Debug.Assert(entry.Format == TarEntryFormat.Unknown, "Missing format handler");
-                    throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format));
-            }
-
-            _wroteEntries = true;
-        }
-
-        // Portion of the WriteEntryAsync(TarEntry, CancellationToken) method containing awaits.
-        private async Task WriteEntryAsyncInternal(TarEntry entry, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
             byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
             Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
             buffer.Span.Clear(); // Rented arrays aren't clean
-
-            Task task = entry.Format switch
+            try
             {
-                TarEntryFormat.V7 => entry._header.WriteAsV7Async(_archiveStream, buffer, cancellationToken),
-                TarEntryFormat.Ustar => entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken),
-                TarEntryFormat.Pax when entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes => entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++, cancellationToken),
-                TarEntryFormat.Pax => entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken),
-                TarEntryFormat.Gnu => entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken),
-                _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
-            };
-            await task.ConfigureAwait(false);
+                ValueTask task = entry.Format switch
+                {
+                    TarEntryFormat.V7 => entry._header.WriteAsV7CoreAsync<TAdapter>(_archiveStream, buffer, cancellationToken),
+                    TarEntryFormat.Ustar => entry._header.WriteAsUstarCoreAsync<TAdapter>(_archiveStream, buffer, cancellationToken),
+                    TarEntryFormat.Pax when entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes => entry._header.WriteAsPaxGlobalExtendedAttributesCoreAsync<TAdapter>(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++, cancellationToken),
+                    TarEntryFormat.Pax => entry._header.WriteAsPaxCoreAsync<TAdapter>(_archiveStream, buffer, cancellationToken),
+                    TarEntryFormat.Gnu => entry._header.WriteAsGnuCoreAsync<TAdapter>(_archiveStream, buffer, cancellationToken),
+                    _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
+                };
+                await task.ConfigureAwait(false);
 
-            _wroteEntries = true;
-
-            ArrayPool<byte>.Shared.Return(rented);
+                _wroteEntries = true;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
         }
 
         // The spec indicates that the end of the archive is indicated
         // by two records consisting entirely of zero bytes.
-        private void WriteFinalRecords()
-        {
-            Span<byte> emptyRecord = stackalloc byte[TarHelpers.RecordSize];
-            emptyRecord.Clear();
-
-            _archiveStream.Write(emptyRecord);
-            _archiveStream.Write(emptyRecord);
-        }
-
-        // The spec indicates that the end of the archive is indicated
-        // by two records consisting entirely of zero bytes.
-        // This method is called from DisposeAsync, so we don't want to propagate a cancelled CancellationToken.
-        private async ValueTask WriteFinalRecordsAsync()
+        // This method is called from Dispose/DisposeAsync, so we don't want to propagate a cancelled CancellationToken.
+        private async ValueTask WriteFinalRecordsCoreAsync<TAdapter>()
+            where TAdapter : IReadWriteAdapter
         {
             const int TwoRecordSize = TarHelpers.RecordSize * 2;
 
             byte[] twoEmptyRecords = ArrayPool<byte>.Shared.Rent(TwoRecordSize);
-            Array.Clear(twoEmptyRecords, 0, TwoRecordSize);
-
-            await _archiveStream.WriteAsync(twoEmptyRecords.AsMemory(0, TwoRecordSize), cancellationToken: default).ConfigureAwait(false);
-
-            ArrayPool<byte>.Shared.Return(twoEmptyRecords);
+            try
+            {
+                Array.Clear(twoEmptyRecords, 0, TwoRecordSize);
+                await TAdapter.WriteAsync(_archiveStream, twoEmptyRecords.AsMemory(0, TwoRecordSize), CancellationToken.None).ConfigureAwait(false);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(twoEmptyRecords);
+            }
         }
 
         private (string, string) ValidateWriteEntryArguments(string fileName, string? entryName)

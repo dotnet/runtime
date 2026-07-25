@@ -10,6 +10,7 @@ using System.Collections.Concurrent;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
@@ -49,6 +50,7 @@ public class Program
         _freeBuffers = new ObjectPool<int[]>(() => new int[_width * 3 * _height]); // Each pixel has 3 fields (RGB)
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static unsafe int TestEntryPoint()
     {

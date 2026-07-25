@@ -63,6 +63,7 @@ namespace R3Trasher1
 
     public static class App
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

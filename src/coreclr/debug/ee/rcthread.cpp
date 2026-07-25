@@ -39,7 +39,6 @@ DebuggerRCThread::DebuggerRCThread(Debugger * pDebugger)
     {
         WRAPPER(THROWS);
         GC_NOTRIGGER;
-        CONSTRUCTOR_CHECK;
     }
     CONTRACTL_END;
 
@@ -116,14 +115,13 @@ HANDLE CreateWin32EventOrThrow(
     BOOL bInitialState
 )
 {
-    CONTRACT(HANDLE)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(lpEventAttributes, NULL_OK));
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     HANDLE h = NULL;
     h = CreateEvent(lpEventAttributes, (BOOL) eType, bInitialState, NULL);
@@ -131,35 +129,7 @@ HANDLE CreateWin32EventOrThrow(
     if (h == NULL)
         ThrowLastError();
 
-    RETURN h;
-}
-
-//-----------------------------------------------------------------------------
-// Open an event. Another helper for DebuggerRCThread::Init
-//-----------------------------------------------------------------------------
-HANDLE OpenWin32EventOrThrow(
-    DWORD dwDesiredAccess,
-    BOOL bInheritHandle,
-    LPCWSTR lpName
-)
-{
-    CONTRACT(HANDLE)
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        POSTCONDITION(RETVAL != NULL);
-    }
-    CONTRACT_END;
-
-    HANDLE h = OpenEvent(
-        dwDesiredAccess,
-        bInheritHandle,
-        lpName
-    );
-    if (h == NULL)
-        ThrowLastError();
-
-    RETURN h;
+    return h;
 }
 
 //---------------------------------------------------------------------------------------
@@ -219,15 +189,6 @@ HRESULT DebuggerIPCControlBlock::Init(
 #else
     m_checkedBuild = false;
 #endif
-    m_bHostingInFiber = false;
-
-    // Are we in fiber mode? In Whidbey, we do not support launch a fiber mode process
-    // nor do we support attach to a fiber mode process.
-    //
-    if (g_CORDebuggerControlFlags & DBCF_FIBERMODE)
-    {
-        m_bHostingInFiber = true;
-    }
 
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
     // Copy RSEA and RSER into the control block.
@@ -355,7 +316,7 @@ HRESULT DebuggerRCThread::Init(void)
     if (dwStatus == ERROR_ALREADY_EXISTS)
     {
         // clean up the handle now
-        rightSideEventAvailable.Clear();
+        rightSideEventAvailable.Free();
     }
 
     HandleHolder rightSideEventRead(CreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL));
@@ -368,7 +329,7 @@ HRESULT DebuggerRCThread::Init(void)
     if (dwStatus == ERROR_ALREADY_EXISTS)
     {
         // clean up the handle now
-        rightSideEventRead.Clear();
+        rightSideEventRead.Free();
     }
 
 
@@ -377,22 +338,18 @@ HRESULT DebuggerRCThread::Init(void)
     // Copy RSEA and RSER into the control block only if shared memory is created without error.
     if (m_pDCB)
     {
-        // Since Init() gets ownership of handles as soon as it's called, we can
-        // release our ownership now.
-        rightSideEventAvailable.SuppressRelease();
-        rightSideEventRead.SuppressRelease();
-        leftSideUnmanagedWaitEvent.SuppressRelease();
-
         // NOTE: initialization of the debugger control block occurs partly on the left side and partly on
         // the right side. This initialization occurs in parallel, so it's unsafe to make assumptions about
         // the order in which the fields will be initialized.
-        hr = m_pDCB->Init(rightSideEventAvailable,
-                                       rightSideEventRead,
+        // Since Init() gets ownership of handles, we can release our ownership now.
+        hr = m_pDCB->Init(rightSideEventAvailable.Detach(),
+                                       rightSideEventRead.Detach(),
                                        NULL,
                                        NULL,
-                                       leftSideUnmanagedWaitEvent);
+                                       leftSideUnmanagedWaitEvent.Detach());
 
         _ASSERTE(SUCCEEDED(hr)); // throws on error.
+
     }
 #endif //FEATURE_DBGIPC_TRANSPORT_VM
 
@@ -1417,11 +1374,7 @@ HRESULT DebuggerRCThread::AsyncStop(void)
         NOTHROW;
         GC_NOTRIGGER;
 
-#ifdef TARGET_X86
         PRECONDITION(!ThisIsHelperThreadWorker());
-#else
-        PRECONDITION(!ThisIsHelperThreadWorker());
-#endif
     }
     CONTRACTL_END;
 

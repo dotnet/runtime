@@ -254,7 +254,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_0(PaddingMode paddingMode)
@@ -272,7 +272,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_1(PaddingMode paddingMode)
@@ -290,7 +290,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_2(PaddingMode paddingMode)
@@ -308,7 +308,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(CipherMode.CBC, 0)]
         [InlineData(CipherMode.CFB, 8)]
         [InlineData(CipherMode.ECB, 0)]
@@ -337,7 +337,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(CipherMode.CBC, 0)]
         [InlineData(CipherMode.CFB, 8)]
         [InlineData(CipherMode.ECB, 0)]
@@ -371,7 +371,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_3(PaddingMode paddingMode)
@@ -389,7 +389,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void VerifyKnownTransform_CFB8_PKCS7_3()
         {
             // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=3
@@ -405,7 +405,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_4(PaddingMode paddingMode)
@@ -423,7 +423,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_5(PaddingMode paddingMode)
@@ -441,7 +441,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_6(PaddingMode paddingMode)
@@ -459,7 +459,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_7(PaddingMode paddingMode)
@@ -477,7 +477,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_8(PaddingMode paddingMode)
@@ -495,7 +495,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             );
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData(PaddingMode.None)]
         [InlineData(PaddingMode.Zeros)]
         public static void VerifyKnownTransform_CFB8_NoOrZeroPadding_9(PaddingMode paddingMode)

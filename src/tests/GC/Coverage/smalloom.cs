@@ -6,9 +6,11 @@
 using System;
 using System.Runtime;
 using Xunit;
+using TestLibrary;
 
 public class TestClass
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/5933", TestRuntimes.CoreCLR)]
     [Fact]
     public static void TestEntryPoint()
     {

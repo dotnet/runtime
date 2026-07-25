@@ -8,7 +8,7 @@ namespace System.Configuration
 {
     internal sealed class ConfigurationValues : NameObjectCollectionBase
     {
-        private static volatile IEnumerable s_emptyCollection;
+        private static IEnumerable s_emptyCollection;
         private BaseConfigurationRecord _configRecord;
         private volatile bool _containsElement;
         private volatile bool _containsInvalidValue;
@@ -83,7 +83,7 @@ namespace System.Configuration
         internal void ChangeSourceInfo(string key, PropertySourceInfo sourceInfo)
         {
             ConfigurationValue configurationValue = GetConfigValue(key);
-            if (configurationValue != null) configurationValue.SourceInfo = sourceInfo;
+            configurationValue?.SourceInfo = sourceInfo;
         }
 
         private ConfigurationValue CreateConfigValue(object value, ConfigurationValueFlags valueFlags,

@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace Dev11_457559;
+
 using System;
 using Xunit;
 
@@ -12,6 +15,7 @@ using Xunit;
 /// </summary>
 public class Test_Dev11_457559
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -73,7 +73,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         private protected ValidationAttribute(bool populateErrorMessageResourceAccessor)
         {
-            Debug.Assert(populateErrorMessageResourceAccessor is false, "Use the default constructor instead");
+            Debug.Assert(!populateErrorMessageResourceAccessor, "Use the default constructor instead");
         }
 
         #endregion
@@ -136,6 +136,13 @@ namespace System.ComponentModel.DataAnnotations
         ///     <see cref="ValidationContext" /> to perform validation.
         ///     Base class returns false. Override in child classes as appropriate.
         /// </summary>
+        /// <remarks>
+        ///     This property is a hint for callers deciding whether a <see cref="ValidationContext" />
+        ///     must be supplied. The asynchronous validation entry point
+        ///     <see cref="AsyncValidationAttribute.GetValidationResultAsync(object?, ValidationContext, System.Threading.CancellationToken)" />
+        ///     always requires a non-null <see cref="ValidationContext" /> parameter,
+        ///     so this property is not applicable to the asynchronous pipeline.
+        /// </remarks>
         public virtual bool RequiresValidationContext => false;
 
         #endregion
@@ -304,6 +311,20 @@ namespace System.ComponentModel.DataAnnotations
             return new ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
         }
 
+        private protected ValidationResult? EnsureValidationResultErrorMessage(
+            ValidationResult? result,
+            ValidationContext validationContext)
+        {
+            if (result is not null && string.IsNullOrEmpty(result.ErrorMessage))
+            {
+                string errorMessage = FormatErrorMessage(validationContext.DisplayName);
+
+                return new ValidationResult(errorMessage, result.MemberNames);
+            }
+
+            return result;
+        }
+
         #endregion
 
         #region Protected & Public Methods
@@ -433,17 +454,7 @@ namespace System.ComponentModel.DataAnnotations
 
             var result = IsValid(value, validationContext);
 
-            // If validation fails, we want to ensure we have a ValidationResult that guarantees it has an ErrorMessage
-            if (result != null)
-            {
-                if (string.IsNullOrEmpty(result.ErrorMessage))
-                {
-                    var errorMessage = FormatErrorMessage(validationContext.DisplayName);
-                    result = new ValidationResult(errorMessage, result.MemberNames);
-                }
-            }
-
-            return result;
+            return EnsureValidationResultErrorMessage(result, validationContext);
         }
 
         /// <summary>

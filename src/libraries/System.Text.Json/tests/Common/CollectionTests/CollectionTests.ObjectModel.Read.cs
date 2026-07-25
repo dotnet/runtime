@@ -42,7 +42,7 @@ namespace System.Text.Json.Serialization.Tests
             // No default constructor.
             await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper<ReadOnlyObservableCollection<bool>>("[true,false]"));
             // No default constructor.
-            await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper<ReadOnlyDictionary<string, bool>>(@"{""true"":false}"));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper<ReadOnlyDictionary<string, bool>>("""{"true":false}"""));
 
             // Abstract types can't be instantiated. This means there's no default constructor, so the type is not supported for deserialization.
             await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper<KeyedCollection<string, bool>>("[true]"));

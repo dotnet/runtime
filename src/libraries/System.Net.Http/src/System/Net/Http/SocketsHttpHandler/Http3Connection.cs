@@ -70,7 +70,7 @@ namespace System.Net.Http
         }
 
         public Http3Connection(HttpConnectionPool pool, HttpAuthority authority, bool includeAltUsedHeader)
-            : base(pool)
+            : base(pool, GetNextConnectionId())
         {
             _authority = authority;
 
@@ -90,9 +90,11 @@ namespace System.Net.Http
             }
         }
 
-        public void InitQuicConnection(QuicConnection connection, Activity? connectionSetupActivity)
+        public void InitQuicConnection(QuicConnection connection, Activity? connectionSetupActivity, DnsEndPoint connectedEndPoint)
         {
-            MarkConnectionAsEstablished(connectionSetupActivity: connectionSetupActivity, remoteEndPoint: connection.RemoteEndPoint);
+            // Report the exact DnsEndPoint used to establish the QUIC connection (Alt-Svc may point it at an authority
+            // distinct from the pool's origin), consistent with the connection's RemoteEndPoint.
+            MarkConnectionAsEstablished(connectionSetupActivity: connectionSetupActivity, remoteEndPoint: connection.RemoteEndPoint, authority: _authority, connectedEndPoint: connectedEndPoint);
 
             _connection = connection;
 
@@ -263,6 +265,8 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, WaitForHttp3ConnectionActivity waitForConnectionActivity, bool streamAvailable, CancellationToken cancellationToken)
         {
+            request.ConnectionId = Id;
+
             // Allocate an active request
             QuicStream? quicStream = null;
             Http3RequestStream? requestStream = null;
@@ -511,7 +515,7 @@ namespace System.Net.Http
             }
         }
 
-        public static byte[] BuildSettingsFrame(HttpConnectionSettings settings)
+        public static unsafe byte[] BuildSettingsFrame(HttpConnectionSettings settings)
         {
             Span<byte> buffer = stackalloc byte[4 + VariableLengthIntegerHelper.MaximumEncodedLength];
 
@@ -583,6 +587,7 @@ namespace System.Net.Http
             {
                 await using (stream.ConfigureAwait(false))
                 {
+                    // Check if this is a bidirectional stream (which we don't support from the server).
                     if (stream.CanWrite)
                     {
                         // Server initiated bidirectional streams are either push streams or extensions, and we support neither.
@@ -591,41 +596,55 @@ namespace System.Net.Http
 
                     buffer = new ArrayBuffer(initialSize: 32, usePool: true);
 
-                    int bytesRead;
-
-                    try
+                    // Read the stream type, which is a variable-length integer.
+                    // This may require multiple reads if the integer is encoded in multiple bytes.
+                    long streamType;
+                    while (true)
                     {
-                        bytesRead = await stream.ReadAsync(buffer.AvailableMemory, CancellationToken.None).ConfigureAwait(false);
+                        int bytesRead;
+                        try
+                        {
+                            bytesRead = await stream.ReadAsync(buffer.AvailableMemory, CancellationToken.None).ConfigureAwait(false);
+                        }
+                        catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted)
+                        {
+                            // Treat identical to receiving 0. See below comment.
+                            bytesRead = 0;
+                        }
+
+                        if (bytesRead == 0)
+                        {
+                            // https://www.rfc-editor.org/rfc/rfc9114.html#name-unidirectional-streams
+                            // A sender can close or reset a unidirectional stream unless otherwise specified. A receiver MUST
+                            // tolerate unidirectional streams being closed or reset prior to the reception of the unidirectional
+                            // stream header.
+                            return;
+                        }
+
+                        buffer.Commit(bytesRead);
+
+                        if (VariableLengthIntegerHelper.TryRead(buffer.ActiveSpan, out streamType, out int streamTypeLength))
+                        {
+                            // Successfully read the stream type.
+                            buffer.Discard(streamTypeLength);
+                            break;
+                        }
                     }
-                    catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted)
+
+                    if (NetEventSource.Log.IsEnabled())
                     {
-                        // Treat identical to receiving 0. See below comment.
-                        bytesRead = 0;
+                        NetEventSource.Info(this, $"Received server-initiated unidirectional stream of type {streamType}");
                     }
 
-                    if (bytesRead == 0)
+                    // Process the stream based on its type.
+                    switch ((Http3StreamType)streamType)
                     {
-                        // https://www.rfc-editor.org/rfc/rfc9114.html#name-unidirectional-streams
-                        // A sender can close or reset a unidirectional stream unless otherwise specified. A receiver MUST
-                        // tolerate unidirectional streams being closed or reset prior to the reception of the unidirectional
-                        // stream header.
-                        return;
-                    }
-
-                    buffer.Commit(bytesRead);
-
-                    // Stream type is a variable-length integer, but we only check the first byte. There is no known type requiring more than 1 byte.
-                    switch (buffer.ActiveSpan[0])
-                    {
-                        case (byte)Http3StreamType.Control:
+                        case Http3StreamType.Control:
                             if (Interlocked.Exchange(ref _haveServerControlStream, true))
                             {
                                 // A second control stream has been received.
                                 throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.StreamCreationError);
                             }
-
-                            // Discard the stream type header.
-                            buffer.Discard(1);
 
                             // Ownership of buffer is transferred to ProcessServerControlStreamAsync.
                             ArrayBuffer bufferCopy = buffer;
@@ -633,7 +652,7 @@ namespace System.Net.Http
 
                             await ProcessServerControlStreamAsync(stream, bufferCopy).ConfigureAwait(false);
                             return;
-                        case (byte)Http3StreamType.QPackDecoder:
+                        case Http3StreamType.QPackDecoder:
                             if (Interlocked.Exchange(ref _haveServerQpackDecodeStream, true))
                             {
                                 // A second QPack decode stream has been received.
@@ -644,7 +663,7 @@ namespace System.Net.Http
                             buffer.Dispose();
                             await stream.CopyToAsync(Stream.Null).ConfigureAwait(false);
                             return;
-                        case (byte)Http3StreamType.QPackEncoder:
+                        case Http3StreamType.QPackEncoder:
                             if (Interlocked.Exchange(ref _haveServerQpackEncodeStream, true))
                             {
                                 // A second QPack encode stream has been received.
@@ -656,35 +675,12 @@ namespace System.Net.Http
                             buffer.Dispose();
                             await stream.CopyToAsync(Stream.Null).ConfigureAwait(false);
                             return;
-                        case (byte)Http3StreamType.Push:
+                        case Http3StreamType.Push:
                             // We don't support push streams.
                             // Because no maximum push stream ID was negotiated via a MAX_PUSH_ID frame, server should not have sent this. Abort the connection with H3_ID_ERROR.
                             throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.IdError);
                         default:
                             // Unknown stream type. Per spec, these must be ignored and aborted but not be considered a connection-level error.
-
-                            if (NetEventSource.Log.IsEnabled())
-                            {
-                                // Read the rest of the integer, which might be more than 1 byte, so we can log it.
-
-                                long unknownStreamType;
-                                while (!VariableLengthIntegerHelper.TryRead(buffer.ActiveSpan, out unknownStreamType, out _))
-                                {
-                                    buffer.EnsureAvailableSpace(VariableLengthIntegerHelper.MaximumEncodedLength);
-                                    bytesRead = await stream.ReadAsync(buffer.AvailableMemory, CancellationToken.None).ConfigureAwait(false);
-
-                                    if (bytesRead == 0)
-                                    {
-                                        unknownStreamType = -1;
-                                        break;
-                                    }
-
-                                    buffer.Commit(bytesRead);
-                                }
-
-                                NetEventSource.Info(this, $"Ignoring server-initiated stream of unknown type {unknownStreamType}.");
-                            }
-
                             stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.StreamCreationError);
                             return;
                     }

@@ -245,19 +245,19 @@ namespace System.Text
             // avoiding loops.
 
 
-            char[] chars = Array.Empty<char>();
-            int charCount = _thisDecoder.GetCharCount(Array.Empty<byte>(), 0, 0, flush: true);
+            char[] chars = [];
+            int charCount = _thisDecoder.GetCharCount([], 0, 0, flush: true);
             if (charCount > 0)
             {
                 chars = new char[charCount];
-                charCount = _thisDecoder.GetChars(Array.Empty<byte>(), 0, 0, chars, 0, flush: true);
+                charCount = _thisDecoder.GetChars([], 0, 0, chars, 0, flush: true);
             }
 
             // convert chars -> bytes [inner]
             // It's possible that _innerEncoder might need to perform some end-of-text fixup
             // (due to flush: true), even if _thisDecoder didn't need to do so.
 
-            byte[] bytes = Array.Empty<byte>();
+            byte[] bytes = [];
             int byteCount = _innerEncoder.GetByteCount(chars, 0, charCount, flush: true);
             if (byteCount > 0)
             {

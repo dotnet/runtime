@@ -334,6 +334,7 @@ namespace BasicEventSourceTests
 
                 using (var listener = new EventListenerListener())
                 {
+                    listener.Start();
                     List<EventSource> eventSourceNotificationsReceived = new List<EventSource>();
                     listener.EventSourceCreated += (s, a) =>
                     {
@@ -388,6 +389,7 @@ namespace BasicEventSourceTests
             {
                 using (var listener = new EventListenerListener())
                 {
+                    listener.Start();
                     string esName = "EventSourceName_HopefullyUnique";
                     string esName2 = "EventSourceName_HopefullyUnique2";
                     bool esNameHit = false;
@@ -448,6 +450,7 @@ namespace BasicEventSourceTests
             {
                 using (var listener = new EventListenerListener())
                 {
+                    listener.Start();
                     listener.EventSourceSynchronousEnable(log);
 
                     var thrownException = new Exception("Oops");

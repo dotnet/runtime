@@ -27,7 +27,7 @@ namespace System.Text.Encodings.Web
         private readonly SearchValues<char> _allowedAsciiChars;
 #endif
 
-        internal OptimizedInboxTextEncoder(
+        internal unsafe OptimizedInboxTextEncoder(
             ScalarEscaperBase scalarEscaper,
             in AllowedBmpCodePointsBitmap allowedCodePointsBmp,
             bool forbidHtmlSensitiveCharacters = true,
@@ -392,72 +392,54 @@ namespace System.Text.Encodings.Web
             return (data.IsEmpty) ? -1 : dataOriginalLength - data.Length;
         }
 
-        public unsafe int GetIndexOfFirstCharToEncode(ReadOnlySpan<char> data)
+        public int GetIndexOfFirstCharToEncode(ReadOnlySpan<char> data)
         {
-            int asciiCharsSkipped = 0;
+            _AssertThisNotNull(); // hoist "this != null" check out of hot loop below
+
+            int idx = 0;
 
 #if NET
             // First, try calling the SIMD-enabled version.
             // The SIMD-enabled version handles only ASCII characters.
             if (data.Length >= 8)
             {
-                asciiCharsSkipped = data.IndexOfAnyExcept(_allowedAsciiChars);
+                idx = data.IndexOfAnyExcept(_allowedAsciiChars);
 
-                if ((uint)asciiCharsSkipped >= (uint)data.Length || char.IsAscii(data[asciiCharsSkipped]))
+                if ((uint)idx >= (uint)data.Length || char.IsAscii(data[idx]))
                 {
-                    // We either processed the whole span (in which case asciiCharsSkipped is -1), or we've found a disallowed ASCII char.
-                    return asciiCharsSkipped;
+                    // We either processed the whole span (in which case idx is -1), or we've found a disallowed ASCII char.
+                    return idx;
                 }
+
+                data = data.Slice(idx);
             }
 #endif
 
-            fixed (char* pData = data)
+            // unroll the loop 8x
+            while (data.Length >= 8)
             {
-                nuint lengthInChars = (uint)data.Length;
-                nuint idx = (uint)asciiCharsSkipped;
-
-                // If there's any leftover data, try consuming it now.
-
-                if (idx < lengthInChars)
-                {
-                    _AssertThisNotNull(); // hoist "this != null" check out of hot loop below
-
-                    // unroll the loop 8x
-                    nint loopIter = 0;
-                    for (; lengthInChars - idx >= 8; idx += 8)
-                    {
-                        loopIter = -1;
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx + (nuint)(++loopIter)])) { goto BrokeInUnrolledLoop; }
-                    }
-
-                    for (; idx < lengthInChars; idx++)
-                    {
-                        if (!_allowedBmpCodePoints.IsCharAllowed(pData[idx])) { break; }
-                    }
-
-                    goto Return;
-
-                BrokeInUnrolledLoop:
-                    idx += (nuint)loopIter;
-                }
-
-            Return:
-
-                Debug.Assert(0 <= idx && idx <= lengthInChars);
-                int idx32 = (int)idx;
-                if (idx32 == (int)lengthInChars)
-                {
-                    idx32 = -1;
-                }
-                return idx32;
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[0])) { goto Return; }
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[1])) { idx += 1; goto Return; }
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[2])) { idx += 2; goto Return; }
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[3])) { idx += 3; goto Return; }
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[4])) { idx += 4; goto Return; }
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[5])) { idx += 5; goto Return; }
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[6])) { idx += 6; goto Return; }
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[7])) { idx += 7; goto Return; }
+                idx += 8;
+                data = data.Slice(8);
             }
+
+            foreach (char c in data)
+            {
+                if (!_allowedBmpCodePoints.IsCharAllowed(c)) { goto Return; }
+                idx++;
+            }
+
+            return -1;
+
+        Return:
+            return idx;
         }
 
         /// <summary>

@@ -62,6 +62,45 @@ namespace System.IO.Packaging.Tests
             }
         }
 
+        [Theory]
+        [InlineData(FileAccess.Write)]
+        [InlineData(FileAccess.ReadWrite)]
+        public void GetStreamCreate_OverwritesExistingPartContentWithoutLeftoverBytes(FileAccess overwriteAccess)
+        {
+            FileInfo file = GetTempFileInfoWithExtension(".zip");
+            Uri partUri = PackUriHelper.CreatePartUri(new Uri("MyFile.bin", UriKind.Relative));
+            byte[] original = Enumerable.Repeat((byte)'A', 5000).ToArray();
+            byte[] replacement = Enumerable.Repeat((byte)'B', 10).ToArray();
+
+            using (Package package = Package.Open(file.FullName, FileMode.Create, FileAccess.ReadWrite))
+            {
+                PackagePart part = package.CreatePart(partUri, System.Net.Mime.MediaTypeNames.Application.Octet);
+                using Stream s = part.GetStream(FileMode.Create, FileAccess.Write);
+                s.Write(original, 0, original.Length);
+            }
+
+            using (Package package = Package.Open(file.FullName, FileMode.Open, FileAccess.ReadWrite))
+            {
+                PackagePart part = package.GetPart(partUri);
+                using Stream s = part.GetStream(FileMode.Create, overwriteAccess);
+
+                // The optimized discard path must still yield a seekable, empty, length-reporting stream.
+                Assert.True(s.CanSeek);
+                Assert.Equal(0L, s.Length);
+
+                s.Write(replacement, 0, replacement.Length);
+            }
+
+            using (Package package = Package.Open(file.FullName, FileMode.Open, FileAccess.Read))
+            {
+                PackagePart part = package.GetPart(partUri);
+                using Stream s = part.GetStream(FileMode.Open, FileAccess.Read);
+                using MemoryStream actual = new MemoryStream();
+                s.CopyTo(actual);
+                Assert.Equal(replacement, actual.ToArray());
+            }
+        }
+
         [Fact]
         public void T201_FileFormatException()
         {
@@ -3959,6 +3998,48 @@ namespace System.IO.Packaging.Tests
                 Assert.Equal(expectedZipFileBitFlags, generalBitFlags);
                 Assert.Equal(expectedCompressionOption, part.CompressionOption);
             }
+        }
+
+        [Fact]
+        public void Package_OpenOrCreate_ReadEntryWithoutWrite_DoesNotThrowOnDispose()
+        {
+            // Regression test: Opening a package with OpenOrCreate/ReadWrite on a non-expandable
+            // MemoryStream, then reading an entry without writing, should not throw on Dispose.
+            // Previously, the ZipArchive would attempt to rewrite even when no changes were made.
+
+            // First, create a valid package
+            byte[] packageData;
+            using (var ms = new MemoryStream())
+            {
+                using (Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+                {
+                    var partUri = PackUriHelper.CreatePartUri(new Uri("test.xml", UriKind.Relative));
+                    PackagePart part = package.CreatePart(partUri, Mime_MediaTypeNames_Text_Xml);
+                    using (Stream partStream = part.GetStream())
+                    using (StreamWriter sw = new StreamWriter(partStream))
+                    {
+                        sw.Write(s_DocumentXml);
+                    }
+                }
+                packageData = ms.ToArray();
+            }
+
+            // Create a non-expandable MemoryStream (fixed-size buffer)
+            byte[] originalData = (byte[])packageData.Clone();
+            var stream = new MemoryStream(packageData, writable: true);
+
+            // This should not throw - opening and disposing without changes
+            using (Package package = Package.Open(stream, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+            {
+                // Just access parts without modifying
+                var parts = package.GetParts();
+                Assert.NotEmpty(parts);
+            }
+
+            // Verify the stream was not modified (no rewrite occurred)
+            Assert.Equal(originalData.Length, stream.Length);
+            Assert.True(originalData.AsSpan().SequenceEqual(packageData),
+                "Stream content should be unchanged when no modifications were made");
         }
 
         [Fact]

@@ -419,7 +419,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Empty(missingMethods);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [ConditionalFact]
         public void DecryptOneShot_Cfb8_ToleratesExtraPadding()
         {
             using (SymmetricAlgorithm alg = CreateAlgorithm())
@@ -498,7 +498,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [ConditionalTheory]
         [InlineData(PaddingMode.PKCS7, 0)]
         [InlineData(PaddingMode.ANSIX923, 0)]
         [InlineData(PaddingMode.ISO10126, 0)]
@@ -553,7 +553,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [ConditionalTheory]
         [InlineData(PaddingMode.PKCS7)]
         [InlineData(PaddingMode.ANSIX923)]
         [InlineData(PaddingMode.ISO10126)]

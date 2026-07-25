@@ -10,17 +10,14 @@
 
   <ItemGroup>
     <Compile Include="ProductVersionInfoGenerator.cs" />
-    <Compile Include="EventSourceGenerator.cs" />
-    <Compile Include="EventSourceGenerator.Emitter.cs" />
-    <Compile Include="EventSourceGenerator.Parser.cs" />
     <Compile Include="IntrinsicsInSystemPrivateCoreLibAnalyzer.cs" />
     <Compile Include="NativeRuntimeEventSourceGenerator.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
   </ItemGroup>
 
   <ItemGroup>

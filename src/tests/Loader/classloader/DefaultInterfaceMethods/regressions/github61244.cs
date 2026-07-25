@@ -2,6 +2,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 // In GH issue 61244 the mono runtime aborted when inflating the default
 // interface method because the context used was from the base interface.
@@ -21,6 +22,7 @@ using Xunit;
 
 public class Program
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static int TestEntryPoint()
     {

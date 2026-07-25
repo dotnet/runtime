@@ -76,7 +76,7 @@
 
 %token VALUE_ VALUETYPE_ NATIVE_ INSTANCE_ SPECIALNAME_ FORWARDER_
 %token STATIC_ PUBLIC_ PRIVATE_ FAMILY_ FINAL_ SYNCHRONIZED_ INTERFACE_ SEALED_ NESTED_
-%token ABSTRACT_ AUTO_ SEQUENTIAL_ EXPLICIT_ ANSI_ UNICODE_ AUTOCHAR_ IMPORT_ ENUM_
+%token ABSTRACT_ AUTO_ SEQUENTIAL_ EXPLICIT_ EXTENDED_ ANSI_ UNICODE_ AUTOCHAR_ IMPORT_ ENUM_
 %token VIRTUAL_ NOINLINING_ AGGRESSIVEINLINING_ NOOPTIMIZATION_ AGGRESSIVEOPTIMIZATION_ UNMANAGEDEXP_ BEFOREFIELDINIT_ ASYNC_
 %token STRICT_ RETARGETABLE_ WINDOWSRUNTIME_ NOPLATFORM_
 %token METHOD_ FIELD_ PINNED_ MODREQ_ MODOPT_ SERIALIZABLE_ PROPERTY_ TYPE_
@@ -260,6 +260,7 @@ id                      : ID                                  { $$ = $1; }
                         | NOOPTIMIZATION_                     { $$ = newString("nooptimization"); }
                         | AGGRESSIVEOPTIMIZATION_             { $$ = newString("aggressiveoptimization"); }
                         | ASYNC_                              { $$ = newString("async"); }
+                        | EXTENDED_                           { $$ = newString("extended"); }
                         | SQSTRING                            { $$ = $1; }
                         ;
 
@@ -444,6 +445,7 @@ classAttr               : /* EMPTY */                       { $$ = (CorRegTypeAt
                         | classAttr AUTO_                   { $$ = (CorRegTypeAttr) (($1 & ~tdLayoutMask) | tdAutoLayout); }
                         | classAttr SEQUENTIAL_             { $$ = (CorRegTypeAttr) (($1 & ~tdLayoutMask) | tdSequentialLayout); }
                         | classAttr EXPLICIT_               { $$ = (CorRegTypeAttr) (($1 & ~tdLayoutMask) | tdExplicitLayout); }
+                        | classAttr EXTENDED_               { $$ = (CorRegTypeAttr) (($1 & ~tdLayoutMask) | tdExtendedLayout); }
                         | classAttr ANSI_                   { $$ = (CorRegTypeAttr) (($1 & ~tdStringFormatMask) | tdAnsiClass); }
                         | classAttr UNICODE_                { $$ = (CorRegTypeAttr) (($1 & ~tdStringFormatMask) | tdUnicodeClass); }
                         | classAttr AUTOCHAR_               { $$ = (CorRegTypeAttr) (($1 & ~tdStringFormatMask) | tdAutoClass); }

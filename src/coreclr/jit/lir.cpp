@@ -1215,7 +1215,7 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
 #ifndef DEBUG
     // The treatment of flags definitions is on a best-effort basis; it should
     // be used for debug purposes only.
-    static_assert_no_msg(!markFlagsOperands);
+    static_assert(!markFlagsOperands);
 #endif
 
     bool     sawUnmarkedNode    = false;

@@ -71,10 +71,7 @@ namespace System.Xml.Schema
                 for (int i = 0; i < schema.Includes.Count; ++i)
                 {
                     XmlSchemaExternal include = (XmlSchemaExternal)schema.Includes[i];
-                    if (include.Schema != null)
-                    {
-                        include.Schema.IsPreprocessed = true;
-                    }
+                    include.Schema?.IsPreprocessed = true;
                 }
             }
             return !HasErrors;

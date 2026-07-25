@@ -25,16 +25,8 @@ namespace System.ComponentModel.Composition
         private const char GenericFormatOpeningBracket = '{';
         private const char GenericFormatClosingBracket = '}';
 
-        [ThreadStatic]
-        private static Dictionary<Type, string>? typeIdentityCache;
-
-        private static Dictionary<Type, string> TypeIdentityCache
-        {
-            get
-            {
-                return typeIdentityCache ??= new Dictionary<Type, string>();
-            }
-        }
+        [field: ThreadStatic]
+        private static Dictionary<Type, string> TypeIdentityCache => field ??= new();
 
         internal static string GetTypeIdentity(Type type)
         {

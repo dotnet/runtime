@@ -14,7 +14,7 @@ namespace System.Collections.Frozen
             => AlternateLookupDelegateHolder<TAlternate>.Instance;
 
         private static class AlternateLookupDelegateHolder<TAlternate>
-#if NET9_0_OR_GREATER
+#if NET
 #pragma warning disable SA1001 // Commas should be spaced correctly
             where TAlternate : allows ref struct
 #pragma warning restore SA1001
@@ -30,7 +30,7 @@ namespace System.Collections.Frozen
 
         /// <inheritdoc cref="FindItemIndex(int)" />
         private int FindItemIndexAlternate<TAlternate>(TAlternate item)
-#if NET9_0_OR_GREATER
+#if NET
 #pragma warning disable SA1001 // Commas should be spaced correctly
             where TAlternate : allows ref struct
 #pragma warning restore SA1001

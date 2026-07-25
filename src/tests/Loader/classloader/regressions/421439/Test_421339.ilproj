@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Test.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="RefX1.ilproj" />
+    <ProjectReference Include="ValX1.ilproj" />
+  </ItemGroup>
+</Project>

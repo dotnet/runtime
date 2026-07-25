@@ -61,6 +61,39 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [InlineData(16)]
+        [InlineData(24)]
+        [InlineData(32)]
+        public static void KeySizeInBytes(int keyLength)
+        {
+            byte[] key = new byte[keyLength];
+
+#if NET
+#pragma warning disable SYSLIB0053
+            using (var aesGcm = new AesGcm(key))
+            {
+                Assert.Equal(keyLength, aesGcm.KeySizeInBytes);
+            }
+
+            using (var aesGcm = new AesGcm(key.AsSpan()))
+            {
+                Assert.Equal(keyLength, aesGcm.KeySizeInBytes);
+            }
+#pragma warning restore SYSLIB0053
+#endif
+
+            using (var aesGcm = new AesGcm(key, AesGcm.TagByteSizes.MinSize))
+            {
+                Assert.Equal(keyLength, aesGcm.KeySizeInBytes);
+            }
+
+            using (var aesGcm = new AesGcm(key.AsSpan(), AesGcm.TagByteSizes.MinSize))
+            {
+                Assert.Equal(keyLength, aesGcm.KeySizeInBytes);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(GetInvalidNonceSizes))]
         public static void InvalidNonceSize(int nonceSize)
         {
@@ -992,7 +1025,7 @@ namespace System.Security.Cryptography.Tests
     {
         public static bool RuntimeSaysIsNotSupported => !AesGcm.IsSupported;
 
-        [ConditionalFact(nameof(RuntimeSaysIsNotSupported))]
+        [ConditionalFact(typeof(AesGcmIsSupportedTests), nameof(RuntimeSaysIsNotSupported))]
         public static void CtorThrowsPNSEIfNotSupported()
         {
             byte[] key;

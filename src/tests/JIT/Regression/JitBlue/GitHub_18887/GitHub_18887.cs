@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace GitHub_18887;
+
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
@@ -51,7 +54,7 @@ public class Program
     bool forceUpload;
     BufferState currentState;
 
-    Program()
+    public Program()
     {
         this.forceUpload = false;
         this.currentState = new BufferState();

@@ -99,7 +99,6 @@ __SkipRestore=""
 __SourceDir="$__ProjectDir/src"
 __StaticAnalyzer=0
 __UnprocessedBuildArgs=
-__UseNinja=0
 __VerboseBuild=0
 __CMakeArgs=""
 __RequestedBuildComponents=""

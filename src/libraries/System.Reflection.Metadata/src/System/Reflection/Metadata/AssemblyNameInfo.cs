@@ -60,11 +60,11 @@ namespace System.Reflection.Metadata
 #else
             PublicKeyOrToken = parts._publicKeyOrToken is null ? default : parts._publicKeyOrToken.Length == 0
                 ? ImmutableArray<byte>.Empty
-    #if NET
+#if NET
                 : Runtime.InteropServices.ImmutableCollectionsMarshal.AsImmutableArray(parts._publicKeyOrToken);
-    #else
+#else
                 : ImmutableArray.Create(parts._publicKeyOrToken);
-    #endif
+#endif
 #endif
         }
 
@@ -203,7 +203,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentException">Provided assembly name was invalid.</exception>
         public static AssemblyNameInfo Parse(ReadOnlySpan<char> assemblyName)
             => TryParse(assemblyName, out AssemblyNameInfo? result)
-                ? result!
+                ? result
                 : throw new ArgumentException(SR.InvalidAssemblyName, nameof(assemblyName));
 
         /// <summary>

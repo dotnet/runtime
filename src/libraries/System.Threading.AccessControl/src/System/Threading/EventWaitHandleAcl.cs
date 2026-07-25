@@ -46,11 +46,7 @@ namespace System.Threading
 
             fixed (byte* pSecurityDescriptor = eventSecurity.GetSecurityDescriptorBinaryForm())
             {
-                var secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
-                {
-                    nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                    lpSecurityDescriptor = pSecurityDescriptor
-                };
+                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = Interop.Kernel32.SECURITY_ATTRIBUTES.Create(pSecurityDescriptor);
 
                 SafeWaitHandle handle = Interop.Kernel32.CreateEventEx(
                     (IntPtr)(&secAttrs),

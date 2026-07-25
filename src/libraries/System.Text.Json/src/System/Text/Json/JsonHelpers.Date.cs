@@ -516,6 +516,22 @@ namespace System.Text.Json
                 return false;
             }
 
+            // Per ISO 8601-1:2019, 24:00:00 represents end of a calendar day
+            // (same instant as next day's 00:00:00), but only when minute, second, and fraction are all zero.
+            // We treat it as hour=0 and add one day at the end.
+            bool isEndOfDay = false;
+            if (parseData.Hour == 24)
+            {
+                if (parseData.Minute != 0 || parseData.Second != 0 || parseData.Fraction != 0)
+                {
+                    value = default;
+                    return false;
+                }
+
+                parseData.Hour = 0;
+                isEndOfDay = true;
+            }
+
             if (((uint)parseData.Hour) > 23)
             {
                 value = default;
@@ -545,6 +561,18 @@ namespace System.Text.Json
             int totalSeconds = (parseData.Hour * 3600) + (parseData.Minute * 60) + parseData.Second;
             ticks += totalSeconds * TimeSpan.TicksPerSecond;
             ticks += parseData.Fraction;
+
+            // If hour was originally 24 (end of day per ISO 8601), add one day to advance to next day's 00:00:00
+            if (isEndOfDay)
+            {
+                ticks += TimeSpan.TicksPerDay;
+                if ((ulong)ticks > (ulong)DateTime.MaxValue.Ticks)
+                {
+                    value = default;
+                    return false;
+                }
+            }
+
             value = new DateTime(ticks: ticks, kind: kind);
             return true;
         }

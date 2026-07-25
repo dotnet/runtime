@@ -536,15 +536,12 @@ namespace System.Runtime.Serialization
                 {
                     throw new InvalidDataContractException(SR.Format(SR.MissingSchemaType, typeQName, DataContract.GetClrTypeFullName(clrType)));
                 }
-                if (xsdType != null)
-                {
-                    xsdType.Annotation = GetSchemaAnnotation(
-                                           ExportSurrogateData(dataContract),
-                                           dataContract.IsValueType ?
-                                             GetAnnotationMarkup(IsValueTypeName, XmlConvert.ToString(dataContract.IsValueType), schema!) :
-                                             null
-                                         );
-                }
+                xsdType?.Annotation = GetSchemaAnnotation(
+                                        ExportSurrogateData(dataContract),
+                                        dataContract.IsValueType ?
+                                          GetAnnotationMarkup(IsValueTypeName, XmlConvert.ToString(dataContract.IsValueType), schema!) :
+                                          null
+                                      );
             }
         }
 

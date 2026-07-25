@@ -7,6 +7,7 @@ using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class Test_finalizearraysleep {
 
@@ -40,6 +41,7 @@ public class Test_finalizearraysleep {
         }
     }
 
+    [ActiveIssue("PlatformDetection.IsPreciseGcSupported false on mono", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint() {
         CreateObj temp = new CreateObj();

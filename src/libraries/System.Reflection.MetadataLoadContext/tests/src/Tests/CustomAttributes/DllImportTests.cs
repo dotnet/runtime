@@ -48,6 +48,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/mono/mono/issues/15340", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         [MemberData(nameof(MarshalAsTheoryData))]
         public static void TestMarshalAsPseudoCustomAttribute(string fieldName, MarshalAsAttribute expected)
         {

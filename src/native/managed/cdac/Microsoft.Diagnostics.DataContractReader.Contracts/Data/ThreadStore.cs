@@ -3,27 +3,13 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ThreadStore : IData<ThreadStore>
+[CdacType(nameof(DataType.ThreadStore))]
+internal sealed partial class ThreadStore : IData<ThreadStore>
 {
-    static ThreadStore IData<ThreadStore>.Create(Target target, TargetPointer address)
-        => new ThreadStore(target, address);
-
-    public ThreadStore(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ThreadStore);
-
-        ThreadCount = target.Read<int>(address + (ulong)type.Fields[nameof(ThreadCount)].Offset);
-        FirstThreadLink = target.ReadPointer(address + (ulong)type.Fields[nameof(FirstThreadLink)].Offset);
-        UnstartedCount = target.Read<int>(address + (ulong)type.Fields[nameof(UnstartedCount)].Offset);
-        BackgroundCount = target.Read<int>(address + (ulong)type.Fields[nameof(BackgroundCount)].Offset);
-        PendingCount = target.Read<int>(address + (ulong)type.Fields[nameof(PendingCount)].Offset);
-        DeadCount = target.Read<int>(address + (ulong)type.Fields[nameof(DeadCount)].Offset);
-    }
-
-    public int ThreadCount { get; init; }
-    public TargetPointer FirstThreadLink { get; init; }
-    public int UnstartedCount { get; init; }
-    public int BackgroundCount { get; init; }
-    public int PendingCount { get; init; }
-    public int DeadCount { get; init; }
+    [Field] public partial int ThreadCount { get; }
+    [Field] public partial TargetPointer FirstThreadLink { get; }
+    [Field] public partial int UnstartedCount { get; }
+    [Field] public partial int BackgroundCount { get; }
+    [Field] public partial int PendingCount { get; }
+    [Field] public partial int DeadCount { get; }
 }

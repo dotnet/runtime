@@ -46,8 +46,6 @@ namespace ILCompiler.DependencyAnalysis
 
             EcmaAssembly ecmaAssembly = (EcmaAssembly)_module;
 
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ecmaAssembly);
-
             foreach (EcmaModule satelliteModule in ((UsageBasedMetadataManager)factory.MetadataManager).GetSatelliteAssemblies(ecmaAssembly))
             {
                 dependencies.Add(factory.ModuleMetadata(satelliteModule), "Satellite assembly");
@@ -56,16 +54,22 @@ namespace ILCompiler.DependencyAnalysis
             return dependencies;
         }
 
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            var dependencies = new List<CombinedDependencyListEntry>();
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, (EcmaAssembly)_module);
+            return dependencies;
+        }
+
         protected override string GetName(NodeFactory factory)
         {
-            return "Reflectable module: " + ((IAssemblyDesc)_module).GetName().FullName;
+            return "Reflectable module: " + ((IAssemblyDesc)_module).GetName().Name;
         }
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
-        public override bool HasConditionalStaticDependencies => false;
+        public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
     }
 }

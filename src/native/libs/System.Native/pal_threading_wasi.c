@@ -3,6 +3,7 @@
 
 #include "pal_config.h"
 #include "pal_threading.h"
+#include "pal_errno.h"
 
 #include <stdio.h>
 #include <limits.h>

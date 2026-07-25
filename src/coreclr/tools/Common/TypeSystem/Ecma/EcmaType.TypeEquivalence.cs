@@ -28,7 +28,7 @@ namespace Internal.TypeSystem.Ecma
                 if (attributeHandle.IsNil)
                     return null;
 
-                guidAttribute = this.MetadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(this.EcmaModule));
+                guidAttribute = this.MetadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(this.Module));
             }
 
             if (!guidAttribute.HasValue)
@@ -41,10 +41,10 @@ namespace Internal.TypeSystem.Ecma
                 return null;
 
             string scope = (string)guidAttribute.Value.FixedArguments[0].Value;
-            string name = this.Name;
+            string name = this.GetName();
 
-            if (this.Namespace != null)
-                name = this.Namespace + "." + name;
+            if (this.Namespace.Length > 0)
+                name = this.GetNamespace() + "." + name;
 
             return new TypeIdentifierData(scope, name);
         }

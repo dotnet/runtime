@@ -14,6 +14,9 @@
     <Compile Include="thdtreelivingobj.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="bintree.csproj" />
   </ItemGroup>
 </Project>

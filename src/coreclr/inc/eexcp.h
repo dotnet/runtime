@@ -67,7 +67,7 @@ struct EE_ILEXCEPTION : public COR_ILMETHOD_SECT_FAT
     }
 };
 
-#define COR_ILEXCEPTION_CLAUSE_CACHED_CLASS     0x10000000
+#define COR_ILEXCEPTION_CLAUSE_CACHED_CLASS     0x10000000 // [cDAC] [ExecutionManager] : Contract depends on this value.
 
 inline BOOL HasCachedTypeHandle(EE_ILEXCEPTION_CLAUSE *EHClause)
 {

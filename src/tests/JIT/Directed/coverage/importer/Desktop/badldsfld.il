@@ -17,10 +17,9 @@ ret
 .method public static int32 Main()
 {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = {}
-.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
     string('https://github.com/dotnet/runtime/issues/91923')
-    type([TestLibrary]TestLibrary.PlatformDetection)
-    string[1] ('IsAppleMobile')
+    int32(0x2) // Mono
 }
 .entrypoint
 .try

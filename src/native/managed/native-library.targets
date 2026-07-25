@@ -22,10 +22,10 @@
           Condition="'$(IsRuntimeComponent)' == 'true' and '$(TargetsWindows)' != 'true'">
     <PropertyGroup>
       <StrippedOutputPath>$(OutputPath)stripped\</StrippedOutputPath>
-      <StripSourceFile>$(StrippedOutputPath)$(TargetName)$(NativeBinaryExt)</StripSourceFile>
+      <StripSourceFile>$(StrippedOutputPath)$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</StripSourceFile>
       <StrippedExt Condition="'$(StrippedExt)' == '' and ('$(TargetsOSX)' == 'true' or '$(TargetsAppleMobile)' == 'true')">.dylib.dwarf</StrippedExt>
       <StrippedExt Condition="'$(TargetsUnix)' == 'true' and '$(StrippedExt)' == ''">.so.dbg</StrippedExt>
-      <StripDestinationFile>$(StrippedOutputPath)$(TargetName)$(StrippedExt)</StripDestinationFile>
+      <StripDestinationFile>$(StrippedOutputPath)$(NativeBinaryPrefix)$(TargetName)$(StrippedExt)</StripDestinationFile>
     </PropertyGroup>
   </Target>
 
@@ -54,14 +54,14 @@
   <Target Name="StripLibraryLikeCoreCLRBuild"
           DependsOnTargets="SetupOSSpecificProps;LinkNative;StripLibraryLikeCoreCLRSetupPaths"
           Condition="'$(IsRuntimeComponent)' == 'true' and '$(TargetsWindows)' != 'true'"
-          Inputs="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)"
+          Inputs="$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)"
           Outputs="$(StripSourceFile);$(StripDestinationFile)">
     <Error Text="Do not set StripSymbols to true - runtime components stripping is controlled by native-library.targets" Condition="'$(StripSymbols)' == 'true'" />
 
-    <Message Importance="Normal" Text="Stripping $(NativeOutputPath)$(TargetName)$(NativeBinaryExt) into $(StripSourceFile) and $(StripDestinationFile)" />
+    <Message Importance="Normal" Text="Stripping $(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt) into $(StripSourceFile) and $(StripDestinationFile)" />
 
     <!-- copy from the native/ subfolder to the stripped/ subfolder -->
-    <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)"
+    <Copy SourceFiles="$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)"
           DestinationFolder="$(StrippedOutputPath)"
           SkipUnchangedFiles="true" />
 
@@ -70,7 +70,7 @@
       <_StripLike Condition="'$(_StripLike)' == ''">gnu</_StripLike>
     </PropertyGroup>
 
-    <Exec Command="dsymutil --flat $(LikeCoreCLRDSymUtilMinimizeOpt) $(StripSourceFile)" Condition="'$(_StripLike)' == 'apple'"/> <!-- produces the .dylib.dwarf file -->
+    <Exec Command="dsymutil --flat $(LikeCoreCLRDSymUtilMinimizeOpt) $(StripSourceFile)" Condition="'$(_StripLike)' == 'apple'" IgnoreStandardErrorWarningFormat="true" /> <!-- produces the .dylib.dwarf file -->
     <Exec Command="strip -no_code_signature_warning -S $(StripSourceFile)" Condition="'$(_StripLike)' == 'apple'"/>
     <!-- runtime build runs "codesign -f -s - libWhatever.dylib" in release configurations -->
     <Exec Command="codesign -f -s - $(StripSourceFile)" Condition="'$(RuntimeConfiguration)' == 'Release' and '$(_StripLike)' == 'apple'" />

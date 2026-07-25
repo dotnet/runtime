@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdump.h"
+#include <minipal/ospagesize.h>
 
 #if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
 long g_pageSize = 0;
@@ -20,7 +21,7 @@ CreateDump(const CreateDumpOptions& options)
 
     // Initialize PAGE_SIZE
 #if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
-    g_pageSize = sysconf(_SC_PAGESIZE);
+    g_pageSize = minipal_getpagesize();
 #endif
     TRACE("PAGE_SIZE %d\n", PAGE_SIZE);
 

@@ -1,0 +1,75 @@
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+
+# This file is consumed by GitHub by default and the git-blame command
+# optionally to make blames ignore uninteresting commits. See docs here:
+# https://docs.github.com/en/repositories/working-with-files/using-files/viewing-and-understanding-files#ignore-commits-in-the-blame-view
+# To configure git-blame to use this file, run:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# These are the commits that trim gc.cpp copies to contain only
+# the functions relevant to each split file. They should be ignored
+# when running git blame.
+
+# region_allocator.cpp
+d49754129145a19ad7aa5a69122e58d09375f4ac
+
+# region_free_list.cpp
+83fa3f4a0493c9c57f44c7cb6e77bb5dfb05ea91
+
+# finalization.cpp
+2ab9d88c8dd2431fc7a09527dd4adb24848a4ece
+
+# interface.cpp
+b91cb52f3b3f23cdb45ac7234a7cab974cbed9af
+
+# allocation.cpp
+d682279be75df3debe5413c5fed486cfdabc3534
+
+# mark_phase.cpp
+6fbf6a2dd6b5c701119368c08276a3ba552b6683
+
+# plan_phase.cpp
+1b46271bd978040090987df603c062a715f0af65
+
+# relocate_compact.cpp
+35d6f5a8e0323294d7b9ff4bea3c4213a3db2ccb
+
+# sweep.cpp
+43fc659bc9145cab1a4a73aae73ac853bc330256
+
+# background.cpp
+81e8f3b4f28894173c6cd3a3a76c4e7f856e8a66
+
+# regions_segments.cpp
+ba70358a247a319a5e2895fde84b2579172f3d2b
+
+# card_table.cpp
+42f56409dc3c7f2443d28230e3e17c50df9d5629
+
+# memory.cpp
+7aa69f096ff5b56e3669b0fe344b85b04426a52e
+
+# diagnostics.cpp
+7932b9d8847f277d1fdfe0375a71c35c0a6969f3
+
+# dynamic_tuning.cpp
+cdc50607148e41906aafb60e2aeb6aa392d1a249
+
+# no_gc.cpp
+2f4ec5f3f7ec88320804b5cabfb8fce5088b4dbd
+
+# dynamic_heap_count.cpp
+b22c2d115c34e36fa5711caae405e8ee1292d167
+
+# init.cpp
+29123fc5becb2b883b9a335392bf8f1fa709b3e9
+
+# collect.cpp
+b5a1146dcfd341e93178530625503dd4fdff5126
+
+# gc.cpp - trim to core infrastructure
+b3e810d361b0652e4caa9476b88cb66f4ed1eed2
+
+# Prepare: rename gc.cpp to gc_full.cpp
+2fdb93ffc36e8c55b713b017e566deae4438938b

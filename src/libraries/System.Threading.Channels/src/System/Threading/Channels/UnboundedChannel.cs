@@ -231,6 +231,16 @@ namespace System.Threading.Channels
                 ChannelUtilities.FailOperations(blockedReadersHead, ChannelUtilities.CreateInvalidCompletionException(error));
                 ChannelUtilities.SetOrFailOperations(waitingReadersHead, result: false, error: error);
 
+                // If we didn't complete above because IsEmpty was false, recheck. A concurrent TryRead
+                // may have dequeued the last item but not yet called CompleteIfDone, or its CompleteIfDone
+                // may have seen _doneWriting as null. Since no new items can be enqueued at this point,
+                // if the queue is now empty, we should complete. ChannelUtilities.Complete is idempotent
+                // and thread-safe.
+                if (!completeTask && parent._items.IsEmpty)
+                {
+                    ChannelUtilities.Complete(parent._completion, error);
+                }
+
                 // Successfully transitioned to completed.
                 return true;
             }

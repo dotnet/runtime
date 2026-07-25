@@ -37,7 +37,6 @@ namespace hostpolicy_resolver
         const fx_definition_vector_t& fx_definitions,
         const pal::string_t& app_candidate,
         const pal::string_t& specified_deps_file,
-        const std::vector<pal::string_t>& probe_realpaths,
         pal::string_t* impl_dir);
 };
 

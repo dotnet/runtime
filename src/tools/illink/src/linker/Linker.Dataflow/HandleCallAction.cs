@@ -290,7 +290,7 @@ namespace ILLink.Shared.TrimAnalysis
                 return false;
             }
 
-            if (!_reflectionMarker.TryResolveTypeNameAndMark(resolvedAssembly, typeName, _diagnosticContext, out TypeReference? foundType))
+            if (!_reflectionMarker.TryResolveTypeNameAndMark(resolvedAssembly, typeName, _diagnosticContext, fallbackToCoreLib: true, out TypeReference? foundType))
             {
                 // It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
                 // Note that we did find the assembly, so it's not a ILLink config problem, it's either intentional, or wrong versions of assemblies
@@ -304,8 +304,44 @@ namespace ILLink.Shared.TrimAnalysis
             return true;
         }
 
+        private partial string? GetAssemblyName(TypeProxy type)
+            => type.Type switch
+            {
+                ArrayType or PointerType or ByReferenceType or FunctionPointerType or GenericParameter => null,
+                // typeof(System.Array).Assembly is rejected because Cecil's ldtoken handling lowers
+                // typeof(SomeType[]) to System.Array, which would otherwise produce wrong analysis
+                // for non-CoreLib element types (System.Array.Assembly returns CoreLib at runtime).
+                _ when type.Type.IsTypeOf(WellKnownType.System_Array) => null,
+                _ => type.Type.Module?.Assembly.Name.Name,
+            };
+
+        private partial bool TryResolveTypeNameInAssemblyAndMark(string assemblyName, string typeName, out TypeProxy resolvedType)
+        {
+            var resolvedAssembly = _context.TryResolve(assemblyName);
+            if (resolvedAssembly is null)
+            {
+                resolvedType = default;
+                return false;
+            }
+
+            if (!_reflectionMarker.TryResolveTypeNameAndMark(resolvedAssembly, typeName, _diagnosticContext, fallbackToCoreLib: false, out TypeReference? foundType))
+            {
+                resolvedType = default;
+                return false;
+            }
+
+            resolvedType = new TypeProxy(foundType, _context);
+            return true;
+        }
+
         private partial void MarkStaticConstructor(TypeProxy type)
             => _reflectionMarker.MarkStaticConstructor(_diagnosticContext.Origin, type.Type);
+
+        private partial void ReportRequiresUnreferencedCode(MethodProxy calledMethod)
+        {
+            if (_context.Annotations.DoesMethodRequireUnreferencedCode(calledMethod.Definition, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
+                MarkStep.ReportRequiresUnreferencedCode(calledMethod.GetDisplayName(), requiresUnreferencedCode, _diagnosticContext);
+        }
 
         private partial void MarkEventsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
             => _reflectionMarker.MarkEventsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, e => e.Name == name, bindingFlags);

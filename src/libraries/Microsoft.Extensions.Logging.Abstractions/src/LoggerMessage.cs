@@ -482,7 +482,7 @@ namespace Microsoft.Extensions.Logging
                     {
                         return new KeyValuePair<string, object?>("{OriginalFormat}", _formatter.OriginalFormat);
                     }
-                    throw new IndexOutOfRangeException(nameof(index));
+                    throw new IndexOutOfRangeException();
                 }
             }
 
@@ -525,7 +525,7 @@ namespace Microsoft.Extensions.Logging
                         case 1:
                             return new KeyValuePair<string, object?>("{OriginalFormat}", _formatter.OriginalFormat);
                         default:
-                            throw new IndexOutOfRangeException(nameof(index));
+                            throw new IndexOutOfRangeException();
                     }
                 }
             }
@@ -577,7 +577,7 @@ namespace Microsoft.Extensions.Logging
                         case 2:
                             return new KeyValuePair<string, object?>("{OriginalFormat}", _formatter.OriginalFormat);
                         default:
-                            throw new IndexOutOfRangeException(nameof(index));
+                            throw new IndexOutOfRangeException();
                     }
                 }
             }
@@ -626,7 +626,7 @@ namespace Microsoft.Extensions.Logging
                         case 3:
                             return new KeyValuePair<string, object?>("{OriginalFormat}", _formatter.OriginalFormat);
                         default:
-                            throw new IndexOutOfRangeException(nameof(index));
+                            throw new IndexOutOfRangeException();
                     }
                 }
             }
@@ -684,7 +684,7 @@ namespace Microsoft.Extensions.Logging
                         case 4:
                             return new KeyValuePair<string, object?>("{OriginalFormat}", _formatter.OriginalFormat);
                         default:
-                            throw new IndexOutOfRangeException(nameof(index));
+                            throw new IndexOutOfRangeException();
                     }
                 }
             }
@@ -748,7 +748,7 @@ namespace Microsoft.Extensions.Logging
                         case 5:
                             return new KeyValuePair<string, object?>("{OriginalFormat}", _formatter.OriginalFormat);
                         default:
-                            throw new IndexOutOfRangeException(nameof(index));
+                            throw new IndexOutOfRangeException();
                     }
                 }
             }
@@ -816,7 +816,7 @@ namespace Microsoft.Extensions.Logging
                         case 6:
                             return new KeyValuePair<string, object?>("{OriginalFormat}", _formatter.OriginalFormat);
                         default:
-                            throw new IndexOutOfRangeException(nameof(index));
+                            throw new IndexOutOfRangeException();
                     }
                 }
             }

@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.TestFramework;
 [ExpectILFailure("Mono.Linker.Tests.Cases.TestFramework.Dependencies.AssemblyWithInvalidIL.GiveMeAValue()",
     "ReturnMissing: Return value missing on the stack",
     "Offset IL_0000")]
-[SetupLinkerArgument("--skip-unresolved", "true")] // needed due to the mscorlib shim
+[SkipUnresolved(true)] // needed due to the mscorlib shim
 [Define("IL_ASSEMBLY_AVAILABLE")]
 [SetupCompileBefore("ILAssembly.dll", new[] { "Dependencies/AssemblyWithInvalidIL.il" })]
 [KeptMemberInAssembly("ILAssembly.dll", "Mono.Linker.Tests.Cases.TestFramework.Dependencies.AssemblyWithInvalidIL", "GiveMeAValue()")]

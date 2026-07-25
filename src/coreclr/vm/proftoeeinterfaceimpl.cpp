@@ -668,7 +668,7 @@ void __stdcall GarbageCollectionStartedCallback(int generation, BOOL induced)
     // Mark that we are starting a GC.  This will allow profilers to do limited object inspection
     // during callbacks that occur while a GC is happening.
     //
-    g_profControlBlock.fGCInProgress = TRUE;
+    g_profControlBlock.fGCInProgress = true;
 
     // Notify the profiler of start of the collection
     {
@@ -712,7 +712,7 @@ void __stdcall GarbageCollectionFinishedCallback()
     }
 
     // Mark that GC is finished.
-    g_profControlBlock.fGCInProgress = FALSE;
+    g_profControlBlock.fGCInProgress = false;
 #endif // PROFILING_SUPPORTED
 }
 
@@ -759,7 +759,7 @@ GenerationTable::GenerationTable() : mutex(CrstLeafLock, CRST_UNSAFE_ANYMODE)
 
 void GenerationTable::AddRecord(int generation, BYTE* rangeStart, BYTE* rangeEnd, BYTE* rangeEndReserved)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -768,7 +768,7 @@ void GenerationTable::AddRecord(int generation, BYTE* rangeStart, BYTE* rangeEnd
         PRECONDITION(CheckPointer(rangeStart));
         PRECONDITION(CheckPointer(rangeEnd));
         PRECONDITION(CheckPointer(rangeEndReserved));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     CrstHolder holder(&mutex);
 
@@ -783,16 +783,15 @@ void GenerationTable::AddRecord(int generation, BYTE* rangeStart, BYTE* rangeEnd
             _ASSERTE (genDescTable[i].generation == generation);
             _ASSERTE (genDescTable[i].rangeEnd == rangeEnd);
             _ASSERTE (genDescTable[i].rangeEndReserved == rangeEndReserved);
-            RETURN;
+            return;
         }
     }
     AddRecordNoLock(generation, rangeStart, rangeEnd, rangeEndReserved);
-    RETURN;
 }
 
 void GenerationTable::AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* rangeEnd, BYTE* rangeEndReserved)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -801,7 +800,7 @@ void GenerationTable::AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* ra
         PRECONDITION(CheckPointer(rangeStart));
         PRECONDITION(CheckPointer(rangeEnd));
         PRECONDITION(CheckPointer(rangeEndReserved));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     _ASSERTE (mutex.OwnedByCurrentThread());
     if (count >= capacity)
@@ -813,7 +812,7 @@ void GenerationTable::AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* ra
             count = capacity = 0;
             delete[] genDescTable;
             genDescTable = nullptr;
-            RETURN;
+            return;
         }
         memcpy(newGenDescTable, genDescTable, sizeof(genDescTable[0]) * count);
         delete[] genDescTable;
@@ -828,7 +827,6 @@ void GenerationTable::AddRecordNoLock(int generation, BYTE* rangeStart, BYTE* ra
     genDescTable[count].rangeEndReserved = rangeEndReserved;
 
     count = count + 1;
-    RETURN;
 }
 
 HRESULT GenerationTable::GetGenerationBounds(ULONG cObjectRanges, ULONG* pcObjectRanges, COR_PRF_GC_GENERATION_RANGE* ranges)
@@ -879,7 +877,7 @@ static void GenWalkFunc(void * context,
                         BYTE * rangeEnd,
                         BYTE * rangeEndReserved)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -889,11 +887,10 @@ static void GenWalkFunc(void * context,
         PRECONDITION(CheckPointer(rangeStart));
         PRECONDITION(CheckPointer(rangeEnd));
         PRECONDITION(CheckPointer(rangeEndReserved));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     GenerationTable *generationTable = (GenerationTable *)context;
     generationTable->AddRecordNoLock(generation, rangeStart, rangeEnd, rangeEndReserved);
-    RETURN;
 }
 
 void GenerationTable::Refresh()
@@ -923,16 +920,15 @@ static Volatile<LONG> s_generationTableWriterCount;
 
 void __stdcall UpdateGenerationBounds()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY; // can be called even on GC threads
 #ifdef PROFILING_SUPPORTED
         PRECONDITION(InterlockedIncrement(&s_generationTableWriterCount) == 1);
-        POSTCONDITION(InterlockedDecrement(&s_generationTableWriterCount) == 0);
 #endif // PROFILING_SUPPORTED
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
 #ifdef PROFILING_SUPPORTED
     // Notify the profiler of start of the collection
@@ -952,22 +948,31 @@ void __stdcall UpdateGenerationBounds()
 
         if (s_currentGenerationTable == nullptr)
         {
-            RETURN;
+#ifdef ENABLE_CONTRACTS_IMPL
+            LONG result = InterlockedDecrement(&s_generationTableWriterCount);
+            _ASSERTE(result == 0);
+#endif
+            return;
         }
         s_currentGenerationTable->Refresh();
     }
 #endif // PROFILING_SUPPORTED
-    RETURN;
+#ifdef ENABLE_CONTRACTS_IMPL
+    {
+        LONG result = InterlockedDecrement(&s_generationTableWriterCount);
+        _ASSERTE(result == 0);
+    }
+#endif
 }
 
 void __stdcall ProfilerAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY; // can be called even on GC threads
-    } CONTRACT_END;
+    } CONTRACTL_END;
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackGC() || CORProfilerTrackBasicGC())
     {
@@ -977,7 +982,6 @@ void __stdcall ProfilerAddNewRegion(int generation, uint8_t* rangeStart, uint8_t
         }
     }
 #endif // PROFILING_SUPPORTED
-    RETURN;
 }
 
 #ifdef PROFILING_SUPPORTED
@@ -1606,7 +1610,7 @@ HRESULT ProfToEEInterfaceImpl::GetHandleFromThread(ThreadID threadId, HANDLE *ph
     else if (phThread)
         *phThread = hThread;
 
-    return (hr);
+    return hr;
 }
 
 HRESULT ProfToEEInterfaceImpl::GetObjectSize(ObjectID objectId, ULONG *pcSize)
@@ -1670,7 +1674,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectSize(ObjectID objectId, ULONG *pcSize)
     }
 
     // Indicate success
-    return (S_OK);
+    return S_OK;
 }
 
 HRESULT ProfToEEInterfaceImpl::GetObjectSize2(ObjectID objectId, SIZE_T *pcSize)
@@ -1729,7 +1733,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectSize2(ObjectID objectId, SIZE_T *pcSize)
     }
 
     // Indicate success
-    return (S_OK);
+    return S_OK;
 }
 
 
@@ -1777,7 +1781,7 @@ HRESULT ProfToEEInterfaceImpl::IsArrayClass(
         // Fill in the type if they want it
         if (pBaseElemType != NULL)
         {
-            *pBaseElemType = th.GetArrayElementTypeHandle().GetVerifierCorElementType();
+            *pBaseElemType = th.GetArrayElementTypeHandle().GetInternalCorElementType();
         }
 
         // If this is an array of classes and they wish to have the base type
@@ -1896,7 +1900,7 @@ HRESULT ProfToEEInterfaceImpl::GetCurrentThreadID(ThreadID *pThreadId)
     else if (pThreadId)
         *pThreadId = (ThreadID) pThread;
 
-    return (hr);
+    return hr;
 }
 
 //---------------------------------------------------------------------------------------
@@ -2535,6 +2539,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
         if (SUCCEEDED(hr))
         {
             PCODE pCodeStart = (PCODE)NULL;
+#ifdef FEATURE_CODE_VERSIONING
             CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
             {
                 ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMethodDesc, reJitId);
@@ -2549,6 +2554,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
                     break;
                 }
             }
+#endif // FEATURE_CODE_VERSIONING
 
             hr = GetCodeInfoFromCodeStart(pCodeStart,
                                           cCodeInfos,
@@ -4101,7 +4107,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
     }
     EX_CATCH_HRESULT(hr);
 
-    return (hr);
+    return hr;
 }
 
 
@@ -4187,7 +4193,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleMetaData(ModuleID    moduleId,
     if (SUCCEEDED(hr) && ppOut)
         hr = pObj->QueryInterface(riid, (void **) ppOut);
 
-    return (hr);
+    return hr;
 }
 
 
@@ -4256,7 +4262,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
     PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
     if (!pPEAssembly->IsLoaded())
-        return (CORPROF_E_DATAINCOMPLETE);
+        return CORPROF_E_DATAINCOMPLETE;
 
     LPCBYTE pbMethod = NULL;
 
@@ -4272,7 +4278,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
         // Check to see if the method has associated IL
         if ((RVA == 0 && !pPEAssembly->IsReflectionEmit()) || !(IsMiIL(dwImplFlags) || IsMiOPTIL(dwImplFlags) || IsMiInternalCall(dwImplFlags)))
         {
-            return (CORPROF_E_FUNCTION_NOT_IL);
+            return CORPROF_E_FUNCTION_NOT_IL;
         }
 
         EX_TRY
@@ -4301,7 +4307,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
         }
         *pcbMethodSize = static_cast<ULONG>(PEDecoder::ComputeILMethodSize((TADDR)pbMethod));
     }
-    return (S_OK);
+    return S_OK;
 }
 
 //---------------------------------------------------------------------------------------
@@ -4367,7 +4373,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBodyAllocator(ModuleID         modul
     if (pModule->IsBeingUnloaded() ||
         !pModule->GetPEAssembly()->IsLoaded())
     {
-        return (CORPROF_E_DATAINCOMPLETE);
+        return CORPROF_E_DATAINCOMPLETE;
     }
 
     *ppMalloc = &ModuleILHeap::s_Heap;
@@ -4430,7 +4436,7 @@ HRESULT ProfToEEInterfaceImpl::SetILFunctionBody(ModuleID    moduleId,
 
     // Cannot set the body for anything other than a method def
     if (TypeFromToken(methodId) != mdtMethodDef)
-        return (E_INVALIDARG);
+        return E_INVALIDARG;
 
     // Cast module to appropriate type
     pModule = (Module *) moduleId;
@@ -4448,7 +4454,7 @@ HRESULT ProfToEEInterfaceImpl::SetILFunctionBody(ModuleID    moduleId,
     // the new ReJIT APIs.
     pModule->SetDynamicIL(methodId, (TADDR)pbNewILMethodHeader);
 
-    return (hr);
+    return hr;
 }
 
 /*
@@ -4654,13 +4660,13 @@ HRESULT ProfToEEInterfaceImpl::GetThreadContext(ThreadID threadId,
 
     // If there's no current context, return incomplete info
     if (!pContext)
-        return (CORPROF_E_DATAINCOMPLETE);
+        return CORPROF_E_DATAINCOMPLETE;
 
     // Set the result and return
     if (pContextId)
         *pContextId = reinterpret_cast<ContextID>(pContext);
 
-    return (S_OK);
+    return S_OK;
 }
 
 HRESULT ProfToEEInterfaceImpl::GetClassIDInfo(ClassID classId,
@@ -4746,7 +4752,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo(ClassID classId,
         }
     }
 
-    return (S_OK);
+    return S_OK;
 }
 
 
@@ -4810,7 +4816,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo(FunctionID functionId,
         *pToken = pMDesc->GetMemberDef();
     }
 
-    return (S_OK);
+    return S_OK;
 }
 
 /*
@@ -4919,6 +4925,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
         else
         {
             PCODE pCodeStart = (PCODE)NULL;
+#ifdef FEATURE_CODE_VERSIONING
             CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
             ILCodeVersion ilCodeVersion = NULL;
             {
@@ -4934,6 +4941,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
                     break;
                 }
             }
+#endif // FEATURE_CODE_VERSIONING
 
             hr = GetILToNativeMapping3(pCodeStart, cMap, pcMap, map);
         }
@@ -5320,7 +5328,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromToken(ModuleID moduleId,
         *pFunctionId = MethodDescToFunctionID(pDesc);
     }
 
-    return (hr);
+    return hr;
 }
 
 HRESULT ProfToEEInterfaceImpl::GetFunctionFromTokenAndTypeArgs(ModuleID moduleID,
@@ -5520,7 +5528,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
     if (pProcessId)
         *pProcessId = (ProcessID) GetCurrentProcessId();
 
-    return (hr);
+    return hr;
 }
 
 
@@ -5608,7 +5616,7 @@ HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
             hr = CORPROF_E_DATAINCOMPLETE;
     }
 
-    return (hr);
+    return hr;
 }
 
 // Setting ELT hooks is only allowed from within Initialize().  However, test-only
@@ -5839,7 +5847,7 @@ HRESULT ProfToEEInterfaceImpl::SetFunctionIDMapper(FunctionIDMapper *pFunc)
 
     g_profControlBlock.mainProfilerInfo.pProfInterface->SetFunctionIDMapper(pFunc);
 
-    return (S_OK);
+    return S_OK;
 }
 
 HRESULT ProfToEEInterfaceImpl::SetFunctionIDMapper2(FunctionIDMapper2 *pFunc, void * clientData)
@@ -5877,7 +5885,7 @@ HRESULT ProfToEEInterfaceImpl::SetFunctionIDMapper2(FunctionIDMapper2 *pFunc, vo
 
     g_profControlBlock.mainProfilerInfo.pProfInterface->SetFunctionIDMapper2(pFunc, clientData);
 
-    return (S_OK);
+    return S_OK;
 }
 
 /*
@@ -6373,7 +6381,7 @@ HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
     }
     EX_CATCH_HRESULT(hr);
 
-    return (hr);
+    return hr;
 }
 
 /*
@@ -6439,6 +6447,7 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
         ULONG32 trueLen = 0;
         StackSArray<UINT_PTR> addresses;
 
+#ifdef FEATURE_CODE_VERSIONING
         CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
 
         ILCodeVersion ilCodeVersion = NULL;
@@ -6459,6 +6468,7 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
                 }
             }
         }
+#endif // FEATURE_CODE_VERSIONING
 
         if (pcCodeStartAddresses != NULL)
         {
@@ -6542,7 +6552,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping3(UINT_PTR pNativeCodeStartAd
         return CORPROF_E_DEBUGGING_DISABLED;
     }
 
-    return (g_pDebugInterface->GetILToNativeMapping(pNativeCodeStartAddress, cMap, pcMap, map));
+    return g_pDebugInterface->GetILToNativeMapping(pNativeCodeStartAddress, cMap, pcMap, map);
 #else
     return E_NOTIMPL;
 #endif
@@ -6834,7 +6844,7 @@ HRESULT ProfToEEInterfaceImpl::SuspendRuntime()
     }
 
     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
-    g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
+    g_profControlBlock.fProfilerRequestedRuntimeSuspend = true;
     return S_OK;
 }
 
@@ -6872,7 +6882,7 @@ HRESULT ProfToEEInterfaceImpl::ResumeRuntime()
         return CORPROF_E_UNSUPPORTED_CALL_SEQUENCE;
     }
 
-    g_profControlBlock.fProfilerRequestedRuntimeSuspend = FALSE;
+    g_profControlBlock.fProfilerRequestedRuntimeSuspend = false;
     ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
     return S_OK;
 }
@@ -7666,13 +7676,13 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
         // arbitrarily long inside SuspendEE() for other threads to complete their own
         // suspensions.
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
-        g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
+        g_profControlBlock.fProfilerRequestedRuntimeSuspend = true;
         ownEESuspension = TRUE;
     }
 
     // Suspending EE ensures safe object inspection. We permit the GC Heap walk callback to
     // invoke ICorProfilerInfo APIs guarded by AllowObjectInspection by toggling fGCInProgress.
-    g_profControlBlock.fGCInProgress = TRUE;
+    g_profControlBlock.fGCInProgress = true;
 
     HRESULT hr = S_OK;
     _ASSERTE(m_pProfilerInfo->pProfInterface.Load() != NULL);
@@ -7694,11 +7704,11 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
 
     }
 
-    g_profControlBlock.fGCInProgress = FALSE;
+    g_profControlBlock.fGCInProgress = false;
 
     if (ownEESuspension)
     {
-        g_profControlBlock.fProfilerRequestedRuntimeSuspend = FALSE;
+        g_profControlBlock.fProfilerRequestedRuntimeSuspend = false;
         ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
     }
 
@@ -8016,10 +8026,7 @@ typedef struct _PROFILER_STACK_WALK_DATA
     ULONG32 infoFlags;
     ULONG32 contextFlags;
     void *clientData;
-
-#ifdef FEATURE_EH_FUNCLETS
     StackFrame sfParent;
-#endif
 } PROFILER_STACK_WALK_DATA;
 
 
@@ -8051,7 +8058,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     CONTEXT builtContext;
 #endif
 
-#ifdef FEATURE_EH_FUNCLETS
     //
     // Skip all managed exception handling functions
     //
@@ -8062,7 +8068,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     {
         return SWA_CONTINUE;
     }
-#endif // FEATURE_EH_FUNCLETS
 
     //
     // For Unmanaged-to-managed transitions we get a NativeMarker back, which we want
@@ -8082,7 +8087,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
         return SWA_CONTINUE;
     }
 
-#ifdef FEATURE_EH_FUNCLETS
     if (!pCf->IsFrameless() && InlinedCallFrame::FrameHasActiveCall(pCf->GetFrame()))
     {
         // Skip new exception handling helpers
@@ -8094,7 +8098,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
             return SWA_CONTINUE;
         }
     }
-#endif // FEATURE_EH_FUNCLETS
 
     //
     // If this is not a transition of any sort and not a managed
@@ -8871,9 +8874,8 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
     data.infoFlags = infoFlags;
     data.contextFlags = 0;
     data.clientData = clientData;
-#ifdef FEATURE_EH_FUNCLETS
+
     data.sfParent.Clear();
-#endif
 
     // workaround: The ForbidTypeLoad book keeping in the stackwalker is not robust against exceptions.
     // Unfortunately, it is hard to get it right in the stackwalker since it has to be exception
@@ -10666,9 +10668,7 @@ void __stdcall ProfilerUnmanagedToManagedTransitionMD(MethodDesc *pMD,
 // These do a lot of work for us, setting up Frames, gathering arg info and resolving generics.
   //*******************************************************************************************
 
-HCIMPL2_RAW(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
-GCX_COOP_THREAD_EXISTS(GET_THREAD());
-HCIMPL_PROLOG(ProfileEnter)
+HCIMPL2(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
 {
     FCALL_CONTRACT;
 
@@ -10844,11 +10844,11 @@ LExit:
 }
 HCIMPLEND
 
-HCIMPL2_RAW(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
-GCX_COOP();
-HCIMPL_PROLOG(ProfileLeave)
+HCIMPL2(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecificHandle)
 {
     FCALL_CONTRACT;
+
+    GCX_COOP();
 
 #ifdef PROFILING_SUPPORTED
 

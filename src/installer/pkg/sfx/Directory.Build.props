@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
     <EnsureRuntimeIdentifierSet>true</EnsureRuntimeIdentifierSet>
+    <UseLocalTargetingRuntimePack>true</UseLocalTargetingRuntimePack>
   </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />

@@ -8,10 +8,6 @@
 #include "cor.h"
 #include "corhlprpriv.h"
 
-#ifdef TARGET_UNIX
-#include <oleauto.h>
-#endif
-
 #define STRING_BUFFER_LEN 4096
 
 typedef void (*strPassBackFn)(const char *str);
@@ -88,7 +84,6 @@ private:
     void DisplayMethodSpecs(void);
     void DisplayMethodSpecInfo(mdMethodSpec ms, const char *preFix);
 
-    void DisplayCorNativeLink(COR_NATIVE_LINK *pCorNLnk, const char *preFix);
     void DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *preFix);
     void DisplayCustomAttributes(mdToken inToken, const char *preFix);
 

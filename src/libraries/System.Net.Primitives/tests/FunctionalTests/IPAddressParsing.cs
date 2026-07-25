@@ -264,6 +264,8 @@ namespace System.Net.Primitives.Functional.Tests
             new object[] { "12.+1.1.4" }, // plus sign in section
             new object[] { "12.1.-1.5" }, // minus sign in section
             new object[] { "12.1.abc.5" }, // text in section
+            new object[] { "0.0.0.089" }, // octal with digits over 7
+            new object[] { "0.0.08.0" }, // octal with digits over 7
         };
 
         public static readonly object[][] InvalidIpv4AddressesStandalone = // but valid as part of IPv6 addresses
@@ -438,7 +440,6 @@ namespace System.Net.Primitives.Functional.Tests
             new object[] { "::FFFF:0:192.168.0.1", "::ffff:0:192.168.0.1" }, // SIIT
             new object[] { "::5EFE:192.168.0.1", "::5efe:192.168.0.1" }, // ISATAP
             new object[] { "1::5EFE:192.168.0.1", "1::5efe:192.168.0.1" }, // ISATAP
-            new object[] { "::192.168.0.010", "::192.168.0.10" }, // Embedded IPv4 octal, read as decimal
         };
 
         [Theory]
@@ -569,6 +570,9 @@ namespace System.Net.Primitives.Functional.Tests
             yield return new object[] { "FFFFF::" }; // invalid value
             yield return new object[] { ":%12" }; // colon scope
             yield return new object[] { "[2001:0db8:85a3:08d3:1319:8a2e:0370:7344]:443/" }; // errneous ending slash after ignored port
+
+            yield return new object[] { "::192.168.01.10" }; // Embedded IPv4 with octal
+            yield return new object[] { "::192.168.0.010" }; // Embedded IPv4 with octal
 
             yield return new object[] { "e3fff:ffff:ffff:ffff:ffff:ffff:ffff:abcd" }; // 1st number too long
             yield return new object[] { "3fff:effff:ffff:ffff:ffff:ffff:ffff:abcd" }; // 2nd number too long

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -143,7 +143,7 @@ namespace System.IO
             return PathHelper.Normalize(path);
         }
 
-        public static string GetTempPath()
+        public static unsafe string GetTempPath()
         {
             var builder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
 
@@ -206,7 +206,7 @@ namespace System.IO
 
         // Returns a unique temporary file name, and creates a 0-byte file by that
         // name on disk.
-        public static string GetTempFileName()
+        public static unsafe string GetTempFileName()
         {
             // Avoid GetTempFileNameW because it is limited to 0xFFFF possibilities, which both
             // means that it may have to make many attempts to create the file before

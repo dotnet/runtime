@@ -29,6 +29,11 @@ check_include_file(
 )
 
 check_include_file(
+    sys/syscall.h
+    HAVE_SYS_SYSCALL_H
+)
+
+check_include_file(
     unistd.h
     HAVE_UNISTD_H
 )
@@ -41,6 +46,17 @@ check_include_file(
 check_include_file(
     errno.h
     HAVE_ERRNO_H
+)
+
+check_include_file(
+    sys/mman.h
+    HAVE_SYS_MMAN_H
+)
+
+check_symbol_exists(
+    __NR_memfd_create
+    sys/syscall.h
+    HAVE_MEMFD_CREATE
 )
 
 if (NOT DEFINED EP_GENERATED_HEADER_PATH)

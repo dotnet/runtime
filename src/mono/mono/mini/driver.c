@@ -54,6 +54,8 @@
 #include <mono/metadata/components.h>
 #include <mono/mini/debugger-agent-external.h>
 
+#include <minipal/descriptorlimit.h>
+
 #include "mini.h"
 #include <mono/jit/jit.h>
 #include "aot-compiler.h"
@@ -68,9 +70,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
-#ifdef HAVE_SYS_RESOURCE_H
-#   include <sys/resource.h>
-#endif
 
 static FILE *mini_stats_fd;
 
@@ -1876,27 +1875,6 @@ mono_set_use_smp (int use_smp)
 #endif
 }
 
-static void
-increase_descriptor_limit (void)
-{
-#if defined(HAVE_GETRLIMIT) && !defined(DONT_SET_RLIMIT_NOFILE)
-	struct rlimit limit;
-
-	if (getrlimit (RLIMIT_NOFILE, &limit) == 0) {
-		// Set our soft limit for file descriptors to be the same
-		// as the max limit.
-		limit.rlim_cur = limit.rlim_max;
-#ifdef __APPLE__
-		// Based on compatibility note in setrlimit(2) manpage for OSX,
-		// trim the limit to OPEN_MAX.
-		if (limit.rlim_cur > OPEN_MAX)
-			limit.rlim_cur = OPEN_MAX;
-#endif
-		setrlimit (RLIMIT_NOFILE, &limit);
-	}
-#endif
-}
-
 #define MONO_HANDLERS_ARGUMENT "--handlers="
 #define MONO_HANDLERS_ARGUMENT_LEN STRING_LENGTH(MONO_HANDLERS_ARGUMENT)
 
@@ -2024,7 +2002,7 @@ mono_main (int argc, char* argv[])
 
 	setlocale (LC_ALL, "");
 
-	increase_descriptor_limit ();
+	minipal_increase_descriptor_limit ();
 
 	if (g_hasenv ("MONO_NO_SMP"))
 		mono_set_use_smp (FALSE);

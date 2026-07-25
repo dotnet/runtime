@@ -1259,33 +1259,9 @@ HRESULT ShimProxyCallback::FunctionRemapComplete(ICorDebugAppDomain * pAppDomain
 // Implementation of ICorDebugManagedCallback2::MDANotification
 HRESULT ShimProxyCallback::MDANotification(ICorDebugController * pController, ICorDebugThread * pThread, ICorDebugMDA * pMDA)
 {
-    m_pShim->PreDispatchEvent();
-    class MDANotificationEvent  : public ManagedEvent
-    {
-        // callbacks parameters. These are strong references
-        RSExtSmartPtr<ICorDebugController > m_pController;
-        RSExtSmartPtr<ICorDebugThread > m_pThread;
-        RSExtSmartPtr<ICorDebugMDA > m_pMDA;
-
-    public:
-        // Ctor
-        MDANotificationEvent(ICorDebugController * pController, ICorDebugThread * pThread, ICorDebugMDA * pMDA) :
-             ManagedEvent(pThread)
-        {
-            this->m_pController.Assign(pController);
-            this->m_pThread.Assign(pThread);
-            this->m_pMDA.Assign(pMDA);
-        }
-
-        HRESULT Dispatch(DispatchArgs args)
-        {
-            return args.GetCallback2()->MDANotification(m_pController, m_pThread, m_pMDA);
-        }
-    }; // end class MDANotificationEvent
-
-    m_pShim->GetManagedEventQueue()->QueueEvent(new MDANotificationEvent(pController, pThread, pMDA));
-    return S_OK;
-} // end of methodICorDebugManagedCallback2::MDANotification
+    // MDA (Managed Debugging Assistant) support does not exist in .NET Core
+    return E_NOTIMPL;
+}
 
 // Implementation of ICorDebugManagedCallback3::CustomNotification
 // Arguments:
@@ -1396,7 +1372,7 @@ HRESULT ShimProxyCallback::DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugT
         // callbacks parameters. These are strong references
         RSExtSmartPtr<ICorDebugProcess> m_pProcess;
         RSExtSmartPtr<ICorDebugThread> m_pThread;
-        CONTEXT m_context;
+        NewArrayHolder<BYTE> m_context;
         ULONG32 m_contextSize;
 
     public:
@@ -1407,14 +1383,20 @@ HRESULT ShimProxyCallback::DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugT
             this->m_pProcess.Assign(pProcess);
             this->m_pThread.Assign(pThread);
 
-            _ASSERTE(contextSize == sizeof(CONTEXT));
-            this->m_contextSize = min(contextSize, (ULONG32)sizeof(CONTEXT));
-            memcpy(&(this->m_context), pContext, this->m_contextSize);
+            this->m_contextSize = min(contextSize, (ULONG32)0x1000);
+            if (pContext != NULL && this->m_contextSize > 0)
+            {
+                m_context = new (nothrow) BYTE[this->m_contextSize];
+                if (m_context != NULL)
+                    memcpy(m_context, pContext, this->m_contextSize);
+            }
         }
 
         HRESULT Dispatch(DispatchArgs args)
         {
-            return args.GetCallback4()->DataBreakpoint(m_pProcess, m_pThread, reinterpret_cast<BYTE*>(&m_context), m_contextSize);
+            if (m_context == NULL)
+                return E_OUTOFMEMORY;
+            return args.GetCallback4()->DataBreakpoint(m_pProcess, m_pThread, m_context, m_contextSize);
         }
     }; // end class AfterGarbageCollectionEvent
 

@@ -19,6 +19,11 @@ namespace Microsoft.NET.HostModel.MachO;
 internal unsafe partial class MachObjectFile
 {
     internal const uint DefaultPageSize = 0x1000;
+    // Code directory page size codesign uses to hash the code slots
+    // https://github.com/apple-oss-distributions/Security/blob/Security-61901.0.87.0.1/OSX/libsecurity_codesigning/lib/diskrep.h#L158-L160
+    // https://github.com/apple-oss-distributions/Security/blob/Security-61901.0.87.0.1/OSX/libsecurity_codesigning/lib/machorep.cpp#L574-L591
+    internal const uint DefaultCodeDirectoryPageSize = 0x1000;
+    internal const uint Arm64CodeDirectoryPageSize = 0x4000;
     private const uint CodeSignatureAlignment = 0x10;
     private MachHeader _header;
     private (LinkEditLoadCommand Command, long FileOffset) _codeSignatureLoadCommand;
@@ -37,6 +42,19 @@ internal unsafe partial class MachObjectFile
     private long NextLoadCommandOffset => _header.SizeOfCommands + sizeof(MachHeader);
 
     internal EmbeddedSignatureBlob? EmbeddedSignatureBlob => _codeSignatureBlob;
+
+    internal MachHeader Header => _header;
+
+    // Match codesign behavior on macOS 26+:
+    //   16 KiB code directory page size for arm64/arm64_32
+    //   4 KiB otherwise
+    // Before macOS 26, it used 4 KiB for every architecture.
+    // HostModel always uses the macOS 26 value so signing is deterministic and independent of the build
+    // machine's OS; a 16 KiB code directory page is valid on older arm64 macOS versions.
+    private uint CodeDirectoryPageSize
+        => (MachCpuType)_header.CpuType is MachCpuType.Arm64 or MachCpuType.Arm64_32
+            ? Arm64CodeDirectoryPageSize
+            : DefaultCodeDirectoryPageSize;
 
     private MachObjectFile(
         MachHeader header,
@@ -106,56 +124,43 @@ internal unsafe partial class MachObjectFile
     public bool HasSignature => !_codeSignatureLoadCommand.Command.IsDefault;
 
     /// <summary>
-    /// Adds or replaces the code signature load command and modifies the __LINKEDIT segment size to accomodate the signature.
+    /// Adds or replaces the code signature load command and modifies the __LINKEDIT segment size to accommodate the signature.
     /// Writes the EmbeddedSignature blob to the file.
     /// Returns the new size of the file (the end of the signature blob).
     /// </summary>
     /// <param name="file">The file to write the signature to.</param>
     /// <param name="identifier">The identifier to use for the code signature.</param>
-    /// <param name="oldSignature">
-    /// An optional old signature to preserve entitlements metadata.
-    /// If not provided, the existing code signature blob will be used.
-    /// If the existing code signature blob is not present, a new signature will be created without entitlements.
-    /// </param>
-    public long AdHocSignFile(IMachOFileAccess file, string identifier, EmbeddedSignatureBlob? oldSignature = null)
+    public long AdHocSignFile(IMachOFileAccess file, string identifier)
     {
-        oldSignature ??= _codeSignatureBlob;
-        AllocateCodeSignatureLoadCommand(identifier, oldSignature);
+        AllocateCodeSignatureLoadCommand(identifier);
         _codeSignatureBlob = null;
         // The code signature includes hashes of the entire file up to the code signature.
         // In order to calculate the hashes correctly, everything up to the code signature must be written before the signature is built.
         Write(file);
-        _codeSignatureBlob = CreateSignature(this, file, identifier, oldSignature);
+        _codeSignatureBlob = CreateSignature(this, file, identifier);
         Validate();
         _codeSignatureBlob.Write(file, _codeSignatureLoadCommand.Command.GetDataOffset(_header));
         return GetFileSize();
     }
 
-    private static EmbeddedSignatureBlob CreateSignature(MachObjectFile machObject, IMachOFileReader file, string identifier, EmbeddedSignatureBlob? oldSignature)
+    private static EmbeddedSignatureBlob CreateSignature(MachObjectFile machObject, IMachOFileReader file, string identifier)
     {
-        var oldSignatureBlob = oldSignature;
-
         Debug.Assert(!machObject._codeSignatureLoadCommand.Command.IsDefault);
         uint signatureStart = machObject._codeSignatureLoadCommand.Command.GetDataOffset(machObject._header);
         RequirementsBlob requirementsBlob = RequirementsBlob.Empty;
         CmsWrapperBlob cmsWrapperBlob = CmsWrapperBlob.Empty;
-        EntitlementsBlob? entitlementsBlob = oldSignatureBlob?.EntitlementsBlob;
-        DerEntitlementsBlob? derEntitlementsBlob = oldSignatureBlob?.DerEntitlementsBlob;
 
         var codeDirectory = CodeDirectoryBlob.Create(
             file,
             signatureStart,
             identifier,
             requirementsBlob,
-            entitlementsBlob,
-            derEntitlementsBlob);
+            machObject.CodeDirectoryPageSize);
 
         return new EmbeddedSignatureBlob(
             codeDirectoryBlob: codeDirectory,
             requirementsBlob: requirementsBlob,
-            cmsWrapperBlob: cmsWrapperBlob,
-            entitlementsBlob: entitlementsBlob,
-            derEntitlementsBlob: derEntitlementsBlob);
+            cmsWrapperBlob: cmsWrapperBlob);
     }
 
     /// <summary>
@@ -204,19 +209,6 @@ internal unsafe partial class MachObjectFile
         return (MachMagic)magic is MachMagic.MachHeaderCurrentEndian or MachMagic.MachHeaderOppositeEndian
             or MachMagic.MachHeader64CurrentEndian or MachMagic.MachHeader64OppositeEndian
             or MachMagic.FatMagicCurrentEndian or MachMagic.FatMagicOppositeEndian;
-    }
-
-    public static bool IsMachOImage(string filePath)
-    {
-        using (BinaryReader reader = new BinaryReader(File.OpenRead(filePath)))
-        {
-            if (reader.BaseStream.Length < 256) // Header size
-            {
-                return false;
-            }
-            uint magic = reader.ReadUInt32();
-            return Enum.IsDefined(typeof(MachMagic), magic);
-        }
     }
 
     /// <summary>
@@ -448,15 +440,15 @@ internal unsafe partial class MachObjectFile
     /// <summary>
     /// Clears the old signature and sets the codeSignatureLC to the proper size and offset for a new signature.
     /// </summary>
-    private void AllocateCodeSignatureLoadCommand(string identifier, EmbeddedSignatureBlob? oldSignature)
+    private void AllocateCodeSignatureLoadCommand(string identifier)
     {
         uint csOffset = GetSignatureStart();
         uint csPtr = (uint)(_codeSignatureLoadCommand.Command.IsDefault ? NextLoadCommandOffset : _codeSignatureLoadCommand.FileOffset);
-        uint csSize = (uint)EmbeddedSignatureBlob.GetSignatureSize(csOffset, identifier, oldSignature);
+        uint csSize = (uint)EmbeddedSignatureBlob.GetSignatureSize(csOffset, identifier, CodeDirectoryPageSize);
 
         if (_codeSignatureLoadCommand.Command.IsDefault)
         {
-            // Update the header to accomodate the new code signature load command
+            // Update the header to accommodate the new code signature load command
             _header.NumberOfCommands += 1;
             _header.SizeOfCommands += (uint)sizeof(LinkEditLoadCommand);
             if (_header.SizeOfCommands > _lowestSectionOffset)

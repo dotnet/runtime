@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.IL.Stubs.StartupCode;
@@ -20,13 +21,15 @@ namespace ILCompiler
         /// </summary>
         public const string ManagedEntryPointMethodName = "__managed__Main";
 
-        private EcmaModule _module;
-        private IReadOnlyCollection<MethodDesc> _libraryInitializers;
-        private bool _generateLibraryAndModuleInitializers;
+        private readonly EcmaModule _module;
+        private readonly string _entryPointName;
+        private readonly IReadOnlyCollection<MethodDesc> _libraryInitializers;
+        private readonly bool _generateLibraryAndModuleInitializers;
 
-        public MainMethodRootProvider(EcmaModule module, IReadOnlyCollection<MethodDesc> libraryInitializers, bool generateLibraryAndModuleInitializers)
+        public MainMethodRootProvider(EcmaModule module, IReadOnlyCollection<MethodDesc> libraryInitializers, bool generateLibraryAndModuleInitializers, string entryPointName = null)
         {
             _module = module;
+            _entryPointName = entryPointName ?? ManagedEntryPointMethodName;
             _libraryInitializers = libraryInitializers;
             _generateLibraryAndModuleInitializers = generateLibraryAndModuleInitializers;
         }
@@ -40,7 +43,7 @@ namespace ILCompiler
             TypeDesc owningType = _module.GetGlobalModuleType();
             var startupCodeMain = new StartupCodeMainMethod(owningType, mainMethod, _libraryInitializers, _generateLibraryAndModuleInitializers);
 
-            rootProvider.AddCompilationRoot(startupCodeMain, "Startup Code Main Method", ManagedEntryPointMethodName);
+            rootProvider.AddCompilationRoot(startupCodeMain, $"Startup Code Main Method for {_module.Assembly.GetName().Name}", new Utf8String(_entryPointName));
         }
     }
 }

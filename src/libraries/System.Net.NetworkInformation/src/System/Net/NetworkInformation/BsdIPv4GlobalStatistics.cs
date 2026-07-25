@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 
 namespace System.Net.NetworkInformation
@@ -39,7 +40,7 @@ namespace System.Net.NetworkInformation
         {
             Context* context = (Context*)pContext;
 
-            context->_interfaceSet.Add(new string((sbyte*)ifaceName));
+            context->_interfaceSet.Add(Utf8StringMarshaller.ConvertToManaged(ifaceName)!);
             context->_numIPAddresses++;
         }
 

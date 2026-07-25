@@ -16,9 +16,7 @@ namespace System.Net.Quic;
 
 internal static partial class MsQuicConfiguration
 {
-    internal static bool ConfigurationCacheEnabled { get; } = !AppContextSwitchHelper.GetBooleanConfig(
-        "System.Net.Quic.DisableConfigurationCache",
-        "DOTNET_SYSTEM_NET_QUIC_DISABLE_CONFIGURATION_CACHE");
+    internal static bool ConfigurationCacheEnabled => !LocalAppContextSwitches.DisableConfigurationCache;
 
     private static readonly MsQuicConfigurationCache s_configurationCache = new MsQuicConfigurationCache();
 

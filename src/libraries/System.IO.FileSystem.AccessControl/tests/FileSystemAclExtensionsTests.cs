@@ -507,6 +507,42 @@ namespace System.IO
             VerifyAccessSecurity(expectedSecurity, actualSecurity);
         }
 
+        [Fact]
+        public void FileInfo_Create_ReadRights_CanWriteIsFalse()
+        {
+            // Regression test: When opening a file with FileSystemRights.Read, the FileStream should have CanWrite = false
+            using var tempRootDir = new TempAclDirectory();
+            string path = tempRootDir.GenerateSubItemPath();
+            var fileInfo = new FileInfo(path);
+
+            // First create the file
+            using (FileStream createStream = fileInfo.Create(
+                FileMode.CreateNew,
+                FileSystemRights.Write,
+                FileShare.ReadWrite | FileShare.Delete,
+                DefaultBufferSize,
+                FileOptions.None,
+                null))
+            {
+                Assert.True(fileInfo.Exists);
+                tempRootDir.CreatedSubfiles.Add(fileInfo);
+            }
+
+            // Now open it with read-only rights
+            using (FileStream readStream = fileInfo.Create(
+                FileMode.Open,
+                FileSystemRights.Read,
+                FileShare.ReadWrite | FileShare.Delete,
+                DefaultBufferSize,
+                FileOptions.None,
+                null))
+            {
+                // The stream should be read-only
+                Assert.False(readStream.CanWrite, "FileStream opened with FileSystemRights.Read should have CanWrite = false");
+                Assert.True(readStream.CanRead, "FileStream opened with FileSystemRights.Read should have CanRead = true");
+            }
+        }
+
         #endregion
 
         #region DirectorySecurity CreateDirectory

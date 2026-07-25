@@ -286,31 +286,6 @@ Another interesting consideration is that in the future I anticipate having some
 
 Thus if the current implementation doesn't appear ideal partly this may be because I wasn't sufficiently clever, but the other part is that I was optimizing for future conditions.
 
-### Domains ###
-There is one CodeVersionManager per AppDomain, and one for the SharedDomain. Versioning for a given method always looks up the appropriate CodeVersionManager by traversing from MethodDef token -> Module that defines that token -> Domain that loaded that module -> CodeVersionManager. In code this is either:
-
-```
-Module* pModule;
-pModule->GetDomain()->GetCodeVersionManager()
-MethodDesc* pMethod;
-pMethod->GetModule()->GetDomain()->GetCodeVersionManager()
-```
-
-Some shortcut accessors are defined to make these lookups simpler:
-
-```
-pModule->GetCodeVersionManager()
-pMethod->GetCodeVersionManager()
-```
-
-Generics can cause methods in domain-neutral modules to refer to types in domain-specific modules. The rules above dictate that these code versions still reside in the domain-neutral CodeVersionManager. The AppDomain specific CodeVersionManagers will never contain code versions with a domain-neutral type in their instantiation.
-
-CoreCLR is largely moving away from multiple AppDomains but I left the domain distinctions in place for a few reasons:
-
-1. Pragmatically the feature is a partial refactoring of ReJitManager and this is what ReJitManager did. Diverging from ReJitManager's design incurs extra time and risk of new issues.
-2. Maybe someday we will want to migrate similar functionality back to the desktop .NET SKU. Desktop supports multiple AppDomains so per-AppDomain handling would be required in that context.
-
-AppDomain unloading however has not been handled. If CoreCLR supports proper AppDomain unload at some point or the code moves back to desktop runtime we will need to handle this gap.
 
 ### Code activation and publishing ###
 
@@ -332,7 +307,7 @@ In order to do step 3 the `CodeVersionManager` relies on one of three different 
 ### Thread-safety ###
 CodeVersionManager is designed for use in a free-threaded environment, in many cases by requiring the caller to acquire a lock before calling. This lock can be acquired by constructing an instance of `CodeVersionManager::LockHolder`.
 
-in some scope for the CodeVersionManager being operated on. CodeVersionManagers from different domains should not have their locks taken by the same thread with one exception, it is OK to take the shared domain  manager lock and one AppDomain manager lock in that order. The lock is required to change the shape of the tree or traverse it but not to read/write configuration properties from each node. A few special cases:
+in some scope for the CodeVersionManager being operated on. The lock is required to change the shape of the tree or traverse it but not to read/write configuration properties from each node. A few special cases:
 
 - CodeVersionManager::SetActiveILCodeVersions needs to operate partially inside and partially outside the lock. The caller should not acquire the lock beforehand.
 - NativeCodeVersion::GetILCodeVersion() does not require the lock if the caller first guarantees it is operating on the default code version.

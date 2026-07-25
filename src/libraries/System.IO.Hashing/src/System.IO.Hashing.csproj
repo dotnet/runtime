@@ -13,10 +13,15 @@ System.IO.Hashing.XxHash32</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="System\IO\Hashing\Adler32.cs" />
     <Compile Include="System\IO\Hashing\Crc32.cs" />
-    <Compile Include="System\IO\Hashing\Crc32.Table.cs" />
+    <Compile Include="System\IO\Hashing\Crc32ParameterSet.cs" />
+    <Compile Include="System\IO\Hashing\Crc32ParameterSet.Table.cs" />
+    <Compile Include="System\IO\Hashing\Crc32ParameterSet.WellKnown.cs" />
     <Compile Include="System\IO\Hashing\Crc64.cs" />
-    <Compile Include="System\IO\Hashing\Crc64.Table.cs" />
+    <Compile Include="System\IO\Hashing\Crc64ParameterSet.cs" />
+    <Compile Include="System\IO\Hashing\Crc64ParameterSet.Table.cs" />
+    <Compile Include="System\IO\Hashing\Crc64ParameterSet.WellKnown.cs" />
     <Compile Include="System\IO\Hashing\NonCryptographicHashAlgorithm.cs" />
     <Compile Include="System\IO\Hashing\XxHash128.cs" />
     <Compile Include="System\IO\Hashing\XxHash3.cs" />
@@ -28,15 +33,16 @@ System.IO.Hashing.XxHash32</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="System\IO\Hashing\Crc32.Arm.cs" />
-    <Compile Include="System\IO\Hashing\Crc32.Vectorized.cs" />
-    <Compile Include="System\IO\Hashing\Crc64.Vectorized.cs" />
+    <Compile Include="System\IO\Hashing\Crc32ParameterSet.Vectorized.cs" />
+    <Compile Include="System\IO\Hashing\Crc64ParameterSet.Vectorized.cs" />
+    <Compile Include="System\IO\Hashing\CrcPolynomialHelper.cs" />
     <Compile Include="System\IO\Hashing\VectorHelper.cs" />
     <Compile Include="System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="System\IO\Hashing\BitOperations.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitOperationsPolyfills.cs" Link="Common\Polyfills\BitOperationsPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\StreamPolyfills.cs" Link="Common\Polyfills\StreamPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

@@ -4,6 +4,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public class Test100536
 {
@@ -29,6 +30,8 @@ public class Test100536
         }
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123946", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     public static void TestEntryPoint()
     {

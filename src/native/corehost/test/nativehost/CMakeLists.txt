@@ -55,3 +55,31 @@ if (CLR_CMAKE_TARGET_WIN32)
     target_link_libraries(nativehost PRIVATE delayimp.lib ole32 oleaut32)
 endif()
 
+# Build a second executable that links against the static nethost library (libnethost)
+# instead of the shared one. This validates the static library consumption scenario.
+add_executable(nativehost_static ${SOURCES})
+
+add_sanitizer_runtime_support(nativehost_static)
+
+install_with_stripped_symbols(nativehost_static TARGETS corehost_test)
+
+target_compile_definitions(nativehost_static PRIVATE NETHOST_USE_AS_STATIC)
+
+target_link_libraries(nativehost_static PRIVATE
+    libnethost
+    hostmisc_public
+    $<$<BOOL:${PTHREAD_LIB}>:${PTHREAD_LIB}>)
+
+if (CLR_CMAKE_TARGET_WIN32)
+    target_link_libraries(nativehost_static PRIVATE ole32 oleaut32)
+endif()
+
+if (MSVC)
+    # Add a linker hook to validate that modules with LTCG are not found.
+    # Shipped static libraries (libnethost) must have LTCG disabled to ensure
+    # that non-MSVC toolchains can work with them.
+    set_target_properties(nativehost_static PROPERTIES
+        INTERPROCEDURAL_OPTIMIZATION OFF
+        CXX_LINKER_LAUNCHER "${CMAKE_COMMAND};-P;${CMAKE_CURRENT_SOURCE_DIR}/run-linker-verify-no-ltcg.cmake")
+endif()
+

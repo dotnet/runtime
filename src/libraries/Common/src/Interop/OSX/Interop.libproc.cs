@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 #pragma warning disable CA1823 // analyzer incorrectly flags fixed buffer length const (https://github.com/dotnet/roslyn/issues/37593)
@@ -48,9 +49,9 @@ internal static partial class Interop
 
         // from sys\resource.h
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct rusage_info_v3
+        internal struct rusage_info_v3
         {
-            internal fixed byte     ri_uuid[16];
+            internal InlineArray16<byte> ri_uuid;
             internal ulong          ri_user_time;
             internal ulong          ri_system_time;
             internal ulong          ri_pkg_idle_wkups;
@@ -82,7 +83,7 @@ internal static partial class Interop
 
         // From proc_info.h
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct proc_threadinfo
+        internal struct proc_threadinfo
         {
             internal ulong      pth_user_time;
             internal ulong      pth_system_time;
@@ -94,7 +95,13 @@ internal static partial class Interop
             internal int        pth_curpri;
             internal int        pth_priority;
             internal int        pth_maxpriority;
-            internal fixed byte pth_name[MAXTHREADNAMESIZE];
+            internal ThreadNameBuffer pth_name;
+
+            [InlineArray(MAXTHREADNAMESIZE)]
+            internal struct ThreadNameBuffer
+            {
+                private byte _element0;
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]

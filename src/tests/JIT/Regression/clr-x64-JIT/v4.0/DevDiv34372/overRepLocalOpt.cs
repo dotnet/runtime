@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace overRepLocalOpt;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -58,6 +61,7 @@ public static class DeadEH
     }
 
     // Get everything jitted before we call
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -112,7 +112,7 @@ Before an AOTed method can be executed, it might need some initialization. This 
 - executing its class cctor
 - initializing the GOT slots used by the method
 
-For methods compiled by the mono JIT, initialization is done when the method is loaded. This means that its not possible to
+For methods compiled by the mono JIT, initialization is done when the method is loaded. This means that it's not possible to
 have direct calls between methods. Instead, calls between methods go through small pieces of generated code called PLT
 (Program Linkage Table) entries, which transfer control to the runtime which loads the called method before executing it.
 For methods compiled by LLVM, the method entry contains a call to the runtime which initializes the method.
@@ -127,7 +127,7 @@ GOT slots used by the trampolines.
 - For some small trampolines, the AOT compiler directly emits platform specific assembly.
 
 The runtime might require an unbounded number of certain trampolines, but the AOT image can only contain a fixed
-number of them. To solve this problem, on some platforms (IOS), its possible to have infinite trampolines. This is
+number of them. To solve this problem, on some platforms (IOS), it's possible to have infinite trampolines. This is
 implemented by emitting a different version of these trampolines which reference their corresponding data using
 relative addressing. At runtime, a page of these trampolines is mapped using `mmap` next to a writable page
 which contains their corresponding data. The same page of trampolines is mapped multiple times at multiple
@@ -135,7 +135,7 @@ addresses.
 
 ## Cross compilation
 
-Its possible to use the AOT compiler to target a platform different than the host. This requires a separate cross compiler
+It's possible to use the AOT compiler to target a platform different than the host. This requires a separate cross compiler
 build of the runtime.
 The generated code depends on offsets inside runtime structures like `MonoClass`/`MonoVTable` etc. which could
 differ between the host and the target. This is handled by having a tool called the offsets-tool, which is a python

@@ -1112,3 +1112,45 @@ extern "C" BOOL DLL_EXPORT STDMETHODCALLTYPE Marshal_Struct_ByRef_Null(VariantWr
     return TRUE;
 }
 
+#define TRAILING_BYTE 0xFF
+
+extern "C" void DLL_EXPORT STDMETHODCALLTYPE GetBSTRWithTrailingByteInVariant(VARIANT* pVariant)
+{
+    VARIANT variant;
+    VariantInit(&variant);
+
+    BSTR bstr = (BSTR)CoreClrBStrAlloc(sizeof(W("Test")) + 1); // 4 characters + trailing byte + null terminator
+    bstr[0] = W('T');
+    bstr[1] = W('e');
+    bstr[2] = W('s');
+    bstr[3] = W('t');
+    bstr[4] = W('\0');
+    *(uint8_t*)(bstr + 5) = TRAILING_BYTE;
+
+    variant.vt = VT_BSTR;
+    variant.bstrVal = bstr;
+
+    *pVariant = variant;
+}
+
+extern "C" BOOL DLL_EXPORT STDMETHODCALLTYPE VerifyBSTRWithTrailingByteInVariant(VARIANT variant)
+{
+    if (variant.vt != VT_BSTR)
+    {
+        return FALSE;
+    }
+
+    BSTR bstr = variant.bstrVal;
+
+    // Verify the contents of the BSTR
+    if (bstr[0] != W('T') || bstr[1] != W('e') || bstr[2] != W('s') || bstr[3] != W('t') || bstr[4] != W('\0'))
+    {
+        return FALSE;
+    }
+
+    if (*(uint8_t*)(bstr + 5) != TRAILING_BYTE)
+    {
+        return FALSE;
+    }
+    return TRUE;
+}

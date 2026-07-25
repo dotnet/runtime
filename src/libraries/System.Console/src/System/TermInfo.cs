@@ -97,7 +97,7 @@ namespace System
             /// The evaluation stack will have a 1 at the top if all processing was completed at invoked level
             /// of recursion, and a 0 at the top if we're still inside of a conditional that requires more processing.
             /// </returns>
-            private static string EvaluateInternal(
+            private static unsafe string EvaluateInternal(
                 string format, ref int pos, FormatParam[] args, Stack<FormatParam> stack,
                 ref FormatParam[]? dynamicVars, ref FormatParam[]? staticVars)
             {
@@ -161,20 +161,12 @@ namespace System
                             // (with a ':' used in front of flags to help differentiate from binary operations, as flags can
                             // include '-' and '+').  While above we've special-cased common usage (e.g. %d, %s),
                             // for more complicated expressions we delegate to printf.
-                            int printfEnd = pos;
-                            for (; printfEnd < format.Length; printfEnd++) // find the end of the printf format string
-                            {
-                                char ec = format[printfEnd];
-                                if (ec == 'd' || ec == 'o' || ec == 'x' || ec == 'X' || ec == 's')
-                                {
-                                    break;
-                                }
-                            }
-                            if (printfEnd >= format.Length)
+                            int printfEnd = format.AsSpan(pos).IndexOfAny("doxXs"); // find the end of the printf format string
+                            if (printfEnd < 0)
                             {
                                 throw new InvalidOperationException(SR.IO_TermInfoInvalid);
                             }
-                            string printfFormat = format.Substring(pos - 1, printfEnd - pos + 2); // extract the format string
+                            string printfFormat = format.Substring(pos - 1, printfEnd + 2); // extract the format string
                             if (printfFormat.Length > 1 && printfFormat[1] == ':')
                             {
                                 printfFormat = printfFormat.Remove(1, 1);

@@ -96,5 +96,7 @@ namespace System.Runtime.Serialization
 
         // 60
         public static readonly XmlDictionaryString AsmxTypesNamespace = s_dictionary.Add("http://microsoft.com/wsdl/types/");
+        public static readonly XmlDictionaryString DateOnlyLocalName = s_dictionary.Add("dateOnly");
+        public static readonly XmlDictionaryString TimeOnlyLocalName = s_dictionary.Add("timeOnly");
     }
 }

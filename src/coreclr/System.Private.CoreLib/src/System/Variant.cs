@@ -140,11 +140,9 @@ namespace System
                 case ErrorWrapper wrapper:
                     pOle = ComVariant.Create(wrapper);
                     break;
-#pragma warning disable 0618 // CurrencyWrapper is obsolete
                 case CurrencyWrapper wrapper:
                     pOle = ComVariant.Create(wrapper);
                     break;
-#pragma warning restore 0618
                 case BStrWrapper wrapper:
                     pOle = ComVariant.Create(wrapper);
                     break;
@@ -191,6 +189,19 @@ namespace System
                     // VT when we convert the object to a COM IP.
                     pOle = GetIUnknownOrIDispatchFromObject(o);
                     break;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void MarshalHelperConvertObjectToVariant(object* pObject, ComVariant* pOle, Exception* pException)
+        {
+            try
+            {
+                MarshalHelperConvertObjectToVariant(*pObject, out *pOle);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
             }
         }
 
@@ -322,6 +333,19 @@ namespace System
             }
         }
 
+        [UnmanagedCallersOnly]
+        private static unsafe void MarshalHelperConvertVariantToObject(ComVariant* pOle, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = MarshalHelperConvertVariantToObject(in *pOle);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         // Helper code: on the back propagation path where a VT_BYREF VARIANT*
         // is marshaled to a "ref Object", we use this helper to force the
         // updated object back to the original type.
@@ -396,6 +420,19 @@ namespace System
                     VarEnum.VT_UINT => ComVariant.Create(iv.ToUInt32(provider)),
                     _ => throw new InvalidCastException(SR.InvalidCast_CannotCoerceByRefVariant),
                 };
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void MarshalHelperCastVariant(object* pValue, int vt, ComVariant* pOle, Exception* pException)
+        {
+            try
+            {
+                MarshalHelperCastVariant(*pValue!, vt, out *pOle);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
             }
         }
     }

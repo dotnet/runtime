@@ -4,6 +4,9 @@
 // Note: In below test case, we were not honoring the fact that the explicit struct size
 //       of struct is 32 bytes while the only 2 fields it has is just 2 bytes. In such case,
 //       we would pass partial struct value.
+
+namespace Runtime_62597;
+
 using System;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;

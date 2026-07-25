@@ -15,7 +15,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         private const int TimeoutShort = 300;
         private const int TimeoutLong = 30000;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void TestBackgroundWorkerBasic()
         {
             var original = SynchronizationContext.Current;
@@ -70,7 +70,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task RunWorkerAsync_NoOnWorkHandler_SetsResultToNull()
         {
             var tcs = new TaskCompletionSource();
@@ -91,7 +91,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
 
         private ManualResetEventSlim manualResetEvent3;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void TestCancelAsync()
         {
             BackgroundWorker bw = new BackgroundWorker();
@@ -155,7 +155,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
 
         #endregion
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void TestThrowExceptionInDoWork()
         {
             var original = SynchronizationContext.Current;
@@ -208,7 +208,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
             Assert.False(bw.CancellationPending);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void RunWorkerAsyncTwice()
         {
             var bw = new BackgroundWorker();
@@ -233,7 +233,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void TestCancelInsideDoWork()
         {
             var original = SynchronizationContext.Current;
@@ -325,7 +325,9 @@ namespace System.ComponentModel.EventBasedAsync.Tests
             bw.Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        // Waits on a ManualResetEventSlim with a timeout, which requires multithreading support; on single-threaded
+        // wasm (browser CoreCLR interpreter) the blocking wait throws PlatformNotSupportedException.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void TestFinalization()
         {
             // BackgroundWorker has a finalizer that exists purely for backwards compatibility

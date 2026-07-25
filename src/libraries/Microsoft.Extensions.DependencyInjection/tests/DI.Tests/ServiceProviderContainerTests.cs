@@ -371,7 +371,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void GetAsyncService_DisposeAsyncOnSameThread_ThrowsAndDoesNotHangAndDisposeAsyncGetsCalled()
         {
             // Arrange
@@ -398,7 +398,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.True(asyncDisposableResource.DisposeAsyncCalled, "!DisposeAsyncCalled");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void GetService_DisposeOnSameThread_ThrowsAndDoesNotHangAndDisposeGetsCalled()
         {
             // Arrange
@@ -525,7 +525,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task GetRequiredService_ResolvingSameSingletonInTwoThreads_SameServiceReturned()
         {
             using (var mreForThread1 = new ManualResetEvent(false))
@@ -581,7 +581,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task GetRequiredService_UsesSingletonAndLazyLocks_NoDeadlock()
         {
             using (var mreForThread1 = new ManualResetEvent(false))
@@ -669,7 +669,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task GetRequiredService_BiggerObjectGraphWithOpenGenerics_NoDeadlock()
         {
             // Test is similar to GetRequiredService_UsesSingletonAndLazyLocks_NoDeadlock (but for open generics and a larger object graph)
@@ -1310,6 +1310,18 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.StartsWith("Some services are not able to be constructed", ex.Message);
             Assert.Contains("ServiceType: Microsoft.Extensions.DependencyInjection.Specification.KeyedDependencyInjectionSpecificationTests+OtherService", ex.ToString());
             Assert.Contains("Microsoft.Extensions.DependencyInjection.Specification.KeyedDependencyInjectionSpecificationTests+IService", ex.ToString());
+        }
+
+        [Fact]
+        public void InvalidConstrainedOpenGenericIsSkippedInEnumerableButThrowsInSingleResolution()
+        {
+            var sc = new ServiceCollection();
+            sc.AddSingleton(typeof(IBB<>), typeof(GenericBB<>));
+            sc.AddSingleton(typeof(IBB<>), typeof(ConstrainedGenericBB<>));
+            var sp = CreateServiceProvider(sc);
+
+            Assert.Single(sp.GetServices<IBB<IBB<string>>>());
+            Assert.Throws<ArgumentException>(() => sp.GetService<IBB<IBB<string>>>());
         }
 
         private async Task<bool> ResolveUniqueServicesConcurrently()

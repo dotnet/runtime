@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="Base01c_seq_ser.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

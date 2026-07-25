@@ -74,7 +74,7 @@ public class ChangeMaskUse
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void UseMaskAsMaskAndVector()
     {
-        Vector<byte> mask1 = Sve.CreateWhileLessThanOrEqualMask8Bit(2, 9); // Create lcl mask
+        Vector<byte> mask1 = Sve.CreateWhileLessThanOrEqualMaskByte(2, 9); // Create lcl mask
         Vector<byte> vec1  = Vector.Create<byte>(3);
         Vector<byte> vec2  = Vector.Create<byte>(4);
         Vector<byte> vec3  = Sve.ConditionalExtractAfterLastActiveElement(mask1, vec1, vec2); // Use as mask

@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Net.Mail.Tests;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -56,6 +57,7 @@ namespace System.Net.Mail.Tests
 #pragma warning restore SYSLIB0014 // ServicePointManager is obsolete
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120959", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsAndroid))]
         [Fact]
         public async Task EnableSsl_ServerSupports_UsesTls()
         {
@@ -154,6 +156,7 @@ namespace System.Net.Mail.Tests
             await SendMail<AuthenticationException>(msg);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120959", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsAndroid))]
         [Fact]
         public async Task ClientCertificateRequired_Sent()
         {

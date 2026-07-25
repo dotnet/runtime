@@ -23,7 +23,7 @@ PALEXPORT ASN1_OBJECT* CryptoNative_GetX509SignatureAlgorithm(X509* x509);
 
 PALEXPORT int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, int32_t cBuf);
 
-PALEXPORT ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509);
+PALEXPORT const ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509);
 
 PALEXPORT int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_t cBuf);
 
@@ -42,14 +42,7 @@ PALEXPORT X509* CryptoNative_GetX509StackField(STACK_OF(X509) * stack, int loc);
 
 PALEXPORT void CryptoNative_RecursiveFreeX509Stack(STACK_OF(X509) * stack);
 
-PALEXPORT int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
-                                                      int32_t year,
-                                                      int32_t month,
-                                                      int32_t day,
-                                                      int32_t hour,
-                                                      int32_t minute,
-                                                      int32_t second,
-                                                      int32_t isDst);
+PALEXPORT int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx, int64_t unixTime);
 
 PALEXPORT X509* CryptoNative_ReadX509AsDerFromBio(BIO* bio);
 

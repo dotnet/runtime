@@ -9,6 +9,9 @@
 //generics.
 //Test returns 100 on success and 1 on failure.
 
+
+namespace b611219;
+
 using System;
 using Xunit;
 
@@ -27,6 +30,7 @@ public class Derived : Base<string>
         return n;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

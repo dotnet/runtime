@@ -90,7 +90,7 @@ namespace System.Collections.Generic
             // via EqualityComparer<T>.Default.Equals, we
             // only make one virtual call to EqualityComparer.LastIndexOf.
 
-            return _size != 0 && Array.LastIndexOf(_array, item, _size - 1) != -1;
+            return _size != 0 && Array.LastIndexOf(_array, item, _size - 1) >= 0;
         }
 
         // Copies the stack into an array.

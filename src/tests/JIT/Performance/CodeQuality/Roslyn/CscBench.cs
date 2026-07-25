@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public static class CscBench
 {
@@ -28,13 +29,6 @@ public static class CscBench
     {
         string CoreRoot = System.Environment.GetEnvironmentVariable("CORE_ROOT");
         if (CoreRoot == null) { return false; }
-        // Some CoreCLR packages have System.Private.CoreLib.ni.dll only
-        string nicorlib = Path.Combine(CoreRoot, "System.Private.CoreLib.ni.dll");
-        if(File.Exists(nicorlib))
-        {
-            MscorlibPath = nicorlib;
-            return true;
-        }
         MscorlibPath = Path.Combine(CoreRoot, "System.Private.CoreLib.dll");
         return File.Exists(MscorlibPath);
     }
@@ -143,6 +137,10 @@ public class C {
         return result;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57352", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/54908", TestPlatforms.Android)]
+    [ActiveIssue("This test requires CORE_ROOT to be set", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static int TestEntryPoint()
     {

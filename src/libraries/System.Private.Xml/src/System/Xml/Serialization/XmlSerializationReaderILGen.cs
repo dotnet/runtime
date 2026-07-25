@@ -3047,7 +3047,8 @@ namespace System.Xml.Serialization
                 {
                 }
 
-                if ((element.Mapping.TypeDesc!.Type == typeof(TimeSpan)) || element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset))
+                if ((element.Mapping.TypeDesc!.Type == typeof(TimeSpan)) || element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset)
+                    || element.Mapping.TypeDesc!.Type == typeof(DateOnly) || element.Mapping.TypeDesc!.Type == typeof(TimeOnly))
                 {
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                        "get_Reader",
@@ -3228,6 +3229,8 @@ namespace System.Xml.Serialization
                         ReflectionAwareILGen.ILGenForCreateInstance(ilg, sm.TypeDesc!.Type!, sm.TypeDesc.CannotNew, false);
                         if (sm.TypeDesc.CannotNew)
                             ilg.ConvertValue(typeof(object), typeof(IXmlSerializable));
+                        else if (sm.TypeDesc.IsValueType)
+                            ilg.ConvertValue(sm.TypeDesc.Type!, typeof(IXmlSerializable));
                         if (isWrappedAny)
                             ilg.Ldc(true);
                         ilg.Call(XmlSerializationReader_ReadSerializable);

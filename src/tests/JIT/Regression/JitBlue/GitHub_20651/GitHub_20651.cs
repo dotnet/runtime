@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace GitHub_20651;
+
 using System;
 using Xunit;
 
@@ -16,6 +19,7 @@ public class X
     }
 
     // Ensure GTF_CALL flag is propagated to MD array accessor
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

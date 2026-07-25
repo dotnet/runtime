@@ -23,10 +23,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         public override JsonSerializerOptions DefaultOptions => _defaultContext.Options;
 
         public override Task<string> SerializeWrapper(object value, Type type, JsonSerializerOptions? options = null)
-            => Task.FromResult(JsonSerializer.Serialize(value, type, GetOptions(options)));
+            => Task.FromResult(JsonSerializer.Serialize(value, GetOptions(options).GetTypeInfo(type)));
 
         public override Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions? options = null)
-            => Task.FromResult(JsonSerializer.Serialize(value, GetOptions(options)));
+            => Task.FromResult(JsonSerializer.Serialize(value, GetOptions(options).GetTypeInfo<T>()));
 
         public override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerContext context)
             => Task.FromResult(JsonSerializer.Serialize(value, inputType, context));
@@ -38,10 +38,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             => Task.FromResult(JsonSerializer.Serialize(value, jsonTypeInfo));
 
         public override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions? options = null)
-            => Task.FromResult(JsonSerializer.Deserialize<T>(json, GetOptions(options)));
+            => Task.FromResult(JsonSerializer.Deserialize(json, GetOptions(options).GetTypeInfo<T>()));
 
         public override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions? options = null)
-            => Task.FromResult(JsonSerializer.Deserialize(json, type, GetOptions(options)));
+            => Task.FromResult(JsonSerializer.Deserialize(json, GetOptions(options).GetTypeInfo(type)));
 
         public override Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
             => Task.FromResult(JsonSerializer.Deserialize(json, jsonTypeInfo));
@@ -71,7 +71,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
         {
-            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, GetOptions(options), cancellationToken);
+            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, GetOptions(options).GetTypeInfo<T>(), cancellationToken);
         }
 
         public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
@@ -86,7 +86,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, bool topLevelValues, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
-            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, topLevelValues, GetOptions(options), cancellationToken);
+            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, GetOptions(options).GetTypeInfo<T>(), topLevelValues, cancellationToken);
         }
     }
 
@@ -102,45 +102,45 @@ namespace System.Text.Json.SourceGeneration.Tests
             _defaultContext = defaultContext ?? throw new ArgumentNullException(nameof(defaultContext));
         }
 
-        public override async Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions? options = null)
+        public override async Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
-            return await JsonSerializer.DeserializeAsync<T>(utf8Json, GetOptions(options));
+            return await JsonSerializer.DeserializeAsync<T>(utf8Json, GetOptions(options).GetTypeInfo<T>(), cancellationToken);
         }
 
-        public override async Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions options = null)
+        public override async Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
         {
-            return await JsonSerializer.DeserializeAsync(utf8Json, returnType, GetOptions(options));
+            return await JsonSerializer.DeserializeAsync(utf8Json, GetOptions(options).GetTypeInfo(returnType), cancellationToken);
         }
 
-        public override async Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo)
+        public override async Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
         {
-            return await JsonSerializer.DeserializeAsync<T>(utf8Json, jsonTypeInfo);
+            return await JsonSerializer.DeserializeAsync<T>(utf8Json, jsonTypeInfo, cancellationToken);
         }
 
-        public override async Task<object> DeserializeWrapper(Stream utf8Json, JsonTypeInfo jsonTypeInfo)
+        public override async Task<object> DeserializeWrapper(Stream utf8Json, JsonTypeInfo jsonTypeInfo, CancellationToken cancellationToken = default)
         {
-            return await JsonSerializer.DeserializeAsync(utf8Json, jsonTypeInfo);
+            return await JsonSerializer.DeserializeAsync(utf8Json, jsonTypeInfo, cancellationToken);
         }
 
-        public override async Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerContext context)
+        public override async Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerContext context, CancellationToken cancellationToken = default)
         {
-            return await JsonSerializer.DeserializeAsync(utf8Json, returnType, context);
+            return await JsonSerializer.DeserializeAsync(utf8Json, returnType, context, cancellationToken);
         }
 
-        public override Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions options = null)
-            => JsonSerializer.SerializeAsync<T>(stream, value, GetOptions(options));
+        public override Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+            => JsonSerializer.SerializeAsync<T>(stream, value, GetOptions(options).GetTypeInfo<T>(), cancellationToken);
 
-        public override Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerOptions options = null)
-            => JsonSerializer.SerializeAsync(stream, value, inputType, GetOptions(options));
+        public override Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+            => JsonSerializer.SerializeAsync(stream, value, GetOptions(options).GetTypeInfo(inputType), cancellationToken);
 
-        public override Task SerializeWrapper<T>(Stream stream, T value, JsonTypeInfo<T> jsonTypeInfo)
-            => JsonSerializer.SerializeAsync(stream, value, jsonTypeInfo);
+        public override Task SerializeWrapper<T>(Stream stream, T value, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
+            => JsonSerializer.SerializeAsync(stream, value, jsonTypeInfo, cancellationToken);
 
-        public override Task SerializeWrapper(Stream stream, object value, JsonTypeInfo jsonTypeInfo)
-            => JsonSerializer.SerializeAsync(stream, value, jsonTypeInfo);
+        public override Task SerializeWrapper(Stream stream, object value, JsonTypeInfo jsonTypeInfo, CancellationToken cancellationToken = default)
+            => JsonSerializer.SerializeAsync(stream, value, jsonTypeInfo, cancellationToken);
 
-        public override Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerContext context)
-            => JsonSerializer.SerializeAsync(stream, value, inputType, context);
+        public override Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerContext context, CancellationToken cancellationToken = default)
+            => JsonSerializer.SerializeAsync(stream, value, inputType, context, cancellationToken);
 
         public override JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions? options = null, bool mutable = false) => base.GetTypeInfo(type, GetOptions(options), mutable);
 
@@ -161,7 +161,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
         {
-            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, GetOptions(options), cancellationToken);
+            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, GetOptions(options).GetTypeInfo<T>(), cancellationToken);
         }
 
         public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
@@ -176,7 +176,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, bool topLevelValues, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
-            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, topLevelValues, GetOptions(options), cancellationToken);
+            return JsonSerializer.DeserializeAsyncEnumerable<T>(utf8Json, GetOptions(options).GetTypeInfo<T>(), topLevelValues, cancellationToken);
         }
     }
 }

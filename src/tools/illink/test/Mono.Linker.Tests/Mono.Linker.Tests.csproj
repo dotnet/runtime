@@ -2,18 +2,13 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Arcade uses by default xunit as test runner, illink uses nunit instead. -->
-    <TestRunnerName>NUnit</TestRunnerName>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" PrivateAssets="All" Publish="True" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <ProjectReference Include="$(RepoRoot)\src\coreclr\tools\ILVerification\ILVerification.csproj" />
-    <!-- This reference is purely so that the ILLink can resolve this
-         dependency of mscorlib. It is not actually required to build
-         the tests. -->
-    <PackageReference Include="System.Threading.AccessControl" Version="$(SystemThreadingAccessControlVersion)" />
 
     <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="..\Mono.Linker.Tests.Cases\**\*.csproj" />
@@ -44,6 +39,12 @@
     </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.LinkerTestDir">
       <Value>$(LinkerTestDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ExpectationsDir">
+      <Value>$(LinkerTestDir)\Mono.Linker.Tests.Cases.Expectations</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ILLinkSharedDir">
+      <Value>$(LinkerTestDir)..\src\ILLink.Shared</Value>
     </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetFramework">
       <Value>$(TargetFramework)</Value>

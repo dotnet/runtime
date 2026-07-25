@@ -10,11 +10,19 @@ namespace System
 {
     internal static partial class Number
     {
-        private static unsafe bool TryParseNumber<TChar>(scoped ref TChar* str, TChar* strEnd, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
+        // Internal-only style bit used by the INumberBase.TryParsePartial implementations to signal that parsing
+        // should stop at the first otherwise-invalid character rather than failing. This is deliberately not a
+        // public NumberStyles value; it is layered on top of the user-provided style after validation. It uses the
+        // highest bit (0x8000_0000) so public flags can keep growing upward without stomping it; see NumberStyles.
+        internal const NumberStyles AllowTrailingInvalidCharacters = unchecked((NumberStyles)0x80000000);
+
+        private static unsafe bool TryParseNumber<TChar>(TChar* str, TChar* strEnd, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(str != null);
-            Debug.Assert(strEnd != null);
+            // str/strEnd may be null when the input is an empty span (e.g. default(ReadOnlySpan<TChar>)
+            // originating from a null string), in which case they are both null and the range is empty.
+            Debug.Assert((str != null) || (str == strEnd));
+            Debug.Assert((strEnd != null) || (str == strEnd));
             Debug.Assert(str <= strEnd);
             Debug.Assert((styles & (NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) == 0);
 
@@ -269,41 +277,48 @@ namespace System
                             number.IsNegative = false;
                         }
                     }
-                    str = p;
-                    return true;
+
+                    int index = (int)(p - str);
+                    var value = new ReadOnlySpan<TChar>(str, (int)(strEnd - str));
+
+                    // For compatibility we still need to process any trailing
+                    // nulls that exist and report them as having been consumed.
+
+                    index = ConsumeTrailingNulls(value, index);
+
+                    if ((index == value.Length) || ((styles & AllowTrailingInvalidCharacters) != 0))
+                    {
+                        elementsConsumed = index;
+                        return true;
+                    }
                 }
             }
-            str = p;
+
+            elementsConsumed = 0;
             return false;
         }
 
-        internal static unsafe bool TryStringToNumber<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
+        internal static unsafe bool TryStringToNumber<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(info != null);
 
             fixed (TChar* stringPointer = &MemoryMarshal.GetReference(value))
             {
-                TChar* p = stringPointer;
-
-                if (!TryParseNumber(ref p, p + value.Length, styles, ref number, info)
-                    || ((int)(p - stringPointer) < value.Length && !TrailingZeros(value, (int)(p - stringPointer))))
-                {
-                    number.CheckConsistency();
-                    return false;
-                }
+                bool succeeded = TryParseNumber(stringPointer, stringPointer + value.Length, styles, ref number, info, out elementsConsumed);
+                number.CheckConsistency();
+                return succeeded;
             }
-
-            number.CheckConsistency();
-            return true;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // rare slow path that shouldn't impact perf of the main use case
-        private static bool TrailingZeros<TChar>(ReadOnlySpan<TChar> value, int index)
+        private static int ConsumeTrailingNulls<TChar>(ReadOnlySpan<TChar> value, int index)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            // For compatibility, we need to allow trailing zeros at the end of a number string
-            return !value.Slice(index).ContainsAnyExcept(TChar.CastFrom('\0'));
+            // For compatibility, we need to allow trailing nulls at the end of a number string
+            var remainder = value.Slice(index);
+
+            var nullsToConsume = remainder.IndexOfAnyExcept(TChar.CastFrom('\0'));
+            return index + ((nullsToConsume >= 0) ? nullsToConsume : remainder.Length);
         }
 
         private static bool IsWhite(uint ch) => (ch == 0x20) || ((ch - 0x09) <= (0x0D - 0x09));
@@ -317,7 +332,10 @@ namespace System
             Overflow
         }
 
-        private static bool IsSpaceReplacingChar(uint c) => (c == '\u00a0') || (c == '\u202f');
+        private static bool IsSpaceReplacingChar(uint c) => c is '\u00a0' or '\u202f';
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint NormalizeSpaceReplacingChar(uint c) => IsSpaceReplacingChar(c) ? '\u0020' : c;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe TChar* MatchNegativeSignChars<TChar>(TChar* p, TChar* pEnd, NumberFormatInfo info)
@@ -336,7 +354,11 @@ namespace System
         private static unsafe TChar* MatchChars<TChar>(TChar* p, TChar* pEnd, ReadOnlySpan<TChar> value)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert((p != null) && (pEnd != null) && (p <= pEnd));
+            // p/pEnd may be null when the input being parsed is an empty span (e.g. from a null string),
+            // in which case they are both null and the range is empty; the loop below never dereferences p then.
+            Debug.Assert((p != null) || (p == pEnd));
+            Debug.Assert((pEnd != null) || (p == pEnd));
+            Debug.Assert(p <= pEnd);
 
             fixed (TChar* stringPointer = &MemoryMarshal.GetReference(value))
             {
@@ -345,14 +367,16 @@ namespace System
                 if (TChar.CastToUInt32(*str) != '\0')
                 {
                     // We only hurt the failure case
-                    // This fix is for French or Kazakh cultures. Since a user cannot type 0xA0 or 0x202F as a
-                    // space character we use 0x20 space character instead to mean the same.
+                    // This fix is for cultures that use NBSP (U+00A0) or narrow NBSP (U+202F) as group/decimal separators
+                    // (e.g., French, Kazakh, Ukrainian). Since a user cannot easily type these characters,
+                    // we accept regular space (U+0020) as equivalent.
+                    // We also need to handle the reverse case where the input has NBSP and the format string has space.
                     while (true)
                     {
                         uint cp = (p < pEnd) ? TChar.CastToUInt32(*p) : '\0';
                         uint val = TChar.CastToUInt32(*str);
 
-                        if ((cp != val) && !(IsSpaceReplacingChar(val) && (cp == '\u0020')))
+                        if (cp != val && NormalizeSpaceReplacingChar(cp) != NormalizeSpaceReplacingChar(val))
                         {
                             break;
                         }

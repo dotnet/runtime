@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Debug = System.Diagnostics.Debug;
+using System;
 using System.Collections.Generic;
+
 using Internal.TypeSystem.Ecma;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
@@ -176,8 +179,8 @@ namespace Internal.TypeSystem
 
             static bool CompareDelegatesForEquivalence(MetadataType type1, MetadataType type2, StackOverflowProtect visited)
             {
-                var invoke1 = type1.GetMethod("Invoke", null);
-                var invoke2 = type2.GetMethod("Invoke", null);
+                var invoke1 = type1.GetMethod("Invoke"u8, null);
+                var invoke2 = type2.GetMethod("Invoke"u8, null);
 
                 if (invoke1 == null)
                     return false;

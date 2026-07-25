@@ -157,6 +157,13 @@ bool NearDiffer::InitAsmDiff()
             {
                 coreDisTargetArchitecture = Target_RiscV64;
             }
+            else if ((0 == _stricmp(TargetArchitecture, "wasm")) || (0 == _stricmp(TargetArchitecture, "wasm32")))
+            {
+                // Requires coredistools >= 1.7.0 (Target_Wasm32 + framed entry points).
+                // Existing NearDiffCodeBlocks / DumpCodeBlock / DumpDiffBlocks auto-route
+                // to the Wasm framing-aware implementations inside coredistools.
+                coreDisTargetArchitecture = Target_Wasm32;
+            }
             else
             {
                 LogError("Illegal target architecture '%s'", TargetArchitecture);
@@ -545,6 +552,16 @@ bool NearDiffer::compareOffsets(
         return true;
     }
 
+    // For wasm32, recorded relocations are the source of truth: handles materialize
+    // as i32.const immediates with padded ULEB128/SLEB128 placeholders that the JIT
+    // separately records in a reloc table. Defer the "are these two distinct
+    // immediates semantically equivalent" decision to a wasm-specific path that
+    // consults the reloc tables instead of replaying generic IP-relative heuristics.
+    if (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_WASM32)
+    {
+        return compareOffsetsWasm(payload, blockOffset, instrLen, offset1, offset2);
+    }
+
     const DiffData* data         = (const DiffData*)payload;
     size_t          ip1          = data->originalBlock1 + blockOffset;
     size_t          ip2          = data->originalBlock2 + blockOffset;
@@ -620,6 +637,97 @@ bool NearDiffer::compareOffsets(
         return true;
     }
 
+    return false;
+}
+
+//
+// Wasm32-specific offset comparator.
+//
+// For wasm32, integer immediates that materialize JIT handles (function indices,
+// type indices, memory addresses, globals) are emitted as 5-byte ULEB128/SLEB128
+// placeholders (`80 80 80 80 00`) that the JIT separately records in a reloc
+// table. For un-prefixed forms like `i32.const`/`call`, the placeholder sits at
+// `opcode-byte + 1`. For un-prefixed memory ops (`i32.load`, `i32.store`, ...),
+// the layout is `<opcode> <align>:u32 <reloc-offset>:u32`, so the relocatable
+// payload sits at `opcode-byte + 2`. Either way, both baseline and diff JITs
+// write the same placeholder bytes, so byte-by-byte comparison naturally
+// succeeds at reloc sites without any patching. Any immediate mismatch surfaced
+// to this comparator therefore falls into one of three cases:
+//
+//   1. Hard-coded non-reloc literal that genuinely differs across baseline/diff.
+//      This is a real codegen change; return false.
+//
+//   2. Reloc sites where both sides recorded a reloc but the immediates somehow
+//      differ (e.g. a future change patches the placeholder into real bytes).
+//      Treat as equivalent when both reloc kinds match and the targets are equal
+//      after addlDelta correction.
+//
+//   3. A reloc on one side but not the other - genuinely asymmetric codegen.
+//      Return false.
+//
+// `blockOffset` is the opcode-byte offset within the framed buffer, per the
+// coredistools Wasm32 contract. The recorded reloc location is the payload byte,
+// which may be `opcode-byte + 1` (un-prefixed i32.const/call/etc.),
+// `opcode-byte + 2` (un-prefixed loads/stores after the align u32), or further
+// for prefixed opcodes. We search the entire immediate window
+// `[blockOffset+1, blockOffset+instrLen)` to handle all of these uniformly.
+//
+bool NearDiffer::compareOffsetsWasm(
+    const void* payload, size_t blockOffset, size_t instrLen, uint64_t offset1, uint64_t offset2)
+{
+    if (offset1 == offset2)
+    {
+        return true;
+    }
+
+    const DiffData* data = (const DiffData*)payload;
+
+    // The relocated payload byte may live at `opcode-byte + 1` (un-prefixed
+    // i32.const/call/etc.), `opcode-byte + 2` (un-prefixed memory ops, after
+    // the align u32), or even deeper for prefixed forms (0xFC/0xFD/0xFE).
+    // Rather than threading per-opcode payload offsets through coredistools,
+    // walk the entire immediate window [blockOffset+1, blockOffset+instrLen)
+    // and accept the first reloc found. Multiple relocs in a single instruction
+    // are not emitted today.
+    const size_t windowStart = blockOffset + 1;
+    const size_t windowSize  = (instrLen > 1) ? (instrLen - 1) : 0;
+
+    if (windowSize == 0)
+    {
+        // Single-byte opcode (no immediate) -- this comparator should not have
+        // been called at all. Treat as a real mismatch.
+        return false;
+    }
+
+    const Agnostic_RecordRelocation* reloc1 =
+        data->cr1->findRelocationInRange(data->originalBlock1, windowStart, windowSize);
+    const Agnostic_RecordRelocation* reloc2 =
+        data->cr2->findRelocationInRange(data->originalBlock2, windowStart, windowSize);
+
+    if ((reloc1 == nullptr) || (reloc2 == nullptr))
+    {
+        // At most one side has a reloc here. Either a genuine non-reloc immediate
+        // mismatch (case 1) or an asymmetric reloc (case 3). Real diff.
+        return false;
+    }
+
+    if (reloc1->fRelocType != reloc2->fRelocType)
+    {
+        // Different reloc kinds at the same site is a real codegen change.
+        return false;
+    }
+
+    const uint64_t target1 = (uint64_t)reloc1->target + (int32_t)reloc1->addlDelta;
+    const uint64_t target2 = (uint64_t)reloc2->target + (int32_t)reloc2->addlDelta;
+    if (target1 == target2)
+    {
+        return true;
+    }
+
+    // Targets differ. This is the "different handle picked for the same source"
+    // case. For now, treat as a real mismatch; a future revision can plug in
+    // handle-equivalence logic mirroring the cr1->cr2 handle remapping used by
+    // the non-wasm `compareOffsets` heuristics.
     return false;
 }
 
@@ -1262,34 +1370,36 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
 {
     ULONG              hotCodeSize_1;
     ULONG              coldCodeSize_1;
-    ULONG              roDataSize_1;
+    ULONG              roDataSize_1_1;
+    ULONG              roDataSize_1_2 = 0;
     ULONG              xcptnsCount_1;
-    CorJitAllocMemFlag flag_1;
     unsigned char*     hotCodeBlock_1;
     unsigned char*     coldCodeBlock_1;
     unsigned char*     roDataBlock_1;
     void*              orig_hotCodeBlock_1;
     void*              orig_coldCodeBlock_1;
-    void*              orig_roDataBlock_1;
+    void*              orig_roDataBlock_1_1;
+    void*              orig_roDataBlock_1_2 = nullptr;
 
     ULONG              hotCodeSize_2;
     ULONG              coldCodeSize_2;
-    ULONG              roDataSize_2;
+    ULONG              roDataSize_2_1;
+    ULONG              roDataSize_2_2 = 0;
     ULONG              xcptnsCount_2;
-    CorJitAllocMemFlag flag_2;
     unsigned char*     hotCodeBlock_2;
     unsigned char*     coldCodeBlock_2;
     unsigned char*     roDataBlock_2;
     void*              orig_hotCodeBlock_2;
     void*              orig_coldCodeBlock_2;
-    void*              orig_roDataBlock_2;
+    void*              orig_roDataBlock_2_1;
+    void*              orig_roDataBlock_2_2 = nullptr;
 
-    cr1->repAllocMem(&hotCodeSize_1, &coldCodeSize_1, &roDataSize_1, &xcptnsCount_1, &flag_1, &hotCodeBlock_1,
+    cr1->repAllocMem(&hotCodeSize_1, &coldCodeSize_1, &roDataSize_1_1, &xcptnsCount_1, &hotCodeBlock_1,
                      &coldCodeBlock_1, &roDataBlock_1, &orig_hotCodeBlock_1, &orig_coldCodeBlock_1,
-                     &orig_roDataBlock_1);
-    cr2->repAllocMem(&hotCodeSize_2, &coldCodeSize_2, &roDataSize_2, &xcptnsCount_2, &flag_2, &hotCodeBlock_2,
+                     &orig_roDataBlock_1_1);
+    cr2->repAllocMem(&hotCodeSize_2, &coldCodeSize_2, &roDataSize_2_1, &xcptnsCount_2, &hotCodeBlock_2,
                      &coldCodeBlock_2, &roDataBlock_2, &orig_hotCodeBlock_2, &orig_coldCodeBlock_2,
-                     &orig_roDataBlock_2);
+                     &orig_roDataBlock_2_1);
 
     // On Arm64 the constant pool is appended at the end of the method code section, hence hotCodeSize_{1,2}
     // is a sum of their sizes. The following is to adjust their sizes and the roDataBlock_{1,2} pointers.
@@ -1301,9 +1411,11 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
             ULONG        nativeSizeOfCode_1;
             CorJitResult jitResult_1;
             cr1->repCompileMethod(&nativeEntry_1, &nativeSizeOfCode_1, &jitResult_1);
-            roDataSize_1 = hotCodeSize_1 - nativeSizeOfCode_1;
+            roDataSize_1_2 = roDataSize_1_1;
+            roDataSize_1_1 = hotCodeSize_1 - nativeSizeOfCode_1;
             roDataBlock_1 = hotCodeBlock_1 + nativeSizeOfCode_1;
-            orig_roDataBlock_1 = (void*)((size_t)orig_hotCodeBlock_1 + nativeSizeOfCode_1);
+            orig_roDataBlock_1_2 = orig_roDataBlock_1_1;
+            orig_roDataBlock_1_1 = (void*)((size_t)orig_hotCodeBlock_1 + nativeSizeOfCode_1);
             hotCodeSize_1 = nativeSizeOfCode_1;
         }
 
@@ -1313,19 +1425,21 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
             ULONG        nativeSizeOfCode_2;
             CorJitResult jitResult_2;
             cr2->repCompileMethod(&nativeEntry_2, &nativeSizeOfCode_2, &jitResult_2);
-            roDataSize_2 = hotCodeSize_2 - nativeSizeOfCode_2;
+            roDataSize_2_2 = roDataSize_2_1;
+            roDataSize_2_1 = hotCodeSize_2 - nativeSizeOfCode_2;
             roDataBlock_2 = hotCodeBlock_2 + nativeSizeOfCode_2;
-            orig_roDataBlock_2 = (void*)((size_t)orig_hotCodeBlock_2 + nativeSizeOfCode_2);
+            orig_roDataBlock_2_2 = orig_roDataBlock_2_1;
+            orig_roDataBlock_2_1 = (void*)((size_t)orig_hotCodeBlock_2 + nativeSizeOfCode_2);
             hotCodeSize_2 = nativeSizeOfCode_2;
         }
     }
 
-    LogDebug("HCS1 %d CCS1 %d RDS1 %d xcpnt1 %d flag1 %08X, HCB %p CCB %p RDB %p ohcb %p occb %p odb %p", hotCodeSize_1,
-             coldCodeSize_1, roDataSize_1, xcptnsCount_1, flag_1, hotCodeBlock_1, coldCodeBlock_1, roDataBlock_1,
-             orig_hotCodeBlock_1, orig_coldCodeBlock_1, orig_roDataBlock_1);
-    LogDebug("HCS2 %d CCS2 %d RDS2 %d xcpnt2 %d flag2 %08X, HCB %p CCB %p RDB %p ohcb %p occb %p odb %p", hotCodeSize_2,
-             coldCodeSize_2, roDataSize_2, xcptnsCount_2, flag_2, hotCodeBlock_2, coldCodeBlock_2, roDataBlock_2,
-             orig_hotCodeBlock_2, orig_coldCodeBlock_2, orig_roDataBlock_2);
+    LogDebug("HCS1 %d CCS1 %d RDS1 %d xcpnt1 %d HCB %p CCB %p RDB %p ohcb %p occb %p odb %p", hotCodeSize_1,
+             coldCodeSize_1, roDataSize_1_1, xcptnsCount_1, hotCodeBlock_1, coldCodeBlock_1, roDataBlock_1,
+             orig_hotCodeBlock_1, orig_coldCodeBlock_1, orig_roDataBlock_1_1);
+    LogDebug("HCS2 %d CCS2 %d RDS2 %d xcpnt2 %d HCB %p CCB %p RDB %p ohcb %p occb %p odb %p", hotCodeSize_2,
+             coldCodeSize_2, roDataSize_2_1, xcptnsCount_2, hotCodeBlock_2, coldCodeBlock_2, roDataBlock_2,
+             orig_hotCodeBlock_2, orig_coldCodeBlock_2, orig_roDataBlock_2_1);
 
     RelocContext rc;
     rc.mc                      = mc;
@@ -1335,43 +1449,47 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
     rc.coldCodeAddress         = (size_t)coldCodeBlock_1;
     rc.coldCodeSize            = coldCodeSize_1;
     rc.roDataAddress           = (size_t)roDataBlock_1;
-    rc.roDataSize              = roDataSize_1;
+    rc.roDataSize1             = roDataSize_1_1;
+    rc.roDataSize2             = roDataSize_1_2;
     rc.originalHotCodeAddress  = (size_t)orig_hotCodeBlock_1;
     rc.originalColdCodeAddress = (size_t)orig_coldCodeBlock_1;
-    rc.originalRoDataAddress   = (size_t)orig_roDataBlock_1;
+    rc.originalRoDataAddress1  = (size_t)orig_roDataBlock_1_1;
+    rc.originalRoDataAddress2  = (size_t)orig_roDataBlock_1_2;
 
     cr1->applyRelocs(&rc, hotCodeBlock_1, hotCodeSize_1, orig_hotCodeBlock_1);
     cr1->applyRelocs(&rc, coldCodeBlock_1, coldCodeSize_1, orig_coldCodeBlock_1);
-    cr1->applyRelocs(&rc, roDataBlock_1, roDataSize_1, orig_roDataBlock_1);
+    cr1->applyRelocs(&rc, roDataBlock_1, roDataSize_1_1, orig_roDataBlock_1_1);
 
     rc.hotCodeAddress          = (size_t)hotCodeBlock_2;
     rc.hotCodeSize             = hotCodeSize_2;
     rc.coldCodeAddress         = (size_t)coldCodeBlock_2;
     rc.coldCodeSize            = coldCodeSize_2;
     rc.roDataAddress           = (size_t)roDataBlock_2;
-    rc.roDataSize              = roDataSize_2;
+    rc.roDataSize1             = roDataSize_2_1;
+    rc.roDataSize2             = roDataSize_2_2;
     rc.originalHotCodeAddress  = (size_t)orig_hotCodeBlock_2;
     rc.originalColdCodeAddress = (size_t)orig_coldCodeBlock_2;
-    rc.originalRoDataAddress   = (size_t)orig_roDataBlock_2;
+    rc.originalRoDataAddress1  = (size_t)orig_roDataBlock_2_1;
+    rc.originalRoDataAddress2  = (size_t)orig_roDataBlock_2_2;
 
     cr2->applyRelocs(&rc, hotCodeBlock_2, hotCodeSize_2, orig_hotCodeBlock_2);
     cr2->applyRelocs(&rc, coldCodeBlock_2, coldCodeSize_2, orig_coldCodeBlock_2);
-    cr2->applyRelocs(&rc, roDataBlock_2, roDataSize_2, orig_roDataBlock_2);
+    cr2->applyRelocs(&rc, roDataBlock_2, roDataSize_2_1, orig_roDataBlock_2_1);
 
-    if (!compareCodeSection(mc, cr1, cr2, hotCodeBlock_1, hotCodeSize_1, roDataBlock_1, roDataSize_1,
-                            orig_hotCodeBlock_1, orig_roDataBlock_1, orig_coldCodeBlock_1, coldCodeSize_1,
-                            hotCodeBlock_2, hotCodeSize_2, roDataBlock_2, roDataSize_2, orig_hotCodeBlock_2,
-                            orig_roDataBlock_2, orig_coldCodeBlock_2, coldCodeSize_2))
+    if (!compareCodeSection(mc, cr1, cr2, hotCodeBlock_1, hotCodeSize_1, roDataBlock_1, roDataSize_1_1,
+                            orig_hotCodeBlock_1, orig_roDataBlock_1_1, orig_coldCodeBlock_1, coldCodeSize_1,
+                            hotCodeBlock_2, hotCodeSize_2, roDataBlock_2, roDataSize_2_1, orig_hotCodeBlock_2,
+                            orig_roDataBlock_2_1, orig_coldCodeBlock_2, coldCodeSize_2))
         return false;
 
-    if (!compareCodeSection(mc, cr1, cr2, coldCodeBlock_1, coldCodeSize_1, roDataBlock_1, roDataSize_1,
-                            orig_coldCodeBlock_1, orig_roDataBlock_1, orig_hotCodeBlock_1, hotCodeSize_1,
-                            coldCodeBlock_2, coldCodeSize_2, roDataBlock_2, roDataSize_2, orig_coldCodeBlock_2,
-                            orig_roDataBlock_2, orig_hotCodeBlock_2, hotCodeSize_2))
+    if (!compareCodeSection(mc, cr1, cr2, coldCodeBlock_1, coldCodeSize_1, roDataBlock_1, roDataSize_1_1,
+                            orig_coldCodeBlock_1, orig_roDataBlock_1_1, orig_hotCodeBlock_1, hotCodeSize_1,
+                            coldCodeBlock_2, coldCodeSize_2, roDataBlock_2, roDataSize_2_1, orig_coldCodeBlock_2,
+                            orig_roDataBlock_2_1, orig_hotCodeBlock_2, hotCodeSize_2))
         return false;
 
-    if (!compareReadOnlyDataBlock(mc, cr1, cr2, roDataBlock_1, roDataSize_1, orig_roDataBlock_1, roDataBlock_2,
-                                  roDataSize_2, orig_roDataBlock_2))
+    if (!compareReadOnlyDataBlock(mc, cr1, cr2, roDataBlock_1, roDataSize_1_1, orig_roDataBlock_1_1, roDataBlock_2,
+                                  roDataSize_2_1, orig_roDataBlock_2_1))
         return false;
 
     if (!compareEHInfo(mc, cr1, cr2))

@@ -8,6 +8,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly 'b16928' {}
 .class public ILGEN_0x38e56b77 {
 
@@ -27,6 +28,10 @@
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )
+.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+    string('Doesn\'t pass after LLVM AOT compilation.')
+    int32(2) // Mono
+}
 .entrypoint
 .maxstack	18
 
@@ -34,77 +39,77 @@
  ldc.i4.1
  stloc ecode
  .try {
- 
+
 //BEGIN INIT LOCALS
 ldc.i4 255
- newarr [mscorlib]System.Byte 
+ newarr [mscorlib]System.Byte
  stloc local_0x0
 ldc.i4 255
- newarr [mscorlib]System.UInt16 
+ newarr [mscorlib]System.UInt16
  stloc local_0x1
 ldc.i4 255
- newarr [mscorlib]System.UInt32 
+ newarr [mscorlib]System.UInt32
  stloc local_0x2
 ldc.i4 255
- newarr [mscorlib]System.UInt64 
+ newarr [mscorlib]System.UInt64
  stloc local_0x3
 ldc.i4 255
- newarr [mscorlib]System.SByte 
+ newarr [mscorlib]System.SByte
  stloc local_0x4
 ldc.i4 255
- newarr [mscorlib]System.Int16 
+ newarr [mscorlib]System.Int16
  stloc local_0x5
 ldc.i4 255
- newarr [mscorlib]System.Int32 
+ newarr [mscorlib]System.Int32
  stloc local_0x6
 ldc.i4 255
- newarr [mscorlib]System.Int64 
+ newarr [mscorlib]System.Int64
  stloc local_0x7
 ldc.i4 255
- newarr [mscorlib]System.Single 
+ newarr [mscorlib]System.Single
  stloc local_0x8
 ldc.i4 255
- newarr [mscorlib]System.Double 
+ newarr [mscorlib]System.Double
  stloc local_0x9
-ldc.i4 0x352f6f76 
+ldc.i4 0x352f6f76
 stloc local_0xa
-ldc.i4 0x5af468aa 
+ldc.i4 0x5af468aa
 stloc local_0xb
-ldc.i4 0x8284dd5 
+ldc.i4 0x8284dd5
 stloc local_0xc
-ldc.i4 0x46f8fbf 
+ldc.i4 0x46f8fbf
 stloc local_0xd
-ldc.i4 0xcae2243 
+ldc.i4 0xcae2243
 stloc local_0xe
-ldc.i8 0x623875f5401af4 
+ldc.i8 0x623875f5401af4
 stloc local_0xf
-ldc.r4 float32(0x90e3ab9) 
+ldc.r4 float32(0x90e3ab9)
 stloc local_0x10
-ldc.r8 float64(0x5a391a03d2e4777) 
+ldc.r8 float64(0x5a391a03d2e4777)
 stloc local_0x11
 
 //END INIT LOCALS
 
 //BEGIN INIT OF STATIC FIELDS
-ldc.i4 0x7435a94 
+ldc.i4 0x7435a94
 stsfld unsigned int8 ILGEN_0x38e56b77::field_0x0
-ldc.i4 0x26225364 
+ldc.i4 0x26225364
 stsfld unsigned int16 ILGEN_0x38e56b77::field_0x1
-ldc.i4 0x5a053f75 
+ldc.i4 0x5a053f75
 stsfld unsigned int32 ILGEN_0x38e56b77::field_0x2
-ldc.i8 0x7b2550d47ea452b 
+ldc.i8 0x7b2550d47ea452b
 stsfld unsigned int64 ILGEN_0x38e56b77::field_0x3
-ldc.i4 0x32e25308 
+ldc.i4 0x32e25308
 stsfld int8 ILGEN_0x38e56b77::field_0x4
-ldc.i4 0x264e4ab4 
+ldc.i4 0x264e4ab4
 stsfld int16 ILGEN_0x38e56b77::field_0x5
-ldc.i4 0x7643ec4 
+ldc.i4 0x7643ec4
 stsfld int32 ILGEN_0x38e56b77::field_0x6
-ldc.i8 0x29202bde50f26511 
+ldc.i8 0x29202bde50f26511
 stsfld int64 ILGEN_0x38e56b77::field_0x7
-ldc.r4 float32(0x1367a3e) 
+ldc.r4 float32(0x1367a3e)
 stsfld float32 ILGEN_0x38e56b77::field_0x8
-ldc.r8 float64(0x33f459275298cd0) 
+ldc.r8 float64(0x33f459275298cd0)
 stsfld float64 ILGEN_0x38e56b77::field_0x9
 
 //END INIT OF STATIC FIELDS
@@ -232,7 +237,7 @@ End_Orphan_36:
  stloc ecode
  leave xx
  }
- 
+
 xx:
  ldloc ecode
 ldc.i4 100

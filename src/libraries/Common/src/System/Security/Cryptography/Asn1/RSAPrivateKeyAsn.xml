@@ -2,7 +2,8 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="RSAPrivateKeyAsn"
-  namespace="System.Security.Cryptography.Asn1">
+  namespace="System.Security.Cryptography.Asn1"
+  emitType="ref">
 
   <!--
     https://tools.ietf.org/html/rfc3447#appendix-C
@@ -24,7 +25,7 @@
         (CONSTRAINED BY {
          - version must be multi if otherPrimeInfos present -
          })
-    
+
     Since we don't support otherPrimeInfos (Version=1) just don't map it in.
   -->
   <asn:Integer name="Version" backingType="int" />

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ namespace System.Reflection
 {
     internal static class AssemblyNameFormatter
     {
-        public static string ComputeDisplayName(string name, Version? version, string? cultureName, byte[]? pkt, AssemblyNameFlags flags = 0, AssemblyContentType contentType = 0, byte[]? pk = null)
+        public static unsafe string ComputeDisplayName(string name, Version? version, string? cultureName, byte[]? pkt, AssemblyNameFlags flags = 0, AssemblyContentType contentType = 0, byte[]? pk = null)
         {
             ValueStringBuilder vsb = new(stackalloc char[256]);
             AppendDisplayName(ref vsb, name, version, cultureName, pkt, flags, contentType, pk);

@@ -501,10 +501,6 @@ template <typename GcInfoEncoding> TGcInfoEncoder<GcInfoEncoding>::TGcInfoEncode
 #endif //_DEBUG
 
     m_CodeLength = 0;
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    m_SizeOfStackOutgoingAndScratchArea = -1;
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
-
 }
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
@@ -723,11 +719,6 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetStack
     _ASSERTE( regNum != NO_STACK_BASE_REGISTER );
     _ASSERTE(GcInfoEncoding::DENORMALIZE_STACK_BASE_REGISTER(GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(regNum)) == regNum);
     _ASSERTE( m_StackBaseRegister == NO_STACK_BASE_REGISTER || m_StackBaseRegister == regNum );
-#if defined(TARGET_LOONGARCH64)
-    assert(regNum == 3 || 22 == regNum);
-#elif defined(TARGET_RISCV64)
-    assert(regNum == 2 || 8 == regNum);
-#endif
     m_StackBaseRegister = regNum;
 }
 
@@ -757,14 +748,20 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetHasTa
 }
 #endif // TARGET_AMD64
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetSizeOfStackOutgoingAndScratchArea( UINT32 size )
 {
-    _ASSERTE( size != (UINT32)-1 );
-    _ASSERTE( m_SizeOfStackOutgoingAndScratchArea == (UINT32)-1 || m_SizeOfStackOutgoingAndScratchArea == size );
-    m_SizeOfStackOutgoingAndScratchArea = size;
+    if constexpr (GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA)
+    {
+        _ASSERTE( size != (UINT32)-1 );
+        _ASSERTE( m_SizeOfStackOutgoingAndScratchArea == (UINT32)-1 || m_SizeOfStackOutgoingAndScratchArea == size );
+        m_SizeOfStackOutgoingAndScratchArea = size;
+    }
+    else
+    {
+        _ASSERTE( m_SizeOfStackOutgoingAndScratchArea == (UINT32)-1 );
+        _ASSERTE( size == (UINT32)0 );
+    }
 }
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
 
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::SetReversePInvokeFrameSlot(INT32 spOffset)
 {
@@ -958,11 +955,6 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     {
         // Slim encoding means nothing special, partially interruptible, maybe a default frame register
         GCINFO_WRITE(m_Info1, 0, 1, FlagsSize); // Slim encoding
-#if defined(TARGET_LOONGARCH64)
-        assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
-#elif defined(TARGET_RISCV64)
-        assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister);
-#endif
         GCINFO_WRITE(m_Info1, (m_StackBaseRegister == NO_STACK_BASE_REGISTER) ? 0 : 1, 1, FlagsSize);
     }
     else
@@ -973,19 +965,19 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         GCINFO_WRITE(m_Info1, (hasGSCookie ? 1 : 0), 1, FlagsSize);
         GCINFO_WRITE(m_Info1, 0 /* unused - was hasPSPSymStackSlot */, 1, FlagsSize);
         GCINFO_WRITE(m_Info1, m_contextParamType, 2, FlagsSize);
-#if defined(TARGET_LOONGARCH64)
-        assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
-#elif defined(TARGET_RISCV64)
-        assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister);
-#endif
         GCINFO_WRITE(m_Info1, ((m_StackBaseRegister != NO_STACK_BASE_REGISTER) ? 1 : 0), 1, FlagsSize);
 #ifdef TARGET_AMD64
         GCINFO_WRITE(m_Info1, (m_WantsReportOnlyLeaf ? 1 : 0), 1, FlagsSize);
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         GCINFO_WRITE(m_Info1, (m_HasTailCalls ? 1 : 0), 1, FlagsSize);
+#else
+        GCINFO_WRITE(m_Info1, 0, 1, FlagsSize); // unused
 #endif // TARGET_AMD64
         GCINFO_WRITE(m_Info1, ((m_SizeOfEditAndContinuePreservedArea != NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) ? 1 : 0), 1, FlagsSize);
         GCINFO_WRITE(m_Info1, (hasReversePInvokeFrame ? 1 : 0), 1, FlagsSize);
+
+        // See definition of GC_INFO_FLAGS_BIT_SIZE
+        _ASSERTE(m_Info1.GetBitCount() == (10 + 1)); // +1 for the initial slim/fat encoding bit
     }
 
     _ASSERTE( m_CodeLength > 0 );
@@ -1052,11 +1044,6 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
     if(!slimHeader && (m_StackBaseRegister != NO_STACK_BASE_REGISTER))
     {
-#if defined(TARGET_LOONGARCH64)
-        assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
-#elif defined(TARGET_RISCV64)
-        assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister);
-#endif
         GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister), GcInfoEncoding::STACK_BASE_REGISTER_ENCBASE, StackBaseSize);
     }
 
@@ -1074,13 +1061,14 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         GCINFO_WRITE_VARL_S(m_Info1, GcInfoEncoding::NORMALIZE_STACK_SLOT(m_ReversePInvokeFrameSlot), GcInfoEncoding::REVERSE_PINVOKE_FRAME_ENCBASE, ReversePInvokeFrameSize);
     }
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    if (!slimHeader)
+    if constexpr (GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA)
     {
-        _ASSERTE( m_SizeOfStackOutgoingAndScratchArea != (UINT32)-1 );
-        GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_SIZE_OF_STACK_AREA(m_SizeOfStackOutgoingAndScratchArea), GcInfoEncoding::SIZE_OF_STACK_AREA_ENCBASE, FixedAreaSize);
+        if (!slimHeader)
+        {
+            _ASSERTE( m_SizeOfStackOutgoingAndScratchArea != (UINT32)-1 );
+            GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_SIZE_OF_STACK_AREA(m_SizeOfStackOutgoingAndScratchArea), GcInfoEncoding::SIZE_OF_STACK_AREA_ENCBASE, FixedAreaSize);
+        }
     }
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
 
     UINT32 numInterruptibleRanges = (UINT32) m_InterruptibleRanges.Count();
 

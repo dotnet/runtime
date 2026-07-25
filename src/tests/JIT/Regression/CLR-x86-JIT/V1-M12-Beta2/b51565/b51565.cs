@@ -6,7 +6,7 @@ using Xunit;
 /*
 set DOTNET_JITStress=1
 */
-namespace Test
+namespace b51565
 {
     using System;
 

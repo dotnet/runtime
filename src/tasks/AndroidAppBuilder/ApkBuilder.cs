@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -16,12 +17,13 @@ using Microsoft.Build.Utilities;
 public enum RuntimeFlavorEnum
 {
     Mono,
-    CoreCLR
+    CoreCLR,
+    NativeAOT
 }
 
 public partial class ApkBuilder
 {
-    private const string DefaultMinApiLevel = "21";
+    private const string DefaultMinApiLevel = "24";
     private const string DefaultTargetApiLevel = "31";
 
     public string? ProjectName { get; set; }
@@ -47,12 +49,16 @@ public partial class ApkBuilder
     public bool IsLibraryMode { get; set; }
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
+    public ITaskItem[] ExtraNativeSources { get; set; } = Array.Empty<ITaskItem>();
     public string[] NativeDependencies { get; set; } = Array.Empty<string>();
     public string RuntimeFlavor { get; set; } = nameof(RuntimeFlavorEnum.Mono);
+    public string? NetworkSecurityConfig { get; set; }
+    public string? NetworkSecurityConfigResourcesDir { get; set; }
 
     private RuntimeFlavorEnum parsedRuntimeFlavor;
     private bool IsMono => parsedRuntimeFlavor == RuntimeFlavorEnum.Mono;
     private bool IsCoreCLR => parsedRuntimeFlavor == RuntimeFlavorEnum.CoreCLR;
+    private bool IsNativeAOT => parsedRuntimeFlavor == RuntimeFlavorEnum.NativeAOT;
 
     private TaskLoggingHelper logger;
 
@@ -91,7 +97,8 @@ public partial class ApkBuilder
             throw new ArgumentException($"ProjectName='{ProjectName}' should not not contain spaces.");
         }
 
-        if (string.IsNullOrEmpty(AndroidSdk)){
+        if (string.IsNullOrEmpty(AndroidSdk))
+        {
             AndroidSdk = Environment.GetEnvironmentVariable("ANDROID_SDK_ROOT");
         }
 
@@ -154,7 +161,7 @@ public partial class ApkBuilder
         var assemblerFilesToLink = new StringBuilder();
         var aotLibraryFiles = new List<string>();
 
-        if (!IsLibraryMode)
+        if (!(IsLibraryMode || IsNativeAOT))
         {
             foreach (ITaskItem file in Assemblies)
             {
@@ -244,7 +251,7 @@ public partial class ApkBuilder
         {
             nativeLibraries = string.Join("\n    ", NativeDependencies.Select(dep => dep));
         }
-        else
+        else if (!IsNativeAOT)
         {
             string runtimeLib = "";
             if (StaticLinkedRuntime && IsMono)
@@ -325,78 +332,91 @@ public partial class ApkBuilder
                 nativeLibraries += $"    libc++_static.a{Environment.NewLine}";
             }
         }
-
-        StringBuilder extraLinkerArgs = new StringBuilder();
-        foreach (ITaskItem item in ExtraLinkerArguments)
+        string abi;
+        if (IsNativeAOT)
         {
-            extraLinkerArgs.AppendLine($"    \"{item.ItemSpec}\"");
+            abi = AndroidProject.DetermineAbi(runtimeIdentifier);
         }
-
-        if (StaticLinkedRuntime && IsCoreCLR)
+        else
         {
-            // Ensure global symbol references in the shared library are resolved to definitions in
-            // the same shared library. For the static linked runtime specifically, we need this for
-            // global functions in assembly for the linker to treat relative offsets to them as constant
-            extraLinkerArgs.AppendLine($"    \"-Wl,-Bsymbolic\"");
-        }
-
-        nativeLibraries += assemblerFilesToLink.ToString();
-
-        string aotSources = assemblerFiles.ToString();
-        string monodroidSource = IsCoreCLR ?
-            "monodroid-coreclr.c" : (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
-        string runtimeInclude = string.Join(" ", runtimeHeaders.Select(h => $"\"{NormalizePathToUnix(h)}\""));
-
-        string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
-            .Replace("%RuntimeInclude%", runtimeInclude)
-            .Replace("%NativeLibrariesToLink%", NormalizePathToUnix(nativeLibraries))
-            .Replace("%MONODROID_SOURCE%", monodroidSource)
-            .Replace("%AotSources%", NormalizePathToUnix(aotSources))
-            .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c")
-            .Replace("%APP_LINKER_ARGS%", extraLinkerArgs.ToString());
-
-        var defines = new StringBuilder();
-        if (ForceInterpreter)
-        {
-            defines.AppendLine("add_definitions(-DFORCE_INTERPRETER=1)");
-        }
-        else if (ForceAOT)
-        {
-            defines.AppendLine("add_definitions(-DFORCE_AOT=1)");
-            if (aotLibraryFiles.Count == 0)
+            StringBuilder extraLinkerArgs = new StringBuilder();
+            foreach (ITaskItem item in ExtraLinkerArguments)
             {
-                defines.AppendLine("add_definitions(-DSTATIC_AOT=1)");
+                extraLinkerArgs.AppendLine($"    \"{item.ItemSpec}\"");
             }
+
+            if (StaticLinkedRuntime && IsCoreCLR)
+            {
+                // Ensure global symbol references in the shared library are resolved to definitions in
+                // the same shared library. For the static linked runtime specifically, we need this for
+                // global functions in assembly for the linker to treat relative offsets to them as constant
+                extraLinkerArgs.AppendLine($"    \"-Wl,-Bsymbolic\"");
+            }
+
+            nativeLibraries += assemblerFilesToLink.ToString();
+
+            string aotSources = assemblerFiles.ToString();
+            string monodroidSource = IsCoreCLR ?
+                "monodroid-coreclr.c" : (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
+            string runtimeInclude = string.Join(" ", runtimeHeaders.Select(h => $"\"{NormalizePathToUnix(h)}\""));
+
+            var extraSources = new StringBuilder();
+            foreach (ITaskItem item in ExtraNativeSources)
+            {
+                extraSources.AppendLine($"    \"{NormalizePathToUnix(item.GetMetadata("FullPath"))}\"");
+            }
+
+            string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
+                .Replace("%RuntimeInclude%", runtimeInclude)
+                .Replace("%NativeLibrariesToLink%", NormalizePathToUnix(nativeLibraries))
+                .Replace("%MONODROID_SOURCE%", monodroidSource)
+                .Replace("%ExtraSources%", extraSources.ToString().TrimEnd())
+                .Replace("%AotSources%", NormalizePathToUnix(aotSources))
+                .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c")
+                .Replace("%APP_LINKER_ARGS%", extraLinkerArgs.ToString());
+
+            var defines = new StringBuilder();
+            if (ForceInterpreter)
+            {
+                defines.AppendLine("add_definitions(-DFORCE_INTERPRETER=1)");
+            }
+            else if (ForceAOT)
+            {
+                defines.AppendLine("add_definitions(-DFORCE_AOT=1)");
+                if (aotLibraryFiles.Count == 0)
+                {
+                    defines.AppendLine("add_definitions(-DSTATIC_AOT=1)");
+                }
+            }
+
+            if (ForceFullAOT)
+            {
+                defines.AppendLine("add_definitions(-DFULL_AOT=1)");
+            }
+
+            if (!string.IsNullOrEmpty(DiagnosticPorts))
+            {
+                defines.AppendLine("add_definitions(-DDIAGNOSTIC_PORTS=\"" + DiagnosticPorts + "\")");
+            }
+
+            cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
+
+            File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
+
+            string monodroidContent = Utils.GetEmbeddedResource(monodroidSource);
+            if (IsCoreCLR)
+            {
+                monodroidContent = RenderMonodroidCoreClrTemplate(monodroidContent);
+            }
+            File.WriteAllText(Path.Combine(OutputDir, monodroidSource), monodroidContent);
+
+            AndroidProject project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
+            project.GenerateCMake(OutputDir, MinApiLevel, StripDebugSymbols);
+            project.BuildCMake(OutputDir, StripDebugSymbols);
+            abi = project.Abi;
+
+            // TODO: https://github.com/dotnet/runtime/issues/115717
         }
-
-        if (ForceFullAOT)
-        {
-            defines.AppendLine("add_definitions(-DFULL_AOT=1)");
-        }
-
-        if (!string.IsNullOrEmpty(DiagnosticPorts))
-        {
-            defines.AppendLine("add_definitions(-DDIAGNOSTIC_PORTS=\"" + DiagnosticPorts + "\")");
-        }
-
-        cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
-
-        File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
-
-        string monodroidContent = Utils.GetEmbeddedResource(monodroidSource);
-        if (IsCoreCLR)
-        {
-            monodroidContent = RenderMonodroidCoreClrTemplate(monodroidContent);
-        }
-        File.WriteAllText(Path.Combine(OutputDir, monodroidSource), monodroidContent);
-
-        AndroidProject project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
-        project.GenerateCMake(OutputDir, MinApiLevel, StripDebugSymbols);
-        project.BuildCMake(OutputDir, StripDebugSymbols);
-
-        // TODO: https://github.com/dotnet/runtime/issues/115717
-
-        string abi = project.Abi;
 
         // 2. Compile Java files
 
@@ -406,7 +426,7 @@ public partial class ApkBuilder
         string javaActivityPath = Path.Combine(javaSrcFolder, "MainActivity.java");
         string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
 
-        Regex checkNumerics = DotNumberRegex();
+        Regex checkNumerics = DotNumberRegex;
         if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
             ProjectName = checkNumerics.Replace(ProjectName, @"_$1");
 
@@ -430,20 +450,72 @@ public partial class ApkBuilder
             envVariables += $"\t\tsetEnv(\"{name}\", \"{value}\");\n";
         }
 
-        string jniLibraryName = (IsLibraryMode) ? ProjectName! :
-            (StaticLinkedRuntime && IsCoreCLR) ? "monodroid" : "System.Security.Cryptography.Native.Android";
+        string jniLibraryName;
+        if (IsLibraryMode || IsNativeAOT)
+            jniLibraryName = ProjectName!;
+        else if (StaticLinkedRuntime && IsCoreCLR)
+            jniLibraryName = "monodroid";
+        else
+            jniLibraryName = "System.Security.Cryptography.Native.Android";
+
+        List<string> librariesToLoad = [jniLibraryName];
+        if (!IsNativeAOT)
+            librariesToLoad.Add("monodroid");
+
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
             .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName))
-            .Replace("%JNI_LIBRARY_NAME%", jniLibraryName)
+            .Replace("%LoadLibraryStatements%",
+                string.Join('\n', librariesToLoad.Select(l => $"System.loadLibrary(\"{l}\");")))
             .Replace("%EnvVariables%", envVariables);
 
         File.WriteAllText(monoRunnerPath, monoRunner);
+
+        // Handle network security config
+        string networkSecurityConfigAttr = "";
+        string resourceDirArg = "";
+        if (!string.IsNullOrEmpty(NetworkSecurityConfigResourcesDir) && string.IsNullOrEmpty(NetworkSecurityConfig))
+        {
+            throw new ArgumentException(
+                $"'{nameof(NetworkSecurityConfigResourcesDir)}' cannot be set without '{nameof(NetworkSecurityConfig)}'. Set '{nameof(NetworkSecurityConfig)}' first.");
+        }
+        if (!string.IsNullOrEmpty(NetworkSecurityConfig))
+        {
+            if (!File.Exists(NetworkSecurityConfig))
+            {
+                throw new ArgumentException($"NetworkSecurityConfig file not found: '{NetworkSecurityConfig}'");
+            }
+
+            string resXmlDir = Path.Combine(OutputDir, "res", "xml");
+            Directory.CreateDirectory(resXmlDir);
+            File.Copy(NetworkSecurityConfig, Path.Combine(resXmlDir, "network_security_config.xml"), overwrite: true);
+            networkSecurityConfigAttr = "\n               a:networkSecurityConfig=\"@xml/network_security_config\"";
+            resourceDirArg = "-S res ";
+
+            // Copy additional resource files (e.g., res/raw/ for certificate files)
+            if (!string.IsNullOrEmpty(NetworkSecurityConfigResourcesDir))
+            {
+                if (!Directory.Exists(NetworkSecurityConfigResourcesDir))
+                {
+                    throw new ArgumentException($"NetworkSecurityConfigResourcesDir directory not found: '{NetworkSecurityConfigResourcesDir}'");
+                }
+
+                string destResDir = Path.Combine(OutputDir, "res");
+                foreach (string srcFile in Directory.GetFiles(NetworkSecurityConfigResourcesDir, "*", SearchOption.AllDirectories))
+                {
+                    string relativePath = Path.GetRelativePath(NetworkSecurityConfigResourcesDir, srcFile);
+                    string destFile = Path.Combine(destResDir, relativePath);
+                    Directory.CreateDirectory(Path.GetDirectoryName(destFile)!);
+                    File.Copy(srcFile, destFile, overwrite: true);
+                }
+            }
+        }
 
         File.WriteAllText(Path.Combine(OutputDir, "AndroidManifest.xml"),
             Utils.GetEmbeddedResource("AndroidManifest.xml")
                 .Replace("%PackageName%", packageId)
                 .Replace("%MinSdkLevel%", MinApiLevel)
-                .Replace("%TargetSdkVersion%", TargetApiLevel));
+                .Replace("%TargetSdkVersion%", TargetApiLevel)
+                .Replace("%NetworkSecurityConfig%", networkSecurityConfigAttr));
 
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
         Utils.RunProcess(logger, javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
@@ -467,10 +539,11 @@ public partial class ApkBuilder
 
         string debugModeArg = StripDebugSymbols ? string.Empty : "--debug-mode";
         string apkFile = Path.Combine(OutputDir, "bin", $"{ProjectName}.unaligned.apk");
-        Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
+        Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"package -f -m -F {apkFile} -A assets {resourceDirArg}-M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
 
         var dynamicLibs = new List<string>();
-        dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
+        if (!IsNativeAOT)
+            dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
 
         if (IsLibraryMode)
         {
@@ -533,7 +606,6 @@ public partial class ApkBuilder
             }
 
             // NOTE: we can run android-strip tool from NDK to shrink native binaries here even more.
-
             File.Copy(dynamicLib, Path.Combine(OutputDir, destRelative), true);
             Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"add {apkFile} {NormalizePathToUnix(destRelative)}", workingDir: OutputDir);
         }
@@ -645,7 +717,7 @@ public partial class ApkBuilder
     }
 
     [GeneratedRegex(@"\.(\d)")]
-    private static partial Regex DotNumberRegex();
+    private static partial Regex DotNumberRegex { get; }
 
     private string RenderMonodroidCoreClrTemplate(string monodroidContent)
     {
@@ -685,19 +757,32 @@ public partial class ApkBuilder
 
     private Dictionary<string, string> ParseRuntimeConfigProperties()
     {
+        // This method reads the binary runtimeconfig.bin file created by RuntimeConfigParserTask.ConvertDictionaryToBlob.
+        // The binary format is: compressed integer count, followed by count pairs of length-prefixed UTF8 strings (key, value).
+        // See src/tasks/MonoTargetsTasks/RuntimeConfigParser/RuntimeConfigParser.cs for the corresponding write logic.
+
         var configProperties = new Dictionary<string, string>();
-        string runtimeConfigPath = Path.Combine(AppDir ?? throw new InvalidOperationException("AppDir is not set"), $"{ProjectName}.runtimeconfig.json");
+        string runtimeConfigPath = Path.Combine(AppDir ?? throw new InvalidOperationException("AppDir is not set"), "runtimeconfig.bin");
 
         try
         {
-            string jsonContent = File.ReadAllText(runtimeConfigPath);
-            using JsonDocument doc = JsonDocument.Parse(jsonContent);
-            JsonElement root = doc.RootElement;
-            if (root.TryGetProperty("runtimeOptions", out JsonElement runtimeOptions) && runtimeOptions.TryGetProperty("configProperties", out JsonElement propertiesJson))
+            byte[] fileBytes = File.ReadAllBytes(runtimeConfigPath);
+            unsafe
             {
-                foreach (JsonProperty property in propertiesJson.EnumerateObject())
+                fixed (byte* ptr = fileBytes)
                 {
-                    configProperties[property.Name] = property.Value.ToString();
+                    var blobReader = new BlobReader(ptr, fileBytes.Length);
+
+                    // Read the compressed integer count
+                    int count = blobReader.ReadCompressedInteger();
+
+                    // Read each key-value pair
+                    for (int i = 0; i < count; i++)
+                    {
+                        string key = blobReader.ReadSerializedString() ?? string.Empty;
+                        string value = blobReader.ReadSerializedString() ?? string.Empty;
+                        configProperties[key] = value;
+                    }
                 }
             }
         }

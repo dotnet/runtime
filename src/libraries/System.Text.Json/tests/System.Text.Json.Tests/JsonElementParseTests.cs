@@ -17,7 +17,9 @@ namespace System.Text.Json.Tests
                 yield return new object[] { "true", JsonValueKind.True };
                 yield return new object[] { "false", JsonValueKind.False };
                 yield return new object[] { "\"MyString\"", JsonValueKind.String };
-                yield return new object[] { @"""\u0033\u002e\u0031""", JsonValueKind.String }; // "3.12"
+                yield return new object[] { """
+                    "\u0033\u002e\u0031"
+                    """, JsonValueKind.String }; // "3.12"
                 yield return new object[] { "1", JsonValueKind.Number };
                 yield return new object[] { "3.125e7", JsonValueKind.Number };
                 yield return new object[] { "{}", JsonValueKind.Object };

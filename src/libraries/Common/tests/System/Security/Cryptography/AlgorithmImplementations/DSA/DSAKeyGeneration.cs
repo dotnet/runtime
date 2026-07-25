@@ -1,18 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.XUnitExtensions;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
-    public partial class DSAKeyGeneration
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
+    public abstract class DSAKeyGeneration
     {
-        public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
-        public static bool HasSecondMinSize { get; } = GetHasSecondMinSize();
+        protected abstract DSAProvider DSAFactory { get; }
 
         [Fact]
-        public static void VerifyDefaultKeySize_Fips186_2()
+        public void VerifyDefaultKeySize_Fips186_2()
         {
             if (!DSAFactory.SupportsFips186_3)
             {
@@ -23,30 +24,35 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
-        public static void GenerateMinKey()
+        [Fact]
+        public void GenerateMinKey()
         {
             GenerateKey(dsa => GetMin(dsa.LegalKeySizes));
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration), nameof(HasSecondMinSize))]
-        public static void GenerateSecondMinKey()
+        [ConditionalFact]
+        public void GenerateSecondMinKey()
         {
+            if (!HasSecondMinSize())
+            {
+                throw new SkipTestException("Provider does not have a second minimum key size.");
+            }
+
             GenerateKey(dsa => GetSecondMin(dsa.LegalKeySizes));
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
-        public static void GenerateKey_1024()
+        [Fact]
+        public void GenerateKey_1024()
         {
             GenerateKey(1024);
         }
 
-        private static void GenerateKey(int size)
+        private void GenerateKey(int size)
         {
             GenerateKey(dsa => size);
         }
 
-        private static void GenerateKey(Func<DSA, int> getSize)
+        private void GenerateKey(Func<DSA, int> getSize)
         {
             int keySize;
 
@@ -120,7 +126,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             return secondMin;
         }
 
-        private static bool GetHasSecondMinSize()
+        private bool HasSecondMinSize()
         {
             try
             {

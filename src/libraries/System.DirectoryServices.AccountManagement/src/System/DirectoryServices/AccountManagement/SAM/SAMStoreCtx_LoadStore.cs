@@ -1005,7 +1005,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private static void UpdateGroupMembership(Principal group, DirectoryEntry de, NetCred credentials, AuthenticationTypes authTypes)
         {
-            Debug.Assert(group.fakePrincipal == false);
+            Debug.Assert(!group.fakePrincipal);
 
             PrincipalCollection members = (PrincipalCollection)group.GetValueForProperty(PropertyNames.GroupMembers);
 
@@ -1112,10 +1112,10 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     // Since we don't allow any of these to be inserted, none of them should ever
                     // show up in the removal list
-                    Debug.Assert(member.unpersisted == false);
+                    Debug.Assert(!member.unpersisted);
 
                     // If the collection was cleared, there should be no original members to remove
-                    Debug.Assert(members.Cleared == false);
+                    Debug.Assert(!members.Cleared);
 
                     // Like insertion, we'll remove by SID.
 
@@ -1146,7 +1146,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private static string GetSidADsPathFromPrincipal(Principal p)
         {
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!p.unpersisted);
 
             // Get the member's SID from its Security IdentityClaim
 

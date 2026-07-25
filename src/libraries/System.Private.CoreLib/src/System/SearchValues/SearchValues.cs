@@ -75,7 +75,7 @@ namespace System.Buffers
         /// </summary>
         /// <param name="values">The set of values.</param>
         /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
-        public static SearchValues<char> Create(params ReadOnlySpan<char> values)
+        public static unsafe SearchValues<char> Create(params ReadOnlySpan<char> values)
         {
             if (values.IsEmpty)
             {
@@ -137,7 +137,7 @@ namespace System.Buffers
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && PackedSpanHelpers.PackedIndexOfIsSupported &&
                 maxInclusive < 128 && values.Length == 4 && minInclusive > 0)
             {
-                Span<char> copy = stackalloc char[4];
+                Span<char> copy = ['\0', '\0', '\0', '\0'];
                 values.CopyTo(copy);
                 copy.Sort();
 
@@ -242,21 +242,12 @@ namespace System.Buffers
         }
 
         private static bool TryGetSingleRange<T>(ReadOnlySpan<T> values, out T minInclusive, out T maxInclusive)
-            where T : struct, INumber<T>, IMinMaxValue<T>
+            where T : struct, INumber<T>
         {
-            T min = T.MaxValue;
-            T max = T.MinValue;
+            minInclusive = values.Min();
+            maxInclusive = values.Max();
 
-            foreach (T value in values)
-            {
-                min = T.Min(min, value);
-                max = T.Max(max, value);
-            }
-
-            minInclusive = min;
-            maxInclusive = max;
-
-            uint range = uint.CreateChecked(max - min) + 1;
+            uint range = uint.CreateChecked(maxInclusive - minInclusive) + 1;
             if (range > values.Length)
             {
                 return false;
@@ -268,7 +259,7 @@ namespace System.Buffers
 
             foreach (T value in values)
             {
-                int offset = int.CreateChecked(value - min);
+                int offset = int.CreateChecked(value - minInclusive);
                 seenValues[offset] = true;
             }
 
@@ -301,6 +292,7 @@ namespace System.Buffers
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompHasFallback]
         internal static Vector128<byte> ShuffleNativeModified(Vector128<byte> vector, Vector128<byte> indices)
         {
             if (Ssse3.IsSupported)

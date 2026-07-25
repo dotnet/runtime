@@ -15,4 +15,7 @@
   <ItemGroup>
     <Compile Include="../../../JIT/HardwareIntrinsics/X86/X86Base/CpuId.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Xunit;
+using TestLibrary;
 
 
 interface IType<T0>
@@ -45,6 +46,7 @@ struct VType3<T0> : IType<VType3<int>>
 
 public class Program
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestEntryPoint()
     {

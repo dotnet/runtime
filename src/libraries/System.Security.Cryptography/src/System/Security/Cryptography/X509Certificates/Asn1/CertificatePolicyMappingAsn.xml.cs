@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, expectedTag, out CertificatePolicyMappingAsn decoded);
                 reader.ThrowIfNotEmpty();
@@ -63,12 +63,12 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, out CertificatePolicyMappingAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, out CertificatePolicyMappingAsn decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, out CertificatePolicyMappingAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, Asn1Tag expectedTag, out CertificatePolicyMappingAsn decoded)
         {
             try
             {
@@ -80,10 +80,10 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, out CertificatePolicyMappingAsn decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, Asn1Tag expectedTag, out CertificatePolicyMappingAsn decoded)
         {
             decoded = default;
-            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
 
             decoded.IssuerDomainPolicy = sequenceReader.ReadObjectIdentifier();
             decoded.SubjectDomainPolicy = sequenceReader.ReadObjectIdentifier();

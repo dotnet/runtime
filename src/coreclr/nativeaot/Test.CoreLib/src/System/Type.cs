@@ -8,6 +8,8 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using Internal.Runtime;
+
 namespace System
 {
     public class Type
@@ -24,6 +26,12 @@ namespace System
         public static Type GetTypeFromHandle(RuntimeTypeHandle rh)
         {
             return new Type(rh);
+        }
+
+        // Implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE
+        internal static unsafe Type GetTypeFromMethodTable(MethodTable* pMT)
+        {
+            return new Type(new RuntimeTypeHandle(pMT));
         }
 
         [Intrinsic]

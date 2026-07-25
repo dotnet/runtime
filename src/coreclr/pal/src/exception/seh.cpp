@@ -303,10 +303,8 @@ PAL_ERROR SEHEnable(CPalThread *pthrCurrent)
 {
 #if HAVE_MACH_EXCEPTIONS
     return pthrCurrent->EnableMachExceptions();
-#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__sun) || defined(__HAIKU__) || defined(__APPLE__) || defined(__wasm__)
-    return NO_ERROR;
 #else // HAVE_MACH_EXCEPTIONS
-#error not yet implemented
+    return NO_ERROR;
 #endif // HAVE_MACH_EXCEPTIONS
 }
 
@@ -328,10 +326,8 @@ PAL_ERROR SEHDisable(CPalThread *pthrCurrent)
 {
 #if HAVE_MACH_EXCEPTIONS
     return pthrCurrent->DisableMachExceptions();
-#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__sun) || defined(__HAIKU__) || defined(__APPLE__) || defined(__wasm__)
-    return NO_ERROR;
 #else // HAVE_MACH_EXCEPTIONS
-#error not yet implemented
+    return NO_ERROR;
 #endif // HAVE_MACH_EXCEPTIONS
 }
 
@@ -365,37 +361,9 @@ bool CatchHardwareExceptionHolder::IsEnabled()
     return pThread ? pThread->IsHardwareExceptionsEnabled() : false;
 }
 
-/*++
-
-  NativeExceptionHolderBase implementation
-
---*/
-
-static thread_local NativeExceptionHolderBase *t_nativeExceptionHolderHead = nullptr;
-
-extern "C"
-NativeExceptionHolderBase **
-PAL_GetNativeExceptionHolderHead()
-{
-    return &t_nativeExceptionHolderHead;
-}
-
-NativeExceptionHolderBase *
-NativeExceptionHolderBase::FindNextHolder(NativeExceptionHolderBase *currentHolder, PVOID stackLowAddress, PVOID stackHighAddress)
-{
-    NativeExceptionHolderBase *holder = (currentHolder == nullptr) ? t_nativeExceptionHolderHead : currentHolder->m_next;
-
-    while (holder != nullptr)
-    {
-        if (((void *)holder >= stackLowAddress) && ((void *)holder < stackHighAddress))
-        {
-            return holder;
-        }
-        // Get next holder
-        holder = holder->m_next;
-    }
-
-    return nullptr;
-}
-
+#if !defined(TARGET_WASI)
+// seh-unwind.cpp uses libunwind which is unavailable on wasm32-wasip2.
+// The WASI build provides equivalent stubs (PAL_VirtualUnwind, RtlCaptureContext,
+// etc.) in arch/wasm/stubs.cpp directly.
 #include "seh-unwind.cpp"
+#endif

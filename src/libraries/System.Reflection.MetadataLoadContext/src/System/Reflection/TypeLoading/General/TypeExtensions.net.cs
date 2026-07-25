@@ -5,17 +5,6 @@
 
 namespace System.Reflection.TypeLoading
 {
-    internal static class NetCoreApiEmulators
-    {
-        // On NetCore, call the real thing.
-
-        public static bool IsSignatureType(this Type type) => type.IsSignatureType;
-        public static bool IsSZArray(this Type type) => type.IsSZArray;
-        public static bool IsVariableBoundArray(this Type type) => type.IsVariableBoundArray;
-        public static bool IsGenericMethodParameter(this Type type) => type.IsGenericMethodParameter;
-        public static Type MakeSignatureGenericType(this Type genericTypeDefinition, Type[] typeArguments) => Type.MakeGenericSignatureType(genericTypeDefinition, typeArguments);
-    }
-
     /// <summary>
     /// Another layer of base types. Empty for NetCore.
     /// </summary>

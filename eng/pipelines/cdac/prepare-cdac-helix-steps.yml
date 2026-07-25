@@ -1,0 +1,71 @@
+# prepare-cdac-helix-steps.yml — Shared steps for preparing cDAC dump test Helix payloads.
+#
+# Used by CdacDumpTests, CdacXPlatDumpGen, and CdacXPlatDumpTests stages in runtime-diagnostics.yml.
+# Handles: building debuggees, preparing Helix payload, finding testhost and Helix queue.
+
+parameters:
+  buildDebuggees: true
+  skipDebuggeeCopy: false
+  runtimeConfiguration: 'Checked'
+  # Configuration the cDAC managed assemblies are built at during payload
+  # prep. The dump tests load the managed cDAC directly via ProjectReference,
+  # so passing /p:Configuration=Debug here makes MSBuild walk the
+  # DumpTests project graph and produce Debug-built cDAC dlls in
+  # DumpTests's bin folder, which PrepareHelixPayload then copies into
+  # the Helix payload. Defaults to $(_BuildConfig) for back-compat.
+  cdacTestConfig: '$(_BuildConfig)'
+  # Libraries configuration is pinned independently of cdacTestConfig so
+  # an /p:Configuration=Debug override here never causes MSBuild to look
+  # for Debug-built libraries (which we don't ship in CI). If the libs
+  # are missing at this config, the dotnet build below will fail with a
+  # clear unresolved-reference error.
+  librariesConfiguration: '$(_BuildConfig)'
+
+steps:
+- ${{ if parameters.buildDebuggees }}:
+  - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) msbuild
+      $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
+      /t:BuildDebuggeesOnly
+      /p:Configuration=${{ parameters.cdacTestConfig }}
+      /p:ToolsConfiguration=${{ parameters.cdacTestConfig }}
+      /p:LibrariesConfiguration=${{ parameters.librariesConfiguration }}
+      /p:RuntimeConfiguration=${{ parameters.runtimeConfiguration }}
+      /p:TargetArchitecture=$(archType)
+      -bl:$(Build.SourcesDirectory)/artifacts/log/BuildDebuggees.binlog
+    displayName: 'Build Debuggees'
+
+- script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) build
+    $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
+    /p:PrepareHelixPayload=true
+    /p:SkipDebuggeeCopy=${{ parameters.skipDebuggeeCopy }}
+    /p:Configuration=${{ parameters.cdacTestConfig }}
+    /p:ToolsConfiguration=${{ parameters.cdacTestConfig }}
+    /p:LibrariesConfiguration=${{ parameters.librariesConfiguration }}
+    /p:HelixPayloadDir=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac
+    /p:SkipDumpVersions=net10.0
+    -bl:$(Build.SourcesDirectory)/artifacts/log/DumpTestPayload.binlog
+  displayName: 'Prepare Helix Payload'
+
+- pwsh: |
+    $testhostDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)/artifacts/bin/testhost/net*-$(osGroup)-*-$(archType)" | Select-Object -First 1 -ExpandProperty FullName
+    if (-not $testhostDir) {
+        Write-Error "No testhost directory found matching net*-$(osGroup)-*-$(archType) under artifacts/bin/testhost/"
+        exit 1
+    }
+    Write-Host "TestHost directory: $testhostDir"
+    Write-Host "##vso[task.setvariable variable=TestHostPayloadDir]$testhostDir"
+
+    $queue = switch ("$(osGroup)_$(archType)") {
+        "windows_x64"  { "$(helix_windows_x64)" }
+        "windows_x86"  { "$(helix_windows_x64)" }
+        "windows_arm64" { "$(helix_windows_arm64)" }
+        "linux_x64"    { "$(helix_linux_x64_oldest)" }
+        "linux_arm64"  { "$(helix_linux_arm64_oldest)" }
+        "linux_arm"    { "$(helix_linux_arm32_oldest)" }
+        "osx_x64"     { "$(helix_macos_x64)" }
+        "osx_arm64"   { "$(helix_macos_arm64)" }
+        default        { Write-Error "Unsupported platform: $(osGroup)_$(archType)"; exit 1 }
+    }
+    Write-Host "Helix queue: $queue"
+    Write-Host "##vso[task.setvariable variable=CdacHelixQueue]$queue"
+  displayName: 'Find TestHost Directory and Helix Queue'

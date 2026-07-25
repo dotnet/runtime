@@ -906,10 +906,10 @@ ep_sequence_point_block_init (
 	const uint32_t thread_count = dn_umap_size (map);
 	ep_write_buffer_uint32_t (&sequence_point_block->block.write_pointer, thread_count);
 
-	DN_UMAP_FOREACH_BEGIN (const EventPipeThreadSessionState *, key, uint32_t, sequence_number, map) {
+	DN_UMAP_FOREACH_BEGIN (EventPipeThread *, thread, uint32_t, sequence_number, map) {
 		ep_write_buffer_uint64_t (
 			&sequence_point_block->block.write_pointer,
-			ep_thread_get_os_thread_id (ep_thread_session_state_get_thread (key)));
+			ep_thread_get_os_thread_id (thread));
 
 		ep_write_buffer_uint32_t (
 			&sequence_point_block->block.write_pointer,

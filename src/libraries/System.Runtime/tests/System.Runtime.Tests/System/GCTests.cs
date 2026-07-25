@@ -294,7 +294,7 @@ namespace System.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsMultithreadingSupported))] // Races finalization across threads; meaningless on single-threaded platforms.
         public static void WaitForPendingFinalizersRaces()
         {
             Task.Run(Test);
@@ -870,7 +870,7 @@ namespace System.Tests
         private static bool IsNotArmProcessAndRemoteExecutorSupported => PlatformDetection.IsNotArmProcess && RemoteExecutor.IsSupported;
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
-        [ConditionalFact(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/29434")]
+        [ConditionalFact(typeof(GCExtendedTests), nameof(IsNotArmProcessAndRemoteExecutorSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/29434")]
         public static void GetGCMemoryInfo()
         {
             RemoteExecutor.Invoke(() =>

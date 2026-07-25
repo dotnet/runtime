@@ -6,7 +6,7 @@ import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import { mono_log_warn } from "./logging";
-import { forceThreadMemoryViewRefresh, free, localHeapViewU8, malloc } from "./memory";
+import { forceThreadMemoryViewRefresh, fixupPointer, free, localHeapViewU8, malloc } from "./memory";
 import { utf8ToString } from "./strings";
 const commands_received: any = new Map<number, CommandResponse>();
 commands_received.remove = function (key: number): CommandResponse {
@@ -34,20 +34,21 @@ export function mono_wasm_runtime_ready (): void {
 }
 
 export function mono_wasm_fire_debugger_agent_message_with_data_to_pause (base64String: string): void {
-    //keep this console.assert, otherwise optimization will remove the assignments
+    // Terser 5.39+ removes console.assert(true, ...) as "unnecessary".
+    // !!Date.now() is always true at runtime, but Terser can't evaluate it statically.
     // eslint-disable-next-line no-console
-    console.assert(true, `mono_wasm_fire_debugger_agent_message_with_data ${base64String}`);
+    console.assert(!!Date.now(), `mono_wasm_fire_debugger_agent_message_with_data ${base64String}`);
     // eslint-disable-next-line no-debugger
     debugger;
 }
 
 export function mono_wasm_fire_debugger_agent_message_with_data (data: number, len: number): void {
-    const base64String = toBase64StringImpl(new Uint8Array(localHeapViewU8().buffer, data, len));
+    const base64String = toBase64StringImpl(new Uint8Array(localHeapViewU8().buffer, fixupPointer(data, 0), len));
     mono_wasm_fire_debugger_agent_message_with_data_to_pause(base64String);
 }
 
 export function mono_wasm_add_dbg_command_received (res_ok: boolean, id: number, buffer: number, buffer_len: number): void {
-    const dbg_command = new Uint8Array(localHeapViewU8().buffer, buffer, buffer_len);
+    const dbg_command = new Uint8Array(localHeapViewU8().buffer, fixupPointer(buffer, 0), buffer_len);
     const base64String = toBase64StringImpl(dbg_command);
     const buffer_obj = {
         res_ok,
@@ -163,9 +164,10 @@ export function mono_wasm_set_entrypoint_breakpoint (entrypoint_method_token: nu
     //keep these assignments, these values are used by BrowserDebugProxy
     _assembly_name_str = loaderHelpers.config.mainAssemblyName + ".dll";
     _entrypoint_method_token = entrypoint_method_token;
-    //keep this console.assert, otherwise optimization will remove the assignments
+    // Terser 5.39+ removes console.assert(true, ...) as "unnecessary".
+    // !!Date.now() is always true at runtime, but Terser can't evaluate it statically.
     // eslint-disable-next-line no-console
-    console.assert(true, `Adding an entrypoint breakpoint ${_assembly_name_str} at method token  ${_entrypoint_method_token}`);
+    console.assert(!!Date.now(), `Adding an entrypoint breakpoint ${_assembly_name_str} at method token  ${_entrypoint_method_token}`);
     // eslint-disable-next-line no-debugger
     debugger;
 

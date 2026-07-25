@@ -76,7 +76,21 @@ namespace System.DirectoryServices.Protocols
                 uris = $"{scheme}:{directoryIdentifier.PortNumber}";
             }
 
-            return LdapPal.SetStringOption(_ldapHandle, LdapOption.LDAP_OPT_URI, uris);
+            int result = LdapPal.SetStringOption(_ldapHandle, LdapOption.LDAP_OPT_URI, uris);
+            if (result == 0)
+            {
+                // Set the network timeout option to honor the Timeout property
+                var timeout = new LDAP_TIMEVAL()
+                {
+                    tv_sec = (int)(_connectionTimeOut.Ticks / TimeSpan.TicksPerSecond),
+                    tv_usec = (int)((_connectionTimeOut.Ticks % TimeSpan.TicksPerSecond) / TimeSpan.TicksPerMicrosecond) // Convert 100ns ticks to microseconds
+                };
+
+                int timeoutResult = LdapPal.SetTimevalOption(_ldapHandle, LdapOption.LDAP_OPT_NETWORK_TIMEOUT, ref timeout);
+                ErrorChecking.CheckAndSetLdapError(timeoutResult);
+            }
+
+            return result;
         }
 
         private int InternalBind(NetworkCredential tempCredential, SEC_WINNT_AUTH_IDENTITY_EX cred, BindMethod method)

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
 
@@ -66,7 +67,7 @@ namespace TypeSystemTests
         [InlineData("ClassWithSequentialInt64Base")]
         public void IsBlittableType_TypeWithBlittableBase_ReturnsTrue(string className)
         {
-            TypeDesc classWithBlittableBase = _testModule.GetType("Marshalling", className);
+            TypeDesc classWithBlittableBase = _testModule.GetType("Marshalling"u8, Encoding.UTF8.GetBytes(className));
             Assert.True(MarshalUtils.IsBlittableType(classWithBlittableBase));
         }
 
@@ -76,8 +77,22 @@ namespace TypeSystemTests
         [InlineData("ClassWithSequentialEmptyBase")]
         public void IsBlittableType_TypeWithEmptyBase_ReturnsTrue(string className)
         {
-            TypeDesc classWithEmptyBase = _testModule.GetType("Marshalling", className);
+            TypeDesc classWithEmptyBase = _testModule.GetType("Marshalling"u8, Encoding.UTF8.GetBytes(className));
             Assert.True(MarshalUtils.IsBlittableType(classWithEmptyBase));
+        }
+
+        [Theory]
+        [InlineData("IUnknownWithIidParameterIndex", NativeTypeKind.IUnknown)]
+        [InlineData("IDispatchWithIidParameterIndex", NativeTypeKind.IDispatch)]
+        [InlineData("InterfaceWithIidParameterIndex", NativeTypeKind.Intf)]
+        public void MarshalAsComInterface_WithIidParameterIndex_ParsesCorrectly(string methodName, NativeTypeKind nativeType)
+        {
+            MetadataType marshallingType = _testModule.GetType("Marshalling"u8, "MethodsWithMarshalAs"u8);
+            MethodDesc marshalAsMethod = marshallingType.GetMethod(Encoding.UTF8.GetBytes(methodName), null);
+
+            ParameterMetadata parameter = marshalAsMethod.GetParameterMetadata()[1];
+
+            Assert.Equal(nativeType, parameter.MarshalAsDescriptor.Type);
         }
     }
 }

@@ -157,6 +157,7 @@ public:
     BOOL HasContents() ;
     BOOL IsPtrInImage(PTR_CVOID data);
 
+    BOOL HasHeaders();
     BOOL HasNTHeaders();
     BOOL HasCorHeader();
     BOOL HasReadyToRunHeader();
@@ -325,18 +326,25 @@ private:
 template<>
 struct cdac_data<PEImage>
 {
-    // The loaded PEImageLayout is m_pLayouts[IMAGE_LOADED]
+    // Layouts are stored in m_pLayouts[], indexed by IMAGE_FLAT (0) and IMAGE_LOADED (1).
+    static constexpr size_t FlatImageLayout = offsetof(PEImage, m_pLayouts);
     static constexpr size_t LoadedImageLayout = offsetof(PEImage, m_pLayouts) + sizeof(PTR_PEImageLayout);
     static constexpr size_t ProbeExtensionResult = offsetof(PEImage, m_probeExtensionResult);
 };
 
-FORCEINLINE void PEImageRelease(PEImage *i)
+struct PEImageHolderTraits final
 {
-    WRAPPER_NO_CONTRACT;
-    i->Release();
-}
+    using Type = PEImage*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type i)
+    {
+        WRAPPER_NO_CONTRACT;
+        if (i != NULL)
+            i->Release();
+    }
+};
 
-typedef Wrapper<PEImage *, DoNothing, PEImageRelease> PEImageHolder;
+using PEImageHolder = LifetimeHolder<PEImageHolderTraits>;
 
 // ================================================================================
 // Inline definitions

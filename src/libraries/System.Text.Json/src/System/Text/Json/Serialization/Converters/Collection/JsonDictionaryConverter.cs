@@ -96,7 +96,7 @@ namespace System.Text.Json.Serialization
                 _keyConverter ??= GetConverter<TKey>(keyTypeInfo);
                 _valueConverter ??= GetConverter<TValue>(elementTypeInfo);
 
-                if (_valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+                if (_valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling is null)
                 {
                     // Process all elements.
                     while (true)
@@ -181,7 +181,7 @@ namespace System.Text.Json.Serialization
                 }
 
                 // Dispatch to any polymorphic converters: should always be entered regardless of ObjectState progress
-                if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0 &&
+                if (((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0 || state.PolymorphicResolvedType is not null) &&
                     state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted &&
                     ResolvePolymorphicConverter(jsonTypeInfo, ref state) is JsonConverter polymorphicConverter)
                 {
@@ -204,7 +204,7 @@ namespace System.Text.Json.Serialization
 
                     if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                     {
-                        Debug.Assert(state.ReferenceId != null);
+                        Debug.Assert(state.ReferenceId is not null);
                         Debug.Assert(options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Preserve);
                         Debug.Assert(state.Current.ReturnValue is TDictionary);
                         state.ReferenceResolver.AddReference(state.ReferenceId, state.Current.ReturnValue);
@@ -337,7 +337,7 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref WriteStack state)
         {
-            if (dictionary == null)
+            if (dictionary is null)
             {
                 writer.WriteNullValue();
                 return true;

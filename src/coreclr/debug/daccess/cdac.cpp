@@ -15,8 +15,19 @@ namespace
     {
         // Load cdac from next to current module (DAC binary)
         PathString path;
+
+        // On Unix, GetCurrentModuleBase() returns a raw dladdr base address, not a PAL HMODULE.
+        // The DAC is typically loaded externally (e.g. by CLRMD via dlopen) and is not registered
+        // in the PAL module list. Use PAL_GetPalHostModule() which properly registers the module.
+#ifdef HOST_UNIX
+        HMODULE hMod = PAL_GetPalHostModule();
+        if (hMod == NULL || WszGetModuleFileName(hMod, path) == 0)
+#else
         if (WszGetModuleFileName((HMODULE)GetCurrentModuleBase(), path) == 0)
+#endif
+        {
             return false;
+        }
 
         SString::Iterator iter = path.End();
         if (!path.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W))
@@ -45,8 +56,13 @@ namespace
 
     int WriteToTargetCallback(uint64_t addr, const uint8_t* buff, uint32_t count, void* context)
     {
-        ICorDebugMutableDataTarget* target = static_cast<ICorDebugMutableDataTarget*>(context);
-        HRESULT hr = target->WriteVirtual((CORDB_ADDRESS)addr, buff, count);
+        ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
+        ICorDebugMutableDataTarget* mutableTarget = nullptr;
+        HRESULT hr = target->QueryInterface(__uuidof(ICorDebugMutableDataTarget), (void**)&mutableTarget);
+        if (FAILED(hr))
+            return hr;
+        hr = mutableTarget->WriteVirtual((CORDB_ADDRESS)addr, buff, count);
+        mutableTarget->Release();
         if (FAILED(hr))
             return hr;
 
@@ -62,9 +78,46 @@ namespace
 
         return S_OK;
     }
+
+    int WriteThreadContext(uint32_t threadId, uint32_t contextSize, const uint8_t* contextBuffer, void* context)
+    {
+        ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
+        ICorDebugMutableDataTarget* mutableTarget = nullptr;
+        HRESULT hr = target->QueryInterface(__uuidof(ICorDebugMutableDataTarget), (void**)&mutableTarget);
+        if (FAILED(hr))
+            return hr;
+        hr = mutableTarget->SetThreadContext(threadId, contextSize, contextBuffer);
+        mutableTarget->Release();
+        if (FAILED(hr))
+            return hr;
+
+        return S_OK;
+    }
+
+    int AllocVirtualCallback(uint32_t size, uint64_t* allocatedAddress, void* context)
+    {
+        ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
+        ICLRDataTarget2* target2 = nullptr;
+        HRESULT hr = target->QueryInterface(__uuidof(ICLRDataTarget2), (void**)&target2);
+        if (FAILED(hr))
+        {
+            *allocatedAddress = 0;
+            return hr;
+        }
+
+        CLRDATA_ADDRESS addr = 0;
+        hr = target2->AllocVirtual(0, size, MEM_COMMIT, PAGE_READWRITE, &addr);
+        target2->Release();
+        *allocatedAddress = addr;
+        if (FAILED(hr))
+        {
+            *allocatedAddress = 0;
+        }
+        return hr;
+    }
 }
 
-CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugMutableDataTarget* target, IUnknown* legacyImpl)
+CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown* legacyImpl)
 {
     HMODULE cdacLib;
     if (!TryLoadCDACLibrary(&cdacLib))
@@ -73,8 +126,15 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugMutableDataTarget* target, I
     decltype(&cdac_reader_init) init = reinterpret_cast<decltype(&cdac_reader_init)>(::GetProcAddress(cdacLib, "cdac_reader_init"));
     _ASSERTE(init != nullptr);
 
+    // Check if the target supports memory allocation (ICLRDataTarget2)
+    ICLRDataTarget2* target2 = nullptr;
+    auto allocCallback = (target->QueryInterface(__uuidof(ICLRDataTarget2), (void**)&target2) == S_OK)
+        ? &AllocVirtualCallback : nullptr;
+    if (target2 != nullptr)
+        target2->Release();
+
     intptr_t handle;
-    if (init(descriptorAddr, &ReadFromTargetCallback, &WriteToTargetCallback, &ReadThreadContext, target, &handle) != 0)
+    if (init(descriptorAddr, &ReadFromTargetCallback, &WriteToTargetCallback, &ReadThreadContext, &WriteThreadContext, allocCallback, target, &handle) != 0)
     {
         ::FreeLibrary(cdacLib);
         return {};
@@ -112,5 +172,13 @@ void CDAC::CreateSosInterface(IUnknown** sos)
     decltype(&cdac_reader_create_sos_interface) createSosInterface = reinterpret_cast<decltype(&cdac_reader_create_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_create_sos_interface"));
     _ASSERTE(createSosInterface != nullptr);
     int ret = createSosInterface(m_cdac_handle, m_legacyImpl, sos);
+    _ASSERTE(ret == 0);
+}
+
+void CDAC::CreateDacDbiInterface(IUnknown** dbi)
+{
+    decltype(&cdac_reader_create_dacdbi_interface) createDacDbiInterface = reinterpret_cast<decltype(&cdac_reader_create_dacdbi_interface)>(::GetProcAddress(m_module, "cdac_reader_create_dacdbi_interface"));
+    _ASSERTE(createDacDbiInterface != nullptr);
+    int ret = createDacDbiInterface(m_cdac_handle, m_legacyImpl, dbi);
     _ASSERTE(ret == 0);
 }

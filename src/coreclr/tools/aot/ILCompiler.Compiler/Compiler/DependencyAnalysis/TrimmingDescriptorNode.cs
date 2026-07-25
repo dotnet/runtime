@@ -8,7 +8,12 @@ using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class TrimmingDescriptorNode : DependencyNodeCore<NodeFactory>, ICompilationRootProvider
+    public class TrimmingDescriptorNode : DependencyNodeCore<NodeFactory>
+#if !ILTRIM
+#pragma warning disable SA1001
+        , ICompilationRootProvider
+#pragma warning restore SA1001
+#endif
     {
         private readonly string _fileName;
 
@@ -21,8 +26,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             using (Stream fs = File.OpenRead(_fileName))
             {
+#if ILTRIM
+                return DescriptorMarker.GetDependencies(factory.Logger, factory, fs, default, default, _fileName, factory.Settings.FeatureSettings);
+#else
                 var metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
                 return DescriptorMarker.GetDependencies(metadataManager.Logger, factory, fs, default, default, _fileName, metadataManager.FeatureSwitches);
+#endif
             }
         }
 
@@ -37,6 +46,8 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+#if !ILTRIM
         void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider) => rootProvider.AddCompilationRoot(this, "Descriptor from command line");
+#endif
     }
 }

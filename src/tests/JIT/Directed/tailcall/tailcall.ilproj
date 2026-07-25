@@ -2,6 +2,7 @@
   <PropertyGroup>
     <!-- Needed for CLRTestEnvironmentVariable, Environment.Exit -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

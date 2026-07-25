@@ -19,9 +19,7 @@ PALEXPORT int32_t CryptoNative_EvpCipherSetCcmNonceLength(EVP_CIPHER_CTX* ctx, i
 /*
 Cleans up and deletes an EVP_CIPHER_CTX instance created by EvpCipherCreate.
 
-Implemented by:
-  1) Calling EVP_CIPHER_CTX_cleanup
-  2) Deleting the EVP_CIPHER_CTX instance.
+Implemented by calling EVP_CIPHER_CTX_free
 
 No-op if ctx is null.
 The given EVP_CIPHER_CTX pointer is invalid after this call.
@@ -160,6 +158,14 @@ PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes128Ccm(void);
 
 /*
 Function:
+EvpAes128WrapPad
+
+Direct shim to EVP_aes_128_wrap_pad.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes128WrapPad(void);
+
+/*
+Function:
 EvpAes192Ecb
 
 Direct shim to EVP_aes_192_ecb.
@@ -208,6 +214,14 @@ PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes192Ccm(void);
 
 /*
 Function:
+EvpAes192WrapPad
+
+Direct shim to EVP_aes_192_wrap_pad.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes192WrapPad(void);
+
+/*
+Function:
 EvpAes256Ecb
 
 Direct shim to EVP_aes_256_ecb.
@@ -253,6 +267,14 @@ EvpAes256Ccm
 Direct shim to EVP_aes_256_ccm.
 */
 PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes256Ccm(void);
+
+/*
+Function:
+EvpAes256WrapPad
+
+Direct shim to EVP_aes_256_wrap_pad.
+*/
+PALEXPORT const EVP_CIPHER* CryptoNative_EvpAes256WrapPad(void);
 
 /*
 Function:

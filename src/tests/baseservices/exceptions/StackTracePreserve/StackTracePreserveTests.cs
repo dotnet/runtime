@@ -6,6 +6,7 @@ using System.Runtime.ExceptionServices;
 using System.IO;
 using System.Security;
 using Xunit;
+using TestLibrary;
 
 public class InactiveForeignException
 {
@@ -502,6 +503,7 @@ exit:
     }
 
     
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/11213", TestRuntimes.CoreCLR)]
     [Fact]
     public static int TestEntryPoint()
     {

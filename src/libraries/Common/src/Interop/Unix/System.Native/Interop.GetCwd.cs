@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
@@ -54,7 +55,7 @@ internal static partial class Interop
             // If it returned non-null, the null-terminated path is in the buffer
             if (result != null)
             {
-                return Marshal.PtrToStringUTF8((IntPtr)ptr);
+                return Utf8StringMarshaller.ConvertToManaged(ptr);
             }
 
             // Otherwise, if it failed due to the buffer being too small, return null;

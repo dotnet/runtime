@@ -5,16 +5,43 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal struct RuntimeInfo_1 : IRuntimeInfo
+internal sealed class RuntimeInfo_1 : IRuntimeInfo
 {
-    internal readonly Target _target;
+    private readonly Target _target;
+
+    private RuntimeInfoArchitecture? _architecture;
+    private RuntimeInfoOperatingSystem? _operatingSystem;
+    private RuntimeInfoRuntimeFlavor? _runtimeFlavor;
+    private uint? _recommendedReaderVersion;
 
     public RuntimeInfo_1(Target target)
     {
         _target = target;
     }
 
-    readonly RuntimeInfoArchitecture IRuntimeInfo.GetTargetArchitecture()
+    public void Flush(FlushScope scope)
+    {
+        _architecture = null;
+        _operatingSystem = null;
+        _runtimeFlavor = null;
+        _recommendedReaderVersion = null;
+    }
+
+    RuntimeInfoArchitecture IRuntimeInfo.GetTargetArchitecture()
+        => _architecture ??= ReadArchitecture();
+
+    RuntimeInfoOperatingSystem IRuntimeInfo.GetTargetOperatingSystem()
+        => _operatingSystem ??= ReadOperatingSystem();
+
+    RuntimeInfoRuntimeFlavor IRuntimeInfo.GetRuntimeFlavor()
+        => _runtimeFlavor ??= ReadRuntimeFlavor();
+
+    uint IRuntimeInfo.GetCurrentReaderVersion() => 1;
+
+    uint IRuntimeInfo.GetRecommendedReaderVersion()
+        => _recommendedReaderVersion ??= ReadRecommendedReaderVersion();
+
+    private RuntimeInfoArchitecture ReadArchitecture()
     {
         if (_target.TryReadGlobalString(Constants.Globals.Architecture, out string? arch))
         {
@@ -27,7 +54,7 @@ internal struct RuntimeInfo_1 : IRuntimeInfo
         return RuntimeInfoArchitecture.Unknown;
     }
 
-    readonly RuntimeInfoOperatingSystem IRuntimeInfo.GetTargetOperatingSystem()
+    private RuntimeInfoOperatingSystem ReadOperatingSystem()
     {
         if (_target.TryReadGlobalString(Constants.Globals.OperatingSystem, out string? os))
         {
@@ -38,5 +65,24 @@ internal struct RuntimeInfo_1 : IRuntimeInfo
         }
 
         return RuntimeInfoOperatingSystem.Unknown;
+    }
+
+    private RuntimeInfoRuntimeFlavor ReadRuntimeFlavor()
+    {
+        if (_target.TryReadGlobalString(Constants.Globals.RuntimeFlavor, out string? flavor))
+        {
+            if (Enum.TryParse(flavor, ignoreCase: true, out RuntimeInfoRuntimeFlavor parsedFlavor))
+            {
+                return parsedFlavor;
+            }
+        }
+
+        return RuntimeInfoRuntimeFlavor.Unknown;
+    }
+
+    private uint ReadRecommendedReaderVersion()
+    {
+        _target.TryReadGlobal(Constants.Globals.RecommendedReaderVersion, out uint? runtimeVersion);
+        return runtimeVersion ?? 0;
     }
 }

@@ -11,6 +11,11 @@ namespace Microsoft.Extensions.FileProviders
     public class NullFileProvider : IFileProvider
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="NullFileProvider"/> class.
+        /// </summary>
+        public NullFileProvider() { }
+
+        /// <summary>
         /// Enumerates a nonexistent directory.
         /// </summary>
         /// <param name="subpath">A path under the root directory. This parameter is ignored.</param>

@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 unsafe static class SuppressGCTransitionNative
 {
@@ -248,7 +249,7 @@ public unsafe class SuppressGCTransitionTest
         CheckGCMode.Validate(transitionSuppressed: false, ret);
         return n + 1;
     }
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ReturnInt(int value)
     {
         return value;
@@ -286,8 +287,12 @@ public unsafe class SuppressGCTransitionTest
         return n + 1;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/70490", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82859", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process))]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/165", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [Xunit.SkipOnCoreClrAttribute("Depends on marshalled pinvoke calli", RuntimeTestModes.InterpreterActive)]
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static void TestEntryPoint()
     {
         CheckGCMode.Initialize(&SuppressGCTransitionNative.SetIsInCooperativeModeFunction);

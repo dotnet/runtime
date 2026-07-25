@@ -27,17 +27,15 @@ namespace System.Collections.Frozen
                 return null;
             }
 
-            int arraySize = spread * MaxPerLength;
-#if NET
-            if (arraySize > Array.MaxLength)
-#else
-            if (arraySize > 0X7FFFFFC7)
-#endif
+            long expectedArraySize = (long)spread * MaxPerLength;
+            if (expectedArraySize > Array.MaxLength)
             {
                 // In the future we may lower the value, as it may be quite unlikely
                 // to have a LOT of strings of different sizes.
                 return null;
             }
+
+            int arraySize = (int)expectedArraySize;
 
             // Instead of creating a dictionary of lists or a multi-dimensional array
             // we rent a single dimension array, where every bucket has five slots.

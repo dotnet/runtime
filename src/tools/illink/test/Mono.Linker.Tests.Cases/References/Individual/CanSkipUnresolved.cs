@@ -5,7 +5,7 @@ namespace Mono.Linker.Tests.Cases.References.Individual
 {
     [SetupCompileBefore("library1.dll", new[] { "Dependencies/CanSkipUnresolved_Library.cs" })]
     [SetupCompileAfter("library1.dll", new[] { "Dependencies/CanSkipUnresolved_Library.cs" }, defines: new[] { "EXCLUDE_STUFF" })]
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
     public class CanSkipUnresolved
     {
         static void Main()

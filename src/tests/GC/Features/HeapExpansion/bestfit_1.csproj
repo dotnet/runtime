@@ -15,4 +15,7 @@
   <ItemGroup>
     <Compile Include="bestfit.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

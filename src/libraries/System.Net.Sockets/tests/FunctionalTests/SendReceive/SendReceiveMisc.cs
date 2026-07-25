@@ -10,7 +10,7 @@ namespace System.Net.Sockets.Tests
 {
     public class SendReceiveMisc
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void SendRecvIovMaxTcp_Success()
         {
             // sending/receiving more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -76,7 +76,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void SendIovMaxUdp_SuccessOrMessageSize()
         {
             // sending more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -117,7 +117,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ReceiveIovMaxUdp_SuccessOrMessageSize()
         {
             // receiving more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -190,7 +190,7 @@ namespace System.Net.Sockets.Tests
             await receiveTask;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [SkipOnPlatform(TestPlatforms.Windows, "All data is sent, even when very large (100M).")]
         public void SocketSendWouldBlock_ReturnsBytesSent()
         {
@@ -219,7 +219,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task Socket_ReceiveFlags_Success()
         {
@@ -284,7 +284,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void ReceiveFrom_MultipleRounds_Success(bool async)

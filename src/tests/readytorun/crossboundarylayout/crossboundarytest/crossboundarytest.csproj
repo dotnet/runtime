@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
+    <!-- Needed for CLRTestTargetUnsupported (inherited from Directory.Build.props) -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
@@ -9,6 +9,9 @@
     <Compile Include="c.cs" />
     <Compile Include="c1.cs" />
     <Compile Include="main.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 
   <ItemGroup>

@@ -17,7 +17,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace {Namespace}
 {
     public static partial class Program
     {
@@ -70,8 +70,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
             public DataTable({Op2BaseType}[] inArray1, {RetBaseType}[] outArray, int alignment)
             {
-                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op2BaseType}>();
-                int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
+                int sizeOfinArray1 = inArray1.Length * sizeof({Op2BaseType});
+                int sizeOfoutArray = outArray.Length * sizeof({RetBaseType});
                 if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfoutArray)
                 {
                     throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfinArray1: {sizeOfinArray1}, sizeOfoutArray: {sizeOfoutArray}");
@@ -116,7 +116,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 // Randomise the output buffer to ensure that after the load operation, expected data is populated.
                 for (var i = 0; i < RetElementCount; i++) { testStruct._outData[i] = {NextValueOp1}; }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{RetBaseType}, byte>(ref testStruct._outData[0]), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{RetBaseType}, byte>(ref testStruct._outData[0]), (uint)sizeof({RetVectorType}<{RetBaseType}>));
 
                 return testStruct;
             }
@@ -134,8 +134,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<{RetVectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
-        private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
+        private static readonly int Op1ElementCount = sizeof({RetVectorType}<{Op1BaseType}>) / sizeof({Op1BaseType});
+        private static readonly int RetElementCount = sizeof({RetVectorType}<{RetBaseType}>) / sizeof({RetBaseType});
         private static readonly int Op2ElementCount = RetElementCount;
 
         private static {Op2BaseType}[] _data = new {Op2BaseType}[Op2ElementCount];
@@ -153,7 +153,7 @@ namespace JIT.HardwareIntrinsics.Arm
             Succeeded = true;
 
             for (var i = 0; i < Op1ElementCount; i++) { _maskData[i] = ({Op1BaseType})({NextValueOp1}); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskData[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskData[0]), (uint)sizeof({Op1VectorType}<{Op1BaseType}>));
 
             for (var i = 0; i < Op2ElementCount; i++) { _data[i] = {NextValueOp2}; }
             _dataTable = new DataTable(_data, new {RetBaseType}[RetElementCount], LargestVectorSize);

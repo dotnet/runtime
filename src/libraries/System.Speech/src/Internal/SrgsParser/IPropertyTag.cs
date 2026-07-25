@@ -8,6 +8,6 @@ namespace System.Speech.Internal.SrgsParser
     /// </summary>
     internal interface IPropertyTag : IElement
     {
-        void NameValue(IElement parent, string name, object value);
+        void NameValue(IElement? parent, string? name, object? value);
     }
 }

@@ -14,4 +14,7 @@
     <Compile Include="Program.Vector256_1.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

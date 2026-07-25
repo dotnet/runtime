@@ -25,7 +25,7 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
   </PropertyGroup>
 
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />
+  <Import Project="$(CommonPath)System\Security\Cryptography\AsnWriter\System.Security.Cryptography.AsnWriter.Shared.projitems" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />
 
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <!-- API types (platform independent) -->
@@ -710,6 +710,10 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' and '$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="$(CommonPath)Polyfills\BitConverterPolyfills.cs" Link="Common\Polyfills\BitConverterPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">

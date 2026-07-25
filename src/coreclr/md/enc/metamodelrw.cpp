@@ -711,6 +711,7 @@ CMiniMdRW::CMiniMdRW()
     m_pHostFilter(0),
     m_pTokenRemapManager(0),
     m_fMinimalDelta(FALSE),
+    m_fAll4ByteColumns(FALSE),
     m_rENCRecs(0)
 {
 #ifdef _DEBUG
@@ -1276,6 +1277,7 @@ CMiniMdRW::ComputeGrowLimits(
         m_limIx = USHRT_MAX << 1;
         m_limRid = USHRT_MAX << 1;
         m_eGrow = eg_grown;
+        m_fAll4ByteColumns = TRUE;
     }
 } // CMiniMdRW::ComputeGrowLimits
 
@@ -3556,6 +3558,7 @@ CMiniMdRW::ExpandTables()
 
     // Remember that we've grown.
     m_eGrow = eg_grown;
+    m_fAll4ByteColumns = TRUE;
     m_maxRid = m_maxIx = UINT32_MAX;
 
 ErrExit:
@@ -4903,6 +4906,14 @@ CMiniMdRW::AddPropertyToPropertyMap(
         IfFailGo(AddChildRowIndirectForParent(TBL_PropertyMap, PropertyMapRec::COL_PropertyList,
                                         TBL_PropertyPtr, pmd, &pPtr));
         hr = PutCol(TBL_PropertyPtr, PropertyPtrRec::COL_Property, pPtr, pd);
+
+        // Add the <property, typedef> to the property parent lookup table.
+        // This mirrors what AddMethodToTypeDef/AddFieldToTypeDef do for their
+        // respective lookup tables, and what emit.cpp:DefineProperty does.
+        PropertyMapRec *pPropertyMapRec;
+        IfFailGo(GetPropertyMapRecord(pmd, &pPropertyMapRec));
+        IfFailGo(AddPropertyToLookUpTable(TokenFromRid(pd, mdtProperty),
+                                          getParentOfPropertyMap(pPropertyMapRec)));
     }
 
 
@@ -4930,6 +4941,14 @@ CMiniMdRW::AddEventToEventMap(
         IfFailGo(AddChildRowIndirectForParent(TBL_EventMap, EventMapRec::COL_EventList,
                                         TBL_EventPtr, emd, &pPtr));
         hr = PutCol(TBL_EventPtr, EventPtrRec::COL_Event, pPtr, ed);
+
+        // Add the <event, typedef> to the event parent lookup table.
+        // This mirrors what AddMethodToTypeDef/AddFieldToTypeDef do for their
+        // respective lookup tables.
+        EventMapRec *pEventMapRec;
+        IfFailGo(GetEventMapRecord(emd, &pEventMapRec));
+        IfFailGo(AddEventToLookUpTable(TokenFromRid(ed, mdtEvent),
+                                       getParentOfEventMap(pEventMapRec)));
     }
 ErrExit:
     return hr;

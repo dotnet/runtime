@@ -37,15 +37,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencies = new DependencyList();
 
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ((EcmaType)_type));
-
-            DefType containingType = _type.ContainingType;
+            MetadataType containingType = _type.ContainingType;
             if (containingType != null)
-                dependencies.Add(factory.TypeMetadata((MetadataType)containingType), "Containing type of a reflectable type");
+                dependencies.Add(factory.TypeMetadata(containingType), "Containing type of a reflectable type");
             else
                 dependencies.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
 
-            MetadataType baseType = _type.MetadataBaseType;
+            MetadataType baseType = _type.BaseType;
             if (baseType != null)
                 GetMetadataDependencies(ref dependencies, factory, baseType, "Base type of a reflectable type");
 
@@ -99,6 +97,13 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            return dependencies;
+        }
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            var dependencies = new List<CombinedDependencyListEntry>();
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ((EcmaType)_type));
             return dependencies;
         }
 
@@ -183,9 +188,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
-        public override bool HasConditionalStaticDependencies => false;
+        public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
     }
 }

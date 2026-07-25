@@ -17,7 +17,7 @@
 #ifdef HOST_64BIT
 // All stack offsets are INT32's, so this guarantees a disjoint range of
 // addresses for each register.
-#define ADDRESS_SPACING UI64(0x100000000)
+#define ADDRESS_SPACING 0x100000000ULL
 #elif defined(TARGET_ARM)
 #define ADDRESS_SPACING 0x100000
 #else
@@ -865,7 +865,10 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
         UINT32 safePointOffset = offset;
 #if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-        safePointOffset++;
+        if (safePointDecoder.Version() < 4)
+        {
+            safePointOffset++;
+        }
 #endif
         if(safePointDecoder.IsSafePoint(safePointOffset))
         {

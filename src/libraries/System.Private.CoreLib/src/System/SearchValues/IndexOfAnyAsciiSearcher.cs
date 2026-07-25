@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -1152,7 +1153,7 @@ namespace System.Buffers
                 // The shift will map values above 127 to values above 16, which the shuffle will then map to 0.
                 // On X86 and WASM, use a logical right shift instead.
                 Vector128<byte> highNibbles = AdvSimd.IsSupported
-                    ? AdvSimd.ShiftRightArithmetic(source.AsSByte(), 4).AsByte()
+                    ? (source.AsSByte() >> 4).AsByte()
                     : source >>> 4;
 
                 // The bitmapLookup represents a 8x16 table of bits, indicating whether a character is present in the needle.
@@ -1252,8 +1253,7 @@ namespace System.Buffers
         private static unsafe int ComputeLastIndex<T, TNegator>(ref T searchSpace, ref T current, Vector128<byte> result)
             where TNegator : struct, INegator
         {
-            uint mask = TNegator.ExtractMask(result) & 0xFFFF;
-            int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
+            int offsetInVector = TNegator.IndexOfLastMatch(result);
             return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
@@ -1261,8 +1261,8 @@ namespace System.Buffers
         private static unsafe int ComputeLastIndexOverlapped<T, TNegator>(ref T searchSpace, ref T secondVector, Vector128<byte> result)
             where TNegator : struct, INegator
         {
-            uint mask = TNegator.ExtractMask(result) & 0xFFFF;
-            int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
+            int offsetInVector = TNegator.IndexOfLastMatch(result);
+
             if (offsetInVector < Vector128<short>.Count)
             {
                 return offsetInVector;
@@ -1282,9 +1282,7 @@ namespace System.Buffers
                 result = PackedSpanHelpers.FixUpPackedVector256Result(result);
             }
 
-            uint mask = TNegator.ExtractMask(result);
-
-            int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
+            int offsetInVector = TNegator.IndexOfLastMatch(result);
             return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
@@ -1298,9 +1296,8 @@ namespace System.Buffers
                 result = PackedSpanHelpers.FixUpPackedVector256Result(result);
             }
 
-            uint mask = TNegator.ExtractMask(result);
+            int offsetInVector = TNegator.IndexOfLastMatch(result);
 
-            int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
             if (offsetInVector < Vector256<short>.Count)
             {
                 return offsetInVector;
@@ -1315,8 +1312,10 @@ namespace System.Buffers
             static abstract bool NegateIfNeeded(bool result);
             static abstract Vector128<byte> NegateIfNeeded(Vector128<byte> result);
             static abstract Vector256<byte> NegateIfNeeded(Vector256<byte> result);
-            static abstract uint ExtractMask(Vector128<byte> result);
-            static abstract uint ExtractMask(Vector256<byte> result);
+            static abstract int IndexOfFirstMatch(Vector128<byte> result);
+            static abstract int IndexOfFirstMatch(Vector256<byte> result);
+            static abstract int IndexOfLastMatch(Vector128<byte> result);
+            static abstract int IndexOfLastMatch(Vector256<byte> result);
         }
 
         internal readonly struct DontNegate : INegator
@@ -1325,13 +1324,21 @@ namespace System.Buffers
             public static Vector128<byte> NegateIfNeeded(Vector128<byte> result) => result;
             public static Vector256<byte> NegateIfNeeded(Vector256<byte> result) => result;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static uint ExtractMask(Vector128<byte> result) => ~Vector128.Equals(result, Vector128<byte>.Zero).ExtractMostSignificantBits();
+            public static int IndexOfFirstMatch(Vector128<byte> result) => Vector128.IndexOfFirstMatch(~Vector128.Equals(result, Vector128<byte>.Zero));
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static uint ExtractMask(Vector256<byte> result) => ~Vector256.Equals(result, Vector256<byte>.Zero).ExtractMostSignificantBits();
+            public static int IndexOfFirstMatch(Vector256<byte> result) => Vector256.IndexOfFirstMatch(~Vector256.Equals(result, Vector256<byte>.Zero));
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int IndexOfLastMatch(Vector128<byte> result) => Vector128.IndexOfLastMatch(~Vector128.Equals(result, Vector128<byte>.Zero));
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int IndexOfLastMatch(Vector256<byte> result) => Vector256.IndexOfLastMatch(~Vector256.Equals(result, Vector256<byte>.Zero));
         }
 
         internal readonly struct Negate : INegator
         {
+            // AdvSimd expects that a given element is strictly Zero or AllBitsSet
+            // so we need to ensure that we normalize the input prior to calling
+            // IndexOfFirstMatch or IndexOfLastMatch
+
             public static bool NegateIfNeeded(bool result) => !result;
             // This is intentionally testing for equality with 0 instead of "~result".
             // We want to know if any character didn't match, as that means it should be treated as a match for the -Except method.
@@ -1340,9 +1347,27 @@ namespace System.Buffers
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<byte> NegateIfNeeded(Vector256<byte> result) => Vector256.Equals(result, Vector256<byte>.Zero);
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static uint ExtractMask(Vector128<byte> result) => result.ExtractMostSignificantBits();
+            public static int IndexOfFirstMatch(Vector128<byte> result)
+            {
+                if (AdvSimd.IsSupported)
+                {
+                    result = (result.AsSByte() >> 7).AsByte();
+                }
+                return Vector128.IndexOfFirstMatch(result);
+            }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static uint ExtractMask(Vector256<byte> result) => result.ExtractMostSignificantBits();
+            public static int IndexOfFirstMatch(Vector256<byte> result) => Vector256.IndexOfFirstMatch(result);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int IndexOfLastMatch(Vector128<byte> result)
+            {
+                if (AdvSimd.IsSupported)
+                {
+                    result = (result.AsSByte() >> 7).AsByte();
+                }
+                return Vector128.IndexOfLastMatch(result);
+            }
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int IndexOfLastMatch(Vector256<byte> result) => Vector256.IndexOfLastMatch(result);
         }
 
         internal interface IOptimizations
@@ -1467,8 +1492,7 @@ namespace System.Buffers
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int FirstIndex<TNegator>(ref T searchSpace, ref T current, Vector128<byte> result) where TNegator : struct, INegator
             {
-                uint mask = TNegator.ExtractMask(result);
-                int offsetInVector = BitOperations.TrailingZeroCount(mask);
+                int offsetInVector = TNegator.IndexOfFirstMatch(result);
                 return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
             }
 
@@ -1481,17 +1505,15 @@ namespace System.Buffers
                     result = PackedSpanHelpers.FixUpPackedVector256Result(result);
                 }
 
-                uint mask = TNegator.ExtractMask(result);
-
-                int offsetInVector = BitOperations.TrailingZeroCount(mask);
+                int offsetInVector = TNegator.IndexOfFirstMatch(result);
                 return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int FirstIndexOverlapped<TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector128<byte> result) where TNegator : struct, INegator
             {
-                uint mask = TNegator.ExtractMask(result);
-                int offsetInVector = BitOperations.TrailingZeroCount(mask);
+                int offsetInVector = TNegator.IndexOfFirstMatch(result);
+
                 if (offsetInVector >= Vector128<short>.Count)
                 {
                     // We matched within the second vector
@@ -1510,9 +1532,8 @@ namespace System.Buffers
                     result = PackedSpanHelpers.FixUpPackedVector256Result(result);
                 }
 
-                uint mask = TNegator.ExtractMask(result);
+                int offsetInVector = TNegator.IndexOfFirstMatch(result);
 
-                int offsetInVector = BitOperations.TrailingZeroCount(mask);
                 if (offsetInVector >= Vector256<short>.Count)
                 {
                     // We matched within the second vector

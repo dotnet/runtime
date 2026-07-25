@@ -386,15 +386,6 @@ static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
 static const int64_t SECS_TO_100NS = 10000000;
 static const int64_t MSECS_TO_MIS = 1000;
 
-/* clock_gettime () is found by configure on Apple builds, but its only present from ios 10, macos 10.12, tvos 10 and watchos 3 */
-#if defined (HAVE_CLOCK_MONOTONIC) && (defined(HOST_IOS) || defined(HOST_OSX) || defined(HOST_WATCHOS) || defined(HOST_TVOS))
-#undef HAVE_CLOCK_MONOTONIC
-#endif
-
-#ifndef HAVE_CLOCK_MONOTONIC
-static const int64_t MISECS_TO_NS = 1000;
-#endif
-
 static
 int64_t
 system_time_to_int64 (
@@ -466,15 +457,9 @@ system_time_to_int64 (
 int64_t
 ep_rt_mono_system_timestamp_get (void)
 {
-#if HAVE_CLOCK_MONOTONIC
 	struct timespec time;
 	if (clock_gettime (CLOCK_REALTIME, &time) == 0)
 		return system_time_to_int64 (time.tv_sec, time.tv_nsec);
-#else
-	struct timeval time;
-	if (gettimeofday (&time, NULL) == 0)
-		return system_time_to_int64 (time.tv_sec, time.tv_usec * MISECS_TO_NS);
-#endif
 	else
 		return system_time_to_int64 (0, 0);
 }

@@ -427,8 +427,7 @@ namespace System.Xml.Serialization
                         }
                         seq.Items.Add(any);
                         type.Particle = seq;
-                        if (element != null)
-                            element.SchemaType = type;
+                        element?.SchemaType = type;
                         return type;
                     }
                 case TypeKind.Serializable:
@@ -463,8 +462,7 @@ namespace System.Xml.Serialization
                             }
                             seq.Items.Add(any);
                             type.Particle = seq;
-                            if (element != null)
-                                element.SchemaType = type;
+                            element?.SchemaType = type;
                             return type;
                         }
                         else if (serializableMapping.XsiType != null || serializableMapping.XsdType != null)
@@ -510,8 +508,7 @@ namespace System.Xml.Serialization
                             {
                                 throw new InvalidOperationException(SR.Format(SR.XmlDuplicateNamespace, anyNs));
                             }
-                            if (element != null)
-                                element.SchemaType = type;
+                            element?.SchemaType = type;
 
                             // check for duplicate top-level elements XmlAttributes
                             serializableMapping.CheckDuplicateElement(element, ns);
@@ -528,8 +525,7 @@ namespace System.Xml.Serialization
                             seq.Items.Add(new XmlSchemaAny());
                             type.Particle = seq;
                             AddSchemaImport(XmlSchema.Namespace, ns);
-                            if (element != null)
-                                element.SchemaType = type;
+                            element?.SchemaType = type;
                             return type;
                         }
                     }
@@ -1022,14 +1018,13 @@ namespace System.Xml.Serialization
             if (mapping.IsAnonymousType)
             {
                 _references[mapping] = null;
-                if (element != null)
-                    element.SchemaType = type;
+                element?.SchemaType = type;
                 return XmlQualifiedName.Empty;
             }
             else
             {
                 XmlQualifiedName qname = new XmlQualifiedName(type.Name, mapping.Namespace);
-                if (element != null) element.SchemaTypeName = qname;
+                element?.SchemaTypeName = qname;
                 return qname;
             }
         }

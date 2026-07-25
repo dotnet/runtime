@@ -87,5 +87,33 @@ namespace Microsoft.Interop
                 return _wasmImportLinkageAttrType.Value;
             }
         }
+
+        private Optional<INamedTypeSymbol?> _stackTraceHiddenAttrType;
+        public INamedTypeSymbol? StackTraceHiddenAttrType
+        {
+            get
+            {
+                if (_stackTraceHiddenAttrType.HasValue)
+                {
+                    return _stackTraceHiddenAttrType.Value;
+                }
+                _stackTraceHiddenAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.System_Diagnostics_StackTraceHiddenAttribute));
+                return _stackTraceHiddenAttrType.Value;
+            }
+        }
+
+        private Optional<INamedTypeSymbol?> _debuggerHiddenAttrType;
+        public INamedTypeSymbol? DebuggerHiddenAttrType
+        {
+            get
+            {
+                if (_debuggerHiddenAttrType.HasValue)
+                {
+                    return _debuggerHiddenAttrType.Value;
+                }
+                _debuggerHiddenAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.System_Diagnostics_DebuggerHiddenAttribute));
+                return _debuggerHiddenAttrType.Value;
+            }
+        }
     }
 }

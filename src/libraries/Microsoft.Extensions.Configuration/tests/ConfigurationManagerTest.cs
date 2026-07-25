@@ -173,7 +173,7 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.True(provider5.IsDisposed);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ProviderCanBlockLoadWaitingOnConcurrentRead()
         {
             using var mre = new ManualResetEventSlim(false);
@@ -209,7 +209,7 @@ namespace Microsoft.Extensions.Configuration.Test
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(ConcurrentReadActions))]
         public async Task ProviderDisposeDelayedWaitingOnConcurrentRead(Action<IConfiguration> concurrentReadAction)
         {

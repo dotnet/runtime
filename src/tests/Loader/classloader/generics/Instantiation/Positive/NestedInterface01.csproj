@@ -5,4 +5,7 @@
   <ItemGroup>
     <Compile Include="NestedInterface01.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

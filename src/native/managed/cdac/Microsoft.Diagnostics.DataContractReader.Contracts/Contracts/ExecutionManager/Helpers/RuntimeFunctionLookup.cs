@@ -16,15 +16,15 @@ internal sealed class RuntimeFunctionLookup
     private RuntimeFunctionLookup(Target target)
     {
         _target = target;
-        _runtimeFunctionSize = target.GetTypeInfo(DataType.RuntimeFunction).Size!.Value;
+        _runtimeFunctionSize = Data.RuntimeFunction.GetSize(target);
     }
 
-    public uint GetFunctionLength(Data.RuntimeFunction function)
+    public uint GetFunctionLength(TargetPointer imageBase, Data.RuntimeFunction function)
     {
         if (function.EndAddress.HasValue)
             return function.EndAddress.Value - function.BeginAddress;
 
-        Data.UnwindInfo unwindInfo = _target.ProcessedData.GetOrAdd<Data.UnwindInfo>(function.UnwindData);
+        Data.UnwindInfo unwindInfo = _target.ProcessedData.GetOrAdd<Data.UnwindInfo>(imageBase + function.UnwindData);
         if (unwindInfo.FunctionLength.HasValue)
             return unwindInfo.FunctionLength.Value;
 

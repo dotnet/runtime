@@ -3,9 +3,6 @@
 
 #define INVALIDGCVALUE 0xCCCCCCCD
 
-// This must match HwExceptionCode.STATUS_NATIVEAOT_THREAD_ABORT
-#define STATUS_NATIVEAOT_THREAD_ABORT     0x43
-
 // Enforce subsections via symbols to workaround bugs in Xcode 15 linker.
 #if defined(__APPLE__)
 .subsections_via_symbols
@@ -57,4 +54,11 @@
 #include "unixasmmacrosloongarch64.inc"
 #elif defined(HOST_RISCV64)
 #include "unixasmmacrosriscv64.inc"
+#endif
+
+// Mark the stack as non-executable for ELF targets.
+// https://github.com/dotnet/runtime/issues/125469
+#if !defined(__APPLE__)
+.pushsection .note.GNU-stack,"",%progbits
+.popsection
 #endif

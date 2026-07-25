@@ -3,6 +3,8 @@
 
 #include "ClientTests.h"
 #include <memory>
+#include <array>
+#include <numeric>
 #include <windows_version_helpers.h>
 
 
@@ -12,6 +14,8 @@ void Validate_Double_In_ReturnAndUpdateByRef();
 void Validate_LCID_Marshaled();
 void Validate_Enumerator();
 void Validate_ParamCoerce();
+void Validate_TriggerCustomMarshaler();
+void Validate_Sum_IntArray_SafeArray();
 
 template<COINIT TM>
 struct ComInit
@@ -50,6 +54,8 @@ int __cdecl main()
         Validate_LCID_Marshaled();
         Validate_Enumerator();
         Validate_ParamCoerce();
+        Validate_TriggerCustomMarshaler();
+        Validate_Sum_IntArray_SafeArray();
     }
     catch (HRESULT hr)
     {
@@ -462,6 +468,76 @@ void Validate_Enumerator()
     ValidateReturnedEnumerator(&result);
 }
 
+struct DummyObject final : public UnknownImpl, public IUnknown
+{
+    STDMETHOD(QueryInterface)(
+        /* [in] */ REFIID riid,
+        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
+    {
+        return DoQueryInterface(riid, ppvObject, static_cast<IUnknown*>(this));
+    }
+
+    DEFINE_REF_COUNTING();
+};
+
+void Validate_TriggerCustomMarshaler()
+{
+    HRESULT hr;
+
+    CoreShimComActivation csact{ W("NETServer"), W("DispatchTesting") };
+
+    ComSmartPtr<IDispatchTesting> dispatchTesting;
+    THROW_IF_FAILED(::CoCreateInstance(CLSID_DispatchTesting, nullptr, CLSCTX_INPROC, IID_IDispatchTesting, (void**)&dispatchTesting));
+
+    LPOLESTR numericMethodName = (LPOLESTR)W("TriggerCustomMarshaler");
+    LCID lcid = MAKELCID(LANG_USER_DEFAULT, SORT_DEFAULT);
+    DISPID methodId;
+
+    ::wprintf(W("Invoke %s\n"), numericMethodName);
+    THROW_IF_FAILED(dispatchTesting->GetIDsOfNames(
+        IID_NULL,
+        &numericMethodName,
+        1,
+        lcid,
+        &methodId));
+
+    DISPPARAMS params{};
+    VARIANTARG args[2] = {};
+    params.cArgs = ARRAY_SIZE(args);
+    params.rgvarg = args;
+
+    ComSmartPtr<IUnknown> objIn;
+    objIn.Attach(new DummyObject());
+    ComSmartPtr<IUnknown> objRef;
+    objRef.Attach(new DummyObject());
+
+    ComSmartPtr<IUnknown> pObjRef{ objRef.p };
+
+    // IDispatch::Invoke expects arguments in reverse order
+    V_VT(&args[0]) = VT_UNKNOWN | VT_BYREF;
+    V_UNKNOWNREF(&args[0]) = &pObjRef;
+    V_VT(&args[1]) = VT_UNKNOWN;
+    V_UNKNOWN(&args[1]) = objIn;
+
+    VARIANT result{};
+    THROW_IF_FAILED(dispatchTesting->Invoke(
+        methodId,
+        IID_NULL,
+        lcid,
+        DISPATCH_METHOD,
+        &params,
+        &result,
+        nullptr,
+        nullptr
+    ));
+
+    THROW_FAIL_IF_FALSE(V_VT(&result) == VT_UNKNOWN);
+    THROW_FAIL_IF_FALSE(V_UNKNOWN(&result) == objRef);
+    THROW_FAIL_IF_FALSE(pObjRef == objIn);
+
+    ::VariantClear(&result);
+}
+
 void Validate_ParamCoerce_Success(ComSmartPtr<IDispatchCoerceTesting>& dispatchCoerceTesting, int lcid, DISPID methodId, VARIANT arg, int expected)
 {
     HRESULT hr;
@@ -538,19 +614,19 @@ void Validate_ParamCoerce()
         1,
         lcid,
         &methodId));
-    
+
     VARIANT arg;
 
     ::wprintf(W("Validating VT_UI4\n"));
     V_VT(&arg) = VT_UI4;
     V_UI4(&arg) = 0x1234ABCD;
     Validate_ParamCoerce_Success(dispatchCoerceTesting, lcid, methodId, arg, 0x1234ABCD);
-    
+
     ::wprintf(W("Validating VT_I2\n"));
     V_VT(&arg) = VT_I2;
     V_I2(&arg) = 123;
     Validate_ParamCoerce_Success(dispatchCoerceTesting, lcid, methodId, arg, 123);
-    
+
     ::wprintf(W("Validating VT_I8\n"));
     V_VT(&arg) = VT_I8;
     V_I8(&arg) = int64_t(1) << 32;
@@ -603,4 +679,71 @@ void Validate_ParamCoerce()
     V_VT(&arg) = VT_DECIMAL;
     VarDecFromI8(int64_t(1) << 32, &V_DECIMAL(&arg));
     Validate_ParamCoerce_Exception(dispatchCoerceTesting, lcid, methodId, arg, DISP_E_OVERFLOW);
+}
+
+void Validate_Sum_IntArray_SafeArray()
+{
+    HRESULT hr;
+
+    CoreShimComActivation csact{ W("NETServer"), W("DispatchTesting") };
+
+    ComSmartPtr<IDispatchTesting> dispatchTesting;
+    THROW_IF_FAILED(::CoCreateInstance(CLSID_DispatchTesting, nullptr, CLSCTX_INPROC, IID_IDispatchTesting, (void**)&dispatchTesting));
+
+    LPOLESTR methodName = (LPOLESTR)W("Sum_IntArray_SafeArray");
+    LCID lcid = MAKELCID(LANG_USER_DEFAULT, SORT_DEFAULT);
+    DISPID methodId;
+
+    ::wprintf(W("Invoke %s\n"), methodName);
+    THROW_IF_FAILED(dispatchTesting->GetIDsOfNames(
+        IID_NULL,
+        &methodName,
+        1,
+        lcid,
+        &methodId));
+
+    const std::array data{ 1, 2, 3, 4, 5 };
+    const int expectedSum = std::accumulate(data.begin(), data.end(), 0);
+    const int count = (int)data.size();
+
+    SAFEARRAYBOUND bound;
+    bound.lLbound = 0;
+    bound.cElements = count;
+    SAFEARRAY *sa = ::SafeArrayCreate(VT_I4, 1, &bound);
+    THROW_FAIL_IF_FALSE(sa != nullptr);
+
+    for (LONG i = 0; i < count; ++i)
+    {
+        THROW_IF_FAILED(::SafeArrayPutElement(sa, &i, (void*)&data[i]));
+    }
+
+    DISPPARAMS params;
+    params.cArgs = 1;
+    params.rgvarg = new VARIANTARG[params.cArgs];
+    params.cNamedArgs = 0;
+    params.rgdispidNamedArgs = nullptr;
+
+    VariantInit(&params.rgvarg[0]);
+    V_VT(&params.rgvarg[0]) = VT_ARRAY | VT_I4;
+    V_ARRAY(&params.rgvarg[0]) = sa;
+
+    VARIANT result;
+    VariantInit(&result);
+
+    THROW_IF_FAILED(dispatchTesting->Invoke(
+        methodId,
+        IID_NULL,
+        lcid,
+        DISPATCH_METHOD,
+        &params,
+        &result,
+        nullptr,
+        nullptr
+    ));
+
+    THROW_FAIL_IF_FALSE(V_I4(&result) == expectedSum);
+
+    delete[] params.rgvarg;
+
+    ::SafeArrayDestroy(sa);
 }

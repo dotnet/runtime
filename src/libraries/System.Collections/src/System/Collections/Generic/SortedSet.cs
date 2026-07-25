@@ -682,10 +682,7 @@ namespace System.Collections.Generic
                 successor.Left = match.Left;
             }
 
-            if (successor != null)
-            {
-                successor.Color = match.Color;
-            }
+            successor?.Color = match.Color;
 
             ReplaceChildOrRoot(parentOfMatch, match, successor!);
         }
@@ -1366,7 +1363,7 @@ namespace System.Collections.Generic
         /// An earlier implementation used delegates to perform these checks rather than returning
         /// an ElementCount struct; however this was changed due to the perf overhead of delegates.
         /// </summary>
-        private ElementCount CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound)
+        private unsafe ElementCount CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound)
         {
             ElementCount result;
 

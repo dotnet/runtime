@@ -133,7 +133,6 @@ namespace System.Security.Cryptography
         /// <value>
         ///   An object that specifies the ML-DSA family of algorithms.
         /// </value>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngAlgorithmGroup MLDsa =>
             field ??= new CngAlgorithmGroup("MLDSA"); // NCRYPT_MLDSA_ALGORITHM_GROUP
 
@@ -157,6 +156,16 @@ namespace System.Security.Cryptography
         [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static CngAlgorithmGroup SlhDsa =>
             field ??= new CngAlgorithmGroup("SLHDSA"); // NCRYPT_SLHDSA_ALGORITHM_GROUP
+
+        /// <summary>
+        ///   Gets a <see cref="CngAlgorithmGroup" /> object that specifies the Composite Module-Lattice-Based Digital Signature
+        ///   Algorithm (Composite ML-DSA) family of algorithms.
+        /// </summary>
+        /// <value>
+        ///   An object that specifies the Composite ML-DSA family of algorithms.
+        /// </value>
+        internal static CngAlgorithmGroup CompositeMLDsa =>
+            field ??= new CngAlgorithmGroup("CompositeMLDSA"); // NCRYPT_COMPOSITE_MLDSA_ALGORITHM_GROUP
 
         private static CngAlgorithmGroup? s_dh;
         private static CngAlgorithmGroup? s_dsa;

@@ -129,10 +129,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             // Generate new key
             using SlhDsa slhDsa = GenerateKey(algorithm);
             byte[] publicKey = slhDsa.ExportSlhDsaPublicKey();
-            byte[] privateKey = slhDsa.ExportSlhDsaPrivateKey();
 
-            SlhDsaTestHelpers.AssertExportPkcs8PrivateKey(export =>
-                SlhDsaTestHelpers.AssertImportPkcs8PrivateKey(import =>
+            SlhDsaTestHelpers.AssertExportSubjectPublicKeyInfo(export =>
+                SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import =>
                 {
                     // Roundtrip it using SPKI
                     using SlhDsa roundTrippedSlhDsa = import(export(slhDsa));
@@ -140,7 +139,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     // The keys should be the same
                     Assert.Equal(algorithm, roundTrippedSlhDsa.Algorithm);
                     AssertExtensions.SequenceEqual(publicKey, roundTrippedSlhDsa.ExportSlhDsaPublicKey());
-                    AssertExtensions.SequenceEqual(privateKey, roundTrippedSlhDsa.ExportSlhDsaPrivateKey());
+                    Assert.Throws<CryptographicException>(() => roundTrippedSlhDsa.ExportSlhDsaPrivateKey());
                 }));
         }
 
@@ -268,7 +267,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         [MemberData(nameof(SlhDsaTestData.GeneratedKeyInfosData), MemberType = typeof(SlhDsaTestData))]
         public void RoundTrip_Import_Export_SPKI(SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
         {
-            SlhDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import =>
+            SlhDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import =>
                 SlhDsaTestHelpers.AssertExportSubjectPublicKeyInfo(export =>
                     SlhDsaTestHelpers.WithDispose(import(info.Pkcs8PublicKey), slhDsa =>
                         AssertExtensions.SequenceEqual(info.Pkcs8PublicKey, export(slhDsa)))));

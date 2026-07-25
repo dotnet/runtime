@@ -37,7 +37,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ParityReplace_Property), nameof(HasOneSerialPort))]
         public void ParityReplace_Default_AfterOpen()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -54,49 +54,49 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ParityReplace_Property), nameof(HasNullModem))]
         public void Read_byte_int_int_RNDParityReplace()
         {
             Debug.WriteLine("Verifying random ParityReplace with Read(byte[], int, int)");
             VerifyParityReplaceByte(Read_byte_int_int, false);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ParityReplace_Property), nameof(HasNullModem))]
         public void Read_char_int_int_RNDParityReplace()
         {
             Debug.WriteLine("Verifying random ParityReplace with Read(char[], int, int)");
             VerifyParityReplaceByte(Read_char_int_int, false);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ParityReplace_Property), nameof(HasNullModem))]
         public void ReadByte_RNDParityReplace()
         {
             Debug.WriteLine("Verifying random ParityReplace with ReadByte()");
             VerifyParityReplaceByte(ReadByte, false);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ParityReplace_Property), nameof(HasNullModem))]
         public void ReadChar_RNDParityReplace()
         {
             Debug.WriteLine("Verifying random ParityReplace with ReadChar()");
             VerifyParityReplaceByte(ReadChar, false);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ParityReplace_Property), nameof(HasNullModem))]
         public void ReadLine_RNDParityReplace()
         {
             Debug.WriteLine("Verifying random ParityReplace with ReadLine()");
             VerifyParityReplaceByte(17, ReadLine, true);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ParityReplace_Property), nameof(HasNullModem))]
         public void ReadTo_str_RNDParityReplace()
         {
             Debug.WriteLine("Verifying random ParityReplace with ReadTo(string)");
             VerifyParityReplaceByte(ReadTo, true);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ParityReplace_Property), nameof(HasNullModem))]
         public void ParityReplace_After_Parity()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -123,7 +123,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ParityReplace_Property), nameof(HasNullModem))]
         public void ParityReplace_After_ParityReplace()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -151,7 +151,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ParityReplace_Property), nameof(HasNullModem))]
         public void ParityReplace_After_ParityReplaceAndParity()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

@@ -67,6 +67,14 @@ inline bool isPow2(T i)
     return (i > 0 && ((i - 1) & i) == 0);
 }
 
+// return true if abs(arg) is a power of 2
+template <typename T>
+inline bool isAbsPow2(T i)
+{
+    static_assert(std::numeric_limits<T>::is_signed);
+    return (i == std::numeric_limits<T>::min()) || isPow2(std::abs(i));
+}
+
 template <typename T>
 constexpr bool AreContiguous(T val1, T val2)
 {
@@ -580,18 +588,29 @@ private:
 #endif                  // DEBUG
 };
 
+enum class ExceptionSetFlags : uint32_t
+{
+    None                     = 0x0,
+    OverflowException        = 0x1,
+    DivideByZeroException    = 0x2,
+    ArithmeticException      = 0x4,
+    NullReferenceException   = 0x8,
+    IndexOutOfRangeException = 0x10,
+    UnknownException         = 0x20,
+};
+
 class HelperCallProperties
 {
 private:
-    bool m_isPure[CORINFO_HELP_COUNT];
-    bool m_noThrow[CORINFO_HELP_COUNT];
-    bool m_alwaysThrow[CORINFO_HELP_COUNT];
-    bool m_nonNullReturn[CORINFO_HELP_COUNT];
-    bool m_isAllocator[CORINFO_HELP_COUNT];
-    bool m_mutatesHeap[CORINFO_HELP_COUNT];
-    bool m_mayRunCctor[CORINFO_HELP_COUNT];
-    bool m_isNoEscape[CORINFO_HELP_COUNT];
-    bool m_isNoGC[CORINFO_HELP_COUNT];
+    bool              m_isPure[CORINFO_HELP_COUNT];
+    ExceptionSetFlags m_exceptions[CORINFO_HELP_COUNT];
+    bool              m_alwaysThrow[CORINFO_HELP_COUNT];
+    bool              m_nonNullReturn[CORINFO_HELP_COUNT];
+    bool              m_isAllocator[CORINFO_HELP_COUNT];
+    bool              m_mutatesHeap[CORINFO_HELP_COUNT];
+    bool              m_mayRunCctor[CORINFO_HELP_COUNT];
+    bool              m_isNoEscape[CORINFO_HELP_COUNT];
+    bool              m_isNoGC[CORINFO_HELP_COUNT];
 
     void init();
 
@@ -612,7 +631,14 @@ public:
     {
         assert(helperId > CORINFO_HELP_UNDEF);
         assert(helperId < CORINFO_HELP_COUNT);
-        return m_noThrow[helperId];
+        return (m_exceptions[helperId] == ExceptionSetFlags::None);
+    }
+
+    ExceptionSetFlags ThrownExceptions(CorInfoHelpFunc helperId)
+    {
+        assert(helperId > CORINFO_HELP_UNDEF);
+        assert(helperId < CORINFO_HELP_COUNT);
+        return m_exceptions[helperId];
     }
 
     bool AlwaysThrow(CorInfoHelpFunc helperId)
@@ -1098,9 +1124,9 @@ double CachedCyclesPerSecond();
 template <typename T>
 bool FitsIn(var_types type, T value)
 {
-    static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
-                          std::is_same<T, size_t>::value || std::is_same<T, ssize_t>::value ||
-                          std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
+    static_assert((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
+                   std::is_same<T, size_t>::value || std::is_same<T, ssize_t>::value ||
+                   std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
 
     switch (type)
     {

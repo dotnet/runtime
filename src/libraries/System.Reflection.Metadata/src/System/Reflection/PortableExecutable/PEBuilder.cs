@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -150,23 +151,16 @@ namespace System.Reflection.PortableExecutable
             return result.MoveToImmutable();
         }
 
-        private static unsafe void WritePESignature(BlobBuilder builder)
+        private static void WritePESignature(BlobBuilder builder)
         {
             // MS-DOS stub (128 bytes)
-            ReadOnlySpan<byte> header = DosHeader;
-            Debug.Assert(DosHeader.Length == DosHeaderSize);
-            fixed (byte* ptr = header)
-            {
-                builder.WriteBytes(ptr, header.Length);
-            }
+            builder.WriteBytes(DosHeader);
 
             // PE Signature "PE\0\0"
             builder.WriteUInt32(PEHeaders.PESignature);
         }
 
-        internal const int DosHeaderSize = 0x80;
-
-        private static ReadOnlySpan<byte> DosHeader => // DosHeaderSize
+        internal static ReadOnlySpan<byte> DosHeader =>
         [
             0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00,
             0x04, 0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00,
@@ -275,9 +269,8 @@ namespace System.Reflection.PortableExecutable
             builder.WriteUInt32((uint)BitArithmetic.Align(Header.ComputeSizeOfPEHeaders(sections.Length), Header.FileAlignment));
 
             // Checksum:
-            // Shall be zero for strong name signing.
+            // Shall be zero for strong name signing, already zeroed by ReserveBytes.
             _lazyChecksum = builder.ReserveBytes(sizeof(uint));
-            new BlobWriter(_lazyChecksum).WriteUInt32(0);
 
             builder.WriteUInt16((ushort)Header.Subsystem);
             builder.WriteUInt16((ushort)Header.DllCharacteristics);
@@ -475,23 +468,6 @@ namespace System.Reflection.PortableExecutable
         internal static Blob GetPrefixBlob(Blob container, Blob blob) => new Blob(container.Buffer, container.Start, blob.Start - container.Start);
         internal static Blob GetSuffixBlob(Blob container, Blob blob) => new Blob(container.Buffer, blob.Start + blob.Length, container.Start + container.Length - blob.Start - blob.Length);
 
-        // internal for testing
-        internal static IEnumerable<Blob> GetContentToChecksum(BlobBuilder peImage, Blob checksumFixup)
-        {
-            foreach (var blob in peImage.GetBlobs())
-            {
-                if (blob.Buffer == checksumFixup.Buffer)
-                {
-                    yield return GetPrefixBlob(blob, checksumFixup);
-                    yield return GetSuffixBlob(blob, checksumFixup);
-                }
-                else
-                {
-                    yield return blob;
-                }
-            }
-        }
-
         internal void Sign(BlobBuilder peImage, Blob strongNameSignatureFixup, Func<IEnumerable<Blob>, byte[]> signatureProvider)
         {
             Debug.Assert(peImage != null);
@@ -517,47 +493,21 @@ namespace System.Reflection.PortableExecutable
         // internal for testing
         internal static uint CalculateChecksum(BlobBuilder peImage, Blob checksumFixup)
         {
-            return CalculateChecksum(GetContentToChecksum(peImage, checksumFixup)) + (uint)peImage.Count;
-        }
-
-        private static unsafe uint CalculateChecksum(IEnumerable<Blob> blobs)
-        {
             uint checksum = 0;
             int pendingByte = -1;
 
-            foreach (var blob in blobs)
+            foreach (Blob blob in peImage.GetBlobs())
             {
-                var segment = blob.GetBytes();
-                fixed (byte* arrayPtr = segment.Array)
+                if (blob.Buffer == checksumFixup.Buffer)
                 {
-                    Debug.Assert(segment.Count > 0);
-
-                    byte* ptr = arrayPtr + segment.Offset;
-                    byte* end = ptr + segment.Count;
-
-                    if (pendingByte >= 0)
-                    {
-                        // little-endian encoding:
-                        checksum = AggregateChecksum(checksum, (ushort)(*ptr << 8 | pendingByte));
-                        ptr++;
-                    }
-
-                    if ((end - ptr) % 2 != 0)
-                    {
-                        end--;
-                        pendingByte = *end;
-                    }
-                    else
-                    {
-                        pendingByte = -1;
-                    }
-
-                    while (ptr < end)
-                    {
-                        // little-endian encoding:
-                        checksum = AggregateChecksum(checksum, (ushort)(ptr[1] << 8 | ptr[0]));
-                        ptr += sizeof(ushort);
-                    }
+                    // The checksum field itself is excluded, so checksum the content before and
+                    // after the fixup as two separate segments.
+                    AddToChecksum(GetPrefixBlob(blob, checksumFixup).GetBytes(), ref checksum, ref pendingByte);
+                    AddToChecksum(GetSuffixBlob(blob, checksumFixup).GetBytes(), ref checksum, ref pendingByte);
+                }
+                else
+                {
+                    AddToChecksum(blob.GetBytes(), ref checksum, ref pendingByte);
                 }
             }
 
@@ -566,7 +516,32 @@ namespace System.Reflection.PortableExecutable
                 checksum = AggregateChecksum(checksum, (ushort)pendingByte);
             }
 
-            return checksum;
+            return checksum + (uint)peImage.Count;
+        }
+
+        private static void AddToChecksum(ReadOnlySpan<byte> segment, ref uint checksum, ref int pendingByte)
+        {
+            if (segment.IsEmpty)
+            {
+                return;
+            }
+
+            if (pendingByte >= 0)
+            {
+                // little-endian encoding:
+                checksum = AggregateChecksum(checksum, (ushort)(segment[0] << 8 | pendingByte));
+                segment = segment.Slice(1);
+            }
+
+            while (segment.Length >= sizeof(ushort))
+            {
+                // little-endian encoding:
+                checksum = AggregateChecksum(checksum, BinaryPrimitives.ReadUInt16LittleEndian(segment));
+                segment = segment.Slice(sizeof(ushort));
+            }
+
+            // Carry a trailing odd byte over to the next segment.
+            pendingByte = segment.IsEmpty ? -1 : segment[0];
         }
 
         private static uint AggregateChecksum(uint checksum, ushort value)

@@ -174,7 +174,7 @@ namespace ILCompiler
                     {
                         try
                         {
-                            var ecmaType = (EcmaType)assembly.GetObject(typeHandle);
+                            var ecmaType = assembly.GetType(typeHandle);
                             WalkAncestorTypes(ecmaType);
                         }
                         catch (TypeSystemException)
@@ -198,7 +198,7 @@ namespace ILCompiler
                         {
                             try
                             {
-                                var ecmaMethod = (EcmaMethod)assembly.GetObject(methodHandle);
+                                var ecmaMethod = assembly.GetMethod(methodHandle);
                                 WalkMethod(ecmaMethod);
 
                                 if (ecmaMethod.IsVirtual)
@@ -218,7 +218,7 @@ namespace ILCompiler
                         {
                             try
                             {
-                                var ecmaField = (EcmaField)assembly.GetObject(fieldHandle);
+                                var ecmaField = assembly.GetField(fieldHandle);
 
                                 if (typeContext.IsNull)
                                 {
@@ -270,7 +270,7 @@ namespace ILCompiler
                 // of the implementation to the generic parameters of the declaration - any call to the
                 // declaration will be modeled as if the declaration was calling into the implementation.
 
-                var decl = (EcmaMethod)MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method).GetTypicalMethodDefinition();
+                var decl = (EcmaMethod)MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method.GetMethodDefinition()).GetTypicalMethodDefinition();
                 if (decl != method)
                 {
                     RecordBinding(this, decl.Instantiation, method.Instantiation);

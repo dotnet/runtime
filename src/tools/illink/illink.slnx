@@ -5,7 +5,6 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/analyzer/">
-    <Project Path="src/analyzer/analyzer.csproj" />
     <Project Path="src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj" />
     <Project Path="src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj" />
   </Folder>
@@ -24,5 +23,4 @@
   <Project Path="src/ILLink.Shared/ILLink.Shared.shproj" />
   <Project Path="src/ILLink.Tasks/ILLink.Tasks.csproj" />
   <Project Path="src/linker/Mono.Linker.csproj" />
-  <Project Path="src/tlens/tlens.csproj" />
 </Solution>

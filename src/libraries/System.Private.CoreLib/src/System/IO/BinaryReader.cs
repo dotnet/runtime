@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -109,7 +109,7 @@ namespace System.IO
             return ch;
         }
 
-        public virtual int Read()
+        public virtual unsafe int Read()
         {
             ThrowIfDisposed();
 
@@ -226,7 +226,7 @@ namespace System.IO
         public virtual unsafe float ReadSingle() => BinaryPrimitives.ReadSingleLittleEndian(InternalRead(stackalloc byte[sizeof(float)]));
         public virtual unsafe double ReadDouble() => BinaryPrimitives.ReadDoubleLittleEndian(InternalRead(stackalloc byte[sizeof(double)]));
 
-        public virtual decimal ReadDecimal()
+        public virtual unsafe decimal ReadDecimal()
         {
             ReadOnlySpan<byte> span = InternalRead(stackalloc byte[sizeof(decimal)]);
             try
@@ -240,7 +240,7 @@ namespace System.IO
             }
         }
 
-        public virtual string ReadString()
+        public virtual unsafe string ReadString()
         {
             ThrowIfDisposed();
 
@@ -312,7 +312,7 @@ namespace System.IO
             return InternalReadChars(buffer);
         }
 
-        private int InternalReadChars(Span<char> buffer)
+        private unsafe int InternalReadChars(Span<char> buffer)
         {
             Debug.Assert(!_disposed);
 
@@ -397,7 +397,7 @@ namespace System.IO
 
             if (count == 0)
             {
-                return Array.Empty<char>();
+                return [];
             }
 
             char[] chars = new char[count];
@@ -438,7 +438,7 @@ namespace System.IO
 
             if (count == 0)
             {
-                return Array.Empty<byte>();
+                return [];
             }
 
             byte[] result = new byte[count];
@@ -503,7 +503,7 @@ namespace System.IO
             {
                 case 0:
                     // ReadExactly no-ops for empty buffers, so special case numBytes == 0 to preserve existing behavior.
-                    int n = _stream.Read(Array.Empty<byte>(), 0, 0);
+                    int n = _stream.Read([], 0, 0);
                     if (n == 0)
                     {
                         ThrowHelper.ThrowEndOfFileException();

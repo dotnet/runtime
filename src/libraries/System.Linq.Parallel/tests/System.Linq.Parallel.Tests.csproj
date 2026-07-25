@@ -2,6 +2,17 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+  </PropertyGroup>
+  <!-- The full [OuterLoop] combinatorial matrix expands to ~195k cases on a single-threaded
+       wasm browser session: it produces a ~72 MB test-results file that exceeds xharness's
+       30 MB upload limit and grows the wasm heap to ~1.3 GB, crashing the browser tab at
+       teardown. PLINQ has no real parallelism on a single thread, so this OuterLoop coverage
+       adds little value here. Skip OuterLoop for this suite on the wasm/CoreCLR outerloop lane
+       only; its innerloop tests still run and all other lanes are unaffected. -->
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and ('$(TestScope)' == 'all' or '$(TestScope)' == 'outerloop')">
+    <WithoutCategories>$(WithoutCategories);OuterLoop</WithoutCategories>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using ILCompiler.DependencyAnalysis;
 using Internal.JitInterface;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
 using static ILCompiler.ObjectWriter.DwarfNative;
@@ -194,15 +195,15 @@ namespace ILCompiler.ObjectWriter
 
     internal sealed class DwarfMemberFunction
     {
-        public string Name { get; private set; }
-        public string LinkageName { get; set; }
+        public Utf8String Name { get; private set; }
+        public Utf8String LinkageName { get; set; }
         public MemberFunctionTypeDescriptor Descriptor { get; private set; }
         public uint[] ArgumentTypes { get; private set; }
         public bool IsStatic { get; private set; }
         public long InfoOffset { get; set; }
 
         public DwarfMemberFunction(
-            string name,
+            Utf8String name,
             MemberFunctionTypeDescriptor descriptor,
             uint[] argumentTypes,
             bool isStatic)
@@ -360,7 +361,7 @@ namespace ILCompiler.ObjectWriter
 
     internal sealed class DwarfSubprogramInfo : DwarfInfo
     {
-        private readonly string _sectionSymbolName;
+        private readonly Utf8String _sectionSymbolName;
         private readonly long _methodAddress;
         private readonly int _methodSize;
         private readonly DwarfMemberFunction _memberFunction;
@@ -370,7 +371,7 @@ namespace ILCompiler.ObjectWriter
         private readonly bool _hasChildren;
 
         public DwarfSubprogramInfo(
-            string sectionSymbolName,
+            Utf8String sectionSymbolName,
             long methodAddress,
             int methodSize,
             DwarfMemberFunction memberFunction,
@@ -511,26 +512,26 @@ namespace ILCompiler.ObjectWriter
                 case VarLocType.VLT_STK:
                 case VarLocType.VLT_STK2:
                 case VarLocType.VLT_STK_BYREF:
-                    e.OpBReg(loc.B, loc.C);
+                    e.OpStackLocation(loc.B, loc.C);
                     if (loc.LocationType == VarLocType.VLT_STK_BYREF)
                     {
                         e.OpDeref();
                     }
                     break;
                 case VarLocType.VLT_REG_REG:
-                    e.OpReg(loc.C);
-                    e.OpPiece();
                     e.OpReg(loc.B);
+                    e.OpPiece();
+                    e.OpReg(loc.C);
                     e.OpPiece();
                     break;
                 case VarLocType.VLT_REG_STK:
                     e.OpReg(loc.B);
                     e.OpPiece();
-                    e.OpBReg(loc.C, loc.D);
+                    e.OpStackLocation(loc.C, loc.D);
                     e.OpPiece();
                     break;
                 case VarLocType.VLT_STK_REG:
-                    e.OpBReg(loc.B, loc.C);
+                    e.OpStackLocation(loc.B, loc.C);
                     e.OpPiece();
                     e.OpReg(loc.D);
                     e.OpPiece();
@@ -553,14 +554,14 @@ namespace ILCompiler.ObjectWriter
         private readonly StaticDataFieldDescriptor _descriptor;
 
         public long InfoOffset { get; set; }
-        public string Name => _descriptor.StaticDataName;
+        public Utf8String Name => _descriptor.StaticDataName;
 
         public DwarfStaticVariableInfo(StaticDataFieldDescriptor descriptor)
         {
             _descriptor = descriptor;
         }
 
-        public void Dump(DwarfInfoWriter writer, string sectionSymbolName, long address)
+        public void Dump(DwarfInfoWriter writer, Utf8String sectionSymbolName, long address)
         {
             writer.WriteStartDIE(DwarfAbbrev.VariableStatic);
 

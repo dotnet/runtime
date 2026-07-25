@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace b06811;
+
 using System;
 using System.Collections;
 using Xunit;
@@ -8,6 +11,7 @@ using Xunit;
 
 public class test
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

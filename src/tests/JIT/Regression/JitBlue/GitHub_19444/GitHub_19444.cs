@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// This test case illustrates a bug where the JIT_ByRefWriteBarrier was not
+// This test case illustrates a bug where the byref GC write barrier was not
 // included in IsIPInMarkedJitHelper on non-32-bit-x86 platforms.
+
+
+namespace GitHub_19444;
 
 using System;
 using Xunit;

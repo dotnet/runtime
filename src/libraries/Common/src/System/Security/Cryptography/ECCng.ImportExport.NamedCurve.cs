@@ -145,46 +145,36 @@ namespace System.Security.Cryptography
             string blobType,
             ReadOnlySpan<byte> keyBlob,
             string curveName,
-            SafeNCryptProviderHandle provider)
+            SafeNCryptProviderHandle provider,
+            int flags = 0)
         {
             ErrorCode errorCode;
             SafeNCryptKeyHandle keyHandle;
 
             using (SafeUnicodeStringHandle safeCurveName = new SafeUnicodeStringHandle(curveName))
             {
-                Interop.BCrypt.BCryptBufferDesc desc = default;
-                Interop.BCrypt.BCryptBuffer buff = default;
-
-                IntPtr descPtr = IntPtr.Zero;
-                IntPtr buffPtr = IntPtr.Zero;
-                try
+                unsafe
                 {
-                    descPtr = Marshal.AllocHGlobal(Marshal.SizeOf(desc));
-                    buffPtr = Marshal.AllocHGlobal(Marshal.SizeOf(buff));
+                    Interop.BCrypt.BCryptBufferDesc desc = default;
+                    Interop.BCrypt.BCryptBuffer buff = default;
+
                     buff.cbBuffer = (curveName.Length + 1) * 2; // Add 1 for null terminator
                     buff.BufferType = Interop.BCrypt.CngBufferDescriptors.NCRYPTBUFFER_ECC_CURVE_NAME;
                     buff.pvBuffer = safeCurveName.DangerousGetHandle();
-                    Marshal.StructureToPtr(buff, buffPtr, false);
 
                     desc.cBuffers = 1;
-                    desc.pBuffers = buffPtr;
+                    desc.pBuffers = (IntPtr)(&buff);
                     desc.ulVersion = Interop.BCrypt.BCRYPTBUFFER_VERSION;
-                    Marshal.StructureToPtr(desc, descPtr, false);
 
                     errorCode = Interop.NCrypt.NCryptImportKey(
                         provider,
                         IntPtr.Zero,
                         blobType,
-                        descPtr,
+                        (IntPtr)(&desc),
                         out keyHandle,
                         ref MemoryMarshal.GetReference(keyBlob),
                         keyBlob.Length,
-                        0);
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(descPtr);
-                    Marshal.FreeHGlobal(buffPtr);
+                        flags);
                 }
             }
 

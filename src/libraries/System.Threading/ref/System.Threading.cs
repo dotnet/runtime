@@ -255,6 +255,7 @@ namespace System.Threading
         public static uint And(ref uint location1, uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong And(ref ulong location1, ulong value) { throw null; }
+        public static T And<T>(ref T location1, T value) where T : struct { throw null; }
         public static double CompareExchange(ref double location1, double value, double comparand) { throw null; }
         public static byte CompareExchange(ref byte location1, byte value, byte comparand) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -317,6 +318,7 @@ namespace System.Threading
         public static uint Or(ref uint location1, uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Or(ref ulong location1, ulong value) { throw null; }
+        public static T Or<T>(ref T location1, T value) where T : struct { throw null; }
         public static long Read(ref readonly long location) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Read(ref readonly ulong location) { throw null; }

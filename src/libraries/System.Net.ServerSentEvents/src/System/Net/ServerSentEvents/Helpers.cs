@@ -47,20 +47,9 @@ namespace System.Net.ServerSentEvents
 
             int maxByteCount = Encoding.UTF8.GetMaxByteCount(value.Length);
             Span<byte> buffer = writer.GetSpan(maxByteCount);
-            Debug.Assert(maxByteCount <= buffer.Length);
-            int bytesWritten;
-#if NET
-            bytesWritten = Encoding.UTF8.GetBytes(value, buffer);
-#else
-            unsafe
-            {
-                fixed (char* chars = value)
-                fixed (byte* bytes = buffer)
-                {
-                    bytesWritten = Encoding.UTF8.GetBytes(chars, value.Length, bytes, maxByteCount);
-                }
-            }
-#endif
+            Debug.Assert(buffer.Length >= maxByteCount);
+
+            int bytesWritten = Encoding.UTF8.GetBytes(value, buffer);
             writer.Advance(bytesWritten);
         }
 

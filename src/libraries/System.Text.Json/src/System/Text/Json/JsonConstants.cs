@@ -54,9 +54,14 @@ namespace System.Text.Json
         public const int RemoveFlagsBitMask = 0x7FFFFFFF;
 
         // In the worst case, an ASCII character represented as a single utf-8 byte could expand 6x when escaped.
-        // For example: '+' becomes '\u0043'
+        // For example: '+' becomes '\u002B'
         // Escaping surrogate pairs (represented by 3 or 4 utf-8 bytes) would expand to 12 bytes (which is still <= 6x).
         // The same factor applies to utf-16 characters.
+        // This factor also serves as an upper bound for the combined escaping-and-transcoding pipeline.
+        // A non-ASCII unicode character is either:
+        // - escaped into an ASCII sequence (e.g. \uXXXX), so 1 UTF-16 char -> at most 6 UTF-8 bytes, or
+        // - written directly as UTF-8 (e.g. when using a non-default encoder such as UnsafeRelaxedJsonEscaping),
+        //   expanding at most 3x (MaxExpansionFactorWhileTranscoding), which is <= 6.
         public const int MaxExpansionFactorWhileEscaping = 6;
 
         // In the worst case, a single UTF-16 character could be expanded to 3 UTF-8 bytes.

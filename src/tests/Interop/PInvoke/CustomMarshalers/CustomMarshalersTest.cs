@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 namespace PInvokeTests
 {
@@ -26,6 +27,7 @@ namespace PInvokeTests
 
     public static class CustomMarshalersTests
     {
+        [ActiveIssue("Requires COM support, disabled on all Mono platforms", TestRuntimes.Mono)]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnMono("These custom marshallers were never built-in to the runtime on Mono")]

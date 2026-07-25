@@ -3,12 +3,16 @@
 //
 
 //COMMAND LINE: csc /nologo /optimize+ /debug- /w:0 bug.cs
+
+namespace b91189;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
 public struct AA
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint() => Run(new string[0]);
 

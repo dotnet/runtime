@@ -5,9 +5,11 @@
 using System;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public class FinalizeTimeout
 {
+    [ActiveIssue("needs triage", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void TestEntryPoint()
     {

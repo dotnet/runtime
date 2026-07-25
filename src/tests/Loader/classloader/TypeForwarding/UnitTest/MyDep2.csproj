@@ -7,6 +7,9 @@
     <Compile Include="MyDep2.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="MyDep3.csproj" />
   </ItemGroup>
 </Project>

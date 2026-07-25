@@ -232,11 +232,7 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 #endif
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
-            g_pDbgTransportTarget = new (nothrow) DbgTransportTarget();
-            if (g_pDbgTransportTarget == NULL)
-                return FALSE;
-
-            if (FAILED(g_pDbgTransportTarget->Init()))
+            if (FAILED(g_DbgTransportTarget.Init()))
                 return FALSE;
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
         }
@@ -262,12 +258,7 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
         case DLL_PROCESS_DETACH:
         {
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
-            if (g_pDbgTransportTarget != NULL)
-            {
-                g_pDbgTransportTarget->Shutdown();
-                delete g_pDbgTransportTarget;
-                g_pDbgTransportTarget = NULL;
-            }
+            g_DbgTransportTarget.Shutdown();
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
         }
         break;

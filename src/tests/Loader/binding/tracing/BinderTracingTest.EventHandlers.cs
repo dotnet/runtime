@@ -23,7 +23,7 @@ namespace BinderTracingTests
     }
     partial class BinderTracingTest
     {
-        private const string AssemblyLoadFromHandlerName = "LoadFromResolveHandler";
+        private const string AssemblyLoadFromHandlerName = "System.Reflection.Assembly.LoadFromResolveHandler";
 
         [BinderTest]
         public static BindOperation AssemblyLoadContextResolving_ReturnNull()
@@ -397,7 +397,7 @@ namespace BinderTracingTests
                 var invocation = new HandlerInvocation()
                 {
                     AssemblyName = assemblyName,
-                    HandlerName = nameof(OnAssemblyLoadContextResolving),
+                    HandlerName = $"{GetType().FullName}.{nameof(OnAssemblyLoadContextResolving)}",
                     AssemblyLoadContext = context == AssemblyLoadContext.Default ? context.Name : context.ToString(),
                 };
                 if (asm != null)
@@ -421,7 +421,7 @@ namespace BinderTracingTests
                 var invocation = new HandlerInvocation()
                 {
                     AssemblyName = assemblyName,
-                    HandlerName = nameof(OnAppDomainAssemblyResolve),
+                    HandlerName = $"{GetType().FullName}.{nameof(OnAppDomainAssemblyResolve)}",
                 };
                 if (asm != null)
                 {

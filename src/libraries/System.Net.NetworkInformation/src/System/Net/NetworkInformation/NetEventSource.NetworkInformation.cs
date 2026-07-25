@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 namespace System.Net
 {
     [EventSource(Name = "Private.InternalDiagnostics.System.Net.NetworkInformation")]
-    internal sealed class NetEventSource : EventSource
+    internal sealed partial class NetEventSource : EventSource
     {
         public static readonly NetEventSource Log = new NetEventSource();
 

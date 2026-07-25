@@ -396,4 +396,3 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
             public SqlGuid sqlGuid = new SqlGuid();
     }
 }
-

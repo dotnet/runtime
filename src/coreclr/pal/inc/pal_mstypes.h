@@ -71,16 +71,10 @@ extern "C" {
 
 #define CALLBACK __cdecl
 
-#if !defined(_declspec)
-#define _declspec(e)  __declspec(e)
-#endif
-
 #if defined(_VAC_) && defined(__cplusplus)
 #define __inline        inline
 #endif
-
-#define __forceinline   inline
-
+    
 #define PALIMPORT
 
 #ifndef DLLEXPORT
@@ -103,13 +97,6 @@ extern "C" {
 #define OPTIONAL
 #define FAR
 
-#ifdef UNICODE
-#define __TEXT(x) L##x
-#else
-#define __TEXT(x) x
-#endif
-#define TEXT(x) __TEXT(x)
-
 ////////////////////////////////////////////////////////////////////////
 // Some special values
 ////////////////////////////////////////////////////////////////////////
@@ -123,25 +110,8 @@ extern "C" {
 #endif
 
 ////////////////////////////////////////////////////////////////////////
-// Misc. type helpers
-////////////////////////////////////////////////////////////////////////
-
-// GCC's way of declaring large integer constants
-// If you define these in one step, without the _HELPER macros, you
-// get extra whitespace when composing these with other concatenating macros.
-#define I64_HELPER(x) x ## LL
-#define I64(x)        I64_HELPER(x)
-
-#define UI64_HELPER(x) x ## ULL
-#define UI64(x)        UI64_HELPER(x)
-
-////////////////////////////////////////////////////////////////////////
 // Misc. types
 ////////////////////////////////////////////////////////////////////////
-
-#if HOST_64BIT
-typedef long double LONG_DOUBLE;
-#endif
 
 typedef void VOID;
 
@@ -162,11 +132,9 @@ typedef unsigned short USHORT;
 typedef USHORT *PUSHORT;
 typedef unsigned char UCHAR;
 typedef UCHAR *PUCHAR;
-typedef char *PSZ;
 typedef ULONGLONG DWORDLONG;
 
 typedef unsigned int DWORD; // NOTE: diff from  windows.h, for LP64 compat
-typedef unsigned int DWORD32, *PDWORD32;
 
 typedef int BOOL;
 typedef unsigned char BYTE;
@@ -248,10 +216,6 @@ typedef LONG_PTR LPARAM;
 typedef char16_t WCHAR;
 
 typedef DWORD LCID;
-typedef PDWORD PLCID;
-typedef WORD LANGID;
-
-typedef DWORD LCTYPE;
 
 typedef WCHAR *PWCHAR;
 typedef WCHAR *LPWCH, *PWCH;
@@ -288,8 +252,6 @@ typedef CONST TCHAR *LPCTSTR;
 #define HIBYTE(w)           ((BYTE)((DWORD_PTR)(w) >> 8))
 
 typedef VOID *HANDLE;
-typedef HANDLE HWND;
-typedef struct __PAL_RemoteHandle__ { HANDLE h; } *RHANDLE;
 typedef HANDLE *PHANDLE;
 typedef HANDLE *LPHANDLE;
 #define INVALID_HANDLE_VALUE ((VOID *)(-1))
@@ -297,9 +259,6 @@ typedef HANDLE *LPHANDLE;
 #define INVALID_FILE_ATTRIBUTES ((DWORD) -1)
 typedef HANDLE HMODULE;
 typedef HANDLE HINSTANCE;
-typedef HANDLE HGLOBAL;
-typedef HANDLE HLOCAL;
-typedef HANDLE HRSRC;
 
 typedef LONG HRESULT;
 typedef LONG NTSTATUS;

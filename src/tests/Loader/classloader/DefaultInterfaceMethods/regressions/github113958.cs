@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 // Github issue 113958, mainly a Mono issue having a generic
 // interface including both private and virtual default methods.
@@ -17,6 +18,7 @@ namespace GenericInterfaceDefaultVirutalMethodBug
 {
     public class Program
     {
+        [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
         [Fact]
         public static void TestEntryPoint()
         {

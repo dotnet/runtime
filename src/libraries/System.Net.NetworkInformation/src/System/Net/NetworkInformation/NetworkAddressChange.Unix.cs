@@ -46,6 +46,7 @@ namespace System.Net.NetworkInformation
 
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public static event NetworkAddressChangedEventHandler? NetworkAddressChanged
         {
             add
@@ -88,6 +89,7 @@ namespace System.Net.NetworkInformation
 
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public static event NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged
         {
             add

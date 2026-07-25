@@ -321,7 +321,7 @@ ShimLocalDataTarget::ReadVirtual(
     {
         // Calculate bytes to read and don't let read cross
         // a page boundary.
-        readSize = GetOsPageSize() - (ULONG32)(address & (GetOsPageSize() - 1));
+        readSize = minipal_getpagesize() - (ULONG32)(address & (minipal_getpagesize() - 1));
         readSize = min(cbRequestSize, readSize);
 
         if (!ReadProcessMemory(m_hProcess, (PVOID)(ULONG_PTR)address,
@@ -385,10 +385,10 @@ ShimLocalDataTarget::GetThreadContext(
         return E_INVALIDARG;
     }
 
-    HandleHolder hThread = OpenThread(
+    HandleHolder hThread{ OpenThread(
         THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_QUERY_INFORMATION ,
         FALSE, // thread handle is not inheritable.
-        dwThreadID);
+        dwThreadID) };
 
     if (hThread != NULL)
     {
@@ -421,10 +421,10 @@ ShimLocalDataTarget::SetThreadContext(
     }
 
 
-    HandleHolder hThread = OpenThread(
+    HandleHolder hThread{ OpenThread(
         THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_QUERY_INFORMATION,
         FALSE, // thread handle is not inheritable.
-        dwThreadID);
+        dwThreadID) };
 
     if (hThread != NULL)
     {

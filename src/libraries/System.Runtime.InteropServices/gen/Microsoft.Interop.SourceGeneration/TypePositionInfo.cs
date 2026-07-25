@@ -70,8 +70,6 @@ namespace Microsoft.Interop
 
         public ByValueContentsMarshalKind ByValueContentsMarshalKind { get; init; }
 
-        public (Location? InLocation, Location? OutLocation) ByValueMarshalAttributeLocations { get; init; }
-
         public bool IsManagedReturnPosition { get => ManagedIndex == ReturnIndex; }
         public bool IsNativeReturnPosition { get => NativeIndex == ReturnIndex; }
         public bool IsManagedExceptionPosition { get => ManagedIndex == ExceptionIndex; }
@@ -87,14 +85,11 @@ namespace Microsoft.Interop
 
         public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, MarshallingInfo marshallingInfo, Compilation compilation)
         {
-            var (byValueContentsMarshalKind, inLocation, outLocation) = GetByValueContentsMarshalKind(paramSymbol.GetAttributes(), compilation);
-
             var typeInfo = new TypePositionInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(paramSymbol.Type), marshallingInfo)
             {
                 InstanceIdentifier = ParseToken(paramSymbol.Name).IsReservedKeyword() ? $"@{paramSymbol.Name}" : paramSymbol.Name,
                 RefKind = paramSymbol.RefKind,
-                ByValueContentsMarshalKind = byValueContentsMarshalKind,
-                ByValueMarshalAttributeLocations = (inLocation, outLocation),
+                ByValueContentsMarshalKind = GetByValueContentsMarshalKind(paramSymbol.GetAttributes(), compilation),
                 ScopedKind = paramSymbol.ScopedKind,
                 IsExplicitThis = ((ParameterSyntax?)paramSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax())?.Modifiers.Any(SyntaxKind.ThisKeyword) ?? false
             };
@@ -113,30 +108,26 @@ namespace Microsoft.Interop
             return methodSymbol.Parameters[info.ManagedIndex].Locations[0];
         }
 
-        private static (ByValueContentsMarshalKind, Location? inAttribute, Location? outAttribute) GetByValueContentsMarshalKind(IEnumerable<AttributeData> attributes, Compilation compilation)
+        private static ByValueContentsMarshalKind GetByValueContentsMarshalKind(IEnumerable<AttributeData> attributes, Compilation compilation)
         {
             INamedTypeSymbol outAttributeType = compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_OutAttribute)!;
             INamedTypeSymbol inAttributeType = compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_InAttribute)!;
 
             ByValueContentsMarshalKind marshalKind = ByValueContentsMarshalKind.Default;
-            Location? inAttributeLocation = null;
-            Location? outAttributeLocation = null;
 
             foreach (AttributeData attr in attributes)
             {
                 if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, outAttributeType))
                 {
                     marshalKind |= ByValueContentsMarshalKind.Out;
-                    outAttributeLocation = attr.ApplicationSyntaxReference.SyntaxTree.GetLocation(attr.ApplicationSyntaxReference.Span);
                 }
                 else if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, inAttributeType))
                 {
                     marshalKind |= ByValueContentsMarshalKind.In;
-                    inAttributeLocation = attr.ApplicationSyntaxReference.SyntaxTree.GetLocation(attr.ApplicationSyntaxReference.Span);
                 }
             }
 
-            return (marshalKind, inAttributeLocation, outAttributeLocation);
+            return marshalKind;
         }
     }
 }

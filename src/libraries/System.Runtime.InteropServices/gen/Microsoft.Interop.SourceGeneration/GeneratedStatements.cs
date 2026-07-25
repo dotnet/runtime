@@ -69,6 +69,27 @@ namespace Microsoft.Interop
             }
         }
 
+        /// <summary>
+        /// Create the standard set of generated statements for an unmanaged-to-managed stub whose
+        /// managed-side invocation is a property or indexer accessor. For a getter the body assigns the
+        /// read expression into the return identifier (<c>__retVal = propertyAccess</c>); for a setter
+        /// it assigns the value parameter into the access expression (<c>propertyAccess = value</c>).
+        /// </summary>
+        /// <remarks>
+        /// For indexers the caller is expected to bake the index arguments into
+        /// <paramref name="propertyAccess"/> (as an <c>ElementAccessExpression</c>) before passing it in;
+        /// the value parameter — which is the LAST entry in <c>ManagedParameterMarshallers</c> for both
+        /// property and indexer setters — is consumed here.
+        /// </remarks>
+        public static GeneratedStatements CreateForProperty(BoundGenerators marshallers, StubIdentifierContext context, ExpressionSyntax propertyAccess, bool isSetter)
+        {
+            GeneratedStatements statements = Create(marshallers, context);
+            return statements with
+            {
+                InvokeStatement = GenerateStatementForProperty(marshallers, context with { CurrentStage = StubIdentifierContext.Stage.Invoke }, propertyAccess, isSetter)
+            };
+        }
+
         private static ImmutableArray<StatementSyntax> GenerateStatementsForStubContext(BoundGenerators marshallers, StubIdentifierContext context)
         {
             ImmutableArray<StatementSyntax>.Builder statementsToUpdate = ImmutableArray.CreateBuilder<StatementSyntax>();
@@ -147,6 +168,39 @@ namespace Microsoft.Interop
                         SyntaxKind.SimpleAssignmentExpression,
                         IdentifierName(context.GetIdentifiers(marshallers.ManagedReturnMarshaller.TypeInfo).managed),
                         invoke));
+        }
+
+        private static ExpressionStatementSyntax GenerateStatementForProperty(BoundGenerators marshallers, StubIdentifierContext context, ExpressionSyntax propertyAccess, bool isSetter)
+        {
+            if (context.CurrentStage != StubIdentifierContext.Stage.Invoke)
+            {
+                throw new ArgumentException("CurrentStage must be Invoke");
+            }
+
+            if (isSetter)
+            {
+                // Setter: assign the value parameter into the access expression.
+                //   propertyAccess = <managedValueIdentifier>;
+                //
+                // For property setters the only managed parameter IS the value parameter, so .Last() is
+                // identical to .Single(). For indexer setters the value parameter is appended LAST after
+                // the index parameters (Roslyn convention), so .Last() correctly picks it out.
+                IBoundMarshallingGenerator valueParameterMarshaller = marshallers.ManagedParameterMarshallers.Last();
+                ExpressionSyntax valueExpression = valueParameterMarshaller.AsManagedArgument(context).Expression;
+                return ExpressionStatement(
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        propertyAccess,
+                        valueExpression));
+            }
+
+            // Getter: assign the property read into the managed return identifier.
+            //   <managedReturnIdentifier> = propertyAccess;
+            return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(context.GetIdentifiers(marshallers.ManagedReturnMarshaller.TypeInfo).managed),
+                    propertyAccess));
         }
 
         private static ImmutableArray<CatchClauseSyntax> GenerateCatchClauseForManagedException(BoundGenerators marshallers, StubIdentifierContext context)

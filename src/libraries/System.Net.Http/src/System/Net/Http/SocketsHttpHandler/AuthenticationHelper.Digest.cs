@@ -210,7 +210,7 @@ namespace System.Net.Http
             return RandomNumberGenerator.GetString(CharacterSet, Length);
         }
 
-        private static string ComputeHash(string data, string algorithm)
+        private static unsafe string ComputeHash(string data, string algorithm)
         {
             Span<byte> hashBuffer = stackalloc byte[SHA256.HashSizeInBytes]; // SHA256 is the largest hash produced
             byte[] dataBytes = Encoding.UTF8.GetBytes(data);

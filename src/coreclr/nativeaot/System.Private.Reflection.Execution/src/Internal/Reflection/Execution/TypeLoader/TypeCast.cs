@@ -209,27 +209,6 @@ namespace Internal.Reflection.Execution
             return true;
         }
 
-        //
-        // Determines if a value of the source type can be assigned to a location of the target type.
-        // It does not handle IDynamicInterfaceCastable, and cannot since we do not have an actual object instance here.
-        // This routine assumes that the source type is boxed, i.e. a value type source is presumed to be
-        // compatible with Object and ValueType and an enum source is additionally compatible with Enum.
-        //
-        private static bool AreTypesAssignable(Type pSourceType, Type pTargetType)
-        {
-            // Special case: T can be cast to Nullable<T> (where T is a value type). Call this case out here
-            // since this is only applicable if T is boxed, which is not true for any other callers of
-            // AreTypesAssignableInternal, so no sense making all the other paths pay the cost of the check.
-            if (pTargetType.IsNullable() && pSourceType.IsValueType && !pSourceType.IsNullable())
-            {
-                Type pNullableType = pTargetType.GetNullableType();
-
-                return AreTypesEquivalentInternal(pSourceType, pNullableType);
-            }
-
-            return AreTypesAssignableInternal(pSourceType, pTargetType, true, false);
-        }
-
         // Internally callable version of the export method above. Has two additional parameters:
         //  fBoxedSource            : assume the source type is boxed so that value types and enums are
         //                            compatible with Object, ValueType and Enum (if applicable)

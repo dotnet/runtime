@@ -87,9 +87,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming))]
         [MemberData(nameof(Export_MemberData))]
         public void Export(string testname, Action<XsdDataContractExporter> export, Action<string, XmlSchemaSet> schemaCheck = null)
         {
@@ -128,7 +126,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
             AppContext.TryGetSwitch("Switch.System.Runtime.Serialization.DataContracts.Auto_Import_KVP", out bool autoImportKVP);
             yield return new object[] { "Exp2", (XsdDataContractExporter exp) => exp.Export(new Assembly[] { typeof(DataContractTypes).Assembly }), (string s, XmlSchemaSet ss) => {
                 Assert.Equal(autoImportKVP ? 21 : 20, ss.Count);
-                Assert.Equal(autoImportKVP ? 171 : 163, ss.GlobalTypes.Count);
+                Assert.Equal(autoImportKVP ? 173 : 165, ss.GlobalTypes.Count);
                 Assert.Equal(autoImportKVP ? 204 : 196, ss.GlobalElements.Count);
             } };
 
@@ -194,7 +192,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
             yield return new object[] { "ExpEnum", (XsdDataContractExporter exp) => exp.Export(new Type[] { typeof(System.Reflection.TypeAttributes) }), (string s, XmlSchemaSet ss) => {
                 Assert.Equal(3, ss.Count);
                 //Assert.Equal(3, ss.GlobalAttributes.Count);
-                Assert.Equal(5, ss.GlobalTypes.Count);
+                Assert.Equal(7, ss.GlobalTypes.Count);
                 Assert.Equal(23, ss.GlobalElements.Count);
             } };
         }

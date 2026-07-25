@@ -22,7 +22,7 @@ namespace BasicEventSourceTests
             PlatformDetection.IsPrivilegedProcess && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
 
         /// ETW only works with elevated process
-        [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(TestsManifestGeneration), nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
         [SkipOnCoreClr("Test should only be run in non-stress modes", ~RuntimeTestModes.RegularRun)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/88027")]
         public void Test_EventSource_EtwManifestGeneration()
@@ -63,7 +63,7 @@ namespace BasicEventSourceTests
             Assert.True(VerifyManifestAndRemoveFile(etlFileName));
         }
 
-        [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(TestsManifestGeneration), nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
         [SkipOnCoreClr("Test should only be run in non-stress modes", ~RuntimeTestModes.RegularRun)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/88027")]
         public void Test_EventSource_EtwManifestGenerationRollover()

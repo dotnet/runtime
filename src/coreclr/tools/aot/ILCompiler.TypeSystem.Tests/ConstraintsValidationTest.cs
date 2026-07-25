@@ -47,33 +47,33 @@ namespace TypeSystemTests
 
             _testModule = systemModule;
 
-            _iNonGenType = _testModule.GetType("GenericConstraints", "INonGen");
-            _iGenType = _testModule.GetType("GenericConstraints", "IGen`1");
-            _arg1Type = _testModule.GetType("GenericConstraints", "Arg1");
-            _arg2Type = _testModule.GetType("GenericConstraints", "Arg2`1");
-            _arg3Type = _testModule.GetType("GenericConstraints", "Arg3`1");
-            _structArgWithDefaultCtorType = _testModule.GetType("GenericConstraints", "StructArgWithDefaultCtor");
-            _structArgWithoutDefaultCtorType = _testModule.GetType("GenericConstraints", "StructArgWithoutDefaultCtor");
-            _classArgWithDefaultCtorType = _testModule.GetType("GenericConstraints", "ClassArgWithDefaultCtor");
-            _classArgWithPrivateDefaultCtorType = _testModule.GetType("GenericConstraints", "ClassArgWithPrivateDefaultCtor");
-            _abstractClassArgWithDefaultCtorType = _testModule.GetType("GenericConstraints", "AbstractClassArgWithDefaultCtor");
-            _classArgWithoutDefaultCtorType = _testModule.GetType("GenericConstraints", "ClassArgWithoutDefaultCtor");
+            _iNonGenType = _testModule.GetType("GenericConstraints"u8, "INonGen"u8);
+            _iGenType = _testModule.GetType("GenericConstraints"u8, "IGen`1"u8);
+            _arg1Type = _testModule.GetType("GenericConstraints"u8, "Arg1"u8);
+            _arg2Type = _testModule.GetType("GenericConstraints"u8, "Arg2`1"u8);
+            _arg3Type = _testModule.GetType("GenericConstraints"u8, "Arg3`1"u8);
+            _structArgWithDefaultCtorType = _testModule.GetType("GenericConstraints"u8, "StructArgWithDefaultCtor"u8);
+            _structArgWithoutDefaultCtorType = _testModule.GetType("GenericConstraints"u8, "StructArgWithoutDefaultCtor"u8);
+            _classArgWithDefaultCtorType = _testModule.GetType("GenericConstraints"u8, "ClassArgWithDefaultCtor"u8);
+            _classArgWithPrivateDefaultCtorType = _testModule.GetType("GenericConstraints"u8, "ClassArgWithPrivateDefaultCtor"u8);
+            _abstractClassArgWithDefaultCtorType = _testModule.GetType("GenericConstraints"u8, "AbstractClassArgWithDefaultCtor"u8);
+            _classArgWithoutDefaultCtorType = _testModule.GetType("GenericConstraints"u8, "ClassArgWithoutDefaultCtor"u8);
 
-            _referenceTypeConstraintType = _testModule.GetType("GenericConstraints", "ReferenceTypeConstraint`1");
-            _defaultConstructorConstraintType = _testModule.GetType("GenericConstraints", "DefaultConstructorConstraint`1");
-            _notNullableValueTypeConstraintType = _testModule.GetType("GenericConstraints", "NotNullableValueTypeConstraint`1");
-            _simpleTypeConstraintType = _testModule.GetType("GenericConstraints", "SimpleTypeConstraint`1");
-            _doubleSimpleTypeConstraintType = _testModule.GetType("GenericConstraints", "DoubleSimpleTypeConstraint`1");
-            _simpleGenericConstraintType = _testModule.GetType("GenericConstraints", "SimpleGenericConstraint`2");
-            _complexGenericConstraint1Type = _testModule.GetType("GenericConstraints", "ComplexGenericConstraint1`2");
-            _complexGenericConstraint2Type = _testModule.GetType("GenericConstraints", "ComplexGenericConstraint2`2");
-            _complexGenericConstraint3Type = _testModule.GetType("GenericConstraints", "ComplexGenericConstraint3`2");
-            _complexGenericConstraint4Type = _testModule.GetType("GenericConstraints", "ComplexGenericConstraint4`2");
-            _multipleConstraintsType = _testModule.GetType("GenericConstraints", "MultipleConstraints`2");
+            _referenceTypeConstraintType = _testModule.GetType("GenericConstraints"u8, "ReferenceTypeConstraint`1"u8);
+            _defaultConstructorConstraintType = _testModule.GetType("GenericConstraints"u8, "DefaultConstructorConstraint`1"u8);
+            _notNullableValueTypeConstraintType = _testModule.GetType("GenericConstraints"u8, "NotNullableValueTypeConstraint`1"u8);
+            _simpleTypeConstraintType = _testModule.GetType("GenericConstraints"u8, "SimpleTypeConstraint`1"u8);
+            _doubleSimpleTypeConstraintType = _testModule.GetType("GenericConstraints"u8, "DoubleSimpleTypeConstraint`1"u8);
+            _simpleGenericConstraintType = _testModule.GetType("GenericConstraints"u8, "SimpleGenericConstraint`2"u8);
+            _complexGenericConstraint1Type = _testModule.GetType("GenericConstraints"u8, "ComplexGenericConstraint1`2"u8);
+            _complexGenericConstraint2Type = _testModule.GetType("GenericConstraints"u8, "ComplexGenericConstraint2`2"u8);
+            _complexGenericConstraint3Type = _testModule.GetType("GenericConstraints"u8, "ComplexGenericConstraint3`2"u8);
+            _complexGenericConstraint4Type = _testModule.GetType("GenericConstraints"u8, "ComplexGenericConstraint4`2"u8);
+            _multipleConstraintsType = _testModule.GetType("GenericConstraints"u8, "MultipleConstraints`2"u8);
 
-            _genericMethodsType = _testModule.GetType("GenericConstraints", "GenericMethods");
-            _simpleGenericConstraintMethod = _genericMethodsType.GetMethod("SimpleGenericConstraintMethod", null);
-            _complexGenericConstraintMethod = _genericMethodsType.GetMethod("ComplexGenericConstraintMethod", null);
+            _genericMethodsType = _testModule.GetType("GenericConstraints"u8, "GenericMethods"u8);
+            _simpleGenericConstraintMethod = _genericMethodsType.GetMethod("SimpleGenericConstraintMethod"u8, null);
+            _complexGenericConstraintMethod = _genericMethodsType.GetMethod("ComplexGenericConstraintMethod"u8, null);
         }
 
         [Fact]
@@ -352,6 +352,182 @@ namespace TypeSystemTests
                 instantiatedType = _iGenType.MakeInstantiatedType(byref);
                 instantiatedType = _iGenType.MakeInstantiatedType(instantiatedType);
                 Assert.False(instantiatedType.Instantiation.CheckValidInstantiationArguments());
+            }
+        }
+
+        [Fact]
+        public void TestCanonicalTypeConstraints()
+        {
+            TypeDesc canon = _context.CanonType;
+            TypeDesc universalCanon = _context.UniversalCanonType;
+            TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
+            TypeDesc stringType = _context.GetWellKnownType(WellKnownType.String);
+            TypeDesc intType = _context.GetWellKnownType(WellKnownType.Int32);
+
+            MetadataType nonVariantInterfaceConstraintType = _testModule.GetType("GenericConstraints"u8, "NonVariantInterfaceConstraint`2"u8);
+            MetadataType nonVariantGenImplType = _testModule.GetType("GenericConstraints"u8, "NonVariantGenImpl`1"u8);
+
+            TypeDesc instantiatedType;
+
+            // __Canon satisfies special constraints: class, new()
+            {
+                instantiatedType = _referenceTypeConstraintType.MakeInstantiatedType(canon);
+                Assert.True(instantiatedType.CheckConstraints());
+
+                instantiatedType = _defaultConstructorConstraintType.MakeInstantiatedType(canon);
+                Assert.True(instantiatedType.CheckConstraints());
+
+                // __Canon should NOT satisfy struct constraint
+                instantiatedType = _notNullableValueTypeConstraintType.MakeInstantiatedType(canon);
+                Assert.False(instantiatedType.CheckConstraints());
+            }
+
+            // __UniversalCanon satisfies all special constraints
+            {
+                instantiatedType = _referenceTypeConstraintType.MakeInstantiatedType(universalCanon);
+                Assert.True(instantiatedType.CheckConstraints());
+
+                instantiatedType = _defaultConstructorConstraintType.MakeInstantiatedType(universalCanon);
+                Assert.True(instantiatedType.CheckConstraints());
+
+                instantiatedType = _notNullableValueTypeConstraintType.MakeInstantiatedType(universalCanon);
+                Assert.True(instantiatedType.CheckConstraints());
+            }
+
+            // __Canon as instantiation param satisfies type constraints (wildcard — runtime will validate)
+            {
+                // NonVariantInterfaceConstraint<__Canon, object>: __Canon is wildcard, passes any type constraint
+                instantiatedType = nonVariantInterfaceConstraintType.MakeInstantiatedType(canon, objectType);
+                Assert.True(instantiatedType.CheckConstraints());
+
+                // ComplexGenericConstraint3<__Canon, object>: where T : IGen<U>, T=__Canon, U=object
+                instantiatedType = _complexGenericConstraint3Type.MakeInstantiatedType(canon, objectType);
+                Assert.True(instantiatedType.CheckConstraints());
+            }
+
+            // Invariant interface constraint with __Canon in the constraint's type args
+            // NonVariantGenImpl<string> : INonVariantGen<string>
+            // NonVariantInterfaceConstraint<T, U> where T : INonVariantGen<U>
+            // Check: NonVariantInterfaceConstraint<NonVariantGenImpl<string>, __Canon>
+            //   constraint becomes INonVariantGen<__Canon>, concrete implements INonVariantGen<string>
+            //   string is a ref type, __Canon matches ref types
+            {
+                TypeDesc nonVariantGenImplOfString = nonVariantGenImplType.MakeInstantiatedType(stringType);
+                instantiatedType = nonVariantInterfaceConstraintType.MakeInstantiatedType(nonVariantGenImplOfString, canon);
+                Assert.True(instantiatedType.CheckConstraints());
+
+                // With int (value type) — __Canon should NOT match value types
+                TypeDesc nonVariantGenImplOfInt = nonVariantGenImplType.MakeInstantiatedType(intType);
+                instantiatedType = nonVariantInterfaceConstraintType.MakeInstantiatedType(nonVariantGenImplOfInt, canon);
+                Assert.False(instantiatedType.CheckConstraints());
+            }
+
+            // Variant interface constraint with __Canon in the constraint's type args
+            // ComplexGenericConstraint3<T, U> where T : IGen<U>  (IGen<in T> is contravariant)
+            // Arg3<object> : IGen<object>
+            // ComplexGenericConstraint3<Arg3<object>, __Canon>
+            //   constraint: IGen<__Canon>. Arg3<object> implements IGen<object>.
+            //   __Canon matches object (ref type) in invariant arg position of IGen
+            {
+                TypeDesc arg3OfObject = _arg3Type.MakeInstantiatedType(objectType);
+                instantiatedType = _complexGenericConstraint3Type.MakeInstantiatedType(arg3OfObject, canon);
+                Assert.True(instantiatedType.CheckConstraints());
+            }
+
+            // Base type constraint with __Canon
+            // ComplexGenericConstraint2<T, U> where T : Arg2<Arg2<U>>
+            // Arg2<Arg2<__Canon>> — constraint has canonical subtype
+            // T=Arg2<Arg2<string>> should match because Arg2<string> canonicalizes to Arg2<__Canon>
+            {
+                TypeDesc arg2OfString = _arg2Type.MakeInstantiatedType(stringType);
+                TypeDesc arg2OfArg2OfString = _arg2Type.MakeInstantiatedType(arg2OfString);
+                instantiatedType = _complexGenericConstraint2Type.MakeInstantiatedType(arg2OfArg2OfString, canon);
+                Assert.True(instantiatedType.CheckConstraints());
+
+                // Value type should not match __Canon in base type constraint
+                TypeDesc arg2OfInt = _arg2Type.MakeInstantiatedType(intType);
+                TypeDesc arg2OfArg2OfInt = _arg2Type.MakeInstantiatedType(arg2OfInt);
+                instantiatedType = _complexGenericConstraint2Type.MakeInstantiatedType(arg2OfArg2OfInt, canon);
+                Assert.False(instantiatedType.CheckConstraints());
+            }
+
+            // Parameterized canonical types (e.g., __Canon[] as type arg in constraint)
+            // ComplexGenericConstraint3<T, U> where T : IGen<U>  (IGen<in T>)
+            // T=IGen<int[]>, U=int[] : IGen<int[]> implements IGen<int[]>, passes normally.
+            // Canonicalized: T becomes __Canon (ref type), U=int[] stays.
+            // Check: __Canon satisfies IGen<int[]>? __Canon is wildcard → true.
+            {
+                TypeDesc intArray = intType.MakeArrayType();
+                instantiatedType = _complexGenericConstraint3Type.MakeInstantiatedType(canon, intArray);
+                Assert.True(instantiatedType.CheckConstraints());
+            }
+
+            // Variance + __Canon interaction: MultipleConstraints<T, U> where T : class, IGen<U>, new()
+            // MultipleConstraints<ClassArgWithDefaultCtor, __Canon>
+            //   ClassArgWithDefaultCtor : IGen<object>
+            //   constraint: IGen<__Canon>, __Canon matches object
+            {
+                instantiatedType = _multipleConstraintsType.MakeInstantiatedType(_classArgWithDefaultCtorType, canon);
+                Assert.True(instantiatedType.CheckConstraints());
+            }
+
+            // Interface type used directly as instantiation param
+            // ComplexGenericConstraint3<IGen<string>, __Canon>: IGen<string> satisfies IGen<__Canon>
+            {
+                TypeDesc igenOfString = _iGenType.MakeInstantiatedType(stringType);
+                instantiatedType = _complexGenericConstraint3Type.MakeInstantiatedType(igenOfString, canon);
+                Assert.True(instantiatedType.CheckConstraints());
+            }
+
+            // __UniversalCanon as instantiation param should pass all type constraints
+            {
+                instantiatedType = nonVariantInterfaceConstraintType.MakeInstantiatedType(universalCanon, objectType);
+                Assert.True(instantiatedType.CheckConstraints());
+
+                instantiatedType = _complexGenericConstraint3Type.MakeInstantiatedType(universalCanon, intType);
+                Assert.True(instantiatedType.CheckConstraints());
+            }
+
+            // __Canon / __UniversalCanon as the constraint type itself
+            // SimpleGenericConstraint<T, U> where T : U
+            // T=Arg1, U=__Canon → constraint type is __Canon, a ref type should satisfy it
+            {
+                instantiatedType = _simpleGenericConstraintType.MakeInstantiatedType(_arg1Type, canon);
+                Assert.True(instantiatedType.CheckConstraints());
+
+                // Value type should not satisfy __Canon constraint
+                instantiatedType = _simpleGenericConstraintType.MakeInstantiatedType(_structArgWithDefaultCtorType, canon);
+                Assert.False(instantiatedType.CheckConstraints());
+
+                // Any type satisfies __UniversalCanon constraint
+                instantiatedType = _simpleGenericConstraintType.MakeInstantiatedType(_arg1Type, universalCanon);
+                Assert.True(instantiatedType.CheckConstraints());
+
+                instantiatedType = _simpleGenericConstraintType.MakeInstantiatedType(_structArgWithDefaultCtorType, universalCanon);
+                Assert.True(instantiatedType.CheckConstraints());
+            }
+
+            // Nested __UniversalCanon under invariant generic shape
+            // ComplexGenericConstraint2<T, U> where T : Arg2<Arg2<U>>
+            // T=Arg2<Arg2<int>>, U=__UniversalCanon → constraint is Arg2<Arg2<__UniversalCanon>>
+            {
+                TypeDesc arg2OfInt = _arg2Type.MakeInstantiatedType(intType);
+                TypeDesc arg2OfArg2OfInt = _arg2Type.MakeInstantiatedType(arg2OfInt);
+                instantiatedType = _complexGenericConstraint2Type.MakeInstantiatedType(arg2OfArg2OfInt, universalCanon);
+                Assert.True(instantiatedType.CheckConstraints());
+            }
+
+            // Array type args with __Canon in invariant position
+            // NonVariantInterfaceConstraint<T, U> where T : INonVariantGen<U>
+            // T=NonVariantGenImpl<string[]>, U=__Canon[] → constraint is INonVariantGen<__Canon[]>
+            // NonVariantGenImpl<string[]> implements INonVariantGen<string[]>
+            // string[] is a ref type, so string[] should be compatible with __Canon[]
+            {
+                TypeDesc stringArray = stringType.MakeArrayType();
+                TypeDesc canonArray = canon.MakeArrayType();
+                TypeDesc nonVariantGenImplOfStringArray = nonVariantGenImplType.MakeInstantiatedType(stringArray);
+                instantiatedType = nonVariantInterfaceConstraintType.MakeInstantiatedType(nonVariantGenImplOfStringArray, canonArray);
+                Assert.True(instantiatedType.CheckConstraints());
             }
         }
     }

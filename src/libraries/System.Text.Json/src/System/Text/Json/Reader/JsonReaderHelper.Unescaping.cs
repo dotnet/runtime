@@ -11,7 +11,7 @@ namespace System.Text.Json
 {
     internal static partial class JsonReaderHelper
     {
-        public static bool TryGetUnescapedBase64Bytes(ReadOnlySpan<byte> utf8Source, [NotNullWhen(true)] out byte[]? bytes)
+        public static unsafe bool TryGetUnescapedBase64Bytes(ReadOnlySpan<byte> utf8Source, [NotNullWhen(true)] out byte[]? bytes)
         {
             byte[]? unescapedArray = null;
 
@@ -27,7 +27,7 @@ namespace System.Text.Json
 
             bool result = TryDecodeBase64InPlace(utf8Unescaped, out bytes!);
 
-            if (unescapedArray != null)
+            if (unescapedArray is not null)
             {
                 utf8Unescaped.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray);
@@ -39,7 +39,7 @@ namespace System.Text.Json
         public static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         // TODO: Similar to escaping, replace the unescaping logic with publicly shipping APIs from https://github.com/dotnet/runtime/issues/27919
-        public static string GetUnescapedString(ReadOnlySpan<byte> utf8Source)
+        public static unsafe string GetUnescapedString(ReadOnlySpan<byte> utf8Source)
         {
             // The escaped name is always >= than the unescaped, so it is safe to use escaped name for the buffer length.
             int length = utf8Source.Length;
@@ -57,7 +57,7 @@ namespace System.Text.Json
 
             string utf8String = TranscodeHelper(utf8Unescaped);
 
-            if (pooledName != null)
+            if (pooledName is not null)
             {
                 utf8Unescaped.Clear();
                 ArrayPool<byte>.Shared.Return(pooledName);
@@ -66,7 +66,7 @@ namespace System.Text.Json
             return utf8String;
         }
 
-        public static byte[] GetUnescaped(ReadOnlySpan<byte> utf8Source)
+        public static unsafe byte[] GetUnescaped(ReadOnlySpan<byte> utf8Source)
         {
             // The escaped name is always >= than the unescaped, so it is safe to use escaped name for the buffer length.
             int length = utf8Source.Length;
@@ -82,7 +82,7 @@ namespace System.Text.Json
             byte[] propertyName = utf8Unescaped.Slice(0, written).ToArray();
             Debug.Assert(propertyName.Length is not 0);
 
-            if (pooledName != null)
+            if (pooledName is not null)
             {
                 new Span<byte>(pooledName, 0, written).Clear();
                 ArrayPool<byte>.Shared.Return(pooledName);
@@ -91,7 +91,7 @@ namespace System.Text.Json
             return propertyName;
         }
 
-        public static bool UnescapeAndCompare(ReadOnlySpan<byte> utf8Source, ReadOnlySpan<byte> other)
+        public static unsafe bool UnescapeAndCompare(ReadOnlySpan<byte> utf8Source, ReadOnlySpan<byte> other)
         {
             Debug.Assert(utf8Source.Length >= other.Length && utf8Source.Length / JsonConstants.MaxExpansionFactorWhileEscaping <= other.Length);
 
@@ -109,7 +109,7 @@ namespace System.Text.Json
 
             bool result = other.SequenceEqual(utf8Unescaped);
 
-            if (unescapedArray != null)
+            if (unescapedArray is not null)
             {
                 utf8Unescaped.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray);
@@ -118,7 +118,7 @@ namespace System.Text.Json
             return result;
         }
 
-        public static bool UnescapeAndCompare(ReadOnlySequence<byte> utf8Source, ReadOnlySpan<byte> other)
+        public static unsafe bool UnescapeAndCompare(ReadOnlySequence<byte> utf8Source, ReadOnlySpan<byte> other)
         {
             Debug.Assert(!utf8Source.IsSingleSegment);
             Debug.Assert(utf8Source.Length >= other.Length && utf8Source.Length / JsonConstants.MaxExpansionFactorWhileEscaping <= other.Length);
@@ -147,9 +147,9 @@ namespace System.Text.Json
 
             bool result = other.SequenceEqual(utf8Unescaped);
 
-            if (unescapedArray != null)
+            if (unescapedArray is not null)
             {
-                Debug.Assert(escapedArray != null);
+                Debug.Assert(escapedArray is not null);
                 utf8Unescaped.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray);
                 utf8Escaped.Clear();
@@ -159,7 +159,7 @@ namespace System.Text.Json
             return result;
         }
 
-        public static bool UnescapeAndCompareBothInputs(ReadOnlySpan<byte> utf8Source1, ReadOnlySpan<byte> utf8Source2)
+        public static unsafe bool UnescapeAndCompareBothInputs(ReadOnlySpan<byte> utf8Source1, ReadOnlySpan<byte> utf8Source2)
         {
             int index1 = utf8Source1.IndexOf(JsonConstants.BackSlash);
             int index2 = utf8Source2.IndexOf(JsonConstants.BackSlash);
@@ -188,13 +188,13 @@ namespace System.Text.Json
 
             bool result = utf8Unescaped1.SequenceEqual(utf8Unescaped2);
 
-            if (unescapedArray1 != null)
+            if (unescapedArray1 is not null)
             {
                 utf8Unescaped1.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray1);
             }
 
-            if (unescapedArray2 != null)
+            if (unescapedArray2 is not null)
             {
                 utf8Unescaped2.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray2);
@@ -215,7 +215,7 @@ namespace System.Text.Json
             return true;
         }
 
-        public static bool TryDecodeBase64(ReadOnlySpan<byte> utf8Unescaped, [NotNullWhen(true)] out byte[]? bytes)
+        public static unsafe bool TryDecodeBase64(ReadOnlySpan<byte> utf8Unescaped, [NotNullWhen(true)] out byte[]? bytes)
         {
             byte[]? pooledArray = null;
 
@@ -229,7 +229,7 @@ namespace System.Text.Json
             {
                 bytes = null;
 
-                if (pooledArray != null)
+                if (pooledArray is not null)
                 {
                     byteSpan.Clear();
                     ArrayPool<byte>.Shared.Return(pooledArray);
@@ -241,7 +241,7 @@ namespace System.Text.Json
 
             bytes = byteSpan.Slice(0, bytesWritten).ToArray();
 
-            if (pooledArray != null)
+            if (pooledArray is not null)
             {
                 byteSpan.Clear();
                 ArrayPool<byte>.Shared.Return(pooledArray);
@@ -254,21 +254,7 @@ namespace System.Text.Json
         {
             try
             {
-#if NET
                 return s_utf8Encoding.GetString(utf8Unescaped);
-#else
-                if (utf8Unescaped.IsEmpty)
-                {
-                    return string.Empty;
-                }
-                unsafe
-                {
-                    fixed (byte* bytePtr = utf8Unescaped)
-                    {
-                        return s_utf8Encoding.GetString(bytePtr, utf8Unescaped.Length);
-                    }
-                }
-#endif
             }
             catch (DecoderFallbackException ex)
             {
@@ -285,22 +271,7 @@ namespace System.Text.Json
         {
             try
             {
-#if NET
                 return s_utf8Encoding.GetChars(utf8Unescaped, destination);
-#else
-                if (utf8Unescaped.IsEmpty)
-                {
-                    return 0;
-                }
-                unsafe
-                {
-                    fixed (byte* srcPtr = utf8Unescaped)
-                    fixed (char* destPtr = destination)
-                    {
-                        return s_utf8Encoding.GetChars(srcPtr, utf8Unescaped.Length, destPtr, destination.Length);
-                    }
-                }
-#endif
             }
             catch (DecoderFallbackException dfe)
             {
@@ -329,21 +300,7 @@ namespace System.Text.Json
 #else
             try
             {
-#if NET
-                s_utf8Encoding.GetCharCount(utf8Buffer);
-#else
-                if (utf8Buffer.IsEmpty)
-                {
-                    return;
-                }
-                unsafe
-                {
-                    fixed (byte* srcPtr = utf8Buffer)
-                    {
-                        s_utf8Encoding.GetCharCount(srcPtr, utf8Buffer.Length);
-                    }
-                }
-#endif
+                _ = s_utf8Encoding.GetCharCount(utf8Buffer);
             }
             catch (DecoderFallbackException ex)
             {
@@ -361,21 +318,7 @@ namespace System.Text.Json
         {
             try
             {
-#if NET
                 return s_utf8Encoding.GetByteCount(text);
-#else
-                if (text.IsEmpty)
-                {
-                    return 0;
-                }
-                unsafe
-                {
-                    fixed (char* charPtr = text)
-                    {
-                        return s_utf8Encoding.GetByteCount(charPtr, text.Length);
-                    }
-                }
-#endif
             }
             catch (EncoderFallbackException ex)
             {
@@ -392,23 +335,7 @@ namespace System.Text.Json
         {
             try
             {
-#if NET
                 return s_utf8Encoding.GetBytes(text, dest);
-#else
-                if (text.IsEmpty)
-                {
-                    return 0;
-                }
-
-                unsafe
-                {
-                    fixed (char* charPtr = text)
-                    fixed (byte* destPtr = dest)
-                    {
-                        return s_utf8Encoding.GetBytes(charPtr, text.Length, destPtr, dest.Length);
-                    }
-                }
-#endif
             }
             catch (EncoderFallbackException ex)
             {
@@ -423,22 +350,7 @@ namespace System.Text.Json
 
         internal static string GetTextFromUtf8(ReadOnlySpan<byte> utf8Text)
         {
-#if NET
             return s_utf8Encoding.GetString(utf8Text);
-#else
-            if (utf8Text.IsEmpty)
-            {
-                return string.Empty;
-            }
-
-            unsafe
-            {
-                fixed (byte* bytePtr = utf8Text)
-                {
-                    return s_utf8Encoding.GetString(bytePtr, utf8Text.Length);
-                }
-            }
-#endif
         }
 
         internal static void Unescape(ReadOnlySpan<byte> source, Span<byte> destination, out int written)

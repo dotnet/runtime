@@ -1,5 +1,4 @@
-// FIXME: SIMD causes compile errors on WASI
-#ifdef HOST_BROWSER
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
 #ifndef INTERP_WASM_SIMD_INTRINSIC_V_P
 #define INTERP_WASM_SIMD_INTRINSIC_V_P(name, arg1, c_intrinsic, wasm_opcode) INTERP_SIMD_INTRINSIC_P_P(INTERP_SIMD_INTRINSIC_ ## name ## arg1, _mono_interp_simd_ ## c_intrinsic, wasm_opcode)
 #endif
@@ -27,7 +26,7 @@
 #ifndef INTERP_WASM_SIMD_INTRINSIC_V_C3
 #define INTERP_WASM_SIMD_INTRINSIC_V_C3(name, arg1, c_function, wasm_opcode) INTERP_SIMD_INTRINSIC_P_PPP(INTERP_SIMD_INTRINSIC_ ## name ## arg1, c_function, wasm_opcode)
 #endif
-#else // HOST_BROWSER
+#else // defined(HOST_BROWSER) || defined(HOST_WASI)
 #define INTERP_WASM_SIMD_INTRINSIC_V_P(name, arg1, c_intrinsic, wasm_opcode)
 #define INTERP_WASM_SIMD_INTRINSIC_V_V(name, arg1, c_intrinsic, wasm_opcode)
 #define INTERP_WASM_SIMD_INTRINSIC_V_C1(name, arg1, c_function, wasm_opcode)
@@ -37,7 +36,7 @@
 #define INTERP_WASM_SIMD_INTRINSIC_V_C2(name, arg1, c_function, wasm_opcode)
 #define INTERP_WASM_SIMD_INTRINSIC_V_VVV(name, arg1, c_intrinsic, wasm_opcode)
 #define INTERP_WASM_SIMD_INTRINSIC_V_C3(name, arg1, c_function, wasm_opcode)
-#endif // HOST_BROWSER
+#endif // defined(HOST_BROWSER) || defined(HOST_WASI)
 
 // The third argument is the wasm opcode that corresponds to this simd intrinsic, if any.
 // Specify -1 if there is no exact 1:1 mapping (the opcode can still be implemented manually in the jiterpreter.)

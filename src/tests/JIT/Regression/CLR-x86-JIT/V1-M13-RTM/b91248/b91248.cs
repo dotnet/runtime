@@ -5,6 +5,7 @@
 //COMMAND LINE: csc /nologo /optimize- /debug- /w:0 bug.cs
 using System;
 using Xunit;
+using TestLibrary;
 public struct AA
 {
     static void Test(int param, __arglist)
@@ -17,7 +18,7 @@ public struct AA
             aa[param, Math.Min(0, 1)] = 0;
         } while ((new bool[2, 2])[param, param]);
     }
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
     public static void TestEntryPoint()
     {
         Test(0, __arglist());

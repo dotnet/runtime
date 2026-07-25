@@ -12,15 +12,15 @@ namespace System.Diagnostics.Eventing.Reader
     /// </summary>
     public class EventLogQuery
     {
-        public EventLogQuery(string path, PathType pathType)
+        public EventLogQuery(string? path, PathType pathType)
             : this(path, pathType, null)
         {
         }
 
-        public EventLogQuery(string path, PathType pathType, string query)
+        public EventLogQuery(string? path, PathType pathType, string? query)
         {
             Session = EventLogSession.GlobalSession;
-            Path = path;   // can be null
+            Path = path;
             ThePathType = pathType;
 
             if (query == null)
@@ -40,10 +40,10 @@ namespace System.Diagnostics.Eventing.Reader
 
         public bool ReverseDirection { get; set; }
 
-        internal string Path { get; }
+        internal string? Path { get; }
 
         internal PathType ThePathType { get; }
 
-        internal string Query { get; }
+        internal string? Query { get; }
     }
 }

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -11,6 +12,12 @@ namespace System
     internal static partial class Number
     {
         public static void Dragon4<TNumber>(TNumber value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
+            where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+            => Dragon4(value, cutoffNumber, isSignificantDigits, ref number, out _);
+
+        // isExact reports whether the emitted digits represent the value exactly (no rounding error), which lets
+        // callers distinguish an exact short result from one whose rounding dropped trailing digits.
+        public static void Dragon4<TNumber>(TNumber value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number, out bool isExact)
             where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
         {
             TNumber v = TNumber.IsNegative(value) ? -value : value;
@@ -26,7 +33,7 @@ namespace System
             if ((mantissa >> TNumber.DenormalMantissaBits) != 0)
             {
                 mantissaHighBitIdx = TNumber.DenormalMantissaBits;
-                hasUnequalMargins = (mantissa == (1U << TNumber.DenormalMantissaBits));
+                hasUnequalMargins = (mantissa == (1UL << TNumber.DenormalMantissaBits));
             }
             else
             {
@@ -34,7 +41,7 @@ namespace System
                 mantissaHighBitIdx = (uint)BitOperations.Log2(mantissa);
             }
 
-            int length = (int)(Dragon4(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits, number.Digits, out int decimalExponent));
+            int length = (int)(Dragon4(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits, number.Digits, out int decimalExponent, out isExact));
 
             number.Scale = decimalExponent + 1;
             number.Digits[length] = (byte)('\0');
@@ -53,7 +60,7 @@ namespace System
         //  "Printing Floating-Point Numbers Quickly and Accurately"
         //    Burger and Dybvig
         //    http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.72.4656&rep=rep1&type=pdf
-        private static unsafe uint Dragon4(ulong mantissa, int exponent, uint mantissaHighBitIdx, bool hasUnequalMargins, int cutoffNumber, bool isSignificantDigits, Span<byte> buffer, out int decimalExponent)
+        private static uint Dragon4(ulong mantissa, int exponent, uint mantissaHighBitIdx, bool hasUnequalMargins, int cutoffNumber, bool isSignificantDigits, Span<byte> buffer, out int decimalExponent, out bool isExact)
         {
             int curDigit = 0;
 
@@ -76,11 +83,12 @@ namespace System
 
             // For normalized IEEE floating-point values, each time the exponent is incremented the margin also doubles.
             // That creates a subset of transition numbers where the high margin is twice the size of the low margin.
-            BigInteger* pScaledMarginHigh;
             BigInteger optionalMarginHigh;
 
             if (hasUnequalMargins)
             {
+                // The high and low margins are different
+
                 if (exponent > 0)   // We have no fractional component
                 {
                     // 1) Expand the input value by multiplying out the mantissa and exponent.
@@ -90,16 +98,16 @@ namespace System
 
                     // scaledValue      = 2 * 2 * mantissa * 2^exponent
                     BigInteger.SetUInt64(out scaledValue, 4 * mantissa);
-                    scaledValue.ShiftLeft((uint)(exponent));
+                    scaledValue.ShiftLeft(exponent);
 
                     // scale            = 2 * 2 * 1
                     BigInteger.SetUInt32(out scale, 4);
 
                     // scaledMarginLow  = 2 * 2^(exponent - 1)
-                    BigInteger.Pow2((uint)(exponent), out scaledMarginLow);
+                    BigInteger.Pow2(exponent, out scaledMarginLow);
 
                     // scaledMarginHigh = 2 * 2 * 2^(exponent + 1)
-                    BigInteger.Pow2((uint)(exponent + 1), out optionalMarginHigh);
+                    BigInteger.Pow2(exponent + 1, out optionalMarginHigh);
                 }
                 else                // We have a fractional exponent
                 {
@@ -109,7 +117,7 @@ namespace System
                     BigInteger.SetUInt64(out scaledValue, 4 * mantissa);
 
                     // scale            = 2 * 2 * 2^(-exponent)
-                    BigInteger.Pow2((uint)(-exponent + 2), out scale);
+                    BigInteger.Pow2(-exponent + 2, out scale);
 
                     // scaledMarginLow  = 2 * 2^(-1)
                     BigInteger.SetUInt32(out scaledMarginLow, 1);
@@ -117,12 +125,11 @@ namespace System
                     // scaledMarginHigh = 2 * 2 * 2^(-1)
                     BigInteger.SetUInt32(out optionalMarginHigh, 2);
                 }
-
-                // The high and low margins are different
-                pScaledMarginHigh = &optionalMarginHigh;
             }
             else
             {
+                // The high and low margins are equal
+
                 if (exponent > 0)   // We have no fractional component
                 {
                     // 1) Expand the input value by multiplying out the mantissa and exponent.
@@ -132,13 +139,13 @@ namespace System
 
                     // scaledValue     = 2 * mantissa*2^exponent
                     BigInteger.SetUInt64(out scaledValue, 2 * mantissa);
-                    scaledValue.ShiftLeft((uint)(exponent));
+                    scaledValue.ShiftLeft(exponent);
 
                     // scale           = 2 * 1
                     BigInteger.SetUInt32(out scale, 2);
 
                     // scaledMarginLow = 2 * 2^(exponent-1)
-                    BigInteger.Pow2((uint)(exponent), out scaledMarginLow);
+                    BigInteger.Pow2(exponent, out scaledMarginLow);
                 }
                 else                // We have a fractional exponent
                 {
@@ -148,15 +155,18 @@ namespace System
                     BigInteger.SetUInt64(out scaledValue, 2 * mantissa);
 
                     // scale           = 2 * 2^(-exponent)
-                    BigInteger.Pow2((uint)(-exponent + 1), out scale);
+                    BigInteger.Pow2(-exponent + 1, out scale);
 
                     // scaledMarginLow = 2 * 2^(-1)
                     BigInteger.SetUInt32(out scaledMarginLow, 1);
                 }
 
-                // The high and low margins are equal
-                pScaledMarginHigh = &scaledMarginLow;
+                // This is unused for this path, but we need it viewed as "initialized" so the
+                // scaledMarginHigh tracking works as expected.
+                Unsafe.SkipInit(out optionalMarginHigh);
             }
+
+            scoped ref BigInteger scaledMarginHigh = ref (hasUnequalMargins ? ref optionalMarginHigh : ref scaledMarginLow);
 
             // Compute an estimate for digitExponent that will be correct or undershoot by one.
             //
@@ -191,9 +201,9 @@ namespace System
                 scaledValue.Multiply(ref pow10);
                 scaledMarginLow.Multiply(ref pow10);
 
-                if (pScaledMarginHigh != &scaledMarginLow)
+                if (!Unsafe.AreSame(ref scaledMarginHigh, ref scaledMarginLow))
                 {
-                    BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
+                    BigInteger.Multiply(ref scaledMarginLow, 2, out scaledMarginHigh);
                 }
             }
 
@@ -206,7 +216,7 @@ namespace System
                 // take IEEE unbiased rounding into account so we can return
                 // shorter strings for various edge case values like 1.23E+22
 
-                BigInteger.Add(ref scaledValue, ref *pScaledMarginHigh, out BigInteger scaledValueHigh);
+                BigInteger.Add(ref scaledValue, ref scaledMarginHigh, out BigInteger scaledValueHigh);
                 int cmpHigh = BigInteger.Compare(ref scaledValueHigh, ref scale);
                 estimateTooLow = isEven ? (cmpHigh >= 0) : (cmpHigh > 0);
             }
@@ -229,9 +239,9 @@ namespace System
                 scaledValue.Multiply10();
                 scaledMarginLow.Multiply10();
 
-                if (pScaledMarginHigh != &scaledMarginLow)
+                if (!Unsafe.AreSame(ref scaledMarginHigh, ref scaledMarginLow))
                 {
-                    BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
+                    BigInteger.Multiply(ref scaledMarginLow, 2, out scaledMarginHigh);
                 }
             }
 
@@ -271,7 +281,7 @@ namespace System
             // This requires the highest block of the denominator to be less than or equal to 429496729 which is the highest number that can be multiplied by 10 without overflowing to a new block.
 
             Debug.Assert(scale.GetLength() > 0);
-            uint hiBlock = scale.GetBlock((uint)(scale.GetLength() - 1));
+            uint hiBlock = scale.GetBlock(scale.GetLength() - 1);
 
             if ((hiBlock < 8) || (hiBlock > 429496729))
             {
@@ -280,17 +290,17 @@ namespace System
                 // This is safe because (2^28 - 1) = 268435455 which is less than 429496729.
                 // This means that all values with a highest bit at index 27 are within range.
                 Debug.Assert(hiBlock != 0);
-                uint hiBlockLog2 = (uint)BitOperations.Log2(hiBlock);
+                int hiBlockLog2 = BitOperations.Log2(hiBlock);
                 Debug.Assert((hiBlockLog2 < 3) || (hiBlockLog2 > 27));
-                uint shift = (32 + 27 - hiBlockLog2) % 32;
+                int shift = (32 + 27 - hiBlockLog2) % 32;
 
                 scale.ShiftLeft(shift);
                 scaledValue.ShiftLeft(shift);
                 scaledMarginLow.ShiftLeft(shift);
 
-                if (pScaledMarginHigh != &scaledMarginLow)
+                if (!Unsafe.AreSame(ref scaledMarginHigh, ref scaledMarginLow))
                 {
-                    BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
+                    BigInteger.Multiply(ref scaledMarginLow, 2, out scaledMarginHigh);
                 }
             }
 
@@ -314,7 +324,7 @@ namespace System
                     Debug.Assert(outputDigit < 10);
 
                     // update the high end of the value
-                    BigInteger.Add(ref scaledValue, ref *pScaledMarginHigh, out BigInteger scaledValueHigh);
+                    BigInteger.Add(ref scaledValue, ref scaledMarginHigh, out BigInteger scaledValueHigh);
 
                     // stop looping if we are far enough away from our neighboring values or if we have reached the cutoff digit
                     int cmpLow = BigInteger.Compare(ref scaledValue, ref scaledMarginLow);
@@ -344,9 +354,9 @@ namespace System
                     scaledValue.Multiply10();
                     scaledMarginLow.Multiply10();
 
-                    if (pScaledMarginHigh != &scaledMarginLow)
+                    if (!Unsafe.AreSame(ref scaledMarginHigh, ref scaledMarginLow))
                     {
-                        BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
+                        BigInteger.Multiply(ref scaledMarginLow, 2, out scaledMarginHigh);
                     }
 
                     digitExponent--;
@@ -404,8 +414,12 @@ namespace System
                 curDigit++;
 
                 // return the number of digits output
+                isExact = scaledValue.IsZero();
                 return (uint)curDigit;
             }
+
+            // The value is captured exactly when no remainder is left; otherwise the final digit is rounded below.
+            isExact = scaledValue.IsZero();
 
             // round off the final digit
             // default to rounding down if value got too close to 0

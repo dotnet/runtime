@@ -79,7 +79,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
             if (_matchMode != SubsetMatchingMode.Subsequence)
             {
-                string sMatchMode = null;
+                string? sMatchMode = null;
                 switch (_matchMode)
                 {
                     case SubsetMatchingMode.Subsequence:

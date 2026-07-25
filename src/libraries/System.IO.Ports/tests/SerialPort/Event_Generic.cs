@@ -21,7 +21,7 @@ namespace System.IO.Ports.Tests
         #region Test Cases
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Event_Generic), nameof(HasNullModem))]
         public void EventHandlers_CalledSerially()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -223,7 +223,7 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Event_Generic), nameof(HasNullModem))]
         public void Thread_In_PinChangedEvent()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -259,7 +259,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Event_Generic), nameof(HasNullModem))]
         public void Thread_In_ReceivedEvent()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -299,7 +299,7 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Event_Generic), nameof(HasNullModem))]
         public void Thread_In_ErrorEvent()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

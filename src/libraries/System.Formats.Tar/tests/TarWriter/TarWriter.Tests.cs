@@ -60,6 +60,19 @@ namespace System.Formats.Tar.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new TarWriter(archiveStream, (TarEntryFormat)int.MaxValue));
         }
 
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void Constructor_Options_Format(TarEntryFormat format)
+        {
+            using MemoryStream archiveStream = new MemoryStream();
+            TarWriterOptions options = new TarWriterOptions() { Format = format };
+            using TarWriter writer = new TarWriter(archiveStream, options, leaveOpen: true);
+            Assert.Equal(format, writer.Format);
+        }
+
         [Fact]
         public void Constructors_UnwritableStream_Throws()
         {
@@ -233,6 +246,12 @@ namespace System.Formats.Tar.Tests
             archiveStream.Seek(sizeLocation, SeekOrigin.Begin);
             archiveStream.Write(replacement);
 
+            // Also fixup checksum
+            int checksumLocation = 148;
+            ReadOnlySpan<byte> checksumReplacement = "04116\0\0\0"u8; // 2126 in octal
+            archiveStream.Seek(checksumLocation, SeekOrigin.Begin);
+            archiveStream.Write(checksumReplacement);
+
             archiveStream.Position = 0;
             using TarReader reader = new(archiveStream);
 
@@ -368,7 +387,7 @@ namespace System.Formats.Tar.Tests
             if (entryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
                 entry.DataStream = new MemoryStream();
-                byte[] buffer = [ 72, 101, 108, 108, 111 ]; // values don't matter, only length (5)
+                byte[] buffer = [72, 101, 108, 108, 111]; // values don't matter, only length (5)
 
                 // '00000000005\0' = 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 48 + 53 + 0 = 533
                 entry.DataStream.Write(buffer);

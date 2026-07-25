@@ -313,7 +313,7 @@ namespace System.Reflection.Emit
             int i;
             for (i = 0; i < validElementsInArray; ++i)
             {
-                if (string.Compare(className.DisplayName, arr[i].FullName, true, CultureInfo.InvariantCulture) == 0)
+                if (string.Equals(className.DisplayName, arr[i].FullName, StringComparison.InvariantCultureIgnoreCase))
                 {
                     return arr[i];
                 }
@@ -326,7 +326,7 @@ namespace System.Reflection.Emit
             int i;
             for (i = 0; i < validElementsInArray; ++i)
             {
-                if (string.Compare(className.DisplayName, arr[i].Name, true, CultureInfo.InvariantCulture) == 0)
+                if (string.Equals(className.DisplayName, arr[i].Name, StringComparison.InvariantCultureIgnoreCase))
                     return arr[i];
             }
             return null;

@@ -21,26 +21,22 @@ class GitHub118072
     [TestMethod]
     public static void RunTest()
     {
-        Type current = typeof(object);
-
         GetMI1().MakeGenericMethod(typeof(object)).Invoke(null, []);
-        current = FillCache(current);
+        FlushCache();
         GetMI2().MakeGenericMethod(typeof(object)).Invoke(null, []);
-        current = FillCache(current);
+        FlushCache();
         GetMI3().MakeGenericMethod(typeof(object)).Invoke(null, []);
-        current = FillCache(current);
+        FlushCache();
         GetMI4().MakeGenericMethod(typeof(object)).Invoke(null, []);
 
-        static Type FillCache(Type current)
+        static void FlushCache()
         {
-            for (int i = 0; i < 400; i++)
+            // Make sure the cached type loader contexts are flushed
+            for (int j = 0; j < 10; j++)
             {
-                Type next = typeof(MyClass<>).MakeGenericType(current);
-                Activator.CreateInstance(next);
-                current = next;
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
             }
-
-            return current;
         }
     }
 

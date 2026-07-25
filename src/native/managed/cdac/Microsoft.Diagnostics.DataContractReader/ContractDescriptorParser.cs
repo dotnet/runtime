@@ -35,11 +35,10 @@ public partial class ContractDescriptorParser
     [JsonSerializable(typeof(ContractDescriptor))]
     [JsonSerializable(typeof(int?))]
     [JsonSerializable(typeof(string))]
-    [JsonSerializable(typeof(Dictionary<string, int>))]
+    [JsonSerializable(typeof(Dictionary<string, string>))]
     [JsonSerializable(typeof(Dictionary<string, TypeDescriptor>))]
     [JsonSerializable(typeof(Dictionary<string, FieldDescriptor>))]
     [JsonSerializable(typeof(Dictionary<string, GlobalDescriptor>))]
-    [JsonSerializable(typeof(Dictionary<string, string>))]
     [JsonSerializable(typeof(TypeDescriptor))]
     [JsonSerializable(typeof(FieldDescriptor))]
     [JsonSerializable(typeof(GlobalDescriptor))]
@@ -62,20 +61,20 @@ public partial class ContractDescriptorParser
     {
         public int? Version { get; set; }
         public string? Baseline { get; set; }
-        public Dictionary<string, int>? Contracts { get; set; }
+        public Dictionary<string, string>? Contracts { get; set; }
 
         public Dictionary<string, TypeDescriptor>? Types { get; set; }
 
         public Dictionary<string, GlobalDescriptor>? Globals { get; set; }
 
-        public Dictionary<string, string>? GlobalStrings { get; set; }
+        public Dictionary<string, GlobalDescriptor>? SubDescriptors { get; set; }
 
         [JsonExtensionData]
         public Dictionary<string, JsonElement>? Extras { get; set; }
 
         public override string ToString()
         {
-            return $"Version: {Version}, Baseline: {Baseline}, Contracts: {Contracts?.Count}, Types: {Types?.Count}, Globals: {Globals?.Count}, GlobalStrings: {GlobalStrings?.Count}";
+            return $"Version: {Version}, Baseline: {Baseline}, Contracts: {Contracts?.Count}, Types: {Types?.Count}, Globals: {Globals?.Count}, SubDescriptors: {SubDescriptors?.Count}";
         }
 
     }

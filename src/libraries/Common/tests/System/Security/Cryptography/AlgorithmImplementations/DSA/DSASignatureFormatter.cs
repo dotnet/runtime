@@ -2,15 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Cryptography.Tests;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
-    public partial class DSASignatureFormatterTests : AsymmetricSignatureFormatterTests
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
+    public abstract class DSASignatureFormatterTests : AsymmetricSignatureFormatterTests
     {
+        protected abstract DSAProvider DSAFactory { get; }
+
         [Fact]
-        public static void VerifySignature_SHA1()
+        public void VerifySignature_SHA1()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -28,7 +31,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public static void InvalidHashAlgorithm()
+        public void InvalidHashAlgorithm()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -50,7 +53,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public static void VerifyKnownSignature()
+        public void VerifyKnownSignature()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -68,14 +71,6 @@ namespace System.Security.Cryptography.Dsa.Tests
                 // Negative case
                 signature[signature.Length - 1] ^= 0xff;
                 Assert.False(deformatter.VerifySignature(hash, signature));
-            }
-        }
-
-        public static bool SupportsFips186_3
-        {
-            get
-            {
-                return DSAFactory.SupportsFips186_3;
             }
         }
     }

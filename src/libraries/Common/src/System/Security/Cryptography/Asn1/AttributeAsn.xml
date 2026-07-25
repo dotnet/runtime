@@ -2,7 +2,8 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="AttributeAsn"
-  namespace="System.Security.Cryptography.Asn1">
+  namespace="System.Security.Cryptography.Asn1"
+  emitType="both">
 
   <!--
     https://tools.ietf.org/html/rfc5652#section-5.3
@@ -15,7 +16,7 @@
     AttributeValue ::= ANY
   -->
   <asn:ObjectIdentifier name="AttrType" />
-  <asn:SetOf name="AttrValues">
+  <asn:SetOf name="AttrValues" valueName="GetAttrValues">
 	  <asn:AnyValue />
   </asn:SetOf>
 </asn:Sequence>

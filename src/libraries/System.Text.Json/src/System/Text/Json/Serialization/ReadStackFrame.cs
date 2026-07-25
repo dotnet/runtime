@@ -114,18 +114,12 @@ namespace System.Text.Json
         /// <summary>
         /// Is the current object a Dictionary.
         /// </summary>
-        public bool IsProcessingDictionary()
-        {
-            return JsonTypeInfo.Kind is JsonTypeInfoKind.Dictionary;
-        }
+        public bool IsProcessingDictionary() => JsonTypeInfo.Kind is JsonTypeInfoKind.Dictionary;
 
         /// <summary>
         /// Is the current object an Enumerable.
         /// </summary>
-        public bool IsProcessingEnumerable()
-        {
-            return JsonTypeInfo.Kind is JsonTypeInfoKind.Enumerable;
-        }
+        public bool IsProcessingEnumerable() => JsonTypeInfo.Kind is JsonTypeInfoKind.Enumerable;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MarkPropertyAsRead(JsonPropertyInfo propertyInfo)
@@ -149,7 +143,7 @@ namespace System.Text.Json
         {
             Debug.Assert(AssignedProperties is null);
 
-            if (typeInfo.ShouldTrackRequiredProperties || typeInfo.Options.AllowDuplicateProperties is false)
+            if (typeInfo.ShouldTrackRequiredProperties || !typeInfo.Options.AllowDuplicateProperties)
             {
                 // This may be slightly larger than required (e.g. if there's an extension property)
                 AssignedProperties = new BitArray(typeInfo.Properties.Count);

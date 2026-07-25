@@ -18,6 +18,9 @@
 // Debug: Outputs <9007199254740992, 1, 1, 1>
 // Release: Outputs <0, 1, 1, 1>
 
+
+namespace Runtime_106142;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -26,43 +29,40 @@ using Xunit;
 
 public class Runtime_106142
 {
-    [Fact]
+    [ConditionalFact(typeof(Avx512F), nameof(Avx512F.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx512F.IsSupported)
-        {
-            Avx512FRotateLeftTest();
-            Avx512FRotateRightTest();
-        }
+        Avx512FRotateLeftTest();
+        Avx512FRotateRightTest();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ShiftRightLogicalTest()
     {
-        var vr17 = Vector128.CreateScalar(2558356441U);
-        var vr18 = Vector128.Create(0, 3113514718U, 0, 0);
-        var vr19 = Sse2.ShiftRightLogical(vr17, vr18);
-        if (Sse2.ConvertToUInt32(vr19) != 0)
-            throw new InvalidOperationException();
+    var vr17 = Vector128.CreateScalar(2558356441U);
+    var vr18 = Vector128.Create(0, 3113514718U, 0, 0);
+    var vr19 = Sse2.ShiftRightLogical(vr17, vr18);
+    if (Sse2.ConvertToUInt32(vr19) != 0)
+        throw new InvalidOperationException();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Avx512FRotateLeftTest()
     {
-        var vr7 = Vector256.Create(1, 0, 0, 0);
-        var vr8 = Vector256.CreateScalar(18446744073709551614UL);
-        Vector256<long> vr9 = Avx512F.VL.RotateLeftVariable(vr7, vr8);
-        if (vr9.GetElement(0) != 4611686018427387904)
-            throw new InvalidOperationException();
+    var vr7 = Vector256.Create(1, 0, 0, 0);
+    var vr8 = Vector256.CreateScalar(18446744073709551614UL);
+    Vector256<long> vr9 = Avx512F.VL.RotateLeftVariable(vr7, vr8);
+    if (vr9.GetElement(0) != 4611686018427387904)
+        throw new InvalidOperationException();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Avx512FRotateRightTest()
     {
-        var vr2 = Vector256.Create<long>(1);
-        var vr3 = Vector256.CreateScalar(9945469575827037067UL);
-        Vector256<long> vr4 = Avx512F.VL.RotateRightVariable(vr2, vr3);
-        if (vr4.GetElement(0) != 9007199254740992)
-            throw new InvalidOperationException();
+    var vr2 = Vector256.Create<long>(1);
+    var vr3 = Vector256.CreateScalar(9945469575827037067UL);
+    Vector256<long> vr4 = Avx512F.VL.RotateRightVariable(vr2, vr3);
+    if (vr4.GetElement(0) != 9007199254740992)
+        throw new InvalidOperationException();
     }
 }

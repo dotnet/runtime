@@ -60,9 +60,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType)
+        internal static void ThrowArgument_TypeContainsReferences(Type targetType)
         {
-            throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, targetType));
+            throw new ArgumentException(SR.Format(SR.Argument_TypeContainsReferences, targetType));
         }
 
         [DoesNotReturn]
@@ -258,12 +258,6 @@ namespace System
         internal static void ThrowArgument_CannotReshapeNonContiguousOrDense()
         {
             throw new ArgumentException(SR.Argument_CannotReshapeNonContiguousOrDense);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowArgument_MinGreaterThanMax()
-        {
-            throw new ArgumentException(SR.Argument_MinGreaterThanMax);
         }
 
         [DoesNotReturn]

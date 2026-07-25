@@ -1,0 +1,37 @@
+trigger: none
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - eng/pipelines/**
+    - src/coreclr/jit/**
+    - src/tests/Common/GenerateHWIntrinsicTests/**
+    - src/tests/JIT/HardwareIntrinsics/**
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
+
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    isOfficialBuild: false
+    stages:
+    - stage: Build
+      jobs:
+      - template: /eng/pipelines/coreclr/templates/jit-hardware-intrinsics-common.yml
+        parameters:
+          platforms:
+            - windows_x86
+            - windows_x64
+          testBuildArgs: 'tree JIT/HardwareIntrinsics'
+
+      - template: /eng/pipelines/coreclr/templates/jit-hardware-intrinsics-common.yml
+        parameters:
+          platforms:
+            - linux_arm
+            - linux_x64
+            - osx_arm64
+          testBuildArgs: '-tree:JIT/HardwareIntrinsics'

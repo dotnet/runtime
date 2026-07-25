@@ -13,7 +13,7 @@ namespace SerializerTrimmingTest
     {
         static int Main(string[] args)
         {
-            string json = @"{""Key"":1}";
+            string json = """{"Key":1}""";
             object obj = JsonSerializer.Deserialize(json, typeof(IReadOnlyDictionary<string, int>));
             if (!(TestHelper.AssertCollectionAndSerialize<IReadOnlyDictionary<string, int>>(obj, json)))
             {

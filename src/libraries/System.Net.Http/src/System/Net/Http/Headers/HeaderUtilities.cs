@@ -324,7 +324,7 @@ namespace System.Net.Http.Headers
             return long.TryParse(value.AsSpan(offset, length), NumberStyles.None, CultureInfo.InvariantCulture, out result);
         }
 
-        internal static void DumpHeaders(ref ValueStringBuilder sb, params HttpHeaders?[] headers)
+        internal static void DumpHeaders(ref ValueStringBuilder sb, params ReadOnlySpan<HttpHeaders?> headers)
         {
             // Dumps all headers in the following format:
             // {

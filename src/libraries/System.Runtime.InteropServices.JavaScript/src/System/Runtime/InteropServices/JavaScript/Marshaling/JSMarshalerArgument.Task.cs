@@ -357,7 +357,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 else
                 {
                     T result = task.Result;
-                    ToJS(result);
+                    marshaler(ref this, result);
                     slot.ElementType = slot.Type;
                     slot.Type = MarshalerType.TaskResolved;
                     return;
@@ -425,7 +425,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
             // Otherwise this is JSExport return value and we can't use the args buffer, because the args buffer arrived in async message and nobody is reading after this.
-            // In such case the JS side already pre-created the Promise and we have to use it, to resolve it in separate call via `mono_wasm_resolve_or_reject_promise_post`
+            // In such case the JS side already pre-created the Promise and we have to use it, to resolve it in separate call via `SystemInteropJS_ResolveOrRejectPromisePost`
             // there is JSVHandle in this arg
             return false;
         }
@@ -441,7 +441,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private sealed record HolderAndMarshaler<T>(JSObject TaskHolder, ArgumentToJSCallback<T> Marshaler);
 
-        private static void RejectPromise(JSObject holder, Exception ex)
+        private static unsafe void RejectPromise(JSObject holder, Exception ex)
         {
             holder.AssertNotDisposed();
 
@@ -476,7 +476,7 @@ namespace System.Runtime.InteropServices.JavaScript
             JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
         }
 
-        private static void ResolveVoidPromise(JSObject holder)
+        private static unsafe void ResolveVoidPromise(JSObject holder)
         {
             holder.AssertNotDisposed();
 
@@ -510,7 +510,7 @@ namespace System.Runtime.InteropServices.JavaScript
             JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
         }
 
-        private static void ResolvePromise<T>(JSObject holder, T value, ArgumentToJSCallback<T> marshaler)
+        private static unsafe void ResolvePromise<T>(JSObject holder, T value, ArgumentToJSCallback<T> marshaler)
         {
             holder.AssertNotDisposed();
 

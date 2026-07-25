@@ -1,7 +1,7 @@
 <!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
 <Project>
   <PropertyGroup>
-    <WasiNativeWorkload Condition="'$(WasiNativeWorkload)' == ''">net10.0</WasiNativeWorkload>
-    <WasiNativeWorkload10>true</WasiNativeWorkload10>
+    <WasiNativeWorkload Condition="'$(WasiNativeWorkload)' == ''">net11.0</WasiNativeWorkload>
+    <WasiNativeWorkload11>true</WasiNativeWorkload11>
   </PropertyGroup>
 </Project>

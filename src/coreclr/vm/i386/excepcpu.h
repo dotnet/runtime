@@ -33,59 +33,6 @@
     }
 #endif // TARGET_WINDOWS
 
-#ifndef FEATURE_EH_FUNCLETS
-class Thread;
-
-#define INSTALL_EXCEPTION_HANDLING_RECORD(record)               \
-    {                                                           \
-        PEXCEPTION_REGISTRATION_RECORD __record = (record);     \
-        _ASSERTE(__record < GetCurrentSEHRecord());             \
-        INSTALL_SEH_RECORD(record);                             \
-    }
-
-//
-// Note: this only pops a handler from the top of the stack. It will not remove a record from the middle of the
-// chain, and I can assure you that you don't want to do that anyway.
-//
-#define UNINSTALL_EXCEPTION_HANDLING_RECORD(record)             \
-    {                                                           \
-        PEXCEPTION_REGISTRATION_RECORD __record = (record);     \
-        _ASSERTE(__record == GetCurrentSEHRecord());            \
-        UNINSTALL_SEH_RECORD(record);                           \
-    }
-
-// stackOverwriteBarrier is used to detect overwriting of stack which will mess up handler registration
-#if defined(_DEBUG)
-#define DECLARE_CPFH_EH_RECORD(pCurThread) \
-    FrameHandlerExRecordWithBarrier *___pExRecordWithBarrier = (FrameHandlerExRecordWithBarrier *)_alloca(sizeof(FrameHandlerExRecordWithBarrier)); \
-    for (int ___i =0; ___i < STACK_OVERWRITE_BARRIER_SIZE; ___i++) \
-        ___pExRecordWithBarrier->m_StackOverwriteBarrier[___i] = STACK_OVERWRITE_BARRIER_VALUE; \
-    FrameHandlerExRecord *___pExRecord = &(___pExRecordWithBarrier->m_ExRecord); \
-    ___pExRecord->m_ExReg.Handler = (PEXCEPTION_ROUTINE)COMPlusFrameHandler; \
-    ___pExRecord->m_pEntryFrame = (pCurThread)->GetFrame();
-
-#else
-#define DECLARE_CPFH_EH_RECORD(pCurThread) \
-    FrameHandlerExRecord *___pExRecord = (FrameHandlerExRecord *)_alloca(sizeof(FrameHandlerExRecord)); \
-    ___pExRecord->m_ExReg.Handler = (PEXCEPTION_ROUTINE)COMPlusFrameHandler; \
-    ___pExRecord->m_pEntryFrame = (pCurThread)->GetFrame();
-
-#endif
-
-
-PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
-PEXCEPTION_REGISTRATION_RECORD GetFirstCOMPlusSEHRecord(Thread*);
-
-LPVOID COMPlusEndCatchWorker(Thread *pCurThread);
-EXTERN_C LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD esi, LPVOID* pRetAddress);
-
-#else // FEATURE_EH_FUNCLETS
-#define INSTALL_EXCEPTION_HANDLING_RECORD(record)
-#define UNINSTALL_EXCEPTION_HANDLING_RECORD(record)
-#define DECLARE_CPFH_EH_RECORD(pCurThread)
-
-#endif // FEATURE_EH_FUNCLETS
-
 //
 // Retrieves the redirected CONTEXT* from the stack frame of one of the
 // RedirectedHandledJITCaseForXXX_Stub's.

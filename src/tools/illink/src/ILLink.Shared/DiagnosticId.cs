@@ -58,6 +58,7 @@ namespace ILLink.Shared
         UnexpectedAttributeArgumentType = 1045,
         InvalidMetadataOption = 1046,
         InvalidDependenciesFileFormat = 1047,
+        MultipleEntryPointRoots = 1048,
 
         // Trimming diagnostic ids.
         TypeHasNoFieldsToPreserve = 2001,
@@ -101,7 +102,7 @@ namespace ILLink.Shared
         XmlInvalidValueForAttributeActionForResource = 2039,
         XmlCouldNotFindResourceToRemoveInAssembly = 2040,
         DynamicallyAccessedMembersIsNotAllowedOnMethods = 2041,
-        DynamicallyAccessedMembersCouldNotFindBackingField = 2042,
+        unused_DynamicallyAccessedMembersCouldNotFindBackingField = 2042,
         DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor = 2043,
         XmlCouldNotFindAnyTypeInNamespace = 2044,
         AttributeIsReferencedButTrimmerRemoveAllInstances = 2045,
@@ -190,6 +191,8 @@ namespace ILLink.Shared
         RequiresUnreferencedCodeOnEntryPoint = 2123,
         TypeMapGroupTypeCannotBeStaticallyDetermined = 2124,
         ReferenceNotMarkedIsTrimmable = 2125,
+        DataflowAnalysisDidNotConverge = 2126,
+        DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties = 2127,
         _EndTrimAnalysisWarningsSentinel,
 
         // Single-file diagnostic ids.
@@ -210,11 +213,16 @@ namespace ILLink.Shared
         RequiresDynamicCodeOnStaticConstructor = 3056,
         RequiresDynamicCodeOnEntryPoint = 3057,
         ReferenceNotMarkedIsAotCompatible = 3058,
+
         _EndAotAnalysisWarningsSentinel,
 
         // Feature guard diagnostic ids.
         ReturnValueDoesNotMatchFeatureGuards = 4000,
-        InvalidFeatureGuard = 4001
+        InvalidFeatureGuard = 4001,
+
+        // Memory safety migration diagnostic ids.
+        UnsafeMemberMissingSafetyDocumentation = 5005,
+        PointerSignatureRequiresUnsafe = 5006,
     }
 
     public static class DiagnosticIdExtensions
@@ -238,7 +246,7 @@ namespace ILLink.Shared
                 2107 => MessageSubCategory.TrimAnalysis,
                 >= 2109 and < (int)DiagnosticId._EndTrimAnalysisWarningsSentinel => MessageSubCategory.TrimAnalysis,
                 >= 3050 and <= 3052 => MessageSubCategory.AotAnalysis,
-                >= 3054 and < (int)DiagnosticId._EndAotAnalysisWarningsSentinel => MessageSubCategory.AotAnalysis,
+                >= 3054 and <= 3058 => MessageSubCategory.AotAnalysis,
                 _ => MessageSubCategory.None,
             };
 
@@ -247,6 +255,7 @@ namespace ILLink.Shared
             {
                 > 2000 and < 3000 => DiagnosticCategory.Trimming,
                 >= 3000 and < 3050 => DiagnosticCategory.SingleFile,
+                5005 or 5006 => DiagnosticCategory.Safety,
                 >= 3050 and <= 6000 => DiagnosticCategory.AOT,
                 _ => throw new ArgumentException($"The provided diagnostic id '{diagnosticId}' does not fall into the range of supported warning codes 2001 to 6000 (inclusive).")
             };

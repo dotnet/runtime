@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public bool ShouldBindTo(PropertySpec property)
         {
             TypeSpec propTypeSpec = GetEffectiveTypeSpec(property.TypeRef);
-            return IsAccessible() && !IsCollectionAndCannotOverride() && !IsDictWithUnsupportedKey();
+            return IsAccessible() && !property.IsIgnored && !IsCollectionAndCannotOverride() && !IsDictWithUnsupportedKey();
 
             bool IsAccessible() => property.CanGet || property.CanSet;
 
@@ -85,7 +85,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static string GetGenericTypeDisplayString(CollectionWithCtorInitSpec type, Enum genericProxyTypeName)
         {
-            string proxyTypeNameStr = genericProxyTypeName.ToString();
+            string typeFNQ = type.TypeRef.FullyQualifiedName;
+            int genericIndex = typeFNQ.IndexOf('<');
+
+            // To get the namespace.
+            int lastDotIndex = genericIndex > 0 ? typeFNQ.LastIndexOf('.', genericIndex) : -1;
+            string proxyTypeNameStr = lastDotIndex >= 0 ? $"{typeFNQ.Substring(0, lastDotIndex + 1)}{genericProxyTypeName}" : genericProxyTypeName.ToString();
             string elementTypeFQN = type.ElementTypeRef.FullyQualifiedName;
 
             if (type is EnumerableSpec)

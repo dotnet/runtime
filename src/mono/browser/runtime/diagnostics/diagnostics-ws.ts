@@ -27,7 +27,7 @@ class DiagnosticConnectionWS extends DiagnosticConnectionBase implements IDiagno
         };
         ws.addEventListener("open", () => {
             for (const data of this.messagesToSend) {
-                ws.send(data);
+                ws.send(data as any);
             }
             this.messagesToSend = [];
             diagnosticServerEventLoop();
@@ -49,7 +49,7 @@ class DiagnosticConnectionWS extends DiagnosticConnectionBase implements IDiagno
             return super.store(message);
         }
 
-        this.ws!.send(message);
+        this.ws!.send(message as any);
 
         return message.length;
     }

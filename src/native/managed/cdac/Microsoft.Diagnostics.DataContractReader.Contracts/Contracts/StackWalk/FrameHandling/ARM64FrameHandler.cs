@@ -13,6 +13,17 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
 {
     private readonly ContextHolder<ARM64Context> _holder = contextHolder;
 
+    public override void HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
+    {
+        base.HandleInlinedCallFrame(inlinedCallFrame);
+
+        Data.Frame? next = GetNextFrame(inlinedCallFrame.Address);
+        if (next is not null && _frameHelpers.GetFrameType(next.Identifier) == FrameType.InterpreterFrame)
+        {
+            _holder.Context.X0 = next.Address.Value;
+        }
+    }
+
     public void HandleHijackFrame(HijackFrame frame)
     {
         HijackArgs args = _target.ProcessedData.GetOrAdd<Data.HijackArgs>(frame.HijackArgsPtr);
@@ -20,7 +31,7 @@ internal class ARM64FrameHandler(Target target, ContextHolder<ARM64Context> cont
         _holder.InstructionPointer = frame.ReturnAddress;
 
         // The stack pointer is the address immediately following HijackArgs
-        uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
+        uint hijackArgsSize = Data.HijackArgs.GetSize(_target);
         Debug.Assert(hijackArgsSize % 8 == 0, "HijackArgs contains register values and should be a multiple of the pointer size (8 bytes for ARM64)");
         // The stack must be multiple of 16. So if hijackArgsSize is not multiple of 16 then there must be padding of 8 bytes
         hijackArgsSize += hijackArgsSize % 16;

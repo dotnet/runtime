@@ -112,7 +112,7 @@ public sealed class PrintfStressMessageFormatter
         {
             builder.Append(_target.ReadUtf8String(ptr).PadLeft(paddingFormat.Width, paddingFormat.FormatChar));
         }
-        catch (InvalidOperationException)
+        catch (VirtualReadException)
         {
             builder.Append($"(#Could not read address of string at 0x{ptr.Value:x}#)");
         }
@@ -124,7 +124,7 @@ public sealed class PrintfStressMessageFormatter
         {
             builder.Append(_target.ReadUtf16String(ptr).PadLeft(paddingFormat.Width, paddingFormat.FormatChar));
         }
-        catch (InvalidOperationException)
+        catch (VirtualReadException)
         {
             builder.Append($"(#Could not read address of string at 0x{ptr.Value:x}#)");
         }

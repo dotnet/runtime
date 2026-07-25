@@ -157,9 +157,9 @@ namespace System.Text.Json.Serialization
             _offset = 0;
         }
 
-        public Utf8JsonReader GetReader(JsonReaderState jsonReaderState)
+        public void GetReader(JsonReaderState jsonReaderState, out Utf8JsonReader reader)
         {
-            return new Utf8JsonReader(
+            reader = new Utf8JsonReader(
                 _buffer.AsSpan(_offset, _count),
                 IsFinalBlock,
                 jsonReaderState);

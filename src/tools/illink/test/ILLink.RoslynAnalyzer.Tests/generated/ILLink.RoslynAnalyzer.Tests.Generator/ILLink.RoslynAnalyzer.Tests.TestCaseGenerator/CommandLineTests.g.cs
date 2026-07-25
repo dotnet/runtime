@@ -40,6 +40,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task MultipleEntryPointRoots()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+        [Fact]
         public Task ResponseFilesWork()
         {
             return RunTest(allowMissingWarnings: true);

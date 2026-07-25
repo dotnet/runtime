@@ -29,22 +29,11 @@ namespace System
         {
             return handle._value;
         }
-    }
-}
 
-namespace Internal.Runtime.CompilerHelpers
-{
-    // Needed by the compiler to lower LDTOKEN
-    internal static class LdTokenHelpers
-    {
-        private static RuntimeTypeHandle GetRuntimeTypeHandle(IntPtr pEEType)
+        // Implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
+        internal static unsafe RuntimeTypeHandle GetRuntimeTypeHandleFromMethodTable(MethodTable* pMT)
         {
-            return new RuntimeTypeHandle(pEEType);
-        }
-
-        private static Type GetRuntimeType(IntPtr pEEType)
-        {
-            return Type.GetTypeFromHandle(new RuntimeTypeHandle(pEEType));
+            return new RuntimeTypeHandle(pMT);
         }
     }
 }

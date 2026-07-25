@@ -43,7 +43,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadChar_Generic), nameof(HasOneSerialPort))]
         public void ReadAfterFailedOpen()
         {
             using (SerialPort com = new SerialPort("BAD_PORT_NAME"))
@@ -58,7 +58,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadChar_Generic), nameof(HasOneSerialPort))]
         public void ReadAfterClose()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -72,7 +72,7 @@ namespace System.IO.Ports.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadChar_Generic), nameof(HasOneSerialPort))]
         public void Timeout()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -88,7 +88,7 @@ namespace System.IO.Ports.Tests
         }
 
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadChar_Generic), nameof(HasOneSerialPort))]
         public void SuccessiveReadTimeoutNoData()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -108,7 +108,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadChar_Generic), nameof(HasNullModem))]
         public void SuccessiveReadTimeoutSomeData()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -160,14 +160,14 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadChar_Generic), nameof(HasNullModem))]
         public void DefaultParityReplaceByte()
         {
             VerifyParityReplaceByte(-1, numRndChar - 2);
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadChar_Generic), nameof(HasNullModem))]
         public void NoParityReplaceByte()
         {
             Random rndGen = new Random(-55);
@@ -176,7 +176,7 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadChar_Generic), nameof(HasNullModem))]
         public void RNDParityReplaceByte()
         {
             Random rndGen = new Random(-55);
@@ -185,7 +185,7 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReadChar_Generic), nameof(HasNullModem))]
         public void ParityErrorOnLastByte()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         void MaterializeSignature();
     }
 
-    public class ManifestMetadataTableNode : HeaderTableNode
+    public class ManifestMetadataTableNode : HeaderTableNode, IDisposable
     {
         /// <summary>
         /// Map from simple assembly names to their module indices. The map gets prepopulated
@@ -253,7 +253,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 else
                 {
-                    Debug.Assert(_nodeFactory.CompilationModuleGroup.CrossModuleInlineableModule(emodule));
+                    // Module lookups can also be used in scenarios (e.g. certain module fixups)
+                    // where there is no actual image reference available. In those cases we
+                    // record a default MVID instead of enforcing that the module must have
+                    // been tracked as "indexable" earlier in the pipeline.
                     _manifestAssemblyMvids.Add(default(Guid));
                 }
             }
@@ -291,7 +294,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             if (relocsOnly)
             {
-                return new ObjectData(Array.Empty<byte>(), null, 1, null);
+                return new ObjectData(Array.Empty<byte>(), null, 4, null);
             }
 
             ComputeLastSetOfModuleIndices();
@@ -310,7 +313,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return new ObjectData(
                 data: _mutableModule.MetadataBlob,
                 relocs: Array.Empty<Relocation>(),
-                alignment: 1,
+                // Metadata stream headers contain DWORD fields and require 4-byte alignment.
+                alignment: 4,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
         }
 
@@ -328,6 +332,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _manifestAssemblyMvids[i].TryWriteBytes(new Span<byte>(manifestAssemblyMvidTable, GuidByteSize * i, GuidByteSize));
             }
             return manifestAssemblyMvidTable;
+        }
+
+        public void Dispose()
+        {
+            _modulesWhichMustBeIndexable = null;
         }
     }
 }

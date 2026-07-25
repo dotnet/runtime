@@ -347,14 +347,10 @@ namespace System.Net.Http
 
         public IDictionary<string, object?> Properties => _underlyingHandler.Properties;
 
-        //
-        // Attributes are commented out due to https://github.com/dotnet/arcade/issues/7585
-        // API compat will fail until this is fixed
-        //
-        //[UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        //[UnsupportedOSPlatform("ios")]
-        //[UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
 #if TARGET_BROWSER || TARGET_WASI

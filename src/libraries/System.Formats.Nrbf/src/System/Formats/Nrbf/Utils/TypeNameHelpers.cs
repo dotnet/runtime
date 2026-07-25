@@ -195,7 +195,7 @@ internal static class TypeNameHelpers
         if (!TypeName.TryParse(rawName.AsSpan(), out TypeName? typeName, payloadOptions.TypeNameParseOptions)
             || typeName.AssemblyName is not null) // the type and library names should be provided separately
         {
-            throw new SerializationException(SR.Format(SR.Serialization_InvalidTypeName, rawName));
+            throw new SerializationException(SR.Serialization_InvalidTypeName);
         }
 
         return typeName;

@@ -237,7 +237,7 @@ namespace System.Text.Json
             currentDepth &= JsonConstants.RemoveFlagsBitMask;
             if (currentDepth != 0)
             {
-                return GetInvalidOperationException(SR.Format(SR.ZeroDepthAtEnd, currentDepth));
+                return GetInvalidOperationException(SR.ZeroDepthAtEnd);
             }
             else
             {
@@ -375,7 +375,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static JsonException GetJsonReaderException(ref Utf8JsonReader json, ExceptionResource resource, byte nextByte, ReadOnlySpan<byte> bytes)
         {
-            string message = GetResourceString(ref json, resource, nextByte, JsonHelpers.Utf8GetString(bytes));
+            string message = GetResourceString(ref json, resource, nextByte, Encoding.UTF8.GetString(bytes));
 
             long lineNumber = json.CurrentState._lineNumber;
             long bytePositionInLine = json.CurrentState._bytePositionInLine;
@@ -384,7 +384,7 @@ namespace System.Text.Json
             return new JsonReaderException(message, lineNumber, bytePositionInLine);
         }
 
-        private static bool IsPrintable(byte value) => value >= 0x20 && value < 0x7F;
+        private static bool IsPrintable(byte value) => value is >= 0x20 and < 0x7F;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static string GetPrintableString(byte value)
@@ -483,7 +483,7 @@ namespace System.Text.Json
                     message = SR.EndOfCommentNotFound;
                     break;
                 case ExceptionResource.ZeroDepthAtEnd:
-                    message = SR.Format(SR.ZeroDepthAtEnd);
+                    message = SR.ZeroDepthAtEnd;
                     break;
                 case ExceptionResource.ExpectedJsonTokens:
                     message = SR.ExpectedJsonTokens;
@@ -498,10 +498,10 @@ namespace System.Text.Json
                     message = SR.Format(SR.InvalidCharacterAtStartOfComment, character);
                     break;
                 case ExceptionResource.UnexpectedEndOfDataWhileReadingComment:
-                    message = SR.Format(SR.UnexpectedEndOfDataWhileReadingComment);
+                    message = SR.UnexpectedEndOfDataWhileReadingComment;
                     break;
                 case ExceptionResource.UnexpectedEndOfLineSeparator:
-                    message = SR.Format(SR.UnexpectedEndOfLineSeparator);
+                    message = SR.UnexpectedEndOfLineSeparator;
                     break;
                 case ExceptionResource.InvalidLeadingZeroInNumber:
                     message = SR.Format(SR.InvalidLeadingZeroInNumber, character);
@@ -612,7 +612,7 @@ namespace System.Text.Json
             switch (resource)
             {
                 case ExceptionResource.MismatchedObjectArray:
-                    Debug.Assert(token == JsonConstants.CloseBracket || token == JsonConstants.CloseBrace);
+                    Debug.Assert(token is JsonConstants.CloseBracket or JsonConstants.CloseBrace);
                     message = (tokenType == JsonTokenType.PropertyName) ?
                         SR.Format(SR.CannotWriteEndAfterProperty, (char)token) :
                         SR.Format(SR.MismatchedObjectArray, (char)token);
@@ -631,7 +631,7 @@ namespace System.Text.Json
                     break;
                 case ExceptionResource.CannotWritePropertyWithinArray:
                     message = (tokenType == JsonTokenType.PropertyName) ?
-                        SR.Format(SR.CannotWritePropertyAfterProperty) :
+                        SR.CannotWritePropertyAfterProperty :
                         SR.Format(SR.CannotWritePropertyWithinArray, tokenType);
                     break;
                 case ExceptionResource.CannotWriteValueAfterPrimitiveOrClose:

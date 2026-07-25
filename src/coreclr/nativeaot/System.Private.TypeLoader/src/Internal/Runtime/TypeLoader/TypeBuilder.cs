@@ -26,11 +26,11 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public static unsafe int ClassConstructorOffset => -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
 
-        private LowLevelList<TypeDesc> _typesThatNeedTypeHandles = new LowLevelList<TypeDesc>();
+        private ArrayBuilder<TypeDesc> _typesThatNeedTypeHandles;
 
-        private LowLevelList<InstantiatedMethod> _methodsThatNeedDictionaries = new LowLevelList<InstantiatedMethod>();
+        private ArrayBuilder<InstantiatedMethod> _methodsThatNeedDictionaries;
 
-        private LowLevelList<TypeDesc> _typesThatNeedPreparation;
+        private ArrayBuilder<TypeDesc> _typesThatNeedPreparation;
 
 #if DEBUG
         private bool _finalTypeBuilding;
@@ -87,8 +87,6 @@ namespace Internal.Runtime.TypeLoader
 
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 return;
-
-            _typesThatNeedPreparation ??= new LowLevelList<TypeDesc>();
 
             _typesThatNeedPreparation.Add(type);
         }
@@ -266,10 +264,10 @@ namespace Internal.Runtime.TypeLoader
         private void ProcessTypesNeedingPreparation()
         {
             // Process the pending types
-            while (_typesThatNeedPreparation != null)
+            while (_typesThatNeedPreparation.Count > 0)
             {
                 var pendingTypes = _typesThatNeedPreparation;
-                _typesThatNeedPreparation = null;
+                _typesThatNeedPreparation = default;
 
                 for (int i = 0; i < pendingTypes.Count; i++)
                     PrepareType(pendingTypes[i]);
@@ -288,7 +286,7 @@ namespace Internal.Runtime.TypeLoader
             if (!method.UnboxingStub && method.OwningType.IsValueType && !TypeLoaderEnvironment.IsStaticMethodSignature(method.NameAndSignature))
             {
                 // Make it an unboxing stub, note the first parameter which is true
-                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(true, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
+                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(true, method.AsyncVariant, method.ReturnDroppingAsyncThunk, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
             }
 
             uint nativeLayoutInfoToken;
@@ -799,11 +797,21 @@ namespace Internal.Runtime.TypeLoader
             for (int i = 0; i < _methodsThatNeedDictionaries.Count; i++)
             {
                 InstantiatedMethod method = _methodsThatNeedDictionaries[i];
+
+                // If this type load is building both unboxing and non-unboxing entrypoint, we only need
+                // to register one of them because the generic dictionary is the same (and registration discards the unbox distinction).
+                if (method.UnboxingStub && IsNonUnboxingDictionaryBeingBuilt(method, out _))
+                {
+                    continue;
+                }
+
                 yield return new TypeLoaderEnvironment.GenericMethodEntry
                 {
                     _declaringTypeHandle = GetRuntimeTypeHandle(method.OwningType),
                     _genericMethodArgumentHandles = GetRuntimeTypeHandles(method.Instantiation),
                     _methodNameAndSignature = method.NameAndSignature,
+                    _isAsyncVariant = method.AsyncVariant,
+                    _isReturnDroppingAsyncThunk = method.ReturnDroppingAsyncThunk,
                     _methodDictionary = method.RuntimeMethodDictionary
                 };
             }
@@ -818,14 +826,32 @@ namespace Internal.Runtime.TypeLoader
                     typesToRegisterCount++;
             }
 
+            int methodsToRegisterCount = 0;
+            for (int i = 0; i < _methodsThatNeedDictionaries.Count; i++)
+            {
+                if (!_methodsThatNeedDictionaries[i].UnboxingStub
+                    || !IsNonUnboxingDictionaryBeingBuilt(_methodsThatNeedDictionaries[i], out _))
+                {
+                    methodsToRegisterCount++;
+                }
+            }
+
             var registrationData = new TypeLoaderEnvironment.DynamicGenericsRegistrationData
             {
                 TypesToRegisterCount = typesToRegisterCount,
                 TypesToRegister = (typesToRegisterCount != 0) ? TypesToRegister() : null,
-                MethodsToRegisterCount = _methodsThatNeedDictionaries.Count,
-                MethodsToRegister = (_methodsThatNeedDictionaries.Count != 0) ? MethodsToRegister() : null,
+                MethodsToRegisterCount = methodsToRegisterCount,
+                MethodsToRegister = (methodsToRegisterCount != 0) ? MethodsToRegister() : null,
             };
             TypeLoaderEnvironment.Instance.RegisterDynamicGenericTypesAndMethods(registrationData);
+        }
+
+        private static bool IsNonUnboxingDictionaryBeingBuilt(InstantiatedMethod method, out nint dictionary)
+        {
+            Debug.Assert(method.UnboxingStub);
+            InstantiatedMethod unboxTargetMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(false, method.AsyncVariant, method.ReturnDroppingAsyncThunk, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
+            dictionary = unboxTargetMethod.RuntimeMethodDictionary;
+            return dictionary != 0;
         }
 
         private void FinishTypeAndMethodBuilding()
@@ -844,9 +870,36 @@ namespace Internal.Runtime.TypeLoader
                 AllocateRuntimeType(_typesThatNeedTypeHandles[i]);
             }
 
+            // Allocate dictionaries for non-unboxing methods first.
             for (int i = 0; i < _methodsThatNeedDictionaries.Count; i++)
             {
-                AllocateRuntimeMethodDictionary(_methodsThatNeedDictionaries[i]);
+                InstantiatedMethod method = _methodsThatNeedDictionaries[i];
+                if (method.UnboxingStub)
+                    continue;
+
+                AllocateRuntimeMethodDictionary(method);
+            }
+
+            // Now look at the unboxing ones.
+            for (int i = 0; i < _methodsThatNeedDictionaries.Count; i++)
+            {
+                InstantiatedMethod method = _methodsThatNeedDictionaries[i];
+                if (!method.UnboxingStub)
+                    continue;
+
+                if (IsNonUnboxingDictionaryBeingBuilt(method, out nint dictionary))
+                {
+                    // The dictionary between the unboxing and non-unboxing variant is the same, we must not
+                    // build a new one. This situation can happen if we need both the unboxing and non-unboxing variants
+                    // as part of the same type build.
+                    // The lookups for existing dictionaries ignore the UnboxingStub bit, so if one flavor was built statically
+                    // or dynamically before this type load, we wouldn't reach here.
+                    method.AssociateWithRuntimeMethodDictionary(dictionary);
+                }
+                else
+                {
+                    AllocateRuntimeMethodDictionary(method);
+                }
             }
 
             // Do not add more type phases here. Instead, read the required information from the TypeDesc or TypeBuilderState.
@@ -864,7 +917,17 @@ namespace Internal.Runtime.TypeLoader
 
             for (int i = 0; i < _methodsThatNeedDictionaries.Count; i++)
             {
-                FinishMethodDictionary(_methodsThatNeedDictionaries[i]);
+                InstantiatedMethod method = _methodsThatNeedDictionaries[i];
+
+                // If this type load is building both unboxing and non-unboxing entrypoint, the unboxing flavor
+                // is using the generic dictionary of the non-unboxing entrypoint (they are the same thing).
+                // The dictionary will be finished by the non-unboxing entrypoint.
+                if (method.UnboxingStub && IsNonUnboxingDictionaryBeingBuilt(method, out _))
+                {
+                    continue;
+                }
+
+                FinishMethodDictionary(method);
             }
 
             int newArrayTypesCount = 0;

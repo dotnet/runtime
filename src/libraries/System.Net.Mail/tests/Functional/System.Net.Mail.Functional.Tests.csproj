@@ -19,6 +19,7 @@
     <Compile Include="MailAddressCollectionTest.cs" />
     <Compile Include="MailAddressTest.cs" />
     <Compile Include="MailMessageTest.cs" />
+    <Compile Include="MediaTypeMapTest.cs" />
     <Compile Include="SmtpExceptionTest.cs" />
     <Compile Include="TestHelper.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateAuthority.cs"

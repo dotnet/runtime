@@ -29,15 +29,18 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             private readonly LanguageVersion _langVersion;
             private readonly IEnumerable<Assembly>? _assemblyReferences;
+            private readonly IEnumerable<MetadataReference>? _metadataReferences;
             private Compilation _compilation = null;
 
             public ConfigBindingGenTestDriver(
                 LanguageVersion langVersion = LanguageVersion.LatestMajor,
-                IEnumerable<Assembly>? assemblyReferences = null)
+                IEnumerable<Assembly>? assemblyReferences = null,
+                IEnumerable<MetadataReference>? metadataReferences = null)
             {
                 _langVersion = langVersion;
 
                 _assemblyReferences = assemblyReferences ?? s_compilationAssemblyRefs;
+                _metadataReferences = metadataReferences;
 
                 _parseOptions = new CSharpParseOptions(langVersion).WithFeatures(new[] {
                     new KeyValuePair<string, string>("InterceptorsNamespaces", "Microsoft.Extensions.Configuration.Binder.SourceGeneration")
@@ -86,6 +89,12 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Annotations))
                         .WithParseOptions(_parseOptions)
                         .WithDocuments(new string[] { source });
+
+                    if (_metadataReferences is not null)
+                    {
+                        project = project.AddMetadataReferences(_metadataReferences);
+                    }
+
                     Assert.True(project.Solution.Workspace.TryApplyChanges(project.Solution));
 
                     _compilation = (await project.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false))!;

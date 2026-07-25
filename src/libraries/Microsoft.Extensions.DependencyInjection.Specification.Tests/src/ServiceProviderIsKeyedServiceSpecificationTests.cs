@@ -125,5 +125,30 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.NotNull(serviceProviderIsService);
             Assert.True(serviceProviderIsService.IsKeyedService(typeof(IFakeService), null));
         }
+
+        [Theory]
+        [InlineData(typeof(IServiceProvider))]
+        [InlineData(typeof(IServiceScopeFactory))]
+        [InlineData(typeof(IServiceProviderIsService))]
+        [InlineData(typeof(IServiceProviderIsKeyedService))]
+        public void BuiltInServicesWithIsKeyedServiceOnlyReturnTrueForNullServiceKey(Type builtInServiceType)
+        {
+            if (!SupportsIServiceProviderIsKeyedService)
+            {
+                return;
+            }
+
+            // Arrange
+            var provider = CreateServiceProvider(new TestServiceCollection());
+
+            // Act
+            var serviceProviderIsService = provider.GetService<IServiceProviderIsKeyedService>();
+
+            // Assert
+            Assert.NotNull(serviceProviderIsService);
+            Assert.True(serviceProviderIsService.IsKeyedService(builtInServiceType, null));
+            Assert.False(serviceProviderIsService.IsKeyedService(builtInServiceType, new object()));
+            Assert.False(serviceProviderIsService.IsKeyedService(builtInServiceType, KeyedService.AnyKey));
+        }
     }
 }

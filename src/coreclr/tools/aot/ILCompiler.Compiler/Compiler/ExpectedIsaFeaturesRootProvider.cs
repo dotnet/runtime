@@ -3,6 +3,7 @@
 
 using System;
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -24,7 +25,7 @@ namespace ILCompiler
             {
                 int isaFlags = HardwareIntrinsicHelpers.GetRuntimeRequiredIsaFlags(_isaSupport);
                 byte[] bytes = BitConverter.GetBytes(isaFlags);
-                rootProvider.RootReadOnlyDataBlob(bytes, 4, "ISA support flags", "g_requiredCpuFeatures", exportHidden: true);
+                rootProvider.RootReadOnlyDataBlob(bytes, 4, "ISA support flags", new Utf8String("g_requiredCpuFeatures"u8), exportHidden: true);
             }
         }
     }

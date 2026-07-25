@@ -35,7 +35,7 @@ namespace System.IO.Pipes.Tests
 
             void ChildFunc(string handle)
             {
-                using (var childClient = new NamedPipeClientStream(PipeDirection.Out, isAsync: false, isConnected: true, new SafePipeHandle((IntPtr)long.Parse(handle, CultureInfo.InvariantCulture), ownsHandle: true)))
+                using (var childClient = new NamedPipeClientStream(PipeDirection.Out, isAsync: false, new SafePipeHandle((IntPtr)long.Parse(handle, CultureInfo.InvariantCulture), ownsHandle: true)))
                 {
                     for (int i = 0; i < 5; i++)
                     {

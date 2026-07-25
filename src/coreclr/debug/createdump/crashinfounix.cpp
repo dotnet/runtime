@@ -12,7 +12,7 @@ extern uint8_t g_debugHeaderCookie[4];
 
 int g_readProcessMemoryErrno = 0;
 
-bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name);
+bool GetProcessInfo(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name);
 
 bool
 CrashInfo::Initialize()
@@ -65,8 +65,7 @@ CrashInfo::Initialize()
         m_fdPagemap = -1;
     }
 
-    // Get the process info
-    if (!GetStatus(m_pid, &m_ppid, &m_tgid, &m_name))
+    if (!GetProcessInfo(m_pid, &m_ppid, &m_tgid, &m_name))
     {
         return false;
     }
@@ -532,6 +531,17 @@ CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t
         // performance optimization.
         m_canUseProcVmReadSyscall = false;
         assert(m_fdMem != -1);
+#ifdef TARGET_ARM64
+        // Android's heap allocator (scudo) uses ARM64 Top-Byte Ignore (TBI) for memory tagging.
+        // pread on /proc/<pid>/mem treats the offset as a file position, not a virtual address,
+        // so the kernel does not apply TBI — tagged pointers cause EINVAL.
+        // See https://www.kernel.org/doc/html/latest/arch/arm64/tagged-address-abi.html
+        //
+        // Currently only Android allocators set a non-zero top byte, so on other ARM64 Linux
+        // configurations this is a no-op. However, any future use of TBI tagging (e.g., ARM MTE)
+        // on other Linux distros would hit the same issue.
+        address &= 0x00FFFFFFFFFFFFFFULL;
+#endif
         *read = pread(m_fdMem, buffer, size, (off_t)address);
     }
 
@@ -597,6 +607,42 @@ GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
 
     free(line);
     fclose(statusFile);
+    return true;
+}
+
+bool
+GetProcessInfo(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
+{
+    if(!GetStatus(pid, ppid, tgid, name))
+    {
+        return false;
+    }
+
+    // Try reading the executable name from the /proc/<pid>/exe link. Prefer this name to the
+    // one reported by status if it is available because the status name is often truncated
+    char exePath[128];
+    int chars = snprintf(exePath, sizeof(exePath), "/proc/%d/exe", pid);
+    if (chars > 0 && (size_t)chars < sizeof(exePath))
+    {
+        struct stat sb;
+        if (lstat(exePath, &sb) != -1)
+        {
+            ssize_t bufSize = sb.st_size == 0 ? 4096 : sb.st_size + 1;
+            char *buf = static_cast<char*>(malloc(bufSize));
+            if (buf != nullptr)
+            {
+                ssize_t nbytes = readlink(exePath, buf, bufSize - 1);
+                if (nbytes != -1)
+                {
+                    buf[nbytes] = '\0';
+                    char* executableName = strrchr(buf, '/');
+                    *name = (executableName != nullptr) ? (executableName + 1) : buf;
+                }
+                free(buf);
+            }
+        }
+    }
+
     return true;
 }
 

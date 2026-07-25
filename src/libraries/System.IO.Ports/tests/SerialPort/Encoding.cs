@@ -23,7 +23,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Encoding_Property), nameof(HasNullModem))]
         public void Encoding_Default()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -43,98 +43,98 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Encoding_Property), nameof(HasNullModem))]
         public void Encoding_ASCIIEncoding_BeforeOpen()
         {
             Debug.WriteLine("Verifying ASCIIEncoding Encoding before open");
             VerifyEncodingBeforeOpen(new ASCIIEncoding());
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Encoding_Property), nameof(HasNullModem))]
         public void Encoding_UTF8Encoding_BeforeOpen()
         {
             Debug.WriteLine("Verifying UTF8Encoding Encoding before open");
             VerifyEncodingBeforeOpen(new UTF8Encoding());
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Encoding_Property), nameof(HasNullModem))]
         public void Encoding_UTF32Encoding_BeforeOpen()
         {
             Debug.WriteLine("Verifying UTF32Encoding Encoding before open");
             VerifyEncodingBeforeOpen(new UTF32Encoding());
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Encoding_Property), nameof(HasNullModem))]
         public void Encoding_UnicodeEncoding_BeforeOpen()
         {
             Debug.WriteLine("Verifying UnicodeEncoding Encoding before open");
             VerifyEncodingBeforeOpen(new UnicodeEncoding());
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Encoding_Property), nameof(HasNullModem))]
         public void Encoding_ASCIIEncoding_AfterOpen()
         {
             Debug.WriteLine("Verifying ASCIIEncoding Encoding after open");
             VerifyEncodingAfterOpen(new ASCIIEncoding());
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Encoding_Property), nameof(HasNullModem))]
         public void Encoding_UTF8Encoding_AfterOpen()
         {
             Debug.WriteLine("Verifying UTF8Encoding Encoding after open");
             VerifyEncodingAfterOpen(new UTF8Encoding());
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Encoding_Property), nameof(HasNullModem))]
         public void Encoding_UTF32Encoding_AfterOpen()
         {
             Debug.WriteLine("Verifying UTF32Encoding Encoding after open");
             VerifyEncodingAfterOpen(new UTF32Encoding());
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Encoding_Property), nameof(HasNullModem))]
         public void Encoding_UnicodeEncoding_AfterOpen()
         {
             Debug.WriteLine("Verifying UnicodeEncoding Encoding after open");
             VerifyEncodingAfterOpen(new UnicodeEncoding());
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Encoding_Property), nameof(HasOneSerialPort))]
         public void Encoding_ISCIIAssemese()
         {
             Debug.WriteLine("Verifying ISCIIAssemese Encoding");
             VerifyException(Encoding.GetEncoding(57006), ThrowAt.Set, typeof(ArgumentException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Encoding_Property), nameof(HasOneSerialPort))]
         public void Encoding_UTF7()
         {
             Debug.WriteLine("Verifying UTF7Encoding Encoding");
             VerifyException(LegacyUTF7Encoding, ThrowAt.Set, typeof(ArgumentException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Encoding_Property), nameof(HasOneSerialPort))]
         public void Encoding_Null()
         {
             Debug.WriteLine("Verifying null Encoding");
             VerifyException(null, ThrowAt.Set, typeof(ArgumentNullException));
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Encoding_Property), nameof(HasNullModem))]
         public void Encoding_IBM_Latin1()
         {
             Debug.WriteLine("Verifying IBM Latin-1 Encoding before open");
             VerifyEncodingBeforeOpen(Encoding.GetEncoding(1047));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(Encoding_Property), nameof(HasOneSerialPort))]
         public void Encoding_Japanese_JIS()
         {
             Debug.WriteLine("Verifying Japanese (JIS) Encoding before open");
             VerifyException(Encoding.GetEncoding(50220), ThrowAt.Set, typeof(ArgumentException));
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Encoding_Property), nameof(HasNullModem))]
         public void Encoding_ChineseSimplified_GB18030()
         {
             Debug.WriteLine("Verifying Chinese Simplified (GB18030) Encoding before open");

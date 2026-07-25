@@ -299,6 +299,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support Synchronous reads")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support Synchronous reads")]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -534,6 +535,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public async Task LoadIntoBufferAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -594,6 +596,24 @@ namespace System.Net.Http.Functional.Tests
                         await IgnoreExceptions(connection.SendResponseAsync(new string('a', 100)));
                     });
                 });
+        }
+
+        [Fact]
+        public async Task GetAsync_WithCustomHandlerReturningStringContent_PreCanceledToken_ThrowsTaskCanceledException()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/121810
+            // Ensures that when using a custom handler that returns pre-buffered content (StringContent),
+            // calling GetAsync with a pre-canceled token properly throws TaskCanceledException
+            using var handler = new HttpClientTest.CustomResponseHandler((req, ct) => Task.FromResult(new HttpResponseMessage()
+            {
+                Content = new StringContent("Hello from CustomHandler")
+            }));
+            using var httpClient = new HttpClient(handler);
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            await Assert.ThrowsAsync<TaskCanceledException>(() =>
+                httpClient.GetAsync("https://example.com", cts.Token));
         }
 
         [Theory]
@@ -801,6 +821,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public async Task ReadAsStringAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -882,6 +903,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public async Task ReadAsByteArrayAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts()
         {
             await LoopbackServer.CreateClientAndServerAsync(

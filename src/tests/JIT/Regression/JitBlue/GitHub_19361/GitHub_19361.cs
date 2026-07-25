@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// The test exposed a bug in CORINFO_HELP_ASSIGN_BYREF GC kill set on Unix x64.
+// The test exposed a bug in the GC write barrier kill set on Unix x64
 // that caused segfault.
 
 using System;
@@ -93,6 +93,7 @@ namespace Repro
             return list;
         }
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

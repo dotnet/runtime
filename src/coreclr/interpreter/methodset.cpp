@@ -155,7 +155,7 @@ bool MethodSet::contains(COMP_HANDLE comp,
         return false;
     }
 
-    TArray<char> printer;
+    TArray<char, MallocAllocator> printer(GetMallocAllocator());
     MethodName*   prevPattern = nullptr;
 
     for (MethodName* name = m_names; name != nullptr; name = name->m_next)

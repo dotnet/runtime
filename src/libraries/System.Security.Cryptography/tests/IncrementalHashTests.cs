@@ -517,6 +517,24 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid))]
+        [MemberData(nameof(GetHMACs))]
+        public static void VerifyEmptyHMACKey_Cloned(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (referenceAlgorithm)
+            using (IncrementalHash incrementalHash = IncrementalHash.CreateHMAC(hashAlgorithm, Array.Empty<byte>()))
+            using (IncrementalHash cloned = incrementalHash.Clone())
+            {
+                referenceAlgorithm.Key = Array.Empty<byte>();
+                cloned.AppendData([1, 2, 3]);
+                byte[] referenceHash = referenceAlgorithm.ComputeHash([1, 2, 3]);
+                byte[] clonedResult = new byte[referenceHash.Length];
+                Assert.True(cloned.TryGetHashAndReset(clonedResult, out int bytesWritten));
+                Assert.Equal(referenceHash.Length, bytesWritten);
+                Assert.Equal(referenceHash, clonedResult);
+            }
+        }
+
         [Theory]
         [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyTrivialHash_Span(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
@@ -554,10 +572,11 @@ namespace System.Security.Cryptography.Tests
         public static void Dispose_HashAlgorithm_ThrowsException(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
             referenceAlgorithm.Dispose();
-            var incrementalHash = IncrementalHash.CreateHash(hashAlgorithm);
+            IncrementalHash incrementalHash = IncrementalHash.CreateHash(hashAlgorithm);
             incrementalHash.Dispose();
 
             byte[] tmpDest = new byte[1];
+            byte[] hash = new byte[incrementalHash.HashLengthInBytes];
 
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.AppendData(tmpDest));
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.AppendData(tmpDest, 0, 0));
@@ -572,6 +591,11 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.TryGetCurrentHash(tmpDest, out int _));
 
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.Clone());
+
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.VerifyHashAndReset(hash));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.VerifyHashAndReset(new ReadOnlySpan<byte>(hash)));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.VerifyCurrentHash(hash));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.VerifyCurrentHash(new ReadOnlySpan<byte>(hash)));
         }
 
         [Theory]
@@ -583,6 +607,7 @@ namespace System.Security.Cryptography.Tests
             incrementalHash.Dispose();
 
             byte[] tmpDest = new byte[1];
+            byte[] hash = new byte[incrementalHash.HashLengthInBytes];
 
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.AppendData(tmpDest));
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.AppendData(tmpDest, 0, 0));
@@ -597,6 +622,11 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.TryGetCurrentHash(tmpDest, out int _));
 
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.Clone());
+
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.VerifyHashAndReset(hash));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.VerifyHashAndReset(new ReadOnlySpan<byte>(hash)));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.VerifyCurrentHash(hash));
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.VerifyCurrentHash(new ReadOnlySpan<byte>(hash)));
         }
 
         [Theory]
@@ -702,6 +732,247 @@ namespace System.Security.Cryptography.Tests
                     (inc, dest) => inc.GetHashAndReset(dest),
                     (IncrementalHash inc, Span<byte> dest, out int bytesWritten) =>
                         inc.TryGetHashAndReset(dest, out bytesWritten));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashAlgorithms))]
+        public static void VerifyHashAndReset_ArgValidation_Hash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            referenceAlgorithm.Dispose();
+            using IncrementalHash incremental = IncrementalHash.CreateHash(hashAlgorithm);
+            byte[] tooShort = new byte[incremental.HashLengthInBytes - 1];
+            byte[] tooLong = new byte[incremental.HashLengthInBytes + 1];
+            Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset(tooShort));
+            Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset(tooLong));
+            Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(tooShort)));
+            Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(tooLong)));
+
+            Assert.Throws<ArgumentNullException>("hash", () => incremental.VerifyHashAndReset((byte[])null));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashAlgorithms))]
+        public static void VerifyCurrentHash_ArgValidation_Hash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            referenceAlgorithm.Dispose();
+            using IncrementalHash incremental = IncrementalHash.CreateHash(hashAlgorithm);
+            byte[] tooShort = new byte[incremental.HashLengthInBytes - 1];
+            byte[] tooLong = new byte[incremental.HashLengthInBytes + 1];
+            Assert.Throws<ArgumentException>("hash", () => incremental.VerifyCurrentHash(tooShort));
+            Assert.Throws<ArgumentException>("hash", () => incremental.VerifyCurrentHash(tooLong));
+            Assert.Throws<ArgumentException>("hash", () => incremental.VerifyCurrentHash(new ReadOnlySpan<byte>(tooShort)));
+            Assert.Throws<ArgumentException>("hash", () => incremental.VerifyCurrentHash(new ReadOnlySpan<byte>(tooLong)));
+
+            Assert.Throws<ArgumentNullException>("hash", () => incremental.VerifyCurrentHash((byte[])null));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashAlgorithms))]
+        public static void VerifyCurrentHash_Hash_Verifies(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (IncrementalHash incremental = IncrementalHash.CreateHash(hashAlgorithm))
+            using (referenceAlgorithm)
+            {
+                byte[] referenceHash = referenceAlgorithm.ComputeHash(s_inputBytes);
+                incremental.AppendData(s_inputBytes);
+
+                AssertExtensions.TrueExpression(incremental.VerifyCurrentHash(referenceHash));
+                // Verifies previous did not reset the state.
+                AssertExtensions.TrueExpression(incremental.VerifyCurrentHash(referenceHash));
+
+                AssertExtensions.TrueExpression(incremental.VerifyCurrentHash(new ReadOnlySpan<byte>(referenceHash)));
+                // Verifies previous did not reset the state.
+                AssertExtensions.TrueExpression(incremental.VerifyCurrentHash(new ReadOnlySpan<byte>(referenceHash)));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHMACs))]
+        [SkipOnPlatform(TestPlatforms.Android, "Android doesn't support cloning the current state for HMAC, so it doesn't support GetCurrentHash.")]
+        public static void VerifyCurrentHash_HMAC_Verifies(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (IncrementalHash incremental = IncrementalHash.CreateHMAC(hashAlgorithm, s_hmacKey))
+            using (referenceAlgorithm)
+            {
+                referenceAlgorithm.Key = s_hmacKey;
+                byte[] referenceHash = referenceAlgorithm.ComputeHash(s_inputBytes);
+                incremental.AppendData(s_inputBytes);
+
+                AssertExtensions.TrueExpression(incremental.VerifyCurrentHash(referenceHash));
+                // Verifies previous did not reset the state.
+                AssertExtensions.TrueExpression(incremental.VerifyCurrentHash(referenceHash));
+
+                AssertExtensions.TrueExpression(incremental.VerifyCurrentHash(new ReadOnlySpan<byte>(referenceHash)));
+                // Verifies previous did not reset the state.
+                AssertExtensions.TrueExpression(incremental.VerifyCurrentHash(new ReadOnlySpan<byte>(referenceHash)));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashAlgorithms))]
+        public static void VerifyHashAndReset_Hash_Verifies(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (IncrementalHash incremental = IncrementalHash.CreateHash(hashAlgorithm))
+            using (referenceAlgorithm)
+            {
+                byte[] referenceHash = referenceAlgorithm.ComputeHash(s_inputBytes);
+
+                incremental.AppendData(s_inputBytes);
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(referenceHash));
+
+                incremental.AppendData(s_inputBytes); // Verifies previous call reset hash.
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(referenceHash));
+
+                incremental.AppendData(s_inputBytes);
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
+
+                incremental.AppendData(s_inputBytes); // Verifies previous call reset hash.
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHMACs))]
+        public static void VerifyHashAndReset_HMAC_Verifies(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (IncrementalHash incremental = IncrementalHash.CreateHMAC(hashAlgorithm, s_hmacKey))
+            using (referenceAlgorithm)
+            {
+                referenceAlgorithm.Key = s_hmacKey;
+                byte[] referenceHash = referenceAlgorithm.ComputeHash(s_inputBytes);
+
+                incremental.AppendData(s_inputBytes);
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(referenceHash));
+
+                incremental.AppendData(s_inputBytes); // Verifies previous call reset hash.
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(referenceHash));
+
+                incremental.AppendData(s_inputBytes);
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
+
+                incremental.AppendData(s_inputBytes); // Verifies previous call reset hash.
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashAlgorithms))]
+        public static void VerifyCurrentHash_Hash_DoesNotVerify(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (IncrementalHash incremental = IncrementalHash.CreateHash(hashAlgorithm))
+            using (referenceAlgorithm)
+            {
+                byte[] referenceHash = referenceAlgorithm.ComputeHash(s_inputBytes);
+                FlipRandomBit(referenceHash);
+
+                incremental.AppendData(s_inputBytes);
+
+                AssertExtensions.FalseExpression(incremental.VerifyCurrentHash(referenceHash));
+                AssertExtensions.FalseExpression(incremental.VerifyCurrentHash(new ReadOnlySpan<byte>(referenceHash)));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHMACs))]
+        [SkipOnPlatform(TestPlatforms.Android, "Android doesn't support cloning the current state for HMAC, so it doesn't support GetCurrentHash.")]
+        public static void VerifyCurrentHash_HMAC_DoesNotVerify(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (IncrementalHash incremental = IncrementalHash.CreateHMAC(hashAlgorithm, s_hmacKey))
+            using (referenceAlgorithm)
+            {
+                referenceAlgorithm.Key = s_hmacKey;
+                byte[] referenceHash = referenceAlgorithm.ComputeHash(s_inputBytes);
+                FlipRandomBit(referenceHash);
+
+                incremental.AppendData(s_inputBytes);
+
+                AssertExtensions.FalseExpression(incremental.VerifyCurrentHash(referenceHash));
+                AssertExtensions.FalseExpression(incremental.VerifyCurrentHash(new ReadOnlySpan<byte>(referenceHash)));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashAlgorithms))]
+        public static void VerifyHashAndReset_Hash_DoesNotVerify(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (IncrementalHash incremental = IncrementalHash.CreateHash(hashAlgorithm))
+            using (referenceAlgorithm)
+            {
+                byte[] referenceHash = referenceAlgorithm.ComputeHash(s_inputBytes);
+                FlipRandomBit(referenceHash);
+
+                incremental.AppendData(s_inputBytes);
+                AssertExtensions.FalseExpression(incremental.VerifyHashAndReset(referenceHash));
+
+                incremental.AppendData(s_inputBytes);
+                AssertExtensions.FalseExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashAlgorithms))]
+        public static void VerifyHashAndReset_Hash_InvalidSizeDoesNotReset(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (IncrementalHash incremental = IncrementalHash.CreateHash(hashAlgorithm))
+            using (referenceAlgorithm)
+            {
+                byte[] referenceHash = referenceAlgorithm.ComputeHash(s_inputBytes);
+
+                incremental.AppendData(s_inputBytes);
+                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset(Array.Empty<byte>()));
+
+                // Verify previous throw should not have reset, so appended bytes should still verify.
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(referenceHash));
+
+                incremental.AppendData(s_inputBytes);
+                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset(ReadOnlySpan<byte>.Empty));
+
+                // Verify previous throw should not have reset, so appended bytes should still verify.
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHMACs))]
+        public static void VerifyHashAndReset_HMAC_DoesNotVerify(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (IncrementalHash incremental = IncrementalHash.CreateHMAC(hashAlgorithm, s_hmacKey))
+            using (referenceAlgorithm)
+            {
+                referenceAlgorithm.Key = s_hmacKey;
+                byte[] referenceHash = referenceAlgorithm.ComputeHash(s_inputBytes);
+                FlipRandomBit(referenceHash);
+
+                incremental.AppendData(s_inputBytes);
+                AssertExtensions.FalseExpression(incremental.VerifyHashAndReset(referenceHash));
+
+                incremental.AppendData(s_inputBytes);
+                AssertExtensions.FalseExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHMACs))]
+        public static void VerifyHashAndReset_HMAC_InvalidSizeDoesNotReset(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (IncrementalHash incremental = IncrementalHash.CreateHMAC(hashAlgorithm, s_hmacKey))
+            using (referenceAlgorithm)
+            {
+                referenceAlgorithm.Key = s_hmacKey;
+                byte[] referenceHash = referenceAlgorithm.ComputeHash(s_inputBytes);
+
+                incremental.AppendData(s_inputBytes);
+                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset(Array.Empty<byte>()));
+
+                // Verify previous throw should not have reset, so appended bytes should still verify.
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(referenceHash));
+
+                incremental.AppendData(s_inputBytes);
+                Assert.Throws<ArgumentException>("hash", () => incremental.VerifyHashAndReset(ReadOnlySpan<byte>.Empty));
+
+                // Verify previous throw should not have reset, so appended bytes should still verify.
+                AssertExtensions.TrueExpression(incremental.VerifyHashAndReset(new ReadOnlySpan<byte>(referenceHash)));
             }
         }
 
@@ -926,6 +1197,12 @@ namespace System.Security.Cryptography.Tests
             {
                 span[i] = (byte)i;
             }
+        }
+
+        private static void FlipRandomBit(Span<byte> input)
+        {
+            int index = Random.Shared.Next(0, input.Length);
+            input[index] = (byte)(input[index] ^ 0b_10000000);
         }
     }
 }

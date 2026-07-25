@@ -6145,14 +6145,14 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void Vector256DoubleEqualsNaNTest()
         {
-            Vector256<double> nan = Vector256.Create(double.NaN);
+            Vector256<double> nan = Vector256<double>.NaN;
             Assert.True(nan.Equals(nan));
         }
 
         [Fact]
         public void Vector256SingleEqualsNaNTest()
         {
-            Vector256<float> nan = Vector256.Create(float.NaN);
+            Vector256<float> nan = Vector256<float>.NaN;
             Assert.True(nan.Equals(nan));
         }
 
@@ -6479,6 +6479,234 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
                 Assert.Equal(expected, sequence.GetElement(index));
                 expected += step;
             }
+        }
+
+        [Fact]
+        public void CreateGeometricSequenceInt32Test()
+        {
+            Vector256<int> sequence = Vector256.CreateGeometricSequence(1, 2);
+            int expected = 1;
+
+            for (int index = 0; index < Vector256<int>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected *= 2;
+            }
+        }
+
+        [Fact]
+        public void CreateGeometricSequenceByteWrapsTest()
+        {
+            Vector256<byte> sequence = Vector256.CreateGeometricSequence((byte)200, (byte)2);
+            byte expected = 200;
+
+            for (int index = 0; index < Vector256<byte>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected = unchecked((byte)(expected * 2));
+            }
+        }
+
+        [Fact]
+        public void CreateGeometricSequenceSingleNonConstantInitialTest()
+        {
+            const float multiplier = 1.0064822f;
+            float initial = GetNonConstant(1.0059024f);
+            Vector256<float> sequence = Vector256.CreateGeometricSequence(initial, multiplier);
+            for (int index = 0; index < Vector256<float>.Count; index++)
+            {
+                float expected = initial * float.Pow(multiplier, index);
+                AssertExtensions.Equal(expected, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateGeometricSequenceDoubleNonConstantInitialTest()
+        {
+            const double multiplier = 1e-50;
+            double initial = GetNonConstant(1e-154);
+            Vector256<double> sequence = Vector256.CreateGeometricSequence(initial, multiplier);
+            for (int index = 0; index < Vector256<double>.Count; index++)
+            {
+                double expected = initial * double.Pow(multiplier, index);
+                AssertExtensions.Equal(expected, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceInt32Test()
+        {
+            Vector256<int> sequence = Vector256.CreateAlternatingSequence(5, -5);
+
+            for (int index = 0; index < Vector256<int>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 5 : -5, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceUInt32Test()
+        {
+            Vector256<uint> sequence = Vector256.CreateAlternatingSequence(5u, uint.MaxValue - 1u);
+
+            for (int index = 0; index < Vector256<uint>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 5u : uint.MaxValue - 1u, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceDoubleTest()
+        {
+            Vector256<double> sequence = Vector256.CreateAlternatingSequence(1.5, -2.5);
+
+            for (int index = 0; index < Vector256<double>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1.5 : -2.5, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceInt32Test()
+        {
+            Vector256<int> sequence = Vector256.CreateHarmonicSequence(1, 1);
+            int expected = 1;
+
+            for (int index = 0; index < Vector256<int>.Count; index++)
+            {
+                Assert.Equal(1 / expected, sequence.GetElement(index));
+                expected += 1;
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceSingleTest()
+        {
+            Vector256<float> sequence = Vector256.CreateHarmonicSequence(1.0f, 1.0f);
+            float expected = 1.0f;
+
+            for (int index = 0; index < Vector256<float>.Count; index++)
+            {
+                AssertExtensions.Equal(1.0f / expected, sequence.GetElement(index), 1e-6f);
+                expected += 1.0f;
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceDoubleTest()
+        {
+            Vector256<double> sequence = Vector256.CreateHarmonicSequence(1.0, 1.0);
+            double expected = 1.0;
+
+            for (int index = 0; index < Vector256<double>.Count; index++)
+            {
+                AssertExtensions.Equal(1.0 / expected, sequence.GetElement(index), 1e-15);
+                expected += 1.0;
+            }
+        }
+
+        [Fact]
+        public void SignSequenceInt32Test()
+        {
+            Vector256<int> sequence = Vector256<int>.SignSequence;
+
+            for (int index = 0; index < Vector256<int>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1 : -1, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void SignSequenceSingleTest()
+        {
+            Vector256<float> sequence = Vector256<float>.SignSequence;
+
+            for (int index = 0; index < Vector256<float>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1.0f : -1.0f, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void SignSequenceDoubleTest()
+        {
+            Vector256<double> sequence = Vector256<double>.SignSequence;
+
+            for (int index = 0; index < Vector256<double>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1.0 : -1.0, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void LaneOperationsInt32Test()
+        {
+            Vector256<int> left = Vector256.CreateSequence(0, 1);
+            Vector256<int> right = Vector256.CreateSequence(100, 1);
+            int count = Vector256<int>.Count;
+            int lowerCount = (count + 1) / 2;
+            int upperStart = count - lowerCount;
+
+            AssertVectorEqual(CreateVector256(index => ((index & 1) == 0) ? left.GetElement(index / 2) : right.GetElement(index / 2)), Vector256.ZipLower(left, right));
+            AssertVectorEqual(CreateVector256(index => ((index & 1) == 0) ? left.GetElement(upperStart + (index / 2)) : right.GetElement(upperStart + (index / 2))), Vector256.ZipUpper(left, right));
+
+            (Vector256<int> lower, Vector256<int> upper) = Vector256.Zip(left, right);
+            AssertVectorEqual(Vector256.ZipLower(left, right), lower);
+            AssertVectorEqual(Vector256.ZipUpper(left, right), upper);
+
+            AssertVectorEqual(left, Vector256.UnzipEven(lower, upper));
+            AssertVectorEqual(right, Vector256.UnzipOdd(lower, upper));
+
+            (Vector256<int> even, Vector256<int> odd) = Vector256.Unzip(lower, upper);
+            AssertVectorEqual(left, even);
+            AssertVectorEqual(right, odd);
+
+            AssertVectorEqual(CreateVector256(index => (index < lowerCount) ? left.GetElement(index) : right.GetElement(index - lowerCount)), Vector256.ConcatLowerLower(left, right));
+            AssertVectorEqual(CreateVector256(index => (index < lowerCount) ? left.GetElement(upperStart + index) : right.GetElement(index - lowerCount)), Vector256.ConcatUpperLower(left, right));
+            AssertVectorEqual(CreateVector256(index => (index < lowerCount) ? left.GetElement(upperStart + index) : right.GetElement(upperStart + index - lowerCount)), Vector256.ConcatUpperUpper(left, right));
+            AssertVectorEqual(CreateVector256(index => (index < lowerCount) ? left.GetElement(index) : right.GetElement(upperStart + index - lowerCount)), Vector256.ConcatLowerUpper(left, right));
+
+            AssertVectorEqual(CreateVector256(index => left.GetElement(count - 1 - index)), Vector256.Reverse(left));
+        }
+
+        private static Vector256<int> CreateVector256(Func<int, int> elementSelector)
+        {
+            int[] values = new int[Vector256<int>.Count];
+
+            for (int index = 0; index < values.Length; index++)
+            {
+                values[index] = elementSelector(index);
+            }
+
+            return Vector256.Create<int>(values);
+        }
+
+        private static void AssertVectorEqual<T>(Vector256<T> expected, Vector256<T> actual)
+            where T : struct
+        {
+            for (int index = 0; index < Vector256<T>.Count; index++)
+            {
+                Assert.Equal(expected.GetElement(index), actual.GetElement(index));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static T GetNonConstant<T>(T value) => value;
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AsinDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void AsinDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector256<double> actualResult = Vector256.Asin(Vector256.Create(value));
+            AssertEqual(Vector256.Create(expectedResult), actualResult, Vector256.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AsinSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void AsinSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector256<float> actualResult = Vector256.Asin(Vector256.Create(value));
+            AssertEqual(Vector256.Create(expectedResult), actualResult, Vector256.Create(variance));
         }
 
         [Theory]
@@ -8111,5 +8339,113 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
         [Fact]
         public void SubtractSaturateUIntPtrTest() => SubtractSaturateToMinTest<nuint>(1);
+
+        [Fact]
+        public void EDoubleTest() => TestConstant(Vector256<double>.E, double.E);
+
+        [Fact]
+        public void ESingleTest() => TestConstant(Vector256<float>.E, float.E);
+
+        [Fact]
+        public void EpsilonDoubleTest() => TestConstant(Vector256<double>.Epsilon, double.Epsilon);
+
+        [Fact]
+        public void EpsilonSingleTest() => TestConstant(Vector256<float>.Epsilon, float.Epsilon);
+
+        [Fact]
+        public void NaNDoubleTest() => TestConstant(Vector256<double>.NaN, double.NaN);
+
+        [Fact]
+        public void NaNSingleTest() => TestConstant(Vector256<float>.NaN, float.NaN);
+
+        [Fact]
+        public void NegativeInfinityDoubleTest() => TestConstant(Vector256<double>.NegativeInfinity, double.NegativeInfinity);
+
+        [Fact]
+        public void NegativeInfinitySingleTest() => TestConstant(Vector256<float>.NegativeInfinity, float.NegativeInfinity);
+
+        [Fact]
+        public void NegativeOneDoubleTest() => TestConstant(Vector256<double>.NegativeOne, -1.0);
+
+        [Fact]
+        public void NegativeOneInt16Test() => TestConstant<short>(Vector256<short>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneInt32Test() => TestConstant<int>(Vector256<int>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneInt64Test() => TestConstant<long>(Vector256<long>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneSByteTest() => TestConstant<sbyte>(Vector256<sbyte>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneSingleTest() => TestConstant(Vector256<float>.NegativeOne, -1.0f);
+
+        [Fact]
+        public void NegativeZeroDoubleTest() => TestConstant(Vector256<double>.NegativeZero, double.NegativeZero);
+
+        [Fact]
+        public void NegativeZeroSingleTest() => TestConstant(Vector256<float>.NegativeZero, float.NegativeZero);
+
+        [Fact]
+        public void PiDoubleTest() => TestConstant(Vector256<double>.Pi, double.Pi);
+
+        [Fact]
+        public void PiSingleTest() => TestConstant(Vector256<float>.Pi, float.Pi);
+
+        [Fact]
+        public void PositiveInfinityDoubleTest() => TestConstant(Vector256<double>.PositiveInfinity, double.PositiveInfinity);
+
+        [Fact]
+        public void PositiveInfinitySingleTest() => TestConstant(Vector256<float>.PositiveInfinity, float.PositiveInfinity);
+
+        [Fact]
+        public void TauDoubleTest() => TestConstant(Vector256<double>.Tau, double.Tau);
+
+        [Fact]
+        public void TauSingleTest() => TestConstant(Vector256<float>.Tau, float.Tau);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void TestConstant(Vector256<double> actual, double expected)
+        {
+            for (int i = 0; i < Vector256<double>.Count; i++)
+            {
+                if (double.IsNaN(expected))
+                {
+                    Assert.True(double.IsNaN(actual[i]));
+                }
+                else
+                {
+                    Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual[i]));
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void TestConstant(Vector256<float> actual, float expected)
+        {
+            for (int i = 0; i < Vector256<float>.Count; i++)
+            {
+                if (float.IsNaN(expected))
+                {
+                    Assert.True(float.IsNaN(actual[i]));
+                }
+                else
+                {
+                    Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(actual[i]));
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void TestConstant<T>(Vector256<T> actual, T expected)
+            where T : IBinaryInteger<T>
+        {
+            for (int i = 0; i < Vector256<T>.Count; i++)
+            {
+                Assert.Equal(expected, actual[i]);
+            }
+        }
     }
 }

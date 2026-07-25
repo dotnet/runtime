@@ -66,7 +66,7 @@ DWORD ArrayMethodDesc::GetAttrs()
 // Generate a short sig (descr) for an array accessors
 //
 
-VOID ArrayClass::GenerateArrayAccessorCallSig(
+static void GenerateArrayAccessorCallSig(
     DWORD   dwRank,
     DWORD   dwFuncType,    // Load, store, or <init>
     PCCOR_SIGNATURE *ppSig,// Generated signature
@@ -180,7 +180,7 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
 //
 // Based on code in class.cpp.
 //
-void ArrayClass::InitArrayMethodDesc(
+static void InitArrayMethodDesc(
     ArrayMethodDesc *pNewMD,
     PCCOR_SIGNATURE pShortSig,
     DWORD   cShortSig,
@@ -200,9 +200,9 @@ void ArrayClass::InitArrayMethodDesc(
     pNewMD->SetTemporaryEntryPoint(pamTracker);
 
 #ifdef _DEBUG
-    _ASSERTE(pNewMD->GetMethodName() && GetDebugClassName());
+    _ASSERTE(pNewMD->GetMethodName() && pNewMD->GetMethodTable()->GetClass()->GetDebugClassName());
     pNewMD->m_pszDebugMethodName = pNewMD->GetMethodName();
-    pNewMD->m_pszDebugClassName  = GetDebugClassName();
+    pNewMD->m_pszDebugClassName  = pNewMD->GetMethodTable()->GetClass()->GetDebugClassName();
     pNewMD->m_pDebugMethodTable = pNewMD->GetMethodTable();
 #endif // _DEBUG
 }
@@ -294,33 +294,32 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     cbMT += pParentClass->GetNumInterfaces() * sizeof(InterfaceInfo_t);
 
 
-    size_t cbArrayClass = 0;
+    size_t cbEEClass = 0;
 
     if (pCanonMT == NULL)
     {
-        // Allocate ArrayClass, MethodTable, and class name in one alloc.
-        // Remember to pad allocation size for ArrayClass portion to ensure MethodTable is pointer aligned.
-        cbArrayClass = ALIGN_UP(sizeof(ArrayClass), sizeof(void*));
+        // Allocate EEClass, MethodTable, and class name in one alloc.
+        // Remember to pad allocation size for EEClass portion to ensure MethodTable is pointer aligned.
+        cbEEClass = ALIGN_UP(sizeof(EEClass), sizeof(void*));
     }
 
-    // ArrayClass already includes one void*
     LoaderAllocator* pAllocator= this->GetLoaderAllocator();
-    BYTE* pMemory = (BYTE *)pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbArrayClass) +
+    BYTE* pMemory = (BYTE *)pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbEEClass) +
                                                                                             S_SIZE_T(cbMT)));
 
     // Note: Memory allocated on loader heap is zero filled
-    // memset(pMemory, 0, sizeof(ArrayClass) + cbMT);
+    // memset(pMemory, 0, sizeof(EEClass) + cbMT);
 
-    ArrayClass* pClass = NULL;
+    EEClass* pClass = NULL;
 
     if (pCanonMT == NULL)
     {
-        pClass = ::new (pMemory) ArrayClass();
+        pClass = ::new (pMemory) EEClass();
     }
 
-    // Head of MethodTable memory (starts after ArrayClass), this points at the GCDesc stuff in front
+    // Head of MethodTable memory (starts after EEClass), this points at the GCDesc stuff in front
     // of a method table (if needed)
-    BYTE* pMTHead = pMemory + cbArrayClass + cbCGCDescData;
+    BYTE* pMTHead = pMemory + cbEEClass + cbCGCDescData;
 
     MethodTable* pMT = (MethodTable *) pMTHead;
 
@@ -336,7 +335,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     {
         pClass->SetInternalCorElementType(arrayKind);
         pClass->SetAttrClass (tdPublic | tdSerializable | tdSealed);  // This class is public, serializable, sealed
-        pClass->SetRank (Rank);
         pClass->SetMethodTable (pMT);
 
         // Fill In the method table
@@ -505,9 +503,9 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             PCCOR_SIGNATURE pSig;
             DWORD           cSig;
 
-            pClass->GenerateArrayAccessorCallSig(dwFuncRank, dwFuncType, &pSig, &cSig, pAllocator, pamTracker, FALSE);
+            GenerateArrayAccessorCallSig(dwFuncRank, dwFuncType, &pSig, &cSig, pAllocator, pamTracker, FALSE);
 
-            pClass->InitArrayMethodDesc(pNewMD, pSig, cSig, numVirtuals + dwMethodIndex, pamTracker);
+            InitArrayMethodDesc(pNewMD, pSig, cSig, numVirtuals + dwMethodIndex, pamTracker);
 
             dwMethodIndex++;
         }
@@ -882,13 +880,13 @@ Stub *GenerateArrayOpStub(ArrayMethodDesc* pMD)
     {
          // The stub has to have signature with explicit hidden argument instead of CORINFO_CALLCONV_PARAMTYPE.
          // Generate a new signature for the stub here.
-         ((ArrayClass*)(pMD->GetMethodTable()->GetClass()))->GenerateArrayAccessorCallSig(pMD->GetMethodTable()->GetRank(),
-                                                                                          ArrayMethodDesc::ARRAY_FUNC_ADDRESS,
-                                                                                          &pSig,
-                                                                                          &cbSig,
-                                                                                          pMD->GetLoaderAllocator(),
-                                                                                          &amTracker,
-                                                                                          1);
+         GenerateArrayAccessorCallSig(pMD->GetMethodTable()->GetRank(),
+                                      ArrayMethodDesc::ARRAY_FUNC_ADDRESS,
+                                      &pSig,
+                                      &cbSig,
+                                      pMD->GetLoaderAllocator(),
+                                      &amTracker,
+                                      1);
     }
     else
     {

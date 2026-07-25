@@ -20,37 +20,37 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_WriteByte), nameof(HasNullModem))]
         public void ASCIIEncoding()
         {
             VerifyWrite(new ASCIIEncoding(), DEFAULT_NUM_WRITES);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_WriteByte), nameof(HasNullModem))]
         public void UTF8Encoding()
         {
             VerifyWrite(new UTF8Encoding(), DEFAULT_NUM_WRITES);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_WriteByte), nameof(HasNullModem))]
         public void UTF32Encoding()
         {
             VerifyWrite(new UTF32Encoding(), DEFAULT_NUM_WRITES);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_WriteByte), nameof(HasNullModem))]
         public void UnicodeEncoding()
         {
             VerifyWrite(new UnicodeEncoding(), DEFAULT_NUM_WRITES);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_WriteByte), nameof(HasNullModem))]
         public void LargeBuffer()
         {
             VerifyWrite(new ASCIIEncoding(), LARGE_NUM_WRITES);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_WriteByte), nameof(HasOneSerialPort))]
         public void InBreak()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

@@ -1,13 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Apple;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs12;
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -29,31 +26,17 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     SafeSecKeyRefHandle key = Interop.AppleCrypto.X509GetPublicKey(applePal.CertificateHandle);
 
-                    switch (oid.Value)
+                    if (oid.Value == Oids.Rsa)
                     {
-                        case Oids.Rsa:
-                            Debug.Assert(!key.IsInvalid);
-                            return new RSAImplementation.RSASecurityTransforms(key);
-                        case Oids.Dsa:
-                            if (key.IsInvalid)
-                            {
-                                // SecCertificateCopyKey returns null for DSA, so fall back to manually building it.
-                                return DecodeDsaPublicKey(encodedKeyValue, encodedParameters);
-                            }
-                            return new DSAImplementation.DSASecurityTransforms(key);
+                        Debug.Assert(!key.IsInvalid);
+                        return new RSAImplementation.RSAAppleCrypto(key);
                     }
 
                     key.Dispose();
                 }
-                else
+                else if (oid.Value == Oids.Rsa)
                 {
-                    switch (oid.Value)
-                    {
-                        case Oids.Rsa:
-                            return DecodeRsaPublicKey(encodedKeyValue);
-                        case Oids.Dsa:
-                            return DecodeDsaPublicKey(encodedKeyValue, encodedParameters);
-                    }
+                    return DecodeRsaPublicKey(encodedKeyValue);
                 }
 
                 throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
@@ -74,36 +57,6 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            private static DSA DecodeDsaPublicKey(byte[] encodedKeyValue, byte[]? encodedParameters)
-            {
-                SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
-                {
-                    Algorithm = new AlgorithmIdentifierAsn
-                    {
-                        Algorithm = Oids.Dsa,
-                        Parameters = encodedParameters.ToNullableMemory(),
-                    },
-                    SubjectPublicKey = encodedKeyValue,
-                };
-
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                spki.Encode(writer);
-
-                DSA dsa = DSA.Create();
-                DSA? toDispose = dsa;
-
-                try
-                {
-                    writer.Encode(dsa, static (dsa, encoded) => dsa.ImportSubjectPublicKeyInfo(encoded, out _));
-                    toDispose = null;
-                    return dsa;
-                }
-                finally
-                {
-                    toDispose?.Dispose();
-                }
-            }
-
             public X509ContentType GetCertContentType(ReadOnlySpan<byte> rawData)
             {
                 const int errSecUnknownFormat = -25257;
@@ -121,20 +74,9 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     try
                     {
-                        unsafe
-                        {
-                            fixed (byte* pin = rawData)
-                            {
-                                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.BER);
-
-                                using (var manager = new PointerMemoryManager<byte>(pin, rawData.Length))
-                                {
-                                    PfxAsn.Decode(ref reader, manager.Memory, out _);
-                                }
-
-                                contentType = X509ContentType.Pkcs12;
-                            }
-                        }
+                        ValueAsnReader reader = new ValueAsnReader(rawData, AsnEncodingRules.BER);
+                        ValuePfxAsn.Decode(ref reader, out _);
+                        contentType = X509ContentType.Pkcs12;
                     }
                     catch (CryptographicException)
                     {

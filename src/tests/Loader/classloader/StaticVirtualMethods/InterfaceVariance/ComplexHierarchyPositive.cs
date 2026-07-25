@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime;
+using TestLibrary;
 using Xunit;
 
 // This regression test tracks the issue where variant static interface dispatch crashes the runtime, and behaves incorrectly
@@ -72,23 +74,36 @@ namespace VariantStaticInterfaceDispatchRegressionTest
             TestTheBarString<FooBarBazBoz2, Derived>("IBoz");
         }
 
+        static Type s_temp;
+        static Type Roundtrip(Type t)
+        {
+            s_temp = t;
+            return s_temp;
+        }
+
         static string GetTheFooString<T, U>() where T : IFoo<U> { try { return T.GetString(); } catch (AmbiguousImplementationException) { return "AmbiguousImplementationException"; } }
         static string GetTheBarString<T, U>() where T : IBar<U> { try { return T.GetString(); } catch (AmbiguousImplementationException) { return "AmbiguousImplementationException"; } }
+        static string GetTheFooStringDynamic<T, U>() where T : class, IFoo<U> where U : class { try { return T.GetString(); } catch (AmbiguousImplementationException) { return "AmbiguousImplementationException"; } }
+        static string GetTheBarStringDynamic<T, U>() where T : class, IBar<U> where U : class { try { return T.GetString(); } catch (AmbiguousImplementationException) { return "AmbiguousImplementationException"; } }
         static string GetTheFooStringInstance<T, U>() where T : IFoo<U>, new() { try { return (new T()).GetStringInstance(); } catch (AmbiguousImplementationException) { return "AmbiguousImplementationException"; } }
         static string GetTheBarStringInstance<T, U>() where T : IBar<U>, new() { try { return (new T()).GetStringInstance(); } catch (AmbiguousImplementationException) { return "AmbiguousImplementationException"; } }
 
         static void TestTheFooString<T, U>(string expected) where T : IFoo<U>, new()
         {
-            Console.WriteLine($"TestTheFooString {typeof(T).Name} {typeof(T).Name} {expected}");
+            Console.WriteLine($"TestTheFooString {typeof(T).Name} {typeof(U).Name} {expected}");
             Assert.Equal(expected, GetTheFooString<T, U>());
             Assert.Equal(expected, GetTheFooStringInstance<T, U>());
+            Assert.Equal(expected, (string)typeof(Test).GetMethod(nameof(GetTheFooStringDynamic), BindingFlags.NonPublic | BindingFlags.Static)
+                .MakeGenericMethod([Roundtrip(typeof(T)), Roundtrip(typeof(U))]).Invoke(null, []));
         }
 
         static void TestTheBarString<T, U>(string expected) where T : IBar<U>, new()
         {
-            Console.WriteLine($"TestTheBarString {typeof(T).Name} {typeof(T).Name} {expected}");
+            Console.WriteLine($"TestTheBarString {typeof(T).Name} {typeof(U).Name} {expected}");
             Assert.Equal(expected, GetTheBarString<T, U>());
             Assert.Equal(expected, GetTheBarStringInstance<T, U>());
+            Assert.Equal(expected, (string)typeof(Test).GetMethod(nameof(GetTheBarStringDynamic), BindingFlags.NonPublic | BindingFlags.Static)
+                .MakeGenericMethod([Roundtrip(typeof(T)), Roundtrip(typeof(U))]).Invoke(null, []));
         }
 
         interface IFoo<in T>

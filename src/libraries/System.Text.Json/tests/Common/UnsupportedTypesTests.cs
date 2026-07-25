@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Threading;
@@ -29,7 +30,9 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.NotNull(Serializer.GetTypeInfo(typeof(T))); // It should be possible to obtain metadata for the type.
 
-            string json = @"""Some string"""; // Any test payload is fine.
+            string json = """
+                "Some string"
+                """; // Any test payload is fine.
 
             Type type = GetNullableOfTUnderlyingType(typeof(T), out bool isNullableOfT);
             string fullName = type.FullName;
@@ -96,10 +99,10 @@ namespace System.Text.Json.Serialization.Tests
 
                 obj.Prop = (T)(object)null;
                 serialized = await Serializer.SerializeWrapper(obj);
-                Assert.Equal(@"{""Prop"":null}", serialized);
+                Assert.Equal("""{"Prop":null}""", serialized);
 
                 serialized = await Serializer.SerializeWrapper(obj, new JsonSerializerOptions { IgnoreNullValues = true });
-                Assert.Equal(@"{}", serialized);
+                Assert.Equal("{}", serialized);
             }
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS
@@ -166,9 +169,10 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-#if !BUILDING_SOURCE_GENERATOR_TESTS
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "NullableContextAttribute is public in corelib in .NET 8+")]
+        [RequiresUnreferencedCode("Uses reflection to construct and serialize an arbitrary runtime type.")]
+        [RequiresDynamicCode("Uses reflection to construct and serialize an arbitrary runtime type.")]
         public async Task TypeWithNullConstructorParameterName_ThrowsNotSupportedException()
         {
             // Regression test for https://github.com/dotnet/runtime/issues/58690
@@ -180,7 +184,6 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAnyAsync<NotSupportedException>(() => Serializer.SerializeWrapper(value));
             await Assert.ThrowsAnyAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("{}", type));
         }
-#endif
 
         [Fact]
         public async Task RuntimeConverterIsSupported_IntPtr()

@@ -7,6 +7,9 @@
 // Debug: Outputs 1
 // Release: Outputs 0
 
+
+namespace Runtime_55141_2;
+
 using System.Runtime.CompilerServices;
 using Xunit;
 

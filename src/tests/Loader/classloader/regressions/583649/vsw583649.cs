@@ -7,10 +7,12 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public class Type_Class42_Driver
 {
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static int TestEntryPoint()
     {

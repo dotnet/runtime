@@ -48,7 +48,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return GetBidiCategoryNoBoundsChecks((uint)GetCodePointFromString(s, index));
+            return GetBidiCategory((ReadOnlySpan<char>)s, index);
         }
 
         internal static StrongBidiCategory GetBidiCategory(StringBuilder s, int index)
@@ -91,6 +91,33 @@ namespace System.Globalization
             return bidiCategory;
         }
 
+        internal static StrongBidiCategory GetBidiCategory(ReadOnlySpan<char> s, int index)
+        {
+            Debug.Assert(index >= 0 && index < s.Length, "index < s.Length");
+
+            // The logic below follows Table 3-5 in the Unicode Standard, Sec. 3.9.
+            // First char (high surrogate) = 110110wwwwxxxxxx
+            // Second char (low surrogate) = 110111xxxxxxxxxx
+
+            int c = (int)s[index];
+            if (index < s.Length - 1)
+            {
+                int temp1 = c - HIGH_SURROGATE_START; // temp1 = 000000wwwwxxxxxx
+                if ((uint)temp1 <= HIGH_SURROGATE_RANGE)
+                {
+                    int temp2 = (int)s[index + 1] - LOW_SURROGATE_START; // temp2 = 000000xxxxxxxxxx
+                    if ((uint)temp2 <= HIGH_SURROGATE_RANGE)
+                    {
+                        // |--------temp1--||-temp2--|
+                        // 00000uuuuuuxxxxxxxxxxxxxxxx (where uuuuu = wwww + 1)
+                        c = (temp1 << 10) + temp2 + UNICODE_PLANE01_START;
+                    }
+                }
+            }
+
+            return GetBidiCategoryNoBoundsChecks((uint)c);
+        }
+
         /*
          * GetDecimalDigitValue
          * ====================
@@ -115,7 +142,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return GetDecimalDigitValueInternalNoBoundsCheck((uint)GetCodePointFromString(s, index));
+            return GetDecimalDigitValueInternalNoBoundsCheck((uint)GetCodePoint(s, index));
         }
 
         private static int GetDecimalDigitValueInternalNoBoundsCheck(uint codePoint)
@@ -149,7 +176,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return GetDigitValueInternalNoBoundsCheck((uint)GetCodePointFromString(s, index));
+            return GetDigitValueInternalNoBoundsCheck((uint)GetCodePoint(s, index));
         }
 
         private static int GetDigitValueInternalNoBoundsCheck(uint codePoint)
@@ -228,7 +255,7 @@ namespace System.Globalization
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static double GetNumericValueInternal(string s, int index) => GetNumericValueNoBoundsCheck((uint)GetCodePointFromString(s, index));
+        internal static double GetNumericValueInternal(string s, int index) => GetNumericValueNoBoundsCheck((uint)GetCodePoint(s, index));
 
         private static double GetNumericValueNoBoundsCheck(uint codePoint)
         {
@@ -365,7 +392,7 @@ namespace System.Globalization
             Debug.Assert(value != null, "value can not be null");
             Debug.Assert(index < value.Length);
 
-            return GetUnicodeCategoryNoBoundsChecks((uint)GetCodePointFromString(value, index));
+            return GetUnicodeCategoryNoBoundsChecks((uint)GetCodePoint(value, index));
         }
 
         /// <summary>
@@ -378,7 +405,7 @@ namespace System.Globalization
             Debug.Assert(str.Length > 0);
             Debug.Assert(index >= 0 && index < str.Length);
 
-            uint codePoint = (uint)GetCodePointFromString(str, index);
+            uint codePoint = (uint)GetCodePoint(str, index);
             UnicodeDebug.AssertIsValidCodePoint(codePoint);
 
             charLength = (codePoint >= UNICODE_PLANE01_START) ? 2 /* surrogate pair */ : 1 /* BMP char */;
@@ -406,9 +433,8 @@ namespace System.Globalization
         /// WARNING: since it doesn't throw an exception it CAN return a value
         /// in the surrogate range D800-DFFF, which is not a legal scalar value.
         /// </summary>
-        private static int GetCodePointFromString(string s, int index)
+        private static int GetCodePoint(ReadOnlySpan<char> s, int index)
         {
-            Debug.Assert(s != null);
             Debug.Assert((uint)index < (uint)s.Length, "index < s.Length");
 
             int codePoint = 0;

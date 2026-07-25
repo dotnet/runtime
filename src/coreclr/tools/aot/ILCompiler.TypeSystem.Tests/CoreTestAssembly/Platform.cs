@@ -214,6 +214,7 @@ namespace System.Runtime.InteropServices
     public sealed class MarshalAsAttribute : Attribute
     {
         public MarshalAsAttribute(UnmanagedType unmanagedType) { }
+        public int IidParameterIndex { get; set; }
     }
 
     public sealed class ComImportAttribute : Attribute
@@ -245,6 +246,7 @@ namespace System.Runtime.CompilerServices
     {
         public const string ByRefFields = nameof(ByRefFields);
         public const string ByRefLikeGenerics = nameof(ByRefLikeGenerics);
+        public const string DefaultImplementationsOfInterfaces = nameof(DefaultImplementationsOfInterfaces);
         public const string UnmanagedSignatureCallingConvention = nameof(UnmanagedSignatureCallingConvention);
         public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
         public const string CovariantReturnsOfClasses = "CovariantReturnsOfClasses";

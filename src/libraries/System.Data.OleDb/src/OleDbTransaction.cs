@@ -4,11 +4,13 @@
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Data.OleDb
 {
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
     public sealed class OleDbTransaction : DbTransaction
     {
         private readonly OleDbTransaction? _parentTransaction; // strong reference to keep parent alive
@@ -286,9 +288,9 @@ namespace System.Data.OleDb
                 _parentTransaction._nestedTransaction = null;
                 //_parentTransaction = null;
             }
-            else if (null != _parentConnection)
+            else
             {
-                _parentConnection.LocalTransaction = null;
+                _parentConnection?.LocalTransaction = null;
             }
             _parentConnection = null!;
         }

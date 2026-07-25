@@ -14,10 +14,12 @@ void
 mono_metadata_update_init (void);
 
 enum MonoModifiableAssemblies {
-	/* modifiable assemblies are disabled */
-	MONO_MODIFIABLE_ASSM_NONE = 0,
+	/* modifiable assemblies are implicitly disabled */
+	MONO_MODIFIABLE_ASSM_UNSET = 0,
+	/* modifiable assemblies are explicitly disabled */
+	MONO_MODIFIABLE_ASSM_NONE = 1,
 	/* assemblies with the Debug flag are modifiable */
-	MONO_MODIFIABLE_ASSM_DEBUG = 1,
+	MONO_MODIFIABLE_ASSM_DEBUG = 2,
 };
 
 typedef MonoStreamHeader* (*MetadataHeapGetterFunc) (MonoImage*);

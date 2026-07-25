@@ -40,7 +40,7 @@ namespace System.Tests
                 return;
             }
 
-            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual);
+            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString());
         }
 
         //
@@ -800,18 +800,12 @@ namespace System.Tests
         public static void op_ModulusTest()
         {
             AssertBitwiseEqual(Half.NaN, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(Half.NegativeInfinity, Two));
-
-            // https://github.com/dotnet/runtime/issues/67993
-            // AssertBitwiseEqual(NegativeZero, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(Half.MinValue, PositiveTwo));
-
+            AssertBitwiseEqual(NegativeZero, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(Half.MinValue, Two));
             AssertBitwiseEqual(NegativeOne, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(NegativeOne, Two));
             AssertBitwiseEqual(-MinNormal, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(-MinNormal, Two));
             AssertBitwiseEqual(-MaxSubnormal, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(-MaxSubnormal, Two));
             AssertBitwiseEqual(-Half.Epsilon, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(-Half.Epsilon, Two)); ;
-
-            // https://github.com/dotnet/runtime/issues/67993
-            // AssertBitwiseEqual(NegativeZero, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(NegativeZero, PositiveTwo));
-
+            AssertBitwiseEqual(NegativeZero, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(NegativeZero, Two));
             AssertBitwiseEqual(Half.NaN, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(Half.NaN, Two));
             AssertBitwiseEqual(Zero, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(Zero, Two));
             AssertBitwiseEqual(Half.Epsilon, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(Half.Epsilon, Two));

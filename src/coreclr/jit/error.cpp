@@ -78,6 +78,12 @@ void DECLSPEC_NORETURN implLimitation()
 }
 
 /*****************************************************************************/
+void DECLSPEC_NORETURN implReadyToRunUnsupported()
+{
+    fatal(CORJIT_R2R_UNSUPPORTED);
+}
+
+/*****************************************************************************/
 void DECLSPEC_NORETURN NOMEM()
 {
 #if MEASURE_FATAL

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
@@ -14,9 +15,9 @@ namespace ILCompiler
     /// </summary>
     public sealed class LibraryInitializers
     {
-        private const string LibraryInitializerContainerNamespaceName = "Internal.Runtime.CompilerHelpers";
-        private const string LibraryInitializerContainerTypeName = "LibraryInitializer";
-        private const string LibraryInitializerMethodName = "InitializeLibrary";
+        private static ReadOnlySpan<byte> LibraryInitializerContainerNamespaceName => "Internal.Runtime.CompilerHelpers"u8;
+        private static ReadOnlySpan<byte> LibraryInitializerContainerTypeName => "LibraryInitializer"u8;
+        private static ReadOnlySpan<byte> LibraryInitializerMethodName => "InitializeLibrary"u8;
 
         private List<MethodDesc> _libraryInitializerMethods;
 

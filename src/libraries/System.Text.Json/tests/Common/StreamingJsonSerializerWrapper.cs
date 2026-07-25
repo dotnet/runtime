@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Text.Json.Serialization.Tests
@@ -18,16 +19,16 @@ namespace System.Text.Json.Serialization.Tests
         public abstract bool IsAsyncSerializer { get; }
         public virtual bool ForceSmallBufferInOptions { get; } = false;
 
-        public abstract Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerOptions? options = null);
-        public abstract Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions? options = null);
-        public abstract Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerContext context);
-        public abstract Task SerializeWrapper<T>(Stream stream, T value, JsonTypeInfo<T> jsonTypeInfo);
-        public abstract Task SerializeWrapper(Stream stream, object value, JsonTypeInfo jsonTypeInfo);
-        public abstract Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions? options = null);
-        public abstract Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions? options = null);
-        public abstract Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerContext context);
-        public abstract Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo);
-        public abstract Task<object> DeserializeWrapper(Stream utf8Json, JsonTypeInfo jsonTypeInfo);
+        public abstract Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default);
+        public abstract Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default);
+        public abstract Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerContext context, CancellationToken cancellationToken = default);
+        public abstract Task SerializeWrapper<T>(Stream stream, T value, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default);
+        public abstract Task SerializeWrapper(Stream stream, object value, JsonTypeInfo jsonTypeInfo, CancellationToken cancellationToken = default);
+        public abstract Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default);
+        public abstract Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default);
+        public abstract Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerContext context, CancellationToken cancellationToken = default);
+        public abstract Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default);
+        public abstract Task<object> DeserializeWrapper(Stream utf8Json, JsonTypeInfo jsonTypeInfo, CancellationToken cancellationToken = default);
 
         public override async Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
         {

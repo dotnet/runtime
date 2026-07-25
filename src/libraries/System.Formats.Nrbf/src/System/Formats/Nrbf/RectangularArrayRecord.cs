@@ -49,7 +49,7 @@ internal sealed class RectangularArrayRecord : ArrayRecord
         // We can not deserialize non-string types.
         // This method returns arrays of SerializationRecord for arrays of complex types.
         Array result =
-#if NET9_0_OR_GREATER
+#if NET
             storeStrings
                 ? Array.CreateInstanceFromArrayType(arrayType, _lengths)
                 : Array.CreateInstance(_elementType, _lengths);

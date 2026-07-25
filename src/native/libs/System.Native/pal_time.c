@@ -32,7 +32,7 @@ int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
 
     updatedTimes[1].tv_sec = (time_t)times[1].tv_sec;
     updatedTimes[1].tv_nsec = (long)times[1].tv_nsec;
-    while (CheckInterrupted(result = utimensat(AT_FDCWD, path, updatedTimes, AT_SYMLINK_NOFOLLOW)));
+    while (CheckInterrupted(result = utimensat((int)AT_FDCWD, path, updatedTimes, AT_SYMLINK_NOFOLLOW)));
 #else
     struct timeval updatedTimes[2];
     updatedTimes[0].tv_sec = (long)times[0].tv_sec;
@@ -91,7 +91,7 @@ int64_t SystemNative_GetLowResolutionTimestamp(void)
 
 int64_t SystemNative_GetBootTimeTicks(void)
 {
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
     struct timespec ts;
 
     int result = clock_gettime(CLOCK_BOOTTIME, &ts);
@@ -114,7 +114,7 @@ int64_t SystemNative_GetBootTimeTicks(void)
 
 double SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
 {
-#if defined(HAVE_GETRUSAGE)
+#ifndef HOST_WASI
     uint64_t kernelTime = 0;
     uint64_t userTime = 0;
 

@@ -35,6 +35,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public const string Disable = "Disable";
         }
 
+        public static class DisableRuntimeVersions
+        {
+            public const string EnvironmentVariable = "DOTNET_DISABLE_RUNTIME_VERSIONS";
+        }
+
         public static class FxVersion
         {
             public const string CommandLineArgument = "--fx-version";
@@ -128,6 +133,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public const int AppArgNotRunnable = unchecked((int)0x80008094);
             public const int AppHostExeNotBoundFailure = unchecked((int)0x80008095);
             public const int FrameworkMissingFailure = unchecked((int)0x80008096);
+            public const int SdkResolveFailure = unchecked((int)0x8000809b);
             public const int FrameworkCompatFailure = unchecked((int)0x8000809c);
             public const int BundleExtractionFailure = unchecked((int)0x8000809f);
 

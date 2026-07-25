@@ -33,7 +33,7 @@
 <!--                                          -->
 <!-- These HRESULTs are used for mapping managed exceptions to COM error codes -->
 <!-- and vice versa through COM Interop.  For background on COM error codes see -->
-<!-- http://msdn.microsoft.com/library/default.asp?url=/library/en-us/com/error_9td2.asp. -->
+<!-- https://learn.microsoft.com/windows/win32/com/com-error-codes . -->
 
 <!-- The range (0x8013xxxx) and (0x13xxxx) is reserved for the .NET Framework SDK teams. -->
 <!-- Within that range, the following subranges have been allocated for different feature areas: -->
@@ -1795,12 +1795,6 @@
 	<SymbolicName>CORDBG_E_ILLEGAL_SHUTDOWN_ORDER</SymbolicName>
 	<Message>"Trying to shutdown out of order."</Message>
 	<Comment> Trying to shutdown out of order. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131c16">
-	<SymbolicName>CORDBG_E_CANNOT_DEBUG_FIBER_PROCESS</SymbolicName>
-	<Message>"Debugging fiber mode managed process is not supported."</Message>
-	<Comment> For Whidbey, we don't support debugging fiber mode managed process </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131c17">

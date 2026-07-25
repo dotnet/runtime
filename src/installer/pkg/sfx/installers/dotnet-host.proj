@@ -13,10 +13,7 @@
     <WixDependencyKeyName>Dotnet_CLI_SharedHost</WixDependencyKeyName>
     <OutputFilesCandleVariable>HostSrc</OutputFilesCandleVariable>
 
-    <!-- Scheduling RemoveExistingProducts after InstallInitialize will remove the previous install first
-         before installing the new version. This allows compositional changes in major upgrades
-         and supports rollback, provided it is not turned off using machine policies (DisableRollback is not set to 1). -->
-    <MajorUpgradeSchedule>afterInstallInitialize</MajorUpgradeSchedule>
+    <MajorUpgradeSchedule>afterInstallExecute</MajorUpgradeSchedule>
     <VersionInstallerName>false</VersionInstallerName>
     <UseBrandingNameInLinuxPackageDescription>true</UseBrandingNameInLinuxPackageDescription>
     <MacOSComponentNamePackType>sharedhost</MacOSComponentNamePackType>
@@ -30,7 +27,7 @@
   <ItemGroup>
     <WixSrcFile Include="host.wxs" />
     <WixExtraComponentGroupRefId Include="InstallSharedHostandDetectionKeys" />
-    <CandleVariables Include="ExtraPropertyRefIds" Value="ProductCPU;RTM_ProductVersion;DISABLE_SETTING_HOST_PATH" />
+    <CandleVariables Include="ExtraPropertyRefIds" Value="ProductCPU;RTM_ProductVersion" />
     <!-- Enables stable provider key - do not change -->
     <CandleVariables Include="DependencyKey" Value="$(WixDependencyKeyName)_$(MajorVersion).$(MinorVersion)_$(TargetArchitecture)" />
   </ItemGroup>
@@ -51,10 +48,16 @@
       <FilesToPublish Include="$(InstallerProjectRoot)pkg\LICENSE-MSFT.TXT"
             Destination="$(OutputPath)LICENSE.txt"
             Condition="'$(TargetsUnix)' != 'true'"/>
+      <FilesToPublish Include="$(MSBuildThisFileDirectory)dnx"
+            Destination="$(OutputPath)dnx"
+            Condition="'$(TargetsUnix)' == 'true'" />
     </ItemGroup>
 
     <Copy SourceFiles="@(FilesToPublish)"
           DestinationFiles="%(FilesToPublish.Destination)" />
+
+    <Exec Command="chmod 755 &quot;$(OutputPath)dnx&quot;"
+          Condition="'$(TargetsUnix)' == 'true' and !$([MSBuild]::IsOSPlatform('windows'))" />
   </Target>
 
   <Target Name="PublishSymbolsToDisk">
@@ -75,6 +78,7 @@
 
   <ItemGroup>
     <LinuxPackageSymlink Include="/usr/bin/dotnet" LinkTarget="../share/dotnet/dotnet" />
+    <LinuxPackageSymlink Include="/usr/bin/dnx" LinkTarget="../share/dotnet/dnx" />
     <LinuxPackageConflicts Include="dotnet;dotnet-nightly" />
     <RpmOwnedDirectory Include="/usr/share/dotnet" />
   </ItemGroup>

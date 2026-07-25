@@ -89,7 +89,7 @@ private:
         };
 
         RationalizeVisitor(Rationalizer& rationalizer)
-            : GenTreeVisitor<RationalizeVisitor>(rationalizer.comp)
+            : GenTreeVisitor<RationalizeVisitor>(rationalizer.m_compiler)
             , m_rationalizer(rationalizer)
         {
         }

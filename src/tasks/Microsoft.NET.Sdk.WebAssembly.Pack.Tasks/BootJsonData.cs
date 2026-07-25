@@ -59,11 +59,6 @@ public class BootJsonData
     public int debugLevel { get; set; }
 
     /// <summary>
-    /// Gets a value that determines if the linker is enabled.
-    /// </summary>
-    public bool? linkerEnabled { get; set; }
-
-    /// <summary>
     /// Config files for the application
     /// </summary>
     /// <remarks>
@@ -122,6 +117,30 @@ public class BootJsonData
     /// Gets or sets pthread pool unused size.
     /// </summary>
     public int? pthreadPoolUnusedSize { get; set; }
+
+    /// <summary>
+    /// internal flags for test instrumentation
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public bool? exitOnUnhandledError { get; set; }
+
+    /// <summary>
+    /// internal flags for test instrumentation
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public bool? appendElementOnExit { get; set; }
+
+    /// <summary>
+    /// internal flags for test instrumentation
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public bool? logExitCode { get; set; }
+
+    /// <summary>
+    /// internal flags for test instrumentation
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public bool? asyncFlushOnExit { get; set; }
 }
 
 /// <summary>
@@ -162,6 +181,9 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary runtime { get; set; }
 
+    /// <remarks>
+    /// Removed in .NET 11; kept for compatibility when the .NET 11 SDK builds projects targeting earlier TFMs.
+    /// </remarks>
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary jsModuleWorker { get; set; }
 
@@ -242,6 +264,7 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, AdditionalAsset> runtimeAssets { get; set; }
 
+    // this field this only for Mono
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, ResourceHashesByNameDictionary> coreVfs { get; set; }
 
@@ -351,14 +374,16 @@ public class JsAsset
 public class SymbolsAsset
 {
     public string name { get; set; }
+    public string cache { get; set; }
 }
 
 [DataContract]
 public class WasmAsset
 {
     public string name { get; set; }
-    public string integrity { get; set; }
+    public string hash { get; set; }
     public string resolvedUrl { get; set; }
+    public string cache { get; set; }
 }
 
 [DataContract]
@@ -366,8 +391,9 @@ public class GeneralAsset
 {
     public string virtualPath { get; set; }
     public string name { get; set; }
-    public string integrity { get; set; }
+    public string hash { get; set; }
     public string resolvedUrl { get; set; }
+    public string cache { get; set; }
 }
 
 [DataContract]
@@ -375,8 +401,9 @@ public class VfsAsset
 {
     public string virtualPath { get; set; }
     public string name { get; set; }
-    public string integrity { get; set; }
+    public string hash { get; set; }
     public string resolvedUrl { get; set; }
+    public string cache { get; set; }
 }
 
 public enum GlobalizationMode : int

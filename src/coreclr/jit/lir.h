@@ -40,6 +40,11 @@ public:
 
             RegOptional = 0x04, // Set on a node if it produces a value, but does not
                                 // require a register (i.e. it can be used from memory).
+
+#ifdef TARGET_WASM
+            MultiplyUsed = 0x08, // Set by lowering on nodes that the RA should allocate into
+                                 // a dedicated register (WASM local), for multiple uses.
+#endif                           // TARGET_WASM
         };
     };
 

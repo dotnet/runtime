@@ -92,6 +92,11 @@
     <RunSettingsTestCaseFilter>$(TestCaseFilter)</RunSettingsTestCaseFilter>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+    <PackageReference Include="Microsoft.Testing.Extensions.CrashDump" Version="$(MicrosoftTestingPlatformVersion)" />
+    <PackageReference Include="Microsoft.Testing.Extensions.HangDump" Version="$(MicrosoftTestingPlatformVersion)" />
+  </ItemGroup>
+
   <Import Project="$(RepositoryEngineeringDir)testing\runsettings.targets"
           Condition="'$(IsTestProject)' == 'true'" />
 

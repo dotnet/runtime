@@ -3,20 +3,23 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ExceptionInfo : IData<ExceptionInfo>
+[CdacType(nameof(DataType.ExceptionInfo))]
+internal sealed partial class ExceptionInfo : IData<ExceptionInfo>
 {
-    static ExceptionInfo IData<ExceptionInfo>.Create(Target target, TargetPointer address)
-        => new ExceptionInfo(target, address);
+    [Field] public partial TargetPointer PreviousNestedInfo { get; }
+    [Field] public partial TargetPointer ThrownObject { get; }
+    [Field] public partial uint ExceptionFlags { get; }
+    [Field] public partial TargetPointer StackLowBound { get; }
+    [Field] public partial TargetPointer StackHighBound { get; }
+    [Field] public partial TargetPointer ExceptionRecord { get; }
+    [Field] public partial TargetPointer ContextRecord { get; }
 
-    public ExceptionInfo(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ExceptionInfo);
-
-        PreviousNestedInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(PreviousNestedInfo)].Offset);
-        ThrownObject = target.ProcessedData.GetOrAdd<ObjectHandle>(
-            target.ReadPointer(address + (ulong)type.Fields[nameof(ThrownObject)].Offset));
-    }
-
-    public TargetPointer PreviousNestedInfo { get; init; }
-    public ObjectHandle ThrownObject { get; init; }
+    // Only present on Windows platforms
+    [Field] public partial TargetPointer? ExceptionWatsonBucketTrackerBuckets { get; }
+    [Field] public partial byte PassNumber { get; }
+    [Field] public partial TargetPointer CSFEHClause { get; }
+    [Field] public partial TargetPointer CSFEnclosingClause { get; }
+    [Field] public partial TargetPointer CallerOfActualHandlerFrame { get; }
+    [Field] public partial uint ClauseForCatchHandlerStartPC { get; }
+    [Field] public partial uint ClauseForCatchHandlerEndPC { get; }
 }

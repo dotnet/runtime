@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -296,6 +296,9 @@
   </data>
   <data name="MethodFallthrough" xml:space="preserve">
     <value>Fall through end of the method without returning.</value>
+  </data>
+  <data name="EHClauseOutOfRange" xml:space="preserve">
+    <value>Exception handling clause bounds outside code size.</value>
   </data>
   <data name="NewobjAbstractClass" xml:space="preserve">
     <value>Cannot construct an instance of abstract class.</value>

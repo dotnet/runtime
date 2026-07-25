@@ -13,7 +13,7 @@ namespace System.Threading.Tasks.Tests
 {
     public sealed class ParallelForEachAsyncTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void InvalidArguments_ThrowsException()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", () => { Parallel.ForEachAsync((IEnumerable<int>)null, (item, cancellationToken) => default); });
@@ -41,7 +41,7 @@ namespace System.Threading.Tasks.Tests
             AssertExtensions.Throws<ArgumentNullException>("body", () => { Parallel.ForEachAsync(EnumerableRangeAsync(1, 10), new ParallelOptions(), null); });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void PreCanceled_CancelsSynchronously()
         {
             var box = new StrongBox<bool>(false);
@@ -87,7 +87,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(-1)]
         [InlineData(1)]
         [InlineData(2)]
@@ -120,7 +120,7 @@ namespace System.Threading.Tasks.Tests
             Assert.InRange(activeWorkers, 0, dop == -1 ? Environment.ProcessorCount : dop);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(-1)]
         [InlineData(1)]
         [InlineData(2)]
@@ -158,7 +158,7 @@ namespace System.Threading.Tasks.Tests
             Assert.InRange(activeWorkers, 0, dop == -1 ? Environment.ProcessorCount : dop);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(-1)]
         [InlineData(1)]
         [InlineData(2)]
@@ -192,7 +192,7 @@ namespace System.Threading.Tasks.Tests
             Assert.InRange(activeWorkers, 0, Math.Min(MaxSchedulerLimit, dop == -1 ? Environment.ProcessorCount : dop));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(-1)]
         [InlineData(1)]
         [InlineData(2)]
@@ -232,7 +232,7 @@ namespace System.Threading.Tasks.Tests
             Assert.InRange(activeWorkers, 0, Math.Min(MaxSchedulerLimit, dop == -1 ? Environment.ProcessorCount : dop));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Dop_NegativeTaskSchedulerLimitTreatedAsDefault_For()
         {
             bool exit = false;
@@ -259,7 +259,7 @@ namespace System.Threading.Tasks.Tests
             Assert.InRange(activeWorkers, 0, Environment.ProcessorCount);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Dop_NegativeTaskSchedulerLimitTreatedAsDefault_Sync()
         {
             static IEnumerable<int> IterateUntilSet(StrongBox<bool> box)
@@ -292,7 +292,7 @@ namespace System.Threading.Tasks.Tests
             Assert.InRange(activeWorkers, 0, Environment.ProcessorCount);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Dop_NegativeTaskSchedulerLimitTreatedAsDefault_Async()
         {
             static async IAsyncEnumerable<int> IterateUntilSet(StrongBox<bool> box)
@@ -326,7 +326,7 @@ namespace System.Threading.Tasks.Tests
             Assert.InRange(activeWorkers, 0, Environment.ProcessorCount);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task RunsAsynchronously_For()
         {
             var cts = new CancellationTokenSource();
@@ -339,7 +339,7 @@ namespace System.Threading.Tasks.Tests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task RunsAsynchronously_EvenForEntirelySynchronousWork_Sync()
         {
             static IEnumerable<int> Iterate()
@@ -357,7 +357,7 @@ namespace System.Threading.Tasks.Tests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task RunsAsynchronously_EvenForEntirelySynchronousWork_Async()
         {
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -377,7 +377,7 @@ namespace System.Threading.Tasks.Tests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(-1)]
         [InlineData(1)]
         [InlineData(2)]
@@ -416,7 +416,7 @@ namespace System.Threading.Tasks.Tests
             Assert.InRange(activeWorkers, 0, dop == -1 ? Environment.ProcessorCount : dop);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void EmptyRange_For()
         {
             int counter = 0;
@@ -430,7 +430,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(0, counter);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task EmptySource_Sync()
         {
             int counter = 0;
@@ -443,7 +443,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(0, counter);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task EmptySource_Async()
         {
             int counter = 0;
@@ -456,7 +456,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(0, counter);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task AllItemsEnumeratedOnce_For(bool yield)
@@ -501,7 +501,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task AllItemsEnumeratedOnce_Sync(bool yield)
@@ -531,7 +531,7 @@ namespace System.Threading.Tasks.Tests
             Assert.False(set.Contains(Start + Count + 1));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task AllItemsEnumeratedOnce_Async(bool yield)
@@ -561,7 +561,7 @@ namespace System.Threading.Tasks.Tests
             Assert.False(set.Contains(Start + Count + 1));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task TaskScheduler_AllCodeExecutedOnCorrectScheduler_For(bool defaultScheduler)
@@ -589,7 +589,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(Enumerable.Range(1, 100), cq.OrderBy(i => i));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task TaskScheduler_AllCodeExecutedOnCorrectScheduler_Sync(bool defaultScheduler)
@@ -627,7 +627,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(Enumerable.Range(1, 100), cq.OrderBy(i => i));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task TaskScheduler_AllCodeExecutedOnCorrectScheduler_Async(bool defaultScheduler)
@@ -666,7 +666,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(Enumerable.Range(1, 100), cq.OrderBy(i => i));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Cancellation_CancelsIterationAndReturnsCanceledTask_For()
         {
             using var cts = new CancellationTokenSource(10);
@@ -677,7 +677,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(cts.Token, oce.CancellationToken);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Cancellation_CancelsIterationAndReturnsCanceledTask_Sync()
         {
             static async IAsyncEnumerable<int> Infinite()
@@ -698,7 +698,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(cts.Token, oce.CancellationToken);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Cancellation_CancelsIterationAndReturnsCanceledTask_Async()
         {
             static async IAsyncEnumerable<int> InfiniteAsync()
@@ -719,7 +719,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(cts.Token, oce.CancellationToken);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Cancellation_CorrectTokenPassedToAsyncEnumerator()
         {
             static async IAsyncEnumerable<CancellationToken> YieldTokenAsync([EnumeratorCancellation] CancellationToken cancellationToken)
@@ -735,7 +735,7 @@ namespace System.Threading.Tasks.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Cancellation_SameTokenPassedToEveryInvocation_For()
         {
             var cq = new ConcurrentQueue<CancellationToken>();
@@ -750,7 +750,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(1, cq.Distinct().Count());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Cancellation_SameTokenPassedToEveryInvocation_Sync()
         {
             var cq = new ConcurrentQueue<CancellationToken>();
@@ -765,7 +765,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(1, cq.Distinct().Count());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Cancellation_SameTokenPassedToEveryInvocation_Async()
         {
             var cq = new ConcurrentQueue<CancellationToken>();
@@ -780,7 +780,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(1, cq.Distinct().Count());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Cancellation_HasPriorityOverExceptions_For()
         {
             var tcs = new TaskCompletionSource();
@@ -806,7 +806,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(t.IsCanceled);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Cancellation_HasPriorityOverExceptions_Sync()
         {
             static IEnumerable<int> Iterate()
@@ -838,7 +838,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(t.IsCanceled);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Cancellation_HasPriorityOverExceptions_Async()
         {
             static async IAsyncEnumerable<int> Iterate()
@@ -874,7 +874,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(t.IsCanceled);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task Cancellation_FaultsForOceForNonCancellation_For(bool internalToken)
@@ -890,7 +890,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(t.IsFaulted);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task Cancellation_FaultsForOceForNonCancellation(bool internalToken)
@@ -916,7 +916,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(t.IsFaulted);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(0, 4)]
         [InlineData(1, 4)]
         [InlineData(2, 4)]
@@ -948,7 +948,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(numThrowingNonCanceledOce, t.Exception.InnerExceptions.Count(e => e is OperationCanceledException));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(0, 4)]
         [InlineData(1, 4)]
         [InlineData(2, 4)]
@@ -980,7 +980,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(numThrowingNonCanceledOce, t.Exception.InnerExceptions.Count(e => e is OperationCanceledException));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Exception_FromGetEnumerator_Sync()
         {
             Task t = Parallel.ForEachAsync((IEnumerable<int>)new ThrowsFromGetEnumerator(), (item, cancellationToken) => default);
@@ -989,7 +989,7 @@ namespace System.Threading.Tasks.Tests
             Assert.IsType<FormatException>(t.Exception.InnerException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Exception_FromGetEnumerator_Async()
         {
             Task t = Parallel.ForEachAsync((IAsyncEnumerable<int>)new ThrowsFromGetEnumerator(), (item, cancellationToken) => default);
@@ -998,7 +998,7 @@ namespace System.Threading.Tasks.Tests
             Assert.IsType<DivideByZeroException>(t.Exception.InnerException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Exception_NullFromGetEnumerator_Sync()
         {
             Task t = Parallel.ForEachAsync((IEnumerable<int>)new ReturnsNullFromGetEnumerator(), (item, cancellationToken) => default);
@@ -1007,7 +1007,7 @@ namespace System.Threading.Tasks.Tests
             Assert.IsType<InvalidOperationException>(t.Exception.InnerException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Exception_NullFromGetEnumerator_Async()
         {
             Task t = Parallel.ForEachAsync((IAsyncEnumerable<int>)new ReturnsNullFromGetEnumerator(), (item, cancellationToken) => default);
@@ -1016,7 +1016,7 @@ namespace System.Threading.Tasks.Tests
             Assert.IsType<InvalidOperationException>(t.Exception.InnerException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Exception_FromMoveNext_Sync()
         {
             static IEnumerable<int> Iterate()
@@ -1036,7 +1036,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(t.IsFaulted);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Exception_FromMoveNext_Async()
         {
             static async IAsyncEnumerable<int> Iterate()
@@ -1057,7 +1057,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(t.IsFaulted);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Exception_FromLoopBody_For()
         {
             var barrier = new Barrier(2);
@@ -1078,7 +1078,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(t.Exception.InnerExceptions, e => e is InvalidTimeZoneException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Exception_FromLoopBody_Sync()
         {
             static IEnumerable<int> Iterate()
@@ -1105,7 +1105,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(t.Exception.InnerExceptions, e => e is InvalidTimeZoneException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Exception_FromLoopBody_Async()
         {
             static async IAsyncEnumerable<int> Iterate()
@@ -1146,7 +1146,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(t.Exception.InnerExceptions, e => e is DivideByZeroException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Exception_FromDispose_Sync()
         {
             Task t = Parallel.ForEachAsync((IEnumerable<int>)new ThrowsExceptionFromDispose(), (item, cancellationToken) => default);
@@ -1154,7 +1154,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(t.IsFaulted);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Exception_FromDispose_Async()
         {
             Task t = Parallel.ForEachAsync((IAsyncEnumerable<int>)new ThrowsExceptionFromDispose(), (item, cancellationToken) => default);
@@ -1162,7 +1162,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(t.IsFaulted);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Exception_FromDisposeAndCancellationCallback_Sync()
         {
             Task t = Parallel.ForEachAsync((IEnumerable<int>)new ThrowsExceptionFromDisposeAndCancellationCallback(), (item, cancellationToken) => default);
@@ -1171,7 +1171,7 @@ namespace System.Threading.Tasks.Tests
             Assert.DoesNotContain(t.Exception.InnerExceptions, e => e is InvalidTimeZoneException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Exception_FromDisposeAndCancellationCallback_Async()
         {
             Task t = Parallel.ForEachAsync((IAsyncEnumerable<int>)new ThrowsExceptionFromDisposeAndCancellationCallback(), (item, cancellationToken) => default);
@@ -1180,7 +1180,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(t.Exception.InnerExceptions, e => e is InvalidTimeZoneException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Exception_ImplicitlyCancelsOtherWorkers_For()
         {
             await Assert.ThrowsAsync<Exception>(() => Parallel.ForAsync(0, long.MaxValue, async (item, cancellationToken) =>
@@ -1208,7 +1208,7 @@ namespace System.Threading.Tasks.Tests
             }));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Exception_ImplicitlyCancelsOtherWorkers_Sync()
         {
             static IEnumerable<int> Iterate()
@@ -1245,7 +1245,7 @@ namespace System.Threading.Tasks.Tests
             }));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Exception_ImplicitlyCancelsOtherWorkers_Async()
         {
             static async IAsyncEnumerable<int> Iterate()
@@ -1283,7 +1283,7 @@ namespace System.Threading.Tasks.Tests
             }));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Exception_LockWaitAsyncCancellationDoesntPropagate()
         {
             static async IAsyncEnumerable<int> Iterate(Task signal)
@@ -1313,7 +1313,7 @@ namespace System.Threading.Tasks.Tests
             Assert.IsType<FormatException>(ae.InnerException);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ExecutionContext_FlowsToWorkerBodies_For(bool defaultScheduler)
@@ -1331,7 +1331,7 @@ namespace System.Threading.Tasks.Tests
             });
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ExecutionContext_FlowsToWorkerBodies_Sync(bool defaultScheduler)
@@ -1357,7 +1357,7 @@ namespace System.Threading.Tasks.Tests
             });
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
@@ -1393,7 +1393,7 @@ namespace System.Threading.Tasks.Tests
             await t;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task GitHubIssue_114262_Async()
         {
             var options = new ParallelOptions

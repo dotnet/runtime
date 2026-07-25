@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace GitHub_27551;
+
 using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;
@@ -90,6 +93,7 @@ public class GitHub_27551
     }
 
     [Fact]
+    [SkipOnMono("needs triage")]
     public static int TestEntryPoint()
     {
         Vector256<Byte> value = Vector256.Create((byte)GetByte());

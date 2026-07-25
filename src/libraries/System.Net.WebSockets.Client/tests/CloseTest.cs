@@ -422,9 +422,13 @@ namespace System.Net.WebSockets.Client.Tests
 
                 await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
 
-                // There is a race condition in the above.  If the ReceiveAsync receives the sent close message from the server,
-                // then it will complete successfully and the socket will close successfully.  If the CloseAsync receive the sent
-                // close message from the server, then the receive async will end up getting aborted along with the socket.
+                // The outcome depends on timing. Two outcomes are acceptable:
+                //   1. The pending ReceiveAsync picks up the server's close frame cleanly: it completes with a Close
+                //      message and the socket transitions to Closed.
+                //   2. The close handshake triggers an internal Abort (e.g. WaitForServerToCloseConnectionAsync
+                //      times out because the server doesn't close TCP within its 1s window): state becomes Aborted,
+                //      the parked receive's stream read fails, and ReceiveAsyncPrivate translates the exception to
+                //      OperationCanceledException because of the Aborted state.
                 try
                 {
                     await t;

@@ -598,7 +598,7 @@ mono_find_jit_info (MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev
 	if (ji == (gpointer)-1)
 		return ji;
 
-	if (ji && !ji->is_trampoline)
+	if (ji && !ji->is_trampoline && !ji->async)
 		method = jinfo_get_method (ji);
 
 	if (managed2 || (method && method->wrapper_type)) {
@@ -2498,8 +2498,16 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						 * methods, then execute the clause and the rest of the method
 						 * using the interpreter.
 						 */
-						g_assert (!jit_tls->resume_state.ex_gchandle);
-						jit_tls->resume_state.ex_gchandle = mono_gchandle_new_internal ((MonoObject*)obj, TRUE);
+						/*
+						 * resume_state.ex_gchandle is shared with the finally-resume path
+						 * (mono_handle_exception_internal above). If a finally handler threw a
+						 * superseding exception that is now being caught here, that path left a
+						 * handle behind that will never be resumed; free it instead of
+						 * asserting, mirroring the finally path.
+						 */
+						if (jit_tls->resume_state.ex_gchandle)
+							mono_gchandle_free_internal (jit_tls->resume_state.ex_gchandle);
+						jit_tls->resume_state.ex_gchandle = mono_gchandle_new_internal ((MonoObject*)obj, FALSE);
 						jit_tls->resume_state.ji = ji;
 						jit_tls->resume_state.clause_index = i;
 						jit_tls->resume_state.il_state = frame.il_state;
@@ -2560,7 +2568,16 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						 * mono_resume_unwind () will call us again to continue
 						 * the unwinding.
 						 */
-						jit_tls->resume_state.ex_obj = obj;
+						/*
+						 * Keep the exception object alive across the (managed) finally
+						 * handler using a GC handle. The handler can reach a GC
+						 * safepoint, and a moving GC would otherwise collect the exception
+						 * (or invalidate a raw pointer stored here); the handle keeps it
+						 * alive and tracks relocation (see mono_resume_unwind ()).
+						 */
+						if (jit_tls->resume_state.ex_gchandle)
+							mono_gchandle_free_internal (jit_tls->resume_state.ex_gchandle);
+						jit_tls->resume_state.ex_gchandle = mono_gchandle_new_internal (obj, FALSE);
 						jit_tls->resume_state.ji = ji;
 						jit_tls->resume_state.clause_index = i + 1;
 						jit_tls->resume_state.ctx = *ctx;
@@ -2909,7 +2926,7 @@ print_stack_frame_signal_safe (StackFrameInfo *frame, MonoContext *ctx, gpointer
 {
 	MonoMethod *method = NULL;
 
-	if (frame->ji && frame->type != FRAME_TYPE_TRAMPOLINE)
+	if (frame->ji && frame->type != FRAME_TYPE_TRAMPOLINE && !frame->ji->async)
 		method = jinfo_get_method (frame->ji);
 
 	if (method) {
@@ -2955,24 +2972,18 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 
 #ifdef MONO_ARCH_USE_SIGACTION
-	struct sigaction sa;
-	sa.sa_handler = SIG_DFL;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-
 	/* Remove our SIGABRT handler */
-	g_assert (sigaction (SIGABRT, &sa, NULL) != -1);
+	mono_runtime_posix_restore_handler (SIGABRT);
 
 	/* On some systems we get a SIGILL when calling abort (), because it might
 	 * fail to raise SIGABRT */
-	g_assert (sigaction (SIGILL, &sa, NULL) != -1);
+	mono_runtime_posix_restore_handler (SIGILL);
 
 	/* Remove SIGCHLD, it uses the finalizer thread */
-	g_assert (sigaction (SIGCHLD, &sa, NULL) != -1);
+	mono_runtime_posix_restore_handler (SIGCHLD);
 
 	/* Remove SIGQUIT, we are already dumping threads */
-	g_assert (sigaction (SIGQUIT, &sa, NULL) != -1);
-
+	mono_runtime_posix_restore_handler (SIGQUIT);
 #endif
 
 	if (mini_debug_options.suspend_on_native_crash) {
@@ -3101,7 +3112,23 @@ mono_resume_unwind (MonoContext *ctx)
 	MONO_CONTEXT_SET_SP (ctx, MONO_CONTEXT_GET_SP (&jit_tls->resume_state.ctx));
 	new_ctx = *ctx;
 
-	mono_handle_exception_internal (&new_ctx, (MonoObject *)jit_tls->resume_state.ex_obj, TRUE, NULL);
+	/*
+	 * Copy the GC handle to a local and clear resume_state.ex_gchandle *before* calling
+	 * mono_handle_exception_internal (). That call runs the managed catch/finally search,
+	 * which can trigger a GC or a nested LLVM finally resume that installs its own
+	 * ex_gchandle. Keeping the handle alive across the call (and freeing it only afterwards)
+	 * ensures ex_obj stays rooted, and clearing the field first avoids accidentally freeing a
+	 * newly-installed handle from a nested resume.
+	 */
+	MonoGCHandle ex_gchandle = jit_tls->resume_state.ex_gchandle;
+	jit_tls->resume_state.ex_gchandle = NULL;
+
+	MonoObject *ex_obj = ex_gchandle ? mono_gchandle_get_target_internal (ex_gchandle) : NULL;
+
+	mono_handle_exception_internal (&new_ctx, ex_obj, TRUE, NULL);
+
+	if (ex_gchandle)
+		mono_gchandle_free_internal (ex_gchandle);
 
 	mono_restore_context (&new_ctx);
 }

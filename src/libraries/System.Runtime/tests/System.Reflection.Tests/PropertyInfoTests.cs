@@ -292,6 +292,27 @@ namespace System.Reflection.Tests
             Assert.NotEqual(0, propertyInfo.GetHashCode());
         }
 
+        [Fact]
+        public void GetHashCode_MultipleSubClasses_ShouldBeUnique()
+        {
+            var numberOfCollisions = 0;
+            var hashset = new HashSet<int>();
+
+            foreach (var type in new Type[] { typeof(BaseClass), typeof(SubClassA), typeof(SubClassB), typeof(SubClassC) })
+            {
+                foreach (var propertyInfo in type.GetProperties())
+                {
+                    if (!hashset.Add(propertyInfo.GetHashCode()))
+                    {
+                        numberOfCollisions++;
+                    }
+                }
+            }
+
+            // If intermittent failures are observed, it's acceptable to relax the assertion to allow some collisions.
+            Assert.Equal(0, numberOfCollisions);
+        }
+
         [Theory]
         [InlineData(typeof(BaseClass), "Item", new string[] { "Index" })]
         [InlineData(typeof(BaseClass), nameof(BaseClass.ReadWriteProperty1), new string[0])]
@@ -484,6 +505,9 @@ namespace System.Reflection.Tests
                 set { _description = value; }
             }
         }
+        public class SubClassA : BaseClass { }
+        public class SubClassB : BaseClass { }
+        public class SubClassC : BaseClass { }
 
         public class CustomIndexerNameClass
         {

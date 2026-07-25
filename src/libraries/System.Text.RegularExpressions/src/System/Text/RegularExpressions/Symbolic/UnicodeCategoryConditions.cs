@@ -16,9 +16,9 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Array containing lazily-initialized BDDs per defined UnicodeCategory value.</summary>
         private static readonly BDD?[] s_categories = new BDD[UnicodeCategoryValueCount];
         /// <summary>Lazily-initialized BDD for \w.</summary>
-        private static volatile BDD? s_wordLetter;
+        private static BDD? s_wordLetter;
         /// <summary>Lazily-initialized BDD for \b.</summary>
-        private static volatile BDD? s_wordLetterForAnchors;
+        private static BDD? s_wordLetterForAnchors;
 
 #if DEBUG
         static UnicodeCategoryConditions()

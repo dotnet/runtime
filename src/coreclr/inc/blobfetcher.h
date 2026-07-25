@@ -17,6 +17,7 @@
 #define __BLOB_FETCHER_H_
 
 #include <windef.h>
+#include <stdio.h>
 
 
 class  CBlobFetcher
@@ -84,7 +85,7 @@ public:
     unsigned ComputeOffset(_In_ char *ptr) const;
 
 // Write out the section to the stream
-    HRESULT Write(HANDLE file);
+    HRESULT Write(FILE* file);
 
 // Write out the section to memory
     HRESULT WriteMem(void ** pMem);

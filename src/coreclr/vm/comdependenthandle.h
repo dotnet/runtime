@@ -40,13 +40,13 @@
 class DependentHandle
 {
 public:
-    static FCDECL2(OBJECTHANDLE, InternalAlloc, Object *target, Object *dependent);
-    static FCDECL1(Object *, InternalGetTarget, OBJECTHANDLE handle);
-    static FCDECL1(Object *, InternalGetDependent, OBJECTHANDLE handle);
-    static FCDECL2(Object *, InternalGetTargetAndDependent, OBJECTHANDLE handle, Object **outDependent);
-    static FCDECL1(VOID, InternalSetTargetToNull, OBJECTHANDLE handle);
-    static FCDECL2(VOID, InternalSetDependent, OBJECTHANDLE handle, Object *dependent);
-    static FCDECL1(FC_BOOL_RET, InternalFree, OBJECTHANDLE handle);
+    FCDECL2(static OBJECTHANDLE, InternalAlloc, Object *target, Object *dependent);
+    FCDECL1(static Object *, InternalGetTarget, OBJECTHANDLE handle);
+    FCDECL1(static Object *, InternalGetDependent, OBJECTHANDLE handle);
+    FCDECL2(static Object *, InternalGetTargetAndDependent, OBJECTHANDLE handle, Object **outDependent);
+    FCDECL1(static VOID, InternalSetTargetToNull, OBJECTHANDLE handle);
+    FCDECL2(static VOID, InternalSetDependent, OBJECTHANDLE handle, Object *dependent);
+    FCDECL1(static FC_BOOL_RET, InternalFree, OBJECTHANDLE handle);
 };
 
 extern "C" OBJECTHANDLE QCALLTYPE DependentHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack target, QCall::ObjectHandleOnStack dependent);

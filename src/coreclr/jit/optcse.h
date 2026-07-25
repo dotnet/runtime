@@ -18,7 +18,7 @@ class CSE_HeuristicCommon
 protected:
     CSE_HeuristicCommon(Compiler*);
 
-    Compiler*              m_pCompiler;
+    Compiler*              m_compiler;
     unsigned               m_addCSEcount;
     CSEdsc**               sortTab;
     size_t                 sortSiz;

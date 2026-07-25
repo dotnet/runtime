@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b02076;
+
 using System;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -42,6 +45,7 @@ class CSwarm
 
 public class MainClass
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

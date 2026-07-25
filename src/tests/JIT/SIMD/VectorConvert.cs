@@ -5,6 +5,7 @@
 using System;
 using System.Numerics;
 using Xunit;
+using TestLibrary;
 
 public partial class VectorTest
 {
@@ -498,6 +499,8 @@ public partial class VectorTest
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/75359", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/75359", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
     public static int TestEntryPoint()

@@ -38,7 +38,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""renamed_TestProperty"":42,""renamed_TestField"":""test value""}", json);
+            Assert.Equal("""{"renamed_TestProperty":42,"renamed_TestField":"test value"}""", json);
 
             TestClass deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
             Assert.Equal(originalObj.TestField, deserialized.TestField);
@@ -84,7 +84,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""TestProperty"":42,""TestField"":""test valueX""}", json);
+            Assert.Equal("""{"TestProperty":42,"TestField":"test valueX"}""", json);
 
             TestClass deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
             Assert.Equal(originalObj.TestField, deserialized.TestField);
@@ -124,11 +124,11 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""TestProperty"":43,""TestField"":""test value""}", json);
+            Assert.Equal("""{"TestProperty":43,"TestField":"test value"}""", json);
 
             originalObj.TestProperty = 42;
             json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""TestField"":""test value""}", json);
+            Assert.Equal("""{"TestField":"test value"}""", json);
 
             TestClass deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
             Assert.Equal(originalObj.TestField, deserialized.TestField);
@@ -165,9 +165,9 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""TestField"":""test value""}", json);
+            Assert.Equal("""{"TestField":"test value"}""", json);
 
-            json = @"{""TestProperty"":42,""TestField"":""test value""}";
+            json = """{"TestProperty":42,"TestField":"test value"}""";
 
             TestClass deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
             Assert.Equal(originalObj.TestField, deserialized.TestField);
@@ -204,7 +204,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""TestProperty"":42,""TestField"":""test value""}", json);
+            Assert.Equal("""{"TestProperty":42,"TestField":"test value"}""", json);
 
             TestClass deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
             Assert.Equal(originalObj.TestField, deserialized.TestField);
@@ -241,7 +241,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""TestProperty"":""42"",""TestField"":""test value""}", json);
+            Assert.Equal("""{"TestProperty":"42","TestField":"test value"}""", json);
 
             TestClass deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
             Assert.Equal(originalObj.TestField, deserialized.TestField);
@@ -278,7 +278,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""TestProperty"":43,""TestField"":""test value""}", json);
+            Assert.Equal("""{"TestProperty":43,"TestField":"test value"}""", json);
 
             TestClass deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
             Assert.Equal(originalObj.TestField, deserialized.TestField);
@@ -315,7 +315,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""ListProperty1"":[2,3,-1],""ListProperty2"":[4,5,6]}", json);
+            Assert.Equal("""{"ListProperty1":[2,3,-1],"ListProperty2":[4,5,6]}""", json);
 
             TestClassWithLists deserialized = JsonSerializer.Deserialize<TestClassWithLists>(json, options);
             Assert.Equal(originalObj.ListProperty1, deserialized.ListProperty1);
@@ -408,18 +408,18 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""TestProperty"":45,""TestField"":""test value 2""}", json);
+            Assert.Equal("""{"TestProperty":45,"TestField":"test value 2"}""", json);
 
             TestClass deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
             Assert.Equal(originalObj.TestField, deserialized.TestField);
             Assert.Equal(originalObj.TestProperty, deserialized.TestProperty);
 
-            json = @"{}";
+            json = "{}";
             deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
             Assert.Equal("test value", deserialized.TestField);
             Assert.Equal(42, deserialized.TestProperty);
 
-            json = @"{""TestField"":""test value 2""}";
+            json = """{"TestField":"test value 2"}""";
             deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
             Assert.Equal(originalObj.TestField, deserialized.TestField);
             Assert.Equal(42, deserialized.TestProperty);
@@ -468,7 +468,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(new List<int> { 99, 2, 3 }, deserialized.ListProperty1);
             Assert.Equal(new List<int> { 99 }, deserialized.ListProperty2);
 
-            json = @"{}";
+            json = "{}";
             deserialized = JsonSerializer.Deserialize<TestClassWithLists>(json, options);
             Assert.Null(deserialized.ListProperty1);
             Assert.Null(deserialized.ListProperty2);
@@ -522,7 +522,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(new Dictionary<string, int> { ["*test*"] = -1, ["test1"] = 2, ["test2"] = 3 }, deserialized.DictionaryProperty1);
             Assert.Equal(new Dictionary<string, int> { ["*test*"] = -1 }, deserialized.DictionaryProperty2);
 
-            json = @"{}";
+            json = "{}";
             deserialized = JsonSerializer.Deserialize<TestClassWithDictionaries>(json, options);
             Assert.Null(deserialized.DictionaryProperty1);
             Assert.Null(deserialized.DictionaryProperty2);
@@ -557,7 +557,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""TestProperty"":""42"",""TestField"":""test value""}", json);
+            Assert.Equal("""{"TestProperty":"42","TestField":"test value"}""", json);
 
             TestClass deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
             Assert.Equal(originalObj.TestField, deserialized.TestField);
@@ -626,7 +626,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""MyTestField"":""test value"",""MyTestProperty"":45}", json);
+            Assert.Equal("""{"MyTestField":"test value","MyTestProperty":45}""", json);
 
             TestClass deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
             Assert.Equal(originalObj.TestField, deserialized.TestField);
@@ -634,11 +634,11 @@ namespace System.Text.Json.Serialization.Tests
 
             originalObj.TestField = null;
             json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""MyTestProperty"":45}", json);
+            Assert.Equal("""{"MyTestProperty":45}""", json);
 
             originalObj.TestField = string.Empty;
             json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""MyTestProperty"":45}", json);
+            Assert.Equal("""{"MyTestProperty":45}""", json);
 
             deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
             Assert.Equal(originalObj.TestField, deserialized.TestField);
@@ -647,7 +647,7 @@ namespace System.Text.Json.Serialization.Tests
             originalObj.TestField = "test value";
             originalObj.TestProperty = 42;
             json = JsonSerializer.Serialize(originalObj, options);
-            Assert.Equal(@"{""MyTestField"":""test value""}", json);
+            Assert.Equal("""{"MyTestField":"test value"}""", json);
             deserialized = JsonSerializer.Deserialize<TestClass>(json, options);
             Assert.Equal(originalObj.TestField, deserialized.TestField);
             Assert.Equal(originalObj.TestProperty, deserialized.TestProperty);
@@ -732,7 +732,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var value = new SpecifiedContractResolver.TestClass { String = "str", Int = 42 };
             string json = JsonSerializer.Serialize(value, options);
-            Assert.Equal("""{}""", json);
+            Assert.Equal("{}", json);
 
             value.IntSpecified = true;
             json = JsonSerializer.Serialize(value, options);

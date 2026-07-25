@@ -19,7 +19,7 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public Atom10ItemFormatter(Type itemTypeToCreate) : base()
+        public Atom10ItemFormatter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type itemTypeToCreate) : base()
         {
             ArgumentNullException.ThrowIfNull(itemTypeToCreate);
 
@@ -58,6 +58,7 @@ namespace System.ServiceModel.Syndication
 
         public override string Version => SyndicationVersions.Atom10;
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         protected Type ItemType { get; }
 
         public override bool CanRead(XmlReader reader)

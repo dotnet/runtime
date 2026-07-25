@@ -5,9 +5,9 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
-    public partial class ECDsaProvider : IECDsaProvider
+    public partial class DefaultECDsaProvider : ECDsaProvider
     {
-        public bool IsCurveValid(Oid oid)
+        public override bool IsCurveValid(Oid oid)
         {
             if (!string.IsNullOrEmpty(oid.Value))
             {
@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             return IsValueOrFriendlyNameValid(oid.FriendlyName);
         }
 
-        public bool ExplicitCurvesSupported
+        public override bool ExplicitCurvesSupported
         {
             get
             {
@@ -52,8 +52,8 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByOid")]
-        internal static extern System.IntPtr EcKeyCreateByOid(string oid);
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByOid", StringMarshalling = StringMarshalling.Utf8)]
+        internal static partial System.IntPtr EcKeyCreateByOid(string oid);
 
         [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyDestroy")]
         internal static extern void EcKeyDestroy(System.IntPtr r);

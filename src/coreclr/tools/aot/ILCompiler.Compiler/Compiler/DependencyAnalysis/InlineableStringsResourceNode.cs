@@ -19,9 +19,9 @@ namespace ILCompiler.DependencyAnalysis
     {
         private readonly EcmaModule _module;
 
-        public const string ResourceAccessorTypeName = "SR";
-        public const string ResourceAccessorTypeNamespace = "System";
-        public const string ResourceAccessorGetStringMethodName = "GetResourceString";
+        public static ReadOnlySpan<byte> ResourceAccessorTypeName => "SR"u8;
+        public static ReadOnlySpan<byte> ResourceAccessorTypeNamespace => "System"u8;
+        public static ReadOnlySpan<byte> ResourceAccessorGetStringMethodName => "GetResourceString"u8;
 
         public InlineableStringsResourceNode(EcmaModule module)
         {

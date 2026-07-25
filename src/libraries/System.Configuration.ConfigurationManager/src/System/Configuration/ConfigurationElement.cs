@@ -40,7 +40,7 @@ namespace System.Configuration
         };
 
         private static readonly Hashtable s_propertyBags = new Hashtable();
-        private static volatile Dictionary<Type, ConfigurationValidatorBase> s_perTypeValidators;
+        private static Dictionary<Type, ConfigurationValidatorBase> s_perTypeValidators;
         internal static readonly object s_nullPropertyValue = new object();
 
         private static readonly ConfigurationElementProperty s_elementProperty =
@@ -52,7 +52,7 @@ namespace System.Configuration
         internal BaseConfigurationRecord _configRecord;
         private ConfigurationElementProperty _elementProperty = s_elementProperty;
         internal ContextInformation _evalContext;
-        private volatile ElementInformation _evaluationElement;
+        private ElementInformation _evaluationElement;
         internal ConfigurationValueFlags _itemLockedFlag;
         internal ConfigurationLockCollection _lockedAllExceptAttributesList;
         internal ConfigurationLockCollection _lockedAllExceptElementsList;
@@ -173,7 +173,7 @@ namespace System.Configuration
                 if (prop == null)
                 {
                     prop = Properties[DefaultCollectionPropertyName];
-                    if (prop.ProvidedName != propertyName) return null;
+                    if (prop is null || prop.ProvidedName != propertyName) return null;
                 }
                 return this[prop];
             }
@@ -828,7 +828,7 @@ namespace System.Configuration
         {
             if (IsReadOnly()) throw new ConfigurationErrorsException(SR.Config_base_read_only);
 
-            if ((ignoreLocks == false) &&
+            if (!ignoreLocks &&
                 (((_lockedAllExceptAttributesList != null) && _lockedAllExceptAttributesList.HasParentElements &&
                 !_lockedAllExceptAttributesList.DefinedInParent(prop.Name)) ||
                 ((_lockedAttributesList != null) &&
@@ -1110,7 +1110,7 @@ namespace System.Configuration
                 }
             }
 
-            if (serializeCollectionKey == false)
+            if (!serializeCollectionKey)
             {
                 dataToWrite |= SerializeLockList(_lockedAttributesList, LockAttributesKey, writer);
                 dataToWrite |= SerializeLockList(_lockedAllExceptAttributesList, LockAllAttributesExceptKey, writer);
@@ -1876,7 +1876,7 @@ namespace System.Configuration
             ConfigurationLockCollection parentLockList,
             ConfigurationSaveMode saveMode)
         {
-            if (sourceLockList.ExceptionList == false)
+            if (!sourceLockList.ExceptionList)
             {
                 switch (saveMode)
                 {

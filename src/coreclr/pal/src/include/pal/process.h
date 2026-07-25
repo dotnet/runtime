@@ -25,6 +25,11 @@ Revision History:
 #include "pal/palinternal.h"
 #include "pal/stackstring.hpp"
 
+#include <signal.h>
+#if defined(TARGET_WASI)
+#include "pal/wasi/pal_wasi_missing.h"
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -37,9 +42,8 @@ extern "C"
 */
 extern Volatile<LONG> terminator;
 
-// The process and session ID of this process, so we can avoid excessive calls to getpid() and getsid().
+// The process ID of this process, so we can avoid excessive calls to getpid().
 extern DWORD gPID;
-extern DWORD gSID;
 
 extern LPWSTR pAppDir;
 
@@ -49,15 +53,6 @@ extern LPCSTR gApplicationGroupId;
 extern int gApplicationGroupIdLength;
 #endif // __APPLE__
 extern PathCharString *gSharedFilesPath;
-
-/*++
-Function:
-  PROCGetProcessIDFromHandle
-
-Abstract
-  Return the process ID from a process handle
---*/
-DWORD PROCGetProcessIDFromHandle(HANDLE hProcess);
 
 /*++
 Function:
@@ -78,54 +73,6 @@ Notes :
     This function takes ownership of lpwstrCmdLine, but not of lpwstrFullPath
 --*/
 BOOL PROCCreateInitialProcess(LPWSTR lpwstrCmdLine, LPWSTR lpwstrFullPath);
-
-/*++
-Function:
-  PROCCleanupInitialProcess
-
-Abstract
-  Cleanup all the structures for the initial process.
-
-Parameter
-  VOID
-
-Return
-  VOID
-
---*/
-VOID PROCCleanupInitialProcess(VOID);
-
-#if USE_SYSV_SEMAPHORES
-/*++
-Function:
-  PROCCleanupThreadSemIds(VOID);
-
-Abstract
-  Cleanup SysV semaphore ids for all threads.
-
-(no parameters, no return value)
---*/
-VOID PROCCleanupThreadSemIds(VOID);
-#endif
-
-/*++
-Function:
-  PROCProcessLock
-
-Abstract
-  Enter the critical section associated to the current process
---*/
-VOID PROCProcessLock(VOID);
-
-
-/*++
-Function:
-  PROCProcessUnlock
-
-Abstract
-  Leave the critical section associated to the current process
---*/
-VOID PROCProcessUnlock(VOID);
 
 /*++
 Function
@@ -152,6 +99,7 @@ Function:
 Parameters:
   signal - POSIX signal number
   siginfo - POSIX signal info
+  context - signal context or nullptr
 
   Does not return
 --*/
@@ -159,7 +107,7 @@ Parameters:
                         // making crash dumps impossible to analyze
 PAL_NORETURN
 #endif
-VOID PROCAbort(int signal = SIGABRT, siginfo_t* siginfo = nullptr);
+VOID PROCAbort(int signal = SIGABRT, siginfo_t* siginfo = nullptr, void* context = nullptr);
 
 /*++
 Function:
@@ -182,22 +130,26 @@ Function:
 Parameters:
   signal - POSIX signal number
   siginfo - POSIX signal info or nullptr
+  context - signal context or nullptr
   serialize - allow only one thread to generate core dump
 
 (no return value)
 --*/
-VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize);
+VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize);
 
 /*++
 Function:
-  InitializeFlushProcessWriteBuffers
+  PROCLogManagedCallstackForSignal
 
-Abstract
-  This function initializes data structures needed for the FlushProcessWriteBuffers
-Return
-  TRUE if it succeeded, FALSE otherwise
+  Invokes the registered callback to log the managed callstack for a signal.
+  Used by Android since CreateDump is not supported there.
+
+Parameters:
+  signal - POSIX signal number
+
+(no return value)
 --*/
-BOOL InitializeFlushProcessWriteBuffers();
+VOID PROCLogManagedCallstackForSignal(int signal);
 
 #ifdef __cplusplus
 }

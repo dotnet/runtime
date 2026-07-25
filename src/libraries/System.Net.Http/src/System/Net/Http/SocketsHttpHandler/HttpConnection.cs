@@ -74,8 +74,9 @@ namespace System.Net.Http
             Stream stream,
             TransportContext? transportContext,
             Activity? connectionSetupActivity,
-            IPEndPoint? remoteEndPoint)
-            : base(pool, connectionSetupActivity, remoteEndPoint)
+            IPEndPoint? remoteEndPoint,
+            long connectionId)
+            : base(pool, connectionId, connectionSetupActivity, remoteEndPoint)
         {
             Debug.Assert(stream != null);
 
@@ -496,7 +497,7 @@ namespace System.Net.Http
             Debug.Assert(status == OperationStatus.Done);
             Debug.Assert(bytesWritten == s.Length);
 
-            _writeBuffer.Commit(s.Length);
+            _writeBuffer.Commit(bytesWritten);
         }
 
         private void WriteString(string s, Encoding? encoding)
@@ -531,6 +532,8 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
+            request.ConnectionId = Id;
+
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
             Debug.Assert(_readBuffer.ActiveLength == 0, "Unexpected data in read buffer");
             Debug.Assert(_readAheadTaskStatus != ReadAheadTask_Started,
@@ -779,12 +782,7 @@ namespace System.Net.Http
 
                 // Create the response stream.
                 Stream responseStream;
-                if (request.Method.IsHead || response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotModified)
-                {
-                    responseStream = EmptyReadStream.Instance;
-                    CompleteResponse();
-                }
-                else if (request.Method.IsConnect && response.StatusCode == HttpStatusCode.OK)
+                if (request.Method.IsConnect && response.IsSuccessStatusCode)
                 {
                     // Successful response to CONNECT does not have body.
                     // What ever comes next should be opaque.
@@ -796,6 +794,11 @@ namespace System.Net.Http
 
                     _pool.InvalidateHttp11Connection(this);
                     _detachedFromPool = true;
+                }
+                else if (request.Method.IsHead || response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotModified)
+                {
+                    responseStream = EmptyReadStream.Instance;
+                    CompleteResponse();
                 }
                 else if (response.StatusCode == HttpStatusCode.SwitchingProtocols)
                 {
@@ -1517,7 +1520,7 @@ namespace System.Net.Http
             await WriteToStreamAsync(source, async).ConfigureAwait(false);
         }
 
-        private ValueTask WriteHexInt32Async(int value, bool async)
+        private unsafe ValueTask WriteHexInt32Async(int value, bool async)
         {
             // Try to format into our output buffer directly.
             if (value.TryFormat(_writeBuffer.AvailableSpan, out int bytesWritten, "X"))
@@ -1836,6 +1839,7 @@ namespace System.Net.Http
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask<int> ReadBufferedAsyncCore(Memory<byte> destination)
         {
             // This is called when reading the response body.

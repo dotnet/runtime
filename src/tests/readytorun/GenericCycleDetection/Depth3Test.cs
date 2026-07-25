@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
@@ -31,6 +32,7 @@ public class Program
     private struct Depth3<T> {}
     private struct Depth4<T> {}
     
+    [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
     [Fact]
     public static void DepthTest()
     {

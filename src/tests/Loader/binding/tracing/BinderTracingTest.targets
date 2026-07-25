@@ -12,6 +12,9 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- And they also time out with jitstress modes -->
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
+
+    <!-- needs triage -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' != 'coreclr'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinderTracingTest.cs" />
@@ -19,7 +22,7 @@
     <Compile Include="Helpers.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
     <ProjectReference Include="AssemblyToLoad.csproj" />
   </ItemGroup>
   <ItemGroup>

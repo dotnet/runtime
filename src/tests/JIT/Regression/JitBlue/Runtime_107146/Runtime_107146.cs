@@ -12,6 +12,9 @@
 //    at Fuzzlyn.ExecutionServer.Program.RunPairAsync(System.Runtime.Loader.AssemblyLoadContext, Fuzzlyn.ExecutionServer.ProgramPair)
 //    at Fuzzlyn.ExecutionServer.Program+<>c__DisplayClass0_0.<Main>b__0()
 //
+
+namespace Runtime_107146;
+
 using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;

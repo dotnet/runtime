@@ -13,4 +13,7 @@
   <ItemGroup>
     <Compile Include="bestfit-threaded.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

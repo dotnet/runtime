@@ -143,28 +143,7 @@ C_FUNC(\Name):
 
 .endm
 
-// Loads the address of a thread-local variable into the target register,
-// which cannot be a0. Preserves all other registers.
-.macro INLINE_GET_TLS_VAR target, var
-    .ifc  \target, $a0
-        .error "target cannot be a0"
-    .endif
-
-    addi.d  $sp, $sp, -16
-    st.d  $a0, $sp, 0
-    st.d  $ra, $sp, 8
-
-    // This instruction is recognized and potentially patched
-    // by the linker (GD->IE/LE relaxation).
-    la.tls.desc  $a0, \var
-
-    ori  \target, $tp, 0
-    add.d  \target, \target, $a0
-
-    ld.d  $a0, $sp, 0
-    ld.d  $ra, $sp, 8
-    addi.d $sp, $sp, 16
-.endm
+#include <loongarch64/InlineTls.inc>
 
 // Inlined version of RhpGetThread. Target cannot be a0.
 .macro INLINE_GETTHREAD target
@@ -198,8 +177,9 @@ C_FUNC(\Name):
 #define PTFF_SAVE_SP            0x00000200
 #define PTFF_SAVE_R4            0x00000800
 #define PTFF_SAVE_R5            0x00001000
+#define PTFF_SAVE_R6            0x00002000
 #define PTFF_SAVE_ALL_PRESERVED 0x000001FF // NOTE: r23-r31
-#define PTFF_THREAD_HIJACK_HI   0x00000001 // upper 32 bits of the PTFF_THREAD_HIJACK
+#define PTFF_THREAD_HIJACK      0x80000000
 
 #define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP)
 
@@ -238,9 +218,6 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0x70
 .endm
 
-// Bit position for the flags above, to be used with bstrpick.d+beq/bne instructions
-#define PTFF_THREAD_ABORT_BIT 31
-
 //
 // CONSTANTS -- INTEGER
 //
@@ -250,10 +227,8 @@ C_FUNC(\Name):
 #define TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC 0x18
 
 // Bit position for the flags above, to be used with bstrpick.d+beq/bne instructions
-#define TrapThreadsFlags_AbortInProgress_Bit 0
-#define TrapThreadsFlags_TrapThreads_Bit     1
+#define TrapThreadsFlags_TrapThreads_Bit     0
 
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0
-#define TrapThreadsFlags_AbortInProgress 1
-#define TrapThreadsFlags_TrapThreads     2
+#define TrapThreadsFlags_TrapThreads     1

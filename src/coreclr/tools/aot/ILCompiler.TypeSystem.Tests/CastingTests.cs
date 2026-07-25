@@ -41,11 +41,11 @@ namespace TypeSystemTests
         [Fact]
         public void TestInterfaceCasting()
         {
-            TypeDesc iFooType = _testModule.GetType("Casting", "IFoo");
+            TypeDesc iFooType = _testModule.GetType("Casting"u8, "IFoo"u8);
             TypeDesc classImplementingIFooType =
-                _testModule.GetType("Casting", "ClassImplementingIFoo");
+                _testModule.GetType("Casting"u8, "ClassImplementingIFoo"u8);
             TypeDesc classImplementingIFooIndirectlyType =
-                _testModule.GetType("Casting", "ClassImplementingIFooIndirectly");
+                _testModule.GetType("Casting"u8, "ClassImplementingIFooIndirectly"u8);
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
 
             Assert.True(classImplementingIFooType.CanCastTo(iFooType));
@@ -68,9 +68,9 @@ namespace TypeSystemTests
             TypeDesc doubleType = _context.GetWellKnownType(WellKnownType.Double);
             TypeDesc boolType = _context.GetWellKnownType(WellKnownType.Boolean);
 
-            TypeDesc intBasedEnumType = _testModule.GetType("Casting", "IntBasedEnum");
-            TypeDesc uintBasedEnumType = _testModule.GetType("Casting", "UIntBasedEnum");
-            TypeDesc shortBasedEnumType = _testModule.GetType("Casting", "ShortBasedEnum");
+            TypeDesc intBasedEnumType = _testModule.GetType("Casting"u8, "IntBasedEnum"u8);
+            TypeDesc uintBasedEnumType = _testModule.GetType("Casting"u8, "UIntBasedEnum"u8);
+            TypeDesc shortBasedEnumType = _testModule.GetType("Casting"u8, "ShortBasedEnum"u8);
 
             Assert.True(intType.MakeArrayType().CanCastTo(uintType.MakeArrayType()));
             Assert.True(intType.MakeArrayType().CanCastTo(uintType.MakeArrayType(1)));
@@ -98,9 +98,9 @@ namespace TypeSystemTests
             TypeDesc byteType = _context.GetWellKnownType(WellKnownType.Byte);
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
             TypeDesc stringType = _context.GetWellKnownType(WellKnownType.String);
-            TypeDesc intBasedEnumType = _testModule.GetType("Casting", "IntBasedEnum");
-            MetadataType iListType = _context.SystemModule.GetType("System.Collections", "IList");
-            MetadataType iListOfTType = _context.SystemModule.GetType("System.Collections.Generic", "IList`1");
+            TypeDesc intBasedEnumType = _testModule.GetType("Casting"u8, "IntBasedEnum"u8);
+            MetadataType iListType = _context.SystemModule.GetType("System.Collections"u8, "IList"u8);
+            MetadataType iListOfTType = _context.SystemModule.GetType("System.Collections.Generic"u8, "IList`1"u8);
 
             InstantiatedType iListOfIntType = iListOfTType.MakeInstantiatedType(intType);
             InstantiatedType iListOfObjectType = iListOfTType.MakeInstantiatedType(objectType);
@@ -156,16 +156,16 @@ namespace TypeSystemTests
         public void TestGenericParameterCasting()
         {
             TypeDesc paramWithNoConstraint =
-                _testModule.GetType("Casting", "ClassWithNoConstraint`1").Instantiation[0];
+                _testModule.GetType("Casting"u8, "ClassWithNoConstraint`1"u8).Instantiation[0];
             TypeDesc paramWithValueTypeConstraint =
-                _testModule.GetType("Casting", "ClassWithValueTypeConstraint`1").Instantiation[0];
+                _testModule.GetType("Casting"u8, "ClassWithValueTypeConstraint`1"u8).Instantiation[0];
             TypeDesc paramWithInterfaceConstraint =
-                _testModule.GetType("Casting", "ClassWithInterfaceConstraint`1").Instantiation[0];
+                _testModule.GetType("Casting"u8, "ClassWithInterfaceConstraint`1"u8).Instantiation[0];
 
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
             TypeDesc valueTypeType = _context.GetWellKnownType(WellKnownType.ValueType);
-            TypeDesc iFooType = _testModule.GetType("Casting", "IFoo");
-            TypeDesc classImplementingIFooType = _testModule.GetType("Casting", "ClassImplementingIFoo");
+            TypeDesc iFooType = _testModule.GetType("Casting"u8, "IFoo"u8);
+            TypeDesc classImplementingIFooType = _testModule.GetType("Casting"u8, "ClassImplementingIFoo"u8);
 
             Assert.True(paramWithNoConstraint.CanCastTo(objectType));
             Assert.False(paramWithNoConstraint.CanCastTo(valueTypeType));
@@ -193,14 +193,14 @@ namespace TypeSystemTests
             TypeDesc stringSzArrayType = stringType.MakeArrayType();
 
             MetadataType iEnumerableOfTType =
-                _context.SystemModule.GetType("System.Collections.Generic", "IEnumerable`1");
+                _context.SystemModule.GetType("System.Collections.Generic"u8, "IEnumerable`1"u8);
             InstantiatedType iEnumerableOfObjectType = iEnumerableOfTType.MakeInstantiatedType(objectType);
             InstantiatedType iEnumerableOfExceptionType = iEnumerableOfTType.MakeInstantiatedType(exceptionType);
 
             Assert.True(stringSzArrayType.CanCastTo(iEnumerableOfObjectType));
             Assert.False(stringSzArrayType.CanCastTo(iEnumerableOfExceptionType));
 
-            MetadataType iContravariantOfTType = _testModule.GetType("Casting", "IContravariant`1");
+            MetadataType iContravariantOfTType = _testModule.GetType("Casting"u8, "IContravariant`1"u8);
             InstantiatedType iContravariantOfObjectType = iContravariantOfTType.MakeInstantiatedType(objectType);
             InstantiatedType iEnumerableOfStringType = iEnumerableOfTType.MakeInstantiatedType(stringType);
 
@@ -221,13 +221,13 @@ namespace TypeSystemTests
         [Fact]
         public void TestGenericParameterArrayCasting()
         {
-            TypeDesc baseArrayType = _testModule.GetType("Casting", "Base").MakeArrayType();
-            TypeDesc iFooArrayType = _testModule.GetType("Casting", "IFoo").MakeArrayType();
+            TypeDesc baseArrayType = _testModule.GetType("Casting"u8, "Base"u8).MakeArrayType();
+            TypeDesc iFooArrayType = _testModule.GetType("Casting"u8, "IFoo"u8).MakeArrayType();
 
             TypeDesc paramArrayWithBaseClassConstraint =
-                _testModule.GetType("Casting", "ClassWithBaseClassConstraint`1").Instantiation[0].MakeArrayType();
+                _testModule.GetType("Casting"u8, "ClassWithBaseClassConstraint`1"u8).Instantiation[0].MakeArrayType();
             TypeDesc paramArrayWithInterfaceConstraint =
-                _testModule.GetType("Casting", "ClassWithInterfaceConstraint`1").Instantiation[0].MakeArrayType();
+                _testModule.GetType("Casting"u8, "ClassWithInterfaceConstraint`1"u8).Instantiation[0].MakeArrayType();
 
             Assert.True(paramArrayWithBaseClassConstraint.CanCastTo(baseArrayType));
             Assert.False(paramArrayWithInterfaceConstraint.CanCastTo(iFooArrayType));
@@ -238,8 +238,8 @@ namespace TypeSystemTests
         {
             // Tests the stack overflow protection in CanCastTo
 
-            TypeDesc classWithRecursiveImplementation = _testModule.GetType("Casting", "ClassWithRecursiveImplementation");
-            MetadataType iContravariantOfTType = (MetadataType)_testModule.GetType("Casting", "IContravariant`1");
+            TypeDesc classWithRecursiveImplementation = _testModule.GetType("Casting"u8, "ClassWithRecursiveImplementation"u8);
+            MetadataType iContravariantOfTType = (MetadataType)_testModule.GetType("Casting"u8, "IContravariant`1"u8);
 
             TypeDesc testType = iContravariantOfTType.MakeInstantiatedType(classWithRecursiveImplementation);
 

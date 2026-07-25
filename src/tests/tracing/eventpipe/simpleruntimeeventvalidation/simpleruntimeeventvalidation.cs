@@ -12,11 +12,13 @@ using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
 using Xunit;
+using TestLibrary;
 
 namespace Tracing.Tests.SimpleRuntimeEventValidation
 {
     public class RuntimeEventValidation
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88499", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint()
         {

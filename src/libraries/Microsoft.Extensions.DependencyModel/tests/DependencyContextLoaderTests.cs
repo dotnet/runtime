@@ -13,6 +13,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
     {
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "GetEntryAssembly() returns null")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/121209", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsAndroid))]
         public void LoadLoadsExtraPaths()
         {
             string appDepsPath = "appPath.deps.json";

@@ -1,15 +1,18 @@
+# This pipeline is a subset of crossgen2-outerloop.yml and is retained for manual runs.
 trigger: none
+pr: none
 
-schedules:
-- cron: "0 5 * * *"
-  displayName: Mon through Sun at 9:00 PM (UTC-8:00)
-  branches:
-    include:
-    - main
-  always: true
+# schedules:
+# - cron: "0 5 * * *"
+#   displayName: Mon through Sun at 9:00 PM (UTC-8:00)
+#   branches:
+#     include:
+#     - main
+#   always: true
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml

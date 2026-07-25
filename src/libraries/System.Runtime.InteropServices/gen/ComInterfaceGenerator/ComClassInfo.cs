@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -8,7 +9,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
 {
-    internal sealed record ComClassInfo
+    internal sealed class ComClassInfo : IEquatable<ComClassInfo>
     {
         public string ClassName { get; init; }
         public ContainingSyntaxContext ContainingSyntaxContext { get; init; }
@@ -23,26 +24,12 @@ namespace Microsoft.Interop
             ImplementedInterfacesNames = implementedInterfacesNames;
         }
 
-        public static DiagnosticOr<ComClassInfo> From(INamedTypeSymbol type, ClassDeclarationSyntax syntax, bool unsafeCodeIsEnabled)
+        public static ComClassInfo From(INamedTypeSymbol type, ClassDeclarationSyntax syntax, INamedTypeSymbol? generatedComInterfaceAttributeType)
         {
-            if (!unsafeCodeIsEnabled)
-            {
-                return DiagnosticOr<ComClassInfo>.From(DiagnosticInfo.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, syntax.Identifier.GetLocation()));
-            }
-
-            if (!syntax.IsInPartialContext(out _))
-            {
-                return DiagnosticOr<ComClassInfo>.From(
-                    DiagnosticInfo.Create(
-                        GeneratorDiagnostics.InvalidAttributedClassMissingPartialModifier,
-                        syntax.Identifier.GetLocation(),
-                        type.ToDisplayString()));
-            }
-
             ImmutableArray<string>.Builder names = ImmutableArray.CreateBuilder<string>();
             foreach (INamedTypeSymbol iface in type.AllInterfaces)
             {
-                AttributeData? generatedComInterfaceAttribute = iface.GetAttributes().FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute);
+                AttributeData? generatedComInterfaceAttribute = iface.GetAttributes().FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generatedComInterfaceAttributeType));
                 if (generatedComInterfaceAttribute is not null)
                 {
                     var attributeData = GeneratedComInterfaceCompilationData.GetDataFromAttribute(generatedComInterfaceAttribute);
@@ -53,19 +40,11 @@ namespace Microsoft.Interop
                 }
             }
 
-            if (names.Count == 0)
-            {
-                return DiagnosticOr<ComClassInfo>.From(DiagnosticInfo.Create(GeneratorDiagnostics.ClassDoesNotImplementAnyGeneratedComInterface,
-                    syntax.Identifier.GetLocation(),
-                    type.ToDisplayString()));
-            }
-
-            return DiagnosticOr<ComClassInfo>.From(
-                new ComClassInfo(
-                    type.ToDisplayString(),
-                    new ContainingSyntaxContext(syntax),
-                    new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
-                    new(names.ToImmutable())));
+            return new ComClassInfo(
+                type.ToDisplayString(),
+                new ContainingSyntaxContext(syntax),
+                new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
+                new(names.ToImmutable()));
         }
 
         public bool Equals(ComClassInfo? other)
@@ -74,6 +53,11 @@ namespace Microsoft.Interop
                 && ClassName == other.ClassName
                 && ContainingSyntaxContext.Equals(other.ContainingSyntaxContext)
                 && ImplementedInterfacesNames.SequenceEqual(other.ImplementedInterfacesNames);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as ComClassInfo);
         }
 
         public override int GetHashCode()

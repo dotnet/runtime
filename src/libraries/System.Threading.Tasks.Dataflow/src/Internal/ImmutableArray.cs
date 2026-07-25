@@ -25,7 +25,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     internal readonly struct ImmutableArray<T>
     {
         /// <summary>An empty array.</summary>
-#pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
+#pragma warning disable CA1825 // avoid the extra generic instantiation for Array.Empty<T>()
         private static readonly ImmutableArray<T> s_empty = new ImmutableArray<T>(new T[0]);
 #pragma warning restore CA1825
         /// <summary>The immutable data in this array instance.</summary>

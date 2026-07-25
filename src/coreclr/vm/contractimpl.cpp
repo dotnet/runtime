@@ -36,7 +36,7 @@ MethodDesc * DispatchSlot::GetMethodDesc()
     if (IsNull())
         return NULL;
     else
-        return MethodTable::GetMethodDescForSlotAddress(GetTarget());
+        return NonVirtualEntry2MethodDesc(GetTarget());
 }
 
 //------------------------------------------------------------------------
@@ -61,7 +61,7 @@ UINT32 TypeIDMap::LookupTypeID(PTR_MethodTable pMT)
         if (GetThread()->PreemptiveGCDisabled()) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
     } CONTRACTL_END;
 
-    UINT32 id = (UINT32) m_mtMap.LookupValue((UPTR)dac_cast<TADDR>(pMT), 0);
+    UINT32 id = (UINT32) m_mtMap.LookupValueByUniqueKey((UPTR)dac_cast<TADDR>(pMT));
 
     return id;
 }
@@ -76,7 +76,7 @@ PTR_MethodTable TypeIDMap::LookupType(UINT32 id)
         PRECONDITION(id <= TypeIDProvider::MAX_TYPE_ID);
     } CONTRACTL_END;
 
-    UPTR ret = m_idMap.LookupValue((UPTR)id, 0);
+    UPTR ret = m_idMap.LookupValueByUniqueKey((UPTR)id);
     if (ret == static_cast<UPTR>(INVALIDENTRY))
         return NULL;
 

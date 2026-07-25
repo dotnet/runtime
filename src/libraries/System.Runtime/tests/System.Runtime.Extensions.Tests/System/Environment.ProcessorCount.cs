@@ -86,7 +86,7 @@ namespace System.Tests
                 if (maxRate != 0)
                 {
                     // Setting JobObjectCpuRateControlInformation requires Windows 8 or later
-                    if (!PlatformDetection.IsWindows8xOrLater)
+                    if (!PlatformDetection.IsWindows)
                         return;
 
                     if (minRate == 0)

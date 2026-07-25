@@ -21,6 +21,21 @@ dotnet_diagnostic.BCL0015.severity = none
 # BCL0020: Invalid SR.Format call
 dotnet_diagnostic.BCL0020.severity = none
 
+# SYSLIB1040: Invalid GeneratedRegexAttribute usage
+dotnet_diagnostic.SYSLIB1040.severity = error
+
+# SYSLIB1041: Invalid GeneratedRegexAttribute usage
+dotnet_diagnostic.SYSLIB1041.severity = error
+
+# SYSLIB1042: Invalid GeneratedRegexAttribute usage
+dotnet_diagnostic.SYSLIB1042.severity = error
+
+# SYSLIB1043: Invalid GeneratedRegexAttribute usage
+dotnet_diagnostic.SYSLIB1043.severity = error
+
+# SYSLIB1044: Regex generator limitation reached.
+dotnet_diagnostic.SYSLIB1044.severity = none
+
 # SYSLIB1045: Convert to 'GeneratedRegexAttribute'.
 dotnet_diagnostic.SYSLIB1045.severity = none
 
@@ -278,6 +293,9 @@ dotnet_diagnostic.CA1514.severity = none
 
 # CA1515: Consider making public types internal
 dotnet_diagnostic.CA1515.severity = none
+
+# CA1516: Use cross-platform intrinsics
+dotnet_diagnostic.CA1516.severity = none
 
 # CA1700: Do not name enum values 'Reserved'
 dotnet_diagnostic.CA1700.severity = none

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Security.Authentication;
 using Xunit;
 
 namespace System.Net.Security.Tests
@@ -32,11 +34,29 @@ namespace System.Net.Security.Tests
             Assert.Equal((int)TlsAlertMessage.DecryptError, Interop.SChannel.TLS1_ALERT_DECRYPT_ERROR);
             Assert.Equal((int)TlsAlertMessage.ExportRestriction, Interop.SChannel.TLS1_ALERT_EXPORT_RESTRICTION);
             Assert.Equal((int)TlsAlertMessage.ProtocolVersion, Interop.SChannel.TLS1_ALERT_PROTOCOL_VERSION);
-            Assert.Equal((int)TlsAlertMessage.InsuffientSecurity, Interop.SChannel.TLS1_ALERT_INSUFFIENT_SECURITY);
+            Assert.Equal((int)TlsAlertMessage.InsufficientSecurity, Interop.SChannel.TLS1_ALERT_INSUFFIENT_SECURITY);
             Assert.Equal((int)TlsAlertMessage.InternalError, Interop.SChannel.TLS1_ALERT_INTERNAL_ERROR);
             Assert.Equal((int)TlsAlertMessage.UserCanceled, Interop.SChannel.TLS1_ALERT_USER_CANCELED);
             Assert.Equal((int)TlsAlertMessage.NoRenegotiation, Interop.SChannel.TLS1_ALERT_NO_RENEGOTIATION);
-            Assert.Equal((int)TlsAlertMessage.UnsupportedExt, Interop.SChannel.TLS1_ALERT_UNSUPPORTED_EXT);
+            Assert.Equal((int)TlsAlertMessage.UnsupportedExtension, Interop.SChannel.TLS1_ALERT_UNSUPPORTED_EXT);
+        }
+
+        [Theory]
+        [MemberData(nameof(AlertFrameData))]
+        public void CreateAlertFrame_NonProtocolAlert_UsesRequestedVersion(SslProtocols protocol, byte minorVersion)
+        {
+            byte[] frame = TlsFrameHelper.CreateAlertFrame(protocol, TlsAlertDescription.UnknownCA);
+
+            Assert.Equal(new byte[] { (byte)TlsContentType.Alert, 3, minorVersion, 0, 2, (byte)TlsAlertLevel.Fatal, (byte)TlsAlertDescription.UnknownCA }, frame);
+        }
+
+        public static IEnumerable<object[]> AlertFrameData()
+        {
+#pragma warning disable SYSLIB0039
+            yield return new object[] { SslProtocols.Tls, (byte)1 };
+            yield return new object[] { SslProtocols.Tls11, (byte)2 };
+#pragma warning restore SYSLIB0039
+            yield return new object[] { SslProtocols.Tls12, (byte)3 };
         }
     }
 }

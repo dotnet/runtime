@@ -45,7 +45,7 @@ namespace Internal.TypeVerifier
         public void VerifyInterfaces()
         {
             TypeDefinition typeDefinition = _module.MetadataReader.GetTypeDefinition(_typeDefinitionHandle);
-            EcmaType type = (EcmaType)_module.GetType(_typeDefinitionHandle);
+            EcmaType type = _module.GetType(_typeDefinitionHandle);
 
             if (type.IsInterface)
             {
@@ -59,7 +59,7 @@ namespace Internal.TypeVerifier
                 return;
             }
 
-            // Look for duplicates and prepare distinct list of implemented interfaces to avoid 
+            // Look for duplicates and prepare distinct list of implemented interfaces to avoid
             // subsequent error duplication
             List<InterfaceMetadataObjects> implementedInterfaces = new List<InterfaceMetadataObjects>();
             foreach (InterfaceImplementationHandle interfaceHandle in interfaceHandles)

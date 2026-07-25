@@ -19,7 +19,7 @@ namespace ILLink.Shared.TypeSystemProxy
 
         public readonly MethodDesc Method;
 
-        public string Name { get => Method.Name; }
+        public string Name { get => Method.GetName(); }
 
         public string GetDisplayName() => Method.GetDisplayName();
 

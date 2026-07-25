@@ -138,7 +138,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         /// <summary>
         /// Any files that are needed for linking should come from the expectations assembly so that these values
-        /// can be controlled using #ifs regardless of the framework the NUnit test project is compiled against
+        /// can be controlled using #ifs regardless of the framework the MSTest test project is compiled against
         /// </summary>
         /// <param name="metadataProvider"></param>
         public virtual void PopulateFromExpectations(TestCaseMetadataProvider metadataProvider)

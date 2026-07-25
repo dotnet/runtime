@@ -34,6 +34,7 @@ parser.add_argument("-output_directory", help="Path to output directory")
 parser.add_argument("-partition", help="Partition name")
 parser.add_argument("-core_root", help="path to CORE_ROOT directory")
 parser.add_argument("-run_duration", help="Run duration in minutes")
+parser.add_argument("-runtime_async", action="store_true", help="Test runtime async")
 is_windows = platform.system() == "Windows"
 
 
@@ -79,6 +80,11 @@ def setup_args(args):
                         "run_duration",
                         lambda unused: True,
                         "Unable to set run_duration")
+
+    coreclr_args.verify(args,
+                        "runtime_async",
+                        lambda unused: True,
+                        "Unable to set runtime_async")
 
     return coreclr_args
 
@@ -206,13 +212,18 @@ def main(main_args):
             reduce_examples = ReduceExamples(fp, temp_location, path_to_tool, path_to_corerun, exit_evt)
             reduce_examples.start()
 
-            run_command([
+            command = [
                 path_to_tool,
                 "--seconds-to-run", str(run_duration),
                 "--output-events-to", summary_file_path,
                 "--host", path_to_corerun,
                 "--parallelism", "-1",
-                "--known-errors", "dotnet/runtime"],
+                "--known-errors", "dotnet/runtime"]
+
+            if coreclr_args.runtime_async:
+                command.extend(["--gen-extensions", "default,async,runtimeasync"])
+
+            run_command(command,
                 _exit_on_fail=True, _output_file=upload_fuzzer_output_path)
 
             exit_evt.set()
