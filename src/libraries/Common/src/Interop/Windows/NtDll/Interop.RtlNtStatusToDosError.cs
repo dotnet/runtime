@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -13,5 +14,14 @@ internal static partial class Interop
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.NtDll)]
         public static safe partial uint RtlNtStatusToDosError(int Status);
+
+        internal static void ThrowExceptionForNtStatus(uint ntStatus)
+        {
+            if (StatusOptions.NT_SUCCESS(ntStatus))
+            {
+                return;
+            }
+            throw new Win32Exception((int)RtlNtStatusToDosError((int)ntStatus));
+        }
     }
 }

@@ -1911,6 +1911,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtStatus.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.NtStatus.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtWaitCompletionPacket.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.NtWaitCompletionPacket.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.IO_STATUS_BLOCK.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.IO_STATUS_BLOCK.cs</Link>
     </Compile>

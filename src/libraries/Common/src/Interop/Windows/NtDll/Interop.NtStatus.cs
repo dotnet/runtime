@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
+
 internal static partial class Interop
 {
     internal static class StatusOptions
@@ -23,7 +25,9 @@ internal static partial class Interop
         internal const uint STATUS_ACCOUNT_RESTRICTION    = 0xC000006E;
         internal const uint STATUS_NONE_MAPPED            = 0xC0000073;
         internal const uint STATUS_INSUFFICIENT_RESOURCES = 0xC000009A;
-        internal const uint STATUS_DISK_FULL = 0xC000007F;
+        internal const uint STATUS_DISK_FULL              = 0xC000007F;
+        internal const uint STATUS_PENDING                = 0xC0000103;
+        internal const uint STATUS_CANCELLED              = 0xC0000120;
         internal const uint STATUS_FILE_TOO_LARGE = 0xC0000904;
     }
 }
