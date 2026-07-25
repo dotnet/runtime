@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices.Marshalling;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -10,11 +11,22 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefinition
 {
     private readonly Target _target;
+    private readonly TargetPointer _module;
+    private readonly uint _token;
+    private readonly ITypeHandle _typeHandle;
     private readonly IXCLRDataTypeDefinition? _legacyImpl;
 
-    public ClrDataTypeDefinition(Target target, IXCLRDataTypeDefinition? legacyImpl)
+    public ClrDataTypeDefinition(
+        Target target,
+        TargetPointer module,
+        uint token,
+        ITypeHandle typeHandle,
+        IXCLRDataTypeDefinition? legacyImpl)
     {
         _target = target;
+        _module = module;
+        _token = token;
+        _typeHandle = typeHandle;
         _legacyImpl = legacyImpl;
     }
 
