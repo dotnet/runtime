@@ -48,37 +48,43 @@
       <_ExtractDir>$(_TempDir)</_ExtractDir>
       <_ExtractDir Condition="'$(WasmToolSubDir)' != ''">$([MSBuild]::NormalizeDirectory('$(_TempDir)', '$(WasmToolSubDir)'))</_ExtractDir>
       <_TarStrip Condition="'$(WasmToolStripComponents)' != ''">--strip-components=$(WasmToolStripComponents) </_TarStrip>
+
+      <!-- The tmp -> final move is an atomic same-filesystem rename, so an existing final directory
+           is already a complete tool. Skip the download/extract entirely in that case: the target
+           still runs when the sentinel is missing, and all it needs to do is re-stamp. -->
+      <_NeedsFetch Condition="!Exists('$(_FinalDir)')">true</_NeedsFetch>
     </PropertyGroup>
 
-    <Message Importance="High" Text="Acquiring $(WasmToolName) into '$(_ToolDir)'" />
+    <Message Condition="'$(_NeedsFetch)' == 'true'" Importance="High" Text="Acquiring $(WasmToolName) into '$(_ToolDir)'" />
 
-    <MakeDir Directories="$(_DownloadDir);$(_ParentDir);$(_ExtractDir)" />
+    <MakeDir Condition="'$(_NeedsFetch)' == 'true'" Directories="$(_DownloadDir);$(_ParentDir);$(_ExtractDir)" />
 
-    <DownloadFile SourceUrl="$(WasmToolUrl)"
+    <DownloadFile Condition="'$(_NeedsFetch)' == 'true'"
+                  SourceUrl="$(WasmToolUrl)"
                   DestinationFolder="$(_DownloadDir)"
                   Retries="3"
                   SkipUnchangedFiles="true">
       <Output TaskParameter="DownloadedFile" PropertyName="_Archive" />
     </DownloadFile>
 
-    <Unzip Condition="'$(WasmToolKind)' == 'zip'"
+    <Unzip Condition="'$(_NeedsFetch)' == 'true' and '$(WasmToolKind)' == 'zip'"
            SourceFiles="$(_Archive)"
            DestinationFolder="$(_ExtractDir)" />
 
-    <Exec Condition="'$(WasmToolKind)' == 'targz'"
+    <Exec Condition="'$(_NeedsFetch)' == 'true' and '$(WasmToolKind)' == 'targz'"
           Command="tar $(_TarStrip)-xzmf &quot;$(_Archive)&quot; -C &quot;$(_ExtractDir)&quot;"
           IgnoreStandardErrorWarningFormat="true" />
 
-    <Exec Condition="'$(WasmToolKind)' == 'tarxz'"
+    <Exec Condition="'$(_NeedsFetch)' == 'true' and '$(WasmToolKind)' == 'tarxz'"
           Command="tar $(_TarStrip)-xJmf &quot;$(_Archive)&quot; -C &quot;$(_ExtractDir)&quot;"
           IgnoreStandardErrorWarningFormat="true" />
 
     <!-- Firefox on Windows ships as an installer rather than an archive. -->
-    <Exec Condition="'$(WasmToolKind)' == 'firefox-installer'"
+    <Exec Condition="'$(_NeedsFetch)' == 'true' and '$(WasmToolKind)' == 'firefox-installer'"
           Command="&quot;$(_Archive)&quot; /InstallDirectoryPath=&quot;$(_ExtractDir.TrimEnd('\/'))&quot; /TaskbarShortcut=false /DesktopShortcut=false /StartMenuShortcut=false /PrivateBrowsingShortcut=false /MaintenanceService=false /PreventRebootRequired=true"
           IgnoreStandardErrorWarningFormat="true" />
 
-    <Copy Condition="'$(WasmToolLauncherSource)' != ''"
+    <Copy Condition="'$(_NeedsFetch)' == 'true' and '$(WasmToolLauncherSource)' != ''"
           SourceFiles="$(WasmToolLauncherSource)"
           DestinationFiles="$(_TempDir)$(WasmToolLauncherName)" />
 
@@ -87,14 +93,12 @@
       <_MoveSource Condition="'$(WasmToolInnerDir)' == ''">$(_TempDir.TrimEnd('\/'))</_MoveSource>
       <_MoveSource Condition="'$(WasmToolInnerDir)' != ''">$([MSBuild]::NormalizePath('$(_TempDir)', '$(WasmToolInnerDir)'))</_MoveSource>
 
-      <!-- Publish only when nothing is at the final path yet. The staging-dir -> final-dir move is
-           a rename within the cache root (same filesystem), so it is atomic: a final directory that
-           already exists is therefore a complete tool, placed either by an earlier run or by a
-           concurrent build. We never delete it (that would pull the rug out from under another
-           build using it); we just make sure the sentinel is present, which also self-heals a
-           complete-but-unstamped directory left by a build that was killed between the move and the
-           Touch below. -->
-      <_MoveIntoPlace Condition="!Exists('$(_FinalDir)')">true</_MoveIntoPlace>
+      <!-- Re-check after the download: a concurrent build may have published the same entry while
+           this one was fetching. We never delete an existing final directory (that would pull the
+           rug out from under a build using it); we only move ours in when the slot is still free,
+           and always (re-)Touch the sentinel below, which self-heals a complete-but-unstamped
+           directory left by a build killed between the move and the Touch. -->
+      <_MoveIntoPlace Condition="'$(_NeedsFetch)' == 'true' and !Exists('$(_FinalDir)')">true</_MoveIntoPlace>
     </PropertyGroup>
 
     <Message Condition="'$(_MoveIntoPlace)' != 'true'"
