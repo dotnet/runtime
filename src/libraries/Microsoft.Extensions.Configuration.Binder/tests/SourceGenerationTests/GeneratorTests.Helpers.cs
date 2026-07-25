@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -229,6 +230,22 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 throw new InvalidOperationException(errorMessage);
             }
             return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Compiles the source-generated output to an in-memory assembly, invokes its Program.Main(),
+        /// and returns the value of the public static field named <paramref name="resultFieldName"/>.
+        /// Used to assert on real bound values rather than just that the generated code compiles,
+        /// since a generator can emit code that builds cleanly but binds the wrong data.
+        /// </summary>
+        private static object? LoadAndInvokeMain(Compilation compilation, string resultFieldName)
+        {
+            byte[] image = CreateAssemblyImage(compilation);
+            Assembly assembly = AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(image));
+
+            Type programType = assembly.GetType("Program")!;
+            programType.GetMethod("Main", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, null);
+            return programType.GetField(resultFieldName, BindingFlags.Public | BindingFlags.Static)!.GetValue(null);
         }
     }
 }

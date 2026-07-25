@@ -558,11 +558,19 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
                 public class Program
                 {
+                    public static object? Result;
+
                     public static void Main()
                     {
                         ConfigurationBuilder configurationBuilder = new();
+                        configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                        {
+                            ["Values:0"] = "a",
+                            ["Values:1"] = "b",
+                        });
                         IConfiguration config = configurationBuilder.Build();
                         Options options = config.Get<Options>();
+                        Result = options.Values;
                     }
                 }
 
@@ -573,7 +581,56 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(result.GeneratedSource);
             Assert.Empty(result.Diagnostics);
 
-            AssertCanCreateAssemblyImage(result.OutputCompilation);
+            // Compiling only proves the Initialize method the fix registers is emitted; loading and
+            // running the assembly proves it also binds the right values, not just compilable code.
+            var boundValues = (IEnumerable<string>)LoadAndInvokeMain(result.OutputCompilation, "Result")!;
+            Assert.Equal(new[] { "a", "b" }, boundValues);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task SoleReadOnlyCollectionConstructorParameterOfComplexElementIsBindable()
+        {
+            // Same regression as SoleReadOnlyCollectionConstructorParameterIsBindable, but the element
+            // type is itself a bindable object rather than a string. ComplexReadOnlyListConstructorParameterIsBindable
+            // below covers the complex-element case, but always pairs it with a second, ordinarily-bindable
+            // property, so it never exercises the fixed code path (the type has bindable members either way).
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+                using System.Linq;
+
+                public class Program
+                {
+                    public static object? Result;
+
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                        {
+                            ["Values:0:Value"] = "a",
+                            ["Values:1:Value"] = "b",
+                        });
+                        IConfiguration config = configurationBuilder.Build();
+                        Options options = config.Get<Options>();
+                        Result = options.Values.Select(v => v.Value).ToArray();
+                    }
+                }
+
+                public class Child
+                {
+                    public string Value { get; set; }
+                }
+
+                public record Options(IReadOnlyList<Child> Values);
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            var boundValues = (string[])LoadAndInvokeMain(result.OutputCompilation, "Result")!;
+            Assert.Equal(new[] { "a", "b" }, boundValues);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
