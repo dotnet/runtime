@@ -814,6 +814,54 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             || t == CorElementType.I
             || t == CorElementType.U;
     public bool RequiresAlign8(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
+
+    // Mirrors CEEInfo::getClassAlignmentRequirementStatic in src/coreclr/vm/jitinterface.cpp.
+    // The result is unclamped; callers (e.g. ArgIterator) apply their own clamping.
+    // Note: the native implementation also handles the native (marshalled) value type view via
+    // TypeHandle::IsNativeValueType. That is a marshalling-only concept and is not reachable from
+    // the managed argument layout this contract serves, so it is intentionally not mirrored here.
+    private const string LayoutInfoFieldName = "LayoutInfo";
+
+    public int GetClassAlignmentRequirement(ITypeHandle typeHandle)
+    {
+        // Default alignment is sizeof(void*).
+        int result = _target.PointerSize;
+        if (!typeHandle.IsMethodTable())
+            return result;
+
+        TargetPointer eeClassPtr = GetClassPointer(typeHandle);
+        if (eeClassPtr != TargetPointer.Null)
+        {
+            Data.EEClass eeClass = _target.ProcessedData.GetOrAdd<Data.EEClass>(eeClassPtr);
+
+            // Only a LayoutEEClass carries layout info; reading it otherwise interprets unrelated
+            // memory. The managed alignment requirement is only used for sequential or blittable
+            // layout, matching the native implementation.
+            if (eeClass.HasLayout)
+            {
+                // LayoutEEClass derives from EEClass, so its layout info lives at a fixed offset
+                // from the same address.
+                Target.TypeInfo layoutClassType = _target.GetTypeInfo(DataType.LayoutEEClass);
+                TargetPointer layoutInfoPtr = eeClassPtr + (ulong)layoutClassType.Fields[LayoutInfoFieldName].Offset;
+                Data.EEClassLayoutInfo layoutInfo = _target.ProcessedData.GetOrAdd<Data.EEClassLayoutInfo>(layoutInfoPtr);
+                if (layoutInfo.LayoutType == (byte)Data.EEClassLayoutInfo.Type.Sequential || layoutInfo.IsBlittable)
+                {
+                    result = layoutInfo.AlignmentRequirement;
+                }
+            }
+        }
+
+        // FEATURE_64BIT_ALIGNMENT: some 32-bit ABIs (ARM, WASM) require 8-byte alignment for
+        // 64-bit primitives. RequiresAlign8 is only set on targets with that requirement, so this
+        // is a no-op elsewhere.
+        if (result < 8 && RequiresAlign8(typeHandle))
+        {
+            result = 8;
+        }
+
+        return result;
+    }
+
     public bool IsContinuationWithoutMetadata(ITypeHandle typeHandle) => typeHandle.IsMethodTable()
         && ContinuationMethodTablePointer != TargetPointer.Null
         && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer

@@ -26,6 +26,8 @@ public class MethodTableTests
         {
             [DataType.MethodTable] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.MethodTableLayout),
             [DataType.EEClass] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.EEClassLayout),
+            [DataType.LayoutEEClass] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.LayoutEEClassLayout),
+            [DataType.EEClassLayoutInfo] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.EEClassLayoutInfoLayout),
             [DataType.MethodTableAuxiliaryData] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.MethodTableAuxiliaryDataLayout),
             [DataType.TypeDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.TypeDescLayout),
             [DataType.FnPtrTypeDesc] = TargetTestHelpers.CreateTypeInfo(rtsBuilder.FnPtrTypeDescLayout),
@@ -1462,5 +1464,95 @@ public class MethodTableTests
         var blobBuilder = new BlobBuilder();
         rootBuilder.Serialize(blobBuilder, 0, 0);
         return blobBuilder.ToArray();
+    }
+
+    // GetClassAlignmentRequirement mirrors CEEInfo::getClassAlignmentRequirementStatic. A type
+    // without layout info reports the target pointer size, regardless of any bytes that happen to
+    // follow the EEClass.
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetClassAlignmentRequirement_NoLayout_ReturnsPointerSize(MockTarget.Architecture arch)
+    {
+        TargetPointer methodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                MockEEClass eeClass = rtsBuilder.AddEEClass("NoLayout");
+                MockMethodTable methodTable = rtsBuilder.AddMethodTable("NoLayout");
+                methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                methodTable.NumVirtuals = 3;
+                methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                methodTable.EEClassOrCanonMT = eeClass.Address;
+                eeClass.MethodTable = methodTable.Address;
+                methodTablePtr = methodTable.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        ITypeHandle handle = contract.GetTypeHandle(methodTablePtr);
+
+        Assert.Equal(target.PointerSize, contract.GetClassAlignmentRequirement(handle));
+    }
+
+    // Sequential and blittable layouts report the managed layout alignment. 16 is the value the
+    // runtime assigns to v128 SIMD types and Int128/UInt128 on WASM.
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetClassAlignmentRequirement_SequentialOrBlittableLayout_ReturnsLayoutAlignment(MockTarget.Architecture arch)
+    {
+        const byte Sequential = (byte)Data.EEClassLayoutInfo.Type.Auto + 1; // LayoutType.Sequential
+        const byte Blittable = 0x01;
+        const byte Alignment = 16;
+
+        foreach ((byte layoutType, byte flags) in new[] { (Sequential, (byte)0), ((byte)0, Blittable) })
+        {
+            TargetPointer methodTablePtr = default;
+            TestPlaceholderTarget target = CreateTarget(
+                arch,
+                rtsBuilder =>
+                {
+                    MockEEClass eeClass = rtsBuilder.AddLayoutEEClass("Layout", layoutType, Alignment, flags);
+                    MockMethodTable methodTable = rtsBuilder.AddMethodTable("Layout");
+                    methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                    methodTable.NumVirtuals = 3;
+                    methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                    methodTable.EEClassOrCanonMT = eeClass.Address;
+                    eeClass.MethodTable = methodTable.Address;
+                    methodTablePtr = methodTable.Address;
+                });
+
+            IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+            ITypeHandle handle = contract.GetTypeHandle(methodTablePtr);
+
+            Assert.Equal(Alignment, contract.GetClassAlignmentRequirement(handle));
+        }
+    }
+
+    // Auto layout that is not blittable does not report the layout alignment, even though the
+    // layout info is present -- it falls back to the pointer size.
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetClassAlignmentRequirement_AutoNonBlittableLayout_ReturnsPointerSize(MockTarget.Architecture arch)
+    {
+        TargetPointer methodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                MockEEClass eeClass = rtsBuilder.AddLayoutEEClass(
+                    "AutoLayout", (byte)Data.EEClassLayoutInfo.Type.Auto, alignmentRequirement: 16, flags: 0);
+                MockMethodTable methodTable = rtsBuilder.AddMethodTable("AutoLayout");
+                methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                methodTable.NumVirtuals = 3;
+                methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                methodTable.EEClassOrCanonMT = eeClass.Address;
+                eeClass.MethodTable = methodTable.Address;
+                methodTablePtr = methodTable.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        ITypeHandle handle = contract.GetTypeHandle(methodTablePtr);
+
+        Assert.Equal(target.PointerSize, contract.GetClassAlignmentRequirement(handle));
     }
 }
