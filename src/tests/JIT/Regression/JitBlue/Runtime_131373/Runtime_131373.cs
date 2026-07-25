@@ -17,10 +17,12 @@
 // has no ADD, so the store address is the bare GT_LCL_VAR, pushed before the
 // call that produces the value and consumed after it.
 //
-// The allocation loops matter: a compacting collection only relocates `box` if
-// there is churn for it to compact. With them the failure is deterministic on
-// the very first iteration, rather than depending on a GC happening to land in
-// the window.
+// The allocation loops are what make this deterministic. A moving GC relocates
+// when an allocation forces a collection, so it is the churn -- not the forced
+// GC.Collect on its own -- that guarantees `box` actually moves: a compacting
+// collect on a small unfragmented heap has nothing to relocate, and the stale
+// operand-stack copy stays accidentally valid. With the churn the failure hits
+// on the very first iteration.
 //
 // Reproduces only under crossgen wasm R2R (TargetOS=browser), where the unfixed
 // JIT stores through the stale byref and leaves box.Slot null. Passes trivially
