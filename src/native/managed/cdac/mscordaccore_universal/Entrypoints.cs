@@ -439,14 +439,14 @@ internal static class Entrypoints
                     uint bytesRead;
                     int hr = dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
                     return hr >= 0 && bytesRead != (uint)buffer.Length
-                        ? HResults.E_FAIL
+                        ? CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE
                         : hr;
                 }
             },
             (address, buffer) =>
             {
                 if (mutableDataTarget is null)
-                    return HResults.E_NOTIMPL;
+                    return CorDbgHResults.CORDBG_E_TARGET_READONLY;
 
                 fixed (byte* bufferPtr = buffer)
                 {
@@ -486,7 +486,7 @@ internal static class Entrypoints
             (threadId, context) =>
             {
                 if (mutableDataTarget is null)
-                    return HResults.E_NOTIMPL;
+                    return CorDbgHResults.CORDBG_E_TARGET_READONLY;
 
                 fixed (byte* contextPtr = context)
                 {
