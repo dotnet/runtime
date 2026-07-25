@@ -447,7 +447,7 @@ void InitializeCurrentProcessCpuCount()
     uint32_t count = 0;
 
     // If the configuration value has been set, it takes precedence. Otherwise, take into account
-    // process affinity and CPU quota limit.
+    // process affinity and CPU quota limit, except for Android (explained below).
 
     const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
     uint64_t configValue;

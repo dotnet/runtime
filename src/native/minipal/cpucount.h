@@ -18,8 +18,8 @@ extern "C"
 int minipal_get_cpu_max_possible_count(void);
 
 // Returns the number of CPUs physically present in the system, regardless of
-// whether they are currently online or offline or -1 if unavailable. It's the
-// number of cores the process could potentially use if they were all online.
+// whether they are currently online or offline or -1 if unavailable. This is the
+// system core count and does not account for per-process affinity / cgroup limits.
 //
 // On Linux, this reads /sys/devices/system/cpu/present.
 int minipal_get_cpu_present_count(void);
