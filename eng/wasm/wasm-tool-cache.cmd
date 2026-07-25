@@ -29,8 +29,10 @@ set "__GitDir=!__GitDir:/=\!"
 set "__Split=!__GitDir:\.git\worktrees\=|!"
 if "!__Split!" == "!__GitDir!" goto :haveAnchor
 for /f "tokens=1 delims=|" %%q in ("!__Split!") do set "__Cand=%%q"
-rem Trust only an absolute path (drive-letter colon in position 2).
+rem Trust only a rooted path, matching MSBuild's IsPathRooted: a drive-letter colon in
+rem position 2 (C:\...) or a UNC prefix (\\server\share\...).
 if "!__Cand:~1,1!" == ":" set "__Anchor=!__Cand!"
+if "!__Cand:~0,2!" == "\\" set "__Anchor=!__Cand!"
 :haveAnchor
 
 set "__Root=%DOTNET_WASM_TOOL_CACHE_DIR%"

@@ -105,20 +105,26 @@
              Importance="High"
              Text="$(WasmToolName) is already present at '$(_FinalDir)'; using it." />
 
-    <Exec Condition="'$(_MoveIntoPlace)' == 'true' and '$(HostOS)' != 'windows'"
-          Command="mv &quot;$(_MoveSource)&quot; &quot;$(_FinalDir)&quot;"
+    <!-- The existence test lives inside the command rather than in the task Condition because both
+         'mv' and 'move' move the source *into* an existing destination directory instead of
+         failing. Re-testing immediately before the rename keeps the window down to a single shell
+         statement, and a build that loses the race simply discards its copy. -->
+    <Exec Condition="'$(_NeedsFetch)' == 'true' and '$(HostOS)' != 'windows'"
+          Command="if [ -e &quot;$(_FinalDir)&quot; ]; then rm -rf &quot;$(_MoveSource)&quot;; else mv &quot;$(_MoveSource)&quot; &quot;$(_FinalDir)&quot;; fi"
           IgnoreStandardErrorWarningFormat="true" />
-    <Exec Condition="'$(_MoveIntoPlace)' == 'true' and '$(HostOS)' == 'windows'"
-          Command="move /Y &quot;$(_MoveSource)&quot; &quot;$(_FinalDir)&quot;"
+    <Exec Condition="'$(_NeedsFetch)' == 'true' and '$(HostOS)' == 'windows'"
+          Command="if exist &quot;$(_FinalDir)&quot; (rmdir /s /q &quot;$(_MoveSource)&quot;) else (move /Y &quot;$(_MoveSource)&quot; &quot;$(_FinalDir)&quot;)"
           IgnoreStandardErrorWarningFormat="true" />
 
     <RemoveDir Directories="$(_TempDir);$(_DownloadDir)" />
 
-    <ItemGroup Condition="'$(_MoveIntoPlace)' == 'true'">
+    <ItemGroup>
       <_ToolChmod Include="$(WasmToolChmod)" />
     </ItemGroup>
 
-    <Exec Condition="'$(_MoveIntoPlace)' == 'true' and '$(HostOS)' != 'windows' and '@(_ToolChmod)' != ''"
+    <!-- Unconditional and idempotent: a build that lost the publish race must not stamp the
+         sentinel before the winner has made the payload executable. -->
+    <Exec Condition="'$(HostOS)' != 'windows' and '@(_ToolChmod)' != ''"
           Command="chmod +x @(_ToolChmod->'&quot;%(Identity)&quot;', ' ')" />
 
     <Error Condition="'$(WasmToolVerify)' != '' and !Exists('$(WasmToolVerify)')"

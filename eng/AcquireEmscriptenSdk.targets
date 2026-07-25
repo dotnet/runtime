@@ -195,11 +195,16 @@ JS_ENGINES = [NODE_JS]
     <Message Condition="'$(_MoveEmsdkIntoPlace)' != 'true'" Importance="High"
              Text="Emscripten SDK $(EmscriptenVersion) is already present at '$(_EmsdkFinalDir)'; using it." />
 
-    <Exec Condition="'$(_MoveEmsdkIntoPlace)' == 'true' and '$(HostOS)' != 'windows'"
-          Command="mv &quot;$(_EmsdkStagingDir.TrimEnd('\/'))&quot; &quot;$(_EmsdkFinalDir)&quot;"
+    <!-- The existence test lives inside the command rather than in the task Condition because both
+         'mv' and 'move' move the source *into* an existing destination directory instead of
+         failing, which would pollute a complete cache entry. Re-testing immediately before the
+         rename keeps the window down to a single shell statement; a build that loses the race
+         discards its staging copy (removed below) and just re-stamps. -->
+    <Exec Condition="'$(HostOS)' != 'windows'"
+          Command="if [ ! -e &quot;$(_EmsdkFinalDir)&quot; ]; then mv &quot;$(_EmsdkStagingDir.TrimEnd('\/'))&quot; &quot;$(_EmsdkFinalDir)&quot;; fi"
           IgnoreStandardErrorWarningFormat="true" />
-    <Exec Condition="'$(_MoveEmsdkIntoPlace)' == 'true' and '$(HostOS)' == 'windows'"
-          Command="move /Y &quot;$(_EmsdkStagingDir.TrimEnd('\/'))&quot; &quot;$(_EmsdkFinalDir)&quot;"
+    <Exec Condition="'$(HostOS)' == 'windows'"
+          Command="if not exist &quot;$(_EmsdkFinalDir)&quot; move /Y &quot;$(_EmsdkStagingDir.TrimEnd('\/'))&quot; &quot;$(_EmsdkFinalDir)&quot;"
           IgnoreStandardErrorWarningFormat="true" />
     <RemoveDir Directories="$(_EmsdkStagingDir)" />
     <Touch Files="$(EmscriptenSdkStampFile)" AlwaysCreate="true" />
