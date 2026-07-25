@@ -175,6 +175,31 @@ public unsafe class TypeHandleTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void ClrDataTypeDefinition_GetNameUsesMetadataForNullTypeHandle(MockTarget.Architecture architecture)
+    {
+        MetadataBuilder metadataBuilder = CreateMetadataBuilder();
+        TypeDefinitionHandle typeDef = AddTypeDefinition(metadataBuilder, "Tests", "MetadataOnly");
+        using MetadataReaderProvider provider = CreateMetadataReader(metadataBuilder, out MetadataReader reader);
+        TestPlaceholderTarget target = CreateTarget(architecture, new TestRuntimeTypeSystem(), reader);
+        IXCLRDataTypeDefinition typeDefinition = new ClrDataTypeDefinition(
+            target,
+            ModuleAddress,
+            null,
+            (uint)MetadataTokens.GetToken(typeDef),
+            null);
+
+        char[] nameBuffer = new char[32];
+        uint nameLen = 0;
+        fixed (char* name = nameBuffer)
+        {
+            Assert.Equal(HResults.S_OK, typeDefinition.GetName(0, (uint)nameBuffer.Length, &nameLen, name));
+            Assert.Equal("Tests.MetadataOnly", new string(name));
+        }
+        Assert.Equal((uint)"Tests.MetadataOnly".Length + 1, nameLen);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void ClrDataTypeDefinition_GetCorElementTypeReturnsInternalType(MockTarget.Architecture architecture)
     {
         TargetTypeHandle typeHandle = new(0x2002);

@@ -3,6 +3,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -14,14 +16,14 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
 {
     private readonly Target _target;
     private readonly TargetPointer _module;
-    private readonly ITypeHandle _typeHandle;
+    private readonly ITypeHandle? _typeHandle;
     private readonly uint _token;
     private readonly IXCLRDataTypeDefinition? _legacyImpl;
 
     public ClrDataTypeDefinition(
         Target target,
         TargetPointer module,
-        ITypeHandle typeHandle,
+        ITypeHandle? typeHandle,
         uint token,
         IXCLRDataTypeDefinition? legacyImpl)
     {
@@ -74,7 +76,22 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
             if (flags != 0)
                 throw new ArgumentException();
 
-            string name = _typeHandle.GetName(_target);
+            string name;
+            if (_typeHandle is null)
+            {
+                Contracts.ModuleHandle module = _target.Contracts.Loader.GetModuleHandleFromModulePtr(_module);
+                MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(module) ?? throw new NotImplementedException();
+                TypeDefinitionHandle typeDefinitionHandle = MetadataTokens.TypeDefinitionHandle((int)EcmaMetadataUtils.GetRowId(_token));
+                TypeDefinition typeDefinition = reader.GetTypeDefinition(typeDefinitionHandle);
+                string typeName = reader.GetString(typeDefinition.Name);
+                string typeNamespace = reader.GetString(typeDefinition.Namespace);
+                name = string.IsNullOrEmpty(typeNamespace) ? typeName : $"{typeNamespace}.{typeName}";
+            }
+            else
+            {
+                name = _typeHandle.GetName(_target);
+            }
+
             OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, name, out bool truncated);
             if (nameBuf is not null && truncated)
                 throw Marshal.GetExceptionForHR(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER);
@@ -169,6 +186,9 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
         {
             if (type is null)
                 throw new NullReferenceException();
+
+            if (_typeHandle is null)
+                throw new NotImplementedException();
 
             *type = (uint)_target.Contracts.RuntimeTypeSystem.GetInternalCorElementType(_typeHandle);
         }
