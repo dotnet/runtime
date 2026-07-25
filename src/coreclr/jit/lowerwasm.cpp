@@ -1375,7 +1375,7 @@ GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
     //                  /--* LCL_VAR originalMaskTmp
     //                  STORE_LCL_VAR originalMaskTmp
     //  m0        = *   LCL_VAR originalMaskTmp
-    //  b0        = *   CNS_INT       int    31
+    //  b0        = *   CNS_INT       int    32
     //                  /--* m0 simd
     //                  +--* b0  int
     //                  GT_BOUNDS_CHECK RNG_CHK_FAIL
