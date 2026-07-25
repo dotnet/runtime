@@ -6,7 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.Frame))]
 internal sealed partial class Frame : IData<Frame>
 {
-    [Field] public TargetPointer Next { get; }
+    [Field] public partial TargetPointer Next { get; }
     public TargetPointer Identifier { get; private set; }
 
     partial void OnInit(Target target, TargetPointer address)

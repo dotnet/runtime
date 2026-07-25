@@ -472,6 +472,22 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 
     // TODO-WASM-CQ: contain suitable LEAs here. Take note of the fact that for this to be correct we must prove the
     // LEA doesn't overflow. It will involve creating a new frontend node to represent "nuw" (offset) addition.
+
+    // Contain a relocatable address constant so it folds into the load's memarg offset.
+    //
+    // Codegen for such a constant is "global.get $imageBase; i32.const <reloc>; i32.add"; containing it lets
+    // genCodeForIndir emit just the image base and put the relocated address in the memarg instead. Only loads
+    // can do this: the parent emits the base in place of the address, and a store cannot because its value
+    // operand has already been pushed. A multiply-used address is excluded because codegen re-materializes it
+    // from a register that would no longer hold the full address.
+    //
+    GenTree* addr = indirNode->Addr();
+    if (indirNode->OperIs(GT_IND) && !indirNode->TypeIs(TYP_SIMD12) && addr->IsIconHandle() &&
+        addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler) &&
+        ((addr->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None))
+    {
+        MakeSrcContained(indirNode, addr);
+    }
 }
 
 //------------------------------------------------------------------------

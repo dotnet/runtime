@@ -2911,18 +2911,29 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     assert(tree->OperIs(GT_IND));
 
     var_types type = tree->TypeGet();
+    GenTree*  addr = tree->Addr();
 
-    genConsumeAddress(tree->Addr());
+    genConsumeAddress(addr);
 
     if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
     {
-        regNumber addrReg = GetMultiUseOperandReg(tree->Addr());
+        regNumber addrReg = GetMultiUseOperandReg(addr);
         genEmitNullCheck(addrReg);
     }
 
     // TODO-WASM: Memory barriers
 
-    if (type == TYP_SIMD12)
+    if (addr->isContained())
+    {
+        // A contained address constant folds into the memarg offset, so emit just the image base here.
+        //
+        assert(addr->IsIconHandle() && !tree->TypeIs(TYP_SIMD12));
+        assert(addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler));
+        GetEmitter()->emitImageBase();
+        GetEmitter()->emitIns_MemargAddress(ins_Load(type), emitActualTypeSize(type),
+                                            (void*)addr->AsIntConCommon()->IntegralValue());
+    }
+    else if (type == TYP_SIMD12)
     {
         genLoadIndTypeSimd12(tree);
     }

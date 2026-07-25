@@ -57,6 +57,7 @@ namespace System.Numerics
         private const uint MostSignificantBitOfSignificandMask = 0x0080_0000;
         private const uint NaNMask = 0x7C00_0000;
         private const uint SNaNMask = 0x7E00_0000;
+        private const uint NaNPayloadMask = 0x000F_FFFF;
         private const uint InfinityMask = 0x7800_0000;
         private const uint MaxSignificand = 9_999_999;
         private const uint MaxInternalValue = 0x77F8_967F; // +9.999_999 * 10^96; aka +9_999_999 * 10^90
@@ -1277,7 +1278,7 @@ namespace System.Numerics
         static int INumberBase<Decimal32>.Radix => 10;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
-        static bool INumberBase<Decimal32>.IsCanonical(Decimal32 value) => Number.IsCanonicalDecimalIeee754<Decimal32, uint>(value._value, nanReservedMask: 0x01F0_0000, nanPayloadMask: 0x000F_FFFF, maxNaNPayload: 999_999);
+        static bool INumberBase<Decimal32>.IsCanonical(Decimal32 value) => Number.IsCanonicalDecimalIeee754<Decimal32, uint>(value._value, nanReservedMask: 0x01F0_0000, nanPayloadMask: NaNPayloadMask, maxNaNPayload: 999_999);
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
         static bool INumberBase<Decimal32>.IsComplexNumber(Decimal32 value) => false;
@@ -1772,6 +1773,8 @@ namespace System.Numerics
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NaNMask => NaNMask;
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.SNaNMask => SNaNMask;
+
+        static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NaNPayloadMask => NaNPayloadMask;
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.SignMask => SignMask;
 
