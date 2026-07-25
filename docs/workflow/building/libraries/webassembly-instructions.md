@@ -24,8 +24,10 @@ The cache is anchored at the **main checkout** (not the individual working direc
 worktrees of the same clone share a single copy — no per-worktree re-download — while the cache is
 still deleted when you delete the repo. It also lives outside `artifacts/`, so it survives `clean`.
 Set `DOTNET_WASM_TOOL_CACHE_DIR` to relocate it (for example to a user-global `~/.dotnet/wasm-tools`
-shared across unrelated clones, or a CI agent cache). Setting `EMSDK_PATH`, `WASI_SDK_PATH` or
-`WASMTIME_PATH` continues to take precedence over the cache for the corresponding tool.
+shared across unrelated clones, or a CI agent cache). Setting `EMSDK_PATH` or `WASI_SDK_PATH`
+continues to take precedence over the cache for the corresponding SDK. (`WASMTIME_PATH` is *not*
+honored: pointing the build at a local wasmtime is currently disabled, see
+[#101528](https://github.com/dotnet/runtime/issues/101528).)
 
 Versions are pinned in `src/mono/browser/emscripten-version.txt`, `eng/wasm/wasi-sdk-version.txt`,
 `src/mono/wasi/wasmtime-version.txt` and `eng/testing/BrowserVersions.props`.
