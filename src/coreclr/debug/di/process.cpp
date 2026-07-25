@@ -662,6 +662,8 @@ HRESULT CordbProcess::GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo)
     HRESULT hr = S_OK;
     EX_TRY
     {
+        RSLockHolder lockHolder(GetProcessLock());
+
         if (!m_fHasCachedTargetInfo)
         {
             IfFailThrow(GetDAC()->GetTargetInfo(&m_cachedTargetInfo));
@@ -8170,6 +8172,7 @@ HRESULT CordbProcess::GetTargetOpcodeSize(ULONG32 * pcbSize)
     {
         case IDacDbiInterface::kArchX86:
         case IDacDbiInterface::kArchAMD64:
+        case IDacDbiInterface::kArchWasm:
             *pcbSize = 1;
             break;
 

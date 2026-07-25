@@ -211,7 +211,9 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
                 extendedVal = (SSIZE_T) *(INT64*)newValue.StartAddress();
                 break;
             }
-            default: _ASSERTE(!"bad size");
+            default:
+                _ASSERTE(!"bad size");
+                ThrowHR(E_FAIL);
         }
     }
     else
@@ -232,7 +234,9 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
                 extendedVal = (SIZE_T) *(UINT64*)newValue.StartAddress();
                 break;
             }
-            default: _ASSERTE(!"bad size");
+            default:
+                _ASSERTE(!"bad size");
+                ThrowHR(E_FAIL);
         }
     }
 
