@@ -196,6 +196,10 @@ public unsafe class TypeHandleTests
             Assert.Equal("Tests.MetadataOnly", new string(name));
         }
         Assert.Equal((uint)"Tests.MetadataOnly".Length + 1, nameLen);
+
+        uint elementType = 0;
+        Assert.Equal(HResults.E_NOTIMPL, typeDefinition.GetCorElementType(&elementType));
+        Assert.Equal(HResults.E_NOTIMPL, typeDefinition.GetCorElementType(null));
     }
 
     [Theory]

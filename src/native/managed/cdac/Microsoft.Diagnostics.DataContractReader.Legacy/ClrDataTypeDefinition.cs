@@ -94,7 +94,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
 
             OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, name, out bool truncated);
             if (nameBuf is not null && truncated)
-                throw Marshal.GetExceptionForHR(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER);
+                throw Marshal.GetExceptionForHR(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER)!;
         }
         catch (System.Exception ex)
         {
@@ -184,11 +184,11 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
 
         try
         {
-            if (type is null)
-                throw new NullReferenceException();
-
             if (_typeHandle is null)
                 throw new NotImplementedException();
+
+            if (type is null)
+                throw new NullReferenceException();
 
             *type = (uint)_target.Contracts.RuntimeTypeSystem.GetInternalCorElementType(_typeHandle);
         }
