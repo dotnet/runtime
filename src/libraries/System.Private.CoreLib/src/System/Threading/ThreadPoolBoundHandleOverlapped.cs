@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
@@ -31,6 +32,21 @@ namespace System.Threading
                 UnsafePack(s_completionCallback, pinData);
             _nativeOverlapped->OffsetLow = 0; // CLR reuses NativeOverlapped instances and does not reset these
             _nativeOverlapped->OffsetHigh = 0;
+        }
+
+        internal static unsafe ThreadPoolBoundHandleOverlapped GetOverlappedWrapper(NativeOverlapped* overlapped)
+        {
+            ThreadPoolBoundHandleOverlapped wrapper;
+            try
+            {
+                wrapper = (ThreadPoolBoundHandleOverlapped)Unpack(overlapped);
+            }
+            catch (NullReferenceException ex)
+            {
+                throw new ArgumentException(SR.Argument_NativeOverlappedAlreadyFree, nameof(overlapped), ex);
+            }
+
+            return wrapper;
         }
 
         private static void CompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
