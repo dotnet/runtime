@@ -61,13 +61,9 @@ public unsafe partial class Decimal128Native
 {
     // Decimal128 shares the raw 128-bit little/big-endian layout of UInt128, so we can build and
     // inspect known bit patterns by reinterpreting a UInt128 without relying on decimal semantics.
-    private static Decimal128 FromBits(ulong upper, ulong lower)
-    {
-        UInt128 bits = new UInt128(upper, lower);
-        return Unsafe.As<UInt128, Decimal128>(ref bits);
-    }
+    private static Decimal128 FromBits(ulong upper, ulong lower) => Unsafe.BitCast<UInt128, Decimal128>(new UInt128(upper, lower));
 
-    private static UInt128 ToBits(Decimal128 value) => Unsafe.As<Decimal128, UInt128>(ref value);
+    private static UInt128 ToBits(Decimal128 value) => Unsafe.BitCast<Decimal128, UInt128>(value);
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/69399", TestRuntimes.Mono)]

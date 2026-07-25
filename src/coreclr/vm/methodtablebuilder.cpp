@@ -10774,7 +10774,8 @@ void MethodTableBuilder::CheckForSystemTypes()
 #elif defined(TARGET_64BIT) || defined(TARGET_X86)
                     pLayout->SetAlignmentRequirement(16); // sizeof(_Decimal128)
 #elif defined(TARGET_WASM)
-                    // Clang has no _Decimal128, so the Wasm Basic C ABI does not define one. Match
+                    // The Wasm Basic C ABI does not define a decimal type; it tracks what the
+                    // clang/LLVM Wasm backend implements, and clang has no _Decimal128. Match
                     // __int128_t, the only other 16 byte scalar it does define, which is 16 byte
                     // aligned (including under Emscripten, which only reduces long double to 8).
                     pLayout->SetAlignmentRequirement(16);
