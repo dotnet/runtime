@@ -258,15 +258,16 @@ internal static class Entrypoints
     private static unsafe int DacDbiInterfaceInstance(
         IntPtr /*ICorDebugDataTarget*/ pTarget,
         ulong runtimeBase,
+        ulong contractDescriptorAddress,
         IntPtr /*IDacDbiInterface::IAllocator*/ pAllocator,
         IntPtr /*IDacDbiInterface::IMetaDataLookup*/ pMetaDataLookup,
         void** iface)
     {
-        // Match the native DAC export (DacDbiInterfaceInstance in dacdbiimpl.cpp), which only
-        // validates the target, base address, and out parameter. The allocator and metadata
-        // lookup pointers are not used by the managed implementation, so don't require them.
+        // The allocator and metadata lookup pointers are not used by the managed implementation,
+        // so, unlike the native DAC export, they are not required.
         if (pTarget == IntPtr.Zero
             || runtimeBase == 0
+            || contractDescriptorAddress == 0
             || iface == null)
         {
             return HResults.E_INVALIDARG;
@@ -277,17 +278,7 @@ internal static class Entrypoints
         try
         {
             object dataTarget = ComInterfaceMarshaller<ICorDebugDataTarget>.ConvertToManaged((void*)pTarget)!;
-            if (dataTarget is ICLRRuntimeLocator runtimeLocator)
-            {
-                ulong locatedRuntimeBase;
-                int hr = runtimeLocator.GetRuntimeBase(&locatedRuntimeBase);
-                if (hr < 0)
-                    return hr;
-                if (locatedRuntimeBase != runtimeBase)
-                    return HResults.E_INVALIDARG;
-            }
-
-            ContractDescriptorTarget target = CreateTargetFromCorDebugDataTarget(dataTarget);
+            ContractDescriptorTarget target = CreateTargetFromCorDebugDataTarget(dataTarget, contractDescriptorAddress);
             Legacy.DacDbiImpl impl = new(target, legacyObj: null);
             *iface = ComInterfaceMarshaller<IDacDbiInterface>.ConvertToUnmanaged(impl);
             return HResults.S_OK;
@@ -433,21 +424,11 @@ internal static class Entrypoints
         return 0;
     }
 
-    private static unsafe ContractDescriptorTarget CreateTargetFromCorDebugDataTarget(object targetObject)
+    private static unsafe ContractDescriptorTarget CreateTargetFromCorDebugDataTarget(object targetObject, ulong contractAddress)
     {
         ICorDebugDataTarget dataTarget = targetObject as ICorDebugDataTarget ?? throw new ArgumentException(
             $"Data target does not implement {nameof(ICorDebugDataTarget)}", nameof(targetObject));
         ICorDebugMutableDataTarget? mutableDataTarget = targetObject as ICorDebugMutableDataTarget;
-        ICLRContractLocator contractLocator = targetObject as ICLRContractLocator ?? throw new ArgumentException(
-            $"Data target does not implement {nameof(ICLRContractLocator)}", nameof(targetObject));
-
-        ulong contractAddress;
-        int hr = contractLocator.GetContractDescriptor(&contractAddress);
-        if (hr != 0)
-        {
-            throw new InvalidOperationException(
-                $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.");
-        }
 
         if (!ContractDescriptorTarget.TryCreate(
             contractAddress,
