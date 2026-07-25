@@ -72,11 +72,11 @@
            DestinationFolder="$(_ExtractDir)" />
 
     <Exec Condition="'$(_NeedsFetch)' == 'true' and '$(WasmToolKind)' == 'targz'"
-          Command="tar $(_TarStrip)-xzmf &quot;$(_Archive)&quot; -C &quot;$(_ExtractDir)&quot;"
+          Command="tar $(_TarStrip)-xzmf &quot;$(_Archive)&quot; -C &quot;$(_ExtractDir.TrimEnd('\/'))&quot;"
           IgnoreStandardErrorWarningFormat="true" />
 
     <Exec Condition="'$(_NeedsFetch)' == 'true' and '$(WasmToolKind)' == 'tarxz'"
-          Command="tar $(_TarStrip)-xJmf &quot;$(_Archive)&quot; -C &quot;$(_ExtractDir)&quot;"
+          Command="tar $(_TarStrip)-xJmf &quot;$(_Archive)&quot; -C &quot;$(_ExtractDir.TrimEnd('\/'))&quot;"
           IgnoreStandardErrorWarningFormat="true" />
 
     <!-- Firefox on Windows ships as an installer rather than an archive. -->
