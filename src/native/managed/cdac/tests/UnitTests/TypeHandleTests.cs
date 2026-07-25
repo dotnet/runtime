@@ -160,10 +160,10 @@ public unsafe class TypeHandleTests
         fixed (char* name = nameBuffer)
         {
             Assert.Equal(HResults.S_OK, typeInstance.GetName(0, nameLen, &nameLen, name));
-            Assert.Equal("System.Int32", new string(name));
+            Assert.Equal("System.Int32", new string(name, 0, (int)nameLen - 1));
 
             Assert.Equal(HResultErrorInsufficientBuffer, typeInstance.GetName(0, 4, &nameLen, name));
-            Assert.Equal("Sys", new string(name));
+            Assert.Equal("Sys", new string(name, 0, 3));
         }
 
         Assert.Equal(HResults.E_INVALIDARG, typeInstance.GetName(1, 0, null, null));

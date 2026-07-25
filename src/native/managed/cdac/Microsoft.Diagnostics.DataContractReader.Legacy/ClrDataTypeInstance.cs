@@ -103,7 +103,7 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
                 if (nameBuf is not null && nameLenLocal > 0)
                 {
                     string dacName = new string(nameBufLocal, 0, (int)nameLenLocal - 1);
-                    string cdacName = new string(nameBuf);
+                    string cdacName = new string(nameBuf, 0, (int)nameLenLocal - 1);
                     Debug.Assert(dacName == cdacName, $"cDAC: {cdacName}, DAC: {dacName}");
                 }
             }
