@@ -57,7 +57,7 @@ namespace System.Threading
             get => _repeating;
         }
 
-        public bool Unregister(WaitHandle waitObject) => UnregisterPortableCore(waitObject);
+        public bool Unregister(WaitHandle? waitObject) => UnregisterPortableCore(waitObject);
 
         /// <summary>
         /// Perform the registered callback if the <see cref="UserUnregisterWaitHandle"/> has not been signaled.

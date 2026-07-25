@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -116,7 +116,7 @@ namespace System.Threading
             Interop.Kernel32.SetThreadpoolWait(_tpWait, _waitHandle!.DangerousGetHandle(), (IntPtr)pTimeout);
         }
 
-        private bool UnregisterWindowsThreadPool(WaitHandle waitObject)
+        private bool UnregisterWindowsThreadPool(WaitHandle? waitObject)
         {
             // Hold the lock during the synchronous part of Unregister (as in CoreCLR)
             lock (_lock!)
