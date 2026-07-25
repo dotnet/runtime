@@ -79,8 +79,12 @@ internal sealed class CachingContractRegistry : ContractRegistry
             return true;
         }
 
-        // Resolve only — never invoke the creator. Invoking it would read target memory and may
-        // chain into other contracts, which must not happen during eager validation.
+        // Presence-only validation: confirm this cDAC can provide the contract at the version the
+        // target advertises, but never invoke the creator. Instantiating a contract can read target
+        // memory and chain into other contracts, and a partial capture (for example a minidump) may
+        // legitimately be missing the data a given contract needs while still being fully usable for
+        // others (stack walks and similar). Reading target memory here could spuriously fail
+        // validation and reject an otherwise serviceable dump, so resolve the creator without running it.
         return TryResolveCreator(typeof(TContract), TContract.Name, out _, out failureException);
     }
 

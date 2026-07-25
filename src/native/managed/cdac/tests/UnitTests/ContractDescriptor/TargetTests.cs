@@ -307,7 +307,7 @@ public unsafe partial class TargetTests
         ContractMissingException ex = Assert.Throws<ContractMissingException>(() => target.Contracts.RuntimeInfo);
         Assert.Equal("RuntimeInfo", ex.ContractName);
         Assert.Null(ex.ContractVersion);
-        Assert.Equal(unchecked((int)0x80004001), ex.HResult);
+        Assert.Equal(CdacHResults.CDAC_E_CONTRACT_NOT_ADVERTISED, ex.HResult);
     }
 
     [Theory]
@@ -326,7 +326,7 @@ public unsafe partial class TargetTests
         ContractUnrecognizedException ex = Assert.Throws<ContractUnrecognizedException>(() => target.Contracts.RuntimeInfo);
         Assert.Equal("RuntimeInfo", ex.ContractName);
         Assert.Equal("unsupported-version", ex.ContractVersion);
-        Assert.Equal(unchecked((int)0x80004001), ex.HResult);
+        Assert.Equal(CdacHResults.CDAC_E_CONTRACT_UNRECOGNIZED, ex.HResult);
     }
 
     [Theory]
@@ -346,7 +346,7 @@ public unsafe partial class TargetTests
         ContractObsoleteException ex = Assert.Throws<ContractObsoleteException>(() => target.Contracts.RuntimeInfo);
         Assert.Equal("RuntimeInfo", ex.ContractName);
         Assert.Equal("obsolete-version", ex.ContractVersion);
-        Assert.Equal(unchecked((int)0x80004001), ex.HResult);
+        Assert.Equal(CdacHResults.CDAC_E_CONTRACT_UNSUPPORTED, ex.HResult);
     }
 
     [Theory]
@@ -371,11 +371,18 @@ public unsafe partial class TargetTests
     private static readonly string[] s_requiredDataAccessContracts =
     [
         "AuxiliarySymbols", "BuiltInCOM", "CodeNotifications", "CodeVersions", "ComWrappers",
-        "ConditionalWeakTable", "DacStreams", "Debugger", "EcmaMetadata", "Exception",
-        "ExecutionManager", "GC", "GCInfo", "Loader", "Notifications", "Object", "PlatformMetadata",
-        "PrecodeStubs", "ReJIT", "RuntimeInfo", "RuntimeTypeSystem", "SHash", "Signature",
-        "StackWalk", "StressLog", "SyncBlock", "Thread",
+        "ConditionalWeakTable", "DacStreams", "Debugger", "DebugInfo", "EcmaMetadata", "Exception",
+        "ExecutionManager", "FeatureFlags", "GC", "GCInfo", "Loader", "Notifications", "Object",
+        "PlatformMetadata", "PrecodeStubs", "ReJIT", "RuntimeInfo", "RuntimeMutableTypeSystem",
+        "RuntimeTypeSystem", "SHash", "Signature", "StackWalk", "StressLog", "SyncBlock", "Thread",
     ];
+
+    // A string-valued "OperatingSystem" contract-descriptor global, used to drive the target
+    // platform that ValidateForDataAccess reads when deciding which OS-specific contracts to require.
+    private static readonly (string Name, ulong? Value, string? StringValue, string? TypeName)[] s_windowsOperatingSystemGlobal =
+        [("OperatingSystem", null, "windows", "string")];
+    private static readonly (string Name, ulong? Value, string? StringValue, string? TypeName)[] s_unixOperatingSystemGlobal =
+        [("OperatingSystem", null, "unix", "string")];
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
@@ -451,11 +458,10 @@ public unsafe partial class TargetTests
 
         Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
-        ContractValidationException ex = Assert.Throws<ContractValidationException>(
+        ContractMissingException ex = Assert.Throws<ContractMissingException>(
             () => Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts));
         Assert.Equal(CdacHResults.CDAC_E_CONTRACT_NOT_ADVERTISED, ex.HResult);
         Assert.Equal("RuntimeInfo", ex.ContractName);
-        Assert.IsType<ContractMissingException>(ex.InnerException);
     }
 
     [Theory]
@@ -473,11 +479,10 @@ public unsafe partial class TargetTests
 
             Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
-            ContractValidationException ex = Assert.Throws<ContractValidationException>(
+            ContractMissingException ex = Assert.Throws<ContractMissingException>(
                 () => Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts));
             Assert.Equal(CdacHResults.CDAC_E_CONTRACT_NOT_ADVERTISED, ex.HResult);
             Assert.Equal(missingContract, ex.ContractName);
-            Assert.IsType<ContractMissingException>(ex.InnerException);
         }
     }
 
@@ -494,12 +499,11 @@ public unsafe partial class TargetTests
 
         Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
-        ContractValidationException ex = Assert.Throws<ContractValidationException>(
+        ContractUnrecognizedException ex = Assert.Throws<ContractUnrecognizedException>(
             () => Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts));
         Assert.Equal(CdacHResults.CDAC_E_CONTRACT_UNRECOGNIZED, ex.HResult);
         Assert.Equal("RuntimeInfo", ex.ContractName);
         Assert.Equal("version-from-the-future", ex.ContractVersion);
-        Assert.IsType<ContractUnrecognizedException>(ex.InnerException);
     }
 
     [Theory]
@@ -520,12 +524,70 @@ public unsafe partial class TargetTests
             out ContractDescriptorTarget? target,
             registry => registry.RegisterUnsupported<Contracts.IRuntimeInfo>("deprecated-version")));
 
-        ContractValidationException ex = Assert.Throws<ContractValidationException>(
+        ContractObsoleteException ex = Assert.Throws<ContractObsoleteException>(
             () => Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts));
         Assert.Equal(CdacHResults.CDAC_E_CONTRACT_UNSUPPORTED, ex.HResult);
         Assert.Equal("RuntimeInfo", ex.ContractName);
         Assert.Equal("deprecated-version", ex.ContractVersion);
-        Assert.IsType<ContractObsoleteException>(ex.InnerException);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_WindowsTarget_RequiresWindowsErrorReporting(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+
+        // A Windows target advertising every cross-platform contract but not the Windows-only
+        // WindowsErrorReporting must still fail validation, since SOS reaches it unconditionally
+        // (GetClrWatsonBuckets) on Windows.
+        descriptorBuilder
+            .SetContracts(s_requiredDataAccessContracts)
+            .SetGlobals(s_windowsOperatingSystemGlobal);
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        ContractMissingException ex = Assert.Throws<ContractMissingException>(
+            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts));
+        Assert.Equal(CdacHResults.CDAC_E_CONTRACT_NOT_ADVERTISED, ex.HResult);
+        Assert.Equal("WindowsErrorReporting", ex.ContractName);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_WindowsTargetWithWindowsErrorReporting_DoesNotThrow(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+
+        descriptorBuilder
+            .SetContracts([.. s_requiredDataAccessContracts, "WindowsErrorReporting"])
+            .SetGlobals(s_windowsOperatingSystemGlobal);
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_NonWindowsTarget_DoesNotRequireWindowsErrorReporting(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+
+        // A non-Windows target that omits WindowsErrorReporting must validate cleanly: the guard
+        // must not require a contract the target platform never uses.
+        descriptorBuilder
+            .SetContracts(s_requiredDataAccessContracts)
+            .SetGlobals(s_unixOperatingSystemGlobal);
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts);
     }
 
     private static void ValidateGlobals(

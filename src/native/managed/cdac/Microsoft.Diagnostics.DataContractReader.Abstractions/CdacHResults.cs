@@ -39,6 +39,13 @@ public static class CdacHResults
     public const int CDAC_E_CONTRACT_UNSUPPORTED = unchecked((int)0xA0DAC003);
 
     /// <summary>
+    /// A required contract could not be validated and the cause could not be classified as one of
+    /// the more specific CONTRACT codes above. This is the default HRESULT carried by the
+    /// <see cref="ContractNotAvailableException"/> base type.
+    /// </summary>
+    public const int CDAC_E_CONTRACT_UNAVAILABLE = unchecked((int)0xA0DAC004);
+
+    /// <summary>
     /// No usable cDAC contract descriptor could be located for the target: the contract locator
     /// did not produce a descriptor address, the descriptor header could not be read, or the bytes
     /// at the descriptor address are not a contract descriptor (bad magic). This typically means the
