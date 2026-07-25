@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -77,14 +76,8 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
             if (flags != 0)
                 throw new ArgumentException();
 
-            StringBuilder sb = new();
-            TypeNameBuilder.AppendType(
-                _target,
-                sb,
-                _typeHandle,
-                TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
-
-            OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, sb.ToString(), out bool truncated);
+            string name = _typeHandle.GetName(_target);
+            OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, name, out bool truncated);
             if (nameBuf is not null && truncated)
                 throw Marshal.GetExceptionForHR(ErrorInsufficientBuffer)!;
         }
