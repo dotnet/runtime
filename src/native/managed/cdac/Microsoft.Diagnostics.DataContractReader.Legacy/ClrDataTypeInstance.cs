@@ -63,19 +63,18 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
 
     int IXCLRDataTypeInstance.GetName(uint flags, uint bufLen, uint* nameLen, char* nameBuf)
     {
-        const int HResultErrorInsufficientBuffer = unchecked((int)0x8007007A);
         int hr = HResults.S_OK;
 
         try
         {
             if (flags != 0)
-                throw new ArgumentException();
+                throw new ArgumentException("GetName requires flags=0.", nameof(flags));
 
             string name = _typeHandle.GetName(_target);
-            OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, name);
-            if (nameBuf is not null && bufLen < name.Length + 1)
+            OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, name, out bool truncated);
+            if (truncated)
             {
-                hr = HResultErrorInsufficientBuffer;
+                hr = CorDbgHResults.ErrorInsufficientBuffer;
             }
         }
         catch (System.Exception ex)
@@ -84,7 +83,7 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
         }
 
 #if DEBUG
-        if (_legacyImpl is not null)
+        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
         {
             uint nameLenLocal = 0;
             char[] nameBufLocal = new char[bufLen > 0 ? bufLen : 1];
@@ -95,10 +94,12 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
             }
 
             Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0 && hrLocal >= 0)
+            if (hr >= 0)
             {
-                if (nameLen is not null)
-                    Debug.Assert(nameLenLocal == *nameLen, $"cDAC: {*nameLen:x}, DAC: {nameLenLocal:x}");
+                string nameLenMessage = nameLen is null
+                    ? $"cDAC: <null>, DAC: {nameLenLocal}"
+                    : $"cDAC: {*nameLen}, DAC: {nameLenLocal}";
+                Debug.Assert(nameLen is null || nameLenLocal == *nameLen, nameLenMessage);
 
                 if (nameBuf is not null && nameLenLocal > 0)
                 {
@@ -121,7 +122,7 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
         int hr = HResults.S_OK;
         int hrLocal = HResults.S_OK;
         IXCLRDataTypeDefinition? legacyDefinition = null;
-        if (_legacyImpl is not null && !typeDefinition.IsNullRef)
+        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null && !typeDefinition.IsNullRef)
         {
             DacComNullableByRef<IXCLRDataTypeDefinition> legacyDefinitionOut = new(isNullRef: false);
             hrLocal = _legacyImpl.GetDefinition(legacyDefinitionOut);
@@ -131,9 +132,9 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
         try
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            ITypeHandle? definitionType;
-            TargetPointer module;
-            uint token;
+            ITypeHandle? definitionType = null;
+            TargetPointer module = default;
+            uint token = 0;
 
             if (rts.IsArray(_typeHandle, out _) || rts.IsFunctionPointer(_typeHandle, out _, out _))
             {
@@ -171,7 +172,7 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
         }
 
 #if DEBUG
-        if (_legacyImpl is not null && !typeDefinition.IsNullRef)
+        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null && !typeDefinition.IsNullRef)
         {
             Debug.ValidateHResult(hr, hrLocal);
         }

@@ -19,7 +19,7 @@ internal static unsafe class CdacStressApi
     public const uint RequestComputeArgGCRefMap = 0xf2000001;
 
     // HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER).
-    private const int HResultErrorInsufficientBuffer = unchecked((int)0x8007007A);
+    private const int ErrorInsufficientBuffer = unchecked((int)0x8007007A);
 
     public static bool IsStressRequest(uint reqCode)
         => reqCode == RequestFlushTargetState
@@ -101,7 +101,7 @@ internal static unsafe class CdacStressApi
         {
             req.cbFilled = 0;
             Unsafe.WriteUnaligned(inBuffer, req);
-            return HResultErrorInsufficientBuffer;
+            return ErrorInsufficientBuffer;
         }
 
         byte* dest = (byte*)(nuint)req.BlobBuffer;

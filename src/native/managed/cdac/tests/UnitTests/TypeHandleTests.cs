@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using Microsoft.Diagnostics.DataContractReader;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
@@ -17,7 +18,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class TypeHandleTests
 {
-    private const int HResultErrorInsufficientBuffer = unchecked((int)0x8007007A);
     private const ulong ModuleAddress = 0x1000;
 
     public static IEnumerable<object[]> TypeDescNames()
@@ -162,7 +162,7 @@ public unsafe class TypeHandleTests
             Assert.Equal(HResults.S_OK, typeInstance.GetName(0, nameLen, &nameLen, name));
             Assert.Equal("System.Int32", new string(name, 0, (int)nameLen - 1));
 
-            Assert.Equal(HResultErrorInsufficientBuffer, typeInstance.GetName(0, 4, &nameLen, name));
+            Assert.Equal(CorDbgHResults.ErrorInsufficientBuffer, typeInstance.GetName(0, 4, &nameLen, name));
             Assert.Equal("Sys", new string(name, 0, 3));
         }
 
