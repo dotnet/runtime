@@ -12,6 +12,8 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 public unsafe class IXCLRDataTypeInstanceDumpTests : DumpTestBase
 {
+    private const int HResultErrorInsufficientBuffer = unchecked((int)0x8007007A);
+
     protected override string DebuggeeName => "TypeHierarchy";
 
     [ConditionalTheory]
@@ -53,7 +55,7 @@ public unsafe class IXCLRDataTypeInstanceDumpTests : DumpTestBase
             hr = typeInstance.GetName(0, (uint)nameBuf.Length, &nameLen, name);
         }
 
-        AssertHResult(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER, hr);
+        AssertHResult(HResultErrorInsufficientBuffer, hr);
         Assert.Equal((uint)"System.String".Length + 1, nameLen);
         Assert.Equal("Syst", new string(nameBuf, 0, nameBuf.Length - 1));
         Assert.Equal('\0', nameBuf[^1]);

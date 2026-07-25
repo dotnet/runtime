@@ -453,6 +453,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     int IXCLRDataModule.GetName(uint bufLen, uint* nameLen, char* name)
     {
         int hr = HResults.S_OK;
+        int E_INSUFFICIENT_BUFFER = unchecked((int)0x8007007A);
         try
         {
             if (nameLen != null)
@@ -467,7 +468,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                 *nameLen = nameLenLocal;
             // throw on insufficient buffer
             if (nameLenLocal > bufLen)
-                throw Marshal.GetExceptionForHR(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER)!;
+                throw Marshal.GetExceptionForHR(E_INSUFFICIENT_BUFFER)!;
         }
         catch (System.Exception ex)
         {
