@@ -506,6 +506,16 @@ namespace System.Threading
             return true; // continue receiving gen 2 GC callbacks
         }
 
+        internal static void CompleteWait(RegisteredWaitHandle handle, bool timedOut)
+        {
+            if (NativeRuntimeEventSource.Log.IsEnabled())
+            {
+                NativeRuntimeEventSource.Log.ThreadPoolIODequeue(handle);
+            }
+
+            handle.PerformCallback(timedOut);
+        }
+
         internal static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -523,7 +533,7 @@ namespace System.Threading
                 (int)millisecondsTimeOutInterval,
                 !executeOnlyOnce);
 
-            PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredWaitHandle);
+            registeredWaitHandle.RegisterWaitPortableCore();
 
             return registeredWaitHandle;
         }

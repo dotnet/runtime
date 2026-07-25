@@ -70,16 +70,6 @@ namespace System.Threading
             }
         }
 
-        internal static void CompleteWait(RegisteredWaitHandle handle, bool timedOut)
-        {
-            if (NativeRuntimeEventSource.Log.IsEnabled())
-            {
-                NativeRuntimeEventSource.Log.ThreadPoolIODequeue(handle);
-            }
-
-            handle.PerformCallback(timedOut);
-        }
-
         /// <summary>
         /// Attempt to remove the given wait thread from the list. It is only removed if there are no user-provided waits on the thread.
         /// </summary>

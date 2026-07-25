@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -17,6 +17,7 @@ namespace System.Threading
         private readonly uint _millisecondsTimeout;
         private readonly int _signedMillisecondsTimeout;
         private bool _repeating;
+        private SafeWaitHandle.WaitCompletionPacket? _waitCompletionPacket;
 
         /// <summary>
         /// The callback to execute when the wait on <see cref="Handle"/> either times out or completes.
@@ -56,6 +57,21 @@ namespace System.Threading
         internal bool Repeating
         {
             get => _repeating;
+        }
+
+        private void InitializePortableCore()
+        {
+            _waitCompletionPacket = Handle.GetWaitCompletionPacket();
+        }
+
+        internal void RegisterWaitPortableCore()
+        {
+            _waitCompletionPacket!.StartWait(this);
+        }
+
+        internal void UnregisterWaitPortableCore()
+        {
+            _waitCompletionPacket!.UnregisterWait();
         }
 
         public bool Unregister(WaitHandle? waitObject) =>
