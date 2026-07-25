@@ -178,7 +178,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
         if [ $__cg2ExitCode -eq 0 ]; then
           if [ "$(CrossGen2OutputFormat)" == "wasm" ] && [ ! -z ${CompositeBuildMode+x} ]; then
-            # The composite WASM output is a manifest; validate each emitted R2R component.
+            # The composite WASM output is a manifest, so validate each emitted R2R component.
             for dllFile in "${__InputFiles[@]}"; do
               __R2RDumpInput="$PWD/${dllFile##*/}"
               __R2RDumpInput="${__R2RDumpInput%.dll}.wasm"
@@ -409,7 +409,7 @@ if defined RunCrossGen2 (
 
     set __R2RDumpInput=!__OutputFile!
     if "$(CrossGen2OutputFormat)"=="wasm" (
-        REM The composite WASM output is a manifest; validate each emitted R2R component.
+        REM The composite WASM output is a manifest, so validate each emitted R2R component.
         if defined CompositeBuildMode set __R2RDumpInput=
     )
 

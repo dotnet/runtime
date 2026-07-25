@@ -8,7 +8,6 @@ using System.Linq.Expressions;
 using System.Numerics;
 using System.Reflection;
 using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -569,28 +568,22 @@ public class Program
         return true;
     }
 
-    private static bool DisposeEnumeratorTestWithConstrainedCall()
+    private static unsafe bool DisposeEnumeratorTestWithConstrainedCall()
     {
         Assembly assembly = Assembly.GetExecutingAssembly();
-        string thisAssembly = assembly.Location;
-        if (string.IsNullOrEmpty(thisAssembly))
+        if (!assembly.TryGetRawMetadata(out byte* metadata, out int length))
         {
-            // Composite WASM R2R assemblies have no location, but the entry assembly remains argv[0].
-            thisAssembly = Environment.GetCommandLineArgs()[0];
+            return false;
         }
 
-        using (var fs = new FileStream(thisAssembly, FileMode.Open, FileAccess.Read))
+        MetadataReader reader = new MetadataReader(metadata, length);
+        MethodDefinitionHandleCollection methodDefinitionHandleCollection = reader.MethodDefinitions;
+        foreach (MethodDefinitionHandle methodDefinitionHandle in methodDefinitionHandleCollection)
         {
-            using (var pereader = new PEReader(fs))
-            {
-                var reader = pereader.GetMetadataReader();
-                var methodDefinitionHandleCollection = reader.MethodDefinitions;
-                foreach (var methodDefinitionHandle in methodDefinitionHandleCollection)
-                {
-                    break;
-                }
-            }
+            break;
         }
+
+        GC.KeepAlive(assembly);
         return true;
     }
 
