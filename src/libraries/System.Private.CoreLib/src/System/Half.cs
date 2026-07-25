@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System
@@ -159,7 +160,7 @@ namespace System
         [Intrinsic]
         public static bool operator <(Half left, Half right)
         {
-            if (Avx2.IsSupported)
+            if (Avx2.IsSupported || ArmBase.Arm64.IsSupported)
             {
                 // (float)Half lowers to a hardware conversion here, so comparing as float is cheaper.
                 return (float)left < (float)right;
@@ -195,7 +196,7 @@ namespace System
         [Intrinsic]
         public static bool operator <=(Half left, Half right)
         {
-            if (Avx2.IsSupported)
+            if (Avx2.IsSupported || ArmBase.Arm64.IsSupported)
             {
                 // (float)Half lowers to a hardware conversion here, so comparing as float is cheaper.
                 return (float)left <= (float)right;
@@ -456,7 +457,7 @@ namespace System
         /// <returns>A value less than zero if this is less than <paramref name="other"/>, zero if this is equal to <paramref name="other"/>, or a value greater than zero if this is greater than <paramref name="other"/>.</returns>
         public int CompareTo(Half other)
         {
-            if (Avx2.IsSupported)
+            if (Avx2.IsSupported || ArmBase.Arm64.IsSupported)
             {
                 // (float)Half lowers to a hardware conversion here, so comparing as float is cheaper.
                 return ((float)this).CompareTo((float)other);
