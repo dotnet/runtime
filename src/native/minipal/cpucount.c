@@ -73,7 +73,7 @@ static int parse_cpulist_file(const char* path, int* outCount, int* outMaxIndex)
         if (outCount) *outCount = count;
         if (outMaxIndex) *outMaxIndex = maxIndex;
     }
-    return parseSuccess;
+    return parseSuccess && count > 0;
 }
 #endif
 
