@@ -1,7 +1,14 @@
 <Project>
   <PropertyGroup>
     <TargetArchitecture>wasm</TargetArchitecture>
+  </PropertyGroup>
 
+  <!-- These target lists name targets defined in WasmApp.Common.targets, which is only
+       imported for Mono. The CoreCLR flavor imports BrowserWasmApp.CoreCLR.targets instead
+       (see Microsoft.NET.Runtime.WebAssembly.Sdk/Sdk/Sdk.targets.in), and it defines its own
+       equivalents. Seeding the Mono names there would make its WasmNestedPublishApp target
+       depend on the non-existent _WasmBuildAppCore, failing the build with MSB4057. -->
+  <PropertyGroup Condition="'$(UseMonoRuntime)' != 'false'">
     <!-- Top level -->
     <WasmBuildAppDependsOn>
       _WasmBuildAppCore;
