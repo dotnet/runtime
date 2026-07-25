@@ -53,7 +53,7 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
 
         if (!isSafeToContainMem)
         {
-            JITDUMP("** Unsafe mem containment of [%06u] in [%06u}\n", m_compiler->dspTreeID(childNode),
+            JITDUMP("** Unsafe mem containment of [%06u] in [%06u]\n", m_compiler->dspTreeID(childNode),
                     m_compiler->dspTreeID(parentNode));
             assert(isSafeToContainMem);
         }
@@ -82,7 +82,7 @@ void Lowering::MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const
 
     if (!isSafeToMarkRegOptional)
     {
-        JITDUMP("** Unsafe regOptional of [%06u] in [%06u}\n", m_compiler->dspTreeID(childNode),
+        JITDUMP("** Unsafe regOptional of [%06u] in [%06u]\n", m_compiler->dspTreeID(childNode),
                 m_compiler->dspTreeID(parentNode));
         assert(isSafeToMarkRegOptional);
     }
@@ -1719,7 +1719,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
 
     if (arg->OperIsFieldList())
     {
-        JITDUMP("Argument is a FIELD_LIST\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a FIELD_LIST\n");
 
         GenTreeFieldList::Use* splitPoint = nullptr;
         // Split the field list into its register and stack parts.
@@ -1742,7 +1742,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
 
         if (splitPoint == nullptr)
         {
-            JITDUMP("No clean split point found, spilling FIELD_LIST\n", splitPoint->GetOffset());
+            JITDUMP("No clean split point found, spilling FIELD_LIST\n");
 
             unsigned int newLcl =
                 StoreFieldListToNewLocal(m_compiler->typGetObjLayout(callArg->GetSignatureClassHandle()),
@@ -1781,7 +1781,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
     }
     else if (arg->OperIs(GT_BLK))
     {
-        JITDUMP("Argument is a BLK\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a BLK\n");
 
         GenTree*       blkAddr = arg->AsBlk()->Addr();
         target_ssize_t offset  = 0;
@@ -1796,12 +1796,12 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
             !m_compiler->lvaGetDesc(addrUse.Def()->AsLclVarCommon())->IsAddressExposed() &&
             IsInvariantInRange(addrUse.Def(), arg))
         {
-            JITDUMP("Reusing LCL_VAR\n", numRegs, stackSeg.Size);
+            JITDUMP("Reusing LCL_VAR\n");
             addrLcl = addrUse.Def()->AsLclVarCommon()->GetLclNum();
         }
         else
         {
-            JITDUMP("Spilling address\n", numRegs, stackSeg.Size);
+            JITDUMP("Spilling address\n");
             addrLcl = addrUse.ReplaceWithLclVar(m_compiler);
         }
 
@@ -1843,7 +1843,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
     {
         assert(arg->OperIsLocalRead());
 
-        JITDUMP("Argument is a local\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a local\n");
 
         GenTreeLclVarCommon* lcl = arg->AsLclVarCommon();
 
@@ -9289,7 +9289,23 @@ void Lowering::FindInducedParameterRegisterLocals()
 
         GenTree* value = m_compiler->gtNewLclVarNode(remappedLclNum);
 
+#ifdef TARGET_WASM
+        if (varTypeIsSIMD(value) && !varTypeIsSIMD(fld))
+        {
+            // Unlike native targets, wasm cannot reinterpret a v128 local access as a scalar.
+            const unsigned laneOffset = fld->GetLclOffs() - regSegment->Offset;
+            const unsigned scalarSize = genTypeSize(fld);
+            assert((laneOffset % scalarSize) == 0);
+
+            const unsigned laneIndex = laneOffset / scalarSize;
+            value                    = m_compiler->gtNewSimdGetElementNode(fld->TypeGet(), value,
+                                                                           m_compiler->gtNewIconNode(static_cast<ssize_t>(laneIndex)),
+                                                                           fld->TypeGet(), genTypeSize(value));
+        }
+        else if (varTypeUsesFloatReg(value))
+#else
         if (varTypeUsesFloatReg(value))
+#endif // TARGET_WASM
         {
             assert(fld->GetLclOffs() == regSegment->Offset);
 

@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.InterpByteCodeStart))]
 internal sealed partial class InterpByteCodeStart : IData<InterpByteCodeStart>
 {
-    [Field] public TargetPointer Method { get; }
+    [Field] public partial TargetPointer Method { get; }
 }

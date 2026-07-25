@@ -7627,24 +7627,33 @@ MONO_RESTORE_WARNING
 		case OP_RMINNUM:
 		case OP_RMAXNUM: {
 			/*
-			 * IEEE 754-2008 minNum/maxNum (NaN-suppressing). Maps directly to
-			 * llvm.minnum/maxnum, which is what `float.MinNumber` /
+			 * IEEE 754-2019 minimumNumber/maximumNumber (NaN-suppressing and
+			 * sign-of-zero aware), as specified by `float.MinNumber` /
 			 * `double.MinNumber` (and the Max variants, surfaced via
-			 * INumber<TSelf> on the primitive Single/Double/Half types) specify.
-			 * On AArch64 this lowers to a single fminnm/fmaxnm instruction.
+			 * INumber<TSelf> on the primitive Single/Double/Half types).
+			 *
+			 * We compose this from llvm.minimum/maximum (sign-of-zero aware but
+			 * NaN-propagating) plus an explicit NaN fixup, rather than lowering
+			 * directly to an intrinsic: llvm.minnum/maxnum leave the sign of zero
+			 * unspecified (minnum(+0, -0) may return +0 on x86, see dotnet/runtime
+			 * #131130) and llvm.minimumnum/maximumnum are miscompiled by the x86
+			 * backend in the LLVM version we build against. When exactly one operand
+			 * is NaN we return the other; when both are NaN the NaN flows through.
 			 */
 			gboolean is_r4 = ins->opcode == OP_RMINNUM || ins->opcode == OP_RMAXNUM;
+			gboolean is_max = ins->opcode == OP_FMAXNUM || ins->opcode == OP_RMAXNUM;
 			LLVMTypeRef t = is_r4 ? LLVMFloatType () : LLVMDoubleType ();
-			LLVMValueRef args [2] = { convert (ctx, lhs, t), convert (ctx, rhs, t) };
-			IntrinsicId iid;
-			switch (ins->opcode) {
-			case OP_FMAXNUM: iid = INTRINS_MAXNUM; break;
-			case OP_FMINNUM: iid = INTRINS_MINNUM; break;
-			case OP_RMAXNUM: iid = INTRINS_MAXNUMF; break;
-			case OP_RMINNUM: iid = INTRINS_MINNUMF; break;
-			default: g_assert_not_reached (); break;
-			}
-			values [ins->dreg] = call_intrins (ctx, iid, args, dname);
+			LLVMValueRef l = convert (ctx, lhs, t);
+			LLVMValueRef r = convert (ctx, rhs, t);
+			LLVMValueRef args [2] = { l, r };
+			IntrinsicId iid = is_max ? (is_r4 ? INTRINS_MAXIMUMF : INTRINS_MAXIMUM)
+			                         : (is_r4 ? INTRINS_MINIMUMF : INTRINS_MINIMUM);
+			LLVMValueRef result = call_intrins (ctx, iid, args, "");
+			LLVMValueRef l_nan = LLVMBuildFCmp (builder, LLVMRealUNO, l, l, "");
+			LLVMValueRef r_nan = LLVMBuildFCmp (builder, LLVMRealUNO, r, r, "");
+			result = LLVMBuildSelect (builder, r_nan, l, result, "");
+			result = LLVMBuildSelect (builder, l_nan, r, result, dname);
+			values [ins->dreg] = result;
 			break;
 		}
 

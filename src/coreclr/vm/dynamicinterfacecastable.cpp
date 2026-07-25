@@ -9,14 +9,13 @@ namespace
 {
     BOOL CallIsInterfaceImplemented(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle, BOOL throwIfNotImplemented)
     {
-        CONTRACT(BOOL) {
+        CONTRACTL {
             THROWS;
             GC_TRIGGERS;
             MODE_COOPERATIVE;
             PRECONDITION(objPROTECTED != NULL);
             PRECONDITION(interfaceTypeHandle.IsInterface());
-            POSTCONDITION(!throwIfNotImplemented || RETVAL);
-        } CONTRACT_END;
+        } CONTRACTL_END;
 
         struct
         {
@@ -31,19 +30,19 @@ namespace
         isInterfaceImplemented.InvokeThrowing(objPROTECTED, &gc.managedType, CLR_BOOL_ARG(throwIfNotImplemented), &isImplemented);
         GCPROTECT_END();
 
-        RETURN isImplemented;
+        _ASSERTE(!throwIfNotImplemented || isImplemented);
+        return isImplemented;
     }
 
     OBJECTREF CallGetInterfaceImplementation(OBJECTREF *objPROTECTED, const TypeHandle &interfaceTypeHandle)
     {
-        CONTRACT(OBJECTREF) {
+        CONTRACTL {
             THROWS;
             GC_TRIGGERS;
             MODE_COOPERATIVE;
             PRECONDITION(objPROTECTED != NULL);
             PRECONDITION(interfaceTypeHandle.IsInterface());
-            POSTCONDITION(RETVAL != NULL);
-        } CONTRACT_END;
+        } CONTRACTL_END;
 
         struct
         {
@@ -59,33 +58,33 @@ namespace
         getInterfaceImplementation.InvokeThrowing(objPROTECTED, &gc.managedType, &gc.result);
         GCPROTECT_END();
 
-        RETURN gc.result;
+        _ASSERTE(gc.result != NULL);
+        return gc.result;
     }
 }
 
 BOOL DynamicInterfaceCastable::IsInstanceOf(OBJECTREF *objPROTECTED, const TypeHandle &typeHandle, BOOL throwIfNotImplemented)
 {
-    CONTRACT(BOOL) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(objPROTECTED != NULL);
         PRECONDITION(typeHandle.IsInterface());
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
-    RETURN CallIsInterfaceImplemented(objPROTECTED, typeHandle, throwIfNotImplemented);
+    return CallIsInterfaceImplemented(objPROTECTED, typeHandle, throwIfNotImplemented);
 }
 
 OBJECTREF DynamicInterfaceCastable::GetInterfaceImplementation(OBJECTREF *objPROTECTED, const TypeHandle &typeHandle)
 {
-    CONTRACT(OBJECTREF) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(objPROTECTED != NULL);
         PRECONDITION(typeHandle.IsInterface());
-        POSTCONDITION(RETVAL != NULL);
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
-    RETURN CallGetInterfaceImplementation(objPROTECTED, typeHandle);
+    return CallGetInterfaceImplementation(objPROTECTED, typeHandle);
 }

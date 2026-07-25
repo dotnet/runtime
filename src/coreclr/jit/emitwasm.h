@@ -37,8 +37,10 @@ void emitIns_V128Imm(instruction ins, const uint8_t bytes[16]);
 void emitIns_Lane(instruction ins, uint8_t laneIdx);
 void emitIns_MemargLane(instruction ins, emitAttr attr, cnsval_ssize_t offset, uint8_t laneIdx);
 
+void emitImageBase();
 void emitAddressConstant(void* address);
 void emitFuncletAddressConstant(cnsval_ssize_t funcletId);
+void emitIns_MemargAddress(instruction ins, emitAttr attr, void* address);
 
 static unsigned SizeOfULEB128(uint64_t value);
 static unsigned SizeOfSLEB128(int64_t value);

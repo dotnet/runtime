@@ -122,11 +122,14 @@ else()
             # required because clang only recognizes well-known linker
             # names (lld/bfd/gold/etc.) by short name.
             get_filename_component(_wasi_sdk_bin "${CMAKE_C_COMPILER}" DIRECTORY)
+            set(_wasi_http_world_wit
+                "${CLR_DIR}/../libraries/System.Net.Http/src/System/Net/Http/WasiHttpHandler/WasiHttpWorld_component_type.wit")
             target_link_options(corerun PRIVATE
                 "-fuse-ld=${_wasi_sdk_bin}/wasm-component-ld"
                 -Wl,-z,stack-size=8388608
                 -Wl,--initial-memory=134217728
-                -Wl,--max-memory=4294967296)
+                -Wl,--max-memory=4294967296
+                "-Wl,--component-type,${_wasi_http_world_wit}")
         endif()
 
         if (CORERUN_IN_BROWSER)

@@ -463,7 +463,7 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
     CONTRACTL
     {
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
