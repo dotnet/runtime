@@ -229,10 +229,6 @@ protected:
     void                       genEmitBeginBlock(WasmValueType blockType = WasmValueType::Invalid);
     void                       genEmitEndBlock();
     void                       genEmitFunctionEnd(bool emitTerminalUnreachable = true);
-#ifdef FEATURE_SIMD
-    void genEmitSimdRangeCheck(GenTreeBoundsChk* boundsCheck);
-#endif
-
 #endif
 
     void genEmitStartBlock(BasicBlock* block);
@@ -1093,7 +1089,6 @@ protected:
 
 #if defined(TARGET_WASM)
     void genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrinsic info);
-    void genHWIntrinsicShuffleRngCheck(GenTreeHWIntrinsic* node, HWIntrinsic info);
 #endif
 
 #endif // FEATURE_HW_INTRINSICS

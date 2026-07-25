@@ -1421,7 +1421,8 @@ GenTree* Lowering::LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node)
     BlockRange().InsertBefore(node, bound);
     LowerNode(bound);
 
-    GenTree* boundsCheck = new (m_compiler, GT_BOUNDS_CHECK) GenTreeBoundsChk(maskReloadForChk, bound, SCK_RNGCHK_FAIL);
+    GenTree* boundsCheck =
+        new (m_compiler, GT_BOUNDS_CHECK) GenTreeBoundsChk(maskReloadForChk, bound, SCK_ARG_RNG_EXCPN);
     BlockRange().InsertBefore(node, boundsCheck);
     LowerNode(boundsCheck);
 
