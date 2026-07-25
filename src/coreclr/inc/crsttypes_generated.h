@@ -118,8 +118,9 @@ enum CrstType
     CrstUnwindInfoTablePendingLock = 100,
     CrstUnwindInfoTablePublishLock = 101,
     CrstVSDIndirectionCellLock = 102,
-    CrstWrapperTemplate = 103,
-    kNumberOfCrstTypes = 104
+    CrstWebcilImageRelocation = 103,
+    CrstWrapperTemplate = 104,
+    kNumberOfCrstTypes = 105
 };
 
 #endif // __CRST_TYPES_INCLUDED
@@ -233,6 +234,7 @@ int g_rgCrstLevelMap[] =
     2,          // CrstUnwindInfoTablePendingLock
     3,          // CrstUnwindInfoTablePublishLock
     3,          // CrstVSDIndirectionCellLock
+    -1,         // CrstWebcilImageRelocation
     3,          // CrstWrapperTemplate
 };
 
@@ -342,6 +344,7 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstUnwindInfoTablePendingLock",
     "CrstUnwindInfoTablePublishLock",
     "CrstVSDIndirectionCellLock",
+    "CrstWebcilImageRelocation",
     "CrstWrapperTemplate",
 };
 

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CdacUsageGraph/CdacUsageGraph.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CdacUsageGraph.Tests/CdacUsageGraph.Tests.csproj" />
+  </Folder>
+</Solution>

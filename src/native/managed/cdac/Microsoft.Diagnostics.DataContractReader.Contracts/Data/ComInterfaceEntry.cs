@@ -8,6 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ComInterfaceEntry))]
 internal sealed partial class ComInterfaceEntry : IData<ComInterfaceEntry>
 {
+    [DataDescriptorDependency(nameof(IID), "nuint")]
     public Guid IID { get; private set; }
 
     partial void OnInit(Target target, TargetPointer address)

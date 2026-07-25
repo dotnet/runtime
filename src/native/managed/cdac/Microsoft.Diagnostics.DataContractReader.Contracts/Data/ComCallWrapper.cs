@@ -8,12 +8,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ComCallWrapper))]
 internal sealed partial class ComCallWrapper : IData<ComCallWrapper>
 {
-    [Field] public TargetPointer Handle { get; }
-    [Field] public TargetPointer SimpleWrapper { get; }
-    [Field] public TargetPointer Next { get; }
+    [Field] public partial TargetPointer Handle { get; }
+    [Field] public partial TargetPointer SimpleWrapper { get; }
+    [Field] public partial TargetPointer Next { get; }
 
     [FieldAddress]
-    public TargetPointer IPtr { get; }
+    public partial TargetPointer IPtr { get; }
 
     public TargetPointer[] IPtrs { get; private set; }
 

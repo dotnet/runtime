@@ -34,7 +34,7 @@ internal struct ConditionalWeakTable_1 : IConditionalWeakTable
 
         Data.Array entriesArray = _target.ProcessedData.GetOrAdd<Data.Array>(container.Entries);
         TargetPointer entriesMT = _target.Contracts.Object.GetMethodTableAddress(container.Entries);
-        TypeHandle entriesTypeHandle = _target.Contracts.RuntimeTypeSystem.GetTypeHandle(entriesMT);
+        ITypeHandle entriesTypeHandle = _target.Contracts.RuntimeTypeSystem.GetTypeHandle(entriesMT);
         uint entrySize = _target.Contracts.RuntimeTypeSystem.GetComponentSize(entriesTypeHandle);
 
         while (entriesIndex != -1)
