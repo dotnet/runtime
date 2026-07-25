@@ -594,7 +594,25 @@ CDAC_TYPE_FIELD(EEClass, T_UINT16, NumThreadStaticFields, cdac_data<EEClass>::Nu
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_FIELD(EEClass, T_UINT8, BaseSizePadding, cdac_data<EEClass>::BaseSizePadding)
 CDAC_TYPE_FIELD(EEClass, T_POINTER, OptionalFields, cdac_data<EEClass>::OptionalFields)
+CDAC_TYPE_FIELD(EEClass, T_UINT32, VMFlags, cdac_data<EEClass>::VMFlags)
 CDAC_TYPE_END(EEClass)
+
+// LayoutEEClass derives from EEClass and carries the managed layout info for types with
+// explicit/sequential layout (EEClass::HasLayout()). Only the offset of LayoutInfo is needed --
+// the reader constructs an EEClassLayoutInfo at that offset from the EEClass address. Reading it
+// on an EEClass that does not have layout interprets unrelated memory, so consumers must check
+// the HasLayout VMFlag first.
+CDAC_TYPE_BEGIN(LayoutEEClass)
+CDAC_TYPE_INDETERMINATE(LayoutEEClass)
+CDAC_TYPE_FIELD(LayoutEEClass, TYPE(EEClassLayoutInfo), LayoutInfo, cdac_data<LayoutEEClass>::LayoutInfo)
+CDAC_TYPE_END(LayoutEEClass)
+
+CDAC_TYPE_BEGIN(EEClassLayoutInfo)
+CDAC_TYPE_INDETERMINATE(EEClassLayoutInfo)
+CDAC_TYPE_FIELD(EEClassLayoutInfo, T_UINT8, LayoutType, cdac_data<EEClassLayoutInfo>::LayoutType)
+CDAC_TYPE_FIELD(EEClassLayoutInfo, T_UINT8, AlignmentRequirement, cdac_data<EEClassLayoutInfo>::AlignmentRequirement)
+CDAC_TYPE_FIELD(EEClassLayoutInfo, T_UINT8, Flags, cdac_data<EEClassLayoutInfo>::Flags)
+CDAC_TYPE_END(EEClassLayoutInfo)
 
 CDAC_TYPE_BEGIN(EEClassOptionalFields)
 CDAC_TYPE_INDETERMINATE(EEClassOptionalFields)

@@ -249,11 +249,12 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
         }
     }
 
-    // Only used by ArgIterator on WASM32 for stack alignment of value types.
+    // Only used by ArgIterator on WASM32 for stack alignment of value types. Mirrors the runtime's
+    // CEEInfo::getClassAlignmentRequirementStatic, which the native wasm ArgIterator reads for the
+    // same purpose (src/coreclr/vm/callingconvention.h). Returns the unclamped alignment; the
+    // shared ArgIterator applies its own clamp.
     public int GetFieldAlignment()
-    {
-        throw new NotImplementedException("Field alignment is not yet implemented.");
-    }
+        => _typeHandle is null ? _target.PointerSize : Rts.GetClassAlignmentRequirement(_typeHandle);
 
     /// <summary>
     /// Maps cDAC CorElementType (short names like I4) to the shared CorElementType
