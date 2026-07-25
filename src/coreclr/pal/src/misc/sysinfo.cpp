@@ -157,7 +157,10 @@ PAL_GetLogicalCpuCountFromOS()
 	// Android tries really hard to save power by powering off CPUs on SMP phones which
 	// means the normal way to query cpu count can underestimate the number of available CPUs.
 #if defined(HOST_ANDROID)
-    nrcpus = minipal_get_cpu_present_count();
+    if (nrcpus <= 0)
+    {
+        nrcpus = minipal_get_cpu_present_count();
+    }
 #endif
 
     if (nrcpus <= 0)

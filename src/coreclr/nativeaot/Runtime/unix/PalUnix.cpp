@@ -464,6 +464,10 @@ void InitializeCurrentProcessCpuCount()
     else if ((cpuPresentCount = minipal_get_cpu_present_count()) > 0)
     {
         count = cpuPresentCount;
+
+        uint32_t cpuLimit;
+        if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
+            count = cpuLimit;
     }
 #endif
     else

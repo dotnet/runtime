@@ -181,7 +181,7 @@ bool GCToOSInterface::Initialize()
 
     InitializeCGroup();
 
-#if HAVE_SCHED_GETAFFINITY && !defined(TARGET_ANDROID)
+#if HAVE_SCHED_GETAFFINITY
 
     {
         // Use a dynamically allocated cpu_set_t to support systems with more than CPU_SETSIZE (typically 1024) CPUs.
