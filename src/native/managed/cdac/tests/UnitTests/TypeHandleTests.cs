@@ -214,6 +214,11 @@ public unsafe class TypeHandleTests
 
         DacComNullableByRef<IXCLRDataTypeDefinition> nullTypeDefinition = new(isNullRef: true);
         Assert.Equal(HResults.E_POINTER, typeInstance.GetDefinition(nullTypeDefinition));
+
+        loader.Setup(l => l.GetModuleLookupMapElement(lookupMap, TypeDefToken, out lookupFlags)).Returns(TargetPointer.Null);
+        DacComNullableByRef<IXCLRDataTypeDefinition> unloadedTypeDefinition = new(isNullRef: false);
+        Assert.Equal(HResults.S_OK, typeInstance.GetDefinition(unloadedTypeDefinition));
+        Assert.IsType<ClrDataTypeDefinition>(unloadedTypeDefinition.Interface);
     }
 
     private static TestPlaceholderTarget CreateTarget(

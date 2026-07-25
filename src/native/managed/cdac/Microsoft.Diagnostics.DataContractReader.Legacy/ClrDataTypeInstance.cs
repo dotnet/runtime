@@ -121,9 +121,9 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
         int hr = HResults.S_OK;
         int hrLocal = HResults.S_OK;
         IXCLRDataTypeDefinition? legacyDefinition = null;
-        if (_legacyImpl is not null)
+        if (_legacyImpl is not null && !typeDefinition.IsNullRef)
         {
-            DacComNullableByRef<IXCLRDataTypeDefinition> legacyDefinitionOut = new(isNullRef: typeDefinition.IsNullRef);
+            DacComNullableByRef<IXCLRDataTypeDefinition> legacyDefinitionOut = new(isNullRef: false);
             hrLocal = _legacyImpl.GetDefinition(legacyDefinitionOut);
             legacyDefinition = legacyDefinitionOut.Interface;
         }
@@ -131,31 +131,37 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
         try
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            ITypeHandle definitionType;
+            ITypeHandle? definitionType;
+            TargetPointer module;
+            uint token;
 
             if (rts.IsArray(_typeHandle, out _) || rts.IsFunctionPointer(_typeHandle, out _, out _))
             {
                 definitionType = _typeHandle;
+                module = rts.GetModule(definitionType);
+                token = rts.GetTypeDefToken(definitionType);
             }
             else if (rts.IsTypeDesc(_typeHandle) && rts.HasTypeParam(_typeHandle))
             {
                 definitionType = rts.GetTypeParam(_typeHandle);
+                module = rts.GetModule(definitionType);
+                token = rts.GetTypeDefToken(definitionType);
             }
             else
             {
-                TargetPointer module = rts.GetModule(_typeHandle);
-                uint token = rts.GetTypeDefToken(_typeHandle);
+                module = rts.GetModule(_typeHandle);
+                token = rts.GetTypeDefToken(_typeHandle);
                 ILoader loader = _target.Contracts.Loader;
                 Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
                 ModuleLookupTables tables = loader.GetLookupTables(moduleHandle);
                 TargetPointer definitionTypeAddress = loader.GetModuleLookupMapElement(tables.TypeDefToMethodTable, token, out _);
-                definitionType = rts.GetTypeHandle(definitionTypeAddress);
+                definitionType = definitionTypeAddress == TargetPointer.Null ? null : rts.GetTypeHandle(definitionTypeAddress);
             }
 
             typeDefinition.Interface = new ClrDataTypeDefinition(
                 _target,
-                rts.GetModule(definitionType),
-                rts.GetTypeDefToken(definitionType),
+                module,
+                token,
                 definitionType,
                 legacyDefinition);
         }
@@ -165,7 +171,7 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
         }
 
 #if DEBUG
-        if (_legacyImpl is not null)
+        if (_legacyImpl is not null && !typeDefinition.IsNullRef)
         {
             Debug.ValidateHResult(hr, hrLocal);
         }
