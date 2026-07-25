@@ -1322,7 +1322,7 @@ static class RuntimeTypeSystem_1_Helpers
             return false;
 
         int TypeAndFlags = // Read TypeAndFlags field from TypeDesc contract using address typeHandle.TypeDescAddress()
-        CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+        CorElementType elemType = (CorElementType)(TypeAndFlags & 0xFF);
 
         switch (elemType)
         {
