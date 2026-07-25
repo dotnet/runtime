@@ -90,6 +90,8 @@ public static class Constants
         public const string EEJitManagerAddress = nameof(EEJitManagerAddress);
         public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
         public const string ThePreStub = nameof(ThePreStub);
+        public const string ThePreStubPatchLabel = nameof(ThePreStubPatchLabel);
+        public const string DACNotifyCompilationFinished = nameof(DACNotifyCompilationFinished);
 
         public const string StaticsPointerMask = nameof(StaticsPointerMask);
         public const string PtrArrayOffsetToDataArray = nameof(PtrArrayOffsetToDataArray);

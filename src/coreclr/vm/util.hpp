@@ -642,6 +642,7 @@ public:
 };
 
 void DACNotifyCompilationFinished(MethodDesc *pMethodDesc, PCODE pCode);
+extern const TADDR g_cdacDACNotifyCompilationFinished;
 
 // These wrap the SString:L:CompareCaseInsensitive function in a way that makes it
 // easy to fix code that uses _stricmp. _stricmp should be avoided as it uses the current

@@ -1702,17 +1702,128 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         ClrDataAddress* outAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* outBuffer,
         uint* outFlags)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.FollowStub(inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.FollowStub2(
         IXCLRDataTask? task,
-        uint inFlags,
+        CLRDataFollowStubInFlag inFlags,
         ClrDataAddress inAddr,
-        /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* inBuffer,
+        CLRDataFollowStubBuffer* inBuffer,
         ClrDataAddress* outAddr,
-        /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* outBuffer,
-        uint* outFlags)
-        => LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.FollowStub2(task, inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags) : HResults.E_NOTIMPL;
+        CLRDataFollowStubBuffer* outBuffer,
+        CLRDataFollowStubOutFlag* outFlags)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (inFlags != CLRDataFollowStubInFlag.CLRDATA_FOLLOW_STUB_DEFAULT)
+                throw new ArgumentException();
+            if (outAddr is null || outBuffer is null || outFlags is null)
+                throw new NullReferenceException();
+
+            *outBuffer = default;
+            StubContinuation continuation = DecodeStubContinuation(inBuffer);
+            TargetPointer thread = task switch
+            {
+                null => TargetPointer.Null,
+                ClrDataTask clrDataTask => clrDataTask.Address,
+                _ => throw new InvalidCastException(),
+            };
+            TargetCodePointer currentAddress = inAddr.ToTargetCodePointer(_target);
+            StubTraceStep step = _target.Contracts.StubTracing.TraceStubStep(
+                currentAddress,
+                continuation,
+                thread);
+            *outFlags = step.Kind switch
+            {
+                StubTraceKind.Unknown or StubTraceKind.Failed =>
+                    throw Marshal.GetExceptionForHR(HResults.E_FAIL)!,
+                StubTraceKind.Managed or StubTraceKind.Unmanaged =>
+                    CLRDataFollowStubOutFlag.CLRDATA_FOLLOW_STUB_EXIT,
+                StubTraceKind.UnjittedMethod or
+                    StubTraceKind.FramePush =>
+                        CLRDataFollowStubOutFlag.CLRDATA_FOLLOW_STUB_INTERMEDIATE,
+                _ => throw new ArgumentException(),
+            };
+            EncodeStubContinuation(step.Continuation, outBuffer);
+
+            *outAddr = step.Address.AsTargetPointer.ToClrDataAddress(_target);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyProcess is not null)
+        {
+            CLRDataFollowStubBuffer legacyInput = inBuffer is null ? default : *inBuffer;
+            CLRDataFollowStubBuffer legacyOutput = default;
+            ClrDataAddress legacyOutAddr = 0;
+            CLRDataFollowStubOutFlag legacyOutFlags = default;
+            IXCLRDataTask? legacyTask = task is ClrDataTask clrDataTask
+                ? clrDataTask.LegacyImpl
+                : task;
+            int hrLocal = _legacyProcess.FollowStub2(
+                legacyTask,
+                inFlags,
+                inAddr,
+                inBuffer is null ? null : &legacyInput,
+                &legacyOutAddr,
+                &legacyOutput,
+                &legacyOutFlags);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr >= 0)
+            {
+                Debug.Assert(*outAddr == legacyOutAddr);
+                Debug.Assert(*outFlags == legacyOutFlags);
+            }
+        }
+#endif
+
+        return hr;
+    }
+
+    private static StubContinuation DecodeStubContinuation(CLRDataFollowStubBuffer* buffer)
+    {
+        if (buffer is null)
+            return default;
+
+        StubContinuationKind kind = (StubContinuationKind)buffer->Data[0];
+        return kind switch
+        {
+            StubContinuationKind.MethodJitted => new StubContinuation(
+                kind,
+                new TargetPointer(buffer->Data[1]),
+                TargetCodePointer.Null),
+            StubContinuationKind.FramePush => new StubContinuation(
+                kind,
+                TargetPointer.Null,
+                new TargetCodePointer(buffer->Data[1])),
+            _ => throw new ArgumentException(),
+        };
+    }
+
+    private static void EncodeStubContinuation(
+        StubContinuation continuation,
+        CLRDataFollowStubBuffer* buffer)
+    {
+        *buffer = default;
+        buffer->Data[0] = (ulong)continuation.Kind;
+        switch (continuation.Kind)
+        {
+            case StubContinuationKind.None:
+                break;
+            case StubContinuationKind.MethodJitted:
+                buffer->Data[1] = continuation.MethodDesc.Value;
+                break;
+            case StubContinuationKind.FramePush:
+                buffer->Data[1] = continuation.Address.Value;
+                break;
+            default:
+                throw new ArgumentException();
+        }
+    }
 
     int IXCLRDataProcess.DumpNativeImage(
         ClrDataAddress loadedBase,

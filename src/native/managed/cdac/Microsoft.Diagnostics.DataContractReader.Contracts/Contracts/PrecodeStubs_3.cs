@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -48,7 +47,7 @@ internal struct PrecodeStubs_3_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
         return target.ProcessedData.GetOrAdd<Data.StubPrecodeData_2>(stubPrecodeDataAddress);
     }
 
-    public static KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    public static PrecodeType? TryGetKnownPrecodeType(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
     {
         if (ReadBytesAndCompare(instrPointer, precodeMachineDescriptor.StubBytes!, precodeMachineDescriptor.StubIgnoredBytes!, target))
         {
@@ -60,32 +59,32 @@ internal struct PrecodeStubs_3_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
 
             if (exactPrecodeType == precodeMachineDescriptor.StubPrecodeType)
             {
-                return KnownPrecodeType.Stub;
+                return PrecodeType.Stub;
             }
             else if (precodeMachineDescriptor.PInvokeImportPrecodeType is byte compareByte1 && compareByte1 == exactPrecodeType)
             {
-                return KnownPrecodeType.PInvokeImport;
+                return PrecodeType.PInvokeImport;
             }
             else if (precodeMachineDescriptor.ThisPointerRetBufPrecodeType is byte compareByte2 && compareByte2 == exactPrecodeType)
             {
-                return KnownPrecodeType.ThisPtrRetBuf;
+                return PrecodeType.ThisPtrRetBuf;
             }
             else if (precodeMachineDescriptor.UMEntryPrecodeType is byte compareByte3 && compareByte3 == exactPrecodeType)
             {
-                return KnownPrecodeType.UMEntry;
+                return PrecodeType.UMEntry;
             }
             else if (precodeMachineDescriptor.InterpreterPrecodeType is byte compareByte4 && compareByte4 == exactPrecodeType)
             {
-                return KnownPrecodeType.Interpreter;
+                return PrecodeType.Interpreter;
             }
             else if (precodeMachineDescriptor.DynamicHelperPrecodeType is byte compareByte5 && compareByte5 == exactPrecodeType)
             {
-                return KnownPrecodeType.DynamicHelper;
+                return PrecodeType.DynamicHelper;
             }
         }
         else if (ReadBytesAndCompare(instrPointer, precodeMachineDescriptor.FixupBytes!, precodeMachineDescriptor.FixupIgnoredBytes!, target))
         {
-            return KnownPrecodeType.Fixup;
+            return PrecodeType.Fixup;
         }
         return null;
 
@@ -108,9 +107,21 @@ internal struct PrecodeStubs_3_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
     }
 }
 
-internal sealed class PrecodeStubs_3 : PrecodeStubsCommon<PrecodeStubs_3_Impl, Data.StubPrecodeData_2>
+internal sealed class PrecodeStubs_3 : PrecodeStubsCommon<PrecodeStubs_3_Impl, Data.StubPrecodeData_2>, IPrecodeStubs
 {
     public PrecodeStubs_3(Target target) : base(target) { }
+
+    public PrecodeType? GetPrecodeType(TargetCodePointer entryPoint)
+    {
+        TargetPointer instrPointer = CodePointerReadableInstrPointer(entryPoint);
+        if (!Target.IsAlignedToPointerSize(instrPointer))
+            return null;
+
+        return PrecodeStubs_3_Impl.TryGetKnownPrecodeType(
+            instrPointer,
+            Target,
+            MachineDescriptor);
+    }
 
     public override TargetCodePointer GetInterpreterCodeFromInterpreterPrecodeIfPresent(
         TargetCodePointer entryPoint)
@@ -124,7 +135,7 @@ internal sealed class PrecodeStubs_3 : PrecodeStubsCommon<PrecodeStubs_3_Impl, D
             if (PrecodeStubs_3_Impl.TryGetKnownPrecodeType(
                     instrPointer,
                     Target,
-                    MachineDescriptor) is not KnownPrecodeType.Interpreter)
+                    MachineDescriptor) is not PrecodeType.Interpreter)
             {
                 return entryPoint;
             }

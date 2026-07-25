@@ -47,6 +47,23 @@ public enum CLRDataAddressType : uint
     CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB = 6,
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct CLRDataFollowStubBuffer
+{
+    public fixed ulong Data[8];
+}
+
+public enum CLRDataFollowStubInFlag : uint
+{
+    CLRDATA_FOLLOW_STUB_DEFAULT = 0x00000000,
+}
+
+public enum CLRDataFollowStubOutFlag : uint
+{
+    CLRDATA_FOLLOW_STUB_INTERMEDIATE = 0x00000000,
+    CLRDATA_FOLLOW_STUB_EXIT = 0x00000001,
+}
+
 [Flags]
 public enum CLRDataMethodCodeNotification : uint
 {
@@ -336,12 +353,12 @@ public unsafe partial interface IXCLRDataProcess
     [PreserveSig]
     int FollowStub2(
         IXCLRDataTask? task,
-        uint inFlags,
+        CLRDataFollowStubInFlag inFlags,
         ClrDataAddress inAddr,
-        /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* inBuffer,
+        CLRDataFollowStubBuffer* inBuffer,
         ClrDataAddress* outAddr,
-        /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* outBuffer,
-        uint* outFlags);
+        CLRDataFollowStubBuffer* outBuffer,
+        CLRDataFollowStubOutFlag* outFlags);
 
     [PreserveSig]
     int DumpNativeImage(

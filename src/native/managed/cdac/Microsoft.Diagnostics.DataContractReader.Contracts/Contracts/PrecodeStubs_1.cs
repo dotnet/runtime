@@ -56,12 +56,12 @@ internal struct PrecodeStubs_1_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
         }
     }
 
-    public static KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    public static PrecodeType? TryGetKnownPrecodeType(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
     {
         return TryGetKnownPrecodeType_Impl<PrecodeStubs_1_Impl, Data.StubPrecodeData_1>(instrPointer, target, precodeMachineDescriptor);
     }
 
-    public static KnownPrecodeType? TryGetKnownPrecodeType_Impl<TPrecodeStubsImplementation, TStubPrecodeData>(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor) where TPrecodeStubsImplementation : IPrecodeStubsContractCommonApi<TStubPrecodeData> where TStubPrecodeData : IData<TStubPrecodeData>
+    public static PrecodeType? TryGetKnownPrecodeType_Impl<TPrecodeStubsImplementation, TStubPrecodeData>(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor) where TPrecodeStubsImplementation : IPrecodeStubsContractCommonApi<TStubPrecodeData> where TStubPrecodeData : IData<TStubPrecodeData>
     {
         // We get the precode type in two phases:
         // 1. Read the precode type from the intruction address.
@@ -83,19 +83,19 @@ internal struct PrecodeStubs_1_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
 
         if (exactPrecodeType == precodeMachineDescriptor.StubPrecodeType)
         {
-            return KnownPrecodeType.Stub;
+            return PrecodeType.Stub;
         }
         else if (precodeMachineDescriptor.PInvokeImportPrecodeType is byte ndType && exactPrecodeType == ndType)
         {
-            return KnownPrecodeType.PInvokeImport;
+            return PrecodeType.PInvokeImport;
         }
         else if (precodeMachineDescriptor.FixupPrecodeType is byte fixupType && exactPrecodeType == fixupType)
         {
-            return KnownPrecodeType.Fixup;
+            return PrecodeType.Fixup;
         }
         else if (precodeMachineDescriptor.ThisPointerRetBufPrecodeType is byte thisPtrRetBufType && exactPrecodeType == thisPtrRetBufType)
         {
-            return KnownPrecodeType.ThisPtrRetBuf;
+            return PrecodeType.ThisPtrRetBuf;
         }
         else
         {

@@ -7,17 +7,6 @@ using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal enum KnownPrecodeType
-{
-    Stub = 1,
-    PInvokeImport,
-    Fixup,
-    ThisPtrRetBuf,
-    UMEntry,
-    Interpreter,
-    DynamicHelper
-}
-
 // Interface used to abstract behavior which may be different between multiple versions of the precode stub implementations
 internal interface IPrecodeStubsContractCommonApi<TStubPrecodeData>
 {
@@ -26,7 +15,7 @@ internal interface IPrecodeStubsContractCommonApi<TStubPrecodeData>
     public static abstract TargetPointer FixupPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
     public static abstract TargetPointer InterpreterPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
     public static abstract byte StubPrecodeData_GetType(TStubPrecodeData stubPrecodeData);
-    public static abstract KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
+    public static abstract PrecodeType? TryGetKnownPrecodeType(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor);
 }
 
 internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData> : IPrecodeStubs where TPrecodeStubsImplementation : IPrecodeStubsContractCommonApi<TStubPrecodeData> where TStubPrecodeData : IData<TStubPrecodeData>
@@ -40,9 +29,9 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
     internal abstract class ValidPrecode
     {
         public TargetPointer InstrPointer { get; }
-        public KnownPrecodeType PrecodeType { get; }
+        public PrecodeType PrecodeType { get; }
 
-        protected ValidPrecode(TargetPointer instrPointer, KnownPrecodeType precodeType)
+        protected ValidPrecode(TargetPointer instrPointer, PrecodeType precodeType)
         {
             InstrPointer = instrPointer;
             PrecodeType = precodeType;
@@ -53,7 +42,7 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
 
     internal class StubPrecode : ValidPrecode
     {
-        internal StubPrecode(TargetPointer instrPointer, KnownPrecodeType type = KnownPrecodeType.Stub) : base(instrPointer, type) { }
+        internal StubPrecode(TargetPointer instrPointer, PrecodeType type = PrecodeType.Stub) : base(instrPointer, type) { }
 
         internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
         {
@@ -63,7 +52,7 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
 
     internal sealed class InterpreterPrecode : ValidPrecode
     {
-        internal InterpreterPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.Interpreter) { }
+        internal InterpreterPrecode(TargetPointer instrPointer) : base(instrPointer, PrecodeType.Interpreter) { }
 
         internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
         {
@@ -73,12 +62,12 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
 
     public sealed class PInvokeImportPrecode : StubPrecode
     {
-        internal PInvokeImportPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.PInvokeImport) { }
+        internal PInvokeImportPrecode(TargetPointer instrPointer) : base(instrPointer, PrecodeType.PInvokeImport) { }
     }
 
     public sealed class FixupPrecode : ValidPrecode
     {
-        internal FixupPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.Fixup) { }
+        internal FixupPrecode(TargetPointer instrPointer) : base(instrPointer, PrecodeType.Fixup) { }
         internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
         {
             return TPrecodeStubsImplementation.FixupPrecode_GetMethodDesc(InstrPointer, target, precodeMachineDescriptor);
@@ -87,7 +76,7 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
 
     public sealed class ThisPtrRetBufPrecode : ValidPrecode
     {
-        internal ThisPtrRetBufPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.ThisPtrRetBuf) { }
+        internal ThisPtrRetBufPrecode(TargetPointer instrPointer) : base(instrPointer, PrecodeType.ThisPtrRetBuf) { }
 
         internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
         {
@@ -103,7 +92,7 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
         return _target.ProcessedData.GetOrAdd<TStubPrecodeData>(stubPrecodeDataAddress);
     }
 
-    private KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrAddress)
+    private PrecodeType? TryGetKnownPrecodeType(TargetPointer instrAddress)
     {
         return TPrecodeStubsImplementation.TryGetKnownPrecodeType(instrAddress, _target, MachineDescriptor);
     }
@@ -126,19 +115,19 @@ internal class PrecodeStubsCommon<TPrecodeStubsImplementation, TStubPrecodeData>
     internal ValidPrecode GetPrecodeFromEntryPoint(TargetCodePointer entryPoint)
     {
         TargetPointer instrPointer = CodePointerReadableInstrPointer(entryPoint);
-        if (IsAlignedInstrPointer(instrPointer) && TryGetKnownPrecodeType(instrPointer) is KnownPrecodeType precodeType)
+        if (IsAlignedInstrPointer(instrPointer) && TryGetKnownPrecodeType(instrPointer) is PrecodeType precodeType)
         {
             switch (precodeType)
             {
-                case KnownPrecodeType.Stub:
+                case PrecodeType.Stub:
                     return new StubPrecode(instrPointer);
-                case KnownPrecodeType.Fixup:
+                case PrecodeType.Fixup:
                     return new FixupPrecode(instrPointer);
-                case KnownPrecodeType.PInvokeImport:
+                case PrecodeType.PInvokeImport:
                     return new PInvokeImportPrecode(instrPointer);
-                case KnownPrecodeType.ThisPtrRetBuf:
+                case PrecodeType.ThisPtrRetBuf:
                     return new ThisPtrRetBufPrecode(instrPointer);
-                case KnownPrecodeType.Interpreter:
+                case PrecodeType.Interpreter:
                     return new InterpreterPrecode(instrPointer);
                 default:
                     break;

@@ -571,6 +571,7 @@ public class MethodDescTests
     public void MethodDescClassificationFlags(MockTarget.Architecture arch)
     {
         TargetPointer normalMethod = TargetPointer.Null;
+        TargetPointer pInvokeMethod = TargetPointer.Null;
         TargetPointer ilStubMethod = TargetPointer.Null;
         TargetPointer lcgMethod = TargetPointer.Null;
         TargetPointer unboxingStubMethod = TargetPointer.Null;
@@ -596,6 +597,20 @@ public class MethodDescTests
                 MockMethodDesc md = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout);
                 md.Flags = (ushort)MethodClassification.IL;
                 normalMethod = new TargetPointer(md.Address);
+            }
+
+            // P/Invoke method
+            {
+                byte methodDescSize = (byte)(
+                    methodDescBuilder.PInvokeMethodDescSize /
+                    methodDescBuilder.MethodDescAlignment);
+                MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("pinvoke", methodDescSize);
+                chunk.MethodTable = methodTable.Value;
+                chunk.Size = methodDescSize;
+                chunk.Count = 1;
+                MockMethodDesc md = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout);
+                md.Flags = (ushort)MethodClassification.PInvoke;
+                pInvokeMethod = new TargetPointer(md.Address);
             }
 
             // IL stub (diagnostics hidden via IsILStub)
@@ -739,9 +754,16 @@ public class MethodDescTests
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(normalMethod);
             Assert.False(rts.IsILStub(handle));
+            Assert.False(rts.IsPInvoke(handle));
             Assert.Equal(AsyncMethodFlags.None, rts.GetAsyncMethodFlags(handle));
             Assert.False(rts.IsWrapperStub(handle));
             Assert.False(rts.IsDynamicMethod(handle));
+        }
+
+        // P/Invoke method
+        {
+            MethodDescHandle handle = rts.GetMethodDescHandle(pInvokeMethod);
+            Assert.True(rts.IsPInvoke(handle));
         }
 
         // IL stub: hidden via IsILStub

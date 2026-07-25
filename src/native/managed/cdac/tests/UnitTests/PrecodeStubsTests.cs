@@ -547,12 +547,16 @@ public class PrecodeStubsTests
 
         var actualMethodDesc = precodeContract.GetMethodDescFromStubAddress(stub1);
         Assert.Equal(expectedMethodDesc, actualMethodDesc);
+        if (contractVersion is "c3")
+            Assert.Equal(PrecodeType.Stub, precodeContract.GetPrecodeType(stub1));
 
         if (contractVersion is not "c1")
         {
             // Implementation of this type of precode is only handled correctly in contract version 2 and higher
             var actualMethodDesc2 = precodeContract.GetMethodDescFromStubAddress(stub2);
             Assert.Equal(expectedMethodDesc2, actualMethodDesc2);
+            if (contractVersion is "c3")
+                Assert.Equal(PrecodeType.ThisPtrRetBuf, precodeContract.GetPrecodeType(stub2));
         }
     }
 
@@ -576,6 +580,7 @@ public class PrecodeStubsTests
 
         var actualMethodDesc = precodeContract.GetMethodDescFromStubAddress(interpStub);
         Assert.Equal(expectedMethodDesc, actualMethodDesc);
+        Assert.Equal(PrecodeType.Interpreter, precodeContract.GetPrecodeType(interpStub));
     }
 
     [Theory]

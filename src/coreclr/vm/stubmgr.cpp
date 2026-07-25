@@ -930,6 +930,10 @@ void StubManager::DbgGetLog(SString * pStringOut)
 
 extern "C" void STDCALL ThePreStubPatchLabel(void);
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+const TADDR g_cdacThePreStubPatchLabel = GetEEFuncEntryPoint(ThePreStubPatchLabel);
+#endif
+
 //-----------------------------------------------------------
 //-----------------------------------------------------------
 BOOL ThePreStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *trace)

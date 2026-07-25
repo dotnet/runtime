@@ -39,7 +39,7 @@ internal struct PrecodeStubs_2_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
         return stubPrecodeData.Type;
     }
 
-    public static KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    public static PrecodeType? TryGetKnownPrecodeType(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
     {
         // Version 2 of this contract behaves just like version 1 other than the details that are abstracted away through the IPrecodeStubsContractCommonApi interface
         return PrecodeStubs_1_Impl.TryGetKnownPrecodeType_Impl<PrecodeStubs_2_Impl, Data.StubPrecodeData_2>(instrPointer, target, precodeMachineDescriptor);

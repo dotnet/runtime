@@ -6,97 +6,66 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.PrecodeMachineDescriptor))]
 internal sealed partial class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
 {
+    private byte[]? _fixupBytes;
+    private bool _fixupBytesRead;
+    private byte[]? _fixupIgnoredBytes;
+    private bool _fixupIgnoredBytesRead;
+    private byte[]? _stubBytes;
+    private bool _stubBytesRead;
+    private byte[]? _stubIgnoredBytes;
+    private bool _stubIgnoredBytesRead;
+
     [Field] public partial byte InvalidPrecodeType { get; }
     [Field] public partial byte StubPrecodeType { get; }
     [Field] public partial uint StubCodePageSize { get; }
 
-    [DataDescriptorDependency(nameof(OffsetOfPrecodeType), "uint8")]
-    public byte? OffsetOfPrecodeType { get; private set; } // Not present for version 3 and above
-
-    [DataDescriptorDependency(nameof(ReadWidthOfPrecodeType), "uint8")]
-    public byte? ReadWidthOfPrecodeType { get; private set; } // Not present for version 3 and above
-
-    [DataDescriptorDependency(nameof(ShiftOfPrecodeType), "uint8")]
-    public byte? ShiftOfPrecodeType { get; private set; } // Not present for version 3 and above
-
-    [DataDescriptorDependency(nameof(PInvokeImportPrecodeType), "uint8")]
-    public byte? PInvokeImportPrecodeType { get; private set; }
-
-    [DataDescriptorDependency(nameof(FixupPrecodeType), "uint8")]
-    public byte? FixupPrecodeType { get; private set; }
-
-    [DataDescriptorDependency(nameof(ThisPointerRetBufPrecodeType), "uint8")]
-    public byte? ThisPointerRetBufPrecodeType { get; private set; }
-
-    [DataDescriptorDependency(nameof(InterpreterPrecodeType), "uint8")]
-    public byte? InterpreterPrecodeType { get; private set; } // May be present for version 3 and above
-
-    [DataDescriptorDependency(nameof(UMEntryPrecodeType), "uint8")]
-    public byte? UMEntryPrecodeType { get; private set; } // May be present for version 3 and above
-
-    [DataDescriptorDependency(nameof(DynamicHelperPrecodeType), "uint8")]
-    public byte? DynamicHelperPrecodeType { get; private set; } // May be present for version 3 and above
-
-    [DataDescriptorDependency(nameof(FixupStubPrecodeSize), "uint8")]
-    public byte? FixupStubPrecodeSize { get; private set; } // Present for version 3 and above
+    [Field] public partial byte? OffsetOfPrecodeType { get; } // Not present for version 3 and above
+    [Field] public partial byte? ReadWidthOfPrecodeType { get; } // Not present for version 3 and above
+    [Field] public partial byte? ShiftOfPrecodeType { get; } // Not present for version 3 and above
+    [Field] public partial byte? PInvokeImportPrecodeType { get; }
+    [Field] public partial byte? FixupPrecodeType { get; }
+    [Field] public partial byte? ThisPointerRetBufPrecodeType { get; }
+    [Field] public partial byte? InterpreterPrecodeType { get; } // May be present for version 3 and above
+    [Field] public partial byte? UMEntryPrecodeType { get; } // May be present for version 3 and above
+    [Field] public partial byte? DynamicHelperPrecodeType { get; } // May be present for version 3 and above
+    [Field] public partial byte? FixupStubPrecodeSize { get; } // Present for version 3 and above
 
     [DataDescriptorDependency(nameof(FixupStubPrecodeSize), "uint8")]
     [DataDescriptorDependency(nameof(FixupBytes), "uint8[]")]
-    public byte[]? FixupBytes { get; private set; } // Present for version 3 and above
+    public byte[]? FixupBytes
+        => ReadBytes(ref _fixupBytes, ref _fixupBytesRead, FixupStubPrecodeSize, nameof(FixupBytes));
 
     [DataDescriptorDependency(nameof(FixupStubPrecodeSize), "uint8")]
     [DataDescriptorDependency(nameof(FixupIgnoredBytes), "uint8[]")]
-    public byte[]? FixupIgnoredBytes { get; private set; } // Present for version 3 and above
+    public byte[]? FixupIgnoredBytes
+        => ReadBytes(ref _fixupIgnoredBytes, ref _fixupIgnoredBytesRead, FixupStubPrecodeSize, nameof(FixupIgnoredBytes));
 
-    [DataDescriptorDependency(nameof(StubPrecodeSize), "uint8")]
-    public byte? StubPrecodeSize { get; private set; } // Present for version 3 and above
+    [Field] public partial byte? StubPrecodeSize { get; } // Present for version 3 and above
 
     [DataDescriptorDependency(nameof(StubPrecodeSize), "uint8")]
     [DataDescriptorDependency(nameof(StubBytes), "uint8[]")]
-    public byte[]? StubBytes { get; private set; } // Present for version 3 and above
+    public byte[]? StubBytes
+        => ReadBytes(ref _stubBytes, ref _stubBytesRead, StubPrecodeSize, nameof(StubBytes));
 
     [DataDescriptorDependency(nameof(StubPrecodeSize), "uint8")]
     [DataDescriptorDependency(nameof(StubIgnoredBytes), "uint8[]")]
-    public byte[]? StubIgnoredBytes { get; private set; } // Present for version 3 and above
+    public byte[]? StubIgnoredBytes
+        => ReadBytes(ref _stubIgnoredBytes, ref _stubIgnoredBytesRead, StubPrecodeSize, nameof(StubIgnoredBytes));
 
-    partial void OnInit(Target target, TargetPointer address)
+    private byte[]? ReadBytes(ref byte[]? bytes, ref bool isRead, byte? size, string fieldName)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.PrecodeMachineDescriptor);
-        if (type.Fields.ContainsKey(nameof(OffsetOfPrecodeType)))
+        if (!isRead)
         {
-            OffsetOfPrecodeType = target.ReadField<byte>(address, type, nameof(OffsetOfPrecodeType));
-            ReadWidthOfPrecodeType = target.ReadField<byte>(address, type, nameof(ReadWidthOfPrecodeType));
-            ShiftOfPrecodeType = target.ReadField<byte>(address, type, nameof(ShiftOfPrecodeType));
+            if (size is byte length)
+            {
+                Target.TypeInfo type = _target.GetTypeInfo(DataType.PrecodeMachineDescriptor);
+                bytes = new byte[length];
+                _target.ReadBuffer(Address + (ulong)type.Fields[fieldName].Offset, bytes);
+            }
+
+            isRead = true;
         }
 
-        if (type.Fields.ContainsKey(nameof(FixupStubPrecodeSize)))
-        {
-            FixupStubPrecodeSize = target.ReadField<byte>(address, type, nameof(FixupStubPrecodeSize));
-            FixupBytes = new byte[FixupStubPrecodeSize.Value];
-            target.ReadBuffer(address + (ulong)type.Fields[nameof(FixupBytes)].Offset, FixupBytes);
-            FixupIgnoredBytes = new byte[FixupStubPrecodeSize.Value];
-            target.ReadBuffer(address + (ulong)type.Fields[nameof(FixupIgnoredBytes)].Offset, FixupIgnoredBytes);
-        }
-
-        if (type.Fields.ContainsKey(nameof(StubPrecodeSize)))
-        {
-            StubPrecodeSize = target.ReadField<byte>(address, type, nameof(StubPrecodeSize));
-            StubBytes = new byte[StubPrecodeSize.Value];
-            target.ReadBuffer(address + (ulong)type.Fields[nameof(StubBytes)].Offset, StubBytes);
-            StubIgnoredBytes = new byte[StubPrecodeSize.Value];
-            target.ReadBuffer(address + (ulong)type.Fields[nameof(StubIgnoredBytes)].Offset, StubIgnoredBytes);
-        }
-
-        PInvokeImportPrecodeType = MaybeGetPrecodeType(target, address, type, nameof(PInvokeImportPrecodeType));
-        FixupPrecodeType = MaybeGetPrecodeType(target, address, type, nameof(FixupPrecodeType));
-        ThisPointerRetBufPrecodeType = MaybeGetPrecodeType(target, address, type, nameof(ThisPointerRetBufPrecodeType));
-        InterpreterPrecodeType = MaybeGetPrecodeType(target, address, type, nameof(InterpreterPrecodeType));
-        UMEntryPrecodeType = MaybeGetPrecodeType(target, address, type, nameof(UMEntryPrecodeType));
-        DynamicHelperPrecodeType = MaybeGetPrecodeType(target, address, type, nameof(DynamicHelperPrecodeType));
-
-        static byte? MaybeGetPrecodeType(Target target, TargetPointer address, Target.TypeInfo type, string fieldName)
-            => type.Fields.ContainsKey(fieldName)
-                ? target.Read<byte>(address + (ulong)type.Fields[fieldName].Offset)
-                : null;
+        return bytes;
     }
 }
