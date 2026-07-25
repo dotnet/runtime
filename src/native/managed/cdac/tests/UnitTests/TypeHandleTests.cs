@@ -165,7 +165,7 @@ public unsafe class TypeHandleTests
         char[] truncatedBuffer = new char[4];
         fixed (char* name = truncatedBuffer)
         {
-            Assert.Equal(unchecked((int)0x8007007A), typeDefinition.GetName(0, (uint)truncatedBuffer.Length, &nameLen, name));
+            Assert.Equal(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER, typeDefinition.GetName(0, (uint)truncatedBuffer.Length, &nameLen, name));
             Assert.Equal("Sys", new string(name));
         }
         Assert.Equal((uint)"System.Int32".Length + 1, nameLen);

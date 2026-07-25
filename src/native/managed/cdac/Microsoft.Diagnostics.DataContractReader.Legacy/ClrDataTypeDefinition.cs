@@ -77,7 +77,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
             string name = _typeHandle.GetName(_target);
             OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, name, out bool truncated);
             if (nameBuf is not null && truncated)
-                throw Marshal.GetExceptionForHR(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER)!;
+                throw Marshal.GetExceptionForHR(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER);
         }
         catch (System.Exception ex)
         {
