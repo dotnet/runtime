@@ -80,6 +80,13 @@ typedef interface IXCLRDataProcess2 IXCLRDataProcess2;
 #endif 	/* __IXCLRDataProcess2_FWD_DEFINED__ */
 
 
+#ifndef __IXCLRDataProcess3_FWD_DEFINED__
+#define __IXCLRDataProcess3_FWD_DEFINED__
+typedef interface IXCLRDataProcess3 IXCLRDataProcess3;
+
+#endif 	/* __IXCLRDataProcess3_FWD_DEFINED__ */
+
+
 #ifndef __IXCLRDataAppDomain_FWD_DEFINED__
 #define __IXCLRDataAppDomain_FWD_DEFINED__
 typedef interface IXCLRDataAppDomain IXCLRDataAppDomain;
@@ -2890,6 +2897,496 @@ EXTERN_C const IID IID_IXCLRDataProcess2;
 
 
 #endif 	/* __IXCLRDataProcess2_INTERFACE_DEFINED__ */
+
+
+#ifndef __IXCLRDataProcess3_INTERFACE_DEFINED__
+#define __IXCLRDataProcess3_INTERFACE_DEFINED__
+
+/* interface IXCLRDataProcess3 */
+/* [uuid][local][object] */
+
+
+EXTERN_C const IID IID_IXCLRDataProcess3;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+
+    MIDL_INTERFACE("5c552ab6-fc09-4cb3-8e36-22fa03c798b9")
+    IXCLRDataProcess3 : public IXCLRDataProcess2
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetFunctionTable(
+            /* [in] */ CLRDATA_ADDRESS tableAddress,
+            /* [in] */ ULONG32 bufferSize,
+            /* [size_is][out] */ BYTE *buffer,
+            /* [out] */ ULONG32 *bytesNeeded,
+            /* [out] */ ULONG32 *entries) = 0;
+
+    };
+
+#else 	/* C style interface */
+
+    typedef struct IXCLRDataProcess3Vtbl
+    {
+        BEGIN_INTERFACE
+
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */
+            _COM_Outptr_  void **ppvObject);
+
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
+            IXCLRDataProcess3 * This);
+
+        ULONG ( STDMETHODCALLTYPE *Release )(
+            IXCLRDataProcess3 * This);
+
+        HRESULT ( STDMETHODCALLTYPE *Flush )(
+            IXCLRDataProcess3 * This);
+
+        HRESULT ( STDMETHODCALLTYPE *StartEnumTasks )(
+            IXCLRDataProcess3 * This,
+            /* [out] */ CLRDATA_ENUM *handle);
+
+        HRESULT ( STDMETHODCALLTYPE *EnumTask )(
+            IXCLRDataProcess3 * This,
+            /* [out][in] */ CLRDATA_ENUM *handle,
+            /* [out] */ IXCLRDataTask **task);
+
+        HRESULT ( STDMETHODCALLTYPE *EndEnumTasks )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ENUM handle);
+
+        HRESULT ( STDMETHODCALLTYPE *GetTaskByOSThreadID )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ ULONG32 osThreadID,
+            /* [out] */ IXCLRDataTask **task);
+
+        HRESULT ( STDMETHODCALLTYPE *GetTaskByUniqueID )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ ULONG64 taskID,
+            /* [out] */ IXCLRDataTask **task);
+
+        HRESULT ( STDMETHODCALLTYPE *GetFlags )(
+            IXCLRDataProcess3 * This,
+            /* [out] */ ULONG32 *flags);
+
+        HRESULT ( STDMETHODCALLTYPE *IsSameObject )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ IXCLRDataProcess *process);
+
+        HRESULT ( STDMETHODCALLTYPE *GetManagedObject )(
+            IXCLRDataProcess3 * This,
+            /* [out] */ IXCLRDataValue **value);
+
+        HRESULT ( STDMETHODCALLTYPE *GetDesiredExecutionState )(
+            IXCLRDataProcess3 * This,
+            /* [out] */ ULONG32 *state);
+
+        HRESULT ( STDMETHODCALLTYPE *SetDesiredExecutionState )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ ULONG32 state);
+
+        HRESULT ( STDMETHODCALLTYPE *GetAddressType )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ADDRESS address,
+            /* [out] */ CLRDataAddressType *type);
+
+        HRESULT ( STDMETHODCALLTYPE *GetRuntimeNameByAddress )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ADDRESS address,
+            /* [in] */ ULONG32 flags,
+            /* [in] */ ULONG32 bufLen,
+            /* [out] */ ULONG32 *nameLen,
+            /* [size_is][out] */ WCHAR nameBuf[  ],
+            /* [out] */ CLRDATA_ADDRESS *displacement);
+
+        HRESULT ( STDMETHODCALLTYPE *StartEnumAppDomains )(
+            IXCLRDataProcess3 * This,
+            /* [out] */ CLRDATA_ENUM *handle);
+
+        HRESULT ( STDMETHODCALLTYPE *EnumAppDomain )(
+            IXCLRDataProcess3 * This,
+            /* [out][in] */ CLRDATA_ENUM *handle,
+            /* [out] */ IXCLRDataAppDomain **appDomain);
+
+        HRESULT ( STDMETHODCALLTYPE *EndEnumAppDomains )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ENUM handle);
+
+        HRESULT ( STDMETHODCALLTYPE *GetAppDomainByUniqueID )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ ULONG64 id,
+            /* [out] */ IXCLRDataAppDomain **appDomain);
+
+        HRESULT ( STDMETHODCALLTYPE *StartEnumAssemblies )(
+            IXCLRDataProcess3 * This,
+            /* [out] */ CLRDATA_ENUM *handle);
+
+        HRESULT ( STDMETHODCALLTYPE *EnumAssembly )(
+            IXCLRDataProcess3 * This,
+            /* [out][in] */ CLRDATA_ENUM *handle,
+            /* [out] */ IXCLRDataAssembly **assembly);
+
+        HRESULT ( STDMETHODCALLTYPE *EndEnumAssemblies )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ENUM handle);
+
+        HRESULT ( STDMETHODCALLTYPE *StartEnumModules )(
+            IXCLRDataProcess3 * This,
+            /* [out] */ CLRDATA_ENUM *handle);
+
+        HRESULT ( STDMETHODCALLTYPE *EnumModule )(
+            IXCLRDataProcess3 * This,
+            /* [out][in] */ CLRDATA_ENUM *handle,
+            /* [out] */ IXCLRDataModule **mod);
+
+        HRESULT ( STDMETHODCALLTYPE *EndEnumModules )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ENUM handle);
+
+        HRESULT ( STDMETHODCALLTYPE *GetModuleByAddress )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ADDRESS address,
+            /* [out] */ IXCLRDataModule **mod);
+
+        HRESULT ( STDMETHODCALLTYPE *StartEnumMethodInstancesByAddress )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ADDRESS address,
+            /* [in] */ IXCLRDataAppDomain *appDomain,
+            /* [out] */ CLRDATA_ENUM *handle);
+
+        HRESULT ( STDMETHODCALLTYPE *EnumMethodInstanceByAddress )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ENUM *handle,
+            /* [out] */ IXCLRDataMethodInstance **method);
+
+        HRESULT ( STDMETHODCALLTYPE *EndEnumMethodInstancesByAddress )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ENUM handle);
+
+        HRESULT ( STDMETHODCALLTYPE *GetDataByAddress )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ADDRESS address,
+            /* [in] */ ULONG32 flags,
+            /* [in] */ IXCLRDataAppDomain *appDomain,
+            /* [in] */ IXCLRDataTask *tlsTask,
+            /* [in] */ ULONG32 bufLen,
+            /* [out] */ ULONG32 *nameLen,
+            /* [size_is][out] */ WCHAR nameBuf[  ],
+            /* [out] */ IXCLRDataValue **value,
+            /* [out] */ CLRDATA_ADDRESS *displacement);
+
+        HRESULT ( STDMETHODCALLTYPE *GetExceptionStateByExceptionRecord )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ EXCEPTION_RECORD64 *record,
+            /* [out] */ IXCLRDataExceptionState **exState);
+
+        HRESULT ( STDMETHODCALLTYPE *TranslateExceptionRecordToNotification )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ EXCEPTION_RECORD64 *record,
+            /* [in] */ IXCLRDataExceptionNotification *notify);
+
+        HRESULT ( STDMETHODCALLTYPE *Request )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ ULONG32 reqCode,
+            /* [in] */ ULONG32 inBufferSize,
+            /* [size_is][in] */ BYTE *inBuffer,
+            /* [in] */ ULONG32 outBufferSize,
+            /* [size_is][out] */ BYTE *outBuffer);
+
+        HRESULT ( STDMETHODCALLTYPE *CreateMemoryValue )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ IXCLRDataAppDomain *appDomain,
+            /* [in] */ IXCLRDataTask *tlsTask,
+            /* [in] */ IXCLRDataTypeInstance *type,
+            /* [in] */ CLRDATA_ADDRESS addr,
+            /* [out] */ IXCLRDataValue **value);
+
+        HRESULT ( STDMETHODCALLTYPE *SetAllTypeNotifications )(
+            IXCLRDataProcess3 * This,
+            IXCLRDataModule *mod,
+            ULONG32 flags);
+
+        HRESULT ( STDMETHODCALLTYPE *SetAllCodeNotifications )(
+            IXCLRDataProcess3 * This,
+            IXCLRDataModule *mod,
+            ULONG32 flags);
+
+        HRESULT ( STDMETHODCALLTYPE *GetTypeNotifications )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ ULONG32 numTokens,
+            /* [size_is][in] */ IXCLRDataModule *mods[  ],
+            /* [in] */ IXCLRDataModule *singleMod,
+            /* [size_is][in] */ mdTypeDef tokens[  ],
+            /* [size_is][out] */ ULONG32 flags[  ]);
+
+        HRESULT ( STDMETHODCALLTYPE *SetTypeNotifications )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ ULONG32 numTokens,
+            /* [size_is][in] */ IXCLRDataModule *mods[  ],
+            /* [in] */ IXCLRDataModule *singleMod,
+            /* [size_is][in] */ mdTypeDef tokens[  ],
+            /* [size_is][in] */ ULONG32 flags[  ],
+            /* [in] */ ULONG32 singleFlags);
+
+        HRESULT ( STDMETHODCALLTYPE *GetCodeNotifications )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ ULONG32 numTokens,
+            /* [size_is][in] */ IXCLRDataModule *mods[  ],
+            /* [in] */ IXCLRDataModule *singleMod,
+            /* [size_is][in] */ mdMethodDef tokens[  ],
+            /* [size_is][out] */ ULONG32 flags[  ]);
+
+        HRESULT ( STDMETHODCALLTYPE *SetCodeNotifications )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ ULONG32 numTokens,
+            /* [size_is][in] */ IXCLRDataModule *mods[  ],
+            /* [in] */ IXCLRDataModule *singleMod,
+            /* [size_is][in] */ mdMethodDef tokens[  ],
+            /* [size_is][in] */ ULONG32 flags[  ],
+            /* [in] */ ULONG32 singleFlags);
+
+        HRESULT ( STDMETHODCALLTYPE *GetOtherNotificationFlags )(
+            IXCLRDataProcess3 * This,
+            /* [out] */ ULONG32 *flags);
+
+        HRESULT ( STDMETHODCALLTYPE *SetOtherNotificationFlags )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ ULONG32 flags);
+
+        HRESULT ( STDMETHODCALLTYPE *StartEnumMethodDefinitionsByAddress )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ADDRESS address,
+            /* [out] */ CLRDATA_ENUM *handle);
+
+        HRESULT ( STDMETHODCALLTYPE *EnumMethodDefinitionByAddress )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ENUM *handle,
+            /* [out] */ IXCLRDataMethodDefinition **method);
+
+        HRESULT ( STDMETHODCALLTYPE *EndEnumMethodDefinitionsByAddress )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ENUM handle);
+
+        HRESULT ( STDMETHODCALLTYPE *FollowStub )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ ULONG32 inFlags,
+            /* [in] */ CLRDATA_ADDRESS inAddr,
+            /* [in] */ CLRDATA_FOLLOW_STUB_BUFFER *inBuffer,
+            /* [out] */ CLRDATA_ADDRESS *outAddr,
+            /* [out] */ CLRDATA_FOLLOW_STUB_BUFFER *outBuffer,
+            /* [out] */ ULONG32 *outFlags);
+
+        HRESULT ( STDMETHODCALLTYPE *FollowStub2 )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ IXCLRDataTask *task,
+            /* [in] */ ULONG32 inFlags,
+            /* [in] */ CLRDATA_ADDRESS inAddr,
+            /* [in] */ CLRDATA_FOLLOW_STUB_BUFFER *inBuffer,
+            /* [out] */ CLRDATA_ADDRESS *outAddr,
+            /* [out] */ CLRDATA_FOLLOW_STUB_BUFFER *outBuffer,
+            /* [out] */ ULONG32 *outFlags);
+
+        HRESULT ( STDMETHODCALLTYPE *DumpNativeImage )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ADDRESS loadedBase,
+            /* [in] */ LPCWSTR name,
+            /* [in] */ IXCLRDataDisplay *display,
+            /* [in] */ IXCLRLibrarySupport *libSupport,
+            /* [in] */ IXCLRDisassemblySupport *dis);
+
+        HRESULT ( STDMETHODCALLTYPE *GetGcNotification )(
+            IXCLRDataProcess3 * This,
+            /* [out][in] */ GcEvtArgs *gcEvtArgs);
+
+        HRESULT ( STDMETHODCALLTYPE *SetGcNotification )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ GcEvtArgs gcEvtArgs);
+
+        HRESULT ( STDMETHODCALLTYPE *GetFunctionTable )(
+            IXCLRDataProcess3 * This,
+            /* [in] */ CLRDATA_ADDRESS tableAddress,
+            /* [in] */ ULONG32 bufferSize,
+            /* [size_is][out] */ BYTE *buffer,
+            /* [out] */ ULONG32 *bytesNeeded,
+            /* [out] */ ULONG32 *entries);
+        END_INTERFACE
+    } IXCLRDataProcess3Vtbl;
+
+    interface IXCLRDataProcess3
+    {
+        CONST_VTBL struct IXCLRDataProcess3Vtbl *lpVtbl;
+    };
+
+
+
+#ifdef COBJMACROS
+
+
+#define IXCLRDataProcess3_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
+
+#define IXCLRDataProcess3_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) )
+
+#define IXCLRDataProcess3_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) )
+
+
+#define IXCLRDataProcess3_Flush(This)	\
+    ( (This)->lpVtbl -> Flush(This) )
+
+#define IXCLRDataProcess3_StartEnumTasks(This,handle)	\
+    ( (This)->lpVtbl -> StartEnumTasks(This,handle) )
+
+#define IXCLRDataProcess3_EnumTask(This,handle,task)	\
+    ( (This)->lpVtbl -> EnumTask(This,handle,task) )
+
+#define IXCLRDataProcess3_EndEnumTasks(This,handle)	\
+    ( (This)->lpVtbl -> EndEnumTasks(This,handle) )
+
+#define IXCLRDataProcess3_GetTaskByOSThreadID(This,osThreadID,task)	\
+    ( (This)->lpVtbl -> GetTaskByOSThreadID(This,osThreadID,task) )
+
+#define IXCLRDataProcess3_GetTaskByUniqueID(This,taskID,task)	\
+    ( (This)->lpVtbl -> GetTaskByUniqueID(This,taskID,task) )
+
+#define IXCLRDataProcess3_GetFlags(This,flags)	\
+    ( (This)->lpVtbl -> GetFlags(This,flags) )
+
+#define IXCLRDataProcess3_IsSameObject(This,process)	\
+    ( (This)->lpVtbl -> IsSameObject(This,process) )
+
+#define IXCLRDataProcess3_GetManagedObject(This,value)	\
+    ( (This)->lpVtbl -> GetManagedObject(This,value) )
+
+#define IXCLRDataProcess3_GetDesiredExecutionState(This,state)	\
+    ( (This)->lpVtbl -> GetDesiredExecutionState(This,state) )
+
+#define IXCLRDataProcess3_SetDesiredExecutionState(This,state)	\
+    ( (This)->lpVtbl -> SetDesiredExecutionState(This,state) )
+
+#define IXCLRDataProcess3_GetAddressType(This,address,type)	\
+    ( (This)->lpVtbl -> GetAddressType(This,address,type) )
+
+#define IXCLRDataProcess3_GetRuntimeNameByAddress(This,address,flags,bufLen,nameLen,nameBuf,displacement)	\
+    ( (This)->lpVtbl -> GetRuntimeNameByAddress(This,address,flags,bufLen,nameLen,nameBuf,displacement) )
+
+#define IXCLRDataProcess3_StartEnumAppDomains(This,handle)	\
+    ( (This)->lpVtbl -> StartEnumAppDomains(This,handle) )
+
+#define IXCLRDataProcess3_EnumAppDomain(This,handle,appDomain)	\
+    ( (This)->lpVtbl -> EnumAppDomain(This,handle,appDomain) )
+
+#define IXCLRDataProcess3_EndEnumAppDomains(This,handle)	\
+    ( (This)->lpVtbl -> EndEnumAppDomains(This,handle) )
+
+#define IXCLRDataProcess3_GetAppDomainByUniqueID(This,id,appDomain)	\
+    ( (This)->lpVtbl -> GetAppDomainByUniqueID(This,id,appDomain) )
+
+#define IXCLRDataProcess3_StartEnumAssemblies(This,handle)	\
+    ( (This)->lpVtbl -> StartEnumAssemblies(This,handle) )
+
+#define IXCLRDataProcess3_EnumAssembly(This,handle,assembly)	\
+    ( (This)->lpVtbl -> EnumAssembly(This,handle,assembly) )
+
+#define IXCLRDataProcess3_EndEnumAssemblies(This,handle)	\
+    ( (This)->lpVtbl -> EndEnumAssemblies(This,handle) )
+
+#define IXCLRDataProcess3_StartEnumModules(This,handle)	\
+    ( (This)->lpVtbl -> StartEnumModules(This,handle) )
+
+#define IXCLRDataProcess3_EnumModule(This,handle,mod)	\
+    ( (This)->lpVtbl -> EnumModule(This,handle,mod) )
+
+#define IXCLRDataProcess3_EndEnumModules(This,handle)	\
+    ( (This)->lpVtbl -> EndEnumModules(This,handle) )
+
+#define IXCLRDataProcess3_GetModuleByAddress(This,address,mod)	\
+    ( (This)->lpVtbl -> GetModuleByAddress(This,address,mod) )
+
+#define IXCLRDataProcess3_StartEnumMethodInstancesByAddress(This,address,appDomain,handle)	\
+    ( (This)->lpVtbl -> StartEnumMethodInstancesByAddress(This,address,appDomain,handle) )
+
+#define IXCLRDataProcess3_EnumMethodInstanceByAddress(This,handle,method)	\
+    ( (This)->lpVtbl -> EnumMethodInstanceByAddress(This,handle,method) )
+
+#define IXCLRDataProcess3_EndEnumMethodInstancesByAddress(This,handle)	\
+    ( (This)->lpVtbl -> EndEnumMethodInstancesByAddress(This,handle) )
+
+#define IXCLRDataProcess3_GetDataByAddress(This,address,flags,appDomain,tlsTask,bufLen,nameLen,nameBuf,value,displacement)	\
+    ( (This)->lpVtbl -> GetDataByAddress(This,address,flags,appDomain,tlsTask,bufLen,nameLen,nameBuf,value,displacement) )
+
+#define IXCLRDataProcess3_GetExceptionStateByExceptionRecord(This,record,exState)	\
+    ( (This)->lpVtbl -> GetExceptionStateByExceptionRecord(This,record,exState) )
+
+#define IXCLRDataProcess3_TranslateExceptionRecordToNotification(This,record,notify)	\
+    ( (This)->lpVtbl -> TranslateExceptionRecordToNotification(This,record,notify) )
+
+#define IXCLRDataProcess3_Request(This,reqCode,inBufferSize,inBuffer,outBufferSize,outBuffer)	\
+    ( (This)->lpVtbl -> Request(This,reqCode,inBufferSize,inBuffer,outBufferSize,outBuffer) )
+
+#define IXCLRDataProcess3_CreateMemoryValue(This,appDomain,tlsTask,type,addr,value)	\
+    ( (This)->lpVtbl -> CreateMemoryValue(This,appDomain,tlsTask,type,addr,value) )
+
+#define IXCLRDataProcess3_SetAllTypeNotifications(This,mod,flags)	\
+    ( (This)->lpVtbl -> SetAllTypeNotifications(This,mod,flags) )
+
+#define IXCLRDataProcess3_SetAllCodeNotifications(This,mod,flags)	\
+    ( (This)->lpVtbl -> SetAllCodeNotifications(This,mod,flags) )
+
+#define IXCLRDataProcess3_GetTypeNotifications(This,numTokens,mods,singleMod,tokens,flags)	\
+    ( (This)->lpVtbl -> GetTypeNotifications(This,numTokens,mods,singleMod,tokens,flags) )
+
+#define IXCLRDataProcess3_SetTypeNotifications(This,numTokens,mods,singleMod,tokens,flags,singleFlags)	\
+    ( (This)->lpVtbl -> SetTypeNotifications(This,numTokens,mods,singleMod,tokens,flags,singleFlags) )
+
+#define IXCLRDataProcess3_GetCodeNotifications(This,numTokens,mods,singleMod,tokens,flags)	\
+    ( (This)->lpVtbl -> GetCodeNotifications(This,numTokens,mods,singleMod,tokens,flags) )
+
+#define IXCLRDataProcess3_SetCodeNotifications(This,numTokens,mods,singleMod,tokens,flags,singleFlags)	\
+    ( (This)->lpVtbl -> SetCodeNotifications(This,numTokens,mods,singleMod,tokens,flags,singleFlags) )
+
+#define IXCLRDataProcess3_GetOtherNotificationFlags(This,flags)	\
+    ( (This)->lpVtbl -> GetOtherNotificationFlags(This,flags) )
+
+#define IXCLRDataProcess3_SetOtherNotificationFlags(This,flags)	\
+    ( (This)->lpVtbl -> SetOtherNotificationFlags(This,flags) )
+
+#define IXCLRDataProcess3_StartEnumMethodDefinitionsByAddress(This,address,handle)	\
+    ( (This)->lpVtbl -> StartEnumMethodDefinitionsByAddress(This,address,handle) )
+
+#define IXCLRDataProcess3_EnumMethodDefinitionByAddress(This,handle,method)	\
+    ( (This)->lpVtbl -> EnumMethodDefinitionByAddress(This,handle,method) )
+
+#define IXCLRDataProcess3_EndEnumMethodDefinitionsByAddress(This,handle)	\
+    ( (This)->lpVtbl -> EndEnumMethodDefinitionsByAddress(This,handle) )
+
+#define IXCLRDataProcess3_FollowStub(This,inFlags,inAddr,inBuffer,outAddr,outBuffer,outFlags)	\
+    ( (This)->lpVtbl -> FollowStub(This,inFlags,inAddr,inBuffer,outAddr,outBuffer,outFlags) )
+
+#define IXCLRDataProcess3_FollowStub2(This,task,inFlags,inAddr,inBuffer,outAddr,outBuffer,outFlags)	\
+    ( (This)->lpVtbl -> FollowStub2(This,task,inFlags,inAddr,inBuffer,outAddr,outBuffer,outFlags) )
+
+#define IXCLRDataProcess3_DumpNativeImage(This,loadedBase,name,display,libSupport,dis)	\
+    ( (This)->lpVtbl -> DumpNativeImage(This,loadedBase,name,display,libSupport,dis) )
+
+
+#define IXCLRDataProcess3_GetGcNotification(This,gcEvtArgs)	\
+    ( (This)->lpVtbl -> GetGcNotification(This,gcEvtArgs) )
+
+#define IXCLRDataProcess3_SetGcNotification(This,gcEvtArgs)	\
+    ( (This)->lpVtbl -> SetGcNotification(This,gcEvtArgs) )
+
+#define IXCLRDataProcess3_GetFunctionTable(This,tableAddress,bufferSize,buffer,bytesNeeded,entries)	\
+    ( (This)->lpVtbl -> GetFunctionTable(This,tableAddress,bufferSize,buffer,bytesNeeded,entries) )
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+#endif 	/* __IXCLRDataProcess3_INTERFACE_DEFINED__ */
 
 
 /* interface __MIDL_itf_xclrdata_0000_0006 */
@@ -7905,5 +8402,4 @@ EXTERN_C const IID IID_IXCLRDataExceptionNotification5;
 #endif
 
 #endif
-
 

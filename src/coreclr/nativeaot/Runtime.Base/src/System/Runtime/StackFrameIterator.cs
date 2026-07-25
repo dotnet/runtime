@@ -62,6 +62,7 @@ namespace System.Runtime
 #endif // NATIVEAOT
 
         [StackTraceHidden]
+        [DebuggerHidden]
         internal bool Init(EH.PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault = false, bool* fIsExceptionIntercepted = null)
         {
             return InternalCalls.RhpSfiInit(ref this, pStackwalkCtx, instructionFault, fIsExceptionIntercepted);

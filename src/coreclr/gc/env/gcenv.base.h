@@ -392,7 +392,6 @@ inline void* ALIGN_DOWN(void* ptr, size_t alignment)
 #define SUPPORTS_DAC
 #define FORBID_FAULT
 #define CONTRACTL_END
-#define CONTRACT_END
 #define TRIGGERSGC()
 #define WRAPPER(_contract)
 #define DISABLED(_contract)
@@ -405,8 +404,6 @@ inline void* ALIGN_DOWN(void* ptr, size_t alignment)
 #define END_GETTHREAD_ALLOWED
 #define LEAF_DAC_CONTRACT
 #define PRECONDITION(_expr)
-#define POSTCONDITION(_expr)
-#define RETURN return
 #define CONDITIONAL_CONTRACT_VIOLATION(_violation, _expr)
 
 // -----------------------------------------------------------------------------------------------------------

@@ -57,9 +57,9 @@
             [2] uint32[] baseArray,
             [3] int64[] maskArray,
             [4] int64[] offsetsArray,
-            [5] uint32* pinned basePinned,
-            [6] int64* pinned maskPinned,
-            [7] int64* pinned offsetsPinned,
+            [5] uint32& pinned basePinned,
+            [6] int64& pinned maskPinned,
+            [7] int64& pinned offsetsPinned,
             [8] valuetype [System.Numerics.Vectors]System.Numerics.Vector`1<int64> result1,
             [9] valuetype [System.Numerics.Vectors]System.Numerics.Vector`1<int64> result2,
             [10] int32 index)
@@ -126,6 +126,7 @@
 
         ldloc.0
         ldloc.s basePinned
+        conv.u
         ldloc.s offsetsPinned
         ldobj valuetype [System.Numerics.Vectors]System.Numerics.Vector`1<int64>
         call valuetype [System.Numerics.Vectors]System.Numerics.Vector`1<int64> [System.Runtime.Intrinsics]System.Runtime.Intrinsics.Arm.Sve2::GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal(valuetype [System.Numerics.Vectors]System.Numerics.Vector`1<int64>, uint32*, valuetype [System.Numerics.Vectors]System.Numerics.Vector`1<int64>)
@@ -133,6 +134,7 @@
 
         ldloc.0
         ldloc.s basePinned
+        conv.u
         ldloc.s offsetsPinned
         ldobj valuetype [System.Numerics.Vectors]System.Numerics.Vector`1<int64>
         call valuetype [System.Numerics.Vectors]System.Numerics.Vector`1<int64> [System.Runtime.Intrinsics]System.Runtime.Intrinsics.Arm.Sve2::GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal(valuetype [System.Numerics.Vectors]System.Numerics.Vector`1<int64>, uint32*, valuetype [System.Numerics.Vectors]System.Numerics.Vector`1<int64>)
