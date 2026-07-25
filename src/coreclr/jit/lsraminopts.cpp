@@ -984,6 +984,9 @@ PhaseStatus LinearScan::doRegisterAllocationMinOpts()
     m_compiler->codeGen->regSet.rsClearRegsModified();
     initMaxSpill();
 
+    // No local variable is enregistered, so this just clears the maps.
+    initVarRegMaps();
+
 #ifdef TARGET_ARM64
     nextConsecutiveRefPositionMap = nullptr;
 #endif

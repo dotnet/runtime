@@ -1350,12 +1350,12 @@ PhaseStatus LinearScan::doRegisterAllocation()
         enregisterLocalVars = false;
     }
 
+    splitBBNumToTargetBBNumMap = nullptr;
+
     if (canUseMinOptsRegAlloc())
     {
         return doRegisterAllocationMinOpts();
     }
-
-    splitBBNumToTargetBBNumMap = nullptr;
 
     // This is complicated by the fact that physical registers have refs associated
     // with locations where they are killed (e.g. calls), but we don't want to
