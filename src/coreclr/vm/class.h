@@ -1971,6 +1971,7 @@ EXTERN_C void STDCALL ThePreStub();
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 extern const TADDR g_cdacThePreStub;
+extern const TADDR g_cdacThePreStubPatchLabel;
 #endif
 
 inline PCODE GetPreStubEntryPoint()

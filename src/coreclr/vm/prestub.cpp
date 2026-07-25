@@ -49,6 +49,8 @@ EXTERN_C void STDCALL ThePreStubPatch();
 const TADDR g_cdacThePreStub = GetEEFuncEntryPoint(ThePreStub);
 #endif
 
+const TADDR g_cdacDACNotifyCompilationFinished = GetEEFuncEntryPoint(DACNotifyCompilationFinished);
+
 #if defined(HAVE_GCCOVER)
 CrstStatic MethodDesc::m_GCCoverCrst;
 

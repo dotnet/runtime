@@ -187,6 +187,196 @@ public unsafe class IXCLRDataProcessTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void FollowStub2(MockTarget.Architecture arch)
+    {
+        TargetCodePointer input = new(0x7000);
+        TargetCodePointer output = new(0x8000);
+        Mock<IStubTracing> stubTracing = new(MockBehavior.Strict);
+        stubTracing
+            .Setup(s => s.TraceStubStep(input, default, TargetPointer.Null))
+            .Returns(new StubTraceStep(StubTraceKind.Managed, output, default));
+        IXCLRDataProcess process = CreateProcess(arch, stubTracing: stubTracing.Object);
+        CLRDataFollowStubBuffer buffer = default;
+        ClrDataAddress outAddress;
+        CLRDataFollowStubOutFlag outFlags;
+
+        int hr = process.FollowStub2(
+            null,
+            0,
+            input.Value,
+            null,
+            &outAddress,
+            &buffer,
+            &outFlags);
+
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(output.Value, outAddress.Value);
+        Assert.Equal(CLRDataFollowStubOutFlag.CLRDATA_FOLLOW_STUB_EXIT, outFlags);
+        Assert.Equal(HResults.E_INVALIDARG, process.FollowStub2(
+            null,
+            (CLRDataFollowStubInFlag)1,
+            input.Value,
+            null,
+            &outAddress,
+            &buffer,
+            &outFlags));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void FollowStubFailure(MockTarget.Architecture arch)
+    {
+        TargetCodePointer input = new(0x7000);
+        Mock<IStubTracing> stubTracing = new(MockBehavior.Strict);
+        stubTracing
+            .Setup(s => s.TraceStubStep(input, default, TargetPointer.Null))
+            .Returns(new StubTraceStep(
+                StubTraceKind.Failed,
+                TargetCodePointer.Null,
+                default));
+        IXCLRDataProcess process = CreateProcess(arch, stubTracing: stubTracing.Object);
+        CLRDataFollowStubBuffer buffer = default;
+        ClrDataAddress outAddress;
+        CLRDataFollowStubOutFlag outFlags;
+
+        int hr = process.FollowStub2(
+            null,
+            0,
+            input.Value,
+            null,
+            &outAddress,
+            &buffer,
+            &outFlags);
+
+        Assert.Equal(HResults.E_FAIL, hr);
+    }
+
+    [Fact]
+    public void FollowStubTruncatesSignExtendedAddress()
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
+        TargetCodePointer input = new(0x80007000);
+        TargetCodePointer output = new(0x7000);
+        ClrDataAddress signExtendedInput = new(unchecked((ulong)(long)(int)(uint)input.Value));
+        Mock<IStubTracing> stubTracing = new(MockBehavior.Strict);
+        stubTracing
+            .Setup(s => s.TraceStubStep(input, default, TargetPointer.Null))
+            .Returns(new StubTraceStep(StubTraceKind.Managed, output, default));
+        IXCLRDataProcess process = CreateProcess(arch, stubTracing: stubTracing.Object);
+        CLRDataFollowStubBuffer buffer = default;
+        ClrDataAddress outAddress;
+        CLRDataFollowStubOutFlag outFlags;
+
+        int hr = process.FollowStub2(
+            null,
+            0,
+            signExtendedInput,
+            null,
+            &outAddress,
+            &buffer,
+            &outFlags);
+
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(output.Value, outAddress.Value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void FollowStubContinuation(MockTarget.Architecture arch)
+    {
+        TargetCodePointer input = new(0x7000);
+        TargetCodePointer notification = new(0x8000);
+        TargetCodePointer output = new(0x9000);
+        TargetPointer methodDesc = new(0xa000);
+        StubContinuation continuation = new(
+            StubContinuationKind.MethodJitted,
+            methodDesc,
+            TargetCodePointer.Null);
+        Mock<IStubTracing> stubTracing = new(MockBehavior.Strict);
+        stubTracing
+            .Setup(s => s.TraceStubStep(input, default, TargetPointer.Null))
+            .Returns(new StubTraceStep(
+                StubTraceKind.UnjittedMethod,
+                notification,
+                continuation));
+        stubTracing
+            .Setup(s => s.TraceStubStep(notification, continuation, TargetPointer.Null))
+            .Returns(new StubTraceStep(StubTraceKind.Managed, output, default));
+        IXCLRDataProcess process = CreateProcess(arch, stubTracing: stubTracing.Object);
+        CLRDataFollowStubBuffer firstBuffer = default;
+        CLRDataFollowStubBuffer secondBuffer = default;
+        ClrDataAddress firstAddress;
+        CLRDataFollowStubOutFlag firstFlags;
+
+        int hr = process.FollowStub2(
+            null,
+            0,
+            input.Value,
+            null,
+            &firstAddress,
+            &firstBuffer,
+            &firstFlags);
+
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(notification.Value, firstAddress.Value);
+        Assert.Equal(CLRDataFollowStubOutFlag.CLRDATA_FOLLOW_STUB_INTERMEDIATE, firstFlags);
+
+        ClrDataAddress secondAddress;
+        CLRDataFollowStubOutFlag secondFlags;
+        hr = process.FollowStub2(
+            null,
+            0,
+            firstAddress,
+            &firstBuffer,
+            &secondAddress,
+            &secondBuffer,
+            &secondFlags);
+
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(output.Value, secondAddress.Value);
+        Assert.Equal(CLRDataFollowStubOutFlag.CLRDATA_FOLLOW_STUB_EXIT, secondFlags);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void FollowStubReturnsSameAddressStep(MockTarget.Architecture arch)
+    {
+        TargetCodePointer input = new(0x7000);
+        StubContinuation continuation = new(
+            StubContinuationKind.FramePush,
+            TargetPointer.Null,
+            input);
+        Mock<IStubTracing> stubTracing = new(MockBehavior.Strict);
+        stubTracing
+            .Setup(s => s.TraceStubStep(
+                input,
+                It.IsAny<StubContinuation>(),
+                TargetPointer.Null))
+            .Returns(new StubTraceStep(StubTraceKind.FramePush, input, continuation));
+        IXCLRDataProcess process = CreateProcess(arch, stubTracing: stubTracing.Object);
+        CLRDataFollowStubBuffer buffer = default;
+        ClrDataAddress outAddress;
+        CLRDataFollowStubOutFlag outFlags;
+
+        int hr = process.FollowStub2(
+            null,
+            0,
+            input.Value,
+            null,
+            &outAddress,
+            &buffer,
+            &outFlags);
+
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(input.Value, outAddress.Value);
+        Assert.Equal(CLRDataFollowStubOutFlag.CLRDATA_FOLLOW_STUB_INTERMEDIATE, outFlags);
+        stubTracing.Verify(
+            s => s.TraceStubStep(input, It.IsAny<StubContinuation>(), TargetPointer.Null),
+            Times.Once);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetDataByAddress(MockTarget.Architecture arch)
     {
         IXCLRDataProcess process = CreateProcess(arch);
@@ -403,6 +593,7 @@ public unsafe class IXCLRDataProcessTests
         ILoader? loader = null,
         IThread? thread = null,
         IExecutionManager? executionManager = null,
+        IStubTracing? stubTracing = null,
         ulong? readableAddress = null,
         IEcmaMetadata? ecmaMetadata = null,
         IEnumerable<MockMemorySpace.HeapFragment>? memory = null)
@@ -414,6 +605,8 @@ public unsafe class IXCLRDataProcessTests
             builder.AddMockContract(thread);
         if (executionManager is not null)
             builder.AddMockContract(executionManager);
+        if (stubTracing is not null)
+            builder.AddMockContract(stubTracing);
         if (ecmaMetadata is not null)
             builder.AddMockContract(ecmaMetadata);
         if (readableAddress is not null)

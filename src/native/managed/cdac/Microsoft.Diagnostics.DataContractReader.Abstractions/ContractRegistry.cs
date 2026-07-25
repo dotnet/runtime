@@ -146,6 +146,11 @@ public abstract class ContractRegistry
     public virtual IStressLog StressLog => GetContract<IStressLog>();
 
     /// <summary>
+    /// Gets an instance of the StubTracing contract for the target.
+    /// </summary>
+    public virtual IStubTracing StubTracing => GetContract<IStubTracing>();
+
+    /// <summary>
     /// Gets an instance of the RuntimeMutableTypeSystem contract for the target.
     /// </summary>
     public virtual IRuntimeMutableTypeSystem RuntimeMutableTypeSystem => GetContract<IRuntimeMutableTypeSystem>();

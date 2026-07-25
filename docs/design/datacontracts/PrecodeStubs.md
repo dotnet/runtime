@@ -5,6 +5,20 @@ This contract provides support for examining [precode](../coreclr/botr/method-de
 ## APIs of contract
 
 ```csharp
+    enum PrecodeType
+    {
+        Stub,
+        PInvokeImport,
+        Fixup,
+        ThisPtrRetBuf,
+        UMEntry,
+        Interpreter,
+        DynamicHelper,
+    }
+
+    // Version 3 only. Classifies a precode entry point, or returns null when it is not recognized.
+    PrecodeType? GetPrecodeType(TargetCodePointer entryPoint);
+
     // Gets a pointer to the MethodDesc for a given stub entrypoint
     TargetPointer GetMethodDescFromStubAddress(TargetCodePointer entryPoint);
 

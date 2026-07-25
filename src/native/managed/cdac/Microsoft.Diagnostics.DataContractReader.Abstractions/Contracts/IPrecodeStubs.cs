@@ -5,9 +5,21 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+public enum PrecodeType
+{
+    Stub = 1,
+    PInvokeImport,
+    Fixup,
+    ThisPtrRetBuf,
+    UMEntry,
+    Interpreter,
+    DynamicHelper,
+}
+
 public interface IPrecodeStubs : IContract
 {
     static string IContract.Name { get; } = nameof(PrecodeStubs);
+    PrecodeType? GetPrecodeType(TargetCodePointer entryPoint) => throw new NotImplementedException();
     TargetPointer GetMethodDescFromStubAddress(TargetCodePointer entryPoint) => throw new NotImplementedException();
 
     // Given an interior address within a precode stub and the kind of stub (StubPrecode or FixupPrecode),

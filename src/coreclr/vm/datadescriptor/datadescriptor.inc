@@ -906,6 +906,13 @@ CDAC_TYPE_FIELD(StubPrecodeData, T_POINTER, SecretParam, offsetof(StubPrecodeDat
 CDAC_TYPE_FIELD(StubPrecodeData, T_UINT8, Type, offsetof(StubPrecodeData, Type))
 CDAC_TYPE_END(StubPrecodeData)
 
+#ifdef FEATURE_TIERED_COMPILATION
+CDAC_TYPE_BEGIN(CallCountingStubData)
+CDAC_TYPE_SIZE(sizeof(CallCountingStubData))
+CDAC_TYPE_FIELD(CallCountingStubData, TYPE(CodePointer), TargetForMethod, offsetof(CallCountingStubData, TargetForMethod))
+CDAC_TYPE_END(CallCountingStubData)
+#endif
+
 #ifdef HAS_THISPTR_RETBUF_PRECODE
 CDAC_TYPE_BEGIN(ThisPtrRetBufPrecodeData)
 CDAC_TYPE_INDETERMINATE(ThisPtrRetBufPrecodeData)
@@ -1686,7 +1693,9 @@ CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
 CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_GLOBAL_POINTER(ThePreStub, &g_cdacThePreStub)
+CDAC_GLOBAL_POINTER(ThePreStubPatchLabel, &g_cdacThePreStubPatchLabel)
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_GLOBAL_POINTER(DACNotifyCompilationFinished, &g_cdacDACNotifyCompilationFinished)
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
@@ -1865,6 +1874,7 @@ CDAC_GLOBAL_CONTRACT(Object, c1)
 CDAC_GLOBAL_CONTRACT(FeatureFlags, c1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, c1)
 CDAC_GLOBAL_CONTRACT(PrecodeStubs, c3)
+CDAC_GLOBAL_CONTRACT(StubTracing, c1)
 #ifdef PROFILING_SUPPORTED
 CDAC_GLOBAL_CONTRACT(ReJIT, c1)
 #endif // PROFILING_SUPPORTED

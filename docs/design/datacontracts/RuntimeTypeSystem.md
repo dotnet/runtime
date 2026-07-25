@@ -261,6 +261,9 @@ partial interface IRuntimeTypeSystem : IContract
     // A IL Stub method is also a StoredSigMethodDesc, and a NoMetadataMethod
     public virtual bool IsILStub(MethodDescHandle methodDesc);
 
+    // Return true if a MethodDesc represents a P/Invoke method
+    public virtual bool IsPInvoke(MethodDescHandle methodDesc);
+
     // Return true if a MethodDesc represents an IL stub with a special MethodDesc context arg
     public virtual bool HasMDContextArg(MethodDescHandle);
 
@@ -1868,6 +1871,12 @@ And the various apis are implemented with the following algorithms
         uint ExtendedFlags = // Read ExtendedFlags field from StoredSigMethodDesc contract using address methodDescHandle.Address
 
         return ((DynamicMethodDescExtendedFlags)ExtendedFlags).HasFlag(DynamicMethodDescExtendedFlags.IsILStub);
+    }
+
+    public bool IsPInvoke(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        return methodDesc.Classification == MethodDescClassification.PInvoke;
     }
 
     public bool IsIL(MethodDescHandle methodDescHandle)
