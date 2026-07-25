@@ -12,8 +12,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefinition
 {
-    private const int ErrorInsufficientBuffer = unchecked((int)0x8007007A);
-
     private readonly Target _target;
     private readonly TargetPointer _module;
     private readonly ITypeHandle _typeHandle;
@@ -79,7 +77,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
             string name = _typeHandle.GetName(_target);
             OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, name, out bool truncated);
             if (nameBuf is not null && truncated)
-                throw Marshal.GetExceptionForHR(ErrorInsufficientBuffer)!;
+                throw Marshal.GetExceptionForHR(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER)!;
         }
         catch (System.Exception ex)
         {
