@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Xunit;
 
 namespace GB18030.Tests;
@@ -29,6 +30,9 @@ public class DirectoryTests : DirectoryTestBase
         File.Create(gb18030File).Dispose();
         expected.Add(gb18030File);
 
-        Assert.Equivalent(expected, Directory.EnumerateFileSystemEntries(rootDir));
+        AssertExtensions.CollectionEqual(
+            expected,
+            Directory.EnumerateFileSystemEntries(rootDir),
+            StringComparer.Ordinal);
     }
 }

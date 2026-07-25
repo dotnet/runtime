@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Xunit;
 
 namespace GB18030.Tests;
@@ -42,6 +43,9 @@ public class DirectoryInfoTests : DirectoryTestBase
         fileInfo.Create().Dispose();
         expected.Add(fileInfo);
 
-        Assert.Equivalent(expected, new DirectoryInfo(rootDir).EnumerateFileSystemInfos());
+        AssertExtensions.CollectionEqual(
+            expected.Select(i => i.FullName),
+            new DirectoryInfo(rootDir).EnumerateFileSystemInfos().Select(i => i.FullName),
+            StringComparer.Ordinal);
     }
 }
