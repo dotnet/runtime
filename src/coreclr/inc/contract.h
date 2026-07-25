@@ -1740,6 +1740,5 @@ extern Volatile<LONG> g_DbgSuppressAllocationAsserts;
     STATIC_CONTRACT_MODE_PREEMPTIVE;
 
 #define AFTER_CONTRACTS
-#include "volatile.h"
 
 #endif  // CONTRACT_H_
