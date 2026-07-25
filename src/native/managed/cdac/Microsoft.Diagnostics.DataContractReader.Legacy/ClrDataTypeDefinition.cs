@@ -186,7 +186,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
             int hrLocal = _legacyImpl.GetCorElementType(type is null ? null : &typeLocal);
 
             Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0)
+            if (hr >= 0 && hrLocal >= 0)
                 Debug.Assert(typeLocal == *type, $"cDAC: {*type:x}, DAC: {typeLocal:x}");
         }
 #endif
