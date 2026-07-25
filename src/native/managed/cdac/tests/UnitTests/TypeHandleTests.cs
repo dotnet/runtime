@@ -162,7 +162,7 @@ public unsafe class TypeHandleTests
             Assert.Equal(HResults.S_OK, typeInstance.GetName(0, nameLen, &nameLen, name));
             Assert.Equal("System.Int32", new string(name, 0, (int)nameLen - 1));
 
-            Assert.Equal(CorDbgHResults.ErrorInsufficientBuffer, typeInstance.GetName(0, 4, &nameLen, name));
+            Assert.Equal(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER, typeInstance.GetName(0, 4, &nameLen, name));
             Assert.Equal("Sys", new string(name, 0, 3));
         }
 
