@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
@@ -16,6 +15,7 @@ namespace System.Threading
         private readonly IOCompletionCallback _userCallback;
         internal readonly object? _userState;
         internal readonly PreAllocatedOverlapped? _preAllocated;
+        internal bool _isUnboundPreAllocatedOverlapped;
 
         internal NativeOverlapped* _nativeOverlapped;
         internal ThreadPoolBoundHandle? _boundHandle;
@@ -63,7 +63,7 @@ namespace System.Threading
 
             overlapped._completed = true;
 
-            if (overlapped._boundHandle == null)
+            if (!overlapped._isUnboundPreAllocatedOverlapped && overlapped._boundHandle == null)
                 throw new InvalidOperationException(SR.Argument_NativeOverlappedAlreadyFree);
 
             overlapped._userCallback(errorCode, numBytes, nativeOverlapped);

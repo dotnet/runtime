@@ -18,7 +18,14 @@ namespace System.Threading
         // not bound to an I/O completion port permanently, but every time they are associated with
         // a wait handle.
 
-        internal NativeOverlapped* AllocateNativeOverlappedPortableUnbound()
+        internal static PreAllocatedOverlapped UnsafeCreatePortableUnbound(IOCompletionCallback callback, object? state, object? pinData)
+        {
+            PreAllocatedOverlapped instance = UnsafeCreate(callback, state, pinData);
+            instance._overlappedPortableCore!._isUnboundPreAllocatedOverlapped = true;
+            return instance;
+        }
+
+        internal unsafe NativeOverlapped* AllocateNativeOverlappedPortableUnbound()
         {
             AddRef();
             Debug.Assert(_overlappedPortableCore!._boundHandle is null);
