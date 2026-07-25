@@ -817,9 +817,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     // Mirrors CEEInfo::getClassAlignmentRequirementStatic in src/coreclr/vm/jitinterface.cpp.
     // The result is unclamped; callers (e.g. ArgIterator) apply their own clamping.
-    // Note: the native implementation also handles the native (marshalled) value type view via
-    // TypeHandle::IsNativeValueType. That is a marshalling-only concept and is not reachable from
-    // the managed argument layout this contract serves, so it is intentionally not mirrored here.
+    //
+    // Two deliberate differences from the native helper, both unreachable from the managed
+    // argument layout this contract serves:
+    //  - The native helper starts from TypeHandle::GetMethodTable, which also resolves a
+    //    MethodTable for a TypeDesc. Here a non-MethodTable handle simply reports the default,
+    //    since the ArgIterator only consults alignment for ELEMENT_TYPE_VALUETYPE arguments.
+    //  - The native helper handles the unmanaged (marshalled) view of a type via
+    //    TypeHandle::IsNativeValueType, which is a TypeDesc produced for native signatures
+    //    (ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG) rather than by decoding an ECMA metadata
+    //    signature, so it cannot appear here.
     private const string LayoutInfoFieldName = "LayoutInfo";
 
     public int GetClassAlignmentRequirement(ITypeHandle typeHandle)

@@ -1555,4 +1555,38 @@ public class MethodTableTests
 
         Assert.Equal(target.PointerSize, contract.GetClassAlignmentRequirement(handle));
     }
+
+    // FEATURE_64BIT_ALIGNMENT (ARM, WASM): a type whose alignment would otherwise be below 8 is
+    // bumped to 8 when the MethodTable carries the RequiresAlign8 flag. The flag is only ever set
+    // on targets with that requirement, so this branch is inert elsewhere.
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetClassAlignmentRequirement_RequiresAlign8_BumpsToEight(MockTarget.Architecture arch)
+    {
+        const uint RequiresAlign8Flag = 0x00800000; // MethodTableFlags_1.WFLAGS_HIGH.RequiresAlign8
+
+        TargetPointer methodTablePtr = default;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            rtsBuilder =>
+            {
+                // Sequential layout reporting 4-byte alignment: below 8, so the flag applies.
+                MockEEClass eeClass = rtsBuilder.AddLayoutEEClass(
+                    "Align8", (byte)Data.EEClassLayoutInfo.Type.Sequential, alignmentRequirement: 4, flags: 0);
+                MockMethodTable methodTable = rtsBuilder.AddMethodTable("Align8");
+                methodTable.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+                methodTable.NumVirtuals = 3;
+                methodTable.MTFlags = RequiresAlign8Flag;
+                methodTable.ParentMethodTable = rtsBuilder.SystemObjectMethodTable.Address;
+                methodTable.EEClassOrCanonMT = eeClass.Address;
+                eeClass.MethodTable = methodTable.Address;
+                methodTablePtr = methodTable.Address;
+            });
+
+        IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
+        ITypeHandle handle = contract.GetTypeHandle(methodTablePtr);
+
+        Assert.True(contract.RequiresAlign8(handle));
+        Assert.Equal(8, contract.GetClassAlignmentRequirement(handle));
+    }
 }
