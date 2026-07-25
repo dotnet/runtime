@@ -11,8 +11,6 @@
 #ifndef SHIMDATATARGET_H_
 #define SHIMDATATARGET_H_
 
-#include <clrdata.h>
-
 // Function to invoke for
 typedef HRESULT (*FPContinueStatusChanged)(void * pUserData, DWORD dwThreadId, CORDB_CONTINUE_STATUS dwContinueStatus);
 
