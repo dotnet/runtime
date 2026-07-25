@@ -256,7 +256,7 @@ public interface IRuntimeTypeSystem : IContract
     ITypeHandle GetTypeParam(ITypeHandle typeHandle) => throw new NotImplementedException();
     ITypeHandle? GetConstructedType(ITypeHandle? typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle?> typeArguments, SignatureCallingConvention callConv = SignatureCallingConvention.Default) => throw new NotImplementedException();
     ITypeHandle GetPrimitiveType(CorElementType typeCode) => throw new NotImplementedException();
-    bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
+    bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token, out uint index) => throw new NotImplementedException();
     bool IsFunctionPointer(ITypeHandle typeHandle, out ReadOnlySpan<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv) => throw new NotImplementedException();
     bool IsPointer(ITypeHandle typeHandle) => throw new NotImplementedException();
     bool IsTypeDesc(ITypeHandle typeHandle) => throw new NotImplementedException();

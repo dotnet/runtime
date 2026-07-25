@@ -146,7 +146,7 @@ partial interface IRuntimeTypeSystem : IContract
     ITypeHandle GetTypeParam(ITypeHandle typeHandle);
     ITypeHandle? GetConstructedType(ITypeHandle? typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle?> typeArguments, SignatureCallingConvention callConv = SignatureCallingConvention.Default);
     ITypeHandle GetPrimitiveType(CorElementType typeCode);
-    bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token);
+    bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token, out uint index);
     bool IsFunctionPointer(ITypeHandle typeHandle, out ReadOnlySpan<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv);
     bool IsPointer(ITypeHandle typeHandle);
     bool IsTypeDesc(ITypeHandle typeHandle);
@@ -637,6 +637,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `TypedByRef` | `Data` | `pointer` | Managed pointer (the byref) stored in a System.TypedReference value |
 | `TypedByRef` | `Type` | `pointer` | Raw TypeHandle pointer of the referent type |
 | `TypeDesc` | `TypeAndFlags` | `uint32` | The lower 8 bits are the CorElementType of the TypeDesc, the upper 24 bits are reserved for flags |
+| `TypeVarTypeDesc` | `Index` | `uint32` | Zero-based index within the declaring type or method |
 | `TypeVarTypeDesc` | `Module` | `pointer` | Pointer to module which defines the type variable |
 | `TypeVarTypeDesc` | `Token` | `uint32` | Token of the type variable |
 
@@ -1325,10 +1326,11 @@ static class RuntimeTypeSystem_1_Helpers
         return GetTypeHandle(typeHandlePtr);
     }
 
-    public bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token)
+    public bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token, out uint index)
     {
         module = TargetPointer.Null;
         token = 0;
+        index = 0;
 
         if (!typeHandle.IsTypeDesc())
             return false;
@@ -1341,7 +1343,8 @@ static class RuntimeTypeSystem_1_Helpers
             case CorElementType.MVar:
             case CorElementType.Var:
                 module = // Read Module field from TypeVarTypeDesc contract using address typeHandle.TypeDescAddress()
-                token = // Read Module field from TypeVarTypeDesc contract using address typeHandle.TypeDescAddress()
+                token = // Read Token field from TypeVarTypeDesc contract using address typeHandle.TypeDescAddress()
+                index = // Read Index field from TypeVarTypeDesc contract using address typeHandle.TypeDescAddress()
                 return true;
         }
         return false;

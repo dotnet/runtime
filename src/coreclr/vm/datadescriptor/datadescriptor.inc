@@ -629,6 +629,7 @@ CDAC_TYPE_BEGIN(TypeVarTypeDesc)
 CDAC_TYPE_INDETERMINATE(TypeVarTypeDesc)
 CDAC_TYPE_FIELD(TypeVarTypeDesc, T_POINTER, Module, cdac_data<TypeVarTypeDesc>::Module)
 CDAC_TYPE_FIELD(TypeVarTypeDesc, T_UINT32, Token, cdac_data<TypeVarTypeDesc>::Token)
+CDAC_TYPE_FIELD(TypeVarTypeDesc, T_UINT32, Index, cdac_data<TypeVarTypeDesc>::Index)
 CDAC_TYPE_END(TypeVarTypeDesc)
 
 CDAC_TYPE_BEGIN(FnPtrTypeDesc)
