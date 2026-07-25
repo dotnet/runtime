@@ -369,7 +369,7 @@ bool LinearScan::minOptsTryRetarget(Interval* interval, SingleTypeRegSet candida
         }
 
         regNumber candidateReg = genRegNumFromMask(order[i], regType);
-        if (minOptsRegFreeSince[candidateReg] <= defLoc)
+        if (minOptsGetRegFreeSince(candidateReg, regType) <= defLoc)
         {
             minOptsMoveInterval(interval, candidateReg);
             return true;
@@ -386,7 +386,7 @@ bool LinearScan::minOptsTryRetarget(Interval* interval, SingleTypeRegSet candida
         SingleTypeRegSet candidateBit = genSingleTypeRegMask(candidateReg);
         takenCandidates ^= candidateBit;
 
-        if (minOptsRegFreeSince[candidateReg] > defLoc)
+        if (minOptsGetRegFreeSince(candidateReg, regType) > defLoc)
         {
             continue;
         }
@@ -423,7 +423,7 @@ bool LinearScan::minOptsTryRetarget(Interval* interval, SingleTypeRegSet candida
             }
 
             regNumber relocReg = genRegNumFromMask(order[i], occRegType);
-            if (minOptsRegFreeSince[relocReg] > occupantDefLoc)
+            if (minOptsGetRegFreeSince(relocReg, occRegType) > occupantDefLoc)
             {
                 continue;
             }
@@ -517,7 +517,7 @@ void LinearScan::minOptsSpillInterval(Interval* interval)
     minOptsLiveRegs.RemoveRegsetForType(regMask, regType);
     minOptsRegsToFree.RemoveRegsetForType(regMask, regType);
     minOptsDelayRegsToFree.RemoveRegsetForType(regMask, regType);
-    minOptsRegFreeSince[interval->physReg] = minOptsCurLoc;
+    minOptsMarkRegFree(interval->physReg, regType, minOptsCurLoc);
 
     minOptsFreeReg(interval);
 }
@@ -1033,7 +1033,7 @@ void LinearScan::allocateUseMinOpts(BasicBlock* block, RefPosition* refPosition)
 
         // Release the old register and take the new one.
         minOptsLiveRegs.RemoveRegsetForType(getSingleTypeRegMask(assignedReg, regType), regType);
-        minOptsRegFreeSince[assignedReg] = minOptsCurLoc;
+        minOptsMarkRegFree(assignedReg, regType, minOptsCurLoc);
         minOptsFreeReg(interval);
 
         minOptsAssignReg(interval, copyReg);

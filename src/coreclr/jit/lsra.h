@@ -690,6 +690,32 @@ public:
     void         minOptsBuildRegOrder();
     void         minOptsRecordNodeRefPosition(RefPosition* refPosition);
 
+    // Record that 'reg' has been free of any occupant since 'loc'. On ARM a TYP_DOUBLE
+    // occupies a register pair, so both halves have to be tracked.
+    void minOptsMarkRegFree(regNumber reg, RegisterType regType, LsraLocation loc)
+    {
+        minOptsRegFreeSince[reg] = loc;
+#ifdef TARGET_ARM
+        if (regType == TYP_DOUBLE)
+        {
+            minOptsRegFreeSince[REG_NEXT(reg)] = loc;
+        }
+#endif
+    }
+
+    // Get the location since which 'reg' has been free; for an ARM double this is the
+    // later of the two halves.
+    LsraLocation minOptsGetRegFreeSince(regNumber reg, RegisterType regType)
+    {
+#ifdef TARGET_ARM
+        if (regType == TYP_DOUBLE)
+        {
+            return max(minOptsRegFreeSince[reg], minOptsRegFreeSince[REG_NEXT(reg)]);
+        }
+#endif
+        return minOptsRegFreeSince[reg];
+    }
+
     static int minOptsRegOrderIndex(RegisterType regType)
     {
         if (varTypeUsesIntReg(regType))
