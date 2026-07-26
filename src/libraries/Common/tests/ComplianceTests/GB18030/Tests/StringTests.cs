@@ -117,7 +117,7 @@ public class StringTests
         }
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(TestHelper), nameof(TestHelper.IsGB18030Supported))]
     [MemberData(nameof(StringComparison_MemberData))]
     public void IndexOf_MultipleElements(string decoded, StringComparison comparison)
     {
@@ -136,7 +136,7 @@ public class StringTests
         }
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(TestHelper), nameof(TestHelper.IsGB18030Supported))]
     [MemberData(nameof(StringComparison_MemberData))]
     public void IndexOf_SingleElement(string decoded, StringComparison comparison)
     {
@@ -173,7 +173,7 @@ public class StringTests
         }
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(TestHelper), nameof(TestHelper.IsGB18030Supported))]
     [MemberData(nameof(StringComparison_MemberData))]
     public void LastIndexOf_MultipleElements(string decoded, StringComparison comparison)
     {
@@ -196,7 +196,7 @@ public class StringTests
         }
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(TestHelper), nameof(TestHelper.IsGB18030Supported))]
     [MemberData(nameof(StringComparison_MemberData))]
     public void LastIndexOf_SingleElement(string decoded, StringComparison comparison)
     {
@@ -258,7 +258,7 @@ public class StringTests
         TestHelper.Cultures.Select(culture => new object[] { testData, culture }));
 
 #if NETCOREAPP
-    [Theory]
+    [ConditionalTheory(typeof(TestHelper), nameof(TestHelper.IsGB18030Supported))]
     [MemberData(nameof(Replace_NetCore_MemberData))]
     public void Replace_CultureInfo(string decoded, CultureInfo culture)
     {

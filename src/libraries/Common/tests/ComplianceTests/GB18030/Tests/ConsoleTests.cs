@@ -11,7 +11,11 @@ public class ConsoleTests
 {
     protected static readonly int WaitInMS = 30 * 1000 * PlatformDetection.SlowRuntimeTimeoutModifier;
 
-    [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+    // GB18030 console tests require a platform whose console subsystem supports the GB18030
+    // code page. Older platforms (e.g. Windows Nano Server) don't, so gate on GB18030 support.
+    public static bool IsSupported => RemoteExecutor.IsSupported && TestHelper.IsGB18030Supported;
+
+    [ConditionalTheory(typeof(ConsoleTests), nameof(IsSupported))]
     [MemberData(nameof(TestHelper.DecodedMemberData), MemberType = typeof(TestHelper))]
     public void StandardOutput(string decodedText)
     {
@@ -32,7 +36,7 @@ public class ConsoleTests
         Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
     }
 
-    [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+    [ConditionalTheory(typeof(ConsoleTests), nameof(IsSupported))]
     [MemberData(nameof(TestHelper.DecodedMemberData), MemberType = typeof(TestHelper))]
     public void StandardInput(string decodedText)
     {
@@ -66,7 +70,7 @@ public class ConsoleTests
         Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
     }
 
-    [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+    [ConditionalTheory(typeof(ConsoleTests), nameof(IsSupported))]
     [MemberData(nameof(TestHelper.DecodedMemberData), MemberType = typeof(TestHelper))]
     public void StandardError(string decodedText)
     {

@@ -61,6 +61,14 @@ public static class TestHelper
         StringComparison.InvariantCulture,
         StringComparison.InvariantCultureIgnoreCase];
 
+    // Detects whether the current platform has up-to-date GB18030 support. Some older
+    // platforms (e.g. Windows Nano Server) lack it: they don't carry collation weights for
+    // the GB18030-2022 code points and can't set the GB18030 console code page. On such
+    // platforms U+4DBC (a CJK Extension A code point that GB18030-2022 covers) is treated as
+    // ignorable in linguistic comparisons, so IndexOf finds it at index 0 instead of -1.
+    public static bool IsGB18030Supported { get; } =
+        "abc".IndexOf("\u4DBC", StringComparison.InvariantCulture) < 0;
+
     internal static string TestDataResourceName { get; } = "Level3+Amendment_Test_Data_for_Mid_to_High_Volume_cases.txt";
 
     internal static byte[] TestDataFileBytes { get; } = ReadTestDataFileBytes();
