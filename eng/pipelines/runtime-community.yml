@@ -3,8 +3,6 @@ trigger:
   branches:
     include:
     - release/*.*
-    exclude:
-    - release/6.0*
   paths:
     include:
     - '*'
@@ -23,8 +21,6 @@ pr:
     include:
     - main
     - release/*.*
-  exclude:
-    - release/6.0*
   paths:
     include:
     - eng/pipelines/runtime-community.yml
