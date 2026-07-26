@@ -502,12 +502,11 @@ static void MergeWorkerCsvs(char* csvFilename, PerWorkerData* workerData, int wo
         if (hasHeader)
         {
             // Skip the title line
-            fgets(buffer, sizeof(buffer) - 1, fpReader);
+            fgets(buffer, sizeof(buffer), fpReader);
         }
 
-        while (!feof(fpReader))
+        while (fgets(buffer, sizeof(buffer), fpReader) != NULL)
         {
-            fgets(buffer, sizeof(buffer) - 1, fpReader);
             fputs(buffer, fpWriter);
         }
 
