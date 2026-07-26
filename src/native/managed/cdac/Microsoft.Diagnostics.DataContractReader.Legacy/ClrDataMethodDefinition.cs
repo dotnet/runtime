@@ -652,7 +652,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
             TargetPointer code = GetILExtentStart(out _);
             if (code == TargetPointer.Null)
-                throw new COMException("Method definition does not have an IL header.", unchecked((int)0x8000FFFF));
+                throw Marshal.GetExceptionForHR(CorDbgHResults.E_UNEXPECTED)!;
 
             *addr = code.ToClrDataAddress(_target);
         }
@@ -688,7 +688,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
             TargetPointer methodDescAddr = TryResolveMethodDesc();
             if (methodDescAddr == TargetPointer.Null)
-                throw new System.Runtime.InteropServices.COMException(null, unchecked((int)0x8000FFFF)); // E_UNEXPECTED
+                throw Marshal.GetExceptionForHR(CorDbgHResults.E_UNEXPECTED)!;
 
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             MethodDescHandle methodDescHandle = rts.GetMethodDescHandle(methodDescAddr);

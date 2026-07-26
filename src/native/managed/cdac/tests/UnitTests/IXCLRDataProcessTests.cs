@@ -356,7 +356,6 @@ public unsafe class IXCLRDataProcessTests
     {
         const ulong ModuleAddress = 0x2000;
         const uint Token = 0x06000001;
-        const int EUnexpected = unchecked((int)0x8000FFFF);
         ModuleHandle module = new(new TargetPointer(ModuleAddress));
         Mock<ILoader> loader = new(MockBehavior.Strict);
         loader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(ModuleAddress))).Returns(module);
@@ -374,7 +373,7 @@ public unsafe class IXCLRDataProcessTests
         Assert.Equal(0ul, handle);
 
         ClrDataAddress address;
-        Assert.Equal(EUnexpected, method.GetRepresentativeEntryAddress(&address));
+        Assert.Equal(CorDbgHResults.E_UNEXPECTED, method.GetRepresentativeEntryAddress(&address));
     }
 
     private static void AssertMethodDefinitionExtent(
