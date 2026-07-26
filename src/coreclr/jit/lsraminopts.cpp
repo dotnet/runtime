@@ -781,7 +781,22 @@ void LinearScan::allocateUseMinOpts(BasicBlock* block, RefPosition* refPosition)
         }
 
         regNumber copyReg = minOptsSelectReg(refPosition, copyCandidates, regType);
-        noway_assert(copyReg != REG_NA);
+        if (copyReg == REG_NA)
+        {
+            // Nothing is available for the move, but this use is able to consume the value
+            // from memory, so spill the definition instead. (minOptsSelectReg only declines
+            // to spill something else when the use is reg-optional.)
+            assert(refPosition->RegOptional());
+            minOptsMarkModified(assignedReg);
+            minOptsSpillInterval(interval);
+
+            defRefPosition->treeNode->gtFlags |= GTF_NOREG_AT_USE;
+            refPosition->registerAssignment = RBM_NONE;
+
+            JITDUMP("      Use of [%06u] from memory\n", Compiler::dspTreeID(defRefPosition->treeNode));
+            return;
+        }
+
         assert(copyReg != assignedReg);
 
         refPosition->registerAssignment = genSingleTypeRegMask(copyReg);
