@@ -393,6 +393,10 @@ void LinearScan::minOptsProcessKill(regMaskTP killedRegs)
         regNumber reg            = genFirstRegNumFromMaskAndToggle(remaining);
         minOptsRegFreeSince[reg] = minOptsCurLoc;
     }
+
+    // Definitions of this node are produced after the kill, so they are free to use
+    // these registers.
+    minOptsKilledRegs &= ~killedRegs;
 }
 
 //------------------------------------------------------------------------
@@ -963,6 +967,12 @@ PhaseStatus LinearScan::doRegisterAllocationMinOpts()
 #endif
 
     buildPhysRegRecords();
+
+#if DOUBLE_ALIGN
+    // identifyCandidates() determines this, but it can return early without setting it.
+    doDoubleAlign = false;
+#endif
+
     identifyCandidates<false>();
 
     // Figure out if we're going to use a frame pointer. This has to happen before we build
