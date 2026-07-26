@@ -10702,7 +10702,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     // The byref is formed from clone + TARGET_POINTER_SIZE below, so discard the
                     // helper result to keep the enclosing COLON/QMARK void.
-                    op1 = gtUnusedValNode(gtNewHelperCallNode(helper, HelperUnboxDiscardedRetType, op2, op1));
+                    op1 = gtUnusedValNode(gtNewHelperCallNode(helper, TYP_BYREF, op2, op1));
 
                     op1 = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), op1);
                     op1 = gtNewQmarkNode(TYP_VOID, condBox, op1->AsColon());
