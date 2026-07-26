@@ -38,10 +38,13 @@ if "!__Cand:~0,2!" == "\\" set "__Anchor=!__Cand!"
 set "__Root=%DOTNET_WASM_TOOL_CACHE_DIR%"
 if "%__Root%" == "" set "__Root=%__Anchor%\.dotnet\wasm-tools"
 
-rem The native build only runs on x64 Windows agents today; map accordingly.
+rem Normalize to the same names MSBuild's $(BuildArchitecture) uses (x86 / x64 / arm64).
+rem A 32-bit process on 64-bit Windows reports x86 in PROCESSOR_ARCHITECTURE and the real
+rem architecture in PROCESSOR_ARCHITEW6432, so consult that first.
 set "__Arch=x64"
 if /i "%PROCESSOR_ARCHITECTURE%" == "ARM64" set "__Arch=arm64"
 if /i "%PROCESSOR_ARCHITEW6432%" == "ARM64" set "__Arch=arm64"
+if /i "%PROCESSOR_ARCHITECTURE%" == "x86" if not defined PROCESSOR_ARCHITEW6432 set "__Arch=x86"
 set "__Rid=windows-%__Arch%"
 
 set "__Resolved="

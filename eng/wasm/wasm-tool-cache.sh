@@ -55,10 +55,14 @@ wasm_tool_host_rid()
         Darwin) _os=osx ;;
         Linux)  _os=linux ;;
     esac
+    # Normalize to the same names MSBuild's $(BuildArchitecture) uses, which comes from
+    # RuntimeInformation.ProcessArchitecture (x86 / x64 / arm / arm64 / ...).
     _arch="$(uname -m)"
     case "$_arch" in
-        arm64|aarch64) _arch=arm64 ;;
-        x86_64|amd64)  _arch=x64 ;;
+        arm64|aarch64)          _arch=arm64 ;;
+        x86_64|amd64)           _arch=x64 ;;
+        i[3456]86|x86)          _arch=x86 ;;
+        armv*|arm)              _arch=arm ;;
     esac
     printf '%s-%s\n' "$_os" "$_arch"
 }
