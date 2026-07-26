@@ -230,7 +230,7 @@ internal static class Entrypoints
                 if (legacyObj is not Legacy.IDacDbiInterface)
                 {
                     *obj = IntPtr.Zero;
-                    throw new InvalidCastException(); // E_NOINTERFACE
+                    return HResults.COR_E_INVALIDCAST; // E_NOINTERFACE
                 }
             }
 
