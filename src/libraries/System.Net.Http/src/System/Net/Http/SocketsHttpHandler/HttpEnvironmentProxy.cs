@@ -114,7 +114,7 @@ namespace System.Net.Http
             {
                 foreach (string entry in bypassList.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                 {
-                    if (entry.Contains('/') && IPNetwork.TryParse(entry, out IPNetwork networkEntry))
+                    if (IPNetwork.TryParse(entry, out IPNetwork networkEntry))
                     {
                         _bypassNetworks ??= new List<IPNetwork>();
                         _bypassNetworks.Add(networkEntry);
@@ -298,6 +298,7 @@ namespace System.Net.Http
                     }
                 }
             }
+
             if (_bypassNetworks != null && IPAddress.TryParse(input.Host, out IPAddress? ip))
             {
                 foreach (IPNetwork network in _bypassNetworks)
@@ -308,6 +309,7 @@ namespace System.Net.Http
                     }
                 }
             }
+
             return false;
         }
 
