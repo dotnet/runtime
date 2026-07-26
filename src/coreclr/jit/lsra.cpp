@@ -935,6 +935,10 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // so we don't want to check that yet.
     enregisterLocalVars = m_compiler->compEnregLocals();
 
+    // TEMPORARY CI STRESS - DO NOT MERGE: never enregister locals, so that the fast MinOpts
+    // register allocator gets used for optimized code too.
+    enregisterLocalVars = false;
+
     regSelector = new (theCompiler, CMK_LSRA) RegisterSelection(this);
 
 #ifdef TARGET_ARM64
