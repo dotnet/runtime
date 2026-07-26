@@ -34,7 +34,7 @@ public class FileTests : FileTestBase
         File.WriteAllBytes(tempFile, s_expectedBytes);
 
         Assert.Equal(
-            s_expectedText.Split([Environment.NewLine], StringSplitOptions.None),
+            SplitLines(s_expectedText),
             File.ReadAllLines(tempFile, TestHelper.GB18030Encoding));
     }
 
@@ -51,12 +51,12 @@ public class FileTests : FileTestBase
     public void WriteAllLines()
     {
         string tempFile = Path.Combine(TempDirectory.FullName, Path.GetRandomFileName());
-        string[] lines = s_expectedText.Split([Environment.NewLine], StringSplitOptions.None);
+        string[] lines = SplitLines(s_expectedText);
         File.WriteAllLines(tempFile, lines, TestHelper.GB18030Encoding);
 
-        // WriteAllLines uses TextWriter.WriteLine which concats a newline to each provided line,
-        // the result is the expected text with an additional newline at the end.
-        byte[] expected = TestHelper.GB18030Encoding.GetBytes(s_expectedText + Environment.NewLine);
+        // WriteAllLines uses TextWriter.WriteLine which concats Environment.NewLine to each provided line,
+        // so the expected content is the lines rejoined with Environment.NewLine plus a trailing one.
+        byte[] expected = TestHelper.GB18030Encoding.GetBytes(string.Join(Environment.NewLine, lines) + Environment.NewLine);
         Assert.True(expected.AsSpan().SequenceEqual(File.ReadAllBytes(tempFile)));
     }
 
@@ -71,4 +71,9 @@ public class FileTests : FileTestBase
         byte[] expected = TestHelper.GB18030Encoding.GetBytes(initialContent + s_expectedText);
         Assert.True(expected.AsSpan().SequenceEqual(File.ReadAllBytes(tempFile)));
     }
+
+    // Splits text the same way File.ReadAllLines does: on '\n', trimming an optional trailing '\r',
+    // so comparisons are robust regardless of whether the data uses LF or CRLF line endings.
+    private static string[] SplitLines(string text) =>
+        text.Split('\n').Select(line => line.TrimEnd('\r')).ToArray();
 }

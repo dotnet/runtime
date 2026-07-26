@@ -32,8 +32,8 @@ public static class TestHelper
     {
         const int CodePointsTotal = 9793; // Make sure a Unicode version downgrade doesn't make us lose coverage.
 
-        var ret = CharUnicodeInfoTestData.TestCases.Where(tc => IsInGB18030Range(tc.CodePoint));
-        Assert.Equal(CodePointsTotal, ret.Count());
+        var ret = CharUnicodeInfoTestData.TestCases.Where(tc => IsInGB18030Range(tc.CodePoint)).ToArray();
+        Assert.Equal(CodePointsTotal, ret.Length);
         return ret;
 
         static bool IsInGB18030Range(int codePoint)
@@ -91,12 +91,12 @@ public static class TestHelper
         }
     }
 
-    private static readonly IEnumerable<byte[]> s_encodedTestData = GetTestData();
+    private static readonly IEnumerable<byte[]> s_encodedTestData = GetTestData().ToArray();
 
-    internal static IEnumerable<string> DecodedTestData { get; } = s_encodedTestData.Select(data => GB18030Encoding.GetString(data));
+    internal static IEnumerable<string> DecodedTestData { get; } = s_encodedTestData.Select(data => GB18030Encoding.GetString(data)).ToArray();
 
     private static readonly IEnumerable<string> s_splitNewLineDecodedTestData = DecodedTestData.SelectMany(
-        data => data.Split([Environment.NewLine], StringSplitOptions.RemoveEmptyEntries));
+        data => data.Split([Environment.NewLine], StringSplitOptions.RemoveEmptyEntries)).ToArray();
 
     internal static IEnumerable<string> NonExceedingPathNameMaxDecodedTestData { get; } =
         s_splitNewLineDecodedTestData.SelectMany<string, string>(
@@ -121,12 +121,12 @@ public static class TestHelper
             }
             result.Add(current);
             return result;
-        });
+        }).ToArray();
 
-    public static IEnumerable<object[]> EncodedMemberData { get; } = s_encodedTestData.Select(data => new object[] { data });
-    public static IEnumerable<object[]> DecodedMemberData { get; } = DecodedTestData.Select(data => new object[] { data });
-    public static IEnumerable<object[]> NonExceedingPathNameMaxDecodedMemberData { get; } = NonExceedingPathNameMaxDecodedTestData.Select(data => new object[] { data });
-    public static IEnumerable<object[]> GB18030CharUnicodeInfoMemberData { get; } = s_gb18030CharUnicodeInfo.Select(data => new object[] { data });
+    public static IEnumerable<object[]> EncodedMemberData { get; } = s_encodedTestData.Select(data => new object[] { data }).ToArray();
+    public static IEnumerable<object[]> DecodedMemberData { get; } = DecodedTestData.Select(data => new object[] { data }).ToArray();
+    public static IEnumerable<object[]> NonExceedingPathNameMaxDecodedMemberData { get; } = NonExceedingPathNameMaxDecodedTestData.Select(data => new object[] { data }).ToArray();
+    public static IEnumerable<object[]> GB18030CharUnicodeInfoMemberData { get; } = s_gb18030CharUnicodeInfo.Select(data => new object[] { data }).ToArray();
 
     private static IEnumerable<byte[]> GetTestData()
     {
