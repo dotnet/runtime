@@ -165,6 +165,16 @@ extends:
           - wasi_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
 
+      # CoreCLR library-test smoke leg run on wasmtime via Helix
+      # (wasi_wasm queue). Starts with a single-library smoke set; see
+      # https://github.com/dotnet/runtime/issues/130129.
+      - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-library-tests.yml
+        parameters:
+          platforms:
+          - wasi_wasm
+          shouldRunSmokeOnly: true
+          alwaysRun: ${{ variables.isRollingBuild }}
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -186,7 +196,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
                   displayName: Build Assets
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -195,7 +205,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
               - template: /eng/pipelines/common/wasm-post-build-steps.yml
                 parameters:
                   publishArtifactsForWorkload: true
@@ -233,7 +243,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
                   displayName: Build Assets
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -242,7 +252,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
               - template: /eng/pipelines/common/wasm-post-build-steps.yml
                 parameters:
                   publishArtifactsForWorkload: true
@@ -1130,7 +1140,8 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS devices
+      # iOS Simulator
+      # Temporarily use the iOS Simulator instead of iOS devices until https://github.com/dotnet/runtime/issues/123796 is resolved.
       # Build the whole product using Native AOT and run libraries tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1140,7 +1151,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - ios_arm64
+            - iossimulator_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1173,7 +1184,8 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS devices
+      # iOS Simulator
+      # Temporarily use the iOS Simulator instead of iOS devices until https://github.com/dotnet/runtime/issues/123796 is resolved.
       # Build the whole product using CoreCLR and run libraries tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1183,7 +1195,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - ios_arm64
+            - iossimulator_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1747,7 +1759,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
             unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
             extraBuildArgs: -os browser -p:HostConfiguration=Release
             condition: >-

@@ -306,11 +306,11 @@ namespace {Namespace}
             {
                 if (trueMode)
                 {
-                    expected[i] = (mask[i] != 0) ? {GetIterResult} : condVal[i];
+                    expected[i] = (Helpers.IsMaskActive(mask[i])) ? {GetIterResult} : condVal[i];
                 }
                 else
                 {
-                    expected[i] = (mask[i] == 0) ? {GetIterResult} : condVal[i];
+                    expected[i] = (Helpers.IsMaskInactive(mask[i])) ? {GetIterResult} : condVal[i];
                 }
             }
 

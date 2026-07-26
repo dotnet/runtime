@@ -87,8 +87,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
             TargetPointer descBase = vtable - (ulong)pointerSize;
             int interfaceKind = _target.Read<int>(descBase);
 
-            Target.TypeInfo sccwTypeInfo = _target.GetTypeInfo(DataType.SimpleComCallWrapper);
-            ulong vtablePtrOffset = (ulong)sccwTypeInfo.Fields[nameof(Data.SimpleComCallWrapper.VTablePtr)].Offset;
+            ulong vtablePtrOffset = (ulong)Data.SimpleComCallWrapper.GetVTablePtrOffset(_target);
             TargetPointer sccwAddr = interfacePointer - (ulong)(interfaceKind * pointerSize) - vtablePtrOffset;
             Data.SimpleComCallWrapper sccw = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(sccwAddr);
             ccw = sccw.MainWrapper;
@@ -105,7 +104,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     {
         ccw = GetStartWrapper(ccw);
 
-        ulong comMethodTableSize = _target.GetTypeInfo(DataType.ComMethodTable).Size!.Value;
+        ulong comMethodTableSize = Data.ComMethodTable.GetSize(_target);
         int pointerSize = _target.PointerSize;
         // LinkedWrapperTerminator = (PTR_ComCallWrapper)-1: all pointer-sized bits set
         TargetPointer linkedWrapperTerminator = pointerSize == 8 ? TargetPointer.Max64Bit : TargetPointer.Max32Bit;
