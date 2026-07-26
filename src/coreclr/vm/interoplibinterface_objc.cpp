@@ -242,7 +242,7 @@ void* ObjCMarshalNative::GetPropagatingExceptionCallback(
     _In_ OBJECTREF throwableRef,
     _Outptr_ void** context)
 {
-    CONTRACT(void*)
+    CONTRACTL
     {
         THROWS;
         MODE_COOPERATIVE;
@@ -250,7 +250,7 @@ void* ObjCMarshalNative::GetPropagatingExceptionCallback(
         PRECONDITION(throwableRef != NULL);
         PRECONDITION(context != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     void* callback = NULL;
     void* callbackContext = NULL;
@@ -280,7 +280,7 @@ void* ObjCMarshalNative::GetPropagatingExceptionCallback(
     }
 
     *context = callbackContext;
-    RETURN callback;
+    return callback;
 }
 
 void ObjCMarshalNative::BeforeRefCountedHandleCallbacks()

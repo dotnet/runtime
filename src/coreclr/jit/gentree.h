@@ -1966,6 +1966,7 @@ public:
     inline bool IsMaskZero() const;
     inline bool IsMaskAllBitsSet() const;
     inline bool IsTrueMask(var_types simdBaseType) const;
+    inline bool IsZeroForSelect() const;
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
 
@@ -4546,6 +4547,12 @@ struct AsyncCallInfo
     // Tail awaits do not generate suspension points and the JIT instead
     // directly returns the callee's continuation to the caller.
     bool IsTailAwait = false;
+
+    // Some async helpers (e.g. AwaitAwaiter/UnsafeAwaitAwaiter/Suspend/
+    // TransparentSuspend) unconditionally suspend when called. For calls to
+    // these the JIT can skip the check for a null continuation after the call
+    // and suspend unconditionally.
+    bool AlwaysSuspends = false;
 
     bool NeedsToSaveAndRestoreExecutionContext() const
     {
@@ -9890,6 +9897,22 @@ inline bool GenTree::IsTrueMask(var_types simdBaseType) const
 #endif
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// IsZeroForSelect: Is the given node a zero value for the purposes of
+//               conditional selection. ConditionalSelect can operate on all
+//               vectors or all masks.
+//
+// Returns true if the node is an all false mask node or a zero vector node.
+//
+// If such a node is used in op3 of ConditionalSelect, it will result in a
+// simple filtering operation on the vector or mask node in op2, using the mask
+// provided in op1.
+//
+inline bool GenTree::IsZeroForSelect() const
+{
+    return IsVectorZero() || IsMaskZero();
 }
 
 //-------------------------------------------------------------------

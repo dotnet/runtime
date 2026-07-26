@@ -6,7 +6,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.DynamicStaticsInfo))]
 internal sealed partial class DynamicStaticsInfo : IData<DynamicStaticsInfo>
 {
+    [DataDescriptorDependency(nameof(GCStatics), "pointer")]
     public TargetPointer GCStatics { get; private set; }
+
+    [DataDescriptorDependency(nameof(NonGCStatics), "pointer")]
     public TargetPointer NonGCStatics { get; private set; }
 
     partial void OnInit(Target target, TargetPointer address)

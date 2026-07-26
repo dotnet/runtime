@@ -311,7 +311,10 @@ namespace ILCompiler
                 {
                     ByteCountUnaligned = layoutFromSimilarIntrinsicVector.ByteCountUnaligned,
                     ByteCountAlignment = layoutFromMetadata.ByteCountAlignment,
-                    FieldAlignment = layoutFromMetadata.FieldAlignment,
+                    // On wasm Vector<T> is passed as a v128 and must share its 16-byte alignment.
+                    FieldAlignment = type.Context.Target.Architecture == TargetArchitecture.Wasm32
+                        ? layoutFromSimilarIntrinsicVector.FieldAlignment
+                        : layoutFromMetadata.FieldAlignment,
                     FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
                     Offsets = layoutFromMetadata.Offsets,
                     LayoutAbiStable = true,

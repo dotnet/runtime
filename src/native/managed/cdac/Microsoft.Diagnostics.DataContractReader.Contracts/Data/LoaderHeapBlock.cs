@@ -6,7 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.LoaderHeapBlock))]
 internal sealed partial class LoaderHeapBlock : IData<LoaderHeapBlock>
 {
-    [Field] public TargetPointer Next { get; }
-    [Field] public TargetPointer VirtualAddress { get; }
-    [Field] public TargetNUInt VirtualSize { get; }
+    [Field] public partial TargetPointer Next { get; }
+    [Field] public partial TargetPointer VirtualAddress { get; }
+    [Field] public partial TargetNUInt VirtualSize { get; }
 }
