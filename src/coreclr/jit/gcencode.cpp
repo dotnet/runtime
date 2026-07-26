@@ -4100,17 +4100,6 @@ void GCInfo::gcMakeRegPtrTable(
     const bool noTrackedGCSlots = m_compiler->opts.MinOpts();
 #endif
 
-    // Wasm does not allow outside access to the wasm operand stack, so a GC reference loaded
-    //  from its linear-stack home onto the operand stack is a copy the GC can neither see nor
-    //  update. Per the wasm ABI ("GC References at Call Sites" in clr-abi.md), references homed
-    //  on the linear stack are therefore reported pinned, so the referent cannot move while such
-    //  a copy is live and the copy stays valid across a call.
-#ifdef TARGET_WASM
-    const bool pinOnFrameGCSlots = true;
-#else
-    const bool pinOnFrameGCSlots = false;
-#endif
-
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
         m_regSlotMap   = new (m_compiler->getAllocator()) RegSlotMap(m_compiler->getAllocator());
@@ -4198,11 +4187,20 @@ void GCInfo::gcMakeRegPtrTable(
                 flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
             }
 
-            if (varDsc->lvPinned || pinOnFrameGCSlots)
+#ifdef TARGET_WASM
+            // Wasm does not allow outside access to the wasm operand stack, so a GC reference loaded
+            //  from its linear-stack home onto the operand stack is a copy the GC can neither see nor
+            //  update. Per the wasm ABI ("GC References at Call Sites" in clr-abi.md), references homed
+            //  on the linear stack are reported pinned, so the referent cannot move while such a copy
+            //  is live and the copy stays valid across a call.
+            flags = (GcSlotFlags)(flags | GC_SLOT_PINNED);
+#else
+            if (varDsc->lvPinned)
             {
                 // Or in pinned_OFFSET_FLAG for 'pinned' pointer tracking
                 flags = (GcSlotFlags)(flags | GC_SLOT_PINNED);
             }
+#endif
             GcStackSlotBase stackSlotBase = GC_SP_REL;
             if (varDsc->lvFramePointerBased)
             {
