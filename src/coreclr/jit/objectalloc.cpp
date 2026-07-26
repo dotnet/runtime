@@ -2837,7 +2837,7 @@ void ObjectAllocator::RewriteUses()
                         //
                         JITDUMP("Rewriting to invoke box type test helper%s\n", isForEffect ? " for side effect" : "");
 
-                        // Unbox_TypeTest returns void, unlike Unbox. Note isForEffect above uses the
+                        // Unbox_TypeTest returns void, unlike Unbox. isForEffect above reads the
                         // original type.
                         call->gtCallMethHnd = m_compiler->eeFindHelper(CORINFO_HELP_UNBOX_TYPETEST);
                         call->gtType        = TYP_VOID;
