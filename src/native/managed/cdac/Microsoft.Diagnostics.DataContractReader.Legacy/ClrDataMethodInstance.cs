@@ -51,10 +51,11 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         int hr = HResults.S_OK;
         int hrLocal = HResults.S_OK;
         IXCLRDataMethodDefinition? legacyMethodDefinition = null;
+        bool canFallback = LegacyFallbackHelper.CanFallback();
 
         try
         {
-            if (_legacyImpl is not null)
+            if (canFallback && _legacyImpl is not null)
             {
                 DacComNullableByRef<IXCLRDataMethodDefinition> legacyMethodDefinitionOut = new(isNullRef: methodDefinition.IsNullRef);
                 hrLocal = _legacyImpl.GetDefinition(legacyMethodDefinitionOut);
@@ -73,7 +74,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         }
 
 #if DEBUG
-        if (_legacyImpl is not null)
+        if (canFallback && _legacyImpl is not null)
         {
             Debug.ValidateHResult(hr, hrLocal);
         }
@@ -85,6 +86,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     int IXCLRDataMethodInstance.GetTokenAndScope(uint* token, DacComNullableByRef<IXCLRDataModule> mod)
     {
         int hr = HResults.S_OK;
+        bool canFallback = LegacyFallbackHelper.CanFallback();
 
         try
         {
@@ -96,7 +98,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             if (!mod.IsNullRef)
             {
                 IXCLRDataModule? legacyMod = null;
-                if (_legacyImpl is not null)
+                if (canFallback && _legacyImpl is not null)
                 {
                     DacComNullableByRef<IXCLRDataModule> legacyModOut = new(isNullRef: false);
                     int hrLegacy = _legacyImpl.GetTokenAndScope(token, legacyModOut);
@@ -117,7 +119,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         }
 
 #if DEBUG
-        if (_legacyImpl is not null)
+        if (canFallback && _legacyImpl is not null)
         {
             bool validateToken = token is not null;
             bool validateMod = !mod.IsNullRef;
@@ -141,6 +143,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     int IXCLRDataMethodInstance.GetName(uint flags, uint bufLen, uint* nameLen, char* nameBuf)
     {
         int hr = HResults.S_OK;
+        bool canFallback = LegacyFallbackHelper.CanFallback();
 
         try
         {
@@ -190,7 +193,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         }
 
 #if DEBUG
-        if (_legacyImpl is not null)
+        if (canFallback && _legacyImpl is not null)
         {
             uint nameLenLocal = 0;
             char[] nameBufLocal = new char[bufLen > 0 ? bufLen : 1];
@@ -234,6 +237,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     int IXCLRDataMethodInstance.GetILOffsetsByAddress(ClrDataAddress address, uint offsetsLen, uint* offsetsNeeded, uint* ilOffsets)
     {
         int hr = HResults.S_OK;
+        bool canFallback = LegacyFallbackHelper.CanFallback();
 
         try
         {
@@ -279,7 +283,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         }
 
 #if DEBUG
-        if (_legacyImpl is not null)
+        if (canFallback && _legacyImpl is not null)
         {
             int hrLocal;
 
@@ -329,6 +333,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         [In, Out, MarshalUsing(CountElementName = nameof(rangesLen))] ClrDataAddressRange[]? addressRanges)
     {
         int hr = HResults.S_OK;
+        bool canFallback = LegacyFallbackHelper.CanFallback();
 
         try
         {
@@ -370,7 +375,8 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 *rangesNeeded = hits;
             }
 
-            hr = hits > 0 ? HResults.S_OK : HResults.COR_E_INVALIDCAST /*E_NOINTERFACE*/;
+            if (hits == 0)
+                throw new InvalidCastException();
         }
         catch (System.Exception ex)
         {
@@ -378,7 +384,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         }
 
 #if DEBUG
-        if (_legacyImpl is not null)
+        if (canFallback && _legacyImpl is not null)
         {
             bool validateRangesNeeded = rangesNeeded is not null;
             uint rangesNeededLocal = 0;
@@ -418,6 +424,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     int IXCLRDataMethodInstance.GetILAddressMap(uint mapLen, uint* mapNeeded, [In, Out, MarshalUsing(CountElementName = "mapLen")] ClrDataILAddressMap[]? maps)
     {
         int hr = HResults.S_OK;
+        bool canFallback = LegacyFallbackHelper.CanFallback();
 
         try
         {
@@ -468,7 +475,8 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 *mapNeeded = (uint)map.Count;
             }
 
-            hr = map.Count > 0 ? HResults.S_OK : HResults.COR_E_INVALIDCAST /*E_NOINTERFACE*/;
+            if (map.Count == 0)
+                throw new InvalidCastException();
         }
         catch (System.Exception ex)
         {
@@ -476,7 +484,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         }
 
 #if DEBUG
-        if (_legacyImpl is not null)
+        if (canFallback && _legacyImpl is not null)
         {
             uint mapNeededLocal;
             ClrDataILAddressMap[]? mapsLocal = mapLen > 0 ? new ClrDataILAddressMap[mapLen] : null;
@@ -546,6 +554,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     int IXCLRDataMethodInstance.StartEnumExtents(ulong* handle)
     {
         int hr = HResults.S_OK;
+        bool canFallback = LegacyFallbackHelper.CanFallback();
         try
         {
             if (handle is null)
@@ -560,7 +569,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         }
 
 #if DEBUG
-        if (_legacyImpl is not null)
+        if (canFallback && _legacyImpl is not null)
         {
             ulong legacyHandle = 0;
             int hrLocal = _legacyImpl.StartEnumExtents(handle is null ? null : &legacyHandle);
@@ -584,6 +593,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     int IXCLRDataMethodInstance.EnumExtent(ulong* handle, ClrDataAddressRange* extent)
     {
         int hr = HResults.S_OK;
+        bool canFallback = LegacyFallbackHelper.CanFallback();
         EnumMethodExtents? extents = null;
         try
         {
@@ -614,7 +624,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         }
 
 #if DEBUG
-        if (_legacyImpl is not null && extents is { LegacyHandle: not 0 })
+        if (canFallback && _legacyImpl is not null && extents is { LegacyHandle: not 0 })
         {
             ulong legacyHandle = (ulong)extents.LegacyHandle;
             ClrDataAddressRange extentLocal = default;
@@ -635,6 +645,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     int IXCLRDataMethodInstance.EndEnumExtents(ulong handle)
     {
         int hr = HResults.S_OK;
+        bool canFallback = LegacyFallbackHelper.CanFallback();
         nuint legacyHandle = 0;
         try
         {
@@ -655,7 +666,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         }
 
 #if DEBUG
-        if (_legacyImpl is not null && legacyHandle != 0)
+        if (canFallback && _legacyImpl is not null && legacyHandle != 0)
         {
             int hrLocal = _legacyImpl.EndEnumExtents((ulong)legacyHandle);
             Debug.ValidateHResult(hr, hrLocal);
@@ -671,6 +682,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
     int IXCLRDataMethodInstance.GetRepresentativeEntryAddress(ClrDataAddress* addr)
     {
         int hr = HResults.S_OK;
+        bool canFallback = LegacyFallbackHelper.CanFallback();
 
         try
         {
@@ -693,7 +705,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         }
 
 #if DEBUG
-        if (_legacyImpl is not null)
+        if (canFallback && _legacyImpl is not null)
         {
             ClrDataAddress addrLocal;
             int hrLocal = _legacyImpl.GetRepresentativeEntryAddress(&addrLocal);
