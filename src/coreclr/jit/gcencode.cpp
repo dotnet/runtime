@@ -4093,7 +4093,9 @@ void GCInfo::gcMakeRegPtrTable(
 {
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
-    // TODO-WASM: Enable tracked GC slots for precise GC
+    // TODO-WASM: Enable tracked GC slots for precise GC. Note that on-frame GC locals are reported
+    //  pinned below on the strength of arriving here as untracked; see the comment at that site before
+    //  enabling tracked slots.
 #ifdef TARGET_WASM
     const bool noTrackedGCSlots = true;
 #else
@@ -4187,20 +4189,23 @@ void GCInfo::gcMakeRegPtrTable(
                 flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
             }
 
-#ifdef TARGET_WASM
-            // Wasm does not allow outside access to the wasm operand stack, so a GC reference loaded
-            //  from its linear-stack home onto the operand stack is a copy the GC can neither see nor
-            //  update. Per the wasm ABI ("GC References at Call Sites" in clr-abi.md), references homed
-            //  on the linear stack are reported pinned, so the referent cannot move while such a copy
-            //  is live and the copy stays valid across a call.
-            flags = (GcSlotFlags)(flags | GC_SLOT_PINNED);
-#else
+            // On wasm this is unconditional, because wasm forces noTrackedGCSlots and so reports every
+            //  on-frame GC local here, as an effectively always-live untracked root. Wasm does not allow
+            //  outside access to the wasm operand stack, so a GC reference loaded from its linear-stack
+            //  home onto the operand stack is a copy the GC can neither see nor update; per the wasm ABI
+            //  ("GC References at Call Sites" in clr-abi.md) such references are reported pinned, so the
+            //  referent cannot move while a copy is live and the copy stays valid across a call.
+            //
+            // If tracked GC slots are ever enabled on wasm, on-frame GC locals will instead be reported
+            //  by gcMakeVarPtrTable, which only pins on pinned_OFFSET_FLAG -- that path would need to
+            //  apply the same rule, or this pinning would silently stop happening.
+#ifndef TARGET_WASM
             if (varDsc->lvPinned)
+#endif // !TARGET_WASM
             {
                 // Or in pinned_OFFSET_FLAG for 'pinned' pointer tracking
                 flags = (GcSlotFlags)(flags | GC_SLOT_PINNED);
             }
-#endif
             GcStackSlotBase stackSlotBase = GC_SP_REL;
             if (varDsc->lvFramePointerBased)
             {
