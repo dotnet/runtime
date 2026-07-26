@@ -479,11 +479,11 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             if (extent is null)
                 throw new ArgumentNullException(nameof(extent));
             if (*handle == 0)
-                throw new ArgumentException("Invalid extent handle.", nameof(handle));
+                throw new ArgumentException("Extent enumeration has not been started or has already ended.", nameof(handle));
 
             GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
             if (gcHandle.Target is not EnumMethodDefinitionExtents methodExtents)
-                throw new ArgumentException("Invalid extent handle.", nameof(handle));
+                throw new ArgumentException("Handle does not reference a method definition extent enumeration.", nameof(handle));
 
             extents = methodExtents;
             if (extents.Enumerator.MoveNext())
@@ -540,7 +540,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             {
                 GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)handle);
                 if (gcHandle.Target is not EnumMethodDefinitionExtents extents)
-                    throw new ArgumentException("Invalid extent handle.", nameof(handle));
+                    throw new ArgumentException("Handle does not reference a method definition extent enumeration.", nameof(handle));
 
                 legacyHandle = extents.LegacyHandle;
                 ((IEnum<ClrDataMethodDefinitionExtent>)extents).Dispose();
@@ -665,7 +665,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
             TargetPointer code = GetILExtentStart(out _);
             if (code == TargetPointer.Null)
-                throw new COMException("Method does not have IL.", unchecked((int)0x8000FFFF));
+                throw new COMException("Method definition does not have an IL header.", unchecked((int)0x8000FFFF));
 
             *addr = code.ToClrDataAddress(_target);
         }
