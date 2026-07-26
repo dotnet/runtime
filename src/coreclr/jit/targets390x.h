@@ -258,7 +258,9 @@
   #define RBM_SPBASE               RBM_SP     // reuse the RBM for REG_ZR
   #define STR_SPBASE               "sp"
 
-  #define FIRST_ARG_STACK_OFFS    (2*REGSIZE_BYTES)   // Caller's saved FP and return address
+  #define S390X_REG_SAVE_AREA_SIZE  160    // Z ABI: 160-byte register save area at SP+0
+
+  #define FIRST_ARG_STACK_OFFS      S390X_REG_SAVE_AREA_SIZE 
 
   // On ARM64 the calling convention defines REG_R8 (x8) as an additional argument register.
   // It isn't allocated for the normal user arguments, so it isn't counted by MAX_REG_ARG.

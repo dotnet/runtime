@@ -4445,6 +4445,13 @@ var_types LclVarDsc::GetStackSlotHomeType() const
         }
     }
 
+
+#ifdef TARGET_S390X
+    if (lvIsParam && !lvIsRegArg && genActualType(GetRegisterType()) == TYP_INT)
+    {
+        return TYP_LONG;
+    }
+#endif
     return genActualType(GetRegisterType());
 }
 
@@ -5844,6 +5851,21 @@ void Compiler::lvaFixVirtualFrameOffsets()
             assert(codeGen->isFramePointerUsed() || varDsc->GetStackOffset() >= 0);
         }
     }
+
+#ifdef TARGET_S390X
+    // On s390x, locals use positive SP-relative offsets (starting at 160) and don't need
+    // a delta adjustment. But incoming stack parameters are in the caller's frame at
+    // callerSP + 160 = SP + genTotalFrameSize() + 160. Adjust only those.
+    for (unsigned paramNum = 0; paramNum < info.compArgsCount; paramNum++)
+    {
+        LclVarDsc* paramDsc = lvaGetDesc(paramNum);
+        int offset;
+        if (lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(paramNum, &offset))
+        {
+            paramDsc->SetStackOffset(paramDsc->GetSteckOffset() + codeGen->genTotalFrameSize() + S390X_REG_SAVE_AREA_SIZE);
+        }
+    }
+#endif
 
     assert(codeGen->regSet.tmpAllFree());
     for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
