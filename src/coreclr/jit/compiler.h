@@ -3363,10 +3363,12 @@ public:
     // result we discard must still be modeled as value-returning. InitClass/InitInstantiatedClass
     // return void*, CastHelpers.Unbox returns a byref.
     static constexpr var_types HelperInitClassRetType = TYP_I_IMPL;
-    static constexpr var_types HelperUnboxRetType     = TYP_BYREF;
+    // Only for unbox sites that discard the result. CastHelpers.Unbox returns a byref on every
+    // target, so a site that consumes the result must model TYP_BYREF directly.
+    static constexpr var_types HelperUnboxDiscardedRetType = TYP_BYREF;
 #else
-    static constexpr var_types HelperInitClassRetType = TYP_VOID;
-    static constexpr var_types HelperUnboxRetType     = TYP_VOID;
+    static constexpr var_types HelperInitClassRetType      = TYP_VOID;
+    static constexpr var_types HelperUnboxDiscardedRetType = TYP_VOID;
 #endif // TARGET_WASM
 
     GenTreeCall* gtNewVirtualFunctionLookupHelperCallNode(
