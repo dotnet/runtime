@@ -91,7 +91,7 @@ public static partial class ZipFileExtensions
             FileStream fs = new FileStream(extractPath, fileStreamOptions);
             await using (fs.ConfigureAwait(false))
             {
-                Stream es = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
+                Stream es = await source.OpenAsync(FileAccess.Read, cancellationToken).ConfigureAwait(false);
                 await using (es.ConfigureAwait(false))
                 {
                     await es.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);

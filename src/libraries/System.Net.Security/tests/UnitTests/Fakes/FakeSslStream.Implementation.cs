@@ -25,6 +25,7 @@ namespace System.Net.Security
             public LocalCertificateSelectionCallback? CertSelectionDelegate;
             public X509RevocationMode CertificateRevocationCheckMode;
             public SslStream? SslStream;
+            public SslAuthenticationOptions.VerifyRemoteCertificateCallback? RemoteCertificateValidator;
 
             public void UpdateOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
             {
@@ -106,10 +107,9 @@ namespace System.Net.Security
             return null;
         }
 
-        internal bool VerifyRemoteCertificate(X509Certificate2? certificate, X509Chain? chain, SslCertificateTrust? trust, ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
+        internal bool VerifyRemoteCertificate(X509Certificate2? certificate, X509Chain? chain, SslCertificateTrust? trust, ref ProtocolToken alertToken, ref SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
         {
             chainStatus = X509ChainStatusFlags.NoError;
-            sslPolicyErrors = SslPolicyErrors.None;
             return true;
         }
 

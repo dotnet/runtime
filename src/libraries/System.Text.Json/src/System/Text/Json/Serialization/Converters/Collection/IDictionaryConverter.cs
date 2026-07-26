@@ -49,7 +49,7 @@ namespace System.Text.Json.Serialization.Converters
         protected internal override bool OnWriteResume(Utf8JsonWriter writer, TDictionary value, JsonSerializerOptions options, ref WriteStack state)
         {
             IDictionaryEnumerator enumerator;
-            if (state.Current.CollectionEnumerator == null)
+            if (state.Current.CollectionEnumerator is null)
             {
                 enumerator = value.GetEnumerator();
                 state.Current.CollectionEnumerator = enumerator;

@@ -72,7 +72,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int DacSetTargetConsistencyChecks(Interop.BOOL fEnableAsserts)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.DacSetTargetConsistencyChecks(fEnableAsserts) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacy is not null
+            ? _legacy.DacSetTargetConsistencyChecks(fEnableAsserts)
+            : HResults.S_OK;
 
     public int IsLeftSideInitialized(Interop.BOOL* pResult)
     {
@@ -249,7 +251,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 if (methodTable != TargetPointer.Null)
                 {
                     Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-                    Contracts.TypeHandle typeHandle = rts.GetTypeHandle(methodTable);
+                    ITypeHandle typeHandle = rts.GetTypeHandle(methodTable);
                     TargetPointer typeDefModulePtr = rts.GetModule(typeHandle);
                     Contracts.ModuleHandle typeDefModule = loader.GetModuleHandleFromModulePtr(typeDefModulePtr);
                     targetAssembly = loader.GetAssembly(typeDefModule);
@@ -346,7 +348,48 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetMetadata(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetMetadata(vmModule, pTargetBuffer) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            *pTargetBuffer = default;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+            Contracts.ModuleFlags flags = loader.GetFlags(handle);
+            Contracts.IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
+
+            // Dynamic modules keep an eagerly-serialized metadata buffer, while non-dynamic modules read metadata from the loaded PE image.
+            TargetSpan targetSpan = flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit)
+                ? ecmaMetadata.GetReadWriteSavedMetadataAddress(handle)
+                : ecmaMetadata.GetReadOnlyMetadataAddress(handle);
+
+            pTargetBuffer->pAddress = targetSpan.Address.Value;
+            pTargetBuffer->cbSize = checked((uint)targetSpan.Size);
+
+            if (pTargetBuffer->cbSize == 0)
+            {
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_MISSING_METADATA)!;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DacDbiTargetBuffer pTargetBufferLocal = default;
+            int hrLocal = _legacy.GetMetadata(vmModule, pTargetBuffer == null ? null : &pTargetBufferLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pTargetBuffer->pAddress == pTargetBufferLocal.pAddress, $"pAddress: cDAC: {pTargetBuffer->pAddress:x}, DAC: {pTargetBufferLocal.pAddress:x}");
+                Debug.Assert(pTargetBuffer->cbSize == pTargetBufferLocal.cbSize, $"cbSize: cDAC: {pTargetBuffer->cbSize}, DAC: {pTargetBufferLocal.cbSize}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int GetSymbolsBuffer(ulong vmModule, DacDbiTargetBuffer* pTargetBuffer, SymbolFormat* pSymbolFormat)
     {
@@ -1685,19 +1728,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             if (handleData.IsValid)
             {
-                IStackWalk sw = _target.Contracts.StackWalk;
-                byte[] context = sw.GetRawContext(handleData.Current);
-
-                // See https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L184
-                RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
-                if (arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64)
-                {
-                    IPlatformAgnosticContext stripped = IPlatformAgnosticContext.GetContextForPlatform(_target);
-                    stripped.FillFromBuffer(context);
-                    stripped.RawContextFlags &= ~0x40u;
-                    context = stripped.GetBytes();
-                }
-
+                byte[] context = GetCurrentContextBytes(handleData.Current!);
                 context.AsSpan().CopyTo(new Span<byte>(pContext, context.Length));
             }
             else
@@ -1850,15 +1881,283 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, int* pRetVal)
+    public int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, FrameType* pRetVal)
     {
         if (pSFIHandle == 0)
             return HResults.E_INVALIDARG;
 
-        nuint legacyHandle = TryGetLegacyHandle(pSFIHandle);
-        return _legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0
-            ? _legacy.GetStackWalkCurrentFrameInfo(legacyHandle, pFrameData, pRetVal)
-            : HResults.E_NOTIMPL;
+        int hr = HResults.S_OK;
+        nuint legacyHandle = 0;
+        FrameType ftResult = FrameType.Invalid;
+#if DEBUG
+        bool haveFrameInfo = false;
+        bool isInterrupted = false;
+#endif
+        try
+        {
+            *pRetVal = FrameType.Invalid;
+            GCHandle gcHandle = GCHandle.FromIntPtr((nint)pSFIHandle);
+            if (gcHandle.Target is not StackWalkHandleData handleData)
+                throw new ArgumentException("Invalid stack walk handle", nameof(pSFIHandle));
+            legacyHandle = handleData.LegacyHandle;
+
+            if (!handleData.IsValid)
+            {
+                ftResult = FrameType.AtEndOfStack;
+            }
+            else
+            {
+                IStackDataFrameHandle handle = handleData.Current;
+                bool initFrameData = false;
+                switch (handle.State)
+                {
+                    case StackWalkState.Frameless:
+                        ftResult = FrameType.ManagedStackFrame;
+                        initFrameData = true;
+                        break;
+                    case StackWalkState.InitialNativeContext:
+                    case StackWalkState.NativeMarker:
+                        TargetCodePointer controlPC = _target.Contracts.StackWalk.GetInstructionPointer(handle);
+                        if (_target.Contracts.Debugger.GetHijackKind(controlPC) != HijackKind.None)
+                        {
+                            ftResult = FrameType.NativeRuntimeUnwindableStackFrame;
+                            initFrameData = true;
+                        }
+                        else
+                        {
+                            ftResult = FrameType.NativeStackFrame;
+                        }
+                        break;
+                    default:
+                        ftResult = FrameType.Invalid;
+                        break;
+                }
+
+                if (initFrameData && pFrameData != 0)
+                {
+#if DEBUG
+                    haveFrameInfo = true;
+                    isInterrupted = handle.IsInterrupted;
+#endif
+                    InitFrameData(handle, ftResult, pFrameData);
+                }
+            }
+
+            *pRetVal = ftResult;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null && legacyHandle != 0)
+        {
+            uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(_target).Size;
+            byte* pLegacyCtx = (byte*)NativeMemory.AlignedAlloc(contextSize, 16);
+            try
+            {
+                new Span<byte>(pLegacyCtx, (int)contextSize).Clear();
+                Debugger_STRData legacyData = default;
+                legacyData.ctx = (nuint)pLegacyCtx;
+                FrameType legacyRetVal = FrameType.Invalid;
+                int hrLocal = _legacy.GetStackWalkCurrentFrameInfo(legacyHandle, (nint)(&legacyData), &legacyRetVal);
+                Debug.ValidateHResult(hr, hrLocal);
+                if (hr == HResults.S_OK)
+                {
+                    Debug.Assert(ftResult == legacyRetVal, $"FrameType mismatch - cDAC: {ftResult}, DAC: {legacyRetVal}");
+                    if (haveFrameInfo && pFrameData != 0)
+                    {
+                        Debugger_STRData* pcdac = (Debugger_STRData*)pFrameData;
+                        Debug.Assert(pcdac->fp == legacyData.fp, $"fp mismatch - cDAC: 0x{pcdac->fp:x}, DAC: 0x{legacyData.fp:x}");
+                        Debug.Assert(pcdac->vmCurrentAppDomainToken == legacyData.vmCurrentAppDomainToken, $"appDomain mismatch - cDAC: 0x{pcdac->vmCurrentAppDomainToken:x}, DAC: 0x{legacyData.vmCurrentAppDomainToken:x}");
+                        Debug.Assert(pcdac->eType == legacyData.eType, $"eType mismatch - cDAC: {pcdac->eType}, DAC: {legacyData.eType}");
+
+                        if (pcdac->ctx != 0)
+                        {
+                            ReadOnlySpan<byte> cctx = new((byte*)pcdac->ctx, (int)contextSize);
+                            ReadOnlySpan<byte> lctx = new(pLegacyCtx, (int)contextSize);
+                            if (!cctx.SequenceEqual(lctx))
+                                Debug.Fail(DescribeContextDiff(cctx, lctx));
+                        }
+
+                        if (ftResult == FrameType.ManagedStackFrame)
+                        {
+                            DebuggerIPCE_STRData_MethodFrame cv = pcdac->v;
+                            DebuggerIPCE_STRData_MethodFrame lv = legacyData.v;
+                            Debug.Assert(cv.mapping == lv.mapping, $"mapping mismatch - cDAC: {cv.mapping}, DAC: {lv.mapping}");
+                            Debug.Assert(cv.fVarArgs == lv.fVarArgs, $"fVarArgs mismatch - cDAC: {cv.fVarArgs}, DAC: {lv.fVarArgs}");
+                            Debug.Assert(cv.fNoMetadata == lv.fNoMetadata, $"fNoMetadata mismatch - cDAC: {cv.fNoMetadata}, DAC: {lv.fNoMetadata}");
+                            Debug.Assert(cv.taAmbientESP == lv.taAmbientESP, $"taAmbientESP mismatch - cDAC: 0x{cv.taAmbientESP:x}, DAC: 0x{lv.taAmbientESP:x}");
+                            Debug.Assert(cv.exactGenericArgsToken == lv.exactGenericArgsToken, $"exactGenericArgsToken mismatch - cDAC: 0x{cv.exactGenericArgsToken:x}, DAC: 0x{lv.exactGenericArgsToken:x}");
+                            Debug.Assert(cv.dwExactGenericArgsTokenIndex == lv.dwExactGenericArgsTokenIndex, $"dwExactGenericArgsTokenIndex mismatch - cDAC: 0x{cv.dwExactGenericArgsTokenIndex:x}, DAC: 0x{lv.dwExactGenericArgsTokenIndex:x}");
+                            Debug.Assert(cv.funcData.funcMetadataToken == lv.funcData.funcMetadataToken, $"funcMetadataToken mismatch - cDAC: 0x{cv.funcData.funcMetadataToken:x}, DAC: 0x{lv.funcData.funcMetadataToken:x}");
+                            Debug.Assert(cv.funcData.vmAssembly == lv.funcData.vmAssembly, $"vmAssembly mismatch - cDAC: 0x{cv.funcData.vmAssembly:x}, DAC: 0x{lv.funcData.vmAssembly:x}");
+                            Debug.Assert(cv.jitFuncData.nativeStartAddressPtr == lv.jitFuncData.nativeStartAddressPtr, $"nativeStartAddressPtr mismatch - cDAC: 0x{cv.jitFuncData.nativeStartAddressPtr:x}, DAC: 0x{lv.jitFuncData.nativeStartAddressPtr:x}");
+                            Debug.Assert(cv.jitFuncData.nativeOffset == lv.jitFuncData.nativeOffset, $"nativeOffset mismatch - cDAC: 0x{cv.jitFuncData.nativeOffset:x}, DAC: 0x{lv.jitFuncData.nativeOffset:x}");
+                            Debug.Assert(cv.jitFuncData.vmNativeCodeMethodDescToken == lv.jitFuncData.vmNativeCodeMethodDescToken, $"vmNativeCodeMethodDescToken mismatch - cDAC: 0x{cv.jitFuncData.vmNativeCodeMethodDescToken:x}, DAC: 0x{lv.jitFuncData.vmNativeCodeMethodDescToken:x}");
+                            Debug.Assert(cv.jitFuncData.fIsFilterFrame == lv.jitFuncData.fIsFilterFrame, $"fIsFilterFrame mismatch - cDAC: {cv.jitFuncData.fIsFilterFrame}, DAC: {lv.jitFuncData.fIsFilterFrame}");
+                            Debug.Assert(cv.jitFuncData.isInstantiatedGeneric == lv.jitFuncData.isInstantiatedGeneric, $"isInstantiatedGeneric mismatch - cDAC: {cv.jitFuncData.isInstantiatedGeneric}, DAC: {lv.jitFuncData.isInstantiatedGeneric}");
+                            Debug.Assert(cv.jitFuncData.fpParentOrSelf == lv.jitFuncData.fpParentOrSelf, $"fpParentOrSelf mismatch - cDAC: 0x{cv.jitFuncData.fpParentOrSelf:x}, DAC: 0x{lv.jitFuncData.fpParentOrSelf:x}");
+                            Debug.Assert(cv.jitFuncData.parentNativeOffset == lv.jitFuncData.parentNativeOffset, $"parentNativeOffset mismatch - cDAC: 0x{cv.jitFuncData.parentNativeOffset:x}, DAC: 0x{lv.jitFuncData.parentNativeOffset:x}");
+                            if (isInterrupted)
+                                Debug.Assert(cv.jitFuncData.justAfterILThrow == lv.jitFuncData.justAfterILThrow, $"justAfterILThrow mismatch - cDAC: {cv.jitFuncData.justAfterILThrow}, DAC: {lv.jitFuncData.justAfterILThrow}");
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                NativeMemory.AlignedFree(pLegacyCtx);
+            }
+        }
+#endif
+        return hr;
+    }
+
+    private byte[] GetCurrentContextBytes(IStackDataFrameHandle handle)
+    {
+        IStackWalk sw = _target.Contracts.StackWalk;
+        byte[] context = sw.GetRawContext(handle);
+
+        // See https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L184
+        RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
+        if (arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64)
+        {
+            IPlatformAgnosticContext stripped = IPlatformAgnosticContext.GetContextForPlatform(_target);
+            stripped.FillFromBuffer(context);
+            stripped.RawContextFlags &= ~0x40u;
+            context = stripped.GetBytes();
+        }
+        return context;
+    }
+
+    private void WriteContext(IStackDataFrameHandle handle, nuint ctxPtr)
+    {
+        if (ctxPtr == 0)
+            return;
+        byte[] context = GetCurrentContextBytes(handle);
+        context.AsSpan().CopyTo(new Span<byte>((byte*)ctxPtr, context.Length));
+    }
+
+    private void InitFrameData(IStackDataFrameHandle handle, FrameType ft, nint pFrameData)
+    {
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+        TargetPointer currentAppDomain = _target.Contracts.Loader.GetAppDomain();
+
+        Debugger_STRData* pDest = (Debugger_STRData*)pFrameData;
+        nuint incomingCtx = pDest->ctx;
+
+        Debugger_STRData data = default;
+        data.ctx = incomingCtx;
+        data.fp = _target.Contracts.StackWalk.GetRuntimeFramePointer(handle).Value;
+        data.vmCurrentAppDomainToken = currentAppDomain.Value;
+        WriteContext(handle, incomingCtx);
+
+        if (ft == FrameType.NativeRuntimeUnwindableStackFrame)
+        {
+            data.eType = Debugger_STRData.EType.cRuntimeNativeFrame;
+        }
+        else
+        {
+            data.eType = Debugger_STRData.EType.cMethodFrame;
+
+            TargetPointer mdPtr = _target.Contracts.StackWalk.GetMethodDescPtr(handle);
+            MethodDescHandle md = rts.GetMethodDescHandle(mdPtr);
+
+            data.v.mapping = (int)CorDebugMappingResult.MAPPING_NO_INFO;
+            data.v.fVarArgs = (byte)(rts.IsVarArg(md) ? 1 : 0);
+            data.v.fNoMetadata = (byte)((rts.IsNoMetadataMethod(md, out _) || rts.IsILStub(md) || IsDiagnosticsHidden(rts.GetAsyncMethodFlags(md)) || rts.IsWrapperStub(md)) ? 1 : 0);
+            GenericContextLoc genericContextLoc = rts.GetGenericContextLoc(md);
+            if (genericContextLoc != GenericContextLoc.None)
+            {
+                try
+                {
+                    data.v.exactGenericArgsToken = _target.Contracts.StackWalk.GetExactGenericArgsToken(handle).Value;
+                }
+                catch (VirtualReadException)
+                {
+
+                }
+                data.v.dwExactGenericArgsTokenIndex = genericContextLoc == GenericContextLoc.ThisPtr ? 0u : unchecked((uint)IlNum.TYPECTXT_ILNUM);
+            }
+            else
+            {
+                data.v.dwExactGenericArgsTokenIndex = unchecked((uint)IlNum.MAX_ILNUM);
+            }
+
+            data.v.funcData.funcMetadataToken = rts.GetMethodToken(md);
+            TargetPointer vmAssembly = ResolveMethodAssembly(rts, md);
+            data.v.funcData.vmAssembly = vmAssembly.Value;
+
+            TargetCodePointer controlPC = _target.Contracts.StackWalk.GetInstructionPointer(handle);
+            ulong nativeOffset = 0;
+            CodeBlockHandle? codeBlockHandle = eman.GetCodeBlockHandle(controlPC);
+            if (codeBlockHandle is CodeBlockHandle cbh)
+            {
+                try
+                {
+                    data.v.jitFuncData.nativeStartAddressPtr = eman.GetStartAddress(cbh).Value;
+                }
+                catch (VirtualReadException)
+                {
+
+                }
+                nativeOffset = eman.GetRelativeOffset(cbh).Value;
+            }
+            data.v.jitFuncData.nativeHotSize = 0;
+            data.v.jitFuncData.nativeStartAddressColdPtr = 0;
+            data.v.jitFuncData.nativeColdSize = 0;
+            data.v.jitFuncData.nativeOffset = nativeOffset;
+            data.v.jitFuncData.vmNativeCodeMethodDescToken = mdPtr.Value;
+            data.v.taAmbientESP = GetAmbientSP(handle, codeBlockHandle, (uint)nativeOffset).Value;
+            data.v.jitFuncData.fIsFilterFrame = codeBlockHandle is CodeBlockHandle codeBlock && eman.IsFilterFunclet(codeBlock)
+                ? Interop.BOOL.TRUE
+                : Interop.BOOL.FALSE;
+            data.v.jitFuncData.fpParentOrSelf = _target.Contracts.StackWalk.GetFuncletRootId(handle, out uint parentNativeOffset).Value;
+            data.v.jitFuncData.parentNativeOffset = parentNativeOffset;
+            data.v.jitFuncData.isInstantiatedGeneric = HasClassOrMethodInstantiation(rts, md) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data.v.jitFuncData.justAfterILThrow = (handle.IsInterrupted && !handle.HasFaulted && nativeOffset != 0) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+
+        *pDest = data;
+    }
+
+    private TargetPointer GetAmbientSP(IStackDataFrameHandle handle, CodeBlockHandle? codeBlockHandle, uint nativeOffset)
+    {
+        if (codeBlockHandle is not CodeBlockHandle cbh)
+            return TargetPointer.Null;
+
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+        eman.GetGCInfo(cbh, out TargetPointer gcInfoAddress, out uint gcVersion);
+        IGCInfo gcInfo = _target.Contracts.GCInfo;
+        TargetCodePointer ip = _target.Contracts.StackWalk.GetInstructionPointer(handle);
+        CodeKind codeKind = eman.GetCodeKind(ip);
+        IGCInfoHandle gcInfoHandle = codeKind == CodeKind.Interpreter
+            ? gcInfo.DecodeInterpreterGCInfo(gcInfoAddress, gcVersion)
+            : gcInfo.DecodePlatformSpecificGCInfo(gcInfoAddress, gcVersion);
+        IStackWalk stackWalk = _target.Contracts.StackWalk;
+        return gcInfo.GetAmbientSP(gcInfoHandle, nativeOffset, stackWalk.GetContextFramePointer(handle), stackWalk.GetStackPointer(handle));
+    }
+
+    private static bool IsDiagnosticsHidden(AsyncMethodFlags flags)
+        => flags.HasFlag(AsyncMethodFlags.Thunk)
+            && (flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk) || !flags.HasFlag(AsyncMethodFlags.IsAsyncVariant));
+
+    private static bool HasClassOrMethodInstantiation(IRuntimeTypeSystem rts, MethodDescHandle md)
+    {
+        try
+        {
+            TargetPointer mtAddr = rts.GetMethodTable(md);
+            ITypeHandle mt = rts.GetTypeHandle(mtAddr);
+            bool hasClassInstantiation = !rts.GetInstantiation(mt).IsEmpty;
+            bool hasMethodInstantiation = rts.IsGenericMethodDefinition(md) || !rts.GetGenericMethodInstantiation(md).IsEmpty;
+            return hasClassInstantiation || hasMethodInstantiation;
+        }
+        catch (VirtualReadException)
+        {
+            return false;
+        }
     }
 
     // Filter used by GetCountOfInternalFrames and EnumerateInternalFrames to decide
@@ -2006,18 +2305,29 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
         funcMetadataToken = rts.GetMethodToken(mdHandle);
+        vmAssembly = ResolveMethodAssembly(rts, mdHandle);
+    }
 
-        TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
-        if (mtPtr == TargetPointer.Null)
-            return;
-        TypeHandle typeHandle = rts.GetTypeHandle(mtPtr);
-        TargetPointer modulePtr = rts.GetModule(typeHandle);
-        if (modulePtr == TargetPointer.Null)
-            return;
+    private TargetPointer ResolveMethodAssembly(IRuntimeTypeSystem rts, MethodDescHandle mdHandle)
+    {
+        try
+        {
+            TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
+            if (mtPtr == TargetPointer.Null)
+                return TargetPointer.Null;
+            ITypeHandle typeHandle = rts.GetTypeHandle(mtPtr);
+            TargetPointer modulePtr = rts.GetModule(typeHandle);
+            if (modulePtr == TargetPointer.Null)
+                return TargetPointer.Null;
 
-        ILoader loader = _target.Contracts.Loader;
-        Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
-        vmAssembly = loader.GetAssembly(moduleHandle);
+            ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+            return loader.GetAssembly(moduleHandle);
+        }
+        catch (VirtualReadException)
+        {
+            return TargetPointer.Null;
+        }
     }
 
     private static CorDebugInternalFrameType ToCorDebugInternalFrameType(Contracts.InternalFrameType frameType)
@@ -2164,7 +2474,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethodDesc));
-            if (rts.IsILStub(md) || rts.IsAsyncThunkMethod(md) || rts.IsWrapperStub(md))
+            if (rts.IsILStub(md) || IsDiagnosticsHidden(rts.GetAsyncMethodFlags(md)) || rts.IsWrapperStub(md))
             {
                 *pRetVal = (int)DynamicMethodType.kDiagnosticHidden;
             }
@@ -2237,7 +2547,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (arch == RuntimeInfoArchitecture.Arm || arch == RuntimeInfoArchitecture.Wasm)
             {
                 Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-                Contracts.TypeHandle th = rts.GetTypeHandle(new TargetPointer(thExact));
+                ITypeHandle th = rts.GetTypeHandle(new TargetPointer(thExact));
                 *pResult = rts.RequiresAlign8(th) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             }
             else
@@ -2395,7 +2705,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            Contracts.TypeHandle th = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
+            ITypeHandle th = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
             *pResult = rts.IsValueType(th) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
@@ -2422,7 +2732,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle typeHandle = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
+            ITypeHandle typeHandle = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
             *pResult = rts.ContainsGenericVariables(typeHandle) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
@@ -2460,12 +2770,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 throw new ArgumentNullException(nameof(fpCallback));
 
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle thExactHandle = rts.GetTypeHandle(thExact);
-            // Native semantics: thApprox is the same TypeHandle that was passed in.
-            if (thExactHandle.IsNull)
-                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
-
-            TypeHandle thApprox = thExactHandle;
+            ITypeHandle thExactHandle = rts.GetTypeHandle(thExact);
+            // Native semantics: thApprox is the same ITypeHandle that was passed in.
+            ITypeHandle thApprox = thExactHandle;
 
             // For Generic classes the object size only comes through with an instantiated type.
             cdacObjectSize = 0;
@@ -2516,11 +2823,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 throw new ArgumentNullException(nameof(fpCallback));
 
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle thExactHandle = rts.GetTypeHandle(vmThExact);
-            TypeHandle thApproxHandle = rts.GetTypeHandle(vmThApprox);
-            if (thApproxHandle.IsNull)
-                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
-
+            ITypeHandle thExactHandle = rts.GetTypeHandle(vmThExact);
+            ITypeHandle thApproxHandle = rts.GetTypeHandle(vmThApprox);
             cdacObjectSize = rts.GetNumInstanceFieldBytes(thApproxHandle);
 
             CollectFieldsForDbi(rts, thExactHandle, thApproxHandle, fpCallback, pUserData, cdacFields);
@@ -2551,15 +2855,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     // then EnC-added instance fields, then EnC-added static fields.
     private void CollectFieldsForDbi(
         IRuntimeTypeSystem rts,
-        TypeHandle thExact,
-        TypeHandle thApprox,
+        ITypeHandle thExact,
+        ITypeHandle thApprox,
         delegate* unmanaged<FieldData*, void*, void> fpCallback,
         nint pUserData,
         List<FieldData>? cdacFields)
     {
         TargetPointer gcStaticsBase = TargetPointer.Null;
         TargetPointer nonGCStaticsBase = TargetPointer.Null;
-        if (!thExact.IsNull && !rts.IsCollectible(thExact))
+        if (!rts.IsCollectible(thExact))
         {
             gcStaticsBase = rts.GetGCStaticsBasePointer(thExact);
             nonGCStaticsBase = rts.GetNonGCStaticsBasePointer(thExact);
@@ -2624,7 +2928,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 TargetPointer enclosingMT = rts.GetMTOfEnclosingClass(fdPtr);
                 if (enclosingMT != TargetPointer.Null)
                 {
-                    TypeHandle enclosingTh = rts.GetTypeHandle(enclosingMT);
+                    ITypeHandle enclosingTh = rts.GetTypeHandle(enclosingMT);
                     isCollectibleStatic = rts.IsCollectible(enclosingTh);
                 }
             }
@@ -2724,7 +3028,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle th = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
+            ITypeHandle th = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
             TypeHandleToExpandedTypeInfoImpl(rts, boxed, th, pTypeInfo);
         }
         catch (System.Exception ex)
@@ -2753,7 +3057,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             TargetPointer mtAddr = _target.Contracts.Object.GetMethodTableAddress(new TargetPointer(addr));
-            TypeHandle th = rts.GetTypeHandle(mtAddr);
+            ITypeHandle th = rts.GetTypeHandle(mtAddr);
             TypeHandleToExpandedTypeInfoImpl(rts, boxed, th, pTypeInfo);
         }
         catch (System.Exception ex)
@@ -2877,11 +3181,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             TargetPointer canonMtPtr = rts.GetWellKnownMethodTable(WellKnownMethodTable.Canon);
             if (canonMtPtr == TargetPointer.Null)
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
-            TypeHandle canonTh = rts.GetTypeHandle(canonMtPtr);
+            ITypeHandle canonTh = rts.GetTypeHandle(canonMtPtr);
 
             TypeDataWalk walk = new TypeDataWalk(_target, rts, canonTh, pTypeData->m_pList, (uint)pTypeData->m_nEntries);
-            TypeHandle th = walk.ReadLoadedTypeHandle();
-            if (th.IsNull)
+            ITypeHandle? th = walk.ReadLoadedTypeHandle();
+            if (th is null)
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
             *pRetVal = th.Address.Value;
         }
@@ -2912,7 +3216,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle th = default;
+            ITypeHandle? th = null;
             CorElementType et = (CorElementType)ReadLittleEndian(pTypeData->elementType);
             switch (et)
             {
@@ -2935,7 +3239,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     th = rts.GetPrimitiveType(et);
                     break;
             }
-            if (th.Address == TargetPointer.Null)
+            if (th is null)
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
             *pVmTypeHandle = th.Address.Value;
         }
@@ -2956,10 +3260,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    private TypeHandle BasicTypeInfoToTypeHandle(IRuntimeTypeSystem rts, DebuggerIPCE_BasicTypeData* pData)
+    private ITypeHandle BasicTypeInfoToTypeHandle(IRuntimeTypeSystem rts, DebuggerIPCE_BasicTypeData* pData)
     {
         CorElementType et = (CorElementType)ReadLittleEndian(pData->elementType);
-        TypeHandle th;
+        ITypeHandle th;
         switch (et)
         {
             case CorElementType.Array:
@@ -2985,7 +3289,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return th;
     }
 
-    private TypeHandle GetClassOrValueTypeHandle(IRuntimeTypeSystem rts, DebuggerIPCE_BasicTypeData* pData)
+    private ITypeHandle GetClassOrValueTypeHandle(IRuntimeTypeSystem rts, DebuggerIPCE_BasicTypeData* pData)
     {
         ulong vmTh = ReadLittleEndian(pData->vmTypeHandle);
         if (vmTh != 0)
@@ -2996,52 +3300,56 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return LookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
     }
 
-    private TypeHandle GetExactArrayTypeHandle(IRuntimeTypeSystem rts, DebuggerIPCE_ExpandedTypeData* pTopLevel, ArgInfoList* pArgInfo)
+    private ITypeHandle GetExactArrayTypeHandle(IRuntimeTypeSystem rts, DebuggerIPCE_ExpandedTypeData* pTopLevel, ArgInfoList* pArgInfo)
     {
         if (pArgInfo->m_nEntries != 1)
             throw new ArgumentException($"Array type with arg count: {pArgInfo->m_nEntries}");
-        TypeHandle elementType = BasicTypeInfoToTypeHandle(rts, &pArgInfo->m_pList[0]);
+        ITypeHandle elementType = BasicTypeInfoToTypeHandle(rts, &pArgInfo->m_pList[0]);
         CorElementType et = (CorElementType)ReadLittleEndian(pTopLevel->elementType);
         int rank = (int)ReadLittleEndian(pTopLevel->ArrayTypeData_arrayRank);
-        return rts.GetConstructedType(elementType, et, rank, ImmutableArray<TypeHandle>.Empty);
+        return rts.GetConstructedType(elementType, et, rank, ImmutableArray<ITypeHandle?>.Empty)
+            ?? throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
     }
 
-    private TypeHandle GetExactPtrOrByRefTypeHandle(IRuntimeTypeSystem rts, DebuggerIPCE_ExpandedTypeData* pTopLevel, ArgInfoList* pArgInfo)
+    private ITypeHandle GetExactPtrOrByRefTypeHandle(IRuntimeTypeSystem rts, DebuggerIPCE_ExpandedTypeData* pTopLevel, ArgInfoList* pArgInfo)
     {
         if (pArgInfo->m_nEntries != 1)
             throw new ArgumentException($"Pointer or byref type with arg count: {pArgInfo->m_nEntries}");
-        TypeHandle referent = BasicTypeInfoToTypeHandle(rts, &pArgInfo->m_pList[0]);
+        ITypeHandle referent = BasicTypeInfoToTypeHandle(rts, &pArgInfo->m_pList[0]);
         CorElementType et = (CorElementType)ReadLittleEndian(pTopLevel->elementType);
-        return rts.GetConstructedType(referent, et, 0, ImmutableArray<TypeHandle>.Empty);
+        return rts.GetConstructedType(referent, et, 0, ImmutableArray<ITypeHandle?>.Empty)
+            ?? throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
     }
 
-    private TypeHandle GetExactClassTypeHandle(IRuntimeTypeSystem rts, DebuggerIPCE_ExpandedTypeData* pTopLevel, ArgInfoList* pArgInfo)
+    private ITypeHandle GetExactClassTypeHandle(IRuntimeTypeSystem rts, DebuggerIPCE_ExpandedTypeData* pTopLevel, ArgInfoList* pArgInfo)
     {
         ulong vmAssembly = ReadLittleEndian(pTopLevel->ClassTypeData_vmAssembly);
         uint metadataToken = ReadLittleEndian(pTopLevel->ClassTypeData_metadataToken);
-        TypeHandle typeConstructor = LookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
+        ITypeHandle typeConstructor = LookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
 
         int argCount = pArgInfo->m_nEntries;
         if (argCount == 0)
             return typeConstructor;
 
-        ImmutableArray<TypeHandle>.Builder builder = ImmutableArray.CreateBuilder<TypeHandle>(argCount);
+        ImmutableArray<ITypeHandle?>.Builder builder = ImmutableArray.CreateBuilder<ITypeHandle?>(argCount);
         for (int i = 0; i < argCount; i++)
             builder.Add(BasicTypeInfoToTypeHandle(rts, &pArgInfo->m_pList[i]));
 
-        return rts.GetConstructedType(typeConstructor, CorElementType.GenericInst, 0, builder.MoveToImmutable());
+        return rts.GetConstructedType(typeConstructor, CorElementType.GenericInst, 0, builder.MoveToImmutable())
+            ?? throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
     }
 
-    private TypeHandle GetExactFnPtrTypeHandle(IRuntimeTypeSystem rts, ArgInfoList* pArgInfo)
+    private ITypeHandle GetExactFnPtrTypeHandle(IRuntimeTypeSystem rts, ArgInfoList* pArgInfo)
     {
         int argCount = pArgInfo->m_nEntries;
-        ImmutableArray<TypeHandle>.Builder builder = ImmutableArray.CreateBuilder<TypeHandle>(argCount);
+        ImmutableArray<ITypeHandle?>.Builder builder = ImmutableArray.CreateBuilder<ITypeHandle?>(argCount);
         for (int i = 0; i < argCount; i++)
             builder.Add(BasicTypeInfoToTypeHandle(rts, &pArgInfo->m_pList[i]));
 
         // Non-default calling conventions are not supported.
         // Currently passes callConv=0 to match native DAC.
-        return rts.GetConstructedType(default, CorElementType.FnPtr, 0, builder.MoveToImmutable());
+        return rts.GetConstructedType(null, CorElementType.FnPtr, 0, builder.MoveToImmutable())
+            ?? throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
     }
 
     public int EnumerateMethodDescParams(ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams,
@@ -3064,13 +3372,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             *pcGenericClassTypeParams = 0;
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle pRepMethod = rts.GetMethodDescHandle(vmMethodDesc);
-            TypeHandle thRepMt = rts.GetTypeHandle(rts.GetMethodTable(pRepMethod));
+            ITypeHandle thRepMt = rts.GetTypeHandle(rts.GetMethodTable(pRepMethod));
 
             // Try to resolve exact instantiations using the generics token. Fall back
             // to canonical when the token is unavailable, the method isn't shared, or any
             // resolution step fails (analogous to native's SanityCheck path).
             Contracts.MethodDescHandle pSpecificMethod = pRepMethod;
-            TypeHandle thSpecificClass = thRepMt;
+            ITypeHandle thSpecificClass = thRepMt;
             bool isExact = false;
 
             GenericContextLoc ctxLoc = rts.GetGenericContextLoc(pRepMethod);
@@ -3099,9 +3407,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     {
                         // AcquiresInstMethodTableFromThis: token is some MethodTable*; it may be a
                         // subclass, so walk the parent chain to find the exact declaring class.
-                        TypeHandle thFromThis = rts.GetTypeHandle(new TargetPointer(genericsToken));
-                        TypeHandle thMatch = GetMethodTableMatchingParentClass(rts, thFromThis, thRepMt);
-                        if (!thMatch.IsNull)
+                        ITypeHandle thFromThis = rts.GetTypeHandle(new TargetPointer(genericsToken));
+                        ITypeHandle? thMatch = GetMethodTableMatchingParentClass(rts, thFromThis, thRepMt);
+                        if (thMatch is not null)
                         {
                             thSpecificClass = thMatch;
                             isExact = true;
@@ -3123,19 +3431,19 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             // Project the specific class onto the method's declaring class to get the class instantiation.
             TargetPointer specMethodMtPtr = rts.GetMethodTable(pSpecificMethod);
-            TypeHandle thSpecMethodMt = rts.GetTypeHandle(specMethodMtPtr);
-            TypeHandle thMatchingParent = GetMethodTableMatchingParentClass(rts, thSpecificClass, thSpecMethodMt);
-            ReadOnlySpan<TypeHandle> classInst = thMatchingParent.IsNull
-                ? ReadOnlySpan<TypeHandle>.Empty
+            ITypeHandle thSpecMethodMt = rts.GetTypeHandle(specMethodMtPtr);
+            ITypeHandle? thMatchingParent = GetMethodTableMatchingParentClass(rts, thSpecificClass, thSpecMethodMt);
+            ReadOnlySpan<ITypeHandle> classInst = thMatchingParent is null
+                ? default
                 : rts.GetInstantiation(thMatchingParent);
-            ReadOnlySpan<TypeHandle> methodInst = rts.GetGenericMethodInstantiation(pSpecificMethod);
+            ReadOnlySpan<ITypeHandle> methodInst = rts.GetGenericMethodInstantiation(pSpecificMethod);
 
             cClassParams = (uint)classInst.Length;
             *pcGenericClassTypeParams = cClassParams;
 
-            // Resolve the System.__Canon TypeHandle for per-parameter fallback.
+            // Resolve the System.__Canon ITypeHandle for per-parameter fallback.
             TargetPointer canonMtPtr = rts.GetWellKnownMethodTable(WellKnownMethodTable.Canon);
-            TypeHandle thCanon = rts.GetTypeHandle(canonMtPtr);
+            ITypeHandle thCanon = rts.GetTypeHandle(canonMtPtr);
 
             DebuggerIPCE_ExpandedTypeData entry;
             for (int i = 0; i < classInst.Length; i++)
@@ -3351,15 +3659,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    internal TypeHandle LookupTypeDefOrRefInAssembly(ulong vmAssembly, uint metadataToken)
+    internal ITypeHandle LookupTypeDefOrRefInAssembly(ulong vmAssembly, uint metadataToken)
     {
-        TypeHandle th = TryLookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
-        if (th.IsNull)
+        ITypeHandle? th = TryLookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
+        if (th is null)
             throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
         return th;
     }
 
-    internal TypeHandle TryLookupTypeDefOrRefInAssembly(ulong vmAssembly, uint metadataToken)
+    internal ITypeHandle? TryLookupTypeDefOrRefInAssembly(ulong vmAssembly, uint metadataToken)
     {
         ILoader loader = _target.Contracts.Loader;
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
@@ -3375,10 +3683,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 mt = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, metadataToken, out _);
                 break;
             default:
-                return default;
+                return null;
         }
         if (mt == TargetPointer.Null)
-            return default;
+            return null;
         return rts.GetTypeHandle(mt);
     }
 
@@ -3395,8 +3703,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 throw new ArgumentNullException(nameof(fpCallback));
 
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle typeHandle = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
-            ReadOnlySpan<TypeHandle> instantiation = rts.GetInstantiation(typeHandle);
+            ITypeHandle typeHandle = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
+            ReadOnlySpan<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
 
             DebuggerIPCE_ExpandedTypeData entry;
             for (int i = 0; i < instantiation.Length; i++)
@@ -3472,12 +3780,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            Contracts.TypeHandle typeHandle = rts.GetPrimitiveType((CorElementType)simpleType);
-
-            if (typeHandle.IsNull)
-            {
-                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
-            }
+            ITypeHandle typeHandle = rts.GetPrimitiveType((CorElementType)simpleType);
 
             Debug.Assert(pMetadataToken != null);
             *pMetadataToken = rts.GetTypeDefToken(typeHandle);
@@ -3528,7 +3831,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     break;
                 }
 
-                TypeHandle typeHandle = rts.GetTypeHandle(parentMT);
+                ITypeHandle typeHandle = rts.GetTypeHandle(parentMT);
                 parentMT = rts.GetParentMethodTable(typeHandle);
             }
         }
@@ -3714,7 +4017,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             TypedByRefInfo info = rts.GetTypedByRefInfo(pTypedByRef);
-            TypeHandle th = rts.GetTypeHandle(info.TypeHandle);
+            ITypeHandle th = rts.GetTypeHandle(info.TypeHandle);
             FillBasicTypeInfo(rts, th, out DebuggerIPCE_BasicTypeData typeData);
             *pTypedByRefType = typeData;
             *pObjRef = info.Data.Value;
@@ -3752,7 +4055,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             TargetPointer mtAddr = _target.Contracts.Object.GetMethodTableAddress(objectAddress);
-            TypeHandle th = rts.GetTypeHandle(mtAddr);
+            ITypeHandle th = rts.GetTypeHandle(mtAddr);
             if (!rts.IsString(th))
             {
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_TARGET_INCONSISTENT)!;
@@ -3791,7 +4094,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             IObject objectContract = _target.Contracts.Object;
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             TargetPointer mt = objectContract.GetMethodTableAddress(objectAddress);
-            TypeHandle th = rts.GetTypeHandle(mt);
+            ITypeHandle th = rts.GetTypeHandle(mt);
             if (rts.IsArray(th, out uint rank))
             {
                 TargetPointer dataStart = objectContract.GetArrayData(objectAddress, out uint numComponents, out TargetPointer boundsStart, out TargetPointer lowerBounds);
@@ -3854,7 +4157,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             *pObjTypeData = default;
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             // verify the object reference is readable and has a valid MethodTable
-            TypeHandle th = default;
+            ITypeHandle? th = null;
             try
             {
                 TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(objectAddress);
@@ -3865,7 +4168,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 *pIsValidRef = Interop.BOOL.FALSE;
             }
 
-            if (*pIsValidRef == Interop.BOOL.TRUE)
+            if (*pIsValidRef == Interop.BOOL.TRUE && th is not null)
             {
                 // objOffsetToVars = offset from the object base to the first field = sizeof(Object) = pointer size
                 *pObjOffsetToVars = (uint)_target.GetTypeInfo(DataType.Object).Size!.Value;
@@ -4180,7 +4483,35 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsThreadSuspendedOrHijacked(vmThread, pResult) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pResult is null)
+                throw new NullReferenceException();
+
+            *pResult = Interop.BOOL.FALSE;
+            Contracts.ThreadState threadState = _target.Contracts.Thread.GetThreadData(vmThread).State;
+            *pResult = (threadState & (Contracts.ThreadState.DebugSyncSuspended | Contracts.ThreadState.Hijacked)) != 0
+                        ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL resultLocal = Interop.BOOL.FALSE;
+            Interop.BOOL* resultLocalPtr = pResult is null ? null : &resultLocal;
+            int hrLocal = _legacy.IsThreadSuspendedOrHijacked(vmThread, resultLocalPtr);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pResult == resultLocal);
+        }
+#endif
+        return hr;
+    }
 
     public int CreateHeapWalk(nuint* pHandle)
     {
@@ -4459,21 +4790,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                 TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(new TargetPointer(obj));
-                TypeHandle th = rts.GetTypeHandle(mt);
-                TargetPointer canonMT = rts.GetCanonicalMethodTable(th);
 
-                if (mt == canonMT)
-                {
-                    isValid = Interop.BOOL.TRUE;
-                }
-                else if (!rts.IsCanonicalMethodTable(th) || rts.IsContinuationWithoutMetadata(th))
-                {
-                    TargetPointer cls = rts.GetClassPointer(th);
-                    TypeHandle canonTh = rts.GetTypeHandle(canonMT);
-                    TargetPointer canonCls = rts.GetClassPointer(canonTh);
-                    if (canonCls == cls)
-                        isValid = Interop.BOOL.TRUE;
-                }
+                // GetTypeHandle validation performs the MethodTable -> EEClass -> MethodTable
+                // round-trip check (the port of MethodTable::ValidateWithPossibleAV), so a
+                // successfully resolved type handle means the object's MethodTable is self-consistent.
+                rts.GetTypeHandle(mt);
+                isValid = Interop.BOOL.TRUE;
             }
             catch (System.Exception)
             {
@@ -4723,7 +5045,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
 
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle typeHandle = rts.GetTypeHandle(new TargetPointer(id));
+            ITypeHandle typeHandle = rts.GetTypeHandle(new TargetPointer(id));
 
             if (rts.IsTypeDesc(typeHandle))
                 throw new ArgumentException("TypeDescs are not supported", nameof(id));
@@ -4735,7 +5057,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             TargetPointer parentMT = rts.GetParentMethodTable(typeHandle);
             if (parentMT != TargetPointer.Null)
             {
-                TypeHandle parentHandle = rts.GetTypeHandle(parentMT);
+                ITypeHandle parentHandle = rts.GetTypeHandle(parentMT);
                 cFields -= rts.GetNumInstanceFields(parentHandle);
             }
 
@@ -4776,7 +5098,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     // Resolve metadata for this field's enclosing class (for offset lookup and
                     // signature decoding context).
                     TargetPointer enclosingMT = rts.GetMTOfEnclosingClass(fieldDescPtr);
-                    TypeHandle enclosingTypeHandle = rts.GetTypeHandle(enclosingMT);
+                    ITypeHandle enclosingTypeHandle = rts.GetTypeHandle(enclosingMT);
                     TargetPointer enclosingModulePtr = rts.GetModule(enclosingTypeHandle);
                     Contracts.ModuleHandle enclosingModuleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(enclosingModulePtr);
                     MetadataReader enclosingMdReader = ecmaMetadataContract.GetMetadata(enclosingModuleHandle)!;
@@ -4788,11 +5110,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     // Resolve the field's type. If we cannot decode the signature (e.g. corrupt
                     // metadata or a type that cannot be loaded), zero out the type id and
                     // fieldType, matching native DAC behavior when LookupFieldTypeHandle returns
-                    // a null TypeHandle.
+                    // a null ITypeHandle.
                     try
                     {
-                        TypeHandle fieldTypeHandle = signature.DecodeFieldSignature(fieldDef.Signature, enclosingModuleHandle, enclosingTypeHandle);
-                        if (fieldTypeHandle.IsNull)
+                        ITypeHandle? fieldTypeHandle = signature.DecodeFieldSignature(fieldDef.Signature, enclosingModuleHandle, enclosingTypeHandle);
+                        if (fieldTypeHandle is null)
                         {
                             corField->id = default;
                             corField->fieldType = 0;
@@ -4809,7 +5131,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                         else
                         {
                             //   - Pointer/FnPtr typedescs report ELEMENT_TYPE_U's MethodTable.
-                            TypeHandle mtHandle = (signatureType == CorElementType.Ptr || signatureType == CorElementType.FnPtr)
+                            ITypeHandle mtHandle = (signatureType == CorElementType.Ptr || signatureType == CorElementType.FnPtr)
                                 ? rts.GetPrimitiveType(CorElementType.U)
                                 : fieldTypeHandle;
 
@@ -4820,7 +5142,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     }
                     catch (System.Exception)
                     {
-                        // Field type could not be resolved - mirror native's null-TypeHandle path.
+                        // Field type could not be resolved - mirror native's null-ITypeHandle path.
                         corField->id = default;
                         corField->fieldType = 0;
                     }
@@ -4874,7 +5196,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
 
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle typeHandle = rts.GetTypeHandle(new TargetPointer((ulong)id));
+            ITypeHandle typeHandle = rts.GetTypeHandle(new TargetPointer((ulong)id));
 
             TargetPointer parentMT = rts.GetParentMethodTable(typeHandle);
             pLayout->parentID.token1 = parentMT.Value;
@@ -4883,7 +5205,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             ushort numInstanceFields = rts.GetNumInstanceFields(typeHandle);
             if (parentMT != TargetPointer.Null)
             {
-                TypeHandle parentHandle = rts.GetTypeHandle(parentMT);
+                ITypeHandle parentHandle = rts.GetTypeHandle(parentMT);
                 numInstanceFields -= rts.GetNumInstanceFields(parentHandle);
             }
             pLayout->numFields = numInstanceFields;
@@ -4930,12 +5252,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (id == 0)
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            TypeHandle arrayOrStringTypeHandle = rts.GetTypeHandle(new TargetPointer(id));
+            ITypeHandle arrayOrStringTypeHandle = rts.GetTypeHandle(new TargetPointer(id));
             uint pointerSize = (uint)_target.PointerSize;
 
             if (rts.IsString(arrayOrStringTypeHandle))
             {
-                TypeHandle charTypeHandle = rts.GetPrimitiveType(CorElementType.Char);
+                ITypeHandle charTypeHandle = rts.GetPrimitiveType(CorElementType.Char);
                 pLayout->componentID.token1 = charTypeHandle.Address.Value;
                 pLayout->componentID.token2 = 0;
                 pLayout->componentType = CorElementType.Char;
@@ -4951,7 +5273,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 if (!rts.IsArray(arrayOrStringTypeHandle, out uint rank))
                     throw Marshal.GetExceptionForHR(HResults.E_INVALIDARG)!;
 
-                TypeHandle componentTypeHandle = rts.GetTypeParam(arrayOrStringTypeHandle);
+                ITypeHandle componentTypeHandle = rts.GetTypeParam(arrayOrStringTypeHandle);
                 CorElementType componentType = rts.IsString(componentTypeHandle) ? CorElementType.String : rts.GetInternalCorElementType(componentTypeHandle);
                 pLayout->componentID.token1 = componentTypeHandle.Address.Value;
                 pLayout->componentID.token2 = 0;
@@ -5412,7 +5734,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             *pMethodDef = rts.GetMethodToken(mdHandle);
 
             TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
-            TypeHandle typeHandle = rts.GetTypeHandle(mtPtr);
+            ITypeHandle typeHandle = rts.GetTypeHandle(mtPtr);
             TargetPointer modulePtr = rts.GetModule(typeHandle);
             Contracts.ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
             *ppFunctionAssembly = _target.Contracts.Loader.GetAssembly(moduleHandle).Value;
@@ -5477,7 +5799,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(vmObject);
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        TypeHandle typeHandle = rts.GetTypeHandle(mt);
+        ITypeHandle typeHandle = rts.GetTypeHandle(mt);
         return rts.IsDelegate(typeHandle);
     }
 
@@ -5647,7 +5969,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethod));
 
-            if (!rts.IsAsyncThunkMethod(md))
+            if (!rts.GetAsyncMethodFlags(md).HasFlag(Contracts.AsyncMethodFlags.Thunk))
             {
                 TargetCodePointer pCode;
                 if (codeAddr != 0)
@@ -5762,7 +6084,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     // Fills a DebuggerIPCE_ExpandedTypeData entry for a single type parameter, falling back to System.__Canon on failure.
-    private void FillExpandedTypeDataWithCanonFallback(IRuntimeTypeSystem rts, TypeHandle typeHandle, TypeHandle thCanon, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    private void FillExpandedTypeDataWithCanonFallback(IRuntimeTypeSystem rts, ITypeHandle typeHandle, ITypeHandle thCanon, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
         try
         {
@@ -5776,7 +6098,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     // True if `a` and `b` share the same non-zero TypeDef RID and Module.
     // Mirrors native MethodTable::HasSameTypeDefAs.
-    private static bool HasSameTypeDefAs(IRuntimeTypeSystem rts, TypeHandle a, TypeHandle b)
+    private static bool HasSameTypeDefAs(IRuntimeTypeSystem rts, ITypeHandle a, ITypeHandle b)
     {
         if (a.Address == b.Address)
             return true;
@@ -5790,11 +6112,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     // Walks the parent chain of `start` and returns the first MethodTable whose TypeDef matches `parent`,
     // or default if no match is found. The walk is bounded by a hard iteration cap to defend against
     // cycles observed in corrupt dumps. Mirrors native MethodTable::GetMethodTableMatchingParentClass.
-    private static TypeHandle GetMethodTableMatchingParentClass(IRuntimeTypeSystem rts, TypeHandle start, TypeHandle parent)
+    private static ITypeHandle? GetMethodTableMatchingParentClass(IRuntimeTypeSystem rts, ITypeHandle start, ITypeHandle parent)
     {
-        TypeHandle current = start;
+        ITypeHandle current = start;
         TargetPointer prev = TargetPointer.Null;
-        for (int i = 0; i < 1000 && !current.IsNull; i++)
+        for (int i = 0; i < 1000; i++)
         {
             if (HasSameTypeDefAs(rts, current, parent))
                 return current;
@@ -5804,11 +6126,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             prev = current.Address;
             current = rts.GetTypeHandle(next);
         }
-        return default;
+        return null;
     }
 
     // Shared core implementation for TypeHandleToExpandedTypeInfo and GetObjectExpandedTypeInfo.
-    private void TypeHandleToExpandedTypeInfoImpl(IRuntimeTypeSystem rts, AreValueTypesBoxed boxed, TypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    private void TypeHandleToExpandedTypeInfoImpl(IRuntimeTypeSystem rts, AreValueTypesBoxed boxed, ITypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
         *pTypeInfo = default;
         CorElementType elementType = GetElementType(rts, typeHandle);
@@ -5855,9 +6177,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     // Determines the CorElementType for a type handle, mapping System.Object and System.String
     // to their specific element types (the runtime's GetSignatureCorElementType returns E_T_CLASS
     // for both Object and String).
-    private static CorElementType GetElementType(IRuntimeTypeSystem rts, TypeHandle typeHandle)
+    private static CorElementType GetElementType(IRuntimeTypeSystem rts, ITypeHandle? typeHandle)
     {
-        if (typeHandle.IsNull)
+        if (typeHandle is null)
             return CorElementType.Void;
 
         if (rts.IsString(typeHandle))
@@ -5871,7 +6193,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     // Mirrors native TypeHandle::UpCastTypeIfNeeded — for continuation types, returns the
     // parent (continuation base) type handle instead.
-    private static TypeHandle UpCastTypeIfNeeded(IRuntimeTypeSystem rts, TypeHandle typeHandle)
+    private static ITypeHandle UpCastTypeIfNeeded(IRuntimeTypeSystem rts, ITypeHandle typeHandle)
     {
         if (rts.IsContinuationWithoutMetadata(typeHandle))
         {
@@ -5884,17 +6206,17 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     // Fills ArrayTypeData for E_T_ARRAY and E_T_SZARRAY.
     // Mirrors native DacDbiInterfaceImpl::GetArrayTypeInfo.
-    private void FillArrayTypeInfo(IRuntimeTypeSystem rts, TypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    private void FillArrayTypeInfo(IRuntimeTypeSystem rts, ITypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
         Debug.Assert(rts.IsArray(typeHandle, out _));
         rts.IsArray(typeHandle, out uint rank);
         WriteLittleEndian(ref pTypeInfo->ArrayTypeData_arrayRank, rank);
-        TypeHandle elemTypeHandle = rts.GetTypeParam(typeHandle);
+        ITypeHandle elemTypeHandle = rts.GetTypeParam(typeHandle);
         FillBasicTypeInfo(rts, elemTypeHandle, out pTypeInfo->ArrayTypeData_arrayTypeArg);
     }
 
     // Fills UnaryTypeData for E_T_PTR and E_T_BYREF (or ClassTypeData if AllBoxed).
-    private void FillPtrTypeInfo(IRuntimeTypeSystem rts, AreValueTypesBoxed boxed, TypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    private void FillPtrTypeInfo(IRuntimeTypeSystem rts, AreValueTypesBoxed boxed, ITypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
         if (boxed == AreValueTypesBoxed.AllBoxed)
         {
@@ -5902,13 +6224,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
         else
         {
-            TypeHandle paramTypeHandle = rts.GetTypeParam(typeHandle);
+            ITypeHandle paramTypeHandle = rts.GetTypeParam(typeHandle);
             FillBasicTypeInfo(rts, paramTypeHandle, out pTypeInfo->UnaryTypeData_unaryTypeArg);
         }
     }
 
     // Fills ClassTypeData for E_T_CLASS and E_T_VALUETYPE.
-    private void FillClassTypeInfo(IRuntimeTypeSystem rts, TypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    private void FillClassTypeInfo(IRuntimeTypeSystem rts, ITypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
         typeHandle = UpCastTypeIfNeeded(rts, typeHandle);
 
@@ -5916,7 +6238,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         Contracts.ILoader loader = _target.Contracts.Loader;
         Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
 
-        ReadOnlySpan<TypeHandle> instantiation = rts.GetInstantiation(typeHandle);
+        ReadOnlySpan<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
         if (instantiation.Length > 0)
         {
             // Generic instantiation — set the type handle so the debugger can fetch type arguments
@@ -5931,7 +6253,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     // Fills NaryTypeData for E_T_FNPTR (or ClassTypeData if AllBoxed).
-    private void FillFnPtrTypeInfo(IRuntimeTypeSystem rts, AreValueTypesBoxed boxed, TypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    private void FillFnPtrTypeInfo(IRuntimeTypeSystem rts, AreValueTypesBoxed boxed, ITypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
         if (boxed == AreValueTypesBoxed.AllBoxed)
         {
@@ -5945,8 +6267,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     // Fills a DebuggerIPCE_BasicTypeData for a type handle — used for array element types
     // and ptr/byref referent types. Exposed as internal so tests can build the ArgInfoList
-    // needed to round-trip a TypeHandle through GetExactTypeHandle.
-    internal void FillBasicTypeInfo(IRuntimeTypeSystem rts, TypeHandle typeHandle, out DebuggerIPCE_BasicTypeData typeInfo)
+    // needed to round-trip an ITypeHandle through GetExactTypeHandle.
+    internal void FillBasicTypeInfo(IRuntimeTypeSystem rts, ITypeHandle typeHandle, out DebuggerIPCE_BasicTypeData typeInfo)
     {
         typeInfo = default;
         CorElementType elementType = GetElementType(rts, typeHandle);
@@ -5972,7 +6294,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 Contracts.ILoader loader = _target.Contracts.Loader;
                 Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
 
-                ReadOnlySpan<TypeHandle> instantiation = rts.GetInstantiation(typeHandle);
+                ReadOnlySpan<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
                 if (instantiation.Length > 0)
                 {
                     WriteLittleEndian(ref typeInfo.vmTypeHandle, typeHandle.Address.Value);

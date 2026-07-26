@@ -81,7 +81,7 @@ namespace System.IO.Compression
             {
                 using (FileStream fs = new FileStream(extractPath, fileStreamOptions))
                 {
-                    using (Stream es = source.Open())
+                    using (Stream es = source.Open(FileAccess.Read))
                         es.CopyTo(fs);
                 }
 
@@ -200,7 +200,10 @@ namespace System.IO.Compression
             // We don't apply UnixFileMode.None because .zip files created on Windows and .zip files created
             // with previous versions of .NET don't include permissions.
             UnixFileMode mode = (UnixFileMode)(source.ExternalAttributes >> 16) & OwnershipPermissions;
-            if (mode != UnixFileMode.None && !OperatingSystem.IsWindows())
+            // The upper byte of VersionMadeBy identifies the host system (platform). System.IO.Compression treats any non-Windows value as Unix on Unix.
+            const byte WindowsMadeByPlatform = 0;
+            byte versionMadeByPlatform = (byte)(source.VersionMadeBy >> 8);
+            if (mode != UnixFileMode.None && !OperatingSystem.IsWindows() && versionMadeByPlatform != WindowsMadeByPlatform)
             {
                 fileStreamOptions.UnixCreateMode = mode;
             }

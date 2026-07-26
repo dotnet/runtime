@@ -23,6 +23,11 @@ namespace System.Runtime.CompilerServices
         ContinueOnThreadPool = 1 << 0,
         ContinueOnCapturedSynchronizationContext = 1 << 1,
         ContinueOnCapturedTaskScheduler = 1 << 2,
+        // This is an await of valueTask.AsTask() (e.g. valueTask.AsTask()
+        // returned from an async version). This flag affects how
+        // ValueTaskSourceContinuation handling computes the flags to pass to
+        // IValueTaskSource.OnCompleted.
+        ValueTaskAdaptedToTask = 1 << 3,
 
         AllContinuationFlags = ContinueOnThreadPool | ContinueOnCapturedSynchronizationContext | ContinueOnCapturedTaskScheduler,
 
@@ -353,6 +358,7 @@ namespace System.Runtime.CompilerServices
         }
 #endif
 
+        [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void Suspend(Task task, ConfigureAwaitOptions options)
@@ -388,6 +394,7 @@ namespace System.Runtime.CompilerServices
             AsyncSuspend(taskCont);
         }
 
+        [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe T Suspend<T>(Task<T> task, ConfigureAwaitOptions options)
@@ -434,6 +441,7 @@ namespace System.Runtime.CompilerServices
         /// awaiting a completion of an underlying Task or ValueTaskSource.
         /// </summary>
         /// <param name="valueTask">ValueTask whose completion we are awaiting.</param>
+        [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void TransparentSuspend(ValueTask valueTask)
@@ -483,6 +491,7 @@ namespace System.Runtime.CompilerServices
             AsyncSuspend(nextCont);
         }
 
+        [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void Suspend(IValueTaskSource source, short token, bool continueOnCapturedContext)
@@ -520,6 +529,7 @@ namespace System.Runtime.CompilerServices
             AsyncSuspend(vtsCont);
         }
 
+        [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe T TransparentSuspend<T>(ValueTask<T> valueTask)
@@ -569,6 +579,7 @@ namespace System.Runtime.CompilerServices
             return default!;
         }
 
+        [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe T Suspend<T>(IValueTaskSource<T> source, short token, bool continueOnCapturedContext)
@@ -611,6 +622,7 @@ namespace System.Runtime.CompilerServices
         /// Used by internal thunks that implement awaiting on Task.
         /// </summary>
         /// <param name="task">Task whose completion we are awaiting.</param>
+        [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void TransparentSuspend(Task task)
@@ -641,6 +653,7 @@ namespace System.Runtime.CompilerServices
         /// Used by internal thunks that implement awaiting on Task.
         /// </summary>
         /// <param name="task">Task whose completion we are awaiting.</param>
+        [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe T TransparentSuspend<T>(Task<T> task)
@@ -832,7 +845,8 @@ namespace System.Runtime.CompilerServices
                         // the direct AsyncHelpers.Await(ValueTask/ValueTask<T>) path.
                         // In either case, that can only happen in nontransparent/user code.
                         Continuation contWithContinueFlags = valueTaskSourceCont;
-                        while ((contWithContinueFlags.Flags & ContinuationFlags.AllContinuationFlags) == 0 && contWithContinueFlags.Next != null)
+                        while ((contWithContinueFlags.Flags & (ContinuationFlags.AllContinuationFlags | ContinuationFlags.ValueTaskAdaptedToTask)) == 0 &&
+                               contWithContinueFlags.Next != null)
                         {
                             contWithContinueFlags = contWithContinueFlags.Next;
                         }
@@ -1589,6 +1603,8 @@ namespace System.Runtime.CompilerServices
             {
                 info.CurrentTask = task;
                 AsyncProfiler.InitInfo(ref info.AsyncProfilerInfo);
+
+                info.AsyncProfilerInfo.DispatcherId = (ulong)task.Id;
 
                 if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
                 {

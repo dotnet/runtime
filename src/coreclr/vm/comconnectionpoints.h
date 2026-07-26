@@ -53,7 +53,7 @@ public:
     // Currently called only from Cooperative mode.
     static ConnectionCookie* CreateConnectionCookie(OBJECTHANDLEHolder hndEventProvObj)
     {
-        CONTRACT (ConnectionCookie*)
+        CONTRACTL
         {
             THROWS;
             GC_NOTRIGGER;
@@ -61,9 +61,9 @@ public:
             INJECT_FAULT(COMPlusThrowOM());
             PRECONDITION(NULL != hndEventProvObj);
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN (new ConnectionCookie(std::move(hndEventProvObj)));
+        return new ConnectionCookie(std::move(hndEventProvObj));
     }
     // Next pointer for SList linkage.
     DPTR(ConnectionCookie)   m_pNext;

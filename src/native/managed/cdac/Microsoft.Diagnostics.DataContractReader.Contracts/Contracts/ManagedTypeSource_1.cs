@@ -14,7 +14,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 {
     private readonly Target _target;
     private readonly Dictionary<string, Target.TypeInfo?> _typeInfoCache = new();
-    private readonly Dictionary<string, TypeHandle> _typeHandleCache = new();
+    private readonly Dictionary<string, ITypeHandle?> _typeHandleCache = new();
     private readonly Dictionary<(string Fqn, string FieldName), TargetPointer> _fieldDescCache = new();
     private bool _inSearch;
 
@@ -25,15 +25,19 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 
     public void Flush(FlushScope scope)
     {
-        // They are safe to retain across FlushScope.ForwardExecution because
-        // ManagedTypeSource_1 only resolves names in System.Private.CoreLib, which
-        // is loaded into the non-collectible default AssemblyLoadContext at runtime
-        // startup and whose ECMA metadata never changes for the process lifetime.
+        // RuntimeTypeSystem invalidates its canonical ITypeHandle instances on every
+        // flush, so this cache must be cleared even when the underlying CoreLib types
+        // remain loaded and immutable.
+        _typeHandleCache.Clear();
+
+        // Type layouts and field descriptors are safe to retain across
+        // FlushScope.ForwardExecution because ManagedTypeSource_1 only resolves names
+        // in System.Private.CoreLib, which is loaded into the non-collectible default
+        // AssemblyLoadContext at runtime startup and whose ECMA metadata never changes.
         if (scope != FlushScope.All)
             return;
 
         _typeInfoCache.Clear();
-        _typeHandleCache.Clear();
         _fieldDescCache.Clear();
     }
 
@@ -81,22 +85,26 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         }
     }
 
-    public TypeHandle GetTypeHandle(string fullyQualifiedName)
+    public ITypeHandle GetTypeHandle(string fullyQualifiedName)
     {
-        if (!TryGetTypeHandle(fullyQualifiedName, out TypeHandle typeHandle))
+        if (!TryGetTypeHandle(fullyQualifiedName, out ITypeHandle? typeHandle))
             throw new InvalidOperationException($"Managed type '{fullyQualifiedName}' is not resolvable through {nameof(ManagedTypeSource_1)}.");
 
         return typeHandle;
     }
 
-    public bool TryGetTypeHandle(string fullyQualifiedName, out TypeHandle typeHandle)
+    public bool TryGetTypeHandle(string fullyQualifiedName, [NotNullWhen(true)] out ITypeHandle? typeHandle)
     {
-        if (_typeHandleCache.TryGetValue(fullyQualifiedName, out typeHandle))
-            return !typeHandle.IsNull;
+        if (_typeHandleCache.TryGetValue(fullyQualifiedName, out ITypeHandle? cached))
+        {
+            typeHandle = cached;
+            return typeHandle is not null;
+        }
 
         if (!TryResolveType(fullyQualifiedName, out typeHandle, out _, out _))
         {
-            _typeHandleCache[fullyQualifiedName] = new TypeHandle(TargetPointer.Null);
+            typeHandle = null;
+            _typeHandleCache[fullyQualifiedName] = null;
             return false;
         }
 
@@ -128,7 +136,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         // Gate on the statics base being allocated for the enclosing class so callers cannot
         // dereference a small offset-from-zero when the class has not been initialized.
         TargetPointer enclosingMT = rts.GetMTOfEnclosingClass(fieldDescAddr);
-        TypeHandle ctx = rts.GetTypeHandle(enclosingMT);
+        ITypeHandle ctx = rts.GetTypeHandle(enclosingMT);
         CorElementType type = rts.GetFieldDescType(fieldDescAddr);
         bool isGC = type is CorElementType.Class or CorElementType.ValueType;
         TargetPointer @base = isGC ? rts.GetGCStaticsBasePointer(ctx) : rts.GetNonGCStaticsBasePointer(ctx);
@@ -163,7 +171,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         // cannot dereference a small offset-from-zero when this thread has not initialized
         // thread-static storage for the type.
         TargetPointer enclosingMT = rts.GetMTOfEnclosingClass(fieldDescAddr);
-        TypeHandle ctx = rts.GetTypeHandle(enclosingMT);
+        ITypeHandle ctx = rts.GetTypeHandle(enclosingMT);
         CorElementType type = rts.GetFieldDescType(fieldDescAddr);
         bool isGC = type is CorElementType.Class or CorElementType.ValueType;
         TargetPointer @base = isGC
@@ -182,7 +190,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         if (_fieldDescCache.TryGetValue(key, out fieldDescAddr))
             return fieldDescAddr != TargetPointer.Null;
 
-        if (!TryResolveType(fullyQualifiedName, out TypeHandle th, out _, out _))
+        if (!TryResolveType(fullyQualifiedName, out ITypeHandle? th, out _, out _))
         {
             fieldDescAddr = TargetPointer.Null;
             _fieldDescCache[key] = TargetPointer.Null;
@@ -198,7 +206,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
     {
         info = default;
 
-        if (!TryResolveType(managedFqName, out TypeHandle th, out MetadataReader? mdReader, out TypeDefinition typeDef))
+        if (!TryResolveType(managedFqName, out ITypeHandle? th, out MetadataReader? mdReader, out TypeDefinition typeDef))
             return false;
 
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
@@ -210,10 +218,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         ulong objectSize = 0;
         if (!isValueType)
         {
-            Target.TypeInfo objType = _target.GetTypeInfo(DataType.Object);
-            objectSize = objType.Size
-                ?? throw new InvalidOperationException(
-                    "The 'Object' data descriptor must have a known Size to compute managed reference-type field offsets.");
+            objectSize = Data.Object.GetSize(_target);
         }
 
         Dictionary<string, Target.FieldInfo> instanceFields = new();
@@ -246,9 +251,9 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         return true;
     }
 
-    private bool TryResolveType(string managedFqName, out TypeHandle th, [NotNullWhen(true)] out MetadataReader? mdReader, out TypeDefinition typeDef)
+    private bool TryResolveType(string managedFqName, [NotNullWhen(true)] out ITypeHandle? th, [NotNullWhen(true)] out MetadataReader? mdReader, out TypeDefinition typeDef)
     {
-        th = new TypeHandle(TargetPointer.Null);
+        th = null;
         typeDef = default;
 
         ILoader loader = _target.Contracts.Loader;
@@ -264,7 +269,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         if (!TryFindTypeDefinition(moduleHandle, managedFqName, out mdReader, out TypeDefinitionHandle typeDefHandle))
             return false;
 
-        // Look up the runtime TypeHandle via the module's TypeDef → MethodTable map.
+        // Look up the cDAC ITypeHandle via the module's TypeDef → MethodTable map.
         int token = MetadataTokens.GetToken((EntityHandle)typeDefHandle);
         TargetPointer typeDefToMethodTable = loader.GetLookupTables(moduleHandle).TypeDefToMethodTable;
         TargetPointer typeHandlePtr = loader.GetModuleLookupMapElement(typeDefToMethodTable, (uint)token, out _);

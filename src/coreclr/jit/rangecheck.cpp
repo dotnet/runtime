@@ -313,7 +313,7 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
 
 bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
 {
-    assert(binop->OperIs(GT_ADD, GT_MUL, GT_LSH));
+    assert(binop->OperIs(GT_ADD));
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
@@ -321,8 +321,8 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     JITDUMP("[RangeCheck::IsBinOpMonotonicallyIncreasing] [%06d], [%06d]\n", Compiler::dspTreeID(op1),
             Compiler::dspTreeID(op2));
 
-    // Check if we have a var + const or var * const.
-    if (binop->OperIs(GT_ADD, GT_MUL) && op2->OperIs(GT_LCL_VAR))
+    // Canonicalize to (lclVar + {lclVar|const}).
+    if (op2->OperIs(GT_LCL_VAR))
     {
         std::swap(op1, op2);
     }
@@ -335,8 +335,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     switch (op2->OperGet())
     {
         case GT_LCL_VAR:
-            // When adding/multiplying/shifting two local variables, we also must ensure that any constant is
-            // non-negative.
+            // When adding two local variables, we also must ensure that any constant is non-negative.
             return IsMonotonicallyIncreasing(op1, true) && IsMonotonicallyIncreasing(op2, true);
 
         case GT_CNS_INT:
@@ -404,7 +403,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
         LclSsaVarDsc* ssaDef = GetSsaDefStore(expr->AsLclVarCommon());
         return (ssaDef != nullptr) && IsMonotonicallyIncreasing(ssaDef->GetDefNode()->Data(), rejectNegativeConst);
     }
-    else if (expr->OperIs(GT_ADD, GT_MUL, GT_LSH))
+    else if (expr->OperIs(GT_ADD))
     {
         return IsBinOpMonotonicallyIncreasing(expr->AsOp());
     }
@@ -2447,7 +2446,7 @@ Range RangeCheck::GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncre
         JITDUMP("[RangeCheck::GetRangeWorker] " FMT_BB " ", block->bbNum);
         m_compiler->gtDispTree(expr);
         Indent(indent);
-        JITDUMP("{\n", expr);
+        JITDUMP("{\n");
     }
 #endif
 
@@ -2462,7 +2461,7 @@ Range RangeCheck::GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncre
         JITDUMP("   %s Range [%06d] => %s\n", (pRange == nullptr) ? "Computed" : "Cached", Compiler::dspTreeID(expr),
                 range.ToString(m_compiler));
         Indent(indent);
-        JITDUMP("}\n", expr);
+        JITDUMP("}\n");
     }
 #endif
     return range;

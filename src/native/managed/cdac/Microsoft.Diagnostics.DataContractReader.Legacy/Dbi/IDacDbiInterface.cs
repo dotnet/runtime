@@ -8,6 +8,20 @@ using CorElementType = Microsoft.Diagnostics.DataContractReader.Contracts.CorEle
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
+[GeneratedComInterface]
+[Guid("FE06DC28-49FB-4636-A4A3-E80DB4AE116C")]
+public unsafe partial interface ICorDebugDataTarget
+{
+    [PreserveSig]
+    int GetPlatform(int* pTargetPlatform);
+
+    [PreserveSig]
+    int ReadVirtual(ulong address, byte* pBuffer, uint bytesRequested, uint* pBytesRead);
+
+    [PreserveSig]
+    int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, byte* pContext);
+}
+
 [StructLayout(LayoutKind.Sequential)]
 public struct COR_TYPEID
 {
@@ -333,6 +347,16 @@ public struct Debugger_STRData
     [FieldOffset(32)] public DebuggerIPCE_STRData_StubFrame stubFrame;
 }
 
+public enum FrameType
+{
+    Invalid = 0,
+    ManagedStackFrame = 1,
+    ExplicitFrame = 2,
+    NativeStackFrame = 3,
+    NativeRuntimeUnwindableStackFrame = 4,
+    AtEndOfStack = 5,
+}
+
 #pragma warning restore CS0649
 
 public enum CorDebugInternalFrameType
@@ -472,6 +496,12 @@ public enum CorDebugGenerationTypes
 public enum IlNum : int
 {
     TYPECTXT_ILNUM = -3,
+    MAX_ILNUM = -6,
+}
+
+public enum CorDebugMappingResult : int
+{
+    MAPPING_NO_INFO = 0x4,
 }
 
 [Flags]
@@ -644,7 +674,7 @@ public unsafe partial interface IDacDbiInterface
     int CheckContext(ulong vmThread, byte* pContext);
 
     [PreserveSig]
-    int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, int* pRetVal);
+    int GetStackWalkCurrentFrameInfo(nuint pSFIHandle, nint pFrameData, FrameType* pRetVal);
 
     [PreserveSig]
     int GetCountOfInternalFrames(ulong vmThread, uint* pRetVal);

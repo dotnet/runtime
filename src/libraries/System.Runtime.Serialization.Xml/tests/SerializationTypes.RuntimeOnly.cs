@@ -2385,6 +2385,90 @@ namespace SerializationTypes
             return obj;
         }
     }
+
+    // XmlSerializer test types: derived class overriding virtual [XmlText] property from base.
+    public class CustomerWithGroupIdRef
+    {
+        [XmlElement("GROUP_IDREF")]
+        public GroupIdRef? GroupIdRef { get; set; }
+    }
+
+    public abstract class GroupIdRefBase<TConcrete> where TConcrete : GroupIdRefBase<TConcrete>
+    {
+        public GroupIdRefBase() { Value = null!; }
+
+        public GroupIdRefBase(string value, string? type)
+        {
+            Type = type;
+            Value = value;
+        }
+
+        [XmlAttribute("type")]
+        public virtual string? Type { get; set; }
+
+        [XmlText]
+        public virtual string Value { get; set; }
+    }
+
+    public class GroupIdRef : GroupIdRefBase<GroupIdRef>
+    {
+        public GroupIdRef() { Value = null!; }
+
+        public GroupIdRef(string value, string? type)
+        {
+            Type = type;
+            Value = value;
+        }
+
+        [XmlAttribute("type")]
+        public override string? Type { get; set; }
+
+        [XmlText]
+        public override string Value { get; set; }
+    }
+
+    // XmlSerializer test types: overriding a virtual [XmlAttribute] property in a derived class.
+    // The base maps 'Code' to an attribute named "aprop".
+    public class GroupWithAttributeBase
+    {
+        [XmlAttribute("aprop")]
+        public virtual string? Code { get; set; }
+    }
+
+    // Valid override: re-applies [XmlAttribute] with the same name. The derived setter records
+    // that it was invoked so deserialization can be shown to assign the overridden property.
+    public class GroupWithSameNameAttributeOverride : GroupWithAttributeBase
+    {
+        private string? _code;
+
+        [XmlIgnore]
+        public bool DerivedSetterInvoked { get; private set; }
+
+        [XmlAttribute("aprop")]
+        public override string? Code
+        {
+            get => _code;
+            set
+            {
+                _code = value;
+                DerivedSetterInvoked = true;
+            }
+        }
+    }
+
+    // Invalid override: the override maps the same property to a different attribute name.
+    public class GroupWithRenamedAttributeOverride : GroupWithAttributeBase
+    {
+        [XmlAttribute("bprop")]
+        public override string? Code { get; set; }
+    }
+
+    // Invalid override: the override omits [XmlAttribute]. XmlSerializer reads member attributes
+    // without inheritance, so the override maps as an element and conflicts with the base attribute.
+    public class GroupWithDroppedAttributeOverride : GroupWithAttributeBase
+    {
+        public override string? Code { get; set; }
+    }
 }
 
 namespace DuplicateTypeNamesTest.ns1

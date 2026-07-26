@@ -75,7 +75,7 @@ namespace Internal.NativeFormat
         Null                        = 0x00,
         TypeHandle                  = 0x01,
         InterfaceCall               = 0x02,
-        // unused                   = 0x03,
+        GvmDispatchCell             = 0x03,
         MethodDictionary            = 0x04,
         StaticData                  = 0x05,
         UnwrapNullableType          = 0x06,

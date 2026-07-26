@@ -30,7 +30,7 @@ struct DefaultLayoutDefaultPacking<T> : ITestStructure
     public byte _byte;
     public T _value;
 
-    public int Size => Unsafe.SizeOf<DefaultLayoutDefaultPacking<T>>();
+    public int Size => sizeof(DefaultLayoutDefaultPacking<T>);
     public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
     public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
@@ -41,7 +41,7 @@ struct SequentialLayoutDefaultPacking<T> : ITestStructure
     public byte _byte;
     public T _value;
 
-    public int Size => Unsafe.SizeOf<SequentialLayoutDefaultPacking<T>>();
+    public int Size => sizeof(SequentialLayoutDefaultPacking<T>);
     public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
     public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
@@ -52,7 +52,7 @@ struct SequentialLayoutMinPacking<T> : ITestStructure
     public byte _byte;
     public T _value;
 
-    public int Size => Unsafe.SizeOf<SequentialLayoutMinPacking<T>>();
+    public int Size => sizeof(SequentialLayoutMinPacking<T>);
     public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
     public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
@@ -63,7 +63,7 @@ struct SequentialLayoutMaxPacking<T> : ITestStructure
     public byte _byte;
     public T _value;
 
-    public int Size => Unsafe.SizeOf<SequentialLayoutMaxPacking<T>>();
+    public int Size => sizeof(SequentialLayoutMaxPacking<T>);
     public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
     public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
@@ -74,7 +74,7 @@ struct AutoLayoutDefaultPacking<T> : ITestStructure
     public byte _byte;
     public T _value;
 
-    public int Size => Unsafe.SizeOf<AutoLayoutDefaultPacking<T>>();
+    public int Size => sizeof(AutoLayoutDefaultPacking<T>);
     public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
     public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
@@ -85,7 +85,7 @@ struct AutoLayoutMinPacking<T> : ITestStructure
     public byte _byte;
     public T _value;
 
-    public int Size => Unsafe.SizeOf<AutoLayoutMinPacking<T>>();
+    public int Size => sizeof(AutoLayoutMinPacking<T>);
     public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
     public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
@@ -96,7 +96,7 @@ struct AutoLayoutMaxPacking<T> : ITestStructure
     public byte _byte;
     public T _value;
 
-    public int Size => Unsafe.SizeOf<AutoLayoutMaxPacking<T>>();
+    public int Size => sizeof(AutoLayoutMaxPacking<T>);
     public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
     public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
@@ -107,7 +107,7 @@ struct ManagedAutoUnmanagedSequentialLayoutMinPacking : ITestStructure
     public Action _value;
     public byte _byte;
 
-    public int Size => Unsafe.SizeOf<ManagedAutoUnmanagedSequentialLayoutMinPacking>();
+    public int Size => sizeof(ManagedAutoUnmanagedSequentialLayoutMinPacking);
     public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
     public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }

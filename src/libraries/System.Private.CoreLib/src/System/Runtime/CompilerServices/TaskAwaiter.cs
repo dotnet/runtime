@@ -205,11 +205,17 @@ namespace System.Runtime.CompilerServices
                     {
                         stateMachineBox = AsyncStateMachineDispatcherInfo.CreateDispatcher(stateMachineBox, flags);
                     }
-                    else if (continueOnCapturedContext)
+                    else
                     {
-                        bool customSyncContext = SynchronizationContext.Current is SynchronizationContext syncCtx && syncCtx.GetType() != typeof(SynchronizationContext);
-                        bool customTaskScheduler = TaskScheduler.InternalCurrent is TaskScheduler scheduler && scheduler != TaskScheduler.Default;
-                        if (customSyncContext || customTaskScheduler)
+                        bool createDispatcher = false;
+                        if (continueOnCapturedContext)
+                        {
+                            bool customSyncContext = SynchronizationContext.Current is SynchronizationContext syncCtx && syncCtx.GetType() != typeof(SynchronizationContext);
+                            bool customTaskScheduler = TaskScheduler.InternalCurrent is TaskScheduler scheduler && scheduler != TaskScheduler.Default;
+                            createDispatcher = customSyncContext || customTaskScheduler;
+                        }
+
+                        if (createDispatcher)
                         {
                             stateMachineBox = AsyncStateMachineDispatcherInfo.CreateDispatcher(stateMachineBox, flags);
                         }
