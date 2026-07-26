@@ -551,6 +551,8 @@ public enum ClrDataSourceType : uint
 
 public enum CLRDataILOffsetMarker : uint
 {
+    CLRDATA_IL_OFFSET_NO_MAPPING = unchecked((uint)-1),
+    CLRDATA_IL_OFFSET_PROLOG = unchecked((uint)-2),
     CLRDATA_IL_OFFSET_EPILOG = unchecked((uint)-3),
 }
 

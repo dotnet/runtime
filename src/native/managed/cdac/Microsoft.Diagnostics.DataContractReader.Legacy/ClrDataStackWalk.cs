@@ -136,7 +136,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     int IXCLRDataStackWalk.GetFrameType(uint* simpleType, uint* detailedType)
         => HResults.E_NOTIMPL;
     int IXCLRDataStackWalk.GetStackSizeSkipped(ulong* stackSizeSkipped)
-        => _legacyImpl is not null ? _legacyImpl.GetStackSizeSkipped(stackSizeSkipped) : HResults.E_NOTIMPL;
+        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetStackSizeSkipped(stackSizeSkipped) : HResults.E_NOTIMPL;
     int IXCLRDataStackWalk.Next()
     {
         int hr;
