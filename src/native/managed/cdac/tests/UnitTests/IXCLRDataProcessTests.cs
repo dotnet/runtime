@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -250,7 +249,8 @@ public unsafe class IXCLRDataProcessTests
             byte[] secondHeader = new byte[FatHeaderSize + FatCodeSize];
             secondHeader[0] = FatFormat;
             secondHeader[1] = FatHeaderDwords << 4;
-            BinaryPrimitives.WriteUInt32LittleEndian(secondHeader.AsSpan(FatCodeSizeOffset), FatCodeSize);
+            int codeSizeByteOffset = FatCodeSizeOffset + (arch.IsLittleEndian ? 0 : sizeof(uint) - 1);
+            secondHeader[codeSizeByteOffset] = FatCodeSize;
             MockMemorySpace.HeapFragment[] memory =
             [
                 new()
@@ -298,8 +298,8 @@ public unsafe class IXCLRDataProcessTests
                 Assert.Equal(FirstToken, token);
                 AssertMethodDefinitionExtent(
                     method,
-                    FirstHeaderAddress,
-                    FirstHeaderAddress + TinyCodeSize - 1);
+                    FirstHeaderAddress + TinyHeaderSize,
+                    FirstHeaderAddress + TinyHeaderSize + TinyCodeSize - 1);
 
                 DacComNullableByRef<IXCLRDataMethodDefinition> endOut = new(isNullRef: false);
                 Assert.Equal(HResults.S_FALSE, process.EnumMethodDefinitionByAddress(&handle, endOut));
@@ -401,9 +401,8 @@ public unsafe class IXCLRDataProcessTests
             Assert.Equal(expectedStart, extent.startAddress);
             Assert.Equal(expectedEnd, extent.endAddress);
             Assert.Equal(0u, extent.enCVersion);
-            Assert.Equal(0u, extent.type);
-            Assert.Equal(0ul, handle);
-            Assert.Equal(HResults.E_INVALIDARG, method.EnumExtent(&handle, &extent));
+            Assert.Equal(CLRDataMethodDefinitionExtentType.CLRDATA_METHDEF_IL, extent.type);
+            Assert.Equal(HResults.S_FALSE, method.EnumExtent(&handle, &extent));
         }
         finally
         {

@@ -67,7 +67,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
         int headerSize = HeaderReaderHelpers.GetHeaderSize(_target, ilHeader);
         codeSize = (uint)HeaderReaderHelpers.GetCodeSize(_target, ilHeader);
-        return headerSize == sizeof(byte) ? ilHeader : ilHeader + (uint)headerSize;
+        return ilHeader + (uint)headerSize;
     }
 
     private static bool HasClassInstantiation(Target target, MethodDescHandle md)
@@ -417,9 +417,6 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         int hr = HResults.S_OK;
         try
         {
-            if (handle is null)
-                throw new ArgumentNullException(nameof(handle));
-
             *handle = 0;
             TargetPointer code = GetILExtentStart(out uint codeSize);
             if (code == TargetPointer.Null)
@@ -434,7 +431,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
                     startAddress = startAddress,
                     endAddress = startAddress + codeSize - 1,
                     enCVersion = 0,
-                    type = 0,
+                    type = CLRDataMethodDefinitionExtentType.CLRDATA_METHDEF_IL,
                 };
                 EnumMethodDefinitionExtents extents = new(extent);
                 *handle = (ulong)((IEnum<ClrDataMethodDefinitionExtent>)extents).GetHandle();
@@ -471,7 +468,6 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     {
         int hr = HResults.S_OK;
         EnumMethodDefinitionExtents? extents = null;
-        bool completed = false;
         try
         {
             if (handle is null)
@@ -489,7 +485,6 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             if (extents.Enumerator.MoveNext())
             {
                 *extent = extents.Enumerator.Current;
-                completed = true;
             }
             else
             {
@@ -518,14 +513,6 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             }
         }
 #endif
-
-        if (completed && extents is not null)
-        {
-            ((IEnum<ClrDataMethodDefinitionExtent>)extents).Dispose();
-            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
-            gcHandle.Free();
-            *handle = 0;
-        }
 
         return hr;
     }
