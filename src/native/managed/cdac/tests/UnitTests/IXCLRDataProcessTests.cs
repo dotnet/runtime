@@ -214,9 +214,10 @@ public unsafe class IXCLRDataProcessTests
         const uint SecondToken = 0x06000003;
         const byte TinyFormat = 0x2;
         const byte FatFormat = 0x3;
-        const byte FatHeaderDwords = 3;
+        const byte FatHeaderDwords = 4;
         const int TinyHeaderSize = sizeof(byte);
         const int TinyCodeSize = 3;
+        const int FatHeaderSize = FatHeaderDwords * sizeof(uint);
         const int FatCodeSize = 2;
         const int FatCodeSizeOffset = 4;
 
@@ -245,7 +246,7 @@ public unsafe class IXCLRDataProcessTests
             Mock<IEcmaMetadata> ecmaMetadata = new(MockBehavior.Strict);
             ecmaMetadata.Setup(e => e.GetMetadata(module)).Returns(reader);
 
-            byte[] secondHeader = new byte[14];
+            byte[] secondHeader = new byte[FatHeaderSize + FatCodeSize];
             secondHeader[0] = FatFormat;
             secondHeader[1] = FatHeaderDwords << 4;
             int codeSizeByteOffset = FatCodeSizeOffset + (arch.IsLittleEndian ? 0 : sizeof(uint) - 1);
@@ -297,8 +298,8 @@ public unsafe class IXCLRDataProcessTests
                 Assert.Equal(FirstToken, token);
                 AssertMethodDefinitionExtent(
                     method,
-                    FirstHeaderAddress + TinyHeaderSize,
-                    FirstHeaderAddress + TinyHeaderSize + TinyCodeSize - 1);
+                    FirstHeaderAddress,
+                    FirstHeaderAddress + TinyCodeSize - 1);
 
                 DacComNullableByRef<IXCLRDataMethodDefinition> endOut = new(isNullRef: false);
                 Assert.Equal(HResults.S_FALSE, process.EnumMethodDefinitionByAddress(&handle, endOut));
@@ -308,7 +309,7 @@ public unsafe class IXCLRDataProcessTests
                 Assert.Equal(HResults.S_OK, process.EndEnumMethodDefinitionsByAddress(handle));
             }
 
-            hr = process.StartEnumMethodDefinitionsByAddress(SecondHeaderAddress + 12, &handle);
+            hr = process.StartEnumMethodDefinitionsByAddress(SecondHeaderAddress + FatHeaderSize, &handle);
             Assert.Equal(HResults.S_OK, hr);
             try
             {
@@ -323,8 +324,8 @@ public unsafe class IXCLRDataProcessTests
                 Assert.Equal(SecondToken, token);
                 AssertMethodDefinitionExtent(
                     method,
-                    SecondHeaderAddress + 12,
-                    SecondHeaderAddress + 12 + FatCodeSize - 1);
+                    SecondHeaderAddress + FatHeaderSize,
+                    SecondHeaderAddress + FatHeaderSize + FatCodeSize - 1);
             }
             finally
             {
@@ -401,7 +402,8 @@ public unsafe class IXCLRDataProcessTests
             Assert.Equal(expectedEnd, extent.endAddress);
             Assert.Equal(0u, extent.enCVersion);
             Assert.Equal(0u, extent.type);
-            Assert.Equal(HResults.S_FALSE, method.EnumExtent(&handle, &extent));
+            Assert.Equal(0ul, handle);
+            Assert.Equal(HResults.E_INVALIDARG, method.EnumExtent(&handle, &extent));
         }
         finally
         {

@@ -54,7 +54,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         return methodDescAddr;
     }
 
-    private TargetPointer GetILCode(out uint codeSize)
+    private TargetPointer GetILExtentStart(out uint codeSize)
     {
         ILoader loader = _target.Contracts.Loader;
         Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_module);
@@ -67,7 +67,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
         int headerSize = HeaderReaderHelpers.GetHeaderSize(_target, ilHeader);
         codeSize = (uint)HeaderReaderHelpers.GetCodeSize(_target, ilHeader);
-        return ilHeader + (uint)headerSize;
+        return headerSize == sizeof(byte) ? ilHeader : ilHeader + (uint)headerSize;
     }
 
     private static bool HasClassInstantiation(Target target, MethodDescHandle md)
@@ -421,7 +421,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
                 throw new ArgumentNullException(nameof(handle));
 
             *handle = 0;
-            TargetPointer code = GetILCode(out uint codeSize);
+            TargetPointer code = GetILExtentStart(out uint codeSize);
             if (code == TargetPointer.Null)
             {
                 hr = HResults.S_FALSE;
@@ -471,6 +471,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     {
         int hr = HResults.S_OK;
         EnumMethodDefinitionExtents? extents = null;
+        bool completed = false;
         try
         {
             if (handle is null)
@@ -488,6 +489,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             if (extents.Enumerator.MoveNext())
             {
                 *extent = extents.Enumerator.Current;
+                completed = true;
             }
             else
             {
@@ -516,6 +518,14 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             }
         }
 #endif
+
+        if (completed && extents is not null)
+        {
+            ((IEnum<ClrDataMethodDefinitionExtent>)extents).Dispose();
+            GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
+            gcHandle.Free();
+            *handle = 0;
+        }
 
         return hr;
     }
@@ -653,7 +663,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             if (addr is null)
                 throw new ArgumentNullException(nameof(addr));
 
-            TargetPointer code = GetILCode(out _);
+            TargetPointer code = GetILExtentStart(out _);
             if (code == TargetPointer.Null)
                 throw new COMException("Method does not have IL.", unchecked((int)0x8000FFFF));
 
