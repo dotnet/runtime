@@ -552,6 +552,10 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             // Regression test: a type whose only member is a non-bindable, read-only collection
             // constructor parameter (no other bindable property) used to make the generator emit a
             // call to an Initialize method that was never generated, producing CS0103 at compile time.
+            //
+            // This only covers the top-level GetCore path. Binding this same shape as a *nested*
+            // member (reached via BindCore/EmitObjectInit) silently produces null instead of the
+            // real value, a separate pre-existing bug tracked in dotnet/runtime#131399.
             string source = $$"""
                 using Microsoft.Extensions.Configuration;
                 using System.Collections.Generic;

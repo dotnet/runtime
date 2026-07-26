@@ -240,6 +240,12 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         /// </summary>
         private static object? LoadAndInvokeMain(Compilation compilation, string resultFieldName)
         {
+            // Every test project shares the same assembly name ("test", from RoslynTestUtils.CreateTestProject),
+            // and AssemblyLoadContext.Default can't unload. If more than one theory case in a run reaches this
+            // method, loading the second image collides with the first under the identical identity. Give each
+            // load a unique name so they can coexist.
+            compilation = compilation.WithAssemblyName($"test_{Guid.NewGuid():N}");
+
             byte[] image = CreateAssemblyImage(compilation);
             Assembly assembly = AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(image));
 
