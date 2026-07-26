@@ -58,6 +58,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.OpenBSD, "libinotify on OpenBSD does not preserve event ordering.")]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
@@ -185,7 +186,6 @@ namespace System.IO.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/96728", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
         private void FileMove_FromWatchedToUnwatched(WatcherChangeTypes eventType)
         {
             string dir_watched = CreateTestDirectory(TestDirectory, "dir_watched");

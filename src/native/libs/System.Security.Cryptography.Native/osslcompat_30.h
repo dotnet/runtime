@@ -25,17 +25,24 @@
 #define OSSL_MAC_PARAM_XOF    "xof"
 #define OSSL_MAC_PARAM_SIZE   "size"
 
-#define OSSL_PKEY_PARAM_GROUP_NAME   "group"
-#define OSSL_PKEY_PARAM_PRIV_KEY     "priv"
-#define OSSL_PKEY_PARAM_EC_PUB_X     "qx"
-#define OSSL_PKEY_PARAM_EC_PUB_Y     "qy"
-#define OSSL_PKEY_PARAM_EC_P         "p"
-#define OSSL_PKEY_PARAM_EC_A         "a"
-#define OSSL_PKEY_PARAM_EC_B         "b"
-#define OSSL_PKEY_PARAM_EC_GENERATOR "generator"
-#define OSSL_PKEY_PARAM_EC_ORDER     "order"
-#define OSSL_PKEY_PARAM_EC_COFACTOR  "cofactor"
-#define OSSL_PKEY_PARAM_EC_SEED      "seed"
+#define OSSL_PKEY_PARAM_GROUP_NAME    "group"
+#define OSSL_PKEY_PARAM_PRIV_KEY      "priv"
+#define OSSL_PKEY_PARAM_EC_PUB_X      "qx"
+#define OSSL_PKEY_PARAM_EC_PUB_Y      "qy"
+#define OSSL_PKEY_PARAM_EC_P          "p"
+#define OSSL_PKEY_PARAM_EC_A          "a"
+#define OSSL_PKEY_PARAM_EC_B          "b"
+#define OSSL_PKEY_PARAM_EC_GENERATOR  "generator"
+#define OSSL_PKEY_PARAM_EC_ORDER      "order"
+#define OSSL_PKEY_PARAM_EC_COFACTOR   "cofactor"
+#define OSSL_PKEY_PARAM_EC_SEED       "seed"
+#define OSSL_PKEY_PARAM_EC_ENCODING   "encoding"
+#define OSSL_PKEY_PARAM_EC_FIELD_TYPE "field-type"
+
+#define OSSL_PKEY_EC_ENCODING_EXPLICIT "explicit"
+#define OSSL_PKEY_EC_ENCODING_GROUP    "named_curve"
+
+#define EVP_PKEY_KEY_PARAMETERS 4
 
 #define OSSL_PKEY_PARAM_RSA_N            "n"
 #define OSSL_PKEY_PARAM_RSA_E            "e"
@@ -52,6 +59,7 @@
 
 typedef struct ossl_lib_ctx_st OSSL_LIB_CTX;
 typedef struct ossl_param_st OSSL_PARAM;
+typedef struct ossl_param_bld_st OSSL_PARAM_BLD;
 typedef struct ossl_provider_st OSSL_PROVIDER;
 typedef struct ossl_store_ctx_st OSSL_STORE_CTX;
 typedef struct ossl_store_info_st OSSL_STORE_INFO;
@@ -98,6 +106,7 @@ EVP_PKEY_CTX *EVP_PKEY_CTX_new_from_name(OSSL_LIB_CTX *libctx, const char *name,
 EVP_PKEY_CTX *EVP_PKEY_CTX_new_from_pkey(OSSL_LIB_CTX *libctx, EVP_PKEY *pkey, const char *propquery);
 int EVP_PKEY_CTX_set_params(EVP_PKEY_CTX *ctx, const OSSL_PARAM *params);
 int EVP_PKEY_CTX_set_rsa_keygen_bits(EVP_PKEY_CTX* ctx, int bits);
+int EVP_PKEY_CTX_set_group_name(EVP_PKEY_CTX *ctx, const char *name);
 int EVP_PKEY_CTX_set_rsa_oaep_md(EVP_PKEY_CTX* ctx, const EVP_MD* md);
 int EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX* ctx, int pad_mode);
 int EVP_PKEY_CTX_set_rsa_pss_saltlen(EVP_PKEY_CTX* ctx, int saltlen);
@@ -119,6 +128,7 @@ int EVP_PKEY_fromdata(EVP_PKEY_CTX *ctx,
                       EVP_PKEY **ppkey,
                       int selection,
                       OSSL_PARAM params[]);
+int EVP_PKEY_generate(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey);
 int EVP_PKEY_get_base_id(const EVP_PKEY* pkey);
 int EVP_PKEY_get_bits(const EVP_PKEY* pkey);
 int EVP_PKEY_get_bn_param(const EVP_PKEY *pkey, const char *key_name, BIGNUM **bn);
@@ -135,11 +145,20 @@ OSSL_PARAM OSSL_PARAM_construct_int32(const char *key, int32_t *buf);
 OSSL_PARAM OSSL_PARAM_construct_octet_string(const char *key, void *buf, size_t bsize);
 OSSL_PARAM OSSL_PARAM_construct_utf8_string(const char *key, char *buf, size_t bsize);
 
+OSSL_PARAM_BLD *OSSL_PARAM_BLD_new(void);
+void OSSL_PARAM_BLD_free(OSSL_PARAM_BLD *bld);
+int OSSL_PARAM_BLD_push_utf8_string(OSSL_PARAM_BLD *bld, const char *key, const char *buf, size_t bsize);
+int OSSL_PARAM_BLD_push_octet_string(OSSL_PARAM_BLD *bld, const char *key, const void *buf, size_t bsize);
+int OSSL_PARAM_BLD_push_BN(OSSL_PARAM_BLD *bld, const char *key, const BIGNUM *bn);
+OSSL_PARAM *OSSL_PARAM_BLD_to_param(OSSL_PARAM_BLD *bld);
+void OSSL_PARAM_free(OSSL_PARAM *params);
+
 void OSSL_LIB_CTX_free(OSSL_LIB_CTX*);
 OSSL_LIB_CTX* OSSL_LIB_CTX_new(void);
 OSSL_PROVIDER* OSSL_PROVIDER_load(OSSL_LIB_CTX*, const char* name);
 OSSL_PROVIDER* OSSL_PROVIDER_try_load(OSSL_LIB_CTX*, const char* name, int retain_fallbacks);
 int OSSL_PROVIDER_unload(OSSL_PROVIDER* prov);
+const OSSL_PROVIDER* EVP_PKEY_get0_provider(const EVP_PKEY* pkey);
 int OSSL_STORE_close(OSSL_STORE_CTX* ctx);
 int OSSL_STORE_eof(OSSL_STORE_CTX* ctx);
 OSSL_STORE_INFO* OSSL_STORE_load(OSSL_STORE_CTX* ctx);

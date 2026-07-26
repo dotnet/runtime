@@ -141,6 +141,31 @@ public class DllImportSearchPathsTest
         Assert.Equal(3, sum);
         Console.WriteLine("NativeLibraryWithDependency.Sum returned {0}", sum);
     }
+
+    [Fact]
+    public static void DllImportResolver_SearchPathMatchesAttributes()
+    {
+        DllImportSearchPath? observedSearchPath = null;
+        NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), (libraryName, assembly, searchPath) =>
+        {
+            if (libraryName == SearchPathPInvoke.LibraryName)
+                observedSearchPath = searchPath;
+
+            return IntPtr.Zero;
+        });
+
+        Assert.Throws<DllNotFoundException>(() => SearchPathPInvoke.AssemblyDirectory());
+        Assert.Equal(DllImportSearchPath.AssemblyDirectory, observedSearchPath);
+
+        Assert.Throws<DllNotFoundException>(() => SearchPathPInvoke.System32());
+        Assert.Equal(DllImportSearchPath.System32, observedSearchPath);
+
+        Assert.Throws<DllNotFoundException>(() => SearchPathPInvoke.LegacyBehavior());
+        Assert.Equal(DllImportSearchPath.LegacyBehavior, observedSearchPath);
+
+        Assert.Throws<DllNotFoundException>(() => SearchPathPInvoke.NoFlags());
+        Assert.Null(observedSearchPath);
+    }
 }
 
 public class NativeLibraryPInvoke
@@ -219,4 +244,25 @@ public class NativeLibraryWithDependency
     [DllImport(nameof(NativeLibraryWithDependency))]
     [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32)]
     static extern int CallDependencySum(int a, int b);
+}
+
+public class SearchPathPInvoke
+{
+    // Routed through the registered DllImportResolver, then fails the built-in search.
+    internal const string LibraryName = "DoesNotExist";
+
+    [DllImport(LibraryName)]
+    public static extern void NoFlags();
+
+    [DllImport(LibraryName)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
+    public static extern void AssemblyDirectory();
+
+    [DllImport(LibraryName)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    public static extern void System32();
+
+    [DllImport(LibraryName)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.LegacyBehavior)]
+    public static extern void LegacyBehavior();
 }

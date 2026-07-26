@@ -1269,7 +1269,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
     {
         // Reduce count modulo 64 to match behavior found in the shift helpers,
         // Compiler::gtFoldExpr and ValueNumStore::EvalOpIntegral.
-        unsigned int count = shiftByOp->AsIntCon()->gtIconVal & 0x3F;
+        unsigned int count = shiftByOp->AsIntCon()->IconValue() & 0x3F;
         Range().Remove(shiftByOp);
 
         if (count == 0)
@@ -1626,7 +1626,7 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
         oper = GT_RSH_LO;
     }
 
-    unsigned count = (unsigned)rotateByOp->AsIntCon()->gtIconVal;
+    unsigned count = (unsigned)rotateByOp->AsIntCon()->IconValue();
     Range().Remove(rotateByOp);
 
     // Make sure the rotate amount is between 0 and 63.
@@ -1869,8 +1869,8 @@ GenTree* DecomposeLongs::DecomposeUMod(LIR::Use& use)
 
     assert(loOp2->OperIs(GT_CNS_INT));
     assert(hiOp2->OperIs(GT_CNS_INT));
-    assert((loOp2->AsIntCon()->gtIconVal >= 2) && (loOp2->AsIntCon()->gtIconVal <= 0x3fffffff));
-    assert(hiOp2->AsIntCon()->gtIconVal == 0);
+    assert((loOp2->AsIntCon()->IconValue() >= 2) && (loOp2->AsIntCon()->IconValue() <= 0x3fffffff));
+    assert(hiOp2->AsIntCon()->IconValue() == 0);
 
     // Get rid of op2's hi part. We don't need it.
     Range().Remove(hiOp2);
@@ -1909,16 +1909,12 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
 
     switch (hwintrinsicTree->GetHWIntrinsicId())
     {
-        case NI_Vector128_GetElement:
-        case NI_Vector256_GetElement:
-        case NI_Vector512_GetElement:
+        case NI_Vector_GetElement:
         {
             return DecomposeHWIntrinsicGetElement(use, hwintrinsicTree);
         }
 
-        case NI_Vector128_ToScalar:
-        case NI_Vector256_ToScalar:
-        case NI_Vector512_ToScalar:
+        case NI_Vector_ToScalar:
         {
             return DecomposeHWIntrinsicToScalar(use, hwintrinsicTree);
         }
@@ -1939,7 +1935,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
 }
 
 //------------------------------------------------------------------------
-// DecomposeHWIntrinsicGetElement: Decompose GT_HWINTRINSIC -- NI_Vector*_GetElement.
+// DecomposeHWIntrinsicGetElement: Decompose GT_HWINTRINSIC -- NI_Vector_GetElement.
 //
 // Decompose a get[i] node on Vector*<long>. For:
 //
@@ -1953,7 +1949,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
 // hi_result = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index_times_two + 1)
 // return: GT_LONG(lo_result, hi_result)
 //
-// This isn't optimal codegen, since NI_Vector*_GetElement sometimes requires
+// This isn't optimal codegen, since NI_Vector_GetElement sometimes requires
 // temps that could be shared, for example.
 //
 // Arguments:
@@ -2048,7 +2044,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
 }
 
 //------------------------------------------------------------------------
-// DecomposeHWIntrinsicToScalar: Decompose GT_HWINTRINSIC -- NI_Vector*_ToScalar.
+// DecomposeHWIntrinsicToScalar: Decompose GT_HWINTRINSIC -- NI_Vector_ToScalar.
 //
 // create:
 //

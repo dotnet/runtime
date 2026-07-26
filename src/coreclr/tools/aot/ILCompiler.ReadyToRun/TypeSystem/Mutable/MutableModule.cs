@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.IO;
 
 using ILCompiler;
+using Internal.Text;
 using System.Runtime.CompilerServices;
 
 namespace Internal.TypeSystem.Ecma
@@ -403,7 +404,7 @@ namespace Internal.TypeSystem.Ecma
             }
             throw new ArgumentException("Invalid UserStringHandle passed to MutableModule.GetObject");
         }
-        public override object GetType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, NotFoundBehavior notFoundBehavior) => throw new NotImplementedException();
+        public override object GetType(Utf8Span nameSpace, Utf8Span name, NotFoundBehavior notFoundBehavior) => throw new NotImplementedException();
         public TypeDesc GetType(EntityHandle handle)
         {
             TypeDesc type = GetObject(handle, NotFoundBehavior.Throw) as TypeDesc;

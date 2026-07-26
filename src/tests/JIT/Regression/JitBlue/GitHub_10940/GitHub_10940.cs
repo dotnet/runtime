@@ -43,6 +43,8 @@ public class Test_GitHub_10940
         }
     }
 
+    public Test_GitHub_10940() { }
+
     Test_GitHub_10940(string s, decimal d)
     {
     }

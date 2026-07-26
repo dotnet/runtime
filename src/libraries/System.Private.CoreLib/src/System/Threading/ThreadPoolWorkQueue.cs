@@ -366,7 +366,10 @@ namespace System.Threading
                                 else
                                 {
                                     // Failed, restore head.
-                                    m_headIndex = head;
+                                    // This write must complete before we return with a missed steal and check if
+                                    // there is a pending thread request because the thread that responds
+                                    // to the request must see the write to not conclude that the queue is empty.
+                                    Interlocked.Exchange(ref m_headIndex, head);
                                 }
                             }
                         }
@@ -653,11 +656,14 @@ namespace System.Threading
         internal static void TransferAllLocalWorkItemsToHighPriorityGlobalQueue()
         {
             // If there's no local queue, there's nothing to transfer.
-            if (ThreadPoolWorkQueueThreadLocals.threadLocals is not ThreadPoolWorkQueueThreadLocals tl)
+            if (ThreadPoolWorkQueueThreadLocals.threadLocals is ThreadPoolWorkQueueThreadLocals tl)
             {
-                return;
+                TransferAllLocalWorkItemsToHighPriorityGlobalQueue(tl);
             }
+        }
 
+        internal static void TransferAllLocalWorkItemsToHighPriorityGlobalQueue(ThreadPoolWorkQueueThreadLocals tl)
+        {
             // Pop each work item off the local queue and push it onto the global. This is a
             // bounded loop as no other thread is allowed to push into this thread's queue.
             ThreadPoolWorkQueue queue = ThreadPool.s_workQueue;
@@ -839,14 +845,17 @@ namespace System.Threading
         // Dispatch (if YieldFromDispatchLoop is true), or performing periodic activities
         public const uint DispatchQuantumMs = 30;
 
+        public enum DispatchResult
+        {
+            Spurious = 0,   // the thread was invited, but there was no work in the queue.
+            Regular = 1,   // this thread did as much work as was available or its quantum expired.
+            ShouldStop = 2, // this thread stopped working early.
+        }
+
         /// <summary>
         /// Dispatches work items to this thread.
         /// </summary>
-        /// <returns>
-        /// <c>true</c> if this thread did as much work as was available or its quantum expired.
-        /// <c>false</c> if this thread stopped working early.
-        /// </returns>
-        internal static bool Dispatch()
+        internal static DispatchResult Dispatch()
         {
             ThreadPoolWorkQueue workQueue = ThreadPool.s_workQueue;
             ThreadPoolWorkQueueThreadLocals tl = workQueue.GetOrCreateThreadLocals();
@@ -862,9 +871,10 @@ namespace System.Threading
                     ThreadPool.EnsureWorkerRequested();
                 }
 
-                // Tell the VM we're returning normally, not because Hill Climbing asked us to return.
-                return true;
+                // The thread found no work.
+                return DispatchResult.Spurious;
             }
+
 
             // The workitems that are currently in the queues could have asked only for one worker.
             // We are going to process a workitem, which may take unknown time or even block.
@@ -921,7 +931,7 @@ namespace System.Threading
                             ThreadPool.EnsureWorkerRequested();
                         }
 
-                        return true;
+                        return DispatchResult.Regular;
                     }
                 }
 
@@ -971,13 +981,14 @@ namespace System.Threading
                     // This thread is being parked and may remain inactive for a while. Transfer any thread-local work items
                     // to ensure that they would not be heavily delayed. Tell the caller that this thread was requested to stop
                     // processing work items.
-                    tl.TransferLocalWork();
+                    ThreadPoolWorkQueue.TransferAllLocalWorkItemsToHighPriorityGlobalQueue(tl);
                     tl.isProcessingHighPriorityWorkItems = false;
                     if (s_assignableWorkItemQueueCount > 0)
                     {
                         workQueue.UnassignWorkItemQueue(tl);
                     }
-                    return false;
+
+                    return DispatchResult.ShouldStop;
                 }
 
                 // Check if the dispatch quantum has expired
@@ -997,7 +1008,7 @@ namespace System.Threading
                     {
                         workQueue.UnassignWorkItemQueue(tl);
                     }
-                    return true;
+                    return DispatchResult.Regular;
                 }
 
                 if (s_assignableWorkItemQueueCount > 0)
@@ -1090,20 +1101,13 @@ namespace System.Threading
             threadLocalCompletionCountNode = ThreadPool.GetOrCreateThreadLocalCompletionCountNode();
         }
 
-        public void TransferLocalWork()
-        {
-            while (workStealingQueue.LocalPop() is object cb)
-            {
-                workQueue.Enqueue(cb, forceGlobal: true);
-            }
-        }
 
         ~ThreadPoolWorkQueueThreadLocals()
         {
             // Transfer any pending workitems into the global queue so that they will be executed by another thread
             if (null != workStealingQueue)
             {
-                TransferLocalWork();
+                ThreadPoolWorkQueue.TransferAllLocalWorkItemsToHighPriorityGlobalQueue(this);
                 ThreadPoolWorkQueue.WorkStealingQueueList.Remove(workStealingQueue);
             }
         }
@@ -1141,7 +1145,8 @@ namespace System.Threading
         private void EnsureWorkerScheduled()
         {
             // Only one worker is requested at a time to mitigate Thundering Herd problem.
-            if (Interlocked.Exchange(ref _hasOutstandingThreadRequest, 1) == 0)
+            if (_hasOutstandingThreadRequest == 0 &&
+                Interlocked.Exchange(ref _hasOutstandingThreadRequest, 1) == 0)
             {
                 // Currently where this type is used, queued work is expected to be processed
                 // at high priority. The implementation could be modified to support different

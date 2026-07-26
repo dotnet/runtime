@@ -24,7 +24,6 @@ namespace System
         public static bool IsUbuntu24OrHigher => IsDistroAndVersionOrHigher("ubuntu", 24);
         public static bool IsDebian => IsDistroAndVersion("debian");
         public static bool IsAlpine => IsDistroAndVersion("alpine");
-        public static bool IsMariner => IsDistroAndVersion("mariner");
         public static bool IsSLES => IsDistroAndVersion("sles");
         public static bool IsTizen => IsDistroAndVersion("tizen");
         public static bool IsFedora => IsDistroAndVersion("fedora");

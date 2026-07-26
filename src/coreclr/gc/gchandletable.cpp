@@ -17,12 +17,17 @@ IGCHandleManager* CreateGCHandleManager()
 
 void GCHandleStore::Uproot()
 {
-    Ref_RemoveHandleTableBucket(&_underlyingBucket);
+    // Dead path. The vtable slot is preserved for GC_INTERFACE_MAJOR_VERSION 5
+    // ABI compatibility with external standalone GC implementations.
+    assert(!"Uproot is not in use");
 }
 
 bool GCHandleStore::ContainsHandle(OBJECTHANDLE handle)
 {
-    return _underlyingBucket.Contains(handle);
+    // Dead path. The vtable slot is preserved for GC_INTERFACE_MAJOR_VERSION 5
+    // ABI compatibility with external standalone GC implementations.
+    assert(!"ContainsHandle is not in use");
+    return false;
 }
 
 // this is the number of handles we allocate in a handle table before we switch to the next table.
@@ -129,25 +134,10 @@ IGCHandleStore* GCHandleManager::GetGlobalHandleStore()
 
 IGCHandleStore* GCHandleManager::CreateHandleStore()
 {
-#ifndef FEATURE_NATIVEAOT
-    GCHandleStore* store = new (nothrow) GCHandleStore();
-    if (store == nullptr)
-    {
-        return nullptr;
-    }
-
-    bool success = ::Ref_InitializeHandleTableBucket(&store->_underlyingBucket);
-    if (!success)
-    {
-        delete store;
-        return nullptr;
-    }
-
-    return store;
-#else
-    assert(!"CreateHandleStore is not implemented when FEATURE_NATIVEAOT is defined!");
+    // Dead path. The vtable slot is preserved for GC_INTERFACE_MAJOR_VERSION 5
+    // ABI compatibility with external standalone GC implementations.
+    assert(!"CreateHandleStore is not in use");
     return nullptr;
-#endif
 }
 
 void GCHandleManager::DestroyHandleStore(IGCHandleStore* store)
@@ -221,4 +211,3 @@ void GCHandleManager::TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t 
 {
     ::Ref_TraceRefCountHandles(callback, param1, param2);
 }
-

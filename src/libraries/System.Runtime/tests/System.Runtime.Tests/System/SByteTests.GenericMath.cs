@@ -1315,6 +1315,24 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CopySignTest()
+        {
+            Assert.Equal((sbyte)0x00, NumberHelper<sbyte>.CopySign((sbyte)0x00, 1));
+            Assert.Equal((sbyte)0x01, NumberHelper<sbyte>.CopySign((sbyte)0x01, 1));
+            Assert.Equal((sbyte)0x7F, NumberHelper<sbyte>.CopySign((sbyte)0x7F, 1));
+            Assert.Equal((sbyte)0x01, NumberHelper<sbyte>.CopySign(unchecked((sbyte)0xFF), 1));
+
+            Assert.Equal((sbyte)0x00, NumberHelper<sbyte>.CopySign((sbyte)0x00, -1));
+            Assert.Equal(unchecked((sbyte)0xFF), NumberHelper<sbyte>.CopySign((sbyte)0x01, -1));
+            Assert.Equal(unchecked((sbyte)0x81), NumberHelper<sbyte>.CopySign((sbyte)0x7F, -1));
+            Assert.Equal(unchecked((sbyte)0x80), NumberHelper<sbyte>.CopySign(unchecked((sbyte)0x80), -1));
+            Assert.Equal(unchecked((sbyte)0xFF), NumberHelper<sbyte>.CopySign(unchecked((sbyte)0xFF), -1));
+
+            Assert.Throws<OverflowException>(() => NumberHelper<sbyte>.CopySign(unchecked((sbyte)0x80), 0));
+            Assert.Throws<OverflowException>(() => NumberHelper<sbyte>.CopySign(unchecked((sbyte)0x80), 1));
+        }
+
+        [Fact]
         public static void MaxTest()
         {
             Assert.Equal((sbyte)0x01, NumberHelper<sbyte>.Max((sbyte)0x00, (sbyte)1));

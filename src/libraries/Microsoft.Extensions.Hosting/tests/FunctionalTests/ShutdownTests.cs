@@ -3,10 +3,10 @@
 
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting.IntegrationTesting;
+using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Test;
 using Xunit;
@@ -21,6 +21,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                                                             "Stopping end\n" +
                                                             "Stopped firing\n" +
                                                             "Stopped end";
+        private static readonly TimeSpan s_shutdownExitTimeout = TimeSpan.FromSeconds(30);
         private readonly ITestOutputHelper _output;
 
         public ShutdownTests(ITestOutputHelper output)
@@ -50,11 +51,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                 builder.AddXunit(_output);
             });
 
-            // TODO refactor deployers to not depend on source code
-            // see https://github.com/dotnet/extensions/issues/1697 and https://github.com/dotnet/aspnetcore/issues/10268
-#pragma warning disable 0618
-            var applicationPath = string.Empty; // disabled for now
-#pragma warning restore 0618
+            string applicationPath = AppContext.BaseDirectory;
 
             Version version = Environment.Version;
             var deploymentParameters = new DeploymentParameters(
@@ -62,24 +59,24 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                 RuntimeFlavor.CoreClr,
                 RuntimeArchitecture.x64)
             {
+                ApplicationName = "Microsoft.Extensions.Hosting.TestApp",
                 TargetFramework = $"net{version.Major}.{version.Minor}",
                 ApplicationType = ApplicationType.Portable,
                 PublishApplicationBeforeDeployment = true,
                 StatusMessagesEnabled = false
             };
+            deploymentParameters.ApplicationPublisher = new ExistingOutputApplicationPublisher(applicationPath);
 
             deploymentParameters.EnvironmentVariables["DOTNET_STARTMECHANIC"] = shutdownMechanic;
 
             using (var deployer = new SelfHostDeployer(deploymentParameters, xunitTestLoggerFactory))
             {
-                var result = await deployer.DeployAsync();
-
                 var started = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
                 var completed = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
                 var output = string.Empty;
-                deployer.HostProcess.OutputDataReceived += (sender, args) =>
+                deployer.OutputReceived += (sender, args) =>
                 {
-                    if (!string.IsNullOrEmpty(args.Data) && args.Data.StartsWith(StartedMessage))
+                    if (!string.IsNullOrEmpty(args.Data) && args.Data.StartsWith(StartedMessage, StringComparison.Ordinal))
                     {
                         output += args.Data.Substring(StartedMessage.Length) + '\n';
                         started.TrySetResult(0);
@@ -95,11 +92,13 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                     }
                 };
 
-                await started.Task.WaitAsync(TimeSpan.FromSeconds(60));
+                await deployer.DeployAsync();
+
+                await started.Task.WaitAsync(TimeSpan.FromSeconds(180));
 
                 SendShutdownSignal(deployer.HostProcess);
 
-                await completed.Task.WaitAsync(TimeSpan.FromSeconds(60));
+                await completed.Task.WaitAsync(TimeSpan.FromSeconds(180));
 
                 WaitForExitOrKill(deployer.HostProcess);
 
@@ -132,27 +131,48 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
 
         private static void SendSIGINT(int processId)
         {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "kill",
-                Arguments = processId.ToString(),
-                RedirectStandardOutput = true,
-                UseShellExecute = false
-            };
-
-            var process = Process.Start(startInfo);
-            WaitForExitOrKill(process);
+            ProcessExtensions.SendSignal(processId, ProcessExtensions.SigIntSignalNumber);
         }
 
         private static void WaitForExitOrKill(Process process)
         {
-            process.WaitForExit(1000);
-            if (!process.HasExited)
+            bool exited = process.WaitForExit((int)s_shutdownExitTimeout.TotalMilliseconds);
+            if (!exited)
             {
-                process.Kill();
+                try
+                {
+                    process.Kill();
+                }
+                catch (InvalidOperationException) { } // Process may have exited between WaitForExit and Kill
+
+                // Wait for the process to actually exit after Kill() before accessing ExitCode
+                if (!process.WaitForExit(5000))
+                {
+                    throw new InvalidOperationException($"Process {process.Id} did not exit within timeout after Kill()");
+                }
             }
 
             Assert.Equal(0, process.ExitCode);
+        }
+
+        private sealed class ExistingOutputApplicationPublisher : ApplicationPublisher
+        {
+            public ExistingOutputApplicationPublisher(string applicationPath)
+                : base(applicationPath)
+            {
+            }
+
+            public override Task<PublishedApplication> Publish(DeploymentParameters deploymentParameters, ILogger logger)
+                => Task.FromResult<PublishedApplication>(new BorrowedPublishedApplication(ApplicationPath, logger));
+
+            // Wraps a path that is borrowed (not owned) from the test output directory.
+            // Dispose is intentionally a no-op to prevent deleting AppContext.BaseDirectory.
+            private sealed class BorrowedPublishedApplication : PublishedApplication
+            {
+                public BorrowedPublishedApplication(string path, ILogger logger) : base(path, logger) { }
+
+                public override void Dispose() { }
+            }
         }
     }
 }

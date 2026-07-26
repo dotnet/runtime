@@ -18,7 +18,7 @@ variables:
   # ===========================================
 
   # macOS on ARM64 (Apple Silicon)
-  # Latest: Sequoia 15 (macOS 26.x kernel)
+  # Latest: Tahoe 26
   - name: helix_macos_arm64_latest
     value: OSX.26.Arm64.Open
 
@@ -47,41 +47,37 @@ variables:
   - name: helix_macos_x64_oldest_internal
     value: OSX.13.Amd64
 
-  # macOS for iOS/tvOS simulator (ARM64)
-  # Latest: Sonoma 14
-  - name: helix_macos_ios_simulator_arm64_latest
+  # macOS host for iOS/tvOS simulator and Mac Catalyst (ARM64)
+  # Tahoe 26
+  - name: helix_macos_ios_simulator_arm64
+    value: OSX.26.Arm64.Open
+
+  - name: helix_macos_ios_simulator_arm64_internal
+    value: OSX.26.Arm64
+
+  # macOS host for iOS/tvOS simulator and Mac Catalyst (x64)
+  # Sequoia 15
+  - name: helix_macos_ios_simulator_x64
     value: OSX.15.Amd64.Open
 
-  # Oldest: Ventura 13
-  - name: helix_macos_ios_simulator_arm64_oldest
-    value: OSX.13.Amd64.Open
+  - name: helix_macos_ios_simulator_x64_internal
+    value: OSX.15.Amd64
 
-  # macOS for iOS/tvOS simulator (x64)
-  # Latest: Sonoma 15
-  - name: helix_macos_ios_simulator_x64_latest
-    value: OSX.15.Amd64.Open
-
-  # Oldest: Ventura 13
-  - name: helix_macos_ios_simulator_x64_oldest
-    value: OSX.13.Amd64.Open
-
-  # macOS for iOS device testing
-  # Latest
-  - name: helix_macos_ios_device_latest
+  # macOS host for iOS device testing
+  # Sequoia 15
+  - name: helix_macos_ios_device
     value: OSX.15.Amd64.Iphone.Open
 
-  # Oldest
-  - name: helix_macos_ios_device_oldest
-    value: OSX.15.Amd64.Iphone.Open
+  - name: helix_macos_ios_device_internal
+    value: OSX.15.Amd64.Iphone
 
-  # macOS for tvOS device testing
-  # Latest
-  - name: helix_macos_tvos_device_latest
+  # macOS host for tvOS device testing
+  # Sequoia 15
+  - name: helix_macos_tvos_device
     value: OSX.15.Amd64.AppleTV.Open
 
-  # Oldest
-  - name: helix_macos_tvos_device_oldest
-    value: OSX.15.Amd64.AppleTV.Open
+  - name: helix_macos_tvos_device_internal
+    value: OSX.15.Amd64.AppleTV
 
   # ===========================================
   # Linux Platforms
@@ -176,39 +172,39 @@ variables:
   - name: helix_linux_musl_x64_latest
     value: (Alpine.edge.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-edge-helix-amd64
 
-  # Oldest: Alpine 3.23
+  # Oldest: Alpine 3.24
   - name: helix_linux_musl_x64_oldest
-    value: (Alpine.323.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-amd64
+    value: (Alpine.324.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64
 
   # Linux musl ARM32
-  # Latest: Alpine 3.23
+  # Latest: Alpine 3.24
   - name: helix_linux_musl_arm32_latest
-    value: (Alpine.323.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
+    value: (Alpine.324.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
 
   - name: helix_linux_musl_arm32_latest_internal
-    value: (Alpine.323.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
+    value: (Alpine.324.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
 
-  # Oldest: Alpine 3.23
+  # Oldest: Alpine 3.24
   - name: helix_linux_musl_arm32_oldest
-    value: (Alpine.323.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
+    value: (Alpine.324.Arm32.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
 
   - name: helix_linux_musl_arm32_oldest_internal
-    value: (Alpine.323.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
+    value: (Alpine.324.Arm32)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm32v7
 
   # Linux musl ARM64
-  # Latest: Alpine 3.23
+  # Latest: Alpine 3.24
   - name: helix_linux_musl_arm64_latest
-    value: (Alpine.323.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
+    value: (Alpine.324.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8
 
   - name: helix_linux_musl_arm64_latest_internal
-    value: (Alpine.323.Arm64)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
+    value: (Alpine.324.Arm64)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8
 
-  # Oldest: Alpine 3.23
+  # Oldest: Alpine 3.24
   - name: helix_linux_musl_arm64_oldest
-    value: (Alpine.323.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
+    value: (Alpine.324.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8
 
   - name: helix_linux_musl_arm64_oldest_internal
-    value: (Alpine.323.Arm64)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
+    value: (Alpine.324.Arm64)AzureLinux.3.Arm64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8
 
   # ===========================================
   # Windows Platforms

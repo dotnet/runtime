@@ -418,6 +418,7 @@ struct cdac_data<TypeVarTypeDesc>
 {
     static constexpr size_t Module = offsetof(TypeVarTypeDesc, m_pModule);
     static constexpr size_t Token = offsetof(TypeVarTypeDesc, m_token);
+    static constexpr size_t Index = offsetof(TypeVarTypeDesc, m_index);
 };
 
 /*************************************************************************/
@@ -472,7 +473,8 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        return PTR_TypeHandle(m_RetAndArgTypes);
+        return dac_cast<PTR_TypeHandle>(
+            PTR_HOST_MEMBER_TADDR(FnPtrTypeDesc, this, m_RetAndArgTypes));
     }
 
     BOOL IsSharedByGenericInstantiations();

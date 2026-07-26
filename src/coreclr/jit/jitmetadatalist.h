@@ -37,6 +37,7 @@ JITMETADATAMETRIC(PhysicallyPromotedFields,              int,              0)
 JITMETADATAMETRIC(LoopsFoundDuringOpts,                  int,              0)
 JITMETADATAMETRIC(LoopsInverted,                         int,              0)
 JITMETADATAMETRIC(LoopsCloned,                           int,              0)
+JITMETADATAMETRIC(LoopsRejectedForInsufficientBenefit,   int,              0)
 JITMETADATAMETRIC(LoopsUnrolled,                         int,              0)
 JITMETADATAMETRIC(LoopAlignmentCandidates,               int,              0)
 JITMETADATAMETRIC(LoopsAligned,                          int,              0)
@@ -94,6 +95,7 @@ JITMETADATAMETRIC(MorphTrackedLocals,                    int,              0)
 JITMETADATAMETRIC(MorphLocals,                           int,              0)
 JITMETADATAMETRIC(EnumeratorGDVProvisionalNoEscape,      int,              0)
 JITMETADATAMETRIC(EnumeratorGDVCanCloneToEnsureNoEscape, int,              0)
+JITMETADATAMETRIC(SuspensionPointsMerged,                int,              0)
 
 #undef JITMETADATA
 #undef JITMETADATAINFO

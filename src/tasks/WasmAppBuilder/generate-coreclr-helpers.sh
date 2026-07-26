@@ -4,14 +4,16 @@ set -euo pipefail
 
 # Default configuration
 configuration="Debug"
-scan_path_override=""
+browser_scan_path_override=""
+wasi_scan_path_override=""
 
 usage="Usage: $0 [options]
 
 Options:
   -c, --configuration <Checked|Debug|Release>  Build configuration (default: Debug)
-  -s, --scan-path <path>                       Override the default scan path
-  -h, --help                                   Show this help message"
+  -s, --scan-path <path>                        Override the default browser scan path
+  -w, --wasi-scan-path <path>                   Override the default wasi scan path
+  -h, --help                                    Show this help message"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -21,7 +23,11 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -s|--scan-path)
-            scan_path_override="$2"
+            browser_scan_path_override="$2"
+            shift 2
+            ;;
+        -w|--wasi-scan-path)
+            wasi_scan_path_override="$2"
             shift 2
             ;;
         -h|--help)
@@ -54,24 +60,42 @@ repo_root="$(cd "$script_dir/../../.." && pwd)"
 echo "Configuration: $configuration"
 echo "Repo root: $repo_root"
 
-if [[ -n "$scan_path_override" ]]; then
-    scan_path="$scan_path_override"
-else
-    scan_path="$repo_root/artifacts/bin/testhost/net11.0-browser-$configuration-wasm/shared/Microsoft.NETCore.App/11.0.0/"
-fi
-
-if [[ ! -d "$scan_path" ]]; then
-    echo "Error: Scan path does not exist: $scan_path"
-    echo "Please build the runtime first using: ./build.sh clr+libs -os browser -c $configuration"
-    exit 1
-fi
-
 cd "$repo_root"
-echo "Scan path: $scan_path"
 
-# Run the generator - invoke directly without building a command string
-echo "Running generator..."
-echo "./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:GeneratorOutputPath=$repo_root/src/coreclr/vm/wasm/ /p:AssembliesScanPath=$scan_path src/tasks/WasmAppBuilder/WasmAppBuilder.csproj"
-./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR "/p:GeneratorOutputPath=$repo_root/src/coreclr/vm/wasm/" "/p:AssembliesScanPath=$scan_path" src/tasks/WasmAppBuilder/WasmAppBuilder.csproj
+# Run the generator for a given target OS.
+# Arguments: <target_os> <scan_path> <output_dir>
+run_generator() {
+    local target_os="$1"
+    local scan_path="$2"
+    local output_dir="$3"
+
+    if [[ ! -d "$scan_path" ]]; then
+        echo "Error: Scan path for $target_os does not exist: $scan_path"
+        echo "Please build the runtime first using: ./build.sh clr+libs -os $target_os -c $configuration"
+        exit 1
+    fi
+
+    echo "[$target_os] Scan path: $scan_path"
+    echo "[$target_os] Output path: $output_dir"
+    echo "Running generator for $target_os..."
+    echo "./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:TargetOS=$target_os /p:GeneratorOutputPath=$output_dir /p:AssembliesScanPath=$scan_path src/tasks/WasmAppBuilder/WasmAppBuilder.csproj"
+    ./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR "/p:TargetOS=$target_os" "/p:GeneratorOutputPath=$output_dir" "/p:AssembliesScanPath=$scan_path" src/tasks/WasmAppBuilder/WasmAppBuilder.csproj
+}
+
+# Resolve scan paths (allow overrides).
+if [[ -n "$browser_scan_path_override" ]]; then
+    browser_scan_path="$browser_scan_path_override"
+else
+    browser_scan_path="$repo_root/artifacts/bin/testhost/net11.0-browser-$configuration-wasm/shared/Microsoft.NETCore.App/11.0.0/"
+fi
+
+if [[ -n "$wasi_scan_path_override" ]]; then
+    wasi_scan_path="$wasi_scan_path_override"
+else
+    wasi_scan_path="$repo_root/artifacts/bin/testhost/net11.0-wasi-$configuration-wasm/shared/Microsoft.NETCore.App/11.0.0/"
+fi
+
+run_generator "browser" "$browser_scan_path" "$repo_root/src/coreclr/vm/wasm/browser/"
+run_generator "wasi" "$wasi_scan_path" "$repo_root/src/coreclr/vm/wasm/wasi/"
 
 echo "Done!"

@@ -389,12 +389,23 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
         return false;
     }
 
-    // Add the DSO link_map entries
-    for (struct link_map* linkMapAddr = debugEntry.r_map; linkMapAddr != nullptr;)
+    // Add the DSO link_map entries.
+    //
+    // Detect cycles using Brent's algorithm (variant of Floyd's cycle-finding algorithm)
+    struct link_map* walker = debugEntry.r_map;
+    struct link_map* checkpoint = nullptr;
+    int power = 1;
+    int lam = 0;
+    while (walker != nullptr)
     {
+        if (checkpoint != nullptr && walker == checkpoint)
+        {
+            Trace("ERROR: EnumerateLinkMapEntries detected cycle in link_map chain; aborting\n");
+            return false;
+        }
         struct link_map map;
-        if (!ReadMemory(linkMapAddr, &map, sizeof(map))) {
-            Trace("ERROR: ReadMemory(%p, %" PRIx ") link_map FAILED\n", linkMapAddr, sizeof(map));
+        if (!ReadMemory(walker, &map, sizeof(map))) {
+            Trace("ERROR: ReadMemory(%p, %" PRIx ") link_map FAILED\n", walker, sizeof(map));
             return false;
         }
         // Read the module's name and make sure the memory is added to the core dump
@@ -414,12 +425,19 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
                 moduleName.append(1, ch);
             }
         }
-        Trace("\nDSO: link_map entry %p l_ld %p l_addr (Ehdr) %p l_name %p %s\n", linkMapAddr, map.l_ld, map.l_addr, map.l_name, moduleName.c_str());
+        Trace("\nDSO: link_map entry %p l_ld %p l_addr (Ehdr) %p l_name %p %s\n", walker, map.l_ld, map.l_addr, map.l_name, moduleName.c_str());
 
         // Call the derived class for each module
         VisitModule(map.l_addr, moduleName);
 
-        linkMapAddr = map.l_next;
+        if (lam == power)
+        {
+            checkpoint = walker;
+            power *= 2;
+            lam = 0;
+        }
+        walker = map.l_next;
+        lam++;
     }
 
     return true;

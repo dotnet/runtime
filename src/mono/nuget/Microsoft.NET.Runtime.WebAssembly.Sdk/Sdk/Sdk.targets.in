@@ -13,5 +13,6 @@
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.props" />
-  <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.targets" Condition="'$(UseMonoRuntime)' != 'false'" />
+  <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.CoreCLR.targets" Condition="'$(UseMonoRuntime)' == 'false'" />
 </Project>

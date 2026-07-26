@@ -197,6 +197,79 @@ private:
         virtual void         FixupRetExpr()               = 0;
 
         //------------------------------------------------------------------------
+        // SplitCall: spill all side effect uses of the call and the useToSpill into temps.
+        //
+        // Parameters
+        //   block - the block to insert the spill statements into.
+        //   useToSpill - the use of the call to spill into a temp.
+        //
+        void SplitCall(BasicBlock* block, GenTree** useToSpill)
+        {
+            // Find last arg with a side effect. All args with any effect
+            // before that will need to be spilled.
+            GenTree** lastSideEffectUse = nullptr;
+            for (GenTree** use : m_origCall->UseEdges())
+            {
+                if (((*use)->gtFlags & GTF_SIDE_EFFECT) != 0)
+                {
+                    lastSideEffectUse = use;
+                }
+            }
+
+            if (lastSideEffectUse != nullptr)
+            {
+                for (GenTree** use : m_origCall->UseEdges())
+                {
+                    GenTree* node = *use;
+                    if (((node->gtFlags & GTF_ALL_EFFECT) != 0) || m_compiler->gtHasLocalsWithAddrOp(node))
+                    {
+                        SpillUseToTemp(block, use);
+                    }
+
+                    if (use == lastSideEffectUse)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            // We spill the use if it is complex, regardless of side effects.
+            if (!(*useToSpill)->IsLocal())
+            {
+                SpillUseToTemp(block, useToSpill);
+            }
+        }
+
+        //------------------------------------------------------------------------
+        // SpillUseToTemp: spill an argument into a temp.
+        //
+        // Parameters
+        //   arg - The arg to create a temp and local store for.
+        //
+        void SpillUseToTemp(BasicBlock* block, GenTree** use)
+        {
+            unsigned       tmpNum = m_compiler->lvaGrabTemp(true DEBUGARG("indirect call transform spill temp"));
+            GenTree* const node   = *use;
+            GenTree*       store  = m_compiler->gtNewTempStore(tmpNum, node);
+
+            if (node->TypeIs(TYP_REF))
+            {
+                bool                 isExact   = false;
+                bool                 isNonNull = false;
+                CORINFO_CLASS_HANDLE cls       = m_compiler->gtGetClassHandle(node, &isExact, &isNonNull);
+                if (cls != NO_CLASS_HANDLE)
+                {
+                    m_compiler->lvaSetClass(tmpNum, cls, isExact);
+                }
+            }
+
+            Statement* storeStmt = m_compiler->fgNewStmtFromTree(store, m_stmt->GetDebugInfo());
+            m_compiler->fgInsertStmtAtEnd(block, storeStmt);
+
+            *use = m_compiler->gtNewLclVarNode(tmpNum);
+        }
+
+        //------------------------------------------------------------------------
         // CreateRemainder: split current block at the call stmt and
         // insert statements after the call into m_remainderBlock.
         //
@@ -378,6 +451,12 @@ private:
         virtual void CreateCheck(uint8_t checkIdx)
         {
             assert(checkIdx == 0);
+
+            if (m_origCall->IsGenericVirtual(m_compiler))
+            {
+                SplitCall(m_currBlock, &m_origCall->gtControlExpr);
+                m_fptrAddress = m_origCall->gtControlExpr;
+            }
 
             m_checkBlock               = CreateAndInsertBasicBlock(BBJ_ALWAYS, m_currBlock, m_currBlock);
             GenTree*   fatPointerMask  = new (m_compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
@@ -630,41 +709,8 @@ private:
                 prevCheckBlock->SetCond(prevCheckCheckEdge, prevCheckThenEdge);
             }
 
-            // Find last arg with a side effect. All args with any effect
-            // before that will need to be spilled.
-            CallArg* lastSideEffArg = nullptr;
-            for (CallArg& arg : m_origCall->gtArgs.Args())
-            {
-                if ((arg.GetNode()->gtFlags & GTF_SIDE_EFFECT) != 0)
-                {
-                    lastSideEffArg = &arg;
-                }
-            }
-
-            if (lastSideEffArg != nullptr)
-            {
-                for (CallArg& arg : m_origCall->gtArgs.Args())
-                {
-                    GenTree* argNode = arg.GetNode();
-                    if (((argNode->gtFlags & GTF_ALL_EFFECT) != 0) || m_compiler->gtHasLocalsWithAddrOp(argNode))
-                    {
-                        SpillArgToTempBeforeGuard(&arg);
-                    }
-
-                    if (&arg == lastSideEffArg)
-                    {
-                        break;
-                    }
-                }
-            }
-
             CallArg* thisArg = m_origCall->gtArgs.GetThisArg();
-            // We spill 'this' if it is complex, regardless of side effects. It
-            // is going to be used multiple times due to the guard.
-            if (!thisArg->GetNode()->IsLocal())
-            {
-                SpillArgToTempBeforeGuard(thisArg);
-            }
+            SplitCall(m_checkBlock, &thisArg->EarlyNodeRef());
 
             GenTree* thisTree = m_compiler->gtCloneExpr(thisArg->GetNode());
 
@@ -741,35 +787,6 @@ private:
             GenTree*   jmpTree = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, compare);
             Statement* jmpStmt = m_compiler->fgNewStmtFromTree(jmpTree, m_stmt->GetDebugInfo());
             m_compiler->fgInsertStmtAtEnd(m_checkBlock, jmpStmt);
-        }
-
-        //------------------------------------------------------------------------
-        // SpillArgToTempBeforeGuard: spill an argument into a temp in the guard/check block.
-        //
-        // Parameters
-        //   arg - The arg to create a temp and local store for.
-        //
-        void SpillArgToTempBeforeGuard(CallArg* arg)
-        {
-            unsigned       tmpNum  = m_compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
-            GenTree* const argNode = arg->GetNode();
-            GenTree*       store   = m_compiler->gtNewTempStore(tmpNum, argNode);
-
-            if (argNode->TypeIs(TYP_REF))
-            {
-                bool                 isExact   = false;
-                bool                 isNonNull = false;
-                CORINFO_CLASS_HANDLE cls       = m_compiler->gtGetClassHandle(argNode, &isExact, &isNonNull);
-                if (cls != NO_CLASS_HANDLE)
-                {
-                    m_compiler->lvaSetClass(tmpNum, cls, isExact);
-                }
-            }
-
-            Statement* storeStmt = m_compiler->fgNewStmtFromTree(store, m_stmt->GetDebugInfo());
-            m_compiler->fgInsertStmtAtEnd(m_checkBlock, storeStmt);
-
-            arg->SetEarlyNode(m_compiler->gtNewLclVarNode(tmpNum));
         }
 
         //------------------------------------------------------------------------
@@ -960,81 +977,54 @@ private:
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", m_compiler->dspTreeID(call), block->bbNum);
 
-            CORINFO_METHOD_HANDLE  methodHnd = inlineInfo->guardedMethodHandle;
-            CORINFO_CONTEXT_HANDLE context   = inlineInfo->exactContextHandle;
-            if (clsHnd != NO_CLASS_HANDLE)
-            {
-                // Pass the original method handle and original context handle to the devirtualizer if needed.
-                //
-                if (inlineInfo->needsMethodContext)
-                {
-                    methodHnd = inlineInfo->originalMethodHandle;
-                    context   = inlineInfo->originalContextHandle;
-                }
+            CORINFO_METHOD_HANDLE methodHnd = inlineInfo->guardedMethodHandle;
 
-                // Then invoke impDevirtualizeCall to actually transform the call for us,
-                // given the original (base) method and the exact guarded class. It should succeed.
-                //
-                unsigned   methodFlags            = m_compiler->info.compCompHnd->getMethodAttribs(methodHnd);
-                const bool isLateDevirtualization = true;
-                const bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
-                CORINFO_CONTEXT_HANDLE contextInput = context;
-                m_compiler->impDevirtualizeCall(call, nullptr, &methodHnd, &methodFlags, &contextInput, &context,
-                                                isLateDevirtualization, explicitTailCall);
-            }
-            else
-            {
-                // Otherwise we know the exact method already, so just change
-                // the call as necessary here.
-                call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
-                call->gtCallMethHnd = methodHnd = inlineInfo->guardedMethodHandle;
-                call->gtCallType                = CT_USER_FUNC;
-                INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
-                call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
-                // TODO-GDV: To support R2R we need to get the entry point
-                // here. We should unify with the tail of impDevirtualizeCall.
+            bool objClassIsExact;
+            bool objIsNonNull;
+            // class-GDV uses the exact temp on the cloned call, method/delegate GDV uses newThisObj
+            GenTree* thisObj = (clsHnd != NO_CLASS_HANDLE) ? call->gtArgs.GetThisArg()->GetEarlyNode() : newThisObj;
+            m_compiler->gtGetClassHandle(thisObj, &objClassIsExact, &objIsNonNull);
 
-                if (m_origCall->IsVirtual())
-                {
-                    // Virtual calls include an implicit null check, which we may
-                    // now need to make explicit.
-                    bool isExact;
-                    bool objIsNonNull;
-                    m_compiler->gtGetClassHandle(newThisObj, &isExact, &objIsNonNull);
+            unsigned derivedMethodAttribs = m_compiler->info.compCompHnd->getMethodAttribs(methodHnd);
 
-                    if (!objIsNonNull)
-                    {
-                        call->gtFlags |= GTF_CALL_NULLCHECK;
-                    }
-                }
+            // Transform the already-resolved GDV target into a direct call.
+            //
+            CORINFO_CONTEXT_HANDLE context      = nullptr;
+            CORINFO_CONTEXT_HANDLE exactContext = inlineInfo->exactContextHandle;
 
-                context = MAKE_METHODCONTEXT(methodHnd);
-            }
+            Compiler::DevirtualizedCallInfo dcInfo;
+            dcInfo.tokenLookupContext = exactContext;
+
+            CORINFO_SIG_INFO derivedSig;
+            m_compiler->info.compCompHnd->getMethodSig(methodHnd, &derivedSig);
+            dcInfo.pMethSig = &derivedSig;
+
+            // only for class-based GDV in R2R
+            dcInfo.pResolvedToken = (clsHnd != NO_CLASS_HANDLE) ? &inlineInfo->guardedMethodResolvedToken : nullptr;
+            dcInfo.pUnboxedResolvedToken =
+                (clsHnd != NO_CLASS_HANDLE) ? &inlineInfo->guardedMethodUnboxedResolvedToken : nullptr;
+
+            dcInfo.objIsNonNull         = objIsNonNull;
+            dcInfo.hadImplicitNullCheck = m_origCall->IsVirtual();
+            dcInfo.isDelegateCall       = m_origCall->IsDelegateInvoke();
+            dcInfo.isExplicitTailCall   = (call->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
+            dcInfo.objClassIsExact      = (clsHnd != NO_CLASS_HANDLE) && objClassIsExact;
+            dcInfo.objClassIsFinal      = false;
+            dcInfo.ilOffset             = inlineInfo->ilOffset;
+            dcInfo.pInstParamLookup     = &inlineInfo->guardedMethodInstParamLookup;
+
+            m_compiler->impTransformDevirtualizedCall(call, &methodHnd, &derivedMethodAttribs, &dcInfo, block,
+                                                      &context COMMA_INDEBUG(inlineInfo->originalMethodHandle));
 
             // We know this call can devirtualize or we would not have set up GDV here.
             // So above code should succeed in devirtualizing.
             //
             assert(!call->IsVirtual() && !call->IsDelegateInvoke());
 
-            // If this call is in tail position, see if we've created a recursive tail call
-            // candidate...
-            //
-            if (call->CanTailCall() && m_compiler->gtIsRecursiveCall(methodHnd))
-            {
-                m_compiler->setMethodHasRecursiveTailcall();
-                block->SetFlags(BBF_RECURSIVE_TAILCALL);
-                JITDUMP("[%06u] is a recursive call in tail position\n", m_compiler->dspTreeID(call));
-            }
-            else
-            {
-                JITDUMP("[%06u] is%s in tail position and is%s recursive\n", m_compiler->dspTreeID(call),
-                        call->CanTailCall() ? "" : " not", m_compiler->gtIsRecursiveCall(methodHnd) ? "" : " not");
-            }
-
             // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
             // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
             //
-            CORINFO_METHOD_HANDLE unboxedMethodHnd = inlineInfo->guardedMethodUnboxedEntryHandle;
+            CORINFO_METHOD_HANDLE unboxedMethodHnd = inlineInfo->guardedMethodUnboxedResolvedToken.hMethod;
             if ((unboxedMethodHnd != nullptr) && (methodHnd != unboxedMethodHnd))
             {
                 // Demote this call to a non-inline candidate
@@ -1065,7 +1055,7 @@ private:
                 //
                 GenTreeRetExpr* oldRetExpr       = inlineInfo->retExpr;
                 inlineInfo->clsHandle            = m_compiler->info.compCompHnd->getMethodClass(methodHnd);
-                inlineInfo->exactContextHandle   = context;
+                inlineInfo->exactContextHandle   = exactContext;
                 inlineInfo->preexistingSpillTemp = m_returnTemp;
                 call->SetSingleInlineCandidateInfo(inlineInfo);
 
@@ -1544,7 +1534,7 @@ private:
         GenTree* CreateFunctionTargetAddr(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup)
         {
             GenTree* con = m_compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-            INDEBUG(con->AsIntCon()->gtTargetHandle = (size_t)methHnd);
+            INDEBUG(con->AsIntCon()->SetTargetHandle((size_t)methHnd));
             return con;
         }
     };

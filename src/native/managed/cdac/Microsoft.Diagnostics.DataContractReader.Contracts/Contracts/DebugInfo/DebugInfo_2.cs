@@ -149,4 +149,22 @@ internal sealed class DebugInfo_2(Target target) : IDebugInfo
 
         return [];
     }
+
+    IReadOnlyList<AsyncSuspensionInfo> IDebugInfo.GetAsyncSuspensionPoints(TargetCodePointer pCode)
+    {
+        if (_eman.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
+            throw new InvalidOperationException($"No CodeBlockHandle found for native code {pCode}.");
+        TargetPointer debugInfo = _eman.GetDebugInfo(cbh, out bool _);
+
+        if (debugInfo == TargetPointer.Null)
+            return Array.Empty<AsyncSuspensionInfo>();
+
+        DebugInfoChunks chunks = DecodeChunks(debugInfo);
+
+        if (chunks.AsyncInfoSize == 0)
+            return Array.Empty<AsyncSuspensionInfo>();
+
+        NativeReader asyncNativeReader = new(new TargetStream(_target, chunks.AsyncInfoStart, chunks.AsyncInfoSize), _target.IsLittleEndian);
+        return DebugInfoHelpers.DoAsyncInfo(asyncNativeReader);
+    }
 }

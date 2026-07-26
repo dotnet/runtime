@@ -58,11 +58,8 @@ void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
 // CORDbgCopyThreadContext() does an intelligent copy from pSrc to pDst,
 // respecting the ContextFlags of both contexts.
 //
-struct DebuggerREGDISPLAY;
 
 extern void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc);
-extern void CORDbgSetDebuggerREGDISPLAYFromContext(DebuggerREGDISPLAY *pDRD,
-                                                   DT_CONTEXT* pContext);
 
 //---------------------------------------------------------------------------------------
 //

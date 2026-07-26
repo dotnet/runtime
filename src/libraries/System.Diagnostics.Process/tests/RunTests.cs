@@ -27,19 +27,61 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task Run_WithFileName_ExitCodeIsReturned(bool useAsync)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task Run_WithFileName_ExitCodeIsReturned(bool useAsync, bool silent)
         {
             using Process template = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
             List<string>? arguments = Helpers.MapToArgumentList(template.StartInfo);
 
             ProcessExitStatus exitStatus = useAsync
-                ? await Process.RunAsync(template.StartInfo.FileName, arguments)
-                : Process.Run(template.StartInfo.FileName, arguments);
+                ? await Process.RunAsync(template.StartInfo.FileName, arguments, silent)
+                : Process.Run(template.StartInfo.FileName, arguments, silent);
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
             Assert.False(exitStatus.Canceled);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task Run_WithFileName_OutputIsDiscardedWhenSilent(bool useAsync, bool silent)
+        {
+            // Process A starts process B that writes large output to stdout and stderr.
+            // When silent is true, B's output is redirected to the null device.
+            // A's stdout/stderr are redirected so we can verify whether B's output leaked through.
+            using Process outerTemplate = CreateProcess((string silentArg) =>
+            {
+                bool silentValue = bool.Parse(silentArg);
+
+                using Process innerTemplate = CreateProcess(() =>
+                {
+                    Console.Write(new string('a', 100_000));
+                    Console.Error.Write(new string('b', 100_000));
+                    return RemoteExecutor.SuccessExitCode;
+                });
+
+                List<string>? args = Helpers.MapToArgumentList(innerTemplate.StartInfo);
+                ProcessExitStatus status = Process.Run(innerTemplate.StartInfo.FileName, args, silent: silentValue);
+
+                return status.ExitCode;
+            }, silent.ToString());
+
+            outerTemplate.StartInfo.RedirectStandardOutput = true;
+            outerTemplate.StartInfo.RedirectStandardError = true;
+
+            ProcessTextOutput result = useAsync
+                ? await Process.RunAndCaptureTextAsync(outerTemplate.StartInfo)
+                : Process.RunAndCaptureText(outerTemplate.StartInfo);
+
+            Assert.Equal(RemoteExecutor.SuccessExitCode, result.ExitStatus.ExitCode);
+            Assert.False(result.ExitStatus.Canceled);
+            Assert.Equal(silent ? string.Empty : new string('a', 100_000), result.StandardOutput);
+            Assert.Equal(silent ? string.Empty : new string('b', 100_000), result.StandardError);
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

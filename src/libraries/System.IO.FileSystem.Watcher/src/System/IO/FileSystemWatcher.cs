@@ -404,6 +404,9 @@ namespace System.IO
         private static InternalBufferOverflowException CreateBufferOverflowException(string directoryPath)
             => new InternalBufferOverflowException(SR.Format(SR.FSW_BufferOverflow, directoryPath));
 
+        private static DirectoryNotFoundException CreateWatchedDirectoryDeletedOrMovedException(string directoryPath)
+            => new DirectoryNotFoundException(SR.Format(SR.FSW_WatchedDirectoryDeletedOrMoved, directoryPath));
+
         /// <summary>
         /// Raises the event to each handler in the list.
         /// </summary>

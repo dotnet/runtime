@@ -13,6 +13,8 @@ public class Test_GitHub_22556
 {
     int f;
 
+    public Test_GitHub_22556() { }
+
     Test_GitHub_22556(int f)
     {
         this.f = f;

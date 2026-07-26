@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using WasiPollWorld.wit.imports.wasi.clocks.v0_2_0;
+using MonotonicClockInterop = WasiPollWorld.wit.Imports.wasi.clocks.v0_2_8.IMonotonicClockImports;
 
 namespace System.Threading
 {

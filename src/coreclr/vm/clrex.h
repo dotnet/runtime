@@ -23,7 +23,7 @@ class PEAssembly;
 enum StackTraceElementFlags
 {
     // Set if this element represents the last frame of the foreign exception stack trace
-    STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001,
+    STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001, // [cDAC] [Exception]: Contract depends on this value.
 
     // Set if the "ip" field has already been adjusted (decremented)
     STEF_IP_ADJUSTED = 0x0002,
@@ -301,7 +301,7 @@ class EEMessageException : public EEException
 
     static BOOL IsEEMessageException(Exception *pException)
     {
-        return (*(PVOID*)pException == GetEEMessageExceptionVPtr());
+        return *(PVOID*)pException == GetEEMessageExceptionVPtr();
     }
 
  protected:
@@ -318,17 +318,16 @@ class EEMessageException : public EEException
 
     static PVOID GetEEMessageExceptionVPtr()
     {
-        CONTRACT (PVOID)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         EEMessageException boilerplate(E_FAIL);
-        RETURN (PVOID&)boilerplate;
+        return (PVOID&)boilerplate;
     }
 
     BOOL GetResourceMessage(UINT iResourceID, SString &result);
@@ -1187,4 +1186,3 @@ class CLRLastThrownObjectException : public CLRException
 bool IsHRESULTForExceptionKind(HRESULT hr, RuntimeExceptionKind kind);
 
 #endif // _CLREX_H_
-

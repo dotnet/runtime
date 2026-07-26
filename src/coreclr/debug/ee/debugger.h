@@ -364,32 +364,7 @@ inline bool ThisMaybeHelperThread() { return true; }
 
 #endif
 
-
-// These are methods for transferring information between a REGDISPLAY and
-// a DebuggerREGDISPLAY.
 extern void CopyREGDISPLAY(REGDISPLAY* pDst, REGDISPLAY* pSrc);
-extern void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* pRD);
-
-//
-// PUSHED_REG_ADDR gives us NULL if the register still lives in the thread's context, or it gives us the address
-// of where the register was pushed for this frame.
-//
-// This macro is used in CopyREGDISPLAY() and SetDebuggerREGDISPLAYFromREGDISPLAY().  We really should make
-// DebuggerREGDISPLAY to be a class with these two methods, but unfortunately, the RS has no notion of REGDISPLAY.
-inline LPVOID PushedRegAddr(REGDISPLAY* pRD, LPVOID pAddr)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if ( ((UINT_PTR)(pAddr) >= (UINT_PTR)pRD->pCurrentContextPointers) &&
-         ((UINT_PTR)(pAddr) <= ((UINT_PTR)pRD->pCurrentContextPointers + sizeof(T_KNONVOLATILE_CONTEXT_POINTERS))) )
-
-        return NULL;
-
-    // (Microsoft 2/9/07 - putting this in an else clause confuses gcc for some reason, so I've moved
-    //  it to here)
-    return pAddr;
-}
-
 bool HandleIPCEventWrapper(Debugger* pDebugger, DebuggerIPCEvent *e);
 
 HRESULT ValidateObject(Object *objPtr);
@@ -1053,7 +1028,7 @@ public:
     ~DebuggerMethodInfo();
 
     // A profiler can remap the IL. We track the "instrumented" IL map here.
-    void SetInstrumentedILMap(COR_IL_MAP * pMap, SIZE_T cEntries);
+    void SetInstrumentedILMap(COR_IL_MAP * pMap, UINT cEntries);
     bool HasInstrumentedILMap() {return m_fHasInstrumentedILMap; }
 
     // TranslateToInstIL will take offOrig, and translate it to the
@@ -1502,8 +1477,6 @@ protected:
     ULONG                    m_lastIL;
     PTR_DebuggerILToNativeMap m_sequenceMap;
     unsigned int             m_sequenceMapCount;
-    PTR_DebuggerILToNativeMap m_callsiteMap;
-    unsigned int             m_callsiteMapCount;
     bool                     m_sequenceMapSorted;
 
     PTR_NativeVarInfo        m_varNativeInfo;
@@ -1532,10 +1505,9 @@ public:
             "                 m_addrOfCode: %p\n"
             "                 m_sizeOfCode: 0x%zx\n"
             "                     m_lastIL: 0x%x\n"
-            "           m_sequenceMapCount: %u\n"
-            "           m_callsiteMapCount: %u\n",
+            "           m_sequenceMapCount: %u\n",
             this, (m_jitComplete ? "true" : "false"), encState,
-            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount, m_callsiteMapCount));
+            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount));
 #endif //LOGGING
     }
 
@@ -1554,22 +1526,6 @@ public:
 
         LazyInitBounds();
         return m_sequenceMap;
-    }
-
-    unsigned int GetCallsiteMapCount()
-    {
-        SUPPORTS_DAC;
-
-        LazyInitBounds();
-        return m_callsiteMapCount;
-    }
-
-    PTR_DebuggerILToNativeMap GetCallSiteMap()
-    {
-        SUPPORTS_DAC;
-
-        LazyInitBounds();
-        return m_callsiteMap;
     }
 
     PTR_NativeVarInfo GetVarNativeInfo()
@@ -1944,6 +1900,7 @@ public:
 
     void ThreadCreated(Thread* pRuntimeThread);
     void ThreadStarted(Thread* pRuntimeThread);
+    void SendCreateThreadAtInterpreterEntry(Thread* pRuntimeThread);
     void DetachThread(Thread *pRuntimeThread);
 
     BOOL SuspendComplete(bool isEESuspendedForGC = false);
@@ -2874,7 +2831,7 @@ private:
     // represents different thead redirection functions recognized by the debugger
     enum HijackFunction
     {
-        kUnhandledException = 0,
+        kUnhandledException = 0, // [cDAC] [Debugger]: Contract depends on this value.
         kRedirectedForGCThreadControl,
         kRedirectedForDbgThreadControl,
         kRedirectedForUserSuspend,
@@ -3866,6 +3823,8 @@ struct cdac_data<Debugger>
     static constexpr size_t RSRequestedSync = offsetof(Debugger, m_RSRequestedSync);
     static constexpr size_t SendExceptionsOutsideOfJMC = offsetof(Debugger, m_sendExceptionsOutsideOfJMC);
     static constexpr size_t GCNotificationEventsEnabled = offsetof(Debugger, m_isGarbageCollectionEventsEnabled);
+    static constexpr size_t RgHijackFunction = offsetof(Debugger, m_rgHijackFunction);
+    static constexpr size_t MaxHijackFunctions = Debugger::kMaxHijackFunctions;
 };
 
 template<>

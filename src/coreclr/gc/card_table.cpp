@@ -1,6 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
 #ifdef CARD_BUNDLE
 
 // Clear the specified card bundle
@@ -130,96 +140,11 @@ BOOL gc_heap::card_bundles_enabled ()
 
 #endif //CARD_BUNDLE
 
-inline
-size_t gc_heap::brick_of (uint8_t* add)
-{
-    return (size_t)(add - lowest_address) / brick_size;
-}
-
-inline
-uint8_t* gc_heap::brick_address (size_t brick)
-{
-    return lowest_address + (brick_size * brick);
-}
-
 void gc_heap::clear_brick_table (uint8_t* from, uint8_t* end)
 {
     size_t from_brick = brick_of (from);
     size_t end_brick = brick_of (end);
     memset (&brick_table[from_brick], 0, sizeof(brick_table[from_brick])*(end_brick-from_brick));
-}
-
-//codes for the brick entries:
-//entry == 0 -> not assigned
-//entry >0 offset is entry-1
-//entry <0 jump back entry bricks
-inline
-void gc_heap::set_brick (size_t index, ptrdiff_t val)
-{
-    if (val < -32767)
-    {
-        val = -32767;
-    }
-    assert (val < 32767);
-    if (val >= 0)
-        brick_table [index] = (short)val+1;
-    else
-        brick_table [index] = (short)val;
-
-    dprintf (3, ("set brick[%zx] to %d\n", index, (short)val));
-}
-
-inline
-int gc_heap::get_brick_entry (size_t index)
-{
-#ifdef MULTIPLE_HEAPS
-    return VolatileLoadWithoutBarrier(&brick_table [index]);
-#else
-    return brick_table[index];
-#endif
-}
-
-inline
-uint8_t* gc_heap::card_address (size_t card)
-{
-    return  (uint8_t*) (card_size * card);
-}
-
-inline
-size_t gc_heap::card_of ( uint8_t* object)
-{
-    return (size_t)(object) / card_size;
-}
-
-inline
-void gc_heap::clear_card (size_t card)
-{
-    card_table [card_word (card)] =
-        (card_table [card_word (card)] & ~(1 << card_bit (card)));
-    dprintf (3,("Cleared card %zx [%zx, %zx[", card, (size_t)card_address (card),
-              (size_t)card_address (card+1)));
-}
-
-inline
-void gc_heap::set_card (size_t card)
-{
-    size_t word = card_word (card);
-    card_table[word] = (card_table [word] | (1 << card_bit (card)));
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-    // Also set the card bundle that corresponds to the card
-    size_t bundle_to_set = cardw_card_bundle(word);
-
-    card_bundle_set(bundle_to_set);
-
-    dprintf (3,("Set card %zx [%zx, %zx[ and bundle %zx", card, (size_t)card_address (card), (size_t)card_address (card+1), bundle_to_set));
-#endif
-}
-
-inline
-BOOL  gc_heap::card_set_p (size_t card)
-{
-    return ( card_table [ card_word (card) ] & (1 << card_bit (card)));
 }
 
 void gc_heap::destroy_card_table_helper (uint32_t* c_table)
@@ -1260,8 +1185,7 @@ inline void gc_heap::verify_card_bundle_bits_set(size_t first_card_word, size_t 
 #endif
 }
 
-// Verifies that any bundles that are not set represent only cards that are not set.
-inline void gc_heap::verify_card_bundles()
+void gc_heap::verify_card_bundles()
 {
 #ifdef _DEBUG
     size_t lowest_card = card_word (card_of (lowest_address));
@@ -1276,23 +1200,22 @@ inline void gc_heap::verify_card_bundles()
     while (cardb < end_cardb)
     {
         uint32_t* card_word = &card_table[max(card_bundle_cardw (cardb), lowest_card)];
-        uint32_t* card_word_end = &card_table[min(card_bundle_cardw (cardb+1), highest_card)];
+        uint32_t* card_word_end = &card_table[min(card_bundle_cardw (cardb + 1), highest_card)];
 
         if (card_bundle_set_p (cardb) == 0)
         {
-            // Verify that no card is set
             while (card_word < card_word_end)
             {
                 if (*card_word != 0)
                 {
                     dprintf  (3, ("gc: %zd, Card word %zx for address %zx set, card_bundle %zx clear",
                             dd_collection_count (dynamic_data_of (0)),
-                            (size_t)(card_word-&card_table[0]),
-                            (size_t)(card_address ((size_t)(card_word-&card_table[0]) * card_word_width)),
+                            (size_t)(card_word - &card_table[0]),
+                            (size_t)(card_address ((size_t)(card_word - &card_table[0]) * card_word_width)),
                             cardb));
                 }
 
-                assert((*card_word)==0);
+                assert((*card_word) == 0);
                 card_word++;
             }
         }
@@ -1369,19 +1292,6 @@ void gc_heap::update_card_table_bundle()
 
 #endif //CARD_BUNDLE
 #endif //WRITE_WATCH
-#ifdef COLLECTIBLE_CLASS
-// We don't want to burn another ptr size space for pinned plugs to record this so just
-// set the card unconditionally for collectible objects if we are demoting.
-inline void
-gc_heap::unconditional_set_card_collectible (uint8_t* obj)
-{
-    if (settings.demotion)
-    {
-        set_card (card_of (obj));
-    }
-}
-
-#endif //COLLECTIBLE_CLASS
 
 //Clear the cards [start_card, end_card[
 void gc_heap::clear_cards (size_t start_card, size_t end_card)
@@ -2004,3 +1914,5 @@ bool gc_heap::find_next_chunk(card_marking_enumerator& card_mark_enumerator, hea
 }
 
 #endif //FEATURE_CARD_MARKING_STEALING
+
+} // namespace WKS/SVR

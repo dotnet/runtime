@@ -331,6 +331,28 @@ namespace System
         }
 
         /// <summary>
+        /// Copies the characters from the source span into the destination, converting each character to uppercase
+        /// using the casing rules used by <see cref="StringComparison.OrdinalIgnoreCase"/> comparisons.
+        /// </summary>
+        /// <param name="source">The source span.</param>
+        /// <param name="destination">The destination span which contains the transformed characters.</param>
+        /// <returns>The number of characters written into the destination span. If the destination is too small, returns -1.</returns>
+        /// <exception cref="InvalidOperationException">The source and destination buffers overlap.</exception>
+        public static int ToUpperOrdinal(this ReadOnlySpan<char> source, Span<char> destination) =>
+            Ordinal.ToUpperOrdinal(source, destination);
+
+        /// <summary>
+        /// Copies the characters from the source span into the destination, converting each character to lowercase
+        /// using ordinal (simple, one-to-one) casing rules.
+        /// </summary>
+        /// <param name="source">The source span.</param>
+        /// <param name="destination">The destination span which contains the transformed characters.</param>
+        /// <returns>The number of characters written into the destination span. If the destination is too small, returns -1.</returns>
+        /// <exception cref="InvalidOperationException">The source and destination buffers overlap.</exception>
+        public static int ToLowerOrdinal(this ReadOnlySpan<char> source, Span<char> destination) =>
+            Ordinal.ToLowerOrdinal(source, destination);
+
+        /// <summary>
         /// Determines whether the end of the <paramref name="span"/> matches the specified <paramref name="value"/> when compared using the specified <paramref name="comparisonType"/> option.
         /// </summary>
         /// <param name="span">The source span.</param>

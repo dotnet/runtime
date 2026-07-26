@@ -186,5 +186,12 @@ namespace System.Security.Cryptography.Xml
                 throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
             }
         }
+
+        internal override void ClearState()
+        {
+            _containingDocument = null;
+            _inputNodeList = null;
+            _nsm = null;
+        }
     }
 }
