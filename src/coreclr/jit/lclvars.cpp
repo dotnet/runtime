@@ -5862,7 +5862,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
         int offset;
         if (lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(paramNum, &offset))
         {
-            paramDsc->SetStackOffset(paramDsc->GetSteckOffset() + codeGen->genTotalFrameSize() + S390X_REG_SAVE_AREA_SIZE);
+            paramDsc->SetStackOffset(paramDsc->GetStackOffset() + codeGen->genTotalFrameSize() + S390X_REG_SAVE_AREA_SIZE);
         }
     }
 #endif
