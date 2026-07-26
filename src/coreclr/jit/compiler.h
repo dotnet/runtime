@@ -3359,12 +3359,10 @@ public:
         unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr, GenTree* arg4 = nullptr);
 
 #ifdef TARGET_WASM
-    // On wasm the emitted call signature is derived from the modeled return type, so helpers whose
-    // result we discard must still be modeled as value-returning. InitClass/InitInstantiatedClass
-    // return void*, CastHelpers.Unbox returns a byref.
+    // Wasm derives the call signature from the modeled return type, so helpers whose result we
+    // discard must still be modeled as value-returning.
     static constexpr var_types HelperInitClassRetType = TYP_I_IMPL;
-    // Only for unbox sites that discard the result. CastHelpers.Unbox returns a byref on every
-    // target, so a site that consumes the result must model TYP_BYREF directly.
+    // CastHelpers.Unbox returns a byref on every target; sites that consume it model TYP_BYREF.
     static constexpr var_types HelperUnboxDiscardedRetType = TYP_BYREF;
 #else
     static constexpr var_types HelperInitClassRetType      = TYP_VOID;
