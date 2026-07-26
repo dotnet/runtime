@@ -38,8 +38,7 @@ bool LinearScan::canUseMinOptsRegAlloc()
 #else
     // The fast allocator relies on no value being live across a block boundary,
     // which is only guaranteed when no local variable is enregistered.
-    // TODO: restore the OptimizationEnabled() check before merging.
-    if (enregisterLocalVars)
+    if (enregisterLocalVars || m_compiler->opts.OptimizationEnabled())
     {
         return false;
     }

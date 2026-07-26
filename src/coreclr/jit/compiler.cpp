@@ -2398,11 +2398,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     lvaEnregEHVars       = (compEnregLocals() && JitConfig.EnableEHWriteThru());
     lvaEnregMultiRegVars = (compEnregLocals() && JitConfig.EnableMultiRegLocals());
 
-    // TODO: revert before merging. LSRA will not enregister anything, so don't let lowering
-    // build multi-reg locals that would then have no registers.
-    lvaEnregEHVars       = false;
-    lvaEnregMultiRegVars = false;
-
 #if FEATURE_TAILCALL_OPT
     // By default opportunistic tail call optimization is enabled.
     // Recognition is done in the importer so this must be set for
