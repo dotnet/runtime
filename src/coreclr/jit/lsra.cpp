@@ -1996,7 +1996,15 @@ void LinearScan::initVarRegMaps()
         // The in and out maps of every block are allocated as a single block and initialized in
         // one shot. They are only ever reached through inVarToRegMaps/outVarToRegMaps, which are
         // not modified after this point.
-        size_t          entryCount = (size_t)bbCount * 2 * regMapCount;
+        ClrSafeInt<size_t> entryCountSafe(bbCount);
+        entryCountSafe *= (size_t)2;
+        entryCountSafe *= (size_t)regMapCount;
+        if (entryCountSafe.IsOverflow())
+        {
+            NOMEM();
+        }
+
+        size_t          entryCount = entryCountSafe.Value();
         regNumberSmall* maps       = new (m_compiler, CMK_LSRA) regNumberSmall[entryCount];
 
         if (sizeof(regNumberSmall) == 1)
