@@ -193,7 +193,7 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, uint32_t maxBytesTotal)
     ReplacePid(logFilename, logFilenameReplaced, MAX_PATH);
 
     // The memory map will be released at process exit
-    MemoryMappedFile* mmap = MemoryMappedFile::OpenRW(logFilename, maxBytesTotal, MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS);
+    MemoryMappedFile* mmap = MemoryMappedFile::OpenRW(logFilenameReplaced, maxBytesTotal, MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS);
     return mmap ? mmap->Address() : nullptr;
 }
 #endif //MEMORY_MAPPED_STRESSLOG

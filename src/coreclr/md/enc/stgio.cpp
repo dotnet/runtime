@@ -1315,7 +1315,7 @@ HRESULT StgIO::WriteToDisk(             // Return code.
                 hr = MapFileError(GetLastError());
 #else // HOST_WINDOWS
             _ASSERTE(m_fd != -1);
-            if ((cbWritten = write(m_fd, pbBuff, cbWrite)) != cbWrite)
+            if ((*pcbWritten = (ULONG)write(m_fd, pbBuff, cbWrite)) != cbWrite)
                 hr = HRESULTFromErr(errno);
 #endif // HOST_WINDOWS
         }
@@ -1371,7 +1371,7 @@ HRESULT StgIO::ReadFromDisk(            // Return code.
             return (S_OK);
         return (MapFileError(GetLastError()));
 #else // HOST_WINDOWS
-        if ((cbRead = read(m_fd, pbBuff, cbBuff)) >= 0)
+        if ((*pcbRead = (ULONG)read(m_fd, pbBuff, cbBuff)) >= 0)
             return (S_OK);
         return HRESULTFromErr(errno);
 #endif // HOST_WINDOWS
