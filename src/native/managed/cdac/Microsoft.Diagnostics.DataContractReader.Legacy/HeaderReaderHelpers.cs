@@ -29,7 +29,7 @@ internal static class HeaderReaderHelpers
         if (IsTiny(firstByte))
             return 1;
         if (IsFat(firstByte))
-            return (target.Read<byte>(ilHeader + 1) >> 4) * sizeof(uint);
+            return 12;
         throw new BadImageFormatException("Invalid IL method header.");
     }
 

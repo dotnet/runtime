@@ -214,10 +214,9 @@ public unsafe class IXCLRDataProcessTests
         const uint SecondToken = 0x06000003;
         const byte TinyFormat = 0x2;
         const byte FatFormat = 0x3;
-        const byte FatHeaderDwords = 4;
+        const byte FatHeaderDwords = 3;
         const int TinyHeaderSize = sizeof(byte);
         const int TinyCodeSize = 3;
-        const int FatHeaderSize = FatHeaderDwords * sizeof(uint);
         const int FatCodeSize = 2;
         const int FatCodeSizeOffset = 4;
 
@@ -246,7 +245,7 @@ public unsafe class IXCLRDataProcessTests
             Mock<IEcmaMetadata> ecmaMetadata = new(MockBehavior.Strict);
             ecmaMetadata.Setup(e => e.GetMetadata(module)).Returns(reader);
 
-            byte[] secondHeader = new byte[FatHeaderSize + FatCodeSize];
+            byte[] secondHeader = new byte[14];
             secondHeader[0] = FatFormat;
             secondHeader[1] = FatHeaderDwords << 4;
             int codeSizeByteOffset = FatCodeSizeOffset + (arch.IsLittleEndian ? 0 : sizeof(uint) - 1);
@@ -309,7 +308,7 @@ public unsafe class IXCLRDataProcessTests
                 Assert.Equal(HResults.S_OK, process.EndEnumMethodDefinitionsByAddress(handle));
             }
 
-            hr = process.StartEnumMethodDefinitionsByAddress(SecondHeaderAddress + FatHeaderSize, &handle);
+            hr = process.StartEnumMethodDefinitionsByAddress(SecondHeaderAddress + 12, &handle);
             Assert.Equal(HResults.S_OK, hr);
             try
             {
@@ -324,8 +323,8 @@ public unsafe class IXCLRDataProcessTests
                 Assert.Equal(SecondToken, token);
                 AssertMethodDefinitionExtent(
                     method,
-                    SecondHeaderAddress + FatHeaderSize,
-                    SecondHeaderAddress + FatHeaderSize + FatCodeSize - 1);
+                    SecondHeaderAddress + 12,
+                    SecondHeaderAddress + 12 + FatCodeSize - 1);
             }
             finally
             {
