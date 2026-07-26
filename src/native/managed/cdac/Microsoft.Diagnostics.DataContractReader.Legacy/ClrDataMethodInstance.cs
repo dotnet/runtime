@@ -334,10 +334,14 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
 
         try
         {
+            if (rangesNeeded is not null)
+            {
+                *rangesNeeded = 0;
+            }
+
             TargetCodePointer nativeCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
             TargetCodePointer pCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
             TargetPointer codeStart = pCode.ToAddress(_target);
-
             if (!_target.Contracts.DebugInfo.HasDebugInfo(pCode))
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
