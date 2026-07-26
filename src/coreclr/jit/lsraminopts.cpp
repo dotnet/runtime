@@ -568,6 +568,12 @@ void LinearScan::allocateNodeMinOpts(BasicBlock* block, GenTree* node)
                 minOptsFixedRegsNextLoc |= refPosition->getKilledRegisters();
             }
         }
+        else if (refPosition->refType == RefTypeFixedReg)
+        {
+            // A RefPosition on a physical register: it reserves that register for the whole
+            // node. (NativeAOT arm64 TLS access reserves the registers the linker patches.)
+            minOptsFixedRegsThisLoc |= genRegMask(refPosition->getReg()->regNum);
+        }
         else if (refPosition->isFixedRegRef)
         {
             assert(RefTypeIsDef(refPosition->refType) || RefTypeIsUse(refPosition->refType));
@@ -612,6 +618,12 @@ void LinearScan::allocateNodeMinOpts(BasicBlock* block, GenTree* node)
 
             case RefTypeKillGCRefs:
                 minOptsSpillGCRefs(refPosition);
+                break;
+
+            case RefTypeFixedReg:
+                // The register is reserved for the whole node (collected above); make sure
+                // nothing is left living in it.
+                minOptsVacateReg(refPosition->getReg()->regNum);
                 break;
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
