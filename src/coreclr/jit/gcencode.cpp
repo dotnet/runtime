@@ -4093,9 +4093,7 @@ void GCInfo::gcMakeRegPtrTable(
 {
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
-    // TODO-WASM: Enable tracked GC slots for precise GC. Note that on-frame GC locals are reported
-    //  pinned below on the strength of arriving here as untracked; see the comment at that site before
-    //  enabling tracked slots.
+    // TODO-WASM: Enable tracked GC slots for precise GC
 #ifdef TARGET_WASM
     const bool noTrackedGCSlots = true;
 #else
@@ -4189,16 +4187,11 @@ void GCInfo::gcMakeRegPtrTable(
                 flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
             }
 
-            // On wasm this is unconditional, because wasm forces noTrackedGCSlots and so reports every
-            //  on-frame GC local here, as an effectively always-live untracked root. Wasm does not allow
-            //  outside access to the wasm operand stack, so a GC reference loaded from its linear-stack
-            //  home onto the operand stack is a copy the GC can neither see nor update; per the wasm ABI
-            //  ("GC References at Call Sites" in clr-abi.md) such references are reported pinned, so the
-            //  referent cannot move while a copy is live and the copy stays valid across a call.
-            //
-            // If tracked GC slots are ever enabled on wasm, on-frame GC locals will instead be reported
-            //  by gcMakeVarPtrTable, which only pins on pinned_OFFSET_FLAG -- that path would need to
-            //  apply the same rule, or this pinning would silently stop happening.
+            // Wasm reports refs homed on the linear stack as pinned, so a copy pushed onto the operand
+            //  stack (where the GC can't update it) stays valid across a call. See "GC References at
+            //  Call Sites" in clr-abi.md. Relies on noTrackedGCSlots reporting every on-frame GC local
+            //  here; enabling tracked slots would move them to gcMakeVarPtrTable, which pins only on
+            //  pinned_OFFSET_FLAG.
 #ifndef TARGET_WASM
             if (varDsc->lvPinned)
 #endif // !TARGET_WASM
