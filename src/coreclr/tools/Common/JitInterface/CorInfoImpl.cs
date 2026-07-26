@@ -2201,11 +2201,12 @@ namespace Internal.JitInterface
             return index < (uint)inst.Length ? ObjectToHandle(inst[(int)index]) : null;
         }
 
-#pragma warning disable CA1822 // Mark members as static
         private CORINFO_CLASS_STRUCT_* getMethodInstantiationArgument(CORINFO_METHOD_STRUCT_* ftn, uint index)
         {
-#pragma warning restore CA1822 // Mark members as static
-            return null;
+            MethodDesc method = HandleToObject(ftn);
+            Instantiation inst = method.Instantiation;
+
+            return index < (uint)inst.Length ? ObjectToHandle(inst[(int)index]) : null;
         }
 
         private nuint printClassName(CORINFO_CLASS_STRUCT_* cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
