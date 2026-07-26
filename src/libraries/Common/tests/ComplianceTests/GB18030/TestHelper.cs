@@ -61,7 +61,18 @@ public static class TestHelper
         StringComparison.InvariantCulture,
         StringComparison.InvariantCultureIgnoreCase];
 
-    internal static string TestDataFilePath { get; } = Path.Combine(AppContext.BaseDirectory, "GB18030", "Level3+Amendment_Test_Data_for_Mid_to_High_Volume_cases.txt");
+    internal static string TestDataResourceName { get; } = "Level3+Amendment_Test_Data_for_Mid_to_High_Volume_cases.txt";
+
+    internal static byte[] TestDataFileBytes { get; } = ReadTestDataFileBytes();
+
+    private static byte[] ReadTestDataFileBytes()
+    {
+        using Stream stream = typeof(TestHelper).Assembly.GetManifestResourceStream(TestDataResourceName)
+            ?? throw new InvalidOperationException($"Could not find embedded resource '{TestDataResourceName}'.");
+        using MemoryStream memoryStream = new();
+        stream.CopyTo(memoryStream);
+        return memoryStream.ToArray();
+    }
 
     private static Encoding? s_gb18030Encoding;
     internal static Encoding GB18030Encoding
@@ -122,8 +133,8 @@ public static class TestHelper
         byte[] startDelimiter = GB18030Encoding.GetBytes($":{Environment.NewLine}");
         byte[] endDelimiter = GB18030Encoding.GetBytes($"{Environment.NewLine}{Environment.NewLine}");
 
-        // Instead of inlining the data in source, parse the test data from the file to prevent encoding issues.
-        ReadOnlyMemory<byte> testFileBytes = File.ReadAllBytes(TestDataFilePath);
+        // Instead of inlining the data in source, parse the test data from an embedded resource to prevent encoding issues.
+        ReadOnlyMemory<byte> testFileBytes = TestDataFileBytes;
 
         while (testFileBytes.Length > 0)
         {
@@ -132,7 +143,7 @@ public static class TestHelper
             {
                 // Every record is introduced by its start delimiter, so anything left here means the
                 // data file was modified unexpectedly. Fail loudly rather than silently running fewer cases.
-                throw new InvalidDataException($"Unexpected trailing content in '{TestDataFilePath}'; expected a '{{label}}:' record delimiter.");
+                throw new InvalidDataException($"Unexpected trailing content in '{TestDataResourceName}'; expected a '{{label}}:' record delimiter.");
             }
 
             testFileBytes = testFileBytes.Slice(start + startDelimiter.Length);

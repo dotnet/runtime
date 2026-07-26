@@ -40,7 +40,9 @@
   </ItemGroup>
   
   <ItemGroup>
-    <None Include="GB18030\Level3+Amendment_Test_Data_for_Mid_to_High_Volume_cases.txt" CopyToOutputDirectory="Always" />
+    <EmbeddedResource Include="GB18030\Level3+Amendment_Test_Data_for_Mid_to_High_Volume_cases.txt">
+      <LogicalName>Level3+Amendment_Test_Data_for_Mid_to_High_Volume_cases.txt</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
