@@ -2255,6 +2255,9 @@ private:
     // Registers killed by the node currently being allocated.
     regMaskTP minOptsKilledRegs;
 
+    // True if any value was spilled; if not, the spill-temp accounting walk can be skipped.
+    bool minOptsAnySpill;
+
     // The location currently being allocated (either the node's location, or the location
     // of its definitions, which is one past it).
     LsraLocation minOptsCurLoc;

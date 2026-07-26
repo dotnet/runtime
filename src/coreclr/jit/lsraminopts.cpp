@@ -349,29 +349,12 @@ void LinearScan::minOptsSpillInterval(Interval* interval)
     {
         defRefPosition->spillAfter = true;
         interval->isSpilled        = true;
+        minOptsAnySpill            = true;
 
         defNode->gtFlags |= GTF_SPILL;
         if (defNode->IsMultiRegNode())
         {
             defNode->SetRegSpillFlagByIdx(GTF_SPILL, defRefPosition->getMultiRegIdx());
-        }
-
-        // Account for the spill temp that will be needed.
-        var_types type;
-        if (!defNode->IsMultiRegNode())
-        {
-            type = getDefType(defNode);
-        }
-        else
-        {
-            type = defNode->GetRegTypeByIndex(defRefPosition->getMultiRegIdx());
-        }
-        type = RegSet::tmpNormalizeType(type);
-
-        currentSpill[type]++;
-        if (currentSpill[type] > maxSpill[type])
-        {
-            maxSpill[type] = currentSpill[type];
         }
 
         JITDUMP("      Spilling [%06u] from %s\n", Compiler::dspTreeID(defNode), getRegName(interval->physReg));
@@ -812,19 +795,6 @@ void LinearScan::allocateUseMinOpts(BasicBlock* block, RefPosition* refPosition)
     assert(defRefPosition->spillAfter);
     assert(defRefPosition->treeNode != nullptr);
 
-    var_types spillType;
-    if (!defRefPosition->treeNode->IsMultiRegNode())
-    {
-        spillType = getDefType(defRefPosition->treeNode);
-    }
-    else
-    {
-        spillType = defRefPosition->treeNode->GetRegTypeByIndex(defRefPosition->getMultiRegIdx());
-    }
-    spillType = RegSet::tmpNormalizeType(spillType);
-    assert(currentSpill[spillType] > 0);
-    currentSpill[spillType]--;
-
     if (refPosition->RegOptional())
     {
         // We could allocate a register here, but since the value is already in memory and
@@ -980,6 +950,7 @@ PhaseStatus LinearScan::doRegisterAllocationMinOpts()
     assert(!enregisterLocalVars);
 
     minOptsRegAlloc = true;
+    minOptsAnySpill = false;
 
     m_compiler->codeGen->regSet.rsClearRegsModified();
     initMaxSpill();
@@ -1034,6 +1005,25 @@ PhaseStatus LinearScan::doRegisterAllocationMinOpts()
     }
 
     allocationPassComplete = true;
+
+    // Compute the number of concurrently live spill temps. A temp is acquired by codegen
+    // where the spilled value is defined (that is where GTF_SPILL is set) and released
+    // where it is reloaded, so this cannot be derived from the order in which we decided
+    // to spill. Walk the RefPositions and reuse the shared accounting instead.
+    if (minOptsAnySpill)
+    {
+        for (RefPosition& refPosition : refPositions)
+        {
+            if ((refPosition.refType == RefTypeDef) || (refPosition.refType == RefTypeUse)
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+                || (refPosition.refType == RefTypeUpperVectorSave)
+#endif
+            )
+            {
+                updateMaxSpill(&refPosition);
+            }
+        }
+    }
 
     needNonIntegerRegisters |= m_compiler->compFloatingPointUsed;
     if (!needNonIntegerRegisters)
