@@ -245,8 +245,6 @@ bool StartProcess(char* commandLine, int hStdOutput, int hStdError, pid_t* pid)
 
 void ReadMCLToArray(char* mclFilename, std::vector<int>& MCL)
 {
-    std::vector<int> l;
-
     FILE*   fp = fopen(mclFilename, "r");
     int64_t size;
 
@@ -273,9 +271,8 @@ void ReadMCLToArray(char* mclFilename, std::vector<int>& MCL)
     int value;
     while (fscanf(fp, "%d", &value) > 0)
     {
-        l.push_back(value);
+        MCL.push_back(value);
     }
-    MCL = std::move(l);
 
 Cleanup:
     if (fp != NULL)
