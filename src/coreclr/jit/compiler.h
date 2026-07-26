@@ -3359,11 +3359,14 @@ public:
         unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr, GenTree* arg4 = nullptr);
 
 #ifdef TARGET_WASM
-    // On wasm these helpers return void* (InitHelpers.InitClass/InitInstantiatedClass). Model them as
-    // value-returning so the call_indirect signature matches the compiled managed helper; the value is unused.
+    // On wasm the emitted call signature is derived from the modeled return type, so helpers whose
+    // result we discard must still be modeled as value-returning. InitClass/InitInstantiatedClass
+    // return void*, CastHelpers.Unbox returns a byref.
     static constexpr var_types HelperInitClassRetType = TYP_I_IMPL;
+    static constexpr var_types HelperUnboxRetType     = TYP_BYREF;
 #else
     static constexpr var_types HelperInitClassRetType = TYP_VOID;
+    static constexpr var_types HelperUnboxRetType     = TYP_VOID;
 #endif // TARGET_WASM
 
     GenTreeCall* gtNewVirtualFunctionLookupHelperCallNode(
