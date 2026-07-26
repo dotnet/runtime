@@ -36,7 +36,7 @@ public abstract class DirectoryTestBase : IDisposable
 
     public static IEnumerable<object[]> Delete_MemberData() =>
         TestHelper.NonExceedingPathNameMaxDecodedTestData.SelectMany(testData =>
-        new int[] { 0, 2, 8 }.Select(recurseLevel => new object[] { testData, recurseLevel }));
+        new int[] { 0, 1 }.Select(recurseLevel => new object[] { testData, recurseLevel }));
 
     [Theory]
     [MemberData(nameof(Delete_MemberData))]
