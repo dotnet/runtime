@@ -1986,10 +1986,9 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                 continue;
             }
 
-            // If a value is just a GT_LCL_VAR that isn't address-exposed we don't need to spill it.
-            //  Its home is on the linear stack and is reported pinned (see gcMakeRegPtrTable), so the
-            //  referent can't move and the copy pushed onto the operand stack stays valid across a
-            //  call. A callee also can't mutate the local, since its address hasn't escaped.
+            // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
+            //  it won't be mutated between its def (here) and its use (the call that would produce a spill)
+            //  and we won't need to spill it.
             if (tree->OperIs(GT_LCL_VAR))
             {
                 GenTreeLclVarCommon* lclVar = tree->AsLclVarCommon();
