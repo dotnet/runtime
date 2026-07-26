@@ -213,7 +213,7 @@ namespace System.Runtime.CompilerServices
             ReadOnlySpan<IntPtr> instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, stackScratch: stackalloc IntPtr[8]);
             fixed (IntPtr* pInstantiation = instantiationHandles)
             {
-                PrepareMethod(methodInfo.Value, pInstantiation, instantiationHandles.Length);
+                PrepareMethod(IRuntimeMethodInfo.GetValue(methodInfo), pInstantiation, instantiationHandles.Length);
                 GC.KeepAlive(instantiation);
                 GC.KeepAlive(methodInfo);
             }

@@ -36,3 +36,43 @@ internal sealed partial class StoredSigMethodDesc : IData<StoredSigMethodDesc>
     [Field] public partial uint cSig { get; }
     [Field] public partial uint ExtendedFlags { get; }
 }
+
+[CdacType(nameof(DataType.ArrayMethodDesc))]
+internal sealed partial class ArrayMethodDesc : IData<ArrayMethodDesc>
+{
+}
+
+[CdacType(nameof(DataType.FCallMethodDesc))]
+internal sealed partial class FCallMethodDesc : IData<FCallMethodDesc>
+{
+}
+
+[CdacType(nameof(DataType.PInvokeMethodDesc))]
+internal sealed partial class PInvokeMethodDesc : IData<PInvokeMethodDesc>
+{
+}
+
+[CdacType(nameof(DataType.EEImplMethodDesc))]
+internal sealed partial class EEImplMethodDesc : IData<EEImplMethodDesc>
+{
+}
+
+[CdacType(nameof(DataType.CLRToCOMCallMethodDesc))]
+internal sealed partial class CLRToCOMCallMethodDesc : IData<CLRToCOMCallMethodDesc>
+{
+}
+
+[CdacType(nameof(DataType.NonVtableSlot))]
+internal sealed partial class NonVtableSlot : IData<NonVtableSlot>
+{
+}
+
+[CdacType(nameof(DataType.MethodImpl))]
+internal sealed partial class MethodImpl : IData<MethodImpl>
+{
+}
+
+[CdacType(nameof(DataType.NativeCodeSlot))]
+internal sealed partial class NativeCodeSlot : IData<NativeCodeSlot>
+{
+}

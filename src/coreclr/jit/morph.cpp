@@ -2160,6 +2160,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         call->gtFlags &= ~GTF_EXCEPT;
     }
 
+    // Calls themselves don't originate an ordering side effect.
+    // Instead, derive it from the call args via flagsSummary
+    call->gtFlags &= ~GTF_ORDER_SIDEEFF;
+
     // Union in the side effect flags from the call's operands
     call->gtFlags |= flagsSummary & GTF_ALL_EFFECT;
 
