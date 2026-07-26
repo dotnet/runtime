@@ -39,7 +39,7 @@ namespace System
             if (value == 0)
                 goto NoMoreOrInvalidInput;
 
-            value = (value << 4) | (uint)HexConverter.FromChar(input[i + 2]);
+            value = (value << 4) + (uint)HexConverter.FromChar(input[i + 2]);
 
             if ((value - 128) > 127)
                 goto NoMoreOrInvalidInput; // Either not Hex or the decoded value is ASCII
