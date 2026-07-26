@@ -199,7 +199,7 @@ public unsafe class TypeHandleTests
 
         uint elementType = 0;
         Assert.Equal(HResults.E_NOTIMPL, typeDefinition.GetCorElementType(&elementType));
-        Assert.Equal(HResults.E_NOTIMPL, typeDefinition.GetCorElementType(null));
+        Assert.Equal(HResults.E_POINTER, typeDefinition.GetCorElementType(null));
     }
 
     [Theory]

@@ -102,7 +102,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
         }
 
 #if DEBUG
-        if (_legacyImpl is not null)
+        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
         {
             uint nameLenLocal = 0;
             char[] nameBufLocal = new char[bufLen > 0 ? bufLen : 1];
@@ -112,7 +112,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
                 hrLocal = _legacyImpl.GetName(flags, bufLen, &nameLenLocal, nameBuf is null ? null : pNameBufLocal);
 
                 Debug.ValidateHResult(hr, hrLocal);
-                if (hr >= 0 && hrLocal >= 0)
+                if (hr >= 0)
                 {
                     if (nameLen is not null)
                         Debug.Assert(nameLenLocal == *nameLen, $"cDAC: {*nameLen:x}, DAC: {nameLenLocal:x}");
@@ -143,7 +143,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
             if (!mod.IsNullRef)
             {
                 IXCLRDataModule? legacyMod = null;
-                if (_legacyImpl is not null)
+                if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
                 {
                     DacComNullableByRef<IXCLRDataModule> legacyModOut = new(isNullRef: false);
                     int hrLegacy = _legacyImpl.GetTokenAndScope(null, legacyModOut);
@@ -160,7 +160,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
         }
 
 #if DEBUG
-        if (_legacyImpl is not null)
+        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
         {
             bool validateToken = token is not null;
             bool validateMod = !mod.IsNullRef;
@@ -170,7 +170,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
             int hrLocal = _legacyImpl.GetTokenAndScope(validateToken ? &tokenLocal : null, legacyModOut);
 
             Debug.ValidateHResult(hr, hrLocal);
-            if (validateToken && hr >= 0 && hrLocal >= 0)
+            if (validateToken && hr >= 0)
                 Debug.Assert(tokenLocal == *token, $"cDAC: {*token:x}, DAC: {tokenLocal:x}");
         }
 #endif
@@ -184,11 +184,11 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
 
         try
         {
-            if (_typeHandle is null)
-                throw new NotImplementedException();
-
             if (type is null)
                 throw new NullReferenceException();
+
+            if (_typeHandle is null)
+                throw new NotImplementedException();
 
             *type = (uint)_target.Contracts.RuntimeTypeSystem.GetInternalCorElementType(_typeHandle);
         }
@@ -198,13 +198,13 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
         }
 
 #if DEBUG
-        if (_legacyImpl is not null)
+        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
         {
             uint typeLocal = 0;
             int hrLocal = _legacyImpl.GetCorElementType(type is null ? null : &typeLocal);
 
             Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0 && hrLocal >= 0)
+            if (hr >= 0)
                 Debug.Assert(typeLocal == *type, $"cDAC: {*type:x}, DAC: {typeLocal:x}");
         }
 #endif
