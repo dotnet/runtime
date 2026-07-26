@@ -422,6 +422,22 @@ void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* arg
 #endif // FEATURE_JAVAMARSHAL
 }
 
+bool GCToEEInterface::IsClientBridgeProcessingActive()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_JAVAMARSHAL
+    return Interop::IsGCBridgeActive();
+#else
+    return false;
+#endif // FEATURE_JAVAMARSHAL
+}
+
 void GCToEEInterface::SyncBlockCacheDemote(int max_gen)
 {
     CONTRACTL
