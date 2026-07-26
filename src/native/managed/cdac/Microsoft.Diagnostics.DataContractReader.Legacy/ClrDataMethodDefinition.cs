@@ -644,7 +644,6 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     int IXCLRDataMethodDefinition.GetRepresentativeEntryAddress(ClrDataAddress* addr)
     {
         int hr = HResults.S_OK;
-
         try
         {
             if (addr is null)
