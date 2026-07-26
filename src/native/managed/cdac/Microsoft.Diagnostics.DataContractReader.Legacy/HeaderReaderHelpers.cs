@@ -40,7 +40,7 @@ internal static class HeaderReaderHelpers
         if (IsTiny(firstByte))
             return firstByte >> 2;
         if (IsFat(firstByte))
-            return (int)target.Read<uint>(ilHeader + 4);
+            return (int)target.ReadLittleEndian<uint>(ilHeader + 4);
         throw new BadImageFormatException("Invalid IL method header.");
     }
 
@@ -52,7 +52,7 @@ internal static class HeaderReaderHelpers
         if (!IsFat(firstByte))
             return false;
 
-        localVarSigToken = target.Read<int>(ilHeader + 8);
+        localVarSigToken = target.ReadLittleEndian<int>(ilHeader + 8);
         return true;
     }
 }

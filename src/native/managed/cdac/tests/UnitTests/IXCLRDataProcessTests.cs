@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -249,8 +250,7 @@ public unsafe class IXCLRDataProcessTests
             byte[] secondHeader = new byte[FatHeaderSize + FatCodeSize];
             secondHeader[0] = FatFormat;
             secondHeader[1] = FatHeaderDwords << 4;
-            int codeSizeByteOffset = FatCodeSizeOffset + (arch.IsLittleEndian ? 0 : sizeof(uint) - 1);
-            secondHeader[codeSizeByteOffset] = FatCodeSize;
+            BinaryPrimitives.WriteUInt32LittleEndian(secondHeader.AsSpan(FatCodeSizeOffset), FatCodeSize);
             MockMemorySpace.HeapFragment[] memory =
             [
                 new()
