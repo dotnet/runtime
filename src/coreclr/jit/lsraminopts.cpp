@@ -558,6 +558,14 @@ void LinearScan::allocateNodeMinOpts(BasicBlock* block, GenTree* node)
         if (refPosition->refType == RefTypeKill)
         {
             minOptsKilledRegs |= refPosition->getKilledRegisters();
+
+            if (refPosition->delayRegFree)
+            {
+                // This kill reserves its registers for the node that follows this one (the
+                // async continuation and the Swift error register), so nothing this node
+                // defines may land there.
+                minOptsFixedRegsNextLoc |= refPosition->getKilledRegisters();
+            }
         }
         else if (refPosition->isFixedRegRef)
         {

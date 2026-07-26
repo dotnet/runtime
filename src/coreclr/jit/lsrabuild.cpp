@@ -4711,6 +4711,14 @@ void LinearScan::MarkSwiftErrorBusyForCall(GenTreeCall* call)
     assert(call->gtNext != nullptr);
     assert(call->gtNext->OperIs(GT_SWIFT_ERROR));
 
+    if (minOptsRegAlloc)
+    {
+        // The MinOpts allocator does not build RefTypeFixedReg RefPositions, so model this
+        // the same way as the async continuation register instead.
+        setDelayFree(addKillForRegs(RBM_SWIFT_ERROR, currentLoc + 1));
+        return;
+    }
+
     // Conveniently we model the zeroing of the register as a non-standard constant zero argument,
     // which will have created a RefPosition corresponding to the use of the error at the location
     // of the uses. Marking this RefPosition as delay freed has the effect of keeping the register
