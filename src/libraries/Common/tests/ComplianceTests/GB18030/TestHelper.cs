@@ -78,13 +78,15 @@ public static class TestHelper
         using Stream stream = typeof(TestHelper).Assembly.GetManifestResourceStream(TestDataResourceName)
             ?? throw new InvalidOperationException($"Could not find embedded resource '{TestDataResourceName}'.");
 
+        // The manifest resource stream is seekable and reports the exact resource size, so read the
+        // whole thing into a right-sized buffer instead of growing a MemoryStream.
         byte[] bytes = new byte[stream.Length];
         int totalRead = 0;
         while (totalRead < bytes.Length)
         {
             int read = stream.Read(bytes, totalRead, bytes.Length - totalRead);
             if (read == 0)
-                break;
+                throw new EndOfStreamException($"Expected {bytes.Length} bytes from '{TestDataResourceName}' but only read {totalRead}.");
             totalRead += read;
         }
 
