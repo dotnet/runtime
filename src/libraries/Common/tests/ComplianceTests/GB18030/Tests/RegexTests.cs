@@ -85,7 +85,7 @@ public class RegexTests
 
     [Theory]
     [MemberData(nameof(NamedBlock_MemberData))]
-    public async Task NamedBlock_InclusionAsync(string[]characters, RegexNamedBlock namedBlock, RegexEngine engine, CultureInfo culture)
+    public async Task NamedBlock_InclusionAsync(string[] characters, RegexNamedBlock namedBlock, RegexEngine engine, CultureInfo culture)
     {
         Regex r = await RegexHelpers.GetRegexAsync(engine, $@"\p{{{namedBlock}}}", RegexOptions.None, culture);
         foreach (string c in characters)
