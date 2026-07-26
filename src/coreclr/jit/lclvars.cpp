@@ -7093,8 +7093,13 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
     /* Reserve space on the stack by bumping the frame size */
 
     lvaIncrementFrameSize(size);
+#if defined(TARGET_S390X)
+    lcl->SetStackOffset(stkOffs);
+    stkOffs += size;
+#else
     stkOffs += size;
     lcl->SetStackOffset(stkOffs);
+#endif
 
 #ifdef DEBUG
     if (verbose)
