@@ -72,7 +72,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int DacSetTargetConsistencyChecks(Interop.BOOL fEnableAsserts)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null
+        => _legacy is not null
             ? _legacy.DacSetTargetConsistencyChecks(fEnableAsserts)
             : HResults.S_OK;
 
@@ -1646,7 +1646,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
         // Mirror the create onto the legacy DBI
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback())
+        if (_legacy is not null)
         {
             uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(_target).Size;
             nuint legacyHandle = 0;
@@ -1701,7 +1701,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0)
+        if (_legacy is not null && legacyHandle != 0)
         {
             int hrLocal = _legacy.DeleteStackWalk(legacyHandle);
             Debug.ValidateHResult(hr, hrLocal);
@@ -1801,7 +1801,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
         // Mirror to legacy DBI in all builds so the legacy walker tracks the cDAC walker
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0)
+        if (_legacy is not null && legacyHandle != 0)
         {
             int hrLocal = _legacy.SetStackWalkCurrentContext(vmThread, legacyHandle, flag, pContext);
             Debug.ValidateHResult(hr, hrLocal);
@@ -1846,7 +1846,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
 
         // Mirror to legacy DBI in all builds so the legacy walker tracks the cDAC walker
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0)
+        if (_legacy is not null && legacyHandle != 0)
         {
             Interop.BOOL localResult;
             int hrLocal = _legacy.UnwindStackWalkFrame(legacyHandle, &localResult);
@@ -1899,7 +1899,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             return HResults.E_INVALIDARG;
 
         nuint legacyHandle = TryGetLegacyHandle(pSFIHandle);
-        return _legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0
+        return _legacy is not null && legacyHandle != 0
             ? _legacy.GetStackWalkCurrentFrameInfo(legacyHandle, pFrameData, pRetVal)
             : HResults.E_NOTIMPL;
     }
@@ -2426,10 +2426,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetNativeCodeInfo(ulong vmAssembly, uint functionToken, nint pJitManagerList)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeInfo(vmAssembly, functionToken, pJitManagerList) : HResults.E_NOTIMPL;
+        => _legacy is not null ? _legacy.GetNativeCodeInfo(vmAssembly, functionToken, pJitManagerList) : HResults.E_NOTIMPL;
 
     public int GetNativeCodeInfoForAddr(ulong codeAddress, nint pCodeInfo, ulong* pVmModule, uint* pFunctionToken)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeInfoForAddr(codeAddress, pCodeInfo, pVmModule, pFunctionToken) : HResults.E_NOTIMPL;
+        => _legacy is not null ? _legacy.GetNativeCodeInfoForAddr(codeAddress, pCodeInfo, pVmModule, pFunctionToken) : HResults.E_NOTIMPL;
 
     public int IsValueType(ulong vmTypeHandle, Interop.BOOL* pResult)
     {
@@ -4216,7 +4216,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsThreadSuspendedOrHijacked(vmThread, pResult) : HResults.E_NOTIMPL;
+        => _legacy is not null ? _legacy.IsThreadSuspendedOrHijacked(vmThread, pResult) : HResults.E_NOTIMPL;
 
     public int CreateHeapWalk(nuint* pHandle)
     {
@@ -5064,7 +5064,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int GetPEFileMDInternalRW(ulong vmPEAssembly, ulong* pAddrMDInternalRW)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetPEFileMDInternalRW(vmPEAssembly, pAddrMDInternalRW) : HResults.E_NOTIMPL;
+        => _legacy is not null ? _legacy.GetPEFileMDInternalRW(vmPEAssembly, pAddrMDInternalRW) : HResults.E_NOTIMPL;
 
     public int AreOptimizationsDisabled(ulong vmModule, uint methodTk, Interop.BOOL* pOptimizationsDisabled)
     {
