@@ -77,9 +77,24 @@ public static class TestHelper
     {
         using Stream stream = typeof(TestHelper).Assembly.GetManifestResourceStream(TestDataResourceName)
             ?? throw new InvalidOperationException($"Could not find embedded resource '{TestDataResourceName}'.");
-        using MemoryStream memoryStream = new();
-        stream.CopyTo(memoryStream);
-        return memoryStream.ToArray();
+
+        byte[] bytes = new byte[stream.Length];
+        int totalRead = 0;
+        while (totalRead < bytes.Length)
+        {
+            int read = stream.Read(bytes, totalRead, bytes.Length - totalRead);
+            if (read == 0)
+                break;
+            totalRead += read;
+        }
+
+        // The data file is checked in as LF, but 'text=auto' materializes it as CRLF on Windows
+        // checkouts and it is then embedded verbatim, so the embedded bytes depend on the build OS.
+        // This broke the WASM legs: built on Windows (CRLF) but run on mono/WASM where the parser's
+        // LF record delimiters weren't found, throwing from the static constructor and failing every
+        // test. Normalize to LF so the data is identical regardless of build/run OS. Dropping every
+        // 0x0D is safe: it can only be a CR, as it never appears inside a multi-byte GB18030 sequence.
+        return bytes.Where(b => b != (byte)'\r').ToArray();
     }
 
     private static Encoding? s_gb18030Encoding;
@@ -104,7 +119,7 @@ public static class TestHelper
     internal static IEnumerable<string> DecodedTestData { get; } = s_encodedTestData.Select(data => GB18030Encoding.GetString(data)).ToArray();
 
     private static readonly IEnumerable<string> s_splitNewLineDecodedTestData = DecodedTestData.SelectMany(
-        data => data.Split([Environment.NewLine], StringSplitOptions.RemoveEmptyEntries)).ToArray();
+        data => data.Split(['\n'], StringSplitOptions.RemoveEmptyEntries)).ToArray();
 
     internal static IEnumerable<string> NonExceedingPathNameMaxDecodedTestData { get; } =
         s_splitNewLineDecodedTestData.SelectMany<string, string>(
@@ -138,8 +153,11 @@ public static class TestHelper
 
     private static IEnumerable<byte[]> GetTestData()
     {
-        byte[] startDelimiter = GB18030Encoding.GetBytes($":{Environment.NewLine}");
-        byte[] endDelimiter = GB18030Encoding.GetBytes($"{Environment.NewLine}{Environment.NewLine}");
+        // The test data uses LF as its record separator (see ReadTestDataFileBytes, which normalizes
+        // the embedded resource to LF). Parse against '\n' explicitly so the record boundaries never
+        // depend on Environment.NewLine, which varies by runtime (LF on Unix/WASM, CRLF on Windows).
+        byte[] startDelimiter = GB18030Encoding.GetBytes(":\n");
+        byte[] endDelimiter = GB18030Encoding.GetBytes("\n\n");
 
         // Instead of inlining the data in source, parse the test data from an embedded resource to prevent encoding issues.
         ReadOnlyMemory<byte> testFileBytes = TestDataFileBytes;
