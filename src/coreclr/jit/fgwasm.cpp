@@ -2039,8 +2039,7 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                 continue;
             }
 
-            // A non-address-exposed GT_LCL_VAR is not exempt: the copy pushed onto the operand stack
-            //  goes stale if the referent moves, so record it and pin its home at the next call.
+            // We have a ref that may be live across a future call.
             defs.push_back(tree);
         }
 
