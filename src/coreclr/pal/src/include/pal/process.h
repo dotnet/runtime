@@ -156,4 +156,3 @@ VOID PROCLogManagedCallstackForSignal(int signal);
 #endif // __cplusplus
 
 #endif //PAL_PROCESS_H_
-

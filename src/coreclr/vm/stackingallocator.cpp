@@ -150,14 +150,14 @@ void *StackingAllocator::GetCheckpoint()
 
 bool StackingAllocator::AllocNewBlockForBytes(unsigned n)
 {
-    CONTRACT (bool)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(m_CheckpointDepth > 0);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // already aligned and in the hard case
 
@@ -195,7 +195,7 @@ bool StackingAllocator::AllocNewBlockForBytes(unsigned n)
         // this allocator, to get even more MP scalability?</TODO>
         b = (StackBlock *)new (nothrow) char[allocSize];
         if (b == NULL)
-            RETURN false;
+            return false;
 
         // reserve space for the Block structure and then link it in
         b->m_Length = (unsigned) (allocSize - sizeof(StackBlock));
@@ -215,22 +215,21 @@ bool StackingAllocator::AllocNewBlockForBytes(unsigned n)
 
      INDEBUG(b->m_Sentinel = 0);
 
-     RETURN true;
+     return true;
 }
 
 
 void* StackingAllocator::UnsafeAllocSafeThrow(UINT32 Size)
 {
-    CONTRACT (void*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(m_CheckpointDepth > 0);
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // OOM fault injection in AllocNoThrow
 
@@ -238,21 +237,20 @@ void* StackingAllocator::UnsafeAllocSafeThrow(UINT32 Size)
     if (retval == NULL)
         ENCLOSE_IN_EXCEPTION_HANDLER ( ThrowOutOfMemory );
 
-    RETURN retval;
+    return retval;
 }
 
 void *StackingAllocator::UnsafeAlloc(UINT32 Size)
 {
-    CONTRACT (void*)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
         INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(m_CheckpointDepth > 0);
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // OOM fault injection in AllocNoThrow
 
@@ -260,7 +258,7 @@ void *StackingAllocator::UnsafeAlloc(UINT32 Size)
     if (retval == NULL)
         ThrowOutOfMemory();
 
-    RETURN retval;
+    return retval;
 }
 
 

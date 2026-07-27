@@ -26,18 +26,17 @@ PtrHashMap *PEImage::s_ijwFixupDataHash;
 /* static */
 void PEImage::Startup()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckStartup());
         INJECT_FAULT(COMPlusThrowOM(););
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (CheckStartup())
-        RETURN;
+        return;
 
     s_hashLock.Init(CrstPEImage, (CrstFlags)(CRST_REENTRANCY|CRST_TAKEN_DURING_SHUTDOWN));
     LockOwner lock = { &s_hashLock, IsOwnerOfCrst };
@@ -53,7 +52,11 @@ void PEImage::Startup()
     PEImageLayout::Startup();
 #endif // TARGET_WASM
 
-    RETURN;
+#ifdef TARGET_WASM
+    PEImageLayout::Startup();
+#endif // TARGET_WASM
+
+    _ASSERTE(CheckStartup());
 }
 
 /* static */
@@ -121,7 +124,7 @@ BOOL PEImage::CompareIJWDataBase(UPTR base, UPTR mapping)
         MODE_ANY;
     } CONTRACTL_END;
 
-    return ((BYTE *)(base << 1) == ((IJWFixupData*)mapping)->GetBase());
+    return (BYTE *)(base << 1) == ((IJWFixupData*)mapping)->GetBase();
 }
 
 ULONG PEImage::Release()
@@ -443,7 +446,7 @@ PEImage::IJWFixupData *PEImage::GetIJWData(void *pBase)
     }
 
     // Return the new data
-    return (pData);
+    return pData;
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -715,11 +718,11 @@ PTR_PEImageLayout PEImage::CreateFlatLayout()
 /* static */
 PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
 {
-    CONTRACT(PTR_PEImage)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     PEImageHolder pImage(new PEImage(NULL /*path*/));
     PTR_PEImageLayout pLayout = PEImageLayout::CreateFromByteArray(pImage, array, size);
@@ -727,20 +730,19 @@ PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
 
     SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
     pImage->SetLayout(IMAGE_FLAT,pLayout);
-    RETURN dac_cast<PTR_PEImage>(pImage.Detach());
+    return dac_cast<PTR_PEImage>(pImage.Detach());
 }
 
 #ifndef TARGET_UNIX
 /* static */
 PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
 {
-    CONTRACT(PTR_PEImage)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(hMod!=NULL);
-        POSTCONDITION(RETVAL->HasLoadedLayout());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     StackSString path;
     WszGetModuleFileName(hMod, path);
@@ -760,7 +762,8 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
     }
 
     _ASSERTE(pImage->m_pLayouts[IMAGE_FLAT] != NULL);
-    RETURN dac_cast<PTR_PEImage>(pImage.Detach());
+    _ASSERTE(pImage->HasLoadedLayout());
+    return dac_cast<PTR_PEImage>(pImage.Detach());
 }
 #endif // !TARGET_UNIX
 
