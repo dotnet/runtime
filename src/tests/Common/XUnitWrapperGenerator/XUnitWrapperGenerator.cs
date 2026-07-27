@@ -305,10 +305,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     {
         // For simplicity, we'll use top-level statements for the generated Main method.
         CodeBuilder builder = new();
-        AppendAliasMap(builder, aliasMap);
-
         CodeBuilder testExecutorBuilder = new();
         int outOfProcessTestCount = testInfos.Count(static test => test is OutOfProcessTest);
+        if (outOfProcessTestCount != 0)
+        {
+            builder.AppendLine("#nullable enable annotations");
+            builder.AppendLine();
+        }
+        AppendAliasMap(builder, aliasMap);
+
         ITestReporterWrapper reporter =
             new WrapperLibraryTestSummaryReporting(
                 "summary",
@@ -332,7 +337,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                                            + "System.IO.StreamWriter tempLogSw, "
                                            + "System.IO.StreamWriter statsCsvSw"
                                            + (outOfProcessTestCount != 0
-                                               ? ", System.IO.StreamWriter outOfProcessPlanWriter)"
+                                               ? ", System.IO.StreamWriter? outOfProcessPlanWriter)"
                                                : ")"));
             testExecutorBuilder.AppendLine("{");
             testExecutorBuilder.PushIndent();
@@ -451,6 +456,11 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         builder.Append(testExecutorBuilder);
         builder.AppendLine("public static class TestCount { public const int Count = " + testInfos.Length.ToString() + "; }");
+        if (outOfProcessTestCount != 0)
+        {
+            builder.AppendLine();
+            builder.AppendLine("#nullable restore annotations");
+        }
         return builder.GetCode();
     }
 
