@@ -440,7 +440,9 @@ namespace System
         {
             Debug.Assert(number.Kind == NumberBufferKind.Decimal);
 
-            if ((nMaxDigits > 0) && (nMaxDigits < number.DigitsCount))
+            bool rounded = (nMaxDigits > 0) && (nMaxDigits < number.DigitsCount);
+
+            if (rounded)
             {
                 RoundNumber(ref number, nMaxDigits, isCorrectlyRounded: false);
             }
@@ -453,12 +455,17 @@ namespace System
             byte* dig = number.DigitsPtr;
             int digitCount = number.DigitsCount;
 
-            // `Scale` is the coefficient digit count plus the quantum exponent. A zero coefficient has no
-            // stored digits but still participates as the single digit `0` when computing the adjusted exponent.
-            int exponent = number.Scale - digitCount;
-            int adjustedExponent = (digitCount != 0) ? (number.Scale - 1) : exponent;
+            // `Scale` is the coefficient digit count plus the quantum exponent, so `Scale` exceeding the number
+            // of significant digits means the quantum exponent is positive. Rounding drops trailing coefficient
+            // digits without touching `Scale`, so the requested precision is what remains significant in that
+            // case; the dropped digits are recovered as trailing zeros below.
+            int significantDigits = rounded ? nMaxDigits : digitCount;
 
-            if ((exponent > 0) || (adjustedExponent < -4))
+            // A zero coefficient has no stored digits but still participates as the single digit `0` when
+            // computing the adjusted exponent.
+            int adjustedExponent = (digitCount != 0) ? (number.Scale - 1) : number.Scale;
+
+            if ((number.Scale > significantDigits) || (adjustedExponent < -4))
             {
                 vlb.Append(TChar.CastFrom((digitCount != 0) ? (char)dig[0] : '0'));
 
@@ -477,13 +484,14 @@ namespace System
             }
 
             int integerDigits = number.Scale;
-            Debug.Assert(integerDigits <= digitCount);
 
             if (integerDigits > 0)
             {
                 for (int i = 0; i < integerDigits; i++)
                 {
-                    vlb.Append(TChar.CastFrom((char)dig[i]));
+                    // Rounding can leave fewer digits than the scale requires, in which case the remaining
+                    // integer positions are trailing zeros of the rounded coefficient.
+                    vlb.Append(TChar.CastFrom((i < digitCount) ? (char)dig[i] : '0'));
                 }
             }
             else
@@ -491,7 +499,7 @@ namespace System
                 vlb.Append(TChar.CastFrom('0'));
             }
 
-            if (exponent < 0)
+            if (integerDigits < digitCount)
             {
                 vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
 

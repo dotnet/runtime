@@ -417,7 +417,7 @@ namespace System.Tests
                 yield return new object[] { Decimal32.MinValue, "G", defaultFormat, "-9.999999E+96" };
                 yield return new object[] { Decimal32.Epsilon, "G", defaultFormat, "1E-101" };
 
-                // The general specifier honors a precision specifier, where-as the roundtrip specifier ignores it
+                // The general specifier honors a precision specifier, whereas the roundtrip specifier ignores it
                 yield return new object[] { Decimal32.Parse("1234"), "G3", defaultFormat, "1.23E+03" };
                 yield return new object[] { Decimal32.Parse("999"), "G2", defaultFormat, "1E+03" };
                 yield return new object[] { Decimal32.Parse("1.000000"), "G1", defaultFormat, "1" };
@@ -425,6 +425,14 @@ namespace System.Tests
                 yield return new object[] { Decimal32.MaxValue, "G1", defaultFormat, "1E+97" };
                 yield return new object[] { Decimal32.Parse("1234567"), "R5", defaultFormat, "1234567" };
                 yield return new object[] { Decimal32.Parse("1234567"), "G5", defaultFormat, "1.2346E+06" };
+
+                // Rounding drops trailing coefficient digits without changing the quantum exponent
+                yield return new object[] { Decimal32.Parse("10.00000"), "G2", defaultFormat, "10" };
+                yield return new object[] { Decimal32.Parse("10.00000"), "G3", defaultFormat, "10" };
+                yield return new object[] { Decimal32.Parse("1000.400"), "G4", defaultFormat, "1000" };
+                yield return new object[] { Decimal32.Parse("1000.500"), "G3", defaultFormat, "1E+03" };
+                yield return new object[] { Decimal32.Parse("100.0"), "G2", defaultFormat, "1E+02" };
+                yield return new object[] { Decimal32.Parse("0.00012345"), "G2", defaultFormat, "0.00012" };
 
                 yield return new object[] { Decimal32.Parse("2468"), "N", defaultFormat, "2,468.00" };
 

@@ -418,13 +418,21 @@ namespace System.Tests
                 yield return new object[] { Decimal128.MinValue, "G", defaultFormat, "-9." + new string('9', 33) + "E+6144" };
                 yield return new object[] { Decimal128.Epsilon, "G", defaultFormat, "1E-6176" };
 
-                // The general specifier honors a precision specifier, where-as the roundtrip specifier ignores it
+                // The general specifier honors a precision specifier, whereas the roundtrip specifier ignores it
                 yield return new object[] { Decimal128.Parse("1234"), "G3", defaultFormat, "1.23E+03" };
                 yield return new object[] { Decimal128.Parse("999"), "G2", defaultFormat, "1E+03" };
                 yield return new object[] { Decimal128.Parse("1." + new string('0', 33)), "G1", defaultFormat, "1" };
                 yield return new object[] { Decimal128.MaxValue, "G1", defaultFormat, "1E+6145" };
                 yield return new object[] { Decimal128.Parse("1234567890123456789012345678901234"), "R5", defaultFormat, "1234567890123456789012345678901234" };
                 yield return new object[] { Decimal128.Parse("1234567890123456789012345678901234"), "G5", defaultFormat, "1.2346E+33" };
+
+                // Rounding drops trailing coefficient digits without changing the quantum exponent
+                yield return new object[] { Decimal128.Parse("10.00000"), "G2", defaultFormat, "10" };
+                yield return new object[] { Decimal128.Parse("10.00000"), "G3", defaultFormat, "10" };
+                yield return new object[] { Decimal128.Parse("1000.400"), "G4", defaultFormat, "1000" };
+                yield return new object[] { Decimal128.Parse("1000.500"), "G3", defaultFormat, "1E+03" };
+                yield return new object[] { Decimal128.Parse("100.0"), "G2", defaultFormat, "1E+02" };
+                yield return new object[] { Decimal128.Parse("0.00012345"), "G2", defaultFormat, "0.00012" };
 
                 yield return new object[] { Decimal128.Parse("2468"), "N", defaultFormat, "2,468.00" };
 
