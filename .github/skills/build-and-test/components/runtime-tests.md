@@ -48,4 +48,4 @@ $CORE_ROOT/corerun <TestName>.dll
 ```
 
 On Windows: `$env:CORE_ROOT = "$PWD\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root"`,
-then run `$env:CORE_ROOT\corerun.exe <TestName>.dll` from the test's output directory.
+then run `& "$env:CORE_ROOT\corerun.exe" <TestName>.dll` from the test's output directory.

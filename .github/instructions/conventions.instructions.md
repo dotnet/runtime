@@ -10,8 +10,8 @@ and any matching area file (`core-runtime`, `jit`, `system-net-*`, `extensions-*
 `cdac`). Where a more specific file conflicts with a general one, the more specific file wins.
 
 Pull-request process — scope, benchmark evidence, API approval, backport — is in
-[`copilot-instructions.md`](/.github/copilot-instructions.md). Review-only criteria are in
-`.github/skills/code-review/pr-assessment.md`.
+[`copilot-instructions.md`](/.github/copilot-instructions.md). Build and test workflow is in the
+`build-and-test` skill. Review-only criteria are in `.github/skills/code-review/pr-assessment.md`.
 
 ## Change Scope & Justification
 

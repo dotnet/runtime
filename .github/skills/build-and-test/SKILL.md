@@ -20,7 +20,7 @@ Commands below are written for bash. On Windows, use the `.cmd` entrypoints and 
 | `src/tests/build.sh <args>` | `src\tests\build.cmd <args>` |
 | `src/tests/run.sh <args>` | `src\tests\run.cmd <args>` |
 | `export FOO=<value>` | `$env:FOO = '<value>'` |
-| `$CORE_ROOT/corerun <Test>.dll` | `$env:CORE_ROOT\corerun.exe <Test>.dll` |
+| `$CORE_ROOT/corerun <Test>.dll` | `& "$env:CORE_ROOT\corerun.exe" <Test>.dll` |
 | `find <dir> -name '<pattern>'` | `Get-ChildItem <dir> -Recurse -Filter '<pattern>'` |
 | `tail -20 <log>` | `Get-Content <log> -Tail 20` |
 | `grep '<pattern>' <log>` | `Select-String -Path <log> -Pattern '<pattern>'` |
