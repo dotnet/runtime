@@ -56,7 +56,7 @@ namespace ILCompiler
 
         internal MethodDesc GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(MethodDesc declMethod, TypeDesc typeParam)
         {
-            Debug.Assert(((SimpleArrayOfTRuntimeInterfacesAlgorithm)GetRuntimeInterfacesAlgorithmForNonPointerArrayType(SystemModule.Context.GetArrayType(typeParam)))
+            Debug.Assert(((SimpleArrayOfTRuntimeInterfacesAlgorithm)GetRuntimeInterfacesAlgorithmForNonPointerArrayType(declMethod.Context.GetArrayType(typeParam)))
                 .IsGenericRuntimeInterface(declMethod.OwningType));
 
             MethodDesc genericImplementor = SystemModule.GetType("System"u8, "SZArrayHelper"u8, throwIfNotFound: false)?.GetMethod(declMethod.Name, null);
