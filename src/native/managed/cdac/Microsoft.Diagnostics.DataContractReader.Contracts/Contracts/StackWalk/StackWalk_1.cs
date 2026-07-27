@@ -137,7 +137,7 @@ internal partial class StackWalk_1 : IStackWalk
     private void SetupContext(IPlatformAgnosticContext context, FrameIterator frameIterator, StackWalkState state, ref bool isFirst, out bool matchedIsInterrupted)
     {
         TargetPointer curSP = context.StackPointer;
-        TargetCodePointer curPc = CodePointerUtils.CodePointerFromAddress(context.InstructionPointer.AsTargetPointer, _target);
+        TargetCodePointer curPc = context.InstructionPointer;
         TargetPointer curFP = context.FramePointer;
         if (state == StackWalkState.Frameless)
         {
@@ -1076,8 +1076,7 @@ internal partial class StackWalk_1 : IStackWalk
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
-                Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(framePtr);
-                TargetCodePointer returnAddress = CodePointerUtils.StripPtrAuthFromReturnAddress(icf.CallerReturnAddress, _target);
+                TargetCodePointer returnAddress = _frameHelpers.GetReturnAddress(frameData);
                 if (returnAddress != TargetCodePointer.Null && _eman.GetCodeBlockHandle(returnAddress) is CodeBlockHandle cbh)
                 {
                     MethodDescHandle returnMethodDesc = rts.GetMethodDescHandle(_eman.GetMethodDesc(cbh));
