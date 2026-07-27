@@ -530,7 +530,6 @@ class AsyncTransformation
                                                               SuspensionContextHelper   helper,
                                                               GenTree*                  execContext,
                                                               GenTree*                  syncContext);
-    bool                      ReuseContinuations();
     const ContinuationLayout* CreateResumptionsAndSuspensions(ArrayStack<GenTree*>& continuationMemberOffsets);
     void                      CreateResumptionSwitch();
 
