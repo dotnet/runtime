@@ -107,9 +107,9 @@ Async calling convention adds an extra `Continuation` parameter and an extra ret
 The `Continuation` is a managed object and needs to be tracked accordingly. The GC info includes the continuation result as live at Async call sites.
 
 ### Returning `Continuation`
-To return `Continuation` we use a volatile/calee-trash register that cannot be used to return the actual result.
+To return `Continuation` we use a volatile/calee-trash register that cannot be used to return the actual result. WebAssembly has no register file, so it instead uses a dedicated mutable global.
 
-| arch | `REG_ASYNC_CONTINUATION_RET` |
+| arch | Returned in |
 | ------------- | ------------- |
 | x86  | ecx  |
 | x64  | rcx  |
@@ -117,16 +117,7 @@ To return `Continuation` we use a volatile/calee-trash register that cannot be u
 | arm64  | x2  |
 | risc-v  | a2  |
 | loongarch64  | a2  |
-
-On WebAssembly there is no register file, so `Continuation` cannot be returned in a register.
-Instead the runtime module defines and exports a single mutable i32 `WebAssembly.Global` named
-`__async_continuation`, which every R2R webcil module imports (analogous to how `__stack_pointer`
-is shared). R2R codegen writes it on the suspend path, clears it to null on the normal-return
-path, and reads it immediately after each async call. C++ runtime code that bridges the
-interpreter and R2R (and therefore cannot emit `global.get`/`global.set`) accesses the same
-global through the `RuntimeAsync_LoadAsyncContinuation` / `RuntimeAsync_StoreAsyncContinuation`
-accessors (see `src/coreclr/vm/wasmasynccontinuation.h`). Wasm is currently single-threaded;
-when multi-threading is enabled this global becomes per-thread, matching `__stack_pointer`.
+| wasm | Global `__async_continuation` |
 
 ### Passing `Continuation` argument
 The `Continuation` parameter is passed at the same position as generic instantiation parameter or immediately after, if both present. For x86 the argument order is reversed.

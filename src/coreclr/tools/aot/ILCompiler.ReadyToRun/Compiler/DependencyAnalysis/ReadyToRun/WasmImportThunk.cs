@@ -118,7 +118,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     pos++;
                 }
 
-                return (pos < asyncMarkerIndex) && (_wasmSignature.SignatureString[pos] == 'i');
+                char hiddenParamChar = (_context.Target.PointerSize == 4) ? 'i' : 'l';
+                return (pos < asyncMarkerIndex) && (_wasmSignature.SignatureString[pos] == hiddenParamChar);
             }
         }
 
