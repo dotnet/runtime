@@ -12448,6 +12448,13 @@ void emitter::emitDispIns(
         }
     }
 
+    // A GC type implies a pointer-sized operand, but the emitter narrows the recorded size when it
+    // drops REX.W (`xor reg, reg`), so the registers must be named at the size actually encoded.
+    if (EA_SIZE(attr) != id->idOpSize())
+    {
+        attr = id->idOpSize();
+    }
+
     /* Now see what instruction format we've got */
 
     // First print the implicit register usage
@@ -12532,9 +12539,14 @@ void emitter::emitDispIns(
             }
             else
 #endif
-                if (ins == INS_movsx || ins == INS_movzx)
+                if (ins == INS_movsx)
             {
                 attr = EA_PTRSIZE;
+            }
+            else if (ins == INS_movzx)
+            {
+                // movzx never encodes REX.W; the 32-bit write already zeroes the upper bits
+                attr = EA_4BYTE;
             }
             else if ((ins == INS_crc32) && (attr != EA_8BYTE))
             {
@@ -12800,9 +12812,14 @@ void emitter::emitDispIns(
             }
             else
 #endif
-                if (ins == INS_movsx || ins == INS_movzx)
+                if (ins == INS_movsx)
             {
                 attr = EA_PTRSIZE;
+            }
+            else if (ins == INS_movzx)
+            {
+                // movzx never encodes REX.W; the 32-bit write already zeroes the upper bits
+                attr = EA_4BYTE;
             }
             else if ((ins == INS_crc32) && (attr != EA_8BYTE))
             {
@@ -12983,9 +13000,15 @@ void emitter::emitDispIns(
 #endif // TARGET_AMD64
 
                     case INS_movsx:
-                    case INS_movzx:
                     {
                         tgtAttr = EA_PTRSIZE;
+                        break;
+                    }
+
+                    case INS_movzx:
+                    {
+                        // movzx never encodes REX.W; the 32-bit write already zeroes the upper bits
+                        tgtAttr = EA_4BYTE;
                         break;
                     }
 
@@ -13377,9 +13400,14 @@ void emitter::emitDispIns(
         case IF_RWR_MRD:
         case IF_RRW_MRD:
         {
-            if (ins == INS_movsx || ins == INS_movzx)
+            if (ins == INS_movsx)
             {
                 attr = EA_PTRSIZE;
+            }
+            else if (ins == INS_movzx)
+            {
+                // movzx never encodes REX.W; the 32-bit write already zeroes the upper bits
+                attr = EA_4BYTE;
             }
 #ifdef TARGET_AMD64
             else if (ins == INS_movsxd)
