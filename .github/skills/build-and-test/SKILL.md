@@ -49,7 +49,7 @@ Pick the row matching the files you will modify:
 | `src/libraries/` with Browser/WASM or WASI targets in the affected `.csproj` | WASM/WASI Libraries | `./build.sh mono+libs -os browser` |
 | `src/native/corehost/`, `src/installer/` | Host | `./build.sh clr+libs+host -rc release -lc release` |
 | `src/tools`, `src/native/managed` | Tools | `./build.sh clr+libs -rc release` |
-| `src/tasks` | Build Tasks | `./build.sh clr+libs -rc release` |
+| `src/tasks` | Build Tasks | None — `./build.sh tasks` is self-contained |
 | `src/tests` | Runtime Tests | `./build.sh clr+libs -lc release -rc checked` |
 
 **WASM/WASI Library Detection:** A change under `src/libraries/` is WASM/WASI-relevant if the library's `.csproj` has explicit Browser/WASM or WASI targets (`TargetFrameworks`, `TARGET_BROWSER`, `TARGET_WASI` constants, or `Condition` attributes referencing `browser`/`wasi`), **and** the changed file is not excluded from those targets via `Condition` on `<ItemGroup>` or `<Compile>`.
