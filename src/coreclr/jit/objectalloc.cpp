@@ -2843,6 +2843,8 @@ void ObjectAllocator::RewriteUses()
                         call->gtType        = TYP_VOID;
                         call->gtReturnType  = TYP_VOID;
                         GenTree* const mt   = m_compiler->gtNewMethodTableLookup(lcl, /* onStack */ true);
+                        // Unbox takes (target, obj) but Unbox_TypeTest takes (source, target), and names
+                        // them in that order in the cast exception message.
                         call->gtArgs.Remove(secondArg);
                         call->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(mt));
 
