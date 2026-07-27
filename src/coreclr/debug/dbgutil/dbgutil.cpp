@@ -446,6 +446,11 @@ HRESULT ReadFromDataTarget(ICorDebugDataTarget* pDataTarget,
 extern "C" bool
 TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
 {
+    if (symbolAddress == nullptr)
+    {
+        return false;
+    }
+
     *symbolAddress = 0;
 
     DWORD exportTableRva;
