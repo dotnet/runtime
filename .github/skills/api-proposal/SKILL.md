@@ -133,11 +133,11 @@ The skill contains baked-in examples and guidelines for writing good proposals (
 
 #### Prototype Validation (all steps required)
 
-> **Prerequisite:** Follow the build and test workflow in [`copilot-instructions.md`](../../copilot-instructions.md) — complete the baseline build, configure the environment, and use the component-specific workflow for the target library. All build and test steps below assume the baseline build has already succeeded.
+> **Prerequisite:** Follow the build and test workflow in the `build-and-test` skill — complete the baseline build, configure the environment, and use the component-specific workflow for the target library. All build and test steps below assume the baseline build has already succeeded.
 
 **Step 1: Build and test**
 
-Build the src and test projects, then run all tests for the target library using the workflow described in `copilot-instructions.md`. All tests must pass with zero failures.
+Build the src and test projects, then run all tests for the target library using the workflow described in the `build-and-test` skill. All tests must pass with zero failures.
 
 Building the test project separately is critical for detecting **source breaking changes** that ApiCompat won't catch:
 - New overloads/extension methods causing wrong method binding in existing code
