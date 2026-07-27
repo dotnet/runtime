@@ -605,6 +605,11 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             ? new StandaloneTestReporting(testExecutedIdentifier, skipReasonIdentifier)
             : new NoTestReporting();
         CodeBuilder builder = new();
+        if (reportOutOfProcessStatus)
+        {
+            builder.AppendLine("#nullable enable");
+            builder.AppendLine();
+        }
         AppendAliasMap(builder, aliasMap);
         builder.AppendLine("class __GeneratedMainWrapper");
         using (builder.NewBracesScope())
@@ -615,7 +620,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 if (reportOutOfProcessStatus)
                 {
                     builder.AppendLine($"bool {testExecutedIdentifier} = false;");
-                    builder.AppendLine($"string {skipReasonIdentifier} = null;");
+                    builder.AppendLine($"string? {skipReasonIdentifier} = null;");
                     builder.AppendLine();
                 }
                 builder.AppendLine("try");
@@ -635,7 +640,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 if (reportOutOfProcessStatus)
                 {
                     builder.AppendLine();
-                    builder.AppendLine(@"string outOfProcessStatusFile = System.Environment.GetEnvironmentVariable(""__TestOutOfProcessStatusFile"");");
+                    builder.AppendLine(@"string? outOfProcessStatusFile = System.Environment.GetEnvironmentVariable(""__TestOutOfProcessStatusFile"");");
                     builder.AppendLine($"if (!System.String.IsNullOrEmpty(outOfProcessStatusFile) && !{testExecutedIdentifier} && {skipReasonIdentifier} is not null)");
                     using (builder.NewBracesScope())
                     {

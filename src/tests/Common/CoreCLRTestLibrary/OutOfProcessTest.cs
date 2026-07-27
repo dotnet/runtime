@@ -87,7 +87,7 @@ namespace TestLibrary
 
             int ret = -100;
             string baseDir = AppContext.BaseDirectory;
-            string outputDir = System.IO.Path.GetFullPath(Path.Combine(reportBase, Path.GetDirectoryName(assemblyPath)));
+            string outputDir = System.IO.Path.GetFullPath(Path.Combine(reportBase, Path.GetDirectoryName(assemblyPath) ?? string.Empty));
             string outputFile = Path.Combine(outputDir, "output.txt");
             string errorFile = Path.Combine(outputDir, "error.txt");
             string statusFile = Path.Combine(outputDir, Path.GetFileName(assemblyPath) + ".outofprocess-status");
