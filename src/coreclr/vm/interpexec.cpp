@@ -477,7 +477,7 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
     InvokeManagedMethod(targetMethod, pArgs, pRet, callTarget, NULL);
 }
 
-static NOINLINE CallStubHeader* InvokeDelegateInvokeMethodHelper(MethodDesc *pMDDelegateInvoke)
+static NOINLINE CallStubHeader *InvokeDelegateInvokeMethodHelper(MethodDesc *pMDDelegateInvoke)
 {
     CONTRACTL
     {
