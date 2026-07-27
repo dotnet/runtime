@@ -70,7 +70,6 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
     int IXCLRDataTypeDefinition.GetName(uint flags, uint bufLen, uint* nameLen, char* nameBuf)
     {
         int hr = HResults.S_OK;
-
         try
         {
             if (flags != 0)
@@ -134,7 +133,6 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
     int IXCLRDataTypeDefinition.GetTokenAndScope(uint* token, DacComNullableByRef<IXCLRDataModule> mod)
     {
         int hr = HResults.S_OK;
-
         try
         {
             if (token is not null)
@@ -179,7 +177,6 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
     int IXCLRDataTypeDefinition.GetCorElementType(uint* type)
     {
         int hr = HResults.S_OK;
-
         try
         {
             if (type is null)
