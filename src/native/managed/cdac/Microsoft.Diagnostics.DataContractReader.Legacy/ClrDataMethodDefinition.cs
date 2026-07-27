@@ -443,7 +443,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         }
 
 #if DEBUG
-        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
+        if (_legacyImpl is not null)
         {
             ulong legacyHandle = 0;
             int hrLocal = _legacyImpl.StartEnumExtents(handle is null ? null : &legacyHandle);
@@ -497,7 +497,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         }
 
 #if DEBUG
-        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null && extents is { LegacyHandle: not 0 })
+        if (_legacyImpl is not null && extents is { LegacyHandle: not 0 })
         {
             ulong legacyHandle = (ulong)extents.LegacyHandle;
             ClrDataMethodDefinitionExtent extentLocal = default;
@@ -540,7 +540,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         }
 
 #if DEBUG
-        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null && legacyHandle != 0)
+        if (_legacyImpl is not null && legacyHandle != 0)
         {
             int hrLocal = _legacyImpl.EndEnumExtents((ulong)legacyHandle);
             Debug.ValidateHResult(hr, hrLocal);
