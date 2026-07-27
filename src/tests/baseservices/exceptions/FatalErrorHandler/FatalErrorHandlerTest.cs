@@ -14,6 +14,9 @@ unsafe class FatalErrorHandlerTest
     const string HandlerInvokedMarker = "FATAL_HANDLER_INVOKED";
     const string LogReceivedMarker = "FATAL_LOG_RECEIVED:";
     const string AddressMarker = "FATAL_ADDRESS:";
+    const string DiagUnsupportedMarker = "FATAL_DIAG:unsupported";
+    const string DiagJsonOkMarker = "FATAL_DIAG_JSON:ok";
+    const string DiagLogOkMarker = "FATAL_DIAG_LOG:ok";
 
     //
     // P/Invoke declarations for the native handler library.
@@ -33,6 +36,9 @@ unsafe class FatalErrorHandlerTest
 
     [DllImport("FatalErrorHandlerNative")]
     private static extern delegate* unmanaged<int, void*, int> GetHandlerCheckNativeInfo();
+
+    [DllImport("FatalErrorHandlerNative")]
+    private static extern delegate* unmanaged<int, void*, int> GetHandlerCheckDiagnosticData();
 
     [DllImport("FatalErrorHandlerNative")]
     private static extern void TriggerNativeAccessViolation();
@@ -91,6 +97,23 @@ unsafe class FatalErrorHandlerTest
         // Trigger an access violation from *native* code (inside the P/Invoked
         // TriggerNativeAccessViolation).
         TriggerNativeAccessViolation();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunChildDiagnosticData()
+    {
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerCheckDiagnosticData());
+        Environment.FailFast("test fatal error");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunChildDiagnosticDataAccessViolation()
+    {
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerCheckDiagnosticData());
+        // Reach the handler through the managed access-violation (corrupted-state) fatal
+        // path instead of FailFast, so the on-demand report is generated while the runtime
+        // is in the fatal-hardware-exception state rather than a clean FailFast.
+        *(int*)s_badAddress = 0;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -346,6 +369,49 @@ unsafe class FatalErrorHandlerTest
         return handlerInvoked && addressPopulated && firstStructPopulated && secondStructPopulated && exited;
     }
 
+    static bool TestDiagnosticData(string scenario, string crashDescription)
+    {
+        Console.WriteLine($"=== TestDiagnosticData ({crashDescription}) ===");
+
+        // The in-proc crash reporter that backs FEP_DiagnosticDataFunc is compiled for
+        // CoreCLR on Unix/macOS (and mobile). It is not present for CoreCLR on Windows or
+        // for NativeAOT, where the property is reported as unavailable.
+        bool expectSupported = !TestLibrary.Utilities.IsNativeAot && !OperatingSystem.IsWindows();
+
+        var (exitCode, stderr) = LaunchChild(scenario);
+
+        bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
+        bool reportedUnsupported = stderr.Contains(DiagUnsupportedMarker);
+        bool exited = exitCode != 0;
+
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, expect supported: {expectSupported}, reported unsupported: {reportedUnsupported}, exited: {exited}");
+        if (!handlerInvoked)
+            Console.WriteLine("  FAIL: Handler was not invoked");
+        if (!exited)
+            Console.WriteLine("  FAIL: Expected non-zero exit code");
+
+        if (!expectSupported)
+        {
+            // Where the reporter is not compiled the property must be reported as
+            // unavailable rather than misbehave.
+            if (!reportedUnsupported)
+                Console.WriteLine("  FAIL: FEP_DiagnosticDataFunc should be unavailable on this platform");
+            return handlerInvoked && exited && reportedUnsupported;
+        }
+
+        bool jsonOk = stderr.Contains(DiagJsonOkMarker);
+        bool logOk = stderr.Contains(DiagLogOkMarker);
+
+        if (reportedUnsupported)
+            Console.WriteLine("  FAIL: FEP_DiagnosticDataFunc was unavailable on a platform expected to support it");
+        if (!jsonOk)
+            Console.WriteLine("  FAIL: JSON crash report was not produced on demand");
+        if (!logOk)
+            Console.WriteLine("  FAIL: Log crash report was not produced on demand");
+
+        return handlerInvoked && exited && !reportedUnsupported && jsonOk && logOk;
+    }
+
     static bool TestNestedHardwareFault()
     {
         Console.WriteLine("=== TestNestedHardwareFault ===");
@@ -421,6 +487,8 @@ unsafe class FatalErrorHandlerTest
                 case "log-handler":  RunChildLogHandler();  return 1;
                 case "native-exception":        RunChildNativeException();         return 1;
                 case "native-code-exception":   RunChildNativeCodeException();      return 1;
+                case "diagnostic-data":         RunChildDiagnosticData();          return 1;
+                case "diagnostic-data-av":      RunChildDiagnosticDataAccessViolation(); return 1;
                 case "nested-native-exception": RunChildNestedNativeException();   return 1;
                 case "set-null":     return RunChildSetNull();
                 case "set-twice":    return RunChildSetTwice();
@@ -436,6 +504,8 @@ unsafe class FatalErrorHandlerTest
         allPassed &= TestLogHandler();
         allPassed &= TestNativeException("native-exception");
         allPassed &= TestNativeCodeException();
+        allPassed &= TestDiagnosticData("diagnostic-data", "FailFast");
+        allPassed &= TestDiagnosticData("diagnostic-data-av", "managed access violation");
         allPassed &= TestNestedHardwareFault();
         allPassed &= TestSetNull();
         allPassed &= TestSetTwice();

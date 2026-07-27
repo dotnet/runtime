@@ -116,6 +116,57 @@ static int DOTNET_CALLCONV HandlerCheckNativeInfo(int /*hresult*/, FatalErrorPro
     return SkipDefaultHandler;
 }
 
+// Sink that receives on-demand diagnostic data fragments and counts the bytes it saw.
+struct DiagnosticSinkState
+{
+    size_t bytes;
+};
+
+static bool DOTNET_CALLCONV DiagnosticSink(const char* data, size_t length, void* userContext)
+{
+    DiagnosticSinkState* state = reinterpret_cast<DiagnosticSinkState*>(userContext);
+    if (state != NULL && data != NULL)
+        state->bytes += length;
+    return true;
+}
+
+// Produces one on-demand report of the requested type and reports whether the runtime
+// streamed any data back through the sink. Returns true when the report succeeded.
+static bool ProduceReport(DiagnosticDataFunc pfnDiag, DiagnosticDataType type)
+{
+    DiagnosticSinkState state = {};
+    DiagnosticDataConfig config = {};
+    config.type = type;
+    config.size = static_cast<uint32_t>(sizeof(config));
+    config.pfnOutput = DiagnosticSink;
+    config.userContext = &state;
+    return pfnDiag(&config) && state.bytes > 0;
+}
+
+// Handler that requests the on-demand diagnostic-data entry point and generates both a
+// JSON and a Log crash report. Where the in-proc crash reporter is not compiled (for
+// example CoreCLR on Windows, or NativeAOT), FEP_DiagnosticDataFunc is reported as
+// unavailable; the handler reports that so the managed test can decide whether the
+// platform was expected to support it.
+static int DOTNET_CALLCONV HandlerCheckDiagnosticData(int /*hresult*/, FatalErrorPropertyGetter getProperty)
+{
+    WriteStdErr("FATAL_HANDLER_INVOKED\n");
+
+    const void* pFunc = NULL;
+    if (getProperty(FEP_DiagnosticDataFunc, &pFunc) == 0 || pFunc == NULL)
+    {
+        WriteStdErr("FATAL_DIAG:unsupported\n");
+        return SkipDefaultHandler;
+    }
+
+    DiagnosticDataFunc pfnDiag = reinterpret_cast<DiagnosticDataFunc>(reinterpret_cast<uintptr_t>(pFunc));
+
+    WriteStdErr(ProduceReport(pfnDiag, JsonCrashReport) ? "FATAL_DIAG_JSON:ok\n" : "FATAL_DIAG_JSON:fail\n");
+    WriteStdErr(ProduceReport(pfnDiag, LogCrashReport) ? "FATAL_DIAG_LOG:ok\n" : "FATAL_DIAG_LOG:fail\n");
+
+    return SkipDefaultHandler;
+}
+
 // Exported accessors — managed code P/Invokes these to get native function pointers.
 using FatalErrorHandler = int (DOTNET_CALLCONV *)(int hresult, FatalErrorPropertyGetter getProperty);
 
@@ -142,6 +193,11 @@ extern "C" DLL_EXPORT FatalErrorHandler GetHandlerCheckInfo()
 extern "C" DLL_EXPORT FatalErrorHandler GetHandlerCheckNativeInfo()
 {
     return HandlerCheckNativeInfo;
+}
+
+extern "C" DLL_EXPORT FatalErrorHandler GetHandlerCheckDiagnosticData()
+{
+    return HandlerCheckDiagnosticData;
 }
 
 // Triggers an access violation from native code — a genuinely-unmanaged fatal fault whose
