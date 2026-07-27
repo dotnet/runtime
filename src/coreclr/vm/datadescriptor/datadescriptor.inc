@@ -629,6 +629,7 @@ CDAC_TYPE_BEGIN(TypeVarTypeDesc)
 CDAC_TYPE_INDETERMINATE(TypeVarTypeDesc)
 CDAC_TYPE_FIELD(TypeVarTypeDesc, T_POINTER, Module, cdac_data<TypeVarTypeDesc>::Module)
 CDAC_TYPE_FIELD(TypeVarTypeDesc, T_UINT32, Token, cdac_data<TypeVarTypeDesc>::Token)
+CDAC_TYPE_FIELD(TypeVarTypeDesc, T_UINT32, Index, cdac_data<TypeVarTypeDesc>::Index)
 CDAC_TYPE_END(TypeVarTypeDesc)
 
 CDAC_TYPE_BEGIN(FnPtrTypeDesc)
@@ -1135,7 +1136,18 @@ CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, EndAddress, offsetof(HeapList, endA
 CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, MapBase, offsetof(HeapList, mapBase))
 CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, HeaderMap, offsetof(HeapList, pHdrMap))
 CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, Heap, offsetof(HeapList, pHeap))
+#ifdef TARGET_64BIT
+CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, CLRPersonalityRoutine, offsetof(HeapList, CLRPersonalityRoutine))
+#endif
 CDAC_TYPE_END(CodeHeapListNode)
+
+#if !defined(TARGET_UNIX) && !defined(TARGET_X86)
+CDAC_TYPE_BEGIN(DynamicFunctionTable)
+CDAC_TYPE_INDETERMINATE(DynamicFunctionTable)
+CDAC_TYPE_FIELD(DynamicFunctionTable, T_POINTER, MinimumAddress, offsetof(DYNAMIC_FUNCTION_TABLE, MinimumAddress))
+CDAC_TYPE_FIELD(DynamicFunctionTable, T_POINTER, Context, offsetof(DYNAMIC_FUNCTION_TABLE, Context))
+CDAC_TYPE_END(DynamicFunctionTable)
+#endif // !defined(TARGET_UNIX) && !defined(TARGET_X86)
 
 CDAC_TYPE_BEGIN(CodeHeap)
 CDAC_TYPE_INDETERMINATE(CodeHeap)

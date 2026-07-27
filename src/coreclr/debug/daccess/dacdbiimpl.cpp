@@ -32,7 +32,6 @@
 #include "conditionalweaktable.h"
 
 #ifndef USE_DAC_TABLE_RVA
-extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
 #include <clrconfignocache.h>
 #define CAN_USE_CDAC
 #endif
@@ -252,10 +251,16 @@ DLLEXPORT
 DacDbiInterfaceInstance(
     ICorDebugDataTarget * pTarget,
     CORDB_ADDRESS baseAddress,
+    CLRDATA_ADDRESS contractDescriptorAddress,
     IDacDbiInterface::IAllocator * pAllocator,
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup,
     IDacDbiInterface ** ppInterface)
 {
+#ifndef CAN_USE_CDAC
+    // Consumed only by the cDAC path, which is compiled out here.
+    (void)contractDescriptorAddress;
+#endif
+
     // No marshalling is done by the instantiationf function - we just need to setup the infrastructure.
     // We don't want to warn if this involves creating and accessing undacized data structures,
     // because it's for the infrastructure, not DACized code itself.
@@ -293,8 +298,8 @@ DacDbiInterfaceInstance(
         DWORD val;
         if (enable.TryAsInteger(10, val) && val == 1)
         {
-            uint64_t contractDescriptorAddr = 0;
-            if (TryGetSymbol(pDac->m_pTarget, pDac->m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+            uint64_t contractDescriptorAddr = contractDescriptorAddress;
+            if (contractDescriptorAddr != 0)
             {
                 IUnknown* legacyImpl;
                 HRESULT qiRes = pDac->QueryInterface(IID_IUnknown, (void**)&legacyImpl);

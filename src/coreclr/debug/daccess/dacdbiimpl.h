@@ -24,6 +24,7 @@ DLLEXPORT
 DacDbiInterfaceInstance(
     ICorDebugDataTarget * pTarget,
     CORDB_ADDRESS baseAddress,
+    CLRDATA_ADDRESS contractDescriptorAddress,
     IDacDbiInterface::IAllocator * pAllocator,
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup,
     IDacDbiInterface ** ppInterface);
