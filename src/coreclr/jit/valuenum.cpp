@@ -12758,6 +12758,16 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
+#if defined(TARGET_ARM64) && defined(DEBUG)
+            if (JitConfig.JitUseScalableVectorT())
+            {
+                simdmaskscalable_t simdmaskVal = tree->AsMskCon()->gtSimdScalableMaskVal;
+
+                tree->gtVNPair.SetBoth(vnStore->VNForSimdMaskScalableCon(simdmaskVal));
+                break;
+            }
+#endif // TARGET_ARM64 && DEBUG
+
             simdmask_t simdmaskVal;
             memcpy(&simdmaskVal, &tree->AsMskCon()->gtSimdMaskVal, sizeof(simdmask_t));
 
