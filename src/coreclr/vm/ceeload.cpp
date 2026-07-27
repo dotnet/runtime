@@ -1089,7 +1089,7 @@ BOOL Module::HasDefaultDllImportSearchPathsAttribute()
     }
     CONTRACTL_END;
 
-    if(IsDefaultDllImportSearchPathsAttributeCached())
+    if (m_dwPersistedFlags & DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED)
     {
         return (m_dwPersistedFlags & DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS) != 0 ;
     }
@@ -1108,15 +1108,6 @@ BOOL Module::HasDefaultDllImportSearchPathsAttribute()
     return (m_dwPersistedFlags & DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS) != 0 ;
 }
 
-// Returns a BOOL to indicate if we have computed whether compiler has instructed us to
-// wrap the non-CLS compliant exceptions or not.
-BOOL Module::IsRuntimeWrapExceptionsStatusComputed()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return (m_dwPersistedFlags & COMPUTED_WRAP_EXCEPTIONS);
-}
-
 BOOL Module::IsRuntimeWrapExceptionsDuringEH()
 {
     CONTRACTL
@@ -1128,9 +1119,9 @@ BOOL Module::IsRuntimeWrapExceptionsDuringEH()
     CONTRACTL_END
 
     // This method assumes that the runtime wrap exceptions status has already been computed.
-    // IsRuntimeWrapExceptionsStatusComputed() returns TRUE before calling this method, but
+    // COMPUTED_WRAP_EXCEPTIONS is set before calling this method, but
     // that should be done as part of Module activation, so we shouldn't need to worry about that.
-    _ASSERTE(IsRuntimeWrapExceptionsStatusComputed());
+    _ASSERTE(m_dwPersistedFlags & COMPUTED_WRAP_EXCEPTIONS);
     return (m_dwPersistedFlags & WRAP_EXCEPTIONS) != 0;
 }
 
@@ -1144,7 +1135,7 @@ BOOL Module::IsRuntimeWrapExceptions()
     }
     CONTRACTL_END
 
-    if (!(IsRuntimeWrapExceptionsStatusComputed()))
+    if (!(m_dwPersistedFlags & COMPUTED_WRAP_EXCEPTIONS))
     {
         UpdateCachedIsRuntimeWrapExceptions();
     }
@@ -1192,15 +1183,9 @@ ErrExit:
 
 BOOL Module::IsRuntimeMarshallingEnabled()
 {
-    CONTRACTL
-    {
-        THROWS;
-        if (IsRuntimeMarshallingEnabledCached()) GC_NOTRIGGER; else GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END
+    STANDARD_VM_CONTRACT;
 
-    if (IsRuntimeMarshallingEnabledCached())
+    if (m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED_IS_CACHED)
     {
         return !!(m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED);
     }
@@ -1228,15 +1213,9 @@ BOOL Module::IsRuntimeMarshallingEnabled()
 
 BOOL Module::OptsIntoRefSafetyRulesV11()
 {
-    CONTRACTL
-    {
-        THROWS;
-        if (OptsIntoRefSafetyRulesV11Cached()) GC_NOTRIGGER; else GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END
+    STANDARD_VM_CONTRACT;
 
-    if (OptsIntoRefSafetyRulesV11Cached())
+    if (m_dwPersistedFlags & REF_SAFETY_RULES_V11_IS_CACHED)
     {
         return !!(m_dwPersistedFlags & REF_SAFETY_RULES_V11);
     }

@@ -158,7 +158,7 @@ BOOL PInvokeMethodDesc::HasDefaultDllImportSearchPathsAttribute()
     }
     CONTRACTL_END;
 
-    if(IsDefaultDllImportSearchPathsAttributeCached())
+    if (m_wPInvokeFlags & kDefaultDllImportSearchPathsIsCached)
     {
         return (m_wPInvokeFlags  & kDefaultDllImportSearchPathsStatus) != 0;
     }
