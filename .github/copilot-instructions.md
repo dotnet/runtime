@@ -1,14 +1,8 @@
-When reviewing pull requests, use the `code-review` skill unless the user has stated they will review the changes themselves.
-
 **Any code you commit MUST compile, and new and existing tests related to the change MUST pass.**
 
-You MUST make your best effort to ensure any code changes satisfy those criteria before committing. If for any reason you were unable to build or test code changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
+You MUST make your best effort to ensure any code changes satisfy those criteria before committing. Build and run the relevant tests after your last edit — do not assume a change fixed a failure you saw, actually run them again to confirm. If for any reason you were unable to build or test code changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
 
-If you make code changes, do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm.
-
-When running under CCA and before completing, use the `code-review` skill to review your code changes. Any issues flagged as errors or warnings should be addressed before the task is considered complete.
-
-When NOT running under CCA, skip the `code-review` skill if the user has stated they will review the changes themselves.
+Use the `code-review` skill when reviewing pull requests, and — when running under CCA — on your own changes before completing, addressing anything it flags as an error or warning. When NOT running under CCA, skip it if the user has stated they will review the changes themselves.
 
 Before making changes to a directory, search for `README.md` files in that directory and its parent directories up to the repository root. Read any you find — they contain conventions, patterns, and architectural context relevant to your work.
 
@@ -18,7 +12,7 @@ When writing or reviewing SIMD / hardware-intrinsics code (anything using `Vecto
 
 You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
 
-In addition to the rules enforced by `.editorconfig`, you SHOULD:
+In addition to the rules enforced by `.editorconfig`, when writing C# you SHOULD:
 
 - Prefer file-scoped namespace declarations and single-line using directives.
 - Ensure that the final return statement of a method is on its own line.
@@ -28,17 +22,20 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - Trust the C# null annotations and don't add null checks when the type system says a value cannot be null.
 - Prefer `?.` if applicable (e.g. `scope?.Dispose()`).
 - Use `ObjectDisposedException.ThrowIf` where applicable.
-- When adding new unit tests, strongly prefer to add them to existing test code files rather than creating new code files.
-- When adding new test files, examine the directory structure of sibling tests first. Some test directories use flat files (e.g., `GCEvents.cs` alongside `GCEvents.csproj`) while others use per-test subdirectories. Match the existing convention.
-- When working with tests, look for `README.md` files along the directory hierarchy (starting from the test's directory and walking up). These contain build, run, and authoring guidance specific to that test area.
-- When adding new unit tests, avoid adding a regression comment citing a GitHub issue or PR number unless explicitly asked to include such information.
-- When writing tests, prefer using `[Theory]` with multiple data sources (like `[InlineData]` or `[MemberData]`) over multiple duplicative `[Fact]` methods. Fewer test methods that validate more inputs are better than many similar test methods.
 - If you add new code files, ensure they are listed in the csproj file (if other files in that folder are listed there) so they build.
+- When adding XML documentation to APIs, follow the guidelines at [`docs.prompt.md`](/.github/prompts/docs.prompt.md).
+
+When writing or modifying tests, you SHOULD:
+
+- Strongly prefer to add new unit tests to existing test code files rather than creating new code files.
+- When adding new test files, examine the directory structure of sibling tests first. Some test directories use flat files (e.g., `GCEvents.cs` alongside `GCEvents.csproj`) while others use per-test subdirectories. Match the existing convention.
+- Avoid adding a regression comment citing a GitHub issue or PR number unless explicitly asked to include such information.
+- Prefer using `[Theory]` with multiple data sources (like `[InlineData]` or `[MemberData]`) over multiple duplicative `[Fact]` methods. Fewer test methods that validate more inputs are better than many similar test methods.
 - When running tests, if possible use filters and check test run counts, or look at test logs, to ensure they actually ran.
 - Do not finish work with any tests commented out or disabled that were not previously commented out or disabled.
-- When writing tests, do not emit "Act", "Arrange" or "Assert" comments.
-- For markdown (`.md`) files, ensure there is no trailing whitespace at the end of any line.
-- When adding XML documentation to APIs, follow the guidelines at [`docs.prompt.md`](/.github/prompts/docs.prompt.md).
+- Do not emit "Act", "Arrange" or "Assert" comments.
+
+For markdown (`.md`) files, ensure there is no trailing whitespace at the end of any line.
 
 When NOT running under CCA, guidance for creating commits and pushing changes:
 
@@ -50,88 +47,68 @@ When NOT running under CCA, guidance for creating commits and pushing changes:
 
 ## AI-Generated Content Disclosure
 
-When posting any content to GitHub under a user's credentials — opening PRs, creating issues, commenting on PRs or issues, posting review comments, or any other public-facing action — and the account is **not** a dedicated "copilot" or "bot" account/app (e.g., `github-actions[bot]`, `copilot`), you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) at the bottom of the content indicating the content was AI/Copilot-generated.
-
-This applies to all GitHub interactions: PR descriptions, issue bodies, comments, review comments, etc. Exceptions:
-- The account is a recognized bot or Copilot app account (e.g., `github-actions[bot]`, `copilot`), where the AI origin is already apparent from the account identity.
-- The user explicitly asks you to omit the disclosure.
+When posting to GitHub under a user's credentials — PR descriptions, issue bodies, comments, review comments, or any other public-facing action — you **MUST** add a concise, visible note (e.g. a `> [!NOTE]` alert) at the bottom of the content indicating it was AI/Copilot-generated. Skip it only when posting from a recognized bot or Copilot app account (e.g. `github-actions[bot]`, `copilot`), where the AI origin is already apparent from the account identity, or when the user explicitly asks you to omit it.
 
 ---
 
 # Building & Testing in dotnet/runtime
 
+## Shell Conventions
+
+Commands below are written for bash. On Windows, use the `.cmd` entrypoints and PowerShell equivalents:
+
+| bash | Windows (PowerShell) |
+|------|----------------------|
+| `./build.sh <args>` | `.\build.cmd <args>` |
+| `src/tests/build.sh <args>` | `src\tests\build.cmd <args>` |
+| `src/tests/run.sh <args>` | `src\tests\run.cmd <args>` |
+| `export FOO=<value>` | `$env:FOO = '<value>'` |
+| `$CORE_ROOT/corerun <Test>.dll` | `$env:CORE_ROOT\corerun.exe <Test>.dll` |
+| `find <dir> -name '<pattern>'` | `Get-ChildItem <dir> -Recurse -Filter '<pattern>'` |
+
+Some arguments also differ in casing: `-priority1` on bash is `-Priority 1` on Windows.
+
 ## Baseline Build
 
-A successful baseline build of the affected component is required for incremental builds and tests. Without it you'll hit "missing testhost" and "shared framework" errors that cost 20+ minutes per occurrence.
+A successful baseline build of the affected component is required for incremental builds and tests. Without it you'll hit "missing testhost" and "shared framework" errors that cost 20+ minutes per occurrence. If a baseline build fails, STOP, report the failure, and do not attempt to work around it.
 
-### When running under CCA — MANDATORY WITH ONE EXCEPTION
+### When a baseline is required
 
-⚠️ **RULE: You MUST complete the baseline build BEFORE making any code changes.** The CCA environment is fresh; there are no pre-existing artifacts, and incremental builds will fail in ways that waste significant compute. Skipping this step IS a task failure — do not proceed with code changes until the baseline build succeeds.
+- **Under CCA — always, before making any code changes.** ⚠️ The environment is fresh, so there are no pre-existing artifacts and incremental builds fail in ways that waste significant compute. Skipping this step IS a task failure. **Exception:** if you are on a feature branch with commits upstream of main and the baseline build fails, make whatever code changes are needed to fix the build, then resume requiring a baseline.
+- **Under CLI (interactive) — only when needed.** A usable baseline may already exist from prior work; don't re-run a 40-minute build unnecessarily. Check the component's **Baseline sentinel** path under `artifacts/` (listed per component below) and build if it is missing. Otherwise attempt the work, and if it fails with a baseline-missing signature from [Troubleshooting](#troubleshooting), run the baseline once and retry — do not loop. Trust volunteered user signals ("just built", "fresh checkout") over probing.
+- **Unsure which mode you're in?** Follow the CCA rule.
 
-If the baseline build fails, STOP, report the failure, and do not attempt to work around it.
+### Step 1: Build the Baseline (from repo root)
 
-⚠️ **EXCEPTION:** If you are on a feature branch with commits upstream of main, and you encounter a build failure in your attempt to run a baseline build, this rule does **NOT** apply. Make any code changes necessary to fix the build. Once said changes are committed , return to requiring a baseline build.
+Pick the row matching the files you will modify:
 
-### When running under CLI (interactive) — flexible
-
-A baseline may already exist in the user's workspace from prior work. Don't re-run a 40-minute baseline if the existing one is usable. Apply this rule (works for human users and for local agents driving the CLI):
-
-1. **Check the sentinel artifact** for the work you're about to do. Each component-specific workflow below lists a sentinel path under `artifacts/`. If it's missing, run the baseline before proceeding.
-2. **Otherwise, attempt the incremental work.** If a build or test step then fails with a baseline-missing signature from [Troubleshooting](#troubleshooting) (e.g., "shared framework must be built", "testhost" missing, `FileNotFoundException` on shared framework paths), run the baseline once and retry. Do not loop.
-3. **Honor explicit user signals when offered.** If the user (or a driving agent) volunteered "just built" / "skip baseline", trust it and skip step 1's check. If they said "fresh checkout" / "no baseline", run the baseline up front without probing.
-
-If you're uncertain which mode you're in, follow the CCA rule.
-
-The remaining steps below apply in both modes whenever a baseline build is actually being performed.
-
-### Step 1: Identify Your Component
-
-Based on file paths you will modify:
-
-| Files Changed | Component |
-|---------------|-----------|
-| `src/coreclr/` | CoreCLR |
-| `src/mono/` | Mono |
-| `src/libraries/` (no Browser/WASM or WASI targets) | Libraries |
-| `src/libraries/` with Browser/WASM or WASI targets in the affected `.csproj` | WASM/WASI Libraries |
-| `src/native/corehost/`, `src/installer/` | Host |
-| `src/tools` | Tools |
-| `src/native/managed` | Tools |
-| `src/tasks` | Build Tasks |
-| `src/tests` | Runtime Tests |
+| Files Changed | Component | Baseline Build |
+|---------------|-----------|----------------|
+| `src/coreclr/` | CoreCLR | `./build.sh clr+libs+host` |
+| `src/mono/` | Mono | `./build.sh mono+libs` |
+| `src/libraries/` (no Browser/WASM or WASI targets) | Libraries | `./build.sh clr+libs -rc release` |
+| `src/libraries/` with Browser/WASM or WASI targets in the affected `.csproj` | WASM/WASI Libraries | `./build.sh mono+libs -os browser` |
+| `src/native/corehost/`, `src/installer/` | Host | `./build.sh clr+libs+host -rc release -lc release` |
+| `src/tools`, `src/native/managed` | Tools | `./build.sh clr+libs -rc release` |
+| `src/tasks` | Build Tasks | `./build.sh clr+libs -rc release` |
+| `src/tests` | Runtime Tests | `./build.sh clr+libs -lc release -rc checked` |
 
 **WASM/WASI Library Detection:** A change under `src/libraries/` is WASM/WASI-relevant if the library's `.csproj` has explicit Browser/WASM or WASI targets (`TargetFrameworks`, `TARGET_BROWSER`, `TARGET_WASI` constants, or `Condition` attributes referencing `browser`/`wasi`), **and** the changed file is not excluded from those targets via `Condition` on `<ItemGroup>` or `<Compile>`.
 
-### Step 2: Run the Baseline Build (from repo root)
-
-From the repo root, run the appropriate build command on the branch you intend to modify. The baseline reflects whatever is in your working tree at that moment, so:
-
-- If you're baselining up front (CCA, or CLI with a fresh checkout), ensure HEAD is clean — no uncommitted changes.
-- If you're baselining after a probe failure and already have work-in-progress changes, either stash them first or accept that the baseline incorporates those changes.
-
-| Component | Command |
-|-----------|---------|
-| **CoreCLR** | `./build.sh clr+libs+host` |
-| **Mono** | `./build.sh mono+libs` |
-| **Libraries** | `./build.sh clr+libs -rc release` |
-| **WASM Libraries** | `./build.sh mono+libs -os browser` |
-| **Host** | `./build.sh clr+libs+host -rc release -lc release` |
-| **Tools** | `./build.sh clr+libs -rc release` |
-| **Build Tasks** | `./build.sh clr+libs -rc release` |
-| **Runtime Tests** | `./build.sh clr+libs -lc release -rc checked` |
-
 For System.Private.CoreLib changes, use `-rc checked` instead of `-rc release` for asserts.
+
+Build on the branch you intend to modify — the baseline reflects your working tree at that moment. Baselining up front requires a clean HEAD; baselining after a probe failure means either stashing work-in-progress changes first or accepting that the baseline incorporates them.
 
 ⏱️ **This build can take up to 40 minutes.** Do not cancel unless no output for 5+ minutes.
 
-### Step 3: Configure Environment
+### Step 2: Configure Environment
 
 ```bash
 export PATH="$(pwd)/.dotnet:$PATH"
 dotnet --version  # Should match sdk.version in global.json
 ```
 
-**If the baseline build fails, report the failure and stop** before proceeding with changes that depend on it.
+On Windows: `$env:PATH = "$PWD\.dotnet;$env:PATH"`
 
 ---
 
@@ -155,8 +132,6 @@ Test projects are typically at: `tests/<LibraryName>.Tests.csproj` or `tests/<Li
 **Test all libraries:** `./build.sh libs.tests -test -rc release`
 
 **System.Private.CoreLib:** Rebuild with `./build.sh clr.corelib+clr.nativecorelib+libs.pretest -rc checked`
-
-Before completing, ensure ALL tests for affected libraries pass.
 
 ### CoreCLR
 
@@ -250,6 +225,9 @@ $CORE_ROOT/corerun <TestName>.dll
 # Exit code 100 = pass, any other value = fail.
 ```
 
+On Windows: `$env:CORE_ROOT = "$PWD\artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root"`, then
+run `$env:CORE_ROOT\corerun.exe <TestName>.dll` from the test's output directory.
+
 ---
 
 ## Adding new tests
@@ -267,14 +245,12 @@ Do not mark a regression test task as complete until both conditions are confirm
 | Error | Solution |
 |-------|----------|
 | "shared framework must be built" | Run baseline build: `./build.sh clr+libs -rc release` |
-| "testhost" missing / FileNotFoundException | Run baseline build first (Step 2 above) |
+| "testhost" missing / FileNotFoundException | Run baseline build first (Step 1 above) |
 | Build timeout | Wait up to 40 min; only fail if no output for 5 min |
 | "Target does not exist" | Avoid specifying a target framework; the build will auto-select `$(NetCoreAppCurrent)` |
 | "0 test projects" after `build.sh -Test` | The test has `<CLRTestPriority>` > 0; add `-priority1` to the build command |
 
 **When reporting failures:** Include logs from `artifacts/log/` and console output for diagnostics.
-
-**Windows:** Use `build.cmd` instead of `build.sh`.
 
 ---
 
