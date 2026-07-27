@@ -79,6 +79,7 @@ LWM(GetSZArrayHelperEnumeratorClass, DWORDLONG, DWORDLONG)
 LWM(GetDelegateCtor, Agnostic_GetDelegateCtorIn, Agnostic_GetDelegateCtorOut)
 LWM(GetEEInfo, DWORD, Agnostic_CORINFO_EE_INFO)
 LWM(GetAsyncInfo, DWORD, Agnostic_CORINFO_ASYNC_INFO)
+LWM(GetAwaitReturnCall, DWORDLONG, Agnostic_GetAwaitReturnCallResult)
 LWM(GetEHinfo, DLD, Agnostic_CORINFO_EH_CLAUSE)
 LWM(GetStaticFieldContent, DLDDD, DD)
 LWM(GetObjectContent, DLDD, DD)
@@ -138,8 +139,6 @@ LWM(GetTokenTypeAsHandle, GetTokenTypeAsHandleValue, DWORDLONG)
 LWM(GetTypeForBox, DWORDLONG, DWORDLONG)
 LWM(GetTypeForPrimitiveValueClass, DWORDLONG, DWORD)
 LWM(GetTypeForPrimitiveNumericClass, DWORDLONG, DWORD)
-LWM(GetUnboxedEntry, DWORDLONG, DLD);
-LWM(GetInstantiatedEntry, DWORDLONG, Agnostic_GetInstantiatedEntryResult);
 LWM(GetAsyncOtherVariant, DWORDLONG, DLD);
 LWM(GetUnBoxHelper, DWORDLONG, DWORD)
 LWM(GetRuntimeTypePointer, DWORDLONG, DWORDLONG)
@@ -174,6 +173,8 @@ LWM(GetUnmanagedCallConv, MethodOrSigInfoValue, DD)
 LWM(DoesFieldBelongToClass, DLDL, DWORD)
 DENSELWM(SigInstHandleMap, DWORDLONG)
 LWM(GetWasmTypeSymbol, Agnostic_GetWasmTypeSymbol, DWORDLONG)
+LWM(GetAddressAlignment, DWORDLONG, DWORD)
+LWM(GetWasmWellKnownGlobals, DWORD, Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS)
 
 #undef LWM
 #undef DENSELWM

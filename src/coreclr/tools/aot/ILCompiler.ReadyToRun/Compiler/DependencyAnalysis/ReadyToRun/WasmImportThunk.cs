@@ -5,6 +5,7 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
+using Internal.CallingConvention;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
@@ -124,17 +125,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ISymbolNode helperTypeIndex = factory.WasmTypeNode(_helperTypeParams);
 
             MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
-            (ArgIterator argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
+            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
 
             int[] offsets = new int[methodSignature.Length];
             bool[] isIndirectStructArg = new bool[methodSignature.Length];
+            bool hasRetBuffArg = _wasmSignature.SignatureString[0] == 'S';
 
             int argIndex = 0;
             int argOffset;
             while ((argOffset = argit.GetNextOffset()) != TransitionBlock.InvalidOffset)
             {
                 offsets[argIndex] = argOffset;
-                isIndirectStructArg[argIndex] = argit.IsArgPassedByRef() && argit.IsValueType();
+                isIndirectStructArg[argIndex] = WasmLowering.CurrentArgLowersValueTypeToPassAsByref(argit);
                 argIndex++;
             }
 
@@ -192,6 +194,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 expressions.Add(Local.Get(0));
                 expressions.Add(Local.Get(wasmLocalIndex));
                 expressions.Add(I32.Store((ulong)transitionBlock.ThisOffset));
+                wasmLocalIndex++;
+            }
+
+            if (hasRetBuffArg)
+            {
                 wasmLocalIndex++;
             }
 
@@ -299,6 +306,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 expressions.Add(Local.Get(0));
                 expressions.Add(I32.Load((ulong)transitionBlock.ThisOffset));
+                wasmLocalIndex++;
+            }
+
+            // Pass return buffer argument if needed
+            if (hasRetBuffArg)
+            {
+                expressions.Add(Local.Get(wasmLocalIndex));
                 wasmLocalIndex++;
             }
 

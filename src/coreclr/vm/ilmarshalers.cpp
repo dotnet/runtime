@@ -1056,15 +1056,14 @@ namespace
 {
     MethodDesc* GetStructMarshalingMethod(BinderMethodID methodId, MethodTable* pMT)
     {
-        CONTRACT(MethodDesc*)
+        CONTRACTL
         {
             THROWS;
             GC_TRIGGERS;
             MODE_PREEMPTIVE;
             PRECONDITION(CheckPointer(pMT));
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         MethodDesc* pPrimaryMD = CoreLibBinder::GetMethod(methodId);
 
@@ -1077,7 +1076,7 @@ namespace
             Instantiation(),
             FALSE);
 
-        RETURN pMD;
+        return pMD;
     }
 }
 
@@ -3868,9 +3867,7 @@ bool ILNativeArrayMarshaler::CanMarshalViaPinning()
 
     TypeHandle elementTypeHandle = m_pargs->na.m_pArrayMT->GetArrayElementTypeHandle();
 
-    return elementTypeHandle.IsBlittable()
-        && (elementTypeHandle.GetMethodTable()->IsValueType()
-            || elementTypeHandle.GetMethodTable()->IsTruePrimitive());
+    return elementTypeHandle.IsBlittable() && elementTypeHandle.GetMethodTable()->IsValueType();
 }
 
 void ILNativeArrayMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)

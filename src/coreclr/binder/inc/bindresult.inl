@@ -121,5 +121,21 @@ void BindResult::AttemptResult::Set(const BindResult::AttemptResult *result)
     Attempted = result->Attempted;
 }
 
+LPCWSTR BindResult::GetDiagnosticInfo() const
+{
+    return m_diagnosticInfo.GetUnicode();
+}
+
+void BindResult::AppendDiagnosticInfo(const SString& info)
+{
+    if (info.IsEmpty())
+        return;
+
+    if (!m_diagnosticInfo.IsEmpty())
+        m_diagnosticInfo.AppendUTF8("\n");
+
+    m_diagnosticInfo.Append(info);
+}
+
 }
 #endif

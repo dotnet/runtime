@@ -321,10 +321,10 @@ namespace System.Reflection
             return result;
         }
 
-        internal static unsafe void EscapeStringToBuilder(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder vsb)
+        internal static void EscapeStringToBuilder(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder vsb)
         {
             // Allocate enough stack space to hold any Rune's UTF8 encoding.
-            Span<byte> utf8Bytes = stackalloc byte[4];
+            Span<byte> utf8Bytes = [0, 0, 0, 0];
 
             while (!stringToEscape.IsEmpty)
             {

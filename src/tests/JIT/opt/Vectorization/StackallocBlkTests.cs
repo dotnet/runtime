@@ -11,7 +11,7 @@ using TestLibrary;
 
 public unsafe class StackallocTests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/84398", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/84398", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsMonoRuntime))]
     [Fact]
     public static int TestEntryPoint()
     {

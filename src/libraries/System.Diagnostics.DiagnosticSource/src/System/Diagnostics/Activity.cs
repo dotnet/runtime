@@ -234,7 +234,7 @@ namespace System.Diagnostics
         ///  - '|a000b421-5d183ab6.1.8e2d4c28_' - Id of the grand child activity. It was started in another process and ends with '_'<para />
         /// 'a000b421-5d183ab6' is a <see cref="RootId"/> for the first Activity and all its children
         /// </example>
-        public unsafe string? Id
+        public string? Id
         {
             get
             {
@@ -243,7 +243,7 @@ namespace System.Diagnostics
                 if (_id == null && _spanId != null)
                 {
                     // Convert flags to binary.
-                    Span<char> flagsChars = stackalloc char[2];
+                    Span<char> flagsChars = ['\0', '\0'];
                     HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _w3CIdFlags), flagsChars, 0, HexConverter.Casing.Lower);
                     string id =
 #if NET
@@ -266,7 +266,7 @@ namespace System.Diagnostics
         /// <para/>
         /// See <see href="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
-        public unsafe string? ParentId
+        public string? ParentId
         {
             get
             {
@@ -275,7 +275,7 @@ namespace System.Diagnostics
                 {
                     if (_parentSpanId != null)
                     {
-                        Span<char> flagsChars = stackalloc char[2];
+                        Span<char> flagsChars = ['\0', '\0'];
                         HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _parentTraceFlags), flagsChars, 0, HexConverter.Casing.Lower);
                         string parentId =
 #if NET
@@ -1963,11 +1963,7 @@ namespace System.Diagnostics
             if (idData.Length != 16)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-#if NET
             return new ActivityTraceId(Convert.ToHexStringLower(idData));
-#else
-            return new ActivityTraceId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
-#endif
         }
         public static ActivityTraceId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivityTraceId(idData);
 
@@ -2019,12 +2015,12 @@ namespace System.Diagnostics
         /// This is exposed as CreateFromUtf8String, but we are modifying fields, so the code needs to be in a constructor.
         /// </summary>
         /// <param name="idData"></param>
-        private unsafe ActivityTraceId(ReadOnlySpan<byte> idData)
+        private ActivityTraceId(ReadOnlySpan<byte> idData)
         {
             if (idData.Length != 32)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-            Span<ulong> span = stackalloc ulong[2];
+            Span<ulong> span = [0, 0];
 
             if (!Utf8Parser.TryParse(idData.Slice(0, 16), out span[0], out _, 'x'))
             {
@@ -2046,11 +2042,7 @@ namespace System.Diagnostics
                 span[1] = BinaryPrimitives.ReverseEndianness(span[1]);
             }
 
-#if NET
             _hexString = Convert.ToHexStringLower(MemoryMarshal.AsBytes(span));
-#else
-            _hexString = HexConverter.ToString(MemoryMarshal.AsBytes(span), HexConverter.Casing.Lower);
-#endif
         }
 
         /// <summary>
@@ -2131,22 +2123,14 @@ namespace System.Diagnostics
         {
             ulong id;
             ActivityTraceId.SetToRandomBytes(new Span<byte>(&id, sizeof(ulong)));
-#if NET
             return new ActivitySpanId(Convert.ToHexStringLower(new ReadOnlySpan<byte>(&id, sizeof(ulong))));
-#else
-            return new ActivitySpanId(HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower));
-#endif
         }
         public static ActivitySpanId CreateFromBytes(ReadOnlySpan<byte> idData)
         {
             if (idData.Length != 8)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-#if NET
             return new ActivitySpanId(Convert.ToHexStringLower(idData));
-#else
-            return new ActivitySpanId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
-#endif
         }
         public static ActivitySpanId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivitySpanId(idData);
 
@@ -2214,11 +2198,7 @@ namespace System.Diagnostics
                 id = BinaryPrimitives.ReverseEndianness(id);
             }
 
-#if NET
             _hexString = Convert.ToHexStringLower(new ReadOnlySpan<byte>(&id, sizeof(ulong)));
-#else
-            _hexString = HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower);
-#endif
         }
 
         /// <summary>

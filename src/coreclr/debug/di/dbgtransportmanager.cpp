@@ -74,7 +74,9 @@ DbgTransportTarget::DbgTransportTarget()
 // Initialization routine called only by the DbgTransportManager.
 HRESULT DbgTransportTarget::Init()
 {
-    m_sLock.Init("DbgTransportTarget Lock", RSLock::cLockFlat, RSLock::LL_DBG_TRANSPORT_TARGET_LOCK);
+    // The Unix loader does not invoke DbgDllMain DLL_PROCESS_DETACH for mscordbi at process exit,
+    // so Shutdown() may never run. Mark the lock as allowing leak to skip the destructor assert.
+    m_sLock.Init("DbgTransportTarget Lock", RSLock::cLockFlat | RSLock::cLockAllowLeak, RSLock::LL_DBG_TRANSPORT_TARGET_LOCK);
 
     return S_OK;
 }

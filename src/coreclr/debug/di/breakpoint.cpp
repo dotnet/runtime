@@ -522,11 +522,11 @@ HRESULT CordbStepper::StepRange(BOOL fStepIn,
 
     if (m_frame == NULL)
     {
-        pEvent->StepData.frameToken = LEAF_MOST_FRAME;
+        pEvent->StepData.frameToken = (CORDB_ADDRESS)0;
     }
     else
     {
-        pEvent->StepData.frameToken = m_frame->GetFramePointer();
+        pEvent->StepData.frameToken = PTR_TO_CORDB_ADDRESS(m_frame->GetFramePointer().GetSPValue());
     }
 
     pEvent->StepData.stepIn = (fStepIn != 0);
@@ -688,11 +688,11 @@ HRESULT CordbStepper::StepOut()
 
     if (m_frame == NULL)
     {
-        pEvent->StepData.frameToken = LEAF_MOST_FRAME;
+        pEvent->StepData.frameToken = (CORDB_ADDRESS)0;
     }
     else
     {
-        pEvent->StepData.frameToken = m_frame->GetFramePointer();
+        pEvent->StepData.frameToken = PTR_TO_CORDB_ADDRESS(m_frame->GetFramePointer().GetSPValue());
     }
 
     pEvent->StepData.totalRangeCount = 0;

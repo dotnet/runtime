@@ -58,9 +58,12 @@
     <Compile Include="../../Common/TypeSystem/IL/ILReader.cs" />
     <Compile Include="../../Common/TypeSystem/Interop/IL/MarshalUtils.cs" Link="TypeSystem/Interop/IL/MarshalUtils.cs" />
     <Compile Include="../../Common/TypeSystem/Interop/IL/MarshalHelpers.cs" Link="TypeSystem/Interop/IL/MarshalHelpers.cs" />
+    <Compile Include="../../Common/TypeSystem/Interop/IL/Marshaller.cs" Link="TypeSystem/Interop/IL/Marshaller.cs" />
+    <Compile Include="../ILCompiler.ReadyToRun/Interop/IL/Marshaller.ReadyToRun.cs" Link="TypeSystem/Interop/IL/Marshaller.ReadyToRun.cs" />
     <Compile Include="../../Common/TypeSystem/Interop/IL/MarshallerKind.cs" Link="TypeSystem/Interop/IL/MarshallerKind.cs" />
     <Compile Include="../../Common/TypeSystem/Interop/InteropTypes.cs" Link="TypeSystem/Interop/InteropTypes.cs" />
-    <Compile Include="../../Common/TypeSystem/IL/HelperExtensions.cs" Link="TypeSystem/IL/HelperExtensions" />
+    <Compile Include="../../Common/TypeSystem/IL/Stubs/PInvokeILCodeStreams.cs" Link="TypeSystem/IL/Stubs/PInvokeILCodeStreams.cs" />
+    <Compile Include="../../Common/TypeSystem/IL/HelperExtensions.cs" Link="TypeSystem/IL/HelperExtensions.cs" />
     <Compile Include="../../Common/Compiler/VectorFieldLayoutAlgorithm.cs" Link="Compiler/VectorFieldLayoutAlgorithm.cs" />
     <Compile Include="../../Common/Compiler/Int128FieldLayoutAlgorithm.cs" Link="Compiler/Int128FieldLayoutAlgorithm.cs" />
     <Compile Include="ArchitectureSpecificFieldLayoutTests.cs" />

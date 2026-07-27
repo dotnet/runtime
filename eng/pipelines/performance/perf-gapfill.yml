@@ -42,14 +42,6 @@ parameters:
     type: boolean
     default: true
 
-  - name: run_android_mono_jit
-    type: boolean
-    default: true
-
-  - name: run_android_mono_aot
-    type: boolean
-    default: true
-
   - name: run_android_coreclr_jit
     type: boolean
     default: true
@@ -100,7 +92,7 @@ extends:
 
       # Runtime perf jobs (non-WASM) — included when any non-WASM group is enabled.
       # Per-job-group toggles are forwarded to runtime-perf-jobs.yml as parameter overrides.
-      - ${{ if or(eq(parameters.run_viper_micro, true), eq(parameters.run_viper_micro_nor2r, true), eq(parameters.run_mono_micro, true), eq(parameters.run_mono_interpreter, true), eq(parameters.run_mono_aot, true), eq(parameters.run_android_mono_jit, true), eq(parameters.run_android_mono_aot, true), eq(parameters.run_android_coreclr_jit, true), eq(parameters.run_android_coreclr_r2r, true)) }}:
+      - ${{ if or(eq(parameters.run_viper_micro, true), eq(parameters.run_viper_micro_nor2r, true), eq(parameters.run_mono_micro, true), eq(parameters.run_mono_interpreter, true), eq(parameters.run_mono_aot, true), eq(parameters.run_android_coreclr_jit, true), eq(parameters.run_android_coreclr_r2r, true)) }}:
         - template: /eng/pipelines/runtime-perf-jobs.yml@performance
           parameters:
             runtimeRepoAlias: self
@@ -139,12 +131,6 @@ extends:
                 enabled: false
                 configs: []
             # Android toggles
-            ${{ if eq(parameters.run_android_mono_jit, false) }}:
-              androidMonoJit:
-                enabled: false
-            ${{ if eq(parameters.run_android_mono_aot, false) }}:
-              androidMonoAot:
-                enabled: false
             ${{ if eq(parameters.run_android_coreclr_jit, false) }}:
               androidCoreclrJit:
                 enabled: false

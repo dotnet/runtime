@@ -10,6 +10,7 @@ using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
@@ -119,12 +120,25 @@ namespace Internal.Runtime.TypeLoader
             return resolution;
         }
 
-        internal unsafe IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle type, RuntimeMethodHandle slot)
+        internal unsafe IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle targetTypeHandle, RuntimeTypeHandle declaringTypeHandle, MethodHandle methodHandle, bool isAsyncVariant, void* methodInstantiation, bool isMethodInstantiationDataRelative)
         {
             TypeSystemContext context = TypeSystemContextFactory.Create();
-            DefType targetType = (DefType)context.ResolveRuntimeTypeHandle(type);
+            TypeManagerHandle moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle);
+            MetadataReader reader = ModuleList.Instance.GetMetadataReaderForModule(moduleHandle);
 
-            InstantiatedMethod slotMethod = (InstantiatedMethod)GetMethodDescForRuntimeMethodHandle(context, slot);
+            MethodNameAndSignature nameAndSignature = new MethodNameAndSignature(reader, methodHandle);
+            RuntimeTypeHandle[] methodInstantiationHandles = GetMethodInstantiationFromList(methodInstantiation, methodHandle.GetMethod(reader).GenericParameters.Count, isMethodInstantiationDataRelative);
+
+            DefType targetType = (DefType)context.ResolveRuntimeTypeHandle(targetTypeHandle);
+            DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
+            Instantiation methodInst = context.ResolveRuntimeTypeHandles(methodInstantiationHandles);
+            InstantiatedMethod slotMethod = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(
+                unboxingStub: false,
+                asyncVariant: isAsyncVariant,
+                returnDroppingAsyncThunk: false,
+                declaringType,
+                nameAndSignature,
+                methodInst);
 
             InstantiatedMethod result = GVMLookupForSlotWorker(targetType, slotMethod);
 
@@ -145,6 +159,21 @@ namespace Internal.Runtime.TypeLoader
 
             TypeSystemContextFactory.Recycle(context);
             return FunctionPointerOps.GetGenericMethodFunctionPointer(methodPointer, dictionaryPointer);
+        }
+
+        private static unsafe RuntimeTypeHandle[] GetMethodInstantiationFromList(void* methodInstantiation, int count, bool isRelative)
+        {
+            RuntimeTypeHandle[] result = new RuntimeTypeHandle[count];
+            MethodTableList instantiation = isRelative
+                ? new MethodTableList((RelativePointer<MethodTable>*)methodInstantiation)
+                : new MethodTableList((MethodTable*)methodInstantiation);
+
+            for (int i = 0; i < count; i++)
+            {
+                result[i] = instantiation[i]->ToRuntimeTypeHandle();
+            }
+
+            return result;
         }
 
         public static MethodNameAndSignature GetMethodNameAndSignatureFromToken(TypeManagerHandle moduleHandle, uint token)

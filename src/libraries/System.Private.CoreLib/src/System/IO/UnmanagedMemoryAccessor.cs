@@ -460,7 +460,7 @@ namespace System.IO
         {
             EnsureSafeToWrite(position, sizeof(decimal));
 
-            Span<int> bits = stackalloc int[4];
+            Span<int> bits = [0, 0, 0, 0];
             decimal.TryGetBits(value, bits, out int intsWritten);
             Debug.Assert(intsWritten == 4);
 

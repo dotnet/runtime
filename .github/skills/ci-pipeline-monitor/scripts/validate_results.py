@@ -546,6 +546,34 @@ def main():
         if not ok:
             failures += 1
 
+    # 16g. Every failure's console_log_url must be valid if it has one
+    if has_test_results:
+        total += 1
+        all_valid_console_log_urls = set(r["console_log_url"] for r in conn.execute("""
+            SELECT console_log_url FROM test_results
+        """).fetchall())
+        all_failure_rows = conn.execute("""
+            SELECT id, title, console_log_url FROM failures
+            WHERE console_log_url IS NOT NULL
+        """).fetchall()
+        bad_console_url = []
+        for failure_row in all_failure_rows:
+            if failure_row["console_log_url"] in all_valid_console_log_urls:
+                continue
+            elif "?helixlogtype=result" in failure_row["console_log_url"]:
+                # HACK: Sometimes we end up with valid console log URLs ending in this suffix that were not in the test_results table.
+                # For now, let's treat them as not a problem
+                continue
+            else:
+                print(f"  [FAIL] Invalid console_log_url for failure {failure_row['id']}: '{failure_row['console_log_url']}'")
+                bad_console_url.append(failure_row)
+
+        ok = check("Every failure has a valid console_log_url",
+                len(bad_console_url) == 0,
+                f"{len(bad_console_url)} URL(s) were invalid (see above)" if len(bad_console_url) else "")
+        if not ok:
+            failures += 1
+
     # Report checks (only if --report provided)
     if args.report:
         print("\n=== Report Sanity ===")

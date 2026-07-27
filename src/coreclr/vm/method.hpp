@@ -60,7 +60,7 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
 
-// [cDAC] [RuntimeTypeSystem]: Contract depends on the values of Thunk, None.
+// [cDAC] [RuntimeTypeSystem]: Contract depends on the values of Thunk, None, IsAsyncVariant.
 enum class AsyncMethodFlags
 {
     // Method uses CORINFO_CALLCONV_ASYNCCALL call convention.
@@ -75,6 +75,8 @@ enum class AsyncMethodFlags
     Thunk                      = 16,
     // A special thunk to drop return value in covariant return scenario
     ReturnDroppingThunk        = 32,
+    // Note: If adding more flags make sure to modify RequiresAsyncContextSaveAndRestore
+
     // The rest of the methods that are not in any of the above groups.
     // Such methods are not interesting to the Runtime Async feature.
     // Note: Generic T-returning methods are classified as "None", even if T could be a Task.
@@ -117,6 +119,11 @@ inline AsyncMethodFlags operator&(AsyncMethodFlags lhs, AsyncMethodFlags rhs)
     return (AsyncMethodFlags)((int)lhs & (int)rhs);
 }
 
+inline AsyncMethodFlags operator~(AsyncMethodFlags flags)
+{
+    return (AsyncMethodFlags)~(int)flags;
+}
+
 inline AsyncMethodFlags& operator|=(AsyncMethodFlags& lhs, AsyncMethodFlags rhs)
 {
     lhs = lhs | rhs;
@@ -141,6 +148,13 @@ struct AsyncMethodData
 };
 
 typedef DPTR(struct AsyncMethodData) PTR_AsyncMethodData;
+
+template<>
+struct cdac_data<AsyncMethodData>
+{
+    static constexpr size_t Flags = offsetof(AsyncMethodData, flags);
+    static constexpr size_t Signature = offsetof(AsyncMethodData, sig);
+};
 
 //=============================================================
 // Splits methoddef token into two pieces for
@@ -276,7 +290,11 @@ using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 enum class AsyncVariantLookup
 {
     Ordinary = 0,
-    Async
+    Async,
+    // Matches only ReturnDroppingThunk methods. Used by FindOrCreateAssociatedMethodDesc to
+    // look up a parallel method that is itself a ReturnDroppingThunk and differs from the
+    // primary only in something other than async kind (e.g. generic arguments).
+    ReturnDroppingThunk
 };
 
 enum class MethodReturnKind
@@ -1546,7 +1564,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         // methods with transient IL bodies do not have IL headers
-        return IsIL() && !IsUnboxingStub() && !IsAsyncThunkMethod();
+        return IsIL() && !IsUnboxingStub() && (!IsAsyncThunkMethod() || SupportsAsyncVersionCodegen());
     }
 
     ULONG GetRVA();
@@ -1577,7 +1595,7 @@ public:
     // indirect call via slot in this case.
     PCODE TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags);
 
-    MethodDesc* GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH);
+    MethodDesc* GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH);
     // These return an address after resolving "virtual methods" correctly, including any
     // handling of context proxies, other thunking layers and also including
     // instantiation of generic virtual methods if required.
@@ -1587,8 +1605,8 @@ public:
     // The code that implements these was taken verbatim from elsewhere in the
     // codebase, and there may be subtle differences between the two, e.g. with
     // regard to thunking.
-    PCODE GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH);
-    PCODE GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH);
+    PCODE GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH);
+    PCODE GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH);
 
 #ifndef DACCESS_COMPILE
     // The current method entrypoint. It is simply the value of the current method slot.
@@ -1722,11 +1740,7 @@ public:
                                                         BOOL allowCreate = TRUE,
                                                         ClassLoadLevel level = CLASS_LOADED)
     {
-        // If this assert fires, we may just need to add a lookup that matches AsyncMethodFlags::ReturnDroppingThunk
-        // It does not look like there is a scenario for directly calling ReturnDroppingThunk right now.
-        _ASSERTE(!pPrimaryMD->IsReturnDroppingThunk());
-        // by default async lookup matches the primaryMD
-        AsyncVariantLookup variantLookup = pPrimaryMD->IsAsyncVariantMethod() ? AsyncVariantLookup::Async : AsyncVariantLookup::Ordinary;
+        AsyncVariantLookup variantLookup = pPrimaryMD->GetMatchingAsyncVariantLookup();
 
         return FindOrCreateAssociatedMethodDesc(
             pPrimaryMD,
@@ -1773,6 +1787,19 @@ public:
         return FindOrCreateAssociatedMethodDesc(this, mt, FALSE, GetMethodInstantiation(), allowInstParam, AsyncVariantLookup::Async, FALSE, FALSE, mt->GetLoadLevel());
     }
 
+    // If this method supports async version codegen, then get the ordinary non-async method.
+    // For async version codegen the ordinary non-async method is the method whose IL we use
+    // for both compilations.
+    MethodDesc* GetOrdinaryVariantIfAsyncVersion()
+    {
+        if (SupportsAsyncVersionCodegen())
+        {
+            return GetOrdinaryVariant();
+        }
+
+        return this;
+    }
+
     // True if a MD is an funny BoxedEntryPointStub (not from the method table) or
     // an MD for a generic instantiation...In other words the MethodDescs and the
     // MethodTable are guaranteed to be "tightly-knit", i.e. if one is present in
@@ -1795,7 +1822,7 @@ public:
     // Given an object and an method descriptor for an instantiation of
     // a virtualized generic method, get the
     // corresponding instantiation of the target of a call.
-    MethodDesc *ResolveGenericVirtualMethod(OBJECTREF *orThis);
+    MethodDesc *ResolveGenericVirtualMethod(OBJECTREF *orThis, MethodTable* pMTOfThis);
 
 #if defined(TARGET_X86) && defined(HAVE_GCCOVER)
 public:
@@ -1812,7 +1839,7 @@ public:
     // but the additional weirdness that class-based-virtual calls (but not interface calls nor calls
     // on proxies) are resolved to their target.  Because of this, many clients of "Call" (see above)
     // end up doing some resolution for interface calls and/or proxies themselves.
-    PCODE GetCallTarget(OBJECTREF* pThisObj, TypeHandle ownerType = TypeHandle());
+    PCODE GetCallTarget(OBJECTREF* pThisObj, MethodTable *pMTThis, TypeHandle ownerType = TypeHandle());
 
     MethodImpl *GetMethodImpl();
 
@@ -2075,6 +2102,12 @@ public:
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::ReturnDroppingThunk);
     }
 
+    inline bool SupportsAsyncVersionCodegen() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return IsAsyncThunkMethod() && IsAsyncVariantMethod() && !IsReturnDroppingThunk();
+    }
+
     inline bool MatchesAsyncVariantLookup(AsyncVariantLookup lookup) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2088,13 +2121,30 @@ public:
                 return false;
 
             // Note: AsyncVariantLookup::Async only matches regular async variants. ReturnDroppingThunk intentionally
-            //       does not match any lookups. Noone should call ReturnDroppingThunk directly. The only way it gets
-            //       invoked is when it adds itself as a virtual override to a regular async variant.
+            //       does not match this lookup. ReturnDroppingThunk is only matched by AsyncVariantLookup::ReturnDroppingThunk,
+            //       which is used to find a parallel ReturnDroppingThunk method that differs in something other than async
+            //       kind (e.g. generic arguments).
             AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
             return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant) && !hasAsyncFlags(asyncFlags, AsyncMethodFlags::ReturnDroppingThunk);
         }
 
+        if (lookup == AsyncVariantLookup::ReturnDroppingThunk)
+        {
+            return IsReturnDroppingThunk();
+        }
+
         return false;
+    }
+
+    // Returns the AsyncVariantLookup that matches this method's async kind.
+    inline AsyncVariantLookup GetMatchingAsyncVariantLookup() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (IsReturnDroppingThunk())
+            return AsyncVariantLookup::ReturnDroppingThunk;
+        if (IsAsyncVariantMethod())
+            return AsyncVariantLookup::Async;
+        return AsyncVariantLookup::Ordinary;
     }
 
     // Is this an Async variant method for a method that
@@ -2155,7 +2205,7 @@ public:
 
         AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
         // asynccall that is also async variant, but not a thunk
-        return asyncFlags == (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
+        return (asyncFlags & ~AsyncMethodFlags::IsAsyncVariantForValueTask) == (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
     }
 
 #ifdef FEATURE_METADATA_UPDATER
@@ -2292,6 +2342,13 @@ public:
     PCODE PrepareInitialCode(CallerGCMode callerGCMode = CallerGCMode::Unknown);
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Probe for precompiled R2R native code for an UnmanagedCallersOnly method and, if present,
+    // publish it into this method's portable entrypoint WITHOUT compiling interpreter byte code.
+    // Returns true if native code was found and published, false otherwise.
+    bool TryPublishR2RCodeForUnmanagedCallersOnly();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
 private:
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
@@ -2303,13 +2360,11 @@ private:
     bool TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     void EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
-    void EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig& msig, ILStubLinker* pSL);
     void EmitReturnDroppingThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
-    SigPointer GetAsyncThunkResultTypeSig();
     int GetTokenForThunkTarget(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
-    int GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
 public:
+    SigPointer GetAsyncThunkResultTypeSig();
     static void CreateDerivedTargetSig(MetaSig& msig, SigBuilder* stubSigBuilder);
     bool TryGenerateTransientILImplementation(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     void GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
@@ -2928,21 +2983,20 @@ public:
         StubStructMarshalInterop = 8,
         StubArrayOp = 9,
         StubMulticastDelegate = 10,
-        StubWrapperDelegate = 11,
-        StubUnboxingIL = 12,
-        StubInstantiating = 13,
-        StubTailCallStoreArgs = 14,
-        StubTailCallCallTarget = 15,
+        StubUnboxingIL = 11,
+        StubInstantiating = 12,
+        StubTailCallStoreArgs = 13,
+        StubTailCallCallTarget = 14,
 
-        StubVirtualStaticMethodDispatch = 16,
-        StubDelegateShuffleThunk = 17,
+        StubVirtualStaticMethodDispatch = 15,
+        StubDelegateShuffleThunk = 16,
 
-        StubDelegateInvokeMethod = 18,
+        StubDelegateInvokeMethod = 17,
 
-        StubAsyncResume = 19,
+        StubAsyncResume = 18,
 
-        StubCLRToCOMEvent = 20,
-        StubLast = 21
+        StubCLRToCOMEvent = 19,
+        StubLast = 20
     };
 
     enum Flag : DWORD
@@ -3126,12 +3180,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubDelegateInvokeMethod;
-    }
-    bool IsWrapperDelegateStub() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(IsILStub());
-        return GetILStubType() == DynamicMethodDesc::StubWrapperDelegate;
     }
     bool IsUnboxingILStub() const
     {
@@ -3802,7 +3850,7 @@ public:
     PTR_DictionaryLayout GetDictLayoutRaw()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pDictLayout;
+        return VolatileLoad(&m_pDictLayout);
     }
 
     PTR_MethodDesc IMD_GetWrappedMethodDesc()
@@ -3821,10 +3869,10 @@ public:
         if (IMD_IsWrapperStubWithInstantiations() && IMD_HasMethodInstantiation())
         {
             InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
-            return pIMD->m_pDictLayout;
+            return VolatileLoad(&pIMD->m_pDictLayout);
         }
         else if (IMD_IsSharedByGenericMethodInstantiations())
-            return m_pDictLayout;
+            return VolatileLoad(&m_pDictLayout);
         else
             return NULL;
     }
@@ -3835,11 +3883,11 @@ public:
         if (IMD_IsWrapperStubWithInstantiations() && IMD_HasMethodInstantiation())
         {
             InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
-            pIMD->m_pDictLayout = pNewLayout;
+            VolatileStore(&pIMD->m_pDictLayout, pNewLayout);
         }
         else if (IMD_IsSharedByGenericMethodInstantiations())
         {
-            m_pDictLayout = pNewLayout;
+            VolatileStore(&m_pDictLayout, pNewLayout);
         }
     }
 #endif // !DACCESS_COMPILE
@@ -3891,14 +3939,11 @@ private:
     WORD          m_wNumGenericArgs;
 
 public:
-    static InstantiatedMethodDesc *FindOrCreateExactClassMethod(MethodTable *pExactMT,
-                                                                MethodDesc *pCanonicalMD);
-
     static InstantiatedMethodDesc* FindLoadedInstantiatedMethodDesc(MethodTable *pMT,
                                                                     mdMethodDef methodDef,
                                                                     Instantiation methodInst,
                                                                     BOOL getSharedNotStub,
-                                                                    BOOL asyncThunk);
+                                                                    AsyncVariantLookup variantLookup);
 
 private:
 

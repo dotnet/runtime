@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowFormatException(NumericType.UInt128);
             }
 
-            if (rentedBuffer != null)
+            if (rentedBuffer is not null)
             {
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
             }
@@ -124,6 +124,9 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling) =>
             GetSchemaForNumericType(JsonSchemaType.Integer, numberHandling);
+
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) =>
+            GetSupportedJsonValueTypesForNumericType(numberHandling);
 
         private static void Format(
             Span<byte> destination,

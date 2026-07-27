@@ -1,32 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class MethodDescChunk : IData<MethodDescChunk>
+[CdacType(nameof(DataType.MethodDescChunk))]
+internal sealed partial class MethodDescChunk : IData<MethodDescChunk>
 {
-    static MethodDescChunk IData<MethodDescChunk>.Create(Target target, TargetPointer address) => new MethodDescChunk(target, address);
-    public MethodDescChunk(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.MethodDescChunk);
+    [Field] public partial TargetPointer MethodTable { get; }
+    [Field] public partial TargetPointer Next { get; }
+    [Field] public partial byte Size { get; }
+    [Field] public partial byte Count { get; }
+    [Field] public partial ushort FlagsAndTokenRange { get; }
 
-        MethodTable = target.ReadPointerField(address, type, nameof(MethodTable));
-        Next = target.ReadPointerField(address, type, nameof(Next));
-        Size = target.ReadField<byte>(address, type, nameof(Size));
-        Count = target.ReadField<byte>(address, type, nameof(Count));
-        FlagsAndTokenRange = target.ReadField<ushort>(address, type, nameof(FlagsAndTokenRange));
-
-        // The first MethodDesc is at the end of the MethodDescChunk
-        FirstMethodDesc = address + type.Size!.Value;
-    }
-
-    public TargetPointer MethodTable { get; init; }
-    public TargetPointer Next { get; init; }
-    public byte Size { get; init; }
-    public byte Count { get; init; }
-    public ushort FlagsAndTokenRange { get; init; }
-
-    public TargetPointer FirstMethodDesc { get; init; }
+    // The first MethodDesc is at the end of the MethodDescChunk
+    [InstanceDataStart]
+    public partial TargetPointer FirstMethodDesc { get; }
 }

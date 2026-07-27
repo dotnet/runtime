@@ -6,7 +6,8 @@ import type {
     EmscriptenModuleInternal, InternalExchange, InternalExchangeSubscriber,
     RuntimeAPI, LoaderExports, BrowserUtilsExports, RuntimeExports,
     VoidPtr, JSMarshalerArguments, CSFnHandle, TypedArray,
-    MemOffset, CharPtrPtr
+    MemOffset, CharPtrPtr,
+    CharPtr
 } from "../types";
 
 // we want to use the cross-module symbols defined in closure of dotnet.native.js
@@ -29,7 +30,8 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     _SystemJS_ExecuteBackgroundJobCallback: () => void;
     _SystemJS_ExecuteFinalizationCallback: () => void;
     _SystemJS_ExecuteDiagnosticServerCallback: () => void;
-    _SystemJS_ScheduleDiagnosticServer: () => void;
+    _SystemJS_ScheduleDiagnosticServer: (delayMs: number) => void;
+    _SystemJS_GetMethodName: (pMethodDesc: number) => CharPtr;
     _BrowserHost_CreateHostContract: () => VoidPtr;
     _BrowserHost_InitializeDotnet: (propertiesCount: number, propertyKeys: CharPtrPtr, propertyValues: CharPtrPtr) => number;
     _BrowserHost_ExecuteAssembly: (mainAssemblyNamePtr: number, argsLength: number, argsPtr: number) => number;

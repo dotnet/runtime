@@ -418,6 +418,63 @@ namespace System.Runtime.Loader.Tests
             }).Dispose();
         }
 
+        [Fact]
+        public static void SetAssemblyLocationOverride_NullArgument_Throws()
+        {
+            // The null check happens before any global state is mutated, so this is safe to run in-process.
+            AssertExtensions.Throws<ArgumentNullException>("locationOverride", () => AssemblyLoadContext.SetAssemblyLocationOverride(null));
+        }
+
+        [ConditionalFact(typeof(AssemblyLoadContextTest), nameof(IsRemoteExecutorSupportedAndAssemblyLoadingSupported))]
+        public static void SetAssemblyLocationOverride_OverridesLocationForStreamLoadedAssembly()
+        {
+            // The override is process-wide and set-once, so it must run in its own process.
+            RemoteExecutor.Invoke(static () =>
+            {
+                // Override the location only for assemblies the runtime reports no location for (e.g. loaded
+                // from a stream / memory). Embed the assembly name so we also verify the Assembly argument.
+                AssemblyLoadContext.SetAssemblyLocationOverride(
+                    static (assembly, location) => string.IsNullOrEmpty(location) ? $"/overridden/{assembly.GetName().Name}.dll" : location);
+
+                string asmPath = ExtractEmbeddedAssembly("System.Runtime.Loader.Tests.AssemblyVersion1");
+                try
+                {
+                    // Loading from a stream means the runtime has no location, so the override kicks in.
+                    var streamAlc = new AssemblyLoadContext("LocationOverride_Stream", isCollectible: true);
+                    Assembly streamLoaded;
+                    using (FileStream fs = File.OpenRead(asmPath))
+                    {
+                        streamLoaded = streamAlc.LoadFromStream(fs);
+                    }
+                    Assert.Equal($"/overridden/{streamLoaded.GetName().Name}.dll", streamLoaded.Location);
+
+                    // The same assembly loaded from a path (into a separate context) has a real location,
+                    // so the callback leaves it untouched.
+                    var pathAlc = new AssemblyLoadContext("LocationOverride_Path", isCollectible: true);
+                    Assembly fileLoaded = pathAlc.LoadFromAssemblyPath(asmPath);
+                    Assert.False(string.IsNullOrEmpty(fileLoaded.Location));
+                    Assert.DoesNotContain("/overridden/", fileLoaded.Location);
+                }
+                finally
+                {
+                    try { File.Delete(asmPath); } catch { }
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(AssemblyLoadContextTest), nameof(IsRemoteExecutorSupportedAndAssemblyLoadingSupported))]
+        public static void SetAssemblyLocationOverride_CalledTwice_Throws()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                AssemblyLoadContext.SetAssemblyLocationOverride(static (assembly, location) => location);
+                Assert.Throws<InvalidOperationException>(
+                    () => AssemblyLoadContext.SetAssemblyLocationOverride(static (assembly, location) => location));
+            }).Dispose();
+        }
+
+        private static bool IsRemoteExecutorSupportedAndAssemblyLoadingSupported => RemoteExecutor.IsSupported && PlatformDetection.IsAssemblyLoadingSupported;
+
         private static bool IsRemoteExecutorSupportedAndCoreCLR => RemoteExecutor.IsSupported && PlatformDetection.IsAssemblyLoadingSupported && PlatformDetection.IsCoreCLR;
 
         private static string ExtractEmbeddedAssembly(string name)

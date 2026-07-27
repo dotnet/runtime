@@ -28,7 +28,7 @@
     <GeckoDriverDir>$(ArtifactsBinDir)geckodriver\</GeckoDriverDir>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('linux'))">
-    <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(linux_FirefoxRevision)/linux-x86_64/en-US/firefox-$(linux_FirefoxRevision).tar.bz2</FirefoxUrl>
+    <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(linux_FirefoxRevision)/linux-x86_64/en-US/firefox-$(linux_FirefoxRevision).tar.xz</FirefoxUrl>
     <GeckoDriverUrl>https://github.com/mozilla/geckodriver/releases/download/v$(linux_GeckoDriverRevision)/geckodriver-v$(linux_GeckoDriverRevision)-linux64.tar.gz</GeckoDriverUrl>
     <FirefoxBinaryName>firefox</FirefoxBinaryName>
     <GeckoDriverBinaryName>geckodriver</GeckoDriverBinaryName>

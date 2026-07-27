@@ -29,7 +29,6 @@ struct REGDISPLAY_BASE {
     T_KNONVOLATILE_CONTEXT_POINTERS *pCallerContextPointers;
 
     BOOL IsCallerContextValid;  // TRUE if pCallerContext really contains the caller's context
-    BOOL IsCallerSPValid;       // Don't add usage of this field.  This is only temporary.
 
     T_CONTEXT  ctxOne;    // used by stackwalk
     T_CONTEXT  ctxTwo;    // used by stackwalk
@@ -43,6 +42,11 @@ struct REGDISPLAY_BASE {
 
     TADDR SP;
     TADDR ControlPC; // LOONGARCH: use RA for PC
+
+#if defined(TARGET_ARM64)
+    TADDR CurrentContextSpForPacSign;
+    TADDR CallerContextSpForPacSign;
+#endif // TARGET_ARM64
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
     TADDR SSP;
@@ -444,14 +448,17 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
     if (pCallerCtx == NULL)
     {
         pRD->IsCallerContextValid = FALSE;
-        pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
     }
     else
     {
         *(pRD->pCallerContext)    = *(pCallerCtx);
         pRD->IsCallerContextValid = TRUE;
-        pRD->IsCallerSPValid      = TRUE;        // Don't add usage of this field.  This is only temporary.
     }
+
+#if defined(TARGET_ARM64)
+    pRD->CurrentContextSpForPacSign = 0;
+    pRD->CallerContextSpForPacSign  = 0;
+#endif // TARGET_ARM64
 
 #ifdef DEBUG_REGDISPLAY
     pRD->_pThread = NULL;

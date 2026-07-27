@@ -16,9 +16,7 @@
 
 #include "rtlfunctions.h"
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #define S_BYTEPTR(x)    S_SIZE_T((SIZE_T)(x))
 
@@ -90,16 +88,6 @@ struct LabelRef : public CodeElement
     LabelRef            *m_nextLabelRef;
 };
 
-#ifdef TARGET_ARM
-void StubLinker::DescribeProlog(UINT cCalleeSavedRegs, UINT cbStackFrame, BOOL fPushArgRegs)
-{
-    m_fProlog = TRUE;
-    m_cCalleeSavedRegs = cCalleeSavedRegs;
-    m_cbStackFrame = cbStackFrame;
-    m_fPushArgRegs = fPushArgRegs;
-}
-#endif // TARGET_ARM
-
 //************************************************************************
 // StubLinker
 //************************************************************************
@@ -122,12 +110,6 @@ StubLinker::StubLinker()
     m_pTargetMethod     = NULL;
     m_stackSize         = 0;
     m_fDataOnly         = FALSE;
-#ifdef TARGET_ARM
-    m_fProlog           = FALSE;
-    m_cCalleeSavedRegs  = 0;
-    m_cbStackFrame      = 0;
-    m_fPushArgRegs      = FALSE;
-#endif
 }
 
 
@@ -579,9 +561,7 @@ Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags, const char *stubType)
 
     EmitStub(pStub, globalsize, size, pHeap);
 
-#ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, stubType, pStub->GetEntryPoint(), pStub->GetNumCodeBytes(), PerfMapStubType::Individual);
-#endif
 
     return pStub.Detach();
 }

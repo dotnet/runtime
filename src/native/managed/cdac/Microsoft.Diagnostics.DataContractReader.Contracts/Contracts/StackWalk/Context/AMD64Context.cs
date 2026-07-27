@@ -31,6 +31,9 @@ internal struct AMD64Context : IPlatformContext
     }
 
     public readonly uint Size => 0x4d0;
+
+    public readonly uint ContextControlFlags => (uint)ContextFlagsValues.CONTEXT_CONTROL;
+
     public readonly uint FullContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
 
     public readonly uint AllContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
@@ -42,7 +45,7 @@ internal struct AMD64Context : IPlatformContext
         readonly get => new(Rsp);
         set => Rsp = value.Value;
     }
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Rip);
         set => Rip = value.Value;
@@ -53,11 +56,16 @@ internal struct AMD64Context : IPlatformContext
         set => Rbp = value.Value;
     }
 
+    public uint RawContextFlags { readonly get => ContextFlags; set => ContextFlags = value; }
+
     public void Unwind(Target target)
     {
         AMD64Unwinder unwinder = new(target);
         unwinder.Unwind(ref this);
     }
+
+    // Clears the x64 hardware trace flag (EFLAGS.TF, bit 0x100).
+    public void UnsetSingleStepFlag() => EFlags &= ~0x100;
 
     public bool TrySetRegister(string name, TargetNUInt value)
     {

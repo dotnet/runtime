@@ -5,6 +5,7 @@
 #ifndef _WRAPPERS_H_
 #define _WRAPPERS_H_
 
+#include "holder.h"
 #include "metadata.h"
 #include "interoputil.h"
 
@@ -52,35 +53,59 @@ private:
 };
 
 template <typename TYPE>
-inline void SafeComRelease(TYPE *value)
+struct ComHolderAnyModeTraits final
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
+    static_assert(
+        std::is_base_of<IUnknown, TYPE>::value,
+        "TYPE must derive from IUnknown");
 
-    SafeRelease((IUnknown*)value);
-}
-template <typename TYPE>
-inline void SafeComReleasePreemp(TYPE *value)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
+    using Type = TYPE*;
+    static constexpr Type Default() { return nullptr; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_ANY;
+        } CONTRACTL_END;
 
-    SafeReleasePreemp((IUnknown*)value);
-}
+        SafeRelease(value);
+    }
+};
 
+// Releases the held COM interface regardless of the current GC mode, switching
+// to preemptive internally when required. Use ComHolderPreemp instead when
+// the release will always occur in preemptive mode.
 template<typename _TYPE>
-using SafeComHolder = SpecializedWrapper<_TYPE, SafeComRelease<_TYPE>>;
+using ComHolderAnyMode = LifetimeHolder<ComHolderAnyModeTraits<_TYPE>>;
+
+template <typename TYPE>
+struct ComHolderPreempTraits final
+{
+    static_assert(
+        std::is_base_of<IUnknown, TYPE>::value,
+        "TYPE must derive from IUnknown");
+
+    using Type = TYPE*;
+    static constexpr Type Default() { return nullptr; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_PREEMPTIVE;
+        } CONTRACTL_END;
+
+        SafeReleasePreemp(value);
+    }
+};
 
 // Use this holder if you're already in preemptive mode for other reasons,
-// use SafeComHolder otherwise.
+// use ComHolderAnyMode otherwise.
 template<typename _TYPE>
-using SafeComHolderPreemp = SpecializedWrapper<_TYPE, SafeComReleasePreemp<_TYPE>>;
+using ComHolderPreemp = LifetimeHolder<ComHolderPreempTraits<_TYPE>>;
 
 //--------------------------------------------------------------------------------
 // safe variant helper

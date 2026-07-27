@@ -57,6 +57,91 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         /// <summary>
+        /// Opens an existing process by its process ID.
+        /// </summary>
+        /// <param name="processId">The process ID of the process to open.</param>
+        /// <returns>A <see cref="SafeProcessHandle"/> that represents the opened process.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="processId"/> is negative or zero.</exception>
+        /// <exception cref="Win32Exception">Thrown when the process could not be opened.</exception>
+        /// <exception cref="UnauthorizedAccessException">Thrown when the process exists but the caller does not have permissions to open it.</exception>
+        /// <remarks>
+        /// <para>
+        /// This API opens the handle immediately. In contrast, <see cref="Process.GetProcessById(int)"/> only checks whether
+        /// the process is currently running; opening the process handle is deferred until <see cref="Process.SafeHandle"/> is accessed.
+        /// </para>
+        /// <para>
+        /// On Windows, this API requests query/synchronize/terminate rights, while <see cref="Process.SafeHandle"/> requests
+        /// broader rights for interop scenarios.
+        /// </para>
+        /// <para>
+        /// On Windows, if the process has already exited, the method may still succeed and return a valid handle representing the terminated process.
+        /// </para>
+        /// <para>
+        /// On Unix, if the process has already exited and been reaped, a <see cref="Win32Exception"/> is thrown.
+        /// </para>
+        /// </remarks>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static SafeProcessHandle Open(int processId)
+        {
+            ValidateOpenArguments(processId);
+
+            if (!TryOpenCore(processId, out SafeProcessHandle? handle, out int lastError))
+            {
+                throw new Win32Exception(lastError);
+            }
+
+            return handle;
+        }
+
+        /// <summary>
+        /// Attempts to open an existing process by its process ID.
+        /// </summary>
+        /// <param name="processId">The process ID of the process to open.</param>
+        /// <param name="processHandle">When this method returns <see langword="true"/>, contains the <see cref="SafeProcessHandle"/> for the opened process; otherwise, <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the process was successfully opened; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="processId"/> is negative or zero.</exception>
+        /// <exception cref="UnauthorizedAccessException">Thrown when the process exists but the caller does not have permissions to open it.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method does not throw when the process does not exist. Instead, it returns <see langword="false"/>.
+        /// </para>
+        /// <para>
+        /// This API opens the handle immediately. In contrast, <see cref="Process.TryGetProcessById(int, out Process)"/> only checks
+        /// whether the process is currently running; opening the process handle is deferred until <see cref="Process.SafeHandle"/> is accessed.
+        /// </para>
+        /// <para>
+        /// On Windows, this API requests query/synchronize/terminate rights, while <see cref="Process.SafeHandle"/> requests
+        /// broader rights for interop scenarios.
+        /// </para>
+        /// <para>
+        /// On Windows, if the process has already exited, the method may still succeed and return a valid handle representing the terminated process.
+        /// </para>
+        /// </remarks>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static bool TryOpen(int processId, [NotNullWhen(true)] out SafeProcessHandle? processHandle)
+        {
+            ValidateOpenArguments(processId);
+            return TryOpenCore(processId, out processHandle, out _);
+        }
+
+        private static void ValidateOpenArguments(int processId)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(processId, 0);
+
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+
+        private static void ThrowOpenProcessAccessDeniedException(int processId) =>
+            throw new UnauthorizedAccessException(SR.Format(SR.OpenProcessAccessDenied, processId));
+
+        /// <summary>
         /// Starts a process using the specified <see cref="ProcessStartInfo"/>.
         /// </summary>
         /// <param name="startInfo">The process start information.</param>
@@ -118,6 +203,29 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
+        }
+
+        /// <summary>
+        /// Resumes the process that was started with <see cref="ProcessStartInfo.StartSuspended" /> set to <see langword="true" />.
+        /// </summary>
+        /// <remarks>
+        /// On Windows, this calls <c>ResumeThread</c> on the main thread of the process.
+        /// On macOS, this sends <c>SIGCONT</c> to the process.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
+        /// <exception cref="PlatformNotSupportedException">The current operating system is not supported.</exception>
+        /// <exception cref="Win32Exception">The OS call to resume the process failed.</exception>
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("macos")]
+        public void Resume()
+        {
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            Validate();
+            ResumeCore();
         }
 
         /// <summary>

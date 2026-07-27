@@ -694,5 +694,25 @@ namespace System.Diagnostics.Tests
 
             return (capturedOutput, capturedError);
         }
+
+        [Theory]
+        [InlineData("hello")]
+        [InlineData("")]
+        [InlineData("line with spaces")]
+        public void ProcessOutputLine_ToString_ReturnsContent(string content)
+        {
+            ProcessOutputLine line = new(content, standardError: false);
+            Assert.Equal(content, line.ToString());
+
+            ProcessOutputLine errorLine = new(content, standardError: true);
+            Assert.Equal(content, errorLine.ToString());
+        }
+
+        [Fact]
+        public void ProcessOutputLine_Default_ToString_ReturnsEmpty()
+        {
+            ProcessOutputLine line = default;
+            Assert.Equal(string.Empty, line.ToString());
+        }
     }
 }

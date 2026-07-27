@@ -257,6 +257,22 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void NullKeysRemainUnmatched()
+        {
+            string[] outer = { "#o1", "a", "#o2" };
+            string[] inner = { "#i1", "A", "#i2", "b" };
+            string[] expected =
+            {
+                "<null>:#i1",
+                "a:A",
+                "<null>:#i2",
+                "<null>:b"
+            };
+
+            Assert.Equal(expected, outer.AsQueryable().RightJoin(inner.AsQueryable(), s => s[0] == '#' ? null : s, s => s[0] == '#' ? null : s, (o, i) => $"{o ?? "<null>"}:{i}", StringComparer.OrdinalIgnoreCase));
+        }
+
+        [Fact]
         public void Join1()
         {
             var count = new[] { 0, 1, 2 }.AsQueryable().RightJoin(new[] { 1, 2, 3 }, n1 => n1, n2 => n2, (n1, n2) => n1 + n2).Count();

@@ -211,34 +211,32 @@ struct RCW
     // return exposed ComObject
     COMOBJECTREF GetExposedObject()
     {
-        CONTRACT(COMOBJECTREF)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_COOPERATIVE;
             PRECONDITION(m_SyncBlockIndex != 0);
-            POSTCONDITION(RETVAL != NULL);
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN (COMOBJECTREF) ObjectToOBJECTREF(g_pSyncTable[m_SyncBlockIndex].m_Object);
+        return (COMOBJECTREF) ObjectToOBJECTREF(g_pSyncTable[m_SyncBlockIndex].m_Object);
     }
 
     //-------------------------------------------------
     // returns the sync block for the RCW
     SyncBlock *GetSyncBlock()
     {
-        CONTRACT(SyncBlock*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_COOPERATIVE;
             PRECONDITION(m_SyncBlockIndex != 0);
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN g_pSyncTable[m_SyncBlockIndex].m_SyncBlock;
+        return g_pSyncTable[m_SyncBlockIndex].m_SyncBlock;
     }
 
     //--------------------------------------------------------------------------
@@ -270,27 +268,6 @@ struct RCW
     ULONG GetRefCount()
     {
         return m_cbRefCount;
-    }
-
-    void GetCachedInterfacePointers(BOOL bIInspectableOnly,
-                        SArray<TADDR> * rgItfPtrs)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        CachedInterfaceEntryIterator it = IterateCachedInterfacePointers();
-        while (it.Next())
-        {
-            PTR_MethodTable pMT = dac_cast<PTR_MethodTable>((TADDR)(it.GetEntry()->m_pMT.Load()));
-            if (pMT != NULL &&
-                (!bIInspectableOnly))
-            {
-                TADDR taUnk = (TADDR)(it.GetEntry()->m_pUnknown.Load());
-                if (taUnk != NULL)
-                {
-                    rgItfPtrs->Append(taUnk);
-                }
-            }
-        }
     }
 
     LPVOID     GetVTablePtr() { LIMITED_METHOD_CONTRACT; return m_vtablePtr; }
@@ -343,7 +320,7 @@ struct RCW
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_Flags.m_MarshalingType == MarshalingType_FreeThreaded) ;
+        return m_Flags.m_MarshalingType == MarshalingType_FreeThreaded ;
     }
 
     //
@@ -352,7 +329,7 @@ struct RCW
     bool IsMarshalingInhibited()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_Flags.m_MarshalingType == MarshalingType_Inhibit) ;
+        return m_Flags.m_MarshalingType == MarshalingType_Inhibit ;
     }
 
     // Returns TRUE if this RCW has been detached. Detached RCWs are fully functional but have been found
@@ -384,33 +361,31 @@ struct RCW
     // GetWrapper context cookie
     LPVOID GetWrapperCtxCookie()
     {
-        CONTRACT (LPVOID)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_UnkEntry.m_pCtxCookie;
+        return m_UnkEntry.m_pCtxCookie;
     }
 
     inline Thread *GetSTAThread()
     {
-        CONTRACT (Thread *)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         CtxEntry *pCtxEntry = GetWrapperCtxEntryNoRef();
         if (pCtxEntry)
-            RETURN pCtxEntry->GetSTAThread();
-        RETURN NULL;
+            return pCtxEntry->GetSTAThread();
+        return NULL;
     }
 
     // Function to enter the context. The specified callback function will
@@ -551,35 +526,33 @@ private :
     // Returns an addref'ed context entry
     CtxEntry* GetWrapperCtxEntry()
     {
-        CONTRACT (CtxEntry*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(!IsFreeThreaded());         // Must not be free-threaded, otherwise CtxEntry = NULL
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         CtxEntry *pCtxEntry = m_UnkEntry.GetCtxEntry();
         pCtxEntry->AddRef();
-        RETURN pCtxEntry;
+        return pCtxEntry;
     }
 
     // Returns an non-addref'ed context entry
     CtxEntry *GetWrapperCtxEntryNoRef()
     {
-        CONTRACT (CtxEntry *)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         CtxEntry *pCtxEntry = m_UnkEntry.GetCtxEntry();
-        RETURN pCtxEntry;
+        return pCtxEntry;
     }
 };
 
@@ -738,26 +711,31 @@ private:
 };
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
-FORCEINLINE void NewRCWHolderRelease(RCW* p)
+struct NewRCWHolderTraits final
 {
-    CONTRACTL
+    using Type = RCW*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type p)
     {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
 
-    if (p)
-    {
-        GCX_COOP();
+        if (p)
+        {
+            GCX_COOP();
 
-        p->DecoupleFromObject();
-        p->Cleanup();
+            p->DecoupleFromObject();
+            p->Cleanup();
+        }
     }
 };
 
-using NewRCWHolder = SpecializedWrapper<RCW, NewRCWHolderRelease>;
+using NewRCWHolder = LifetimeHolder<NewRCWHolderTraits>;
 
 #ifndef DACCESS_COMPILE
 class RCWHolder
@@ -1126,16 +1104,15 @@ public:
 
     AppDomain* GetDomain()
     {
-        CONTRACT (AppDomain*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pDomain;
+        return m_pDomain;
     }
 
     // Worker function called to release wrappers in the pCtxCookie context.
@@ -1176,21 +1153,20 @@ public:
 
     RCW* LookupWrapperUnsafe(LPVOID pUnk)
     {
-        CONTRACT (RCW*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_COOPERATIVE;
             PRECONDITION(CheckPointer(pUnk));
             PRECONDITION(LOCKHELD());
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         // We don't want the GC messing with the hash table underneath us.
         GCX_FORBID();
 
-        RETURN m_HashMap.Lookup(pUnk);
+        return m_HashMap.Lookup(pUnk);
     }
 
 #endif //DACCESS_COMPILE

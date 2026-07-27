@@ -577,7 +577,7 @@ namespace System.Net.Security.Tests
         private static IEnumerable<TlsCipherSuite> GetNonTls13CipherSuites()
         {
             var tls13cs = new HashSet<TlsCipherSuite>(GetTls13CipherSuites());
-            foreach (TlsCipherSuite cs in typeof(TlsCipherSuite).GetEnumValues())
+            foreach (TlsCipherSuite cs in Enum.GetValues<TlsCipherSuite>())
             {
                 if (!tls13cs.Contains(cs))
                 {

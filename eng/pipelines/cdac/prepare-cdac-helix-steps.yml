@@ -7,15 +7,30 @@ parameters:
   buildDebuggees: true
   skipDebuggeeCopy: false
   runtimeConfiguration: 'Checked'
+  # Configuration the cDAC managed assemblies are built at during payload
+  # prep. The dump tests load the managed cDAC directly via ProjectReference,
+  # so passing /p:Configuration=Debug here makes MSBuild walk the
+  # DumpTests project graph and produce Debug-built cDAC dlls in
+  # DumpTests's bin folder, which PrepareHelixPayload then copies into
+  # the Helix payload. Defaults to $(_BuildConfig) for back-compat.
+  cdacTestConfig: '$(_BuildConfig)'
+  # Libraries configuration is pinned independently of cdacTestConfig so
+  # an /p:Configuration=Debug override here never causes MSBuild to look
+  # for Debug-built libraries (which we don't ship in CI). If the libs
+  # are missing at this config, the dotnet build below will fail with a
+  # clear unresolved-reference error.
+  librariesConfiguration: '$(_BuildConfig)'
 
 steps:
 - ${{ if parameters.buildDebuggees }}:
   - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) msbuild
       $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
       /t:BuildDebuggeesOnly
-      /p:Configuration=$(_BuildConfig)
-      /p:TargetArchitecture=$(archType)
+      /p:Configuration=${{ parameters.cdacTestConfig }}
+      /p:ToolsConfiguration=${{ parameters.cdacTestConfig }}
+      /p:LibrariesConfiguration=${{ parameters.librariesConfiguration }}
       /p:RuntimeConfiguration=${{ parameters.runtimeConfiguration }}
+      /p:TargetArchitecture=$(archType)
       -bl:$(Build.SourcesDirectory)/artifacts/log/BuildDebuggees.binlog
     displayName: 'Build Debuggees'
 
@@ -23,7 +38,9 @@ steps:
     $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
     /p:PrepareHelixPayload=true
     /p:SkipDebuggeeCopy=${{ parameters.skipDebuggeeCopy }}
-    /p:Configuration=$(_BuildConfig)
+    /p:Configuration=${{ parameters.cdacTestConfig }}
+    /p:ToolsConfiguration=${{ parameters.cdacTestConfig }}
+    /p:LibrariesConfiguration=${{ parameters.librariesConfiguration }}
     /p:HelixPayloadDir=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac
     /p:SkipDumpVersions=net10.0
     -bl:$(Build.SourcesDirectory)/artifacts/log/DumpTestPayload.binlog

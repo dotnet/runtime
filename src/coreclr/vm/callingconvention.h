@@ -578,6 +578,12 @@ public:
 #ifdef TARGET_AMD64
         return IsArgPassedByRef(size);
 #elif defined(TARGET_ARM64)
+        // TODO-SVE: This should be removed when Vector<T> has an HFA type.
+        if (ExecutionManager::GetEEJitManager()->UseScalableVectorT() && th.IsVectorT())
+        {
+            return TRUE;
+        }
+
         // Composites greater than 16 bytes are passed by reference
         return ((size > ENREGISTERED_PARAMTYPE_MAXSIZE) && !th.IsHFA());
 #elif defined(TARGET_LOONGARCH64)
@@ -636,7 +642,14 @@ public:
         if (m_argType == ELEMENT_TYPE_VALUETYPE)
         {
             _ASSERTE(!m_argTypeHandle.IsNull());
-            return ((m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE) && (!m_argTypeHandle.IsHFA() || this->IsVarArg()));
+
+            // TODO-SVE: This should be removed when Vector<T> has an HFA type.
+            if (ExecutionManager::GetEEJitManager()->UseScalableVectorT() && m_argTypeHandle.IsVectorT())
+            {
+                return TRUE;
+            }
+
+            return (((m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE) && (!m_argTypeHandle.IsHFA() || this->IsVarArg())));
         }
         return FALSE;
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -1919,15 +1932,9 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         align = INTERP_STACK_SLOT_SIZE;
     }
 
-    if (HasRetBuffArg())
-    {
-        // the slot for retbuf arg will be removed before the actual call
-        m_ofsStack = ALIGN_UP(m_ofsStack - INTERP_STACK_SLOT_SIZE, align) + INTERP_STACK_SLOT_SIZE;
-    }
-    else
-    {
-        m_ofsStack = ALIGN_UP(m_ofsStack, align);
-    }
+    _ASSERTE(!HasRetBuffArg());
+
+    m_ofsStack = ALIGN_UP(m_ofsStack, align);
 
     int cbArg = ALIGN_UP(argSize, INTERP_STACK_SLOT_SIZE);
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
@@ -2074,6 +2081,11 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
     default:
         break;
     }
+
+#ifdef TARGET_WASM
+    // WebAssembly ArgIterator follows the Interpreter calling convention which does not use a return buffer arg in the normal argument stream
+    flags &= ~RETURN_HAS_RET_BUFFER;
+#endif
 
     m_dwFlags |= flags;
 }
@@ -2435,7 +2447,7 @@ inline BOOL HasRetBuffArgUnmanagedFixup(MetaSig * pSig)
 {
     WRAPPER_NO_CONTRACT;
     // We cannot just pSig->GetReturnType() here since it will return ELEMENT_TYPE_VALUETYPE for enums
-    CorElementType type = pSig->GetRetTypeHandleThrowing().GetVerifierCorElementType();
+    CorElementType type = pSig->GetRetTypeHandleThrowing().GetInternalCorElementType();
     return type == ELEMENT_TYPE_VALUETYPE;
 }
 #endif

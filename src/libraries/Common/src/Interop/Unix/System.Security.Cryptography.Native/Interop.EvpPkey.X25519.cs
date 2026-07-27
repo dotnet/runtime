@@ -30,6 +30,15 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X25519GenerateKey")]
         private static partial SafeEvpPKeyHandle CryptoNative_X25519GenerateKey();
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X25519DeriveSecretAgreementWithBytes")]
+        private static partial int CryptoNative_X25519DeriveSecretAgreementWithBytes(
+            SafeEvpPKeyHandle key,
+            IntPtr extraHandle,
+            ReadOnlySpan<byte> peerKey,
+            int peerKeyLength,
+            Span<byte> secret,
+            uint secretLength);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X25519IsValidHandle")]
         private static partial int CryptoNative_X25519IsValidHandle(
             SafeEvpPKeyHandle key,
@@ -125,6 +134,32 @@ internal static partial class Interop
             }
 
             return key;
+        }
+
+        internal static int X25519DeriveSecretAgreementWithBytes(
+            SafeEvpPKeyHandle key,
+            ReadOnlySpan<byte> peerKey,
+            Span<byte> destination)
+        {
+            Debug.Assert(key != null);
+            Debug.Assert(peerKey.Length == X25519DiffieHellman.PublicKeySizeInBytes);
+            Debug.Assert(destination.Length == X25519DiffieHellman.SecretAgreementSizeInBytes);
+
+            int written = CryptoNative_X25519DeriveSecretAgreementWithBytes(
+                key,
+                GetExtraHandle(key),
+                peerKey,
+                peerKey.Length,
+                destination,
+                (uint)destination.Length);
+
+            if (written <= 0)
+            {
+                Debug.Assert(written == 0);
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return written;
         }
 
         internal static SafeEvpPKeyHandle X25519ImportPublicKey(ReadOnlySpan<byte> source)

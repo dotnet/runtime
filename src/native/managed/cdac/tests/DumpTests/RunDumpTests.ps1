@@ -32,6 +32,12 @@
     Configuration of the testhost used for the "local" runtime version.
     Default: "Release"
 
+.PARAMETER RuntimeConfiguration
+    Configuration of the runtime (CoreCLR) used for the "local" runtime version.
+    This determines where crossgen2 and other runtime tools are located.
+    Common values: "Release", "Checked", "Debug"
+    Default: "Release"
+
 .PARAMETER Filter
     Glob-style filter for test names. Uses substring matching.
     Examples: "*StackWalk*", "*Thread*", "*GC_Heap*"
@@ -92,6 +98,8 @@ param(
     [switch]$Force,
 
     [string]$TestHostConfiguration = "Release",
+
+    [string]$RuntimeConfiguration = "Release",
 
     [string]$Filter = "",
 
@@ -323,6 +331,7 @@ if ($Action -in @("dumps", "all")) {
         "msbuild", $dumpTestsProj,
         "/t:GenerateAllDumps",
         "/p:TestHostConfiguration=$TestHostConfiguration",
+        "/p:RuntimeConfiguration=$RuntimeConfiguration",
         "/p:DumpVersions=`"$($selectedVersions -join ';')`"",
         "/v:$msbuildVerbosity"
     )

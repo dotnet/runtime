@@ -34,6 +34,8 @@ namespace TestApp
                     ConstructorParameterMetadataInitializer = InaccessibleCtorCtorParamInit,
                     ConstructorAttributeProviderFactory = static () => typeof(global::TestApp.InaccessibleCtor).GetConstructor(InstanceMemberBindingFlags, binder: null, new[] {typeof(string), typeof(int)}, modifiers: null),
                     SerializeHandler = InaccessibleCtorSerializeHandler,
+                    PolymorphismOptions = new global::System.Text.Json.Serialization.Metadata.JsonPolymorphismOptions(),
+                    TypeClassifierFactory = null,
                 };
                 
                 jsonTypeInfo = global::System.Text.Json.Serialization.Metadata.JsonMetadataServices.CreateObjectInfo<global::TestApp.InaccessibleCtor>(options, objectInfo);

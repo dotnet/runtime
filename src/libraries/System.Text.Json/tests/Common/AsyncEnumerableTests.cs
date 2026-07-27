@@ -841,6 +841,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128766", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsMonoRuntime))]
         public async Task SerializeAsyncEnumerable_TopLevelValues_PartialItemFailure_PriorItemsAreFullyWritten()
         {
             // When element serialization throws mid-item, items written prior to the failure
@@ -870,6 +871,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128766", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsMonoRuntime))]
         public async Task SerializeAsyncEnumerable_PipeWriter_TopLevelValues_PartialItemFailure_PriorItemsAreFullyWritten()
         {
             // When element serialization throws mid-item, items written prior to the failure

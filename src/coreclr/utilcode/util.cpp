@@ -2110,6 +2110,49 @@ void PutArm64Rel12(UINT32 * pCode, INT32 imm12)
 }
 
 //*****************************************************************************
+//  Extract the 12-bit page offset from an LDR instruction (unsigned immediate).
+//  For a 64-bit LDR the encoded immediate is scaled by 8 bytes.
+//*****************************************************************************
+INT32 GetArm64Rel12Ldr(UINT32 * pCode)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    UINT32 ldrInstr = *pCode;
+
+    // 21-10 contains the scaled immediate. Mask 12 bits and shift by 10 bits.
+    INT32 scaledImm12 = (INT32)(ldrInstr & 0x003FFC00) >> 10;
+
+    // Scale back to a byte offset (multiply by 8).
+    return scaledImm12 << 3;
+}
+
+//*****************************************************************************
+//  Deposit the PC-Relative page offset 'imm12' into an LDR instruction (unsigned
+//  immediate). For a 64-bit LDR the immediate represents offset/8 (scaled by 8).
+//*****************************************************************************
+void PutArm64Rel12Ldr(UINT32 * pCode, INT32 imm12)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Verify that we got a valid offset that is aligned to 8 bytes.
+    _ASSERTE(FitsInRel12(imm12));
+    _ASSERTE((imm12 & 7) == 0);
+
+    UINT32 ldrInstr = *pCode;
+    // Check ldr opcode: 1111 1001 0100 .... (LDR 64-bit, unsigned immediate)
+    _ASSERTE((ldrInstr & 0xFFC00000) == 0xF9400000);
+
+    INT32 scaledImm12 = imm12 >> 3;       // scale the offset by the access size (8)
+
+    ldrInstr &= 0xFFC003FF;               // keep bits 31-22, 9-0
+    ldrInstr |= (scaledImm12 << 10);      // Occupy 21-10.
+
+    *pCode = ldrInstr;                    // write the assembled instruction
+
+    _ASSERTE(GetArm64Rel12Ldr(pCode) == imm12);
+}
+
+//*****************************************************************************
 //  Extract the PC-Relative page address and page offset from pcalau12i+add/ld
 //*****************************************************************************
 INT64 GetLoongArch64PC12(UINT32 * pCode)
@@ -2261,11 +2304,23 @@ void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, bool isStype)
     INT32 hi20 = INT32(offset - lo12);
     _ASSERTE(INT64(lo12) + INT64(hi20) == offset);
 
-    _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == 0);
-    pCode[0] |= hi20;
-    int bottomBitsPos = isStype ? 7 : 20;
-    pCode[1] |= (lo12 >> 5) << 25; // top 7 bits are in the same spot
-    pCode[1] |= (lo12 & 0x1F) << bottomBitsPos;
+    // Replace existing immediate bits because RISC-V relocation placeholders may already carry addends.
+    pCode[0] &= 0x00000FFF;
+    pCode[0] |= hi20 & 0xFFFFF000;
+
+    UINT32 lo12Bits = UINT32(lo12) & 0xFFF;
+    if (isStype)
+    {
+        pCode[1] &= 0x01FFF07F;
+        pCode[1] |= (lo12Bits & 0xFE0) << 20;
+        pCode[1] |= (lo12Bits & 0x01F) << 7;
+    }
+    else
+    {
+        pCode[1] &= 0x000FFFFF;
+        pCode[1] |= lo12Bits << 20;
+    }
+
     _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == offset);
 }
 
@@ -2369,7 +2424,7 @@ namespace Util
 #ifdef HOST_WINDOWS
     // Struct used to scope suspension of client impersonation for the current thread.
     // https://learn.microsoft.com/windows/desktop/secauthz/client-impersonation
-    class SuspendImpersonation
+    class SuspendImpersonation final
     {
     public:
         SuspendImpersonation()
@@ -2393,11 +2448,14 @@ namespace Util
         ~SuspendImpersonation()
         {
             if (_token != nullptr)
+            {
                 ::SetThreadToken(nullptr, _token);
+                ::CloseHandle(_token);
+            }
         }
 
     private:
-        HandleHolder _token;
+        HANDLE _token;
     };
 
     struct ProcessIntegrityResult

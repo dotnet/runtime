@@ -28,9 +28,15 @@ namespace ILCompiler.Reflection.ReadyToRun
         FreeBSD = 0xADC4,
         Linux = 0x7B79,
         NetBSD = 0x1993,
+        OpenBSD = 0xADC5,
         SunOS = 0x1992,
         Windows = 0,
         Unknown = -1
+    }
+
+    public static class WasmMachine
+    {
+        public const Machine Wasm32 = (Machine)0xFFFE;
     }
 
     public struct InstanceMethod
@@ -683,6 +689,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.Arm:
                 case Machine.Thumb:
                 case Machine.ArmThumb2:
+                case WasmMachine.Wasm32:
                     _pointerSize = 4;
                     break;
 
@@ -818,6 +825,37 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return 3 * sizeof(int);
             }
             return 2 * sizeof(int);
+        }
+
+        private uint? _wasmMinFunctionTableIndex;
+
+        /// <summary>
+        /// For WASM images, returns the minimum function table index stored after the
+        /// RuntimeFunctions sentinel. Returns 0 for non-WASM images or if not available.
+        /// </summary>
+        public uint WasmMinFunctionTableIndex
+        {
+            get
+            {
+                if (_wasmMinFunctionTableIndex is not null)
+                    return _wasmMinFunctionTableIndex.Value;
+
+                if (Machine != WasmMachine.Wasm32 ||
+                    !ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection rtfSection))
+                {
+                    _wasmMinFunctionTableIndex = 0;
+                    return 0;
+                }
+
+                // The sentinel (0xFFFFFFFF) and min table index are located immediately
+                // after the section data (section.Size only covers the entries).
+                int sectionOffset = CompositeReader.GetOffset(rtfSection.RelativeVirtualAddress);
+                int afterSection = sectionOffset + rtfSection.Size;
+                // Skip the sentinel (4 bytes), then read the min function table index (4 bytes)
+                int minTableOffset = afterSection + 4;
+                _wasmMinFunctionTableIndex = ImageReader.ReadUInt32(ref minTableOffset);
+                return _wasmMinFunctionTableIndex.Value;
+            }
         }
 
         /// <summary>
@@ -1216,7 +1254,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                             constrainedType: null,
                             instanceArgs: method.InstanceArgs,
                             signaturePrefixes: ["[RESUME]"],
-                            fixupOffset: null);
+                            fixupOffset: null)
+                        {
+                            RuntimeFunctionCount = 1,
+                        };
                         _instanceMethods.Add(new InstanceMethod(0, stubMethod));
                     }
                 }
@@ -1529,6 +1570,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     {
                         case Machine.I386:
                         case Machine.ArmThumb2:
+                        case WasmMachine.Wasm32:
                             entrySize = 4;
                             break;
 
@@ -1559,7 +1601,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                 for (int i = 0; i < entryCount; i++)
                 {
                     int entryOffset = sectionOffset - startOffset;
-                    long section = ImageReader.ReadInt64(ref sectionOffset);
+                    long section = entrySize == 4
+                        ? ImageReader.ReadInt32(ref sectionOffset)
+                        : ImageReader.ReadInt64(ref sectionOffset);
                     uint sigRva = ImageReader.ReadUInt32(ref signatureOffset);
                     int sigOffset = GetOffset((int)sigRva);
                     ReadyToRunSignature signature = MetadataNameFormatter.FormatSignature(_assemblyResolver, this, sigOffset);

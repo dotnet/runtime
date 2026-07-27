@@ -30,7 +30,8 @@ namespace Microsoft.Interop
 
         public static MarshallingInfo CreateComInterfaceMarshallingInfo(
             Compilation compilation,
-            ITypeSymbol interfaceType)
+            ITypeSymbol interfaceType,
+            TypePositionInfo? iidParameterIndexInfo = null)
         {
             INamedTypeSymbol? comInterfaceMarshaller = compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_Marshalling_ComInterfaceMarshaller_Metadata);
             if (comInterfaceMarshaller is null)
@@ -42,6 +43,14 @@ namespace Microsoft.Interop
             {
                 if (ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(comInterfaceMarshaller, interfaceType, compilation, out CustomTypeMarshallers? marshallers))
                 {
+                    if (iidParameterIndexInfo is not null)
+                    {
+                        return new IidParameterIndexNativeMarshallingInfo(
+                            EntryPointType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(comInterfaceMarshaller),
+                            Marshallers: marshallers.Value,
+                            IidParameterIndexInfo: iidParameterIndexInfo);
+                    }
+
                     return new NativeMarshallingAttributeInfo(
                         EntryPointType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(comInterfaceMarshaller),
                         Marshallers: marshallers.Value);

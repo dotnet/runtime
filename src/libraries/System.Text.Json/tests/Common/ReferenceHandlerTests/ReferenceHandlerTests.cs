@@ -7,7 +7,7 @@ using System.Collections.Immutable;
 using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
+using System.Diagnostics.CodeAnalysis;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -34,11 +34,8 @@ namespace System.Text.Json.Serialization.Tests
             Employee angela = new Employee();
             angela.Manager = angela;
 
-            // Compare parity with Newtonsoft.Json
-            string expected = JsonConvert.SerializeObject(angela, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(angela, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(angela, actual);
 
             // Ensure round-trip
             Employee angelaCopy = await Serializer.DeserializeWrapper<Employee>(actual, s_serializerOptionsPreserve);
@@ -51,10 +48,8 @@ namespace System.Text.Json.Serialization.Tests
             Employee angela = new Employee();
             angela.Subordinates = new List<Employee> { angela };
 
-            string expected = JsonConvert.SerializeObject(angela, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(angela, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(angela, actual);
 
             Employee angelaCopy = await Serializer.DeserializeWrapper<Employee>(actual, s_serializerOptionsPreserve);
             Assert.Same(angelaCopy.Subordinates[0], angelaCopy);
@@ -66,10 +61,8 @@ namespace System.Text.Json.Serialization.Tests
             Employee angela = new Employee();
             angela.Contacts = new Dictionary<string, Employee> { { "555-5555", angela } };
 
-            string expected = JsonConvert.SerializeObject(angela, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(angela, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(angela, actual);
 
             Employee angelaCopy = await Serializer.DeserializeWrapper<Employee>(actual, s_serializerOptionsPreserve);
             Assert.Same(angelaCopy.Contacts["555-5555"], angelaCopy);
@@ -84,10 +77,8 @@ namespace System.Text.Json.Serialization.Tests
             };
             angela.Manager2 = angela.Manager;
 
-            string expected = JsonConvert.SerializeObject(angela, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(angela, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(angela, actual);
 
             Employee angelaCopy = await Serializer.DeserializeWrapper<Employee>(actual, s_serializerOptionsPreserve);
             Assert.Same(angelaCopy.Manager, angelaCopy.Manager2);
@@ -102,10 +93,8 @@ namespace System.Text.Json.Serialization.Tests
             };
             angela.Contacts2 = angela.Contacts;
 
-            string expected = JsonConvert.SerializeObject(angela, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(angela, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(angela, actual);
 
             Employee angelaCopy = await Serializer.DeserializeWrapper<Employee>(actual, s_serializerOptionsPreserve);
             Assert.Same(angelaCopy.Contacts, angelaCopy.Contacts2);
@@ -120,10 +109,8 @@ namespace System.Text.Json.Serialization.Tests
             };
             angela.Subordinates2 = angela.Subordinates;
 
-            string expected = JsonConvert.SerializeObject(angela, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(angela, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(angela, actual);
 
             Employee angelaCopy = await Serializer.DeserializeWrapper<Employee>(actual, s_serializerOptionsPreserve);
             Assert.Same(angelaCopy.Subordinates, angelaCopy.Subordinates2);
@@ -253,10 +240,8 @@ namespace System.Text.Json.Serialization.Tests
             root["Self"] = root;
             root["Other"] = new DictionaryWithGenericCycle();
 
-            string expected = JsonConvert.SerializeObject(root, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(root, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(root, actual);
 
             DictionaryWithGenericCycle rootCopy = await Serializer.DeserializeWrapper<DictionaryWithGenericCycle>(actual, s_serializerOptionsPreserve);
             Assert.Same(rootCopy, rootCopy["Self"]);
@@ -269,10 +254,8 @@ namespace System.Text.Json.Serialization.Tests
             root["Self1"] = root;
             root["Self2"] = root;
 
-            string expected = JsonConvert.SerializeObject(root, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(root, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(root, actual);
 
             DictionaryWithGenericCycle rootCopy = await Serializer.DeserializeWrapper<DictionaryWithGenericCycle>(actual, s_serializerOptionsPreserve);
             Assert.Same(rootCopy, rootCopy["Self1"]);
@@ -285,10 +268,8 @@ namespace System.Text.Json.Serialization.Tests
             Dictionary<string, Employee> root = new Dictionary<string, Employee>();
             root["Angela"] = new Employee() { Name = "Angela", Contacts = root };
 
-            string expected = JsonConvert.SerializeObject(root, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(root, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(root, actual);
 
             Dictionary<string, Employee> rootCopy = await Serializer.DeserializeWrapper<Dictionary<string, Employee>>(actual, s_serializerOptionsPreserve);
             Assert.Same(rootCopy, rootCopy["Angela"].Contacts);
@@ -302,10 +283,8 @@ namespace System.Text.Json.Serialization.Tests
             DictionaryWithGenericCycleWithinList root = new DictionaryWithGenericCycleWithinList();
             root["ArrayWithSelf"] = new List<DictionaryWithGenericCycleWithinList> { root };
 
-            string expected = JsonConvert.SerializeObject(root, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(root, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(root, actual);
 
             DictionaryWithGenericCycleWithinList rootCopy = await Serializer.DeserializeWrapper<DictionaryWithGenericCycleWithinList>(actual, s_serializerOptionsPreserve);
             Assert.Same(rootCopy, rootCopy["ArrayWithSelf"][0]);
@@ -318,10 +297,8 @@ namespace System.Text.Json.Serialization.Tests
             root["Array1"] = new List<DictionaryWithGenericCycleWithinList> { root };
             root["Array2"] = root["Array1"];
 
-            string expected = JsonConvert.SerializeObject(root, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(root, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(root, actual);
 
             DictionaryWithGenericCycleWithinList rootCopy = await Serializer.DeserializeWrapper<DictionaryWithGenericCycleWithinList>(actual, s_serializerOptionsPreserve);
             Assert.Same(rootCopy, rootCopy["Array1"][0]);
@@ -337,10 +314,8 @@ namespace System.Text.Json.Serialization.Tests
             };
             root["Employee2"] = root["Employee1"];
 
-            string expected = JsonConvert.SerializeObject(root, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(root, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(root, actual);
 
             Dictionary<string, Employee> rootCopy = await Serializer.DeserializeWrapper<Dictionary<string, Employee>>(actual, s_serializerOptionsPreserve);
             Assert.Same(rootCopy["Employee1"], rootCopy["Employee2"]);
@@ -447,10 +422,8 @@ namespace System.Text.Json.Serialization.Tests
             ListWithGenericCycle root = new ListWithGenericCycle();
             root.Add(root);
 
-            string expected = JsonConvert.SerializeObject(root, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(root, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(root, actual);
 
             ListWithGenericCycle rootCopy = await Serializer.DeserializeWrapper<ListWithGenericCycle>(actual, s_serializerOptionsPreserve);
             Assert.Same(rootCopy, rootCopy[0]);
@@ -461,10 +434,8 @@ namespace System.Text.Json.Serialization.Tests
             root.Add(root);
             root.Add(root);
 
-            expected = JsonConvert.SerializeObject(root, s_newtonsoftSerializerSettingsPreserve);
             actual = await Serializer.SerializeWrapper(root, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(root, actual);
 
             rootCopy = await Serializer.DeserializeWrapper<ListWithGenericCycle>(actual, s_serializerOptionsPreserve);
             Assert.Same(rootCopy, rootCopy[0]);
@@ -478,10 +449,8 @@ namespace System.Text.Json.Serialization.Tests
             List<Employee> root = new List<Employee>();
             root.Add(new Employee() { Name = "Angela", Subordinates = root });
 
-            string expected = JsonConvert.SerializeObject(root, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(root, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(root, actual);
 
             List<Employee> rootCopy = await Serializer.DeserializeWrapper<List<Employee>>(actual, s_serializerOptionsPreserve);
             Assert.Same(rootCopy, rootCopy[0].Subordinates);
@@ -496,10 +465,8 @@ namespace System.Text.Json.Serialization.Tests
             };
             root.Add(root[0]);
 
-            string expected = JsonConvert.SerializeObject(root, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(root, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(root, actual);
 
             List<Employee> rootCopy = await Serializer.DeserializeWrapper<List<Employee>>(actual, s_serializerOptionsPreserve);
             Assert.Same(rootCopy[0], rootCopy[1]);
@@ -513,10 +480,8 @@ namespace System.Text.Json.Serialization.Tests
             ListWithGenericCycleWithinDictionary root = new ListWithGenericCycleWithinDictionary();
             root.Add(new Dictionary<string, ListWithGenericCycleWithinDictionary> { { "Root", root } });
 
-            string expected = JsonConvert.SerializeObject(root, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(root, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(root, actual);
 
             ListWithGenericCycleWithinDictionary rootCopy = await Serializer.DeserializeWrapper<ListWithGenericCycleWithinDictionary>(actual, s_serializerOptionsPreserve);
             Assert.Same(rootCopy, rootCopy[0]["Root"]);
@@ -531,10 +496,8 @@ namespace System.Text.Json.Serialization.Tests
             };
             root.Add(root[0]);
 
-            string expected = JsonConvert.SerializeObject(root, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(root, s_serializerOptionsPreserve);
-
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(root, actual);
 
             ListWithGenericCycleWithinDictionary rootCopy = await Serializer.DeserializeWrapper<ListWithGenericCycleWithinDictionary>(actual, s_serializerOptionsPreserve);
             Assert.Same(rootCopy[0], rootCopy[1]);
@@ -864,7 +827,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(ClassWithConflictingRefProperty), "$ref")]
         [InlineData(typeof(ClassWithConflictingIdProperty), "$id")]
-        public async Task ClassWithConflictingMetadataProperties_ThrowsInvalidOperationException(Type type, string propertyName)
+        public async Task ClassWithConflictingMetadataProperties_ThrowsInvalidOperationException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, string propertyName)
         {
             InvalidOperationException ex;
             object value = Activator.CreateInstance(type);

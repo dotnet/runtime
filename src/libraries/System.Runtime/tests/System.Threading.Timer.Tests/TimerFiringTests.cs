@@ -106,7 +106,7 @@ namespace System.Threading.Tests
         }
 
         [OuterLoop("Waits seconds")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // blocking waits and timer firing require threads, unavailable on single-threaded platforms
         public void Timer_ChangeToDelete_DoesntFire()
         {
             RetryHelper.Execute(() =>

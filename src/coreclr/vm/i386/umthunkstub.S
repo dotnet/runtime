@@ -8,7 +8,7 @@
 //
 // eax = UMEntryThunkData*
 //
-NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
+NESTED_ENTRY TheUMEntryPrestub, _TEXT, NoHandler
 #define STK_ALIGN_PADDING 8
     sub     esp, STK_ALIGN_PADDING
     push    eax  // UMEntryThunkData*

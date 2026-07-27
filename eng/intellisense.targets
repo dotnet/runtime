@@ -87,70 +87,104 @@
     </ItemGroup>
   </Target>
 
-  <!-- Resolve the first non-PNSE sibling TF whose IsCandidateCompilerGeneratedDocFile is true. -->
-  <Target Name="GetPNSEDocTargetFramework"
-          Condition="'$(PNSEDocTargetFramework)' == ''">
 
-    <!-- GetTargetFrameworks is the standard outer-build target that aggregates per-TF metadata collected via
-         AdditionalTargetFrameworkInfoProperty, including IsCandidateCompilerGeneratedDocFile. -->
+  <!-- ======================== Canonical doc source resolution ======================== -->
+  <!-- Both PNSE builds and platform-specific builds need the compiler-generated doc XML
+       from the canonical doc source TFM:
+         - PNSE builds use it as their DocFileOverride (they have no real source).
+         - Platform-specific builds pass it to PlatformDocAnalyzer for consistency checks.
+
+       The canonical doc source is the first IsCandidateCompilerGeneratedDocFile=true TFM
+       that is not the current TFM. We prefer non-platform TFMs (no '-' in the name) so
+       that platform-specific builds compare against the platform-agnostic version.
+
+       This never creates a cycle because the canonical doc source has
+       IsCandidateCompilerGeneratedDocFile=true, meaning it is neither PNSE nor using a
+       doc override, so it never adds a doc-source reference of its own. -->
+
+  <Target Name="GetCanonicalDocSourceTargetFramework"
+          Condition="'$(CanonicalDocSourceTargetFramework)' == '' and
+                     ('$(IsCandidateCompilerGeneratedDocFile)' != 'true' or '$(TargetPlatformIdentifier)' != '')">
+
     <MSBuild Projects="$(MSBuildProjectFullPath)"
              Targets="GetTargetFrameworks"
              RemoveProperties="TargetFramework">
-      <Output ItemName="_PNSETargetFrameworks" TaskParameter="TargetOutputs" />
+      <Output ItemName="_DocSourceTargetFrameworks" TaskParameter="TargetOutputs" />
     </MSBuild>
 
-    <!-- Find the first TF whose IsCandidateCompilerGeneratedDocFile child element is 'true'.
-         AdditionalPropertiesFromProject is XML of the form:
-           <AdditionalProjectProperties>
-            <TargetFramework Name="net11.0">
-              <IsCandidateCompilerGeneratedDocFile>true</IsCandidateCompilerGeneratedDocFile>
-              ...
-            </TargetFramework>
-            <TargetFramework Name="net10.0">
-              <IsCandidateCompilerGeneratedDocFile>false</IsCandidateCompilerGeneratedDocFile>
-              ...
-            </TargetFramework>
-             ...
-           </AdditionalProjectProperties> -->
-    <XmlPeek XmlContent="@(_PNSETargetFrameworks->'%(AdditionalPropertiesFromProject)')"
+    <!-- For platform-specific TFMs, first try the exact TFM with the platform suffix stripped
+         (e.g. net11.0-windows → net11.0). This ensures the canonical matches the same version. -->
+    <PropertyGroup Condition="'$(TargetPlatformIdentifier)' != ''">
+      <_StrippedTfm>$(TargetFramework.Substring(0, $(TargetFramework.IndexOf('-'))))</_StrippedTfm>
+    </PropertyGroup>
+
+    <XmlPeek Condition="'$(_StrippedTfm)' != ''"
+             XmlContent="@(_DocSourceTargetFrameworks->'%(AdditionalPropertiesFromProject)')"
+             Query="/AdditionalProjectProperties/TargetFramework[@Name='$(_StrippedTfm)' and IsCandidateCompilerGeneratedDocFile='true']/@Name">
+      <Output TaskParameter="Result" ItemName="_StrippedTfmCandidate" />
+    </XmlPeek>
+
+    <!-- Otherwise, prefer any non-platform candidate (no '-' in the TFM name). -->
+    <XmlPeek Condition="'@(_StrippedTfmCandidate)' == ''"
+             XmlContent="@(_DocSourceTargetFrameworks->'%(AdditionalPropertiesFromProject)')"
+             Query="/AdditionalProjectProperties/TargetFramework[IsCandidateCompilerGeneratedDocFile='true' and not(contains(@Name, '-'))][1]/@Name">
+      <Output TaskParameter="Result" ItemName="_NonPlatformDocCandidate" />
+    </XmlPeek>
+
+    <!-- Fall back to the first candidate (stable across all TFMs). -->
+    <XmlPeek Condition="'@(_StrippedTfmCandidate)' == '' and '@(_NonPlatformDocCandidate)' == ''"
+             XmlContent="@(_DocSourceTargetFrameworks->'%(AdditionalPropertiesFromProject)')"
              Query="/AdditionalProjectProperties/TargetFramework[IsCandidateCompilerGeneratedDocFile='true'][1]/@Name">
-      <Output TaskParameter="Result" ItemName="_PNSECandidateTargetFramework" />
+      <Output TaskParameter="Result" ItemName="_AnyDocCandidate" />
     </XmlPeek>
 
     <PropertyGroup>
-      <PNSEDocTargetFramework>@(_PNSECandidateTargetFramework)</PNSEDocTargetFramework>
+      <CanonicalDocSourceTargetFramework Condition="'@(_StrippedTfmCandidate)' != ''">@(_StrippedTfmCandidate)</CanonicalDocSourceTargetFramework>
+      <CanonicalDocSourceTargetFramework Condition="'$(CanonicalDocSourceTargetFramework)' == '' and '@(_NonPlatformDocCandidate)' != ''">@(_NonPlatformDocCandidate)</CanonicalDocSourceTargetFramework>
+      <CanonicalDocSourceTargetFramework Condition="'$(CanonicalDocSourceTargetFramework)' == '' and '@(_AnyDocCandidate)' != ''">@(_AnyDocCandidate)</CanonicalDocSourceTargetFramework>
     </PropertyGroup>
+
+    <Error Condition="'$(IsPlatformNotSupportedAssembly)' == 'true' and '$(CanonicalDocSourceTargetFramework)' == ''"
+           Text="Could not find a compatible TargetFramework to use as the documentation source for this PNSE build. Set 'CanonicalDocSourceTargetFramework' to the desired target framework." />
   </Target>
 
-  <!-- Skip the PNSE doc-source self-reference when not building a .NETCoreApp vertical. -->
-  <Target Name="AddProjectReferenceToPNSEDocSource"
-          DependsOnTargets="GetPNSEDocTargetFramework"
+  <!-- Add a ProjectReference to the canonical doc source to ensure it builds first.
+       Both PNSE and platform-specific builds flow through this target.
+       Skip if the canonical is this TFM itself (it IS the doc source). -->
+  <Target Name="AddCanonicalDocSourceReference"
+          DependsOnTargets="GetCanonicalDocSourceTargetFramework"
           BeforeTargets="PrepareForBuild"
-          Condition="'$(IsPlatformNotSupportedAssembly)' == 'true' and
-                    '$(UseCompilerGeneratedDocXmlFile)' == 'true' and
-                    ('$(BuildTargetFramework)' == '' or '$(TargetFrameworkIdentifier)' == '.NETCoreApp')">
-    
-    <Error Condition="'$(PNSEDocTargetFramework)' == ''"
-           Text="Could not find a compatible TargetFramework to use as the documentation source for this PNSE build. Set 'PNSEDocTargetFramework' to the desired target framework." />
+          Condition="'$(UseCompilerGeneratedDocXmlFile)' == 'true' and
+                     '$(CanonicalDocSourceTargetFramework)' != '' and
+                     '$(CanonicalDocSourceTargetFramework)' != '$(TargetFramework)' and
+                     ('$(BuildTargetFramework)' == '' or '$(TargetFrameworkIdentifier)' == '.NETCoreApp')">
 
-    <!-- ProjectReference to the sibling TF; OutputItemType captures its DocFileItem into @(PNSEDocSource). -->
-    <ItemGroup Condition="'$(PNSEDocTargetFramework)' != ''">
+    <ItemGroup>
       <ProjectReference Include="$(MSBuildProjectFullPath)"
-                        SetTargetFramework="TargetFramework=$(PNSEDocTargetFramework)"
+                        SetTargetFramework="TargetFramework=$(CanonicalDocSourceTargetFramework)"
                         ReferenceOutputAssembly="false"
                         Private="false"
                         PrivateAssets="all"
-                        OutputItemType="PNSEDocSource" />
+                        OutputItemType="CanonicalDocSource" />
     </ItemGroup>
   </Target>
 
-  <Target Name="SetDocFileOverrideFromPNSEDocSource"
+  <!-- After resolving references, consume the canonical doc source:
+       - PNSE builds: override their doc file with the canonical's.
+       - Platform-specific builds: pass it to PlatformDocAnalyzer as an AdditionalFile. -->
+  <Target Name="ConsumeCanonicalDocSource"
           AfterTargets="ResolveProjectReferences"
-          Condition="'@(PNSEDocSource)' != '' and '$(DocFileOverride)' == ''">
-    <PropertyGroup>
-      <!-- Use the DocFileItem metadata from the PNSEDocSource reference, which points to the compiler-generated doc XML from the non-PNSE sibling build. -->
-      <DocFileOverride>@(PNSEDocSource->'%(DocFileItem)')</DocFileOverride>
+          Condition="'@(CanonicalDocSource)' != ''">
+    <!-- PNSE: override the doc file. -->
+    <PropertyGroup Condition="'$(IsPlatformNotSupportedAssembly)' == 'true' and '$(DocFileOverride)' == ''">
+      <DocFileOverride>@(CanonicalDocSource->'%(DocFileItem)')</DocFileOverride>
     </PropertyGroup>
+
+    <!-- Platform-specific non-PNSE: pass to analyzer for comparison. -->
+    <ItemGroup Condition="'$(IsPlatformNotSupportedAssembly)' != 'true' and '$(TargetPlatformIdentifier)' != ''">
+      <AdditionalFiles Include="@(CanonicalDocSource->'%(DocFileItem)')"
+                       PlatformDocCanonical="true" />
+    </ItemGroup>
   </Target>
 
 </Project>

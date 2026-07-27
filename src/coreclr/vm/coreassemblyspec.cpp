@@ -26,7 +26,7 @@
 #include "../binder/inc/assemblybindercommon.hpp"
 #include "../binder/inc/applicationcontext.hpp"
 
-HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly)
+HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly, SString* pDiagnosticInfo)
 {
     CONTRACTL
     {
@@ -62,7 +62,7 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
     {
         AssemblyNameData assemblyNameData = { 0 };
         PopulateAssemblyNameData(assemblyNameData);
-        hr = pBinder->BindAssemblyByName(&assemblyNameData, &pPrivAsm);
+        hr = pBinder->BindAssemblyByName(&assemblyNameData, &pPrivAsm, pDiagnosticInfo);
     }
 
     if (SUCCEEDED(hr))
@@ -77,7 +77,8 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
 
 STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
                             PEImage               **ppPEImage,
-                            ProbeExtensionResult    probeExtensionResult)
+                            ProbeExtensionResult    probeExtensionResult,
+                            SString                *pDiagnosticInfo)
 {
     HRESULT hr = S_OK;
 
@@ -93,6 +94,15 @@ STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
             hr = pImage->TryOpenFile();
             if (FAILED(hr))
             {
+                if (pDiagnosticInfo != NULL)
+                {
+                    StackSString format;
+                    format.LoadResource(IDS_BINDING_FAILED_TO_OPEN_FILE);
+                    SString pathStr(wszAssemblyPath);
+                    StackSString hrMsg;
+                    GetHRMsg(hr, hrMsg);
+                    pDiagnosticInfo->Printf(format.GetUTF8(), pathStr.GetUTF8(), hrMsg.GetUTF8());
+                }
                 goto Exit;
             }
         }
@@ -100,7 +110,21 @@ STDAPI BinderAcquirePEImage(LPCWSTR                 wszAssemblyPath,
         if (pImage)
             *ppPEImage = pImage.Detach();
     }
-    EX_CATCH_HRESULT(hr);
+    EX_CATCH
+    {
+        hr = GET_EXCEPTION()->GetHR();
+        _ASSERTE(FAILED(hr));
+        if (pDiagnosticInfo != NULL)
+        {
+            StackSString format;
+            format.LoadResource(IDS_BINDING_EXCEPTION_OPENING_FILE);
+            SString pathStr(wszAssemblyPath);
+            StackSString exMessage;
+            GET_EXCEPTION()->GetMessage(exMessage);
+            pDiagnosticInfo->Printf(format.GetUTF8(), pathStr.GetUTF8(), exMessage.GetUTF8());
+        }
+    }
+    EX_END_CATCH
 
  Exit:
     return hr;

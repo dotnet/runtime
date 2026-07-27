@@ -23,6 +23,15 @@ internal static partial class Interop
             Span<byte> destination,
             int destinationLength);
 
+        [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X25519DeriveRawSecretAgreementWithBytes")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        private static partial int AppleCryptoNative_X25519DeriveRawSecretAgreementWithBytes(
+            SafeX25519KeyHandle key,
+            ReadOnlySpan<byte> peerKey,
+            int peerKeyLength,
+            Span<byte> destination,
+            int destinationLength);
+
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X25519ExportPrivateKey")]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static partial int AppleCryptoNative_X25519ExportPrivateKey(
@@ -67,6 +76,32 @@ internal static partial class Interop
                     throw new CryptographicException();
                 default:
                     Debug.Fail($"Unexpected result from {nameof(AppleCryptoNative_X25519DeriveRawSecretAgreement)}: {ret}.");
+                    throw new CryptographicException();
+            }
+        }
+
+        internal static void X25519DeriveRawSecretAgreementWithBytes(
+            SafeX25519KeyHandle key,
+            ReadOnlySpan<byte> peerKey,
+            Span<byte> destination)
+        {
+            const int Success = 1;
+            const int KeyDerivationFailed = 0;
+            int ret = AppleCryptoNative_X25519DeriveRawSecretAgreementWithBytes(
+                key,
+                peerKey,
+                peerKey.Length,
+                destination,
+                destination.Length);
+
+            switch (ret)
+            {
+                case Success:
+                    return;
+                case KeyDerivationFailed:
+                    throw new CryptographicException();
+                default:
+                    Debug.Fail($"Unexpected result from {nameof(AppleCryptoNative_X25519DeriveRawSecretAgreementWithBytes)}: {ret}.");
                     throw new CryptographicException();
             }
         }

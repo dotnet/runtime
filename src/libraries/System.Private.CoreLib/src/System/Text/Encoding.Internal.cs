@@ -97,14 +97,14 @@ namespace System.Text
         /// Returns <see langword="false"/> if the <see cref="Rune"/> cannot be represented in the
         /// current <see cref="Encoding"/>.
         /// </summary>
-        internal virtual unsafe bool TryGetByteCount(Rune value, out int byteCount)
+        internal virtual bool TryGetByteCount(Rune value, out int byteCount)
         {
             // Any production-quality type would override this method and provide a real
             // implementation, so we won't provide a base implementation. However, a
             // non-shipping slow reference implementation is provided below for convenience.
 
 #if false
-            Span<byte> bytes = stackalloc byte[4]; // max 4 bytes per input scalar
+            Span<byte> bytes = [0, 0, 0, 0]; // max 4 bytes per input scalar
 
             OperationStatus opStatus = EncodeRune(value, bytes, out byteCount);
             Debug.Assert(opStatus == OperationStatus.Done || opStatus == OperationStatus.InvalidData, "Unexpected return value.");

@@ -202,8 +202,8 @@ namespace Internal.TypeSystem.Interop
                 if (customModifierType == null)
                     continue;
 
-                if ((customModifierType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8) && customModifierType.Name.SequenceEqual("IsCopyConstructed"u8)) ||
-                    (customModifierType.Namespace.SequenceEqual("Microsoft.VisualC"u8) && customModifierType.Name.SequenceEqual("NeedsCopyConstructorModifier"u8)))
+                if ((customModifierType.Namespace == "System.Runtime.CompilerServices"u8 && customModifierType.Name == "IsCopyConstructed"u8) ||
+                    (customModifierType.Namespace == "Microsoft.VisualC"u8 && customModifierType.Name == "NeedsCopyConstructorModifier"u8))
                 {
                     return true;
                 }
@@ -946,7 +946,7 @@ namespace Internal.TypeSystem.Interop
             //   objc_msgSendSuper
             //   objc_msgSendSuper_stret
             return metadata.Module.Equals(ObjectiveCLibrary)
-                && metadata.Name.StartsWith(ObjectiveCMsgSend);
+                && metadata.Name.AsSpan().StartsWith(ObjectiveCMsgSend);
         }
 
         internal static uint? GetObjectiveCMessageSendFunction(TargetDetails target, string pinvokeModule, string pinvokeFunction)
@@ -970,6 +970,11 @@ namespace Internal.TypeSystem.Interop
         public static bool IsRuntimeMarshallingEnabled(ModuleDesc module)
         {
             return module.Assembly is not EcmaAssembly assembly || !assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
+        }
+
+        public static bool IsMarshallingRequired(MethodSignature methodSig, ModuleDesc moduleContext)
+        {
+            return Marshaller.IsMarshallingRequired(methodSig, moduleContext);
         }
     }
 }

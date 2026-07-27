@@ -76,6 +76,16 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"a{2,}?b", "abc", RegexOptions.None, 0, 3, false, string.Empty);
             yield return (@"a{2,}?b", "aabc", RegexOptions.None, 0, 4, true, "aab");
 
+            // Optional group wrapping a lazy capturing loop followed by a trailing literal. The input drives the lazy
+            // loop to its maximum iteration count and then fails the trailing literal, exercising the loop's give-up
+            // backtracking path, which must unwind every matched iteration's state off the backtracking stack. The
+            // whole expression is optional, so the overall result is a successful empty match.
+            yield return (@"(([0-9]){1,3}?x)?", "123", RegexOptions.None, 0, 3, true, string.Empty);
+            yield return (@"((a+(:c*)?@)?([0-9]|A){1,4}?:)?", "1234", RegexOptions.None, 0, 4, true, string.Empty);
+            yield return (@"((a+(:c*)?@)?([0-9]|A){2,4}?:)?", "1234", RegexOptions.None, 0, 4, true, string.Empty);
+            yield return (@"((a+(:c*)?@)?([0-9]|A){1,4}?:)?", "12:", RegexOptions.None, 0, 3, true, "12:");
+            yield return (@"((a+(:c*)?@)?([0-9]|A){1,4}?:)?", "a@99:", RegexOptions.None, 0, 5, true, "a@99:");
+
             // {,n} is treated as a literal rather than {0,n} as it should be
             yield return (@"a{,3}b", "a{,3}bc", RegexOptions.None, 0, 6, true, "a{,3}b");
             yield return (@"a{,3}b", "aaabc", RegexOptions.None, 0, 5, false, string.Empty);
