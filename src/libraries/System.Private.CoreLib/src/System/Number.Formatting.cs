@@ -376,7 +376,7 @@ namespace System
             char fmt = ParseFormatSpecifier(format, out int digits);
 
             byte* pDigits = stackalloc byte[TDecimal.BufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, TDecimal.BufferLength);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.DecimalIeee754, pDigits, TDecimal.BufferLength);
 
             DecimalIeee754ToNumber<TDecimal, TValue>(value, ref number);
 
@@ -438,7 +438,7 @@ namespace System
         private static unsafe void FormatGeneralAndRoundTripDecimalIeee754<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, char expChar, int nMaxDigits, NumberFormatInfo info)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(number.Kind == NumberBufferKind.Decimal);
+            Debug.Assert(number.Kind == NumberBufferKind.DecimalIeee754);
 
             bool rounded = (nMaxDigits > 0) && (nMaxDigits < number.DigitsCount);
 

@@ -268,7 +268,7 @@ namespace System
                 {
                     if ((state & StateNonZero) == 0)
                     {
-                        if (number.Kind != NumberBufferKind.Decimal)
+                        if (number.Kind is not (NumberBufferKind.Decimal or NumberBufferKind.DecimalIeee754))
                         {
                             number.Scale = 0;
                         }

@@ -994,7 +994,7 @@ namespace System
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, stackalloc byte[TDecimal.BufferLength]);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.DecimalIeee754, stackalloc byte[TDecimal.BufferLength]);
             result = default;
 
             if (!TryStringToNumber(value, styles, ref number, info, out elementsConsumed))

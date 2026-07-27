@@ -435,7 +435,7 @@ namespace System
                 }
                 else
                 {
-                    if (number.Kind != NumberBufferKind.FloatingPoint)
+                    if (number.Kind is not (NumberBufferKind.FloatingPoint or NumberBufferKind.DecimalIeee754))
                     {
                         // The integer types don't have a concept of -0 and decimal always format -0 as 0
                         number.IsNegative = false;
@@ -1085,7 +1085,7 @@ namespace System
 
             if (i == 0)
             {
-                if (number.Kind != NumberBufferKind.FloatingPoint)
+                if (number.Kind is not (NumberBufferKind.FloatingPoint or NumberBufferKind.DecimalIeee754))
                 {
                     // The integer types don't have a concept of -0 and decimal always format -0 as 0
                     number.IsNegative = false;

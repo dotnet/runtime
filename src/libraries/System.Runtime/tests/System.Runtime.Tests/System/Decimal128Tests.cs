@@ -392,6 +392,16 @@ namespace System.Tests
             {
                 yield return new object[] { Decimal128.Parse("-0"), "G", defaultFormat, "-0" };
                 yield return new object[] { Decimal128.NegativeZero, "G", defaultFormat, "-0" };
+
+                // A signed zero is a distinct IEEE value, so the sign survives every specifier, as it does for double
+                yield return new object[] { Decimal128.NegativeZero, "E2", defaultFormat, "-0.00E+000" };
+                yield return new object[] { Decimal128.NegativeZero, "F2", defaultFormat, "-0.00" };
+                yield return new object[] { Decimal128.NegativeZero, "N2", defaultFormat, "-0.00" };
+                yield return new object[] { Decimal128.NegativeZero, "P0", defaultFormat, "-0 %" };
+                yield return new object[] { Decimal128.NegativeZero, "C2", defaultFormat, "(\u00A40.00)" };
+                yield return new object[] { Decimal128.NegativeZero, "0.00", defaultFormat, "-0.00" };
+                yield return new object[] { Decimal128.Parse("-0e2"), "F2", defaultFormat, "-0.00" };
+                yield return new object[] { Decimal128.Parse("-0.001"), "F2", defaultFormat, "-0.00" };
                 yield return new object[] { Decimal128.Parse("-0.0000"), "G", defaultFormat, "-0.0000" };
                 yield return new object[] { Decimal128.Parse("0"), "G", defaultFormat, "0" };
                 yield return new object[] { Decimal128.Zero, "G", defaultFormat, "0" };

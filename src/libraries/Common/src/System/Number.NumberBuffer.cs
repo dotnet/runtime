@@ -65,7 +65,7 @@ namespace System
             public void CheckConsistency()
             {
 #if DEBUG
-                Debug.Assert(Kind is NumberBufferKind.Integer or NumberBufferKind.Decimal or NumberBufferKind.FloatingPoint);
+                Debug.Assert(Kind is NumberBufferKind.Integer or NumberBufferKind.Decimal or NumberBufferKind.FloatingPoint or NumberBufferKind.DecimalIeee754);
                 Debug.Assert(Digits[0] != '0', "Leading zeros should never be stored in a Number");
 
                 int numDigits;
@@ -127,6 +127,12 @@ namespace System
             Integer = 1,
             Decimal = 2,
             FloatingPoint = 3,
+
+            /// <summary>
+            /// An IEEE 754 decimal interchange format. This rounds like <see cref="Decimal"/> but, like
+            /// <see cref="FloatingPoint"/>, has a signed zero that must survive formatting.
+            /// </summary>
+            DecimalIeee754 = 4,
         }
     }
 }
