@@ -12229,6 +12229,10 @@ void emitter::emitDispConstant(const instrDesc* id, bool skipComma) const
             case INS_roundps:
             case INS_roundsd:
             case INS_roundss:
+            case INS_vextractf32x4:
+            case INS_vextracti32x4:
+            case INS_vinsertf32x4:
+            case INS_vinserti32x4:
             {
                 // These instructions have pseudo-names, but still need to display the immediate
                 break;
@@ -12983,6 +12987,8 @@ void emitter::emitDispIns(
             {
                 switch (ins)
                 {
+                    case INS_movmskpd:
+                    case INS_movmskps:
                     case INS_pmovmskb:
                     {
                         assert(!id->idIsEvexAaaContextSet());
