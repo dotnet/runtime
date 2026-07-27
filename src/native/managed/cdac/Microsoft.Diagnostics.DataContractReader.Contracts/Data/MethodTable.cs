@@ -6,14 +6,14 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.MethodTable))]
 internal sealed partial class MethodTable : IData<MethodTable>
 {
-    [Field] public uint MTFlags { get; }
-    [Field] public uint BaseSize { get; }
-    [Field] public uint MTFlags2 { get; }
-    [Field] public TargetPointer EEClassOrCanonMT { get; }
-    [Field] public TargetPointer Module { get; }
-    [Field] public TargetPointer ParentMethodTable { get; }
-    [Field] public TargetPointer PerInstInfo { get; }
-    [Field] public ushort NumInterfaces { get; }
-    [Field] public ushort NumVirtuals { get; }
-    [Field] public TargetPointer AuxiliaryData { get; }
+    [Field] public partial uint MTFlags { get; }
+    [Field] public partial uint BaseSize { get; }
+    [Field] public partial uint MTFlags2 { get; }
+    [Field] public partial TargetPointer EEClassOrCanonMT { get; }
+    [Field] public partial TargetPointer Module { get; }
+    [Field] public partial TargetPointer ParentMethodTable { get; }
+    [Field] public partial TargetPointer PerInstInfo { get; }
+    [Field] public partial ushort NumInterfaces { get; }
+    [Field] public partial ushort NumVirtuals { get; }
+    [Field] public partial TargetPointer AuxiliaryData { get; }
 }

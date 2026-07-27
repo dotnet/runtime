@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.AsyncResumeInfo))]
 internal sealed partial class AsyncResumeInfo : IData<AsyncResumeInfo>
 {
-    [Field] public TargetPointer DiagnosticIP { get; }
+    [Field] public partial TargetPointer DiagnosticIP { get; }
 }

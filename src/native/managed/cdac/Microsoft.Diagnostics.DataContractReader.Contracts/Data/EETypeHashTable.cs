@@ -11,6 +11,10 @@ internal sealed partial class EETypeHashTable : IData<EETypeHashTable>
 {
     private const ulong FLAG_MASK = 0x1ul;
 
+    [DataDescriptorDependency("Buckets", "pointer")]
+    [DataDescriptorDependency("Count", "uint32")]
+    [DataDescriptorDependency("VolatileEntryValue", "pointer")]
+    [DataDescriptorDependency("VolatileEntryNextEntry", "pointer")]
     public IReadOnlyList<Entry> Entries { get; private set; }
 
     [MemberNotNull(nameof(Entries))]

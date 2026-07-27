@@ -129,4 +129,13 @@
     <Delete Files="$(OutDir)System.Runtime.Loader.Test.BindFailure.Locked.dll" />
     <Delete Files="$(OutDir)System.Runtime.Loader.Test.BindFailure.Corrupt.dll" />
   </Target>
+
+  <Target Name="RemoveBindFailureTestAssembliesFromReadyToRunPublish"
+          Condition="'$(TestReadyToRun)' == 'true'"
+          AfterTargets="Publish"
+          BeforeTargets="ZipTestArchive">
+    <Delete Files="$(BundleDir)System.Runtime.Loader.Test.BindFailure.Missing.dll" />
+    <Delete Files="$(BundleDir)System.Runtime.Loader.Test.BindFailure.Locked.dll" />
+    <Delete Files="$(BundleDir)System.Runtime.Loader.Test.BindFailure.Corrupt.dll" />
+  </Target>
 </Project>
