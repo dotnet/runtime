@@ -31,7 +31,7 @@ A successful baseline build of the affected component is required for incrementa
 
 ### When a baseline is required
 
-- **Under CCA — always, before making any code changes.** ⚠️ The environment is fresh, so there are no pre-existing artifacts and incremental builds fail in ways that waste significant compute. Skipping this step IS a task failure. **Exception:** if you are on a feature branch with commits upstream of main and the baseline build fails, make whatever code changes are needed to fix the build, then resume requiring a baseline.
+- **Under CCA — always, before changing any of the product code in the table below.** ⚠️ The environment is fresh, so there are no pre-existing artifacts and incremental builds fail in ways that waste significant compute. Skipping this step IS a task failure. Changes outside those paths — docs, markdown, workflow and instruction files — don't need one. **Exception:** if you are on a feature branch with commits upstream of main and the baseline build fails, make whatever code changes are needed to fix the build, then resume requiring a baseline.
 - **Under CLI (interactive) — only when needed.** A usable baseline may already exist from prior work; don't re-run a 40-minute build unnecessarily. Check the component's [baseline sentinel](#baseline-sentinels) and build if it is missing. Otherwise attempt the work, and if it fails with a baseline-missing signature from [Troubleshooting](#troubleshooting), run the baseline once and retry — do not loop. Trust volunteered user signals ("just built", "fresh checkout") over probing.
 - **Unsure which mode you're in?** Follow the CCA rule.
 

@@ -1,10 +1,10 @@
-**Any code you commit MUST compile, and new and existing tests related to the change MUST pass.**
+**Don't claim more than you verified.** Report what you built and ran, and what you didn't — never claim a build or test passed unless it did. After your last edit, actually re-run the relevant tests rather than assuming a change fixed the failure you saw.
 
-You MUST make your best effort to ensure any code changes satisfy those criteria before committing. Build and run the relevant tests after your last edit — do not assume a change fixed a failure you saw, actually run them again to confirm. If for any reason you were unable to build or test code changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
+Scale the effort to the risk. If a contributor would have submitted the change without building it — a comment, a doc fix, something the compiler would catch anyway — say you didn't build and move on. Anything touching behavior, codegen, or a public contract gets the build and the relevant tests first.
 
 Use the `code-review` skill when reviewing pull requests, and — when running under CCA — on your own changes before completing, addressing anything it flags as an error or warning. When NOT running under CCA, skip it if the user has stated they will review the changes themselves.
 
-Before making changes to a directory, search for `README.md` files in that directory and its parent directories up to the repository root. Read any you find — they contain conventions, patterns, and architectural context relevant to your work.
+When starting work in an unfamiliar directory, search for `README.md` files in it and its parents up to the repository root. Read any you find — they contain conventions, patterns, and architectural context relevant to your work.
 
 If the changes are intended to improve performance, or if they could negatively impact performance, use the `performance-benchmark` skill to validate the impact before completing.
 
@@ -45,6 +45,7 @@ For markdown (`.md`) files, ensure there is no trailing whitespace at the end of
 - **Put the measurements in the description** for performance changes — BenchmarkDotNet results, or codegen and instruction-count evidence for low-level work.
 - **Behavioral changes need breaking-change documentation**, even prerelease-to-prerelease. Use the `breaking-change-doc` skill.
 - **Merge to main first, then `/backport`.** Servicing backports are limited to security bugs, regressions, and reliability issues, and should be small targeted fixes rather than refactorings.
+- **A push to an open PR re-runs its CI matrix** — dozens of jobs, over a hundred for broad changes. For anything non-trivial, validate locally rather than using CI to find out whether it builds, and batch fixes into one push. Branches with no PR trigger nothing, as do changes confined to `**.md`, `docs/*`, or `.github/*`.
 
 When NOT running under CCA, for commits and pushes:
 
