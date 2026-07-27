@@ -1351,6 +1351,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
             }
 
+            interface IRequiresAll<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] U>
+            {
+            }
+
+            interface IRequiresNew<T> where T : new()
+            {
+            }
+
             [RequiresUnreferencedCode("--ClassWithRequires--")]
             public class ClassWithRequires
             {
@@ -1424,6 +1432,25 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
             }
 
+            // Unlike the base type case above, the warning for the interface list originates from the type
+            // declaration itself, so it is not suppressed by the RequiresUnreferencedCode on the type.
+            [ExpectedWarning("IL2026", "ClassWithRequires()", "--ClassWithRequires--")]
+            class ClassImplementingInterfaceWithWarningOnGenericArgumentConstructor : IRequiresNew<ClassWithRequires>
+            {
+            }
+
+            [UnexpectedWarning("IL2026", "ClassWithRequires()", "--ClassWithRequires--", Tool.All, "https://github.com/dotnet/runtime/issues/108507")]
+            [RequiresUnreferencedCode("--ClassImplementingInterfaceWithWarningOnGenericArgumentConstructorWithRequires--")]
+            class ClassImplementingInterfaceWithWarningOnGenericArgumentConstructorWithRequires : IRequiresNew<ClassWithRequires>
+            {
+            }
+
+            [UnexpectedWarning("IL2091", Tool.All, "https://github.com/dotnet/runtime/issues/108523")]
+            [RequiresUnreferencedCode("--ClassImplementingInterfaceWithWarningWithRequires--")]
+            public class ClassImplementingInterfaceWithWarningWithRequires : IRequiresAll<T>
+            {
+            }
+
             [RequiresUnreferencedCode("--GenericAnnotatedWithWarningWithRequires--")]
             public class GenericAnnotatedWithWarningWithRequires<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TFields> : RequiresAll<TFields>
             {
@@ -1436,6 +1463,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL2026", "--GenericClassWithWarningWithRequires--")]
             [ExpectedWarning("IL2026", "--ClassWithWarningWithRequires--")]
             [ExpectedWarning("IL2026", "--ClassWithWarningOnGenericArgumentConstructorWithRequires--")]
+            [ExpectedWarning("IL2026", "--ClassImplementingInterfaceWithWarningOnGenericArgumentConstructorWithRequires--")]
+            [ExpectedWarning("IL2026", "--ClassImplementingInterfaceWithWarningWithRequires--")]
             [ExpectedWarning("IL2026", "--GenericAnnotatedWithWarningWithRequires--")]
             public static void Test(ClassWithRequires inst = null)
             {
@@ -1455,6 +1484,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 var k = new ClassWithWarningOnGenericArgumentConstructor_NewAndAnnotation();
                 var l = new ClassWithWarningOnGenericArgumentConstructorWithRequires();
                 var m = new GenericAnnotatedWithWarningWithRequires<int>();
+                var n = new ClassImplementingInterfaceWithWarningOnGenericArgumentConstructor();
+                var o = new ClassImplementingInterfaceWithWarningOnGenericArgumentConstructorWithRequires();
+                var p = new ClassImplementingInterfaceWithWarningWithRequires();
+
+                // Reference the interfaces, otherwise they could be trimmed
+                Type t;
+                t = typeof(IRequiresNew<>);
+                t = typeof(IRequiresAll<>);
             }
         }
 
