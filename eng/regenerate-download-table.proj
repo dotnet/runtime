@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
   <!-- installer.tasks needs to be built in advance. -->
-  <UsingTask TaskName="RegenerateDownloadTable" AssemblyFile="$(InstallerTasksAssemblyPath)" />
+  <UsingTask TaskName="RegenerateDownloadTable" AssemblyFile="$(InstallerTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
 
   <Target Name="RegenerateDownloadTable"
           AfterTargets="Build">

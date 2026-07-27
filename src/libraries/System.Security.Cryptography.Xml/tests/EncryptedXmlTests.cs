@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
@@ -12,6 +15,8 @@ namespace System.Security.Cryptography.Xml.Tests
     public static class EncryptedXmlTests
     {
         private const string AllowDangerousEncryptedXmlTransformsAppContextSwitch = "System.Security.Cryptography.Xml.AllowDangerousEncryptedXmlTransforms";
+        private const string MaxTransformsPerChainAppContextSwitch = "System.Security.Cryptography.Xml.MaxTransformsPerChain";
+        private const string MalformedTransformsMessage = "Malformed element Transforms.";
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49871", TestPlatforms.Android)]
@@ -271,6 +276,92 @@ namespace System.Security.Cryptography.Xml.Tests
             EncryptedXml exml = new(doc);
             CryptographicException ex = Assert.Throws<CryptographicException>(() => exml.DecryptDocument());
             Assert.Equal("The XML element has exceeded the maximum nesting depth allowed for decryption.", ex.Message);
+        }
+
+        [Fact]
+        public static void EncryptedXml_DecryptedEncodedDtd()
+        {
+            // The payload contains more transforms than the default limit, so
+            // deserialization of the transform chain should fail.
+            Assert.True(GetEncodedDtdPayloadTransformCount() > 20);
+
+            EncryptedXml encryptedXml = CreateEncryptedXmlWithEncodedDtdPayload();
+            CryptographicException ex = Assert.Throws<CryptographicException>(() => encryptedXml.DecryptDocument());
+            Assert.Equal(MalformedTransformsMessage, ex.Message);
+        }
+
+        public static IEnumerable<object[]> EncodedDtdTransformChainLimits()
+        {
+            int requiredTransformCount = GetEncodedDtdPayloadTransformCount();
+
+            yield return new object[] { requiredTransformCount - 1, true };
+            yield return new object[] { requiredTransformCount, false };
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(EncodedDtdTransformChainLimits))]
+        public static void EncryptedXml_DecryptedEncodedDtd_WithExactTransformChainLimit(int maxTransformsPerChain, bool expectTransformLimit)
+        {
+            RemoteExecutor.Invoke(static (string maxTransformsPerChainText, string expectTransformLimitText) =>
+            {
+                AppContext.SetData(MaxTransformsPerChainAppContextSwitch, int.Parse(maxTransformsPerChainText, CultureInfo.InvariantCulture));
+
+                EncryptedXml encryptedXml = CreateEncryptedXmlWithEncodedDtdPayload();
+                CryptographicException ex = Assert.ThrowsAny<CryptographicException>(() => encryptedXml.DecryptDocument());
+
+                if (bool.Parse(expectTransformLimitText))
+                {
+                    Assert.Equal(MalformedTransformsMessage, ex.Message);
+                }
+                else
+                {
+                    Assert.NotEqual(MalformedTransformsMessage, ex.Message);
+                }
+            }, maxTransformsPerChain.ToString(CultureInfo.InvariantCulture), expectTransformLimit.ToString()).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void EncryptedXml_DecryptedEncodedDtd_WithUnlimitedTransformChain()
+        {
+            // With the transform chain limit removed, the operation should still release
+            // intermediate state so processing terminates without excessive memory usage.
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetData(MaxTransformsPerChainAppContextSwitch, 0);
+
+                EncryptedXml encryptedXml = CreateEncryptedXmlWithEncodedDtdPayload();
+                CryptographicException ex = Assert.ThrowsAny<CryptographicException>(() => encryptedXml.DecryptDocument());
+                Assert.NotEqual(MalformedTransformsMessage, ex.Message);
+            }).Dispose();
+        }
+
+        private static int GetEncodedDtdPayloadTransformCount()
+        {
+            using Stream encryptedXmlStream = TestHelpers.LoadResourceStream("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample5.xml");
+            XmlDocument encryptedXmlDocument = new();
+            encryptedXmlDocument.Load(encryptedXmlStream);
+
+            XmlNamespaceManager namespaceManager = new(encryptedXmlDocument.NameTable);
+            namespaceManager.AddNamespace("xenc", EncryptedXml.XmlEncNamespaceUrl);
+            namespaceManager.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
+
+            return encryptedXmlDocument.SelectNodes(
+                "/xenc:EncryptedData/xenc:CipherData/xenc:CipherReference/xenc:Transforms/ds:Transform",
+                namespaceManager)!.Count;
+        }
+
+        private static EncryptedXml CreateEncryptedXmlWithEncodedDtdPayload()
+        {
+            Stream encryptedXmlStream = TestHelpers.LoadResourceStream("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample5.xml");
+            XmlDocument encryptedXmlDocument = new();
+            encryptedXmlDocument.Load(encryptedXmlStream);
+            EncryptedXml encryptedXml = new(encryptedXmlDocument);
+
+            Aes symAlg = Aes.Create();
+            symAlg.KeySize = 128;
+            encryptedXml.AddKeyNameMapping("TheKey", symAlg);
+
+            return encryptedXml;
         }
 #endif
     }

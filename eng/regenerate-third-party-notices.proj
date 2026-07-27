@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
-  <UsingTask TaskName="RegenerateThirdPartyNotices" AssemblyFile="$(InstallerTasksAssemblyPath)" />
+  <UsingTask TaskName="RegenerateThirdPartyNotices" AssemblyFile="$(InstallerTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
 
   <Target Name="RegenerateThirdPartyNotices" AfterTargets="Build">
     <PropertyGroup>

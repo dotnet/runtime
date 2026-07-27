@@ -4,7 +4,7 @@
     <!-- File version numbers -->
     <MajorVersion>10</MajorVersion>
     <MinorVersion>0</MinorVersion>
-    <PatchVersion>10</PatchVersion>
+    <PatchVersion>12</PatchVersion>
     <!-- The .NET product branding version -->
     <ProductVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</ProductVersion>
     <PackageVersionNet9>9.0.$([MSBuild]::Add($(PatchVersion),12))</PackageVersionNet9>
@@ -177,11 +177,11 @@
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
     <!-- sdk version, for testing workloads -->
     <!-- WiX 5+ dependencies for MSI generation -->
-    <MicrosoftWixVersion>5.0.2-dotnet.3009129</MicrosoftWixVersion>
-    <MicrosoftWixToolsetUIWixextVersion>5.0.2-dotnet.3009129</MicrosoftWixToolsetUIWixextVersion>
-    <MicrosoftWixToolsetDependencyWixextVersion>5.0.2-dotnet.3009129</MicrosoftWixToolsetDependencyWixextVersion>
-    <MicrosoftWixToolsetUtilWixextVersion>5.0.2-dotnet.3009129</MicrosoftWixToolsetUtilWixextVersion>
-    <MicrosoftWixToolsetBalWixextVersion>5.0.2-dotnet.3009129</MicrosoftWixToolsetBalWixextVersion>
-    <MicrosoftWixToolsetHeatVersion>5.0.2-dotnet.3009129</MicrosoftWixToolsetHeatVersion>
+    <MicrosoftWixVersion>6.0.3-dotnet.6</MicrosoftWixVersion>
+    <MicrosoftWixToolsetUIWixextVersion>6.0.3-dotnet.6</MicrosoftWixToolsetUIWixextVersion>
+    <MicrosoftWixToolsetDependencyWixextVersion>6.0.3-dotnet.6</MicrosoftWixToolsetDependencyWixextVersion>
+    <MicrosoftWixToolsetUtilWixextVersion>6.0.3-dotnet.6</MicrosoftWixToolsetUtilWixextVersion>
+    <MicrosoftWixToolsetBalWixextVersion>6.0.3-dotnet.6</MicrosoftWixToolsetBalWixextVersion>
+    <MicrosoftWixToolsetHeatVersion>6.0.3-dotnet.6</MicrosoftWixToolsetHeatVersion>
   </PropertyGroup>
 </Project>
