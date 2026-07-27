@@ -263,9 +263,10 @@ namespace System.Xml.Serialization
             }
 
             Reader.MoveToContent();
+            int[]? sequenceState = IsSequence(members) ? new int[1] : null;
             while (Reader.NodeType != XmlNodeType.EndElement && Reader.NodeType != XmlNodeType.None)
             {
-                WriteMemberElements(members, UnknownNode, UnknownNode, anyElement, anyText, null);
+                WriteMemberElements(members, UnknownNode, UnknownNode, anyElement, anyText, null, sequenceState: sequenceState);
                 Reader.MoveToContent();
             }
 
@@ -474,7 +475,7 @@ namespace System.Xml.Serialization
             return o;
         }
 
-        private void WriteMemberElements(Member[] expectedMembers, UnknownNodeAction elementElseAction, UnknownNodeAction elseAction, Member? anyElement, Member? anyText, Fixup? fixup = null, List<CheckTypeSource>? checkTypeHrefsSource = null)
+        private void WriteMemberElements(Member[] expectedMembers, UnknownNodeAction elementElseAction, UnknownNodeAction elseAction, Member? anyElement, Member? anyText, Fixup? fixup = null, List<CheckTypeSource>? checkTypeHrefsSource = null, int[]? sequenceState = null)
         {
             bool checkType = checkTypeHrefsSource != null;
             if (Reader.NodeType == XmlNodeType.Element)
@@ -491,7 +492,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    WriteMemberElementsIf(expectedMembers, anyElement, elementElseAction, fixup: fixup);
+                    WriteMemberElementsIf(expectedMembers, anyElement, elementElseAction, fixup: fixup, sequenceState: sequenceState);
                 }
             }
             else if (anyText != null && anyText.Mapping != null && WriteMemberText(anyText))
@@ -530,9 +531,10 @@ namespace System.Xml.Serialization
         {
             Reader.MoveToContent();
 
+            int[]? sequenceState = IsSequence(members) ? new int[1] : null;
             while (Reader.NodeType != XmlNodeType.EndElement && Reader.NodeType != XmlNodeType.None)
             {
-                WriteMemberElements(members, elementElseAction, elseAction, anyElement, anyText);
+                WriteMemberElements(members, elementElseAction, elseAction, anyElement, anyText, sequenceState: sequenceState);
                 Reader.MoveToContent();
             }
         }
@@ -725,29 +727,41 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        private static bool IsSequence()
+        private static bool IsSequence(Member[] members)
         {
-            // https://github.com/dotnet/runtime/issues/1402:
-            // Currently the reflection based method treat this kind of type as normal types.
-            // But potentially we can do some optimization for types that have ordered properties.
+            // A type is treated as a sequence when at least one of its members participates in an
+            // explicitly ordered xsd:sequence (e.g. via [XmlElement(Order = N)]). For such types the
+            // elements must be read in the declared order, which is enforced by the state machine in
+            // WriteMemberElementsIf below (mirroring the IL/CodeGen based reader).
+            for (int i = 0; i < members.Length; i++)
+            {
+                if (members[i].Mapping.IsParticle && members[i].Mapping.IsSequence)
+                    return true;
+            }
+
             return false;
         }
 
-        private void WriteMemberElementsIf(Member[] expectedMembers, Member? anyElementMember, UnknownNodeAction elementElseAction, Fixup? fixup = null, CheckTypeSource? checkTypeSource = null)
+        private void WriteMemberElementsIf(Member[] expectedMembers, Member? anyElementMember, UnknownNodeAction elementElseAction, Fixup? fixup = null, CheckTypeSource? checkTypeSource = null, int[]? sequenceState = null)
         {
             bool checkType = checkTypeSource != null;
-            bool isSequence = IsSequence();
-            if (isSequence)
-            {
-                // https://github.com/dotnet/runtime/issues/1402:
-                // Currently the reflection based method treat this kind of type as normal types.
-                // But potentially we can do some optimization for types that have ordered properties.
-            }
 
+            // sequenceState is non-null only for sequence types (created via IsSequence in WriteMembers),
+            // and it always accompanies the same member array, so its presence alone identifies a sequence.
+            bool isSequence = sequenceState != null;
+
+            // This mirrors XmlSerializationReaderILGen.WriteMemberElementsIf, which uses a single
+            // loop over the members with isSequence-conditional logic inline (it does not split into
+            // two separate loops). For a sequence, the IL generator emits an else-if chain keyed on a
+            // "state" local so that each pass of the surrounding read loop evaluates exactly the one
+            // member at the current sequence position. Because the reflection reader cannot emit such
+            // a chain, it instead scans to the member at the current position (sequenceState[0]) via
+            // currentCase below; the observable behavior is identical.
             ElementAccessor? e = null;
             Member? member = null;
             bool foundElement = false;
             int elementIndex = -1;
+            int currentCase = 0;
             foreach (Member m in expectedMembers)
             {
                 if (m.Mapping.Xmlns != null)
@@ -755,6 +769,12 @@ namespace System.Xml.Serialization
                 if (m.Mapping.Ignore)
                     continue;
                 if (isSequence && (m.Mapping.IsText || m.Mapping.IsAttribute))
+                    continue;
+
+                // In a sequence the members are matched in order: only the member at the current
+                // position (sequenceState[0]) is a candidate for the element being read; the others
+                // are skipped. currentCase tracks the position of the member within the sequence.
+                if (isSequence && currentCase++ != sequenceState![0])
                     continue;
 
                 for (int i = 0; i < m.Mapping.Elements!.Length; i++)
@@ -779,7 +799,7 @@ namespace System.Xml.Serialization
                             foundElement = true;
                         }
                     }
-                    else if (ele.Name == Reader.LocalName && ns == Reader.NamespaceURI)
+                    else if ((isSequence && ele.Any && ele.AnyNamespaces == null) || (ele.Name == Reader.LocalName && ns == Reader.NamespaceURI))
                     {
                         foundElement = true;
                     }
@@ -790,6 +810,26 @@ namespace System.Xml.Serialization
                         member = m;
                         elementIndex = i;
                         break;
+                    }
+                }
+
+                if (isSequence)
+                {
+                    if (foundElement)
+                    {
+                        // Array-like members can match repeated elements, so the position only
+                        // advances once a non-matching element is seen. Non-array members advance
+                        // after a single read.
+                        if (!m.Mapping.TypeDesc!.IsArrayLike)
+                            sequenceState![0]++;
+                    }
+                    else
+                    {
+                        // The current member did not match. Advance to the next member without
+                        // consuming the element so it can be re-evaluated against the following
+                        // member on the next pass.
+                        sequenceState![0]++;
+                        return;
                     }
                 }
 
@@ -812,7 +852,7 @@ namespace System.Xml.Serialization
                 {
                     string? ns = e!.Form == XmlSchemaForm.Qualified ? e.Namespace : string.Empty;
                     bool isList = member!.Mapping.TypeDesc!.IsArrayLike && !member.Mapping.TypeDesc.IsArray;
-                    WriteElement(e, isList && member.Mapping.TypeDesc.IsNullable, member.Mapping.ReadOnly, ns, member.FixupIndex, fixup, member);
+                    WriteElement(e, isList && member.Mapping.TypeDesc.IsNullable, member.Mapping.ReadOnly, ns, member.FixupIndex, fixup, member, elementIndex);
                 }
             }
             else
@@ -828,7 +868,7 @@ namespace System.Xml.Serialization
                         if (element.Any && element.Name.Length == 0)
                         {
                             string? ns = element.Form == XmlSchemaForm.Qualified ? element.Namespace : string.Empty;
-                            WriteElement(element, false, false, ns, fixup: fixup, member: member);
+                            WriteElement(element, false, false, ns, fixup: fixup, member: member, elementIndex: i);
                             break;
                         }
                     }
@@ -841,7 +881,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private object? WriteElement(ElementAccessor element, bool checkForNull, bool readOnly, string? defaultNamespace, int fixupIndex = -1, Fixup? fixup = null, Member? member = null)
+        private object? WriteElement(ElementAccessor element, bool checkForNull, bool readOnly, string? defaultNamespace, int fixupIndex = -1, Fixup? fixup = null, Member? member = null, int elementIndex = -1)
         {
             object? value = null;
             if (element.Mapping is ArrayMapping arrayMapping)
@@ -1013,7 +1053,7 @@ namespace System.Xml.Serialization
                 throw new InvalidOperationException(SR.XmlInternalError);
             }
 
-            member?.ChoiceSource?.Invoke(element.Name);
+            member?.ChoiceSource?.Invoke(elementIndex);
 
             if (member?.ArraySource != null)
             {
@@ -1744,19 +1784,20 @@ namespace System.Xml.Serialization
                     ChoiceIdentifierAccessor? choice = mapping.ChoiceIdentifier;
                     if (choice != null && o != null)
                     {
-                        member.ChoiceSource = (elementNameObject) =>
+                        member.ChoiceSource = (elementIndex) =>
                         {
-                            string? elementName = elementNameObject as string;
-                            foreach (var name in choice.MemberIds!)
+                            // The choice enum member that corresponds to the selected element is stored
+                            // positionally in MemberIds, parallel to the member's Elements. This mirrors
+                            // how the IL-generated reader resolves the choice (choice.MemberIds[elementIndex]),
+                            // and honors [XmlEnum] aliases because the importer already resolved them.
+                            string[]? memberIds = choice.MemberIds;
+                            if (memberIds is null || (uint)elementIndex >= (uint)memberIds.Length)
                             {
-                                if (name == elementName)
-                                {
-                                    object choiceValue = Enum.Parse(choice.Mapping!.TypeDesc!.Type!, name);
-                                    SetOrAddValueToMember(o, choiceValue, choice.MemberInfo!);
-
-                                    break;
-                                }
+                                return;
                             }
+
+                            object choiceValue = Enum.Parse(choice.Mapping!.TypeDesc!.Type!, memberIds[elementIndex]);
+                            SetOrAddValueToMember(o, choiceValue, choice.MemberInfo!);
                         };
                     }
 
@@ -1786,13 +1827,6 @@ namespace System.Xml.Serialization
                 else
                 {
                     Reader.ReadStartElement();
-                    bool IsSequenceAllMembers = IsSequence();
-                    if (IsSequenceAllMembers)
-                    {
-                        // https://github.com/dotnet/runtime/issues/1402:
-                        // Currently the reflection based method treat this kind of type as normal types.
-                        // But potentially we can do some optimization for types that have ordered properties.
-                    }
 
                     WriteMembers(allMembers, unknownNodeAction, unknownNodeAction, anyElementMember, anyTextMember);
 
@@ -2107,7 +2141,7 @@ namespace System.Xml.Serialization
             public Func<object?>? GetSource;
             public Action<object>? ArraySource;
             public Action<object?>? CheckSpecifiedSource;
-            public Action<object>? ChoiceSource;
+            public Action<int>? ChoiceSource;
             public Action<string, string>? XmlnsSource;
             public Action<object>? EnsureCollection;
 

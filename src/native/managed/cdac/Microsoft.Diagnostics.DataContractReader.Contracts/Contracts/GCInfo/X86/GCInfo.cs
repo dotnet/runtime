@@ -296,9 +296,8 @@ public record X86GCInfo : IGCInfoDecoder
                         break;
                     case IPtrMask:
                     case GcTransitionCall:
-                    case CalleeSavedRegister:
-                        // Callee-saved register tags (e.g. partial-interrupt ESP-frame
-                        // "Reg is saved" markers) don't affect outgoing-argument depth.
+                    case ThisPointerRegister:
+                        // This-pointer register metadata doesn't affect outgoing-argument depth.
                         break;
                     default:
                         throw new InvalidOperationException("Unsupported gc transition type");
@@ -352,6 +351,7 @@ public record X86GCInfo : IGCInfoDecoder
 
             uint lowBits = OFFSET_MASK & (uint)stkOffs;
             stkOffs = (int)((uint)stkOffs & ~OFFSET_MASK);
+            int argumentBaseOffset = stkOffs;
 
             bool isEbpRelative = Header.EbpFrame;
             if (Header.DoubleAlign &&
@@ -362,7 +362,7 @@ public record X86GCInfo : IGCInfoDecoder
                 stkOffs -= (int)(_target.PointerSize * (Header.FrameSize + calleeSavedRegsCount));
             }
 
-            builder.Add(new UntrackedSlot(stkOffs, isEbpRelative, lowBits));
+            builder.Add(new UntrackedSlot(stkOffs, isEbpRelative, lowBits, argumentBaseOffset));
         }
 
         return builder.MoveToImmutable();
@@ -448,6 +448,146 @@ public record X86GCInfo : IGCInfoDecoder
     }
 
     uint IGCInfoDecoder.GetCodeLength() => MethodSize;
+
+    private const ulong SHADOW_SP_BITS = 0x3;
+    private const uint INVALID_SYNC_OFFSET = 0;
+
+    bool IGCInfoDecoder.TryGetGenericContextStorage(GenericContextLoc contextKind, uint instructionOffset, out GenericContextStorage storage)
+    {
+        storage = default;
+
+        // Native EECodeManager::GetInstance and GetParamTypeArg reject prolog and epilog offsets
+        // because the frame and transition state are not accurate there.
+        if (IsCodeOffsetInProlog(instructionOffset) || IsCodeOffsetInEpilog(instructionOffset))
+            return false;
+
+        if (contextKind is GenericContextLoc.InstArgMethodDesc or GenericContextLoc.InstArgMethodTable)
+        {
+            // Native GetParamTypeArg uses EBP minus GetParamTypeArgOffset.
+            if (!Header.GenericsContext || !Header.EbpFrame)
+                return false;
+
+            uint position = SavedRegsCountExclFP
+                          + (Header.SyncStartOffset != INVALID_SYNC_OFFSET ? 1u : 0u)
+                          + (Header.LocalAlloc ? 1u : 0u)
+                          + 1u;
+
+            storage = new GenericContextStorage(
+                GenericContextStorageKind.RegisterRelative,
+                registerName: "ebp",
+                offset: -(int)(position * (uint)_target.PointerSize));
+            return true;
+        }
+
+        if (contextKind != GenericContextLoc.ThisPtr)
+            return false;
+
+        if (TryGetThisPointerRegister(instructionOffset, out uint registerNumber))
+        {
+            storage = new GenericContextStorage(
+                GenericContextStorageKind.Register,
+                registerNumber,
+                offset: 0);
+            return true;
+        }
+
+        // Native falls back to the first untracked slot when no register currently describes
+        // 'this'. The first entry is the cached generic-context object.
+        if (!Header.GenericsContext || UntrackedSlots.IsEmpty)
+            return false;
+
+        int argumentBaseOffset = UntrackedSlots[0].ArgumentBaseOffset;
+        if (Header.EbpFrame)
+        {
+            storage = new GenericContextStorage(
+                GenericContextStorageKind.RegisterRelative,
+                registerName: "ebp",
+                argumentBaseOffset);
+        }
+        else
+        {
+            storage = new GenericContextStorage(
+                GenericContextStorageKind.StackPointerRelative,
+                registerNumber: 0,
+                checked((int)CalculatePushedArgSizeAt(instructionOffset) + argumentBaseOffset));
+        }
+
+        return true;
+    }
+
+    private bool TryGetThisPointerRegister(uint instructionOffset, out uint registerNumber)
+    {
+        RegMask thisRegister = RegMask.NONE;
+
+        foreach (int offset in SortedTransitionOffsets)
+        {
+            if (Header.Interruptible ? offset > instructionOffset : offset >= instructionOffset)
+                break;
+
+            foreach (BaseGcTransition transition in Transitions[offset])
+            {
+                if (Header.Interruptible && transition is GcTransitionRegister registerTransition)
+                {
+                    if (registerTransition.IsLive == Action.LIVE && registerTransition.IsThis)
+                    {
+                        thisRegister = registerTransition.Register;
+                    }
+                    else if (registerTransition.IsLive == Action.DEAD && registerTransition.Register == thisRegister)
+                    {
+                        thisRegister = RegMask.NONE;
+                    }
+                }
+                else if (transition is ThisPointerRegister thisPointerTransition)
+                {
+                    thisRegister = thisPointerTransition.Register;
+                }
+            }
+        }
+
+        if (thisRegister == RegMask.NONE)
+        {
+            registerNumber = 0;
+            return false;
+        }
+
+        registerNumber = RegMaskToRegisterNumber(thisRegister);
+        return true;
+    }
+
+    // See https://github.com/dotnet/runtime/blob/5ad8ae4df419c33fed516bebe59231b21127bc5d/src/coreclr/vm/stackwalk.cpp#L145
+    public TargetPointer GetAmbientSP(uint codeOffset, TargetPointer fp, TargetPointer sp)
+    {
+        if (IsCodeOffsetInProlog(codeOffset) || IsCodeOffsetInEpilog(codeOffset))
+            return TargetPointer.Null;
+
+        if (Header.Handlers)
+            return new TargetPointer(GetOutermostBaseFP(fp).Value & ~SHADOW_SP_BITS);
+
+        if (Header.EbpFrame)
+            return GetOutermostBaseFP(fp);
+
+        return new TargetPointer(sp.Value + CalculatePushedArgSizeAt(codeOffset));
+    }
+
+    private TargetPointer GetOutermostBaseFP(TargetPointer ebp)
+    {
+        if (Header.LocalAlloc)
+        {
+            TargetPointer pLocalloc = new(ebp.Value - GetLocallocSPOffset());
+            return _target.ReadPointer(pLocalloc);
+        }
+
+        return new TargetPointer(ebp.Value - RawStackSize + (uint)sizeof(int));
+    }
+
+    private ulong GetLocallocSPOffset()
+    {
+        Debug.Assert(Header.LocalAlloc && Header.EbpFrame);
+        uint position = SavedRegsCountExclFP
+                        + (Header.SyncStartOffset != INVALID_SYNC_OFFSET ? 1u : 0u)
+                        + 1u;
+        return position * (uint)_target.PointerSize;
+    }
 
     uint IGCInfoDecoder.GetCalleePoppedArgumentsSize()
     {
@@ -696,9 +836,9 @@ public record X86GCInfo : IGCInfoDecoder
                         activeCallSite = callT;
                         break;
                     case IPtrMask:
-                    case CalleeSavedRegister:
+                    case ThisPointerRegister:
                     case GcTransitionCall:
-                        // CalleeSavedRegister is informational. IPtrMask is reserved for future
+                        // ThisPointerRegister is informational for GC slot enumeration. IPtrMask is reserved for future
                         // interior-pointer-bitmap support. GcTransitionCall at offset !=
                         // instructionOffset is also ignored.
                         break;
@@ -1037,7 +1177,8 @@ public record X86GCInfo : IGCInfoDecoder
 /// <param name="StackOffset">Frame-relative byte offset of the slot.</param>
 /// <param name="IsEbpRelative">True if <see cref="StackOffset"/> is EBP-relative; false if ESP-relative.</param>
 /// <param name="LowBits">Raw flag bits from the encoded offset (0x1 = byref/interior, 0x2 = pinned).</param>
-internal readonly record struct UntrackedSlot(int StackOffset, bool IsEbpRelative, uint LowBits);
+/// <param name="ArgumentBaseOffset">Byte offset from native EnumGcRefsX86's argument base before double-align adjustment.</param>
+internal readonly record struct UntrackedSlot(int StackOffset, bool IsEbpRelative, uint LowBits, int ArgumentBaseOffset);
 
 /// <summary>
 /// A tracked GC frame variable with a per-offset lifetime range (entry of the

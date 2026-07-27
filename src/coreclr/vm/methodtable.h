@@ -214,7 +214,7 @@ struct InteropMethodTableSlotData
     }
 
     BOOL IsDuplicate() {
-        return ((BOOL)(wFlags & e_DUPLICATE));
+        return (BOOL)(wFlags & e_DUPLICATE);
     }
 
     WORD GetSlot() {
@@ -408,7 +408,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_dwFlagsDebug & enum_flagDebug_ParentMethodTablePointerValid);
+        return m_dwFlagsDebug & enum_flagDebug_ParentMethodTablePointerValid;
     }
     inline void SetParentMethodTablePointerValid()
     {
@@ -421,7 +421,7 @@ public:
     inline BOOL IsInitError() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (VolatileLoad(&m_dwFlags) & enum_flag_IsInitError);
+        return VolatileLoad(&m_dwFlags) & enum_flag_IsInitError;
     }
 
 #ifndef DACCESS_COMPILE
@@ -435,7 +435,7 @@ public:
     inline BOOL IsTlsIndexAllocated() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (VolatileLoad(&m_dwFlags) & enum_flag_IsTlsIndexAllocated);
+        return VolatileLoad(&m_dwFlags) & enum_flag_IsTlsIndexAllocated;
     }
 
 #ifndef DACCESS_COMPILE
@@ -491,7 +491,7 @@ public:
     inline BOOL IsStaticDataAllocated() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (VolatileLoad(&m_dwFlags) & enum_flag_IsStaticDataAllocated);
+        return VolatileLoad(&m_dwFlags) & enum_flag_IsStaticDataAllocated;
     }
 
 #ifndef DACCESS_COMPILE
@@ -550,7 +550,7 @@ public:
     bool IsPublished() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (VolatileLoad(&m_dwFlagsDebug) & enum_flagDebug_IsPublished);
+        return VolatileLoad(&m_dwFlagsDebug) & enum_flagDebug_IsPublished;
     }
 #endif // _DEBUG
 
@@ -1261,7 +1261,7 @@ public:
     inline BOOL IsGlobalClass()
     {
         WRAPPER_NO_CONTRACT;
-        return (GetTypeDefRid() == RidFromToken(COR_GLOBAL_PARENT_TOKEN));
+        return GetTypeDefRid() == RidFromToken(COR_GLOBAL_PARENT_TOKEN);
     }
 
 private:
@@ -1331,7 +1331,7 @@ public:
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
+        return GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_CanCompareBitsOrUseFastGetHashCode;
     }
 
     // If canCompare is true, this method ensure an atomic operation for setting
@@ -1354,7 +1354,7 @@ public:
     inline BOOL HasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        return GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode;
     }
 
     inline void SetHasCheckedCanCompareBitsOrUseFastGetHashCode()
@@ -1879,7 +1879,7 @@ public:
     DWORD           GetBaseSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return(m_BaseSize);
+        return m_BaseSize;
     }
 
     void            SetBaseSize(DWORD baseSize)
@@ -2268,7 +2268,7 @@ public:
     inline int HasInterfaceMap()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wNumInterfaces != 0);
+        return m_wNumInterfaces != 0;
     }
 
     // Where possible, use this iterator over the interface map instead of accessing the map directly
@@ -2314,13 +2314,13 @@ public:
             PRECONDITION(!Finished());
             if (m_i != (DWORD) -1)
                 m_pMap++;
-            return (++m_i < m_count);
+            return ++m_i < m_count;
         }
 
         // Have we iterated over all of the items?
         BOOL Finished()
         {
-            return (m_i == m_count);
+            return m_i == m_count;
         }
 
 #ifndef DACCESS_COMPILE
@@ -2334,29 +2334,28 @@ public:
         // Get the interface at the current position, with whatever its normal load level is
         inline PTR_MethodTable GetInterfaceApprox()
         {
-            CONTRACT(PTR_MethodTable)
+            CONTRACTL
             {
                 GC_NOTRIGGER;
                 NOTHROW;
                 SUPPORTS_DAC;
                 PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
-                POSTCONDITION(CheckPointer(RETVAL));
             }
-            CONTRACT_END;
+            CONTRACTL_END;
 
-            RETURN (m_pMap->GetMethodTable());
+            return m_pMap->GetMethodTable();
         }
 
         inline bool CurrentInterfaceMatches(MethodTable* pMTOwner, MethodTable* pMT)
         {
-            CONTRACT(bool)
+            CONTRACTL
             {
                 GC_NOTRIGGER;
                 NOTHROW;
                 SUPPORTS_DAC;
                 PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
             }
-            CONTRACT_END;
+            CONTRACTL_END;
 
             MethodTable *pCurrentMethodTable = m_pMap->GetMethodTable();
 
@@ -2380,23 +2379,23 @@ public:
                 }
             }
 
-            RETURN (exactMatch);
+            return exactMatch;
         }
 
         bool CurrentInterfaceEquivalentTo(MethodTable* pMTOwner, MethodTable* pMT);
 
         inline bool HasSameTypeDefAs(MethodTable* pMT)
         {
-            CONTRACT(bool)
+            CONTRACTL
             {
                 GC_NOTRIGGER;
                 NOTHROW;
                 SUPPORTS_DAC;
                 PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
             }
-            CONTRACT_END;
+            CONTRACTL_END;
 
-            RETURN (m_pMap->GetMethodTable()->HasSameTypeDefAs(pMT));
+            return m_pMap->GetMethodTable()->HasSameTypeDefAs(pMT);
         }
 
 #ifndef DACCESS_COMPILE
@@ -2824,7 +2823,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(g_pObjectClass);
-        return (this == g_pObjectClass);
+        return this == g_pObjectClass;
     }
 
     // Is this System.ValueType?
@@ -2832,7 +2831,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(g_pValueTypeClass);
-        return (this == g_pValueTypeClass);
+        return this == g_pValueTypeClass;
     }
 
     // Is this value type? Returns false for System.ValueType and System.Enum.
@@ -3892,7 +3891,7 @@ private:
     FORCEINLINE DWORD GetFlag(WFLAGS_LOW_ENUM flag) const
     {
         SUPPORTS_DAC;
-        return (IsStringOrArray() ? (enum_flag_StringArrayValues & flag) : (m_dwFlags & flag));
+        return IsStringOrArray() ? (enum_flag_StringArrayValues & flag) : (m_dwFlags & flag);
     }
     FORCEINLINE BOOL TestFlagWithMask(WFLAGS_LOW_ENUM mask, WFLAGS_LOW_ENUM flag) const
     {
@@ -3917,7 +3916,7 @@ private:
     FORCEINLINE BOOL TestFlagWithMask(WFLAGS_HIGH_ENUM mask, WFLAGS_HIGH_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return ((m_dwFlags & (DWORD)mask) == (DWORD)flag);
+        return (m_dwFlags & (DWORD)mask) == (DWORD)flag;
     }
 
     FORCEINLINE void ClearFlag(WFLAGS2_ENUM flag)
@@ -4011,7 +4010,7 @@ private:
     FORCEINLINE static TADDR   union_getPointer(TADDR pCanonMT)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (pCanonMT & ~UNION_MASK);
+        return pCanonMT & ~UNION_MASK;
     }
 
     // m_pPerInstInfo and m_pInterfaceMap have to be at fixed offsets because of performance sensitive
