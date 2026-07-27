@@ -3,6 +3,9 @@
 
 #ifdef FEATURE_INTERPRETER
 
+#include <limits>
+#include <functional>
+
 #include "threads.h"
 #include "gcenv.h"
 #include "interpexec.h"
@@ -907,19 +910,18 @@ template <typename THelper> static THelper GetPossiblyIndirectHelper(const Inter
     return (THelper)addr;
 }
 
-// At present our behavior for float to int conversions is to perform a saturating conversion down to either 32 or 64 bits
-//  and then perform an unchecked truncation from that intermediate size down to the actual result size.
-// See https://github.com/dotnet/runtime/issues/116823
+// Floating-point to integer conversions saturate at the destination type's range. NaN maps to 0.
 template <typename TResult, typename TIntermediate, typename TSource> static void ConvFpHelper(int8_t *stack, const int32_t *ip)
 {
     static_assert(!std::numeric_limits<TSource>::is_integer, "ConvFpHelper is only for use on floats and doubles");
     static_assert(sizeof(TIntermediate) >= sizeof(TResult), "Intermediate type must not be smaller than result type");
     static_assert(std::numeric_limits<TResult>::is_integer, "ConvFpHelper is only for use on floats and doubles to be converted to integers");
 
-    // First, promote the source value to double
+    // First, promote the source value to double. The bounds are derived from TResult so that
+    // out-of-range values saturate at the destination type's range.
     double src = LOCAL_VAR(ip[2], TSource),
-        minValue = (double)std::numeric_limits<TIntermediate>::lowest(),
-        maxValue = (double)std::numeric_limits<TIntermediate>::max();
+        minValue = (double)std::numeric_limits<TResult>::lowest(),
+        maxValue = (double)std::numeric_limits<TResult>::max();
 
     // (src != src) checks for NaN, then we check whether the min and max values (as represented by their closest double)
     //  properly bound the source value so that when it is truncated it will be in range
@@ -928,11 +930,11 @@ template <typename TResult, typename TIntermediate, typename TSource> static voi
     if (src != src)
         result = 0;
     else if (src >= maxValue)
-        result = (TResult)std::numeric_limits<TIntermediate>::max();
-    else if (!std::numeric_limits<TIntermediate>::is_signed && (src <= -1))
+        result = std::numeric_limits<TResult>::max();
+    else if (!std::numeric_limits<TResult>::is_signed && (src <= -1))
         result = 0;
-    else if (std::numeric_limits<TIntermediate>::is_signed && (src < minValue))
-        result = (TResult)std::numeric_limits<TIntermediate>::lowest();
+    else if (std::numeric_limits<TResult>::is_signed && (src < minValue))
+        result = std::numeric_limits<TResult>::lowest();
     else
         result = (TResult)(TIntermediate)src;
 
@@ -3233,8 +3235,9 @@ SWITCH_OPCODE:
                     {
                         // miss, resolve the virtual method and cache it
                         targetMethod = CallWithSEHWrapper(
-                            [&pMD, &pThisArg]() {
-                                return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
+                            [&pMD, &pThisArg, pObjMT]() {
+                                GCX_PREEMP();
+                                return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pObjMT, pMD->GetMethodTable());
                             });
                         g_InterpDispatchCache.Insert(dispatchToken, pObjMT, targetMethod, (uint16_t)dispatchTokenHash);
                     }
@@ -3400,7 +3403,9 @@ SWITCH_OPCODE:
                             NULL_CHECK(*pThisArg);
                             targetMethod = CallWithSEHWrapper(
                                 [&targetMethod, &pThisArg]() {
-                                    return targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, targetMethod->GetMethodTable());
+                                    MethodTable* pMT = (*pThisArg)->GetMethodTable();
+                                    GCX_PREEMP();
+                                    return targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, pMT, targetMethod->GetMethodTable());
                                 });
                         }
                         else

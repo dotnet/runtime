@@ -1060,8 +1060,6 @@ public:
         kExplicitFrame,
         kNativeStackFrame,
         kNativeRuntimeUnwindableStackFrame,
-        kManagedExceptionHandlingCodeFrame,
-        kRuntimeEntryPointFrame,
         kAtEndOfStack,
     } FrameType;
 
@@ -2175,7 +2173,7 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE ParseContinuation(
         CORDB_ADDRESS continuationAddress,
-        OUT PCODE* pDiagnosticIP,
+        OUT CORDB_ADDRESS* pDiagnosticIP,
         OUT CORDB_ADDRESS* pNextContinuation,
         OUT UINT32* pState) = 0;
 

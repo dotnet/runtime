@@ -149,7 +149,7 @@ public unsafe partial class TargetTests
 
         static (string Name, ulong? Value, string? StringValue, string? Type) MakeGlobalsToStrings((string Name, string Value, ulong? NumericValue) global)
         {
-            return (global.Name, null, global.Value, "string");
+            return (global.Name, null, global.Value, global.NumericValue is null ? "string" : null);
         }
     }
 

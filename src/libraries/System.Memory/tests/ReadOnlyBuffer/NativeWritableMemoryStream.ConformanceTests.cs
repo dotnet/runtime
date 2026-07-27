@@ -10,7 +10,6 @@ namespace System.Memory.Tests
     public class NativeWritableMemoryStreamConformanceTests : StandaloneStreamConformanceTests
     {
         protected override bool CanSeek => true;
-        protected override bool CanSetLength => false;
         protected override bool NopFlushCompletesSynchronously => true;
         protected override bool CanSetLengthGreaterThanCapacity => false;
 
@@ -20,17 +19,19 @@ namespace System.Memory.Tests
 
         protected override Task<Stream?> CreateReadWriteStreamCore(byte[]? initialData)
         {
-            int dataLength = initialData?.Length ?? 0;
-            int length = dataLength == 0 ? 64 * 1024 : dataLength;
-            var manager = new System.Buffers.NativeMemoryManager(length);
+            // See WritableMemoryStreamConformanceTests: WritableMemoryStream is fixed-capacity, so the
+            // null case returns null and the grow-from-empty conformance tests are skipped.
+            if (initialData is null)
+            {
+                return Task.FromResult<Stream?>(null);
+            }
+
+            var manager = new System.Buffers.NativeMemoryManager(initialData.Length);
             manager.GetSpan().Clear();
 
             var inner = new WritableMemoryStream(manager.Memory);
-            if (dataLength != 0)
-            {
-                inner.Write(initialData!, 0, dataLength);
-                inner.Position = 0;
-            }
+            inner.Write(initialData, 0, initialData.Length);
+            inner.Position = 0;
 
             return Task.FromResult<Stream?>(new NativeMemoryOwningStream(inner, manager));
         }

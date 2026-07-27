@@ -212,7 +212,7 @@ namespace System.Text.Json
                 val = utf8FormattedNumber[i];
             }
 
-            if (val == 'e' || val == 'E')
+            if (val is (byte)'e' or (byte)'E')
             {
                 i++;
 
@@ -223,7 +223,7 @@ namespace System.Text.Json
 
                 val = utf8FormattedNumber[i];
 
-                if (val == '+' || val == '-')
+                if (val is (byte)'+' or (byte)'-')
                 {
                     i++;
                 }
@@ -324,7 +324,7 @@ namespace System.Text.Json
                 }
                 finally
                 {
-                    if (rented != null)
+                    if (rented is not null)
                     {
                         ArrayPool<byte>.Shared.Return(rented);
                     }
@@ -359,7 +359,7 @@ namespace System.Text.Json
                 }
                 finally
                 {
-                    if (rented != null)
+                    if (rented is not null)
                     {
                         ArrayPool<byte>.Shared.Return(rented);
                     }

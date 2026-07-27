@@ -45,9 +45,9 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     {
         IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
         TargetPointer mtAddr = rts.GetMethodTable(md);
-        TypeHandle mt = rts.GetTypeHandle(mtAddr);
+        ITypeHandle mt = rts.GetTypeHandle(mtAddr);
 
-        return !rts.GetInstantiation(mt).IsEmpty;
+        return rts.GetInstantiation(mt).Length > 0;
     }
 
     private static bool HasMethodInstantiation(Target target, MethodDescHandle md)
@@ -56,7 +56,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         if (rts.IsGenericMethodDefinition(md))
             return true;
 
-        return !rts.GetGenericMethodInstantiation(md).IsEmpty;
+        return rts.GetGenericMethodInstantiation(md).Length > 0;
     }
 
     private static bool HasClassOrMethodInstantiation(Target target, MethodDescHandle md)
@@ -99,7 +99,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     }
 
     int IXCLRDataMethodDefinition.GetTypeDefinition(DacComNullableByRef<IXCLRDataTypeDefinition> typeDefinition)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetTypeDefinition(typeDefinition) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataMethodDefinition.StartEnumInstances(IXCLRDataAppDomain? appDomain, ulong* handle)
     {
@@ -375,13 +375,13 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     }
 
     int IXCLRDataMethodDefinition.GetFlags(uint* flags)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFlags(flags) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataMethodDefinition.IsSameObject(IXCLRDataMethodDefinition? method)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.IsSameObject(method) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataMethodDefinition.GetLatestEnCVersion(uint* version)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetLatestEnCVersion(version) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataMethodDefinition.StartEnumExtents(ulong* handle)
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.StartEnumExtents(handle) : HResults.E_NOTIMPL;
@@ -441,7 +441,47 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     }
 
     int IXCLRDataMethodDefinition.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (reqCode != (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION
+                || inBufferSize != 0
+                || inBuffer is not null
+                || outBufferSize != sizeof(uint))
+            {
+                throw new ArgumentException("Invalid request parameters.");
+            }
+
+            if (outBuffer is null)
+                throw new NullReferenceException("The output buffer is null.");
+
+            *(uint*)outBuffer = 1;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint revisionLocal = 0;
+            int hrLocal = _legacyImpl.Request(
+                reqCode,
+                inBufferSize,
+                inBuffer,
+                outBufferSize,
+                outBuffer is null ? null : (byte*)&revisionLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*(uint*)outBuffer == revisionLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataMethodDefinition.GetRepresentativeEntryAddress(ClrDataAddress* addr)
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetRepresentativeEntryAddress(addr) : HResults.E_NOTIMPL;

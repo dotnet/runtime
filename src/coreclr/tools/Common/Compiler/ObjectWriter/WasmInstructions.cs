@@ -145,8 +145,8 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         MemoryFill = unchecked((int)0xFC00000B),
         TableInit = unchecked((int)0xFC00000C),
         TableGrow = unchecked((int)0xFC00000F),
-        V128Load = unchecked((int)0xFD00000A),
-        V128Store = unchecked((int)0xFD000000),
+        V128Load = unchecked((int)0xFD000000),
+        V128Store = unchecked((int)0xFD00000B),
     }
 
     public static class WasmExprKindExtensions

@@ -1,6 +1,9 @@
 // Test: crossgen2 --strip-il-bodies IL preservation.
 // Validates that non-async Task/ValueTask-returning methods, generic methods,
 // and methods on generic types keep their IL, while plain and async methods are stripped.
+// Also validates that a non-async Task-returning method whose async variant is compiled
+// (because a runtime-async method awaits it) has its IL stripped, since the IL is no longer
+// needed to synthesize the async variant at runtime.
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -57,6 +60,20 @@ public static class StripILBodies
     public static async ValueTask AsyncValueTaskMethod()
     {
         await Task.Yield();
+    }
+
+    // Non-async Task-returning method whose async variant is compiled because
+    // AwaitSyncTaskForcingAsyncVariant awaits it. Its IL should be stripped.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Task<int> SyncTaskWithCompiledAsyncVariant(int value)
+    {
+        return Task.FromResult(value + 4);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static async Task<int> AwaitSyncTaskForcingAsyncVariant()
+    {
+        return await SyncTaskWithCompiledAsyncVariant(10);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

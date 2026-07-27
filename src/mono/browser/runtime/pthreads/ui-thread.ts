@@ -274,7 +274,7 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
     if (!WasmEnableThreads) return null as any;
 
     if (modulePThread.unusedWorkers.length == 0) {
-        mono_log_debug(() => `Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
+        mono_log_debug(() => `Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${Object.keys(modulePThread.pthreads).length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
         const worker = allocateUnusedWorker();
         modulePThread.loadWasmModuleToWorker(worker);
         return worker;
@@ -293,7 +293,7 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
             return worker;
         }
     }
-    mono_log_debug(() => `Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
+    mono_log_debug(() => `Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${Object.keys(modulePThread.pthreads).length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
     return modulePThread.unusedWorkers.pop()!;
 }
 
@@ -333,7 +333,7 @@ export function getUnusedWorkerPool (): PThreadWorker[] {
 }
 
 export function getRunningWorkers (): PThreadWorker[] {
-    return getModulePThread().runningWorkers;
+    return Object.values(getModulePThread().pthreads);
 }
 
 export function terminateAllThreads (): void {

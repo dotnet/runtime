@@ -1059,6 +1059,7 @@ The string format is:
 | `l` | returns `i64` |
 | `f` | returns `f32` |
 | `d` | returns `f64` |
+| `V` | returns `v128` (a `Vector128<T>`, or a 16-byte `Vector<T>`) |
 | `S<N>` | struct return via hidden buffer, `N` is the struct size in bytes |
 
 **This pointer** (if the method has a `this` parameter):
@@ -1085,6 +1086,7 @@ it knows a hidden retbuf pointer argument is present in the Wasm parameter list.
 | `l` | `i64` parameter |
 | `f` | `f32` parameter |
 | `d` | `f64` parameter |
+| `V` | `v128` parameter (a `Vector128<T>`, or a 16-byte `Vector<T>`, passed by value) |
 | `S<N>` | struct parameter passed by reference, `<N>` is the struct size in bytes |
 | `e` | empty struct parameter — elided from Wasm args but present in the string |
 

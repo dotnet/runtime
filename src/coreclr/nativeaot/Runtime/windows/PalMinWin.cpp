@@ -8,7 +8,6 @@
 
 #include "holder.h"
 
-#define _T(s) L##s
 #include "RhConfig.h"
 
 #include "gcenv.h"
@@ -18,7 +17,7 @@
 #include "thread.h"
 #include "threadstore.h"
 
-#include "nativecontext.h"
+#include "NativeContext.h"
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 #include <versionhelpers.h>

@@ -63,6 +63,15 @@ internal sealed class InterpToNativeGenerator
         var signatures = cookies.OrderBy(c => c).Distinct().ToArray();
         Array.Sort(signatures, StringComparer.Ordinal);
 
+        // Collect unique struct return sizes so we can emit typedefs
+        var structReturnSizes = new SortedSet<int>();
+        foreach (var sig in signatures)
+        {
+            var toks = SignatureMapper.ParseSignatureTokens(sig);
+            if (toks[0][0] == 'S' && toks[0].Length > 1)
+                structReturnSizes.Add(int.Parse(toks[0].Substring(1)));
+        }
+
         w.Write(
         """
         // Licensed to the .NET Foundation under one or more agreements.
@@ -85,6 +94,17 @@ internal sealed class InterpToNativeGenerator
         #define ARG_F32(i) (*(float*)ARG_ADDR(i))
         #define ARG_F64(i) (*(double*)ARG_ADDR(i))
 
+        """);
+
+        // Emit typedefs for struct return types so emcc generates the correct sret ABI
+        foreach (var size in structReturnSizes)
+        {
+            w.WriteLine($"typedef struct {{ char d[{size}]; }} wasm_ret_S{size};");
+        }
+
+        w.Write(
+        """
+
         namespace
         {
         """);
@@ -104,7 +124,6 @@ internal sealed class InterpToNativeGenerator
                     tokens.RemoveAt(tokens.Count - 1);
                 }
                 var args = Args(tokens);
-                var portabilityAssert = returnToken[0] == 'S' ? "PORTABILITY_ASSERT(\"Indirect struct return is not yet implemented.\");\n        " : "";
 
                 var portableEntryPointComma = args.Count > 0 ? ", " : "";
                 var portableEntrypointDeclaration = isPortableEntryPointCall ? portableEntryPointComma + "PCODE" : "";
@@ -118,7 +137,7 @@ internal sealed class InterpToNativeGenerator
                         {{(isPortableEntryPointCall ? "NOINLINE " : "")}}static void {{CallFuncName(args, SignatureMapper.TokenToNameType(returnToken), isPortableEntryPointCall)}}(PCODE {{(isPortableEntryPointCall ? "pPortableEntryPoint" : "pcode")}}, int8_t* pArgs, int8_t* pRet)
                         {{{(isPortableEntryPointCall ? "\n        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;" : "")}}
                             {{result.nativeType}} (*fptr)({{portableEntrypointStackDeclaration}}{{string.Join(", ", args.Select(static t => SignatureMapper.TokenToNativeType(t)))}}{{portableEntrypointDeclaration}}) = {{portableEntrypointPointerRD}}({{result.nativeType}} ({{portableEntrypointPointerRD}}*)({{portableEntrypointStackDeclaration}}{{string.Join(", ", args.Select(static t => SignatureMapper.TokenToNativeType(t)))}}{{portableEntrypointDeclaration}})){{(isPortableEntryPointCall ? "(pPortableEntryPoint)" : "pcode")}};
-                            {{portabilityAssert}}{{(result.isVoid ? "" : "*" + "((" + result.nativeType + "*)pRet) = ")}}(*fptr)({{portableEntrypointStackParam}}{{string.Join(", ", ArgsWithSlotOffsets(args))}}{{portableEntrypointParam}});
+                            {{(result.isVoid ? "" : "*" + "((" + result.nativeType + "*)pRet) = ")}}(*fptr)({{portableEntrypointStackParam}}{{string.Join(", ", ArgsWithSlotOffsets(args))}}{{portableEntrypointParam}});
                         }
 
                     """);
@@ -169,7 +188,12 @@ internal sealed class InterpToNativeGenerator
         }
 
         static (bool isVoid, string nativeType) Result(string returnToken)
-            => new(returnToken == "v", SignatureMapper.TokenToNativeType(returnToken));
+        {
+            // For struct returns, use the typedef so emcc generates the correct sret ABI
+            if (returnToken[0] == 'S' && returnToken.Length > 1)
+                return (false, $"wasm_ret_{returnToken}");
+            return new(returnToken == "v", SignatureMapper.TokenToNativeType(returnToken));
+        }
 
         static bool IsPortableEntryPointCall(List<string> tokens)
         {

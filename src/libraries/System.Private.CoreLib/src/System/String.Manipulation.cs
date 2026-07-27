@@ -163,6 +163,16 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(values);
 
+            if (values.GetType() == typeof(List<string?>)) // avoid accidentally bypassing a derived type's reimplementation of IEnumerable<T>
+            {
+                return Concat(CollectionsMarshal.AsSpan((List<string?>)values));
+            }
+
+            if (values is string?[] valuesArray)
+            {
+                return Concat((ReadOnlySpan<string?>)valuesArray);
+            }
+
             using (IEnumerator<string?> en = values.GetEnumerator())
             {
                 if (!en.MoveNext())

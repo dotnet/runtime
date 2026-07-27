@@ -821,15 +821,15 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
                 case CorInfoReloc::ARM32_THUMB_BRANCH24:
                 {
-                    INT32 delta = (INT32)(tmp.target - fixupLocation);
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
-                        if (!FitsInThumb2BlRel24(delta))
-                        {
-                            DWORDLONG target = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
-                            delta            = (INT32)(target - fixupLocation);
-                        }
-                        PutThumb2BlRel24((UINT16*)address, delta);
+                        // Like the arm64 ARM64_BRANCH26 and x64 RELATIVE32 handling, hardcode the
+                        // bottom bits of the target into the instruction so the encoding does not
+                        // depend on where SuperPMI allocated the code buffer. Otherwise a BL whose
+                        // target is out of the +-16MB range for one of the two compared blocks would
+                        // get a buffer-dependent placeholder, producing spurious asm diffs.
+                        DWORDLONG target = tmp.target + (int32_t)tmp.addlDelta;
+                        PutThumb2BlRel24((UINT16*)address, (INT32)(target & 0x00FFFFFE));
                     }
                     wasRelocHandled = true;
                 }
