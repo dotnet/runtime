@@ -101,7 +101,7 @@ See [code versioning](../features/code-versioning.md) for a general overview and
 | `ILCodeVersionNode` | `InstrumentedILMap` | `InstrumentedILOffsetMapping` | Embedded InstrumentedILOffsetMapping describing the instrumented IL offset mapping |
 | `ILCodeVersionNode` | `Next` | `pointer` | Pointer to the next ILCodeVersionNode |
 | `ILCodeVersionNode` | `Source` | `uint32` | a CodeVersionSource value indicating what produced this version (ReJIT, EnC, or unknown) |
-| `ILCodeVersionNode` | `VersionId` | `nuint` | ReJIT ID of the IL code version node |
+| `ILCodeVersionNode` | `VersionId` | `nuint` | Unique IL code version ID of the node (used as a ReJIT ID when `Source == ReJIT`) |
 | `InstrumentedILOffsetMapping` | `Count` | `uint32` | Number of instrumented IL offset map entries |
 | `InstrumentedILOffsetMapping` | `Map` | `pointer` | Pointer to the array of instrumented IL offset map entries |
 | `MethodDescVersioningState` | `Flags` | `uint8` | MethodDescVersioningStateFlags flags, see below |
