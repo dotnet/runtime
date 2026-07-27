@@ -34,6 +34,11 @@ public class GetTotalAllocatedBytesServerGC
     [Fact]
     public static void TestEntryPoint()
     {
+        if (!System.Runtime.GCSettings.IsServerGC)
+        {
+            throw new Exception("ERROR: Requires server GC.");
+        }
+
         TimeSpan budget = TimeSpan.FromSeconds(20);
 
         // The precise total legitimately fluctuates by a small amount (it subtracts each
