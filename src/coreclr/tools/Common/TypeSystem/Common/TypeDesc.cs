@@ -112,7 +112,6 @@ namespace Internal.TypeSystem
                 case WellKnownType.Array:
                 case WellKnownType.MulticastDelegate:
                 case WellKnownType.Exception:
-                case WellKnownType.SZArrayHelper:
                     flags = TypeFlags.Class;
                     break;
 
@@ -121,14 +120,6 @@ namespace Internal.TypeSystem
                 case WellKnownType.RuntimeFieldHandle:
                 case WellKnownType.TypedReference:
                     flags = TypeFlags.ValueType;
-                    break;
-
-                case WellKnownType.IEnumerableGeneric:
-                case WellKnownType.IListGeneric:
-                case WellKnownType.ICollectionGeneric:
-                case WellKnownType.IReadOnlyListGeneric:
-                case WellKnownType.IReadOnlyCollectionGeneric:
-                    flags = TypeFlags.Interface;
                     break;
 
                 default:

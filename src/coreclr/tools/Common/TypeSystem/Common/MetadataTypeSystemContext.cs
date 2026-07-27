@@ -9,50 +9,43 @@ namespace Internal.TypeSystem
 {
     public abstract partial class MetadataTypeSystemContext : TypeSystemContext
     {
-        private static readonly (string Namespace, string TypeName)[] s_wellKnownTypeNames =[
-            ("System", "Void"),
+        private static readonly string[] s_wellKnownTypeNames = new string[] {
+            "Void",
 
-            ("System", "Boolean"),
-            ("System", "Char"),
-            ("System", "SByte"),
-            ("System", "Byte"),
-            ("System", "Int16"),
-            ("System", "UInt16"),
-            ("System", "Int32"),
-            ("System", "UInt32"),
-            ("System", "Int64"),
-            ("System", "UInt64"),
-            ("System", "IntPtr"),
-            ("System", "UIntPtr"),
-            ("System", "Single"),
-            ("System", "Double"),
+            "Boolean",
+            "Char",
+            "SByte",
+            "Byte",
+            "Int16",
+            "UInt16",
+            "Int32",
+            "UInt32",
+            "Int64",
+            "UInt64",
+            "IntPtr",
+            "UIntPtr",
+            "Single",
+            "Double",
 
-            ("System", "ValueType"),
-            ("System", "Enum"),
-            ("System", "Nullable`1"),
+            "ValueType",
+            "Enum",
+            "Nullable`1",
 
-            ("System", "Object"),
-            ("System", "String"),
-            ("System", "Array"),
-            ("System", "MulticastDelegate"),
+            "Object",
+            "String",
+            "Array",
+            "MulticastDelegate",
 
-            ("System", "RuntimeTypeHandle"),
-            ("System", "RuntimeMethodHandle"),
-            ("System", "RuntimeFieldHandle"),
+            "RuntimeTypeHandle",
+            "RuntimeMethodHandle",
+            "RuntimeFieldHandle",
 
-            ("System", "Exception"),
+            "Exception",
 
-            ("System", "TypedReference"),
+            "TypedReference",
+        };
 
-            ("System", "SZArrayHelper"),
-            ("System.Collections.Generic", "IEnumerable`1"),
-            ("System.Collections.Generic", "IList`1"),
-            ("System.Collections.Generic", "ICollection`1"),
-            ("System.Collections.Generic", "IReadOnlyList`1"),
-            ("System.Collections.Generic", "IReadOnlyCollection`1"),
-        ];
-
-        public static IEnumerable<(string Namespace, string TypeName)> WellKnownTypeNames => s_wellKnownTypeNames;
+        public static IEnumerable<string> WellKnownTypeNames => s_wellKnownTypeNames;
 
         private MetadataType[] _wellKnownTypes;
 
@@ -70,7 +63,7 @@ namespace Internal.TypeSystem
             InitializeSystemModule(systemModule);
 
             // Sanity check the name table
-            Debug.Assert(s_wellKnownTypeNames[(int)WellKnownType.MulticastDelegate - 1] == ("System", "MulticastDelegate"));
+            Debug.Assert(s_wellKnownTypeNames[(int)WellKnownType.MulticastDelegate - 1] == "MulticastDelegate");
 
             _wellKnownTypes = new MetadataType[s_wellKnownTypeNames.Length];
 
@@ -79,10 +72,7 @@ namespace Internal.TypeSystem
             {
                 // Require System.Object to be present as a minimal sanity check.
                 // The set of required well-known types is not strictly defined since different .NET profiles implement different subsets.
-                MetadataType type = systemModule.GetType(
-                    System.Text.Encoding.UTF8.GetBytes(s_wellKnownTypeNames[typeIndex].Namespace),
-                    System.Text.Encoding.UTF8.GetBytes(s_wellKnownTypeNames[typeIndex].TypeName),
-                    throwIfNotFound: typeIndex == (int)WellKnownType.Object);
+                MetadataType type = systemModule.GetType("System"u8, System.Text.Encoding.UTF8.GetBytes(s_wellKnownTypeNames[typeIndex]), throwIfNotFound: typeIndex == (int)WellKnownType.Object);
                 if (type != null)
                 {
                     type.SetWellKnownType((WellKnownType)(typeIndex + 1));
@@ -98,7 +88,7 @@ namespace Internal.TypeSystem
             int typeIndex = (int)wellKnownType - 1;
             DefType type = _wellKnownTypes[typeIndex];
             if (type == null && throwIfNotFound)
-                ThrowHelper.ThrowTypeLoadException(s_wellKnownTypeNames[typeIndex].Namespace, s_wellKnownTypeNames[typeIndex].TypeName, SystemModule);
+                ThrowHelper.ThrowTypeLoadException("System", s_wellKnownTypeNames[typeIndex], SystemModule);
 
             return type;
         }
