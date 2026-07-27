@@ -147,7 +147,7 @@ This may look like a large amount of code for every suspension inside `C`, but s
 ### Resuming inside an inlinee
 
 Let's imagine we resume at the inlined `Task.Yield()` in `C`.
-Initially such a resumption progesses as normal: async infrastructure restores the `ExecutionContext` that was saved.
+Initially such a resumption progresses as normal: async infrastructure restores the `ExecutionContext` that was saved.
 If this was a task await (which it isn't, but often will be), the async infrastructure ensures it is running in the right continuation context.
 Then it resumes in the code.
 
@@ -336,7 +336,7 @@ private static async Task Baz()
     await new AlwaysThreadPoolAwaitable();
     Console.WriteLine(s_local.Value);
 }
+```
 
 Similar to above, except this time we do not need a full bail out; rather, the post-inline handling will restore the `ExecutionContext` to make sure the value of `s_local` is properly restored.
 Proper output is 3,2,1 and relies on `ExecutionContext`s having been restored by the post-inline handling.
-```
