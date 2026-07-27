@@ -148,6 +148,22 @@ void Compiler::impTryOptimizeAwaitAwaiter(GenTreeCall*            call,
         return;
     }
 
+    if (info.compCompHnd->isIntrinsicType(awaiterArg->GetSignatureClassHandle()))
+    {
+        const char* namespaceName;
+        const char* className = info.compCompHnd->getClassNameFromMetadata(awaiterArg->GetSignatureClassHandle(), &namespaceName);
+        if ((strcmp(className, "YieldAwaiter") == 0) && (strcmp(namespaceName, "System.Runtime.CompilerServices") == 0))
+        {
+            // YieldAwaiter is specially recognized by
+            // AsyncHelpers.UnsafeAwaitAwaiter and accomplishes more than just
+            // avoiding a box.
+            JITDUMP("Skipping custom awaiter optimization for YieldAwaiter\n");
+            return;
+        }
+    }
+
+    JITDUMP("Optimizing awaiter call [%06u] to read its struct awaiter from the continuation\n", dspTreeID(call));
+
     CORINFO_LOOKUP   newInstArgLookup;
     CORINFO_SIG_INFO lookupSig = *sig;
     if (pResolvedToken->pMethodSpec != nullptr)
@@ -163,6 +179,12 @@ void Compiler::impTryOptimizeAwaitAwaiter(GenTreeCall*            call,
         info.compCompHnd->getAwaitAwaiterInContinuationCall(info.compMethodHnd, &lookupSig, isUnsafe,
                                                             &newExactContextHnd, &newInstArgLookup);
 
+    if (newMethod == NO_METHOD_HANDLE)
+    {
+        JITDUMP("EE returned no method to call; bailing on optimization\n");
+        return;
+    }
+
     CORINFO_SIG_INFO newSig;
     info.compCompHnd->getMethodSig(newMethod, &newSig);
 
@@ -177,8 +199,6 @@ void Compiler::impTryOptimizeAwaitAwaiter(GenTreeCall*            call,
             return;
         }
     }
-
-    JITDUMP("Optimizing awaiter call [%06u] to read its struct awaiter from the continuation\n", dspTreeID(call));
 
     *methHnd              = newMethod;
     *exactContextHnd      = newExactContextHnd;

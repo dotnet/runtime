@@ -3683,8 +3683,8 @@ namespace Internal.JitInterface
                 if (runtimeDeterminedResult.IsRuntimeDeterminedExactMethod)
                 {
                     // TODO-Async: the instantiation argument would have to be obtained through a runtime
-                    // generic dictionary lookup, which is not yet emitted here, so defer to the runtime JIT.
-                    throw new RequiresRuntimeJitException($"getAwaitReturnCall: runtime-determined exact instantiation requires runtime JIT ({runtimeDeterminedResult})");
+                    // generic dictionary lookup, which is not yet emitted here, so skip the optimization.
+                    return null;
                 }
 
                 instArg.constLookup = CreateConstLookupToSymbol(
@@ -3739,6 +3739,13 @@ namespace Internal.JitInterface
             if (targetMethod.RequiresInstArg())
             {
 #if READYTORUN
+                if (result.IsRuntimeDeterminedExactMethod)
+                {
+                    // TODO-Async: the instantiation argument would have to be obtained through a runtime
+                    // generic dictionary lookup, which is not yet emitted here, so defer to the runtime JIT.
+                    throw new RequiresRuntimeJitException($"getAwaitAwaiterInContinuationCall: runtime-determined exact instantiation requires runtime JIT ({result})");
+                }
+
                 instArg.constLookup = CreateConstLookupToSymbol(
                     _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                         ReadyToRunHelperId.MethodDictionary,
