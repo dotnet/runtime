@@ -9,7 +9,9 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+#if NET
 using System.Runtime.Loader;
+#endif
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -240,6 +242,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         /// </summary>
         private static object? LoadAndInvokeMain(Compilation compilation, string resultFieldName)
         {
+#if NET
             // Every test project shares the same assembly name ("test", from RoslynTestUtils.CreateTestProject),
             // and AssemblyLoadContext.Default can't unload. If more than one theory case in a run reaches this
             // method, loading the second image collides with the first under the identical identity. Give each
@@ -252,6 +255,12 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Type programType = assembly.GetType("Program")!;
             programType.GetMethod("Main", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, null);
             return programType.GetField(resultFieldName, BindingFlags.Public | BindingFlags.Static)!.GetValue(null);
+#else
+            // Callers are gated with [ConditionalTheory/Fact(..., nameof(PlatformDetection.IsNetCore))],
+            // so this is never actually invoked on .NET Framework; the branch only exists so the file
+            // still compiles there (System.Runtime.Loader.AssemblyLoadContext isn't available on netfx).
+            throw new PlatformNotSupportedException();
+#endif
         }
     }
 }
