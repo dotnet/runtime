@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
@@ -34,7 +35,8 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 return false;
 
             Debug.Assert(codeStart.Value <= jittedCodeAddress.Value);
-            TargetNUInt relativeOffset = new TargetNUInt(jittedCodeAddress.Value - codeStart.Value);
+            TargetPointer instrPointer = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
+            TargetNUInt relativeOffset = new TargetNUInt(instrPointer.Value - codeStart.Value);
 
             if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
                 return false;
@@ -158,6 +160,43 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return _nibbleMap.FindMethodCode(heapListNode, codeAddress);
         }
 
+        public List<TargetPointer> EnumerateFunctionTableEntries(Data.CodeHeapListNode heapListNode)
+        {
+            // Port of the reverse code-header walk in OutOfProcessFunctionTableCallbackEx. Starting from
+            // the end of the used portion of the code heap, walk backwards through the nibble map to visit
+            // each method, skip stub code blocks, and collect the RUNTIME_FUNCTION entries of the real code
+            // headers. Entries are ordered by descending method start address, ascending within a method.
+            uint runtimeFunctionSize = Target.GetTypeInfo(DataType.RuntimeFunction).Size!.Value;
+            List<TargetPointer> entries = [];
+
+            TargetCodePointer current = new(heapListNode.EndAddress.Value);
+            while (true)
+            {
+                TargetPointer codeStart = _nibbleMap.FindMethodCode(heapListNode, current);
+                if (codeStart == TargetPointer.Null)
+                    break;
+
+                // The real code header pointer is stored immediately before the code start.
+                TargetPointer codeHeaderIndirect = codeStart - (ulong)Target.PointerSize;
+                TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
+
+                // Only real code headers (not stub code blocks) contribute unwind info entries.
+                if (!RangeSection.IsStubCodeBlock(Target, codeHeaderAddress))
+                {
+                    Data.RealCodeHeader realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
+                    for (uint i = 0; i < realCodeHeader.NumUnwindInfos; i++)
+                        entries.Add(realCodeHeader.UnwindInfos + (ulong)(i * runtimeFunctionSize));
+                }
+
+                if (codeStart.Value <= heapListNode.StartAddress.Value)
+                    break;
+
+                current = new TargetCodePointer(codeStart.Value - 1);
+            }
+
+            return entries;
+        }
+
         private TargetPointer GetCodeHeaderAddress(RangeSection rangeSection, TargetPointer codeStart)
         {
             // EEJitManager::JitCodeToMethodInfo
@@ -215,7 +254,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             Data.EEILException ehInfo = Target.ProcessedData.GetOrAdd<Data.EEILException>(realCodeHeader.EHInfo);
             TargetNUInt numEHInfos = Target.ReadNUInt(ehInfo.Address - (ulong)Target.PointerSize);
             startAddr = ehInfo.Clauses;
-            endAddr = startAddr + numEHInfos.Value * Target.GetTypeInfo(DataType.EEExceptionClause).Size!.Value;
+            endAddr = startAddr + numEHInfos.Value * Data.EEExceptionClause.GetSize(Target);
         }
     }
 }

@@ -693,6 +693,11 @@ private:
         RUNTIME_MARSHALLING_ENABLED = 0x00010000,
 
         SKIP_TYPE_VALIDATION = 0x00020000,
+
+        //If the RefSafetyRules >= v11 setting has been cached
+        REF_SAFETY_RULES_V11_IS_CACHED = 0x00040000,
+        //If this module opted into RefSafetyRules version 11 or above
+        REF_SAFETY_RULES_V11 = 0x00080000,
     };
 
     Volatile<DWORD>          m_dwTransientFlags;
@@ -1568,12 +1573,6 @@ protected:
 
 public:
     //-----------------------------------------------------------------------------------------
-    // Returns a BOOL to indicate if we have computed whether compiler has instructed us to
-    // wrap the non-CLS compliant exceptions or not.
-    //-----------------------------------------------------------------------------------------
-    BOOL                    IsRuntimeWrapExceptionsStatusComputed();
-
-    //-----------------------------------------------------------------------------------------
     // If true,  any non-CLSCompliant exceptions (i.e. ones which derive from something other
     // than System.Exception) are wrapped in a RuntimeWrappedException instance.  In other
     // words, they become compliant
@@ -1588,11 +1587,11 @@ public:
     //-----------------------------------------------------------------------------------------
     BOOL                    IsRuntimeMarshallingEnabled();
 
-    BOOL                    IsRuntimeMarshallingEnabledCached()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED_IS_CACHED);
-    }
+    //-----------------------------------------------------------------------------------------
+    // If true, this module opted into the ECMA-335 augment tied to RefSafetyRulesAttribute with a
+    // version of at least 11 (i.e. RefSafetyRulesAttribute(version) with version >= 11).
+    //-----------------------------------------------------------------------------------------
+    BOOL                    OptsIntoRefSafetyRulesV11();
 
 protected:
     // For reflection emit modules we set this flag when we emit the attribute, and always consider
@@ -1605,12 +1604,6 @@ protected:
 public:
 
     BOOL                    HasDefaultDllImportSearchPathsAttribute();
-
-    BOOL IsDefaultDllImportSearchPathsAttributeCached()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_dwPersistedFlags & DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED) != 0;
-    }
 
     ULONG DefaultDllImportSearchPathsAttributeCachedValue()
     {

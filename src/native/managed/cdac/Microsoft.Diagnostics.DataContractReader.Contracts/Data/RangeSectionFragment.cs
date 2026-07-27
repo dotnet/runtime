@@ -15,6 +15,7 @@ internal sealed partial class RangeSectionFragment : IData<RangeSectionFragment>
     /// (see <c>RangeSectionFragmentPointer</c> in codeman.h).
     /// The OnInit handler strips it to get the actual address.
     /// </summary>
+    [DataDescriptorDependency(nameof(Next), "pointer")]
     public TargetPointer Next { get; private set; }
 
     partial void OnInit(Target target, TargetPointer address)

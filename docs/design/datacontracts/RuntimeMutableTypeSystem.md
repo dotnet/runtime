@@ -14,44 +14,52 @@ TargetPointer GetEnCInstanceFieldAddress(TargetPointer objectAddress, TargetPoin
 
 ## Version 1
 
-### Data descriptors
+<!-- BEGIN GENERATED: usage contract=RuntimeMutableTypeSystem version=c1 -->
+### Data descriptors used
 
-| Data Descriptor Name   | Field                    | Meaning |
-| ---                    | ---                      | --- |
-| `Module`               | `EnCClassList`           | Address of the embedded `CUnorderedArray` (whose `CUnorderedArrayBase` portion holds `Count`/`Table`) holding the module's `EnCEEClassData*` entries. Optional: only present when EditAndContinue is configured. |
-| `UnorderedArrayBase`       | `Count`                  | Number of valid entries currently stored in the array. |
-| `UnorderedArrayBase`       | `Table`                  | Pointer to the backing storage holding the array's entries. |
-| `EnCEEClassData`       | `MethodTable`            | Pointer to the `MethodTable` whose EnC data is held by this entry. |
-| `EnCEEClassData`       | `AddedInstanceFields`    | Head of the linked list of `EnCAddedFieldElement` for added instance fields. |
-| `EnCEEClassData`       | `AddedStaticFields`      | Head of the linked list of `EnCAddedFieldElement` for added static fields. |
-| `EnCAddedFieldElement` | `Next`                   | Pointer to the next `EnCAddedFieldElement` in the linked list. |
-| `EnCAddedFieldElement` | `FieldDesc`              | Address of the embedded `EnCFieldDesc` (layout-compatible with `FieldDesc`). |
-| `EnCFieldDesc`         | `NeedsFixup`             | Non-zero when the `EnCFieldDesc` still needs fixup (i.e., it has not been fully initialized). |
-| `EnCFieldDesc`         | `StaticFieldData`        | Pointer to the `EnCAddedStaticField` that backs this static field (NULL until storage has been allocated). |
-| `EnCAddedStaticField`  | `FieldDesc`              | Pointer back to the `EnCFieldDesc` that owns this storage. |
-| `EnCAddedStaticField`  | `FieldData`              | Address of the first byte of static field storage on this entry. |
-| `EnCAddedField`        | `Next`                   | Pointer to the next `EnCAddedField` entry in the per-object linked list hanging off the SyncBlock. |
-| `EnCAddedField`        | `FieldDesc`              | Pointer to the `EnCFieldDesc` for the added instance field. |
-| `EnCAddedField`        | `FieldData`              | The dependent-handle pair (typed as `ObjectHandle`) whose primary OBJECTREF is the dependency anchor and whose secondary OBJECTREF is the `System.Diagnostics.EditAndContinueHelper` instance. |
-| `EnCSyncBlockInfo`     | `List`                   | Head of the linked list of `EnCAddedField` entries for the EnC-added instance fields associated with an object. |
-| `SyncBlock`            | `EnCInfo`                | Pointer to the `EnCSyncBlockInfo` for this object (NULL if the object has no added EnC fields). Optional: only present when EditAndContinue is configured. |
-| `FieldDesc`            | `DWord2`                 | Packed flags/offset word containing the field's offset; the EnC-new sentinel `FieldOffsetNewEnc` is stored here for fields that have been added but do not yet have storage assigned. |
-| `System.Diagnostics.EditAndContinueHelper` | `_objectReference` | Holds the per-field storage for an EnC-added instance field. |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `EnCAddedField` | `FieldData` | `ObjectHandle` | The dependent-handle pair (typed as ObjectHandle) whose primary OBJECTREF is the dependency anchor and whose secondary OBJECTREF is the System.Diagnostics.EditAndContinueHelper instance. |
+| `EnCAddedField` | `FieldDesc` | `pointer` | Pointer to the EnCFieldDesc for the added instance field. |
+| `EnCAddedField` | `Next` | `pointer` | Pointer to the next EnCAddedField entry in the per-object linked list hanging off the SyncBlock. |
+| `EnCAddedFieldElement` | `FieldDesc` | `pointer` | Address of the embedded EnCFieldDesc (layout-compatible with FieldDesc). |
+| `EnCAddedFieldElement` | `Next` | `pointer` | Pointer to the next EnCAddedFieldElement in the linked list. |
+| `EnCAddedStaticField` | `FieldData` | `pointer` | Address of the first byte of static field storage on this entry. |
+| `EnCEEClassData` | `AddedInstanceFields` | `pointer` | Head of the linked list of EnCAddedFieldElement for added instance fields. |
+| `EnCEEClassData` | `AddedStaticFields` | `pointer` | Head of the linked list of EnCAddedFieldElement for added static fields. |
+| `EnCEEClassData` | `MethodTable` | `pointer` | Pointer to the MethodTable whose EnC data is held by this entry. |
+| `EnCFieldDesc` | `NeedsFixup` | `int32` | Non-zero when the EnCFieldDesc still needs fixup (i.e., it has not been fully initialized). |
+| `EnCFieldDesc` | `StaticFieldData` | `pointer` | Pointer to the EnCAddedStaticField that backs this static field (NULL until storage has been allocated). |
+| `EnCSyncBlockInfo` | `List` | `pointer` | Head of the linked list of EnCAddedField entries for the EnC-added instance fields associated with an object. |
+| `FieldDesc` | `DWord2` | `uint32` | Packed flags and offset word containing the field's offset; the FieldOffsetNewEnc sentinel identifies an EnC-added field without assigned storage |
+| `Module` | `EnCClassList` | `pointer` | Pointer to the list of classes added through Edit and Continue |
+| `Object` | *(type size)* | `uint32` | Size in bytes of the fixed Object portion through its MethodTable pointer |
+| `SyncBlock` | `EnCInfo` | `pointer` | Pointer to Edit-and-Continue added-field information for the object; optional when Edit and Continue is not configured |
+| `SyncBlock` | `InteropInfo` | `pointer` | Pointer to optional COM interop data associated with the sync block |
+| `SyncBlock` | `Lock` | `ObjectHandle` | Object handle referring to the System.Threading.Lock used for the object's monitor |
+| `System.Diagnostics.EditAndContinueHelper` | `_objectReference` | `pointer` | Holds the per-field storage for an EnC-added instance field. |
+| `UnorderedArrayBase` | `Count` | `uint32` | Number of valid entries currently stored in the array. |
+| `UnorderedArrayBase` | `Table` | `pointer` | Pointer to the backing storage holding the array's entries. |
 
-### Globals used
+### Global variables used
 
-| Global Name           | Type   | Purpose |
-| ---                   | ---    | --- |
-| `FieldOffsetNewEnc`   | uint   | Sentinel offset value stored in `FieldDesc::DWord2` for added fields whose storage has not yet been allocated. |
+| Global | Type | Meaning |
+| --- | --- | --- |
+| `FieldOffsetNewEnc` | `uint32` | Sentinel offset value stored in FieldDesc::DWord2 for added fields whose storage has not yet been allocated. |
+
+### Contracts used
+
+| Contract Name |
+| --- |
+| `GC` |
+| `Loader` |
+| `Object` |
+| `RuntimeTypeSystem` |
+<!-- END GENERATED: usage contract=RuntimeMutableTypeSystem version=c1 -->
+
 
 ### Required contracts
 
-| Contract            |
-| ---                 |
-| `IRuntimeTypeSystem` |
-| `ILoader`            |
-| `IObject`            |
-| `IGC`                |
 
 ```csharp
 internal enum FieldDescFlags2 : uint

@@ -13,8 +13,13 @@ internal sealed partial class TableSegment : IData<TableSegment>
     [FieldAddress]
     public partial TargetPointer RgValue { get; }
 
+    [DataDescriptorDependency(nameof(RgTail), "uint8[]")]
     public byte[] RgTail { get; private set; }
+
+    [DataDescriptorDependency(nameof(RgAllocation), "uint8[]")]
     public byte[] RgAllocation { get; private set; }
+
+    [DataDescriptorDependency(nameof(RgUserData), "uint8[]")]
     public byte[] RgUserData { get; private set; }
 
     [MemberNotNull(nameof(RgTail), nameof(RgAllocation), nameof(RgUserData))]
