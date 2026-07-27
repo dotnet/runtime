@@ -411,6 +411,20 @@ MethodDesc* GetTargetPInvokeMethodDesc(PCODE target)
     return NULL;
 }
 
+static NOINLINE CallStubHeader *InvokeManagedMethodHelper(MethodDesc *pMD, PCODE target)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pMD));
+    }
+    CONTRACTL_END
+
+    GCX_PREEMP();
+    return UpdateCallStubForMethod(pMD, target == (PCODE)NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
+}
+
 void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
 {
     CONTRACTL
@@ -426,7 +440,7 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
     CallStubHeader *pHeader = pMD->GetCalliCookie();
     if (pHeader == NULL)
     {
-        pHeader = UpdateCallStubForMethod(pMD, target == (PCODE)NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
+        pHeader = InvokeManagedMethodHelper(pMD, target);
     }
 
     if (target != (PCODE)NULL)
