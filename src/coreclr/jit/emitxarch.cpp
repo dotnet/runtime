@@ -10527,9 +10527,10 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
     // functionality even if their actual identifier differs and we should optimize these
 
-    if (!emitCanPeepholeLastIns() ||       // Don't optimize if unsafe
-        (emitLastIns->idIns() != ins) ||   // or if the instruction is different from the last instruction
-        (emitLastIns->idOpSize() != size)) // or if the operand size is different from the last instruction
+    if (!emitCanPeepholeLastIns() ||          // Don't optimize if unsafe
+        (emitLastIns->idIns() != ins) ||      // or if the instruction is different from the last instruction
+        (emitLastIns->idOpSize() != size) ||  // or if the operand size is different from the last instruction
+        (emitLastIns->idGCref() != GCT_NONE)) // or if the last instruction created a GC live value
     {
         return false;
     }
