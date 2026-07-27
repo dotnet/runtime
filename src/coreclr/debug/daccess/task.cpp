@@ -5050,7 +5050,7 @@ EnumMethodDefinitions::Next(ClrDataAccess* dac,
         COR_ILMETHOD_DECODER ilDec(ilMeth);
 
         CLRDATA_ADDRESS start =
-            TO_CDADDR(PTR_HOST_TO_TADDR(ilMeth) + 4 * ilDec.GetSize());
+            TO_CDADDR(PTR_HOST_TO_TADDR(ilDec.Code));
         if (m_addrFilter < start ||
             m_addrFilter > start + ilDec.GetCodeSize() - 1)
         {

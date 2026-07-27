@@ -8,5 +8,5 @@ internal sealed partial class ConditionalWeakTable : IData<ConditionalWeakTable>
 {
     /// <summary>Pointer to the active <c>Container</c> object.</summary>
     [Field("_container")]
-    public TargetPointer Container { get; }
+    public partial TargetPointer Container { get; }
 }

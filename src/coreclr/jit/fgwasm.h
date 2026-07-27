@@ -468,7 +468,18 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
                     //
                     if (acd->acdUsed)
                     {
-                        RETURN_ON_ABORT(func(acd->acdDstBlk));
+                        // bbThrowIndex / bbInTryRegions are purely lexical tests, so a match can
+                        // name a throw helper that lives in a different function region (funclet)
+                        // than this side-entry -- e.g. a main-method helper for an outer try whose
+                        // handler funclet merely nests inside that try. Attaching it here would pull
+                        // the helper into this funclet's layout, interleaving it with funclet blocks
+                        // and corrupting the emitted wasm. Only attach when the helper and the
+                        // side-entry share the same function region.
+                        //
+                        if (comp->bbIsInSameFunclet(block, acd->acdDstBlk))
+                        {
+                            RETURN_ON_ABORT(func(acd->acdDstBlk));
+                        }
                     }
                 }
             }

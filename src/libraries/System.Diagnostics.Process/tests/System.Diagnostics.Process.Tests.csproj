@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>$(MSBuildProjectDirectory)\..\src\Resources\Strings.resx</StringResourcesPath>
@@ -46,6 +46,7 @@
     <Compile Include="StartSuspendedTests.cs" />
     <Compile Include="ProcessOpenTests.cs" />
     <Compile Include="KillOnParentExitTests.cs" />
+    <Compile Include="WaitForExitStatusTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="ProcessHandlesTests.Windows.cs" />

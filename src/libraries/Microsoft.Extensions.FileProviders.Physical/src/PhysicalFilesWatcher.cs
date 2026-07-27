@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
@@ -48,6 +49,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private PendingCreationWatcher? _rootCreationWatcher;
         private readonly object _rootCreationWatcherLock = new();
         private bool _rootWasUnavailable;
+
+        // The last Error reported by the FileSystemWatcher that could indicate a persistent failure,
+        // remembered until a change is successfully delivered (see OnFileSystemEntryChange). Guarded by
+        // _errorLock. Used to detect the same error occurring again with no progress in between, like a
+        // file system that can't be watched (for example, a network share or a WSL path accessed from Windows).
+        private Exception? _lastError;
+        private readonly object _errorLock = new();
 
         private Timer? _timer;
         private bool _timerInitialized;
@@ -373,6 +381,39 @@ namespace Microsoft.Extensions.FileProviders.Physical
         [SupportedOSPlatform("maccatalyst")]
         private void OnError(object sender, ErrorEventArgs e)
         {
+            Exception? error = e.GetException();
+
+            // An InternalBufferOverflowException means the watcher is still functioning but dropped
+            // events, so consumers must rescan; a DirectoryNotFoundException means the watched directory
+            // was deleted or moved, which is a real change the root-creation watcher recovers from. Both
+            // must always be reported, and both count as progress that clears any remembered error.
+            if (error is InternalBufferOverflowException or DirectoryNotFoundException)
+            {
+                ClearLastError();
+            }
+            else if (error is not null)
+            {
+                lock (_errorLock)
+                {
+                    if (_lastError is not null && IsSameError(_lastError, error))
+                    {
+                        // The same error recurred with no change delivered in between, so the file
+                        // system can't be watched. Don't cancel tokens: doing so would likely re-create tokens
+                        // and re-enable the watcher, looping until the stack overflows. The watcher is
+                        // still re-enabled on the next request, so if the condition later clears it can
+                        // resume watching.
+                        return;
+                    }
+
+                    _lastError = error;
+                }
+            }
+            else
+            {
+                // The Error carried no exception (only reachable through a custom FileSystemWatcher).
+                // Report it like any other error, but leave the remembered-error state untouched.
+            }
+
             // Notify all cache entries on error.
             CancelAll(_filePathTokenLookup, FilePathRequiresSubdirectories);
             CancelAll(_wildcardTokenLookup, WildcardRequiresSubdirectories);
@@ -393,6 +434,34 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         CancelToken(matchInfo);
                     }
                 }
+            }
+        }
+
+        // Two errors are considered the same when they have the same type and OS error code. That's a
+        // strong signal of a persistent condition (for example the same failure for an unwatchable
+        // volume), while genuinely distinct failures keep being reported. Win32Exception carries the
+        // code in NativeErrorCode (its HResult is a constant); other exceptions, such as the IOExceptions
+        // built from errno on Unix, carry it in HResult.
+        private static bool IsSameError(Exception a, Exception b)
+        {
+            if (a.GetType() != b.GetType())
+            {
+                return false;
+            }
+
+            if (a is Win32Exception win32A && b is Win32Exception win32B)
+            {
+                return win32A.NativeErrorCode == win32B.NativeErrorCode;
+            }
+
+            return a.HResult == b.HResult;
+        }
+
+        private void ClearLastError()
+        {
+            lock (_errorLock)
+            {
+                _lastError = null;
             }
         }
 
@@ -420,6 +489,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 {
                     return;
                 }
+
+                // A relevant change was delivered, which proves the watcher is working, so forget any
+                // remembered error; a later identical error then starts over rather than being treated
+                // as a persistent recurrence. This should run only for changes inside _root that aren't
+                // excluded, so unrelated events don't reset the detection while an unwatchable-root
+                // error loop is in progress.
+                ClearLastError();
 
                 string relativePath = fullPath.Substring(_root.Length);
                 ReportChangeForMatchedEntries(relativePath);

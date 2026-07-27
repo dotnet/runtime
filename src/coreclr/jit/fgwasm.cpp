@@ -1458,11 +1458,36 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 continue;
             }
 
-            // Non-contiguous, non-subsumed forward branch. Start the Block at the try
-            // header when crossing a try-catch exit so it encloses the wrapper.
+            // Non-contiguous, non-subsumed forward branch. If it exits enclosing
+            // try/catch regions, start the Block at the outermost escaped catch-try
+            // so the Block encloses those trys' ends. Each Try emits a trailing
+            // validation `unreachable` after its `end`; starting only at the innermost
+            // try would nest the Block inside an outer try sharing this target as its
+            // end cursor, so the branch would land on that `unreachable` instead of the
+            // continuation. Single-level try/catch is unchanged (outermost == innermost).
             //
-            BasicBlock* const   blockStart = isCrossingTryCatchExit ? blockTryDsc->ebdTryBeg : block;
-            WasmInterval* const branch     = WasmInterval::NewBlock(this, blockStart, initialLayout[succNum]);
+            BasicBlock* blockStart = block;
+            for (EHblkDsc* tryDsc = ehGetBlockTryDsc(block); tryDsc != nullptr;)
+            {
+                // Once succ is contained in an enclosing try, all outer trys contain it
+                // too, so the branch does not exit them.
+                //
+                if (bbInTryRegions(ehGetIndex(tryDsc), succ))
+                {
+                    break;
+                }
+
+                if (tryDsc->HasCatchHandler())
+                {
+                    blockStart = tryDsc->ebdTryBeg;
+                }
+
+                tryDsc = (tryDsc->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+                             ? nullptr
+                             : ehGetDsc(tryDsc->ebdEnclosingTryIndex);
+            }
+
+            WasmInterval* const branch = WasmInterval::NewBlock(this, blockStart, initialLayout[succNum]);
             fgWasmIntervals->push_back(branch);
 
             // Remember an interval end here

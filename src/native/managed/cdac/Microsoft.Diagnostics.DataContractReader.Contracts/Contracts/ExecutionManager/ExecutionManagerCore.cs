@@ -22,6 +22,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     private readonly EEJitManager _eeJitManager;
     private readonly ReadyToRunJitManager _r2rJitManager;
     private readonly InterpreterJitManager _interpreterJitManager;
+    private readonly TargetPointer _thePreStub;
 
     private Data.RangeSectionMap _topRangeSectionMap
         => _target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(_topRangeSectionMapAddress);
@@ -35,6 +36,9 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
         _interpreterJitManager = new InterpreterJitManager(_target, nibbleMap);
+        _thePreStub = _target.TryReadGlobalPointer(Constants.Globals.ThePreStub, out TargetPointer? thePreStubPtr)
+            ? _target.ReadPointer(thePreStubPtr.Value)
+            : TargetPointer.Null;
     }
 
     public void Flush(FlushScope scope)
@@ -492,6 +496,45 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         }
     }
 
+    IReadOnlyList<TargetPointer> IExecutionManager.GetDynamicFunctionTableEntries(TargetPointer tableAddress)
+    {
+        IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
+        if (runtimeInfo.GetTargetOperatingSystem() != RuntimeInfoOperatingSystem.Windows ||
+            runtimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86)
+        {
+            return [];
+        }
+
+        // Port of the DAC's OutOfProcessFunctionTableCallbackEx (see vm/../debug/daccess/fntableaccess.cpp).
+        // The dynamic-function-table header identifies both the owning JIT manager (via its Context) and
+        // the module base (via MinimumAddress) of the code heap whose function table is requested.
+        Data.DynamicFunctionTable table = _target.ProcessedData.GetOrAdd<Data.DynamicFunctionTable>(tableAddress);
+
+        // The low bits of Context are flags; the remaining bits point at the owning EEJitManager.
+        TargetPointer jitManagerAddress = new(table.Context.Value & ~(ulong)3);
+        TargetPointer minimumAddress = table.MinimumAddress;
+
+        Data.EEJitManager jitManager = _target.ProcessedData.GetOrAdd<Data.EEJitManager>(jitManagerAddress);
+
+        TargetPointer nodeAddr = jitManager.AllCodeHeaps;
+        while (nodeAddr != TargetPointer.Null)
+        {
+            Data.CodeHeapListNode node = _target.ProcessedData.GetOrAdd<Data.CodeHeapListNode>(nodeAddr);
+
+            // HeapList::GetModuleBase - the personality routine on 64-bit targets when set,
+            // otherwise the map base. This matches the value used to register the function table.
+            TargetPointer moduleBase = node.CLRPersonalityRoutine is { } personalityRoutine && personalityRoutine != TargetPointer.Null
+                ? personalityRoutine
+                : node.MapBase;
+            if (moduleBase == minimumAddress)
+                return _eeJitManager.EnumerateFunctionTableEntries(node);
+
+            nodeAddr = node.Next;
+        }
+
+        return [];
+    }
+
     private RangeSection RangeSectionFromCodeBlockHandle(CodeBlockHandle codeInfoHandle)
     {
         if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
@@ -546,13 +589,14 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             return new List<ExceptionClauseInfo>();
         jitManager.GetExceptionClauses(range, codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr);
         bool isR2R = jitManager is ReadyToRunJitManager;
-        DataType clauseType = isR2R ? DataType.R2RExceptionClause : DataType.EEExceptionClause;
-        uint clauseSize = _target.GetTypeInfo(clauseType).Size!.Value;
+        uint clauseSize = isR2R
+            ? Data.R2RExceptionClause.GetSize(_target)
+            : Data.EEExceptionClause.GetSize(_target);
         TargetPointer methodDescPtr = ((IExecutionManager)this).GetMethodDesc(codeInfoHandle);
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
         TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
-        TypeHandle th = rts.GetTypeHandle(mtPtr);
+        ITypeHandle th = rts.GetTypeHandle(mtPtr);
         TargetPointer handleModuleAddr = rts.GetModule(th);
 
         List<ExceptionClauseInfo> exceptionClauses = new List<ExceptionClauseInfo>();
@@ -624,7 +668,13 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     {
         RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeAddress);
         if (range.Data == null)
+        {
+            TargetPointer address = new(codeAddress.Value);
+            if (address == _thePreStub && _thePreStub != TargetPointer.Null)
+                return CodeKind.ThePreStub;
+
             return CodeKind.Unknown;
+        }
 
         // check if this is a stub
         JitManager? jitManager = GetJitManager(range);

@@ -7,14 +7,14 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class WebcilSectionHeader : IData<WebcilSectionHeader>
 {
     [RawOffset(0)]
-    public uint VirtualSize { get; }
+    public partial uint VirtualSize { get; }
 
     [RawOffset(4)]
-    public uint VirtualAddress { get; }
+    public partial uint VirtualAddress { get; }
 
     [RawOffset(8)]
-    public uint SizeOfRawData { get; }
+    public partial uint SizeOfRawData { get; }
 
     [RawOffset(12)]
-    public uint PointerToRawData { get; }
+    public partial uint PointerToRawData { get; }
 }

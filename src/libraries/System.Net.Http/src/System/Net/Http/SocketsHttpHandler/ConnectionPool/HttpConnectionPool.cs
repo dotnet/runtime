@@ -13,6 +13,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Text;
 using System.Threading;
@@ -967,41 +968,37 @@ namespace System.Net.Http
                     _ = connection.EvaluateForEvictionAsync();
                 }
 
-                // HTTP/2: snapshot the available list under the lock, then evaluate outside of it.
-                Http2Connection[]? http2Connections = null;
+                // HTTP/2: Get the list of available connections under the lock, then evaluate outside of it.
+                ReadOnlySpan<Http2Connection> http2Connections = default;
                 lock (SyncObj)
                 {
                     if (_availableHttp2Connections is { Count: > 0 } http2)
                     {
-                        http2Connections = http2.ToArray();
+                        http2Connections = CollectionsMarshal.AsSpan(http2);
                     }
                 }
 
-                if (http2Connections is not null)
+                foreach (Http2Connection connection in http2Connections)
                 {
-                    foreach (Http2Connection connection in http2Connections)
-                    {
-                        _ = connection.EvaluateForEvictionAsync();
-                    }
+                    // The span may be modified concurrently, so check for null connections
+                    _ = connection?.EvaluateForEvictionAsync();
                 }
 
                 if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3)
                 {
-                    Http3Connection[]? http3Connections = null;
+                    ReadOnlySpan<Http3Connection> http3Connections = default;
                     lock (SyncObj)
                     {
                         if (_availableHttp3Connections is { Count: > 0 } http3)
                         {
-                            http3Connections = http3.ToArray();
+                            http3Connections = CollectionsMarshal.AsSpan(http3);
                         }
                     }
 
-                    if (http3Connections is not null)
+                    foreach (Http3Connection connection in http3Connections)
                     {
-                        foreach (Http3Connection connection in http3Connections)
-                        {
-                            _ = connection.EvaluateForEvictionAsync();
-                        }
+                        // The span may be modified concurrently, so check for null connections
+                        _ = connection?.EvaluateForEvictionAsync();
                     }
                 }
             }
