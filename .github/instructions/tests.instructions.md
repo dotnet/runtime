@@ -2,18 +2,14 @@
 applyTo: "src/tests/**,**/tests/**"
 ---
 
-# Code Review -- Tests
+# Tests
 
-Rules for reviewing test changes. Also apply `review-all-src` plus the language file for the code
-under test (`review-csharp` or `review-native`). Note that test conventions differ across areas:
-libraries tests (`src/libraries/**/tests/`) typically use xUnit with `[Fact]`/`[Theory]` and
-`Assert.*`; JIT/runtime tests (`src/tests/`) often use a `return 100` success convention and
-have different naming/priority requirements. Apply area-specific rules when they conflict with
-general guidance below.
-
-These are review criteria. During code authoring or local experimentation, treat PR-level gates
-such as motivation, benchmark evidence, and issue prerequisites as preparation guidance for a
-ready-for-review PR, not as reasons to block exploratory work unless the user asks for review.
+Conventions for test changes. Also apply `conventions` plus the language file for the code under
+test (`csharp` or `native`). Note that test conventions differ across areas: libraries tests
+(`src/libraries/**/tests/`) typically use xUnit with `[Fact]`/`[Theory]` and `Assert.*`;
+JIT/runtime tests (`src/tests/`) often use a `return 100` success convention and have different
+naming/priority requirements. Apply area-specific rules when they conflict with general guidance
+below.
 
 ## Testing
 

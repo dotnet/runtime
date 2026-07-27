@@ -37,7 +37,16 @@ When writing or modifying tests, you SHOULD:
 
 For markdown (`.md`) files, ensure there is no trailing whitespace at the end of any line.
 
-When NOT running under CCA, guidance for creating commits and pushing changes:
+## Pull Requests
+
+- **One concern per PR.** Split large or mixed changes. Do large refactorings and mechanical renames in their own PR, separate from logic changes.
+- **New public API requires an approved proposal before submission** — PRs adding unapproved API will be closed. Use the `api-proposal` skill; until approval lands, mark the API `internal`.
+- **Core component changes should start with an issue.** Changes to the host, VM, or JIT need a GitHub issue describing the problem and motivation first.
+- **Put the measurements in the description** for performance changes — BenchmarkDotNet results, or codegen and instruction-count evidence for low-level work.
+- **Behavioral changes need breaking-change documentation**, even prerelease-to-prerelease. Use the `breaking-change-doc` skill.
+- **Merge to main first, then `/backport`.** Servicing backports are limited to security bugs, regressions, and reliability issues, and should be small targeted fixes rather than refactorings.
+
+When NOT running under CCA, for commits and pushes:
 
 - Never squash and force push unless explicitly instructed. Always push incremental commits on top of previous PR changes.
 - Never push to an active PR without being explicitly asked, even in autopilot/yolo mode. Always wait for explicit instruction to push.
