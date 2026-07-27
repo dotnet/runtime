@@ -31,7 +31,7 @@ namespace ILCompiler
             ComputedInstanceFieldLayout layoutFromMetadata = _fallbackAlgorithm.ComputeInstanceLayout(defType, layoutKind);
 
             // 32bit platforms use standard metadata layout engine
-            if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
+            if (defType.Context.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.Wasm32)
             {
                 layoutFromMetadata.LayoutAbiStable = true;
                 layoutFromMetadata.IsInt128OrHasInt128Fields = true;

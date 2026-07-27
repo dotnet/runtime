@@ -10817,7 +10817,8 @@ void MethodTableBuilder::CheckForSystemTypes()
             // even on X86
             pLayout->SetAlignmentRequirement(16); // sizeof(__int128)
 #elif defined(TARGET_WASM)
-            pLayout->SetAlignmentRequirement(16); // sizeof(v128)
+            // Wasm has no 128-bit scalar type to match, so use the natural field alignment.
+            pLayout->SetAlignmentRequirement(8);
 #else
 #error Unknown architecture
 #endif // TARGET_64BIT
