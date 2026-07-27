@@ -1183,7 +1183,13 @@ ErrExit:
 
 BOOL Module::IsRuntimeMarshallingEnabled()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END
 
     if (m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED_IS_CACHED)
     {

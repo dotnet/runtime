@@ -462,7 +462,14 @@ void WrapNonCompliantException(OBJECTREF *ppThrowable)
 // assembly level setting.
 OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer(pAssembly));
+    }
+    CONTRACTL_END;
 
     // Check if we are required to compute the RuntimeWrapExceptions status.
     BOOL fIsRuntimeWrappedException = ((throwable != NULL) && (throwable->GetMethodTable() == pMT_RuntimeWrappedException));
