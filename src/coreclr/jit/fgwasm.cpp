@@ -1837,6 +1837,36 @@ PhaseStatus Compiler::fgWasmControlFlow()
             order++;
         }
     }
+
+    {
+        // Verify that each funclet's blocks are contiguous.
+        //
+        jitstd::vector<bool> regionClosed(compFuncInfoCount, false, getAllocator(CMK_DebugOnly));
+        unsigned             prevRegion = UINT_MAX;
+        for (BasicBlock* const block : Blocks())
+        {
+            const unsigned region = bbFuncletRegionOf(block);
+            assert(region < compFuncInfoCount);
+
+            if (region != prevRegion)
+            {
+                if (prevRegion != UINT_MAX)
+                {
+                    regionClosed[prevRegion] = true;
+                }
+
+                if (regionClosed[region])
+                {
+                    JITDUMP("Wasm function region %u is not contiguous: " FMT_BB " re-enters it\n", region,
+                            block->bbNum);
+                }
+                assert(!regionClosed[region] &&
+                       "wasm function region (main method / funclet) blocks are not contiguous");
+
+                prevRegion = region;
+            }
+        }
+    }
 #endif // DEBUG
 
     JITDUMPEXEC(fgDumpWasmControlFlow());
