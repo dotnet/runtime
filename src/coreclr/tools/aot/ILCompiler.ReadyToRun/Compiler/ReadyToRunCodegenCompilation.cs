@@ -1064,6 +1064,8 @@ namespace ILCompiler
                 asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [valueTaskType])),
                 asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [taskOfTType.MakeInstantiatedType(methodVar)])),
                 asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [valueTaskOfTType.MakeInstantiatedType(methodVar)])),
+                asyncHelpers.GetKnownMethod("AwaitAwaiterInContinuation"u8, null),
+                asyncHelpers.GetKnownMethod("UnsafeAwaitAwaiterInContinuation"u8, null),
             ];
             var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);

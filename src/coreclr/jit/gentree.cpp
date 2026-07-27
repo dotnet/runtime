@@ -13,6 +13,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jitpch.h"
 #include "hwintrinsic.h"
 #include "simd.h"
+#include "async.h"
 
 #ifdef _MSC_VER
 #pragma hdrstop
@@ -1648,6 +1649,7 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
 #endif // HAS_FIXED_REGISTER_SET
 
         case WellKnownArg::StackArrayLocal:
+        case WellKnownArg::AsyncAwaiter:
         case WellKnownArg::AsyncExecutionContext:
         case WellKnownArg::AsyncSynchronizationContext:
             // These are pseudo-args; they are not actual arguments, but we
@@ -11917,6 +11919,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
         case GT_ASYNC_RESUME_INFO:
+        case GT_CONTINUATION_MEMBER_OFFSET:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_FTN_ENTRY:
@@ -14007,6 +14010,15 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_WASM_THROW_REF:
         case GT_WASM_JEXCEPT:
             break;
+
+        case GT_CONTINUATION_MEMBER_OFFSET:
+        {
+            printf(" index=%zu ", tree->AsVal()->gtVal1);
+
+            const ContinuationMember& member = GetContinuationMember(tree->AsVal()->gtVal1);
+            member.Print();
+            break;
+        }
 
         case GT_RET_EXPR:
         {

@@ -620,12 +620,6 @@ OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
 // a continuation is being reused.
 OPT_CONFIG_STRING(JitAsyncPreservedValueAnalysisRange, "JitAsyncPreservedValueAnalysisRange")
 
-// Enable continuation reuse based on method hash range
-OPT_CONFIG_STRING(JitAsyncReuseContinuationsRange, "JitAsyncReuseContinuationsRange")
-// Save and reuse continuation instances in runtime async functions. Also
-// implies use of shared continuation layouts for all suspension points.
-RELEASE_CONFIG_INTEGER(JitAsyncReuseContinuations, "JitAsyncReuseContinuations", 1)
-
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods
 RELEASE_CONFIG_INTEGER(JitOptRepeatCount, "JitOptRepeatCount", 2) // Number of times to repeat opts when repeating

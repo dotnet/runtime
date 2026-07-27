@@ -978,6 +978,17 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(
     return original_ICorJitInfo->getAwaitReturnCall(callerHandle, contextHandle, instArg);
 }
 
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitAwaiterInContinuationCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_SIG_INFO* callSig,
+          bool isUnsafe,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg)
+{
+    mcs->AddCall("getAwaitAwaiterInContinuationCall");
+    return original_ICorJitInfo->getAwaitAwaiterInContinuationCall(callerHandle, callSig, isUnsafe, contextHandle, instArg);
+}
+
 mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {

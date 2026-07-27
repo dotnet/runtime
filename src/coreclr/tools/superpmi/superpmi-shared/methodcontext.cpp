@@ -4483,6 +4483,73 @@ CORINFO_METHOD_HANDLE MethodContext::repGetAwaitReturnCall(CORINFO_METHOD_HANDLE
     return (CORINFO_METHOD_HANDLE)result.methodHnd;
 }
 
+void MethodContext::recGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE callerHnd,
+                                                         CORINFO_SIG_INFO* callSig,
+                                                         bool isUnsafe,
+                                                         CORINFO_CONTEXT_HANDLE* contextHandle,
+                                                         CORINFO_LOOKUP* instArg,
+                                                         CORINFO_METHOD_HANDLE methHnd)
+{
+    if (GetAwaitAwaiterInContinuationCall == nullptr)
+    {
+        GetAwaitAwaiterInContinuationCall =
+            new LightWeightMap<Agnostic_GetAwaitAwaiterInContinuationCall, Agnostic_GetAwaitReturnCallResult>();
+    }
+
+    Agnostic_GetAwaitAwaiterInContinuationCall key;
+    ZeroMemory(&key, sizeof(key));
+    key.callerHnd = CastHandle(callerHnd);
+    key.callSig =
+        SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(*callSig, GetAwaitAwaiterInContinuationCall, SigInstHandleMap);
+    key.isUnsafe = isUnsafe;
+
+    Agnostic_GetAwaitReturnCallResult value;
+    ZeroMemory(&value, sizeof(value));
+    value.methodHnd = CastHandle(methHnd);
+    value.contextHandle = CastHandle(*contextHandle);
+    value.instArg = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(instArg);
+
+    GetAwaitAwaiterInContinuationCall->Add(key, value);
+    DEBUG_REC(dmpGetAwaitAwaiterInContinuationCall(key, value));
+}
+
+void MethodContext::dmpGetAwaitAwaiterInContinuationCall(
+    const Agnostic_GetAwaitAwaiterInContinuationCall& key,
+    Agnostic_GetAwaitReturnCallResult& value)
+{
+    printf("GetAwaitAwaiterInContinuationCall caller-%016" PRIX64 " sig-%s unsafe-%u "
+           "methodHnd-%016" PRIX64 " contextHandle-%016" PRIX64 " instArg %s",
+           key.callerHnd,
+           SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(
+               key.callSig, GetAwaitAwaiterInContinuationCall, SigInstHandleMap).c_str(),
+           key.isUnsafe,
+           value.methodHnd,
+           value.contextHandle,
+           SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value.instArg).c_str());
+}
+
+CORINFO_METHOD_HANDLE MethodContext::repGetAwaitAwaiterInContinuationCall(
+    CORINFO_METHOD_HANDLE callerHnd,
+    CORINFO_SIG_INFO* callSig,
+    bool isUnsafe,
+    CORINFO_CONTEXT_HANDLE* contextHandle,
+    CORINFO_LOOKUP* instArg)
+{
+    Agnostic_GetAwaitAwaiterInContinuationCall key;
+    ZeroMemory(&key, sizeof(key));
+    key.callerHnd = CastHandle(callerHnd);
+    key.callSig = SpmiRecordsHelper::RestoreAgnostic_CORINFO_SIG_INFO(
+        *callSig, GetAwaitAwaiterInContinuationCall, SigInstHandleMap);
+    key.isUnsafe = isUnsafe;
+
+    Agnostic_GetAwaitReturnCallResult value =
+        LookupByKeyOrMissNoMessage(GetAwaitAwaiterInContinuationCall, key);
+    DEBUG_REP(dmpGetAwaitAwaiterInContinuationCall(key, value));
+    *contextHandle = (CORINFO_CONTEXT_HANDLE)value.contextHandle;
+    *instArg = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value.instArg);
+    return (CORINFO_METHOD_HANDLE)value.methodHnd;
+}
+
 void MethodContext::recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
 {
     if (GetGSCookie == nullptr)
