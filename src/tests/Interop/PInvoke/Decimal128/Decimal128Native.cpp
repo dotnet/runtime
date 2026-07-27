@@ -21,8 +21,6 @@ Decimal128 {
     uint64_t upper;
 };
 
-static Decimal128 Decimal128Value = { };
-
 struct StructWithDecimal128
 {
     int8_t messUpPadding;

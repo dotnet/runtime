@@ -29,8 +29,8 @@ namespace ILCompiler
 
             // Only Decimal128 corresponds to a 16-byte ABI primitive (_Decimal128) requiring the packing
             // applied to Int128/UInt128; Decimal32/Decimal64 keep the natural alignment of uint/ulong.
-            // ARM32 has no such primitive in its PCS, so it uses the metadata layout as Int128 does.
-            // x86 and WASM are still 16-byte aligned, matching the Int128/UInt128 treatment.
+            // ARM32 has no such primitive in its PCS, so it uses the metadata layout as Int128 does;
+            // every other target is 16-byte aligned, matching the Int128/UInt128 treatment.
             if (defType.Name != "Decimal128"u8
                 || defType.Context.Target.Architecture == TargetArchitecture.ARM)
             {
