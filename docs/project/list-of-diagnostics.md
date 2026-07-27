@@ -191,8 +191,8 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1060`__ | Specified marshaller type is invalid |
 |  __`SYSLIB1061`__ | Marshaller type has incompatible method signatures |
 |  __`SYSLIB1062`__ | Project must be updated with '\<AllowUnsafeBlocks\>true\</AllowUnsafeBlocks\>' |
-|  __`SYSLIB1063`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
-|  __`SYSLIB1064`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
+|  __`SYSLIB1063`__ | Unnecessary marshalling info |
+|  __`SYSLIB1064`__ | Method with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe' |
 |  __`SYSLIB1065`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
 |  __`SYSLIB1066`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
 |  __`SYSLIB1067`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |

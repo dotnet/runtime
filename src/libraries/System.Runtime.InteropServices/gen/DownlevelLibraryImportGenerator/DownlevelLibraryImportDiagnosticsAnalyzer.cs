@@ -37,7 +37,8 @@ namespace Microsoft.Interop.Analyzers
                 GeneratorDiagnostics.ConfigurationValueNotSupported,
                 GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported,
                 GeneratorDiagnostics.CannotForwardToDllImport,
-                GeneratorDiagnostics.RequiresAllowUnsafeBlocks);
+                GeneratorDiagnostics.RequiresAllowUnsafeBlocks,
+                GeneratorDiagnostics.RequiresExplicitSafetyModifier);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -174,6 +175,8 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
+            ReportMissingExplicitSafetyModifier(context, method, libraryImportAttr);
+
             // Calculate stub information and collect diagnostics
             var diagnostics = CalculateDiagnostics(methodSyntax, method, libraryImportAttr, env, context.CancellationToken);
 
@@ -190,6 +193,39 @@ namespace Microsoft.Interop.Analyzers
                     context.ReportDiagnostic(diagnostic.ToDiagnostic());
                 }
             }
+        }
+
+        /// <summary>
+        /// Requires an explicit <c>safe</c> or <c>unsafe</c> modifier on every method with
+        /// <c>LibraryImportAttribute</c> when the updated memory safety rules are enabled.
+        /// </summary>
+        /// <remarks>
+        /// The compiler only requires the modifier when the generated implementing part is <c>extern</c>, which
+        /// depends on whether the signature needs marshalling. That is an implementation detail of the generator,
+        /// so the requirement is enforced for every shape to keep the contract stable.
+        /// </remarks>
+        private static void ReportMissingExplicitSafetyModifier(SymbolAnalysisContext context, IMethodSymbol method, AttributeData libraryImportAttr)
+        {
+            // The generator never copies LibraryImportAttribute onto the implementing part, so the attribute
+            // application always points at the declaration the user authored.
+            if (libraryImportAttr.ApplicationSyntaxReference is not { } attributeReference
+                || !MemorySafetyRules.UsesUpdatedMemorySafetyRules(attributeReference.SyntaxTree))
+            {
+                return;
+            }
+
+            if (attributeReference.GetSyntax(context.CancellationToken).FirstAncestorOrSelf<MethodDeclarationSyntax>() is not { } declaration
+                || MemorySafetyRules.HasExplicitSafetyModifier(declaration.Modifiers))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticInfo.Create(
+                    GeneratorDiagnostics.RequiresExplicitSafetyModifier,
+                    declaration.Identifier.GetLocation(),
+                    method.Name)
+                .ToDiagnostic());
         }
 
         private static ImmutableArray<DiagnosticInfo> CalculateDiagnostics(

@@ -168,8 +168,8 @@ namespace ILLink.CodeFix
 
         private static SyntaxTokenList AddUnsafeModifier(SyntaxTokenList modifiers)
         {
-            // Place unsafe before extern while preserving the existing modifier order.
-            int insertionIndex = modifiers.IndexOf(SyntaxKind.ExternKeyword);
+            // Place unsafe before extern and partial while preserving the existing modifier order.
+            int insertionIndex = GetFirstModifierIndex(modifiers, SyntaxKind.ExternKeyword, SyntaxKind.PartialKeyword);
             if (insertionIndex < 0)
                 insertionIndex = modifiers.Count;
 
@@ -184,6 +184,17 @@ namespace ILLink.CodeFix
             }
 
             return modifiers.Insert(insertionIndex, unsafeModifier);
+        }
+
+        private static int GetFirstModifierIndex(SyntaxTokenList modifiers, SyntaxKind first, SyntaxKind second)
+        {
+            for (int i = 0; i < modifiers.Count; i++)
+            {
+                if (modifiers[i].IsKind(first) || modifiers[i].IsKind(second))
+                    return i;
+            }
+
+            return -1;
         }
 
         private static SyntaxTokenList RemoveUnsafeModifier(SyntaxTokenList modifiers)

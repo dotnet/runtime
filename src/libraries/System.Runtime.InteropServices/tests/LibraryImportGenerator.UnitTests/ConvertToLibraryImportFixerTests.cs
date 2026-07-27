@@ -1229,6 +1229,32 @@ namespace LibraryImportGenerator.UnitTests
             await VerifyCodeFixAsync(source, fixedSource);
         }
 
+        [Fact]
+        public async Task UnsafeModifierIsPreserved()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [DllImport("DoesNotExist")]
+                    public static unsafe extern void [|Method|](int* i);
+                }
+
+               """;
+
+            string fixedSource = """
+                 using System.Runtime.InteropServices;
+                 partial class Test
+                 {
+                     [LibraryImport("DoesNotExist")]
+                     public static unsafe partial void {|CS8795:Method|}(int* i);
+                 }
+
+                """;
+
+            await VerifyCodeFixAsync(source, fixedSource);
+        }
+
         private static async Task VerifyCodeFixAsync(string source, string fixedSource, LanguageVersion languageVersion = LanguageVersion.Default, string? editorconfig = null)
         {
             var test = new TestWithLanguageVersion
