@@ -1975,7 +1975,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 new Span<byte>(pLegacyCtx, (int)contextSize).Clear();
                 Debugger_STRData legacyData = default;
-                legacyData.ctx = (nuint)pLegacyCtx;
+                legacyData.ctx = new ContextBuffer { pContextBytes = pLegacyCtx, contextSize = contextSize };
                 FrameType legacyRetVal = FrameType.Invalid;
                 int hrLocal = _legacy.GetStackWalkCurrentFrameInfo(legacyHandle, (nint)(&legacyData), &legacyRetVal);
                 Debug.ValidateHResult(hr, hrLocal);
@@ -1989,9 +1989,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                         Debug.Assert(pcdac->vmCurrentAppDomainToken == legacyData.vmCurrentAppDomainToken, $"appDomain mismatch - cDAC: 0x{pcdac->vmCurrentAppDomainToken:x}, DAC: 0x{legacyData.vmCurrentAppDomainToken:x}");
                         Debug.Assert(pcdac->eType == legacyData.eType, $"eType mismatch - cDAC: {pcdac->eType}, DAC: {legacyData.eType}");
 
-                        if (pcdac->ctx != 0)
+                        if (pcdac->ctx.pContextBytes is not null)
                         {
-                            ReadOnlySpan<byte> cctx = new((byte*)pcdac->ctx, (int)contextSize);
+                            ReadOnlySpan<byte> cctx = new(pcdac->ctx.pContextBytes, (int)contextSize);
                             ReadOnlySpan<byte> lctx = new(pLegacyCtx, (int)contextSize);
                             if (!cctx.SequenceEqual(lctx))
                                 Debug.Fail(DescribeContextDiff(cctx, lctx));
@@ -2048,12 +2048,16 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return context;
     }
 
-    private void WriteContext(IStackDataFrameHandle handle, nuint ctxPtr)
+    private void WriteContext(IStackDataFrameHandle handle, ContextBuffer contextBuffer)
     {
-        if (ctxPtr == 0)
+        if (contextBuffer.pContextBytes is null)
             return;
+
         byte[] context = GetCurrentContextBytes(handle);
-        context.AsSpan().CopyTo(new Span<byte>((byte*)ctxPtr, context.Length));
+        if (contextBuffer.contextSize < context.Length)
+            throw new ArgumentException("The context buffer is invalid.", nameof(contextBuffer));
+
+        context.AsSpan().CopyTo(new Span<byte>(contextBuffer.pContextBytes, context.Length));
     }
 
     private void InitFrameData(IStackDataFrameHandle handle, FrameType ft, nint pFrameData)
@@ -2063,7 +2067,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         TargetPointer currentAppDomain = _target.Contracts.Loader.GetAppDomain();
 
         Debugger_STRData* pDest = (Debugger_STRData*)pFrameData;
-        nuint incomingCtx = pDest->ctx;
+        ContextBuffer incomingCtx = pDest->ctx;
 
         Debugger_STRData data = default;
         data.ctx = incomingCtx;
