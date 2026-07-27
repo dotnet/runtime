@@ -2680,8 +2680,10 @@ namespace Internal.JitInterface
 #endif
 
             // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
-            // not care about since they are considered primitives by the JIT.
-            if (type.IsIntrinsic)
+            // not care about since they are considered primitives by the JIT. The IEEE 754
+            // decimal floating-point types are the System.Numerics intrinsics that are not
+            // SIMD, so the JIT lays them out like any other struct and needs their fields.
+            if (type.IsIntrinsic && !type.IsDecimalFloatingPointOrHasDecimalFloatingPointFields)
             {
                 Utf8Span ns = type.Namespace;
                 if (ns == "System.Runtime.Intrinsics"u8 || ns == "System.Numerics"u8)
