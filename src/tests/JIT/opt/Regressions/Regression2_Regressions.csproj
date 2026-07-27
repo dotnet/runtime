@@ -1,12 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Needed for CLRTestTargetUnsupported -->
+    <RequiresProcessIsolation Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</RequiresProcessIsolation>
     <!-- TODO: Re-enable when a WebAssembly JIT or equivalent makes the full regression workload practical.
          Tracked by https://github.com/dotnet/runtime/issues/131321. -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
-    <!-- Test simply runs for too long under GCStress -->
-    <GCStressIncompatible>true</GCStressIncompatible>
 
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
   </PropertyGroup>
@@ -16,5 +14,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

@@ -117,7 +117,7 @@ namespace
         SString path{ componentModulePath };
         SString::Iterator lastPathSeparatorIter = path.End();
         size_t pathDirLength = 0;
-        if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
+        if (path.FindBack(lastPathSeparatorIter, DIRECTORY_SEPARATOR_CHAR_A))
         {
             pathDirLength = (lastPathSeparatorIter - path.Begin()) + 1;
         }
