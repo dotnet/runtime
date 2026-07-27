@@ -4187,7 +4187,13 @@ void GCInfo::gcMakeRegPtrTable(
                 flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
             }
 
+            // On wasm a local's home is also reported pinned when a copy of it is held on the operand
+            //  stack across a safepoint, since the GC cannot update that copy. See fgWasmSpillRefs.
+#ifdef TARGET_WASM
+            if (varDsc->lvPinned || varDsc->lvStackPinned)
+#else
             if (varDsc->lvPinned)
+#endif
             {
                 // Or in pinned_OFFSET_FLAG for 'pinned' pointer tracking
                 flags = (GcSlotFlags)(flags | GC_SLOT_PINNED);

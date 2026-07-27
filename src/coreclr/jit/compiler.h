@@ -537,6 +537,12 @@ public:
 #endif
     unsigned char lvPinned : 1; // is this a pinned variable?
 
+#ifdef TARGET_WASM
+    unsigned char lvStackPinned : 1; // the GC must not move this local's referent, because a copy of it is held on
+                                     // the wasm operand stack across a safepoint. Unlike lvPinned this says nothing
+                                     // about the local itself, so it is safe to set after liveness.
+#endif
+
     unsigned char lvMustInit : 1; // must be initialized
 
 private:

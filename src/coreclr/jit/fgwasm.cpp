@@ -1850,6 +1850,24 @@ PhaseStatus Compiler::fgWasmControlFlow()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
+// Determine whether `operand` is a direct operand of `user`.
+static bool fgWasmIsOperandOf(GenTree* user, GenTree* operand)
+{
+    bool isOperand = false;
+
+    user->VisitOperands([operand, &isOperand](GenTree* op) {
+        if (op != operand)
+        {
+            return GenTree::VisitResult::Continue;
+        }
+
+        isOperand = true;
+        return GenTree::VisitResult::Abort;
+    });
+
+    return isOperand;
+}
+
 PhaseStatus Compiler::fgWasmSpillRefs()
 {
     bool anyChanges = false;
@@ -1879,6 +1897,41 @@ PhaseStatus Compiler::fgWasmSpillRefs()
         {
             if (tree->IsCall())
             {
+                // A ref sourced from a non-address-exposed local already has a linear-stack home, so
+                //  rather than spilling it to a second slot we report that home as pinned. The GC then
+                //  can't move the referent, and the copy on the operand stack stays valid across the
+                //  call. This is only safe because the local can't be stored to between its def and its
+                //  use, so the home still holds the object the operand stack refers to.
+                //
+                // A value this call consumes directly needs neither: there is no safepoint between
+                //  loading it and the call, and the local's home keeps the referent reachable meanwhile.
+                for (size_t i = defs.size(); i > 0; i--)
+                {
+                    GenTree* const def = defs[i - 1];
+
+                    if (!def->OperIs(GT_LCL_VAR))
+                    {
+                        continue;
+                    }
+
+                    LclVarDsc* const dsc = lvaGetDesc(def->AsLclVarCommon());
+                    if (dsc->IsAddressExposed())
+                    {
+                        continue;
+                    }
+
+                    if (!fgWasmIsOperandOf(tree, def))
+                    {
+                        JITDUMP("Pinning V%02u, held across call\n", def->AsLclVarCommon()->GetLclNum());
+                        dsc->lvStackPinned = true;
+                    }
+
+                    // Swapping with the last element is safe because we walk backwards, so whatever
+                    //  lands here has already been examined.
+                    defs[i - 1] = defs[defs.size() - 1];
+                    defs.pop_back();
+                }
+
                 // For any ref/byref values live at the point of a call, spill them into pinned slots
                 //  on the stack where the GC can see them so it won't move them.
                 if (!defs.empty())
@@ -1986,21 +2039,7 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                 continue;
             }
 
-            // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
-            //  it won't be mutated between its def (here) and its use (the call that would produce a spill)
-            //  and we won't need to spill it.
-            if (tree->OperIs(GT_LCL_VAR))
-            {
-                GenTreeLclVarCommon* lclVar = tree->AsLclVarCommon();
-                LclVarDsc*           dsc    = lvaGetDesc(lclVar);
-                if (!dsc->IsAddressExposed())
-                {
-                    continue;
-                }
-            }
-
-            // We have a ref sourced from something like a call result or an indirection that hasn't been
-            //  spilled yet, so record it for potential spilling at the next call.
+            // We have a ref that may be live across a future call.
             defs.push_back(tree);
         }
 
