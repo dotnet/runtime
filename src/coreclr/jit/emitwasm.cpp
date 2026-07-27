@@ -1364,11 +1364,11 @@ void emitter::emitDispIns(
             cnsval_ssize_t offset    = emitGetInsSC(id);
             if (id->idIsCnsReloc())
             {
-                printf(" %u reloc 0x" PRIx64, log2align, (uint64_t)offset);
+                printf(" %u reloc 0x%" PRIx64, log2align, (uint64_t)offset);
             }
             else
             {
-                printf(" %u " PRIu64, log2align, (uint64_t)offset);
+                printf(" %u %" PRIu64, log2align, (uint64_t)offset);
             }
             dispLclVarInfoIfAny();
         }
