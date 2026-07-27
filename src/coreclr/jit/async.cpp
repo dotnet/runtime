@@ -1946,9 +1946,9 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
         }
     }
 
-    static const WellKnownArg validateArgs[] = {
-        WellKnownArg::AsyncResumedUse, WellKnownArg::AsyncResumedDef, WellKnownArg::AsyncExecutionContext,
-        WellKnownArg::AsyncSynchronizationContext};
+    static const WellKnownArg validateArgs[] = {WellKnownArg::AsyncResumedUse, WellKnownArg::AsyncResumedDef,
+                                                WellKnownArg::AsyncExecutionContext,
+                                                WellKnownArg::AsyncSynchronizationContext};
     for (WellKnownArg arg : validateArgs)
     {
         CallArg* thisArg  = call->gtArgs.FindWellKnownArg(arg);
@@ -1999,9 +1999,9 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
 //
 void AsyncTransformation::HandleReusedSuspension(BasicBlock* callBlock, GenTreeCall* call)
 {
-    static const WellKnownArg argsToRemove[] = {
-        WellKnownArg::AsyncResumedUse, WellKnownArg::AsyncResumedDef, WellKnownArg::AsyncExecutionContext,
-        WellKnownArg::AsyncSynchronizationContext};
+    static const WellKnownArg argsToRemove[] = {WellKnownArg::AsyncResumedUse, WellKnownArg::AsyncResumedDef,
+                                                WellKnownArg::AsyncExecutionContext,
+                                                WellKnownArg::AsyncSynchronizationContext};
     for (WellKnownArg wka : argsToRemove)
     {
         CallArg* arg = call->gtArgs.FindWellKnownArg(wka);
