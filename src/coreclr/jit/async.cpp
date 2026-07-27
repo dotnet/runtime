@@ -2385,8 +2385,9 @@ void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
             LIR::AsRange(callBlock).Remove(field);
 
             GenTree* continuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
-            unsigned offset       = OFFSETOF__CORINFO_Continuation__data + layout.ContinuationMemberOffsets[memberIndex] + use.GetOffset();
-            GenTree* store        = StoreAtOffset(continuation, offset, field, use.GetType());
+            unsigned offset =
+                OFFSETOF__CORINFO_Continuation__data + layout.ContinuationMemberOffsets[memberIndex] + use.GetOffset();
+            GenTree* store = StoreAtOffset(continuation, offset, field, use.GetType());
             LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
         }
     }
@@ -3229,14 +3230,14 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
     LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeException));
 
     // Since we may reuse this continuation later we make sure we don't see the same exception again.
-    GenTree* continuation    = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
-    unsigned exceptionOffset = OFFSETOF__CORINFO_Continuation__data + layout.ExceptionOffset;
-    GenTree* null            = m_compiler->gtNewNull();
-    GenTree* nullException   = StoreAtOffset(continuation, exceptionOffset, null, TYP_REF);
+    continuation           = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+    exceptionOffset        = OFFSETOF__CORINFO_Continuation__data + layout.ExceptionOffset;
+    GenTree* null          = m_compiler->gtNewNull();
+    GenTree* nullException = StoreAtOffset(continuation, exceptionOffset, null, TYP_REF);
     LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, nullException));
 
     GenTree* exception = m_compiler->gtNewLclVarNode(exceptionLclNum, TYP_REF);
-    GenTree* null      = m_compiler->gtNewNull();
+    null               = m_compiler->gtNewNull();
     GenTree* neNull    = m_compiler->gtNewOperNode(GT_NE, TYP_INT, exception, null);
     GenTree* jtrue     = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
     LIR::AsRange(resumeBB).InsertAtEnd(exception, null, neNull, jtrue);
