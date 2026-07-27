@@ -3470,12 +3470,6 @@ public:
 
     BOOL HasDefaultDllImportSearchPathsAttribute();
 
-    BOOL IsDefaultDllImportSearchPathsAttributeCached()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_wPInvokeFlags & kDefaultDllImportSearchPathsIsCached) != 0;
-    }
-
     BOOL IsPopulated()
     {
         LIMITED_METHOD_CONTRACT;

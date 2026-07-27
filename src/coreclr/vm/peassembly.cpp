@@ -931,40 +931,6 @@ void PEAssembly::PathToUrl(SString &string)
     }
 }
 
-void PEAssembly::UrlToPath(SString &string)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    SString::Iterator i = string.Begin();
-
-    SString sss2(SString::Literal, W("file://"));
-#if !defined(TARGET_UNIX)
-    SString sss3(SString::Literal, W("file:///"));
-    if (string.MatchCaseInsensitive(i, sss3))
-        string.Delete(i, 8);
-    else
-#endif
-    if (string.MatchCaseInsensitive(i, sss2))
-        string.Delete(i, 7);
-
-#if !defined(TARGET_UNIX)
-    while (string.Find(i, W('/')))
-    {
-        string.Replace(i, W('\\'));
-    }
-#endif
-}
-
-BOOL PEAssembly::FindLastPathSeparator(const SString &path, SString::Iterator &i)
-{
-    return path.FindBack(i, DIRECTORY_SEPARATOR_CHAR_A);
-}
-
 // ------------------------------------------------------------
 // Metadata access
 // ------------------------------------------------------------
