@@ -2427,12 +2427,12 @@ GenTree* Compiler::impImplicitIorI4Cast(GenTree* tree, var_types dstTyp, bool ze
             // Note that this allows TYP_INT to be cast to a TYP_I_IMPL when wantedType is a TYP_BYREF or TYP_REF
             tree = gtNewCastNode(TYP_I_IMPL, tree, zeroExtend, TYP_I_IMPL);
         }
+#endif // TARGET_64BIT
         else if ((wantedType == TYP_INT) && varTypeIsI(currType))
         {
             // Note that this allows TYP_BYREF or TYP_REF to be cast to a TYP_INT
             tree = gtNewCastNode(TYP_INT, tree, false, TYP_INT);
         }
-#endif // TARGET_64BIT
     }
 
     return tree;
