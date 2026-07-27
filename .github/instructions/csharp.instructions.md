@@ -77,7 +77,7 @@ files), and any matching area file (`core-runtime`, `jit`, `system-net-*`, `exte
 ## API Design & Contracts
 
 - **Implementation must match the approved API shape.** Deferring portions of an approved API to incremental follow-up PRs is explicitly allowed, as is excluding specific members for technical reasons — unless the exclusion significantly impacts the design.
-- **Use `internal` for new APIs pending API review.** If the API is needed immediately for implementation, mark it `internal` and file a review request separately.
+- **Use `internal` for new APIs pending API review.** If the API is needed immediately for implementation, mark it `internal` and file a review request separately. This governs code being submitted — an `api-proposal` prototype branch keeps the surface public so ref source generation can extract it.
 - **Parameter names must match between ref and src.** Renaming a public API parameter (including case changes) is a breaking change affecting named arguments and late-bound scenarios.
 - **Align exception types and validation order across platforms.** Validate arguments first (`ArgumentNullException`, then `ArgumentException`), then `PNSE`, then `ObjectDisposedException`, then perform the operation. Throw the same exception types on all platforms.
 - **`Try` APIs should return `false` only for the common expected failure.** Throw for everything else (corruption, permissions, invalid arguments). Try methods must always throw on invalid arguments.

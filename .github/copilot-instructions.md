@@ -40,7 +40,7 @@ For markdown (`.md`) files, ensure there is no trailing whitespace at the end of
 ## Pull Requests
 
 - **One concern per PR.** Split large or mixed changes. Do large refactorings and mechanical renames in their own PR, separate from logic changes.
-- **New public API requires an approved proposal before submission** — PRs adding unapproved API will be closed. Use the `api-proposal` skill; until approval lands, mark the API `internal`.
+- **New public API requires an approved proposal before submission** — PRs adding unapproved API will be closed. Use the `api-proposal` skill; until approval lands the API stays `internal` in any submitted PR. A proposal's prototype branch is exempt and keeps its surface public — it's evidence, not a submission.
 - **Core component changes should start with an issue.** Changes to the host, VM, or JIT need a GitHub issue describing the problem and motivation first.
 - **Put the measurements in the description** for performance changes — BenchmarkDotNet results, or codegen and instruction-count evidence for low-level work.
 - **Behavioral changes need breaking-change documentation**, even prerelease-to-prerelease. Use the `breaking-change-doc` skill.
