@@ -53,11 +53,17 @@ struct _DiagnosticsIpcStream {
 };
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern int ds_rt_websocket_poll (int client_socket);
 extern int ds_rt_websocket_create (const char* url);
-extern int ds_rt_websocket_recv (int client_socket, const uint8_t* buffer, uint32_t bytes_to_read);
+extern int ds_rt_websocket_recv (int client_socket, uint8_t* buffer, uint32_t bytes_to_read);
 extern int ds_rt_websocket_send (int client_socket, const uint8_t* buffer, uint32_t bytes_to_write);
 extern int ds_rt_websocket_close(int client_socket);
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __DIAGNOSTICS_IPC_PAL_WEB_SOCKET_H__ */

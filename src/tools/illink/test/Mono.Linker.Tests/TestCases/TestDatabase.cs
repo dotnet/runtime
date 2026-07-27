@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner;
-using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCases
 {
@@ -14,239 +13,239 @@ namespace Mono.Linker.Tests.TestCases
     {
         private static TestCase[] _cachedAllCases;
 
-        public static IEnumerable<TestCaseData> AdvancedTests()
+        public static IEnumerable<object[]> AdvancedTests()
         {
-            return NUnitCasesBySuiteName("Advanced");
+            return TestCasesBySuiteName("Advanced");
         }
 
-        public static IEnumerable<TestCaseData> AttributeDebuggerTests()
+        public static IEnumerable<object[]> AttributeDebuggerTests()
         {
-            return NUnitCasesBySuiteName("Attributes.Debugger");
+            return TestCasesBySuiteName("Attributes.Debugger");
         }
 
-        public static IEnumerable<TestCaseData> AttributeTests()
+        public static IEnumerable<object[]> AttributeTests()
         {
-            return NUnitCasesBySuiteName("Attributes");
+            return TestCasesBySuiteName("Attributes");
         }
 
-        public static IEnumerable<TestCaseData> AttributesStructLayoutTests()
+        public static IEnumerable<object[]> AttributesStructLayoutTests()
         {
-            return NUnitCasesBySuiteName("Attributes.StructLayout");
+            return TestCasesBySuiteName("Attributes.StructLayout");
         }
 
-        public static IEnumerable<TestCaseData> BCLFeaturesTests()
+        public static IEnumerable<object[]> BCLFeaturesTests()
         {
-            return NUnitCasesBySuiteName("BCLFeatures");
+            return TestCasesBySuiteName("BCLFeatures");
         }
 
-        public static IEnumerable<TestCaseData> BasicTests()
+        public static IEnumerable<object[]> BasicTests()
         {
-            return NUnitCasesBySuiteName("Basic");
+            return TestCasesBySuiteName("Basic");
         }
 
-        public static IEnumerable<TestCaseData> CodegenAnnotationTests()
+        public static IEnumerable<object[]> CodegenAnnotationTests()
         {
-            return NUnitCasesBySuiteName("CodegenAnnotation");
+            return TestCasesBySuiteName("CodegenAnnotation");
         }
 
-        public static IEnumerable<TestCaseData> CommandLineTests()
+        public static IEnumerable<object[]> CommandLineTests()
         {
-            return NUnitCasesBySuiteName("CommandLine");
+            return TestCasesBySuiteName("CommandLine");
         }
 
-        public static IEnumerable<TestCaseData> ComponentModelTests()
+        public static IEnumerable<object[]> ComponentModelTests()
         {
-            return NUnitCasesBySuiteName("ComponentModel");
+            return TestCasesBySuiteName("ComponentModel");
         }
 
-        public static IEnumerable<TestCaseData> CoreLinkTests()
+        public static IEnumerable<object[]> CoreLinkTests()
         {
-            return NUnitCasesBySuiteName("CoreLink");
+            return TestCasesBySuiteName("CoreLink");
         }
 
-        public static IEnumerable<TestCaseData> CppCLITests()
+        public static IEnumerable<object[]> CppCLITests()
         {
-            return NUnitCasesBySuiteName("CppCLI");
+            return TestCasesBySuiteName("CppCLI");
         }
 
-        public static IEnumerable<TestCaseData> DataFlowTests()
+        public static IEnumerable<object[]> DataFlowTests()
         {
-            return NUnitCasesBySuiteName("DataFlow");
+            return TestCasesBySuiteName("DataFlow");
         }
 
-        public static IEnumerable<TestCaseData> DynamicDependenciesTests()
+        public static IEnumerable<object[]> DynamicDependenciesTests()
         {
-            return NUnitCasesBySuiteName("DynamicDependencies");
+            return TestCasesBySuiteName("DynamicDependencies");
         }
 
-        public static IEnumerable<TestCaseData> ExtensibilityTests()
+        public static IEnumerable<object[]> ExtensibilityTests()
         {
-            return NUnitCasesBySuiteName("Extensibility");
+            return TestCasesBySuiteName("Extensibility");
         }
 
-        public static IEnumerable<TestCaseData> FeatureSettingsTests()
+        public static IEnumerable<object[]> FeatureSettingsTests()
         {
-            return NUnitCasesBySuiteName("FeatureSettings");
+            return TestCasesBySuiteName("FeatureSettings");
         }
 
-        public static IEnumerable<TestCaseData> FunctionPointersTests()
+        public static IEnumerable<object[]> FunctionPointersTests()
         {
-            return NUnitCasesBySuiteName("FunctionPointers");
+            return TestCasesBySuiteName("FunctionPointers");
         }
 
-        public static IEnumerable<TestCaseData> GenericsTests()
+        public static IEnumerable<object[]> GenericsTests()
         {
-            return NUnitCasesBySuiteName("Generics");
+            return TestCasesBySuiteName("Generics");
         }
 
-        public static IEnumerable<TestCaseData> InheritanceAbstractClassTests()
+        public static IEnumerable<object[]> InheritanceAbstractClassTests()
         {
-            return NUnitCasesBySuiteName("Inheritance.AbstractClasses");
+            return TestCasesBySuiteName("Inheritance.AbstractClasses");
         }
 
-        public static IEnumerable<TestCaseData> InheritanceComplexTests()
+        public static IEnumerable<object[]> InheritanceComplexTests()
         {
-            return NUnitCasesBySuiteName("Inheritance.Complex");
+            return TestCasesBySuiteName("Inheritance.Complex");
         }
 
-        public static IEnumerable<TestCaseData> InheritanceInterfaceTests()
+        public static IEnumerable<object[]> InheritanceInterfaceTests()
         {
-            return NUnitCasesBySuiteName("Inheritance.Interfaces");
+            return TestCasesBySuiteName("Inheritance.Interfaces");
         }
 
-        public static IEnumerable<TestCaseData> InheritanceVirtualMethodsTests()
+        public static IEnumerable<object[]> InheritanceVirtualMethodsTests()
         {
-            return NUnitCasesBySuiteName("Inheritance.VirtualMethods");
+            return TestCasesBySuiteName("Inheritance.VirtualMethods");
         }
 
-        public static IEnumerable<TestCaseData> InlineArrayTests()
+        public static IEnumerable<object[]> InlineArrayTests()
         {
-            return NUnitCasesBySuiteName("InlineArrays");
+            return TestCasesBySuiteName("InlineArrays");
         }
 
-        public static IEnumerable<TestCaseData> InteropTests()
+        public static IEnumerable<object[]> InteropTests()
         {
-            return NUnitCasesBySuiteName("Interop");
+            return TestCasesBySuiteName("Interop");
         }
 
-        public static IEnumerable<TestCaseData> LibrariesTests()
+        public static IEnumerable<object[]> LibrariesTests()
         {
-            return NUnitCasesBySuiteName("Libraries");
+            return TestCasesBySuiteName("Libraries");
         }
 
-        public static IEnumerable<TestCaseData> LinkAttributesTests()
+        public static IEnumerable<object[]> LinkAttributesTests()
         {
-            return NUnitCasesBySuiteName("LinkAttributes");
+            return TestCasesBySuiteName("LinkAttributes");
         }
 
-        public static IEnumerable<TestCaseData> LoggingTests()
+        public static IEnumerable<object[]> LoggingTests()
         {
-            return NUnitCasesBySuiteName("Logging");
+            return TestCasesBySuiteName("Logging");
         }
 
-        public static IEnumerable<TestCaseData> PreserveDependenciesTests()
+        public static IEnumerable<object[]> PreserveDependenciesTests()
         {
-            return NUnitCasesBySuiteName("PreserveDependencies");
+            return TestCasesBySuiteName("PreserveDependencies");
         }
 
-        public static IEnumerable<TestCaseData> ReferencesTests()
+        public static IEnumerable<object[]> ReferencesTests()
         {
-            return NUnitCasesBySuiteName("References");
+            return TestCasesBySuiteName("References");
         }
 
-        public static IEnumerable<TestCaseData> ReflectionTests()
+        public static IEnumerable<object[]> ReflectionTests()
         {
-            return NUnitCasesBySuiteName("Reflection");
+            return TestCasesBySuiteName("Reflection");
         }
 
-        public static IEnumerable<TestCaseData> RequiresCapabilityTests()
+        public static IEnumerable<object[]> RequiresCapabilityTests()
         {
-            return NUnitCasesBySuiteName("RequiresCapability");
+            return TestCasesBySuiteName("RequiresCapability");
         }
 
-        public static IEnumerable<TestCaseData> ResourcesTests()
+        public static IEnumerable<object[]> ResourcesTests()
         {
-            return NUnitCasesBySuiteName("Resources");
+            return TestCasesBySuiteName("Resources");
         }
 
-        public static IEnumerable<TestCaseData> SealerTests()
+        public static IEnumerable<object[]> SealerTests()
         {
-            return NUnitCasesBySuiteName("Sealer");
+            return TestCasesBySuiteName("Sealer");
         }
 
-        public static IEnumerable<TestCaseData> SerializationTests()
+        public static IEnumerable<object[]> SerializationTests()
         {
-            return NUnitCasesBySuiteName("Serialization");
+            return TestCasesBySuiteName("Serialization");
         }
 
-        public static IEnumerable<TestCaseData> SingleFileTests()
+        public static IEnumerable<object[]> SingleFileTests()
         {
-            return NUnitCasesBySuiteName("SingleFile");
+            return TestCasesBySuiteName("SingleFile");
         }
 
-        public static IEnumerable<TestCaseData> StaticsTests()
+        public static IEnumerable<object[]> StaticsTests()
         {
-            return NUnitCasesBySuiteName("Statics");
+            return TestCasesBySuiteName("Statics");
         }
 
-        public static IEnumerable<TestCaseData> SubstitutionsTests()
+        public static IEnumerable<object[]> SubstitutionsTests()
         {
-            return NUnitCasesBySuiteName("Substitutions");
+            return TestCasesBySuiteName("Substitutions");
         }
 
-        public static IEnumerable<TestCaseData> SymbolsTests()
+        public static IEnumerable<object[]> SymbolsTests()
         {
-            return NUnitCasesBySuiteName("Symbols");
+            return TestCasesBySuiteName("Symbols");
         }
 
-        public static IEnumerable<TestCaseData> TestFrameworkTests()
+        public static IEnumerable<object[]> TestFrameworkTests()
         {
-            return NUnitCasesBySuiteName("TestFramework");
+            return TestCasesBySuiteName("TestFramework");
         }
 
-        public static IEnumerable<TestCaseData> TopLevelStatementsTests()
+        public static IEnumerable<object[]> TopLevelStatementsTests()
         {
-            return NUnitCasesBySuiteName("TopLevelStatements");
+            return TestCasesBySuiteName("TopLevelStatements");
         }
 
-        public static IEnumerable<TestCaseData> TracingTests()
+        public static IEnumerable<object[]> TracingTests()
         {
-            return NUnitCasesBySuiteName("Tracing");
+            return TestCasesBySuiteName("Tracing");
         }
 
-        public static IEnumerable<TestCaseData> TypeForwardingTests()
+        public static IEnumerable<object[]> TypeForwardingTests()
         {
-            return NUnitCasesBySuiteName("TypeForwarding");
+            return TestCasesBySuiteName("TypeForwarding");
         }
 
-        public static IEnumerable<TestCaseData> UnreachableBlockTests()
+        public static IEnumerable<object[]> UnreachableBlockTests()
         {
-            return NUnitCasesBySuiteName("UnreachableBlock");
+            return TestCasesBySuiteName("UnreachableBlock");
         }
 
-        public static IEnumerable<TestCaseData> UnreachableBodyTests()
+        public static IEnumerable<object[]> UnreachableBodyTests()
         {
-            return NUnitCasesBySuiteName("UnreachableBody");
+            return TestCasesBySuiteName("UnreachableBody");
         }
 
-        public static IEnumerable<TestCaseData> WarningsTests()
+        public static IEnumerable<object[]> WarningsTests()
         {
-            return NUnitCasesBySuiteName("Warnings");
+            return TestCasesBySuiteName("Warnings");
         }
 
-        public static IEnumerable<TestCaseData> XmlTests()
+        public static IEnumerable<object[]> XmlTests()
         {
-            return NUnitCasesBySuiteName("LinkXml");
+            return TestCasesBySuiteName("LinkXml");
         }
 
-        public static IEnumerable<TestCaseData> LinqExpressionsTests()
+        public static IEnumerable<object[]> LinqExpressionsTests()
         {
-            return NUnitCasesBySuiteName("LinqExpressions");
+            return TestCasesBySuiteName("LinqExpressions");
         }
 
-        public static IEnumerable<TestCaseData> MetadataTests()
+        public static IEnumerable<object[]> MetadataTests()
         {
-            return NUnitCasesBySuiteName("Metadata");
+            return TestCasesBySuiteName("Metadata");
         }
 
         public static TestCaseCollector CreateCollector()
@@ -274,19 +273,12 @@ namespace Mono.Linker.Tests.TestCases
             return _cachedAllCases;
         }
 
-        static IEnumerable<TestCaseData> NUnitCasesBySuiteName(string suiteName)
+        static IEnumerable<object[]> TestCasesBySuiteName(string suiteName)
         {
             return AllCases()
                 .Where(c => c.TestSuiteDirectory.FileName == suiteName)
-                .Select(c => CreateNUnitTestCase(c, c.DisplayName))
-                .OrderBy(c => c.TestName);
-        }
-
-        static TestCaseData CreateNUnitTestCase(TestCase testCase, string displayName)
-        {
-            var data = new TestCaseData(testCase);
-            data.SetName(displayName);
-            return data;
+                .Select(c => new object[] { c })
+                .OrderBy(c => ((TestCase)c[0]).DisplayName);
         }
 
         static void GetDirectoryPaths(out string rootSourceDirectory, out string testCaseAssemblyRoot)

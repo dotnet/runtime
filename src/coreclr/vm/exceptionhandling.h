@@ -59,6 +59,7 @@ enum EHFuncletType
 // These values are or-ed into the InlinedCallFrame::m_Datum field.
 // The bit 0 is used for unrelated purposes (see comments on the
 // InlinedCallFrame::m_Datum field for details).
+// [cDAC] [StackWalk]: Contract depends on these values.
 enum class InlinedCallFrameMarker
 {
 #ifdef HOST_64BIT
@@ -86,6 +87,11 @@ public:
         *pResumeIP = m_resumeIP;
     }
 };
+
+#ifndef HOST_WASM
+VOID DECLSPEC_NORETURN RethrowResumeAfterCatchExceptionSkipManagedFrames(const ResumeAfterCatchException& ex, CONTEXT *pContext, TADDR ssp);
+#endif // HOST_WASM
+
 #endif // FEATURE_INTERPRETER
 
 void DECLSPEC_NORETURN ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t targetSSP, size_t arg1 = 0, size_t arg2 = 0);

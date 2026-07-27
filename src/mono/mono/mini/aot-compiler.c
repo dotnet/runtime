@@ -4545,7 +4545,7 @@ get_runtime_invoke (MonoAotCompile *acfg, MonoMethod *method, gboolean virtual_)
 }
 
 static gboolean
-can_marshal_struct (MonoClass *klass)
+can_marshal_struct_internal (MonoClass *klass, int depth)
 {
 	MonoClassField *field;
 	gboolean can_marshal = TRUE;
@@ -4553,6 +4553,15 @@ can_marshal_struct (MonoClass *klass)
 	MonoMarshalType *info;
 
 	if (mono_class_is_auto_layout (klass))
+		return FALSE;
+
+	/*
+	 * Guard against runaway recursion for self-referential or cyclic layout types: a
+	 * reference-class field can point back to its declaring class, directly or indirectly.
+	 * Such a type cannot be marshalled as a flat struct anyway, so treat it as
+	 * non-marshalable instead of overflowing the stack.
+	 */
+	if (depth > 32)
 		return FALSE;
 
 	info = mono_marshal_load_type_info (klass);
@@ -4581,7 +4590,17 @@ can_marshal_struct (MonoClass *klass)
 		case MONO_TYPE_STRING:
 			break;
 		case MONO_TYPE_VALUETYPE:
-			if (!m_class_is_enumtype (mono_class_from_mono_type_internal (field->type)) && !can_marshal_struct (mono_class_from_mono_type_internal (field->type)))
+			if (!m_class_is_enumtype (mono_class_from_mono_type_internal (field->type)) && !can_marshal_struct_internal (mono_class_from_mono_type_internal (field->type), depth + 1))
+				can_marshal = FALSE;
+			break;
+		case MONO_TYPE_CLASS:
+			/*
+			 * A field whose type is a non-auto-layout (sequential/explicit) class is marshalled
+			 * as an embedded struct, the same way the runtime marshalling code handles it. Allow it
+			 * if the nested class is itself marshalable; otherwise the StructureToPtr/PtrToStructure
+			 * wrappers are not AOT compiled and full-AOT fails with a JIT-in-aot-only error.
+			 */
+			if (!can_marshal_struct_internal (mono_class_from_mono_type_internal (field->type), depth + 1))
 				can_marshal = FALSE;
 			break;
 		case MONO_TYPE_SZARRAY: {
@@ -4609,6 +4628,12 @@ can_marshal_struct (MonoClass *klass)
 		return TRUE;
 
 	return can_marshal;
+}
+
+static gboolean
+can_marshal_struct (MonoClass *klass)
+{
+	return can_marshal_struct_internal (klass, 0);
 }
 
 /* Create a ref shared instantiation */
@@ -5790,6 +5815,36 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 		 * for example Array.Resize<int> for List<int>.Add ().
 		 */
 		add_extra_method_with_depth (acfg, method, depth + 1);
+	}
+
+	/*
+	 * Minimal gsharedvt used by llvmonly cannot compile shared methods whose
+	 * signatures contain variable-size value types. Nullable<T>.Box/Unbox have
+	 * such signatures, so their shared implementations are unavailable.
+	 *
+	 * The runtime consequently resolves these helpers to concrete methods and
+	 * adapts gsharedvt callers with out wrappers. Those wrappers are generated
+	 * when the concrete methods are AOT-compiled, while the generic-class scan
+	 * normally skips these methods because they are otherwise sharable.
+	 * Explicitly add the concrete helpers to cover this llvmonly-specific gap.
+	 *
+	 * The rgctx unbox entry (MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX) always resolves
+	 * Unbox, so add Box and Unbox unconditionally; enum-backed Nullable<T> is
+	 * additionally unboxed via UnboxExact from the statically-typed IL lowering
+	 * (handle_unbox_nullable), so add that too.
+	 */
+	if (acfg->aot_opts.llvm_only && mono_class_is_nullable (klass)) {
+		MonoMethod *box = try_get_method_nofail (klass, "Box", 1, 0);
+		if (box)
+			add_extra_method_with_depth (acfg, box, depth + 1);
+		MonoMethod *unbox = try_get_method_nofail (klass, "Unbox", 1, 0);
+		if (unbox)
+			add_extra_method_with_depth (acfg, unbox, depth + 1);
+		if (m_class_is_enumtype (mono_class_get_nullable_param_internal (klass))) {
+			MonoMethod *unbox_exact = try_get_method_nofail (klass, "UnboxExact", 1, 0);
+			if (unbox_exact)
+				add_extra_method_with_depth (acfg, unbox_exact, depth + 1);
+		}
 	}
 
 	iter = NULL;

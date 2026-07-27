@@ -2,6 +2,8 @@
   <PropertyGroup>
     <AssemblyName>System.Threading.ThreadPool</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- https://github.com/dotnet/dotnet/issues/5640 -->
+    <NoWarn>$(NoWarn);CS9368</NoWarn>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- tell references.targets to bump the assembly file version -->
     <IsExperimentalRefAssembly>true</IsExperimentalRefAssembly>

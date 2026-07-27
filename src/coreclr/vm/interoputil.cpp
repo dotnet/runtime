@@ -1333,15 +1333,14 @@ void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie)
 // has been aggregated
 ComCallWrapper* GetCCWFromIUnknown(IUnknown* pUnk, BOOL bEnableCustomization)
 {
-    CONTRACT (ComCallWrapper*)
+    CONTRACTL
     {
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pUnk));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ComCallWrapper* pWrap = MapIUnknownToWrapper(pUnk);
     if (pWrap != NULL)
@@ -1353,7 +1352,7 @@ ComCallWrapper* GetCCWFromIUnknown(IUnknown* pUnk, BOOL bEnableCustomization)
         }
     }
 
-    RETURN pWrap;
+    return pWrap;
 }
 
 HRESULT LoadRegTypeLib(_In_ REFGUID guid,
@@ -2957,44 +2956,34 @@ static void DoIUInvokeDispMethod(IDispatchEx* pDispEx, IDispatch* pDisp, DISPID 
     GCPROTECT_END();
 }
 
-
-FORCEINLINE void DispParamHolderRelease(VARIANT* value)
+struct DispParamHolderTraits final
 {
-    CONTRACTL
+    using Type = VARIANT*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
 
-    if (value)
-    {
-       if (V_VT(value) & VT_BYREF)
-       {
-           VariantHolder TmpVar;
-           OleVariant::ExtractContentsFromByrefVariant(value, &TmpVar);
-       }
+        if (value)
+        {
+            if (V_VT(value) & VT_BYREF)
+            {
+                VariantHolder TmpVar;
+                OleVariant::ExtractContentsFromByrefVariant(value, &TmpVar);
+            }
 
-       SafeVariantClear(value);
-    }
-}
-
-class DispParamHolder : public Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>
-{
-public:
-    DispParamHolder(VARIANT* p = NULL)
-        : Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>(p)
-    {
-        WRAPPER_NO_CONTRACT;
-    }
-
-    FORCEINLINE void operator=(VARIANT* p)
-    {
-        WRAPPER_NO_CONTRACT;
-        Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>::operator=(p);
+            SafeVariantClear(value);
+        }
     }
 };
+
+using DispParamHolder = LifetimeHolder<DispParamHolderTraits>;
 
 //--------------------------------------------------------------------------------
 // This methods converts an IEnumVARIANT to a managed IEnumerator.
@@ -3055,10 +3044,10 @@ void IUInvokeDispMethod(
     DISPID              MemberID            = 0;
     ByrefArgumentInfo*  aByrefArgInfos      = NULL;
     BOOL                bSomeArgsAreByref   = FALSE;
-    SafeComHolder<IUnknown> pUnk            = NULL;
-    SafeComHolder<IDispatch> pDisp          = NULL;
-    SafeComHolder<IDispatchEx> pDispEx      = NULL;
-    VariantPtrHolder    pVarResult          = NULL;
+    ComHolderAnyMode<IUnknown> pUnk;
+    ComHolderAnyMode<IDispatch> pDisp;
+    ComHolderAnyMode<IDispatchEx> pDispEx;
+    VariantPtrHolder    pVarResult;
     NewArrayHolder<DispParamHolder> params  = NULL;
 
     //
@@ -3153,17 +3142,17 @@ void IUInvokeDispMethod(
         // we will not correctly detect that the user did something wrong and will crash.
         // This is a known issue with no solution.
         // Our check here is best effort to catch the simple case where a user may make a mistake.
-        SafeComHolder<IUnknown> pInvokedMTUnknown = ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT);
+        ComHolderAnyMode<IUnknown> pInvokedMTUnknown{ ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT) };
 
         // QI for IDispatch to catch the simple error case (COM object has no IDispatch but pInvokedMT is specified as a dispatch or dual interface)
-        SafeComHolder<IUnknown> pCanonicalDisp;
+        ComHolderAnyMode<IUnknown> pCanonicalDisp;
         hr = SafeQueryInterface(pInvokedMTUnknown, IID_IDispatch, &pCanonicalDisp);
         if (FAILED(hr))
             COMPlusThrow(kTargetException, W("TargetInvocation_TargetDoesNotImplementIDispatch"));
 
         _ASSERTE(IsDispatchBasedItf(pInvokedMT->GetComInterfaceType()));
         // Extract the IDispatch pointer that is associated with pInvokedMT specifically.
-        pDisp = (IDispatch*)pInvokedMTUnknown.Extract();
+        pDisp = (IDispatch*)pInvokedMTUnknown.Detach();
     }
     else
     {
@@ -3653,7 +3642,7 @@ void GetComClassFromCLSID(REFCLSID clsid, _In_opt_z_ PCWSTR wszServer, OBJECTREF
 // if not set one up
 ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
 {
-    CONTRACT (ClassFactoryBase*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -3661,9 +3650,8 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
         INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(CheckPointer(pClassMT));
         PRECONDITION(pClassMT->IsComObjectType());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Work our way up the hierarchy until we find the first COM import type.
     while (!pClassMT->IsComImport())
@@ -3699,7 +3687,7 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
         pClsFac = pNewFactory.Extract();
     }
 
-    RETURN pClsFac;
+    return pClsFac;
 }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
@@ -3719,7 +3707,6 @@ void InitializeComInterop()
     }
     CONTRACTL_END;
 
-    ComCall::Init();
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();
 #ifdef _DEBUG
@@ -3935,7 +3922,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
 
     LPVOID              pCurrCtx    = NULL;
     HRESULT             hr          = S_OK;
-    SafeComHolder<IUnknown> pUnk        = NULL;
+    ComHolderAnyMode<IUnknown> pUnk;
     CHAR                szIID[MINIPAL_GUID_BUFFER_LEN];
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
@@ -3982,7 +3969,7 @@ VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, _In_z_ LPCSTR szMsg)
 
     LPVOID              pCurrCtx    = NULL;
     HRESULT             hr          = S_OK;
-    SafeComHolder<IUnknown> pUnk        = NULL;
+    ComHolderAnyMode<IUnknown> pUnk;
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
 

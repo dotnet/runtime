@@ -3,26 +3,17 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class CodeHeapListNode : IData<CodeHeapListNode>
+[CdacType(nameof(DataType.CodeHeapListNode))]
+internal sealed partial class CodeHeapListNode : IData<CodeHeapListNode>
 {
-    static CodeHeapListNode IData<CodeHeapListNode>.Create(Target target, TargetPointer address)
-        => new CodeHeapListNode(target, address);
+    [Field] public partial TargetPointer Next { get; }
+    [Field] public partial TargetPointer StartAddress { get; }
+    [Field] public partial TargetPointer EndAddress { get; }
+    [Field] public partial TargetPointer MapBase { get; }
+    [Field] public partial TargetPointer HeaderMap { get; }
+    [Field] public partial TargetPointer Heap { get; }
 
-    public CodeHeapListNode(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.CodeHeapListNode);
-        Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
-        StartAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(StartAddress)].Offset);
-        EndAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(EndAddress)].Offset);
-        MapBase = target.ReadPointer(address + (ulong)type.Fields[nameof(MapBase)].Offset);
-        HeaderMap = target.ReadPointer(address + (ulong)type.Fields[nameof(HeaderMap)].Offset);
-    }
-
-    public TargetPointer Next { get; init; }
-    public TargetPointer StartAddress { get; init; }
-    public TargetPointer EndAddress { get; init; }
-
-    public TargetPointer MapBase { get; init; }
-
-    public TargetPointer HeaderMap { get; init; }
+    // 64-bit only: jump thunk to the personality routine. Used as the module base
+    // when matching a dynamic function table's minimum address.
+    [Field] public partial TargetPointer? CLRPersonalityRoutine { get; }
 }

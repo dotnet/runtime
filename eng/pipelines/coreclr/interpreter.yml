@@ -35,6 +35,7 @@ extends:
           - osx_arm64
           jobParameters:
             buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
+            timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -63,7 +64,7 @@ extends:
           testGroup: outerloop
 
       #
-      # Checked JIT test runs
+      # Checked Interpreter test runs
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -78,6 +79,11 @@ extends:
           - osx_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          variables:
+            - name: timeoutPerTestInMinutes
+              value: 20
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
           jobParameters:
             testGroup: outerloop
             runInterpreter: true

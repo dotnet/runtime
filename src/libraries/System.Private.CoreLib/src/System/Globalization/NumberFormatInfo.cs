@@ -798,7 +798,7 @@ namespace System.Globalization
             return info;
         }
 
-        // private const NumberStyles InvalidNumberStyles = unchecked((NumberStyles) 0xFFFFFC00);
+        // private const NumberStyles InvalidNumberStyles = unchecked((NumberStyles) 0xFFFFF800);
         private const NumberStyles InvalidNumberStyles = ~(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite
                                                            | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign
                                                            | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint
@@ -844,6 +844,18 @@ namespace System.Globalization
                         SR.Arg_InvalidHexFloatStyle,
                         nameof(style));
                 }
+            }
+        }
+
+        internal static void ValidateParseStyleDecimal(NumberStyles style)
+        {
+            // Check for undefined flags or hex/binary specifiers.
+            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0)
+            {
+                ThrowInvalid(style);
+
+                static void ThrowInvalid(NumberStyles value) =>
+                    throw new ArgumentException((value & InvalidNumberStyles) != 0 ? SR.Argument_InvalidNumberStyles : SR.Arg_HexBinaryStylesNotSupported, nameof(style));
             }
         }
     }

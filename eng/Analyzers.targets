@@ -29,4 +29,16 @@
     <EditorConfigFiles Remove="$(RepositoryEngineeringDir)CodeAnalysis.src.globalconfig" />
     <EditorConfigFiles Include="$(RepositoryEngineeringDir)CodeAnalysis.test.globalconfig" />
   </ItemGroup>
+
+  <!-- PlatformDocAnalyzer: Enforce documentation conventions for platform-specific libraries.
+       Opt-in via EnablePlatformDocAnalyzer; src/libraries enables this by default for src projects. -->
+  <ItemGroup Condition="'$(EnablePlatformDocAnalyzer)' == 'true' and '$(MSBuildProjectExtension)' == '.csproj' and '$(RunAnalyzers)' != 'false'">
+    <ProjectReference Include="$(RepositoryEngineeringDir)analyzers\PlatformDocAnalyzer\PlatformDocAnalyzer.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)" />
+  </ItemGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)analyzers\PlatformDocAnalyzer\PlatformDocAnalyzer.props"
+          Condition="'$(EnablePlatformDocAnalyzer)' == 'true' and '$(MSBuildProjectExtension)' == '.csproj' and '$(RunAnalyzers)' != 'false'" />
 </Project>

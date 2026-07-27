@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Metadata;
 
 using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysisFramework;
@@ -11,6 +13,7 @@ using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 using EcmaMethod = Internal.TypeSystem.Ecma.EcmaMethod;
+using EcmaType = Internal.TypeSystem.Ecma.EcmaType;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -84,6 +87,38 @@ namespace ILCompiler.DependencyAnalysis
                     || owningType.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute"))
                 {
                     dependencies.Add(factory.AnalysisCharacteristic("StackTraceHiddenMetadataPresent"), "Method is StackTraceHidden");
+                }
+
+                // If this method is a property or event accessor, ensure metadata for the associated
+                // property or event is generated as well. Properties/events are not modeled as first-class
+                // entities in the type system, so we discover them here from their accessors.
+                // As a performance optimization, only SpecialName methods can be accessors.
+                if ((_method.Attributes & MethodAttributes.SpecialName) != 0)
+                {
+                    MetadataReader reader = _method.MetadataReader;
+                    MethodDefinitionHandle methodHandle = _method.Handle;
+                    TypeDefinition declaringType = reader.GetTypeDefinition(reader.GetMethodDefinition(methodHandle).GetDeclaringType());
+                    foreach (PropertyDefinitionHandle propertyHandle in declaringType.GetProperties())
+                    {
+                        PropertyAccessors accessors = reader.GetPropertyDefinition(propertyHandle).GetAccessors();
+                        if (accessors.Getter == methodHandle || accessors.Setter == methodHandle)
+                        {
+                            dependencies.Add(
+                                factory.PropertyMetadata(new PropertyPseudoDesc((EcmaType)owningType, propertyHandle)),
+                                "Property associated with reflectable accessor");
+                        }
+                    }
+
+                    foreach (EventDefinitionHandle eventHandle in declaringType.GetEvents())
+                    {
+                        EventAccessors accessors = reader.GetEventDefinition(eventHandle).GetAccessors();
+                        if (accessors.Adder == methodHandle || accessors.Remover == methodHandle || accessors.Raiser == methodHandle)
+                        {
+                            dependencies.Add(
+                                factory.EventMetadata(new EventPseudoDesc((EcmaType)owningType, eventHandle)),
+                                "Event associated with reflectable accessor");
+                        }
+                    }
                 }
             }
 

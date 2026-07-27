@@ -31,9 +31,6 @@ namespace ILLink.RoslynAnalyzer
             builder.Add(new RequiresAssemblyFilesAnalyzer());
             builder.Add(new RequiresUnreferencedCodeAnalyzer());
             builder.Add(new RequiresDynamicCodeAnalyzer());
-#if DEBUG
-            builder.Add(new RequiresUnsafeAnalyzer());
-#endif
             return builder.ToImmutable();
         }
 
@@ -134,7 +131,7 @@ namespace ILLink.RoslynAnalyzer
                 });
 
                 // Remaining actions are only for DynamicallyAccessedMembers analysis.
-                if (!dataFlowAnalyzerContext.EnableTrimAnalyzer)
+                if (dataFlowAnalyzerContext.TrimAnalyzer is null)
                     return;
 
                 // Examine generic instantiations in base types and interface list
@@ -150,9 +147,7 @@ namespace ILLink.RoslynAnalyzer
                     var location = GetPrimaryLocation(type.Locations);
 
                     var typeNameResolver = new TypeNameResolver(context.Compilation);
-                    var genericArgumentDataFlow = new GenericArgumentDataFlow(dataFlowAnalyzerContext, FeatureContext.None, typeNameResolver, type, location, context.ReportDiagnostic);
-                    if (type.BaseType is INamedTypeSymbol baseType)
-                        genericArgumentDataFlow.ProcessGenericArgumentDataFlow(baseType);
+                    var genericArgumentDataFlow = new GenericArgumentDataFlow(dataFlowAnalyzerContext.TrimAnalyzer, FeatureContext.None, typeNameResolver, type, location, context.ReportDiagnostic);
 
                     foreach (var interfaceType in type.Interfaces)
                         genericArgumentDataFlow.ProcessGenericArgumentDataFlow(interfaceType);

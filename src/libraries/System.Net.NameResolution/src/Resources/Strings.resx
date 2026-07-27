@@ -72,7 +72,22 @@
   <data name="net_invalid_ip_addr" xml:space="preserve">
     <value>IPv4 address 0.0.0.0 and IPv6 address ::0 are unspecified addresses that cannot be used as a target address.</value>
   </data>
+  <data name="net_hostname_invalid_character" xml:space="preserve">
+    <value>The host name contains an invalid character.</value>
+  </data>
   <data name="SystemNetNameResolution_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.NameResolution is not supported on this platform.</value>
+  </data>
+  <data name="net_dns_custom_port_not_supported" xml:space="preserve">
+    <value>Specifying a custom DNS server port is not supported on this platform; only the default DNS port (53) can be used.</value>
+  </data>
+  <data name="net_dns_mixed_address_families" xml:space="preserve">
+    <value>All DNS server endpoints must belong to the same address family.</value>
+  </data>
+  <data name="net_dns_servers_contains_null" xml:space="preserve">
+    <value>The DNS server list must not contain null entries.</value>
+  </data>
+  <data name="net_dns_unsupported_address_family" xml:space="preserve">
+    <value>Only the InterNetwork and InterNetworkV6 address families are supported.</value>
   </data>
 </root>

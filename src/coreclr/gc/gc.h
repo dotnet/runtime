@@ -30,7 +30,7 @@ Module Name:
 #endif // BUILD_AS_STANDALONE
 #include "gcconfig.h"
 
-#include "cdacdata.h"
+#include "../inc/cdacdata.h"
 
 /*
  * Promotion Function Prototypes

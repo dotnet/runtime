@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using Internal.Text;
+
 namespace Internal.TypeSystem
 {
     public static class TypeSystemHelpers
@@ -431,12 +433,22 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        public static ReadOnlySpan<T> Append<T>(this ReadOnlySpan<T> s1, ReadOnlySpan<T> s2)
+        public static ReadOnlySpan<byte> Append(this Utf8Span s1, Utf8Span s2)
         {
-            Span<T> buffer = new T[s1.Length + s2.Length];
+            Span<byte> buffer = new byte[s1.Length + s2.Length];
+
+            s1.AsSpan().CopyTo(buffer);
+            s2.AsSpan().CopyTo(buffer.Slice(s1.Length));
+
+            return buffer;
+        }
+
+        public static ReadOnlySpan<byte> Append(this ReadOnlySpan<byte> s1, Utf8Span s2)
+        {
+            Span<byte> buffer = new byte[s1.Length + s2.Length];
 
             s1.CopyTo(buffer);
-            s2.CopyTo(buffer.Slice(s1.Length));
+            s2.AsSpan().CopyTo(buffer.Slice(s1.Length));
 
             return buffer;
         }
@@ -452,16 +464,30 @@ namespace Internal.TypeSystem
             return buffer;
         }
 
-        public static ReadOnlySpan<byte> Append(this ReadOnlySpan<byte> s1, ReadOnlySpan<byte> s2, ReadOnlySpan<byte> s3, uint i)
+        public static ReadOnlySpan<byte> Append(this Utf8Span s1, Utf8Span s2, Utf8Span s3)
+        {
+            ReadOnlySpan<byte> s1Span = s1.AsSpan();
+            ReadOnlySpan<byte> s2Span = s2.AsSpan();
+            ReadOnlySpan<byte> s3Span = s3.AsSpan();
+            Span<byte> buffer = new byte[s1Span.Length + s2Span.Length + s3Span.Length];
+
+            s1Span.CopyTo(buffer);
+            s2Span.CopyTo(buffer.Slice(s1Span.Length));
+            s3Span.CopyTo(buffer.Slice(s1Span.Length + s2Span.Length));
+
+            return buffer;
+        }
+
+        public static ReadOnlySpan<byte> Append(this Utf8Span s1, Utf8Span s2, Utf8Span s3, uint i)
         {
             Span<byte> s4 = stackalloc byte[16];
             System.Buffers.Text.Utf8Formatter.TryFormat(i, s4, out int s4length);
 
             Span<byte> buffer = new byte[s1.Length + s2.Length + s3.Length + s4length];
 
-            s1.CopyTo(buffer);
-            s2.CopyTo(buffer.Slice(s1.Length));
-            s3.CopyTo(buffer.Slice(s1.Length + s2.Length));
+            s1.AsSpan().CopyTo(buffer);
+            s2.AsSpan().CopyTo(buffer.Slice(s1.Length));
+            s3.AsSpan().CopyTo(buffer.Slice(s1.Length + s2.Length));
             s4.Slice(0, s4length).CopyTo(buffer.Slice(s1.Length + s2.Length + s3.Length));
 
             return buffer;

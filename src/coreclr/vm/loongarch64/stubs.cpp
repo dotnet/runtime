@@ -14,9 +14,7 @@
 #include "jitinterface.h"
 #include "ecall.h"
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------
@@ -82,11 +80,11 @@ class BranchInstructionFormat : public InstructionFormat
             if (fExternal)
             {
                 // Note that the parameter 'offset' is not an offset but the target address itself (when fExternal is true)
-                return (refSize == InstructionFormat::k64);
+                return refSize == InstructionFormat::k64;
             }
             else
             {
-                return ((offset >= -0x80000000L && offset <= 0x7fffffff) || (refSize == InstructionFormat::k64));
+                return (offset >= -0x80000000L && offset <= 0x7fffffff) || (refSize == InstructionFormat::k64);
             }
         }
 
@@ -273,7 +271,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     // copy the callee saved regs
     CalleeSavedRegisters *pCalleeSaved = GetCalleeSavedRegisters();
@@ -307,10 +304,10 @@ void InterpreterFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, 
     UINT64 *pCalleeSavedFloats = (UINT64*)((BYTE*)pTransitionBlock - 128);
 
     // LoongArch CONTEXT::F has 4 slots per register for LASX support.
-    // Each scalar double value is stored in the first slot.
+    // Scalar double value is stored in the first 8 * 32.
     for (int i = 0; i < 8; i++)
     {
-        memcpy(&pRD->pCurrentContext->F[(24 + i) * 4], &pCalleeSavedFloats[i], sizeof(double));
+        memcpy(&pRD->pCurrentContext->F[24 + i], &pCalleeSavedFloats[i], sizeof(double));
     }
 }
 #endif // DACCESS_COMPILE
@@ -352,14 +349,13 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -369,7 +365,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!InlinedCallFrame::FrameHasActiveCall(this))
     {
@@ -385,7 +381,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;
 
     pRD->pCurrentContext->Pc = *(DWORD64 *)&m_pCallerReturnAddress;
     pRD->pCurrentContext->Sp = *(DWORD64 *)&m_pCallSiteSP;
@@ -414,8 +409,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     pRD->pCurrentContextPointers->Fp = &m_pCalleeSavedFP;
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    RETURN;
 }
 
 #ifdef FEATURE_HIJACK
@@ -427,14 +420,14 @@ TADDR ResumableFrame::GetReturnAddressPtr_Impl(void)
 
 void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CopyMemory(pRD->pCurrentContext, m_Regs, sizeof(T_CONTEXT));
 
@@ -474,11 +467,8 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     pRD->volatileCurrContextPointers.X0 = &m_Regs->X0;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    RETURN;
 }
 
 void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -486,7 +476,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     LIMITED_METHOD_CONTRACT;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;
 
     pRD->pCurrentContext->Pc = m_ReturnAddress;
     size_t s = sizeof(struct HijackArgs);
@@ -531,43 +520,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 #endif // FEATURE_HIJACK
-
-#ifdef FEATURE_COMINTEROP
-
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-
-{
-    WRAPPER_NO_CONTRACT;
-
-    // pcaddi  $r21,0
-	// ld.d  $t2, label_comCallMethodDesc
-	// ld.d  $r21, label_target
-	// jirl  $r0,$r21,0
-	// label_target:
-    // target address (8 bytes)
-    // label_comCallMethodDesc:
-    DWORD rgCode[] = {
-        0x0,
-        0x0,
-        0x0
-    };
-
-    _ASSERTE(!"LOONGARCH64: not implementation on loongarch64!!!");
-
-    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
-    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
-
-    memcpy(pBufferRW, rgCode, sizeof(rgCode));
-    *((PCODE*)(pBufferRW + sizeof(rgCode) + 4)) = target;
-
-    // Ensure that the updated instructions get actually written
-    ClrFlushInstructionCache(pBufferRX, COMMETHOD_CALL_PRESTUB_SIZE);
-
-    _ASSERTE(IS_ALIGNED(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
-             *((PCODE*)(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == target);
-}
-#endif // FEATURE_COMINTEROP
-
 
 #if !defined(DACCESS_COMPILE)
 EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
@@ -825,13 +777,13 @@ void StubLinkerCPU::Init()
 static bool InRegister(UINT16 ofs)
 {
     _ASSERTE(ofs != ShuffleEntry::SENTINEL);
-    return (ofs & ShuffleEntry::REGMASK);
+    return ofs & ShuffleEntry::REGMASK;
 }
 
 static bool IsRegisterFloating(UINT16 ofs)
 {
     _ASSERTE(InRegister(ofs));
-    return (ofs & ShuffleEntry::FPREGMASK);
+    return ofs & ShuffleEntry::FPREGMASK;
 }
 
 static int GetRegister(UINT16 ofs)
@@ -1003,13 +955,9 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
 
-#ifdef FEATURE_PERFMAP
 #define BEGIN_DYNAMIC_HELPER_EMIT(size) \
     BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
-#else
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size)
-#endif
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \

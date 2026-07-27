@@ -40,4 +40,8 @@ internal class LoongArch64GCInfoTraits : IGCInfoTraits
     public static int NUM_INTERRUPTIBLE_RANGES_ENCBASE => 1;
 
     public static bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA => true;
+
+    // LoongArch64 scratch registers: RA (reg 1), A0-A7 (4-11), T0-T8 (12-21)
+    // See gcinfodecoder.cpp IsScratchRegister for TARGET_LOONGARCH64
+    public static bool IsScratchRegister(uint regNum) => regNum == 1 || (regNum >= 4 && regNum <= 21);
 }

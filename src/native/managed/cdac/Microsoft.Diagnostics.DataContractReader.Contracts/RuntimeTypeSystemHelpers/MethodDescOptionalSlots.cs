@@ -4,8 +4,8 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
-// Non-vtable slot, native code slot, and MethodImpl slots are stored after the MethodDesc itself, packed tightly
-// in the order: [non-vtable; method impl; native code].
+// Optional slots are stored after the MethodDesc itself, packed tightly
+// in the order: [non-vtable; method impl; native code; async method data].
 internal static class MethodDescOptionalSlots
 {
     internal static bool HasNonVtableSlot(ushort flags)
@@ -16,6 +16,9 @@ internal static class MethodDescOptionalSlots
 
     internal static bool HasNativeCodeSlot(ushort flags)
         => (flags & (ushort)MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot) != 0;
+
+    internal static bool HasAsyncMethodData(ushort flags)
+        => (flags & (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData) != 0;
 
     internal static TargetPointer GetAddressOfNonVtableSlot(TargetPointer methodDesc, MethodClassification classification, ushort flags, Target target)
     {
@@ -31,6 +34,13 @@ internal static class MethodDescOptionalSlots
         return methodDesc + offset;
     }
 
+    internal static TargetPointer GetAddressOfAsyncMethodData(TargetPointer methodDesc, MethodClassification classification, ushort flags, Target target)
+    {
+        uint offset = StartOffset(classification, target);
+        offset += AsyncMethodDataOffset(flags, target);
+        return methodDesc + offset;
+    }
+
     // Offset from the MethodDesc address to the start of its optional slots
     private static uint StartOffset(MethodClassification classification, Target target)
     {
@@ -43,19 +53,18 @@ internal static class MethodDescOptionalSlots
         // sizeof(InstantiatedMethodDesc),     mcInstantiated
         // sizeof(CLRToCOMCallMethodDesc),     mcComInterOp
         // sizeof(DynamicMethodDesc)           mcDynamic
-        DataType type = classification switch
+        return classification switch
         {
-            MethodClassification.IL => DataType.MethodDesc,
-            MethodClassification.FCall => DataType.FCallMethodDesc,
-            MethodClassification.PInvoke => DataType.PInvokeMethodDesc,
-            MethodClassification.EEImpl => DataType.EEImplMethodDesc,
-            MethodClassification.Array => DataType.ArrayMethodDesc,
-            MethodClassification.Instantiated => DataType.InstantiatedMethodDesc,
-            MethodClassification.ComInterop => DataType.CLRToCOMCallMethodDesc,
-            MethodClassification.Dynamic => DataType.DynamicMethodDesc,
+            MethodClassification.IL => Data.MethodDesc.GetSize(target),
+            MethodClassification.FCall => Data.FCallMethodDesc.GetSize(target),
+            MethodClassification.PInvoke => Data.PInvokeMethodDesc.GetSize(target),
+            MethodClassification.EEImpl => Data.EEImplMethodDesc.GetSize(target),
+            MethodClassification.Array => Data.ArrayMethodDesc.GetSize(target),
+            MethodClassification.Instantiated => Data.InstantiatedMethodDesc.GetSize(target),
+            MethodClassification.ComInterop => Data.CLRToCOMCallMethodDesc.GetSize(target),
+            MethodClassification.Dynamic => Data.DynamicMethodDesc.GetSize(target),
             _ => throw new InvalidOperationException($"Unexpected method classification 0x{classification:x2} for MethodDesc")
         };
-        return target.GetTypeInfo(type).Size ?? throw new InvalidOperationException($"size of MethodDesc not known");
     }
 
     // Offsets are from the start of optional slots data (so right after the MethodDesc), obtained via StartOffset
@@ -82,10 +91,28 @@ internal static class MethodDescOptionalSlots
 
         uint offset = 0;
         if (HasNonVtableSlot(flags))
-            offset += target.GetTypeInfo(DataType.NonVtableSlot).Size!.Value;
+            offset += Data.NonVtableSlot.GetSize(target);
 
         if (HasMethodImpl(flags))
-            offset += target.GetTypeInfo(DataType.MethodImpl).Size!.Value;
+            offset += Data.MethodImpl.GetSize(target);
+
+        return offset;
+    }
+
+    private static uint AsyncMethodDataOffset(ushort flags, Target target)
+    {
+        if (!HasAsyncMethodData(flags))
+            throw new InvalidOperationException("no async method data");
+
+        uint offset = 0;
+        if (HasNonVtableSlot(flags))
+            offset += Data.NonVtableSlot.GetSize(target);
+
+        if (HasMethodImpl(flags))
+            offset += Data.MethodImpl.GetSize(target);
+
+        if (HasNativeCodeSlot(flags))
+            offset += Data.NativeCodeSlot.GetSize(target);
 
         return offset;
     }

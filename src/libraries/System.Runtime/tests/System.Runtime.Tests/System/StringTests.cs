@@ -1235,7 +1235,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(GetHashCode_NoSuchStringComparison_ThrowsArgumentException_Data))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void GetHashCode_NoSuchStringComparison_ThrowsArgumentException(StringComparison comparisonType)
         {
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => "abc".GetHashCode(comparisonType));
@@ -1345,6 +1344,35 @@ namespace System.Tests
         {
             ReadOnlySpan<char> span = (string)null;
             Assert.True(span == default);
+        }
+
+        [Fact]
+        public static void IndexOf_Char_OrdinalIgnoreCase_ThrowsArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => "Hello".IndexOf('o', -1, 0, StringComparison.OrdinalIgnoreCase));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => "Hello".IndexOf('o', 6, 0, StringComparison.OrdinalIgnoreCase));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => "Hello".IndexOf('o', 0, -1, StringComparison.OrdinalIgnoreCase));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => "Hello".IndexOf('o', 0, 6, StringComparison.OrdinalIgnoreCase));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => "Hello".IndexOf('o', 3, 3, StringComparison.OrdinalIgnoreCase));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => "Hello".IndexOf('o', 1, int.MaxValue, StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public static void IndexOf_Rune_StartIndexCount_ThrowsArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => "Hello".IndexOf(new Rune('o'), -1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => "Hello".IndexOf(new Rune('o'), 6, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => "Hello".IndexOf(new Rune('o'), 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => "Hello".IndexOf(new Rune('o'), 0, 6));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => "Hello".IndexOf(new Rune('o'), 3, 3));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => "Hello".IndexOf(new Rune('o'), 1, int.MaxValue));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => "Hello".IndexOf(new Rune('o'), -1, 0, StringComparison.OrdinalIgnoreCase));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => "Hello".IndexOf(new Rune('o'), 6, 0, StringComparison.OrdinalIgnoreCase));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => "Hello".IndexOf(new Rune('o'), 0, -1, StringComparison.OrdinalIgnoreCase));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => "Hello".IndexOf(new Rune('o'), 0, 6, StringComparison.OrdinalIgnoreCase));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => "Hello".IndexOf(new Rune('o'), 3, 3, StringComparison.OrdinalIgnoreCase));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => "Hello".IndexOf(new Rune('o'), 1, int.MaxValue, StringComparison.OrdinalIgnoreCase));
         }
 
         public static IEnumerable<object[]> IndexOf_SingleLetter_StringComparison_TestData()

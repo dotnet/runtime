@@ -56,7 +56,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             byte[] manifestAssemblyMvidTable = _manifestNode.GetManifestAssemblyMvidTableData();
-            return new ObjectData(manifestAssemblyMvidTable, Array.Empty<Relocation>(), alignment: 1, new ISymbolDefinitionNode[] { this });
+
+            // GUID has a natural alignment of 4, so the table must be at least 4-byte aligned.
+            return new ObjectData(manifestAssemblyMvidTable, Array.Empty<Relocation>(), alignment: 4, new ISymbolDefinitionNode[] { this });
         }
     }
 }

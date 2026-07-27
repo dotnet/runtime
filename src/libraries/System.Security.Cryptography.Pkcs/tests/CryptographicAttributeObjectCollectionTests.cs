@@ -164,7 +164,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
             if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
             {
                 // Array has non-zero lower bound
+#pragma warning disable IL3050 // Creating multi-dimensional arrays is AOT safe, only SzArrays are problem
                 Array array = Array.CreateInstance(typeof(object), new int[] { 10 }, new int[] { 10 });
+#pragma warning restore IL3050
                 Assert.Throws<IndexOutOfRangeException>(() => ic.CopyTo(array, 0));
             }
         }

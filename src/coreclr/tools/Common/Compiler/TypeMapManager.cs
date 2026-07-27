@@ -23,6 +23,8 @@ namespace ILCompiler
     /// </summary>
     public abstract class TypeMapManager : ICompilationRootProvider
     {
+        public virtual ModuleDesc AssociatedModule => null;
+
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
         }

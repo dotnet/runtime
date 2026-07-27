@@ -7,6 +7,8 @@
 
 #include <clrtypes.h>
 
+#include "cdacdata.h"
+
 #ifndef _PATCHPOINTINFO_H_
 #define _PATCHPOINTINFO_H_
 
@@ -37,14 +39,17 @@ struct PatchpointInfo
     // Initialize
     void Initialize(uint32_t localCount, int32_t totalFrameSize)
     {
-        m_calleeSaveRegisters     = 0;
-        m_tier0Version            = 0;
-        m_totalFrameSize          = totalFrameSize;
-        m_numberOfLocals          = localCount;
-        m_genericContextArgOffset = -1;
-        m_keptAliveThisOffset     = -1;
-        m_securityCookieOffset    = -1;
-        m_monitorAcquiredOffset   = -1;
+        m_calleeSaveRegisters               = 0;
+        m_tier0Version                      = 0;
+        m_totalFrameSize                    = totalFrameSize;
+        m_numberOfLocals                    = localCount;
+        m_genericContextArgOffset           = -1;
+        m_keptAliveThisOffset               = -1;
+        m_securityCookieOffset              = -1;
+        m_monitorAcquiredOffset             = -1;
+        m_asyncThreadObjectOffset           = -1;
+        m_asyncExecutionContextOffset       = -1;
+        m_asyncSynchronizationContextOffset = -1;
     }
 
     // Copy
@@ -56,6 +61,9 @@ struct PatchpointInfo
         m_keptAliveThisOffset = original->m_keptAliveThisOffset;
         m_securityCookieOffset = original->m_securityCookieOffset;
         m_monitorAcquiredOffset = original->m_monitorAcquiredOffset;
+        m_asyncThreadObjectOffset = original->m_asyncThreadObjectOffset;
+        m_asyncExecutionContextOffset = original->m_asyncExecutionContextOffset;
+        m_asyncSynchronizationContextOffset = original->m_asyncSynchronizationContextOffset;
 
         for (uint32_t i = 0; i < original->m_numberOfLocals; i++)
         {
@@ -145,13 +153,28 @@ struct PatchpointInfo
         m_monitorAcquiredOffset = offset;
     }
 
-    // Original method FP relative offset for async contexts
+    // Original method FP relative offset for async thread/contexts
+    int32_t AsyncThreadOffset() const
+    {
+        return m_asyncThreadObjectOffset;
+    }
+
+    bool HasAsyncThread() const
+    {
+        return m_asyncThreadObjectOffset != -1;
+    }
+
+    void SetAsyncThreadOffset(int32_t offset)
+    {
+        m_asyncThreadObjectOffset = offset;
+    }
+
     int32_t AsyncExecutionContextOffset() const
     {
         return m_asyncExecutionContextOffset;
     }
 
-    bool HasAsyncExecutionContextOffset() const
+    bool HasAsyncExecutionContext() const
     {
         return m_asyncExecutionContextOffset != -1;
     }
@@ -166,7 +189,7 @@ struct PatchpointInfo
         return m_asyncSynchronizationContextOffset;
     }
 
-    bool HasAsyncSynchronizationContextOffset() const
+    bool HasAsyncSynchronizationContext() const
     {
         return m_asyncSynchronizationContextOffset != -1;
     }
@@ -217,6 +240,8 @@ struct PatchpointInfo
     }
 
 private:
+    friend struct ::cdac_data<PatchpointInfo>;
+
     enum
     {
         OFFSET_SHIFT = 0x1,
@@ -231,11 +256,18 @@ private:
     int32_t      m_keptAliveThisOffset;
     int32_t      m_securityCookieOffset;
     int32_t      m_monitorAcquiredOffset;
+    int32_t      m_asyncThreadObjectOffset;
     int32_t      m_asyncExecutionContextOffset;
     int32_t      m_asyncSynchronizationContextOffset;
     int32_t      m_offsetAndExposureData[];
 };
 
 typedef DPTR(struct PatchpointInfo) PTR_PatchpointInfo;
+
+template<>
+struct cdac_data<PatchpointInfo>
+{
+    static constexpr size_t LocalCount = offsetof(PatchpointInfo, m_numberOfLocals);
+};
 
 #endif // _PATCHPOINTINFO_H_

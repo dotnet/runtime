@@ -18,7 +18,7 @@
 class ArrayNative
 {
 public:
-    static FCDECL1(INT32, GetCorElementTypeOfElementType, ArrayBase* arrayUNSAFE);
+    FCDECL1(static INT32, GetCorElementTypeOfElementType, ArrayBase* arrayUNSAFE);
 };
 
 extern "C" PCODE QCALLTYPE Array_GetElementConstructorEntrypoint(QCall::TypeHandle pArrayTypeHnd);

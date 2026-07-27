@@ -7,6 +7,6 @@ namespace Microsoft.Diagnostics.DataContractReader;
 
 public interface IContractFactory<out TContract> where TContract : Contracts.IContract
 {
-    TContract CreateContract(Target target, int version);
+    TContract CreateContract(Target target, string version);
     Type ContractType => typeof(TContract);
 }

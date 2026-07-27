@@ -188,6 +188,10 @@ enum insFlags : uint64_t
     INS_Flags_IsDstSrcSrcAVXInstruction = 1ULL << 27,
     INS_Flags_Is3OperandInstructionMask = (INS_Flags_IsDstDstSrcAVXInstruction | INS_Flags_IsDstSrcSrcAVXInstruction),
 
+    // The instruction is commutative for op1/op2 and so can have
+    // these operands swapped if it will result in a smaller encoding.
+    INS_Flags_IsAvxCommutative = 1ULL << 28,
+
     // w and s bits
     INS_FLAGS_Has_Wbit = 1ULL << 29,
     INS_FLAGS_Has_Sbit = 1ULL << 30,
@@ -295,8 +299,8 @@ enum insOpts: unsigned
     // One-bit:  0b1000_0000
     INS_OPTS_EVEX_nf_MASK = 0x80,   // mask for APX-EVEX.nf related features
 
-    INS_OPTS_EVEX_nf = 1 << 7,      // NDD form for legacy instructions
-    INS_OPTS_EVEX_dfv_byte_offset = 8, // save the bit offset for first dfv flag pos
+    INS_OPTS_EVEX_nf = 1 << 7,      // No-Flag for legacy instructions
+    INS_OPTS_EVEX_dfv_shift = 8, // bit shift for the first dfv flag position
 
     INS_OPTS_EVEX_dfv_cf = 1 << 8,
     INS_OPTS_EVEX_dfv_zf = 1 << 9,
@@ -441,6 +445,15 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_IMM_FIRST,           // Variants with an immediate and a register, where the immediate comes first
 };
 
+// Some SVE RMW instructions require a mov/movprfx instruction to setup the destination
+// register, using this option to specify which variant of mov/movprfx to use.
+enum insSveMovOpts : unsigned
+{
+    INS_SVE_MOV_OPTS_UNPRED,  // <Zd>, <Zn>
+    INS_SVE_MOV_OPTS_ZEROING, // <Zd>.<T>, <Pg>/Z, <Zn>.<T>
+    INS_SVE_MOV_OPTS_MERGING, // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+};
+
 // Maps directly to the pattern used in SVE instructions such as cntb.
 enum insSvePattern : unsigned
 {
@@ -566,7 +579,9 @@ enum insOpts : unsigned
 
 enum insBarrier : unsigned
 {
-    INS_BARRIER_FULL  =  0x33,
+    INS_BARRIER_FULL       = 0x33, // fence rw, rw
+    INS_BARRIER_LOAD_ONLY  = 0x23, // fence r, rw
+    INS_BARRIER_STORE_ONLY = 0x31, // fence rw, w
 };
 #elif defined(TARGET_WASM)
 enum insOpts : unsigned

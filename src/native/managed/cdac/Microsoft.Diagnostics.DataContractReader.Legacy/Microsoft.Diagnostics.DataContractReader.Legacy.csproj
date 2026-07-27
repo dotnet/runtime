@@ -18,4 +18,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.Tests" />
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.DumpTests" />
+  </ItemGroup>
 </Project>

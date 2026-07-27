@@ -28,6 +28,7 @@ set __msbuildExtraArgs=
 set __LongGCTests=
 set __GCSimulatorTests=
 set __IlasmRoundTrip=
+set __UseManagedIlasm=
 set __PrintLastResultsOnly=
 set LogsDirArg=
 set RunInUnloadableContext=
@@ -73,12 +74,18 @@ if /i "%1" == "gcstresslevel"                           (set DOTNET_GCStress=%2&
 if /i "%1" == "gcsimulator"                             (set __GCSimulatorTests=1&shift&goto Arg_Loop)
 if /i "%1" == "longgc"                                  (set __LongGCTests=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
+if /i "%1" == "usemanagedilasm"                          (set __IlasmRoundTrip=1&set __UseManagedIlasm=1&shift&goto Arg_Loop)
 if /i "%1" == "timeout"                                 (set __TestTimeout=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "runincontext"                            (set RunInUnloadableContext=1&shift&goto Arg_Loop)
 if /i "%1" == "tieringtest"                             (set TieringTest=1&shift&goto Arg_Loop)
 if /i "%1" == "runnativeaottests"                       (set RunNativeAot=1&shift&goto Arg_Loop)
 if /i "%1" == "interpreter"                             (set RunInterpreter=1&shift&goto Arg_Loop)
 if /i "%1" == "node"                                    (set RunWithNodeJS=1&shift&goto Arg_Loop)
+@REM For tree, support '/', '-', and '--' prefixes like build.cmd
+set __treeArg=%~1
+set __treeArg=%__treeArg:/=%
+set __treeArg=%__treeArg:-=%
+if /i "%__treeArg%" == "tree"                           (set __TreeSubtree=%~2&shift&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
@@ -147,6 +154,10 @@ if defined __IlasmRoundTrip (
     set __RuntestPyArgs=%__RuntestPyArgs% --ilasmroundtrip
 )
 
+if defined __UseManagedIlasm (
+    set __RuntestPyArgs=%__RuntestPyArgs% --use_managed_ilasm
+)
+
 if defined __TestEnv (
     set __RuntestPyArgs=%__RuntestPyArgs% -test_env %__TestEnv%
 )
@@ -193,6 +204,10 @@ if defined RunInterpreter (
 
 if defined RunWithNodeJS (
     set __RuntestPyArgs=%__RuntestPyArgs% --node
+)
+
+if defined __TreeSubtree (
+    set __RuntestPyArgs=%__RuntestPyArgs% --tree "%__TreeSubtree%"
 )
 
 REM Find python and set it to the variable PYTHON
@@ -261,6 +276,7 @@ echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild 
 echo ^<CORE_ROOT^>               - Path to the runtime to test ^(if specified^).
 echo interpreter               - Runs the tests with the interpreter enabled.
 echo node                       - Runs the tests with NodeJS ^(wasm only^).
+echo tree ^<path^>               - Only run tests under the specified subtree ^(e.g. JIT/Regression^).
 echo.
 echo Note that arguments are not case-sensitive.
 echo.

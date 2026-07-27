@@ -470,7 +470,7 @@ HRESULT ReJitManager::UpdateActiveILVersions(
     }
     CONTRACTL_END;
 
-    // Serialize all RequestReJIT() and Revert() calls against each other (even across AppDomains)
+    // Serialize all RequestReJIT() and Revert() calls against each other
     CrstHolder ch(&(s_csGlobalRequest));
 
     HRESULT hr = S_OK;

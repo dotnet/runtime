@@ -42,6 +42,7 @@ namespace System.Reflection
         public override Type[] GenericTypeArguments => _unmodifiedType.GenericTypeArguments;
         public override int GenericParameterPosition => _unmodifiedType.GenericParameterPosition;
         internal override SignatureType? ElementType => HasElementType ? new SignatureModifiedType(_unmodifiedType.GetElementType()!, [], []) : null;
+        public override Type? GetNullableUnderlyingType() => _unmodifiedType.GetNullableUnderlyingType();
         public override string Name => _unmodifiedType.Name;
         public override string? Namespace => _unmodifiedType.Namespace;
         public override bool IsEnum => _unmodifiedType.IsEnum;

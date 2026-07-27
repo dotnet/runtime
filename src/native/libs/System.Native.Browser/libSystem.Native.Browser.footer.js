@@ -23,6 +23,9 @@ function libDotnetFactory() {
         "SystemJS_ExecuteTimerCallback",
         "SystemJS_ExecuteBackgroundJobCallback",
         "SystemJS_ExecuteFinalizationCallback",
+        "SystemJS_ExecuteDiagnosticServerCallback",
+        "SystemJS_ScheduleDiagnosticServer",
+        "SystemJS_GetMethodName",
         "__funcs_on_exit",
     ];
     const mergeDotnet = {

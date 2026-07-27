@@ -128,7 +128,7 @@
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.*.nupkg" />
       </ItemGroup>
-      <ItemGroup Condition="'$(TargetRid)' == 'browser-wasm' and '$(WasmEnableThreads)' != 'true'">
+      <ItemGroup Condition="'$(TargetRid)' == 'browser-wasm' and '$(WasmEnableThreads)' != 'true' and '$(RuntimeFlavor)' != 'CoreCLR'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.wasm.Sample.Mono.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WorkloadTesting.Internal.*.nupkg;

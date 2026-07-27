@@ -108,10 +108,10 @@ namespace JIT.HardwareIntrinsics.X86._AvxVnni.Vector128
 
             public DataTable(Int32[] inArray0, Byte[] inArray1, SByte[] inArray2, Int32[] outArray, int alignment)
             {
-                int sizeOfinArray0 = inArray0.Length * Unsafe.SizeOf<Int32>();
-                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<Byte>();
-                int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<SByte>();
-                int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<Int32>();
+                int sizeOfinArray0 = inArray0.Length * sizeof(Int32);
+                int sizeOfinArray1 = inArray1.Length * sizeof(Byte);
+                int sizeOfinArray2 = inArray2.Length * sizeof(SByte);
+                int sizeOfoutArray = outArray.Length * sizeof(Int32);
 
                 if((alignment != 32 && alignment != 16) || (alignment *2) < sizeOfinArray0 || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray)        
                 {
@@ -164,11 +164,11 @@ namespace JIT.HardwareIntrinsics.X86._AvxVnni.Vector128
                 var testStruct = new TestStruct();
 
                 for (var i = 0; i < Op0ElementCount; i++) { _data0[i] = TestLibrary.Generator.GetByte(); }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int32>, byte>(ref testStruct._fld0), ref Unsafe.As<Int32, byte>(ref _data0[0]), (uint)Unsafe.SizeOf<Vector128<Int32>>());
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int32>, byte>(ref testStruct._fld0), ref Unsafe.As<Int32, byte>(ref _data0[0]), (uint)sizeof(Vector128<Int32>));
                 for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetByte(); }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref testStruct._fld1), ref Unsafe.As<Byte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Byte>>());
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref testStruct._fld1), ref Unsafe.As<Byte, byte>(ref _data1[0]), (uint)sizeof(Vector128<Byte>));
                 for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (sbyte)TestLibrary.Generator.GetSByte(); }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref testStruct._fld2), ref Unsafe.As<SByte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref testStruct._fld2), ref Unsafe.As<SByte, byte>(ref _data2[0]), (uint)sizeof(Vector128<SByte>));
 
                 return testStruct;
             }
@@ -184,10 +184,10 @@ namespace JIT.HardwareIntrinsics.X86._AvxVnni.Vector128
 
         private static readonly int LargestVectorSize = 32;
 
-        private static readonly int Op0ElementCount = Unsafe.SizeOf<Vector128<Int32>>() / sizeof(Int32);
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Byte>>() / sizeof(Byte);
-        private static readonly int Op2ElementCount = Unsafe.SizeOf<Vector128<SByte>>() / sizeof(SByte);
-        private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<Int32>>() / sizeof(Int32);
+        private static readonly int Op0ElementCount = sizeof(Vector128<Int32>) / sizeof(Int32);
+        private static readonly int Op1ElementCount = sizeof(Vector128<Byte>) / sizeof(Byte);
+        private static readonly int Op2ElementCount = sizeof(Vector128<SByte>) / sizeof(SByte);
+        private static readonly int RetElementCount = sizeof(Vector128<Int32>) / sizeof(Int32);
 
         private static Int32[] _data0 = new Int32[Op0ElementCount];
         private static Byte[] _data1 = new Byte[Op1ElementCount];
@@ -206,11 +206,11 @@ namespace JIT.HardwareIntrinsics.X86._AvxVnni.Vector128
         static SimpleTernaryOpTest__MultiplyWideningAndAddSaturateByte()
         {
             for (var i = 0; i < Op0ElementCount; i++) { _data0[i] = TestLibrary.Generator.GetInt32(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int32>, byte>(ref _clsVar0), ref Unsafe.As<Int32, byte>(ref _data0[0]), (uint)Unsafe.SizeOf<Vector128<Int32>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int32>, byte>(ref _clsVar0), ref Unsafe.As<Int32, byte>(ref _data0[0]), (uint)sizeof(Vector128<Int32>));
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetByte(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref _clsVar1), ref Unsafe.As<Byte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Byte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref _clsVar1), ref Unsafe.As<Byte, byte>(ref _data1[0]), (uint)sizeof(Vector128<Byte>));
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (sbyte)TestLibrary.Generator.GetSByte(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar2), ref Unsafe.As<SByte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar2), ref Unsafe.As<SByte, byte>(ref _data2[0]), (uint)sizeof(Vector128<SByte>));
         }
 
         public SimpleTernaryOpTest__MultiplyWideningAndAddSaturateByte()
@@ -218,11 +218,11 @@ namespace JIT.HardwareIntrinsics.X86._AvxVnni.Vector128
             Succeeded = true;
 
             for (var i = 0; i < Op0ElementCount; i++) { _data0[i] = TestLibrary.Generator.GetInt32(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int32>, byte>(ref _fld0), ref Unsafe.As<Int32, byte>(ref _data0[0]), (uint)Unsafe.SizeOf<Vector128<Int32>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int32>, byte>(ref _fld0), ref Unsafe.As<Int32, byte>(ref _data0[0]), (uint)sizeof(Vector128<Int32>));
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetByte(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref _fld1), ref Unsafe.As<Byte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Byte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref _fld1), ref Unsafe.As<Byte, byte>(ref _data1[0]), (uint)sizeof(Vector128<Byte>));
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (sbyte)TestLibrary.Generator.GetSByte(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld2), ref Unsafe.As<SByte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld2), ref Unsafe.As<SByte, byte>(ref _data2[0]), (uint)sizeof(Vector128<SByte>));
 
             for (var i = 0; i < Op0ElementCount; i++) { _data0[i] = TestLibrary.Generator.GetInt32(); }
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetByte(); }
@@ -445,7 +445,7 @@ namespace JIT.HardwareIntrinsics.X86._AvxVnni.Vector128
             Unsafe.WriteUnaligned(ref Unsafe.As<Int32, byte>(ref inArray0[0]), addend);
             Unsafe.WriteUnaligned(ref Unsafe.As<Byte, byte>(ref inArray1[0]), left);
             Unsafe.WriteUnaligned(ref Unsafe.As<SByte, byte>(ref inArray2[0]), right);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int32, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Int32>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int32, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)sizeof(Vector128<Int32>));
 
             ValidateResult(inArray0, inArray1, inArray2, outArray, method);
         }
@@ -457,10 +457,10 @@ namespace JIT.HardwareIntrinsics.X86._AvxVnni.Vector128
             SByte[] inArray2 = new SByte[Op2ElementCount];
             Int32[] outArray = new Int32[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int32, byte>(ref inArray0[0]), ref Unsafe.AsRef<byte>(addend), (uint)Unsafe.SizeOf<Vector128<Int32>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Byte, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(left), (uint)Unsafe.SizeOf<Vector128<Byte>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(right), (uint)Unsafe.SizeOf<Vector128<SByte>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int32, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Int32>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int32, byte>(ref inArray0[0]), ref Unsafe.AsRef<byte>(addend), (uint)sizeof(Vector128<Int32>));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Byte, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(left), (uint)sizeof(Vector128<Byte>));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(right), (uint)sizeof(Vector128<SByte>));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int32, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)sizeof(Vector128<Int32>));
 
             ValidateResult(inArray0, inArray1, inArray2, outArray, method);
         }

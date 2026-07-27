@@ -78,6 +78,7 @@ namespace R2RDump
                 writer.WriteLine($"    Variable Number: {varLoc.VariableNumber}");
                 writer.WriteLine($"    Start Offset: 0x{varLoc.StartOffset:X}");
                 writer.WriteLine($"    End Offset: 0x{varLoc.EndOffset:X}");
+                writer.WriteLine($"    Call return IL offset: 0x{varLoc.CallReturnValueILOffset:X}");
                 writer.WriteLine($"    Loc Type: {varLoc.VariableLocation.VarLocType}");
 
                 switch (varLoc.VariableLocation.VarLocType)
@@ -186,14 +187,27 @@ namespace R2RDump
 
         public static void WriteTo(this RuntimeFunction theThis, TextWriter writer, DumpModel model)
         {
+            bool isWasm = theThis.UnwindInfo is ILCompiler.Reflection.ReadyToRun.Wasm32.UnwindInfo;
             if (!model.Naked)
             {
                 writer.WriteLine($"Id: {theThis.Id}");
-                writer.WriteLine($"StartAddress: 0x{theThis.StartAddress:X8}");
+                if (isWasm)
+                {
+                    writer.WriteLine($"VirtualIP: {theThis.StartAddress}");
+                    writer.WriteLine($"IsFunclet: {theThis.WasmIsFunclet}");
+                }
+                else
+                {
+                    writer.WriteLine($"StartAddress: 0x{theThis.StartAddress:X8}");
+                }
             }
             if (theThis.Size == -1)
             {
                 writer.WriteLine("Size: Unavailable");
+            }
+            else if (isWasm)
+            {
+                writer.WriteLine($"Size: {theThis.Size} virtual IPs");
             }
             else
             {

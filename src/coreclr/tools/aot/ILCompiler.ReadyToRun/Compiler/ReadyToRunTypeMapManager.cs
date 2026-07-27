@@ -14,6 +14,8 @@ namespace ILCompiler.ReadyToRun
     {
         private ImportReferenceProvider _importReferenceProvider;
 
+        public override ModuleDesc AssociatedModule => triggeringModule;
+
         public override void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
             base.AttachToDependencyGraph(graph);
@@ -51,13 +53,13 @@ namespace ILCompiler.ReadyToRun
 
         public void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ImportReferenceProvider importReferenceProvider)
         {
-            base.AddToReadyToRunHeader(header, nodeFactory, importReferenceProvider);
-
             _importReferenceProvider = importReferenceProvider;
 
             if (IsEmpty)
                 return;
 
+            header.Add(ReadyToRunSectionType.ExternalTypeMaps, new ExternalTypeMapObjectNode(this, importReferenceProvider));
+            header.Add(ReadyToRunSectionType.ProxyTypeMaps, new ProxyTypeMapObjectNode(this, importReferenceProvider));
             header.Add(ReadyToRunSectionType.TypeMapAssemblyTargets, new TypeMapAssemblyTargetsNode(assemblyTypeMaps, importReferenceProvider));
         }
     }

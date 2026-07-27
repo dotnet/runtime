@@ -14,7 +14,8 @@ using namespace BINDER_SPACE;
 // CustomAssemblyBinder implementation
 // ============================================================================
 HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName,
-                                                       BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly)
+                                                       BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
+                                                       SString *pDiagnosticInfo)
 {
     VALIDATE_ARG_RET(pAssemblyName != nullptr && ppCoreCLRFoundAssembly != nullptr);
     HRESULT hr = S_OK;
@@ -28,7 +29,9 @@ HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
     hr = AssemblyBinderCommon::BindAssembly(this,
                                             pAssemblyName,
                                             false, //excludeAppPaths,
-                                            ppCoreCLRFoundAssembly);
+                                            ppCoreCLRFoundAssembly,
+                                            nullptr /* ppExistingAssemblyOnFailure */,
+                                            pDiagnosticInfo);
     if (!FAILED(hr))
     {
         _ASSERTE(*ppCoreCLRFoundAssembly != NULL);
@@ -39,7 +42,8 @@ HRESULT CustomAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
 }
 
 HRESULT CustomAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
-    BINDER_SPACE::Assembly** ppAssembly)
+    BINDER_SPACE::Assembly** ppAssembly,
+    SString* pDiagnosticInfo)
 {
     // When LoadContext needs to resolve an assembly reference, it will go through the following lookup order:
     //
@@ -58,7 +62,7 @@ HRESULT CustomAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName* 
 
     {
         // Step 1 - Try to find the assembly within the LoadContext.
-        hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly);
+        hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, pDiagnosticInfo);
         if ((hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) ||
             (hr == FUSION_E_APP_DOMAIN_LOCKED) || (hr == FUSION_E_REF_DEF_MISMATCH))
         {
@@ -103,7 +107,8 @@ Exit:;
 
 HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                                                 /* in */ bool excludeAppPaths,
-                                                /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
+                                                /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly,
+                                                /* [out, optional] */ BINDER_SPACE::Assembly **ppExistingAssemblyOnConflict)
 {
     HRESULT hr = S_OK;
 
@@ -129,7 +134,7 @@ HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
         }
 
-        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly);
+        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly, ppExistingAssemblyOnConflict);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);

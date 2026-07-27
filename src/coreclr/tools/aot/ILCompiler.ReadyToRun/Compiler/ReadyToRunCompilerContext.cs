@@ -311,7 +311,10 @@ namespace ILCompiler
                 {
                     ByteCountUnaligned = layoutFromSimilarIntrinsicVector.ByteCountUnaligned,
                     ByteCountAlignment = layoutFromMetadata.ByteCountAlignment,
-                    FieldAlignment = layoutFromMetadata.FieldAlignment,
+                    // On wasm Vector<T> is passed as a v128 and must share its 16-byte alignment.
+                    FieldAlignment = type.Context.Target.Architecture == TargetArchitecture.Wasm32
+                        ? layoutFromSimilarIntrinsicVector.FieldAlignment
+                        : layoutFromMetadata.FieldAlignment,
                     FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
                     Offsets = layoutFromMetadata.Offsets,
                     LayoutAbiStable = true,
@@ -329,7 +332,7 @@ namespace ILCompiler
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
             if (type.Context.Target.Architecture == TargetArchitecture.ARM64 &&
-                type.Instantiation[0].IsPrimitiveNumeric)
+                VectorFieldLayoutAlgorithm.IsSupportedVectorBaseType(type.Instantiation[0]))
             {
                 return type.InstanceFieldSize.AsInt switch
                 {
@@ -342,7 +345,7 @@ namespace ILCompiler
 
         public static bool IsVectorOfTType(DefType type)
         {
-            return type.IsIntrinsic && type.Namespace.SequenceEqual("System.Numerics"u8) && type.Name.SequenceEqual("Vector`1"u8);
+            return type.IsIntrinsic && type.Namespace == "System.Numerics"u8 && type.Name == "Vector`1"u8;
         }
     }
 }

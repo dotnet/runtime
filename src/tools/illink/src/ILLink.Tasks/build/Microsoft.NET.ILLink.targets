@@ -37,7 +37,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       could be removed by the ILLink, causing a trimmed app to crash. -->
   <PropertyGroup Condition="'$(PublishTrimmed)' == 'true'">
     <StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
-    <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == ''">false</MetadataUpdaterSupport>
+    <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == '' and '$(Configuration)' != 'Debug'">false</MetadataUpdaterSupport>
     <CustomResourceTypesSupport Condition="'$(CustomResourceTypesSupport)' == ''">false</CustomResourceTypesSupport>
     <EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization Condition="'$(EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization)' == ''">false</EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization>
     <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
@@ -219,9 +219,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <TrimmerSingleWarn Condition=" '$(TrimmerSingleWarn)' == '' ">true</TrimmerSingleWarn>
     </PropertyGroup>
 
-    <!-- Root the main assembly entry point. -->
+    <!-- Root the main assembly entry point for non-library projects. -->
     <ItemGroup>
-      <TrimmerRootAssembly Include="@(IntermediateAssembly->'%(Filename)')" RootMode="EntryPoint" />
+      <TrimmerRootAssembly Include="@(IntermediateAssembly->'%(Filename)')" RootMode="EntryPoint" Condition="'$(OutputType)' != 'Library'" />
     </ItemGroup>
 
     <ItemGroup>

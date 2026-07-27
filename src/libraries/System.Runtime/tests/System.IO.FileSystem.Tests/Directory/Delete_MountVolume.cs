@@ -79,11 +79,7 @@ namespace System.IO.Tests
                         }
                         finally
                         {
-                            if (Directory.Exists(mountedDirName))
-                            {
-                                MountHelper.Unmount(mountedDirName);
-                                DeleteDir(mountedDirName, true);
-                            }
+                            MountHelper.Unmount(mountedDirName, deleteDirectory: true);
                         }
                         File.AppendAllText(debugFileName, string.Format("Completed scenario {0}", Environment.NewLine));
                     }
@@ -127,11 +123,7 @@ namespace System.IO.Tests
                         }
                         finally
                         {
-                            if (Directory.Exists(mountedDirName))
-                            {
-                                MountHelper.Unmount(mountedDirName);
-                                DeleteDir(mountedDirName, true);
-                            }
+                            MountHelper.Unmount(mountedDirName, deleteDirectory: true);
                         }
                         File.AppendAllText(debugFileName, string.Format("Completed scenario {0}", Environment.NewLine));
                     }
@@ -172,11 +164,7 @@ namespace System.IO.Tests
                         }
                         finally
                         {
-                            if (Directory.Exists(mountedDirName))
-                            {
-                                MountHelper.Unmount(mountedDirName);
-                                DeleteDir(mountedDirName, true);
-                            }
+                            MountHelper.Unmount(mountedDirName, deleteDirectory: true);
                         }
                         File.AppendAllText(debugFileName, string.Format("Completed scenario {0}", Environment.NewLine));
                     }
@@ -217,11 +205,7 @@ namespace System.IO.Tests
                         }
                         finally
                         {
-                            if (Directory.Exists(mountedDirName))
-                            {
-                                MountHelper.Unmount(mountedDirName);
-                                DeleteDir(mountedDirName, true);
-                            }
+                            MountHelper.Unmount(mountedDirName, deleteDirectory: true);
                         }
                         File.AppendAllText(debugFileName, string.Format("Completed scenario {0}", Environment.NewLine));
                     }

@@ -193,6 +193,11 @@ static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
     //                       because we asked the stackwalker for it!
     MethodDesc* pFunc = pCf->GetFunction();
 
+    if (pFunc != nullptr && pFunc == g_pEnvironmentCallEntryPointMethodDesc)
+    {
+        return SWA_CONTINUE;
+    }
+
     DebugStackTrace::GetStackFramesData* pData = (DebugStackTrace::GetStackFramesData*)data;
     if (pData->cElements >= pData->cElementsAllocated)
     {
@@ -839,8 +844,19 @@ extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip)
     return pResult;
 }
 
-FORCEINLINE void HolderDestroyStrongHandle(OBJECTHANDLE h) { if (h != NULL) DestroyStrongHandle(h); }
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, HolderDestroyStrongHandle, 0> StrongHandleHolder;
+struct StrongHandleHolderTraits final
+{
+    using Type = OBJECTHANDLE;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type handle)
+    {
+        WRAPPER_NO_CONTRACT;
+        if (handle != NULL)
+            DestroyStrongHandle(handle);
+    }
+};
+
+using StrongHandleHolder = LifetimeHolder<StrongHandleHolderTraits>;
 
 // receives a custom notification object from the target and sends it to the RS via
 // code:Debugger::SendCustomDebuggerNotification
@@ -861,14 +877,14 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
     Thread * pThread = GetThread();
     AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
-    StrongHandleHolder objHandle = pAppDomain->CreateStrongHandle(data.Get());
+    StrongHandleHolder objHandle(pAppDomain->CreateStrongHandle(data.Get()));
     MethodTable* pMT = data.Get()->GetGCSafeMethodTable();
     Module* pModule = pMT->GetModule();
-    DomainAssembly* pDomainAssembly = pModule->GetDomainAssembly();
+    Assembly* pAssembly = pModule->GetAssembly();
     mdTypeDef classToken = pMT->GetCl();
 
     pThread->SetThreadCurrNotification(objHandle);
-    g_pDebugInterface->SendCustomDebuggerNotification(pThread, pDomainAssembly, classToken);
+    g_pDebugInterface->SendCustomDebuggerNotification(pThread, pAssembly, classToken);
     pThread->ClearThreadCurrNotification();
 
     if (pThread->IsAbortRequested())

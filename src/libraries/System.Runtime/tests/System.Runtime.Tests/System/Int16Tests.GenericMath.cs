@@ -193,6 +193,24 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            Assert.Equal((short)0, BinaryIntegerHelper<short>.Log10((short)0));
+            Assert.Equal((short)0, BinaryIntegerHelper<short>.Log10((short)1));
+            Assert.Equal((short)0, BinaryIntegerHelper<short>.Log10((short)9));
+            Assert.Equal((short)1, BinaryIntegerHelper<short>.Log10((short)10));
+            Assert.Equal((short)1, BinaryIntegerHelper<short>.Log10((short)99));
+            Assert.Equal((short)2, BinaryIntegerHelper<short>.Log10((short)100));
+            Assert.Equal((short)2, BinaryIntegerHelper<short>.Log10((short)999));
+            Assert.Equal((short)3, BinaryIntegerHelper<short>.Log10((short)1000));
+            Assert.Equal((short)3, BinaryIntegerHelper<short>.Log10((short)9999));
+            Assert.Equal((short)4, BinaryIntegerHelper<short>.Log10((short)10000));
+            Assert.Equal((short)4, BinaryIntegerHelper<short>.Log10((short)32767));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<short>.Log10((short)(-32768)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<short>.Log10((short)(-1)));
+        }
+
+        [Fact]
         public static void PopCountTest()
         {
             Assert.Equal((short)0x0000, BinaryIntegerHelper<short>.PopCount((short)0x0000));
@@ -1302,6 +1320,24 @@ namespace System.Tests
             Assert.Equal((short)0x003F, NumberHelper<short>.Clamp((short)0x7FFF, unchecked((short)0xFFC0), (short)0x003F));
             Assert.Equal(unchecked((short)0xFFC0), NumberHelper<short>.Clamp(unchecked((short)0x8000), unchecked((short)0xFFC0), (short)0x003F));
             Assert.Equal(unchecked((short)0xFFFF), NumberHelper<short>.Clamp(unchecked((short)0xFFFF), unchecked((short)0xFFC0), (short)0x003F));
+        }
+
+        [Fact]
+        public static void CopySignTest()
+        {
+            Assert.Equal((short)0x0000, NumberHelper<short>.CopySign((short)0x0000, 1));
+            Assert.Equal((short)0x0001, NumberHelper<short>.CopySign((short)0x0001, 1));
+            Assert.Equal((short)0x7FFF, NumberHelper<short>.CopySign((short)0x7FFF, 1));
+            Assert.Equal((short)0x0001, NumberHelper<short>.CopySign(unchecked((short)0xFFFF), 1));
+
+            Assert.Equal((short)0x0000, NumberHelper<short>.CopySign((short)0x0000, -1));
+            Assert.Equal(unchecked((short)0xFFFF), NumberHelper<short>.CopySign((short)0x0001, -1));
+            Assert.Equal(unchecked((short)0x8001), NumberHelper<short>.CopySign((short)0x7FFF, -1));
+            Assert.Equal(unchecked((short)0x8000), NumberHelper<short>.CopySign(unchecked((short)0x8000), -1));
+            Assert.Equal(unchecked((short)0xFFFF), NumberHelper<short>.CopySign(unchecked((short)0xFFFF), -1));
+
+            Assert.Throws<OverflowException>(() => NumberHelper<short>.CopySign(unchecked((short)0x8000), 0));
+            Assert.Throws<OverflowException>(() => NumberHelper<short>.CopySign(unchecked((short)0x8000), 1));
         }
 
         [Fact]

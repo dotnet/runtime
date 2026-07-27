@@ -9,6 +9,10 @@
 #ifndef __CALLHELPERS_H__
 #define __CALLHELPERS_H__
 
+#ifdef TARGET_WASM
+#include "wasm/callhelpers.hpp"
+#endif
+
 struct CallDescrData
 {
     // Input arguments
@@ -30,6 +34,7 @@ struct CallDescrData
     size_t                      nArgsSize;
     bool                        hasThis;
     bool                        hasRetBuff;
+    void*                       pRetBuffArg;
 #endif // TARGET_WASM
 
 #ifdef CALLDESCR_RETBUFFARGREG
@@ -99,178 +104,9 @@ private:
     }
 #endif // _DEBUG
 
-    void DefaultInit(OBJECTREF* porProtectedThis)
-    {
-        CONTRACTL
-        {
-            MODE_ANY;
-            GC_TRIGGERS;
-            THROWS;
-        }
-        CONTRACTL_END;
-
-#ifdef _DEBUG
-        //
-        // Make sure we are passing in a 'this' if and only if it is required
-        //
-        if (m_pMD->IsVtableMethod())
-        {
-            CONSISTENCY_CHECK_MSG(NULL != porProtectedThis, "You did not pass in the 'this' object for a vtable method");
-        }
-        else
-        {
-            if (NULL != porProtectedThis)
-            {
-                if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AssertOnUnneededThis))
-                {
-                    CONSISTENCY_CHECK_MSG(NULL == porProtectedThis, "You passed in a 'this' object to a non-vtable method.");
-                }
-                else
-                {
-                    LogWeakAssert();
-                }
-
-            }
-        }
-#endif // _DEBUG
-
-        m_pCallTarget = m_pMD->GetCallTarget(porProtectedThis);
-
-        m_argIt.ForceSigWalk();
-    }
-
-    void DefaultInit(TypeHandle th)
-    {
-        CONTRACTL
-        {
-            MODE_ANY;
-        GC_TRIGGERS;
-        THROWS;
-        }
-        CONTRACTL_END;
-
-        m_pCallTarget = m_pMD->GetCallTarget(NULL, th);
-
-        m_argIt.ForceSigWalk();
-}
-
     void CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *pReturnValue, int cbReturnValue);
 
 public:
-    // Used to avoid touching metadata for CoreLib methods.
-    // instance methods must pass in the 'this' object
-    // static methods must pass null
-    MethodDescCallSite(BinderMethodID id, OBJECTREF* porProtectedThis = NULL) :
-        m_pMD(
-            CoreLibBinder::GetMethod(id)
-            ),
-        m_methodSig(id),
-        m_argIt(&m_methodSig)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-        DefaultInit(porProtectedThis);
-    }
-
-    // Used to avoid touching metadata for CoreLib methods.
-    // instance methods must pass in the 'this' object
-    // static methods must pass null
-    MethodDescCallSite(BinderMethodID id, OBJECTHANDLE hThis) :
-        m_pMD(
-            CoreLibBinder::GetMethod(id)
-            ),
-        m_methodSig(id),
-        m_argIt(&m_methodSig)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        DefaultInit((OBJECTREF*)hThis);
-    }
-
-    // instance methods must pass in the 'this' object
-    // static methods must pass null
-    MethodDescCallSite(MethodDesc* pMD, OBJECTREF* porProtectedThis = NULL) :
-        m_pMD(pMD),
-        m_methodSig(pMD),
-        m_argIt(&m_methodSig)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        if (porProtectedThis == NULL)
-        {
-            // We don't have a "this" pointer - ensure that we have activated the containing module
-            m_pMD->EnsureActive();
-        }
-
-        DefaultInit(porProtectedThis);
-    }
-
-    // instance methods must pass in the 'this' object
-    // static methods must pass null
-    MethodDescCallSite(MethodDesc* pMD, OBJECTHANDLE hThis) :
-        m_pMD(pMD),
-        m_methodSig(pMD),
-        m_argIt(&m_methodSig)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (hThis == NULL)
-        {
-            // We don't have a "this" pointer - ensure that we have activated the containing module
-            m_pMD->EnsureActive();
-        }
-
-        DefaultInit((OBJECTREF*)hThis);
-    }
-
-    // instance methods must pass in the 'this' object
-    // static methods must pass null
-    MethodDescCallSite(MethodDesc* pMD, LPHARDCODEDMETASIG pwzSignature, OBJECTREF* porProtectedThis = NULL) :
-        m_pMD(pMD),
-        m_methodSig(pwzSignature),
-        m_argIt(&m_methodSig)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (porProtectedThis == NULL)
-        {
-            // We don't have a "this" pointer - ensure that we have activated the containing module
-            m_pMD->EnsureActive();
-        }
-
-        DefaultInit(porProtectedThis);
-    }
-
-    MethodDescCallSite(MethodDesc* pMD, TypeHandle th) :
-        m_pMD(pMD),
-        m_methodSig(pMD, th),
-        m_argIt(&m_methodSig)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        // We don't have a "this" pointer - ensure that we have activated the containing module
-        m_pMD->EnsureActive();
-
-        DefaultInit(th);
-    }
-
     //
     // Only use this constructor if you're certain you know where
     // you're going and it cannot be affected by generics/virtual
@@ -280,6 +116,30 @@ public:
         m_pMD(pMD),
         m_pCallTarget(pCallTarget),
         m_methodSig(pMD),
+        m_argIt(&m_methodSig)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+        m_pMD->EnsureActive();
+
+        m_argIt.ForceSigWalk();
+    }
+
+    //
+    // Only use this constructor if you're certain you know where
+    // you're going and it cannot be affected by generics/virtual
+    // dispatch/etc..
+    //
+    MethodDescCallSite(MethodDesc* pMD, PCODE pCallTarget, TypeHandle th) :
+        m_pMD(pMD),
+        m_pCallTarget(pCallTarget),
+        m_methodSig(pMD, th),
         m_argIt(&m_methodSig)
     {
         CONTRACTL
@@ -500,104 +360,6 @@ enum EEToManagedCallFlags
 /***********************************************************************/
 
 #define ARGHOLDER_TYPE LPVOID
-#define OBJECTREF_TO_ARGHOLDER(x) (LPVOID)OBJECTREFToObject(x)
-#define STRINGREF_TO_ARGHOLDER(x) (LPVOID)STRINGREFToObject(x)
-#define PTR_TO_ARGHOLDER(x) (LPVOID)x
-#define DWORD_TO_ARGHOLDER(x)   (LPVOID)(SIZE_T)x
-#define BOOL_TO_ARGHOLDER(x) DWORD_TO_ARGHOLDER(!!(x))
-
-#define INIT_VARIABLES(count)                               \
-        DWORD   __numArgs = count;                          \
-        BOOL    __criticalDispatchCall = FALSE;             \
-
-#define PREPARE_NONVIRTUAL_CALLSITE(id) \
-        static PCODE s_pAddr##id = 0;                       \
-        PCODE __pSlot = VolatileLoad(&s_pAddr##id);         \
-        if ( __pSlot == 0 )                                 \
-        {                                                   \
-            MethodDesc *pMeth = CoreLibBinder::GetMethod(id);   \
-            _ASSERTE(pMeth);                                \
-            __pSlot = pMeth->GetMultiCallableAddrOfCode();  \
-            VolatileStore(&s_pAddr##id, __pSlot);           \
-        }
-
-#define PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pCode)       \
-        PCODE __pSlot = pCode;
-
-#define CRITICAL_CALLSITE                                   \
-        __criticalDispatchCall = TRUE;
-
-#define PERFORM_CALL    \
-        void * __retval = NULL;                         \
-        __retval = DispatchCallSimple(__pArgs,          \
-                           __numStackSlotsToCopy,       \
-                           __pSlot,                     \
-                           __criticalDispatchCall);     \
-
-#ifdef CALLDESCR_ARGREGS
-
-#if defined(TARGET_X86)
-
-// Arguments on x86 are passed backward
-#define ARGNUM_0    1
-#define ARGNUM_1    0
-#define ARGNUM_N(n)    (__numArgs - (n) + 1)
-
-#else
-
-#define ARGNUM_0    0
-#define ARGNUM_1    1
-#define ARGNUM_N(n)    n
-
-#endif
-
-#define PRECALL_PREP(args)  \
-        DWORD __numStackSlotsToCopy = (__numArgs > NUM_ARGUMENT_REGISTERS) ? (__numArgs - NUM_ARGUMENT_REGISTERS) : 0; \
-        SIZE_T * __pArgs = (SIZE_T *)args;
-
-#define DECLARE_ARGHOLDER_ARRAY(arg, count)             \
-        INIT_VARIABLES(count)                           \
-        ARGHOLDER_TYPE arg[(count <= NUM_ARGUMENT_REGISTERS ? NUM_ARGUMENT_REGISTERS : count)];
-
-#else   // CALLDESCR_ARGREGS
-
-#define ARGNUM_0    0
-#define ARGNUM_1    1
-#define ARGNUM_N(n)    n
-
-#define PRECALL_PREP(args)                              \
-        DWORD __numStackSlotsToCopy = (__numArgs > NUM_ARGUMENT_REGISTERS) ? __numArgs : NUM_ARGUMENT_REGISTERS; \
-        SIZE_T * __pArgs = (SIZE_T *)args;
-
-#define DECLARE_ARGHOLDER_ARRAY(arg, count)             \
-        INIT_VARIABLES(count)                           \
-        ARGHOLDER_TYPE arg[(count <= NUM_ARGUMENT_REGISTERS ? NUM_ARGUMENT_REGISTERS : count)];
-
-#endif  // CALLDESCR_ARGREGS
-
-
-#define CALL_MANAGED_METHOD(ret, rettype, args)         \
-        PRECALL_PREP(args)                              \
-        PERFORM_CALL                                    \
-        ret = *(rettype *)(&__retval);
-
-#define CALL_MANAGED_METHOD_NORET(args)                 \
-        PRECALL_PREP(args)                              \
-        PERFORM_CALL
-
-#define CALL_MANAGED_METHOD_RETREF(ret, reftype, args)  \
-        PRECALL_PREP(args)                              \
-        PERFORM_CALL                                    \
-        ret = (reftype)ObjectToOBJECTREF((Object *)__retval);
-
-#define ARGNUM_2 ARGNUM_N(2)
-#define ARGNUM_3 ARGNUM_N(3)
-#define ARGNUM_4 ARGNUM_N(4)
-#define ARGNUM_5 ARGNUM_N(5)
-#define ARGNUM_6 ARGNUM_N(6)
-#define ARGNUM_7 ARGNUM_N(7)
-#define ARGNUM_8 ARGNUM_N(8)
-
 
 void CallDefaultConstructor(OBJECTREF ref);
 
@@ -741,6 +503,54 @@ public:
         GCPROTECT_END();
 
         return ret;
+    }
+
+    template<typename... Args>
+    void InvokeDirect(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        _ASSERTE(_pMD->GetModule()->IsSystem());
+
+        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
+        GCX_PREEMP();
+
+        PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+        _ASSERTE(methodEntry != (PCODE)NULL);
+
+        auto fptr = reinterpret_cast<void(*)(Args...)>(methodEntry);
+        fptr(args...);
+    }
+
+    template<typename Ret, typename... Args>
+    Ret InvokeDirect_Ret(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        _ASSERTE(_pMD->GetModule()->IsSystem());
+
+        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
+        GCX_PREEMP();
+
+        PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+        _ASSERTE(methodEntry != (PCODE)NULL);
+
+        auto fptr = reinterpret_cast<Ret(*)(Args...)>(methodEntry);
+        return fptr(args...);
     }
 };
 

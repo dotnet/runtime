@@ -316,9 +316,6 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-    virtual void DebuggerModifyingLogSwitch (int iNewLevel,
-                                             const WCHAR *pLogSwitchName) = 0;
-
     virtual HRESULT SetIPFromSrcToDst(Thread *pThread,
                           SLOT addrStart,
                           DWORD offFrom,

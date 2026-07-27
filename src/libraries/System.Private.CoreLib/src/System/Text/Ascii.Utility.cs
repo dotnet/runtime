@@ -105,7 +105,6 @@ namespace System.Text
         /// </summary>
         /// <returns>An ASCII byte is defined as 0x00 - 0x7F, inclusive.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         internal static unsafe nuint GetIndexOfFirstNonAsciiByte(byte* pBuffer, nuint bufferLength)
         {
             // If 256/512-bit aren't supported but SSE2 is supported, use those specific intrinsics instead of
@@ -128,7 +127,6 @@ namespace System.Text
             }
         }
 
-        [RequiresUnsafe]
         private static unsafe nuint GetIndexOfFirstNonAsciiByte_Vector(byte* pBuffer, nuint bufferLength)
         {
             // Squirrel away the original buffer reference. This method works by determining the exact
@@ -365,7 +363,6 @@ namespace System.Text
             return advSimdIndex < 16;
         }
 
-        [RequiresUnsafe]
         private static unsafe nuint GetIndexOfFirstNonAsciiByte_Intrinsified(byte* pBuffer, nuint bufferLength)
         {
             // JIT turns the below into constants
@@ -731,7 +728,6 @@ namespace System.Text
         /// </summary>
         /// <returns>An ASCII char is defined as 0x0000 - 0x007F, inclusive.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         internal static unsafe nuint GetIndexOfFirstNonAsciiChar(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // If 256/512-bit aren't supported but SSE2/ASIMD is supported, use those specific intrinsics instead of
@@ -754,7 +750,6 @@ namespace System.Text
             }
         }
 
-        [RequiresUnsafe]
         private static unsafe nuint GetIndexOfFirstNonAsciiChar_Vector(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // Squirrel away the original buffer reference.This method works by determining the exact
@@ -960,7 +955,6 @@ namespace System.Text
         }
 
 #if NET
-        [RequiresUnsafe]
         private static unsafe nuint GetIndexOfFirstNonAsciiChar_Intrinsified(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // This method contains logic optimized using vector instructions for both x64 and Arm64.
@@ -1349,7 +1343,6 @@ namespace System.Text
         /// or once <paramref name="elementCount"/> elements have been converted. Returns the total number
         /// of elements that were able to be converted.
         /// </summary>
-        [RequiresUnsafe]
         internal static unsafe nuint NarrowUtf16ToAscii(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
         {
             nuint currentOffset = 0;
@@ -1716,7 +1709,6 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         private static unsafe nuint NarrowUtf16ToAscii_Intrinsified(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
         {
             // This method contains logic optimized using vector instructions for both x64 and Arm64.
@@ -1836,7 +1828,6 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         private static unsafe nuint NarrowUtf16ToAscii_Intrinsified_256(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
         {
             // This method contains logic optimized using vector instructions for x64 only.
@@ -1954,7 +1945,6 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         private static unsafe nuint NarrowUtf16ToAscii_Intrinsified_512(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
         {
             // This method contains logic optimized using vector instructions for x64 only.
@@ -2079,7 +2069,6 @@ namespace System.Text
         /// or once <paramref name="elementCount"/> elements have been converted. Returns the total number
         /// of elements that were able to be converted.
         /// </summary>
-        [RequiresUnsafe]
         internal static unsafe nuint WidenAsciiToUtf16(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
         {
             // Intrinsified in mono interpreter
@@ -2203,7 +2192,6 @@ namespace System.Text
 
 #if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         private static unsafe void WidenAsciiToUtf1_Vector<TVectorByte, TVectorUInt16>(byte* pAsciiBuffer, char* pUtf16Buffer, ref nuint currentOffset, nuint elementCount)
             where TVectorByte : unmanaged, ISimdVector<TVectorByte, byte>
             where TVectorUInt16 : unmanaged, ISimdVector<TVectorUInt16, ushort>

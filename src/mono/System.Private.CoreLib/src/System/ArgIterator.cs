@@ -31,7 +31,6 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public unsafe ArgIterator(RuntimeArgumentHandle arglist, void* ptr)
         {
             sig = IntPtr.Zero;

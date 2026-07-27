@@ -11,6 +11,9 @@ namespace System.Reflection.Emit
         {
         }
 
+        // An EnumBuilder represents an enum being built; it cannot itself be a Nullable<T>.
+        public override Type? GetNullableUnderlyingType() => null;
+
         public FieldBuilder UnderlyingField
             => UnderlyingFieldCore;
 

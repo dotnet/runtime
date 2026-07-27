@@ -8,6 +8,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace ILCompiler.Reflection.ReadyToRun.MachO
 {
@@ -38,7 +39,7 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
         }
 
         public ImmutableArray<byte> GetEntireImage()
-            => Unsafe.As<byte[], ImmutableArray<byte>>(ref Unsafe.AsRef(in _image));
+            => ImmutableCollectionsMarshal.AsImmutableArray(_image);
 
         public int GetOffset(int rva)
         {

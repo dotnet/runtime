@@ -19,10 +19,9 @@
 #include "dllimport.h"
 #include "clrvarargs.h"
 #include "sigbuilder.h"
-#include "olevariant.h"
 #include "configuration.h"
 #include "conditionalweaktable.h"
-#include "interoplibinterface_comwrappers.h"
+#include "interoplibinterface.h"
 #include "assemblynative.hpp"
 
 //

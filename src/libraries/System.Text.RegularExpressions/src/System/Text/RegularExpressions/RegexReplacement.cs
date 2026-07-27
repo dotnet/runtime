@@ -31,7 +31,7 @@ namespace System.Text.RegularExpressions
         /// the constructor takes a RegexNode which is a concatenation
         /// of constant strings and backreferences.
         /// </summary>
-        public RegexReplacement(string rep, RegexNode concat, Hashtable _caps)
+        public unsafe RegexReplacement(string rep, RegexNode concat, Hashtable _caps)
         {
             Debug.Assert(concat.Kind == RegexNodeKind.Concatenate, $"Expected Concatenate, got {concat.Kind}");
 

@@ -129,8 +129,7 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
     pSB->SetPrecious();
     DWORD dwSyncBlockIndex = pSB->GetSyncBlockIndex();
 
-    NewRCWHolder pNewRCW;
-    pNewRCW = RCW::CreateRCW(m_pUnknown, dwSyncBlockIndex, m_flags, m_typeHandle.GetMethodTable());
+    NewRCWHolder pNewRCW(RCW::CreateRCW(m_pUnknown, dwSyncBlockIndex, m_flags, m_typeHandle.GetMethodTable()));
 
     if (fDuplicate)
     {
@@ -205,7 +204,7 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
                 fInserted = m_pWrapperCache->FindOrInsertWrapper_NoLock(m_pIdentity, &pRCW, !fExisting);
                 _ASSERTE(fInserted);
 
-                pNewRCW.SuppressRelease();
+                pNewRCW.Detach();
             }
             else
             {
@@ -216,7 +215,7 @@ void COMInterfaceMarshaler::CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj,
         else
         {
             // If we did insert this wrapper in the table, make sure we don't delete it.
-            pNewRCW.SuppressRelease();
+            pNewRCW.Detach();
         }
     }
 

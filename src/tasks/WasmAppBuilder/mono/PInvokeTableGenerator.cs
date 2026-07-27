@@ -12,8 +12,9 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using WasmAppBuilder;
 using JoinedString;
+
+namespace Microsoft.WebAssembly.Build.Tasks.Mono;
 
 internal sealed class PInvokeTableGenerator
 {
@@ -27,11 +28,11 @@ internal sealed class PInvokeTableGenerator
     private readonly PInvokeCollector _pinvokeCollector;
     private readonly bool _isLibraryMode;
 
-    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode = false)
+    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode, string targetOS)
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
-        _pinvokeCollector = new(log);
+        _pinvokeCollector = new(log, targetOS);
         _isLibraryMode = isLibraryMode;
     }
 
@@ -365,6 +366,47 @@ internal sealed class PInvokeTableGenerator
             }
             entryArgs.AddRange(cb.Parameters.Select((_, i) => $"(int*)&arg{i}"));
             entryArgs.Add($"(int*)wasm_native_to_interp_ftndescs [{cb_index}].arg");
+
+            // Methods with at most MAX_INTERP_ENTRY_ARGS (8) arguments use a specialized
+            // interp entry function that receives the arguments individually. Methods with
+            // more arguments use the generic interp_entry_general entry point, which takes
+            // the arguments as a pointer array:
+            //   void interp_entry_general (void *this_arg, void *res, void **args, void *rmethod)
+            // The runtime already installs interp_entry_general as the ftndesc target for these
+            // methods, but there is no per-signature wrapper to adapt the individual-argument
+            // calling convention (generating one would require runtime JIT, which is unavailable
+            // on wasm). So for the high-argument-count case, build the argument pointer array here
+            // and call the general entry point directly with the matching signature. Keep this in
+            // sync with MAX_INTERP_ENTRY_ARGS in src/mono/mono/mini/interp/interp.h.
+            const int MaxInterpEntryArgs = 8;
+            if (cb.Parameters.Length > MaxInterpEntryArgs)
+            {
+                string argArray = string.Join(", ", cb.Parameters.Select((_, i) => $"(void*)&arg{i}"));
+                string resArg = cb.IsVoid ? "(void*)0" : "(void*)&result";
+                w.Write(
+                    $$"""
+
+                    {{(cb.IsExport ?
+                    $"__attribute__((export_name(\"{EscapeLiteral(cb.EntryPoint!)}\"))){w.NewLine}" : "")}}{{
+                    MapType(cb.ReturnType)}}
+                    {{cb.EntrySymbol}} ({{cb.Parameters.Join(", ", (info, i) => $"{MapType(info.ParameterType)} arg{i}")}}) {{{
+                        (!cb.IsVoid ? $"{w.NewLine}    {MapType(cb.ReturnType)} result;" : "")}}
+                        void *wasm_interp_args{{cb_index}} [{{cb.Parameters.Length}}] = { {{argArray}} };
+
+                        if (!wasm_native_to_interp_ftndescs [{{cb_index}}].func) {{{
+                            (cb.IsExport && _isLibraryMode ? $"initialize_runtime();{w.NewLine}" : "")}}
+                            mono_wasm_marshal_get_managed_wrapper ("{{EscapeLiteral(cb.AssemblyName)}}", "{{EscapeLiteral(cb.Namespace)}}", "{{EscapeLiteral(cb.TypeName)}}", "{{EscapeLiteral(cb.MethodName)}}", {{cb.Token}}, {{cb.Parameters.Length}});
+                        }
+
+                        typedef void (*InterpEntryGeneral_T{{cb_index}}) (void*, void*, void**, void*);
+                        ((InterpEntryGeneral_T{{cb_index}})wasm_native_to_interp_ftndescs [{{cb_index}}].func) ((void*)0, {{resArg}}, wasm_interp_args{{cb_index}}, wasm_native_to_interp_ftndescs [{{cb_index}}].arg);{{
+                        (!cb.IsVoid ?  $"{w.NewLine}    return result;" : "")}}
+                    }
+
+                    """);
+                cb_index++;
+                continue;
+            }
 
             w.Write(
                 $$"""

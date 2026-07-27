@@ -33,7 +33,6 @@ namespace System.Runtime.InteropServices
 
         private static bool IsNullOrWin32Atom(IntPtr ptr) => ptr == IntPtr.Zero;
 
-        [RequiresUnsafe]
         internal static unsafe int StringToAnsiString(string s, byte* buffer, int bufferLength, bool bestFit = false, bool throwOnUnmappableChar = false)
         {
             Debug.Assert(bufferLength >= (s.Length + 1) * SystemMaxDBCSCharSize, "Insufficient buffer length passed to StringToAnsiString");

@@ -296,10 +296,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhHandleTryGetCrossReferenceContext")]
         internal static extern bool RhHandleTryGetCrossReferenceContext(IntPtr handle, out IntPtr context);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhIsGCBridgeActive")]
-        internal static extern bool RhIsGCBridgeActive();
-
         // Free handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleFree")]
@@ -400,10 +396,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhNewVariableSizeObject")]
         internal static extern unsafe Array RhNewVariableSizeObject(MethodTable* pEEType, int length);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhNewString")]
-        internal static extern unsafe string RhNewString(MethodTable* pEEType, nint length);
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetNewObjectHelper")]
         internal static extern unsafe IntPtr RhGetNewObjectHelper(MethodTable* pEEType);
@@ -441,10 +433,6 @@ namespace System.Runtime
         internal static extern unsafe int RhGetGCDescSize(MethodTable* eeType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhNewInterfaceDispatchCell")]
-        internal static extern unsafe IntPtr RhNewInterfaceDispatchCell(MethodTable* pEEType, int slotNumber);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDispatch")]
         internal static extern unsafe IntPtr RhResolveDispatch(object pObject, MethodTable* pInterfaceType, ushort slot);
 
@@ -463,6 +451,10 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDynamicInterfaceCastableDispatchOnType")]
         internal static extern unsafe IntPtr RhResolveDynamicInterfaceCastableDispatchOnType(MethodTable* instanceType, MethodTable* interfaceType, ushort slot, MethodTable** pGenericContext);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpRegisterDispatchCache")]
+        internal static extern void RhpRegisterDispatchCache(ref byte cache);
 
         //
         // Support for GC and HandleTable callouts.

@@ -30,6 +30,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public INamedTypeSymbol? ActionOfBinderOptions { get; }
         public INamedTypeSymbol? ConfigurationBinder { get; }
+        public INamedTypeSymbol? ConfigurationIgnoreAttribute { get; }
         public INamedTypeSymbol? ConfigurationKeyNameAttribute { get; }
         public INamedTypeSymbol? OptionsBuilderConfigurationExtensions { get; }
         public INamedTypeSymbol? OptionsBuilderOfT { get; }
@@ -88,6 +89,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             INamedTypeSymbol? binderOptions = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.BinderOptions");
             ActionOfBinderOptions = binderOptions is null ? null : compilation.GetBestTypeByMetadataName(typeof(Action<>))?.Construct(binderOptions);
             ConfigurationBinder = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.ConfigurationBinder");
+            ConfigurationIgnoreAttribute = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.ConfigurationIgnoreAttribute");
             ConfigurationKeyNameAttribute = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.ConfigurationKeyNameAttribute");
             IConfiguration = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.IConfiguration");
             IConfigurationSection = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.IConfigurationSection");

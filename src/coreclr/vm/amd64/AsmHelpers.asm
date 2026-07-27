@@ -106,41 +106,6 @@ NESTED_ENTRY JIT_RareDisableHelper, _TEXT
 
 NESTED_END JIT_RareDisableHelper, _TEXT
 
-
-; extern "C" void setFPReturn(int fpSize, INT64 retVal);
-LEAF_ENTRY setFPReturn, _TEXT
-        cmp     ecx, 4
-        je      setFPReturn4
-        cmp     ecx, 8
-        jne     setFPReturnNot8
-        mov     [rsp+10h], rdx
-        movsd   xmm0, real8 ptr [rsp+10h]
-setFPReturnNot8:
-        REPRET
-
-setFPReturn4:
-        mov     [rsp+10h], rdx
-        movss   xmm0, real4 ptr [rsp+10h]
-        ret
-LEAF_END setFPReturn, _TEXT
-
-
-; extern "C" void getFPReturn(int fpSize, INT64 *retval);
-LEAF_ENTRY getFPReturn, _TEXT
-        cmp     ecx, 4
-        je      getFPReturn4
-        cmp     ecx, 8
-        jne     getFPReturnNot8
-        movsd   real8 ptr [rdx], xmm0
-getFPReturnNot8:
-        REPRET
-
-getFPReturn4:
-        movss   real4 ptr [rdx], xmm0
-        ret
-LEAF_END getFPReturn, _TEXT
-
-
 ; A JITted method's return address was hijacked to return to us here.
 ; VOID OnHijackTripThread()
 NESTED_ENTRY OnHijackTripThread, _TEXT

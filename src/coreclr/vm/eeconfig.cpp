@@ -31,14 +31,13 @@ int GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
 // Poor mans narrow
 LPUTF8 NarrowWideChar(__inout_z LPCWSTR str)
 {
-    CONTRACT (LPUTF8)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(str, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     if (str != 0) {
         LPCWSTR fromPtr = str;
@@ -47,9 +46,9 @@ LPUTF8 NarrowWideChar(__inout_z LPCWSTR str)
         while(*fromPtr != 0)
             *toPtr++ = (char) *fromPtr++;
         *toPtr = 0;
-        RETURN result;
+        return result;
     }
-    RETURN NULL;
+    return NULL;
 }
 
 /**************************************************************/
@@ -139,12 +138,6 @@ HRESULT EEConfig::Init()
     pPerfTypesToLog = NULL;
     iFastGCStress = 0;
     iInjectFatalError = 0;
-#ifdef TEST_DATA_CONSISTENCY
-    // indicates whether to run the self test to determine that we are detecting when a lock is held by the
-    // LS in DAC builds. Initialized via the environment variable TestDataConsistency
-    fTestDataConsistency = false;
-#endif
-
     // In Thread::SuspendThread(), default the timeout to 2 seconds.  If the suspension
     // takes longer, assert (but keep trying).
     m_SuspendThreadDeadlockTimeoutMs = 2000;
@@ -624,10 +617,6 @@ HRESULT EEConfig::sync()
 #endif
 
 #ifdef _DEBUG
-
-#ifdef TEST_DATA_CONSISTENCY
-    fTestDataConsistency = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TestDataConsistency) !=0);
-#endif
 
     m_SuspendThreadDeadlockTimeoutMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuspendThreadDeadlockTimeoutMs);
     m_SuspendDeadlockTimeout = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuspendDeadlockTimeout);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -14,7 +15,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class SyncBlockDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "SyncBlock";
-    protected override string DumpType => "full";
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]

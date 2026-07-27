@@ -14,7 +14,7 @@ class Module;
 class COMModule
 {
 public:
-    static FCDECL1(Object*,     GetMethods,             ReflectModuleBaseObject* refThisUNSAFE);
+    FCDECL1(static Object*,     GetMethods,             ReflectModuleBaseObject* refThisUNSAFE);
 };
 
 // GetTypeRef

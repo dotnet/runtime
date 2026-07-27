@@ -5,12 +5,20 @@ using System;
 using System.Diagnostics;
 using System.Numerics;
 using System.Text;
+
 using Internal.TypeSystem;
+using Internal.Text;
 
 namespace Internal
 {
     internal static partial class VersionResilientHashCode
     {
+        public static int NameHashCode(Utf8Span src)
+            => NameHashCode(src.AsSpan());
+
+        public static int NameHashCode(Utf8Span namespacePart, Utf8Span namePart)
+            => NameHashCode(namespacePart.AsSpan(), namePart.AsSpan());
+
         /// <summary>
         /// CoreCLR <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/typehashingalgorithms.h#L87">ComputeGenericInstanceHashCode</a>
         /// </summary>

@@ -65,7 +65,7 @@ jobs:
         jobTemplate: /eng/pipelines/common/global-build-job.yml
         buildConfig: release
         platforms:
-        - linux_x64
+        - linux_arm64
         jobParameters:
           nameSuffix: coreclr_r2r_interpreter
           buildArgs: -s clr+libs+packs -c $(_BuildConfig) -dynamiccodecompiled false

@@ -90,7 +90,7 @@ namespace System.Net.Mime
         // "=?utf-8?B?RmlsZU5hbWVf55CG0Y3Qq9C60I5jw4TRicKq0YIM0Y1hSsSeTNCy0Klh?="; // 3.5
         // With the addition of folding in 4.0, there may be multiple lines with encoding, only detect the first:
         // "=?utf-8?B?RmlsZU5hbWVf55CG0Y3Qq9C60I5jw4TRicKq0YIM0Y1hSsSeTNCy0Klh?=\r\n =?utf-8?B??=";
-        internal static Encoding? DecodeEncoding(string? value)
+        internal static unsafe Encoding? DecodeEncoding(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {

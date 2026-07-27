@@ -17,6 +17,7 @@
 //  public:
 //      void StartMerge(BasicBlock* block);
 //      void Merge(BasicBlock* block, BasicBlock* pred, unsigned dupCount);
+//      void MergeHandler(BasicBlock* block, BasicBlock* tryBeg, BasicBlock* tryLast);
 //      bool EndMerge(BasicBlock* block);
 //  };
 #pragma once
@@ -42,6 +43,7 @@ private:
 template <typename TCallback>
 void DataFlow::ForwardAnalysis(TCallback& callback)
 {
+    assert(m_compiler->fgTrysContiguous());
     if (m_compiler->m_dfsTree == nullptr)
     {
         m_compiler->m_dfsTree = m_compiler->fgComputeDfs();

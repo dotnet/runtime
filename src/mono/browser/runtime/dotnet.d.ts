@@ -261,7 +261,6 @@ interface Assets {
     lazyAssembly?: AssemblyAsset[];
     corePdb?: PdbAsset[];
     pdb?: PdbAsset[];
-    jsModuleWorker?: JsAsset[];
     jsModuleDiagnostics?: JsAsset[];
     jsModuleNative: JsAsset[];
     jsModuleRuntime: JsAsset[];
@@ -422,10 +421,6 @@ type SingleAssetBehaviors =
  * The javascript module for loader.
  */
  | "js-module-dotnet"
-/**
- * The javascript module for threads.
- */
- | "js-module-threads"
 /**
  * The javascript module for diagnostic server and client.
  */
@@ -718,7 +713,7 @@ type DiagnosticsAPIType = {
 type DiagnosticCommandProviderV2 = {
     keywords: [number, number];
     logLevel: number;
-    provider_name: string;
+    providerName: string;
     arguments: string | null;
 };
 type DiagnosticCommandOptions = {
@@ -790,4 +785,4 @@ declare global {
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
 export { GlobalizationMode, createDotnetRuntime as default, dotnet, exit };
-export type { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, RuntimeAPI };
+export type { AssemblyAsset, Asset, AssetBehaviors, AssetEntry, Assets, BootModule, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, IcuAsset, JsAsset, LoadBootResourceCallback, LoadingResource, ModuleAPI, MonoConfig, PdbAsset, ResourceExtensions, ResourceList, RuntimeAPI, SymbolsAsset, VfsAsset, WasmAsset, WebAssemblyBootResourceType };

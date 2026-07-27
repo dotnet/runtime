@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Security.Principal;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit.Sdk;
 
@@ -11,6 +13,50 @@ namespace System.Diagnostics.Tests
 {
     internal static class Helpers
     {
+        // RemoteExecutor populates ProcessStartInfo.Arguments, but the fileName overloads
+        // take an argument list, so this helper maps the serialized argument string.
+        public static List<string>? MapToArgumentList(ProcessStartInfo startInfo)
+        {
+            string arguments = startInfo.Arguments;
+            if (string.IsNullOrEmpty(arguments))
+            {
+                return null;
+            }
+
+            List<string> list = new();
+            StringBuilder builder = new();
+            bool isQuoted = false;
+
+            foreach (char c in arguments)
+            {
+                switch (c)
+                {
+                    case '"' when !isQuoted:
+                        isQuoted = true;
+                        break;
+                    case ' ' when !isQuoted:
+                    case '"' when isQuoted:
+                        if (builder.Length > 0)
+                        {
+                            list.Add(builder.ToString());
+                            builder.Clear();
+                        }
+                        isQuoted = false;
+                        break;
+                    default:
+                        builder.Append(c);
+                        break;
+                }
+            }
+
+            if (builder.Length > 0)
+            {
+                list.Add(builder.ToString());
+            }
+
+            return list;
+        }
+
         public const int PassingTestTimeoutMilliseconds = 60_000;
 
         public static async Task RetryWithBackoff(Action action, int delayInMilliseconds = 10, int times = 10)

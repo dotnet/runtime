@@ -10,6 +10,7 @@
 
 using System.IO;
 using System.Xml;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -30,6 +31,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
     public class XmlDecryptionTransformTest
     {
+        private const string DangerousMaxRecursionDepthAppContextSwitch = "System.Security.Cryptography.Xml.DangerousMaxRecursionDepth";
         private UnprotectedXmlDecryptionTransform transform;
 
         public XmlDecryptionTransformTest()
@@ -221,6 +223,30 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.NotEqual(xml, transformedDocument.OuterXml);
         }
 
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(3, false)]
+        [InlineData(4, true)]
+        public void GetOutput_XmlWithNestedEncryptedData_EnforcesDepthLimit(int depth, bool shouldThrow)
+        {
+            RemoteExecutor.Invoke(static (string depthStr, string shouldThrowStr) =>
+            {
+                int depth = int.Parse(depthStr);
+                bool shouldThrow = bool.Parse(shouldThrowStr);
+
+                AppContext.SetData(DangerousMaxRecursionDepthAppContextSwitch, 3);
+
+                if (shouldThrow)
+                {
+                    CryptographicException ex = Assert.Throws<CryptographicException>(() => DecryptNestedEncryptedDataDocument(depth));
+                    Assert.Equal("The XML element has exceeded the maximum nesting depth allowed for decryption.", ex.Message);
+                }
+                else
+                {
+                    DecryptNestedEncryptedDataDocument(depth);
+                }
+            }, depth.ToString(), shouldThrow.ToString()).Dispose();
+        }
+
         private XmlDocument GetTransformedOutput(XmlDocument doc, string nodeToEncrypt)
         {
             using (var aesAlgo = Aes.Create())
@@ -244,6 +270,45 @@ namespace System.Security.Cryptography.Xml.Tests
 
                 return transformedDocument;
             }
+        }
+
+        private static void DecryptNestedEncryptedDataDocument(int depth)
+        {
+            XmlDocument document = new();
+            XmlElement current = document.CreateElement("Level0");
+            document.AppendChild(current);
+
+            XmlElement[] levels = new XmlElement[depth + 1];
+            levels[0] = current;
+
+            for (int i = 1; i <= depth; i++)
+            {
+                XmlElement child = document.CreateElement($"Level{i}");
+                current.AppendChild(child);
+                levels[i] = child;
+                current = child;
+            }
+
+            current.InnerText = "payload";
+
+            using Aes aes = Aes.Create();
+
+            EncryptedXml encryptedXml = new();
+            encryptedXml.AddKeyNameMapping("aes", aes);
+
+            for (int i = depth; i >= 0; i--)
+            {
+                EncryptedData encryptedData = encryptedXml.Encrypt(levels[i], "aes");
+                EncryptedXml.ReplaceElement(levels[i], encryptedData, false);
+            }
+
+            XmlDecryptionTransform decryptionTransform = new();
+            decryptionTransform.LoadInput(document);
+            decryptionTransform.EncryptedXml = encryptedXml;
+
+            XmlDocument transformedDocument = (XmlDocument)decryptionTransform.GetOutput();
+
+            Assert.Equal("payload", transformedDocument.DocumentElement!.InnerText);
         }
     }
 }

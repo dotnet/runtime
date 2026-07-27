@@ -45,5 +45,28 @@ namespace System.Globalization.Tests
                 float.Parse(value, style); // Should not throw
             }
         }
+
+        [Theory]
+        [InlineData(unchecked((NumberStyles)0xFFFFFC00), false)]
+        [InlineData(NumberStyles.HexNumber | NumberStyles.Integer, false)]
+        [InlineData(NumberStyles.AllowHexSpecifier, false)]
+        [InlineData(NumberStyles.HexFloat, false)]
+        [InlineData(NumberStyles.Float, true)]
+        [InlineData(NumberStyles.AllowBinarySpecifier, false)]
+        [InlineData(NumberStyles.AllowHexSpecifier | NumberStyles.AllowExponent, false)]
+        [InlineData(NumberStyles.None, true)]
+        public void ValidateParseStyle_Decimal(NumberStyles style, bool valid)
+        {
+            if (!valid)
+            {
+                AssertExtensions.Throws<ArgumentException>("style", () => decimal.Parse("0", style));
+                AssertExtensions.Throws<ArgumentException>("style", () => decimal.Parse("0"u8, style));
+            }
+            else
+            {
+                decimal.Parse("0", style); // Should not throw
+                decimal.Parse("0"u8, style); // Should not throw
+            }
+        }
     }
 }

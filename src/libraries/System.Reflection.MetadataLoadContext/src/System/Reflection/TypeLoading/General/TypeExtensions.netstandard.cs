@@ -5,18 +5,28 @@
 
 namespace System.Reflection.TypeLoading
 {
-    // For code that have to interact with "Type" rather than "RoType", some handy extension methods that "add" the NetCore reflection apis to NetStandard.
+    // For code that has to interact with "Type" rather than "RoType", some handy extensions that "add" the NetCore reflection APIs to NetStandard.
     internal static class NetCoreApiEmulators
     {
-        // On NetStandard, have to do with slower emulations.
 #pragma warning disable IDE0060
-        public static bool IsSignatureType(this Type type) => false;
-        public static bool IsSZArray(this Type type) => type.IsArray && type.GetArrayRank() == 1 && type.Name.EndsWith("[]", StringComparison.Ordinal);
-        public static bool IsVariableBoundArray(this Type type) => type.IsArray && !type.IsSZArray();
-        public static bool IsGenericMethodParameter(this Type type) => type.IsGenericParameter && type.DeclaringMethod != null;
+        // On NetStandard, have to do with slower emulations.
+        extension(Type type)
+        {
+#pragma warning disable CA1822 // Mark members as static
+            public bool IsSignatureType => false;
+#pragma warning restore CA1822 // Mark members as static
 
-        // Signature Types do not exist on NetStandard 2.0 but it's possible we could reach this if a NetCore app uses the NetStandard build of this library.
-        public static Type MakeSignatureGenericType(this Type genericTypeDefinition, Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_MakeGenericType_SignatureTypes);
+            public bool IsSZArray => type.IsArray && type.GetArrayRank() == 1 && type.Name.EndsWith("[]", StringComparison.Ordinal);
+
+            public bool IsVariableBoundArray => type.IsArray && !type.IsSZArray;
+
+            public bool IsGenericMethodParameter => type.IsGenericParameter && type.DeclaringMethod != null;
+        }
+        extension(Type)
+        {
+            // Signature Types do not exist on NetStandard 2.0 but it's possible we could reach this if a NetCore app uses the NetStandard build of this library.
+            public static Type MakeGenericSignatureType(Type genericTypeDefinition, params Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_MakeGenericType_SignatureTypes);
+        }
 #pragma warning restore IDE0060
     }
 

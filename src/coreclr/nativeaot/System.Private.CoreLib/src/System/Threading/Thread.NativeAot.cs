@@ -13,6 +13,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
+    [DataContract]
     public sealed partial class Thread
     {
         // Extra bits used in _threadState
@@ -29,7 +30,9 @@ namespace System.Threading
 
         private volatile int _threadState = (int)ThreadState.Unstarted;
         private ThreadPriority _priority;
+        [DataContract]
         private ManagedThreadId _managedThreadId;
+        [DataContract]
         private string? _name;
         private StartHelper? _startHelper;
         private Exception? _startException;

@@ -63,7 +63,7 @@ namespace System.Reflection.Runtime.Assemblies
         {
             get
             {
-                return string.Empty;
+                return System.Runtime.Loader.AssemblyLoadContext.ResolveAssemblyLocation(this, string.Empty);
             }
         }
 

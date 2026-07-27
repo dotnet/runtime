@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -216,7 +216,7 @@ namespace System
         /// Returns an array of TimeSpan objects representing all of
         /// the possible UTC offset values for this ambiguous time.
         /// </summary>
-        public TimeSpan[] GetAmbiguousTimeOffsets(DateTimeOffset dateTimeOffset)
+        public unsafe TimeSpan[] GetAmbiguousTimeOffsets(DateTimeOffset dateTimeOffset)
         {
             Span<TimeSpan> offsets = stackalloc TimeSpan[2];
 
@@ -232,7 +232,7 @@ namespace System
         /// Returns an array of TimeSpan objects representing all of
         /// possible UTC offset values for this ambiguous time.
         /// </summary>
-        public TimeSpan[] GetAmbiguousTimeOffsets(DateTime dateTime)
+        public unsafe TimeSpan[] GetAmbiguousTimeOffsets(DateTime dateTime)
         {
             if (!SupportsDaylightSavingTime)
             {
@@ -649,7 +649,7 @@ namespace System
                 throw new ArgumentException(SR.Argument_ConvertMismatch, nameof(sourceTimeZone));
             }
 
-            bool isInvalidTime = !sourceTimeZone.TryLocalToUtc(dateTime, out DateTime utcDateTime);
+            bool isInvalidTime = !sourceTimeZone.TryLocalToUtc(dateTime, out long utcTicks);
 
             if (((flags & TimeZoneInfoOptions.NoThrowOnInvalidTime) == 0) && isInvalidTime)
             {
@@ -660,7 +660,10 @@ namespace System
             {
                 // This is not logical to do but we are keeping it for app compatibility reason.
                 // We get here if the dateTime is invalid in the source time zone.
-                utcDateTime = new DateTime(dateTime.Ticks + sourceTimeZone.BaseUtcOffset.Ticks, DateTimeKind.Utc);
+                // Preserve the historical behavior of throwing if the computed UTC time is
+                // outside the DateTime range, rather than silently clamping it later.
+                DateTime invalidTimeUtc = new DateTime(dateTime.Ticks + sourceTimeZone.BaseUtcOffset.Ticks, DateTimeKind.Utc);
+                utcTicks = invalidTimeUtc.Ticks;
             }
 
             DateTimeKind targetKind = cachedData.GetCorrespondingKind(destinationTimeZone);
@@ -671,7 +674,15 @@ namespace System
                 return dateTime;
             }
 
-            DateTime targetConverted = destinationTimeZone.UtcToLocal(utcDateTime, out bool isDaylightSaving);
+            // Use a clamped DateTime for destination offset lookup because transition-table lookups require
+            // an in-range DateTime. This preserves the existing offset-selection behavior for the lookup,
+            // while the final local ticks are still computed from the raw utcTicks to avoid double-clamping.
+            DateTime utcForLookup = SafeCreateDateTimeFromTicks(utcTicks, DateTimeKind.Utc);
+            TimeSpan destOffset = destinationTimeZone.GetOffsetForUtcDate(utcForLookup, out bool isDaylightSaving);
+
+            // Compute the final result from raw ticks to avoid precision loss from double-clamping.
+            // The intermediate UTC ticks may be outside DateTime range, but the final local ticks may be valid.
+            DateTime targetConverted = SafeCreateDateTimeFromTicks(utcTicks + destOffset.Ticks);
 
             if (targetKind == DateTimeKind.Local)
             {

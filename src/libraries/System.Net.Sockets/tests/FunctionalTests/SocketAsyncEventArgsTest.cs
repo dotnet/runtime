@@ -1092,6 +1092,7 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact(typeof(DualModeBase), nameof(DualModeBase.LocalhostIsBothIPv4AndIPv6))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
         public void Connect_Parallel_Success()
         {
             using PortBlocker portBlocker = new PortBlocker(() =>
@@ -1125,6 +1126,7 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact(typeof(DualModeBase), nameof(DualModeBase.LocalhostIsBothIPv4AndIPv6))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
         public void Connect_Parallel_Fails()
         {
             using PortBlocker portBlocker = new PortBlocker(() =>
@@ -1160,6 +1162,8 @@ namespace System.Net.Sockets.Tests
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/127986", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
         public void Connect_Parallel_FailsOver(bool preferIPv6)
         {
             using PortBlocker portBlocker = new PortBlocker(() =>

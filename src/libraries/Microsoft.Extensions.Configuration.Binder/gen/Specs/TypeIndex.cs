@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public bool ShouldBindTo(PropertySpec property)
         {
             TypeSpec propTypeSpec = GetEffectiveTypeSpec(property.TypeRef);
-            return IsAccessible() && !IsCollectionAndCannotOverride() && !IsDictWithUnsupportedKey();
+            return IsAccessible() && !property.IsIgnored && !IsCollectionAndCannotOverride() && !IsDictWithUnsupportedKey();
 
             bool IsAccessible() => property.CanGet || property.CanSet;
 

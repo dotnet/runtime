@@ -137,7 +137,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::unwindBegProlog()
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     assert(!compGeneratingUnwindProlog);
     compGeneratingUnwindProlog = true;
 
@@ -166,14 +166,14 @@ void Compiler::unwindBegProlog()
 
 void Compiler::unwindEndProlog()
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     assert(compGeneratingUnwindProlog);
     compGeneratingUnwindProlog = false;
 }
 
 void Compiler::unwindBegEpilog()
 {
-    assert(compGeneratingEpilog);
+    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
     assert(!compGeneratingUnwindEpilog);
     compGeneratingUnwindEpilog = true;
 
@@ -189,7 +189,7 @@ void Compiler::unwindBegEpilog()
 
 void Compiler::unwindEndEpilog()
 {
-    assert(compGeneratingEpilog);
+    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
     assert(compGeneratingUnwindEpilog);
     compGeneratingUnwindEpilog = false;
 }
@@ -398,7 +398,7 @@ void Compiler::unwindAllocStack(unsigned size)
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
-        if (compGeneratingProlog)
+        if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
         {
             unwindAllocStackCFI(size);
         }
@@ -452,7 +452,7 @@ void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
-        if (compGeneratingProlog)
+        if (GetEmitter()->emitGeneratingPrologOrFuncletProlog())
         {
             unwindSetFrameRegCFI(reg, offset);
         }
@@ -549,13 +549,12 @@ void Compiler::unwindPadding()
 // all its funclets.
 void Compiler::unwindReserve()
 {
-    assert(!compGeneratingProlog);
-    assert(!compGeneratingEpilog);
+    assert(!GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(!GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
 
-    assert(compFuncInfoCount > 0);
-    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    for (FuncInfoDsc* const func : Funcs())
     {
-        unwindReserveFunc(funGetFunc(funcIdx));
+        unwindReserveFunc(func);
     }
 }
 
@@ -642,10 +641,9 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 
 void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 {
-    assert(compFuncInfoCount > 0);
-    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    for (FuncInfoDsc* const func : Funcs())
     {
-        unwindEmitFunc(funGetFunc(funcIdx), pHotCode, pColdCode);
+        unwindEmitFunc(func, pHotCode, pColdCode);
     }
 }
 

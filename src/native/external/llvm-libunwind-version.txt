@@ -2,3 +2,5 @@ v22.1.1
 https://github.com/llvm/llvm-project/releases/tag/llvmorg-22.1.1
 
 Apply https://github.com/dotnet/runtime/commit/35b7d59fa1075ab0fefb921393409806a821d8ed
+Apply https://github.com/dotnet/runtime/commit/be5f98fb6702704afbaf705dce0b54d55479c6f1
+Apply https://github.com/llvm/llvm-project/commit/588451c160c34b888ced1c3d9263d361df22f757

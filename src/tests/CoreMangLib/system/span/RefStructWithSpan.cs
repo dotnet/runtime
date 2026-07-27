@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 ref struct MyStruct<A, B>
 {
@@ -70,7 +71,7 @@ public class My
 
     public static int[][] g = new int[10000][];
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     [OuterLoop]
     [SkipOnCoreClr("Incompatible with GC stress", RuntimeTestModes.AnyGCStress)]
     public static int TestEntryPoint()

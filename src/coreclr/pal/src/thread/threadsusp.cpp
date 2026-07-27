@@ -239,13 +239,6 @@ CThreadSuspensionInfo::InternalResumeThreadFromData(
 
     int nWrittenBytes = -1;
 
-    if (SignalHandlerThread == pthrTarget->GetThreadType())
-    {
-        ASSERT("Attempting to resume the signal handling thread, which can never be suspended.\n");
-        palError = ERROR_INVALID_HANDLE;
-        goto InternalResumeThreadFromDataExit;
-    }
-
     // Acquire suspension mutex
     AcquireSuspensionLocks(pthrResumer, pthrTarget);
 

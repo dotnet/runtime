@@ -6,7 +6,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Marker interface that identifies the node representing a compiled method body.
     /// </summary>
-    public interface IMethodBodyNode : IMethodNode
+    public interface IMethodBodyNode : IMethodNode, IPCodeSymbolNode
     {
     }
 }

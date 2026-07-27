@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RollForward>Major</RollForward>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.DotNet.HotReload.Utils.Generator.Frontend\Microsoft.DotNet.HotReload.Utils.Generator.Frontend.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -214,6 +214,7 @@ namespace System.Runtime.InteropServices
     public sealed class MarshalAsAttribute : Attribute
     {
         public MarshalAsAttribute(UnmanagedType unmanagedType) { }
+        public int IidParameterIndex { get; set; }
     }
 
     public sealed class ComImportAttribute : Attribute

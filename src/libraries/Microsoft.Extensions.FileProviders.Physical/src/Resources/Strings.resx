@@ -141,4 +141,10 @@
   <data name="FileSystemWatcher_PlatformNotSupported" xml:space="preserve">
     <value>The type '{0}' is not supported on this platform, use polling instead.</value>
   </data>
+  <data name="RootDirectoryMissing" xml:space="preserve">
+    <value>Could not find the root directory '{0}'.</value>
+  </data>
+  <data name="FileSystemWatcherPathError" xml:space="preserve">
+    <value>The FileSystemWatcher path '{0}' must be empty, equal to, an ancestor of, or a descendant of the root '{1}'.</value>
+  </data>
 </root>

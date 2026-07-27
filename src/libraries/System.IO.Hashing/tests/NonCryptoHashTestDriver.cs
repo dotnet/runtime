@@ -3,11 +3,13 @@
 
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Xunit;
 
 namespace System.IO.Hashing.Tests
 {
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
     public abstract class NonCryptoHashTestDriver
     {
         private readonly int _hashLengthInBytes;

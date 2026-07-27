@@ -15,6 +15,7 @@
 #include "metadata.h"
 #include "metamodelro.h"
 #include "metamodelrw.h"
+#include "cdacdata.h"
 
 #include "stgtiggerstorage.h"
 
@@ -79,6 +80,7 @@ void CLiteWeightStgdb<MiniMd>::Uninit()
 
 class CLiteWeightStgdbRW : public CLiteWeightStgdb<CMiniMdRW>
 {
+    friend struct ::cdac_data<CLiteWeightStgdbRW>;
     friend class RegMeta;
     friend class VerifyLayoutsMD;
     friend HRESULT TranslateSigHelper(
@@ -234,5 +236,12 @@ private:
     PdbHeap *m_pPdbHeap;
 #endif
 };  // class CLiteWeightStgdbRW
+
+template<>
+struct cdac_data<CLiteWeightStgdbRW>
+{
+    static constexpr size_t MiniMd = offsetof(CLiteWeightStgdbRW, m_MiniMd);
+    static constexpr size_t MetadataAddress = offsetof(CLiteWeightStgdbRW, m_pvMd);
+};
 
 #endif // __LiteWeightStgdb_h__

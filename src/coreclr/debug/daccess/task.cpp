@@ -2798,9 +2798,6 @@ ClrDataModule::SetJITCompilerFlags(
                 dwBits |= DACF_ALLOW_JIT_OPTS;
             }
 
-            // Settings from the debugger take precedence over all other settings.
-            dwBits |= DACF_USER_OVERRIDE;
-
             // set flags. This will write back to the target
             m_module->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)dwBits);
 
@@ -4565,7 +4562,7 @@ ClrDataExceptionState::GetPrevious(
                                       m_thread,
                                       CLRDATA_EXCEPTION_DEFAULT,
                                       m_prevExInfo,
-                                      m_prevExInfo->m_hThrowable,
+                                      m_prevExInfo->GetThrowableAsPseudoHandle(),
                                       m_prevExInfo->m_pPrevNestedInfo);
             status = *exState ? S_OK : E_OUTOFMEMORY;
         }
@@ -4929,7 +4926,7 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
                               thread,
                               CLRDATA_EXCEPTION_DEFAULT,
                               exState,
-                              exState->m_hThrowable,
+                              exState->GetThrowableAsPseudoHandle(),
                               exState->m_pPrevNestedInfo);
     if (!exIf)
     {
@@ -5053,7 +5050,7 @@ EnumMethodDefinitions::Next(ClrDataAccess* dac,
         COR_ILMETHOD_DECODER ilDec(ilMeth);
 
         CLRDATA_ADDRESS start =
-            TO_CDADDR(PTR_HOST_TO_TADDR(ilMeth) + 4 * ilDec.GetSize());
+            TO_CDADDR(PTR_HOST_TO_TADDR(ilDec.Code));
         if (m_addrFilter < start ||
             m_addrFilter > start + ilDec.GetCodeSize() - 1)
         {

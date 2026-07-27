@@ -88,4 +88,13 @@ function(generate_data_descriptors)
   # Set include directories for the data descriptor targets, now that they are created.
   target_include_directories(${LIBRARY} PUBLIC ${DATA_DESCRIPTOR_SHARED_INCLUDE_DIR})
   target_include_directories(${LIBRARY} PRIVATE ${GENERATED_CDAC_DESCRIPTOR_DIR})
+
+  if(MSVC)
+    # Embed debug info in the object files (/Z7). CMake does not assign a compile
+    # PDB to OBJECT libraries, so the objects archived into a static library (e.g.
+    # Runtime.ServerGC.lib) would otherwise reference an absent vc140.pdb, producing
+    # LNK4099 for the NativeAOT publish of ILCompiler/crossgen2/ilasm/mscordaccore_universal,
+    # which is fatal under /WX in the VMR build.
+    set_target_properties(${LIBRARY} PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+  endif()
 endfunction(generate_data_descriptors)

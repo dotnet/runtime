@@ -1,6 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
 
 allocator::allocator (unsigned int num_b, int fbb, alloc_list* b, int gen)
 {
@@ -1319,27 +1328,6 @@ bool gc_heap::new_allocation_allowed (int gen_number)
     }
 #endif //MULTIPLE_HEAPS
     return TRUE;
-}
-
-inline
-ptrdiff_t gc_heap::get_desired_allocation (int gen_number)
-{
-    return dd_desired_allocation (dynamic_data_of (gen_number));
-}
-
-inline
-ptrdiff_t  gc_heap::get_new_allocation (int gen_number)
-{
-    return dd_new_allocation (dynamic_data_of (gen_number));
-}
-
-//return the amount allocated so far in gen_number
-inline
-ptrdiff_t  gc_heap::get_allocation (int gen_number)
-{
-    dynamic_data* dd = dynamic_data_of (gen_number);
-
-    return dd_desired_allocation (dd) - dd_new_allocation (dd);
 }
 
 #ifdef SHORT_PLUGS
@@ -3253,29 +3241,6 @@ exit:
     return soh_alloc_state;
 }
 
-#ifdef BACKGROUND_GC
-inline
-void gc_heap::bgc_track_uoh_alloc()
-{
-    if (current_c_gc_state == c_gc_state_planning)
-    {
-        Interlocked::Increment (&uoh_alloc_thread_count);
-        dprintf (3, ("h%d: inc lc: %d", heap_number, (int32_t)uoh_alloc_thread_count));
-    }
-}
-
-inline
-void gc_heap::bgc_untrack_uoh_alloc()
-{
-    if (current_c_gc_state == c_gc_state_planning)
-    {
-        Interlocked::Decrement (&uoh_alloc_thread_count);
-        dprintf (3, ("h%d: dec lc: %d", heap_number, (int32_t)uoh_alloc_thread_count));
-    }
-}
-
-#endif //BACKGROUND_GC
-
 size_t gc_heap::get_uoh_seg_size (size_t size)
 {
     size_t default_seg_size =
@@ -4118,8 +4083,8 @@ void gc_heap::balance_heaps (alloc_context* acontext)
         if (set_home_heap)
         {
             /*
-                        // Since we are balancing up to MAX_SUPPORTED_CPUS, no need for this.
-                        if (n_heaps > MAX_SUPPORTED_CPUS)
+                        // Since we are balancing up to MAX_SUPPORTED_HEAPS, no need for this.
+                        if (n_heaps > MAX_SUPPORTED_HEAPS)
                         {
                             // on machines with many processors cache affinity is really king, so don't even try
                             // to balance on these.
@@ -4549,41 +4514,6 @@ BOOL gc_heap::allocate_more_space(alloc_context* acontext, size_t size,
     while (status == a_state_retry_allocate);
 
     return (status == a_state_can_allocate);
-}
-
-inline
-CObjectHeader* gc_heap::allocate (size_t jsize, alloc_context* acontext, uint32_t flags)
-{
-    size_t size = Align (jsize);
-    assert (size >= Align (min_obj_size));
-    {
-    retry:
-        uint8_t*  result = acontext->alloc_ptr;
-        acontext->alloc_ptr+=size;
-        if (acontext->alloc_ptr <= acontext->alloc_limit)
-        {
-            CObjectHeader* obj = (CObjectHeader*)result;
-            assert (obj != 0);
-            return obj;
-        }
-        else
-        {
-            acontext->alloc_ptr -= size;
-
-#ifdef _MSC_VER
-#pragma inline_depth(0)
-#endif //_MSC_VER
-
-            if (! allocate_more_space (acontext, size, flags, 0))
-                return 0;
-
-#ifdef _MSC_VER
-#pragma inline_depth(20)
-#endif //_MSC_VER
-
-            goto retry;
-        }
-    }
 }
 
 void  gc_heap::leave_allocation_segment (generation* gen)
@@ -5418,15 +5348,6 @@ generation*  gc_heap::ensure_ephemeral_heap_segment (generation* consing_gen)
 #endif //!USE_REGIONS
 
 inline
-void gc_heap::init_alloc_info (generation* gen, heap_segment* seg)
-{
-    generation_allocation_segment (gen) = seg;
-    generation_allocation_pointer (gen) = heap_segment_mem (seg);
-    generation_allocation_limit (gen) = generation_allocation_pointer (gen);
-    generation_allocation_context_start_region (gen) = generation_allocation_pointer (gen);
-}
-
-inline
 heap_segment* gc_heap::get_next_alloc_seg (generation* gen)
 {
 #ifdef USE_REGIONS
@@ -5473,6 +5394,55 @@ heap_segment* gc_heap::get_next_alloc_seg (generation* gen)
 #endif //USE_REGIONS
 }
 
+bool gc_heap::decide_on_gen1_pin_promotion (float pin_frag_ratio, float pin_surv_ratio)
+{
+    return ((pin_frag_ratio > 0.15) && (pin_surv_ratio > 0.30));
+}
+
+// Add the size of the pinned plug to the higher generation's pinned allocations.
+void gc_heap::attribute_pin_higher_gen_alloc (
+#ifdef USE_REGIONS
+                                              heap_segment* seg, int to_gen_number,
+#endif
+                                              uint8_t* plug, size_t len)
+{
+    //find out which gen this pinned plug came from
+    int frgn = object_gennum (plug);
+    if ((frgn != (int)max_generation) && settings.promotion)
+    {
+        generation_pinned_allocation_sweep_size (generation_of (frgn + 1)) += len;
+
+#ifdef USE_REGIONS
+        // With regions it's a bit more complicated since we only set the plan_gen_num
+        // of a region after we've planned it. This means if the pinning plug is in
+        // the same seg we are planning, we haven't set its plan_gen_num yet. So we
+        // need to check for that first.
+        int togn = (in_range_for_segment (plug, seg) ? to_gen_number : object_gennum_plan (plug));
+#else
+        int togn = object_gennum_plan (plug);
+#endif //USE_REGIONS
+        if (frgn < togn)
+        {
+            generation_pinned_allocation_compact_size (generation_of (togn)) += len;
+        }
+    }
+}
+
+#ifdef USE_REGIONS
+void gc_heap::attribute_pin_higher_gen_alloc (int frgn, int togn, size_t len)
+{
+    if ((frgn != (int)max_generation) && settings.promotion)
+    {
+        generation_pinned_allocation_sweep_size (generation_of (frgn + 1)) += len;
+
+        if (frgn < togn)
+        {
+            generation_pinned_allocation_compact_size (generation_of (togn)) += len;
+        }
+    }
+}
+#endif //USE_REGIONS
+
 uint8_t* gc_heap::allocate_in_condemned_generations (generation* gen,
                                                   size_t size,
                                                   int from_gen_number,
@@ -5505,6 +5475,16 @@ uint8_t* gc_heap::allocate_in_condemned_generations (generation* gen,
 
 #ifdef SHORT_PLUGS
     int pad_in_front = ((old_loc != 0) && (to_gen_number != max_generation)) ? USE_PADDING_FRONT : 0;
+
+    // A near-region-sized plug can't fit with front padding even in an empty region, so skip the padding.
+    // This is safe because front padding only exists to protect short plugs (shorter than sizeof(plug_and_gap))
+    // from being overwritten by the plug_and_gap header during compaction — a plug this large is in no such danger.
+    if ((pad_in_front & USE_PADDING_FRONT) &&
+        (size + Align (min_obj_size) >
+        ((size_t)1 << min_segment_size_shr) - sizeof (aligned_plug_and_gap)))
+    {
+        pad_in_front = 0;
+    }
 #else //SHORT_PLUGS
     int pad_in_front = 0;
 #endif //SHORT_PLUGS
@@ -5560,28 +5540,12 @@ retry:
                 generation_allocation_context_start_region (gen) = generation_allocation_pointer (gen);
                 generation_allocation_limit (gen) = heap_segment_plan_allocated (seg);
                 set_allocator_next_pin (gen);
-
-                //Add the size of the pinned plug to the right pinned allocations
-                //find out which gen this pinned plug came from
-                int frgn = object_gennum (plug);
-                if ((frgn != (int)max_generation) && settings.promotion)
-                {
-                    generation_pinned_allocation_sweep_size (generation_of (frgn + 1)) += len;
-
+                attribute_pin_higher_gen_alloc (
 #ifdef USE_REGIONS
-                    // With regions it's a bit more complicated since we only set the plan_gen_num
-                    // of a region after we've planned it. This means if the pinning plug is in the
-                    // the same seg we are planning, we haven't set its plan_gen_num yet. So we
-                    // need to check for that first.
-                    int togn = (in_range_for_segment (plug, seg) ? to_gen_number : object_gennum_plan (plug));
-#else
-                    int togn = object_gennum_plan (plug);
-#endif //USE_REGIONS
-                    if (frgn < togn)
-                    {
-                        generation_pinned_allocation_compact_size (generation_of (togn)) += len;
-                    }
-                }
+                                                seg, to_gen_number,
+#endif
+                                                plug, len);
+
                 goto retry;
             }
 
@@ -5837,3 +5801,5 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
 
     return obj;
 }
+
+} // namespace SVR/WKS

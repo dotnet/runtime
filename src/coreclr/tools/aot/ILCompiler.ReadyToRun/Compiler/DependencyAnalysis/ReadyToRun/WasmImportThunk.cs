@@ -5,6 +5,7 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
+using Internal.CallingConvention;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
@@ -19,6 +20,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly TypeSystemContext _context;
         private readonly Import _helperCell;
         private readonly WasmTypeNode _typeNode;
+        private readonly WasmSignature _wasmSignature;
 
         private readonly ImportThunkKind _thunkKind;
 
@@ -33,10 +35,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// Import thunks are used to call a runtime-provided helper which fixes up an indirection cell in a particular
         /// import section. Optionally they may also contain a relocation for a specific indirection cell to fix up.
         /// </summary>
-        public WasmImportThunk(NodeFactory factory, WasmTypeNode typeNode, ReadyToRunHelper helperId, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
+        public WasmImportThunk(NodeFactory factory, WasmSignature wasmSignature, ReadyToRunHelper helperId, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
         {
             _context = factory.TypeSystemContext;
-            _typeNode = typeNode;
+            _wasmSignature = wasmSignature;
+            _typeNode = factory.WasmTypeNode(wasmSignature);
             _helperCell = factory.GetReadyToRunHelperCell(helperId);
             _containingImportSection = containingImportSection;
 
@@ -72,8 +75,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             sb.Append("WasmDelayLoadHelper->"u8);
             _helperCell.AppendMangledName(nameMangler, sb);
-            sb.Append($"(ImportSection:{_containingImportSection.Name},Kind:{_thunkKind})");
-            _typeNode.AppendMangledName(nameMangler, sb);
+            sb.Append($"(ImportSection:{_containingImportSection.Name},Kind:{_thunkKind},Sig:{_wasmSignature.SignatureString})");
         }
 
         protected override string GetName(NodeFactory factory)
@@ -85,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 948271336;
 
-        MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_typeNode.Type, _context);
+        MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_wasmSignature, _context);
 
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
         bool INodeWithTypeSignature.IsAsyncCall => false;
@@ -98,7 +100,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            result = _typeNode.CompareToImpl(otherNode._typeNode, comparer);
+            result = _wasmSignature.CompareTo(otherNode._wasmSignature);
             if (result != 0)
                 return result;
 
@@ -109,7 +111,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_helperCell, otherNode._helperCell);
         }
 
-        static CorInfoWasmType[] _helperTypeParams = new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32 };
+        static CorInfoWasmType[] _helperTypeParams = new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32 };
 
         protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)
         {
@@ -117,43 +119,34 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Debug.Assert(!instructionEncoder.Is64Bit); // We currently only support 32-bit, and the thunk logic is currently tied to that assumption
 
             // WASM-TODO! This is NOT an efficient way to implement this thunk. Currently it writes all the arguments to the stack, not just the ones which need to be saved for GC purposes.
-            // At some point we'll want to only write the arguments which need GC tracking, and skip the save/restore for other arguments. This will require changes to code
+            // At some point we'll want to only write the arguments which need GC tracking, and skip the save/restore for other arguments. This might require changes to code
             // which is currently architecture neutral on the VM side, so we should wait to do this until we have a better picture of how the VM and compiler sides will interact for this thunk.
 
             ISymbolNode helperTypeIndex = factory.WasmTypeNode(_helperTypeParams);
 
-            // The arguments are $sp, ARG0-ARGN, PortableEntrypointThunk.
-            // The general logic is...
-            // Compute stack offset needed.
-            int currentOffset = 0;
+            MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
+            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
 
-            for (int i = 1; i < _typeNode.Type.Params.Types.Length - 1; i++)
+            int[] offsets = new int[methodSignature.Length];
+            bool[] isIndirectStructArg = new bool[methodSignature.Length];
+            bool hasRetBuffArg = _wasmSignature.SignatureString[0] == 'S';
+
+            int argIndex = 0;
+            int argOffset;
+            while ((argOffset = argit.GetNextOffset()) != TransitionBlock.InvalidOffset)
             {
-                WasmValueType type = _typeNode.Type.Params.Types[i];
-                switch (type)
-                {
-                    case WasmValueType.I32:
-                    case WasmValueType.F32:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 4);
-                        currentOffset += 4;
-                        break;
-                    case WasmValueType.I64:
-                    case WasmValueType.F64:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 8);
-                        currentOffset += 8;
-                        break;
-                    case WasmValueType.V128:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 16);
-                        currentOffset += 16;
-                        break;
-
-                    default:
-                        throw new System.Exception("Unexpected wasm type arg");
-                }
+                offsets[argIndex] = argOffset;
+                isIndirectStructArg[argIndex] = WasmLowering.CurrentArgLowersValueTypeToPassAsByref(argit);
+                argIndex++;
             }
 
-            // Align stack to 16 byte boundaries
-            int sizeOfStoredLocals = AlignmentHelper.AlignUp(currentOffset, 16);
+            argit.Reset();
+
+            // The arguments are $sp, ARG0-ARGN, PortableEntrypointThunk.
+            // Compute stack offset needed.
+
+            // Align total allocation (args + transition block) to 16 byte boundaries
+            int sizeOfStoredLocals = AlignmentHelper.AlignUp(argit.SizeOfFrameArgumentArray() + transitionBlock.SizeOfTransitionBlock, 16);
 
             List<WasmExpr> expressions = new List<WasmExpr>();
             // local.get 0
@@ -162,11 +155,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Const(sizeOfStoredLocals));
             // i32.sub
             expressions.Add(I32.Sub);
-            // local.tee 0
-            expressions.Add(Local.Tee(0));
+            // local.set 0
+            expressions.Add(Local.Set(0));
 
-            // global.set {stack pointer global}  // This is a callout from managed to native, we need to set the global stack pointer so that C++ code will work
-            expressions.Add(Global.Set(0));
+            // Initialize m_ReturnAddress to 0 at offset 0 of the transition block
+            // The 0 is a marker that the actual return address is to be computed from the m_StackPointer at offset 4.
+            expressions.Add(Local.Get(0));
+            expressions.Add(I32.Const(0));
+            expressions.Add(I32.Store(0));
+
+            // Store the original caller's frame pointer (SP before allocation) at offset 4
+            expressions.Add(Local.Get(0));
+            expressions.Add(Local.Get(0));
+            expressions.Add(I32.Const(sizeOfStoredLocals));
+            expressions.Add(I32.Add);
+            expressions.Add(I32.Store(4));
 
             //
             // ; Stash all the locals away
@@ -178,48 +181,81 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // }
 
             // In the calling convention, the first arg is the sp arg, and the last is the portable entrypoint arg. Each of those are treated specially
-            currentOffset = 0;
-            for (int i = 1; i < _typeNode.Type.Params.Types.Length - 1; i++)
+            // Iterate over the raised MethodSignature params rather than wasm-level types.
+            // This allows us to:
+            //   - Skip empty struct params (no wasm local exists)
+            //   - Zero-fill indirect struct params instead of copying the byref pointer
+            bool hasThis = !methodSignature.IsStatic;
+            int wasmLocalIndex = 1; // local 0 is $sp
+
+            // Store 'this' pointer if present — it occupies a wasm local but is not in the raised MethodSignature params
+            if (hasThis)
             {
                 expressions.Add(Local.Get(0));
-                expressions.Add(Local.Get(i));
-                WasmValueType type = _typeNode.Type.Params.Types[i];
-                switch (type)
-                {
-                    case WasmValueType.I32:
-                    case WasmValueType.F32:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 4);
-                        if (type == WasmValueType.I32)
-                        {
-                            expressions.Add(I32.Store((ulong)currentOffset));
-                        }
-                        else
-                        {
-                            expressions.Add(F32.Store((ulong)currentOffset));
-                        }
-                        currentOffset += 4;
-                        break;
-                    case WasmValueType.I64:
-                    case WasmValueType.F64:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 8);
-                        if (type == WasmValueType.I64)
-                        {
-                            expressions.Add(I64.Store((ulong)currentOffset));
-                        }
-                        else
-                        {
-                            expressions.Add(F64.Store((ulong)currentOffset));
-                        }
-                        currentOffset += 8;
-                        break;
-                    case WasmValueType.V128:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 16);
-                        expressions.Add(V128.Store((ulong)currentOffset));
-                        currentOffset += 16;
-                        break;
+                expressions.Add(Local.Get(wasmLocalIndex));
+                expressions.Add(I32.Store((ulong)transitionBlock.ThisOffset));
+                wasmLocalIndex++;
+            }
 
-                    default:
-                        throw new System.Exception("Unexpected wasm type arg");
+            if (hasRetBuffArg)
+            {
+                wasmLocalIndex++;
+            }
+
+            for (int i = 0; i < methodSignature.Length; i++)
+            {
+                TypeDesc paramType = methodSignature[i];
+
+                if (WasmLowering.IsEmptyStruct(paramType))
+                {
+                    // Empty struct — no wasm local, nothing to store
+                    continue;
+                }
+
+                int currentOffset = offsets[i];
+
+                if (isIndirectStructArg[i])
+                {
+                    // Indirect struct — zero-fill the transition block slot instead of copying the byref pointer.
+                    int structSize = paramType.GetElementSize().AsInt;
+                    int fillSize = AlignmentHelper.AlignUp(structSize, 8);
+
+                    // memory.fill: (dst, val, len) -> ()
+                    expressions.Add(Local.Get(0));
+                    expressions.Add(I32.Const(currentOffset));
+                    expressions.Add(I32.Add);
+                    expressions.Add(I32.Const(0));
+                    expressions.Add(I32.Const(fillSize));
+                    expressions.Add(Memory.Fill());
+                    wasmLocalIndex++;
+                }
+                else
+                {
+                    expressions.Add(Local.Get(0));
+                    expressions.Add(Local.Get(wasmLocalIndex));
+                    WasmValueType type = _typeNode.Type.Params.Types[wasmLocalIndex];
+                    switch (type)
+                    {
+                        case WasmValueType.I32:
+                            expressions.Add(I32.Store((ulong)currentOffset));
+                            break;
+                        case WasmValueType.F32:
+                            expressions.Add(F32.Store((ulong)currentOffset));
+                            break;
+                        case WasmValueType.I64:
+                            expressions.Add(I64.Store((ulong)currentOffset));
+                            break;
+                        case WasmValueType.F64:
+                            expressions.Add(F64.Store((ulong)currentOffset));
+                            break;
+                        case WasmValueType.V128:
+                            expressions.Add(V128.Store((ulong)currentOffset));
+                            break;
+
+                        default:
+                            throw new System.Exception("Unexpected wasm type arg");
+                    }
+                    wasmLocalIndex++;
                 }
             }
             //
@@ -229,30 +265,30 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             expressions.Add(Local.Get(0)); // The address of the args is passed as the first argument
             expressions.Add(Local.Get(portableEntrypointLocalIndex)); // The address of the portable entrypoint is passed as the second
-            expressions.Add(Global.Get(1)); // The module base address is passed as the third argument
+            expressions.Add(Global.Get(WasmObjectWriter.ImageBaseGlobalIndex)); // The module base address is passed as the third argument
+
+            // Pass the RVA of the Module fixup as the fourth argument
+            // i32.const (RVA of Module fixup)
+            expressions.Add(I32.ConstRVA(factory.ModuleImport));
 
             // Load the helper function address and dispatch
             // global.get {module base}
-            expressions.Add(Global.Get(1)); // Module base?
-            // i32.const (RVA of R2RHelperID)
-            expressions.Add(I32.ConstRVA(_helperCell));
-            // i32.add
-            expressions.Add(I32.Add);
-            // i32.load 0
-            expressions.Add(I32.Load(0));
-            // call_indirect (i32, i32, i32, i32) (returns i32)
+            expressions.Add(Global.Get(WasmObjectWriter.ImageBaseGlobalIndex)); // Module base used to load the helper function address
+            expressions.Add(I32.LoadWithRVAOffset(_helperCell)); // Load the helper call function pointer from the helper cell, using a load with an RVA offset so that the helper cell can be left as a zero in the R2R image and fixed up at runtime. This avoids the need to emit a runtime relocation for the helper cell.
+            // call_indirect (i32, i32, i32, i32) -> (i32)
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));
 
-            // local.set (PortableEntrypointThunk)  / At this point we can overwrite with the incoming portable entrypoint local, since the old value it will no longer be used
+            // local.set (PortableEntrypointThunk)  / At this point we can overwrite with the incoming portable entrypoint local, since the old value will no longer be used
             expressions.Add(Local.Set(portableEntrypointLocalIndex));
             //
-             // ;Setup sp arg for the final call, with the call address now coming from the portable entrypoint
+            // ;Setup sp arg for the final call, with the call address now coming from the portable entrypoint
             // local.get 0
             expressions.Add(Local.Get(0));
             // i32.const {sizeofstoredlocals}
             expressions.Add(I32.Const(sizeOfStoredLocals));
             // i32.add
             expressions.Add(I32.Add);
+
             //
             // ; Setup normal args
             // for (int i = 0; i < N; i++)
@@ -262,47 +298,67 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             //   local.set (i+1)
             // }
             // In the calling convention, the first arg is the sp arg, and the last is the portable entrypoint arg. Each of those are treated specially
-            currentOffset = 0;
-            for (int i = 1; i < _typeNode.Type.Params.Types.Length - 1; i++)
+            // Iterate over the raised MethodSignature params to handle indirect/empty structs correctly
+            wasmLocalIndex = 1;
+
+            // Restore 'this' pointer if present
+            if (hasThis)
             {
                 expressions.Add(Local.Get(0));
-                WasmValueType type = _typeNode.Type.Params.Types[i];
-                switch (type)
-                {
-                    case WasmValueType.I32:
-                    case WasmValueType.F32:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 4);
-                        if (type == WasmValueType.I32)
-                        {
-                            expressions.Add(I32.Load((ulong)currentOffset));
-                        }
-                        else
-                        {
-                            expressions.Add(F32.Load((ulong)currentOffset));
-                        }
-                        currentOffset += 4;
-                        break;
-                    case WasmValueType.I64:
-                    case WasmValueType.F64:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 8);
-                        if (type == WasmValueType.I64)
-                        {
-                            expressions.Add(I64.Load((ulong)currentOffset));
-                        }
-                        else
-                        {
-                            expressions.Add(F64.Load((ulong)currentOffset));
-                        }
-                        currentOffset += 8;
-                        break;
-                    case WasmValueType.V128:
-                        currentOffset = AlignmentHelper.AlignUp(currentOffset, 16);
-                        expressions.Add(V128.Load((ulong)currentOffset));
-                        currentOffset += 16;
-                        break;
+                expressions.Add(I32.Load((ulong)transitionBlock.ThisOffset));
+                wasmLocalIndex++;
+            }
 
-                    default:
-                        throw new System.Exception("Unexpected wasm type arg");
+            // Pass return buffer argument if needed
+            if (hasRetBuffArg)
+            {
+                expressions.Add(Local.Get(wasmLocalIndex));
+                wasmLocalIndex++;
+            }
+
+            for (int i = 0; i < methodSignature.Length; i++)
+            {
+                TypeDesc paramType = methodSignature[i];
+
+                if (WasmLowering.IsEmptyStruct(paramType))
+                {
+                    // Empty struct — no wasm local, nothing to restore
+                    continue;
+                }
+
+                if (isIndirectStructArg[i])
+                {
+                    // Indirect struct — pass the original byref pointer from the caller
+                    expressions.Add(Local.Get(wasmLocalIndex));
+                    wasmLocalIndex++;
+                }
+                else
+                {
+                    expressions.Add(Local.Get(0));
+                    WasmValueType type = _typeNode.Type.Params.Types[wasmLocalIndex];
+                    int currentOffset = offsets[i];
+                    switch (type)
+                    {
+                        case WasmValueType.I32:
+                            expressions.Add(I32.Load((ulong)currentOffset));
+                            break;
+                        case WasmValueType.F32:
+                            expressions.Add(F32.Load((ulong)currentOffset));
+                            break;
+                        case WasmValueType.I64:
+                            expressions.Add(I64.Load((ulong)currentOffset));
+                            break;
+                        case WasmValueType.F64:
+                            expressions.Add(F64.Load((ulong)currentOffset));
+                            break;
+                        case WasmValueType.V128:
+                            expressions.Add(V128.Load((ulong)currentOffset));
+                            break;
+
+                        default:
+                            throw new System.Exception("Unexpected wasm type arg");
+                    }
+                    wasmLocalIndex++;
                 }
             }
             // ; Add the portable entrypoint arg

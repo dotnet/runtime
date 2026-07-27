@@ -411,12 +411,13 @@ C_FUNC(\Name\()_End):
 // Stack layout (from low to high address):
 //   sp+0:     FloatArgumentRegisters (fa0-fa7, 64 bytes)
 //   sp+64:    TransitionBlock start
-//             - CalleeSavedRegisters (fp, ra, s0-s8 - 96 bytes)
+//             - CalleeSavedRegisters (fp, ra, s0-s8 - 88 bytes)
+//             - padding (8 bytes)
 //             - ArgumentRegisters (a0-a7, 64 bytes)
 //
 // On exit, \target contains the TransitionBlock pointer (sp+128).
 .macro PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS target
-        // Stack: FPCalleeSaved(64) + FloatArgs(64) + CalleeSaved(96) + Args(64) = 288 bytes
+        // Stack: FPCalleeSaved(64) + FloatArgs(64) + CalleeSaved(88) + pad(8) + Args(64) = 288 bytes
         PROLOG_STACK_ALLOC 288
         PROLOG_SAVE_REG_PAIR  22, 1, 128, 1
 

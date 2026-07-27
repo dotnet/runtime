@@ -755,7 +755,7 @@ namespace System.Text.RegularExpressions
         /// If the method returns false, the caller can be sure the sets do not overlap.
         /// If the method returns true, it's still possible the sets don't overlap.
         /// </remarks>
-        public static bool MayOverlap(string set1, string set2)
+        public static unsafe bool MayOverlap(string set1, string set2)
         {
             // If the sets are identical, there's obviously overlap.
             if (set1 == set2)
@@ -883,7 +883,7 @@ namespace System.Text.RegularExpressions
         /// Determines conservatively whether <paramref name="subset"/> is a subset of <paramref name="superset"/>
         /// (i.e. every character in subset is also in superset). Returns false if the subset relationship cannot be determined.
         /// </summary>
-        public static bool IsSubsetOf(string subset, string superset)
+        public static unsafe bool IsSubsetOf(string subset, string superset)
         {
             // Identical sets are trivially subsets.
             if (subset == superset)
@@ -1628,7 +1628,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Constructs the string representation of the class.
         /// </summary>
-        public string ToStringClass()
+        public unsafe string ToStringClass()
         {
             var vsb = new ValueStringBuilder(stackalloc char[256]);
 
@@ -1682,7 +1682,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Logic to reduce a character class to a unique, sorted form.
         /// </summary>
-        private void Canonicalize()
+        private unsafe void Canonicalize()
         {
             List<(char First, char Last)>? rangelist = _rangelist;
             if (rangelist != null)
@@ -1876,7 +1876,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <param name="set">The set string to describe.</param>
         /// <param name="forceBrackets">Whether to force brackets around the description even for single characters.</param>
-        public static string DescribeSet(string set, bool forceBrackets = false)
+        public static unsafe string DescribeSet(string set, bool forceBrackets = false)
         {
             int setLength = set[SetLengthIndex];
             int categoryLength = set[CategoryLengthIndex];

@@ -227,7 +227,7 @@ int32_t GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era, int32_t* 
                         startDateComponents.day = startDateComponents.day + 1;
                         date = [japaneseCalendar dateFromComponents:startDateComponents];
                         NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
-                        NSDateComponents *components = [gregorianCalendar components:NSCalendarUnitDay | NSCalendarUnitMonth | NSCalendarUnitYear fromDate:date];
+                        NSDateComponents *components = [gregorianCalendar components:(NSCalendarUnit)(NSCalendarUnitDay | NSCalendarUnitMonth | NSCalendarUnitYear) fromDate:date];
                         *startYear = (int32_t)[components year];
                         *startMonth = (int32_t)[components month];
                         *startDay = (int32_t)[components day];

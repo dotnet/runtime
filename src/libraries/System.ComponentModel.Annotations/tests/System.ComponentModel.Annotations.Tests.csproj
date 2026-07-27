@@ -4,6 +4,9 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>disable</Nullable> <!-- Disable nullable attributes as some tests depend on them not being present. -->
     <NoWarn>$(NoWarn);nullable</NoWarn>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\ComponentModel\DataAnnotations\AllowedValuesAttributeTests.cs" />

@@ -22,7 +22,7 @@ export function SystemJS_ScheduleTimer(shortestDueTimeMs: number): void {
         } catch (error: any) {
             // do not propagate ExitStatus exception
             if (!error || typeof error.status !== "number") {
-                _ems_.dotnetApi.exit(1, error);
+                _ems_.dotnetBrowserUtilsExports.abortPosix(1, error, true);
                 throw error;
             }
         }
@@ -48,7 +48,7 @@ export function SystemJS_ScheduleBackgroundJob(): void {
         } catch (error: any) {
             // do not propagate ExitStatus exception
             if (!error || typeof error.status !== "number") {
-                _ems_.dotnetApi.exit(1, error);
+                _ems_.dotnetBrowserUtilsExports.abortPosix(1, error, true);
                 throw error;
             }
         }
@@ -74,7 +74,36 @@ export function SystemJS_ScheduleFinalization(): void {
         } catch (error: any) {
             // do not propagate ExitStatus exception
             if (!error || typeof error.status !== "number") {
-                _ems_.dotnetApi.exit(1, error);
+                _ems_.dotnetBrowserUtilsExports.abortPosix(1, error, true);
+                throw error;
+            }
+        }
+    }
+}
+
+export function SystemJS_ScheduleDiagnosticServer(delayMs: number): void {
+    if (_ems_.ABORT || _ems_.DOTNET.isAborting) {
+        // runtime is shutting down
+        return;
+    }
+    if (delayMs !== 0 && (_ems_.ENVIRONMENT_IS_SHELL || _ems_.DOTNET.lastScheduledDiagnosticServerId)) {
+        return;
+    }
+    if (_ems_.DOTNET.lastScheduledDiagnosticServerId) {
+        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledDiagnosticServerId);
+        _ems_.runtimeKeepalivePop();
+        _ems_.DOTNET.lastScheduledDiagnosticServerId = undefined;
+    }
+    _ems_.DOTNET.lastScheduledDiagnosticServerId = _ems_.safeSetTimeout(SystemJS_ScheduleDiagnosticServerTick, delayMs);
+
+    function SystemJS_ScheduleDiagnosticServerTick(): void {
+        try {
+            _ems_.DOTNET.lastScheduledDiagnosticServerId = undefined;
+            _ems_._SystemJS_ExecuteDiagnosticServerCallback();
+        } catch (error: any) {
+            // do not propagate ExitStatus exception
+            if (!error || typeof error.status !== "number") {
+                _ems_.dotnetBrowserUtilsExports.abortPosix(1, error, true);
                 throw error;
             }
         }

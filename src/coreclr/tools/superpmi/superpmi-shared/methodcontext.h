@@ -446,19 +446,6 @@ public:
     void dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodKey& key, const Agnostic_ResolveVirtualMethodResult& value);
     bool repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info);
 
-    void recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg, CORINFO_METHOD_HANDLE result);
-    void dmpGetUnboxedEntry(DWORDLONG key, DLD value);
-    CORINFO_METHOD_HANDLE repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
-
-    void recGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn,
-                                 CORINFO_METHOD_HANDLE methodHandle,
-                                 CORINFO_CLASS_HANDLE classHandle,
-                                 CORINFO_METHOD_HANDLE result);
-    void dmpGetInstantiatedEntry(DWORDLONG key, const Agnostic_GetInstantiatedEntryResult& value);
-    CORINFO_METHOD_HANDLE repGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn,
-                                                  CORINFO_METHOD_HANDLE* methodHandle,
-                                                  CORINFO_CLASS_HANDLE* classHandle);
-
     void recGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool variantIsThunk, CORINFO_METHOD_HANDLE result);
     void dmpGetAsyncOtherVariant(DWORDLONG key, DLD value);
     CORINFO_METHOD_HANDLE repGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk);
@@ -571,6 +558,14 @@ public:
     void recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo);
     void dmpGetAsyncInfo(DWORD key, const Agnostic_CORINFO_ASYNC_INFO& value);
     void repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut);
+
+    void recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg, CORINFO_METHOD_HANDLE methHnd);
+    void dmpGetAwaitReturnCall(DWORDLONG key, Agnostic_GetAwaitReturnCallResult& value);
+    CORINFO_METHOD_HANDLE repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
+
+    void recGetWasmWellKnownGlobals(const CORINFO_WASM_WELLKNOWN_GLOBALS* pBaseGlobals);
+    void dmpGetWasmWellKnownGlobals(DWORD key, const Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS& value);
+    void repGetWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut);
 
     void recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
     void dmpGetGSCookie(DWORD key, DLDL value);
@@ -795,6 +790,10 @@ public:
     void recGetRelocTypeHint(void* target, CorInfoReloc result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
     CorInfoReloc repGetRelocTypeHint(void* target);
+
+    void recGetAddressAlignment(void* address, uint32_t result);
+    void dmpGetAddressAlignment(DWORDLONG key, DWORD value);
+    uint32_t repGetAddressAlignment(void* address);
 
     void recGetExpectedTargetArchitecture(DWORD result);
     void dmpGetExpectedTargetArchitecture(DWORD key, DWORD result);
@@ -1149,7 +1148,7 @@ enum mcPackets
     Packet_GetDefaultEqualityComparerClass = 162,
     Packet_CompareTypesForCast = 163,
     Packet_CompareTypesForEquality = 164,
-    Packet_GetUnboxedEntry = 165,
+    //Packet_GetUnboxedEntry = 165,
     Packet_GetClassNameFromMetadata = 166,
     Packet_GetTypeInstantiationArgument = 167,
     Packet_GetTypeForPrimitiveNumericClass = 168,
@@ -1212,7 +1211,7 @@ enum mcPackets
     Packet_GetClassAssemblyName = 225,
     Packet_GetSZArrayHelperEnumeratorClass = 226,
     Packet_GetMethodInstantiationArgument = 227,
-    Packet_GetInstantiatedEntry = 228,
+    //Packet_GetInstantiatedEntry = 228,
     Packet_NotifyInstructionSetUsage = 229,
     Packet_GetAsyncInfo = 230,
     Packet_GetAsyncResumptionStub = 231,
@@ -1222,6 +1221,9 @@ enum mcPackets
     Packet_GetWasmTypeSymbol = 235,
     Packet_GetWasmLowering = 236,
     Packet_GetAsyncOtherVariant = 237,
+    Packet_GetAwaitReturnCall = 238,
+    Packet_GetAddressAlignment = 239,
+    Packet_GetWasmWellKnownGlobals = 240,
 };
 
 void SetDebugDumpVariables();

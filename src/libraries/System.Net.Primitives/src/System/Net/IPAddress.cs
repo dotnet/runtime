@@ -183,7 +183,7 @@ namespace System.Net
         {
             if (address.Length == IPAddressParserStatics.IPv4AddressBytes)
             {
-                PrivateAddress = MemoryMarshal.Read<uint>(address);
+                PrivateAddress = BitConverter.ToUInt32(address);
             }
             else if (address.Length == IPAddressParserStatics.IPv6AddressBytes)
             {
@@ -457,7 +457,7 @@ namespace System.Net
         ///     or standard IPv6 representation.
         ///   </para>
         /// </devdoc>
-        public override string ToString()
+        public override unsafe string ToString()
         {
             string? toString = _toString;
             if (toString is null)
@@ -497,7 +497,7 @@ namespace System.Net
             // format and provider are explicitly ignored
             TryFormatCore(utf8Destination, out bytesWritten);
 
-        private bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
+        private unsafe bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
             if (IsIPv4)
             {
@@ -721,10 +721,10 @@ namespace System.Net
                 {
                     ReadOnlySpan<byte> numbers = MemoryMarshal.AsBytes<ushort>(_numbers).Slice(0, 16);
                     _hashCode = HashCode.Combine(
-                        MemoryMarshal.Read<uint>(numbers),
-                        MemoryMarshal.Read<uint>(numbers.Slice(4)),
-                        MemoryMarshal.Read<uint>(numbers.Slice(8)),
-                        MemoryMarshal.Read<uint>(numbers.Slice(12)),
+                        BitConverter.ToUInt32(numbers),
+                        BitConverter.ToUInt32(numbers.Slice(4)),
+                        BitConverter.ToUInt32(numbers.Slice(8)),
+                        BitConverter.ToUInt32(numbers.Slice(12)),
                         _addressOrScopeId);
                 }
                 else

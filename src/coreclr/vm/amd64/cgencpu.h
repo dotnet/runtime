@@ -31,11 +31,6 @@ class Module;
 struct VASigCookie;
 class ComCallMethodDesc;
 
-
-#define COMMETHOD_PREPAD                        16   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
-#define COMMETHOD_CALL_PRESTUB_SIZE             6    // 32-bit indirect relative call
-#define COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET   -10  // the offset of the call target address inside the prestub
-
 #define STACK_ALIGN_SIZE                        16
 
 #define JUMP_ALLOCATE_SIZE                      12   // # bytes to allocate for a 64-bit jump instruction
@@ -64,7 +59,6 @@ class ComCallMethodDesc;
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 8    // bytes
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          8    // bytes
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         8    // bytes
-#define COM_STUBS_SEPARATE_FP_LOCATIONS
 #define CALLDESCR_REGTYPEMAP                    1
 #endif
 
@@ -506,15 +500,10 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
 // Get Rel32 destination, emit jumpStub if necessary into a preallocated location
 INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCODE jumpStubAddr, PCODE jumpStubAddrRW, bool emitJump);
 
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target);
-
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
 bool isBackToBackJump(PCODE pCode);
 PCODE decodeBackToBackJump(PCODE pCode);
-
-extern "C" void setFPReturn(int fpSize, INT64 retVal);
-extern "C" void getFPReturn(int fpSize, INT64 *retval);
 
 struct HijackArgs
 {

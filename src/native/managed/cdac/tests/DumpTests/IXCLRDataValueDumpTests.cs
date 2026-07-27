@@ -6,8 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
-using static Microsoft.Diagnostics.DataContractReader.Tests.TestHelpers;
+using static Microsoft.Diagnostics.DataContractReader.TestInfrastructure.TestHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
@@ -19,7 +20,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public unsafe class IXCLRDataValueDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "LocalVariables";
-    protected override string DumpType => "full";
 
     // ========== GetSize ==========
 
@@ -242,7 +242,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
 
         // --- GenericInst and ByRef ---
         // GenericInstAndByRefVars(List<int> listArg, KeyValuePair<int,string> kvpArg, ref int refArg)
-        // Native DAC passes ByRef TypeHandle directly to GetTypeFieldValueFlags which
+        // Native DAC passes ByRef ITypeHandle directly to GetTypeFieldValueFlags which
         // returns DEFAULT (ELEMENT_TYPE_BYREF is not IsObjRef, not primitive, etc.).
         var genericInstArgs = GetArgumentValues("GenericInstAndByRefVars");
         AssertEach(genericInstArgs, new Dictionary<string, Action<IXCLRDataValue, string>>
@@ -538,7 +538,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
         int totalValues = 0;
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -731,7 +731,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)

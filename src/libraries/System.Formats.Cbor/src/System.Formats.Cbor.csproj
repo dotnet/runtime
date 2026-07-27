@@ -25,6 +25,7 @@ System.Formats.Cbor.CborWriter</PackageDescription>
     <Compile Include="System\Formats\Cbor\Reader\CborReader.Integer.cs" />
     <Compile Include="System\Formats\Cbor\Reader\CborReader.Map.cs" />
     <Compile Include="System\Formats\Cbor\Reader\CborReader.String.cs" />
+    <Compile Include="System\Formats\Cbor\Reader\CborReaderOptions.cs" />
     <Compile Include="System\Formats\Cbor\Writer\CborWriter.Array.cs" />
     <Compile Include="System\Formats\Cbor\Writer\CborWriter.Map.cs" />
     <Compile Include="System\Formats\Cbor\Writer\CborWriter.Simple.cs" />
@@ -32,10 +33,11 @@ System.Formats.Cbor.CborWriter</PackageDescription>
     <Compile Include="System\Formats\Cbor\Writer\CborWriter.cs" />
     <Compile Include="System\Formats\Cbor\Writer\CborWriter.Integer.cs" />
     <Compile Include="System\Formats\Cbor\Writer\CborWriter.Tag.cs" />
+    <Compile Include="System\Formats\Cbor\Writer\CborWriterOptions.cs" />
     <Compile Include="System\Formats\Cbor\CborConformanceLevel.cs" />
+    <Compile Include="System\Formats\Cbor\CborContentException.cs" />
     <Compile Include="System\Formats\Cbor\CborInitialByte.cs" />
     <Compile Include="System\Formats\Cbor\CborTag.cs" />
-    <Compile Include="System\Formats\Cbor\CborContentException.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
@@ -49,6 +51,10 @@ System.Formats.Cbor.CborWriter</PackageDescription>
     <Compile Include="System\Formats\Cbor\CborHelpers.netstandard.cs" />
     <Compile Include="System\Formats\Cbor\HalfHelpers.netstandard.cs" />
     <Compile Include="System\Formats\Cbor\Writer\CborWriter.Simple.netstandard.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DateTimeOffsetPolyfills.cs" Link="Common\Polyfills\DateTimeOffsetPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\HashCodePolyfills.cs" Link="Common\Polyfills\HashCodePolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\BitConverterPolyfills.cs" Link="Common\Polyfills\BitConverterPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\ArrayPolyfills.cs" Link="Common\Polyfills\ArrayPolyfills.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

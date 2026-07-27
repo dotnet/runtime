@@ -67,6 +67,7 @@ class Generics
         Test104913Regression.Run();
         Test105397Regression.Run();
         Test105880Regression.Run();
+        Test130028Regression.Run();
         TestInterfaceGenericCornerCase.Run();
         Test115442Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
@@ -3865,6 +3866,29 @@ class Generics
         public static void Run()
         {
             Console.WriteLine(new Baz());
+        }
+    }
+
+    class Test130028Regression
+    {
+        public class C
+        {
+            public static Array Create<T>() => new InlineArray65536<T>[1];
+            [InlineArray(65536)] struct InlineArray65536<T> { T field; }
+        }
+
+        public static void Run()
+        {
+            try
+            {
+                typeof(C).GetMethod("Create").MakeGenericMethod(typeof(object)).Invoke(null, []);
+            }
+            catch (TargetInvocationException e) when (e.InnerException is TypeLoadException)
+            {
+                return;
+            }
+
+            throw new Exception();
         }
     }
 

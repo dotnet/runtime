@@ -136,6 +136,12 @@ internal static partial class Interop
         internal static partial PAL_TlsHandshakeState SslHandshake(SafeSslHandle sslHandle);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslSetError(
+            SafeSslHandle sslHandle,
+            TlsAlertMessage alertMessage,
+            out int pOSStatus);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SslSetAcceptClientCert(SafeSslHandle sslHandle);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetIoCallbacks")]
@@ -328,6 +334,25 @@ internal static partial class Interop
             throw new SslException();
         }
 
+        internal static void SslSetError(SafeSslHandle sslHandle, TlsAlertMessage alertMessage)
+        {
+            int osStatus;
+            int result = AppleCryptoNative_SslSetError(sslHandle, alertMessage, out osStatus);
+
+            if (result == 1)
+            {
+                return;
+            }
+
+            if (result == 0)
+            {
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            Debug.Fail($"AppleCryptoNative_SslSetError returned {result}");
+            throw new SslException();
+        }
+
         internal static void SslSetCertificate(SafeSslHandle sslHandle, ReadOnlySpan<IntPtr> certChainPtrs)
         {
             using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certChainPtrs))
@@ -460,6 +485,13 @@ namespace System.Net
 {
     internal sealed class SafeSslHandle : SafeHandle
     {
+        // Backreference used by AppleCryptoNative_SslSetConnection so native
+        // Read/Write callbacks can resolve the owning SafeDeleteSslContext.
+        // Owned here so the lifetime is tied to ReleaseHandle, which only
+        // runs once all outstanding P/Invokes (and therefore any in-flight
+        // callbacks) have completed.
+        private GCHandle<SafeDeleteSslContext> _connectionGCHandle;
+
         public SafeSslHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
@@ -470,10 +502,18 @@ namespace System.Net
         {
         }
 
+        internal void SetConnectionGCHandle(GCHandle<SafeDeleteSslContext> handle)
+        {
+            Debug.Assert(!_connectionGCHandle.IsAllocated, "Connection GCHandle already set");
+            _connectionGCHandle = handle;
+        }
+
         protected override bool ReleaseHandle()
         {
             Interop.CoreFoundation.CFRelease(handle);
             SetHandle(IntPtr.Zero);
+            _connectionGCHandle.Dispose();
+
             return true;
         }
 

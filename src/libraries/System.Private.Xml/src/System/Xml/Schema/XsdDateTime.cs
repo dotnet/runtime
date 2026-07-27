@@ -502,7 +502,19 @@ namespace System.Xml.Schema
                     break;
                 case XsdDateTimeKind.Unspecified:
                 default:
-                    result = new DateTimeOffset(dt, TimeZoneInfo.Local.GetUtcOffset(dt));
+                    TimeSpan offset = TimeZoneInfo.Local.GetUtcOffset(dt);
+                    if (dt == DateTime.MinValue && offset >= TimeSpan.Zero)
+                    {
+                        result = DateTimeOffset.MinValue;
+                    }
+                    else if (dt == DateTime.MaxValue && offset <= TimeSpan.Zero)
+                    {
+                        result = DateTimeOffset.MaxValue;
+                    }
+                    else
+                    {
+                        result = new DateTimeOffset(dt, offset);
+                    }
                     break;
             }
 
@@ -512,7 +524,7 @@ namespace System.Xml.Schema
         /// <summary>
         /// Serialization to a string
         /// </summary>
-        public override string ToString()
+        public override unsafe string ToString()
         {
             Span<char> destination = stackalloc char[CharStackBufferSize];
             bool success = TryFormat(destination, out int charsWritten);

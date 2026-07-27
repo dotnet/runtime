@@ -169,7 +169,7 @@ namespace System.IO.Tests
             Assert.False(disposeInvoked, "Expected finalizer to have been suppressed");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void Finalizer_CallsVirtualDispose_FalseArg()
         {
             bool disposeInvoked = false;
@@ -345,24 +345,24 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void FinalizeFlushesWriteBuffer()
             => VerifyFlushedBufferOnFinalization(
                 filePath => new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, bufferSize: 4096, useAsync: false));
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void FinalizeFlushesWriteBufferForDerivedFileStreamWithFinalizerCreatedFromPath()
             => VerifyFlushedBufferOnFinalization(
                 filePath => new DerivedFileStreamWithFinalizer(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, bufferSize: 4096, FileOptions.None));
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void FinalizeFlushesWriteBufferForDerivedFileStreamWithFinalizerCreatedFromSafeFileHandle()
             => VerifyFlushedBufferOnFinalization(
                 filePath => new DerivedFileStreamWithFinalizer(
                     File.OpenHandle(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, FileOptions.None),
                     FileAccess.Write, bufferSize: 4096, isAsync: false));
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void FinalizeFlushesWriteBufferForDerivedFileStreamWithFinalizerCreatedFromIntPtr()
              => VerifyFlushedBufferOnFinalization(
                 filePath => new DerivedFileStreamWithFinalizer(
@@ -370,19 +370,19 @@ namespace System.IO.Tests
                     FileAccess.Write,
                     ownsHandle: true));
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void FinalizeFlushesWriteBufferForDerivedFileStreamWithoutFinalizerCreatedFromPath()
             => VerifyFlushedBufferOnFinalization(
                 filePath => new DerivedFileStreamWithoutFinalizer(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, bufferSize: 4096, FileOptions.None));
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void FinalizeFlushesWriteBufferForDerivedFileStreamWithoutFinalizerCreatedFromSafeFileHandle()
             => VerifyFlushedBufferOnFinalization(
                 filePath => new DerivedFileStreamWithoutFinalizer(
                     File.OpenHandle(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, FileOptions.None),
                     FileAccess.Write, bufferSize: 4096, isAsync: false));
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported), nameof(PlatformDetection.IsNotBrowser))]
         public void FinalizeFlushesWriteBufferForDerivedFileStreamWithoutFinalizerCreatedFromIntPtr()
              => VerifyFlushedBufferOnFinalization(
                 filePath => new DerivedFileStreamWithoutFinalizer(

@@ -2,19 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal class HijackArgs : IData<HijackArgs>
+[CdacType(nameof(DataType.HijackArgs))]
+internal partial class HijackArgs : IData<HijackArgs>
 {
-    static HijackArgs IData<HijackArgs>.Create(Target target, TargetPointer address)
-        => new HijackArgs(target, address);
+    public IReadOnlyDictionary<string, TargetNUInt> Registers { get; private set; }
 
-    public HijackArgs(Target target, TargetPointer address)
+    [MemberNotNull(nameof(Registers))]
+    partial void OnInit(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.HijackArgs);
-
-        Dictionary<string, TargetNUInt> registers = new Dictionary<string, TargetNUInt>(type.Fields.Count);
+        Dictionary<string, TargetNUInt> registers = new(type.Fields.Count);
         foreach ((string name, Target.FieldInfo field) in type.Fields)
         {
             TargetNUInt value = target.ReadNUInt(address + (ulong)field.Offset);
@@ -22,6 +23,4 @@ internal class HijackArgs : IData<HijackArgs>
         }
         Registers = registers;
     }
-
-    public IReadOnlyDictionary<string, TargetNUInt> Registers { get; }
 }

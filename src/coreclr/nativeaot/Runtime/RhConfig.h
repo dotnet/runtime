@@ -20,7 +20,7 @@
 
 class RhConfig
 {
-#define CONFIG_VAL_MAXLEN 16              //64 bit uint in hex
+#define CONFIG_VAL_MAXLEN 18              // "0x" prefix + 64-bit uint in hex
 public:
     struct Config
     {
@@ -45,8 +45,11 @@ public:
     };
 
     bool ReadConfigValue(_In_z_ const char* wszName, uint64_t* pValue, bool decimal = false);
+    bool ReadStringConfigValue(_In_z_ const char* wszName, const char** pValue);
     bool ReadKnobUInt64Value(_In_z_ const char* wszName, uint64_t* pValue);
+    bool ReadKnobStringValue(_In_z_ const char* wszName, const char** pValue);
     bool ReadKnobBooleanValue(_In_z_ const char* wszName, bool* pValue);
+    void FreeStringConfigValue(const char* value);
 
     char** GetKnobNames();
     char** GetKnobValues();

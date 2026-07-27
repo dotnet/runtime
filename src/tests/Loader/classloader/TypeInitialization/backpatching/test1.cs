@@ -56,7 +56,7 @@ public class CMain{
         Console.WriteLine("X_getX: {0}: thread {1}",X_getX,Thread.CurrentThread.Name); 
     } 
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static int TestEntryPoint(){
         Thread t1 = new Thread(RunSomeMethod);
         t1.Name = "T1";

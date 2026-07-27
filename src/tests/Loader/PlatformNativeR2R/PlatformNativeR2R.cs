@@ -30,22 +30,18 @@ public class PlatformNativeR2R
             RedirectStandardError = true
         };
 
-        using (Process process = Process.Start(psi))
+        ProcessTextOutput result = Process.RunAndCaptureText(psi);
+
+        string output = result.StandardOutput;
+        if (result.ExitStatus.ExitCode != 0)
         {
-            process.WaitForExit();
-
-            string output = process.StandardOutput.ReadToEnd();
-            if (process.ExitCode != 0)
-            {
-                string stderr = process.StandardError.ReadToEnd();
-                Console.WriteLine($"R2RDump failed with exit code {process.ExitCode}");
-                Console.WriteLine($"stdout: {output}");
-                Console.WriteLine($"stderr: {stderr}");
-                Assert.Fail("R2RDump failed to execute");
-            }
-
-            Assert.True(output.Contains("READYTORUN_FLAG_Component"), "Component assembly should be associated with a platform-native composite image");
-            Assert.True(output.Contains("READYTORUN_FLAG_PlatformNativeImage"), "Component assembly should be associated with a platform-native composite image");
+            Console.WriteLine($"R2RDump failed with exit code {result.ExitStatus.ExitCode}");
+            Console.WriteLine($"stdout: {output}");
+            Console.WriteLine($"stderr: {result.StandardError}");
+            Assert.Fail("R2RDump failed to execute");
         }
+
+        Assert.True(output.Contains("READYTORUN_FLAG_Component"), "Component assembly should be associated with a platform-native composite image");
+        Assert.True(output.Contains("READYTORUN_FLAG_PlatformNativeImage"), "Component assembly should be associated with a platform-native composite image");
     }
 }

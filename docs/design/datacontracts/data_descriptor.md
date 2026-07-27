@@ -311,7 +311,7 @@ The baseline is given in the "regular" format.
   "version": 0,
   "types": [
     {
-      "name": "GCHandle",
+      "name": "ObjectHandle",
       "size": 8,
       "fields": [
         { "name": "Value", "type": "pointer", "offset": 0 }
@@ -369,7 +369,7 @@ If the indirect values table has the values `0x0100ffe0` in offset 0, then a pos
 
 | Type        | Size          | Field Name  | Field Type | Field Offset |
 | ----------- | ------------- | ----------- | ---------- | ------------ |
-| GCHandle    | 8             | Value       | pointer    | 0            |
+| ObjectHandle| 8             | Value       | pointer    | 0            |
 | Thread      | indeterminate | ThreadState | uint32     | 0            |
 |             |               | ThreadId    | uint32     | 32           |
 |             |               | Next        | pointer    | 128          |

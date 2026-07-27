@@ -2527,7 +2527,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
                 TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                 string postYesDoneLabel = doneLabel;
-                if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                 {
                     writer.WriteLine($"{resumeAt} = 0;");
                 }
@@ -2556,7 +2556,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
                     TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     postNoDoneLabel = doneLabel;
-                    if (!isAtomic && postNoDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postNoDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         writer.WriteLine($"{resumeAt} = 1;");
                     }
@@ -2566,7 +2566,7 @@ namespace System.Text.RegularExpressions.Generator
                     // There's only a yes branch.  If it's going to cause us to output a backtracking
                     // label but code may not end up taking the yes branch path, we need to emit a resumeAt
                     // that will cause the backtracking to immediately pass through this node.
-                    if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         writer.WriteLine($"{resumeAt} = 2;");
                     }
@@ -4095,7 +4095,13 @@ namespace System.Text.RegularExpressions.Generator
                         // to something prior to the lazy loop, then we need to pop off that state here.
                         if (doneLabel == originalDoneLabel)
                         {
-                            EmitAdd(writer, "stackpos", -entriesPerIteration);
+                            // Each iteration of the lazy loop pushed entriesPerIteration values onto the stack, and
+                            // all iterationCount iterations' worth of that state is still on the stack at this point.
+                            // As we're backtracking out of the whole loop, we need to remove all of it.
+                            Debug.Assert(entriesPerIteration >= 1);
+                            writer.WriteLine(entriesPerIteration > 1 ?
+                                $"stackpos -= {iterationCount} * {entriesPerIteration};" :
+                                $"stackpos -= {iterationCount};");
                         }
 
                         if (iterationMayBeEmpty)

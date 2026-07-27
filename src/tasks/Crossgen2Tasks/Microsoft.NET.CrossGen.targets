@@ -677,6 +677,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Exec Command="chmod 644 &quot;%(_ReadyToRunNativeObjectOutputs.Identity)&quot;" />
 
     <Exec Condition="'$(StripSymbols)' == 'true'"
+      IgnoreStandardErrorWarningFormat="true"
       Command="
         dsymutil $(DsymUtilOptions) &quot;%(_ReadyToRunNativeObjectOutputs.Identity)&quot; &amp;&amp;
         strip -no_code_signature_warning -x &quot;%(_ReadyToRunNativeObjectOutputs.Identity)&quot;" />

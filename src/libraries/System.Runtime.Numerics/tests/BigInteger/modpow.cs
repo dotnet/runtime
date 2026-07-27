@@ -368,25 +368,17 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AssertFailureRegressionTest_InputData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/126212", typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
-        public static void FastReducer_AssertFailure_RegressionTest(BigInteger value, int exponent, BigInteger modulus)
+        [MemberData(nameof(ModPow_BarrettReduction_Data))]
+        public static void ModPow_BarrettReduction(BigInteger value, int exponent, BigInteger modulus)
         {
-            // Regression test exercising the code path that was resulting in
-            // assertion failures per https://github.com/dotnet/runtime/issues/97780.
-            // The failures seemingly have no impact on functional correctness,
-            // so they have been disabled until the underlying issue is resolved.
-
-            // Act
             BigInteger result = BigInteger.ModPow(value, exponent, modulus);
 
-            // Assert
             BigInteger expected = 1;
             for (int i = 0; i < exponent; i++) expected = (expected * value) % modulus;
             Assert.Equal(expected, result);
         }
 
-        public static IEnumerable<object[]> AssertFailureRegressionTest_InputData()
+        public static IEnumerable<object[]> ModPow_BarrettReduction_Data()
         {
             // Minimal repro
             BigInteger modulus = (BigInteger)3 << 1024;

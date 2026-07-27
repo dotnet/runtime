@@ -157,7 +157,7 @@ namespace System.Security.Cryptography
                 cancellationToken);
         }
 
-        private static bool VerifyCore<TSource>(
+        private static unsafe bool VerifyCore<TSource>(
             ReadOnlySpan<byte> key,
             TSource source,
             ReadOnlySpan<byte> hash,

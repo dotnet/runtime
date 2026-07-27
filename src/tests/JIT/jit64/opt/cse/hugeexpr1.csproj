@@ -5,6 +5,8 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Takes long time to compile and not interesting from AOT perspective -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- This test generates IL that is too large for ilasm to round-trip -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

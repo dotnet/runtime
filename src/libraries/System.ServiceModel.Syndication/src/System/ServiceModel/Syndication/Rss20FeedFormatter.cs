@@ -28,7 +28,7 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public Rss20FeedFormatter(Type feedTypeToCreate) : base()
+        public Rss20FeedFormatter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type feedTypeToCreate) : base()
         {
             ArgumentNullException.ThrowIfNull(feedTypeToCreate);
 
@@ -66,6 +66,7 @@ namespace System.ServiceModel.Syndication
 
         public override string Version => SyndicationVersions.Rss20;
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         protected Type FeedType { get; }
 
         public override bool CanRead(XmlReader reader)
@@ -174,11 +175,7 @@ namespace System.ServiceModel.Syndication
 
         private static string AsString(DateTimeOffset dateTime)
         {
-#if NET
             if (dateTime.TotalOffsetMinutes == 0)
-#else
-            if (dateTime.Offset == TimeSpan.Zero)
-#endif // NET
             {
                 return dateTime.ToUniversalTime().ToString(Rfc822OutputUtcDateTimeFormat, CultureInfo.InvariantCulture);
             }

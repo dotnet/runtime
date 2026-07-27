@@ -78,7 +78,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public static void Validate_MatchingTimesOut_ThrowsRegexMatchTimeoutException()
         {
             RegularExpressionAttribute attribute = new RegularExpressionAttribute("(a[ab]+)+$") { MatchTimeoutInMilliseconds = 1 };
-            Assert.Throws<RegexMatchTimeoutException>(() => attribute.Validate("aaaaaaaaaaaaaaaaaaaaaaaaaaaa>", new ValidationContext(new object())));
+            Assert.Throws<RegexMatchTimeoutException>(() => attribute.Validate(new string('a', 100) + ">", new ValidationContext(new object())));
         }
 
         [Fact]

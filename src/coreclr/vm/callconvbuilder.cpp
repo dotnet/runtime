@@ -550,7 +550,7 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
 
     // UnmanagedCallersOnly each
     // have optional named arguments.
-    CaNamedArg namedArgs[2];
+    CaNamedArg namedArgs[3];
 
     // For the UnmanagedCallersOnly scenario.
     CaType caCallConvs;
@@ -562,6 +562,9 @@ bool CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(_In_ MethodDesc* 
     // Define common optional named properties
     CaTypeCtor caEntryPoint(SERIALIZATION_TYPE_STRING);
     namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caEntryPoint);
+
+    CaTypeCtor caAssociatedSourceType(SERIALIZATION_TYPE_TYPE);
+    namedArgs[2].Init("AssociatedSourceType", SERIALIZATION_TYPE_TYPE, caAssociatedSourceType);
 
     InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
     Assembly* assembly = pMD->GetLoaderModule()->GetAssembly();

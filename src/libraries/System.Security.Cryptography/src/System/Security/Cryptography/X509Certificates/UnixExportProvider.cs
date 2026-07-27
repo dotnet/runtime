@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.X509Certificates
             return _certs[0].RawData;
         }
 
-        public byte[] ExportPkcs12(PbeParameters exportParameters, SafePasswordHandle password)
+        public unsafe byte[] ExportPkcs12(PbeParameters exportParameters, SafePasswordHandle password)
         {
             bool gotRef = false;
 

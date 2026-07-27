@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
                 Meter meter = meterFactory?.Create(new MeterOptions("Microsoft.Extensions.Caching.Memory.MemoryCache")
                 {
-                    Tags = [new("cache.name", _options.Name)]
+                    Tags = [new("dotnet.cache.name", _options.Name)]
                 }) ?? SharedMeter.Instance;
                 InitializeMetrics(meter);
             }
@@ -177,11 +177,25 @@ namespace Microsoft.Extensions.Caching.Memory
                     // Try to update with the new entry if a previous entries exist.
                     entryAdded = coherentState.TryUpdate(entry.Key, entry, priorEntry);
 
-                    if (!entryAdded)
+                    if (entryAdded)
+                    {
+                        if (_options.HasSizeLimit)
+                        {
+                            // The prior entry was atomically replaced by this entry via TryUpdate, so
+                            // no other path can also remove (and decrement) it. Decrement its size here
+                            // exactly once, tied to the swap we performed. Doing this speculatively
+                            // inside UpdateCacheSizeExceedsCapacity (before the swap) races with a
+                            // concurrent RemoveEntry of the prior entry and double-counts the decrement,
+                            // drifting _cacheSize negative and permanently blocking all future inserts.
+                            Interlocked.Add(ref coherentState._cacheSize, -priorEntry.Size);
+                        }
+                    }
+                    else
                     {
                         // The update will fail if the previous entry was removed after retrieval.
                         // Adding the new entry will succeed only if no entry has been added since.
                         // This guarantees removing an old entry does not prevent adding a new entry.
+                        // The prior entry's size is decremented by whichever path removed it, not here.
                         entryAdded = coherentState.TryAdd(entry.Key, entry);
                     }
                 }
@@ -194,8 +208,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     if (_options.HasSizeLimit)
                     {
-                        // Entry could not be added, reset cache size
-                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size + (priorEntry?.Size).GetValueOrDefault());
+                        // Entry could not be added, roll back the size increment for this entry only.
+                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size);
                     }
                     entry.SetExpired(EvictionReason.Replaced);
                     entry.InvokeEvictionCallbacks();
@@ -534,23 +548,27 @@ namespace Microsoft.Extensions.Caching.Memory
                 return false;
             }
 
+            long priorSize = priorEntry?.Size ?? 0;
             long sizeRead = coherentState.Size;
             for (int i = 0; i < 100; i++)
             {
-                long newSize = sizeRead + entry.Size;
-                if (priorEntry != null)
-                {
-                    Debug.Assert(entry.Key == priorEntry.Key);
-                    newSize -= priorEntry.Size;
-                }
+                // The capacity decision still accounts for the prior entry being replaced (its size is
+                // freed by the replace), so a same-or-smaller replacement at the size limit is admitted.
+                // However, only the new entry's size is committed to _cacheSize here. The prior entry's
+                // size is decremented by the caller, atomically with the dictionary swap that actually
+                // removes it. Decrementing the prior size here (before the swap) races with a concurrent
+                // RemoveEntry of the same prior entry and double-counts the decrement, drifting
+                // _cacheSize negative and permanently blocking all future inserts.
+                long sizeAfterReplace = sizeRead + entry.Size - priorSize;
 
-                if ((ulong)newSize > (ulong)sizeLimit)
+                if ((ulong)sizeAfterReplace > (ulong)sizeLimit)
                 {
-                    // Overflow occurred, return true without updating the cache size
+                    // Exceeds the limit (or overflow); return true without updating the cache size.
                     return true;
                 }
 
-                long original = Interlocked.CompareExchange(ref coherentState._cacheSize, newSize, sizeRead);
+                long committedSize = sizeRead + entry.Size;
+                long original = Interlocked.CompareExchange(ref coherentState._cacheSize, committedSize, sizeRead);
                 if (sizeRead == original)
                 {
                     return false;
@@ -883,9 +901,9 @@ namespace Microsoft.Extensions.Caching.Memory
             // Use a weak reference for `this` to avoid keeping it alive indefinitely
             // due to it being captured in the instrument's lambda and hence kept alive by the Meter.
             WeakReference<MemoryCache> weakThis = new(this);
-            KeyValuePair<string, object?> cacheNameTag = new("cache.name", _options.Name);
+            KeyValuePair<string, object?> cacheNameTag = new("dotnet.cache.name", _options.Name);
 
-            meter.CreateObservableCounter("cache.requests",
+            meter.CreateObservableCounter("dotnet.cache.requests",
                 () =>
                 {
                     if (!weakThis.TryGetTarget(out MemoryCache? cache) || cache._disposed)
@@ -898,14 +916,14 @@ namespace Microsoft.Extensions.Caching.Memory
                         ? []
                         : new Measurement<long>[]
                         {
-                            new(stats.TotalHits, cacheNameTag, new("cache.request.type", "hit")),
-                            new(stats.TotalMisses, cacheNameTag, new("cache.request.type", "miss")),
+                            new(stats.TotalHits, cacheNameTag, new("dotnet.cache.request.type", "hit")),
+                            new(stats.TotalMisses, cacheNameTag, new("dotnet.cache.request.type", "miss")),
                         };
                 },
-                unit: "{requests}",
+                unit: "{request}",
                 description: "Total cache requests.");
 
-            meter.CreateObservableCounter<long>("cache.evictions",
+            meter.CreateObservableCounter<long>("dotnet.cache.evictions",
                 () =>
                 {
                     if (!weakThis.TryGetTarget(out MemoryCache? cache) || cache._disposed)
@@ -918,10 +936,10 @@ namespace Microsoft.Extensions.Caching.Memory
                         ? []
                         : [new Measurement<long>(stats.TotalEvictions, cacheNameTag)];
                 },
-                unit: "{evictions}",
+                unit: "{eviction}",
                 description: "Total cache evictions.");
 
-            meter.CreateObservableUpDownCounter<long>("cache.entries",
+            meter.CreateObservableUpDownCounter<long>("dotnet.cache.entries",
                 () =>
                 {
                     if (!weakThis.TryGetTarget(out MemoryCache? cache) || cache._disposed)
@@ -934,10 +952,10 @@ namespace Microsoft.Extensions.Caching.Memory
                         ? []
                         : [new Measurement<long>(stats.CurrentEntryCount, cacheNameTag)];
                 },
-                unit: "{entries}",
+                unit: "{entry}",
                 description: "Current number of cache entries.");
 
-            meter.CreateObservableGauge<long>("cache.estimated_size",
+            meter.CreateObservableGauge<long>("dotnet.cache.estimated_size",
                 () =>
                 {
                     if (!weakThis.TryGetTarget(out MemoryCache? cache) || cache._disposed)

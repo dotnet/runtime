@@ -68,14 +68,6 @@ namespace System.Text.Json.SourceGeneration
                 defaultSeverity: DiagnosticSeverity.Error,
                 isEnabledByDefault: true);
 
-            public static DiagnosticDescriptor InaccessibleJsonIncludePropertiesNotSupported { get; } = DiagnosticDescriptorHelper.Create(
-                id: "SYSLIB1038",
-                title: new LocalizableResourceString(nameof(SR.InaccessibleJsonIncludePropertiesNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                messageFormat: new LocalizableResourceString(nameof(SR.InaccessibleJsonIncludePropertiesNotSupportedFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
-                defaultSeverity: DiagnosticSeverity.Warning,
-                isEnabledByDefault: true);
-
             public static DiagnosticDescriptor PolymorphismNotSupported { get; } = DiagnosticDescriptorHelper.Create(
                 id: "SYSLIB1039",
                 title: new LocalizableResourceString(nameof(SR.FastPathPolymorphismNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
@@ -98,14 +90,6 @@ namespace System.Text.Json.SourceGeneration
                 messageFormat: new LocalizableResourceString(nameof(SR.JsonUnsupportedLanguageVersionMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
-            public static DiagnosticDescriptor JsonConstructorInaccessible { get; } = DiagnosticDescriptorHelper.Create(
-                id: "SYSLIB1222",
-                title: new LocalizableResourceString(nameof(SR.JsonConstructorInaccessibleTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                messageFormat: new LocalizableResourceString(nameof(SR.JsonConstructorInaccessibleMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
-                defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
             public static DiagnosticDescriptor DerivedJsonConverterAttributesNotSupported { get; } = DiagnosticDescriptorHelper.Create(
@@ -136,6 +120,54 @@ namespace System.Text.Json.SourceGeneration
                 id: "SYSLIB1226",
                 title: new LocalizableResourceString(nameof(SR.JsonIgnoreConditionAlwaysInvalidOnTypeTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 messageFormat: new LocalizableResourceString(nameof(SR.JsonIgnoreConditionAlwaysInvalidOnTypeFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor UnionCaseTypesNotClassifiable { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1227",
+                title: new LocalizableResourceString(nameof(SR.UnionCaseTypesNotClassifiableTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.UnionCaseTypesNotClassifiableMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor UnionTypeShapeNotSupported { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1228",
+                title: new LocalizableResourceString(nameof(SR.UnionTypeShapeNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.UnionTypeShapeNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor OpenGenericDerivedTypeCouldNotBeResolved { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1229",
+                title: new LocalizableResourceString(nameof(SR.OpenGenericDerivedTypeCouldNotBeResolvedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor DerivedTypeIsNotSupported { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1240",
+                title: new LocalizableResourceString(nameof(SR.DerivedTypeIsNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.DerivedTypeIsNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor InferredDerivedTypeIsNotAccessible { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1241",
+                title: new LocalizableResourceString(nameof(SR.InferredDerivedTypeIsNotAccessibleTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.InferredDerivedTypeIsNotAccessibleMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor DerivedTypeDiscriminatorCollision { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1242",
+                title: new LocalizableResourceString(nameof(SR.DerivedTypeDiscriminatorCollisionTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.DerivedTypeDiscriminatorCollisionMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);

@@ -53,7 +53,7 @@ namespace System.Formats.Asn1
         ///   the method.
         /// </exception>
         /// <seealso cref="System.Globalization.Calendar.TwoDigitYearMax"/>
-        public static DateTimeOffset ReadUtcTime(
+        public static unsafe DateTimeOffset ReadUtcTime(
             ReadOnlySpan<byte> source,
             AsnEncodingRules ruleSet,
             out int bytesConsumed,
