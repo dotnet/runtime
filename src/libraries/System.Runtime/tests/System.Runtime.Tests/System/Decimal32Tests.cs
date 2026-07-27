@@ -417,6 +417,15 @@ namespace System.Tests
                 yield return new object[] { Decimal32.MinValue, "G", defaultFormat, "-9.999999E+96" };
                 yield return new object[] { Decimal32.Epsilon, "G", defaultFormat, "1E-101" };
 
+                // The general specifier honors a precision specifier, where-as the roundtrip specifier ignores it
+                yield return new object[] { Decimal32.Parse("1234"), "G3", defaultFormat, "1.23E+03" };
+                yield return new object[] { Decimal32.Parse("999"), "G2", defaultFormat, "1E+03" };
+                yield return new object[] { Decimal32.Parse("1.000000"), "G1", defaultFormat, "1" };
+                yield return new object[] { Decimal32.Parse("1000000e1"), "G3", defaultFormat, "1E+07" };
+                yield return new object[] { Decimal32.MaxValue, "G1", defaultFormat, "1E+97" };
+                yield return new object[] { Decimal32.Parse("1234567"), "R5", defaultFormat, "1234567" };
+                yield return new object[] { Decimal32.Parse("1234567"), "G5", defaultFormat, "1.2346E+06" };
+
                 yield return new object[] { Decimal32.Parse("2468"), "N", defaultFormat, "2,468.00" };
 
                 yield return new object[] { Decimal32.Parse("2467"), "[#-##-#]", defaultFormat, "[2-46-7]" };
@@ -505,6 +514,10 @@ namespace System.Tests
                 Decimal32 actual = Decimal32.Parse(formatted, CultureInfo.InvariantCulture);
                 Assert.Equal(Decimal32.EncodeDecimal(expected), Decimal32.EncodeDecimal(actual));
             }
+
+            // The roundtrip specifier ignores any precision specifier
+            Assert.Equal(expected.ToString("R", CultureInfo.InvariantCulture), expected.ToString("R1", CultureInfo.InvariantCulture));
+            Assert.Equal(expected.ToString("r", CultureInfo.InvariantCulture), expected.ToString("r5", CultureInfo.InvariantCulture));
         }
 
         [Theory]
