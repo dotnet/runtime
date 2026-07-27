@@ -46,6 +46,7 @@ For markdown (`.md`) files, ensure there is no trailing whitespace at the end of
 - **Behavioral changes need breaking-change documentation**, even prerelease-to-prerelease. Use the `breaking-change-doc` skill.
 - **Merge to main first, then `/backport`.** Servicing backports are limited to security bugs, regressions, and reliability issues, and should be small targeted fixes rather than refactorings.
 - **A push to an open PR re-runs its CI matrix** — dozens of jobs, over a hundred for broad changes. For anything non-trivial, validate locally rather than using CI to find out whether it builds, and batch fixes into one push. Branches with no PR trigger nothing, as do changes confined to `**.md`, `docs/*`, or `.github/*`.
+- **Treat review feedback as a sample, not a list.** A reviewer flags examples of a problem, not every instance. Grep for the rest of the class and fix it in the same push, and answer a whole round of comments at once rather than pushing per comment.
 
 When NOT running under CCA, for commits and pushes:
 
