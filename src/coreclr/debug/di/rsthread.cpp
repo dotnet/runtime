@@ -4280,7 +4280,7 @@ BOOL CordbUnmanagedThread::IsExceptionFromLastRaiseException(const EXCEPTION_REC
 HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress)
 {
     ULONG32 patch = CORDbg_BREAK_INSTRUCTION;
-    HRESULT hr = pProcess->SafeWriteOpcode(PTR_TO_CORDB_ADDRESS(pRemoteAddress), patch);
+    HRESULT hr = pProcess->SafeWriteBreakpointPatch(PTR_TO_CORDB_ADDRESS(pRemoteAddress), patch);
     SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
     return S_OK;
 }
@@ -4289,7 +4289,7 @@ HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress)
 // Get the opcode that we're replacing.
 HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 * pOpcode)
 {
-    HRESULT hr = pProcess->SafeReadOpcode(PTR_TO_CORDB_ADDRESS(pRemoteAddress), pOpcode);
+    HRESULT hr = pProcess->SafeReadBreakpointPatch(PTR_TO_CORDB_ADDRESS(pRemoteAddress), pOpcode);
     if (FAILED(hr))
     {
         return hr;
@@ -4304,7 +4304,7 @@ HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, U
 //-----------------------------------------------------------------------------
 HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 opcode)
 {
-    pProcess->SafeWriteOpcode(PTR_TO_CORDB_ADDRESS(pRemoteAddress), opcode);
+    pProcess->SafeWriteBreakpointPatch(PTR_TO_CORDB_ADDRESS(pRemoteAddress), opcode);
 
     // This may fail because the module has been unloaded.  In which case, the patch is also
     // gone so it makes sense to return success.

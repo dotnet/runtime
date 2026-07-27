@@ -6613,7 +6613,7 @@ HRESULT CordbProcess::FindPatchByAddress(CORDB_ADDRESS address, bool *pfPatchFou
     {
         // Read one instruction from the faulting address...
         ULONG32 TrapCheck = 0;
-        HRESULT hr2 = SafeReadOpcode(address, &TrapCheck);
+        HRESULT hr2 = SafeReadBreakpointPatch(address, &TrapCheck);
         if (SUCCEEDED(hr2) && (TrapCheck != (ULONG32) CORDbg_BREAK_INSTRUCTION))
         {
             LOG((LF_CORDB, LL_INFO1000, "CP::FPBA: patchFound=true based on odd missing int 3 case.\n"));
@@ -8159,7 +8159,7 @@ HRESULT CordbProcess::SafeReadBuffer(TargetBuffer tb, BYTE * pLocalBuffer, BOOL 
 // Returns the width, in bytes, of the breakpoint opcode in the target's
 // instruction stream, determined from the target's architecture at runtime.
 //-----------------------------------------------------------------------------
-HRESULT CordbProcess::GetTargetOpcodeSize(ULONG32 * pcbSize)
+HRESULT CordbProcess::GetTargetBreakpointSize(ULONG32 * pcbSize)
 {
     _ASSERTE(pcbSize != NULL);
 
@@ -8198,10 +8198,10 @@ HRESULT CordbProcess::GetTargetOpcodeSize(ULONG32 * pcbSize)
 // Reads the breakpoint opcode from the target using the target's instruction
 // width. The value is zero-extended into pOpcode.
 //-----------------------------------------------------------------------------
-HRESULT CordbProcess::SafeReadOpcode(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode)
+HRESULT CordbProcess::SafeReadBreakpointPatch(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode)
 {
     ULONG32 cbSize = 0;
-    HRESULT hr = GetTargetOpcodeSize(&cbSize);
+    HRESULT hr = GetTargetBreakpointSize(&cbSize);
     if (FAILED(hr))
         return hr;
 
@@ -8220,10 +8220,10 @@ HRESULT CordbProcess::SafeReadOpcode(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode
 //-----------------------------------------------------------------------------
 // Writes an opcode to the target using the target's instruction width.
 //-----------------------------------------------------------------------------
-HRESULT CordbProcess::SafeWriteOpcode(CORDB_ADDRESS pRemotePtr, ULONG32 opcode)
+HRESULT CordbProcess::SafeWriteBreakpointPatch(CORDB_ADDRESS pRemotePtr, ULONG32 opcode)
 {
     ULONG32 cbSize = 0;
-    HRESULT hr = GetTargetOpcodeSize(&cbSize);
+    HRESULT hr = GetTargetBreakpointSize(&cbSize);
     if (FAILED(hr))
         return hr;
 
@@ -8444,7 +8444,7 @@ bool CordbProcess::IsBreakOpcodeAtAddress(const void * address)
     // we should be able to safely read it out.
     ULONG32 opcodeTest = 0;
 
-    HRESULT hr = SafeReadOpcode(PTR_TO_CORDB_ADDRESS(address), &opcodeTest);
+    HRESULT hr = SafeReadBreakpointPatch(PTR_TO_CORDB_ADDRESS(address), &opcodeTest);
     SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
 
     return (opcodeTest == (ULONG32) CORDbg_BREAK_INSTRUCTION);
@@ -8503,7 +8503,7 @@ CordbProcess::SetUnmanagedBreakpointInternal(CORDB_ADDRESS address, ULONG32 bufs
     NativePatch * p = NULL;
     ULONG32 opcode = 0;
     ULONG32 cbOpcode = 0;
-    hr = GetTargetOpcodeSize(&cbOpcode);
+    hr = GetTargetBreakpointSize(&cbOpcode);
     if (FAILED(hr))
         goto ErrExit;
 
@@ -12541,7 +12541,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         CordbUnmanagedThread::LogContext(&tempDebugContext);
 
         ULONG32 breakpointOpcodeSize = 0;
-        IfFailThrow(GetTargetOpcodeSize(&breakpointOpcodeSize));
+        IfFailThrow(GetTargetBreakpointSize(&breakpointOpcodeSize));
         _ASSERTE(CORDbgGetIP(&tempDebugContext) == pEvent->u.Exception.ExceptionRecord.ExceptionAddress ||
             (DWORD)(size_t)CORDbgGetIP(&tempDebugContext) == ((DWORD)(size_t)pEvent->u.Exception.ExceptionRecord.ExceptionAddress)+breakpointOpcodeSize);
     }

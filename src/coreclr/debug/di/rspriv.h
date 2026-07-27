@@ -3280,10 +3280,10 @@ public:
     void SafeWriteBuffer(TargetBuffer tb, const BYTE * pLocalBuffer);
 
     // Reads the breakpoint opcode from the target, using the target's instruction width.
-    HRESULT SafeReadOpcode(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode);
+    HRESULT SafeReadBreakpointPatch(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode);
 
     // Writes an opcode to the target, using the target's instruction width.
-    HRESULT SafeWriteOpcode(CORDB_ADDRESS pRemotePtr, ULONG32 opcode);
+    HRESULT SafeWriteBreakpointPatch(CORDB_ADDRESS pRemotePtr, ULONG32 opcode);
 
 #if defined(FEATURE_INTEROP_DEBUGGING)
     void DuplicateHandleToLocalProcess(HANDLE * pLocalHandle, RemoteHANDLE * pRemoteHandle);
@@ -3609,7 +3609,7 @@ public:
     HRESULT GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo);
 
     // Get the width, in bytes, of the breakpoint opcode in the target's instruction stream.
-    HRESULT GetTargetOpcodeSize(ULONG32 * pcbSize);
+    HRESULT GetTargetBreakpointSize(ULONG32 * pcbSize);
 
     // Get the data-target, which provides access to the debuggee.
     ICorDebugDataTarget * GetDataTarget();
