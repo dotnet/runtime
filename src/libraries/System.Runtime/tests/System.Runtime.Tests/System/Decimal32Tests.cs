@@ -116,13 +116,13 @@ namespace System.Tests
         public static IEnumerable<object[]> Parse_Preserve_TrailingZero_TestData()
         {
             yield return new object[] { "0.00", "0.00" };
-            yield return new object[] { "0." + new string('0', 101), "0." + new string('0', 101) };
-            yield return new object[] { "0." + new string('0', 1000), "0." + new string('0', 101) };
-            yield return new object[] { "0." + new string('0', 1000) + "1234567", "0." + new string('0', 101) };
+            yield return new object[] { "0." + new string('0', 101), "0E-101" };
+            yield return new object[] { "0." + new string('0', 1000), "0E-101" };
+            yield return new object[] { "0." + new string('0', 1000) + "1234567", "0E-101" };
             yield return new object[] { "0e-2", "0.00" };
-            yield return new object[] { "0e-101", "0." + new string('0', 101) };
-            yield return new object[] { "0e-1000", "0." + new string('0', 101) };
-            yield return new object[] { "0.123e-1000", "0." + new string('0', 101) };
+            yield return new object[] { "0e-101", "0E-101" };
+            yield return new object[] { "0e-1000", "0E-101" };
+            yield return new object[] { "0.123e-1000", "0E-101" };
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
@@ -393,27 +393,41 @@ namespace System.Tests
                 yield return new object[] { Decimal32.Parse("0"), "G", defaultFormat, "0" };
                 yield return new object[] { Decimal32.Zero, "G", defaultFormat, "0" };
                 yield return new object[] { Decimal32.Parse("0.0000"), "G", defaultFormat, "0.0000" };
-                yield return new object[] { Decimal32.Parse($"{int.MinValue}"), "G", defaultFormat, "-2147484000" };
-                yield return new object[] { Decimal32.Parse($"{int.MaxValue}"), "G", defaultFormat, "2147484000" };
-                yield return new object[] { Decimal32.Parse("3" + new string('0', 96)), "G", defaultFormat, "3" + new string('0', 96) };
-                yield return new object[] { Decimal32.Parse("-3" + new string('0', 96)), "G", defaultFormat, "-3" + new string('0', 96) };
+                yield return new object[] { Decimal32.Parse($"{int.MinValue}"), "G", defaultFormat, "-2.147484E+09" };
+                yield return new object[] { Decimal32.Parse($"{int.MaxValue}"), "G", defaultFormat, "2.147484E+09" };
+                yield return new object[] { Decimal32.Parse("3" + new string('0', 96)), "G", defaultFormat, "3.000000E+96" };
+                yield return new object[] { Decimal32.Parse("-3" + new string('0', 96)), "G", defaultFormat, "-3.000000E+96" };
                 yield return new object[] { Decimal32.Parse("-4567"), "G", defaultFormat, "-4567" };
                 yield return new object[] { Decimal32.Parse("-4567.891"), "G", defaultFormat, "-4567.891" };
                 yield return new object[] { Decimal32.Parse("0"), "G", defaultFormat, "0" };
                 yield return new object[] { Decimal32.Parse("4567"), "G", defaultFormat, "4567" };
                 yield return new object[] { Decimal32.Parse("4567.891"), "G", defaultFormat, "4567.891" };
 
+                // A positive quantum exponent has no fixed-point spelling, so scientific notation is required
+                yield return new object[] { Decimal32.Parse("1e7"), "G", defaultFormat, "1E+07" };
+                yield return new object[] { Decimal32.Parse("10e6"), "G", defaultFormat, "1.0E+07" };
+                yield return new object[] { Decimal32.Parse("1000000e1"), "G", defaultFormat, "1.000000E+07" };
+                yield return new object[] { Decimal32.Parse("10000000"), "G", defaultFormat, "1.000000E+07" };
+                yield return new object[] { Decimal32.Parse("0e2"), "G", defaultFormat, "0E+02" };
+                yield return new object[] { Decimal32.Parse("-0e2"), "G", defaultFormat, "-0E+02" };
+                yield return new object[] { Decimal32.Parse("0.0001"), "G", defaultFormat, "0.0001" };
+                yield return new object[] { Decimal32.Parse("0.00001"), "G", defaultFormat, "1E-05" };
+                yield return new object[] { Decimal32.Parse("0.000100"), "G", defaultFormat, "0.000100" };
+                yield return new object[] { Decimal32.MaxValue, "G", defaultFormat, "9.999999E+96" };
+                yield return new object[] { Decimal32.MinValue, "G", defaultFormat, "-9.999999E+96" };
+                yield return new object[] { Decimal32.Epsilon, "G", defaultFormat, "1E-101" };
+
                 yield return new object[] { Decimal32.Parse("2468"), "N", defaultFormat, "2,468.00" };
 
                 yield return new object[] { Decimal32.Parse("2467"), "[#-##-#]", defaultFormat, "[2-46-7]" };
-                yield return new object[] { Decimal32.Parse("4e-102"), "G", defaultFormat, "0." + new string('0', 101) };
-                yield return new object[] { Decimal32.Parse("5e-102"), "G", defaultFormat, "0." + new string('0', 101) };
-                yield return new object[] { Decimal32.Parse("5.000000000000001e-102"), "G", defaultFormat, "0." + new string('0', 100) + "1" };
-                yield return new object[] { Decimal32.Parse("6e-102"), "G", defaultFormat, "0." + new string('0', 100) + "1" };
-                yield return new object[] { Decimal32.Parse("-4e-102"), "G", defaultFormat, "-0." + new string('0', 101) };
-                yield return new object[] { Decimal32.Parse("-5e-102"), "G", defaultFormat, "-0." + new string('0', 101) };
-                yield return new object[] { Decimal32.Parse("-5.000000000000001e-102"), "G", defaultFormat, "-0." + new string('0', 100) + "1" };
-                yield return new object[] { Decimal32.Parse("-6e-102"), "G", defaultFormat, "-0." + new string('0', 100) + "1" };
+                yield return new object[] { Decimal32.Parse("4e-102"), "G", defaultFormat, "0E-101" };
+                yield return new object[] { Decimal32.Parse("5e-102"), "G", defaultFormat, "0E-101" };
+                yield return new object[] { Decimal32.Parse("5.000000000000001e-102"), "G", defaultFormat, "1E-101" };
+                yield return new object[] { Decimal32.Parse("6e-102"), "G", defaultFormat, "1E-101" };
+                yield return new object[] { Decimal32.Parse("-4e-102"), "G", defaultFormat, "-0E-101" };
+                yield return new object[] { Decimal32.Parse("-5e-102"), "G", defaultFormat, "-0E-101" };
+                yield return new object[] { Decimal32.Parse("-5.000000000000001e-102"), "G", defaultFormat, "-1E-101" };
+                yield return new object[] { Decimal32.Parse("-6e-102"), "G", defaultFormat, "-1E-101" };
 
             }
         }
@@ -451,6 +465,46 @@ namespace System.Tests
             }
             Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
             Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
+        }
+
+        public static IEnumerable<object[]> ToString_Roundtrip_TestData()
+        {
+            yield return new object[] { "0" };
+            yield return new object[] { "-0" };
+            yield return new object[] { "0.00" };
+            yield return new object[] { "0e2" };
+            yield return new object[] { "0e90" };
+            yield return new object[] { "0e-101" };
+            yield return new object[] { "-0e-101" };
+            yield return new object[] { "1" };
+            yield return new object[] { "1.0" };
+            yield return new object[] { "1.000000" };
+            yield return new object[] { "1e7" };
+            yield return new object[] { "10e6" };
+            yield return new object[] { "1000000e1" };
+            yield return new object[] { "-4567.891" };
+            yield return new object[] { "0.0001" };
+            yield return new object[] { "0.00001" };
+            yield return new object[] { "0.000100" };
+            yield return new object[] { "2147483648" };
+            yield return new object[] { "9999999e90" };
+            yield return new object[] { "-9999999e90" };
+            yield return new object[] { "1e-101" };
+            yield return new object[] { "1234567e-101" };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToString_Roundtrip_TestData))]
+        public static void ToString_Roundtrips_And_PreservesQuantum(string value)
+        {
+            Decimal32 expected = Decimal32.Parse(value, CultureInfo.InvariantCulture);
+
+            foreach (string format in new[] { null, "G", "g", "R", "r" })
+            {
+                string formatted = expected.ToString(format, CultureInfo.InvariantCulture);
+                Decimal32 actual = Decimal32.Parse(formatted, CultureInfo.InvariantCulture);
+                Assert.Equal(Decimal32.EncodeDecimal(expected), Decimal32.EncodeDecimal(actual));
+            }
         }
 
         [Theory]

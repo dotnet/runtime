@@ -117,13 +117,13 @@ namespace System.Tests
         public static IEnumerable<object[]> Parse_Preserve_TrailingZero_TestData()
         {
             yield return new object[] { "0.00", "0.00" };
-            yield return new object[] { "0." + new string('0', 398), "0." + new string('0', 398) };
-            yield return new object[] { "0." + new string('0', 1000), "0." + new string('0', 398) };
-            yield return new object[] { "0." + new string('0', 1000) + "1234567", "0." + new string('0', 398) };
+            yield return new object[] { "0." + new string('0', 398), "0E-398" };
+            yield return new object[] { "0." + new string('0', 1000), "0E-398" };
+            yield return new object[] { "0." + new string('0', 1000) + "1234567", "0E-398" };
             yield return new object[] { "0e-2", "0.00" };
-            yield return new object[] { "0e-398", "0." + new string('0', 398) };
-            yield return new object[] { "0e-10000", "0." + new string('0', 398) };
-            yield return new object[] { "0.123e-10000", "0." + new string('0', 398) };
+            yield return new object[] { "0e-398", "0E-398" };
+            yield return new object[] { "0e-10000", "0E-398" };
+            yield return new object[] { "0.123e-10000", "0E-398" };
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
@@ -399,27 +399,39 @@ namespace System.Tests
                 yield return new object[] { Decimal64.Parse("0"), "G", defaultFormat, "0" };
                 yield return new object[] { Decimal64.Zero, "G", defaultFormat, "0" };
                 yield return new object[] { Decimal64.Parse("0.0000"), "G", defaultFormat, "0.0000" };
-                yield return new object[] { Decimal64.Parse($"{long.MinValue}"), "G", defaultFormat, "-9223372036854776000" };
-                yield return new object[] { Decimal64.Parse($"{long.MaxValue}"), "G", defaultFormat, "9223372036854776000" };
-                yield return new object[] { Decimal64.Parse("3e384"), "G", defaultFormat, "3" + new string('0', 384) };
-                yield return new object[] { Decimal64.Parse("-3e384"), "G", defaultFormat, "-3" + new string('0', 384) };
+                yield return new object[] { Decimal64.Parse($"{long.MinValue}"), "G", defaultFormat, "-9.223372036854776E+18" };
+                yield return new object[] { Decimal64.Parse($"{long.MaxValue}"), "G", defaultFormat, "9.223372036854776E+18" };
+                yield return new object[] { Decimal64.Parse("3e384"), "G", defaultFormat, "3." + new string('0', 15) + "E+384" };
+                yield return new object[] { Decimal64.Parse("-3e384"), "G", defaultFormat, "-3." + new string('0', 15) + "E+384" };
                 yield return new object[] { Decimal64.Parse("-4567e0"), "G", defaultFormat, "-4567" };
                 yield return new object[] { Decimal64.Parse("-4567891e-3"), "G", defaultFormat, "-4567.891" };
                 yield return new object[] { Decimal64.Parse("0e0"), "G", defaultFormat, "0" };
                 yield return new object[] { Decimal64.Parse("4567e0"), "G", defaultFormat, "4567" };
                 yield return new object[] { Decimal64.Parse("4567891e-3"), "G", defaultFormat, "4567.891" };
 
+                // A positive quantum exponent has no fixed-point spelling, so scientific notation is required
+                yield return new object[] { Decimal64.Parse("1e7"), "G", defaultFormat, "1E+07" };
+                yield return new object[] { Decimal64.Parse("10e6"), "G", defaultFormat, "1.0E+07" };
+                yield return new object[] { Decimal64.Parse("0e2"), "G", defaultFormat, "0E+02" };
+                yield return new object[] { Decimal64.Parse("-0e2"), "G", defaultFormat, "-0E+02" };
+                yield return new object[] { Decimal64.Parse("0.0001"), "G", defaultFormat, "0.0001" };
+                yield return new object[] { Decimal64.Parse("0.00001"), "G", defaultFormat, "1E-05" };
+                yield return new object[] { Decimal64.Parse("0.000100"), "G", defaultFormat, "0.000100" };
+                yield return new object[] { Decimal64.MaxValue, "G", defaultFormat, "9.999999999999999E+384" };
+                yield return new object[] { Decimal64.MinValue, "G", defaultFormat, "-9.999999999999999E+384" };
+                yield return new object[] { Decimal64.Epsilon, "G", defaultFormat, "1E-398" };
+
                 yield return new object[] { Decimal64.Parse("2468e0"), "N", defaultFormat, "2,468.00" };
 
                 yield return new object[] { Decimal64.Parse("2467e0"), "[#-##-#]", defaultFormat, "[2-46-7]" };
-                yield return new object[] { Decimal64.Parse("4e-399"), "G", defaultFormat, "0." + new string('0', 398) };
-                yield return new object[] { Decimal64.Parse("5e-399"), "G", defaultFormat, "0." + new string('0', 398) };
-                yield return new object[] { Decimal64.Parse("5.00000000000000000000000001e-399"), "G", defaultFormat, "0." + new string('0', 397) + "1" };
-                yield return new object[] { Decimal64.Parse("6e-399"), "G", defaultFormat, "0." + new string('0', 397) + "1" };
-                yield return new object[] { Decimal64.Parse("-4e-399"), "G", defaultFormat, "-0." + new string('0', 398) };
-                yield return new object[] { Decimal64.Parse("-5e-399"), "G", defaultFormat, "-0." + new string('0', 398) };
-                yield return new object[] { Decimal64.Parse("-5.00000000000000000000000001e-399"), "G", defaultFormat, "-0." + new string('0', 397) + "1" };
-                yield return new object[] { Decimal64.Parse("-6e-399"), "G", defaultFormat, "-0." + new string('0', 397) + "1" };
+                yield return new object[] { Decimal64.Parse("4e-399"), "G", defaultFormat, "0E-398" };
+                yield return new object[] { Decimal64.Parse("5e-399"), "G", defaultFormat, "0E-398" };
+                yield return new object[] { Decimal64.Parse("5.00000000000000000000000001e-399"), "G", defaultFormat, "1E-398" };
+                yield return new object[] { Decimal64.Parse("6e-399"), "G", defaultFormat, "1E-398" };
+                yield return new object[] { Decimal64.Parse("-4e-399"), "G", defaultFormat, "-0E-398" };
+                yield return new object[] { Decimal64.Parse("-5e-399"), "G", defaultFormat, "-0E-398" };
+                yield return new object[] { Decimal64.Parse("-5.00000000000000000000000001e-399"), "G", defaultFormat, "-1E-398" };
+                yield return new object[] { Decimal64.Parse("-6e-399"), "G", defaultFormat, "-1E-398" };
 
             }
         }
@@ -457,6 +469,46 @@ namespace System.Tests
             }
             Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
             Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
+        }
+
+        public static IEnumerable<object[]> ToString_Roundtrip_TestData()
+        {
+            yield return new object[] { "0" };
+            yield return new object[] { "-0" };
+            yield return new object[] { "0.00" };
+            yield return new object[] { "0e2" };
+            yield return new object[] { "0e369" };
+            yield return new object[] { "0e-398" };
+            yield return new object[] { "-0e-398" };
+            yield return new object[] { "1" };
+            yield return new object[] { "1.0" };
+            yield return new object[] { "1.000000000000000" };
+            yield return new object[] { "1e7" };
+            yield return new object[] { "10e6" };
+            yield return new object[] { "1000000000000000e1" };
+            yield return new object[] { "-4567.891" };
+            yield return new object[] { "0.0001" };
+            yield return new object[] { "0.00001" };
+            yield return new object[] { "0.000100" };
+            yield return new object[] { "9223372036854775808" };
+            yield return new object[] { "9999999999999999e369" };
+            yield return new object[] { "-9999999999999999e369" };
+            yield return new object[] { "1e-398" };
+            yield return new object[] { "1234567890123456e-398" };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToString_Roundtrip_TestData))]
+        public static void ToString_Roundtrips_And_PreservesQuantum(string value)
+        {
+            Decimal64 expected = Decimal64.Parse(value, CultureInfo.InvariantCulture);
+
+            foreach (string format in new[] { null, "G", "g", "R", "r" })
+            {
+                string formatted = expected.ToString(format, CultureInfo.InvariantCulture);
+                Decimal64 actual = Decimal64.Parse(formatted, CultureInfo.InvariantCulture);
+                Assert.Equal(Decimal64.EncodeDecimal(expected), Decimal64.EncodeDecimal(actual));
+            }
         }
 
         [Theory]
