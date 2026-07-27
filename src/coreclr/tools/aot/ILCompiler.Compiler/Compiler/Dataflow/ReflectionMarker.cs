@@ -26,6 +26,7 @@ namespace ILCompiler.Dataflow
         private readonly Logger _logger;
         private readonly MetadataType? _typeHierarchyDataFlowOrigin;
         private readonly bool _enabled;
+        private readonly bool _suppressWarnings;
 
         public NodeFactory Factory { get; }
         public FlowAnnotations Annotations { get; }
@@ -39,13 +40,14 @@ namespace ILCompiler.Dataflow
             TokenAccess
         }
 
-        public ReflectionMarker(Logger logger, NodeFactory factory, FlowAnnotations annotations, MetadataType? typeHierarchyDataFlowOrigin, bool enabled)
+        public ReflectionMarker(Logger logger, NodeFactory factory, FlowAnnotations annotations, MetadataType? typeHierarchyDataFlowOrigin, bool enabled, bool suppressWarnings = false)
         {
             _logger = logger;
             Factory = factory;
             Annotations = annotations;
             _typeHierarchyDataFlowOrigin = typeHierarchyDataFlowOrigin;
             _enabled = enabled;
+            _suppressWarnings = suppressWarnings;
         }
 
         internal void MarkTypeForDynamicallyAccessedMembers(in MessageOrigin origin, TypeDesc typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, TypeSystemEntity reason, bool declaredOnly = false)
@@ -277,7 +279,7 @@ namespace ILCompiler.Dataflow
 
         internal void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, AccessKind accessKind = AccessKind.Unspecified)
         {
-            if (!_enabled)
+            if (!_enabled || _suppressWarnings)
                 return;
 
             if (_typeHierarchyDataFlowOrigin is not null)

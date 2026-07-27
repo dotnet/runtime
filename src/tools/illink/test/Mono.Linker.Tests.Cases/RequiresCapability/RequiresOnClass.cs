@@ -1432,20 +1432,16 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
             }
 
-            // Unlike the base type case above, the warning for the interface list originates from the type
-            // declaration itself, so it is not suppressed by the RequiresUnreferencedCode on the type.
             [ExpectedWarning("IL2026", "ClassWithRequires()", "--ClassWithRequires--")]
             class ClassImplementingInterfaceWithWarningOnGenericArgumentConstructor : IRequiresNew<ClassWithRequires>
             {
             }
 
-            [UnexpectedWarning("IL2026", "ClassWithRequires()", "--ClassWithRequires--", Tool.All, "https://github.com/dotnet/runtime/issues/108507")]
             [RequiresUnreferencedCode("--ClassImplementingInterfaceWithWarningOnGenericArgumentConstructorWithRequires--")]
             class ClassImplementingInterfaceWithWarningOnGenericArgumentConstructorWithRequires : IRequiresNew<ClassWithRequires>
             {
             }
 
-            [UnexpectedWarning("IL2091", Tool.All, "https://github.com/dotnet/runtime/issues/108523")]
             [RequiresUnreferencedCode("--ClassImplementingInterfaceWithWarningWithRequires--")]
             public class ClassImplementingInterfaceWithWarningWithRequires : IRequiresAll<T>
             {
