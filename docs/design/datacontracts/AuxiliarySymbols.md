@@ -14,19 +14,29 @@ bool TryGetAuxiliarySymbolName(TargetPointer ip, out string symbolName);
 
 ## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `AuxiliarySymbolInfo` | `Address` | Code pointer to the dynamically-located helper function |
-| `AuxiliarySymbolInfo` | `Name` | Pointer to a null-terminated char string with the helper name |
+<!-- BEGIN GENERATED: usage contract=AuxiliarySymbols version=c1 -->
+### Data descriptors used
 
-Global variables used:
-| Global Name | Type | Purpose |
-| --- | --- | --- |
-| `AuxiliarySymbols` | TargetPointer | Pointer to an array of `AuxiliarySymbolInfo` entries |
-| `AuxiliarySymbolCount` | TargetPointer | Pointer to the count of populated entries in the array |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `AuxiliarySymbolInfo` | *(type size)* | `uint32` | Size in bytes of each entry in the auxiliary symbol array |
+| `AuxiliarySymbolInfo` | `Address` | `CodePointer` | Code pointer to the dynamically-located helper function |
+| `AuxiliarySymbolInfo` | `Name` | `pointer` | Pointer to a null-terminated char string with the helper name |
 
-Contracts used: none
+### Global variables used
+
+| Global | Type | Meaning |
+| --- | --- | --- |
+| `AuxiliarySymbolCount` | `pointer` | Pointer to the count of populated entries in the array |
+| `AuxiliarySymbols` | `pointer` | Pointer to an array of AuxiliarySymbolInfo entries |
+
+### Contracts used
+
+| Contract Name |
+| --- |
+| `PlatformMetadata` |
+<!-- END GENERATED: usage contract=AuxiliarySymbols version=c1 -->
+
 
 ``` csharp
 bool TryGetAuxiliarySymbolName(TargetPointer ip, out string? symbolName)

@@ -12,27 +12,31 @@ byte[] GetWatsonBuckets(TargetPointer threadPointer);
 
 ## Version 1
 
-Data descriptors used:
+<!-- BEGIN GENERATED: usage contract=WindowsErrorReporting version=c1 -->
+### Data descriptors used
 
-| Data Descriptor Name | Field | Meaning |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `Exception` | `_watsonBuckets` | `pointer` | Pointer to exception Watson buckets |
+| `ExceptionInfo` | `ExceptionWatsonBucketTrackerBuckets` | `pointer` | Pointer to Watson unhandled buckets on non-Unix |
+| `ExceptionInfo` | `ThrownObject` | `pointer` | Handle to the thrown exception object |
+| `Thread` | `ExceptionTracker` | `pointer` | Pointer to exception tracking information |
+| `Thread` | `RuntimeThreadLocals` | `pointer` | Pointer to some thread-local storage |
+| `Thread` | `ThreadHandle` | `pointer` | OS thread handle (optional, Windows only; readers should expect `TargetPointer.Null` on non-Windows targets) |
+| `Thread` | `UEWatsonBucketTrackerBuckets` | `pointer` | Pointer to thread Watson buckets data (optional, Windows only) |
+
+### Global variables used
+
+| Global | Type | Meaning |
 | --- | --- | --- |
-| `Exception` | `WatsonBuckets` | Pointer to exception Watson buckets |
-| `ExceptionInfo` | `ThrownObject` | Pointer to the active exception object |
-| `ExceptionInfo` | `ExceptionWatsonBucketTrackerBuckets` | Pointer to Watson unhandled buckets on non-Unix |
-| `Thread` | `ExceptionTracker` | Pointer to exception tracking information |
-| `Thread` | `UEWatsonBucketTrackerBuckets` | Pointer to thread Watson buckets data (optional, Windows only) |
+| `SizeOfGenericModeBlock` | `uint32` | Size of the GenericModeBlock structure |
 
-Global variables used:
+### Contracts used
 
-| Global Name | Type | Purpose |
-| --- | --- | --- |
-| `SizeOfGenericModeBlock` | uint32 | Size of the GenericModeBlock struct |
-
-Contracts used:
-
-| Contract |
+| Contract Name |
 | --- |
-| Object |
+| `Object` |
+<!-- END GENERATED: usage contract=WindowsErrorReporting version=c1 -->
 
 ``` csharp
 byte[] GetWatsonBuckets(TargetPointer threadPointer)

@@ -1333,15 +1333,14 @@ void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie)
 // has been aggregated
 ComCallWrapper* GetCCWFromIUnknown(IUnknown* pUnk, BOOL bEnableCustomization)
 {
-    CONTRACT (ComCallWrapper*)
+    CONTRACTL
     {
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pUnk));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ComCallWrapper* pWrap = MapIUnknownToWrapper(pUnk);
     if (pWrap != NULL)
@@ -1353,7 +1352,7 @@ ComCallWrapper* GetCCWFromIUnknown(IUnknown* pUnk, BOOL bEnableCustomization)
         }
     }
 
-    RETURN pWrap;
+    return pWrap;
 }
 
 HRESULT LoadRegTypeLib(_In_ REFGUID guid,
@@ -3643,7 +3642,7 @@ void GetComClassFromCLSID(REFCLSID clsid, _In_opt_z_ PCWSTR wszServer, OBJECTREF
 // if not set one up
 ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
 {
-    CONTRACT (ClassFactoryBase*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
@@ -3651,9 +3650,8 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
         INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(CheckPointer(pClassMT));
         PRECONDITION(pClassMT->IsComObjectType());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Work our way up the hierarchy until we find the first COM import type.
     while (!pClassMT->IsComImport())
@@ -3689,7 +3687,7 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
         pClsFac = pNewFactory.Extract();
     }
 
-    RETURN pClsFac;
+    return pClsFac;
 }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 

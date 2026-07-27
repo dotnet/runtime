@@ -341,6 +341,12 @@ namespace System.Tests
             yield return new object[] { (Half)(-180f), (Half)(180f), -1};
             yield return new object[] { (Half)(180f), (Half)(-180f), 1};
             yield return new object[] { (Half)(-65535), (object)null, 1};
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x0000), BitConverter.UInt16BitsToHalf(0x8000), 0 }; // +0 vs -0
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8000), BitConverter.UInt16BitsToHalf(0x0000), 0 }; // -0 vs +0
+            yield return new object[] { BitConverter.UInt16BitsToHalf(0x8001), Half.Epsilon, -1 }; // -subnormal vs +subnormal
+            yield return new object[] { Half.NaN, Half.PositiveInfinity, -1 };
+            yield return new object[] { Half.PositiveInfinity, Half.NaN, 1 };
+            yield return new object[] { Half.NaN, Half.NegativeInfinity, -1 };
         }
 
         [Theory]
