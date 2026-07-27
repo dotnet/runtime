@@ -69,7 +69,7 @@ public unsafe partial class Decimal128Native
     [ActiveIssue("https://github.com/dotnet/runtime/issues/69399", TestRuntimes.Mono)]
     public static void TestDecimal128FieldLayout()
     {
-        // Validates that the 16-byte alignment of Decimal128 within a struct matches the native compiler.
+        // Validates that the ABI-required alignment of Decimal128 within a struct matches the native compiler (16-byte on most targets; 8-byte on ARM32).
         StructWithDecimal128 lhs = new StructWithDecimal128(FromBits(11, 12));
         StructWithDecimal128 rhs = new StructWithDecimal128(FromBits(13, 14));
 
