@@ -15,6 +15,7 @@ unsafe class FatalErrorHandlerTest
     const string LogReceivedMarker = "FATAL_LOG_RECEIVED:";
     const string AddressMarker = "FATAL_ADDRESS:";
     const string DiagUnsupportedMarker = "FATAL_DIAG:unsupported";
+    const string DiagNegOkMarker = "FATAL_DIAG_NEG:ok";
     const string DiagJsonOkMarker = "FATAL_DIAG_JSON:ok";
     const string DiagLogOkMarker = "FATAL_DIAG_LOG:ok";
 
@@ -374,9 +375,11 @@ unsafe class FatalErrorHandlerTest
         Console.WriteLine($"=== TestDiagnosticData ({crashDescription}) ===");
 
         // The in-proc crash reporter that backs FEP_DiagnosticDataFunc is compiled for
-        // CoreCLR on Unix/macOS (and mobile). It is not present for CoreCLR on Windows or
-        // for NativeAOT, where the property is reported as unavailable.
-        bool expectSupported = !TestLibrary.Utilities.IsNativeAot && !OperatingSystem.IsWindows();
+        // CoreCLR on desktop Linux and macOS (and mobile). It is not present for CoreCLR on
+        // Windows or other Unix platforms, nor for NativeAOT, where the property is reported
+        // as unavailable. Mirror the clrfeatures.cmake gate rather than "any non-Windows".
+        bool expectSupported = !TestLibrary.Utilities.IsNativeAot &&
+                               (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS());
 
         var (exitCode, stderr) = LaunchChild(scenario);
 
@@ -399,17 +402,20 @@ unsafe class FatalErrorHandlerTest
             return handlerInvoked && exited && reportedUnsupported;
         }
 
+        bool negOk = stderr.Contains(DiagNegOkMarker);
         bool jsonOk = stderr.Contains(DiagJsonOkMarker);
         bool logOk = stderr.Contains(DiagLogOkMarker);
 
         if (reportedUnsupported)
             Console.WriteLine("  FAIL: FEP_DiagnosticDataFunc was unavailable on a platform expected to support it");
+        if (!negOk)
+            Console.WriteLine("  FAIL: malformed on-demand requests were not rejected as documented");
         if (!jsonOk)
             Console.WriteLine("  FAIL: JSON crash report was not produced on demand");
         if (!logOk)
             Console.WriteLine("  FAIL: Log crash report was not produced on demand");
 
-        return handlerInvoked && exited && !reportedUnsupported && jsonOk && logOk;
+        return handlerInvoked && exited && !reportedUnsupported && negOk && jsonOk && logOk;
     }
 
     static bool TestNestedHardwareFault()

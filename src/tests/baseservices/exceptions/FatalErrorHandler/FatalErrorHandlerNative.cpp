@@ -130,6 +130,14 @@ static bool DOTNET_CALLCONV DiagnosticSink(const char* data, size_t length, void
     return true;
 }
 
+// Sink that immediately aborts by returning false on the first fragment, exercising the
+// documented DiagnosticDataOutputFunc abort contract (the report generation must stop and
+// the entry point must return false).
+static bool DOTNET_CALLCONV AbortingSink(const char* /*data*/, size_t /*length*/, void* /*userContext*/)
+{
+    return false;
+}
+
 // Produces one on-demand report of the requested type and reports whether the runtime
 // streamed any data back through the sink. Returns true when the report succeeded.
 static bool ProduceReport(DiagnosticDataFunc pfnDiag, DiagnosticDataType type)
@@ -141,6 +149,45 @@ static bool ProduceReport(DiagnosticDataFunc pfnDiag, DiagnosticDataType type)
     config.pfnOutput = DiagnosticSink;
     config.userContext = &state;
     return pfnDiag(&config) && state.bytes > 0;
+}
+
+// Verifies the entry point rejects the malformed requests enumerated in the header
+// contract (NULL config, undersized config, NULL sink, unrecognized type) and honors a
+// sink that aborts. Returns true only when every such request returns false.
+static bool RejectsBadRequests(DiagnosticDataFunc pfnDiag)
+{
+    if (pfnDiag(NULL))
+        return false;
+
+    DiagnosticDataConfig undersized = {};
+    undersized.type = JsonCrashReport;
+    undersized.size = static_cast<uint32_t>(sizeof(DiagnosticDataConfig)) - 1;
+    undersized.pfnOutput = DiagnosticSink;
+    if (pfnDiag(&undersized))
+        return false;
+
+    DiagnosticDataConfig noSink = {};
+    noSink.type = JsonCrashReport;
+    noSink.size = static_cast<uint32_t>(sizeof(noSink));
+    noSink.pfnOutput = NULL;
+    if (pfnDiag(&noSink))
+        return false;
+
+    DiagnosticDataConfig badType = {};
+    badType.type = 0x7FFFFFFF;
+    badType.size = static_cast<uint32_t>(sizeof(badType));
+    badType.pfnOutput = DiagnosticSink;
+    if (pfnDiag(&badType))
+        return false;
+
+    DiagnosticDataConfig aborts = {};
+    aborts.type = JsonCrashReport;
+    aborts.size = static_cast<uint32_t>(sizeof(aborts));
+    aborts.pfnOutput = AbortingSink;
+    if (pfnDiag(&aborts))
+        return false;
+
+    return true;
 }
 
 // Handler that requests the on-demand diagnostic-data entry point and generates both a
@@ -161,6 +208,7 @@ static int DOTNET_CALLCONV HandlerCheckDiagnosticData(int /*hresult*/, FatalErro
 
     DiagnosticDataFunc pfnDiag = reinterpret_cast<DiagnosticDataFunc>(reinterpret_cast<uintptr_t>(pFunc));
 
+    WriteStdErr(RejectsBadRequests(pfnDiag) ? "FATAL_DIAG_NEG:ok\n" : "FATAL_DIAG_NEG:fail\n");
     WriteStdErr(ProduceReport(pfnDiag, JsonCrashReport) ? "FATAL_DIAG_JSON:ok\n" : "FATAL_DIAG_JSON:fail\n");
     WriteStdErr(ProduceReport(pfnDiag, LogCrashReport) ? "FATAL_DIAG_LOG:ok\n" : "FATAL_DIAG_LOG:fail\n");
 
