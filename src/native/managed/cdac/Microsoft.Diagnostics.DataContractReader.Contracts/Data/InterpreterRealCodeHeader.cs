@@ -10,6 +10,7 @@ internal sealed partial class InterpreterRealCodeHeader : IData<InterpreterRealC
     [Field] public partial TargetPointer DebugInfo { get; }
     [Field] public partial TargetPointer GCInfo { get; }
 
+    [DataDescriptorDependency(nameof(JitEHInfo), "pointer")]
     public EEILException? JitEHInfo { get; private set; }
 
     partial void OnInit(Target target, TargetPointer address)

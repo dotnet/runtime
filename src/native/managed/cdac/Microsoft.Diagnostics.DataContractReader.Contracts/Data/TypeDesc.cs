@@ -17,8 +17,7 @@ internal sealed partial class ParamTypeDesc : IData<ParamTypeDesc>
 
     partial void OnInit(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
-        TypeAndFlags = target.ReadField<uint>(address, type, nameof(TypeAndFlags));
+        TypeAndFlags = target.ProcessedData.GetOrAdd<TypeDesc>(address).TypeAndFlags;
     }
 }
 
@@ -28,11 +27,11 @@ internal sealed partial class TypeVarTypeDesc : IData<TypeVarTypeDesc>
     public uint TypeAndFlags { get; private set; }
     [Field] public partial TargetPointer Module { get; }
     [Field] public partial uint Token { get; }
+    [Field] public partial uint Index { get; }
 
     partial void OnInit(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
-        TypeAndFlags = target.ReadField<uint>(address, type, nameof(TypeAndFlags));
+        TypeAndFlags = target.ProcessedData.GetOrAdd<TypeDesc>(address).TypeAndFlags;
     }
 }
 
@@ -50,7 +49,6 @@ internal sealed partial class FnPtrTypeDesc : IData<FnPtrTypeDesc>
 
     partial void OnInit(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.TypeDesc);
-        TypeAndFlags = target.ReadField<uint>(address, type, nameof(TypeAndFlags));
+        TypeAndFlags = target.ProcessedData.GetOrAdd<TypeDesc>(address).TypeAndFlags;
     }
 }
