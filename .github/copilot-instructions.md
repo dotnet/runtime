@@ -61,6 +61,17 @@ When posting to GitHub under a user's credentials — PR descriptions, issue bod
 
 ---
 
+## Running Commands
+
+Redirect long-running commands to a log and poll a bounded view — a tail, a grep for errors, or a status sentinel. Re-reading a running command's output re-sends it from the start every time, so repeatedly checking a long build costs far more than the check is worth. Check the outcome, not the process.
+
+```bash
+<cmd> > out.log 2>&1; echo "exit=$?" > out.status               # bash
+<cmd> *> out.log; "exit=$LASTEXITCODE" | Out-File out.status    # PowerShell -- $? is a [bool] here
+```
+
+Fetch narrowly: `gh run view --log-failed` over `--log`, `--json`/`--jq` to project only the fields needed, `git diff --stat` before the full diff. Quiet what doesn't detect a non-TTY: `curl -sS`, `--quiet` on `git clone`/`fetch`/`checkout`. MSBuild and `dotnet` already detect it — no flags needed.
+
 ## Building & Testing
 
 **Before running any build or test command, use the `build-and-test` skill** — don't guess the commands. Under CCA, invoke it **before making any code changes**; a missing or incorrect baseline build costs 20-40 minutes to recover from.

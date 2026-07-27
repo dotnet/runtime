@@ -22,6 +22,8 @@ Commands below are written for bash. On Windows, use the `.cmd` entrypoints and 
 | `export FOO=<value>` | `$env:FOO = '<value>'` |
 | `$CORE_ROOT/corerun <Test>.dll` | `$env:CORE_ROOT\corerun.exe <Test>.dll` |
 | `find <dir> -name '<pattern>'` | `Get-ChildItem <dir> -Recurse -Filter '<pattern>'` |
+| `tail -20 <log>` | `Get-Content <log> -Tail 20` |
+| `grep '<pattern>' <log>` | `Select-String -Path <log> -Pattern '<pattern>'` |
 
 Some arguments also differ in casing: `-priority1` on bash is `-Priority 1` on Windows.
 
@@ -58,9 +60,7 @@ Build on the branch you intend to modify — the baseline reflects your working 
 
 ⏱️ **This build can take up to 40 minutes.** Do not cancel unless no output for 5+ minutes.
 
-Redirect it to a log and poll a bounded view — re-reading a running command's console buffer
-returns the whole accumulated output every time, so watching a long build that way costs more than
-the build guidance itself:
+Redirect it to a log and poll a bounded view rather than watching the console:
 
 ```bash
 ./build.sh clr+libs -rc release > artifacts/build.log 2>&1; echo "exit=$?" > artifacts/build.status
