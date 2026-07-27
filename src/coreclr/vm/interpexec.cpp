@@ -463,6 +463,20 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
     InvokeManagedMethod(targetMethod, pArgs, pRet, callTarget, NULL);
 }
 
+static NOINLINE CallStubHeader* InvokeDelegateInvokeMethodHelper(MethodDesc *pMDDelegateInvoke)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pMDDelegateInvoke));
+    }
+    CONTRACTL_END
+
+    GCX_PREEMP();
+    return UpdateCallStubForMethod(pMDDelegateInvoke, (PCODE)pMDDelegateInvoke->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+}
+
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
 {
     CONTRACTL
@@ -478,7 +492,7 @@ void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, in
     CallStubHeader *stubHeaderTemplate = pMDDelegateInvoke->GetCalliCookie();
     if (stubHeaderTemplate == NULL)
     {
-        stubHeaderTemplate = UpdateCallStubForMethod(pMDDelegateInvoke, (PCODE)pMDDelegateInvoke->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+        stubHeaderTemplate = InvokeDelegateInvokeMethodHelper(pMDDelegateInvoke);
     }
 
     // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
