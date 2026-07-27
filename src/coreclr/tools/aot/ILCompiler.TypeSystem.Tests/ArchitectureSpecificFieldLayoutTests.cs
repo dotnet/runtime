@@ -22,6 +22,8 @@ namespace TypeSystemTests
         private ModuleDesc _testModuleARM;
         private TestTypeSystemContext _contextARM64;
         private ModuleDesc _testModuleARM64;
+        private TestTypeSystemContext _contextWasm32;
+        private ModuleDesc _testModuleWasm32;
 
         public ArchitectureSpecificFieldLayoutTests()
         {
@@ -60,6 +62,12 @@ namespace TypeSystemTests
             _contextARM64.SetSystemModule(systemModuleARM64);
 
             _testModuleARM64 = systemModuleARM64;
+
+            _contextWasm32 = new TestTypeSystemContext(TargetArchitecture.Wasm32);
+            var systemModuleWasm32 = _contextWasm32.CreateModuleForSimpleName("CoreTestAssembly");
+            _contextWasm32.SetSystemModule(systemModuleWasm32);
+
+            _testModuleWasm32 = systemModuleWasm32;
         }
 
         [Fact]
@@ -501,11 +509,13 @@ namespace TypeSystemTests
         [InlineData("StructStructByte_Int128StructAuto", "X86", 16, 32)]
         [InlineData("StructStructByte_Int128StructAuto", "X64Linux", 16, 32)]
         [InlineData("StructStructByte_Int128StructAuto", "X64Windows", 16, 32)]
+        [InlineData("StructStructByte_Int128StructAuto", "Wasm32", 8, 24)]
         [InlineData("StructStructByte_UInt128StructAuto", "ARM64", 16, 32)]
         [InlineData("StructStructByte_UInt128StructAuto", "ARM", 8, 24)]
         [InlineData("StructStructByte_UInt128StructAuto", "X86", 16, 32)]
         [InlineData("StructStructByte_UInt128StructAuto", "X64Linux", 16, 32)]
         [InlineData("StructStructByte_UInt128StructAuto", "X64Windows", 16, 32)]
+        [InlineData("StructStructByte_UInt128StructAuto", "Wasm32", 8, 24)]
         // Variation of TestAlignmentBehavior_AutoAlignmentRules above that is able to deal with os specific behavior
         public void TestAlignmentBehavior_AutoAlignmentRulesWithOSDependence(string wrapperType, string osArch, int alignment, int size)
         {
@@ -529,6 +539,9 @@ namespace TypeSystemTests
                     break;
                 case "X86":
                     testModule = _testModuleX86;
+                    break;
+                case "Wasm32":
+                    testModule = _testModuleWasm32;
                     break;
                 default:
                     throw new Exception();
