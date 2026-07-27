@@ -1120,6 +1120,30 @@ namespace System
                     return false;
                 }
 
+                if (numberKind == NumberBufferKind.DecimalIeee754)
+                {
+                    // The buffer holds the exact coefficient, so a '5' followed by nothing but zeros is a
+                    // true tie rather than an artifact of a truncated expansion. IEEE 754 §5.12.1 requires
+                    // the conversion to be correctly rounded under the applicable rounding-direction
+                    // attribute, which is roundTiesToEven.
+
+                    if (digit != '5')
+                    {
+                        return digit > '5';
+                    }
+
+                    for (int j = i + 1; dig[j] != '\0'; j++)
+                    {
+                        if (dig[j] != '0')
+                        {
+                            return true;
+                        }
+                    }
+
+                    // A tie with no preceding digit rounds toward the implicit leading zero, which is even.
+                    return (i > 0) && (((dig[i - 1] - '0') & 1) != 0);
+                }
+
                 // Values greater than or equal to 5 should round up, otherwise we round down. The IEEE
                 // 754 spec actually dictates that ties (exactly 5) should round to the nearest even number
                 // but that can have undesired behavior for custom numeric format strings. This probably

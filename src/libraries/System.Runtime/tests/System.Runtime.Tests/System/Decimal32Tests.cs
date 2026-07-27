@@ -444,6 +444,26 @@ namespace System.Tests
                 yield return new object[] { Decimal32.Parse("100.0"), "G2", defaultFormat, "1E+02" };
                 yield return new object[] { Decimal32.Parse("0.00012345"), "G2", defaultFormat, "0.00012" };
 
+                // Ties round to even, as IEEE 754 §5.12.1 requires of every conversion to a character
+                // sequence, including the custom formats where the binary types round away from zero
+                yield return new object[] { Decimal32.Parse("0.5"), "F0", defaultFormat, "0" };
+                yield return new object[] { Decimal32.Parse("1.5"), "F0", defaultFormat, "2" };
+                yield return new object[] { Decimal32.Parse("2.5"), "F0", defaultFormat, "2" };
+                yield return new object[] { Decimal32.Parse("3.5"), "F0", defaultFormat, "4" };
+                yield return new object[] { Decimal32.Parse("-0.5"), "F0", defaultFormat, "-0" };
+                yield return new object[] { Decimal32.Parse("-2.5"), "F0", defaultFormat, "-2" };
+                yield return new object[] { Decimal32.Parse("2.500"), "F0", defaultFormat, "2" };
+                yield return new object[] { Decimal32.Parse("2.5001"), "F0", defaultFormat, "3" };
+                yield return new object[] { Decimal32.Parse("2.4999"), "F0", defaultFormat, "2" };
+                yield return new object[] { Decimal32.Parse("0.25"), "F1", defaultFormat, "0.2" };
+                yield return new object[] { Decimal32.Parse("0.35"), "F1", defaultFormat, "0.4" };
+                yield return new object[] { Decimal32.Parse("1.25"), "E1", defaultFormat, "1.2E+000" };
+                yield return new object[] { Decimal32.Parse("12.5"), "N0", defaultFormat, "12" };
+                yield return new object[] { Decimal32.Parse("12.5"), "G2", defaultFormat, "12" };
+                yield return new object[] { Decimal32.Parse("1000.500"), "G4", defaultFormat, "1000" };
+                yield return new object[] { Decimal32.Parse("0.25"), "0.0", defaultFormat, "0.2" };
+                yield return new object[] { Decimal32.Parse("1.25"), "#.#", defaultFormat, "1.2" };
+
                 yield return new object[] { Decimal32.Parse("2468"), "N", defaultFormat, "2,468.00" };
 
                 yield return new object[] { Decimal32.Parse("2467"), "[#-##-#]", defaultFormat, "[2-46-7]" };
