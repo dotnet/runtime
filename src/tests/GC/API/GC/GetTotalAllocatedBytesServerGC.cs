@@ -116,6 +116,11 @@ public class GetTotalAllocatedBytesServerGC
                         prevInitial = prev;
                         prevFinal = cur;
                     }
+
+                    if (maxDrop > Tolerance)
+                    {
+                        break;
+                    }
                 }
                 prev = cur;
             }
