@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal partial class TailCallFrame : IData<TailCallFrame>
 {
     [FieldAddress]
-    public TargetPointer CalleeSavedRegisters { get; }
+    public partial TargetPointer CalleeSavedRegisters { get; }
 
-    [Field] public TargetCodePointer ReturnAddress { get; }
+    [Field] public partial TargetCodePointer ReturnAddress { get; }
 }

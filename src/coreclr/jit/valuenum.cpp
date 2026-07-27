@@ -10342,7 +10342,14 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
-                    res            = pow(arg0Val, arg1Val);
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+                    // The ARM/ARM64 CRT `pow` returns `0` rather than `arg0Val` for subnormal
+                    // `arg0Val` when `arg1Val` is exactly `1`; match the runtime helper fixup
+                    // https://github.com/dotnet/runtime/issues/12139
+                    res = (arg1Val == 1.0) ? arg0Val : pow(arg0Val, arg1Val);
+#else
+                    res = pow(arg0Val, arg1Val);
+#endif
                     break;
                 }
 
@@ -10430,7 +10437,14 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
-                    res           = powf(arg0Val, arg1Val);
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+                    // The ARM/ARM64 CRT `powf` returns `0` rather than `arg0Val` for subnormal
+                    // `arg0Val` when `arg1Val` is exactly `1`; match the runtime helper fixup
+                    // https://github.com/dotnet/runtime/issues/12139
+                    res = (arg1Val == 1.0f) ? arg0Val : powf(arg0Val, arg1Val);
+#else
+                    res = powf(arg0Val, arg1Val);
+#endif
                     break;
                 }
 

@@ -4186,7 +4186,7 @@ public:
             return;
         }
 
-        if (strBufferSize > bufferSize)
+        if (static_cast<size_t>(strBufferSize) > bufferSize)
         {
             m_pBuffer = new WCHAR[strBufferSize];
         }

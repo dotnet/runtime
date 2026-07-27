@@ -3939,6 +3939,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(!"JitBreakEmitOutputInstr reached");
         }
     }
+
+    // Output any delta in GC info.
+    if (EMIT_GC_VERBOSE || m_compiler->opts.disasmWithGC)
+    {
+        emitDispGCInfoDelta();
+    }
 #endif
 
     /* All instructions are expected to generate code */

@@ -170,6 +170,7 @@ static MethodDesc * FindTightlyBoundWrappedMethodDesc(MethodDesc * pMD)
 {
     CONTRACTL
     {
+        MODE_ANY;
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pMD));
@@ -399,8 +400,9 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                                                   Instantiation methodInst,
                                                   BOOL getWrappedCode)
 {
-    CONTRACT(InstantiatedMethodDesc*)
+    CONTRACTL
     {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
@@ -408,11 +410,8 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         PRECONDITION(CheckPointer(pGenericMDescInRepMT));
         PRECONDITION(methodInst.IsEmpty() || pGenericMDescInRepMT->IsGenericMethodDefinition());
         PRECONDITION(methodInst.GetNumArgs() == pGenericMDescInRepMT->GetNumGenericMethodArgs());
-        POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(getWrappedCode == RETVAL->IsSharedByGenericInstantiations());
-        POSTCONDITION(methodInst.IsEmpty() || RETVAL->HasMethodInstantiation());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // All instantiated method descs live off the RepMT for the
     // instantiated class they live in.
@@ -592,49 +591,11 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
     }
 
     _ASSERTE(pNewMD != NULL);
+    _ASSERTE(getWrappedCode == pNewMD->IsSharedByGenericInstantiations());
+    _ASSERTE(methodInst.IsEmpty() || pNewMD->HasMethodInstantiation());
     pNewMD->CheckRestore();
-
-    RETURN pNewMD;
+    return pNewMD;
 }
-
-// Calling this method is equivalent to
-// FindOrCreateAssociatedMethodDesc(pCanonicalMD, pExactMT, FALSE, Instantiation(), FALSE, TRUE)
-// except that it also creates InstantiatedMethodDescs based on shared class methods. This is
-// convenient for interop where, unlike ordinary managed methods, marshaling stubs for say Foo<string>
-// and Foo<object> look very different and need separate representation.
-InstantiatedMethodDesc*
-InstantiatedMethodDesc::FindOrCreateExactClassMethod(MethodTable *pExactMT,
-                                                     MethodDesc *pCanonicalMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(!pExactMT->IsSharedByGenericInstantiations());
-        PRECONDITION(pCanonicalMD->IsSharedByGenericInstantiations());
-    }
-    CONTRACTL_END;
-
-    InstantiatedMethodDesc *pInstMD = FindLoadedInstantiatedMethodDesc(pExactMT,
-                                                                       pCanonicalMD->GetMemberDef(),
-                                                                       Instantiation(),
-                                                                       FALSE,
-                                                                       pCanonicalMD->GetMatchingAsyncVariantLookup());
-
-    if (pInstMD == NULL)
-    {
-        // create a new MD if not found
-        pInstMD = NewInstantiatedMethodDesc(pExactMT,
-                                            pCanonicalMD,
-                                            pCanonicalMD,
-                                            Instantiation(),
-                                            FALSE);
-    }
-
-    return pInstMD;
-}
-
 #endif // !DACCESS_COMPILE
 
 // N.B. it is not guarantee that the returned InstantiatedMethodDesc is restored.
@@ -647,7 +608,7 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
                                                          BOOL getWrappedCode,
                                                          AsyncVariantLookup variantLookup)
 {
-    CONTRACT(InstantiatedMethodDesc *)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
@@ -659,16 +620,8 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
         // canonical and exhibit some kind of code sharing.
         PRECONDITION(!getWrappedCode || pExactOrRepMT->IsCanonicalMethodTable());
         PRECONDITION(!getWrappedCode || pExactOrRepMT->IsSharedByGenericInstantiations() || ClassLoader::IsSharableInstantiation(methodInst));
-
-        // Unboxing stubs are dealt with separately in FindOrCreateAssociatedMethodDesc.  This should
-        // probably be streamlined...
-        POSTCONDITION(!RETVAL || !RETVAL->IsUnboxingStub());
-
-        // All wrapped method descriptors (except BoxedEntryPointStubs, which don't use this path) take an inst arg.
-        // The only ones that don't should have been found in the type's meth table.
-        POSTCONDITION(!getWrappedCode || !RETVAL || RETVAL->RequiresInstArg());
     }
-    CONTRACT_END
+    CONTRACTL_END
 
 
     // First look in the table for the runtime loader module in case someone created it before any
@@ -684,9 +637,20 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
                                                   variantLookup);
 
     if (resultMD != NULL)
-       RETURN((InstantiatedMethodDesc*) resultMD);
+    {
+        InstantiatedMethodDesc *pInstMD = (InstantiatedMethodDesc*)resultMD;
 
-    RETURN(NULL);
+        // Unboxing stubs are dealt with separately in FindOrCreateAssociatedMethodDesc.  This should
+        // probably be streamlined...
+        _ASSERTE(!pInstMD->IsUnboxingStub());
+
+        // All wrapped method descriptors (except BoxedEntryPointStubs, which don't use this path) take an inst arg.
+        // The only ones that don't should have been found in the type's meth table.
+        _ASSERTE(!getWrappedCode || pInstMD->RequiresInstArg());
+        return pInstMD;
+    }
+
+    return NULL;
 }
 
 
@@ -804,9 +768,10 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                              BOOL allowCreate,
                                              ClassLoadLevel level)
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         THROWS;
+        if (allowCreate) { MODE_PREEMPTIVE; } else { MODE_ANY; }
         if (allowCreate) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
         if (!allowCreate) { SUPPORTS_DAC; }
         INJECT_FAULT(COMPlusThrowOM(););
@@ -828,11 +793,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         // For remotable methods we better not be allowing instantiation parameters.
         PRECONDITION(!forceRemotableMethod || !allowInstParam);
 
-        POSTCONDITION(((RETVAL == NULL) && !allowCreate) || CheckPointer(RETVAL));
-        POSTCONDITION(((RETVAL == NULL) && !allowCreate) || forceBoxedEntryPoint || !RETVAL->IsUnboxingStub());
-        POSTCONDITION(((RETVAL == NULL) && !allowCreate) || allowInstParam || !RETVAL->RequiresInstArg());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Quick exit for the common cases where the result is the same as the primary MD we are given
     if (!pDefMD->HasClassOrMethodInstantiation() &&
@@ -845,7 +807,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         // if we took the fast path.
         _ASSERTE(pDefMD->IsArray() || pDefMD->GetExactDeclaringType(pExactMT) != NULL);
 
-        RETURN pDefMD;
+        return pDefMD;
     }
 
     // Get the version of the method desc. for the instantiated shared class, e.g.
@@ -884,7 +846,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
         if (!allowCreate && !pMDescInCanonMT->GetMethodTable()->IsFullyLoaded())
         {
-            RETURN(NULL);
+            return NULL;
         }
 
         pMDescInCanonMT->CheckRestore(level);
@@ -901,7 +863,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         && (!forceRemotableMethod || !pMDescInCanonMT->IsInterface() || !pMDescInCanonMT->GetMethodTable()->IsSharedByGenericInstantiations())
         && (pMDescInCanonMT->MatchesAsyncVariantLookup(asyncVariantLookup)))
     {
-        RETURN(pMDescInCanonMT);
+        return pMDescInCanonMT;
     }
 
     // Unboxing stubs
@@ -943,7 +905,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             if (pResultMD != NULL)
             {
                 _ASSERTE(pResultMD->GetMethodTable()->IsFullyLoaded());
-                RETURN(pResultMD);
+                return pResultMD;
             }
 
             MethodTable *pRepMT = pMDescInCanonMT->GetMethodTable();
@@ -967,7 +929,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                 // !allowCreate ==> GC_NOTRIGGER ==> no entering Crst
                 if (!allowCreate)
                 {
-                    RETURN(NULL);
+                    return NULL;
                 }
 
 #ifndef DACCESS_COMPILE
@@ -1034,7 +996,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                 // !allowCreate ==> GC_NOTRIGGER ==> no entering Crst
                 if (!allowCreate)
                 {
-                    RETURN(NULL);
+                    return NULL;
                 }
 
 #ifndef DACCESS_COMPILE
@@ -1105,13 +1067,13 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
         if (!allowCreate && !pResultMD->GetMethodTable()->IsFullyLoaded())
         {
-            RETURN(NULL);
+            return NULL;
         }
 
         pResultMD->CheckRestore(level);
         _ASSERTE(pResultMD->IsUnboxingStub());
         _ASSERTE(!pResultMD->IsInstantiatingStub());
-        RETURN(pResultMD);
+        return pResultMD;
     }
 
 
@@ -1157,7 +1119,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                 _ASSERTE(pResultMD->GetMethodTable()->IsFullyLoaded());
                 if (allowInstParam || !pResultMD->RequiresInstArg())
                 {
-                    RETURN(pResultMD);
+                    return pResultMD;
                 }
             }
         }
@@ -1173,7 +1135,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             ClassLoader::IsTypicalInstantiation(pModule, methodDef, methodInst))
         {
             _ASSERTE(!pMDescInCanonMT->IsUnboxingStub());
-            RETURN(pMDescInCanonMT);
+            return pMDescInCanonMT;
         }
 
         // OK, so we now know the thing we're looking for can only be found in the MethodDesc table.
@@ -1218,7 +1180,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             {
                 if (!allowCreate)
                 {
-                    RETURN(NULL);
+                    return NULL;
                 }
 
 #ifndef DACCESS_COMPILE
@@ -1245,7 +1207,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             {
                 if (!allowCreate)
                 {
-                    RETURN(NULL);
+                    return NULL;
                 }
 
 #ifndef DACCESS_COMPILE
@@ -1288,7 +1250,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             {
                 if (!allowCreate)
                 {
-                    RETURN(NULL);
+                    return NULL;
                 }
 
 #ifndef DACCESS_COMPILE
@@ -1304,12 +1266,14 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 
         if (!allowCreate && !pInstMD->GetMethodTable()->IsFullyLoaded())
         {
-            RETURN(NULL);
+            return NULL;
         }
 
         pInstMD->CheckRestore(level);
 
-        RETURN(pInstMD);
+        _ASSERTE(allowInstParam || !pInstMD->RequiresInstArg());
+
+        return pInstMD;
     }
 }
 
@@ -1322,6 +1286,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
     Instantiation methodInst)
 {
     CONTRACTL {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;    // Because allowCreate is TRUE
         PRECONDITION(CheckPointer(pMethod));
@@ -1399,15 +1364,13 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
 //
 MethodDesc * MethodDesc::FindOrCreateTypicalSharedInstantiation(BOOL allowCreate /* = TRUE */)
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(IsTypicalMethodDefinition());
-        POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(RETVAL->IsTypicalSharedInstantiation());
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     MethodDesc *pMD = this;
     MethodTable *pMT = pMD->GetMethodTable();
@@ -1458,13 +1421,18 @@ MethodDesc * MethodDesc::FindOrCreateTypicalSharedInstantiation(BOOL allowCreate
             genericMethodArgs[i] = TypeHandle(g_pCanonMethodTableClass);
     }
 
-    RETURN(MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
-                                                        pMT,
-                                                        FALSE, /* don't get unboxing entry point */
-                                                        Instantiation(genericMethodArgs, nGenericMethodArgs),
-                                                        TRUE,
-                                                        FALSE,
-                                                        allowCreate));
+    MethodDesc* result = MethodDesc::FindOrCreateAssociatedMethodDesc(
+        pMD,
+        pMT,
+        FALSE, /* don't get unboxing entry point */
+        Instantiation(genericMethodArgs, nGenericMethodArgs),
+        TRUE,
+        FALSE,
+        allowCreate);
+
+    _ASSERTE(result == NULL || result->IsSharedByGenericInstantiations());
+    return result;
+
 }
 
 //@GENERICSVER: Set up the typical instance (i.e., non-instantiated)
@@ -1670,8 +1638,6 @@ void MethodDesc::CheckConstraintMetadataValidity(BOOL *pfHasCircularMethodConstr
             *pfHasCircularMethodConstraints = TRUE;
         }
     }
-
-    return;
 }
 
 

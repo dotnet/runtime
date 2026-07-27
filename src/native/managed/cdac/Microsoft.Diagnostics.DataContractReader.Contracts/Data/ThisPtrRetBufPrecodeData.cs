@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ThisPtrRetBufPrecodeData))]
 internal sealed partial class ThisPtrRetBufPrecodeData : IData<ThisPtrRetBufPrecodeData>
 {
-    [Field] public TargetPointer MethodDesc { get; }
+    [Field] public partial TargetPointer MethodDesc { get; }
 }

@@ -154,7 +154,7 @@ namespace System.Reflection.Tests
             string assembly = Assembly.GetEntryAssembly().ToString();
 
             bool correct;
-            if (PlatformDetection.IsNativeAot)
+            if (PlatformDetection.IsNativeAot || PlatformDetection.IsReadyToRunCompiled)
             {
                 // The single file test runner is not 'xunit.console'.
                 correct = assembly.IndexOf("System.Reflection.Tests", StringComparison.OrdinalIgnoreCase) != -1;
