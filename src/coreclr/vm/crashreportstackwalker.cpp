@@ -709,39 +709,6 @@ CrashReportInitialize()
     InProcCrashReportInitialize(settings);
 }
 
-#else // !FEATURE_INPROC_CRASHREPORT
-
-// The in-proc crash reporter is not compiled on this platform; CrashReportInitialize is a no-op.
-void
-CrashReportInitialize()
-{
-}
-
-// The VM fatal paths (excep.cpp / eepolicy.cpp) call these unconditionally; provide no-op
-// definitions so the reporter's absence does not require guarding the call sites.
-void
-InProcCrashReportSetCrashKind(InProcCrashReportCrashKind)
-{
-}
-
-void
-InProcCrashReportBeginStackOverflowTrace(uint64_t, uint32_t)
-{
-}
-
-void
-InProcCrashReportAddStackOverflowTraceFrame(
-    const char*,
-    uint32_t,
-    uint32_t)
-{
-}
-
-void
-InProcCrashReportEndStackOverflowTrace()
-{
-}
-
 #endif // FEATURE_INPROC_CRASHREPORT
 
 // CrashReportConfigure starts the env-gated crash-dump services and registers the PAL

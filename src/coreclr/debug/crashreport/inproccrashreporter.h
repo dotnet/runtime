@@ -18,6 +18,8 @@ enum class InProcCrashReportCrashKind : uint32_t
     StackOverflow = 1,
 };
 
+#ifdef FEATURE_INPROC_CRASHREPORT
+
 // Records crash kind hints from VM fatal paths that later terminate through PAL
 // as a generic signal (for example stack overflow -> SIGABRT).
 void InProcCrashReportSetCrashKind(InProcCrashReportCrashKind crashKind);
@@ -31,6 +33,17 @@ void InProcCrashReportAddStackOverflowTraceFrame(
     uint32_t repeatCount,
     uint32_t repeatSequenceLength);
 void InProcCrashReportEndStackOverflowTrace();
+
+#else // !FEATURE_INPROC_CRASHREPORT
+
+// The in-proc crash reporter is not compiled on this platform. The VM fatal paths
+// (excep.cpp / eepolicy.cpp) call these unconditionally, so provide inline no-ops.
+inline void InProcCrashReportSetCrashKind(InProcCrashReportCrashKind) {}
+inline void InProcCrashReportBeginStackOverflowTrace(uint64_t, uint32_t) {}
+inline void InProcCrashReportAddStackOverflowTraceFrame(const char*, uint32_t, uint32_t) {}
+inline void InProcCrashReportEndStackOverflowTrace() {}
+
+#endif // FEATURE_INPROC_CRASHREPORT
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
