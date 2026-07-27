@@ -80,6 +80,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         addToTable = true;
                     }
                 }
+                else if (customAttributeTypeNamespace == "System.Diagnostics.CodeAnalysis")
+                {
+                    // Consulted by the JIT (via canValueClassInstancePointerEscape) to reason
+                    // about escaping receivers of value type instance methods.
+                    if (customAttributeTypeName == "UnscopedRefAttribute")
+                    {
+                        addToTable = true;
+                    }
+                }
 
                 if (!addToTable)
                     continue;
