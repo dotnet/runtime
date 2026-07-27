@@ -66,11 +66,11 @@ extends:
 
     - stage: Build
       jobs:
-
-      - template: /eng/common/core-templates/job/helix-job-monitor.yml
-        parameters:
-          helixAccessToken: $(HelixApiAccessToken)
-          timeoutInMinutes: 540
+      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: 540
 
       #
       # Build CoreCLR verticals where we don't run host tests
@@ -272,6 +272,7 @@ extends:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       #
       # Build CoreCLR and Libraries with Libraries tests
