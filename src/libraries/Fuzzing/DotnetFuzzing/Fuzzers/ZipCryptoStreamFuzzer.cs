@@ -86,18 +86,34 @@ internal sealed class ZipCryptoStreamFuzzer : IFuzzer
                 entryReadStream.Dispose();
             }
 
-            Assert.SequenceEqual(content.AsSpan(0, length), decrypted.ToArray());
+            Assert.SequenceEqual(content.AsSpan(0, length), decrypted.GetBuffer().AsSpan(0, (int)decrypted.Length));
         }
 
-        // Decrypting with a wrong password must fail cleanly with InvalidDataException, never crash.
+        // Exercise the wrong-password failure path. ZipCrypto only has a weak 1-byte password
+        // verifier over a stream cipher, so a wrong key is rejected with InvalidDataException with
+        // roughly 255/256 probability and may occasionally decrypt to garbage without throwing;
+        // both outcomes are acceptable and cannot be distinguished reliably on fuzzed input. Any
+        // other exception type would indicate a real bug and is intentionally left to propagate.
         try
         {
-            using Stream stream = readEntry.Open("wrong-password".AsSpan());
-            stream.CopyTo(Stream.Null);
+            Stream wrongStream = async
+                ? await readEntry.OpenAsync("wrong-password".AsSpan())
+                : readEntry.Open("wrong-password".AsSpan());
+            using (wrongStream)
+            {
+                if (async)
+                {
+                    await wrongStream.CopyToAsync(Stream.Null);
+                }
+                else
+                {
+                    wrongStream.CopyTo(Stream.Null);
+                }
+            }
         }
         catch (InvalidDataException)
         {
-            // Expected: the header password verifier rejects the wrong key.
+            // Expected: the check byte rejects the wrong key.
         }
 
         if (async)

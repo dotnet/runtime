@@ -98,19 +98,36 @@ internal sealed class WinZipAesStreamFuzzer : IFuzzer
                 entryReadStream.Dispose();
             }
 
-            Assert.SequenceEqual(content.AsSpan(0, length), decrypted.ToArray());
+            Assert.SequenceEqual(content.AsSpan(0, length), decrypted.GetBuffer().AsSpan(0, (int)decrypted.Length));
         }
 
-        // Decrypting with a wrong password must fail cleanly with InvalidDataException, never crash.
+        // A wrong password must be rejected: the AES password verifier and HMAC make accepting a
+        // wrong key cryptographically infeasible, so decryption must fail with InvalidDataException.
+        bool wrongPasswordRejected = false;
         try
         {
-            using Stream stream = readEntry.Open("wrong-password".AsSpan());
-            stream.CopyTo(Stream.Null);
+            Stream wrongStream = async
+                ? await readEntry.OpenAsync("wrong-password".AsSpan())
+                : readEntry.Open("wrong-password".AsSpan());
+            using (wrongStream)
+            {
+                if (async)
+                {
+                    await wrongStream.CopyToAsync(Stream.Null);
+                }
+                else
+                {
+                    wrongStream.CopyTo(Stream.Null);
+                }
+            }
         }
         catch (InvalidDataException)
         {
             // Expected: the AES password verifier / HMAC rejects the wrong key.
+            wrongPasswordRejected = true;
         }
+
+        Assert.True(wrongPasswordRejected);
 
         if (async)
         {
