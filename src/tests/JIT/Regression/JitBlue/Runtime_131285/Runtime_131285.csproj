@@ -4,7 +4,7 @@
     <!-- The bug is wasm R2R (crossgen) codegen. On non-browser legs this runs as
          ordinary JIT/interp and passes trivially (expected). On the browser leg,
          AlwaysUseCrossGen2 forces crossgen (exports RunCrossGen2=1) so the test is
-         actually compiled to wasm R2R and run under node -- otherwise a plain
+         actually compiled to wasm R2R and run under node; otherwise a plain
          browser leg runs it as normal JIT and silently false-passes without ever
          exercising the fix. CrossGen2OutputFormat=wasm is set automatically for
          TargetOS=browser (src/tests/Directory.Build.props). -->
