@@ -14017,7 +14017,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
             const ContinuationMember& member = GetContinuationMember(tree->AsVal()->gtVal1);
             member.Print();
-            printf("\n");
             break;
         }
 

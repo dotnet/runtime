@@ -2370,33 +2370,47 @@ void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
     assert(layout.ContinuationMemberOffsets[memberIndex] != UINT_MAX);
 
     GenTree* awaiter = awaiterArg->GetNode();
-    if (!awaiter->OperIs(GT_LCL_VAR))
+    assert(varTypeIsStruct(awaiter));
+
+    if (awaiter->OperIs(GT_FIELD_LIST))
     {
-        LIR::Use use(LIR::AsRange(callBlock), &awaiterArg->NodeRef(), call);
-        use.ReplaceWithLclVar(m_compiler);
-        awaiter = use.Def();
+        GenTreeFieldList* fieldList = awaiter->AsFieldList();
+        for (GenTreeFieldList::Use& use : fieldList->Uses())
+        {
+            if (!use.GetNode()->IsInvariant() && !use.GetNode()->OperIs(GT_LCL_VAR))
+            {
+                LIR::Use lirUse(LIR::AsRange(callBlock), &use.NodeRef(), fieldList);
+                lirUse.ReplaceWithLclVar(m_compiler);
+            }
+
+            GenTree* field = use.GetNode();
+            LIR::AsRange(callBlock).Remove(field);
+
+            GenTree* continuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+            unsigned offset       = OFFSETOF__CORINFO_Continuation__data + layout.ContinuationMemberOffsets[memberIndex] + use.GetOffset();
+            GenTree* store        = StoreAtOffset(continuation, offset, field, use.GetType());
+            LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
+        }
+    }
+    else
+    {
+        if (!awaiter->OperIs(GT_LCL_VAR))
+        {
+            LIR::Use use(LIR::AsRange(callBlock), &awaiterArg->NodeRef(), call);
+            use.ReplaceWithLclVar(m_compiler);
+            awaiter = use.Def();
+        }
+
+        GenTree* continuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        unsigned offset       = OFFSETOF__CORINFO_Continuation__data + layout.ContinuationMemberOffsets[memberIndex];
+        GenTree* offsetNode   = m_compiler->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
+        GenTree* address      = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, continuation, offsetNode);
+        GenTree* store        = m_compiler->gtNewStoreValueNode(awaiterLayout, address, awaiter, GTF_IND_NONFAULTING);
+        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
     }
 
     LIR::AsRange(callBlock).Remove(awaiter);
     call->gtArgs.RemoveUnsafe(awaiterArg);
-
-    GenTree* continuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
-    unsigned offset       = OFFSETOF__CORINFO_Continuation__data + layout.ContinuationMemberOffsets[memberIndex];
-    GenTree* offsetNode   = m_compiler->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
-    GenTree* address      = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, continuation, offsetNode);
-    GenTree* store;
-    if (varTypeIsStruct(awaiter))
-    {
-        store = m_compiler->gtNewStoreValueNode(awaiterLayout, address, awaiter, GTF_IND_NONFAULTING);
-    }
-    else
-    {
-        var_types storeType =
-            m_compiler->getPrimitiveTypeForStruct(awaiterLayout->GetSize(), awaiterLayout->GetClassHandle());
-        assert(storeType != TYP_UNKNOWN);
-        store = m_compiler->gtNewStoreValueNode(storeType, address, awaiter, GTF_IND_NONFAULTING);
-    }
-    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
 }
 
 //------------------------------------------------------------------------
