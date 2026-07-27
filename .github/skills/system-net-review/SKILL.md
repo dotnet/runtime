@@ -9,7 +9,7 @@ This skill provides **implementation guidance** when writing or modifying code u
 
 ## Scope
 
-Applies to all `System.Net.*` libraries, `System.Private.Uri`, and shared networking code in `Common/src`. For general dotnet/runtime conventions defer to the path-scoped files under `.github/instructions/` (style, tests), the `build-and-test` skill (build and test workflow), and the `code-review` skill.
+Applies to all `System.Net.*` libraries, `System.Private.Uri`, and shared networking code in `Common/src`. For general dotnet/runtime conventions, defer to the path-scoped files under `.github/instructions/` (style, tests), the `build-and-test` skill (build and test workflow), and the `code-review` skill.
 
 ### Review Delegation
 
