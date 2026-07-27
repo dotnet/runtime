@@ -183,15 +183,43 @@ bool emitter::emitInsIsStore(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// emitImageBase: Emit the module base (imageBase global) onto the stack.
+//
+void emitter::emitImageBase()
+{
+    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
+              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->imageBase);
+}
+
+//------------------------------------------------------------------------
 // emitAddressConstant: Emit a memory address constant, like an indirection cell.
 // This will automatically make use of relocations and the module base (imageBase).
 void emitter::emitAddressConstant(void* address)
 {
     // Load our module base from the image base global, then load our address constant, then sum them.
-    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
-              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->imageBase);
+    emitImageBase();
     emitIns_I(INS_i32_const_address, EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)address);
     emitIns(INS_i32_add);
+}
+
+//------------------------------------------------------------------------
+// emitIns_MemargAddress: Emit a load or store whose memarg offset is a relocated address constant.
+//
+// Arguments:
+//   ins     - the load or store instruction
+//   attr    - emit attributes
+//   address - the address constant, relocated relative to the module base
+//
+// Notes:
+//   The module base must already be on the stack; see emitImageBase. This folds the addition that
+//   emitAddressConstant would otherwise emit into the memarg offset. The memarg offset is always a
+//   relocation, never a raw address, so the caller must only reach here when relocating.
+//
+void emitter::emitIns_MemargAddress(instruction ins, emitAttr attr, void* address)
+{
+    assert(emitInsFormat(ins) == IF_MEMARG);
+    assert(m_compiler->opts.compReloc);
+    emitIns_I(ins, EA_SET_FLG(attr, EA_CNS_RELOC_FLG), (cnsval_ssize_t)address);
 }
 
 void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
@@ -1003,12 +1031,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MEMARG:
         {
             dst += emitOutputOpcode(dst, ins);
-            uint64_t align  = emitGetAlignHintLog2(id);
-            uint64_t offset = emitGetInsSC(id);
+            uint64_t align = emitGetAlignHintLog2(id);
             assert(align <= UINT32_MAX); // spec says memarg alignment is u32
             assert(align < 64);          // spec says align > 2^6 produces a memidx for multiple memories.
             dst += emitOutputULEB128(dst, align);
-            dst += emitOutputULEB128(dst, offset);
+            // TODO-WASM: as with IF_MEMADDR, this reloc is specific to R2R and assumes the address we want is an
+            // offset from __image_base.
+            dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_MEMORY_ADDR_REL_LEB);
             break;
         }
         case IF_LOCAL_DECL:
@@ -1332,7 +1361,14 @@ void emitter::emitDispIns(
         {
             unsigned       log2align = emitGetAlignHintLog2(id);
             cnsval_ssize_t offset    = emitGetInsSC(id);
-            printf(" %u %llu", log2align, (uint64_t)offset);
+            if (id->idIsCnsReloc())
+            {
+                printf(" %u reloc 0x%llx", log2align, (uint64_t)offset);
+            }
+            else
+            {
+                printf(" %u %llu", log2align, (uint64_t)offset);
+            }
             dispLclVarInfoIfAny();
         }
         break;

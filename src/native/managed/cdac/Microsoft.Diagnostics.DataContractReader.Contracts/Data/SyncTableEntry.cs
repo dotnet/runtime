@@ -6,7 +6,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.SyncTableEntry))]
 internal sealed partial class SyncTableEntry : IData<SyncTableEntry>
 {
+    [DataDescriptorDependency(nameof(SyncBlock), "pointer")]
     public SyncBlock? SyncBlock { get; private set; }
+
+    [DataDescriptorDependency(nameof(Object), "pointer")]
     public Object? Object { get; private set; }
 
     partial void OnInit(Target target, TargetPointer address)

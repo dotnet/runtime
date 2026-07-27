@@ -5,6 +5,8 @@ using System.Collections.Generic;
 
 using Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler
 {
     public partial class CompilerTypeSystemContext
@@ -25,6 +27,11 @@ namespace ILCompiler
         /// </summary>
         public void CacheV128Type(TypeDesc type)
         {
+            // All v128 types share the same wasm ABI (16-byte aligned), so any one round-trips the
+            // 'V' encoding identically; a smaller alignment would change raised signatures silently.
+            Debug.Assert(type is DefType defType && defType.InstanceFieldAlignment.AsInt == 16,
+                $"v128 type {type} must be 16-byte aligned to be interchangeable in raised signatures");
+
             _cachedV128Type ??= type;
         }
 

@@ -22,6 +22,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <typeparam name="TAwaiter">The awaiter type.</typeparam>
         /// <param name="awaiter">The awaiter to await.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         [StackTraceHidden]
         public static unsafe void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
@@ -41,6 +42,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <typeparam name="TAwaiter">The awaiter type.</typeparam>
         /// <param name="awaiter">The awaiter to await.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         [StackTraceHidden]
         public static unsafe void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion

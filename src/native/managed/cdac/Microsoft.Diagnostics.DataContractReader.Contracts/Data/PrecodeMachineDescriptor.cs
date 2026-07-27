@@ -10,23 +10,53 @@ internal sealed partial class PrecodeMachineDescriptor : IData<PrecodeMachineDes
     [Field] public partial byte StubPrecodeType { get; }
     [Field] public partial uint StubCodePageSize { get; }
 
+    [DataDescriptorDependency(nameof(OffsetOfPrecodeType), "uint8")]
     public byte? OffsetOfPrecodeType { get; private set; } // Not present for version 3 and above
+
+    [DataDescriptorDependency(nameof(ReadWidthOfPrecodeType), "uint8")]
     public byte? ReadWidthOfPrecodeType { get; private set; } // Not present for version 3 and above
+
+    [DataDescriptorDependency(nameof(ShiftOfPrecodeType), "uint8")]
     public byte? ShiftOfPrecodeType { get; private set; } // Not present for version 3 and above
 
+    [DataDescriptorDependency(nameof(PInvokeImportPrecodeType), "uint8")]
     public byte? PInvokeImportPrecodeType { get; private set; }
+
+    [DataDescriptorDependency(nameof(FixupPrecodeType), "uint8")]
     public byte? FixupPrecodeType { get; private set; }
+
+    [DataDescriptorDependency(nameof(ThisPointerRetBufPrecodeType), "uint8")]
     public byte? ThisPointerRetBufPrecodeType { get; private set; }
+
+    [DataDescriptorDependency(nameof(InterpreterPrecodeType), "uint8")]
     public byte? InterpreterPrecodeType { get; private set; } // May be present for version 3 and above
+
+    [DataDescriptorDependency(nameof(UMEntryPrecodeType), "uint8")]
     public byte? UMEntryPrecodeType { get; private set; } // May be present for version 3 and above
+
+    [DataDescriptorDependency(nameof(DynamicHelperPrecodeType), "uint8")]
     public byte? DynamicHelperPrecodeType { get; private set; } // May be present for version 3 and above
 
+    [DataDescriptorDependency(nameof(FixupStubPrecodeSize), "uint8")]
     public byte? FixupStubPrecodeSize { get; private set; } // Present for version 3 and above
+
+    [DataDescriptorDependency(nameof(FixupStubPrecodeSize), "uint8")]
+    [DataDescriptorDependency(nameof(FixupBytes), "uint8[]")]
     public byte[]? FixupBytes { get; private set; } // Present for version 3 and above
+
+    [DataDescriptorDependency(nameof(FixupStubPrecodeSize), "uint8")]
+    [DataDescriptorDependency(nameof(FixupIgnoredBytes), "uint8[]")]
     public byte[]? FixupIgnoredBytes { get; private set; } // Present for version 3 and above
 
+    [DataDescriptorDependency(nameof(StubPrecodeSize), "uint8")]
     public byte? StubPrecodeSize { get; private set; } // Present for version 3 and above
+
+    [DataDescriptorDependency(nameof(StubPrecodeSize), "uint8")]
+    [DataDescriptorDependency(nameof(StubBytes), "uint8[]")]
     public byte[]? StubBytes { get; private set; } // Present for version 3 and above
+
+    [DataDescriptorDependency(nameof(StubPrecodeSize), "uint8")]
+    [DataDescriptorDependency(nameof(StubIgnoredBytes), "uint8[]")]
     public byte[]? StubIgnoredBytes { get; private set; } // Present for version 3 and above
 
     partial void OnInit(Target target, TargetPointer address)

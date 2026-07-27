@@ -19,41 +19,50 @@ Types from other contracts:
 ## Version 1
 
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `Module` | `Base` | Pointer to start of PE file in memory |
-| `Module` | `DynamicMetadata` | Pointer to saved metadata for reflection emit modules |
-| `Module` | `MetadataGeneration` | Counter incremented each time a module's metadata changes |
-| `Module` | `FieldDefToDescMap` | Mapping table |
-| `DynamicMetadata` | `Size` | Size of the dynamic metadata blob (as a 32bit uint) |
-| `DynamicMetadata` | `Data` | Start of dynamic metadata data array |
-| `PEAssembly` | `MDImport` | An `MDInternalRW` when module has writable metadata |
-| `MDInternalRW` | `Stgdb` | Pointer to the read-write storage database |
-| `CLiteWeightStgdbRW` | `MiniMd` | Address of the embedded `CMiniMdRW` model |
-| `CLiteWeightStgdbRW` | `MetadataAddress` | Pointer to the metadata image |
-| `CMiniMdRW` | `Schema` | Address of the embedded `CMiniMdSchema` |
-| `CMiniMdRW` | `TableCount` | Number of valid tables |
-| `CMiniMdRW` | `All4ByteColumns` | Whether all variable-width columns are 4 bytes wide |
-| `CMiniMdRW` | `Tables` | Address of the first table's record storage pool |
-| `CMiniMdRW` | `StringHeap` | Address of the string heap's storage pool |
-| `CMiniMdRW` | `BlobHeap` | Address of the blob heap's storage pool |
-| `CMiniMdRW` | `UserStringHeap` | Address of the user-string heap's storage pool |
-| `CMiniMdRW` | `GuidHeap` | Address of the GUID heap's storage pool |
-| `CMiniMdSchema` | `Heaps` | Heap-size flags byte |
-| `CMiniMdSchema` | `Sorted` | Sorted-table bit mask |
-| `CMiniMdSchema` | `RecordCounts` | Address of the inline per-table row count array |
-| `StgPool` | `SegData` | Pointer to the head segment's data |
-| `StgPool` | `NextSegment` | Pointer to the next pool segment |
-| `StgPool` | `DataSize` | Live byte count of the head segment |
-| `StgPoolSeg` | `SegData` | Pointer to this extension segment's data |
-| `StgPoolSeg` | `NextSegment` | Pointer to the next pool segment, or null |
-| `StgPoolSeg` | `DataSize` | Live byte count of this extension segment |
+<!-- BEGIN GENERATED: usage contract=EcmaMetadata version=c1 -->
+### Data descriptors used
 
-Contracts used:
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `CLiteWeightStgdbRW` | `MetadataAddress` | `pointer` | Pointer to the metadata image |
+| `CLiteWeightStgdbRW` | `MiniMd` | `pointer` | Address of the embedded `CMiniMdRW` model |
+| `CMiniMdRW` | `All4ByteColumns` | `uint32` | Whether all variable-width columns are 4 bytes wide |
+| `CMiniMdRW` | `BlobHeap` | `pointer` | Address of the blob heap's storage pool |
+| `CMiniMdRW` | `GuidHeap` | `pointer` | Address of the GUID heap's storage pool |
+| `CMiniMdRW` | `Schema` | `pointer` | Address of the embedded `CMiniMdSchema` |
+| `CMiniMdRW` | `StringHeap` | `pointer` | Address of the string heap's storage pool |
+| `CMiniMdRW` | `TableCount` | `uint32` | Number of valid tables |
+| `CMiniMdRW` | `Tables` | `pointer` | Address of the first table's record storage pool |
+| `CMiniMdRW` | `UserStringHeap` | `pointer` | Address of the user-string heap's storage pool |
+| `CMiniMdSchema` | `Heaps` | `uint8` | Heap-size flags byte |
+| `CMiniMdSchema` | `RecordCounts` | `pointer` | Address of the inline per-table row count array |
+| `CMiniMdSchema` | `Sorted` | `uint64` | Sorted-table bit mask |
+| `DynamicMetadata` | `Data` | `pointer` | Start of dynamic metadata data array |
+| `DynamicMetadata` | `Size` | `uint32` | Size of the dynamic metadata blob (as a 32bit uint) |
+| `ImageDataDirectory` | `Size` | `uint32` | Size of the data |
+| `ImageDataDirectory` | `VirtualAddress` | `uint32` | Virtual address of the image data directory |
+| `MDInternalRW` | `Stgdb` | `pointer` | Pointer to the read-write storage database |
+| `Module` | `DynamicMetadata` | `pointer` | Pointer to metadata updated dynamically through Edit and Continue |
+| `Module` | `MetadataGeneration` | `uint32` | Counter incremented each time a module's metadata changes |
+| `Module` | `PEAssembly` | `pointer` | Pointer to the module's PE assembly |
+| `PEAssembly` | `MDImport` | `pointer` | An `MDInternalRW` when module has writable metadata |
+| `StgPool` | `DataSize` | `uint32` | Live byte count of the head segment |
+| `StgPool` | `NextSegment` | `pointer` | Pointer to the next pool segment |
+| `StgPool` | `SegData` | `pointer` | Pointer to the head segment's data |
+| `StgPoolSeg` | `DataSize` | `uint32` | Live byte count of this extension segment |
+| `StgPoolSeg` | `NextSegment` | `pointer` | Pointer to the next pool segment, or null |
+| `StgPoolSeg` | `SegData` | `pointer` | Pointer to this extension segment's data |
+
+### Global variables used
+
+_None._
+
+### Contracts used
+
 | Contract Name |
 | --- |
 | `Loader` |
+<!-- END GENERATED: usage contract=EcmaMetadata version=c1 -->
 
 
 ```csharp

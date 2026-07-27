@@ -12,4 +12,8 @@ internal sealed partial class CodeHeapListNode : IData<CodeHeapListNode>
     [Field] public partial TargetPointer MapBase { get; }
     [Field] public partial TargetPointer HeaderMap { get; }
     [Field] public partial TargetPointer Heap { get; }
+
+    // 64-bit only: jump thunk to the personality routine. Used as the module base
+    // when matching a dynamic function table's minimum address.
+    [Field] public partial TargetPointer? CLRPersonalityRoutine { get; }
 }

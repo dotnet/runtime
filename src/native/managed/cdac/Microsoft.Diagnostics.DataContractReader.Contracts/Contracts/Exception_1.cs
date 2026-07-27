@@ -27,8 +27,7 @@ internal readonly struct Exception_1 : IException
         // exception Object*. This has the same lifetime as the ExInfo (both are invalidated
         // when PopExInfos calls ReleaseResources). See dacimpl.h for the equivalent native
         // DAC documentation.
-        Target.TypeInfo type = _target.GetTypeInfo(DataType.ExceptionInfo);
-        thrownObjectHandle = exceptionInfoAddr + (ulong)type.Fields[nameof(Data.ExceptionInfo.ThrownObject)].Offset;
+        thrownObjectHandle = exceptionInfoAddr + (ulong)Data.ExceptionInfo.GetThrownObjectOffset(_target);
         return exceptionInfo.ThrownObject;
     }
 
@@ -88,10 +87,9 @@ internal readonly struct Exception_1 : IException
         if (frameCount == 0)
             yield break;
 
-        Target.TypeInfo elementTypeInfo = _target.GetTypeInfo(DataType.StackTraceElement);
-        ulong elementSize = elementTypeInfo.Size!.Value;
+        ulong elementSize = Data.StackTraceElement.GetSize(_target);
 
-        uint headerSize = _target.GetTypeInfo(DataType.StackTraceArrayHeader).Size!.Value;
+        uint headerSize = Data.StackTraceArrayHeader.GetSize(_target);
         TargetPointer cursor = payload + headerSize;
         for (uint i = 0; i < frameCount; i++)
         {
