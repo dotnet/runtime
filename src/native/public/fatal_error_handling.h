@@ -91,6 +91,6 @@ typedef enum _FatalErrorProperty
 // must not be cached.
 // Returns a nonzero value if the property is available (and *value has been
 // written), or 0 if the property is not available.
-typedef int32_t (DOTNET_CALLCONV *FatalErrorPropertyGetter)(FatalErrorProperty prop, const void** value);
+typedef int32_t (DOTNET_CALLCONV *FatalErrorPropertyGetter)(/* FatalErrorProperty */ int32_t prop, const void** value);
 
 #endif // FATAL_ERROR_HANDLING_H
