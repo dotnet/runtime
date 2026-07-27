@@ -163,10 +163,8 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
         if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
         {
             bool validateToken = token is not null;
-            bool validateMod = !mod.IsNullRef;
-
             uint tokenLocal = 0;
-            DacComNullableByRef<IXCLRDataModule> legacyModOut = new(isNullRef: !validateMod);
+            DacComNullableByRef<IXCLRDataModule> legacyModOut = new(isNullRef: mod.IsNullRef);
             int hrLocal = _legacyImpl.GetTokenAndScope(validateToken ? &tokenLocal : null, legacyModOut);
 
             Debug.ValidateHResult(hr, hrLocal);
