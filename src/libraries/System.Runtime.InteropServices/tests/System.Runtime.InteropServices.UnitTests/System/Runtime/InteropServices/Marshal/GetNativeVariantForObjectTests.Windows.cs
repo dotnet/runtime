@@ -110,9 +110,10 @@ namespace System.Runtime.InteropServices.Tests
         public unsafe void GetNativeVariantForObject_InvalidArrayType_ThrowsInvalidCastException(object obj)
         {
             ComVariant variant = default;
+            nint pNative = (nint)(&variant);
 
-            Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject(obj, (nint)(&variant)));
-            Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject<object>(obj, (nint)(&variant)));
+            Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject(obj, pNative));
+            Assert.Throws<InvalidCastException>(() => Marshal.GetNativeVariantForObject<object>(obj, pNative));
         }
     }
 }
