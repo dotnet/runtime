@@ -93,7 +93,7 @@ if (CLR_CMAKE_TARGET_APPLE_MOBILE AND NOT DEFINED CMAKE_ICU_DIR)
     link_libraries(icucore)
 endif()
 
-if (CMAKE_USE_PTHREADS)
+if (CLR_CMAKE_WASM_ENABLE_THREADS)
     add_compile_options(-pthread)
     add_linker_flag(-pthread)
 endif()

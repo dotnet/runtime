@@ -130,4 +130,4 @@ Native debugging is supported through Xcode. You can debug both the managed port
 
 ## See also
 
-- [Building CoreCLR on macOS](../macos.md)
+- [Building CoreCLR on macOS](README.md)

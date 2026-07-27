@@ -17,6 +17,7 @@
     <NoWarn>$(NoWarn);NU5128</NoWarn>
     <IsPackable>true</IsPackable>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- This template package uses a different PackageId per major version so we can't validate it against the baseline -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <!-- TODO: Add package readme -->
     <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>

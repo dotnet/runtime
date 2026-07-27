@@ -25,6 +25,11 @@ Revision History:
 #include "pal/palinternal.h"
 #include "pal/stackstring.hpp"
 
+#include <signal.h>
+#if defined(TARGET_WASI)
+#include "pal/wasi/pal_wasi_missing.h"
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -151,4 +156,3 @@ VOID PROCLogManagedCallstackForSignal(int signal);
 #endif // __cplusplus
 
 #endif //PAL_PROCESS_H_
-

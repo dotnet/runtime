@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Dsa.Tests
     [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public abstract class DSASignatureFormatTests : DsaFamilySignatureFormatTests
     {
-        private static readonly Dictionary<DSAProvider, KeyDescription[]> s_keyCache = new();
+        private static readonly Dictionary<(DSAProvider Provider, Type TestClass), KeyDescription[]> s_keyCache = new();
 
         protected abstract DSAProvider DSAFactory { get; }
 
@@ -24,10 +24,12 @@ namespace System.Security.Cryptography.Dsa.Tests
         {
             lock (s_keyCache)
             {
-                if (!s_keyCache.TryGetValue(DSAFactory, out KeyDescription[] keys))
+                (DSAProvider Provider, Type TestClass) cacheKey = (DSAFactory, GetType());
+
+                if (!s_keyCache.TryGetValue(cacheKey, out KeyDescription[] keys))
                 {
                     keys = LocalGenerateTestKeys().ToArray();
-                    s_keyCache.Add(DSAFactory, keys);
+                    s_keyCache.Add(cacheKey, keys);
                 }
 
                 return keys;

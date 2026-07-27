@@ -4771,11 +4771,42 @@ void CordbNativeCode::LoadNativeInfo()
     if (m_fCodeAvailable)
     {
         RSLockHolder lockHolder(pProcess->GetProcessLock());
-        IfFailThrow(pProcess->GetDAC()->GetNativeCodeSequencePointsAndVarInfo(GetVMNativeCodeMethodDescToken(),
-                                                                  GetAddress(),
-                                                                  m_fCodeAvailable,
-                                                                  &m_nativeVarData,
-                                                                  &m_sequencePoints));
+
+        struct CallbackData
+        {
+            CallbackAccumulator<ICorDebugInfo::NativeVarInfo> varInfos;
+            CallbackAccumulator<ICorDebugInfo::OffsetMapping> seqPoints;
+        };
+
+        CallbackData data;
+
+        ULONG32 fixedArgCount = 0;
+        IfFailThrow(pProcess->GetDAC()->GetNativeCodeSequencePointsAndVarInfo(
+            GetVMNativeCodeMethodDescToken(),
+            GetAddress(),
+            m_fCodeAvailable,
+            &fixedArgCount,
+            [](ICorDebugInfo::NativeVarInfo *pVarInfo, void *pUserData)
+            {
+                static_cast<CallbackData *>(pUserData)->varInfos.Push(*pVarInfo);
+            },
+            [](ICorDebugInfo::OffsetMapping *pMapping, void *pUserData)
+            {
+                static_cast<CallbackData *>(pUserData)->seqPoints.Push(*pMapping);
+            },
+            &data));
+        IfFailThrow(data.varInfos.hrError);
+        IfFailThrow(data.seqPoints.hrError);
+
+        // Initialize native var data from collected entries
+        m_nativeVarData.InitVarDataList(data.varInfos.items.Ptr(), (int)fixedArgCount, (int)data.varInfos.items.Size());
+
+        // Initialize sequence points from collected entries
+        m_sequencePoints.InitSequencePoints((ULONG32)data.seqPoints.items.Size());
+        if (data.seqPoints.items.Size() > 0)
+        {
+            m_sequencePoints.CopyAndSortSequencePoints(data.seqPoints.items.Ptr());
+        }
     }
 
 } // CordbNativeCode::LoadNativeInfo

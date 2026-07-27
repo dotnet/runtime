@@ -30,8 +30,26 @@ if(CORECLR_SET_RPATH)
     set(MACOSX_RPATH ON)
 endif(CORECLR_SET_RPATH)
 
-if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_BROWSER OR CLR_CMAKE_HOST_ANDROID)
+if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_BROWSER OR CLR_CMAKE_HOST_WASI OR CLR_CMAKE_HOST_ANDROID)
   set(FEATURE_STANDALONE_GC 0)
+endif()
+
+if(CLR_CMAKE_TARGET_WASI)
+  add_compile_definitions(_WASI_EMULATED_SIGNAL)
+  add_compile_definitions(_WASI_EMULATED_PROCESS_CLOCKS)
+  add_compile_definitions(_WASI_EMULATED_MMAN)
+  add_compile_definitions(_WASI_EMULATED_GETPID)
+  # EventPipe / diag-server PAL require sockets we have not validated
+  # for the WASI bring-up; revisit once corerun.wasm runs.
+  set(FEATURE_EVENT_TRACE 0)
+  set(FEATURE_PERFTRACING 0)
+  include_directories(BEFORE SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/pal/src/include/pal/wasi)
+  # Cross-compile try_run() answers — wasm32 binaries cannot execute on
+  # the build host, so pre-seed the cache.
+  set(REALPATH_SUPPORTS_NONEXISTENT_FILES_EXITCODE 1 CACHE STRING "" FORCE)
+  set(HAVE_WORKING_GETTIMEOFDAY_EXITCODE 0 CACHE STRING "" FORCE)
+  set(HAVE_WORKING_CLOCK_GETTIME_EXITCODE 0 CACHE STRING "" FORCE)
+  set(HAVE_PROCFS_STATM_EXITCODE 1 CACHE STRING "" FORCE)
 endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
@@ -84,6 +102,11 @@ if(NOT CLR_CROSS_COMPONENTS_BUILD)
     set(STATIC_LIB_DESTINATION ${CMAKE_BINARY_DIR}/libs-native)
     set(CORERUN_LIBS_ONLY 1)
   endif()
+  if(CLR_CMAKE_TARGET_WASI)
+    # Side-build libs to avoid collision with the published libs.native artifact.
+    set(STATIC_LIB_DESTINATION ${CMAKE_BINARY_DIR}/libs-native)
+    set(CORERUN_LIBS_ONLY 1)
+  endif()
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
 endif()
 
@@ -119,7 +142,7 @@ endif()
 #----------------------------------------------------
 # Build the test watchdog alongside the CLR
 #----------------------------------------------------
-if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_TARGET_BROWSER)
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
   add_subdirectory("${CLR_SRC_NATIVE_DIR}/watchdog" test-watchdog)
 endif()
 
@@ -149,14 +172,12 @@ endif()
 include_directories("pal/prebuilt/inc")
 include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 
-if (NOT CLR_CMAKE_TARGET_BROWSER OR CLR_CROSS_COMPONENTS_BUILD)
+if ((NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI) OR CLR_CROSS_COMPONENTS_BUILD)
   add_subdirectory(tools/aot/jitinterface)
 endif ()
 
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
-  # NativeAOT is buildable for all CoreCLR-supported configurations except a known reject list.
-  # Keep this in sync with the NativeAotSupported reject list in eng/common/native/NativeAotSupported.props.
-  if(NOT (CLR_CMAKE_HOST_ARCH_WASM OR CLR_CMAKE_HOST_ARCH_S390X OR CLR_CMAKE_HOST_ARCH_POWERPC64 OR (CLR_CMAKE_HOST_ARCH_I386 AND NOT CLR_CMAKE_HOST_WIN32)))
+  if(NOT CLR_CMAKE_HOST_ARCH_WASM)
     add_subdirectory(nativeaot)
   endif()
 endif(NOT CLR_CROSS_COMPONENTS_BUILD)

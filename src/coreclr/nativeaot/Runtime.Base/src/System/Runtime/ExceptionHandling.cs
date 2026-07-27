@@ -380,6 +380,7 @@ namespace System.Runtime
         // the asm helpers to these functions, which performs the throw. The tail-call is important: it ensures that
         // the stack is crawlable from within these functions.
         [StackTraceHidden]
+        [DebuggerHidden]
         [RuntimeExport("RhExceptionHandling_ThrowClasslibOverflowException")]
         public static void ThrowClasslibOverflowException(IntPtr address)
         {
@@ -390,6 +391,7 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
+        [DebuggerHidden]
         [RuntimeExport("RhExceptionHandling_ThrowClasslibDivideByZeroException")]
         public static void ThrowClasslibDivideByZeroException(IntPtr address)
         {
@@ -400,6 +402,7 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
+        [DebuggerHidden]
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
         public static void FailedAllocation(MethodTable* pEEType, bool fIsOverflow)
         {
@@ -579,6 +582,7 @@ namespace System.Runtime
         // Called by RhpThrowHwEx
         //
         [StackTraceHidden]
+        [DebuggerHidden]
 #if NATIVEAOT
         [RuntimeExport("RhThrowHwEx")]
         public static void RhThrowHwEx(uint exceptionCode, ref ExInfo exInfo)
@@ -668,6 +672,7 @@ namespace System.Runtime
         private const uint MaxTryRegionIdx = 0xFFFFFFFFu;
 
         [StackTraceHidden]
+        [DebuggerHidden]
 #if NATIVEAOT
         [RuntimeExport("RhThrowEx")]
         public static void RhThrowEx(object exceptionObj, ref ExInfo exInfo)
@@ -708,6 +713,7 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
+        [DebuggerHidden]
 #if NATIVEAOT
         [RuntimeExport("RhRethrow")]
         public static void RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
@@ -745,6 +751,7 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
+        [DebuggerHidden]
         private static void DispatchEx(scoped ref StackFrameIterator frameIter, ref ExInfo exInfo)
         {
             Debug.Assert(exInfo._passNumber == 1, "expected asm throw routine to set the pass");
@@ -1007,6 +1014,7 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
+        [DebuggerHidden]
         private static bool FindFirstPassHandler(object exception, uint idxStart,
             ref StackFrameIterator frameIter, out uint tryRegionIdx, out byte* pHandler)
         {

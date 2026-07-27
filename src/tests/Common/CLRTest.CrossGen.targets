@@ -158,7 +158,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         cat "$__ResponseFile"
 
         # Suppress some DOTNET variables for the duration of Crossgen2 execution
-        export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+        export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_GCHeapAffinitizeRanges
         # FIXME: Remove this?
         # work around problems in 6.0 OSR
         export -n DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
@@ -179,7 +179,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         $__R2RDumpCommand
         __r2rDumpExitCode=$?
 
-        export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+        export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_GCHeapAffinitizeRanges
         export DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
         date +%H:%M:%S
       }
@@ -376,6 +376,7 @@ if defined RunCrossGen2 (
     set "DOTNET_GCStress="
     set "DOTNET_HeapVerify="
     set "DOTNET_ReadyToRun="
+    set "DOTNET_GCHeapAffinitizeRanges="
 
     REM FIXME: remove this?
     REM work around problems in 6.0 OSR

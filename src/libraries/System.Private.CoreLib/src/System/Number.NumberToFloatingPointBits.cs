@@ -11,7 +11,7 @@ namespace System
 {
     internal unsafe partial class Number
     {
-        private static ReadOnlySpan<double> Pow10DoubleTable =>
+        internal static ReadOnlySpan<double> Pow10DoubleTable =>
         [
             1e0,    // 10^0
             1e1,    // 10^1
@@ -1002,54 +1002,62 @@ namespace System
                 byte* src = number.DigitsPtr;
 
                 ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
-
                 int exponent = (int)(number.Scale - integerDigitsPresent - fractionalDigitsPresent);
-                int fastExponent = Math.Abs(exponent);
 
-                // When the number of significant digits is less than or equal to MaxMantissaFastPath and the
-                // scale is less than or equal to MaxExponentFastPath, we can take some shortcuts and just rely
-                // on floating-point arithmetic to compute the correct result. This is
-                // because each floating-point precision values allows us to exactly represent
-                // different whole integers and certain powers of 10, depending on the underlying
-                // formats exact range. Additionally, IEEE operations dictate that the result is
-                // computed to the infinitely precise result and then rounded, which means that
-                // we can rely on it to produce the correct result when both inputs are exact.
-                // This is known as Clinger's fast path
-
-                if ((mantissa <= TFloat.MaxMantissaFastPath) && (fastExponent <= TFloat.MaxExponentFastPath))
+                if (TryFloatingPointBitsFromMantissa<TFloat>(mantissa, exponent, out ulong bits))
                 {
-                    double mantissa_d = mantissa;
-                    double scale = Pow10DoubleTable[fastExponent];
-
-                    if (fractionalDigitsPresent != 0)
-                    {
-                        mantissa_d /= scale;
-                    }
-                    else
-                    {
-                        mantissa_d *= scale;
-                    }
-
-                    TFloat result = TFloat.CreateSaturating(mantissa_d);
-                    return TFloat.FloatToBits(result);
-                }
-
-                // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
-                // https://arxiv.org/abs/2101.11408
-                (int Exponent, ulong Mantissa) am = ComputeFloat<TFloat>(exponent, mantissa);
-
-                // If we called ComputeFloat and we have an invalid power of 2 (Exponent < 0),
-                // then we need to go the slow way around again. This is very uncommon.
-                if (am.Exponent > 0)
-                {
-                    ulong word = am.Mantissa;
-                    word |= (ulong)(uint)(am.Exponent) << TFloat.DenormalMantissaBits;
-                    return word;
-
+                    return bits;
                 }
             }
 
             return NumberToFloatingPointBitsSlow<TFloat>(ref number, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
+        }
+
+        /// <summary>
+        /// Converts <paramref name="mantissa"/> x 10^<paramref name="exponent"/> to the correctly-rounded
+        /// bits of <typeparamref name="TFloat"/> using the string-free Clinger and Eisel-Lemire fast paths.
+        /// Returns <see langword="false"/> only on the uncommon Eisel-Lemire miss, where the caller must fall
+        /// back to the digit-based slow path. The caller must already have applied the scale range shortcuts
+        /// (see <see cref="NumberToFloat{TFloat}"/>) so that <paramref name="exponent"/> is in representable range.
+        /// </summary>
+        internal static bool TryFloatingPointBitsFromMantissa<TFloat>(ulong mantissa, int exponent, out ulong bits)
+            where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
+        {
+            int fastExponent = Math.Abs(exponent);
+
+            // When the mantissa is less than or equal to MaxMantissaFastPath and the exponent is less than or
+            // equal to MaxExponentFastPath, we can take some shortcuts and just rely on floating-point
+            // arithmetic to compute the correct result. This is because each floating-point precision allows us
+            // to exactly represent different whole integers and certain powers of 10, depending on the
+            // underlying format's exact range. Additionally, IEEE operations dictate that the result is computed
+            // to the infinitely precise result and then rounded, which means that we can rely on it to produce
+            // the correct result when both inputs are exact. This is known as Clinger's fast path.
+
+            if ((mantissa <= TFloat.MaxMantissaFastPath) && (fastExponent <= TFloat.MaxExponentFastPath))
+            {
+                double mantissa_d = mantissa;
+                double scale = Pow10DoubleTable[fastExponent];
+
+                mantissa_d = (exponent < 0) ? (mantissa_d / scale) : (mantissa_d * scale);
+
+                bits = TFloat.FloatToBits(TFloat.CreateSaturating(mantissa_d));
+                return true;
+            }
+
+            // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
+            // https://arxiv.org/abs/2101.11408
+            (int Exponent, ulong Mantissa) am = ComputeFloat<TFloat>(exponent, mantissa);
+
+            // If we called ComputeFloat and we have an invalid power of 2 (Exponent < 0),
+            // then we need to go the slow way around again. This is very uncommon.
+            if (am.Exponent > 0)
+            {
+                bits = am.Mantissa | ((ulong)(uint)(am.Exponent) << TFloat.DenormalMantissaBits);
+                return true;
+            }
+
+            bits = 0;
+            return false;
         }
 
         private static ulong NumberToFloatingPointBitsSlow<TFloat>(ref NumberBuffer number, uint positiveExponent, uint integerDigitsPresent, uint fractionalDigitsPresent)

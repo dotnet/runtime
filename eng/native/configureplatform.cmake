@@ -221,6 +221,7 @@ endif(CLR_CMAKE_HOST_OS STREQUAL emscripten)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL wasi)
     set(CLR_CMAKE_HOST_WASI 1)
+    set(CLR_CMAKE_HOST_UNIX 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL wasi)
 
 #--------------------------------------------
@@ -436,6 +437,7 @@ if(CLR_CMAKE_TARGET_OS STREQUAL emscripten OR CLR_CMAKE_TARGET_OS STREQUAL brows
 endif(CLR_CMAKE_TARGET_OS STREQUAL emscripten OR CLR_CMAKE_TARGET_OS STREQUAL browser)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL wasi)
+    set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_WASI 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL wasi)
 
@@ -511,7 +513,7 @@ else()
             add_link_options(-lstubs)
             add_link_options(-lc)
             add_link_options(-lmalloc)
-            add_link_options(-lcompiler_rt)
+            add_link_options(-lclang_rt.builtins)
             add_link_options(-lc++-wasmexcept)
             add_link_options(-lc++abi-wasmexcept)
             add_link_options(-lunwind-wasmexcept)
@@ -522,7 +524,36 @@ else()
             add_compile_options(-msimd128)
         endif()
         if(CLR_CMAKE_TARGET_WASI)
-            add_compile_options(-fexceptions)
+            # Native wasm exceptions: sjlj cannot handle the interpreter's
+            # ResumeAfterCatch (throw-from-catch). -wasm-use-legacy-eh=false
+            # selects the new try_table/throw_ref proposal that wasmtime 45+
+            # supports natively; legacy would require --legacy-exceptions.
+            add_compile_options(-fwasm-exceptions)
+            add_compile_options(-mllvm -wasm-use-legacy-eh=false)
+
+            # Suppress CMake's default -lstdc++; wasi-sdk has libc++ only and
+            # we link the eh-flavored variant explicitly below.
+            set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "" CACHE STRING "" FORCE)
+            set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
+            set(CMAKE_C_IMPLICIT_LINK_LIBRARIES "" CACHE STRING "" FORCE)
+            set(CMAKE_C_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
+
+            add_link_options(-fwasm-exceptions)
+            add_link_options(-mllvm -wasm-use-legacy-eh=false)
+            add_link_options(-Wno-unused-command-line-argument)
+            add_link_options(-Wl,--error-limit=0)
+
+            add_link_options(-lc)
+            add_link_options(-lc++)
+            add_link_options(-lc++abi)
+            add_link_options(-lunwind)
+            add_link_options(-ldl)
+
+            # WASI emulated libc helpers the CoreCLR PAL pulls in.
+            add_link_options(-lwasi-emulated-process-clocks)
+            add_link_options(-lwasi-emulated-signal)
+            add_link_options(-lwasi-emulated-mman)
+            add_link_options(-lwasi-emulated-getpid)
         endif()
     endif()
 endif()

@@ -33,20 +33,7 @@ engine:
   id: copilot
   model: claude-opus-4.8
   env:
-    COPILOT_GITHUB_TOKEN: |
-      ${{ case(
-        needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0,
-        needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1,
-        needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2,
-        needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3,
-        needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4,
-        needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5,
-        needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6,
-        needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7,
-        needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8,
-        needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9,
-        'NO COPILOT PAT AVAILABLE')
-      }}
+    COPILOT_GITHUB_TOKEN: ${{ case(needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0, needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1, needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2, needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3, needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4, needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5, needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6, needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7, needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8, needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9, 'NO COPILOT PAT AVAILABLE') }}
 
 concurrency:
   group: "ci-failure-fix"
@@ -196,7 +183,7 @@ Apply these fixer-specific bounds on top of the skill's guidance:
 
 | KBE pipeline / area | Fix policy |
 |---|---|
-| Mobile (ios/tvos/maccatalyst/android/wasm/wasi) | Small test/csproj/condition fixes in bounds are fair game. For trimming/AOT reflection failures, do **not** root a type in the test assembly itself via `ILLink.Descriptors.xml`/`TrimmerRootDescriptor` — test assemblies are rooted whole, so this is a no-op; only root a separate owning assembly confirmed from source, else loop in with a comment. |
+| Mobile (ios/tvos/maccatalyst/android/wasm/wasi) | Small test/csproj/condition fixes in bounds are fair game. For trimming/AOT reflection failures, apply the already-rooted caution in Step 5.2 before proposing a descriptor or root. |
 | JIT / GC / PGO stress (codegen) | JIT/GC product fixes are OUT of bounds for any PR — no safe diff is producible, so loop in JIT/GC owners with a comment. Workarounds in unrelated code (e.g. changing library buffer sizes or API call patterns to sidestep a codegen bug) are equally OUT of bounds — go straight to the loop-in comment instead of opening a workaround PR. |
 | `System.Net.*` | In bounds only if it satisfies Step 5.2. |
 | `Microsoft.Extensions.*` | In bounds only if it satisfies Step 5.2. |
@@ -218,6 +205,8 @@ codegen-stress failures. No fix or workaround PR is in bounds for them.
 #### Step 5.2 — Attempt a fix, then classify confidence
 
 Always try to produce a real candidate change first. Read every file you would modify at `HEAD`, work out the minimal correct change (e.g. wrong expected value in a test, missing `using`, wrong cast, missing `#if`, off-by-one in test setup, a missing platform guard that *enables* correct behavior rather than disabling the test), and stage it. If the change reduces to "do what the source already does", there is nothing to fix -> record `-> skipped: candidate fix already present in source`.
+
+**Already-rooted test-assembly caution.** For any failing leg, when the symptom is a type, assembly, or method *missing at run time* (a `FileNotFoundException` for a `*.TestAssembly.dll`, a reflection lookup returning null, a missing logging/DI provider), first inspect the harness and project sources for existing roots and for whether the missing artifact is already present in the app/layout. If the test assembly or member is already rooted, do **not** propose another `[DynamicDependency]`, `.rd.xml`/`ILLink.Descriptors.xml` root, or `TrimmerRootAssembly` — the change is a no-op reviewers will reject. Similarly, if the assembly is already copied into the app bundle/layout, do **not** propose an additional bundle-copy. Only add a root or copy step when source confirms it is missing. Otherwise pin a concrete product-side root cause, or treat it as no-producible-diff and route to Branch COMMENT (Step 5.5).
 
 Once you have a candidate diff, classify it:
 

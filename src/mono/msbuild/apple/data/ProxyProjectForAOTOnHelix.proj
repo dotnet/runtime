@@ -93,7 +93,11 @@
       </ManagedBinary>
 
       <_NativeAotHelixLinkLibs Include="$(_NativeAotLinkInputsDir)*.a"
-                               Exclude="$(_NativeAotLinkInputsDir)libRuntime.ServerGC.a;$(_NativeAotLinkInputsDir)libRuntime.VxsortEnabled.a;$(_NativeAotLinkInputsDir)libstandalonegc-enabled.a;$(_NativeAotLinkInputsDir)libeventpipe-enabled.a" />
+                               Exclude="$(_NativeAotLinkInputsDir)libRuntime.ServerGC.a;$(_NativeAotLinkInputsDir)libRuntime.VxsortEnabled.a;$(_NativeAotLinkInputsDir)libstandalonegc-enabled.a" />
+      <_NativeAotHelixLinkLibs Remove="$(_NativeAotLinkInputsDir)libeventpipe-disabled.a"
+                               Condition="'$(EventSourceSupport)' == 'true'" />
+      <_NativeAotHelixLinkLibs Remove="$(_NativeAotLinkInputsDir)libeventpipe-enabled.a"
+                               Condition="'$(EventSourceSupport)' != 'true'" />
       <_NativeAotHelixLinkLibs Include="$(_NativeAotLinkInputsDir)libbootstrapperdll.o" />
 
       <NativeDependencies Include="$(_PrebuiltNativeAOTLib)" />

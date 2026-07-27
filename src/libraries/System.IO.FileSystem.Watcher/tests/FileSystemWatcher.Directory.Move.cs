@@ -26,6 +26,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalTheory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/127651", TestPlatforms.OSX)]
         [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData(1)]
         [InlineData(2)]

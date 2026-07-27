@@ -1,14 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
 using Internal.Runtime;
-using Internal.Runtime.CompilerHelpers;
 
 namespace System.Runtime
 {
@@ -65,15 +62,8 @@ namespace System.Runtime
         }
 #endif
 
-        [StructLayout(LayoutKind.Sequential)]
-        private struct DispatchCell
-        {
-            public nint MethodTable;
-            public nint Code;
-        }
-
         [RuntimeExport("RhpCidResolve")]
-        private static unsafe IntPtr RhpCidResolve(IntPtr callerTransitionBlockParam, IntPtr pCell)
+        private static IntPtr RhpCidResolve(IntPtr callerTransitionBlockParam, IntPtr pCell)
         {
             IntPtr locationOfThisPointer = callerTransitionBlockParam + TransitionBlock.GetThisOffset();
             object pObject = *(object*)locationOfThisPointer;
@@ -81,15 +71,11 @@ namespace System.Runtime
             return dispatchResolveTarget;
         }
 
+        [RuntimeExport("RhpCidResolve_Worker")]
         private static IntPtr RhpCidResolve_Worker(object pObject, IntPtr pCell)
         {
-            DispatchCellInfo cellInfo;
-            // We're passing the type manager of the object, but we need a type manager associated with
-            // the dispatch cell region. This is fine for now since we don't worry about multifile scenarios much.
-            // We'll need an API to find the right containing section in multimodule.
-            GetDispatchCellInfo(pObject.GetMethodTable()->TypeManager, pCell, out cellInfo);
-
-            IntPtr pTargetCode = RhResolveDispatchWorker(pObject, (void*)pCell, ref cellInfo);
+            var resolver = (delegate*<object, nint, nint>)InternalCalls.RhpGetClasslibFunctionFromEEType(pObject.GetMethodTable(), ClassLibFunctionId.ResolveDispatch);
+            IntPtr pTargetCode = resolver(pObject, pCell);
             if (pTargetCode != IntPtr.Zero)
             {
                 return UpdateDispatchCellCache(pCell, pTargetCode, pObject.GetMethodTable());
@@ -98,52 +84,6 @@ namespace System.Runtime
             // "Valid method implementation was not found."
             EH.FallbackFailFast(RhFailFastReason.InternalError, null);
             return IntPtr.Zero;
-        }
-
-        private static void GetDispatchCellInfo(TypeManagerHandle typeManager, IntPtr pCell, out DispatchCellInfo info)
-        {
-            IntPtr dispatchCellRegion = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.InterfaceDispatchCellRegion, out int length);
-            if (pCell >= dispatchCellRegion && pCell < dispatchCellRegion + length)
-            {
-                // Static dispatch cell: find the info in the associated info region
-                nint cellIndex = (pCell - dispatchCellRegion) / sizeof(DispatchCell);
-
-                IntPtr dispatchCellInfoRegion = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.InterfaceDispatchCellInfoRegion, out _);
-                if (MethodTable.SupportsRelativePointers)
-                {
-                    var dispatchCellInfo = (int*)dispatchCellInfoRegion;
-                    info = new DispatchCellInfo
-                    {
-                        CellType = DispatchCellType.InterfaceAndSlot,
-                        InterfaceType = (MethodTable*)ReadRelPtr32(dispatchCellInfo + (cellIndex * 2)),
-                        InterfaceSlot = (ushort)*(dispatchCellInfo + (cellIndex * 2 + 1))
-                    };
-
-                    static void* ReadRelPtr32(void* address)
-                        => (byte*)address + *(int*)address;
-                }
-                else
-                {
-                    var dispatchCellInfo = (nint*)dispatchCellInfoRegion;
-                    info = new DispatchCellInfo
-                    {
-                        CellType = DispatchCellType.InterfaceAndSlot,
-                        InterfaceType = (MethodTable*)(*(dispatchCellInfo + (cellIndex * 2))),
-                        InterfaceSlot = (ushort)*(dispatchCellInfo + (cellIndex * 2 + 1))
-                    };
-                }
-
-            }
-            else
-            {
-                // Dynamically allocated dispatch cell: info is next to the dispatch cell
-                info = new DispatchCellInfo
-                {
-                    CellType = DispatchCellType.InterfaceAndSlot,
-                    InterfaceType = *(MethodTable**)(pCell + sizeof(DispatchCell)),
-                    InterfaceSlot = (ushort)*(nint*)(pCell + sizeof(DispatchCell) + sizeof(MethodTable*))
-                };
-            }
         }
 
         private static IntPtr UpdateDispatchCellCache(IntPtr pCell, IntPtr pTargetCode, MethodTable* pInstanceType)
@@ -213,12 +153,7 @@ namespace System.Runtime
         [RuntimeExport("RhResolveDispatch")]
         private static IntPtr RhResolveDispatch(object pObject, MethodTable* interfaceType, ushort slot)
         {
-            DispatchCellInfo cellInfo = default;
-            cellInfo.CellType = DispatchCellType.InterfaceAndSlot;
-            cellInfo.InterfaceType = interfaceType;
-            cellInfo.InterfaceSlot = slot;
-
-            return RhResolveDispatchWorker(pObject, null, ref cellInfo);
+            return RhResolveDispatchWorker(pObject, interfaceType, slot);
         }
 
         [RuntimeExport("RhResolveDispatchOnType")]
@@ -266,52 +201,23 @@ namespace System.Runtime
         [AnalysisCharacteristic]
         private static extern bool DynamicInterfaceCastablePresent();
 
-        private static unsafe IntPtr RhResolveDispatchWorker(object pObject, void* cell, ref DispatchCellInfo cellInfo)
+        internal static IntPtr RhResolveDispatchWorker(object pObject, MethodTable* pItfType, ushort itfSlotNumber)
         {
             // Type of object we're dispatching on.
             MethodTable* pInstanceType = pObject.GetMethodTable();
-
-            if (cellInfo.CellType == DispatchCellType.InterfaceAndSlot)
+            IntPtr pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(pInstanceType,
+                                                                            pItfType,
+                                                                            itfSlotNumber,
+                                                                            flags: default,
+                                                                            ppGenericContext: null);
+            if (DynamicInterfaceCastablePresent() && pTargetCode == IntPtr.Zero && pInstanceType->IsIDynamicInterfaceCastable)
             {
-                IntPtr pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(pInstanceType,
-                                                                              cellInfo.InterfaceType,
-                                                                              cellInfo.InterfaceSlot,
-                                                                              flags: default,
-                                                                              ppGenericContext: null);
-                if (DynamicInterfaceCastablePresent() && pTargetCode == IntPtr.Zero && pInstanceType->IsIDynamicInterfaceCastable)
-                {
-                    // Dispatch not resolved through normal dispatch map, try using the IDynamicInterfaceCastable
-                    // This will either give us the appropriate result, or throw.
-                    pTargetCode = IDynamicInterfaceCastable.GetDynamicInterfaceImplementation((IDynamicInterfaceCastable)pObject, cellInfo.InterfaceType, cellInfo.InterfaceSlot);
-                    Diagnostics.Debug.Assert(pTargetCode != IntPtr.Zero);
-                }
-                return pTargetCode;
+                // Dispatch not resolved through normal dispatch map, try using the IDynamicInterfaceCastable
+                // This will either give us the appropriate result, or throw.
+                pTargetCode = IDynamicInterfaceCastable.GetDynamicInterfaceImplementation((IDynamicInterfaceCastable)pObject, pItfType, itfSlotNumber);
+                Diagnostics.Debug.Assert(pTargetCode != IntPtr.Zero);
             }
-            else if (cellInfo.CellType == DispatchCellType.VTableOffset)
-            {
-                // Dereference VTable
-                return *(IntPtr*)(((byte*)pInstanceType) + cellInfo.VTableOffset);
-            }
-            else
-            {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING_AND_SUPPORTS_TOKEN_BASED_DISPATCH_CELLS
-                // Attempt to convert dispatch cell to non-metadata form if we haven't acquired a cache for this cell yet
-                if (cellInfo.HasCache == 0)
-                {
-                    cellInfo = InternalTypeLoaderCalls.ConvertMetadataTokenDispatch(InternalCalls.RhGetModuleFromPointer(cell), cellInfo);
-                    if (cellInfo.CellType != DispatchCellType.MetadataToken)
-                    {
-                        return RhResolveDispatchWorker(pObject, cell, ref cellInfo);
-                    }
-                }
-
-                // If that failed, go down the metadata resolution path
-                return InternalTypeLoaderCalls.ResolveMetadataTokenDispatch(InternalCalls.RhGetModuleFromPointer(cell), (int)cellInfo.MetadataToken, new IntPtr(pInstanceType));
-#else
-                EH.FallbackFailFast(RhFailFastReason.InternalError, null);
-                return IntPtr.Zero;
-#endif
-            }
+            return pTargetCode;
         }
     }
 }

@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract class ECDsaSignatureFormatTests : DsaFamilySignatureFormatTests
     {
-        private static readonly Dictionary<ECDsaProvider, KeyDescription[]> s_keyCache = new();
+        private static readonly Dictionary<(ECDsaProvider Provider, Type TestClass), KeyDescription[]> s_keyCache = new();
 
         protected abstract ECDsaProvider ECDsaFactory { get; }
 
@@ -22,10 +22,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             lock (s_keyCache)
             {
-                if (!s_keyCache.TryGetValue(ECDsaFactory, out KeyDescription[] keys))
+                (ECDsaProvider Provider, Type TestClass) cacheKey = (ECDsaFactory, GetType());
+
+                if (!s_keyCache.TryGetValue(cacheKey, out KeyDescription[] keys))
                 {
                     keys = LocalGenerateTestKeys().ToArray();
-                    s_keyCache.Add(ECDsaFactory, keys);
+                    s_keyCache.Add(cacheKey, keys);
                 }
 
                 return keys;
