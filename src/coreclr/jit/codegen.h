@@ -613,6 +613,9 @@ protected:
     void genReserveEpilog(BasicBlock* block);
     void genFnProlog();
     void genBeginFnProlog();
+#ifdef TARGET_WASM
+    void genInitImageBaseLocal(FuncInfoDsc* func);
+#endif
     void genFnEpilog(BasicBlock* block);
 
     void genReserveFuncletProlog(BasicBlock* block);

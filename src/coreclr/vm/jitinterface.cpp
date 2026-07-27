@@ -6431,6 +6431,35 @@ bool CEEInfo::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return ret;
 }
 
+bool CEEInfo::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result = true;
+
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE(ftn != NULL);
+
+    MethodDesc* pMD = GetMethod(ftn);
+    _ASSERTE(!pMD->IsStatic());
+
+    // ECMA augment III.1.7.7 allows making this escaping assumption based on
+    // RefSafetyRules and UnscopedRef attributes.
+    if (pMD->GetModule()->OptsIntoRefSafetyRulesV11())
+    {
+        result = (pMD->GetCustomAttribute(WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 bool CEEInfo::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 {
     CONTRACTL {
