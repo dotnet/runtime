@@ -52,7 +52,7 @@ namespace ILCompiler
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
         private Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
         private TypeWithRepeatedFieldsFieldLayoutAlgorithm _typeWithRepeatedFieldsFieldLayoutAlgorithm;
-        private SimpleArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
+        private RuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
 
         internal MethodDesc GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(MethodDesc declMethod, TypeDesc typeParam)
         {
