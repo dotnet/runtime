@@ -36,7 +36,8 @@ namespace System.SpanTests
             finally
             {
                 // Only a successful allocation keeps the mutex; the matching ReleaseNative frees it.
-                // Any failure must release it here or a later allocation hangs on a mutex nothing frees.
+                // Any failure (OOM, a null result, or an unexpected throw) must release it here so a
+                // later large allocation doesn't hang waiting on a mutex that will never be freed.
                 if (memory == IntPtr.Zero)
                     s_memoryLock.ReleaseMutex();
             }
