@@ -1076,8 +1076,8 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     FlowEdge* const retainedEdge = m_b1->GetFalseEdge();
 
     // Will need to re-adjust the likelihoods of the outgoing edges of the combined b1+b2 block
-    const weight_t    b1RemovedLikelihood     = removedEdge->getLikelihood();
-    const weight_t    b1FallthroughLikelihood = retainedEdge->getLikelihood();
+    const weight_t    removedEdgeLikelihood   = removedEdge->getLikelihood();
+    const weight_t    fallthroughLikelihood   = retainedEdge->getLikelihood();
     BasicBlock* const b1RemovedTarget         = removedEdge->getDestinationBlock();
 
     // Need to repair b2's profile as b1->b2 flow will be unconditional.
@@ -1099,10 +1099,10 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     FlowEdge* const b2Edges[] = {m_b2->GetTrueEdge(), m_b2->GetFalseEdge()};
     for (FlowEdge* const b2Edge : b2Edges)
     {
-        weight_t combined = b1FallthroughLikelihood * b2Edge->getLikelihood();
+        weight_t combined = fallthroughLikelihood * b2Edge->getLikelihood();
         if (b2Edge->getDestinationBlock() == b1RemovedTarget)
         {
-            combined += b1RemovedLikelihood;
+            combined += removedEdgeLikelihood;
         }
         b2Edge->setLikelihood(min(1.0, combined));
     }
