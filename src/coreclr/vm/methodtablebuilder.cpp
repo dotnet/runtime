@@ -10696,6 +10696,18 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                 return;
             }
+
+#ifdef TARGET_WASM
+            // System.Numerics.Vector<T> is a v128 value on wasm, so it needs the same 16-byte
+            // alignment as System.Runtime.Intrinsics.Vector128<T> above. Its metadata layout is
+            // already 16 bytes (two UInt64 fields), but those only give it 8-byte alignment,
+            // which disagrees with crossgen2 and the interpreter.
+            if ((strcmp(nameSpace, g_NumericsNS) == 0) && (strcmp(name, "Vector`1") == 0))
+            {
+                pClass->GetLayoutInfo()->SetAlignmentRequirement(16); // sizeof(v128)
+                return;
+            }
+#endif // TARGET_WASM
         }
 
         if (g_pNullableClass != NULL)
