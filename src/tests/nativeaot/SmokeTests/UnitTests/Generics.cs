@@ -3800,6 +3800,7 @@ class Generics
         }
 
         // Inlineable generic method taking the address of a method that needs a generic context.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static unsafe nint GetPtr<U>() => (nint)(delegate*<Type>)&Gen<U>.Method;
 
         class Caller<X>
