@@ -9,6 +9,8 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)-osx</TargetFrameworks>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <!-- Tests exercise the experimental SocketsHttpHandler connection eviction control and HttpRequestMessage.ConnectionId (SYSLIB5008) APIs. -->
+    <NoWarn>$(NoWarn);SYSLIB5008</NoWarn>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
     <!-- https://github.com/dotnet/runtime/issues/126862 -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
@@ -29,7 +31,7 @@
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <!-- This WASM test is slow on NodeJS. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
-    <XunitShowProgress Condition="'$(RuntimeFlavor)' == 'CoreCLR'">true</XunitShowProgress>
+    <XunitShowProgress Condition="'$(RuntimeFlavor)' == 'CoreCLR' or '$(WasmEnableThreads)' == 'true'">true</XunitShowProgress>
     <!-- Enable diagnostic features. They will add appropriate RuntimeHostConfigurationOption values to runtime config and ILLink.
     https://github.com/dotnet/docs/blob/main/docs/core/deploying/trimming/trimming-options.md#trim-framework-library-features 
     -->
@@ -145,6 +147,8 @@
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="ByteArrayContentTest.cs" />
+    <Compile Include="CompressedContentTest.cs" />
+    <Compile Include="CompressedContentTest.NonBrowser.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ChannelBindingAwareContent.cs"
              Link="Common\System\Net\Http\ChannelBindingAwareContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\DribbleStream.cs"

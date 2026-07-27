@@ -85,7 +85,7 @@ extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pMod
         {
             // reference to top level type
 
-            SafeComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
+            ComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
 
             // Generate AssemblyRef
             IfFailThrow( pEmit->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
@@ -181,7 +181,7 @@ namespace
         mdToken             rs;             // resolution scope
         DWORD               dwFlags;
 
-        SafeComHolder<IMetaDataImport> pImport;
+        ComHolderAnyMode<IMetaDataImport> pImport;
         IfFailThrow( pEmit->QueryInterface(IID_IMetaDataImport, (void **)&pImport) );
         IfFailThrow( pImport->GetTypeDefProps(td, szTypeDef, MAX_CLASSNAME_LENGTH, NULL, &dwFlags, NULL) );
         if ( IsTdNested(dwFlags) )
@@ -244,7 +244,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModul
             COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
     }
 
-    SafeComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
+    ComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
     IfFailThrow( pRefingAssembly->GetModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
 
     CQuickBytes             qbNewSig;
@@ -321,7 +321,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
         Assembly * pRefedAssembly = pMeth->GetModule()->GetAssembly();
         Assembly * pRefingAssembly = pModule->GetAssembly();
 
-        SafeComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
+        ComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
         IfFailThrow( pRefingAssembly->GetModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
 
         CQuickBytes     qbNewSig;
@@ -407,7 +407,7 @@ extern "C" mdMemberRef QCALLTYPE ModuleBuilder_GetMemberRefOfFieldInfo(QCall::Mo
             else
                 COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
         }
-        SafeComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
+        ComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
         IfFailThrow( pRefingAssembly->GetModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
 
         // Translate the field signature this scope

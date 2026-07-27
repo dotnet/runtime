@@ -240,6 +240,7 @@ enum PInvokeTransitionFrameFlags
 #if defined(TARGET_X86)
     PTFF_RAX_IS_GCREF   = 0x00010000,   // used by hijack handler to report return value of hijacked method
     PTFF_RAX_IS_BYREF   = 0x00020000,
+    PTFF_RCX_IS_GCREF   = 0x00040000,
 #endif
 
     PTFF_THREAD_HIJACK  = 0x00100000,   // indicates that this is a frame for a hijacked call

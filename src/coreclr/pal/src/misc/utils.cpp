@@ -21,6 +21,11 @@ Abstract:
 SET_DEFAULT_DEBUG_CHANNEL(MISC); // some headers have code with asserts, so do this first
 
 #include "pal/palinternal.h"
+
+#if defined(TARGET_WASI)
+#include "pal/wasi/pal_wasi_missing.h"
+#endif
+
 #if HAVE_VM_ALLOCATE
 #include <mach/message.h>
 #endif //HAVE_VM_ALLOCATE

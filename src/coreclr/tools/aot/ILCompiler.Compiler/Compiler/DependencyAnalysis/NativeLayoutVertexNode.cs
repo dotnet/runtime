@@ -1279,6 +1279,49 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    public sealed class NativeLayoutGvmDispatchGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
+    {
+        private MethodDesc _method;
+
+        public NativeLayoutGvmDispatchGenericDictionarySlotNode(NodeFactory factory, MethodDesc method)
+        {
+            Debug.Assert(method.HasInstantiation);
+            _method = method;
+        }
+
+        protected sealed override string GetName(NodeFactory factory) => "NativeLayoutGvmDispatchGenericDictionarySlotNode_" + factory.NameMangler.GetMangledMethodName(_method);
+
+        protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.GvmDispatchCell;
+
+        public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            var result = new DependencyList();
+
+            foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_method.OwningType))
+            {
+                result.Add(dependency, "template construction dependency for method OwningType");
+            }
+
+            foreach (var type in _method.Instantiation)
+            {
+                foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(type))
+                    result.Add(dependency, "template construction dependency for method Instantiation types");
+            }
+
+            MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            result.Add(factory.GVMDependencies(canonMethod), "GVM dependencies");
+            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref result, factory, GvmDispatchCellInfoSectionNode.GetMethodForMetadata(_method, out _));
+            result.Add(factory.NativeLayout.MethodEntry(_method), "wrappednode");
+
+            return result;
+        }
+
+        protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
+        {
+            return factory.NativeLayout.MethodEntry(_method).WriteVertex(factory);
+        }
+    }
+
     public sealed class NativeLayoutMethodDictionaryGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
         private MethodDesc _method;

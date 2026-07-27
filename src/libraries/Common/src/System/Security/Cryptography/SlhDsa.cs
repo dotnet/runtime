@@ -2003,6 +2003,5 @@ namespace System.Security.Cryptography
             }
         }
 
-        private delegate TResult ExportPkcs8PrivateKeyFunc<TResult>(ReadOnlySpan<byte> pkcs8);
     }
 }

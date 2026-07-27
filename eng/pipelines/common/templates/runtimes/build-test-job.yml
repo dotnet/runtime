@@ -128,7 +128,7 @@ jobs:
         displayName: Prepare BXL Helix payload
 
     - ${{ else }}:
-      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) $(testFilterArg) ci /p:TargetOS=AnyOS
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout $(buildConfig) -arch $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) $(testFilterArg) ci /p:TargetOS=AnyOS
         displayName: Build managed test components
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:

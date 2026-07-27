@@ -106,24 +106,6 @@ LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
     ret
 LEAF_END JIT_PatchedCodeStart, _TEXT
 
-// void JIT_ByRefWriteBarrier
-//
-// On entry:
-//   t5 : the source address (points to object reference to write)
-//   t3: the destination address (object reference written here)
-//
-// On exit:
-//   t5  : incremented by 8
-//   t4  : trashed
-//
-
-// void JIT_ByRefWriteBarrier
-WRITE_BARRIER_ENTRY JIT_ByRefWriteBarrier
-    ld  t4, 0(t5)
-    addi  t5, t5, 8
-    tail  C_FUNC(JIT_CheckedWriteBarrier)
-WRITE_BARRIER_END JIT_ByRefWriteBarrier
-
 //-----------------------------------------------------------------------------
 // Simple WriteBarriers
 // void JIT_CheckedWriteBarrier(Object** dst, Object* src)
@@ -136,7 +118,7 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 //   t1  : trashed
 //   t0  : trashed
 //   t6  : trashed
-//   t3  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
+//   t3  : preserved (the destination address is not modified)
 //
 
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
@@ -149,7 +131,6 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     beq  t6, zero, C_FUNC(JIT_WriteBarrier)
 
     sd  t4, 0(t3)
-    addi  t3, t3, 8
     ret
 WRITE_BARRIER_END JIT_CheckedWriteBarrier
 
@@ -163,7 +144,7 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //   t1  : trashed
 //   t6  : trashed
 //   t4  : trashed
-//   t3  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
+//   t3  : preserved (the destination address is not modified)
 //
 WRITE_BARRIER_ENTRY JIT_WriteBarrier
     // TODO: sync_release (runtime detection required)
@@ -258,7 +239,6 @@ LOCAL_LABEL(SkipEphemeralCheck):
     sb  t0, 0(t4)
 #endif
 LOCAL_LABEL(Exit):
-    addi  t3, t3, 8
     ret
 WRITE_BARRIER_END JIT_WriteBarrier
 
@@ -335,7 +315,7 @@ C_FUNC(ThePreStubPatchLabel):
     ret
 LEAF_END ThePreStubPatch, _TEXT
 
-NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
+NESTED_ENTRY TheUMEntryPrestub, _TEXT, NoHandler
     // Save arguments and return address
     PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 0xa0
     //PROLOG_SAVE_REG  gp, 16

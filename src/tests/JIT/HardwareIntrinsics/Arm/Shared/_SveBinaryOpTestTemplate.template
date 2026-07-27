@@ -107,9 +107,9 @@ namespace {Namespace}
 
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector<{Op1BaseType}>>() / sizeof({Op1BaseType});
-        private static readonly int Op2ElementCount = Unsafe.SizeOf<Vector<{Op2BaseType}>>() / sizeof({Op2BaseType});
-        private static readonly int RetElementCount = Unsafe.SizeOf<Vector<{RetBaseType}>>() / sizeof({RetBaseType});
+        private static readonly int Op1ElementCount = sizeof(Vector<{Op1BaseType}>) / sizeof({Op1BaseType});
+        private static readonly int Op2ElementCount = sizeof(Vector<{Op2BaseType}>) / sizeof({Op2BaseType});
+        private static readonly int RetElementCount = sizeof(Vector<{RetBaseType}>) / sizeof({RetBaseType});
 
         private Vector<{RetBaseType}> _mask;
         private Vector<{Op1BaseType}> _fld1;
@@ -313,7 +313,9 @@ namespace {Namespace}
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ConditionalSelectScenario_TrueValue(Vector<{RetBaseType}> mask, Vector<{Op1BaseType}> op1, Vector<{Op2BaseType}> op2, Vector<{RetBaseType}> falseOp)
         {
-            var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(op1, op2), falseOp);
+            var result = (falseOp == Vector<{RetBaseType}>.Zero) ?
+                         Sve.ConditionalSelect(mask, {Isa}.{Method}(op1, op2), Vector<{RetBaseType}>.Zero) :
+                         Sve.ConditionalSelect(mask, {Isa}.{Method}(op1, op2), falseOp);
             ValidateConditionalSelectResult(mask, op1, op2, falseOp, result);
         }
 

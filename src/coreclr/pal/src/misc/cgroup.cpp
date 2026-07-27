@@ -21,7 +21,7 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #include "pal/cgroup.h"
 #include <algorithm>
 
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
 
 #include <sys/vfs.h>
 
@@ -520,7 +520,7 @@ PAL_GetCpuLimit(UINT* val)
     return CGroup::GetCpuLimit(val);
 }
 
-#else // !(TARGET_LINUX || TARGET_ANDROID)
+#else // !TARGET_LINUX
 
 void InitializeCGroup()
 {
@@ -537,4 +537,4 @@ PAL_GetCpuLimit(UINT* val)
     return FALSE;
 }
 
-#endif // TARGET_LINUX || TARGET_ANDROID
+#endif // TARGET_LINUX

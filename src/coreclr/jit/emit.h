@@ -482,13 +482,15 @@ struct EmitCallParams
     BitVec    ptrVars       = BitVecOps::UninitVal();
     regMaskTP gcrefRegs     = RBM_NONE;
     regMaskTP byrefRegs     = RBM_NONE;
-    DebugInfo debugInfo;
-    regNumber ireg        = REG_NA;
-    regNumber xreg        = REG_NA;
-    unsigned  xmul        = 0;
-    ssize_t   disp        = 0;
-    bool      isJump      = false;
-    bool      noSafePoint = false;
+    regNumber ireg          = REG_NA;
+    regNumber xreg          = REG_NA;
+    unsigned  xmul          = 0;
+    ssize_t   disp          = 0;
+    bool      isJump        = false;
+    bool      noSafePoint   = false;
+    // If this call should have managed return value debug info associated with it, this is the call to associate it
+    // with.
+    GenTreeCall* returnValueCall = nullptr;
 #ifdef TARGET_WASM
     CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature = nullptr;
 #endif
@@ -2816,7 +2818,7 @@ public:
     bool emitChkAlign; // perform some alignment checks
 #endif
 
-    insGroup* emitCurIG;
+    insGroup* emitCurIG = nullptr;
 
     void emitSetShortJump(instrDescJmp* id);
     void emitSetMediumJump(instrDescJmp* id);
@@ -2981,9 +2983,10 @@ private:
 
     void emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG); // Check for illegal branches between funclets
 
-    bool     emitFwdJumps;         // forward jumps present?
-    unsigned emitNoGCRequestCount; // Count of number of nested "NO GC" region requests we have.
-    bool     emitNoGCIG;           // Are we generating IGF_NOGCINTERRUPT insGroups (for prologs, epilogs, etc.)
+    bool     emitFwdJumps;           // forward jumps present?
+    unsigned emitNoGCRequestCount;   // Count of number of nested "NO GC" region requests we have.
+    bool     emitNoGCIG;             // Are we generating IGF_NOGCINTERRUPT insGroups (for prologs, epilogs, etc.)
+    bool     emitLastSavedIGWasNoGC; // Was the last non-empty saved IG non-interruptible?
     bool emitForceNewIG; // If we generate an instruction, and not another instruction group, force create a new emitAdd
                          // instruction group.
 
@@ -3070,7 +3073,7 @@ private:
 
     void emitDisableGC();
     void emitEnableGC();
-    bool emitGCDisabled();
+    bool emitLastCodeIsNoGC() const;
 
 #if defined(TARGET_XARCH)
     static bool emitAlignInstHasNoCode(instrDesc* id);
@@ -3891,6 +3894,7 @@ public:
         debugPrevGCrefRegs = RBM_NONE;
         debugPrevByrefRegs = RBM_NONE;
 #endif
+        emitCurIG = nullptr;
     }
 };
 

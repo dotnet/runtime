@@ -380,8 +380,9 @@ test:.cs
 *.tempLog.xml
 *.testResults.xml
 *.testStats.csv
+
+# BuildXL
 Out/
 
-# Bazel convenience symlinks
-/bazel-*
-MODULE.bazel.lock
+# Copilot CLI local configuration
+.github/copilot/settings.local.json

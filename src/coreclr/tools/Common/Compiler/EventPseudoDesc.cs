@@ -93,7 +93,16 @@ namespace ILCompiler
 
         public override string ToString() => $"{_type}.{Name}";
 
-        public static bool operator ==(EventPseudoDesc a, EventPseudoDesc b) => a._type == b._type && a._handle == b._handle;
+        public static bool operator ==(EventPseudoDesc a, EventPseudoDesc b)
+        {
+            if (a is null)
+                return b is null;
+
+            if (b is null)
+                return false;
+
+            return a._type == b._type && a._handle == b._handle;
+        }
 
         public static bool operator !=(EventPseudoDesc a, EventPseudoDesc b) => !(a == b);
     }

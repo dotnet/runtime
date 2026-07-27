@@ -34,39 +34,25 @@ namespace System.Formats.Tar
         private const string RootUNameGName = "root";
 
         // Writes the entry in the order required to be able to obtain the seekable data stream size.
-        private void WriteWithSeekableDataStream(TarEntryFormat format, Stream archiveStream, Span<byte> buffer)
-        {
-            Debug.Assert(format is > TarEntryFormat.Unknown and <= TarEntryFormat.Gnu);
-            Debug.Assert(_dataStream == null || _dataStream.CanSeek);
-
-            _size = GetTotalDataBytesToWrite();
-            WriteFieldsToBuffer(format, buffer);
-            archiveStream.Write(buffer);
-
-            if (_dataStream != null)
-            {
-                WriteData(archiveStream, _dataStream);
-            }
-        }
-
-        // Asynchronously writes the entry in the order required to be able to obtain the seekable data stream size.
-        private async Task WriteWithSeekableDataStreamAsync(TarEntryFormat format, Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        private async ValueTask WriteWithSeekableDataStreamCoreAsync<TAdapter>(TarEntryFormat format, Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             Debug.Assert(format is > TarEntryFormat.Unknown and <= TarEntryFormat.Gnu);
             Debug.Assert(_dataStream == null || _dataStream.CanSeek);
 
             _size = GetTotalDataBytesToWrite();
             WriteFieldsToBuffer(format, buffer.Span);
-            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+            await TAdapter.WriteAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
 
             if (_dataStream != null)
             {
-                await WriteDataAsync(archiveStream, _dataStream, cancellationToken).ConfigureAwait(false);
+                await WriteDataCoreAsync<TAdapter>(archiveStream, _dataStream, cancellationToken).ConfigureAwait(false);
             }
         }
 
         // Writes into the specified destination stream the entry in the order required to be able to obtain the unseekable data stream size.
-        private void WriteWithUnseekableDataStream(TarEntryFormat format, Stream destinationStream, Span<byte> buffer, bool shouldAdvanceToEnd)
+        private async ValueTask WriteWithUnseekableDataStreamCoreAsync<TAdapter>(TarEntryFormat format, Stream destinationStream, Memory<byte> buffer, bool shouldAdvanceToEnd, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             // When the data stream is unseekable, the order in which we write the entry data changes
             Debug.Assert(destinationStream.CanSeek);
@@ -92,66 +78,14 @@ namespace System.Formats.Tar
 
             // Move to the data start location and write the data
             destinationStream.Seek(dataLocation, SeekOrigin.Current);
-            _dataStream.CopyTo(destinationStream); // The data gets copied from the current position
+            await TAdapter.CopyToAsync(_dataStream, destinationStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
 
             // Get the new archive stream position, and the difference is the size of the data stream
             long dataEndPosition = destinationStream.Position;
             _size = dataEndPosition - dataStartPosition;
 
             // Write the padding now so that we can go back to writing the entry's header metadata
-            WriteEmptyPadding(destinationStream);
-
-            // Store the end of the current header, we will write the next one after this position
-            long endOfHeaderPosition = destinationStream.Position;
-
-            // Go back to the start of the entry header to write the rest of the fields
-            destinationStream.Position = headerStartPosition;
-
-            WriteFieldsToBuffer(format, buffer);
-            destinationStream.Write(buffer);
-
-            if (shouldAdvanceToEnd)
-            {
-                // Finally, move to the end of the header to continue with the next entry
-                destinationStream.Position = endOfHeaderPosition;
-            }
-        }
-
-        // Asynchronously writes into the destination stream the entry in the order required to be able to obtain the unseekable data stream size.
-        private async Task WriteWithUnseekableDataStreamAsync(TarEntryFormat format, Stream destinationStream, Memory<byte> buffer, bool shouldAdvanceToEnd, CancellationToken cancellationToken)
-        {
-            // When the data stream is unseekable, the order in which we write the entry data changes
-            Debug.Assert(destinationStream.CanSeek);
-            Debug.Assert(_dataStream != null);
-            Debug.Assert(!_dataStream.CanSeek);
-
-            // Store the start of the current entry's header, it'll be used later
-            long headerStartPosition = destinationStream.Position;
-
-            ushort dataLocation = format switch
-            {
-                TarEntryFormat.V7 => FieldLocations.V7Data,
-                TarEntryFormat.Ustar or TarEntryFormat.Pax => FieldLocations.PosixData,
-                TarEntryFormat.Gnu => FieldLocations.GnuData,
-                _ => throw new ArgumentOutOfRangeException(nameof(format))
-            };
-
-            // We know the exact location where the data starts depending on the format
-            long dataStartPosition = headerStartPosition + dataLocation;
-
-            // Before writing, update the offset field now that the entry belongs to an archive
-            _dataOffset = dataStartPosition;
-
-            // Move to the data start location and write the data
-            destinationStream.Seek(dataLocation, SeekOrigin.Current);
-            await _dataStream.CopyToAsync(destinationStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
-
-            // Get the new archive stream position, and the difference is the size of the data stream
-            long dataEndPosition = destinationStream.Position;
-            _size = dataEndPosition - dataStartPosition;
-
-            // Write the padding now so that we can go back to writing the entry's header metadata
-            await WriteEmptyPaddingAsync(destinationStream, cancellationToken).ConfigureAwait(false);
+            await WriteEmptyPaddingCoreAsync<TAdapter>(destinationStream, cancellationToken).ConfigureAwait(false);
 
             // Store the end of the current header, we will write the next one after this position
             long endOfHeaderPosition = destinationStream.Position;
@@ -160,7 +94,7 @@ namespace System.Formats.Tar
             destinationStream.Position = headerStartPosition;
 
             WriteFieldsToBuffer(format, buffer.Span);
-            await destinationStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+            await TAdapter.WriteAsync(destinationStream, buffer, cancellationToken).ConfigureAwait(false);
 
             if (shouldAdvanceToEnd)
             {
@@ -193,22 +127,11 @@ namespace System.Formats.Tar
         }
 
         // Writes the current header as a PAX Global Extended Attributes entry into the archive stream.
-        internal void WriteAsPaxGlobalExtendedAttributes(Stream archiveStream, Span<byte> buffer, int globalExtendedAttributesEntryNumber)
+        internal ValueTask WriteAsPaxGlobalExtendedAttributesCoreAsync<TAdapter>(Stream archiveStream, Memory<byte> buffer, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             VerifyGlobalExtendedAttributesDataIsValid(globalExtendedAttributesEntryNumber);
-            WriteAsPaxExtendedAttributes(archiveStream, buffer, ExtendedAttributes, isGea: true, globalExtendedAttributesEntryNumber);
-        }
-
-        // Writes the current header as a PAX Global Extended Attributes entry into the archive stream and returns the value of the final checksum.
-        internal Task WriteAsPaxGlobalExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
-
-            VerifyGlobalExtendedAttributesDataIsValid(globalExtendedAttributesEntryNumber);
-            return WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, ExtendedAttributes, isGea: true, globalExtendedAttributesEntryNumber, cancellationToken);
+            return WriteAsPaxExtendedAttributesCoreAsync<TAdapter>(archiveStream, buffer, ExtendedAttributes, isGea: true, globalExtendedAttributesEntryNumber, cancellationToken);
         }
 
         // Verifies the data is valid for writing a Global Extended Attributes entry.
@@ -218,63 +141,38 @@ namespace System.Formats.Tar
             Debug.Assert(globalExtendedAttributesEntryNumber >= 0);
         }
 
-        internal void WriteAsV7(Stream archiveStream, Span<byte> buffer)
+        internal ValueTask WriteAsV7CoreAsync<TAdapter>(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
             if (archiveStream.CanSeek && _dataStream is { CanSeek: false })
             {
-                WriteWithUnseekableDataStream(TarEntryFormat.V7, archiveStream, buffer, shouldAdvanceToEnd: true);
-            }
-            else // Seek status of archive does not matter
-            {
-                WriteWithSeekableDataStream(TarEntryFormat.V7, archiveStream, buffer);
-            }
-        }
-
-        internal Task WriteAsV7Async(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
-        {
-            Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
-
-            if (archiveStream.CanSeek && _dataStream is { CanSeek: false })
-            {
-                return WriteWithUnseekableDataStreamAsync(TarEntryFormat.V7, archiveStream, buffer, shouldAdvanceToEnd: true, cancellationToken);
+                return WriteWithUnseekableDataStreamCoreAsync<TAdapter>(TarEntryFormat.V7, archiveStream, buffer, shouldAdvanceToEnd: true, cancellationToken);
             }
 
             // Else: Seek status of archive does not matter
-            return WriteWithSeekableDataStreamAsync(TarEntryFormat.V7, archiveStream, buffer, cancellationToken);
+            return WriteWithSeekableDataStreamCoreAsync<TAdapter>(TarEntryFormat.V7, archiveStream, buffer, cancellationToken);
         }
 
-        internal void WriteAsUstar(Stream archiveStream, Span<byte> buffer)
+        internal ValueTask WriteAsUstarCoreAsync<TAdapter>(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
             if (archiveStream.CanSeek && _dataStream is { CanSeek: false })
             {
-                WriteWithUnseekableDataStream(TarEntryFormat.Ustar, archiveStream, buffer, shouldAdvanceToEnd: true);
-            }
-            else // Seek status of archive does not matter
-            {
-                WriteWithSeekableDataStream(TarEntryFormat.Ustar, archiveStream, buffer);
-            }
-        }
-
-        internal Task WriteAsUstarAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
-        {
-            Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
-
-            if (archiveStream.CanSeek && _dataStream is { CanSeek: false })
-            {
-                return WriteWithUnseekableDataStreamAsync(TarEntryFormat.Ustar, archiveStream, buffer, shouldAdvanceToEnd: true, cancellationToken);
+                return WriteWithUnseekableDataStreamCoreAsync<TAdapter>(TarEntryFormat.Ustar, archiveStream, buffer, shouldAdvanceToEnd: true, cancellationToken);
             }
 
             // Else: Seek status of archive does not matter
-            return WriteWithSeekableDataStreamAsync(TarEntryFormat.Ustar, archiveStream, buffer, cancellationToken);
+            return WriteWithSeekableDataStreamCoreAsync<TAdapter>(TarEntryFormat.Ustar, archiveStream, buffer, cancellationToken);
         }
 
         // Writes the current header as a PAX entry into the archive stream.
         // Makes sure to add the preceding extended attributes entry before the actual entry.
-        internal void WriteAsPax(Stream archiveStream, Span<byte> buffer)
+        internal async ValueTask WriteAsPaxCoreAsync<TAdapter>(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
             Debug.Assert(_typeFlag is not TarEntryType.GlobalExtendedAttributes);
@@ -287,51 +185,7 @@ namespace System.Formats.Tar
                 // Write the full entry header into a temporary stream, which will also collect the data length in the _size field
                 using MemoryStream tempStream = new();
                 // Don't advance the tempStream, instead, we will rewind it to the beginning for copying later
-                WriteWithUnseekableDataStream(TarEntryFormat.Pax, tempStream, buffer, shouldAdvanceToEnd: false);
-                tempStream.Position = 0;
-                buffer.Clear();
-
-                // If the data length is larger than it fits in the standard size field, it will get stored as an extended attribute
-                CollectExtendedAttributesFromStandardFieldsIfNeeded();
-
-                // Write the extended attributes entry into the archive first
-                extendedAttributesHeader.WriteAsPaxExtendedAttributes(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1);
-                buffer.Clear();
-
-                // And then write the stored entry into the archive
-                tempStream.CopyTo(archiveStream);
-            }
-            else // Seek status of archive does not matter
-            {
-                _size = GetTotalDataBytesToWrite();
-                // Fill the current header's dict
-                CollectExtendedAttributesFromStandardFieldsIfNeeded();
-                // And pass the attributes to the preceding extended attributes header for writing
-                extendedAttributesHeader.WriteAsPaxExtendedAttributes(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1);
-                buffer.Clear(); // Reset it to reuse it
-
-                // Second, we write this header as a normal one
-                WriteWithSeekableDataStream(TarEntryFormat.Pax, archiveStream, buffer);
-            }
-        }
-
-        // Asynchronously writes the current header as a PAX entry into the archive stream.
-        // Makes sure to add the preceding exteded attributes entry before the actual entry.
-        internal async Task WriteAsPaxAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
-        {
-            Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
-            Debug.Assert(_typeFlag is not TarEntryType.GlobalExtendedAttributes);
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // First, we create the preceding extended attributes header
-            TarHeader extendedAttributesHeader = new(TarEntryFormat.Pax);
-
-            if (archiveStream.CanSeek && _dataStream is { CanSeek: false })
-            {
-                // Write the full entry header into a temporary stream, which will also collect the data length in the _size field
-                using MemoryStream tempStream = new();
-                // Don't advance the tempStream, instead, we will rewind it to the beginning for copying later
-                await WriteWithUnseekableDataStreamAsync(TarEntryFormat.Pax, tempStream, buffer, shouldAdvanceToEnd: false, cancellationToken).ConfigureAwait(false);
+                await WriteWithUnseekableDataStreamCoreAsync<TAdapter>(TarEntryFormat.Pax, tempStream, buffer, shouldAdvanceToEnd: false, cancellationToken).ConfigureAwait(false);
                 tempStream.Position = 0;
                 buffer.Span.Clear();
 
@@ -339,11 +193,11 @@ namespace System.Formats.Tar
                 CollectExtendedAttributesFromStandardFieldsIfNeeded();
 
                 // Write the extended attributes entry into the archive first
-                await extendedAttributesHeader.WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, cancellationToken).ConfigureAwait(false);
+                await extendedAttributesHeader.WriteAsPaxExtendedAttributesCoreAsync<TAdapter>(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear();
 
                 // And then write the stored entry into the archive
-                await tempStream.CopyToAsync(archiveStream, cancellationToken).ConfigureAwait(false);
+                await TAdapter.CopyToAsync(tempStream, archiveStream, cancellationToken).ConfigureAwait(false);
             }
             else // Seek status of archive does not matter
             {
@@ -351,11 +205,11 @@ namespace System.Formats.Tar
                 // Fill the current header's dict
                 CollectExtendedAttributesFromStandardFieldsIfNeeded();
                 // And pass the attributes to the preceding extended attributes header for writing
-                await extendedAttributesHeader.WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, cancellationToken).ConfigureAwait(false);
+                await extendedAttributesHeader.WriteAsPaxExtendedAttributesCoreAsync<TAdapter>(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
 
                 // Second, we write this header as a normal one
-                await WriteWithSeekableDataStreamAsync(TarEntryFormat.Pax, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                await WriteWithSeekableDataStreamCoreAsync<TAdapter>(TarEntryFormat.Pax, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
             }
         }
         // Checks if the linkname string is too long to fit in the regular header field.
@@ -368,7 +222,8 @@ namespace System.Formats.Tar
 
         // Writes the current header as a Gnu entry into the archive stream.
         // Makes sure to add the preceding LongLink and/or LongPath entries if necessary, before the actual entry.
-        internal void WriteAsGnu(Stream archiveStream, Span<byte> buffer)
+        internal async ValueTask WriteAsGnuCoreAsync<TAdapter>(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
@@ -377,43 +232,7 @@ namespace System.Formats.Tar
                 // Linkname is too long for the regular header field, create a longlink entry where the linkname will be stored.
                 TarHeader longLinkHeader = GetGnuLongLinkMetadataHeader();
                 Debug.Assert(longLinkHeader._dataStream != null && longLinkHeader._dataStream.CanSeek); // We generate the long metadata data stream, should always be seekable
-                longLinkHeader.WriteWithSeekableDataStream(TarEntryFormat.Gnu, archiveStream, buffer);
-                buffer.Clear(); // Reset it to reuse it
-            }
-
-            if (IsNameTooLongForRegularField())
-            {
-                // Name is too long for the regular header field, create a longpath entry where the name will be stored.
-                TarHeader longPathHeader = GetGnuLongPathMetadataHeader();
-                Debug.Assert(longPathHeader._dataStream != null && longPathHeader._dataStream.CanSeek); // We generate the long metadata data stream, should always be seekable
-                longPathHeader.WriteWithSeekableDataStream(TarEntryFormat.Gnu, archiveStream, buffer);
-                buffer.Clear(); // Reset it to reuse it
-            }
-
-            // Third, we write this header as a normal one
-            if (archiveStream.CanSeek && _dataStream is { CanSeek: false })
-            {
-                WriteWithUnseekableDataStream(TarEntryFormat.Gnu, archiveStream, buffer, shouldAdvanceToEnd: true);
-            }
-            else // Seek status of archive does not matter
-            {
-                WriteWithSeekableDataStream(TarEntryFormat.Gnu, archiveStream, buffer);
-            }
-        }
-
-        // Writes the current header as a Gnu entry into the archive stream.
-        // Makes sure to add the preceding LongLink and/or LongPath entries if necessary, before the actual entry.
-        internal async Task WriteAsGnuAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
-        {
-            Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (IsLinkNameTooLongForRegularField())
-            {
-                // Linkname is too long for the regular header field, create a longlink entry where the linkname will be stored.
-                TarHeader longLinkHeader = GetGnuLongLinkMetadataHeader();
-                Debug.Assert(longLinkHeader._dataStream != null && longLinkHeader._dataStream.CanSeek); // We generate the long metadata data stream, should always be seekable
-                await longLinkHeader.WriteWithSeekableDataStreamAsync(TarEntryFormat.Gnu, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                await longLinkHeader.WriteWithSeekableDataStreamCoreAsync<TAdapter>(TarEntryFormat.Gnu, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
             }
 
@@ -422,18 +241,18 @@ namespace System.Formats.Tar
                 // Name is too long for the regular header field, create a longpath entry where the name will be stored.
                 TarHeader longPathHeader = GetGnuLongPathMetadataHeader();
                 Debug.Assert(longPathHeader._dataStream != null && longPathHeader._dataStream.CanSeek); // We generate the long metadata data stream, should always be seekable
-                await longPathHeader.WriteWithSeekableDataStreamAsync(TarEntryFormat.Gnu, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                await longPathHeader.WriteWithSeekableDataStreamCoreAsync<TAdapter>(TarEntryFormat.Gnu, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
             }
 
             // Third, we write this header as a normal one
             if (archiveStream.CanSeek && _dataStream is { CanSeek: false })
             {
-                await WriteWithUnseekableDataStreamAsync(TarEntryFormat.Gnu, archiveStream, buffer, shouldAdvanceToEnd: true, cancellationToken).ConfigureAwait(false);
+                await WriteWithUnseekableDataStreamCoreAsync<TAdapter>(TarEntryFormat.Gnu, archiveStream, buffer, shouldAdvanceToEnd: true, cancellationToken).ConfigureAwait(false);
             }
             else // Seek status of archive does not matter
             {
-                await WriteWithSeekableDataStreamAsync(TarEntryFormat.Gnu, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                await WriteWithSeekableDataStreamCoreAsync<TAdapter>(TarEntryFormat.Gnu, archiveStream, buffer, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -491,20 +310,12 @@ namespace System.Formats.Tar
         }
 
         // Writes the current header as a PAX Extended Attributes entry into the archive stream.
-        private void WriteAsPaxExtendedAttributes(Stream archiveStream, Span<byte> buffer, Dictionary<string, string> extendedAttributes, bool isGea, int globalExtendedAttributesEntryNumber)
+        private ValueTask WriteAsPaxExtendedAttributesCoreAsync<TAdapter>(Stream archiveStream, Memory<byte> buffer, Dictionary<string, string> extendedAttributes, bool isGea, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             WriteAsPaxExtendedAttributesShared(isGea, globalExtendedAttributesEntryNumber, extendedAttributes);
             Debug.Assert(_dataStream == null || (extendedAttributes.Count > 0 && _dataStream.CanSeek)); // We generate the extended attributes data stream, should always be seekable
-            WriteWithSeekableDataStream(TarEntryFormat.Pax, archiveStream, buffer);
-        }
-
-        // Asynchronously writes the current header as a PAX Extended Attributes entry into the archive stream and returns the value of the final checksum.
-        private Task WriteAsPaxExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, Dictionary<string, string> extendedAttributes, bool isGea, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            WriteAsPaxExtendedAttributesShared(isGea, globalExtendedAttributesEntryNumber, extendedAttributes);
-            Debug.Assert(_dataStream == null || (extendedAttributes.Count > 0 && _dataStream.CanSeek)); // We generate the extended attributes data stream, should always be seekable
-            return WriteWithSeekableDataStreamAsync(TarEntryFormat.Pax, archiveStream, buffer, cancellationToken);
+            return WriteWithSeekableDataStreamCoreAsync<TAdapter>(TarEntryFormat.Pax, archiveStream, buffer, cancellationToken);
         }
 
         // Initializes the name, mode and type flag of a PAX extended attributes entry.
@@ -797,65 +608,35 @@ namespace System.Formats.Tar
         }
 
         // Writes the current header's data stream into the archive stream.
-        private void WriteData(Stream archiveStream, Stream dataStream)
+        private async ValueTask WriteDataCoreAsync<TAdapter>(Stream archiveStream, Stream dataStream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             // Before writing, update the offset field now that the entry belongs to an archive
             SetDataOffset(this, archiveStream);
 
-            dataStream.CopyTo(archiveStream); // The data gets copied from the current position
-            WriteEmptyPadding(archiveStream);
+            await TAdapter.CopyToAsync(dataStream, archiveStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
+            await WriteEmptyPaddingCoreAsync<TAdapter>(archiveStream, cancellationToken).ConfigureAwait(false);
         }
 
         // Calculates the padding for the current entry and writes it after the data.
-        private unsafe void WriteEmptyPadding(Stream archiveStream)
+        private async ValueTask WriteEmptyPaddingCoreAsync<TAdapter>(Stream archiveStream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             int paddingAfterData = TarHelpers.CalculatePadding(_size);
             if (paddingAfterData != 0)
             {
                 Debug.Assert(paddingAfterData <= TarHelpers.RecordSize);
 
-                Span<byte> zeros = stackalloc byte[TarHelpers.RecordSize];
-                zeros = zeros.Slice(0, paddingAfterData);
-                zeros.Clear();
-
-                archiveStream.Write(zeros);
-            }
-        }
-
-        // Calculates the padding for the current entry and asynchronously writes it after the data.
-        private ValueTask WriteEmptyPaddingAsync(Stream archiveStream, CancellationToken cancellationToken)
-        {
-            int paddingAfterData = TarHelpers.CalculatePadding(_size);
-            if (paddingAfterData != 0)
-            {
-                Debug.Assert(paddingAfterData <= TarHelpers.RecordSize);
-
-                byte[] zeros = new byte[paddingAfterData];
-                return archiveStream.WriteAsync(zeros, cancellationToken);
-            }
-
-            return ValueTask.CompletedTask;
-        }
-
-        // Asynchronously writes the current header's data stream into the archive stream.
-        private async Task WriteDataAsync(Stream archiveStream, Stream dataStream, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // Before writing, update the offset field now that the entry belongs to an archive
-            SetDataOffset(this, archiveStream);
-
-            await dataStream.CopyToAsync(archiveStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
-
-            int paddingAfterData = TarHelpers.CalculatePadding(_size);
-            if (paddingAfterData != 0)
-            {
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(paddingAfterData);
-                Array.Clear(buffer, 0, paddingAfterData);
-
-                await archiveStream.WriteAsync(buffer.AsMemory(0, paddingAfterData), cancellationToken).ConfigureAwait(false);
-
-                ArrayPool<byte>.Shared.Return(buffer);
+                try
+                {
+                    Array.Clear(buffer, 0, paddingAfterData);
+                    await TAdapter.WriteAsync(archiveStream, buffer.AsMemory(0, paddingAfterData), cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
         }
 
@@ -868,58 +649,63 @@ namespace System.Formats.Tar
             byte[]? buffer = null;
             Span<byte> span = stackalloc byte[512];
 
-            if (extendedAttributes.Count > 0)
+            try
             {
-                dataStream = new MemoryStream();
-
-                foreach ((string attribute, string value) in extendedAttributes)
+                if (extendedAttributes.Count > 0)
                 {
-                    // Generates an extended attribute key value pair string saved into a byte array, following the ISO/IEC 10646-1:2000 standard UTF-8 encoding format.
-                    // https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html
+                    dataStream = new MemoryStream();
 
-                    // The format is:
-                    //     "XX attribute=value\n"
-                    // where "XX" is the number of characters in the entry, including those required for the count itself.
-                    // If prepending the length digits increases the number of digits, we need to expand.
-                    int length = 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value);
-                    int originalDigitCount = CountDigits(length), newDigitCount;
-                    length += originalDigitCount;
-                    while ((newDigitCount = CountDigits(length)) != originalDigitCount)
+                    foreach ((string attribute, string value) in extendedAttributes)
                     {
-                        length += newDigitCount - originalDigitCount;
-                        originalDigitCount = newDigitCount;
-                    }
-                    Debug.Assert(length == CountDigits(length) + 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value));
+                        // Generates an extended attribute key value pair string saved into a byte array, following the ISO/IEC 10646-1:2000 standard UTF-8 encoding format.
+                        // https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html
 
-                    // Get a large enough buffer if we don't already have one.
-                    if (span.Length < length)
-                    {
-                        if (buffer is not null)
+                        // The format is:
+                        //     "XX attribute=value\n"
+                        // where "XX" is the number of characters in the entry, including those required for the count itself.
+                        // If prepending the length digits increases the number of digits, we need to expand.
+                        int length = 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value);
+                        int originalDigitCount = CountDigits(length), newDigitCount;
+                        length += originalDigitCount;
+                        while ((newDigitCount = CountDigits(length)) != originalDigitCount)
                         {
-                            ArrayPool<byte>.Shared.Return(buffer);
+                            length += newDigitCount - originalDigitCount;
+                            originalDigitCount = newDigitCount;
                         }
-                        span = buffer = ArrayPool<byte>.Shared.Rent(length);
+                        Debug.Assert(length == CountDigits(length) + 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value));
+
+                        // Get a large enough buffer if we don't already have one.
+                        if (span.Length < length)
+                        {
+                            if (buffer is not null)
+                            {
+                                ArrayPool<byte>.Shared.Return(buffer);
+                            }
+                            span = buffer = ArrayPool<byte>.Shared.Rent(length);
+                        }
+
+                        // Format the contents.
+                        bool formatted = Utf8Formatter.TryFormat(length, span, out int bytesWritten);
+                        Debug.Assert(formatted);
+                        span[bytesWritten++] = (byte)' ';
+                        bytesWritten += Encoding.UTF8.GetBytes(attribute, span.Slice(bytesWritten));
+                        span[bytesWritten++] = (byte)'=';
+                        bytesWritten += Encoding.UTF8.GetBytes(value, span.Slice(bytesWritten));
+                        span[bytesWritten++] = (byte)'\n';
+
+                        // Write it to the stream.
+                        dataStream.Write(span.Slice(0, bytesWritten));
                     }
 
-                    // Format the contents.
-                    bool formatted = Utf8Formatter.TryFormat(length, span, out int bytesWritten);
-                    Debug.Assert(formatted);
-                    span[bytesWritten++] = (byte)' ';
-                    bytesWritten += Encoding.UTF8.GetBytes(attribute, span.Slice(bytesWritten));
-                    span[bytesWritten++] = (byte)'=';
-                    bytesWritten += Encoding.UTF8.GetBytes(value, span.Slice(bytesWritten));
-                    span[bytesWritten++] = (byte)'\n';
-
-                    // Write it to the stream.
-                    dataStream.Write(span.Slice(0, bytesWritten));
+                    dataStream.Position = 0; // Ensure it gets written into the archive from the beginning
                 }
-
-                dataStream.Position = 0; // Ensure it gets written into the archive from the beginning
             }
-
-            if (buffer is not null)
+            finally
             {
-                ArrayPool<byte>.Shared.Return(buffer);
+                if (buffer is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
 
             return dataStream;

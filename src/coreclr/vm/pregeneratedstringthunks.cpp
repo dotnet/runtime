@@ -13,6 +13,9 @@
 #include "loaderallocator.hpp"
 #include "wasm/helpers.hpp"
 #include "precode_portable.hpp"
+#ifdef FEATURE_WEBCIL
+#include "webcildecoder.h"
+#endif
 
 static StringToThunkHash* s_pPregeneratedStringThunks = nullptr;
 

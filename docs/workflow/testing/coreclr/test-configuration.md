@@ -49,8 +49,6 @@ Therefore the managed portion of each test **must not contain**:
     * e.g. `<DisableProjectBuild>true</DisableProjectBuild>`
 * Exclude test from GCStress runs by adding the following to the csproj:
     * `<GCStressIncompatible>true</GCStressIncompatible>`
-* Exclude test from HeapVerify testing runs runs by adding the following to the csproj:
-    * `<HeapVerifyIncompatible>true</HeapVerifyIncompatible>`
 * Exclude test from JIT stress runs runs by adding the following to the csproj:
     * `<JitOptimizationSensitive>true</JitOptimizationSensitive>`
 * Exclude test from NativeAOT runs runs by adding the following to the csproj:
@@ -63,6 +61,8 @@ Therefore the managed portion of each test **must not contain**:
     * `<AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>`
 * When `CrossGenTest` is set to false, this test is not run with standard R2R compilation even if running an R2R test pass.
     * `<CrossGenTest>false</CrossGenTest>`
+* Exclude test from ReadyToRun (R2R) test runs by adding the following to the csproj:
+    * `<R2RIncompatible>true</R2RIncompatible>`
 * Add NuGet references by updating the following [test project](https://github.com/dotnet/runtime/blob/main/src/tests/Common/test_dependencies/test_dependencies.csproj).
 * Any System.Private.CoreLib types and methods used by tests must be available for building on all platforms.
 This means there must be enough implementation for the C# compiler to find the referenced types and methods. Unsupported target platforms

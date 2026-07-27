@@ -983,7 +983,7 @@ static size_t GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCoun
         }
 #if BIGENDIAN
         if (self->treatAsLE)
-            *pTarget = ((CHAR16_T)ch)<<8;
+            *pTarget = (((CHAR16_T)ch) << 8 | ((CHAR16_T)ch) >> 8);
         else
 #endif
         *pTarget = (CHAR16_T)ch;
@@ -1438,7 +1438,7 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
         // compiling "ch = *pSrc++;", so rather use "ch = *pSrc; pSrc++;" instead
 #if BIGENDIAN
         if (self->treatAsLE)
-            ch = (*pSrc) >> 8;
+            ch = (CHAR16_T)(((*pSrc) >> 8) | ((*pSrc) << 8));
         else
 #endif
         ch = *pSrc;
@@ -1581,7 +1581,7 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
             {
 #if BIGENDIAN
                 if (self->treatAsLE)
-                    ch = (*pSrc) >> 8;
+                    ch = (CHAR16_T)(((*pSrc) >> 8) | ((*pSrc) << 8));
                 else
 #endif
                 ch = *pSrc;
@@ -1619,7 +1619,7 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
         {
 #if BIGENDIAN
             if (self->treatAsLE)
-                ch = (*pSrc) >> 8;
+                ch = (CHAR16_T)(((*pSrc) >> 8) | ((*pSrc) << 8));
             else
 #endif
             ch = *pSrc;
@@ -1635,7 +1635,7 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
             {
 #if BIGENDIAN
                 if (self->treatAsLE)
-                    ch = (*pSrc) >> 8;
+                    ch = (CHAR16_T)(((*pSrc) >> 8) | ((*pSrc) << 8));
                 else
 #endif
                 ch = *pSrc;
@@ -1652,10 +1652,7 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
                 ch = *(int*)pSrc;
                 int chc = *(int*)(pSrc + 2);
 #if BIGENDIAN
-                if (self->treatAsLE){
-                    if (((ch | chc) & (int)0x80FF80FF) != 0) goto LongCodeWithMask;
-                }
-                else
+                if (((ch | chc) & (int)0x80FF80FF) != 0) goto LongCodeWithMask;
 #else
                 if (((ch | chc) & (int)0xFF80FF80) != 0) goto LongCodeWithMask;
 #endif

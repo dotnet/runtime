@@ -24,6 +24,7 @@ function libBrowserUtilsFactory() {
         "_exit",
         "abort",
         "__trap",
+        "__stack_pointer",
         "$readI53FromU64",
         "$readI53FromI64",
         "$writeI53ToI64"

@@ -219,6 +219,7 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     infoPtr->ebpFrame        = header.ebpFrame;
     infoPtr->interruptible   = header.interruptible;
     infoPtr->returnKind      = (ReturnKind) header.returnKind;
+    infoPtr->isAsync         = header.isAsync;
 
     infoPtr->prologSize      = header.prologSize;
     infoPtr->epilogSize      = header.epilogSize;

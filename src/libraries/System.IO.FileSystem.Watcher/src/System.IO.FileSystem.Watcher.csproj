@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-openbsd;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
@@ -77,7 +77,7 @@
              Link="Common\Interop\Unix\Interop.PathConf.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'openbsd'">
     <Compile Include="System\IO\FileSystemWatcher.Linux.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\System.Native\Interop.INotify.cs"
              Link="Common\Interop\Linux\Interop.inotify.cs" />

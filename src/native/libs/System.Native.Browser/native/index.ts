@@ -29,6 +29,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         getWasmMemory,
         getWasmTable,
         SystemJS_ScheduleDiagnosticServer: _ems_._SystemJS_ScheduleDiagnosticServer,
+        SystemJS_GetMethodName: (pMethodDesc: number) => _ems_._SystemJS_GetMethodName(pMethodDesc),
     });
     _ems_.dotnetUpdateInternals(internals, _ems_.dotnetUpdateInternalsSubscriber);
 
@@ -41,6 +42,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             map.getWasmMemory,
             map.getWasmTable,
             map.SystemJS_ScheduleDiagnosticServer,
+            map.SystemJS_GetMethodName,
         ];
     }
 

@@ -368,6 +368,7 @@ usage_list+=("-nativeaot - Builds the tests for Native AOT compilation.")
 usage_list+=("-priority1 - Include priority=1 tests in the build.")
 usage_list+=("-perfmap - Emit perfmap symbol files when compiling the framework assemblies using Crossgen2.")
 usage_list+=("-allTargets - Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).")
+usage_list+=("-use-bootstrap - Use artifacts produced by the bootstrap subset for local targeting, runtime, and apphost packs.")
 usage_list+=("")
 usage_list+=("-runtests - Run tests after building them.")
 usage_list+=("-bxl - Build tests via the BuildXL-backed flow (Linux x64 Checked CoreCLR with Release libraries only).")
@@ -435,6 +436,10 @@ handle_arguments_local() {
 
         alltargets|-alltargets)
             __UnprocessedBuildArgs+=("/p:CLRTestBuildAllTargets=allTargets")
+            ;;
+
+        use-bootstrap|-use-bootstrap)
+            __UnprocessedBuildArgs+=("/p:UseBootstrap=true")
             ;;
 
         rebuild|-rebuild)
@@ -608,12 +613,12 @@ fi
 
 # Get the number of processors available to the scheduler
 platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
-if [[ "$platform" == "freebsd" ]]; then
+if [[ "$platform" == "freebsd" || "$platform" == "openbsd" ]]; then
   __NumProc="$(($(sysctl -n hw.ncpu)+1))"
 elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then
   __NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
 elif [[ "$platform" == "darwin" ]]; then
-  __NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
+  __NumProc="$(getconf _NPROCESSORS_ONLN)"
 elif command -v nproc > /dev/null 2>&1; then
   __NumProc="$(nproc)"
 elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then

@@ -2090,6 +2090,8 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 					*op = MINT_TAN;
 				} else if (strcmp (tm, "Tanh") == 0){
 					*op = MINT_TANH;
+				} else if (strcmp (tm, "Truncate") == 0) {
+					*op = MINT_TRUNC;
 				}
 			}
 		} else if (csignature->param_count == 2 && csignature->params [0]->type == param_type && csignature->params [1]->type == param_type) {
@@ -2101,6 +2103,8 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				*op = MINT_MIN;
 			else if (strcmp (tm, "Max") == 0)
 				*op = MINT_MAX;
+			else if (strcmp (tm, "CopySign") == 0)
+				*op = MINT_COPYSIGN;
 		} else if (csignature->param_count == 3 && csignature->params [0]->type == param_type && csignature->params [1]->type == param_type && csignature->params [2]->type == param_type) {
 			if (strcmp (tm, "FusedMultiplyAdd") == 0)
 				*op = MINT_FMA;
@@ -2882,8 +2886,22 @@ interp_type_as_ptr (MonoType *tp)
 		return TRUE;
 	if ((tp)->type == MONO_TYPE_CHAR)
 		return TRUE;
-	if ((tp)->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (tp)))
-		return TRUE;
+	if ((tp)->type == MONO_TYPE_VALUETYPE) {
+		MonoClass *tp_klass = m_type_data_get_klass_unchecked (tp);
+		if (m_class_is_enumtype (tp_klass)) {
+			/*
+			 * A 64-bit enum (e.g. 'enum : ulong') must not be treated as a pointer-sized icall
+			 * argument on 32-bit targets such as wasm32: it would otherwise be passed through
+			 * do_icall's gpointer signature and cause a native call_indirect signature mismatch.
+			 * Defer to the underlying type, which is width-guarded, for those cases; enums with
+			 * a smaller underlying type keep their existing classification.
+			 */
+			MonoType *base_type = mono_class_enum_basetype_internal (tp_klass);
+			if (base_type && (base_type->type == MONO_TYPE_I8 || base_type->type == MONO_TYPE_U8))
+				return interp_type_as_ptr (base_type);
+			return TRUE;
+		}
+	}
 	if (is_scalar_vtype (tp))
 		return TRUE;
 	return FALSE;

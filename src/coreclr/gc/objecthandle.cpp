@@ -1815,6 +1815,7 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_VARIABLE_HANDLES
         HNDTYPE_VARIABLE,
 #endif
+        HNDTYPE_DEPENDENT,
 #ifdef FEATURE_REFCOUNTED_HANDLES
         HNDTYPE_REFCOUNTED,
 #endif
@@ -1868,13 +1869,13 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
         HNDTYPE_WEAK_SHORT,
         HNDTYPE_WEAK_LONG,
 
-
         HNDTYPE_STRONG,
 
         HNDTYPE_PINNED,
 #ifdef FEATURE_VARIABLE_HANDLES
         HNDTYPE_VARIABLE,
 #endif
+        HNDTYPE_DEPENDENT,
 #ifdef FEATURE_REFCOUNTED_HANDLES
         HNDTYPE_REFCOUNTED,
 #endif

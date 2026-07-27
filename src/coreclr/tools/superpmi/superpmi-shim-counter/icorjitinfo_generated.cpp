@@ -19,6 +19,13 @@ bool interceptor_ICJI::isIntrinsic(
     return original_ICorJitInfo->isIntrinsic(ftn);
 }
 
+bool interceptor_ICJI::canValueClassInstancePointerEscape(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    mcs->AddCall("canValueClassInstancePointerEscape");
+    return original_ICorJitInfo->canValueClassInstancePointerEscape(ftn);
+}
+
 bool interceptor_ICJI::notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn)
 {
@@ -152,23 +159,6 @@ bool interceptor_ICJI::resolveVirtualMethod(
 {
     mcs->AddCall("resolveVirtualMethod");
     return original_ICorJitInfo->resolveVirtualMethod(info);
-}
-
-CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          bool* requiresInstMethodTableArg)
-{
-    mcs->AddCall("getUnboxedEntry");
-    return original_ICorJitInfo->getUnboxedEntry(ftn, requiresInstMethodTableArg);
-}
-
-CORINFO_METHOD_HANDLE interceptor_ICJI::getInstantiatedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_HANDLE* methodArg,
-          CORINFO_CLASS_HANDLE* classArg)
-{
-    mcs->AddCall("getInstantiatedEntry");
-    return original_ICorJitInfo->getInstantiatedEntry(ftn, methodArg, classArg);
 }
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncOtherVariant(
@@ -986,6 +976,15 @@ void interceptor_ICJI::getAsyncInfo(
     original_ICorJitInfo->getAsyncInfo(pAsyncInfoOut);
 }
 
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg)
+{
+    mcs->AddCall("getAwaitReturnCall");
+    return original_ICorJitInfo->getAwaitReturnCall(callerHandle, contextHandle, instArg);
+}
+
 mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {
@@ -1050,6 +1049,20 @@ CorInfoWasmType interceptor_ICJI::getWasmLowering(
 {
     mcs->AddCall("getWasmLowering");
     return original_ICorJitInfo->getWasmLowering(structHnd);
+}
+
+uint32_t interceptor_ICJI::getAddressAlignment(
+          void* address)
+{
+    mcs->AddCall("getAddressAlignment");
+    return original_ICorJitInfo->getAddressAlignment(address);
+}
+
+void interceptor_ICJI::getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    mcs->AddCall("getWasmWellKnownGlobals");
+    original_ICorJitInfo->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
 }
 
 uint32_t interceptor_ICJI::getThreadTLSIndex(

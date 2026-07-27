@@ -12,6 +12,8 @@
       <HasDisasmCheck>true</HasDisasmCheck>
     </Compile>
 
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+
     <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
     <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
   </ItemGroup>

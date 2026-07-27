@@ -237,7 +237,16 @@
     <UriProject>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'System.Private.Uri', 'src', 'System.Private.Uri.csproj'))</UriProject>
 
     <!-- this property is used by the SDK to pull in mono-based runtime packs -->
+    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' and '$(UseNativeAOTRuntime)' == 'true'">false</UseMonoRuntime>
     <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' and '$(RuntimeFlavor)' == 'Mono'">true</UseMonoRuntime>
+    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == 'true' and '$(TargetsMobile)' != 'true' and (
+        $(TargetFramework.EndsWith('-android')) or $(TargetFramework.EndsWith('-ios')) or
+        $(TargetFramework.EndsWith('-tvos')) or $(TargetFramework.EndsWith('-maccatalyst')))">false</UseMonoRuntime>
+
+    <!-- Multi-targeted libraries' mobile target frameworks (e.g. netXX.0-android/ios/tvos/maccatalyst) are restored with UseMonoRuntime=true in the browser/wasi legs.
+         As of .NET 11, the SDK raises NETSDK1242 when a mobile project targets the Mono runtime. These mobile target frameworks are only restored (never actually built)
+         in these legs, so disable the check to avoid the false-positive failure -->
+    <_DisableCheckForUnsupportedMonoMobileRuntime Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">true</_DisableCheckForUnsupportedMonoMobileRuntime>
 
     <!-- For enabling the use of XUnitLogChecker in coreclr and libraries test runs. -->
     <!-- TODO: Enable XUnitLogChecker for NativeAOT tests https://github.com/dotnet/runtime/issues/94722 -->

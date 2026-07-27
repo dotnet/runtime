@@ -41,7 +41,7 @@ class DiagnosticConnectionWS extends DiagnosticConnectionBase implements IDiagno
     }
 
     send(message: Uint8Array): number {
-        dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer();
+        dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer(0);
         // copy the message
         if (this.ws!.readyState == WebSocket.CLOSED || this.ws!.readyState == WebSocket.CLOSING) {
             return -1;
@@ -61,7 +61,7 @@ class DiagnosticConnectionWS extends DiagnosticConnectionBase implements IDiagno
     }
 
     close(): number {
-        dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer();
+        dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer(0);
         this.ws.close();
         return 0;
     }
