@@ -163,11 +163,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (implType.IsWellKnownType(WellKnownType.Array))
                 {
                     ReadyToRunCompilerContext context = (ReadyToRunCompilerContext)declMethod.Context;
-
-                    // The instantiation we want is based on the interface element type, not the array element type.
-                    TypeDesc resultElemType = declMethod.OwningType.Instantiation[0];
                     SimpleArrayOfTRuntimeInterfacesAlgorithm runtimeInterfacesAlgorithm =
-                        (SimpleArrayOfTRuntimeInterfacesAlgorithm)context.GetRuntimeInterfacesAlgorithmForType(context.GetArrayType(resultElemType));
+                        (SimpleArrayOfTRuntimeInterfacesAlgorithm)context.GetRuntimeInterfacesAlgorithmForType(context.GetArrayType(context.GetWellKnownType(WellKnownType.Object)));
 
                     if (runtimeInterfacesAlgorithm.IsGenericRuntimeInterface(declMethod.OwningType))
                     {
@@ -177,6 +174,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             return null;
                         }
 
+                        // The instantiation we want is based on the interface element type, not the array element type.
+                        TypeDesc resultElemType = declMethod.OwningType.Instantiation[0];
                         // We should have ruled this out above.
                         Debug.Assert(!resultElemType.IsCanonicalSubtype(CanonicalFormKind.Any));
                         resolvedVirtualMethod = context.GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(declMethod, resultElemType);
