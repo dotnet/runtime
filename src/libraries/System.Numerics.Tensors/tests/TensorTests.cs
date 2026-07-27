@@ -1113,7 +1113,7 @@ namespace System.Numerics.Tensors.Tests
             var src = new ReadOnlyTensorSpan<int>(data, shape, strides);
             Assert.False(src.IsDense);
 
-            // Resize to a larger dense destination
+            // Resize to a smaller dense destination
             nint srcFlatLen = src.FlattenedLength;
             int[] dstData = new int[(int)srcFlatLen - 1];
             Array.Fill(dstData, -1);
