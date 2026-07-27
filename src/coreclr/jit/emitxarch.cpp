@@ -13222,6 +13222,20 @@ void emitter::emitDispIns(
                             break;
                         }
 
+                        case INS_vbroadcastf32x2:
+                        case INS_vbroadcasti32x2:
+                        case INS_vbroadcastsd:
+                        case INS_vbroadcastss:
+                        case INS_vpbroadcastb:
+                        case INS_vpbroadcastd:
+                        case INS_vpbroadcastq:
+                        case INS_vpbroadcastw:
+                        {
+                            // The source is the low element of a vector, so it is always xmm
+                            srcAttr = EA_16BYTE;
+                            break;
+                        }
+
                         default:
                             break;
                     }
