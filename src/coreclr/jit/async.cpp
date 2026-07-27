@@ -45,6 +45,17 @@
 #include "jitstd/algorithm.h"
 #include "async.h"
 
+//------------------------------------------------------------------------
+// ContinuationMember::CustomAwaiterOfLayout:
+//   Create a continuation member that stores a custom awaiter with the
+//   specified layout.
+//
+// Parameters:
+//   layout - Layout of the custom awaiter.
+//
+// Returns:
+//   A continuation member describing the custom awaiter.
+//
 ContinuationMember ContinuationMember::CustomAwaiterOfLayout(ClassLayout* layout)
 {
     ContinuationMember member;
@@ -53,12 +64,30 @@ ContinuationMember ContinuationMember::CustomAwaiterOfLayout(ClassLayout* layout
     return member;
 }
 
+//------------------------------------------------------------------------
+// ContinuationMember::GetCustomAwaiterLayout:
+//   Get the layout of a custom awaiter continuation member.
+//
+// Returns:
+//   The custom awaiter's layout.
+//
 ClassLayout* ContinuationMember::GetCustomAwaiterLayout() const
 {
     assert(Type == ContinuationMemberType::CustomAwaiterOfLayout);
     return m_customAwaiterLayout;
 }
 
+//------------------------------------------------------------------------
+// ContinuationMember::AreCompatible:
+//   Check whether two continuation members can share the same storage.
+//
+// Parameters:
+//   a - First continuation member.
+//   b - Second continuation member.
+//
+// Returns:
+//   True if the members are compatible; otherwise false.
+//
 bool ContinuationMember::AreCompatible(const ContinuationMember& a, const ContinuationMember& b)
 {
     if (a.Type != b.Type)
@@ -76,6 +105,10 @@ bool ContinuationMember::AreCompatible(const ContinuationMember& a, const Contin
 }
 
 #ifdef DEBUG
+//------------------------------------------------------------------------
+// ContinuationMember::Print:
+//   Print a description of this continuation member.
+//
 void ContinuationMember::Print() const
 {
     switch (Type)
@@ -89,6 +122,16 @@ void ContinuationMember::Print() const
 }
 #endif
 
+//------------------------------------------------------------------------
+// Compiler::GetContinuationMemberIndex:
+//   Find or add a continuation member and return its index.
+//
+// Parameters:
+//   member - Continuation member to find or add.
+//
+// Returns:
+//   The member's index in m_asyncContinuationMembers.
+//
 size_t Compiler::GetContinuationMemberIndex(const ContinuationMember& member)
 {
     if (m_asyncContinuationMembers == nullptr)
@@ -112,11 +155,28 @@ size_t Compiler::GetContinuationMemberIndex(const ContinuationMember& member)
     return m_asyncContinuationMembers->size() - 1;
 }
 
+//------------------------------------------------------------------------
+// Compiler::GetContinuationMemberCount:
+//   Get the number of continuation members registered by the compiler.
+//
+// Returns:
+//   The number of registered continuation members.
+//
 size_t Compiler::GetContinuationMemberCount() const
 {
     return m_asyncContinuationMembers == nullptr ? 0 : m_asyncContinuationMembers->size();
 }
 
+//------------------------------------------------------------------------
+// Compiler::GetContinuationMember:
+//   Get a registered continuation member by index.
+//
+// Parameters:
+//   index - Index of the continuation member.
+//
+// Returns:
+//   The continuation member at the specified index.
+//
 const ContinuationMember& Compiler::GetContinuationMember(size_t index)
 {
     assert(index < m_asyncContinuationMembers->size());
@@ -640,7 +700,8 @@ bool ContinuationLayoutBuilder::Equals(const ContinuationLayoutBuilder& a, const
 }
 
 //------------------------------------------------------------------------
-// TransformAsync: Run async transformation.
+// Compiler::TransformAsync:
+//   Run the async transformation.
 //
 // Returns:
 //   Suitable phase status.
@@ -1516,6 +1577,10 @@ const ReturnInfo* ContinuationLayout::FindReturn(Compiler* comp, GenTreeCall* ca
 //   Finalize the layout by computing offsets for all fields, locals, and
 //   return values. Allocates the continuation type from the VM.
 //
+// Parameters:
+//   continuationMemberOffsets - Symbolic continuation member offset nodes
+//                               that remain in the method.
+//
 // Returns:
 //   The finalized ContinuationLayout with computed offsets and a class
 //   handle for the continuation type.
@@ -2348,6 +2413,12 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
 //------------------------------------------------------------------------
 // AsyncTransformation::StoreAsyncAwaiter:
 //   Move the pseudo awaiter argument into its reserved continuation member.
+//
+// Parameters:
+//   callBlock - Block containing the async awaiter call.
+//   call      - Async awaiter call.
+//   suspendBB - Suspension block in which to store the awaiter.
+//   layout    - Layout of the continuation.
 //
 void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
                                             GenTreeCall*              call,
@@ -3858,6 +3929,13 @@ void AsyncTransformation::InsertFinishContextHandlingCall(BasicBlock*           
 // AsyncTransformation::CreateResumptionsAndSuspensions:
 //   Walk all recorded async states and create the suspension and resumption
 //   IR, continuation layouts, and debug info for each one.
+//
+// Parameters:
+//   continuationMemberOffsets - Symbolic continuation member offset nodes
+//                               that remain in the method.
+//
+// Returns:
+//   The continuation layout containing the continuation member offsets.
 //
 const ContinuationLayout* AsyncTransformation::CreateResumptionsAndSuspensions(
     ArrayStack<GenTree*>& continuationMemberOffsets)
