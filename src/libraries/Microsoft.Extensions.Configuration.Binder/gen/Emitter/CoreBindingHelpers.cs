@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
@@ -327,7 +328,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 foreach (ParameterSpec parameter in type.ConstructorParameters)
                 {
-                    string name = parameter.Name;
+                    string name = EscapeIdentifier(parameter.Name);
                     string argExpr = parameter.RefKind switch
                     {
                         RefKind.None => name,
@@ -361,8 +362,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         // Properties bound through a matching constructor parameter don't have a local of their
                         // own; their bound value lives in the local named after the parameter.
-                        string valueExpr = property.MatchingCtorParam?.Name ?? property.Name;
-                        _writer.WriteLine($@"{property.Name} = {valueExpr},");
+                        string valueExpr = EscapeIdentifier(property.MatchingCtorParam?.Name ?? property.Name);
+                        _writer.WriteLine($@"{EscapeIdentifier(property.Name)} = {valueExpr},");
                     }
                     EmitEndBlock(endBraceTrailingSource: ";");
                 }
@@ -374,7 +375,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 void EmitBindImplForMember(MemberSpec member)
                 {
                     TypeSpec memberType = _typeIndex.GetTypeSpec(member.TypeRef);
-                    string parsedMemberDeclarationLhs = $"{memberType.TypeRef.FullyQualifiedName} {member.Name}";
+                    string escapedName = EscapeIdentifier(member.Name);
+                    string parsedMemberDeclarationLhs = $"{memberType.TypeRef.FullyQualifiedName} {escapedName}";
                     string configKeyName = member.ConfigurationKeyName;
 
                     switch (memberType)
@@ -403,7 +405,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     bool canBindToMember = this.EmitBindImplForMember(
                         member,
-                        member.Name,
+                        escapedName,
                         sectionPathExpr: GetSectionPathFromConfigurationExpression(configKeyName),
                         // Since we're binding to local variables, we can always get and set
                         canSet: true,
@@ -417,7 +419,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             // Add exception logic for parameter ctors; must be present in configuration object.
                             // In case of Arrays and IEnumerable<T>, we emit extra block to handle collection. The throw block will not be `else` case at that time.
                             TypeSpec typeSpec = _typeIndex.GetEffectiveTypeSpec(member.TypeRef);
-                            EmitThrowBlock(condition: typeSpec is ArraySpec || typeSpec.IsExactIEnumerableOfT ? $"if ({member.Name} is null)" : "else");
+                            EmitThrowBlock(condition: typeSpec is ArraySpec || typeSpec.IsExactIEnumerableOfT ? $"if ({escapedName} is null)" : "else");
                         }
 
                         _writer.WriteLine();
@@ -866,7 +868,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         string containingTypeRef = property.IsStatic ? type.TypeRef.FullyQualifiedName : Identifier.instance;
                         EmitBindImplForMember(
                             property,
-                            memberAccessExpr: $"{containingTypeRef}.{property.Name}",
+                            memberAccessExpr: $"{containingTypeRef}.{EscapeIdentifier(property.Name)}",
                             GetSectionPathFromConfigurationExpression(property.ConfigurationKeyName),
                             canSet: property.CanSet,
                             canGet: property.CanGet,

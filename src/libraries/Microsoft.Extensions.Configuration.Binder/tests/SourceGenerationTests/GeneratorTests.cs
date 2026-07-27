@@ -830,5 +830,36 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             return await new CompilationWithAnalyzers(compilation, analyzers, options)
                 .GetAllDiagnosticsAsync();
         }
+
+        [Fact]
+        public async Task KeywordNamedConstructorParameters()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        MyConfiguration options = config.GetSection("My").Get<MyConfiguration>()!;
+                    }
+                }
+
+                class MyConfiguration(string @base, string @event)
+                {
+                    public string Base { get; } = @base;
+                    public string Event { get; } = @event;
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
     }
 }
