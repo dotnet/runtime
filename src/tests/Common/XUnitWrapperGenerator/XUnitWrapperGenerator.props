@@ -31,8 +31,9 @@
   <Target Name="WriteHasOutOfProcessTestsMarker" AfterTargets="Build">
     <PropertyGroup>
       <_HasOutOfProcessTestsMarker>$(OutputPath)$(AssemblyName).HasOutOfProcessTests</_HasOutOfProcessTestsMarker>
+      <!-- allTargets output is reused by target-specific test jobs without rebuilding the merged runner. -->
       <_ShouldWriteHasOutOfProcessTestsMarker
-        Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '@(OutOfProcessTests)' != '' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</_ShouldWriteHasOutOfProcessTestsMarker>
+        Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '@(OutOfProcessTests)' != '' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetOS)' == 'browser' or '$(CLRTestBuildAllTargets)' == 'allTargets')">true</_ShouldWriteHasOutOfProcessTestsMarker>
     </PropertyGroup>
     <WriteLinesToFile
       File="$(_HasOutOfProcessTestsMarker)"

@@ -396,15 +396,22 @@ IF NOT DEFINED RunWithNodeJS (
                 set "__OopResultTemp=!__OopResult!.tmp.!RANDOM!"
                 set "__OopStatus=!__OopResult!.status.!RANDOM!"
                 del /q "!__OopResult!" "!__OopOutput!" "!__OopResultTemp!" "!__OopStatus!" 2>NUL
+                TYPE NUL > "!__OopOutput!"
 
                 set "CORE_ROOT=!__CoreRootWin!"
-                for %%S in ("!__OopStatus!") do set "__OopStatusUnix=%%~fS"
-                set "__OopStatusUnix=!__OopStatusUnix:\=/!"
-                if "!__OopStatusUnix:~1,1!"==":" set "__OopStatusUnix=/!__OopStatusUnix:~3!"
-                set "__TestOutOfProcessStatusFile=!__OopStatusUnix!"
-                "%ComSpec%" /D /S /C call "!__OopWrapper!" > "!__OopOutput!" 2>&1
-                set "__OopExit=!ERRORLEVEL!"
-                set "__TestOutOfProcessStatusFile="
+                IF EXIST "!__OopWrapper!" (
+                    for %%S in ("!__OopStatus!") do set "__OopStatusUnix=%%~fS"
+                    set "__OopStatusUnix=!__OopStatusUnix:\=/!"
+                    if "!__OopStatusUnix:~1,1!"==":" set "__OopStatusUnix=/!__OopStatusUnix:~3!"
+                    set "__TestOutOfProcessStatusFile=!__OopStatusUnix!"
+                    "%ComSpec%" /D /S /C call "!__OopWrapper!" > "!__OopOutput!" 2>&1
+                    set "__OopExit=!ERRORLEVEL!"
+                    set "__TestOutOfProcessStatusFile="
+                ) ELSE (
+                    REM allTargets runners can include tests whose target-specific wrapper was not generated.
+                    set "__OopExit=0"
+                    ECHO Test executable '!__OopWrapper!' was not found on this platform.> "!__OopStatus!"
+                )
                 set "CORE_ROOT=!__CoreRootUnix!"
 
                 (

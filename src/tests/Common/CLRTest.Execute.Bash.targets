@@ -534,10 +534,18 @@ run_out_of_process_tests() {
     local oop_exit
 
     rm -f "$oop_result" "$oop_output" "$oop_result_tmp" "$oop_status"
-    export __TestOutOfProcessStatusFile="$oop_status"
-    /usr/bin/env bash "$oop_wrapper" < /dev/null > "$oop_output" 2>&1
-    oop_exit=$?
-    unset __TestOutOfProcessStatusFile
+    : > "$oop_output"
+    if [ -f "$oop_wrapper" ]
+    then
+      export __TestOutOfProcessStatusFile="$oop_status"
+      /usr/bin/env bash "$oop_wrapper" < /dev/null > "$oop_output" 2>&1
+      oop_exit=$?
+      unset __TestOutOfProcessStatusFile
+    else
+      # allTargets runners can include tests whose target-specific wrapper was not generated.
+      oop_exit=0
+      echo "Test executable '${PWD}/${oop_wrapper}' was not found on this platform." > "$oop_status"
+    fi
 
     {
       echo 2
