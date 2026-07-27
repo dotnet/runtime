@@ -70,6 +70,21 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
         return handle.IsGcSafe(instructionOffset);
     }
 
+    bool IGCInfo.TryGetGenericContextStorage(IGCInfoHandle gcInfoHandle, GenericContextLoc contextKind, uint instructionOffset, out GenericContextStorage storage)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.TryGetGenericContextStorage(contextKind, instructionOffset, out storage);
+    }
+
+    TargetPointer IGCInfo.GetAmbientSP(IGCInfoHandle gcInfoHandle, uint codeOffset, TargetPointer fp, TargetPointer sp)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        if (TTraits.UsesStackPointerAsAmbientSP)
+            return sp;
+
+        return handle.GetAmbientSP(codeOffset, fp, sp);
+    }
+
     private static IGCInfoDecoder AssertCorrectHandle(IGCInfoHandle gcInfoHandle)
     {
         if (gcInfoHandle is not IGCInfoDecoder handle)

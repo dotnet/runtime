@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -23,4 +22,6 @@ internal interface IGCInfoDecoder : IGCInfoHandle
 
     IReadOnlyList<LiveSlot> EnumerateLiveSlots(uint instructionOffset, GcSlotEnumerationOptions options);
     bool IsGcSafe(uint instructionOffset);
+    bool TryGetGenericContextStorage(GenericContextLoc contextKind, uint instructionOffset, out GenericContextStorage storage);
+    TargetPointer GetAmbientSP(uint codeOffset, TargetPointer fp, TargetPointer sp);
 }
