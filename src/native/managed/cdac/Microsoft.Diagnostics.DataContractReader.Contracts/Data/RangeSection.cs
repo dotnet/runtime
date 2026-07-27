@@ -6,12 +6,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.RangeSection))]
 internal sealed partial class RangeSection : IData<RangeSection>
 {
-    [Field] public TargetPointer RangeBegin { get; }
-    [Field] public TargetPointer RangeEndOpen { get; }
-    [Field] public TargetPointer NextForDelete { get; }
-    [Field] public TargetPointer JitManager { get; }
-    [Field] public TargetPointer HeapList { get; }
-    [Field] public int Flags { get; }
-    [Field] public TargetPointer R2RModule { get; }
-    [Field] public TargetPointer RangeList { get; }
+    [Field] public partial TargetPointer RangeBegin { get; }
+    [Field] public partial TargetPointer RangeEndOpen { get; }
+    [Field] public partial TargetPointer NextForDelete { get; }
+    [Field] public partial TargetPointer JitManager { get; }
+    [Field] public partial TargetPointer HeapList { get; }
+    [Field] public partial int Flags { get; }
+    [Field] public partial TargetPointer R2RModule { get; }
+    [Field] public partial TargetPointer RangeList { get; }
 }

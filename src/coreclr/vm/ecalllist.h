@@ -257,6 +257,9 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("CatchAtSafePoint", ThreadNative::CatchAtSafePoint)
     FCFuncElement("CurrentThreadIsFinalizerThread", ThreadNative::CurrentThreadIsFinalizerThread)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
+#ifdef TARGET_WASM
+    FCFuncElement("GetThreadStaticsBaseNative", ThreadNative::GetThreadStaticsBaseNative)
+#endif
 FCFuncEnd()
 
 FCFuncStart(gObjectHeaderFuncs)

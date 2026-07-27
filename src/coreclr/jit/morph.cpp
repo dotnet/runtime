@@ -2160,6 +2160,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         call->gtFlags &= ~GTF_EXCEPT;
     }
 
+    // Calls themselves don't originate an ordering side effect.
+    // Instead, derive it from the call args via flagsSummary
+    call->gtFlags &= ~GTF_ORDER_SIDEEFF;
+
     // Union in the side effect flags from the call's operands
     call->gtFlags |= flagsSummary & GTF_ALL_EFFECT;
 
@@ -10570,23 +10574,27 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
             GenTreeIntCon*       offsetNode  = op2->AsIntCon();
             ssize_t              consVal     = offsetNode->IconValue();
 
-            // Note: the emitter does not expect out-of-bounds access for LCL_ADDR.
-            if (FitsIn<uint16_t>(consVal) && IsValidLclAddr(lclAddrNode->GetLclNum(), (uint32_t)consVal))
+            // Note: the emitter does not expect out-of-bounds access for LCL_ADDR. Validate the
+            // resulting offset rather than just the addend, so repeated folds cannot accumulate an
+            // offset the emitter is unable to encode. Both operands are bounded to [0, UINT16_MAX],
+            // so the addition below cannot overflow.
+            if (FitsIn<uint16_t>(consVal))
             {
-                ClrSafeInt<uint16_t> newOffset =
-                    ClrSafeInt<uint16_t>(lclAddrNode->GetLclOffs()) + ClrSafeInt<uint16_t>(consVal);
-                assert(!newOffset.IsOverflow());
+                unsigned newOffset = lclAddrNode->GetLclOffs() + static_cast<unsigned>(consVal);
 
-                lclAddrNode->SetOper(GT_LCL_ADDR);
-                lclAddrNode->AsLclFld()->SetLclOffs(newOffset.Value());
-                assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
+                if (FitsIn<uint16_t>(newOffset) && IsValidLclAddr(lclAddrNode->GetLclNum(), newOffset))
+                {
+                    lclAddrNode->SetOper(GT_LCL_ADDR);
+                    lclAddrNode->AsLclFld()->SetLclOffs(static_cast<uint16_t>(newOffset));
+                    assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
 
-                lclAddrNode->SetVNsFromNode(add);
+                    lclAddrNode->SetVNsFromNode(add);
 
-                DEBUG_DESTROY_NODE(offsetNode);
-                DEBUG_DESTROY_NODE(add);
+                    DEBUG_DESTROY_NODE(offsetNode);
+                    DEBUG_DESTROY_NODE(add);
 
-                return lclAddrNode;
+                    return lclAddrNode;
+                }
             }
         }
 
@@ -10788,7 +10796,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         {
             // We may be able to throw away op1 (unless it has side-effects)
 
-            if ((op1->gtFlags & GTF_SIDE_EFFECT) == 0)
+            if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) == 0)
             {
                 DEBUG_DESTROY_NODE(op1);
                 DEBUG_DESTROY_NODE(mul);
@@ -14670,21 +14678,22 @@ GenTree* Compiler::fgInitThisClass()
                 vtTree             = gtNewMethodTableLookup(vtTree);
                 GenTree* methodHnd = gtNewIconEmbMethHndNode(info.compMethodHnd);
 
-                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, TYP_VOID, vtTree, methodHnd);
+                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, HelperInitClassRetType, vtTree, methodHnd);
             }
 
             case CORINFO_LOOKUP_CLASSPARAM:
             {
                 GenTree* vtTree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
                 vtTree->gtFlags |= GTF_VAR_CONTEXT;
-                return gtNewHelperCallNode(CORINFO_HELP_INITCLASS, TYP_VOID, vtTree);
+                return gtNewHelperCallNode(CORINFO_HELP_INITCLASS, HelperInitClassRetType, vtTree);
             }
 
             case CORINFO_LOOKUP_METHODPARAM:
             {
                 GenTree* methHndTree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
                 methHndTree->gtFlags |= GTF_VAR_CONTEXT;
-                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, TYP_VOID, gtNewIconNode(0), methHndTree);
+                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, HelperInitClassRetType, gtNewIconNode(0),
+                                           methHndTree);
             }
 
             default:

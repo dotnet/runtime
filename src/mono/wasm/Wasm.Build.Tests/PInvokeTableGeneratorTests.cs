@@ -479,5 +479,35 @@ namespace Wasm.Build.Tests
             Assert.DoesNotContain("Conflict.A.Managed8\u4F60Func(123) -> 123", result.TestOutput);
             Assert.Contains("ManagedFunc returned 42", result.TestOutput);
         }
+
+        [Theory]
+        [BuildAndRun(aot: false)]
+        public async Task UnmanagedCallbackWithManyArgs(Configuration config, bool aot)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/109338:
+            // [UnmanagedCallersOnly] exports with more than MAX_INTERP_ENTRY_ARGS (8)
+            // arguments trapped with "null function or function signature mismatch"
+            // when invoked from native code.
+            var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
+            var extraItems = @"<NativeFileReference Include=""local.c"" />";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "uco_manyargs", extraItems: extraItems, extraProperties: extraProperties);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackManyArgs.cs"));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "local_manyargs.c"), Path.Combine(_projectDir, "local.c"));
+            // The test program does not use JS interop, so the JS interop assembly would be
+            // linked away by the trimmer and the template main.js (which calls
+            // getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
+
+            PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+                config,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("ManagedSum8 returned 36", result.TestOutput);
+            Assert.Contains("ManagedSum9 returned 45", result.TestOutput);
+            Assert.Contains("ManagedSum16 returned 136", result.TestOutput);
+            Assert.Contains("ManagedVoid12 stored 78", result.TestOutput);
+        }
     }
 }

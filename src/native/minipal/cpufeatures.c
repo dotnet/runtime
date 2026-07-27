@@ -7,6 +7,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/types.h>
+
+#include "minipalconfig.h"
+
+#if HAVE_ELF_AUX_INFO
+#include <sys/auxv.h>
+#endif
 
 #include "cpufeatures.h"
 #include "cpuid.h"
@@ -40,8 +47,6 @@
 #endif
 
 #else // HOST_WINDOWS
-
-#include "minipalconfig.h"
 
 #if HAVE_AUXV_HWCAP_H
 
@@ -510,8 +515,17 @@ int minipal_getcpufeatures(void)
 #if defined(HOST_ARM64)
 #if defined(HOST_UNIX)
 
+#if HAVE_AUXV_HWCAP_H || HAVE_ELF_AUX_INFO
 #if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
+    unsigned long hwCap2 = getauxval(AT_HWCAP2);
+#elif HAVE_ELF_AUX_INFO
+    unsigned long hwCap = 0;
+    unsigned long hwCap2 = 0;
+
+    elf_aux_info(AT_HWCAP, &hwCap, sizeof(hwCap));
+    elf_aux_info(AT_HWCAP2, &hwCap2, sizeof(hwCap2));
+#endif
 
     if ((hwCap & HWCAP_ASIMD) == 0)
     {
@@ -555,8 +569,6 @@ int minipal_getcpufeatures(void)
     if (hwCap & HWCAP_SVE)
         result |= ARM64IntrinsicConstants_Sve;
 
-    unsigned long hwCap2 = getauxval(AT_HWCAP2);
-
     if (hwCap2 & HWCAP2_SVE2)
         result |= ARM64IntrinsicConstants_Sve2;
 
@@ -571,10 +583,7 @@ int minipal_getcpufeatures(void)
 
     if (hwCap2 & HWCAP2_CSSC)
         result |= ARM64IntrinsicConstants_Cssc;
-
-#else // !HAVE_AUXV_HWCAP_H
-
-#if HAVE_SYSCTLBYNAME
+#elif HAVE_SYSCTLBYNAME
     int64_t valueFromSysctl = 0;
     size_t sz = sizeof(valueFromSysctl);
 
@@ -646,7 +655,6 @@ int minipal_getcpufeatures(void)
     if ((sysctlbyname("hw.optional.arm.FEAT_CSSC", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Cssc;
 #endif // HAVE_SYSCTLBYNAME
-#endif // HAVE_AUXV_HWCAP_H
 #endif // HOST_UNIX
 
 #if defined(HOST_WINDOWS)

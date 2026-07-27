@@ -70,7 +70,7 @@ namespace System.Net.Http
         }
 
         public Http3Connection(HttpConnectionPool pool, HttpAuthority authority, bool includeAltUsedHeader)
-            : base(pool)
+            : base(pool, GetNextConnectionId())
         {
             _authority = authority;
 
@@ -90,9 +90,11 @@ namespace System.Net.Http
             }
         }
 
-        public void InitQuicConnection(QuicConnection connection, Activity? connectionSetupActivity)
+        public void InitQuicConnection(QuicConnection connection, Activity? connectionSetupActivity, DnsEndPoint connectedEndPoint)
         {
-            MarkConnectionAsEstablished(connectionSetupActivity: connectionSetupActivity, remoteEndPoint: connection.RemoteEndPoint);
+            // Report the exact DnsEndPoint used to establish the QUIC connection (Alt-Svc may point it at an authority
+            // distinct from the pool's origin), consistent with the connection's RemoteEndPoint.
+            MarkConnectionAsEstablished(connectionSetupActivity: connectionSetupActivity, remoteEndPoint: connection.RemoteEndPoint, authority: _authority, connectedEndPoint: connectedEndPoint);
 
             _connection = connection;
 
@@ -263,6 +265,8 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, WaitForHttp3ConnectionActivity waitForConnectionActivity, bool streamAvailable, CancellationToken cancellationToken)
         {
+            request.ConnectionId = Id;
+
             // Allocate an active request
             QuicStream? quicStream = null;
             Http3RequestStream? requestStream = null;

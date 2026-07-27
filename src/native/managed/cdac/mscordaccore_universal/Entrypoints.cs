@@ -307,6 +307,27 @@ internal static class Entrypoints
         return CLRDataCreateInstanceImpl(pIID, pLegacyTarget, IntPtr.Zero, iface);
     }
 
+    // Creates a cDAC data-access instance from an explicit contract descriptor address,
+    // so the data target does not need to implement ICLRContractLocator.
+    [UnmanagedCallersOnly(EntryPoint = "DbgShimCreateInstanceFromContractDescriptor")]
+    private static unsafe int DbgShimCreateInstanceFromContractDescriptor(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, ulong contractDescriptorAddr, void** iface)
+    {
+        if (pLegacyTarget == IntPtr.Zero || contractDescriptorAddr == 0 || iface == null)
+            return HResults.E_INVALIDARG;
+        *iface = null;
+
+        try
+        {
+            object legacyTarget = ComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pLegacyTarget)!;
+            return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractDescriptorAddr, legacyImpl: null, iface);
+        }
+        catch (Exception ex)
+        {
+            int hr = ex.HResult;
+            return hr < 0 ? hr : HResults.E_FAIL;
+        }
+    }
+
     private static unsafe int CLRDataCreateInstanceImpl(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, void** iface)
     {
         if (pLegacyTarget == IntPtr.Zero || iface == null)
@@ -330,13 +351,8 @@ internal static class Entrypoints
         object? legacyImpl = pLegacyImpl != IntPtr.Zero ?
             ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)pLegacyImpl) : null;
 
-        ICLRDataTarget dataTarget = legacyTarget as ICLRDataTarget ?? throw new ArgumentException(
-            $"{nameof(pLegacyTarget)} does not implement {nameof(ICLRDataTarget)}", nameof(pLegacyTarget));
         ICLRContractLocator contractLocator = legacyTarget as ICLRContractLocator ?? throw new ArgumentException(
             $"{nameof(pLegacyTarget)} does not implement {nameof(ICLRContractLocator)}", nameof(pLegacyTarget));
-
-        // Try to get ICLRDataTarget2 for memory allocation support (optional)
-        ICLRDataTarget2? dataTarget2 = legacyTarget as ICLRDataTarget2;
 
         ulong contractAddress;
         int hr = contractLocator.GetContractDescriptor(&contractAddress);
@@ -345,6 +361,17 @@ internal static class Entrypoints
             throw new InvalidOperationException(
                 $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.");
         }
+
+        return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractAddress, legacyImpl, iface);
+    }
+
+    private static unsafe int CreateInstanceFromContractDescriptorCore(Guid* pIID, object legacyTarget, ulong contractAddress, object? legacyImpl, void** iface)
+    {
+        ICLRDataTarget dataTarget = legacyTarget as ICLRDataTarget ?? throw new ArgumentException(
+            $"Data target does not implement {nameof(ICLRDataTarget)}", nameof(legacyTarget));
+
+        // Try to get ICLRDataTarget2 for memory allocation support (optional)
+        ICLRDataTarget2? dataTarget2 = legacyTarget as ICLRDataTarget2;
 
         // Build the allocVirtual delegate if the target supports ICLRDataTarget2
         ContractDescriptorTarget.AllocVirtualDelegate allocVirtual = (ulong size, out ulong allocatedAddress) =>
@@ -424,12 +451,15 @@ internal static class Entrypoints
 
         Legacy.SOSDacImpl impl = new(target, legacyImpl);
         void* ccw = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
-        Marshal.QueryInterface((nint)ccw, *pIID, out nint ptrToIface);
-        *iface = (void*)ptrToIface;
+        int hrQI = Marshal.QueryInterface((nint)ccw, *pIID, out nint ptrToIface);
 
         // Decrement reference count on ccw because QI incremented it
         ComInterfaceMarshaller<IXCLRDataProcess>.Free(ccw);
 
+        if (hrQI < 0)
+            return hrQI;
+
+        *iface = (void*)ptrToIface;
         return 0;
     }
 

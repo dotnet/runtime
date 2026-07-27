@@ -143,18 +143,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // creation of InheritedVirtualMethodsNode as it is done in TypeFixupSignature, so we
                 // scan the virtual methods on this type for dependency analysis.
                 if (_typeArgument != null)
-                {
-                    TypeDesc canonType = _typeArgument.ConvertToCanonForm(CanonicalFormKind.Specific);
-                    if (!canonType.IsGenericDefinition &&
-                        !canonType.IsInterface &&
-                        canonType.IsDefType &&
-                        (factory.CompilationCurrentPhase == 0) &&
-                        factory.CompilationModuleGroup.VersionsWithType(canonType))
-                    {
-                        dependencies ??= new DependencyList();
-                        dependencies.Add(factory.InheritedVirtualMethods(canonType), "Generic lookup type discovery for virtual dispatch");
-                    }
-                }
+                    factory.AddVirtualMethodDiscoveryDependencies(ref dependencies, _typeArgument);
             }
 
             return dependencies;

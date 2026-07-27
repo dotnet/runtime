@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.CLiteWeightStgdbRW))]
 internal sealed partial class CLiteWeightStgdbRW : IData<CLiteWeightStgdbRW>
 {
-    [FieldAddress] public TargetPointer MiniMd { get; }
-    [Field] public TargetPointer MetadataAddress { get; }
+    [FieldAddress] public partial TargetPointer MiniMd { get; }
+    [Field] public partial TargetPointer MetadataAddress { get; }
 }

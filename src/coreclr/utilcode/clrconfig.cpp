@@ -110,19 +110,19 @@ namespace
     bool CheckLookupOption(const ConfigDWORDInfo & info, LookupOptions option)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((info.options & option) == option);
+        return (info.options & option) == option;
     }
 
     bool CheckLookupOption(const ConfigStringInfo & info, LookupOptions option)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((info.options & option) == option);
+        return (info.options & option) == option;
     }
 
     bool CheckLookupOption(LookupOptions infoOptions, LookupOptions optionToCheck)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((infoOptions & optionToCheck) == optionToCheck);
+        return (infoOptions & optionToCheck) == optionToCheck;
     }
 
     //*****************************************************************************
@@ -261,12 +261,12 @@ namespace
             if (fSuccess)
             {
                 *result = configMaybe;
-                return (S_OK);
+                return S_OK;
             }
         }
 
         *result = defValue;
-        return (E_FAIL);
+        return E_FAIL;
     }
 
     LPWSTR GetConfigString(
@@ -291,7 +291,7 @@ namespace
             if (*ret != W('\0'))
             {
                 ret.SuppressRelease();
-                return(ret);
+                return ret;
             }
             ret.Clear();
         }
@@ -542,12 +542,11 @@ LPWSTR CLRConfig::GetConfigValue(const ConfigStringInfo & info)
 // static
 HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, _Outptr_result_z_ LPWSTR * outVal)
 {
-    CONTRACT(HRESULT) {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT (CONTRACT_RETURN E_OUTOFMEMORY);
-        POSTCONDITION(CheckPointer(outVal, NULL_OK)); // TODO: Should this check be *outVal instead of outVal?
-    } CONTRACT_END;
+        INJECT_FAULT (return E_OUTOFMEMORY);
+    } CONTRACTL_END;
 
     LPWSTR result = NULL;
 
@@ -568,7 +567,7 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, _Outptr_result_
     }
 
     *outVal = result;
-    RETURN S_OK;
+    return S_OK;
 }
 
 //
