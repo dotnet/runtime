@@ -659,6 +659,8 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
     }
     CONTRACTL_END;
 
+    GCX_PREEMP();
+
     GUID clsid;
     GUID ciid;
     ComMethodTable *pComMT              = NULL;
@@ -668,8 +670,6 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
     ReleaseHolderAnyMode<ITypeInfo> pTI;
     ReleaseHolderAnyMode<ITypeInfo> pTIDef;  // Default typeinfo of a coclass.
     ComCallWrapperTemplate *pTemplate   = NULL;
-
-    GCX_PREEMP();
 
     // Get the typeinfo.
     if (bClassInfo || pClass->IsInterface() || pClass->IsValueType() || pClass->IsEnum())
