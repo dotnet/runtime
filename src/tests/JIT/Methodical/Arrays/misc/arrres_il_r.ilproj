@@ -10,9 +10,11 @@
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="arrres.il" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

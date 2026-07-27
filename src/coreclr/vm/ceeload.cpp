@@ -1087,7 +1087,7 @@ BOOL Module::HasDefaultDllImportSearchPathsAttribute()
     }
     CONTRACTL_END;
 
-    if(IsDefaultDllImportSearchPathsAttributeCached())
+    if (m_dwPersistedFlags & DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED)
     {
         return (m_dwPersistedFlags & DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS) != 0 ;
     }
@@ -1106,15 +1106,6 @@ BOOL Module::HasDefaultDllImportSearchPathsAttribute()
     return (m_dwPersistedFlags & DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS) != 0 ;
 }
 
-// Returns a BOOL to indicate if we have computed whether compiler has instructed us to
-// wrap the non-CLS compliant exceptions or not.
-BOOL Module::IsRuntimeWrapExceptionsStatusComputed()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_dwPersistedFlags & COMPUTED_WRAP_EXCEPTIONS;
-}
-
 BOOL Module::IsRuntimeWrapExceptionsDuringEH()
 {
     CONTRACTL
@@ -1126,9 +1117,9 @@ BOOL Module::IsRuntimeWrapExceptionsDuringEH()
     CONTRACTL_END
 
     // This method assumes that the runtime wrap exceptions status has already been computed.
-    // IsRuntimeWrapExceptionsStatusComputed() returns TRUE before calling this method, but
+    // COMPUTED_WRAP_EXCEPTIONS is set before calling this method, but
     // that should be done as part of Module activation, so we shouldn't need to worry about that.
-    _ASSERTE(IsRuntimeWrapExceptionsStatusComputed());
+    _ASSERTE(m_dwPersistedFlags & COMPUTED_WRAP_EXCEPTIONS);
     return (m_dwPersistedFlags & WRAP_EXCEPTIONS) != 0;
 }
 
@@ -1142,7 +1133,7 @@ BOOL Module::IsRuntimeWrapExceptions()
     }
     CONTRACTL_END
 
-    if (!(IsRuntimeWrapExceptionsStatusComputed()))
+    if (!(m_dwPersistedFlags & COMPUTED_WRAP_EXCEPTIONS))
     {
         UpdateCachedIsRuntimeWrapExceptions();
     }
@@ -1193,12 +1184,12 @@ BOOL Module::IsRuntimeMarshallingEnabled()
     CONTRACTL
     {
         THROWS;
-        if (IsRuntimeMarshallingEnabledCached()) GC_NOTRIGGER; else GC_TRIGGERS;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END
 
-    if (IsRuntimeMarshallingEnabledCached())
+    if (m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED_IS_CACHED)
     {
         return !!(m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED);
     }
@@ -1222,6 +1213,36 @@ BOOL Module::IsRuntimeMarshallingEnabled()
         (hr == S_OK ? 0 : RUNTIME_MARSHALLING_ENABLED));
 
     return hr != S_OK;
+}
+
+BOOL Module::OptsIntoRefSafetyRulesV11()
+{
+    STANDARD_VM_CONTRACT;
+
+    if (m_dwPersistedFlags & REF_SAFETY_RULES_V11_IS_CACHED)
+    {
+        return !!(m_dwPersistedFlags & REF_SAFETY_RULES_V11);
+    }
+
+    bool optsIn = false;
+
+    const void *pVal;
+    ULONG       cbVal;
+    if (GetCustomAttribute(TokenFromRid(1, mdtModule), WellKnownAttribute::RefSafetyRules, &pVal, &cbVal) == S_OK)
+    {
+        // RefSafetyRulesAttribute(int version): a 2-byte prolog followed by the int32 version argument.
+        CustomAttributeParser cap(pVal, cbVal);
+        INT32 version;
+        if (SUCCEEDED(cap.SkipProlog()) && SUCCEEDED(cap.GetI4(&version)) && version >= 11)
+        {
+            optsIn = true;
+        }
+    }
+
+    InterlockedOr((LONG*)&m_dwPersistedFlags, REF_SAFETY_RULES_V11_IS_CACHED |
+        (optsIn ? REF_SAFETY_RULES_V11 : 0));
+
+    return optsIn;
 }
 
 //---------------------------------------------------------------------------------------
