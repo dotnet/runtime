@@ -450,11 +450,7 @@ static void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
 // Return Value:
 //    None
 
-//
-// Uses the public FatalErrorHandling.h header for shared type definitions.
-//
-
-#include <public/FatalErrorHandling.h>
+#include <public/fatal_error_handling.h>
 
 // State passed through the CrashInfoWriter context pointer to forward
 // crash output to the user's FatalErrorLogAction callback.

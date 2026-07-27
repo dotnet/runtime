@@ -23,7 +23,7 @@
 #define DOTNET_CALLCONV
 #endif
 
-enum FatalErrorHandlerResult : int32_t
+typedef enum _FatalErrorHandlerResult
 {
     // Allow the runtime to continue with its default fatal error handling
     // (printing crash information, generating a crash dump, etc.).
@@ -33,7 +33,7 @@ enum FatalErrorHandlerResult : int32_t
     // still be terminated, but the runtime will not print crash information
     // or generate a crash dump.
     SkipDefaultHandler = 1,
-};
+} FatalErrorHandlerResult;
 
 // Callback signature for receiving crash log text. The runtime may invoke
 // pfnLogAction multiple times, each time passing a UTF-8 encoded fragment
@@ -57,7 +57,7 @@ typedef void (DOTNET_CALLCONV *FatalErrorLogFunc)(FatalErrorLogAction pfnLogActi
 // writes the value through its out parameter. New properties may be added over
 // time, so handlers must tolerate the getter reporting a property as
 // unavailable.
-enum FatalErrorProperty : int32_t
+typedef enum _FatalErrorProperty
 {
     // Value: FatalErrorLogFunc. Entry point for retrieving the crash log.
     FEP_FatalErrorLogFunc = 0x1,
@@ -81,7 +81,7 @@ enum FatalErrorProperty : int32_t
     // Value: Mach thread state for the current architecture
     // (arm_thread_state64_t* on arm64, x86_thread_state64_t* on x64).
     FEP_MachExceptionInfo = 0x7,
-};
+} FatalErrorProperty;
 
 // Property-getter callback passed to the fatal error handler. The handler
 // calls it with a FatalErrorProperty value and a pointer that receives the

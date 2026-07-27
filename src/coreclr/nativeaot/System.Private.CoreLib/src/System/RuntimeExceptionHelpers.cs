@@ -28,7 +28,7 @@ namespace System
 
     internal static class RuntimeExceptionHelpers
     {
-        // Matches the FatalErrorProperty enum defined in src/native/public/FatalErrorHandling.h.
+        // Matches the FatalErrorProperty enum defined in src/native/public/fatal_error_handling.h.
         // The values must be kept in sync with the native header.
         private enum FatalErrorProperty
         {
@@ -213,7 +213,7 @@ namespace System
             s_fatalErrorPlatformData1 = pPlatformData1;
 
             // Invoke the user-installed fatal error handler.
-            // See src/native/public/FatalErrorHandling.h for the handler contract.
+            // See src/native/public/fatal_error_handling.h for the handler contract.
             int handlerResult = ((delegate* unmanaged<int, delegate* unmanaged<int, void**, int>, int>)fatalHandler)(errorCode, &GetFatalErrorProperty);
 
             s_fatalErrorAddress = null;

@@ -52,10 +52,10 @@ namespace System.Runtime.ExceptionServices
         /// A pointer to an unmanaged callback invoked when the runtime encounters a fatal
         /// error. The callback receives the HRESULT associated with the failure and a
         /// property-getter callback (<c>FatalErrorPropertyGetter</c>, declared in
-        /// <c>FatalErrorHandling.h</c>) through which it can request additional crash
-        /// information on demand. The callback returns <c>0</c> (<c>RunDefaultHandler</c>)
-        /// to allow the runtime to continue with its default fatal-error handling, or
-        /// <c>1</c> (<c>SkipDefaultHandler</c>) to suppress it.
+        /// <c>fatal_error_handling.h</c>; see Microsoft.NETCore.App.Host package) through
+        /// which it can request additional crash information on demand. The callback returns
+        /// <c>0</c> (<c>RunDefaultHandler</c>) to allow the runtime to continue with its
+        /// default fatal-error handling, or <c>1</c> (<c>SkipDefaultHandler</c>) to suppress it.
         /// </param>
         /// <exception cref="ArgumentNullException"><paramref name="handler" /> is null.</exception>
         /// <exception cref="InvalidOperationException">A handler is already set.</exception>

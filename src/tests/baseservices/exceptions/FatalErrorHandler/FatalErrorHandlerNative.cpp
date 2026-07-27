@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Native helper library for the FatalErrorHandler test.
-// Validates that the public FatalErrorHandling.h header is usable
+// Validates that the public fatal_error_handling.h header is usable
 // from a third-party C++ library.
 
 #include <stdio.h>
 #include <string.h>
 #include <platformdefines.h>
 
-#include <FatalErrorHandling.h> // Public API for fatal error handling
+#include <fatal_error_handling.h> // Public API for fatal error handling
 
 #ifdef _WIN32
 #include <windows.h>
