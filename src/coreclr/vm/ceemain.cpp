@@ -719,7 +719,10 @@ void EEStartupHelper()
 #endif
 
 #ifdef FEATURE_INPROC_CRASHREPORT
-        CrashReportConfigure();
+        if (PAL_InProcCrashReporterEnabled())
+        {
+            CrashReportConfigure();
+        }
 #endif // FEATURE_INPROC_CRASHREPORT
 
 #ifdef STRESS_LOG

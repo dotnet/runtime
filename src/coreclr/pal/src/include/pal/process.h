@@ -79,9 +79,9 @@ Function
   PROCAbortInitialize()
 
 Abstract
-  Initialize the process abort crash dump program file path and
-  name. Doing all of this ahead of time so nothing is allocated
-  or copied in PROCAbort/signal handler.
+  Select the automatic crash reporter and initialize createdump when selected.
+  This runs ahead of time so the signal handler does not read configuration or
+  build a createdump command line.
 
 Return
   TRUE - succeeds, FALSE - fails
@@ -156,4 +156,3 @@ VOID PROCLogManagedCallstackForSignal(int signal);
 #endif // __cplusplus
 
 #endif //PAL_PROCESS_H_
-

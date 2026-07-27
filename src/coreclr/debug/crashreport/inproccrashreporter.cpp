@@ -30,7 +30,7 @@
 #include <minipal/thread.h>
 #if defined(__ANDROID__)
 #include <android/log.h>
-#elif defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#elif defined(TARGET_APPLE)
 #include <mach/mach.h>
 #include <sys/sysctl.h>
 #endif
@@ -100,7 +100,7 @@ struct StackOverflowTraceSnapshot
 static char sccsid[] = "@(#)Version N/A";
 #endif
 
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if defined(TARGET_APPLE)
 // Query a sysctl by name into a caller-supplied buffer. Called from Initialize, NOT from the
 // signal handler -- sysctl/sysctlbyname is not on POSIX's async-signal-safe list, so the
 // queried values are cached for use during crash reporting.
@@ -118,7 +118,7 @@ static void CacheSysctlString(const char* sysctlName, char* buffer, size_t buffe
         buffer[0] = '\0';
     }
 }
-#endif // defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#endif // TARGET_APPLE
 
 // Bounded module table that deduplicates each unique module observed during a
 // single crash report. Frames in the compact log refer to modules by short
@@ -426,7 +426,7 @@ private:
     char m_reportFilePath[CRASHREPORT_PATH_BUFFER_SIZE];
     char m_processName[CRASHREPORT_STRING_BUFFER_SIZE];
     char m_stringScratch[CRASHREPORT_STRING_BUFFER_SIZE];
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if defined(TARGET_APPLE)
     char m_osVersion[CRASHREPORT_STRING_BUFFER_SIZE];
     char m_systemModel[CRASHREPORT_STRING_BUFFER_SIZE];
 #endif
@@ -814,7 +814,7 @@ InProcCrashReporter::Initialize(
         }
     }
 
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if defined(TARGET_APPLE)
     // Cache sysctl values at Initialize because sysctl/sysctlbyname is not on POSIX's
     // async-signal-safe list; CreateReport reads these from the signal-handler path.
     CacheSysctlString("kern.osproductversion", m_osVersion, sizeof(m_osVersion));
@@ -1161,9 +1161,9 @@ CrashReportHelpers::GetInstructionPointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__x86_64__)
+#if defined(TARGET_APPLE) && defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rip);
-#elif (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__aarch64__)
+#elif defined(TARGET_APPLE) && defined(__aarch64__)
     return reinterpret_cast<uint64_t>(arm_thread_state64_get_pc_fptr(ucontext->uc_mcontext->__ss));
 #elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RIP]);
@@ -1186,9 +1186,9 @@ CrashReportHelpers::GetStackPointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__x86_64__)
+#if defined(TARGET_APPLE) && defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rsp);
-#elif (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__aarch64__)
+#elif defined(TARGET_APPLE) && defined(__aarch64__)
     return static_cast<uint64_t>(arm_thread_state64_get_sp(ucontext->uc_mcontext->__ss));
 #elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RSP]);
@@ -1211,9 +1211,9 @@ CrashReportHelpers::GetFramePointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__x86_64__)
+#if defined(TARGET_APPLE) && defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rbp);
-#elif (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__aarch64__)
+#elif defined(TARGET_APPLE) && defined(__aarch64__)
     return static_cast<uint64_t>(arm_thread_state64_get_fp(ucontext->uc_mcontext->__ss));
 #elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RBP]);
@@ -2212,7 +2212,7 @@ InProcCrashReporter::EndJsonReport(
 
     m_jsonWriter.OpenObject("parameters");
     m_jsonWriter.WriteSignedDecimalAsString("signal", static_cast<int64_t>(signal));
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if defined(TARGET_APPLE)
     if (m_osVersion[0] != '\0')
     {
         m_jsonWriter.WriteString("OSVersion", m_osVersion);

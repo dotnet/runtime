@@ -170,11 +170,13 @@ const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 // once during startup via PAL_SetInProcCrashReportCallback; use Volatile<>
 // to match the publication ordering of g_logManagedCallstackForSignalCallback.
 // PAL has no direct dependency on the in-proc crash reporter library; the
-// reporter registers itself by installing this signal-safe callback. When
-// no callback is registered, the fatal-signal path falls back to the
-// out-of-proc createdump utility (where g_argvCreateDump has been populated
-// via PAL_InitializeCoreCLR).
+// reporter registers itself by installing this signal-safe callback.
 static Volatile<PINPROCCRASHREPORT_CALLBACK> g_inProcCrashReportCallback = nullptr;
+
+// Crash-reporter selection is resolved during startup in PROCAbortInitialize
+// and then consumed by the fatal-signal path without consulting environment
+// variables.
+static bool g_inProcCrashReporterEnabled = false;
 
 //
 // Key used for associating CPalThread's with the underlying pthread
@@ -531,6 +533,13 @@ PAL_SetInProcCrashReportCallback(
 {
     _ASSERTE(g_inProcCrashReportCallback == nullptr);
     g_inProcCrashReportCallback = callback;
+}
+
+BOOL
+PALAPI
+PAL_InProcCrashReporterEnabled()
+{
+    return g_inProcCrashReporterEnabled;
 }
 
 // Build the semaphore names using the PID and a value that can be used for distinguishing
@@ -1632,14 +1641,16 @@ PROCCreateCrashDump(
 #endif // !TARGET_IOS && !TARGET_TVOS && !TARGET_WASM
 }
 
+static BOOL InitializeCreateDump();
+
 /*++
 Function
   PROCAbortInitialize()
 
 Abstract
-  Initialize the process abort crash dump program file path and
-  name. Doing all of this ahead of time so nothing is allocated
-  or copied in PROCAbort/signal handler.
+  Select the crash reporter and initialize createdump when selected.
+  This runs ahead of time so the signal handler does not read
+  configuration or build a createdump command line.
 
 Return
   TRUE - succeeds, FALSE - fails
@@ -1647,6 +1658,31 @@ Return
 --*/
 BOOL
 PROCAbortInitialize()
+{
+#if defined(TARGET_ANDROID) || defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+    g_inProcCrashReporterEnabled = true;
+    return TRUE;
+#else
+    CLRConfigNoCache modeCfg = CLRConfigNoCache::Get("CrashReportMode", /*noprefix*/ false, &getenv);
+    if (modeCfg.IsSet())
+    {
+        const char* mode = modeCfg.AsString();
+        if (strcmp(mode, "1") == 0)
+        {
+            g_inProcCrashReporterEnabled = false;
+        }
+        else if (strcmp(mode, "2") == 0)
+        {
+            g_inProcCrashReporterEnabled = true;
+        }
+    }
+
+    return g_inProcCrashReporterEnabled ? TRUE : InitializeCreateDump();
+#endif
+}
+
+static BOOL
+InitializeCreateDump()
 {
     CLRConfigNoCache enabledCfg = CLRConfigNoCache::Get("DbgEnableMiniDump", /*noprefix*/ false, &getenv);
 
@@ -1825,18 +1861,20 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
     // Preserve context pointer to prevent optimization
     DoNotOptimize(&context);
 
-    // If a host registered an in-proc crash report callback, prefer it: the
-    // host emits its report from this signal frame and the process aborts.
-    PINPROCCRASHREPORT_CALLBACK callback = g_inProcCrashReportCallback;
-    if (callback != nullptr)
+    if (g_inProcCrashReporterEnabled)
     {
+        PINPROCCRASHREPORT_CALLBACK callback = g_inProcCrashReportCallback;
+        if (callback == nullptr)
+        {
+            return;
+        }
+
         callback(signal, siginfo, context);
         minipal_log_write_fatal("Aborting process.\n");
         return;
     }
 
-    // Otherwise fall back to launching the out-of-proc createdump utility
-    // and wait until it completes.
+    // Launch the out-of-proc createdump utility and wait until it completes.
     if (g_argvCreateDump[0] != nullptr)
     {
         const char* argv[MAX_ARGV_ENTRIES];
