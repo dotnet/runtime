@@ -725,6 +725,9 @@ void SystemDomain::Attach()
     RangeSectionStubManager::Init();
     ILStubManager::Init();
     PInvokeStubManager::Init();
+#ifdef FEATURE_COMINTEROP
+    CLRToCOMStubManager::Init();
+#endif // FEATURE_COMINTEROP
     InteropDispatchStubManager::Init();
     StubLinkStubManager::Init();
     TailCallStubManager::Init();

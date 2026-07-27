@@ -137,7 +137,7 @@ inline bool MethodDesc::IsInteropStub()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (IsPInvoke())
+    if (IsPInvoke() || IsCLRToCOMCall())
         return true;
 
     if (!IsILStub())

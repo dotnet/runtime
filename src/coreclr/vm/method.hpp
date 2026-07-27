@@ -788,8 +788,8 @@ public:
     }
 
     // Returns true if this MethodDesc represents an interop stub.
-    // This includes interop IL stubs (PInvoke, COM, reverse PInvoke, struct marshal)
-    // and PInvoke methods (PInvokeMethodDesc).
+    // This includes interop IL stubs (PInvoke, COM, reverse PInvoke, struct marshal),
+    // PInvoke methods (PInvokeMethodDesc), and CLR->COM calls (CLRToCOMCallMethodDesc).
     inline bool IsInteropStub();
 
     inline DWORD IsInterface()
@@ -3609,9 +3609,6 @@ struct CLRToCOMCallInfo
     // EEImplMethodDesc that has already been initialized for COM interop.
     inline static CLRToCOMCallInfo *FromMethodDesc(MethodDesc *pMD);
 
-    // IL stub for CLR to COM call
-    PCODE m_pILStub;
-
     // MethodDesc of the COM event provider to forward the call to (COM event interfaces)
     MethodDesc *m_pEventProviderMD;
 
@@ -3629,12 +3626,6 @@ struct CLRToCOMCallInfo
     // caching but I'm not sure I know all the places these things are
     // created.)
     WORD        m_cachedComSlot;
-
-    PCODE * GetAddrOfILStubField()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_pILStub;
-    }
 
 #ifdef TARGET_X86
     // Size of outgoing arguments (on stack). This is currently used only
@@ -3684,12 +3675,6 @@ public:
     CLRToCOMCallInfo *m_pCLRToCOMCallInfo; // initialized in code:CLRToCOMCall.PopulateCLRToCOMCallMethodDesc
 
     void InitComEventCallInfo();
-
-    PCODE * GetAddrOfILStubField()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pCLRToCOMCallInfo->GetAddrOfILStubField();
-    }
 
     MethodTable* GetInterfaceMethodTable()
     {

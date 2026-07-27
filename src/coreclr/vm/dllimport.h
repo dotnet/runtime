@@ -10,6 +10,7 @@
 #include "util.hpp"
 
 struct PInvokeStaticSigInfo;
+class ILStubResolver;
 
 // This structure groups together data that describe the signature for which a marshaling stub is being generated.
 struct StubSigDesc
@@ -132,6 +133,12 @@ public:
                     DynamicResolver** ppResolver);
 
 #ifdef FEATURE_COMINTEROP
+    // Generates the marshalling IL for a CLR->COM call into the supplied resolver.
+    static COR_ILMETHOD_DECODER* CreateCLRToCOMMarshallingIL(
+                    MethodDesc*        pMD,
+                    DWORD              dwStubFlags, // PInvokeStubFlags
+                    ILStubResolver*    pResolver);
+
     static MethodDesc* CreateFieldAccessILStub(
                     PCCOR_SIGNATURE    szMetaSig,
                     DWORD              cbMetaSigSize,
@@ -475,6 +482,10 @@ public:
     void    EmitObjectValidation(ILCodeStream* pcsEmit, DWORD dwStubFlags);
 #endif // VERIFY_HEAP
     void    EmitLoadStubContext(ILCodeStream* pcsEmit, DWORD dwStubFlags);
+    // Specifies the MethodDesc that the stub context refers to. When the stub is generated as
+    // transient IL for a specific MethodDesc, the context is known at IL generation time and can
+    // be baked into the IL instead of being passed in the hidden "secret argument".
+    void    SetStubContextMD(MethodDesc* pStubContextMD);
     void    GenerateInteropParamException(ILCodeStream* pcsEmit);
     void    NeedsCleanupList();
 
@@ -558,6 +569,9 @@ protected:
     UINT                m_ErrorResID;
     UINT                m_ErrorParamIdx;
     int                 m_iLCIDParamIdx;
+
+    // Non-NULL when the stub context is known at IL generation time (see SetStubContextMD).
+    MethodDesc*         m_pStubContextMD;
 
     DWORD               m_dwStubFlags;
 };

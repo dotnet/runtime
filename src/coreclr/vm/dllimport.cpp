@@ -196,6 +196,14 @@ static bool IsSharedStubScenario(DWORD dwStubFlags)
         return false;
     }
 
+#ifdef FEATURE_COMINTEROP
+    if (SF_IsForwardCOMStub(dwStubFlags))
+    {
+        // Forward CLR->COM stubs are generated as transient IL on the CLR->COM method itself.
+        return false;
+    }
+#endif // FEATURE_COMINTEROP
+
     return true;
 }
 
@@ -777,6 +785,11 @@ public:
         {
             // Regular PInvokes don't use the secret parameter
         }
+        else if (SF_IsForwardCOMStub(m_dwStubFlags))
+        {
+            // Forward CLR->COM stubs bake the stub context into the IL, so they don't
+            // use the secret parameter.
+        }
         else
         {
             // All other IL stubs will need to use the secret parameter.
@@ -1325,6 +1338,10 @@ public:
         if (SF_IsForwardStub(dwStubFlags))
         {
             m_slIL.SetCallingConvention(CorInfoCallConvExtension::Stdcall, SF_IsVarArgStub(dwStubFlags));
+
+            // Forward CLR->COM stubs are generated as transient IL on the CLR->COM method itself,
+            // so the stub context is known here and doesn't need to be passed as a secret argument.
+            m_slIL.SetStubContextMD(pTargetMD);
         }
     }
 
@@ -1475,6 +1492,10 @@ public:
     {
         STANDARD_VM_CONTRACT;
         m_wrapperTypes.ReSizeThrows(m_signature.NumFixedArgs());
+
+        // Late bound CLR->COM stubs are generated as transient IL on the CLR->COM method itself,
+        // so the stub context is known here and doesn't need to be passed as a secret argument.
+        m_slIL.SetStubContextMD(pTargetMD);
 
         MethodDesc* pInterfaceMD = pTargetMD;
         if (!pInterfaceMD->IsInterface())
@@ -1865,6 +1886,7 @@ PInvokeStubLinker::PInvokeStubLinker(
     m_ErrorResID(-1),
     m_ErrorParamIdx(-1),
     m_iLCIDParamIdx(iLCIDParamIdx),
+    m_pStubContextMD(NULL),
     m_dwStubFlags(dwStubFlags)
 {
     STANDARD_VM_CONTRACT;
@@ -2583,8 +2605,24 @@ void PInvokeStubLinker::EmitLoadStubContext(ILCodeStream* pcsEmit, DWORD dwStubF
 
     CONSISTENCY_CHECK(!SF_IsForwardDelegateStub(dwStubFlags));
     CONSISTENCY_CHECK(!SF_IsFieldGetterStub(dwStubFlags) && !SF_IsFieldSetterStub(dwStubFlags));
+
+    if (m_pStubContextMD != NULL)
+    {
+        // The stub is generated for one specific MethodDesc, so the context is a constant
+        // that can be baked into the IL instead of being passed in the secret argument.
+        pcsEmit->EmitLDC((DWORD_PTR)m_pStubContextMD);
+        pcsEmit->EmitCONV_I();
+        return;
+    }
+
     // get the secret argument via intrinsic
     pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
+}
+
+void PInvokeStubLinker::SetStubContextMD(MethodDesc* pStubContextMD)
+{
+    LIMITED_METHOD_CONTRACT;
+    m_pStubContextMD = pStubContextMD;
 }
 
 namespace
@@ -4764,6 +4802,62 @@ COR_ILMETHOD_DECODER* PInvoke::CreatePInvokeMethodIL(PInvokeMethodDesc* pMD, Dyn
     return pIL;
 }
 
+#ifdef FEATURE_COMINTEROP
+COR_ILMETHOD_DECODER* PInvoke::CreateCLRToCOMMarshallingIL(MethodDesc* pMD, DWORD dwStubFlags, ILStubResolver* pResolver)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+
+        PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(CheckPointer(pResolver));
+        PRECONDITION(SF_IsForwardCOMStub(dwStubFlags));
+    }
+    CONTRACTL_END;
+
+    StubSigDesc sigDesc(pMD);
+
+    int         iLCIDArg = 0;
+    int         numArgs = 0;
+    int         numParamTokens = 0;
+    mdParamDef* pParamTokenArray = NULL;
+
+    CorInfoCallConvExtension unmgdCallConv = CallConv::GetDefaultUnmanagedCallingConvention();
+
+    CreatePInvokeStubAccessMetadata(&sigDesc,
+                                    unmgdCallConv,
+                                    &dwStubFlags,
+                                    &iLCIDArg,
+                                    &numArgs);
+
+    Module *pModule = sigDesc.m_pModule;
+    numParamTokens = numArgs + 1;
+    pParamTokenArray = (mdParamDef*)_alloca(numParamTokens * sizeof(mdParamDef));
+    CollateParamTokens(pModule->GetMDImport(), sigDesc.m_tkMethodDef, numArgs, pParamTokenArray);
+
+    NewHolder<ILStubState> pStubState;
+    if (SF_IsCOMLateBoundStub(dwStubFlags))
+    {
+        pStubState = new LateBoundCLRToCOM_ILStubState(pModule, sigDesc.m_sig, &sigDesc.m_typeContext, dwStubFlags, pMD);
+    }
+    else
+    {
+        pStubState = new CLRToCOM_ILStubState(pModule, sigDesc.m_sig, &sigDesc.m_typeContext, dwStubFlags, iLCIDArg, pMD);
+    }
+
+    return CreatePInvokeStubWorker(pStubState,
+                                   pResolver,
+                                   &sigDesc,
+                                   (CorNativeLinkType)0,
+                                   (CorNativeLinkFlags)0,
+                                   unmgdCallConv,
+                                   pStubState->GetFlags(),
+                                   pMD,
+                                   pParamTokenArray,
+                                   iLCIDArg);
+}
+#endif // FEATURE_COMINTEROP
+
 #ifdef TARGET_X86
 void PInvoke::CalculateStackArgumentSize(PInvokeMethodDesc* pMD)
 {
@@ -5459,20 +5553,6 @@ namespace
 
                 pTargetNMD->SetStackArgumentSize(cbStackArgSize, CallConv::GetDefaultUnmanagedCallingConvention());
             }
-#ifdef FEATURE_COMINTEROP
-            else
-            {
-                if (SF_IsCOMStub(dwStubFlags))
-                {
-                    CLRToCOMCallInfo *pComInfo = CLRToCOMCallInfo::FromMethodDesc(pTargetMD);
-
-                    if (pComInfo != NULL)
-                    {
-                        pComInfo->SetStackArgumentSize(cbStackArgSize);
-                    }
-                }
-            }
-#endif // FEATURE_COMINTEROP
         }
 #endif // defined(TARGET_X86)
 
@@ -5518,18 +5598,10 @@ MethodDesc* PInvoke::CreateCLRToNativeILStub(
 #ifdef FEATURE_COMINTEROP
     if (SF_IsCOMStub(dwStubFlags))
     {
-        if (SF_IsReverseStub(dwStubFlags))
-        {
-            pStubState = new COMToCLR_ILStubState(pModule, pSigDesc->m_sig, &pSigDesc->m_typeContext, dwStubFlags, iLCIDArg, pMD);
-        }
-        else if (SF_IsCOMLateBoundStub(dwStubFlags))
-        {
-            pStubState = new LateBoundCLRToCOM_ILStubState(pModule, pSigDesc->m_sig, &pSigDesc->m_typeContext, dwStubFlags, pMD);
-        }
-        else
-        {
-            pStubState = new CLRToCOM_ILStubState(pModule, pSigDesc->m_sig, &pSigDesc->m_typeContext, dwStubFlags, iLCIDArg, pMD);
-        }
+        // Forward CLR->COM calls are implemented with transient IL on the CLR->COM method itself
+        // (see CLRToCOMCall::CreateCLRToCOMCallMethodIL), so they never create a separate IL stub.
+        _ASSERTE(SF_IsReverseStub(dwStubFlags));
+        pStubState = new COMToCLR_ILStubState(pModule, pSigDesc->m_sig, &pSigDesc->m_typeContext, dwStubFlags, iLCIDArg, pMD);
     }
     else
 #endif
@@ -5928,7 +6000,7 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
         STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pMD->IsPInvoke() || pMD->IsCLRToCOMCall() || pMD->IsEEImpl() || pMD->IsIL());
+        PRECONDITION(pMD->IsPInvoke() || pMD->IsEEImpl() || pMD->IsIL());
     }
     CONTRACTL_END;
 
@@ -5941,13 +6013,6 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
         CONSISTENCY_CHECK(pNMD->IsVarArg());
         pStub = PInvoke::GetStubForILStub(pNMD, &pStubMD, dwStubFlags);
     }
-#ifdef FEATURE_COMINTEROP
-    else
-    if (pMD->IsCLRToCOMCall())
-    {
-        pStub = CLRToCOMCall::GetStubForILStub(pMD, &pStubMD);
-    }
-#endif // FEATURE_COMINTEROP
     else
     if (pMD->IsEEImpl())
     {
