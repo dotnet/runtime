@@ -812,7 +812,7 @@ namespace System.Xml.Serialization
                 {
                     string? ns = e!.Form == XmlSchemaForm.Qualified ? e.Namespace : string.Empty;
                     bool isList = member!.Mapping.TypeDesc!.IsArrayLike && !member.Mapping.TypeDesc.IsArray;
-                    WriteElement(e, isList && member.Mapping.TypeDesc.IsNullable, member.Mapping.ReadOnly, ns, member.FixupIndex, fixup, member);
+                    WriteElement(e, isList && member.Mapping.TypeDesc.IsNullable, member.Mapping.ReadOnly, ns, member.FixupIndex, fixup, member, elementIndex);
                 }
             }
             else
@@ -828,7 +828,7 @@ namespace System.Xml.Serialization
                         if (element.Any && element.Name.Length == 0)
                         {
                             string? ns = element.Form == XmlSchemaForm.Qualified ? element.Namespace : string.Empty;
-                            WriteElement(element, false, false, ns, fixup: fixup, member: member);
+                            WriteElement(element, false, false, ns, fixup: fixup, member: member, elementIndex: i);
                             break;
                         }
                     }
@@ -841,7 +841,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private object? WriteElement(ElementAccessor element, bool checkForNull, bool readOnly, string? defaultNamespace, int fixupIndex = -1, Fixup? fixup = null, Member? member = null)
+        private object? WriteElement(ElementAccessor element, bool checkForNull, bool readOnly, string? defaultNamespace, int fixupIndex = -1, Fixup? fixup = null, Member? member = null, int elementIndex = -1)
         {
             object? value = null;
             if (element.Mapping is ArrayMapping arrayMapping)
@@ -1013,7 +1013,7 @@ namespace System.Xml.Serialization
                 throw new InvalidOperationException(SR.XmlInternalError);
             }
 
-            member?.ChoiceSource?.Invoke(element.Name);
+            member?.ChoiceSource?.Invoke(elementIndex);
 
             if (member?.ArraySource != null)
             {
@@ -1744,19 +1744,20 @@ namespace System.Xml.Serialization
                     ChoiceIdentifierAccessor? choice = mapping.ChoiceIdentifier;
                     if (choice != null && o != null)
                     {
-                        member.ChoiceSource = (elementNameObject) =>
+                        member.ChoiceSource = (elementIndex) =>
                         {
-                            string? elementName = elementNameObject as string;
-                            foreach (var name in choice.MemberIds!)
+                            // The choice enum member that corresponds to the selected element is stored
+                            // positionally in MemberIds, parallel to the member's Elements. This mirrors
+                            // how the IL-generated reader resolves the choice (choice.MemberIds[elementIndex]),
+                            // and honors [XmlEnum] aliases because the importer already resolved them.
+                            string[]? memberIds = choice.MemberIds;
+                            if (memberIds is null || (uint)elementIndex >= (uint)memberIds.Length)
                             {
-                                if (name == elementName)
-                                {
-                                    object choiceValue = Enum.Parse(choice.Mapping!.TypeDesc!.Type!, name);
-                                    SetOrAddValueToMember(o, choiceValue, choice.MemberInfo!);
-
-                                    break;
-                                }
+                                return;
                             }
+
+                            object choiceValue = Enum.Parse(choice.Mapping!.TypeDesc!.Type!, memberIds[elementIndex]);
+                            SetOrAddValueToMember(o, choiceValue, choice.MemberInfo!);
                         };
                     }
 
@@ -2107,7 +2108,7 @@ namespace System.Xml.Serialization
             public Func<object?>? GetSource;
             public Action<object>? ArraySource;
             public Action<object?>? CheckSpecifiedSource;
-            public Action<object>? ChoiceSource;
+            public Action<int>? ChoiceSource;
             public Action<string, string>? XmlnsSource;
             public Action<object>? EnsureCollection;
 

@@ -2266,6 +2266,25 @@ namespace SerializationTypes
         public MoreChoices[] ChoiceArray;
     }
 
+    public enum AliasedChoiceType
+    {
+        [XmlEnum("Word")]
+        WordChoice,
+        [XmlEnum("Number")]
+        NumberChoice,
+    }
+
+    public class TypeWithAliasedChoiceIdentifier
+    {
+        [XmlChoiceIdentifier("ChoiceType")]
+        [XmlElement("Word", typeof(string))]
+        [XmlElement("Number", typeof(int))]
+        public object Item;
+
+        [XmlIgnore]
+        public AliasedChoiceType ChoiceType;
+    }
+
     internal class MyFileStreamSurrogateProvider : ISerializationSurrogateProvider
     {
         static MyFileStreamSurrogateProvider()
