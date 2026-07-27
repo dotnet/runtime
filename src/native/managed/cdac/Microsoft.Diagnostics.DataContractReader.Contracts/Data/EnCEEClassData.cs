@@ -6,7 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.EnCEEClassData))]
 internal sealed partial class EnCEEClassData : IData<EnCEEClassData>
 {
-    [Field] public TargetPointer MethodTable { get; }
-    [Field] public TargetPointer AddedInstanceFields { get; }
-    [Field] public TargetPointer AddedStaticFields { get; }
+    [Field] public partial TargetPointer MethodTable { get; }
+    [Field] public partial TargetPointer AddedInstanceFields { get; }
+    [Field] public partial TargetPointer AddedStaticFields { get; }
 }

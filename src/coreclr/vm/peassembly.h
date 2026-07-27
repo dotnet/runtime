@@ -346,8 +346,6 @@ public:
       // ------------------------------------------------------------
 
       static void PathToUrl(SString& string);
-      static void UrlToPath(SString& string);
-      static BOOL FindLastPathSeparator(const SString& path, SString::Iterator& i);
 
 private:
     // ------------------------------------------------------------

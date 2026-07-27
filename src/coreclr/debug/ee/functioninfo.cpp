@@ -166,7 +166,7 @@ DWORD DebuggerJitInfo::GetFuncletOffsetByIndex(int index)
 
     if (index < 0 || index >= m_funcletCount)
     {
-        return (-1);
+        return -1;
     }
 
     return m_rgFunclet[index];
@@ -448,7 +448,7 @@ bool DebuggerJitInfo::ILToNativeOffsetIterator::IsAtEnd()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return (m_currentILOffset.m_ilOffset == INVALID_IL_OFFSET);
+    return m_currentILOffset.m_ilOffset == INVALID_IL_OFFSET;
 }
 
 SIZE_T DebuggerJitInfo::ILToNativeOffsetIterator::Current(BOOL* pfExact)
@@ -1392,7 +1392,6 @@ DebuggerMethodInfo::DebuggerMethodInfo(Module *module, mdMethodDef token) :
     {
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
-        CONSTRUCTOR_CHECK;
     }
     CONTRACTL_END;
 
@@ -1845,7 +1844,7 @@ bool DebuggerMethodInfo::HasJitInfos()
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
-    return (m_latestJitInfo != NULL);
+    return m_latestJitInfo != NULL;
 }
 
 /******************************************************************************
@@ -2104,7 +2103,6 @@ DebuggerMethodInfoTable::DebuggerMethodInfoTable() : CHashTableAndData<CNewZeroD
         WRAPPER(THROWS);
         GC_NOTRIGGER;
 
-        CONSTRUCTOR_CHECK;
     }
     CONTRACTL_END;
 
@@ -2341,37 +2339,37 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetMethodInfo(Module *pModule, mdMe
 
 DebuggerMethodInfo *DebuggerMethodInfoTable::GetFirstMethodInfo(HASHFIND *info)
 {
-    CONTRACT(DebuggerMethodInfo*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
 
         PRECONDITION(CheckPointer(info));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
     DebuggerMethodInfoEntry *entry = PTR_DebuggerMethodInfoEntry
         (PTR_HOST_TO_TADDR(FindFirstEntry(info)));
     if (entry == NULL)
-        RETURN NULL;
+        return NULL;
     else
-        RETURN entry->mi;
+        {
+            return entry->mi;
+        }
 }
 
 DebuggerMethodInfo *DebuggerMethodInfoTable::GetNextMethodInfo(HASHFIND *info)
 {
-    CONTRACT(DebuggerMethodInfo*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
 
         PRECONDITION(CheckPointer(info));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
@@ -2389,9 +2387,11 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetNextMethodInfo(HASHFIND *info)
     }
 
     if (entry == NULL)
-        RETURN NULL;
+        return NULL;
     else
-        RETURN entry->mi;
+        {
+            return entry->mi;
+        }
 }
 
 
