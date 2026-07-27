@@ -2298,7 +2298,7 @@ static int32_t TryChangeHandleEventRegistrationInner(
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
-static void ConvertEventEPollToSocketAsync(HandleEvent* sae, struct epoll_event* epoll)
+static void ConvertEventEPollToHandleEvent(HandleEvent* sae, struct epoll_event* epoll)
 {
     assert(sae != NULL);
     assert(epoll != NULL);
@@ -2347,7 +2347,7 @@ static int32_t WaitForHandleEventsInner(int32_t port, HandleEvent* buffer, int32
         {
             // This copy is made deliberately to avoid overwriting data.
             struct epoll_event evt = events[i];
-            ConvertEventEPollToSocketAsync(&buffer[i], &evt);
+            ConvertEventEPollToHandleEvent(&buffer[i], &evt);
         }
     }
     else
@@ -2357,7 +2357,7 @@ static int32_t WaitForHandleEventsInner(int32_t port, HandleEvent* buffer, int32
         {
             // This copy is made deliberately to avoid overwriting data.
             struct epoll_event evt = events[i];
-            ConvertEventEPollToSocketAsync(&buffer[i], &evt);
+            ConvertEventEPollToHandleEvent(&buffer[i], &evt);
         }
     }
 

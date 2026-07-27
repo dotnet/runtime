@@ -88,8 +88,9 @@ namespace System.Threading
             private Operation? _tail;
 
             // The _queueLock is used to ensure atomic access to the queue state above.
-            // The lock is only ever held briefly, to read and/or update queue state, and
-            // never around any external call, e.g. OS call or user code invocation.
+            // Except during the initial registration, the lock is only ever held briefly,
+            // to read and/or update queue state, and never around any external call,
+            // e.g. OS call or user code invocation.
             private object _queueLock;
 
             internal LockToken Lock()
