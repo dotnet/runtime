@@ -2844,7 +2844,7 @@ void ObjectAllocator::RewriteUses()
                         call->gtReturnType  = TYP_VOID;
                         GenTree* const mt   = m_compiler->gtNewMethodTableLookup(lcl, /* onStack */ true);
                         call->gtArgs.Remove(secondArg);
-                        call->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(mt));
+                        call->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(mt));
 
                         if (isForEffect)
                         {
