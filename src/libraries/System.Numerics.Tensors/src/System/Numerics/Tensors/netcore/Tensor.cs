@@ -1672,6 +1672,7 @@ namespace System.Numerics.Tensors
                 if (ospan.Length >= span.Length)
                 {
                     span.CopyTo(ospan);
+                    ospan.Slice(span.Length).Clear();
                 }
                 else
                 {
@@ -1690,6 +1691,19 @@ namespace System.Numerics.Tensors
                     bool dstMoved = dstEnumerator.MoveNext();
                     Debug.Assert(srcMoved && dstMoved);
                     dstEnumerator.Current = srcEnumerator.Current;
+                }
+
+                if (destination.IsDense)
+                {
+                    Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
+                    ospan.Slice((int)copyLength).Clear();
+                }
+                else
+                {
+                    while (dstEnumerator.MoveNext())
+                    {
+                        dstEnumerator.Current = default!;
+                    }
                 }
             }
         }
