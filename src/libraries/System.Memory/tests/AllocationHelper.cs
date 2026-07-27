@@ -26,7 +26,8 @@ namespace System.SpanTests
 
             try
             {
-                memory = (IntPtr)NativeMemory.Alloc((nuint)size);
+                // .NETFramework has no IntPtr -> nuint conversion; round-trip through a pointer instead.
+                memory = (IntPtr)NativeMemory.Alloc((nuint)(void*)size);
             }
             catch (OutOfMemoryException)
             {
@@ -35,8 +36,7 @@ namespace System.SpanTests
             finally
             {
                 // Only a successful allocation keeps the mutex; the matching ReleaseNative frees it.
-                // Any failure (OOM, a null result, or an unexpected throw) must release it here so a
-                // later large allocation doesn't hang waiting on a mutex that will never be freed.
+                // Any failure must release it here or a later allocation hangs on a mutex nothing frees.
                 if (memory == IntPtr.Zero)
                     s_memoryLock.ReleaseMutex();
             }
