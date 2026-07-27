@@ -28,7 +28,7 @@ Before analyzing anything, load `.github/skills/code-review/pr-assessment.md` --
 Before analyzing anything, collect as much relevant **code** context as you can. **Critically, do NOT read the PR description, linked issues, or existing review comments yet.** You must form your own independent assessment of what the code does, why it might be needed, what problems it has, and whether the approach is sound — before being exposed to the author's framing. Reading the author's narrative first anchors your judgment and makes you less likely to find real problems.
 
 1. **Diff and file list**: Fetch the full diff and the list of changed files.
-2. **Full source files**: For every changed file, read the **entire source file** (not just the diff hunks). You need the surrounding code to understand invariants, locking protocols, call patterns, and data flow. Diff-only review is the #1 cause of false positives and missed issues.
+2. **Full source files**: For every changed file, read well beyond the diff hunks — diff-only review is the #1 cause of false positives and missed issues. You need the surrounding code to understand invariants, locking protocols, call patterns, and data flow. Read the whole file when it is a reasonable size; for the very large ones this repo has (`morph.cpp` alone is ~137k tokens) read the enclosing functions, their callers, and the types involved instead of paging through the entire file.
 3. **Consumers and callers**: If the change modifies a public/internal API, a type that others depend on, or a virtual/interface method, search for how consumers use the functionality. Grep for callers, usages, and test sites. Understanding how the code is consumed reveals whether the change could break existing behavior or violate caller assumptions.
 4. **Sibling types and related code**: If the change fixes a bug or adds a pattern in one type, check whether sibling types (e.g., other abstraction implementations, other collection types, platform-specific variants) have the same issue or need the same fix. Fetch and read those files too.
 5. **Key utility/helper files**: If the diff calls into shared utilities, read those to understand the contracts (thread-safety, idempotency, etc.).
@@ -97,7 +97,7 @@ Now read the PR description, labels, linked issues (in full), author information
 
 ## Multi-Model Review
 
-When the environment supports launching sub-agents with different models (e.g., the `task` tool with a `model` parameter), run the review in parallel across multiple model families to get diverse perspectives. Different models catch different classes of issues. If the environment does not support this, proceed with a single-model review.
+When the environment supports launching sub-agents with different models (e.g., the `task` tool with a `model` parameter), run the review in parallel across multiple model families to get diverse perspectives. Different models catch different classes of issues. If the environment does not support this, proceed with a single-model review. Each sub-agent re-reads the diff and the surrounding files, so this multiplies the cost of the review by the number of models — worth it for a substantial or risky change, not for a one-line fix.
 
 **How to execute (when supported):**
 1. Inspect the available model list and select models from 2-3 distinct model families, up to 3 sub-agent models total. If fewer than 2 eligible families are available, use what is available. **Model selection rules:**

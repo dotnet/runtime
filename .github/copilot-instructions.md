@@ -61,7 +61,9 @@ When posting to GitHub under a user's credentials — PR descriptions, issue bod
 
 ---
 
-## Running Commands
+## Tool Use
+
+Issue independent tool calls together in one response rather than one at a time. Every round trip re-sends the whole conversation as cached input — measured at roughly half the cost of a call before it does any work — so fewer, wider steps beat many narrow ones.
 
 Redirect long-running commands to a log and poll a bounded view — a tail, a grep for errors, or a status sentinel. Re-reading a running command's output re-sends it from the start every time, so repeatedly checking a long build costs far more than the check is worth. Check the outcome, not the process.
 
