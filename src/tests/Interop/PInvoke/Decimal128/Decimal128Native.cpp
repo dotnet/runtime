@@ -17,8 +17,13 @@ struct
 alignas(16)
 #endif
 Decimal128 {
+#if BIGENDIAN
+    uint64_t upper;
+    uint64_t lower;
+#else
     uint64_t lower;
     uint64_t upper;
+#endif
 };
 
 struct StructWithDecimal128
