@@ -57,7 +57,7 @@ public:
     BOOL IsCompletelyInited()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_pILStub != (PCODE)1);
+        return m_pILStub != (PCODE)1;
     }
 
     static UINT32 GetOffsetOfStub()
@@ -287,14 +287,14 @@ public:
 
     PCODE GetManagedTarget() const
     {
-        CONTRACT (PCODE)
+        CONTRACTL
         {
             THROWS;
             GC_TRIGGERS;
             MODE_ANY;
             PRECONDITION(m_state == kRunTimeInited || m_state == kLoadTimeInited);
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         OBJECTHANDLE hndDelegate = GetObjectHandle();
         if (hndDelegate != NULL)
@@ -308,26 +308,26 @@ public:
             // We have optimizations that skip the Invoke method and call directly the
             // delegate's target method. We need to return the target in that case,
             // otherwise debugger would fail to step in.
-            RETURN orDelegate->GetMethodPtr();
+            return orDelegate->GetMethodPtr();
         }
         else if (m_pManagedTarget != (PCODE)NULL)
         {
-            RETURN m_pManagedTarget;
+            return m_pManagedTarget;
         }
         else if (m_pMD != NULL)
         {
-            RETURN m_pMD->GetMultiCallableAddrOfCode();
+            return m_pMD->GetMultiCallableAddrOfCode();
         }
         else
         {
-            RETURN (PCODE)NULL;
+            return (PCODE)NULL;
         }
     }
 #endif // !DACCESS_COMPILE
 
     OBJECTHANDLE GetObjectHandle() const
     {
-        CONTRACT (OBJECTHANDLE)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
@@ -339,9 +339,9 @@ public:
                          m_state == kLoadTimeInited ||
                          m_pObjectHandle == NULL);
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pObjectHandle;
+        return m_pObjectHandle;
     }
 
     bool IsCollectedDelegate() const
@@ -353,48 +353,45 @@ public:
 
     UMThunkMarshInfo* GetUMThunkMarshInfo() const
     {
-        CONTRACT (UMThunkMarshInfo*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             SUPPORTS_DAC;
             PRECONDITION(m_state == kRunTimeInited || m_state == kLoadTimeInited);
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pUMThunkMarshInfo;
+        return m_pUMThunkMarshInfo;
     }
 
     PCODE GetCode() const
     {
-        CONTRACT (PCODE)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(m_state == kRunTimeInited || m_state == kLoadTimeInited);
-            POSTCONDITION(CheckPointer(dac_cast<BYTE*>(RETVAL), NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN PINSTRToPCODE(dac_cast<TADDR>(m_pUMEntryThunk));
+        return PINSTRToPCODE(dac_cast<TADDR>(m_pUMEntryThunk));
     }
 
     MethodDesc* GetMethod() const
     {
-        CONTRACT (MethodDesc*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(m_state == kRunTimeInited || m_state == kLoadTimeInited);
-            POSTCONDITION(CheckPointer(RETVAL,NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pMD;
+        return m_pMD;
     }
 };
 

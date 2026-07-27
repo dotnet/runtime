@@ -349,10 +349,21 @@ namespace System.Net.Http
         {
             HttpConnectionKey key = GetConnectionKey(request, proxyUri, isProxyConnect);
 
+            string? sslHostName = key.SslHostName;
+
+            if (sslHostName is not null && request.IsConnectionPoolPartitioningBySniDisabled())
+            {
+                // The request is using HTTPS, but has opted out of partitioning the connection pool by SNI.
+                // The connection pool will be shared by requests to the same Uri Host, regardless of the Host header.
+                // This enables requests where the Uri is set to an IP of shared infrastructure to share connections even if the host names differ.
+                // This is a dangerous opt-in where the caller is responsible for ensuring that the server certificate is acceptable for all requests to a given IP.
+                key = new HttpConnectionKey(key.Kind, key.Host, key.Port, sslHostName: null, key.ProxyUri, key.Identity);
+            }
+
             HttpConnectionPool? pool;
             while (!_pools.TryGetValue(key, out pool))
             {
-                pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, key.SslHostName, key.ProxyUri, GetTelemetryServerAddress(request, key));
+                pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, sslHostName, key.ProxyUri, GetTelemetryServerAddress(request, key));
 
                 if (_cleaningTimer == null)
                 {
@@ -446,6 +457,11 @@ namespace System.Net.Http
         {
             HttpRequestException rethrowException;
 
+            // Save the original ProxyAuthorization header value so we can restore it when retrying with a different proxy.
+            // This ensures that any proxy credentials set from the credential cache during a failed attempt are cleared
+            // before trying the next proxy, while preserving any user-set credentials.
+            Headers.AuthenticationHeaderValue? originalProxyAuthorization = request.Headers.ProxyAuthorization;
+
             do
             {
                 try
@@ -455,6 +471,10 @@ namespace System.Net.Http
                 catch (HttpRequestException ex) when (ex.AllowRetry != RequestRetryType.NoRetry)
                 {
                     rethrowException = ex;
+
+                    // Clear any proxy-auth credentials that were set from the proxy credential cache for the previous proxy.
+                    // Restore the original value before retrying with the next proxy.
+                    request.Headers.ProxyAuthorization = originalProxyAuthorization;
                 }
             }
             while (multiProxy.ReadNext(out firstProxy, out _));
