@@ -465,7 +465,9 @@ namespace System.Tests
                 yield return new object[] { Decimal64.Parse("12.5"), "G2", defaultFormat, "12" };
                 yield return new object[] { Decimal64.Parse("1000.500"), "G4", defaultFormat, "1000" };
                 yield return new object[] { Decimal64.Parse("0.25"), "0.0", defaultFormat, "0.2" };
+                yield return new object[] { Decimal64.Parse("0.75"), "0.0", defaultFormat, "0.8" };
                 yield return new object[] { Decimal64.Parse("1.25"), "#.#", defaultFormat, "1.2" };
+                yield return new object[] { Decimal64.Parse("1.75"), "#.#", defaultFormat, "1.8" };
 
                 yield return new object[] { Decimal64.Parse("2468e0"), "N", defaultFormat, "2,468.00" };
 

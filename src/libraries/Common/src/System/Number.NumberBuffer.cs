@@ -129,8 +129,10 @@ namespace System
             FloatingPoint = 3,
 
             /// <summary>
-            /// An IEEE 754 decimal interchange format. This rounds like <see cref="NumberBufferKind.Decimal"/> but, like
-            /// <see cref="NumberBufferKind.FloatingPoint"/>, has a signed zero that must survive formatting.
+            /// An IEEE 754 decimal interchange format. Unlike <see cref="NumberBufferKind.FloatingPoint"/> the buffer
+            /// holds the exact coefficient rather than a pre-rounded shortest representation, so formatting must round
+            /// it; unlike <see cref="NumberBufferKind.Decimal"/> that rounding is ties-to-even and a signed zero must
+            /// survive it.
             /// </summary>
             DecimalIeee754 = 4,
         }
