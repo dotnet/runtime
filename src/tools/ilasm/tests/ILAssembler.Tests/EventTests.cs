@@ -68,5 +68,111 @@ namespace ILAssembler.Tests
             var attrs = reader.GetCustomAttributes(eventHandle);
             Assert.True(attrs.Count >= 1, $"Event should have at least 1 custom attribute, got {attrs.Count}");
         }
+
+        [Fact]
+        public void EventWithRaiseAccessor_EmitsAccessorMetadata()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi MyDelegate extends [mscorlib]System.MulticastDelegate
+                {
+                    .method public specialname rtspecialname instance void .ctor(object 'object', native int 'method') runtime managed
+                    {
+                    }
+                    .method public virtual instance void Invoke() runtime managed
+                    {
+                    }
+                }
+                .class public auto ansi MyClass extends [mscorlib]System.Object
+                {
+                    .method public hidebysig specialname instance void add_MyEvent(class MyDelegate value) cil managed
+                    {
+                        ret
+                    }
+                    .method public hidebysig specialname instance void remove_MyEvent(class MyDelegate value) cil managed
+                    {
+                        ret
+                    }
+                    .method public hidebysig specialname instance void raise_MyEvent() cil managed
+                    {
+                        ret
+                    }
+                    .event MyDelegate MyEvent
+                    {
+                        .addon instance void MyClass::add_MyEvent(class MyDelegate)
+                        .removeon instance void MyClass::remove_MyEvent(class MyDelegate)
+                        .fire instance void MyClass::raise_MyEvent()
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var eventHandle = reader.EventDefinitions.Single();
+            var @event = reader.GetEventDefinition(eventHandle);
+            var accessors = @event.GetAccessors();
+            string eventTypeName = @event.Type.Kind switch
+            {
+                HandleKind.TypeDefinition => reader.GetString(reader.GetTypeDefinition((TypeDefinitionHandle)@event.Type).Name),
+                HandleKind.TypeReference => reader.GetString(reader.GetTypeReference((TypeReferenceHandle)@event.Type).Name),
+                _ => throw new InvalidOperationException($"Unexpected event type handle kind '{@event.Type.Kind}'."),
+            };
+
+            Assert.Equal("MyEvent", reader.GetString(@event.Name));
+            Assert.Equal("MyDelegate", eventTypeName);
+            Assert.Equal("add_MyEvent", reader.GetString(reader.GetMethodDefinition(accessors.Adder).Name));
+            Assert.Equal("remove_MyEvent", reader.GetString(reader.GetMethodDefinition(accessors.Remover).Name));
+            Assert.Equal("raise_MyEvent", reader.GetString(reader.GetMethodDefinition(accessors.Raiser).Name));
+            Assert.Equal(3, reader.GetTableRowCount(TableIndex.MethodSemantics));
+        }
+
+        [Fact]
+        public void EventAttributesOtherAccessorAndCustomAttribute_EmitMetadata()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi MyDelegate extends [mscorlib]System.MulticastDelegate
+                {
+                    .method public specialname rtspecialname instance void .ctor(object 'object', native int 'method') runtime managed { }
+                    .method public virtual instance void Invoke() runtime managed { }
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public specialname instance void add_Changed(class MyDelegate value) cil managed { ret }
+                    .method public specialname instance void remove_Changed(class MyDelegate value) cil managed { ret }
+                    .method public specialname instance void raise_Changed() cil managed { ret }
+                    .method public specialname instance void other_Changed() cil managed { ret }
+
+                    .event specialname rtspecialname MyDelegate Changed
+                    {
+                        .addon instance void Test::add_Changed(class MyDelegate)
+                        .removeon instance void Test::remove_Changed(class MyDelegate)
+                        .fire instance void Test::raise_Changed()
+                        .other instance void Test::other_Changed()
+                        .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var eventHandle = Assert.Single(reader.EventDefinitions);
+            var @event = reader.GetEventDefinition(eventHandle);
+            var accessors = @event.GetAccessors();
+
+            Assert.True(@event.Attributes.HasFlag(EventAttributes.SpecialName));
+            Assert.Equal("add_Changed", reader.GetString(reader.GetMethodDefinition(accessors.Adder).Name));
+            Assert.Equal("remove_Changed", reader.GetString(reader.GetMethodDefinition(accessors.Remover).Name));
+            Assert.Equal("raise_Changed", reader.GetString(reader.GetMethodDefinition(accessors.Raiser).Name));
+            Assert.Equal(
+                "other_Changed",
+                reader.GetString(reader.GetMethodDefinition(Assert.Single(accessors.Others)).Name));
+            Assert.Equal(
+                [0x01, 0x00, 0x00, 0x00],
+                reader.GetBlobBytes(reader.GetCustomAttribute(Assert.Single(reader.GetCustomAttributes(eventHandle))).Value));
+        }
     }
 }
