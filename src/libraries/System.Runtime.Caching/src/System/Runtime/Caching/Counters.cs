@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 
@@ -19,7 +21,42 @@ namespace System.Runtime.Caching
         private const int NUM_COUNTERS = 7;
 
         private DiagnosticCounter[] _counters;
-        private long[] _counterValues;
+
+        // Backing storage for the raw counter values.
+        //
+        // These are updated with Interlocked ops on every cache Get/Add/Remove, so the layout matters:
+        //
+        // 1. Named fields instead of a long[]. Indexing an array forces the JIT to emit a bounds check,
+        //    which loads the array's length field. That length lives in the same cache line as the
+        //    elements of a small array, so every increment performed a plain load of a line that is
+        //    simultaneously the target of a contended atomic RMW. That defeats the "far atomic" handling
+        //    LSE-capable hardware uses to keep contended counters resident at the shared cache, and turns
+        //    each increment into a cache-line migration. Struct fields have no length to load.
+        //
+        // 2. Counters are grouped onto cache lines by how MemoryCacheStore actually updates them, so that
+        //    unrelated operations running concurrently do not falsely share a line. Counters that are
+        //    always bumped by the *same* operation stay together, because splitting those would force one
+        //    operation to acquire several contended lines with fully-ordered atomics back to back:
+        //      - Entries + Turnover: always bumped together by Add()/RemoveFromCache()
+        //      - Hits:               bumped by a Get() that hits
+        //      - Misses:             bumped by a Get() that misses
+        //      - Trims:              bumped in batches by the (rare) trim path
+        private CounterValues _counterValues;
+
+        private const int CacheLineSize = Internal.PaddingHelpers.CACHE_LINE_SIZE;
+
+        [StructLayout(LayoutKind.Explicit, Size = CacheLineSize * 4)]
+        private struct CounterValues
+        {
+            [FieldOffset(CacheLineSize * 0)] public long Entries;
+            [FieldOffset(CacheLineSize * 0 + 8)] public long Turnover;
+
+            [FieldOffset(CacheLineSize * 1)] public long Hits;
+
+            [FieldOffset(CacheLineSize * 2)] public long Misses;
+
+            [FieldOffset(CacheLineSize * 3)] public long Trims;
+        }
 
         internal Counters(string cacheName) : base(EVENT_SOURCE_NAME_ROOT + (cacheName ?? throw new ArgumentNullException(nameof(cacheName))))
         {
@@ -33,23 +70,30 @@ namespace System.Runtime.Caching
             try
             {
                 _counters = new DiagnosticCounter[NUM_COUNTERS];
-                _counterValues = new long[NUM_COUNTERS];
-                _counters[(int)CounterName.Entries] = CreatePollingCounter("entries", "Cache Entries", (int)CounterName.Entries);
-                _counters[(int)CounterName.Hits] = CreatePollingCounter("hits", "Cache Hits", (int)CounterName.Hits);
-                _counters[(int)CounterName.Misses] = CreatePollingCounter("misses", "Cache Misses", (int)CounterName.Misses);
-                _counters[(int)CounterName.Trims] = CreatePollingCounter("trims", "Cache Trims", (int)CounterName.Trims);
+                _counters[(int)CounterName.Entries] = CreatePollingCounter("entries", "Cache Entries", () => _counterValues.Entries);
+                _counters[(int)CounterName.Hits] = CreatePollingCounter("hits", "Cache Hits", () => _counterValues.Hits);
+                _counters[(int)CounterName.Misses] = CreatePollingCounter("misses", "Cache Misses", () => _counterValues.Misses);
+                _counters[(int)CounterName.Trims] = CreatePollingCounter("trims", "Cache Trims", () => _counterValues.Trims);
 
                 _counters[(int)CounterName.Turnover] = new IncrementingPollingCounter("turnover", this,
-                    () => (double)_counterValues[(int)CounterName.Turnover])
+                    () => _counterValues.Turnover)
                 {
                     DisplayName = "Cache Turnover Rate",
                 };
 
-                // This two-step dance with hit-ratio was an old perf-counter artifact. There only needs
-                // to be one polling counter here, rather than the two-part perf counter. Still keeping array
-                // indexes and raw counter values consistent between NetFx and Core code though.
+                // This two-step dance with hit-ratio was an old perf-counter artifact: the ratio used to be
+                // tracked as a pair of raw counters (HitRatio, incremented on every hit, and HitRatioBase,
+                // incremented on every hit and every miss). Neither raw value is observable - only the
+                // percentage computed below is - and they are exactly redundant with Hits and Hits + Misses.
+                // Deriving the ratio lets the Get() hot path do a single Interlocked op instead of three.
+                // 0 hits and 0 misses still yields NaN, as it did with the raw counters, and the result can
+                // no longer transiently exceed 100% the way separate reads of HitRatio/HitRatioBase could.
                 _counters[(int)CounterName.HitRatio] = new PollingCounter("hit-ratio", this,
-                    () => ((double)_counterValues[(int)CounterName.HitRatio] / (double)_counterValues[(int)CounterName.HitRatioBase]) * 100d)
+                    () =>
+                    {
+                        double hits = _counterValues.Hits;
+                        return (hits / (hits + _counterValues.Misses)) * 100d;
+                    })
                 {
                     DisplayName = "Cache Hit Ratio",
                 };
@@ -64,9 +108,9 @@ namespace System.Runtime.Caching
             }
         }
 
-        private PollingCounter CreatePollingCounter(string name, string displayName, int counterIndex)
+        private PollingCounter CreatePollingCounter(string name, string displayName, Func<double> getValue)
         {
-            return new PollingCounter(name, this, () => (double)_counterValues[counterIndex])
+            return new PollingCounter(name, this, getValue)
             {
                 DisplayName = displayName,
             };
@@ -88,18 +132,39 @@ namespace System.Runtime.Caching
 
         internal void Increment(CounterName name)
         {
-            int idx = (int)name;
-            Interlocked.Increment(ref _counterValues[idx]);
+            switch (name)
+            {
+                case CounterName.Entries: Interlocked.Increment(ref _counterValues.Entries); break;
+                case CounterName.Hits: Interlocked.Increment(ref _counterValues.Hits); break;
+                case CounterName.Misses: Interlocked.Increment(ref _counterValues.Misses); break;
+                case CounterName.Trims: Interlocked.Increment(ref _counterValues.Trims); break;
+                case CounterName.Turnover: Interlocked.Increment(ref _counterValues.Turnover); break;
+                default: Debug.Fail($"Counter '{name}' has no backing storage."); break;
+            }
         }
         internal void IncrementBy(CounterName name, long value)
         {
-            int idx = (int)name;
-            Interlocked.Add(ref _counterValues[idx], value);
+            switch (name)
+            {
+                case CounterName.Entries: Interlocked.Add(ref _counterValues.Entries, value); break;
+                case CounterName.Hits: Interlocked.Add(ref _counterValues.Hits, value); break;
+                case CounterName.Misses: Interlocked.Add(ref _counterValues.Misses, value); break;
+                case CounterName.Trims: Interlocked.Add(ref _counterValues.Trims, value); break;
+                case CounterName.Turnover: Interlocked.Add(ref _counterValues.Turnover, value); break;
+                default: Debug.Fail($"Counter '{name}' has no backing storage."); break;
+            }
         }
         internal void Decrement(CounterName name)
         {
-            int idx = (int)name;
-            Interlocked.Decrement(ref _counterValues[idx]);
+            switch (name)
+            {
+                case CounterName.Entries: Interlocked.Decrement(ref _counterValues.Entries); break;
+                case CounterName.Hits: Interlocked.Decrement(ref _counterValues.Hits); break;
+                case CounterName.Misses: Interlocked.Decrement(ref _counterValues.Misses); break;
+                case CounterName.Trims: Interlocked.Decrement(ref _counterValues.Trims); break;
+                case CounterName.Turnover: Interlocked.Decrement(ref _counterValues.Turnover); break;
+                default: Debug.Fail($"Counter '{name}' has no backing storage."); break;
+            }
         }
 #else
 #pragma warning disable CA1822, IDE0060
