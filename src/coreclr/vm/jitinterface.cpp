@@ -9613,6 +9613,13 @@ void CEEInfo::getBoundaries(CORINFO_METHOD_HANDLE ftn,
 void CEEInfo::getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
                          bool *extendOthers)
 {
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+void CEECodeGenInfo::getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
+                         bool *extendOthers)
+{
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -9624,7 +9631,7 @@ void CEEInfo::getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::
 #ifdef DEBUGGING_SUPPORTED
     if (g_pDebugInterface)
     {
-        g_pDebugInterface->getVars(GetMethod(ftn), cVars, vars, extendOthers);
+        g_pDebugInterface->getVars(GetMethod(ftn), cVars, vars, extendOthers, m_MethodInfo.ILCodeSize);
     }
     else
     {
@@ -12911,7 +12918,7 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
     if (pMD->IsEligibleForTieredCompilation())
     {
-        hr = PgoManager::allocPgoInstrumentationBySchema(pMD, pSchema, countSchemaItems, pInstrumentationData);
+        hr = PgoManager::allocPgoInstrumentationBySchema(pMD, m_ILHeader, pSchema, countSchemaItems, pInstrumentationData);
     }
     else
     {
@@ -12979,7 +12986,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
         m_foundPgoData = newPgoData;
         newPgoData.SuppressRelease();
 
-        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_allocatedData, &newPgoData->m_schema,
+        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, m_ILHeader, &newPgoData->m_allocatedData, &newPgoData->m_schema,
             &newPgoData->m_cSchemaElems, &newPgoData->m_pInstrumentationData, &newPgoData->m_pgoSource);
         pDataCur = m_foundPgoData;
     }

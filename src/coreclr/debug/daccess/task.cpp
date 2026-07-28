@@ -3568,7 +3568,11 @@ ClrDataMethodDefinition::GetIlMethod(void)
     {
         if (m_methodDesc->MayHaveILHeader())
         {
-            return m_methodDesc->GetILHeader();
+            // This API doesn't have enough information to know which
+            // version of the code the caller would like to see when
+            // multiple versions exist (EnC/ReJIT). It
+            // guesses the active version is most appropriate.
+            return m_methodDesc->GetActiveILHeader();
         }
         else
         {
