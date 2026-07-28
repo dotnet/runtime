@@ -276,14 +276,13 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                     ilCodeVersion.SetIL((COR_ILMETHOD*)&pLocalILMemory[dwMethodRVA]);
                     ilCodeVersion.SetRejitState(RejitFlags::kStateActive);
                 }
+
+                if (FAILED(hr = pCodeVersionManager->SetActiveILCodeVersions(&ilCodeVersion, 1, NULL)))
                 {
-                    GCX_PREEMP();
-                    if (FAILED(hr = pCodeVersionManager->SetActiveILCodeVersions(&ilCodeVersion, 1, NULL)))
-                    {
-                        LOG((LF_ENC, LL_INFO100, "EACM::AEAC: Error SetActiveILCodeVersions returned hr 0x%x\n", hr));
-                        return hr;
-                    }
+                    LOG((LF_ENC, LL_INFO100, "EACM::AEAC: Error SetActiveILCodeVersions returned hr 0x%x\n", hr));
+                    return hr;
                 }
+
                 // use module to resolve to method
                 pMethod = LookupMethodDef(token);
                 if (pMethod)
