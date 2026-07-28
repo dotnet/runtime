@@ -4,8 +4,7 @@
 ; This binary owns its own PAL and only supports the path-based OpenVirtualProcessImpl2
 ; activation flow, so the HMODULE-taking OpenVirtualProcessImpl and the deprecated
 ; OpenVirtualProcess/OpenVirtualProcess2 entrypoints exported by dlls/mscordbi/mscordbi.src
-; are intentionally omitted here. The remaining export set matches mscordbi.src; only the
-; LIBRARY name differs so the module's internal name matches mscordbi_universal.dll.
+; are intentionally omitted here. The LIBRARY name differs so the module's internal name matches mscordbi_universal.dll.
 
 LIBRARY         mscordbi_universal
 
