@@ -11,13 +11,6 @@ using Xunit.Abstractions;
 
 namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
-enum TargetRid
-{
-    Host,
-    HostArm,
-    BrowserWasm
-}
-
 /// <summary>
 /// Describes an assembly compiled by Roslyn as part of a test case.
 /// </summary>
@@ -101,8 +94,6 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
     /// </summary>
     public Action<ReadyToRunReader>? Validate { get; init; }
 
-    public TargetRid TargetRid { get; init; } = TargetRid.Host;
-
     public string Name => name;
 
     public bool IsComposite => Options.Contains(Crossgen2Option.Composite);
@@ -185,12 +176,10 @@ internal sealed class R2RTestCase(string name, List<CrossgenCompilation> compila
 internal sealed class R2RTestRunner
 {
     private readonly ITestOutputHelper _output;
-    private readonly TestPaths _paths;
 
     public R2RTestRunner(ITestOutputHelper output)
     {
         _output = output;
-        _paths = new TestPaths(output);
     }
 
     /// <summary>
@@ -213,25 +202,11 @@ internal sealed class R2RTestRunner
             var assemblyPaths = CompileAllAssemblies(assembliesToCompile);
 
             // Step 2: Run each crossgen2 compilation and validate
-            var driver = new R2RDriver(_output, _paths);
-            List<string> hostRefPaths = BuildReferencePaths(CoreLibTargetArchitecture.Host);
-            List<string>? wasmRefPaths = null;
-            List<string>? armRefPaths = null;
+            var driver = new R2RDriver(_output);
+            List<string> refPaths = BuildReferencePaths();
 
             foreach(var compilation in testCase.Compilations)
             {
-                List<string> refPaths = hostRefPaths;
-                if (compilation.TargetRid == TargetRid.BrowserWasm)
-                {
-                    wasmRefPaths ??= BuildReferencePaths(CoreLibTargetArchitecture.Wasm);
-                    refPaths = wasmRefPaths;
-                }
-                else if (compilation.TargetRid == TargetRid.HostArm)
-                {
-                    armRefPaths ??= BuildReferencePaths(CoreLibTargetArchitecture.Arm32);
-                    refPaths = armRefPaths;
-                }
-
                 string outputPath = RunCrossgenCompilation(
                     testCase.Name, compilation, driver, compilation.FilePath, refPaths, assemblyPaths);
 
@@ -260,7 +235,7 @@ internal sealed class R2RTestRunner
         var paths = new Dictionary<string, string>();
 
         // Tests shouldn't require a platform-specific runtime/ref pack for Roslyn compilation
-        var defaultReferences = BuildReferencePaths(CoreLibTargetArchitecture.Host);
+        var defaultReferences = BuildReferencePaths();
         var compiler = new R2RTestCaseCompiler(defaultReferences);
         foreach (var asm in assemblies)
         {
@@ -332,13 +307,7 @@ internal sealed class R2RTestRunner
         foreach (var option in compilation.Options)
             args.Add(option.ToArg());
 
-        args.AddRange(compilation.TargetRid switch
-        {
-            TargetRid.Host => [],
-            TargetRid.HostArm => ["--targetarch", "arm"],
-            TargetRid.BrowserWasm => ["--targetos", "browser", "--targetarch", "wasm"],
-            _ => throw new InvalidOperationException($"Unknown target RID: {compilation.TargetRid}")
-        });
+        args.AddRange(["--targetos", TestPaths.TargetOS, "--targetarch", TestPaths.TargetArchitecture]);
 
         // Caller-supplied raw args (for options that take values, e.g. --determinism-stress=N)
         args.AddRange(compilation.AdditionalArgs);
@@ -369,45 +338,18 @@ internal sealed class R2RTestRunner
     }
 
     /// <summary>
-    /// Runtime packs are used as references for both Roslyn compilation and crossgen2 compilation. This method builds the reference paths for both.
+    /// Builds the reference paths used for both Roslyn and crossgen2 compilation, from the
+    /// shared framework IL assemblies staged for this build's target RID.
     /// </summary>
-    private List<string> BuildReferencePaths(CoreLibTargetArchitecture coreLibArch)
+    private static List<string> BuildReferencePaths()
     {
-        List<string> paths;
-        (string runtimePackDir, string runtimePackNativeDir) = coreLibArch switch
-        {
-            CoreLibTargetArchitecture.Host => (_paths.RuntimePackDir, _paths.RuntimePackNativeDir),
-            CoreLibTargetArchitecture.Arm32 => (_paths.ArmRuntimePackDir, _paths.ArmRuntimePackNativeDir),
-            CoreLibTargetArchitecture.Wasm => (_paths.WasmRuntimePackDir, _paths.WasmRuntimePackNativeDir),
-            _ => throw new InvalidOperationException($"Unknown CoreLibTargetArchitecture: {coreLibArch}")
-        };
-        if (!RuntimePackPathsAreValid(runtimePackDir, runtimePackNativeDir))
-        {
-            if (_paths.RequireTargetArchRuntimePack)
-            {
-                throw new InvalidOperationException($"Required runtime pack for {coreLibArch} not found: {runtimePackDir} or {runtimePackNativeDir}");
-            }
-            else
-            {
-                _output.WriteLine($"Warning: Required runtime pack for {coreLibArch} not found: {runtimePackDir} or {runtimePackNativeDir}. Falling back to host references.");
-                (runtimePackDir, runtimePackNativeDir) = (_paths.RuntimePackDir, _paths.RuntimePackNativeDir);
-            }
-        }
+        string librariesDir = TestPaths.LibrariesDir;
 
-        string coreLibPath = Path.Combine(runtimePackNativeDir, "System.Private.CoreLib.dll");
-        Assert.True(File.Exists(coreLibPath), $"System.Private.CoreLib.dll not found: {coreLibPath}");
-        Assert.True(Directory.Exists(runtimePackDir), $"Runtime pack directory not found: {runtimePackDir}");
-
-        paths = [
-            ..Directory.GetFiles(runtimePackDir, "*.dll"),
-            coreLibPath
-        ];
+        List<string> paths = [.. Directory.GetFiles(librariesDir, "*.dll")];
+        Assert.True(
+            paths.Exists(p => Path.GetFileName(p) == "System.Private.CoreLib.dll"),
+            $"System.Private.CoreLib.dll not found in staged references: {librariesDir}");
 
         return paths;
-
-        bool RuntimePackPathsAreValid(string runtimePackDir, string runtimePackNativeDir)
-        {
-            return Directory.Exists(runtimePackDir) && File.Exists(Path.Combine(runtimePackNativeDir, "System.Private.CoreLib.dll"));
-        }
     }
 }

@@ -4,8 +4,6 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
-using Xunit.Abstractions;
 
 namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
@@ -13,67 +11,97 @@ namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 /// Provides paths to build artifacts needed by the test infrastructure.
 /// All paths come from RuntimeHostConfigurationOption items in the csproj.
 /// </summary>
-internal sealed class TestPaths
+internal static class TestPaths
 {
-    private readonly ITestOutputHelper _output;
-
-    public TestPaths(ITestOutputHelper output)
-    {
-        _output = output;
-    }
-
     private static string GetRequiredConfig(string key)
     {
         return AppContext.GetData(key) as string
             ?? throw new InvalidOperationException($"Missing RuntimeHostConfigurationOption '{key}'. Was the project built with the correct properties?");
     }
 
-    /// <summary>
-    /// Path to the crossgen2 output directory (contains the self-contained crossgen2 executable and clrjit).
-    /// e.g. artifacts/bin/coreclr/linux.x64.Checked/x64/crossgen2/
-    /// </summary>
-    public string Crossgen2Dir => GetRequiredConfig("R2RTest.Crossgen2Dir");
-
     private static string Crossgen2ExeName => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "crossgen2.exe" : "crossgen2";
 
     /// <summary>
-    /// Path to the self-contained crossgen2 executable (from crossgen2_inbuild).
+    /// The OS and architecture this root build targets, e.g. <c>linux</c>/<c>x64</c> or
+    /// <c>browser</c>/<c>wasm</c>. Every test case compiles for this target.
     /// </summary>
-    public string Crossgen2Exe => Path.Combine(Crossgen2Dir, Crossgen2ExeName);
+    /// <remarks>
+    /// The test assembly itself always runs on the build machine; this is what crossgen2 compiles
+    /// <em>for</em>, which is independent of what the tests run <em>on</em>.
+    /// </remarks>
+    public static string TargetOS => GetRequiredConfig("R2RTest.TargetOS");
+    public static string TargetArchitecture => GetRequiredConfig("R2RTest.TargetArchitecture");
+
+    private static string TargetDescription => $"{TargetOS}-{TargetArchitecture}";
+
+    public static bool IsWasmTarget => TargetArchitecture == "wasm";
 
     /// <summary>
-    /// Path to the host runtime pack managed assemblies directory.
+    /// Gates the test cases that are not wasm-specific. crossgen2's wasm backend cannot yet compile
+    /// most of what these tests exercise, and the R2R images it does produce are wasm modules rather
+    /// than PE files, so <see cref="ILCompiler.Reflection.ReadyToRun.ReadyToRunReader"/> cannot read
+    /// them back to validate. Test cases are therefore opt-in for wasm rather than opt-out.
     /// </summary>
-    public string RuntimePackDir => GetRequiredConfig("R2RTest.RuntimePackDir");
+    public static bool IsNotWasmTarget => !IsWasmTarget;
+
+    public static bool IsArmTarget => TargetArchitecture is "arm" or "armel";
+
+    public static bool IsWindows => OperatingSystem.IsWindows();
 
     /// <summary>
-    /// Path to the host runtime pack native directory.
+    /// Subdirectory of the output directory holding the assets this root build staged. Keyed on OS
+    /// as well as architecture so that targets sharing an architecture do not collide.
+    /// Matches the <c>TargetAssetDirName</c> property in the csproj.
     /// </summary>
-    public string RuntimePackNativeDir => GetRequiredConfig("R2RTest.RuntimePackNativeDir");
+    private static string TargetAssetDirName => TargetDescription;
 
     /// <summary>
-    /// Path to the browser-wasm runtime pack managed assemblies directory.
-    /// When present, the wasm crossgen2 compilation references these real browser-wasm
-    /// framework assemblies instead of the host runtime pack.
+    /// Path to the crossgen2 that compiles for this build's target.
     /// </summary>
-    public string WasmRuntimePackDir => GetRequiredConfig("R2RTest.WasmRuntimePackDir");
+    /// <remarks>
+    /// A root build stages the crossgen2 it built into a subdirectory named after its target,
+    /// so builds for different targets accumulate rather than clobber each other.
+    /// Only the subdirectory for this build's own target is ever read: a crossgen2 built for one
+    /// target does not carry the cross-targeting JIT for any other, so substituting a different
+    /// one either fails with a DllNotFoundException or silently compiles for the wrong
+    /// architecture.
+    /// </remarks>
+    public static string Crossgen2Exe
+    {
+        get
+        {
+            string exe = Path.Combine(AppContext.BaseDirectory, TargetAssetDirName, "crossgen2", Crossgen2ExeName);
+            if (!File.Exists(exe))
+            {
+                throw new FileNotFoundException(
+                    $"No crossgen2 staged for {TargetDescription} at '{exe}'. Build the clr and libs subsets for " +
+                    $"{TargetDescription}, then rebuild this test project.");
+            }
+
+            return exe;
+        }
+    }
 
     /// <summary>
-    /// Path to the browser-wasm runtime pack native directory (contains the wasm
-    /// System.Private.CoreLib.dll).
+    /// Directory holding the shared framework IL assemblies crossgen2 compiles against.
     /// </summary>
-    public string WasmRuntimePackNativeDir => GetRequiredConfig("R2RTest.WasmRuntimePackNativeDir");
+    public static string LibrariesDir
+    {
+        get
+        {
+            string dir = Path.Combine(AppContext.BaseDirectory, TargetAssetDirName, "libraries");
+            if (!Directory.Exists(dir))
+            {
+                throw new DirectoryNotFoundException(
+                    $"No shared framework assemblies staged for {TargetDescription} at '{dir}'. Build the clr and " +
+                    $"libs subsets for {TargetDescription}, then rebuild this test project.");
+            }
 
-    public string ArmRuntimePackDir => GetRequiredConfig("R2RTest.ArmRuntimePackDir");
-    public string ArmRuntimePackNativeDir => GetRequiredConfig("R2RTest.ArmRuntimePackNativeDir");
-
-    public bool RequireTargetArchRuntimePack => string.Equals(
-        GetRequiredConfig("R2RTest.RequireTargetArchRuntimePack"),
-        bool.TrueString,
-        StringComparison.OrdinalIgnoreCase);
+            return dir;
+        }
+    }
 
     public static string CoreCLRConfiguration => GetRequiredConfig("R2RTest.CoreCLRConfiguration");
     public static bool IsReleaseCoreCLR => string.Equals(CoreCLRConfiguration, "Release", StringComparison.OrdinalIgnoreCase);
     public static bool IsNotReleaseCoreCLR => !IsReleaseCoreCLR;
-    public static bool ArmOnHostOSSupported => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
 }

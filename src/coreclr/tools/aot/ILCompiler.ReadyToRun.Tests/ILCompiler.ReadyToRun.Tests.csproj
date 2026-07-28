@@ -1,4 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+
+  <!--
+    Set Platform=AnyCPU before importing Sdk.props.
+    This test is meant to run on the build machine, so it should not be built for the target of the
+    outer build / runtime target.
+  -->
+  <PropertyGroup>
+    <Platform>AnyCPU</Platform>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
     <AssemblyName>ILCompiler.ReadyToRun.Tests</AssemblyName>
@@ -7,7 +18,21 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
-    <RequireTargetArchRuntimePack Condition="'$(RequireTargetArchRuntimePack)' == ''">false</RequireTargetArchRuntimePack>
+    <!-- The tests always run on the build machine, so pin to the host RID and keep it out of the
+         output path. Combined with Platform=AnyCPU above, every target-arch build shares one
+         output directory. -->
+    <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Each target stages its own assets into the shared output directory, but IncrementalClean
+         deletes any file recorded in a previous build that the current build did not produce and
+         that lives under OutDir. With a single file-write log the targets would evict each other's
+         staged assets, so give each target its own log. Only the log has to be per-target; the rest
+         of the intermediate directory stays shared, which keeps the runtimeconfig.json
+         incrementality cache shared and therefore correctly invalidated when the target changes. -->
+    <CleanFile>$(MSBuildProjectFile).$(TargetOS).$(TargetArchitecture).FileListAbsolute.txt</CleanFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,89 +49,84 @@
 
   <ItemGroup>
     <ProjectReference Include="../ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
-    <ProjectReference Include="../crossgen2/crossgen2_inbuild.csproj" ReferenceOutputAssembly="false" OutputItemType="Crossgen2InbuildOutputItems">
-      <SetConfiguration>Configuration=$(CoreCLRConfiguration);CopyAllJitLibrariesToAotCompilerOutput=true</SetConfiguration>
+    <!-- Built for the outer TargetOS/TargetArchitecture, so it runs on the build machine but
+         compiles for the target. Private="false" keeps it out of the output root; StageTargetAssets
+         below places it under its own target-architecture subdirectory instead. -->
+    <ProjectReference Include="../crossgen2/crossgen2_inbuild.csproj" ReferenceOutputAssembly="false" OutputItemType="Crossgen2InbuildOutputItems" Private="false">
+      <SetConfiguration>Configuration=$(CoreCLRConfiguration);CopyAllJitLibrariesToAotCompilerOutput=true;TargetArchitecture=$(TargetArchitecture);TargetOS=$(TargetOS)</SetConfiguration>
     </ProjectReference>
   </ItemGroup>
 
   <PropertyGroup>
-    <WasmRuntimePackRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.browser-wasm'))</WasmRuntimePackRoot>
-    <WasmRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', 'browser-wasm', 'lib', '$(NetCoreAppCurrent)'))</WasmRuntimePackDir>
-    <WasmRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', 'browser-wasm', 'native'))</WasmRuntimePackNativeDir>
-    <WasmRuntimePackDir Condition="!Exists('$(WasmRuntimePackDir)') and Exists('$(WasmRuntimePackRoot)Release/runtimes/browser-wasm/lib/$(NetCoreAppCurrent)')">$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', 'Release', 'runtimes', 'browser-wasm', 'lib', '$(NetCoreAppCurrent)'))</WasmRuntimePackDir>
-    <WasmRuntimePackNativeDir Condition="!Exists('$(WasmRuntimePackNativeDir)') and Exists('$(WasmRuntimePackRoot)Release/runtimes/browser-wasm/native')">$([MSBuild]::NormalizeDirectory('$(WasmRuntimePackRoot)', 'Release', 'runtimes', 'browser-wasm', 'native'))</WasmRuntimePackNativeDir>
-
-    <ArmRuntimePackRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(TargetOS)-arm'))</ArmRuntimePackRoot>
-    <ArmRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', '$(TargetOS)-arm', 'lib', '$(NetCoreAppCurrent)'))</ArmRuntimePackDir>
-    <ArmRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(ArmRuntimePackRoot)', '$(LibrariesConfiguration)', 'runtimes', '$(TargetOS)-arm', 'native'))</ArmRuntimePackNativeDir>
-    <ArmRuntimePackDir Condition="!Exists('$(ArmRuntimePackDir)') and Exists('$(ArmRuntimePackRoot)Release/runtimes/$(TargetOS)-arm/lib/$(NetCoreAppCurrent)')">$([MSBuild]::NormalizeDirectory('$(ArmRuntimePackRoot)', 'Release', 'runtimes', '$(TargetOS)-arm', 'lib', '$(NetCoreAppCurrent)'))</ArmRuntimePackDir>
-    <ArmRuntimePackNativeDir Condition="!Exists('$(ArmRuntimePackNativeDir)') and Exists('$(ArmRuntimePackRoot)Release/runtimes/$(TargetOS)-arm/native')">$([MSBuild]::NormalizeDirectory('$(ArmRuntimePackRoot)', 'Release', 'runtimes', '$(TargetOS)-arm', 'native'))</ArmRuntimePackNativeDir>
+    <!-- Subdirectory of $(OutDir) that holds this root build's target-specific assets. Every build
+         writes to a different one, so builds for different targets accumulate rather than clobber.
+         Keyed on OS as well as architecture: several targets share an architecture (browser-wasm vs
+         wasi-wasm, linux-x64 vs windows-x64) and must not overwrite each other's crossgen2 and
+         libraries. Matches TestPaths.TargetAssetDirName. -->
+    <TargetAssetDirName>$(TargetOS)-$(TargetArchitecture)</TargetAssetDirName>
   </PropertyGroup>
 
-  <Target Name="ValidatePathsExist"
-          BeforeTargets="Build"
+  <!-- Stage this root build's target-specific assets into $(OutDir)$(TargetAssetDirName)/. The
+       directory name is derived from the target architecture, so successive root builds for
+       different targets accumulate side by side (e.g. wasm/ and arm/) instead of clobbering
+       each other.
+
+       This must run before AssignTargetPaths: that target snapshots @(Content) into
+       @(ContentWithTargetPath), which is what the stock copy-to-output-directory pipeline
+       consumes. Hooking anything later (e.g. BeforeTargets="Build") is silently a no-op. -->
+  <Target Name="StageTargetAssets"
+          BeforeTargets="AssignTargetPaths"
+          DependsOnTargets="ResolveProjectReferences"
           Condition="'$(DesignTimeBuild)' != 'true'">
+    <Error Condition="'@(Crossgen2InbuildOutputItems)' == ''"
+           Text="crossgen2_inbuild published no files. This is a build authoring error; the ProjectReference should have built it." />
 
-    <Error Condition="!Exists('$(CoreCLRArtifactsPath)\$(BuildArchitecture)\crossgen2')"
-           Text="Crossgen2 inbuild publish directory '$(CoreCLRArtifactsPath)\$(BuildArchitecture)\crossgen2' does not exist. This is a build authoring error and should be generated in the test project build." />
-    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackNativeDir)')"
-           Text="Runtime pack path '$(MicrosoftNetCoreAppRuntimePackNativeDir)' does not exist." />
-    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)')"
-           Text="Runtime pack path '$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' does not exist." />
-
-    <!-- Wasm and arm32 runtime packs are not strictly required for local builds, but are required in CI by setting RequireTargetArchRuntimePack to true -->
-    <Error Condition="'$(RequireTargetArchRuntimePack)' == 'true' and (!Exists('$(WasmRuntimePackDir)') or !Exists('$(WasmRuntimePackNativeDir)System.Private.CoreLib.dll') or !Exists('$(ArmRuntimePackDir)') or !Exists('$(ArmRuntimePackNativeDir)System.Private.CoreLib.dll'))"
-           Text="The browser-wasm or arm32 runtime pack was not found under '$(WasmRuntimePackRoot)' or '$(ArmRuntimePackRoot)'. Build the wasm and arm32 prerequisite artifacts before building this test." />
-    <Message Importance="High" Condition="'$(RequireTargetArchRuntimePack)' != 'true' and !Exists('$(WasmRuntimePackDir)')"
-             Text="Browser-wasm runtime pack path '$(WasmRuntimePackDir)' does not exist. Browser-wasm ReadyToRun tests will fall back to host references, which may cause unexpected failures. Generate by building the clr.corelib+libs+libs.pretest subsets for browser-wasm." />
-    <Message Importance="High" Condition="'$(RequireTargetArchRuntimePack)' != 'true' and !Exists('$(WasmRuntimePackNativeDir)System.Private.CoreLib.dll')"
-             Text="Browser-wasm System.Private.CoreLib.dll was not found under '$(WasmRuntimePackNativeDir)'. Browser-wasm ReadyToRun tests will fall back to host references, which may cause unexpected failures. Generate by building the clr.corelib+libs+libs.pretest subsets for browser-wasm." />
-    <Message Importance="High" Condition="'$(RequireTargetArchRuntimePack)' != 'true' and !Exists('$(ArmRuntimePackDir)')"
-             Text="Arm32 runtime pack path '$(ArmRuntimePackDir)' does not exist. Arm32 ReadyToRun tests will fall back to host references, which may cause unexpected failures. Generate by building the clr.corelib+libs+libs.pretest subsets for arm32." />
-    <Message Importance="High" Condition="'$(RequireTargetArchRuntimePack)' != 'true' and !Exists('$(ArmRuntimePackNativeDir)System.Private.CoreLib.dll')"
-             Text="Arm32 System.Private.CoreLib.dll was not found under '$(ArmRuntimePackNativeDir)'. Arm32 ReadyToRun tests will fall back to host references, which may cause unexpected failures. Generate by building the clr.corelib+libs+libs.pretest subsets for arm32." />
-  </Target>
-
-  <!-- RuntimeConfiguration values that depend on build output paths must be set in a target -->
-  <Target Name="SetRuntimeConfigurationOptions"
-          BeforeTargets="GenerateBuildRuntimeConfigurationFiles"
-          Condition="'$(DesignTimeBuild)' != 'true'">
+    <!-- The shared framework references crossgen2 compiles against. These are taken from the
+         already-built libs output rather than a ProjectReference: referencing sfx-src.proj walks
+         all ~180 library projects on every build, which costs far more than it buys here since
+         the 'libs' subset is a prerequisite of this project anyway. Both paths below are derived
+         from the outer TargetOS/TargetArchitecture, so a root build for e.g. browser-wasm picks up
+         the browser flavors. System.Private.CoreLib comes from CoreCLR's IL directory: the copy at
+         the root of $(CoreCLRArtifactsPath) is the crossgen'd image, and crossgen2 needs IL. -->
+    <Error Condition="!Exists('$(LibrariesSharedFrameworkBinArtifactsPath)')"
+           Text="The 'libs' subset must be built for $(TargetOS)-$(TargetArchitecture) before building this project. Missing artifacts: $(LibrariesSharedFrameworkBinArtifactsPath). Configuration: '$(LibrariesConfiguration)'." />
+    <Error Condition="!Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll')"
+           Text="The 'clr.corelib' subset must be built for $(TargetOS)-$(TargetArchitecture) before building this project. Missing artifacts: $(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll. Configuration: '$(CoreCLRConfiguration)'." />
 
     <ItemGroup>
-      <RuntimeHostConfigurationOption Include="R2RTest.Crossgen2Dir">
-        <Value>@(Crossgen2InbuildOutputItems->WithMetadataValue('Filename', 'crossgen2')->WithMetadataValue('Extension', '$(ExeSuffix)')->'%(RootDir)%(Directory)')</Value>
-      </RuntimeHostConfigurationOption>
-      <RuntimeHostConfigurationOption Include="R2RTest.RuntimePackDir">
-        <Value>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</Value>
-      </RuntimeHostConfigurationOption>
-      <RuntimeHostConfigurationOption Include="R2RTest.RuntimePackNativeDir">
-        <Value>$(MicrosoftNetCoreAppRuntimePackNativeDir)</Value>
-      </RuntimeHostConfigurationOption>
-
-      <RuntimeHostConfigurationOption Include="R2RTest.RequireTargetArchRuntimePack">
-        <Value>$(RequireTargetArchRuntimePack)</Value>
-      </RuntimeHostConfigurationOption>
-
-      <RuntimeHostConfigurationOption Include="R2RTest.WasmRuntimePackDir">
-        <Value>$(WasmRuntimePackDir)</Value>
-      </RuntimeHostConfigurationOption>
-      <RuntimeHostConfigurationOption Include="R2RTest.WasmRuntimePackNativeDir">
-        <Value>$(WasmRuntimePackNativeDir)</Value>
-      </RuntimeHostConfigurationOption>
-
-      <RuntimeHostConfigurationOption Include="R2RTest.ArmRuntimePackDir">
-        <Value>$(ArmRuntimePackDir)</Value>
-      </RuntimeHostConfigurationOption>
-      <RuntimeHostConfigurationOption Include="R2RTest.ArmRuntimePackNativeDir">
-        <Value>$(ArmRuntimePackNativeDir)</Value>
-      </RuntimeHostConfigurationOption>
-
-      <!-- Used for gating Debug-only JIT features from being tested. -->
-      <RuntimeHostConfigurationOption Include="R2RTest.CoreCLRConfiguration">
-        <Value>$(CoreCLRConfiguration)</Value>
-      </RuntimeHostConfigurationOption>
+      <_SharedFrameworkAssembly Include="$(LibrariesSharedFrameworkBinArtifactsPath)*.dll" />
+      <_SharedFrameworkAssembly Include="$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Include="@(Crossgen2InbuildOutputItems)"
+               CopyToOutputDirectory="PreserveNewest"
+               TargetPath="$(TargetAssetDirName)/crossgen2/%(Filename)%(Extension)" />
+
+      <Content Include="@(_SharedFrameworkAssembly)"
+               CopyToOutputDirectory="PreserveNewest"
+               TargetPath="$(TargetAssetDirName)/libraries/%(Filename)%(Extension)" />
+    </ItemGroup>
   </Target>
+
+  <!-- These must be plain items rather than being set in a target: the incrementality hash for
+       the runtimeconfig (_GenerateRuntimeConfigurationFilesInputCache) is computed from
+       @(RuntimeHostConfigurationOption) before any BeforeTargets hook on
+       GenerateBuildRuntimeConfigurationFiles gets to run. Values added from a target are therefore
+       invisible to it, and since every target-architecture build shares one output directory, a
+       stale runtimeconfig from a previous target would be silently reused. -->
+  <ItemGroup>
+    <!-- Used for gating Debug-only JIT features from being tested. -->
+    <RuntimeHostConfigurationOption Include="R2RTest.CoreCLRConfiguration" Value="$(CoreCLRConfiguration)" />
+    <!-- The target every test case compiles for. Distinct from $(RuntimeIdentifier) above, which is
+         the RID the test assembly itself runs on. These are published as separate values rather than
+         as a RID that the tests parse: $(TargetRid) can carry an OS qualifier or a distro name
+         (linux-musl-x64, linux-bionic-arm64, alpine.3.19-x64), none of which crossgen2 accepts as a
+         target OS. -->
+    <RuntimeHostConfigurationOption Include="R2RTest.TargetOS" Value="$(TargetOS)" />
+    <RuntimeHostConfigurationOption Include="R2RTest.TargetArchitecture" Value="$(TargetArchitecture)" />
+  </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
 </Project>

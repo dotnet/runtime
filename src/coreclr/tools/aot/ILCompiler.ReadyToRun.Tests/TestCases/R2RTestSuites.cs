@@ -29,7 +29,7 @@ public class R2RTestSuites
         _output = output;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void BasicCrossModuleInlining()
     {
         var inlineableLib = new CompiledAssembly
@@ -62,7 +62,7 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmWebcilModule()
     {
         var wasmWebcilModule = new CompiledAssembly
@@ -80,7 +80,6 @@ public class R2RTestSuites
                     // Reference the real browser-wasm framework assemblies when they are available
                     // (e.g. the wasm tools-test job downloads them); otherwise the runner falls back
                     // to host references so this test still runs everywhere.
-                    TargetRid = TargetRid.BrowserWasm,
                     Validate = Validate,
                 },
             ]));
@@ -118,7 +117,7 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmSimdModule()
     {
         var wasmSimdModule = new CompiledAssembly
@@ -133,7 +132,6 @@ public class R2RTestSuites
                 new(nameof(WasmSimdModule), [new CrossgenAssembly(wasmSimdModule)])
                 {
                     OutputFileExtension = ".wasm",
-                    TargetRid = TargetRid.BrowserWasm,
                     Validate = Validate,
                 },
             ]));
@@ -193,7 +191,7 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void RuntimeFunctionsSectionSizeExcludesSentinel()
     {
         var lib = new CompiledAssembly
@@ -226,7 +224,7 @@ public class R2RTestSuites
         }
     }
 
-    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.ArmOnHostOSSupported))]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsArmTarget))]
     public void ArmThumbBitRelocationTargets()
     {
         var inlineableLib = new CompiledAssembly
@@ -250,7 +248,6 @@ public class R2RTestSuites
                     new CrossgenAssembly(inlineableLib) { Kind = Crossgen2InputKind.Reference },
                 ])
                 {
-                    TargetRid = TargetRid.HostArm,
                     Validate = Validate,
                 },
             ]));
@@ -263,7 +260,7 @@ public class R2RTestSuites
     }
 
     // JitStressProcedureSplitting is only available in Debug/Checked JIT builds.
-    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotReleaseCoreCLR), nameof(TestPaths.ArmOnHostOSSupported))]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotReleaseCoreCLR), nameof(TestPaths.IsArmTarget))]
     public void ArmThumbBitHotColdRuntimeFunctions()
     {
         var hotColdSplitting = new CompiledAssembly
@@ -277,7 +274,6 @@ public class R2RTestSuites
             [
                 new(nameof(ArmThumbBitHotColdRuntimeFunctions), [new CrossgenAssembly(hotColdSplitting)])
                 {
-                    TargetRid = TargetRid.HostArm,
                     Options =
                     [
                         Crossgen2Option.Optimize,
@@ -299,7 +295,7 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void TransitiveReferences()
     {
         var externalLib = new CompiledAssembly()
@@ -342,7 +338,7 @@ public class R2RTestSuites
             ]));
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void AsyncCrossModuleInlining()
     {
         var asyncInlineableLib = new CompiledAssembly
@@ -382,7 +378,7 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeBasic()
     {
         var compositeLib = new CompiledAssembly
@@ -418,7 +414,7 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeManifestAssemblyMvidsAreAligned()
     {
         var compositeLib = new CompiledAssembly
@@ -454,9 +450,7 @@ public class R2RTestSuites
         }
     }
 
-    public static bool IsWindows => System.OperatingSystem.IsWindows();
-
-    [ConditionalFact(nameof(IsWindows))]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWindows), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeManifestAssemblyMvidsArePaddedWhenPdbPresent()
     {
         var compositeLib = new CompiledAssembly
@@ -506,7 +500,7 @@ public class R2RTestSuites
     /// boundary. When they landed on an unaligned RVA the runtime faulted on ARM32 (which does not
     /// permit unaligned multi-word loads) during coreclr_initialize; x64/arm64 tolerated it.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeManifestSectionsAreAligned()
     {
         var compositeLib = new CompiledAssembly
@@ -548,7 +542,7 @@ public class R2RTestSuites
     /// sections off a 4-byte boundary without the fix. Windows-only because it relies on Windows PDB
     /// generation.
     /// </summary>
-    [ConditionalFact(nameof(IsWindows))]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWindows), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeManifestSectionsArePaddedWhenPdbPresent()
     {
         var compositeLib = new CompiledAssembly
@@ -585,7 +579,7 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void RuntimeAsyncMethodEmission()
     {
         var runtimeAsyncMethodEmission = new CompiledAssembly
@@ -623,7 +617,7 @@ public class R2RTestSuites
     /// It must also strip a non-async Task-returning method whose async variant has already been
     /// compiled, since the IL is no longer needed at runtime.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void RuntimeAsyncStripILBodiesPreservesTaskReturningIL()
     {
         var stripILBodies = new CompiledAssembly
@@ -682,7 +676,7 @@ public class R2RTestSuites
     /// produce ContinuationLayout fixups encoding the GC ref map.
     /// PR #124203: Resumption stubs for methods with suspension points.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void RuntimeAsyncContinuationLayout()
     {
         var runtimeAsyncContinuationLayout = new CompiledAssembly
@@ -721,7 +715,7 @@ public class R2RTestSuites
     /// PR #125420: [ASYNC] variant generation for devirtualizable async call patterns
     /// (sealed class and interface dispatch through AsyncAwareVirtualMethodResolutionAlgorithm).
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void RuntimeAsyncDevirtualize()
     {
         var runtimeAsyncDevirtualize = new CompiledAssembly
@@ -756,7 +750,7 @@ public class R2RTestSuites
     /// PR #124203: Async methods without yield points may omit resumption stubs.
     /// Validates that no-yield async methods still produce [ASYNC] variants.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void RuntimeAsyncNoYield()
     {
         var runtimeAsyncNoYield = new CompiledAssembly
@@ -793,7 +787,7 @@ public class R2RTestSuites
     /// --determinism-stress), each compiled method should have exactly one
     /// ResumptionStubEntryPoint fixup.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void RuntimeAsyncResumptionStubFixupDedup()
     {
         var asm = new CompiledAssembly
@@ -836,7 +830,7 @@ public class R2RTestSuites
     /// PR #121679: MutableModule async references + cross-module inlining
     /// of runtime-async methods with cross-module dependency.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void RuntimeAsyncCrossModule()
     {
         var asyncDepLib = new CompiledAssembly
@@ -895,7 +889,7 @@ public class R2RTestSuites
     /// Validates that inlining info (CrossModuleInlineInfo or InliningInfo2) is
     /// properly populated (CompositeBasic only validates ManifestRef).
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeCrossModuleInlining()
     {
         var inlineableLib = new CompiledAssembly
@@ -937,7 +931,7 @@ public class R2RTestSuites
     /// assemblies does NOT produce a CrossModuleInlineInfo section. CrossModuleInlineInfo only records
     /// inlining where the inlinee module is outside the compiled image's version bubble
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeDoesNotProduceCrossModuleInliningInfo()
     {
         var inlineableLib = new CompiledAssembly
@@ -984,7 +978,7 @@ public class R2RTestSuites
     /// comes from an assembly outside the version bubble (passed as a Reference with
     /// --opt-cross-module).
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeProducesCrossModuleInliningInfoForExternalReference()
     {
         var inlineableLib = new CompiledAssembly
@@ -1036,7 +1030,7 @@ public class R2RTestSuites
     /// Composite mode with runtime-async methods in both assemblies.
     /// Validates async variants exist in composite output.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeAsync()
     {
         var asyncCompositeLib = new CompiledAssembly
@@ -1081,7 +1075,7 @@ public class R2RTestSuites
     /// Verifies that, in composite mode, awaitless async candidates ARE inlined into
     /// their callers.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeAsyncInliningMatrix()
     {
         var asyncInlineCandidatesLib = new CompiledAssembly
@@ -1136,7 +1130,7 @@ public class R2RTestSuites
     /// https://github.com/dotnet/runtime/pull/126904 added support for ensuring the OwningType signature modifier is emitted
     /// for these methods.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeAsyncGenericTypes()
     {
         var asyncGenericTypeLib = new CompiledAssembly
@@ -1201,7 +1195,7 @@ public class R2RTestSuites
     /// captures GC refs across await points. Validates that ContinuationLayout
     /// fixups correctly reference cross-module types via MutableModule tokens.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void AsyncCrossModuleContinuation()
     {
         var asyncDepLibCont = new CompiledAssembly
@@ -1256,7 +1250,7 @@ public class R2RTestSuites
     /// Two-step compilation: composite A+B, then non-composite C referencing A.
     /// Exercises the multi-compilation model.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void MultiStepCompositeAndNonComposite()
     {
         var libA = new CompiledAssembly
@@ -1321,7 +1315,7 @@ public class R2RTestSuites
     /// Composite + runtime-async + cross-module devirtualization.
     /// Interface defined in AsyncInterfaceLib, call sites in CompositeAsyncDevirtMain.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeAsyncDevirtualize()
     {
         var asyncInterfaceLib = new CompiledAssembly
@@ -1369,7 +1363,7 @@ public class R2RTestSuites
     /// devirtualizes to a sealed receiver. Resolving the callee's async-variant thunk must unwrap it
     /// to the underlying EcmaMethod.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeAsyncDevirtNonAsyncCallee()
     {
         // Compiled WITHOUT runtime-async so the awaited virtuals get synthesized async-variant thunks.
@@ -1416,7 +1410,7 @@ public class R2RTestSuites
     /// Composite with 3 assemblies in A→B→C transitive chain.
     /// Validates manifest refs for all three and transitive inlining.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeTransitive()
     {
         var externalLib = new CompiledAssembly
@@ -1464,7 +1458,7 @@ public class R2RTestSuites
     /// Non-composite runtime-async + transitive cross-module inlining.
     /// Chain: AsyncTransitiveMain → AsyncTransitiveLib → AsyncExternalLib.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void AsyncCrossModuleTransitive()
     {
         var asyncExternalLib = new CompiledAssembly
@@ -1525,7 +1519,7 @@ public class R2RTestSuites
     /// Composite + runtime-async + transitive (3 assemblies).
     /// Full combination of composite, async, and transitive references.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void CompositeAsyncTransitive()
     {
         var asyncExternalLib = new CompiledAssembly
@@ -1584,7 +1578,7 @@ public class R2RTestSuites
     /// Step 1: Composite of async libs. Step 2: Non-composite consumer
     /// with cross-module inlining of async methods.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void MultiStepCompositeAndNonCompositeAsync()
     {
         var asyncDepLib = new CompiledAssembly
@@ -1655,7 +1649,7 @@ public class R2RTestSuites
     /// CrossModuleInlineInfo section, exercising the absolute-index encoding
     /// (not delta-encoded) for cross-module inliner entries.
     /// </summary>
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void CrossModuleGenericMultiInliner()
     {
         var crossModuleGenericLib = new CompiledAssembly
@@ -1701,7 +1695,7 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void VirtualMethodGenericsNonGVM()
     {
         var nonGvmLib = new CompiledAssembly
@@ -1746,7 +1740,7 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void VirtualMethodGenericsGVM()
     {
         var gvmLib = new CompiledAssembly
@@ -1791,7 +1785,7 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void VirtualMethodGenericsGenericLookup()
     {
         var genericLookupLib = new CompiledAssembly
