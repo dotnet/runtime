@@ -58,11 +58,13 @@ namespace ILCompiler
             TargetDetails details,
             SharedGenericsMode genericsMode,
             bool bubbleIncludesCoreModule,
+            bool targetAllowsRuntimeCodeGeneration,
             InstructionSetSupport instructionSetSupport,
             CompilerTypeSystemContext oldTypeSystemContext)
             : base(details, genericsMode)
         {
             BubbleIncludesCoreModule = bubbleIncludesCoreModule;
+            TargetAllowsRuntimeCodeGeneration = targetAllowsRuntimeCodeGeneration;
             InstructionSetSupport = instructionSetSupport;
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
@@ -99,27 +101,7 @@ namespace ILCompiler
 
         public InstructionSetSupport InstructionSetSupport { get; }
 
-        public bool TargetAllowsRuntimeCodeGeneration
-        {
-            get
-            {
-#if FEATURE_DYNAMIC_CODE_COMPILED
-                if (Target.OperatingSystem is TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator)
-                {
-                    return false;
-                }
-
-                if (Target.Architecture is TargetArchitecture.Wasm32)
-                {
-                    return false;
-                }
-
-                return true;
-#else
-                return false;
-#endif
-            }
-        }
+        public bool TargetAllowsRuntimeCodeGeneration { get; }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
