@@ -23,5 +23,4 @@
   <Project Path="src/ILLink.Shared/ILLink.Shared.shproj" />
   <Project Path="src/ILLink.Tasks/ILLink.Tasks.csproj" />
   <Project Path="src/linker/Mono.Linker.csproj" />
-  <Project Path="src/tlens/tlens.csproj" />
 </Solution>

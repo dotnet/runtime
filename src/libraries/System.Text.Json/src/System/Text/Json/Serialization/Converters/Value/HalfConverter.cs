@@ -19,6 +19,8 @@ namespace System.Text.Json.Serialization.Converters
             IsInternalConverterForNumberType = true;
         }
 
+        internal override bool IsIeeeFloatingPointConverter => true;
+
         public override Half Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
@@ -60,7 +62,7 @@ namespace System.Text.Json.Serialization.Converters
             byteBuffer = byteBuffer.Slice(0, written);
 
             bool success = TryParse(byteBuffer, out result);
-            if (rentedByteBuffer != null)
+            if (rentedByteBuffer is not null)
             {
                 ArrayPool<byte>.Shared.Return(rentedByteBuffer);
             }

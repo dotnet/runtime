@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Secur32
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Secur32)]
         internal static partial uint LsaFreeReturnBuffer(IntPtr buffer);
     }

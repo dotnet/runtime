@@ -209,7 +209,6 @@ export interface Assets {
     lazyAssembly?: AssemblyAsset[];
     corePdb?: PdbAsset[];
     pdb?: PdbAsset[];
-    jsModuleWorker?: JsAsset[];
     jsModuleDiagnostics?: JsAsset[];
     jsModuleNative: JsAsset[];
     jsModuleRuntime: JsAsset[];
@@ -222,7 +221,6 @@ export interface Assets {
     modulesAfterConfigLoaded?: JsAsset[];
     modulesAfterRuntimeReady?: JsAsset[];
     extensions?: ResourceExtensions;
-    coreVfs?: VfsAsset[];
     vfs?: VfsAsset[];
 }
 export type Asset = {
@@ -360,10 +358,6 @@ export type SingleAssetBehaviors =
      * The javascript module for loader.
      */
     | "js-module-dotnet"
-    /**
-     * The javascript module for threads.
-     */
-    | "js-module-threads"
     /**
      * The javascript module for diagnostic server and client.
      */

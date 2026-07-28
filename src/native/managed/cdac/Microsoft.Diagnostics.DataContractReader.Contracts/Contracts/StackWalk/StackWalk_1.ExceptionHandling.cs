@@ -55,7 +55,7 @@ internal partial class StackWalk_1 : IStackWalk
         // Check for out-of-line finally funclets.  Filter funclets can't be out-of-line.
         if (!isFilterFunclet)
         {
-            TargetPointer callerIp = callerContext.InstructionPointer;
+            TargetCodePointer callerIp = callerContext.InstructionPointer;
 
             // In the runtime, on Windows, we check with that the IP is in the runtime
             // TODO(stackref): make sure this difference doesn't matter
@@ -100,6 +100,61 @@ internal partial class StackWalk_1 : IStackWalk
         return TargetPointer.Null;
     }
 
+
+    // See https://github.com/dotnet/runtime/blob/5ad8ae4df419c33fed516bebe59231b21127bc5d/src/coreclr/vm/exceptionhandling.cpp#L3060
+    private bool TryGetFuncletParentInfo(StackDataFrameHandle funclet, out TargetPointer parentCallerSP, out uint parentNativeOffset)
+    {
+        parentCallerSP = TargetPointer.Null;
+        parentNativeOffset = 0;
+
+        // The funclet frame we are searching for in the fresh walk
+        TargetPointer targetSP = funclet.Context.StackPointer;
+        byte[] seed = funclet.Context.GetBytes();
+
+        bool foundTarget = false;
+        TargetPointer skipTo = TargetPointer.Null;
+
+        foreach (IStackDataFrameHandle rawHandle in ((IStackWalk)this).CreateStackWalk(funclet.ThreadData, seed, isFirst: true))
+        {
+            StackDataFrameHandle cf = AssertCorrectHandle(rawHandle);
+
+            // Only managed (frameless) frames participate
+            if (cf.State != StackWalkState.Frameless)
+                continue;
+
+            if (!foundTarget)
+            {
+                if (cf.Context.StackPointer != targetSP)
+                    continue;
+                foundTarget = true;
+            }
+
+            if (skipTo != TargetPointer.Null &&
+                (skipTo == TargetPointer.PlatformMaxValue(_target) || IsUnwoundToTargetParentFrame(cf, skipTo)))
+            {
+                // Reached the frame we were skipping to; clear and re-evaluate this frame.
+                skipTo = TargetPointer.Null;
+            }
+
+            if (skipTo == TargetPointer.Null && IsFunclet(cf))
+            {
+                // Current frame is itself a funclet (the target funclet or a nested one);
+                // get its parent so we keep skipping.
+                skipTo = FindParentStackFrameHelper(cf);
+            }
+
+            if (skipTo != TargetPointer.Null)
+                continue;
+
+            // We have reached the parent method frame.
+            parentCallerSP = CallerStackPointer(cf);
+            if (IsManaged(cf.Context.InstructionPointer, out CodeBlockHandle? cbh))
+                parentNativeOffset = (uint)_eman.GetRelativeOffset(cbh.Value).Value;
+            return true;
+        }
+
+        return false;
+    }
 
     private bool IsFunclet(StackDataFrameHandle handle)
     {

@@ -9,9 +9,11 @@ internal class StackRefData
     {
         StackSourceIP = 0,
         StackSourceFrame = 1,
+        StackSourceOther = 2,
     }
 
     public bool HasRegisterInformation { get; set; }
+    public bool IsInteriorPointer { get; set; }
     public int Register { get; set; }
     public int Offset { get; set; }
     public TargetPointer Address { get; set; }

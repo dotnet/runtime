@@ -53,6 +53,7 @@ CompPhaseNameMacro(PHASE_LOCAL_MORPH,                "Local morph",        false
 CompPhaseNameMacro(PHASE_OPTIMIZE_MASK_CONVERSIONS,  "Optimize mask conversions",      false, -1, false)
 CompPhaseNameMacro(PHASE_EARLY_LIVENESS,             "Early liveness",                 false, -1, false)
 CompPhaseNameMacro(PHASE_PHYSICAL_PROMOTION,         "Physical promotion",             false, -1, false)
+CompPhaseNameMacro(PHASE_UNPIN_LOCALS,               "Unpin non-movable locals",       false, -1, false)
 CompPhaseNameMacro(PHASE_FWD_SUB,                    "Forward Substitution",           false, -1, false)
 CompPhaseNameMacro(PHASE_IMPBYREF_COPY_OMISSION,     "Identify candidates for implicit byref copy omission", false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_IMPBYREF,             "Morph - ByRefs",                 false, -1, false)
@@ -110,6 +111,7 @@ CompPhaseNameMacro(PHASE_VN_BASED_DEAD_STORE_REMOVAL,"VN-based dead store remova
 CompPhaseNameMacro(PHASE_EMPTY_FINALLY_3,            "Remove empty finally 3",         false, -1, false)
 CompPhaseNameMacro(PHASE_EMPTY_TRY_3,                "Remove empty try 3",             false, -1, false)
 CompPhaseNameMacro(PHASE_EMPTY_TRY_CATCH_FAULT_3,    "Remove empty try-catch-fault 3", false, -1, false)
+CompPhaseNameMacro(PHASE_REMOVE_UNREACHABLE_TRY,     "Remove unreachable try",         false, -1, false)
 CompPhaseNameMacro(PHASE_OPT_UPDATE_FLOW_GRAPH,      "Update flow graph opt pass",     false, -1, false)
 CompPhaseNameMacro(PHASE_OPT_DFS_BLOCKS,             "Remove unreachable blocks",      false, -1, false)
 CompPhaseNameMacro(PHASE_STRESS_SPLIT_TREE,          "Stress gtSplitTree",             false, -1, false)
@@ -129,6 +131,7 @@ CompPhaseNameMacro(PHASE_DFS_BLOCKS_WASM,            "Wasm remove unreachable bl
 CompPhaseNameMacro(PHASE_WASM_EH_FLOW,               "Wasm eh control flow",           false, -1, false)
 CompPhaseNameMacro(PHASE_WASM_TRANSFORM_SCCS,        "Wasm transform sccs",            false, -1, false)
 CompPhaseNameMacro(PHASE_WASM_CONTROL_FLOW,          "Wasm control flow",              false, -1, false)
+CompPhaseNameMacro(PHASE_WASM_SPILL_REFS,            "Wasm spill refs",                false, -1, false)
 CompPhaseNameMacro(PHASE_WASM_VIRTUAL_IP,            "Wasm virtual IP",                false, -1, false)
 
 CompPhaseNameMacro(PHASE_ASYNC,                      "Transform async",                false, -1, true)

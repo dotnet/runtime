@@ -122,7 +122,7 @@ namespace ILCompiler.ReadyToRun
                 AddTokenToMutableModule(ecmaMethod);
                 return;
             }
-            if (methodDesc.HasInstantiation)
+            if (methodDesc.HasInstantiation || methodDesc.OwningType.HasInstantiation)
             {
                 EnsureTypeDefTokensAreAvailableInVersionBubble(methodDesc.GetMethodDefinition().OwningType);
                 foreach (TypeDesc instParam in methodDesc.Instantiation)

@@ -15,7 +15,7 @@ namespace System.Buffers.Text
         [Conditional("DEBUG")]
         internal static unsafe void AssertRead<TVector>(byte* src, byte* srcStart, int srcLength)
         {
-            int vectorElements = Unsafe.SizeOf<TVector>();
+            int vectorElements = sizeof(TVector);
             byte* readEnd = src + vectorElements;
             byte* srcEnd = srcStart + srcLength;
 
@@ -29,7 +29,7 @@ namespace System.Buffers.Text
         [Conditional("DEBUG")]
         internal static unsafe void AssertWrite<TVector>(byte* dest, byte* destStart, int destLength)
         {
-            int vectorElements = Unsafe.SizeOf<TVector>();
+            int vectorElements = sizeof(TVector);
             byte* writeEnd = dest + vectorElements;
             byte* destEnd = destStart + destLength;
 
@@ -43,7 +43,7 @@ namespace System.Buffers.Text
         [Conditional("DEBUG")]
         internal static unsafe void AssertRead<TVector>(ushort* src, ushort* srcStart, int srcLength)
         {
-            int vectorElements = Unsafe.SizeOf<TVector>();
+            int vectorElements = sizeof(TVector);
             ushort* readEnd = src + vectorElements;
             ushort* srcEnd = srcStart + srcLength;
 
@@ -57,7 +57,7 @@ namespace System.Buffers.Text
         [Conditional("DEBUG")]
         internal static unsafe void AssertWrite<TVector>(ushort* dest, ushort* destStart, int destLength)
         {
-            int vectorElements = Unsafe.SizeOf<TVector>();
+            int vectorElements = sizeof(TVector);
             ushort* writeEnd = dest + vectorElements;
             ushort* destEnd = destStart + destLength;
 

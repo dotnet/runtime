@@ -98,6 +98,14 @@ candidates:
 - `is:issue is:closed in:title "<test-name>" closed:>=<30-days-ago>` to catch a
   closed `[ci-scan]` predecessor or a human-filed report that never carried the
   KBE label.
+- `is:issue is:closed in:title "[ci-scan]" "<stem>" closed:>=<30-days-ago>`
+  to catch a closed `[ci-scan]` predecessor whose title was reworded across runs
+  (e.g. `Runtime_105619` vs a differently-phrased earlier title for the same
+  test); match on the stable test-name stem rather than the full title.
+- `is:issue is:closed in:body "<assertion-text>" closed:>=<30-days-ago>`
+  to catch a predecessor by its assertion text, which is more stable than titles
+  across runs and survives cases where the predecessor was integrity-filtered or
+  cross-linked rather than directly readable.
 
 On a closed-candidate hit, compare the failing AzDO build's `finishTime` (read
 it from the build metadata, not the queue time) against the issue's `closed_at`:
@@ -109,6 +117,17 @@ it from the build metadata, not the queue time) against the issue's `closed_at`:
   genuine post-close recurrence): file a fresh KBE and name the closed
   predecessor `#<n>` in the body so the regression is explicit, mirroring the
   merged-fix-PR recurrence rule below.
+
+**Recurring signature.** Evaluate this check *before* acting on the post-close
+recurrence case above; when it applies, it takes precedence. First re-run the
+closed-candidate searches for the test-name stem with the look-back widened from
+`closed:>=<30-days-ago>` to `closed:>=<90-days-ago>` — the wider window is what
+lets a recurring signature surface at all. If that widened scan returns **two or
+more** closed `[ci-scan]` predecessors sharing the stem, treat it as a recurring
+signature, not a fresh regression: do **not** file — record `existing-kbe #<n>`
+against the most recently closed predecessor, even if the current build finished
+after that predecessor's `closed_at`. Fewer than two hits is not a recurring
+signature; fall back to the post-close recurrence rule above.
 
 <a id="search-area-team-tracker"></a>
 
@@ -270,7 +289,7 @@ Title:
 Labels:
 
 - `Known Build Error`
-- `blocking-clean-ci`
+- `blocking-clean-ci` — or `blocking-clean-ci-optional` when the failure comes from an optional rolling pipeline outside the required `runtime` / `runtime-extra-platforms` gate (the JIT / GC / PGO stress-mode pipelines marked `optional-ci` in the scanner's pipeline table). Apply exactly one of the two.
 
 ````markdown
 ## Build Information

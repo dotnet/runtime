@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class SspiCli
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.SspiCli)]
         internal static partial int LsaLookupAuthenticationPackage(
             SafeLsaHandle LsaHandle,

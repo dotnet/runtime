@@ -362,7 +362,6 @@ private:
     LPCWSTR         szString;           // The string data.
     DWORD           cch;                // Characters in the string.
 #ifdef _DEBUG
-    BOOL            bDebugOnlyLowChars;      // Does the string contain only characters less than 0x80?
     DWORD           dwDebugCch;
 #endif // _DEBUG
 
@@ -374,7 +373,6 @@ public:
 
         SetStringBuffer(NULL);
         SetCharCount(0);
-        SetIsOnlyLowChars(FALSE);
     };
     EEStringData(DWORD cchString, LPCWSTR str) : cch(0)
     {
@@ -382,15 +380,6 @@ public:
 
         SetStringBuffer(str);
         SetCharCount(cchString);
-        SetIsOnlyLowChars(FALSE);
-    };
-    EEStringData(DWORD cchString, LPCWSTR str, BOOL onlyLow) : cch(0)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        SetStringBuffer(str);
-        SetCharCount(cchString);
-        SetIsOnlyLowChars(onlyLow);
     };
     inline ULONG GetCharCount() const
     {
@@ -420,36 +409,7 @@ public:
 
         szString = _szString;
     }
-    inline BOOL GetIsOnlyLowChars() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(bDebugOnlyLowChars == ((cch & ONLY_LOW_CHARS_MASK) ? TRUE : FALSE));
-        return ((cch & ONLY_LOW_CHARS_MASK) ? TRUE : FALSE);
-    }
-    inline void SetIsOnlyLowChars(BOOL bIsOnlyLowChars)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-#ifdef _DEBUG
-        bDebugOnlyLowChars = bIsOnlyLowChars;
-#endif // _DEBUG
-        bIsOnlyLowChars ? (cch |= ONLY_LOW_CHARS_MASK) : (cch &= ~ONLY_LOW_CHARS_MASK);
-    }
 };
-
-class EEUnicodeHashTableHelper
-{
-public:
-    static EEHashEntry_t * AllocateEntry(EEStringData *pKey, BOOL bDeepCopy, AllocationHeap Heap);
-    static void            DeleteEntry(EEHashEntry_t *pEntry, AllocationHeap Heap);
-    static BOOL            CompareKeys(EEHashEntry_t *pEntry, EEStringData *pKey);
-    static DWORD           Hash(EEStringData *pKey);
-    static EEStringData *  GetKey(EEHashEntry_t *pEntry);
-};
-
-typedef EEHashTable<EEStringData *, EEUnicodeHashTableHelper, TRUE> EEUnicodeStringHashTable;
-
 
 class EEUnicodeStringLiteralHashTableHelper
 {

@@ -74,6 +74,48 @@ public:
     }
 };
 
+// Returns true for known host properties that do not need to be stored as CLR configuration.
+// The runtime parses these into binder/AppDomain structures during AppDomain creation, so it
+// does not need to also keep the original raw strings around in the CLR config knobs.
+static bool IsKnownHostProperty(LPCSTR key)
+{
+    return strcmp(key, HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES) == 0
+        || strcmp(key, HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES) == 0
+        || strcmp(key, HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS) == 0
+        || strcmp(key, HOST_PROPERTY_APP_PATHS) == 0;
+}
+
+struct HostPropertyArrays final
+{
+    int count;
+    const char** keys;
+    LPCWSTR* keysW;
+    LPCWSTR* valuesW;
+};
+
+// Frees the key and value arrays and the wide-string copies of the known host probing-path
+// properties. The remaining strings are handed to the CLR configuration knobs, which retain
+// them for the process lifetime, so they are not freed here.
+struct HostPropertyArraysTraits final
+{
+    using Type = HostPropertyArrays;
+    static Type Default() { return {}; }
+    static void Free(Type arrays)
+    {
+        for (int i = 0; i < arrays.count; ++i)
+        {
+            if (IsKnownHostProperty(arrays.keys[i]))
+            {
+                delete[] arrays.keysW[i];
+                delete[] arrays.valuesW[i];
+            }
+        }
+
+        delete[] arrays.keysW;
+        delete[] arrays.valuesW;
+    }
+};
+
 // Convert 8 bit string to unicode
 static LPCWSTR StringToUnicode(LPCSTR str)
 {
@@ -294,8 +336,35 @@ int coreclr_initialize(
         Bundle::AppBundle = &bundle;
     }
 
-    // This will take ownership of propertyKeysWTemp and propertyValuesWTemp
-    Configuration::InitializeConfigurationKnobs(propertyCount, propertyKeysW, propertyValuesW);
+    // Take ownership of the converted (unfiltered) property arrays. The unfiltered arrays
+    // are passed to CreateAppDomainWithManager so the binder/AppDomain can parse them.
+    // Afterward, the arrays and the excluded strings are freed. The other property strings
+    // are handed to the CLR config knobs, which own them for the process lifetime.
+    LifetimeHolder<HostPropertyArraysTraits> hostPropertiesHolder{ HostPropertyArrays{ propertyCount, propertyKeys, propertyKeysW, propertyValuesW } };
+
+    // Build a filtered set of properties for the CLR config knobs that excludes probing path
+    // properties (TPA, NATIVE_DLL_SEARCH_DIRECTORIES, PLATFORM_RESOURCE_ROOTS, APP_PATHS).
+    // Those are parsed into binder/AppDomain structures during CreateAppDomainWithManager,
+    // so the runtime does not need a duplicate copy held forever in the CLR config knobs.
+    // The TPA list in particular can be tens of KB.
+    LPCWSTR* configKeysW = new (nothrow) LPCWSTR[propertyCount];
+    ASSERTE_ALL_BUILDS(configKeysW != nullptr);
+    LPCWSTR* configValuesW = new (nothrow) LPCWSTR[propertyCount];
+    ASSERTE_ALL_BUILDS(configValuesW != nullptr);
+
+    int configPropertyCount = 0;
+    for (int i = 0; i < propertyCount; ++i)
+    {
+        if (IsKnownHostProperty(propertyKeys[i]))
+            continue;
+
+        configKeysW[configPropertyCount] = propertyKeysW[i];
+        configValuesW[configPropertyCount] = propertyValuesW[i];
+        ++configPropertyCount;
+    }
+
+    // Configuration takes ownership of the filtered arrays and the strings they reference
+    Configuration::InitializeConfigurationKnobs(configPropertyCount, configKeysW, configValuesW);
 
 #ifdef TARGET_UNIX
     if (Configuration::GetKnobBooleanValue(W("System.Runtime.CrashReportBeforeSignalChaining"), CLRConfig::INTERNAL_CrashReportBeforeSignalChaining))

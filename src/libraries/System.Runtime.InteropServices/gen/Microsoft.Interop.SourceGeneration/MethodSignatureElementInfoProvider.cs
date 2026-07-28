@@ -1,10 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Text;
+using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
@@ -18,6 +16,9 @@ namespace Microsoft.Interop
 
         public MethodSignatureElementInfoProvider(Compilation compilation, GeneratorDiagnosticsBag generatorDiagnostics, IMethodSymbol method, ImmutableArray<IUseSiteAttributeParser> useSiteAttributeParsers)
         {
+            Debug.Assert(method.AssociatedSymbol is not IPropertySymbol,
+                "Property accessors are not valid arguments to MethodSignatureElementInfoProvider.");
+
             _compilation = compilation;
             _generatorDiagnostics = generatorDiagnostics;
             _method = method;

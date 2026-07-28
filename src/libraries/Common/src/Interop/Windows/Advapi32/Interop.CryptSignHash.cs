@@ -24,6 +24,7 @@ internal static partial class Interop
             CRYPT_X931_FORMAT = 0x00000004,  // Not supported
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptSignHashW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptSignHash(
@@ -34,6 +35,7 @@ internal static partial class Interop
             byte[]? pbSignature,
             ref int pdwSigLen);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptVerifySignatureW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptVerifySignature(

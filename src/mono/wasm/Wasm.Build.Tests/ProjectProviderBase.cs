@@ -129,9 +129,19 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                         if (!match.Success)
                             return true;
 
-                        actual[expectedFilename] = new(ExpectedFilename: expectedFilename,
-                                                       Hash: match.Groups[1].Value,
-                                                       ActualPath: actualFile);
+                        // Multiple fingerprinted variants of the same logical file can coexist when
+                        // republishing into an existing output directory: the previous publish's
+                        // fingerprinted copy is not removed, and a rebuild that changes the file's
+                        // content produces a new fingerprint alongside the stale one. Keep the newest
+                        // file so the assertion compares against the current (re)build output instead
+                        // of picking a stale artifact by filename ordering.
+                        if (!actual.TryGetValue(expectedFilename, out DotNetFileName? existingMatch) ||
+                            File.GetLastWriteTimeUtc(actualFile) >= File.GetLastWriteTimeUtc(existingMatch.ActualPath))
+                        {
+                            actual[expectedFilename] = new(ExpectedFilename: expectedFilename,
+                                                           Hash: match.Groups[1].Value,
+                                                           ActualPath: actualFile);
+                        }
                     }
                     else
                     {
@@ -606,7 +616,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         var bootJsonEntries = assets.jsModuleNative.Select(a => a.name)
             .Union(assets.wasmNative.Select(a => a.name))
             .Union(assets.jsModuleRuntime.Select(a => a.name))
-            .Union(assets.jsModuleWorker?.Select(a => a.name) ?? Enumerable.Empty<string>())
             .Union(assets.jsModuleDiagnostics?.Select(a => a.name) ?? Enumerable.Empty<string>())
             .Union(assets.wasmSymbols?.Select(a => a.name) ?? Enumerable.Empty<string>())
             .ToArray();

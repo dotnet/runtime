@@ -43,6 +43,35 @@ namespace System.Globalization
         // Every cell is array of 512 character for uppercasing mapping.
         private static readonly ushort[]?[] s_casingTable = InitCasingTable();
 
+        // s_lowerBasicLatin covers the lower casing for the Basic Latin & C0 Controls range.
+        // We don't lazily initialize this range because it is the most commonly used range and we'll cache it anyway very early.
+        private static readonly ushort[] s_lowerBasicLatin =
+        [
+            // Lower Casing
+
+            /* 0000-000f */  0x0000, 0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006, 0x0007, 0x0008, 0x0009, 0x000a, 0x000b, 0x000c, 0x000d, 0x000e, 0x000f,
+            /* 0010-001f */  0x0010, 0x0011, 0x0012, 0x0013, 0x0014, 0x0015, 0x0016, 0x0017, 0x0018, 0x0019, 0x001a, 0x001b, 0x001c, 0x001d, 0x001e, 0x001f,
+            /* 0020-002f */  0x0020, 0x0021, 0x0022, 0x0023, 0x0024, 0x0025, 0x0026, 0x0027, 0x0028, 0x0029, 0x002a, 0x002b, 0x002c, 0x002d, 0x002e, 0x002f,
+            /* 0030-003f */  0x0030, 0x0031, 0x0032, 0x0033, 0x0034, 0x0035, 0x0036, 0x0037, 0x0038, 0x0039, 0x003a, 0x003b, 0x003c, 0x003d, 0x003e, 0x003f,
+            /* 0040-004f */  0x0040, 0x0061, 0x0062, 0x0063, 0x0064, 0x0065, 0x0066, 0x0067, 0x0068, 0x0069, 0x006a, 0x006b, 0x006c, 0x006d, 0x006e, 0x006f,
+            /* 0050-005f */  0x0070, 0x0071, 0x0072, 0x0073, 0x0074, 0x0075, 0x0076, 0x0077, 0x0078, 0x0079, 0x007a, 0x005b, 0x005c, 0x005d, 0x005e, 0x005f,
+            /* 0060-006f */  0x0060, 0x0061, 0x0062, 0x0063, 0x0064, 0x0065, 0x0066, 0x0067, 0x0068, 0x0069, 0x006a, 0x006b, 0x006c, 0x006d, 0x006e, 0x006f,
+            /* 0070-007f */  0x0070, 0x0071, 0x0072, 0x0073, 0x0074, 0x0075, 0x0076, 0x0077, 0x0078, 0x0079, 0x007a, 0x007b, 0x007c, 0x007d, 0x007e, 0x007f,
+            /* 0080-008f */  0x0080, 0x0081, 0x0082, 0x0083, 0x0084, 0x0085, 0x0086, 0x0087, 0x0088, 0x0089, 0x008a, 0x008b, 0x008c, 0x008d, 0x008e, 0x008f,
+            /* 0090-009f */  0x0090, 0x0091, 0x0092, 0x0093, 0x0094, 0x0095, 0x0096, 0x0097, 0x0098, 0x0099, 0x009a, 0x009b, 0x009c, 0x009d, 0x009e, 0x009f,
+            /* 00a0-00af */  0x00a0, 0x00a1, 0x00a2, 0x00a3, 0x00a4, 0x00a5, 0x00a6, 0x00a7, 0x00a8, 0x00a9, 0x00aa, 0x00ab, 0x00ac, 0x00ad, 0x00ae, 0x00af,
+            /* 00b0-00bf */  0x00b0, 0x00b1, 0x00b2, 0x00b3, 0x00b4, 0x00b5, 0x00b6, 0x00b7, 0x00b8, 0x00b9, 0x00ba, 0x00bb, 0x00bc, 0x00bd, 0x00be, 0x00bf,
+            /* 00c0-00cf */  0x00e0, 0x00e1, 0x00e2, 0x00e3, 0x00e4, 0x00e5, 0x00e6, 0x00e7, 0x00e8, 0x00e9, 0x00ea, 0x00eb, 0x00ec, 0x00ed, 0x00ee, 0x00ef,
+            /* 00d0-00df */  0x00f0, 0x00f1, 0x00f2, 0x00f3, 0x00f4, 0x00f5, 0x00f6, 0x00d7, 0x00f8, 0x00f9, 0x00fa, 0x00fb, 0x00fc, 0x00fd, 0x00fe, 0x00df,
+            /* 00e0-00ef */  0x00e0, 0x00e1, 0x00e2, 0x00e3, 0x00e4, 0x00e5, 0x00e6, 0x00e7, 0x00e8, 0x00e9, 0x00ea, 0x00eb, 0x00ec, 0x00ed, 0x00ee, 0x00ef,
+            /* 00f0-00ff */  0x00f0, 0x00f1, 0x00f2, 0x00f3, 0x00f4, 0x00f5, 0x00f6, 0x00f7, 0x00f8, 0x00f9, 0x00fa, 0x00fb, 0x00fc, 0x00fd, 0x00fe, 0x00ff,
+        ];
+
+        // s_lowerCasingTable mirrors s_casingTable but holds the simple lower casing mapping for the BMP.
+        // It is pre-seeded with the shared NoCasingPage for the permanently uncased pages (see InitLowerCasingTable);
+        // remaining pages are initialized lazily through ICU and identity pages collapse to the shared NoCasingPage.
+        private static readonly ushort[]?[] s_lowerCasingTable = InitLowerCasingTable();
+
         /*
          The table is initialized to:
         {
@@ -147,7 +176,10 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
 
-            for (int i = 0; i < source.Length; i++)
+            // Quickly upper-case the leading run of ASCII characters, then handle the remainder.
+            Ascii.ToUpper(source, destination, out int start);
+
+            for (int i = start; (uint)i < (uint)source.Length; i++)
             {
                 char c = source[i];
                 if (c <= '\u00FF') // optimize ASCII/Latin
@@ -169,6 +201,60 @@ namespace System.Globalization
                 }
 
                 destination[i] = ToUpper(c);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static char ToLower(char c)
+        {
+            int pageNumber = ((int)c) >> 8;
+            if (pageNumber == 0) // optimize for ASCII range
+            {
+                return (char)s_lowerBasicLatin[(int)c];
+            }
+
+            ushort[]? casingTable = s_lowerCasingTable[pageNumber];
+
+            if (casingTable == NoCasingPage)
+            {
+                return c;
+            }
+
+            casingTable ??= InitOrdinalLowerCasingPage(pageNumber);
+
+            return (char)casingTable[((int)c) & 0xFF];
+        }
+
+        internal static void ToLowerOrdinal(ReadOnlySpan<char> source, Span<char> destination)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
+
+            // Quickly lower-case the leading run of ASCII characters, then handle the remainder.
+            Ascii.ToLower(source, destination, out int start);
+
+            for (int i = start; (uint)i < (uint)source.Length; i++)
+            {
+                char c = source[i];
+                if (c <= '\u00FF') // optimize ASCII/Latin
+                {
+                    destination[i] = (char)s_lowerBasicLatin[c];
+                    continue;
+                }
+
+                if (char.IsHighSurrogate(c) && i < source.Length - 1)
+                {
+                    char cl = source[i + 1];
+                    if (char.IsLowSurrogate(cl))
+                    {
+                        // well formed surrogates
+                        SurrogateCasing.ToLower(c, cl, out destination[i], out destination[i + 1]);
+                        i++; // skip the low surrogate
+                        continue;
+                    }
+                }
+
+                destination[i] = ToLower(c);
             }
         }
 
@@ -426,6 +512,47 @@ namespace System.Globalization
                 Interop.Globalization.InitOrdinalCasingPage(pageNumber, pTable);
             }
             Volatile.Write(ref s_casingTable[pageNumber], casingTable);
+            return casingTable;
+        }
+
+        private static ushort[]?[] InitLowerCasingTable()
+        {
+            // Reuse the upper-casing NoCasing bitmap to pre-seed the lower-casing table. Every page that bitmap
+            // marks (the permanently uncased CJK/Hangul/PUA blocks) is also identity under lower casing, so seeding
+            // these pages with the shared NoCasingPage avoids first-use native calls without risking a wrong mapping.
+            ushort[]?[] table = new ushort[]?[s_casingTableInit.Length * 8];
+            for (int i = 0; i < s_casingTableInit.Length * 8; ++i)
+            {
+                // The bits are in reverse order
+                byte val = (byte)(s_casingTableInit[i / 8] >> (7 - (i % 8)));
+                if ((val & 1) == 1)
+                    table[i] = NoCasingPage;
+            }
+            table[0] = s_lowerBasicLatin;
+            return table;
+        }
+
+        private static unsafe ushort[] InitOrdinalLowerCasingPage(int pageNumber)
+        {
+            Debug.Assert(pageNumber > 0 && pageNumber < 256);
+
+            ushort[] casingTable = new ushort[256];
+            fixed (ushort* table = casingTable)
+            {
+                char* pTable = (char*)table;
+                Interop.Globalization.InitOrdinalLowerCasingPage(pageNumber, pTable);
+            }
+
+            // If the page doesn't change any character, collapse it to the shared NoCasingPage to avoid
+            // retaining the 512-byte buffer. We still return the fully populated table for the current lookup.
+            int pageBase = pageNumber << 8;
+            int i = 0;
+            while (i < 256 && casingTable[i] == (ushort)(pageBase + i))
+            {
+                i++;
+            }
+
+            Volatile.Write(ref s_lowerCasingTable[pageNumber], i == 256 ? NoCasingPage : casingTable);
             return casingTable;
         }
     }

@@ -971,5 +971,10 @@ namespace Internal.TypeSystem.Interop
         {
             return module.Assembly is not EcmaAssembly assembly || !assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
         }
+
+        public static bool IsMarshallingRequired(MethodSignature methodSig, ModuleDesc moduleContext)
+        {
+            return Marshaller.IsMarshallingRequired(methodSig, moduleContext);
+        }
     }
 }

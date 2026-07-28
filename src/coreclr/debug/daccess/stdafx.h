@@ -18,8 +18,6 @@
 // and there's no reason why DAC should be forbidden from using it.
 #define DO_NOT_DISABLE_RAND
 
-#define USE_COM_CONTEXT_DEF
-
 #include <stddef.h>
 #include <stdint.h>
 #include <windows.h>

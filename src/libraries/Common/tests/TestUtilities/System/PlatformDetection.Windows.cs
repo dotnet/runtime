@@ -69,6 +69,11 @@ namespace System
         // Windows 11 2024 Update (24H2)
         public static bool IsWindows10Version26100OrGreater => IsWindowsVersionOrLater(10, 0, 26100);
 
+        // TODO (https://github.com/dotnet/runtime/issues/129787): This build has Composite ML-DSA support but is a preview build.
+        // This should be changed to the next official release build once it is available.
+        // Windows 11 Preview Build 28120 (Experimental Channel)
+        public static bool IsWindows10Version28120OrGreater => IsWindowsVersionOrLater(10, 0, 28120);
+
         public static bool IsWindowsIoTCore
         {
             get

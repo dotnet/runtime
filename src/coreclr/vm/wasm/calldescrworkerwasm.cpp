@@ -38,5 +38,16 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
         retBuff = &pCallDescrData->returnValue;
     }
 
+    if (targetIp == NULL)
+    {
+        // The target method has no interpreter code because it was compiled to native (R2R) code.
+        // Invoke it as a compiled managed method through the interpreter->R2R thunk, mirroring the
+        // fallback already present in ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex and
+        // the CALL_INTERP_METHOD path in InterpExecMethod. Without this, the NULL bytecode pointer
+        // would be handed to the interpreter and dispatched as INTOP_INVALID.
+        InvokeManagedMethod(pMethod, args, (int8_t*)retBuff, (PCODE)NULL, nullptr);
+        return;
+    }
+
     ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argsSize, retBuff, (PCODE)&CallDescrWorkerInternal);
 }

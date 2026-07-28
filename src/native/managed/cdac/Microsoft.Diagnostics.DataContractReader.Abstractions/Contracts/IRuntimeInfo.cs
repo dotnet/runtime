@@ -30,11 +30,19 @@ public enum RuntimeInfoOperatingSystem : uint
     Apple,
 }
 
+public enum RuntimeInfoRuntimeFlavor : uint
+{
+    Unknown = 0,
+    Coreclr,
+    NativeAot,
+}
+
 public interface IRuntimeInfo : IContract
 {
     static string IContract.Name { get; } = nameof(RuntimeInfo);
     RuntimeInfoArchitecture GetTargetArchitecture() => throw new NotImplementedException();
     RuntimeInfoOperatingSystem GetTargetOperatingSystem() => throw new NotImplementedException();
+    RuntimeInfoRuntimeFlavor GetRuntimeFlavor() => throw new NotImplementedException();
     uint GetCurrentReaderVersion() => throw new NotImplementedException();
     uint GetRecommendedReaderVersion() => throw new NotImplementedException();
 }

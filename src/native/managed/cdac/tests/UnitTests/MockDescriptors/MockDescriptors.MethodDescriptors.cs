@@ -259,7 +259,7 @@ internal partial class MockDescriptors
         public uint NonVtableSlotSize => (uint)TargetTestHelpers.PointerSize;
         public uint MethodImplSize => (uint)(TargetTestHelpers.PointerSize * 2);
         public uint NativeCodeSlotSize => (uint)TargetTestHelpers.PointerSize;
-        public uint AsyncMethodDataSize => (uint)(TargetTestHelpers.PointerSize * 2);
+        public uint AsyncMethodDataSize => (uint)(TargetTestHelpers.PointerSize * 3);
         public uint ArrayMethodDescSize => (uint)StoredSigMethodDescLayout.Size;
         public uint FCallMethodDescSize => (uint)(MethodDescLayout.Size + TargetTestHelpers.PointerSize);
         public uint PInvokeMethodDescSize => (uint)(MethodDescLayout.Size + TargetTestHelpers.PointerSize);
@@ -300,6 +300,15 @@ internal partial class MockDescriptors
 
             MockMethodDescChunk chunk = MethodDescChunkLayout.Create(fragment.Data.AsMemory(), fragment.Address);
             return chunk;
+        }
+
+        internal TargetPointer AddSignatureBuffer(byte[] signature)
+        {
+            ArgumentNullException.ThrowIfNull(signature);
+
+            MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)signature.Length, "MethodSignature");
+            signature.CopyTo(fragment.Data.AsSpan());
+            return new TargetPointer(fragment.Address);
         }
 
         internal MockPerInstInfo AddPerInstInfo(ulong[] typeArgs)

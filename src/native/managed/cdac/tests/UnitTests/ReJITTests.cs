@@ -24,6 +24,7 @@ public class ReJITTests
             [DataType.NativeCodeVersionNode] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.NativeCodeVersionNodeLayout),
             [DataType.ILCodeVersioningState] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.ILCodeVersioningStateLayout),
             [DataType.ILCodeVersionNode] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.ILCodeVersionNodeLayout),
+            [DataType.InstrumentedILOffsetMapping] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.InstrumentedILOffsetMappingLayout),
             [DataType.GCCoverageInfo] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.GCCoverageInfoLayout),
         };
 
@@ -127,7 +128,9 @@ public class ReJITTests
     {
         Mock<ICodeVersions> mockCodeVersions = new Mock<ICodeVersions>();
 
-        List<ulong> expectedRejitIds = [0, 1];
+        // Only explicit ReJIT versions that are active are returned. The synthetic default version
+        // (id 0) and requested-but-not-active versions are excluded (matches native GetReJITIDs).
+        List<ulong> expectedRejitIds = [1];
         expectedRejitIds.Sort();
 
         List<ILCodeVersionHandle> ilCodeVersionHandles =
@@ -139,6 +142,9 @@ public class ReJITTests
         TargetPointer methodDesc = new TargetPointer(/* arbitrary */ 0x200);
         mockCodeVersions.Setup(cv => cv.GetILCodeVersions(methodDesc))
             .Returns(ilCodeVersionHandles);
+        // Explicit versions in this test are ReJIT versions; the synthetic version is not.
+        mockCodeVersions.Setup(cv => cv.GetSource(It.IsAny<ILCodeVersionHandle>()))
+            .Returns((ILCodeVersionHandle h) => h.IsExplicit ? CodeVersionSource.ReJIT : CodeVersionSource.Unknown);
         ReJITContractContext context = CreateReJITContract(
             arch,
             rejitBuilder =>

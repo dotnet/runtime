@@ -751,6 +751,49 @@ namespace System.Diagnostics.Tests
             Assert.InRange(p.ExitTime.ToUniversalTime(), timeBeforeProcessStart, DateTime.MaxValue);
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TimingProperties_AfterProcessExit()
+        {
+            using Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+            process.Start();
+            Assert.True(process.WaitForExit(WaitInMS));
+
+            Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
+            Assert.NotEqual(default, process.ExitTime);
+
+            if (OperatingSystem.IsWindows())
+            {
+                // Windows process handles retain timing information after the process exits.
+                Assert.NotEqual(default, process.StartTime);
+                Assert.InRange(process.PrivilegedProcessorTime, TimeSpan.Zero, TimeSpan.MaxValue);
+                Assert.InRange(process.TotalProcessorTime, TimeSpan.Zero, TimeSpan.MaxValue);
+                Assert.InRange(process.UserProcessorTime, TimeSpan.Zero, TimeSpan.MaxValue);
+            }
+            else
+            {
+                // Unix reaps child processes after exit. Processor times are unavailable, and StartTime was not
+                // accessed before exit and therefore was not cached.
+                Assert.Throws<InvalidOperationException>(() => process.StartTime);
+                Assert.Throws<InvalidOperationException>(() => process.PrivilegedProcessorTime);
+                Assert.Throws<InvalidOperationException>(() => process.TotalProcessorTime);
+                Assert.Throws<InvalidOperationException>(() => process.UserProcessorTime);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void StartTime_AfterProcessExit_WhenCachedBeforeExit_IsAvailable()
+        {
+            using Process process = CreateProcessLong();
+            process.Start();
+            DateTime startTime = process.StartTime;
+
+            process.Kill();
+            Assert.True(process.WaitForExit(WaitInMS));
+
+            Assert.NotEqual(default, startTime);
+            Assert.Equal(startTime, process.StartTime);
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void StartTime_GetNotStarted_ThrowsInvalidOperationException()
@@ -887,7 +930,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsOpenBSD || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
@@ -935,7 +978,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsOpenBSD || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
@@ -1299,7 +1342,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "getting/setting affinity not supported on OSX and BSD")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.OpenBSD, "getting/setting affinity not supported on OSX and BSD")]
         public void TestProcessorAffinity()
         {
             CreateDefaultProcess();

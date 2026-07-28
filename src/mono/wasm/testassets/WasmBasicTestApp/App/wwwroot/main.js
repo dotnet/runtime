@@ -20,6 +20,44 @@ function countChars(str) {
     return length;
 }
 
+const memoryTestImports = {
+    countChars,
+    echoString: (value) => value,
+    createBytes: (length) => {
+        const result = new Uint8Array(length);
+        for (let i = 0; i < length; i++) {
+            result[i] = i & 0xFF;
+        }
+        return result;
+    },
+    sumBytes: (value) => {
+        let sum = 0;
+        for (let i = 0; i < value.length; i++) {
+            sum += value[i];
+        }
+        return sum;
+    },
+    sumMemoryView: (view) => {
+        const copy = view.slice();
+        let sum = 0;
+        for (let i = 0; i < copy.length; i++) {
+            sum += copy[i];
+        }
+        return sum;
+    },
+    echoInt32Array: (value) => value,
+    echoDoubleArray: (value) => value,
+    createObject: (name, value) => ({ name, value }),
+    throwError: (message) => { throw new Error(message); },
+    delayedSum: async (a, b) => {
+        await new Promise(resolve => setTimeout(resolve, 10));
+        return a + b;
+    },
+    callManagedExports: () => memoryTestCallManagedExports(),
+};
+
+let memoryTestCallManagedExports = () => "managed exports were not initialized";
+
 // Prepare base runtime parameters
 dotnet.withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true });
 
@@ -270,7 +308,15 @@ try {
                         break;
                 }
 
-                await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
+                const firstJsonLoad = await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
+                testOutput(`firstJsonLoad=${firstJsonLoad}`);
+                if (params.get("loadLazyAssemblyTwice") === "true") {
+                    // Regression test: loading the same lazy assembly a second time must be an
+                    // idempotent no-op (returns false) and must not throw
+                    // "must be marked with 'BlazorWebAssemblyLazyLoad'".
+                    const secondJsonLoad = await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
+                    testOutput(`secondJsonLoad=${secondJsonLoad}`);
+                }
                 exports.LazyLoadingTest.Run();
                 await INTERNAL.loadLazyAssembly(`LazyLibrary${lazyAssemblyExtension}`);
                 const { LazyLibrary } = await getAssemblyExports("LazyLibrary");
@@ -288,6 +334,7 @@ try {
         case "InvokeLibraryInitializersTest":
             await invokeLibraryInitializers("customHook", []);
             testOutput(`customHookCalled=${globalThis.__customHookCalled === true}`);
+            testOutput(`resources.libraryInitializers.length=${config.resources.libraryInitializers.length}`);
             exit(0);
             break;
         case "ZipArchiveInteropTest":
@@ -339,10 +386,38 @@ try {
             exit(0);
             break;
         case "AllocateLargeHeapThenInterop":
-            setModuleImports('main.js', {
-                countChars
-            });
-            exports.MemoryTest.Run();
+            setModuleImports('main.js', memoryTestImports);
+            memoryTestCallManagedExports = () => {
+                const errors = [];
+                const check = (condition, message) => {
+                    if (!condition) {
+                        errors.push(message);
+                    }
+                };
+
+                const bytes = new Uint8Array(64 * 1024);
+                let expected = 0;
+                for (let i = 0; i < bytes.length; i++) {
+                    bytes[i] = (i * 5) & 0xFF;
+                    expected += bytes[i];
+                }
+                check(exports.MemoryTest.SumBytesManaged(bytes) === expected, "SumBytesManaged returned a wrong sum");
+
+                const made = exports.MemoryTest.CreateBytesManaged(64 * 1024);
+                check(made.length === 64 * 1024, `CreateBytesManaged returned ${made.length} bytes`);
+                for (let i = 0; i < made.length; i++) {
+                    if (made[i] !== ((i * 3) & 0xFF)) {
+                        check(false, `CreateBytesManaged[${i}] is ${made[i]}`);
+                        break;
+                    }
+                }
+
+                const text = 'ě'.repeat(200000) + 'abc';
+                check(exports.MemoryTest.EchoStringManaged(text) === text, "EchoStringManaged returned a different string");
+
+                return errors.join('; ');
+            };
+            await exports.MemoryTest.RunAsync();
             exit(0);
             break;
         case "DevServer_UploadPattern":

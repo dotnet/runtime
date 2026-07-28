@@ -148,6 +148,27 @@ PALTEST(locale_info_WideCharToMultiByte_test5_paltest_widechartomultibyte_test5,
         free(utf8Buffer);
     }
 
+    {
+        // U+6F22 — code unit > U+00FF catches long-code-path bugs that move
+        // only the low byte instead of performing a full 16-bit byte swap.
+        const WCHAR srcNative[1] = { 0x6F22 };
+        CHAR utf8[4] = { 0 };
+        size_t n = minipal_convert_utf16_to_utf8((const CHAR16_T*)srcNative, 1, utf8, sizeof(utf8), 0);
+        if (n != 3 || memcmp(utf8, "\xE6\xBC\xA2", 3) != 0)
+            Fail("utf16->utf8 produced %02x %02x %02x (n=%zu)\n",
+                (unsigned char)utf8[0], (unsigned char)utf8[1], (unsigned char)utf8[2], n);
+
+#if BIGENDIAN
+        // Stored little-endian (22 6F) reads as BE word 0x226F.
+        const WCHAR srcLE[1] = { 0x226F };
+        memset(utf8, 0, sizeof(utf8));
+        n = minipal_convert_utf16_to_utf8((const CHAR16_T*)srcLE, 1, utf8, sizeof(utf8), MINIPAL_TREAT_AS_LITTLE_ENDIAN);
+        if (n != 3 || memcmp(utf8, "\xE6\xBC\xA2", 3) != 0)
+            Fail("treat-as-LE utf16->utf8 produced %02x %02x %02x (n=%zu)\n",
+                (unsigned char)utf8[0], (unsigned char)utf8[1], (unsigned char)utf8[2], n);
+#endif
+    }
+
 #if BIGENDIAN
     {
         const char* expected = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456";

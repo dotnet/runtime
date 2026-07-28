@@ -92,6 +92,7 @@ internal sealed class MockReJITBuilder
     internal Layout<MockNativeCodeVersionNode> NativeCodeVersionNodeLayout => _codeVersions.NativeCodeVersionNodeLayout;
     internal Layout<MockILCodeVersioningState> ILCodeVersioningStateLayout => _codeVersions.ILCodeVersioningStateLayout;
     internal Layout<MockILCodeVersionNode> ILCodeVersionNodeLayout => _codeVersions.ILCodeVersionNodeLayout;
+    internal Layout<MockInstrumentedILOffsetMapping> InstrumentedILOffsetMappingLayout => _codeVersions.InstrumentedILOffsetMappingLayout;
     internal Layout<MockGCCoverageInfo> GCCoverageInfoLayout => _codeVersions.GCCoverageInfoLayout;
 
     public MockILCodeVersionNode AddExplicitILCodeVersionNode(ulong rejitId, RejitFlags rejitFlags, bool deoptimized = false)

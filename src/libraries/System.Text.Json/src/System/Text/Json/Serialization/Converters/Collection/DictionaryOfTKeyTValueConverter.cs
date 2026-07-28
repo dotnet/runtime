@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization.Converters
             ref WriteStack state)
         {
             Dictionary<TKey, TValue>.Enumerator enumerator;
-            if (state.Current.CollectionEnumerator == null)
+            if (state.Current.CollectionEnumerator is null)
             {
                 enumerator = value.GetEnumerator();
                 if (!enumerator.MoveNext())
@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization.Converters
             _keyConverter ??= GetConverter<TKey>(typeInfo.KeyTypeInfo!);
             _valueConverter ??= GetConverter<TValue>(typeInfo.ElementTypeInfo!);
 
-            if (!state.SupportContinuation && _valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+            if (!state.SupportContinuation && _valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling is null)
             {
                 // Fast path that avoids validation and extra indirection.
                 do
