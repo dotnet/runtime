@@ -429,6 +429,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int FillReadWriteMetadata(ulong vmModule, byte* pBuffer, uint cbBuffer)
     {
         int hr = HResults.S_OK;
+        int blobSize = 0;
         try
         {
             if (pBuffer == null)
@@ -439,6 +440,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
             byte[] blob = _target.Contracts.EcmaMetadata.GetReadWriteMetadata(handle);
+            blobSize = blob.Length;
             if (cbBuffer < (uint)blob.Length)
                 throw Marshal.GetExceptionForHR(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER)!;
 
@@ -460,7 +462,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
-                Debug.Assert(new Span<byte>(pBuffer, checked((int)cbBuffer)).SequenceEqual(bufferLocal), "cDAC and DAC read-write metadata buffers differ.");
+                Debug.Assert(new Span<byte>(pBuffer, blobSize).SequenceEqual(bufferLocal.AsSpan(0, blobSize)), "cDAC and DAC read-write metadata buffers differ.");
             }
         }
 #endif

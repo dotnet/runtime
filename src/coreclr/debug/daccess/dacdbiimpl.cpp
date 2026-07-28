@@ -3910,7 +3910,7 @@ namespace
 
     const ULONG64 MaxPoolBytes = 100000000;
     const ULONG32 MaxPoolSegments = 1000;
-    const ULONG32 MaxTableCount = 64;
+    const ULONG32 MaxTableCount = TBL_COUNT;
 
     FORCEINLINE ULONG32 AlignUp4(ULONG32 value)
     {
