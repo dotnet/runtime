@@ -10,9 +10,9 @@ namespace System.Data.Tests
     {
         /// <summary>
         /// Regression test: BinaryNode.EvalBinaryOp OR operator performed an unconditional
-        /// (bool)vLeft unbox when vLeft could be SqlBoolean сausing InvalidCastException
-        /// Covers the full truth table to exercise both the short-circuit path left=true
-        /// and the fall-through path left=false, evaluate right.
+        /// (bool)vLeft unboxing when vLeft could be SqlBoolean, causing InvalidCastException.
+        /// Covers the full truth table to exercise both the short-circuit path (left=true)
+        /// and the fall-through path (left=false) that evaluates the right operand.
         /// </summary>
         [Theory]
         [InlineData(true, true, true)]
