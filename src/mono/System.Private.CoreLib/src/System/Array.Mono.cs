@@ -347,6 +347,7 @@ namespace System
             SetValueImpl(ObjectHandleOnStack.Create(ref self), ObjectHandleOnStack.Create(ref value), (int)index);
         }
 
+        [RequiresUnreferencedCode("The default constructor of the array's element type may be trimmed if not referenced elsewhere.")]
         public void Initialize()
         {
             object arr = this;

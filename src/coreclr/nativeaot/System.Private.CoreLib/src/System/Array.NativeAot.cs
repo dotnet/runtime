@@ -253,6 +253,7 @@ namespace System
             }
         }
 
+        [RequiresUnreferencedCode("The default constructor of the array's element type may be trimmed if not referenced elsewhere.")]
         public unsafe void Initialize()
         {
             MethodTable* pElementEEType = ElementMethodTable;
