@@ -3296,8 +3296,7 @@ ClrDataMethodDefinition::EnumExtent(
             COR_ILMETHOD_DECODER ilDec(ilMeth);
             *handle = 0;
 
-            extent->startAddress = TO_CDADDR(PTR_HOST_TO_TADDR(ilMeth) +
-                                             4 * ilDec.GetSize());
+            extent->startAddress = TO_CDADDR(PTR_HOST_TO_TADDR(ilDec.Code));
             extent->endAddress = extent->startAddress +
                 ilDec.GetCodeSize() - 1;
             extent->type = CLRDATA_METHDEF_IL;
@@ -3460,8 +3459,7 @@ ClrDataMethodDefinition::GetRepresentativeEntryAddress(
         if (ilMeth)
         {
             COR_ILMETHOD_DECODER ilDec(ilMeth);
-            *addr = TO_CDADDR(PTR_HOST_TO_TADDR(ilMeth) +
-                              4 * ilDec.GetSize());
+            *addr = TO_CDADDR(PTR_HOST_TO_TADDR(ilDec.Code));
             status = S_OK;
         }
         else

@@ -5,6 +5,7 @@ namespace Microsoft.Diagnostics.DataContractReader;
 
 public static class CorDbgHResults
 {
+    public const int E_UNEXPECTED = unchecked((int)0x8000FFFF);
     public const int CORDBG_E_NOTREADY = unchecked((int)0x80131c10);
     public const int CORDBG_E_BAD_THREAD_STATE = unchecked((int)0x8013132d);
     public const int CORDBG_E_READVIRTUAL_FAILURE = unchecked((int)0x80131c49);

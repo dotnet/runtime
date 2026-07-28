@@ -3837,7 +3837,7 @@ public sealed unsafe partial class SOSDacImpl
             int regIndex = callerFrame ? -regName - 1 : regName;
 
             if ((uint)regIndex >= (uint)regs.Length)
-                return unchecked((int)0x8000FFFF); // E_UNEXPECTED
+                return CorDbgHResults.E_UNEXPECTED;
 
             string name = callerFrame ? $"caller.{regs[regIndex]}" : regs[regIndex];
 
