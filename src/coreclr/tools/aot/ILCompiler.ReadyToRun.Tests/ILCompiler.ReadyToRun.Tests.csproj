@@ -1,15 +1,4 @@
-<Project>
-
-  <!--
-    Set Platform=AnyCPU before importing Sdk.props.
-    This test is meant to run on the build machine, so it should not be built for the target of the
-    outer build / runtime target.
-  -->
-  <PropertyGroup>
-    <Platform>AnyCPU</Platform>
-  </PropertyGroup>
-
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <AssemblyName>ILCompiler.ReadyToRun.Tests</AssemblyName>
@@ -19,20 +8,13 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
     <!-- The tests always run on the build machine, so pin to the host RID and keep it out of the
-         output path. Combined with Platform=AnyCPU above, every target-arch build shares one
-         output directory. -->
+         output path, the same way crossgen2_inbuild.csproj does. PlatformTarget must be AnyCPU to
+         go with it: $(Platform) defaults it to the target architecture, which the SDK then rejects
+         as incompatible with the host RID (NETSDK1032). The sibling AOT tool projects, including
+         crossgen2.props, all do the same. -->
     <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- Each target stages its own assets into the shared output directory, but IncrementalClean
-         deletes any file recorded in a previous build that the current build did not produce and
-         that lives under OutDir. With a single file-write log the targets would evict each other's
-         staged assets, so give each target its own log. Only the log has to be per-target; the rest
-         of the intermediate directory stays shared, which keeps the runtimeconfig.json
-         incrementality cache shared and therefore correctly invalidated when the target changes. -->
-    <CleanFile>$(MSBuildProjectFile).$(TargetOS).$(TargetArchitecture).FileListAbsolute.txt</CleanFile>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
@@ -57,19 +39,7 @@
     </ProjectReference>
   </ItemGroup>
 
-  <PropertyGroup>
-    <!-- Subdirectory of $(OutDir) that holds this root build's target-specific assets. Every build
-         writes to a different one, so builds for different targets accumulate rather than clobber.
-         Keyed on OS as well as architecture: several targets share an architecture (browser-wasm vs
-         wasi-wasm, linux-x64 vs windows-x64) and must not overwrite each other's crossgen2 and
-         libraries. Matches TestPaths.TargetAssetDirName. -->
-    <TargetAssetDirName>$(TargetOS)-$(TargetArchitecture)</TargetAssetDirName>
-  </PropertyGroup>
-
-  <!-- Stage this root build's target-specific assets into $(OutDir)$(TargetAssetDirName)/. The
-       directory name is derived from the target architecture, so successive root builds for
-       different targets accumulate side by side (e.g. wasm/ and arm/) instead of clobbering
-       each other.
+  <!-- Stage this build's target-specific assets next to the test assembly.
 
        This must run before AssignTargetPaths: that target snapshots @(Content) into
        @(ContentWithTargetPath), which is what the stock copy-to-output-directory pipeline
@@ -101,20 +71,19 @@
     <ItemGroup>
       <Content Include="@(Crossgen2InbuildOutputItems)"
                CopyToOutputDirectory="PreserveNewest"
-               TargetPath="$(TargetAssetDirName)/crossgen2/%(Filename)%(Extension)" />
+               TargetPath="crossgen2/%(Filename)%(Extension)" />
 
       <Content Include="@(_SharedFrameworkAssembly)"
                CopyToOutputDirectory="PreserveNewest"
-               TargetPath="$(TargetAssetDirName)/libraries/%(Filename)%(Extension)" />
+               TargetPath="libraries/%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
 
   <!-- These must be plain items rather than being set in a target: the incrementality hash for
        the runtimeconfig (_GenerateRuntimeConfigurationFilesInputCache) is computed from
        @(RuntimeHostConfigurationOption) before any BeforeTargets hook on
-       GenerateBuildRuntimeConfigurationFiles gets to run. Values added from a target are therefore
-       invisible to it, and since every target-architecture build shares one output directory, a
-       stale runtimeconfig from a previous target would be silently reused. -->
+       GenerateBuildRuntimeConfigurationFiles gets to run, so values added from a target are
+       invisible to it and a stale runtimeconfig would be silently reused. -->
   <ItemGroup>
     <!-- Used for gating Debug-only JIT features from being tested. -->
     <RuntimeHostConfigurationOption Include="R2RTest.CoreCLRConfiguration" Value="$(CoreCLRConfiguration)" />
@@ -126,7 +95,5 @@
     <RuntimeHostConfigurationOption Include="R2RTest.TargetOS" Value="$(TargetOS)" />
     <RuntimeHostConfigurationOption Include="R2RTest.TargetArchitecture" Value="$(TargetArchitecture)" />
   </ItemGroup>
-
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
 </Project>

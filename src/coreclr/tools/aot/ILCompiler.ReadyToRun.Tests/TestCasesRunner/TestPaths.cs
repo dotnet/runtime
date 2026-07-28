@@ -49,28 +49,18 @@ internal static class TestPaths
     public static bool IsWindows => OperatingSystem.IsWindows();
 
     /// <summary>
-    /// Subdirectory of the output directory holding the assets this root build staged. Keyed on OS
-    /// as well as architecture so that targets sharing an architecture do not collide.
-    /// Matches the <c>TargetAssetDirName</c> property in the csproj.
-    /// </summary>
-    private static string TargetAssetDirName => TargetDescription;
-
-    /// <summary>
     /// Path to the crossgen2 that compiles for this build's target.
     /// </summary>
     /// <remarks>
-    /// A root build stages the crossgen2 it built into a subdirectory named after its target,
-    /// so builds for different targets accumulate rather than clobber each other.
-    /// Only the subdirectory for this build's own target is ever read: a crossgen2 built for one
-    /// target does not carry the cross-targeting JIT for any other, so substituting a different
-    /// one either fails with a DllNotFoundException or silently compiles for the wrong
-    /// architecture.
+    /// A build stages the crossgen2 it built next to the test assembly. A crossgen2 built for one
+    /// target does not carry the cross-targeting JIT for any other, so substituting a different one
+    /// either fails with a DllNotFoundException or silently compiles for the wrong architecture.
     /// </remarks>
     public static string Crossgen2Exe
     {
         get
         {
-            string exe = Path.Combine(AppContext.BaseDirectory, TargetAssetDirName, "crossgen2", Crossgen2ExeName);
+            string exe = Path.Combine(AppContext.BaseDirectory, "crossgen2", Crossgen2ExeName);
             if (!File.Exists(exe))
             {
                 throw new FileNotFoundException(
@@ -89,7 +79,7 @@ internal static class TestPaths
     {
         get
         {
-            string dir = Path.Combine(AppContext.BaseDirectory, TargetAssetDirName, "libraries");
+            string dir = Path.Combine(AppContext.BaseDirectory, "libraries");
             if (!Directory.Exists(dir))
             {
                 throw new DirectoryNotFoundException(
