@@ -1,25 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- Set TargetOS and TargetArchitecture to control what JIT and corelib the tests will give to crossgen2 -->
+  <!-- Setting TargetRid will not work -->
+
   <PropertyGroup>
     <AssemblyName>ILCompiler.ReadyToRun.Tests</AssemblyName>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
-    <!-- The tests always run on the build machine, so pin to the host RID and keep it out of the
-         output path, the same way crossgen2_inbuild.csproj does. PlatformTarget must be AnyCPU to
-         go with it: $(Platform) defaults it to the target architecture, which the SDK then rejects
-         as incompatible with the host RID (NETSDK1032). The sibling AOT tool projects, including
-         crossgen2.props, all do the same. -->
+    <!-- These tests build for AnyCPU, but the assets copied for crossgen compilations within the
+         tests are tied to the outer runtime build's Target -->
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <!-- Key the output directory on the full target RID rather than on Arcade's $(PlatformName),
-         which is just the architecture and so cannot tell browser-wasm from wasi-wasm or linux-x64
-         from windows-x64. src/coreclr/Directory.Build.props already makes the same correction for
-         the intermediate directory. -->
-    <OutputPath>$(BaseOutputPath)$(TargetRid)\$(Configuration)\</OutputPath>
+    <!-- Set the output path based on the RID of the outer build (the one used in crossgen
+         compilations that run inside the tests), not this test's RID
+         Some tests are skipped based on CoreCLRConfiguration, so also include that in output path -->
+    <OutputPath>$(BaseOutputPath)$(Configuration)\$(CoreCLRConfiguration)_CLR\$(TargetRid)\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,8 +24,6 @@
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
   </ItemGroup>
 
-  <!-- Test case source files are embedded as resources so we can compile them with Roslyn at test time.
-       Exclude subdirectory sources from compilation since they are compiled in-memory by R2RTestCaseCompiler. -->
   <ItemGroup>
     <Compile Remove="TestCases/*/**/*.cs" />
     <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
@@ -36,33 +31,17 @@
 
   <ItemGroup>
     <ProjectReference Include="../ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
-    <!-- Built for the outer TargetOS/TargetArchitecture, so it runs on the build machine but
-         compiles for the target. Private="false" keeps it out of the output root; StageTargetAssets
-         below places it under its own target-architecture subdirectory instead. -->
     <ProjectReference Include="../crossgen2/crossgen2_inbuild.csproj" ReferenceOutputAssembly="false" OutputItemType="Crossgen2InbuildOutputItems" Private="false">
       <SetConfiguration>Configuration=$(CoreCLRConfiguration);CopyAllJitLibrariesToAotCompilerOutput=true;TargetArchitecture=$(TargetArchitecture);TargetOS=$(TargetOS)</SetConfiguration>
     </ProjectReference>
   </ItemGroup>
 
-  <!-- Stage this build's target-specific assets next to the test assembly.
-
-       This must run before AssignTargetPaths: that target snapshots @(Content) into
-       @(ContentWithTargetPath), which is what the stock copy-to-output-directory pipeline
-       consumes. Hooking anything later (e.g. BeforeTargets="Build") is silently a no-op. -->
-  <Target Name="StageTargetAssets"
+  <Target Name="SetupCopyCrossgen2CompilationAssets"
           BeforeTargets="AssignTargetPaths"
           DependsOnTargets="ResolveProjectReferences"
           Condition="'$(DesignTimeBuild)' != 'true'">
     <Error Condition="'@(Crossgen2InbuildOutputItems)' == ''"
            Text="crossgen2_inbuild published no files. This is a build authoring error; the ProjectReference should have built it." />
-
-    <!-- The shared framework references crossgen2 compiles against. These are taken from the
-         already-built libs output rather than a ProjectReference: referencing sfx-src.proj walks
-         all ~180 library projects on every build, which costs far more than it buys here since
-         the 'libs' subset is a prerequisite of this project anyway. Both paths below are derived
-         from the outer TargetOS/TargetArchitecture, so a root build for e.g. browser-wasm picks up
-         the browser flavors. System.Private.CoreLib comes from CoreCLR's IL directory: the copy at
-         the root of $(CoreCLRArtifactsPath) is the crossgen'd image, and crossgen2 needs IL. -->
     <Error Condition="!Exists('$(LibrariesSharedFrameworkBinArtifactsPath)')"
            Text="The 'libs' subset must be built for $(TargetOS)-$(TargetArchitecture) before building this project. Missing artifacts: $(LibrariesSharedFrameworkBinArtifactsPath). Configuration: '$(LibrariesConfiguration)'." />
     <Error Condition="!Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll')"
@@ -84,19 +63,8 @@
     </ItemGroup>
   </Target>
 
-  <!-- These must be plain items rather than being set in a target: the incrementality hash for
-       the runtimeconfig (_GenerateRuntimeConfigurationFilesInputCache) is computed from
-       @(RuntimeHostConfigurationOption) before any BeforeTargets hook on
-       GenerateBuildRuntimeConfigurationFiles gets to run, so values added from a target are
-       invisible to it and a stale runtimeconfig would be silently reused. -->
   <ItemGroup>
-    <!-- Used for gating Debug-only JIT features from being tested. -->
     <RuntimeHostConfigurationOption Include="R2RTest.CoreCLRConfiguration" Value="$(CoreCLRConfiguration)" />
-    <!-- The target every test case compiles for. Distinct from $(RuntimeIdentifier) above, which is
-         the RID the test assembly itself runs on. These are published as separate values rather than
-         as a RID that the tests parse: $(TargetRid) can carry an OS qualifier or a distro name
-         (linux-musl-x64, linux-bionic-arm64, alpine.3.19-x64), none of which crossgen2 accepts as a
-         target OS. -->
     <RuntimeHostConfigurationOption Include="R2RTest.TargetOS" Value="$(TargetOS)" />
     <RuntimeHostConfigurationOption Include="R2RTest.TargetArchitecture" Value="$(TargetArchitecture)" />
   </ItemGroup>

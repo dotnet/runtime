@@ -77,9 +77,6 @@ public class R2RTestSuites
                 new(nameof(WasmWebcilModule), [new CrossgenAssembly(wasmWebcilModule)])
                 {
                     OutputFileExtension = ".wasm",
-                    // Reference the real browser-wasm framework assemblies when they are available
-                    // (e.g. the wasm tools-test job downloads them); otherwise the runner falls back
-                    // to host references so this test still runs everywhere.
                     Validate = Validate,
                 },
             ]));
@@ -450,7 +447,7 @@ public class R2RTestSuites
         }
     }
 
-    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWindows), nameof(TestPaths.IsNotWasmTarget))]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWindowsTarget))]
     public void CompositeManifestAssemblyMvidsArePaddedWhenPdbPresent()
     {
         var compositeLib = new CompiledAssembly
@@ -542,7 +539,7 @@ public class R2RTestSuites
     /// sections off a 4-byte boundary without the fix. Windows-only because it relies on Windows PDB
     /// generation.
     /// </summary>
-    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWindows), nameof(TestPaths.IsNotWasmTarget))]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWindowsTarget))]
     public void CompositeManifestSectionsArePaddedWhenPdbPresent()
     {
         var compositeLib = new CompiledAssembly

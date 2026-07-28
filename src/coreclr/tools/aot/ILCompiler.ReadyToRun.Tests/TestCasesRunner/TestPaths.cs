@@ -46,7 +46,7 @@ internal static class TestPaths
 
     public static bool IsArmTarget => TargetArchitecture is "arm" or "armel";
 
-    public static bool IsWindows => OperatingSystem.IsWindows();
+    public static bool IsWindowsTarget => TargetOS is "windows" or "win";
 
     /// <summary>
     /// Path to the crossgen2 that compiles for this build's target.

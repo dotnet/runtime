@@ -208,7 +208,7 @@ internal sealed class R2RTestRunner
             foreach(var compilation in testCase.Compilations)
             {
                 string outputPath = RunCrossgenCompilation(
-                    testCase.Name, compilation, driver, compilation.FilePath, refPaths, assemblyPaths);
+                    testCase.Name, compilation, driver, compilation.FilePath, assemblyPaths);
 
                 if (compilation.Validate is not null)
                 {
@@ -234,7 +234,6 @@ internal sealed class R2RTestRunner
     {
         var paths = new Dictionary<string, string>();
 
-        // Tests shouldn't require a platform-specific runtime/ref pack for Roslyn compilation
         var defaultReferences = BuildReferencePaths();
         var compiler = new R2RTestCaseCompiler(defaultReferences);
         foreach (var asm in assemblies)
@@ -271,7 +270,6 @@ internal sealed class R2RTestRunner
         CrossgenCompilation compilation,
         R2RDriver driver,
         string outputFile,
-        List<string> refPaths,
         Dictionary<string, string> assemblyPaths)
     {
         var args = new List<string>();
@@ -312,8 +310,8 @@ internal sealed class R2RTestRunner
         // Caller-supplied raw args (for options that take values, e.g. --determinism-stress=N)
         args.AddRange(compilation.AdditionalArgs);
 
-        // Global refs (runtime pack + System.Private.CoreLib)
-        AddRefArgs(args, refPaths);
+        // Global refs (shared framework + System.Private.CoreLib)
+        AddRefArgs(args);
 
         EnsureDirectoryExists(Path.GetDirectoryName(outputFile));
 
@@ -328,18 +326,19 @@ internal sealed class R2RTestRunner
         return outputFile;
     }
 
-    private static void AddRefArgs(List<string> args, List<string> refPaths)
+    /// <summary>
+    /// Adds the shared framework references for crossgen2 as a single directory wildcard.
+    /// </summary>
+    private static void AddRefArgs(List<string> args)
     {
-        foreach (string refPath in refPaths)
-        {
-            args.Add("-r");
-            args.Add(refPath);
-        }
+        args.Add("-r");
+        args.Add(Path.Combine(TestPaths.LibrariesDir, "*.dll"));
     }
 
     /// <summary>
-    /// Builds the reference paths used for both Roslyn and crossgen2 compilation, from the
-    /// shared framework IL assemblies staged for this build's target RID.
+    /// Builds the explicit reference paths used for Roslyn compilation and for resolving assemblies
+    /// when reading back an R2R image, from the shared framework IL assemblies staged for this
+    /// build's target RID. crossgen2 takes the same assemblies as a wildcard; see <see cref="AddRefArgs"/>.
     /// </summary>
     private static List<string> BuildReferencePaths()
     {
