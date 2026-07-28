@@ -142,7 +142,7 @@ namespace System.Runtime.Caching
                 case CounterName.Misses: return ref _counterValues.Misses;
                 case CounterName.Trims: return ref _counterValues.Trims;
                 case CounterName.Turnover: return ref _counterValues.Turnover;
-                default: throw new UnreachableException($"Counter '{name}' has no backing storage.");
+                default: throw new UnreachableException();
             }
         }
 
