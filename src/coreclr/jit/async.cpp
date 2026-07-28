@@ -2461,6 +2461,8 @@ void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
             GenTree* store = StoreAtOffset(continuation, offset, field, use.GetType());
             LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
         }
+
+        LIR::AsRange(callBlock).Remove(fieldList);
     }
     else
     {
@@ -2471,6 +2473,8 @@ void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
             awaiter = use.Def();
         }
 
+        LIR::AsRange(callBlock).Remove(awaiter);
+
         GenTree* continuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
         unsigned offset       = OFFSETOF__CORINFO_Continuation__data + layout.ContinuationMemberOffsets[memberIndex];
         GenTree* offsetNode   = m_compiler->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
@@ -2479,7 +2483,6 @@ void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
         LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
     }
 
-    LIR::AsRange(callBlock).Remove(awaiter);
     call->gtArgs.RemoveUnsafe(awaiterArg);
 }
 
