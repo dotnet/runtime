@@ -3683,8 +3683,8 @@ namespace Internal.JitInterface
                 if (runtimeDeterminedResult.IsRuntimeDeterminedExactMethod)
                 {
                     // TODO-Async: the instantiation argument would have to be obtained through a runtime
-                    // generic dictionary lookup, which is not yet emitted here, so skip the optimization.
-                    return null;
+                    // generic dictionary lookup, which is not yet emitted here, so defer to the runtime JIT.
+                    throw new RequiresRuntimeJitException($"getAwaitReturnCall: runtime-determined exact instantiation requires runtime JIT ({runtimeDeterminedResult})");
                 }
 
                 instArg.constLookup = CreateConstLookupToSymbol(
@@ -3749,8 +3749,18 @@ namespace Internal.JitInterface
                 if (runtimeDeterminedResult.IsRuntimeDeterminedExactMethod)
                 {
                     // TODO-Async: the instantiation argument would have to be obtained through a runtime
-                    // generic dictionary lookup, which is not yet emitted here, so skip the optimization.
-                    return null;
+                    // generic dictionary lookup, which is not yet emitted here.
+                    if (((ReadyToRunCompilerContext)context).TargetAllowsRuntimeCodeGeneration)
+                    {
+                        // Leave this method to runtime JIT that will be able to avoid the box
+                        throw new RequiresRuntimeJitException($"getAwaitReturnCall: runtime-determined exact instantiation requires runtime JIT ({runtimeDeterminedResult})");
+                    }
+                    else
+                    {
+                        // Skip the optimization, which will result in a box,
+                        // but is still better than interpreter fallback
+                        return null;
+                    }
                 }
 
                 instArg.constLookup = CreateConstLookupToSymbol(

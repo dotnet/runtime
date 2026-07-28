@@ -73,8 +73,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Spot check that the system module ALWAYS succeeds
                 if (failAtEnd)
                 {
-                    LogErrors(s => Console.WriteLine(s));
-                    throw new InternalCompilerErrorException("System module failed to validate all types");
+                    throw new InternalCompilerErrorException("System module failed to validate all types:" + Environment.NewLine
+                        + string.Join(Environment.NewLine, _typeLoadValidationErrors.Select(e => e.type.ToString())));
                 }
             }
 #endif
