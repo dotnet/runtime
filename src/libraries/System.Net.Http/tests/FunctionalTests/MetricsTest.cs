@@ -717,7 +717,7 @@ namespace System.Net.Http.Functional.Tests
 
                     serverTask = redirectServer.AcceptConnectionAsync(async connection =>
                     {
-                        var requestData = await connection.ReadRequestDataAsync();
+                        await connection.ReadRequestDataAsync();
                         redirectServerTcs.SetResult();
                         await clientTcs2.Task.WaitAsync(TestHelper.PassingTestTimeout);
                         await connection.SendResponseAsync();
