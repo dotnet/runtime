@@ -512,10 +512,6 @@ FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 
 #if defined(HOST_64BIT)
     UINT_PTR target = (UINT_PTR)orefThis->GetMethodPtrAux();
-
-    // See code:GenericPInvokeCalliHelper
-    // The lowest bit is used to distinguish between MD and target on 64-bit.
-    target = (target << 1) | 1;
 #endif // HOST_64BIT
 
     pEntryPoint = orefThis->GetMethodPtrAux();

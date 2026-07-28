@@ -6649,6 +6649,13 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         /* Function marked as not inlineable */
         result |= CORINFO_FLG_DONT_INLINE;
     }
+    else if (pMD->IsILStub())
+    {
+        // IL stubs have no metadata and their IL is only materialized while the stub itself is
+        // being compiled, so they can never be inlined into their callers. Reporting this here
+        // keeps the JIT from asking for the stub's IL (see code:CEEInfo::canInline).
+        result |= CORINFO_FLG_DONT_INLINE;
+    }
     // AggressiveInlining only makes sense for IL methods.
     else if (pMD->IsIL() && IsMiAggressiveInlining(ilMethodImplAttribs))
     {
@@ -7672,7 +7679,7 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
             localSig = SigPointer{ cxt.Header->LocalVarSig, cxt.Header->cbLocalVarSig };
         }
     }
-    else if (ilFtn->IsDynamicMethod())
+    else if (ilFtn->IsDynamicMethod() && !ilFtn->AsDynamicMethodDesc()->UsesTransientIL())
     {
         DynamicResolver* pResolver = ilFtn->AsDynamicMethodDesc()->GetResolver();
         scopeHnd = MakeDynamicScope(pResolver);
@@ -13312,7 +13319,7 @@ void CEECodeGenInfo::getEHinfo(
     pMD = pMD->GetOrdinaryVariantIfAsyncVersion();
 
     COR_ILMETHOD* pILHeader;
-    if (pMD->IsDynamicMethod())
+    if (pMD->IsDynamicMethod() && !pMD->AsDynamicMethodDesc()->UsesTransientIL())
     {
         pMD->AsDynamicMethodDesc()->GetResolver()->GetEHInfo(EHnumber, clause);
     }
@@ -13325,7 +13332,7 @@ void CEECodeGenInfo::getEHinfo(
         COR_ILMETHOD_DECODER header(pILHeader, pMD->GetMDImport(), NULL);
         getEHinfoHelper(EHnumber, clause, &header);
     }
-    else if (pMD->IsIL())
+    else if (pMD->IsIL() || (pMD->IsILStub() && pMD->AsDynamicMethodDesc()->UsesTransientIL()))
     {
         TransientMethodDetails* details;
         if (!FindTransientMethodDetails(pMD, &details))
@@ -15419,9 +15426,94 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
     return CORINFO_METHOD_HANDLE(result);
 }
 
+//---------------------------------------------------------------------------------------
+//
+// Optionally converts an unmanaged calli call site into a call to an IL stub that performs
+// the argument marshalling and the managed/native transition.
+//
+// The IL stub is created (and cached in the IL stub cache by signature) here, but it is only
+// JIT-compiled the first time it is called - we cannot JIT it while we are jitting the caller.
+//
+// Arguments:
+//    pResolvedToken - the token of the calli call site. Only token, tokenScope and
+//                     tokenContext are valid on entry. On success, hMethod is filled in
+//                     with the IL stub.
+//    fMustConvert   - true if the JIT cannot emit an inline P/Invoke at this call site and
+//                     therefore requires the conversion.
+//
+// Return Value:
+//    true if the call site was converted to a call to an IL stub.
+//
 bool CEEInfo::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert)
 {
-    return false;
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    CORINFO_MODULE_HANDLE scopeHnd = pResolvedToken->tokenScope;
+
+    SigPointer sig{};
+    bool canConvert = true;
+
+    if (IsDynamicScope(scopeHnd))
+    {
+        // The calli that dispatches to the unmanaged target inside a marshalling stub is the
+        // P/Invoke itself and must stay inline. Those call sites always use
+        // TOKEN_ILSTUB_TARGET_SIG, and their IL is owned either by an IL stub MethodDesc or,
+        // for a plain P/Invoke, directly by the PInvokeMethodDesc.
+        if (pResolvedToken->token == (mdToken)TOKEN_ILSTUB_TARGET_SIG)
+        {
+            canConvert = false;
+        }
+        else
+        {
+            sig = GetDynamicResolver(scopeHnd)->ResolveSignature(pResolvedToken->token);
+        }
+    }
+    else
+    {
+        Module* pModule = (Module*)scopeHnd;
+
+        PCCOR_SIGNATURE pSig = NULL;
+        uint32_t cbSig = 0;
+        IfFailThrow(pModule->GetMDImport()->GetSigFromToken(
+            (mdSignature)pResolvedToken->token,
+            (ULONG*)&cbSig,
+            &pSig));
+        sig = SigPointer{ pSig, cbSig };
+    }
+
+    if (canConvert)
+    {
+        PCCOR_SIGNATURE pSig;
+        uint32_t cbSig;
+        sig.GetSignature(&pSig, &cbSig);
+
+        SigTypeContext typeContext;
+        GetTypeContext(pResolvedToken->tokenContext, &typeContext);
+
+        MethodDesc* pStubMD = PInvoke::CreateCalliILStub(
+            GetModule(scopeHnd),
+            Signature(pSig, cbSig),
+            &typeContext,
+            fMustConvert);
+
+        if (pStubMD != NULL)
+        {
+            pResolvedToken->hMethod = (CORINFO_METHOD_HANDLE)pStubMD;
+            result = true;
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
 }
 
 void CEEInfo::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)

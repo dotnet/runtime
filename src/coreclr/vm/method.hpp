@@ -3082,6 +3082,11 @@ public:
     bool IsILStub() const { LIMITED_METHOD_DAC_CONTRACT; return HasFlags(FlagIsILStub); }
     bool IsLCGMethod() const { LIMITED_METHOD_DAC_CONTRACT; return HasFlags(FlagIsLCGMethod); }
 
+    // IL stubs whose IL is generated on demand while the stub is being compiled, and discarded
+    // afterwards, rather than being generated eagerly when the stub is created.
+    // See code:MethodDesc::TryGenerateTransientILImplementation.
+    bool UsesTransientIL() const { LIMITED_METHOD_DAC_CONTRACT; return IsILStub() && IsPInvokeCalliStub(); }
+
     inline PTR_DynamicResolver    GetResolver();
     inline PTR_LCGMethodResolver  GetLCGMethodResolver();
     inline PTR_ILStubResolver     GetILStubResolver();

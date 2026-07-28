@@ -230,10 +230,14 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (opcode == CEE_CALLI)
     {
-        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        // ReadyToRun does not support converting an unmanaged calli into a call to a
+        // marshalling stub; such call sites are handled by the PInvoke calli cookie below.
+        if (!IsReadyToRun())
         {
             if (info.compCompHnd->convertPInvokeCalliToCall(pResolvedToken, !impCanPInvokeInlineCallSite(compCurBB)))
             {
+                // The VM only fills in hMethod; derive the rest of the token from it.
+                pResolvedToken->hClass = info.compCompHnd->getMethodClass(pResolvedToken->hMethod);
                 eeGetCallInfo(pResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, callInfo);
                 return impImportCall(CEE_CALL, pResolvedToken, nullptr, nullptr, prefixFlags, callInfo, rawILOffset);
             }
@@ -7209,11 +7213,11 @@ void Compiler::impCheckForPInvokeCall(
     }
     optNativeCallCount++;
 
-    if (methHnd == nullptr && (IsTargetAbi(CORINFO_NATIVEAOT_ABI) ||
-                               (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && !compIsForInlining())))
+    if (methHnd == nullptr &&
+        (!IsReadyToRun() || (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && !compIsForInlining())))
     {
-        // PInvoke CALLI in NativeAOT ABI must be always inlined. Non-inlineable CALLI cases have been
-        // converted to regular method calls earlier using convertPInvokeCalliToCall.
+        // PInvoke CALLI outside of ReadyToRun must always be inlined. Non-inlineable CALLI cases
+        // have been converted to regular method calls earlier using convertPInvokeCalliToCall.
 
         // PInvoke CALLI in IL stubs must be inlined
     }
