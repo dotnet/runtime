@@ -682,12 +682,15 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             if (PlatformDetection.IsNetFramework && (digestOid == Oids.Shake128 || digestOid == Oids.Shake256))
             {
+                const int CryptEUnknownAlgorithm = unchecked((int)0x80091002);
+
                 // .NET Framework's CMS is backed by Windows CAPI, which does not recognize SHAKE
                 // digest algorithms and fails signing with CRYPT_E_UNKNOWN_ALGO. .NET builds the
                 // CMS in managed code and succeeds.
                 ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
                 SignedCms cms = new SignedCms(contentInfo, detached);
-                Assert.Throws<CryptographicException>(() => SignWithMLDsa(cms));
+                CryptographicException exception = Assert.Throws<CryptographicException>(() => SignWithMLDsa(cms));
+                Assert.Equal(CryptEUnknownAlgorithm, exception.HResult);
                 return;
             }
 
