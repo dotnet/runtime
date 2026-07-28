@@ -3541,6 +3541,7 @@ public:
         ) = 0;
 
     // Optionally, convert calli to regular method call. This is for PInvoke argument marshalling.
+    // On success, pResolvedToken->hMethod is set to the method that should be called instead.
     virtual bool convertPInvokeCalliToCall(
             CORINFO_RESOLVED_TOKEN *    pResolvedToken,
             bool                        fMustConvert

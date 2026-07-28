@@ -1418,6 +1418,10 @@ public:
 
     // Enregisters a VASig.
     VASigCookie *GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext);
+
+    // Computes the module that owns runtime artifacts created for a standalone signature.
+    // Clears *pTypeContext if the signature does not actually use the generic context.
+    Module* GetLoaderModuleForSignature(Signature signature, SigTypeContext* pTypeContext);
 private:
     static VASigCookie *GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, Signature vaSignature, const SigTypeContext* typeContext);
 

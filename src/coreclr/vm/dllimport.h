@@ -127,6 +127,22 @@ public:
                     CorInfoCallConvExtension unmgdCallConv,
                     DWORD                    dwStubFlags); // PInvokeStubFlags
 
+    // Creates the IL stub that marshals an unmanaged calli call site described by
+    // calliSignature. Returns NULL if the call site does not describe an unmanaged call, or if
+    // no marshaling is required and fMustCreate is false (in which case the caller - the JIT -
+    // can emit the unmanaged call inline instead).
+    // Only the MethodDesc is created; the stub IL is generated on demand by CreateCalliStubIL.
+    static MethodDesc* CreateCalliILStub(
+                    Module*                  pModule,
+                    const Signature&         calliSignature,
+                    const SigTypeContext*    pTypeContext,
+                    bool                     fMustCreate);
+
+    // Generates the transient IL of a stub created by CreateCalliILStub.
+    static COR_ILMETHOD_DECODER* CreateCalliStubIL(
+                    MethodDesc*       pStubMD,
+                    DynamicResolver** ppResolver);
+
     static COR_ILMETHOD_DECODER* CreatePInvokeMethodIL(
                     PInvokeMethodDesc* pMD,
                     DynamicResolver** ppResolver);
@@ -461,6 +477,9 @@ public:
 
     void    SetCallingConvention(CorInfoCallConvExtension unmngCallConv, BOOL fIsVarArg);
 
+    // For unmanaged CALLI stubs, the native target is passed in as the last argument of the stub.
+    void    SetCalliTargetArgIndex(UINT uArgIdx);
+
     void    Begin(DWORD dwStubFlags);
     void    End(DWORD dwStubFlags);
     void    DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc * pStubMD);
@@ -558,6 +577,7 @@ protected:
     UINT                m_ErrorResID;
     UINT                m_ErrorParamIdx;
     int                 m_iLCIDParamIdx;
+    UINT                m_uCalliTargetArgIdx;
 
     DWORD               m_dwStubFlags;
 };
