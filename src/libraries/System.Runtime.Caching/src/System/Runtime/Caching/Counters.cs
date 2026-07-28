@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -131,42 +132,25 @@ namespace System.Runtime.Caching
             }
         }
 
-        internal void Increment(CounterName name)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ref long GetCounterRef(CounterName name)
         {
             switch (name)
             {
-                case CounterName.Entries: Interlocked.Increment(ref _counterValues.Entries); break;
-                case CounterName.Hits: Interlocked.Increment(ref _counterValues.Hits); break;
-                case CounterName.Misses: Interlocked.Increment(ref _counterValues.Misses); break;
-                case CounterName.Trims: Interlocked.Increment(ref _counterValues.Trims); break;
-                case CounterName.Turnover: Interlocked.Increment(ref _counterValues.Turnover); break;
-                default: Debug.Fail($"Counter '{name}' has no backing storage."); break;
+                case CounterName.Entries: return ref _counterValues.Entries;
+                case CounterName.Hits: return ref _counterValues.Hits;
+                case CounterName.Misses: return ref _counterValues.Misses;
+                case CounterName.Trims: return ref _counterValues.Trims;
+                case CounterName.Turnover: return ref _counterValues.Turnover;
+                default: throw new UnreachableException($"Counter '{name}' has no backing storage.");
             }
         }
-        internal void IncrementBy(CounterName name, long value)
-        {
-            switch (name)
-            {
-                case CounterName.Entries: Interlocked.Add(ref _counterValues.Entries, value); break;
-                case CounterName.Hits: Interlocked.Add(ref _counterValues.Hits, value); break;
-                case CounterName.Misses: Interlocked.Add(ref _counterValues.Misses, value); break;
-                case CounterName.Trims: Interlocked.Add(ref _counterValues.Trims, value); break;
-                case CounterName.Turnover: Interlocked.Add(ref _counterValues.Turnover, value); break;
-                default: Debug.Fail($"Counter '{name}' has no backing storage."); break;
-            }
-        }
-        internal void Decrement(CounterName name)
-        {
-            switch (name)
-            {
-                case CounterName.Entries: Interlocked.Decrement(ref _counterValues.Entries); break;
-                case CounterName.Hits: Interlocked.Decrement(ref _counterValues.Hits); break;
-                case CounterName.Misses: Interlocked.Decrement(ref _counterValues.Misses); break;
-                case CounterName.Trims: Interlocked.Decrement(ref _counterValues.Trims); break;
-                case CounterName.Turnover: Interlocked.Decrement(ref _counterValues.Turnover); break;
-                default: Debug.Fail($"Counter '{name}' has no backing storage."); break;
-            }
-        }
+
+        internal void Increment(CounterName name) => Interlocked.Increment(ref GetCounterRef(name));
+
+        internal void IncrementBy(CounterName name, long value) => Interlocked.Add(ref GetCounterRef(name), value);
+
+        internal void Decrement(CounterName name) => Interlocked.Decrement(ref GetCounterRef(name));
 #else
 #pragma warning disable CA1822, IDE0060
         internal Counters(string cacheName)
