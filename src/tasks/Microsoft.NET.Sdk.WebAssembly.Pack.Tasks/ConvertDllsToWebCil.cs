@@ -25,6 +25,15 @@ public class ConvertDllsToWebcil : Task
 
     public int WebcilVersion { get; set; }
 
+    /// <summary>
+    /// Optional build_id (hex string, with or without a leading <c>0x</c>) stamped into every produced
+    /// webcil module. When empty, each webcil gets a content hash so it is self-identifying.
+    /// </summary>
+    public string? WasmNativeBuildId { get; set; }
+
+    /// <summary>Product version recorded in the producers section of each webcil module.</summary>
+    public string? ProductVersion { get; set; }
+
     [Output]
     public ITaskItem[] WebcilCandidates { get; set; }
 
@@ -136,6 +145,8 @@ public class ConvertDllsToWebcil : Task
             var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
             var logAdapter = new Microsoft.WebAssembly.Build.Tasks.LogAdapter(Log);
             var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter, webcilVersion: WebcilVersion);
+            webcilWriter.ProductVersion = ProductVersion ?? string.Empty;
+            webcilWriter.BuildId = ParseBuildId(WasmNativeBuildId);
             webcilWriter.ConvertToWebcil();
 
             if (!Directory.Exists(candidatePath))
@@ -166,5 +177,39 @@ public class ConvertDllsToWebcil : Task
         }
 
         return webcilItem;
+    }
+
+    // Parses a hex build_id (optionally 0x-prefixed) into raw bytes. Returns null when empty so the
+    // wrapper falls back to a per-file content hash.
+    private byte[]? ParseBuildId(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        string hex = value!.Trim();
+        if (hex.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            hex = hex.Substring(2);
+
+        if (hex.Length == 0 || (hex.Length % 2) != 0)
+        {
+            Log.LogError($"WasmNativeBuildId '{value}' is not a valid hex string.");
+            return null;
+        }
+
+        var bytes = new byte[hex.Length / 2];
+        for (int i = 0; i < bytes.Length; i++)
+        {
+#if NETFRAMEWORK
+            if (!byte.TryParse(hex.Substring(i * 2, 2), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out bytes[i]))
+#else
+            if (!byte.TryParse(hex.AsSpan(i * 2, 2), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out bytes[i]))
+#endif
+            {
+                Log.LogError($"WasmNativeBuildId '{value}' is not a valid hex string.");
+                return null;
+            }
+        }
+
+        return bytes;
     }
 }

@@ -6,6 +6,7 @@ using System.IO;
 using System.Collections.Immutable;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace Microsoft.NET.WebAssembly.Webcil;
 
@@ -39,6 +40,21 @@ public class WebcilWasmWrapper
     private readonly Stream _webcilPayloadStream;
     private readonly uint _webcilPayloadSize;
 
+    /// <summary>
+    /// When true (the default), a WebAssembly tool-conventions <c>producers</c> section and a
+    /// <c>build_id</c> section are appended to the wrapped module.
+    /// </summary>
+    public bool EmitMetadataSections { get; set; } = true;
+
+    /// <summary>Version used for the <c>producers</c> <c>processed-by</c>/<c>sdk</c> fields.</summary>
+    public string ProductVersion { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Explicit <c>build_id</c> bytes (e.g. from <c>$(WasmNativeBuildId)</c>). When <see langword="null"/>,
+    /// a content hash of the webcil payload is used so each module is self-identifying.
+    /// </summary>
+    public byte[]? BuildId { get; set; }
+
     public WebcilWasmWrapper(Stream webcilPayloadStream)
     {
         _webcilPayloadStream = webcilPayloadStream;
@@ -56,6 +72,43 @@ public class WebcilWasmWrapper
             WriteDataSection(writer);
         }
         WriteWasmSuffix(outputStream);
+
+        if (EmitMetadataSections)
+            WriteMetadataSections(outputStream);
+    }
+
+    // Appends the tool-conventions producers + build_id custom sections. These must come after the
+    // module's name section (which is part of the suffix), which is why this runs last.
+    private void WriteMetadataSections(Stream outputStream)
+    {
+        var producers = new[]
+        {
+            new WasmCustomSectionWriter.ProducerValue(WasmCustomSectionWriter.ProducersFieldLanguage, "C#", string.Empty),
+            new WasmCustomSectionWriter.ProducerValue(WasmCustomSectionWriter.ProducersFieldProcessedBy, "WebCIL", ProductVersion),
+            new WasmCustomSectionWriter.ProducerValue(WasmCustomSectionWriter.ProducersFieldSdk, ".NET", ProductVersion),
+        };
+
+        byte[]? buildId = BuildId ?? ComputePayloadHash();
+        WasmCustomSectionWriter.AppendMetadataSections(outputStream, producers, buildId);
+    }
+
+    // Content hash of the webcil payload, used as the build_id when none was supplied explicitly.
+    private byte[]? ComputePayloadHash()
+    {
+        if (!_webcilPayloadStream.CanSeek)
+            return null;
+
+        long savedPosition = _webcilPayloadStream.Position;
+        try
+        {
+            _webcilPayloadStream.Seek(0, SeekOrigin.Begin);
+            using var sha = SHA256.Create();
+            return sha.ComputeHash(_webcilPayloadStream);
+        }
+        finally
+        {
+            _webcilPayloadStream.Seek(savedPosition, SeekOrigin.Begin);
+        }
     }
 
     //

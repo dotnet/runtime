@@ -315,6 +315,9 @@
   <data name="CustomPESectionAlignmentOption" xml:space="preserve">
     <value>Use custom alignment for PE sections in generated PE file</value>
   </data>
+  <data name="WasmNativeBuildIdOption" xml:space="preserve">
+    <value>Hex build_id to stamp into the WebAssembly build_id custom section of R2R webcil output. When omitted, a content hash is used.</value>
+  </data>
   <data name="InvalidCustomPESectionAlignment" xml:space="preserve">
     <value>Custom PE Section Alignment must be a power of two greater or equal to 4096.</value>
   </data>

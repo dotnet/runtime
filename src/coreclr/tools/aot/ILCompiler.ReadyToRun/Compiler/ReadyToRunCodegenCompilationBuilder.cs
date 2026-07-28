@@ -38,6 +38,7 @@ namespace ILCompiler
         private MethodLayoutAlgorithm _r2rMethodLayoutAlgorithm;
         private FileLayoutAlgorithm _r2rFileLayoutAlgorithm;
         private int _customPESectionAlignment;
+        private string _wasmNativeBuildId;
         private bool _verifyTypeAndFieldLayout;
         private bool _hotColdSplitting;
         private CompositeImageSettings _compositeImageSettings;
@@ -181,6 +182,12 @@ namespace ILCompiler
         public ReadyToRunCodegenCompilationBuilder UseCustomPESectionAlignment(int customPESectionAlignment)
         {
             _customPESectionAlignment = customPESectionAlignment;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseWasmNativeBuildId(string wasmNativeBuildId)
+        {
+            _wasmNativeBuildId = wasmNativeBuildId;
             return this;
         }
 
@@ -353,7 +360,8 @@ namespace ILCompiler
                 _r2rFileLayoutAlgorithm,
                 _customPESectionAlignment,
                 _verifyTypeAndFieldLayout,
-                _format);
+                _format,
+                _wasmNativeBuildId);
         }
     }
 }

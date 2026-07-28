@@ -67,6 +67,13 @@
       - $(EmccStackSize)                    - Stack size. Default value: 5MB.
                                               Corresponds to `-s STACK_SIZE=...` emcc arg.
 
+      - $(WasmNativeBuildId)                - Hex string (e.g. `a1b2c3...`, optional `0x` prefix) used to stamp a
+                                              WebAssembly tool-conventions `build_id` custom section into
+                                              `dotnet.native.wasm` via the `wasm-ld --build-id` linker flag.
+                                              Setting it forces a native (re)link. When empty (the default),
+                                              no `build_id` section is emitted by the app build.
+                                              See https://github.com/WebAssembly/tool-conventions/blob/main/BuildId.md
+
       - $(WasmBuildAppAfterThisTarget)      - This target is used as `AfterTargets` for `WasmBuildApp. this
                                               is what triggers the wasm app building. Defaults to `Build`.
       - $(WasmTriggerPublishAppAfterThisTarget) - This target is used as `AfterTargets` for `WasmTriggerPublishApp.
@@ -121,6 +128,7 @@
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CoreClr.ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" Condition="'$(WasmAppRuntimeFlavor)' == 'CoreCLR'" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmCalculateInitialHeapSize" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmEmitProducersObject" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="EmitBundleObjectFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
 
@@ -493,7 +501,12 @@
     </ItemGroup>
     <PropertyGroup>
       <_WasmBuildNativeRequired Condition="@(_ChangedPropertiesThatTriggerRelinking->Count()) > 0">true</_WasmBuildNativeRequired>
+      <!-- Pinning a specific build_id via $(WasmNativeBuildId) requires a native (re)link. -->
+      <_WasmBuildNativeRequired Condition="'$(WasmNativeBuildId)' != ''">true</_WasmBuildNativeRequired>
     </PropertyGroup>
+
+    <Error Condition="'$(WasmBuildNative)' == 'false' and '$(WasmNativeBuildId)' != ''"
+           Text="WasmBuildNative is required because %24(WasmNativeBuildId)=$(WasmNativeBuildId), but WasmBuildNative is already set to 'false'." />
 
     <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_WasmBuildNativeRequired)' == 'true'"
            Text="WasmBuildNative is required because %(_ChangedPropertiesThatTriggerRelinking.Identity)=$(%(_ChangedPropertiesThatTriggerRelinking.Identity)), but WasmBuildNative is already set to 'false'." />

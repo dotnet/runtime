@@ -35,8 +35,14 @@ export let globalObjectsRoot: GlobalObjects = null as any;
 
 export let _runtimeModuleLoaded = false; // please keep it in place also as rollup guard
 
-export function passEmscriptenInternals (internals: EmscriptenInternals, emscriptenBuildOptions: EmscriptenBuildOptions): void {
+export function passEmscriptenInternals(internals: EmscriptenInternals, emscriptenBuildOptions: EmscriptenBuildOptions): void {
     runtimeHelpers.emscriptenBuildOptions = emscriptenBuildOptions;
+
+    // For an application re-link, the build_id comes from the (re)linked native module via the
+    // WASM_BUILD_ID env var and overrides the default rollup constant baked into dotnet.runtime.js.
+    if (emscriptenBuildOptions.buildId) {
+        exportedRuntimeAPI.runtimeBuildInfo.buildId = emscriptenBuildOptions.buildId;
+    }
 
     ENVIRONMENT_IS_PTHREAD = internals.isPThread;
     runtimeHelpers.quit = internals.quit_;
@@ -47,7 +53,7 @@ export function passEmscriptenInternals (internals: EmscriptenInternals, emscrip
 }
 
 // NOTE: this is called AFTER the config is loaded
-export function setRuntimeGlobals (globalObjects: GlobalObjects) {
+export function setRuntimeGlobals(globalObjects: GlobalObjects) {
     if (_runtimeModuleLoaded) {
         throw new Error("Runtime module already loaded");
     }
@@ -91,14 +97,14 @@ export function setRuntimeGlobals (globalObjects: GlobalObjects) {
     });
 }
 
-export function createPromiseController<T> (afterResolve?: () => void, afterReject?: () => void): PromiseAndController<T> {
+export function createPromiseController<T>(afterResolve?: () => void, afterReject?: () => void): PromiseAndController<T> {
     return loaderHelpers.createPromiseController<T>(afterResolve, afterReject);
 }
 
 // this will abort the program if the condition is false
 // see src\mono\browser\runtime\rollup.config.js
 // we inline the condition, because the lambda could allocate closure on hot path otherwise
-export function mono_assert (condition: unknown, messageFactory: string | (() => string)): asserts condition {
+export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (condition) return;
     const message = "Assert failed: " + (typeof messageFactory === "function"
         ? messageFactory()

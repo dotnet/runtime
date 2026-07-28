@@ -64,7 +64,7 @@ export const CharPtrNull: CharPtr = <CharPtr><any>0;
 export const NativePointerNull: NativePointer = <NativePointer><any>0;
 export const PThreadPtrNull: PThreadPtr = <PThreadPtr><any>0;
 
-export function coerceNull<T extends ManagedPointer | NativePointer> (ptr: T | null | undefined): T {
+export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | null | undefined): T {
     if ((ptr === null) || (ptr === undefined))
         return (0 as any) as T;
     else
@@ -245,11 +245,11 @@ export type RuntimeHelpers = {
 }
 
 export type DiagnosticHelpers = {
-    ds_rt_websocket_create:(urlPtr :CharPtr) => number,
-    ds_rt_websocket_send:(client_socket :number, buffer:VoidPtr, bytes_to_write:number) => number,
-    ds_rt_websocket_poll:(client_socket :number) => number,
-    ds_rt_websocket_recv:(client_socket :number, buffer:VoidPtr, bytes_to_read:number) => number,
-    ds_rt_websocket_close:(client_socket :number) => number,
+    ds_rt_websocket_create: (urlPtr: CharPtr) => number,
+    ds_rt_websocket_send: (client_socket: number, buffer: VoidPtr, bytes_to_write: number) => number,
+    ds_rt_websocket_poll: (client_socket: number) => number,
+    ds_rt_websocket_recv: (client_socket: number, buffer: VoidPtr, bytes_to_read: number) => number,
+    ds_rt_websocket_close: (client_socket: number) => number,
 }
 
 export type AOTProfilerOptions = {
@@ -268,7 +268,7 @@ export type DotnetModuleInternal = EmscriptenModule & DotnetModuleConfig & Emscr
 
 // Evaluates whether a value is nullish (same definition used as the ?? operator,
 //  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
-export function is_nullish<T> (value: T | null | undefined): value is null | undefined {
+export function is_nullish<T>(value: T | null | undefined): value is null | undefined {
     return (value === undefined) || (value === null);
 }
 
@@ -283,6 +283,8 @@ export type EmscriptenBuildOptions = {
     runAOTCompilation: boolean,
     wasmEnableThreads: boolean,
     gitHash: string,
+    // build_id from the last native (re)link, via the WASM_BUILD_ID env var. Empty when not pinned.
+    buildId: string,
 };
 export type EmscriptenInternals = {
     isPThread: boolean,
@@ -315,14 +317,14 @@ export interface ExitStatusError {
 
 /// Always throws. Used to handle unreachable switch branches when TypeScript refines the type of a variable
 /// to 'never' after you handle all the cases it knows about.
-export function assertNever (x: never): never {
+export function assertNever(x: never): never {
     throw new Error("Unexpected value: " + x);
 }
 
 /// returns true if the given value is not Thenable
 ///
 /// Useful if some function returns a value or a promise of a value.
-export function notThenable<T> (x: T | PromiseLike<T>): x is T {
+export function notThenable<T>(x: T | PromiseLike<T>): x is T {
     return typeof x !== "object" || typeof ((<PromiseLike<T>>x).then) !== "function";
 }
 

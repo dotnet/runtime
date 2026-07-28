@@ -117,6 +117,11 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         private readonly int _customPESectionAlignment;
 
+        /// <summary>
+        /// Explicit WebAssembly build_id (hex) stamped into R2R webcil output; null to use a content hash.
+        /// </summary>
+        private readonly string _wasmNativeBuildId;
+
         public ReadyToRunObjectWriter(
             string objectFilePath,
             EcmaModule componentModule,
@@ -132,7 +137,8 @@ namespace ILCompiler.DependencyAnalysis
             int perfMapFormatVersion,
             bool generateProfileFile,
             CallChainProfile callChainProfile,
-            int customPESectionAlignment)
+            int customPESectionAlignment,
+            string wasmNativeBuildId = null)
         {
             _objectFilePath = objectFilePath;
             _componentModule = componentModule;
@@ -140,6 +146,7 @@ namespace ILCompiler.DependencyAnalysis
             _nodes = nodes;
             _nodeFactory = factory;
             _customPESectionAlignment = customPESectionAlignment;
+            _wasmNativeBuildId = wasmNativeBuildId;
             _generateMapFile = generateMapFile;
             _generateMapCsvFile = generateMapCsvFile;
             _generatePdbFile = generatePdbFile;
@@ -302,7 +309,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private WasmObjectWriter CreateWasmObjectWriter()
         {
-            return new WasmObjectWriter(_nodeFactory, ObjectWritingOptions.None,  _outputInfoBuilder);
+            return new WasmObjectWriter(_nodeFactory, ObjectWritingOptions.None,  _outputInfoBuilder, _wasmNativeBuildId);
         }
 
         public static void EmitObject(
@@ -322,7 +329,8 @@ namespace ILCompiler.DependencyAnalysis
             CallChainProfile callChainProfile,
             ReadyToRunContainerFormat format,
             int customPESectionAlignment,
-            Logger logger)
+            Logger logger,
+            string wasmNativeBuildId = null)
         {
             Console.WriteLine($@"Emitting R2R {format} file: {objectFilePath}");
             ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(
@@ -340,7 +348,8 @@ namespace ILCompiler.DependencyAnalysis
                 perfMapFormatVersion: perfMapFormatVersion,
                 generateProfileFile: generateProfileFile,
                 callChainProfile,
-                customPESectionAlignment);
+                customPESectionAlignment,
+                wasmNativeBuildId);
 
             objectWriter.EmitReadyToRunObjects(format, logger);
         }
