@@ -64,6 +64,12 @@ public static class DiagnosticIds
     public const string DuplicateExportOrdinal = "ILA0044";
     public const string UnsupportedVTableDeclaration = "ILA0045";
     public const string InvalidOctalLiteral = "ILA0046";
+    public const string PseudoCustomAttributeInvalidTarget = "ILA0047";
+    public const string PseudoCustomAttributeInvalidValue = "ILA0048";
+    public const string PseudoCustomAttributeInvalidBlob = "ILA0049";
+    public const string PseudoCustomAttributeInvalidGuid = "ILA0050";
+    public const string PseudoCustomAttributeUnknownArgument = "ILA0051";
+    public const string PseudoCustomAttributeRepeatedArgument = "ILA0052";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -114,4 +120,10 @@ internal static class DiagnosticMessageTemplates
     public const string DuplicateExportOrdinal = "Export '{0}' uses ordinal {1}, which is already assigned to a different VTable target";
     public const string UnsupportedVTableDeclaration = "Raw .vtable declarations are not supported; use .vtfixup instead";
     public const string InvalidOctalLiteral = "The value '{0}' is not a valid octal literal";
+    public const string PseudoCustomAttributeInvalidTarget = "Custom attribute '{0}' cannot be applied to this target";
+    public const string PseudoCustomAttributeInvalidValue = "Custom attribute '{0}' has an invalid argument value";
+    public const string PseudoCustomAttributeInvalidBlob = "Custom attribute '{0}' has a malformed value blob";
+    public const string PseudoCustomAttributeInvalidGuid = "Custom attribute '{0}' does not specify a valid GUID";
+    public const string PseudoCustomAttributeUnknownArgument = "Custom attribute '{0}' does not have a field or property named '{1}'";
+    public const string PseudoCustomAttributeRepeatedArgument = "Custom attribute '{0}' specifies '{1}' more than once";
 }

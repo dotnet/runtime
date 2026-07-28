@@ -3,15 +3,44 @@
 
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 
 namespace ILAssembler;
 
 internal static class MetadataExtensions
 {
+    extension(FieldAttributes)
+    {
+        public static FieldAttributes NotSerializedFlag => (FieldAttributes)0x0080;
+    }
+
+    extension(MethodImplAttributes)
+    {
+        public static MethodImplAttributes UserMask =>
+            MethodImplAttributes.ManagedMask |
+            MethodImplAttributes.ForwardRef |
+            MethodImplAttributes.PreserveSig |
+            MethodImplAttributes.InternalCall |
+            MethodImplAttributes.Synchronized |
+            MethodImplAttributes.NoInlining |
+            MethodImplAttributes.AggressiveInlining |
+            MethodImplAttributes.NoOptimization |
+            MethodImplAttributes.AggressiveOptimization |
+            MethodImplAttributes.Async;
+    }
+
     extension(TypeAttributes)
     {
         public static TypeAttributes ExtendedLayout => (TypeAttributes)0x18;
         public static TypeAttributes Forwarder => (TypeAttributes)0x00200000;
+        public static TypeAttributes SerializableFlag => (TypeAttributes)0x00002000;
+    }
+
+    extension(UnmanagedType)
+    {
+        public static int ArraySizeParamIndexSpecified => 0x0001;
+        public static UnmanagedType ByValStr => (UnmanagedType)0x22;
+        public static UnmanagedType Max => (UnmanagedType)0x50;
     }
 
     extension(DeclarativeSecurityAction)
@@ -33,5 +62,21 @@ internal static class MetadataExtensions
     extension(ILOpCode)
     {
         public static ILOpCode Unused => (ILOpCode)0xFE22;
+    }
+}
+
+internal static class ClassInterfaceTypeExtensions
+{
+    extension(ClassInterfaceType)
+    {
+        public static ClassInterfaceType Last => (ClassInterfaceType)3;
+    }
+}
+
+internal static class ComInterfaceTypeExtensions
+{
+    extension(ComInterfaceType)
+    {
+        public static ComInterfaceType Last => (ComInterfaceType)4;
     }
 }
