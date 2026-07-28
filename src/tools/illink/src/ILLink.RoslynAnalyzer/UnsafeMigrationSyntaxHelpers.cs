@@ -17,6 +17,12 @@ namespace ILLink.RoslynAnalyzer
         // The analyzer builds against a Roslyn version that predates SyntaxKind.SafeKeyword.
         private static readonly SyntaxKind s_safeKeyword = SyntaxFacts.GetContextualKeywordKind("safe");
 
+        /// <summary>
+        /// The kind of the <c>safe</c> contextual keyword, or <see cref="SyntaxKind.None"/> when the hosting
+        /// compiler does not know it.
+        /// </summary>
+        internal static SyntaxKind SafeKeywordKind => s_safeKeyword;
+
         internal static SyntaxTokenList GetModifiers(SyntaxNode declaration) =>
             declaration switch
             {
@@ -42,6 +48,19 @@ namespace ILLink.RoslynAnalyzer
 
             return default;
         }
+
+        /// <summary>
+        /// Determines whether an <c>unsafe</c> keyword token introduces an <c>unsafe(...)</c> expression rather
+        /// than a modifier or a block.
+        /// </summary>
+        /// <remarks>
+        /// <c>UnsafeExpressionSyntax</c> is newer than the Roslyn these analyzers compile against, but it derives
+        /// from <see cref="ExpressionSyntax"/>, which is not, so the expression form is recognized by its parent's
+        /// base type. Matching on a following open parenthesis instead would misclassify the modifier on any
+        /// member whose type is a tuple, such as <c>static unsafe (int, int) M()</c>.
+        /// </remarks>
+        internal static bool IsUnsafeExpressionKeyword(SyntaxToken token) =>
+            token.IsKind(SyntaxKind.UnsafeKeyword) && token.Parent is ExpressionSyntax;
     }
 }
 #endif

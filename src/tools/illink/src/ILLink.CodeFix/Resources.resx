@@ -144,6 +144,9 @@
   <data name="AddUnsafeToFieldCodeFixTitle" xml:space="preserve">
     <value>Mark field-like member 'unsafe'</value>
   </data>
+  <data name="AddSafetyCommentCodeFixTitle" xml:space="preserve">
+    <value>Add '// SAFETY:' comment</value>
+  </data>
   <data name="UconditionalSuppressMessageCodeFixTitle" xml:space="preserve">
     <value>Add UnconditionalSuppressMessage attribute to parent method</value>
   </data>
