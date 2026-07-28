@@ -710,10 +710,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 {
                     byte[] sig2 = roundtrippedFirstSigner.GetSignature();
                     Assert.Equal(signature, sig2);
-                },
-                // On .NET Framework, verifying a detached ML-DSA signature without supplying the
-                // content does not throw the way it does on .NET (and for RSA/ECDSA on both).
-                detachedNoContentThrows: !PlatformDetection.IsNetFramework);
+                });
         }
 
         private static void AssertAddFirstSigner(
@@ -721,8 +718,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             bool detached,
             Action<SignedCms> signCms,
             Action<SignerInfo> assertFirstSigner,
-            Action<SignerInfo> assertRoundtrippedFirstSigner,
-            bool detachedNoContentThrows = true)
+            Action<SignerInfo> assertRoundtrippedFirstSigner)
         {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
             SignedCms cms = new SignedCms(contentInfo, detached);
@@ -764,16 +760,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             if (detached)
             {
-                if (detachedNoContentThrows)
-                {
-                    Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
-                }
-                else
-                {
-                    // Assert.NoThrow
-                    cms.CheckSignature(true);
-                }
-
+                Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
                 cms = new SignedCms(contentInfo, detached);
                 cms.Decode(encoded);
             }
