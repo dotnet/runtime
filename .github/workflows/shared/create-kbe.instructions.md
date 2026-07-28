@@ -63,8 +63,7 @@ best-match ranking can place noisier hits above the correct one.
 
 When a failure includes a complete test method identifier, search that
 identifier verbatim before deriving any shorter stem. Do not truncate
-underscore-delimited identifiers (for example, keep
-`CreateFileChangeToken_RootDeletedAndRecreated_TokenFiresWhenFileCreated`);
+underscore-delimited identifiers;
 GitHub search does not reliably prefix-match them. Only strip the specific
 platform, architecture, and type-width suffixes described in variation 6.
 
