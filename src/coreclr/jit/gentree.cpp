@@ -1607,14 +1607,6 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
             *reg = comp->virtualStubParamInfo->GetReg();
             return true;
 
-        case WellKnownArg::PInvokeCookie:
-            *reg = REG_PINVOKE_COOKIE_PARAM;
-            return true;
-
-        case WellKnownArg::PInvokeTarget:
-            *reg = REG_PINVOKE_TARGET_PARAM;
-            return true;
-
         case WellKnownArg::R2RIndirectionCell:
             *reg = REG_R2R_INDIRECT_PARAM;
             return true;
@@ -2396,12 +2388,6 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
         // R11 = Virtual stub param
         return 1;
     }
-    else if ((gtCallType == CT_INDIRECT) && (gtCallCookie != nullptr))
-    {
-        // R10 = PInvoke target param
-        // R11 = PInvoke cookie param
-        return 2;
-    }
     return 0;
 }
 
@@ -2617,18 +2603,6 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
             {
                 return false;
             }
-        }
-    }
-    else if (!c1->IsVirtualStub())
-    {
-        if ((c1->gtCallCookie == nullptr) != (c2->gtCallCookie == nullptr))
-        {
-            return false;
-        }
-
-        if ((c1->gtCallCookie != nullptr) && !sameLookup(*c1->gtCallCookie, *c2->gtCallCookie))
-        {
-            return false;
         }
     }
 
@@ -10118,11 +10092,10 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtRetClsHnd     = nullptr;
     node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
     INDEBUG(node->gtCallDebugFlags = GTF_CALL_MD_EMPTY);
-    node->gtInlineInfoCount = 0;
+    node->ClearInlineInfo();
 
     if (callType == CT_INDIRECT)
     {
-        node->gtCallCookie  = nullptr;
         node->gtCallMethHnd = NO_METHOD_HANDLE;
         node->gtControlExpr = (GenTree*)callHnd;
     }
@@ -10130,7 +10103,6 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     {
         node->gtCallMethHnd = callHnd;
         node->gtControlExpr = nullptr;
-        node->ClearInlineInfo();
     }
     node->gtReturnType = type;
 
@@ -11741,15 +11713,15 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     copy->gtStubCallStubAddr = tree->gtStubCallStubAddr;
 
     /* Copy the union */
+    copy->gtInlineCandidateInfo = tree->gtInlineCandidateInfo;
+
     if (tree->gtCallType == CT_INDIRECT)
     {
-        copy->gtCallCookie  = tree->gtCallCookie;
         copy->gtCallMethHnd = NO_METHOD_HANDLE;
     }
     else
     {
-        copy->gtCallMethHnd         = tree->gtCallMethHnd;
-        copy->gtInlineCandidateInfo = tree->gtInlineCandidateInfo;
+        copy->gtCallMethHnd = tree->gtCallMethHnd;
     }
 
     copy->gtInlineInfoCount          = tree->gtInlineInfoCount;

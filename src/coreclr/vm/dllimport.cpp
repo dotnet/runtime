@@ -6281,7 +6281,8 @@ static Signature GetCalliSignatureFromStubSignature(const Signature& stubSignatu
 }
 
 // Determines the unmanaged calling convention of an unmanaged CALLI call site and the
-// corresponding stub flags. Returns false if the signature does not describe a P/Invoke.
+// corresponding stub flags. Returns false if the signature does not describe a P/Invoke, and
+// throws if it describes one the runtime cannot express.
 static bool TryGetCalliStubCallConv(
     Module* pModule,
     const Signature& calliSignature,
@@ -6294,11 +6295,6 @@ static bool TryGetCalliStubCallConv(
     uint32_t rawCallConv;
     IfFailThrow(sigParser.GetCallingConvInfo(&rawCallConv));
 
-    // Signatures with an instance 'this' are not expressible as a static stub, so leave them
-    // for the JIT to handle inline.
-    if ((rawCallConv & (IMAGE_CEE_CS_CALLCONV_GENERIC | IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS)) != 0)
-        return false;
-
     switch (rawCallConv & IMAGE_CEE_CS_CALLCONV_MASK)
     {
         case IMAGE_CEE_CS_CALLCONV_C:
@@ -6306,7 +6302,7 @@ static bool TryGetCalliStubCallConv(
         case IMAGE_CEE_CS_CALLCONV_THISCALL:
         case IMAGE_CEE_CS_CALLCONV_FASTCALL:
             *pUnmgdCallConv = (CorInfoCallConvExtension)(rawCallConv & IMAGE_CEE_CS_CALLCONV_MASK);
-            return true;
+            break;
 
         case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
         {
@@ -6329,7 +6325,7 @@ static bool TryGetCalliStubCallConv(
             }
 
             *pUnmgdCallConv = unmgdCallConv;
-            return true;
+            break;
         }
 
         case IMAGE_CEE_CS_CALLCONV_DEFAULT:
@@ -6344,6 +6340,24 @@ static bool TryGetCalliStubCallConv(
             // Not a method signature at all.
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
+
+    if ((rawCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
+    {
+        // An unmanaged standalone signature is never generic.
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    // An unmanaged call site carrying an instance 'this' is not expressible as a stub, and the JIT
+    // cannot emit it inline either. Reject it the same way a P/Invoke declared on an instance method
+    // is rejected - see code:CreatePInvokeStubAccessMetadata. Note that a native member function is
+    // expressed as a static signature whose first parameter is the 'this' pointer, so this only
+    // rejects signatures that no calling convention can describe.
+    if ((rawCallConv & (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS)) != 0)
+    {
+        COMPlusThrow(kInvalidProgramException, VLDTR_E_FMD_PINVOKENOTSTATIC);
+    }
+
+    return true;
 }
 
 MethodDesc* PInvoke::CreateCalliILStub(

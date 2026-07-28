@@ -329,16 +329,23 @@ ILStubResolver::ILStubResolver() :
     LIMITED_METHOD_CONTRACT;
 }
 
-bool ILStubResolver::IsCompiled()
+bool ILStubResolver::IsCompiled() const
 {
     LIMITED_METHOD_CONTRACT;
     return dac_cast<TADDR>(m_pCompileTimeState) == ILGeneratedAndFreed;
 }
 
-bool ILStubResolver::IsILGenerated()
+bool ILStubResolver::IsILGenerated() const
 {
     LIMITED_METHOD_CONTRACT;
     return dac_cast<TADDR>(m_pCompileTimeState) != ILNotYetGenerated;
+}
+
+// Defined here rather than in method.inl because it needs the complete ILStubResolver type.
+bool DynamicMethodDesc::UsesTransientIL() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return IsILStub() && !PTR_ILStubResolver(m_pResolver)->IsILGenerated();
 }
 
 MethodDesc* ILStubResolver::GetStubMethodDesc()

@@ -230,17 +230,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (opcode == CEE_CALLI)
     {
-        // ReadyToRun does not support converting an unmanaged calli into a call to a
-        // marshalling stub; such call sites are handled by the PInvoke calli cookie below.
-        if (!IsReadyToRun())
+        if (info.compCompHnd->convertPInvokeCalliToCall(pResolvedToken, !impCanPInvokeInlineCallSite(compCurBB)))
         {
-            if (info.compCompHnd->convertPInvokeCalliToCall(pResolvedToken, !impCanPInvokeInlineCallSite(compCurBB)))
-            {
-                // The VM only fills in hMethod; derive the rest of the token from it.
-                pResolvedToken->hClass = info.compCompHnd->getMethodClass(pResolvedToken->hMethod);
-                eeGetCallInfo(pResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, callInfo);
-                return impImportCall(CEE_CALL, pResolvedToken, nullptr, nullptr, prefixFlags, callInfo, rawILOffset);
-            }
+            // The VM only fills in hMethod; derive the rest of the token from it.
+            pResolvedToken->hClass = info.compCompHnd->getMethodClass(pResolvedToken->hMethod);
+            eeGetCallInfo(pResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, callInfo);
+            return impImportCall(CEE_CALL, pResolvedToken, nullptr, nullptr, prefixFlags, callInfo, rawILOffset);
         }
 
         /* Get the call site sig */
@@ -829,20 +824,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         impPopArgsForUnmanagedCall(call->AsCall(), sig, &swiftErrorNode);
 
         goto DONE;
-    }
-    else if ((opcode == CEE_CALLI) && ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_DEFAULT) &&
-             ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG))
-    {
-        void*                pCookie;
-        void*                cookie       = info.compCompHnd->GetCookieForPInvokeCalliSig(sig, &pCookie);
-        CORINFO_CONST_LOOKUP cookieLookup = eeConvertToLookup(cookie, pCookie);
-        call->AsCall()->gtCallCookie      = new (getAllocator(CMK_ASTNode)) CORINFO_CONST_LOOKUP(cookieLookup);
-
-        if (canTailCall)
-        {
-            canTailCall             = false;
-            szCanTailCallFailReason = "PInvoke calli";
-        }
     }
 
     if (sig->isAsyncCall())
@@ -7189,8 +7170,6 @@ void Compiler::impCheckForPInvokeCall(
         }
 
         unmanagedCallConv = info.compCompHnd->getUnmanagedCallConv(nullptr, sig, &suppressGCTransition);
-
-        assert(!call->gtCallCookie);
     }
 
     if (suppressGCTransition)
@@ -7213,13 +7192,11 @@ void Compiler::impCheckForPInvokeCall(
     }
     optNativeCallCount++;
 
-    if (methHnd == nullptr &&
-        (!IsReadyToRun() || (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && !compIsForInlining())))
+    if (methHnd == nullptr)
     {
-        // PInvoke CALLI outside of ReadyToRun must always be inlined. Non-inlineable CALLI cases
-        // have been converted to regular method calls earlier using convertPInvokeCalliToCall.
-
-        // PInvoke CALLI in IL stubs must be inlined
+        // PInvoke CALLI must always be inlined. Call sites that cannot be inlined have been converted
+        // to a call to a marshalling stub earlier using convertPInvokeCalliToCall, or, in ReadyToRun,
+        // have aborted the compilation of this method.
     }
     else if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && IsReadyToRun())
     {
@@ -8402,17 +8379,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     if (compCurBB->isRunRarely() || opts.OptimizationDisabled())
     {
         JITDUMP("NOT Marking call [%06u] as guarded devirtualization candidate -- rare / dbg / minopts\n",
-                dspTreeID(call));
-        return;
-    }
-
-    // CT_INDIRECT calls may use the cookie, bail if so...
-    //
-    // If transforming these provides a benefit, we could save this off in the same way
-    // we save the stub address below.
-    if ((call->gtCallType == CT_INDIRECT) && (call->AsCall()->gtCallCookie != nullptr))
-    {
-        JITDUMP("NOT Marking call [%06u] as guarded devirtualization candidate -- CT_INDIRECT with cookie\n",
                 dspTreeID(call));
         return;
     }

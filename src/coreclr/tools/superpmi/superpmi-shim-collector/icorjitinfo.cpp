@@ -1621,7 +1621,7 @@ void interceptor_ICJI::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, C
     mc->recGetAddressOfPInvokeTarget(method, pLookup);
 }
 
-// Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
+// Unused
 LPVOID interceptor_ICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection)
 {
     mc->cr->AddCall("GetCookieForPInvokeCalliSig");
