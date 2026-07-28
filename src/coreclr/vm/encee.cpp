@@ -94,7 +94,7 @@ struct EncReleaseHolderTraits final
     {
         CONTRACTL
         {
-            THROWS;
+            NOTHROW;
             GC_NOTRIGGER;
             MODE_PREEMPTIVE;
         }
