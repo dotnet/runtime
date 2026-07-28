@@ -260,8 +260,8 @@ FrameCallbackAdapter(
 
     Module* pModule = pMD->GetModule();
 
-    bool hasManagedNativeCode = !pCF->HasFaulted() && pCF->IsFrameless();
-    uint32_t nativeOffset = hasManagedNativeCode ? pCF->GetRelOffset() : 0;
+    bool canResolveOffsets = !pCF->HasFaulted() && pCF->IsFrameless();
+    uint32_t nativeOffset = canResolveOffsets ? pCF->GetRelOffset() : 0;
     uint32_t ilOffset = 0;
     PCODE ip = (PCODE)0;
     TADDR stackPointer = (TADDR)0;
@@ -277,7 +277,7 @@ FrameCallbackAdapter(
         return SWA_CONTINUE;
     }
 
-    if (g_pDebugInterface != nullptr && hasManagedNativeCode)
+    if (g_pDebugInterface != nullptr && canResolveOffsets)
     {
         DWORD resolvedILOffset = 0;
         BOOL haveILOffset = FALSE;
