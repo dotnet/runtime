@@ -66,6 +66,9 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 add_library_clr(mscordbi_universal SHARED ${MSCORDBI_UNIVERSAL_SOURCES})
 set_target_properties(mscordbi_universal PROPERTIES DBI_COMPONENT TRUE)
+# This binary links its own PAL, so the shared mscordbi.cpp must not also define the
+# PAL-owned g_arm64_atomics_present symbol (see mscordbi.cpp).
+target_compile_definitions(mscordbi_universal PRIVATE MSCORDBI_LINKS_PRIVATE_PAL)
 target_precompile_headers(mscordbi_universal PRIVATE $<$<COMPILE_LANGUAGE:CXX>:stdafx.h>)
 
 if(CLR_CMAKE_HOST_UNIX)
