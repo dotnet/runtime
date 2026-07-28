@@ -54,7 +54,7 @@ namespace System.Data.Tests
             row2["Col2"] = SqlBoolean.False;
             table.Rows.Add(row2);
 
-            //false AND True => False short-circuit on left=false
+            // false AND True => False short-circuit on left=false
             DataRow row3 = table.NewRow();
             row3["Col1"] = SqlBoolean.False;
             row3["Col2"] = SqlBoolean.True;
