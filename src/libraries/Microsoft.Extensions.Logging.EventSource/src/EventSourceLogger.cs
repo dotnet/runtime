@@ -35,6 +35,17 @@ namespace Microsoft.Extensions.Logging.EventSource
         private readonly LoggingEventSource _eventSource;
         private readonly int _factoryID;
 
+        [ThreadStatic]
+        private static MemoryStream? t_jsonStream;
+        [ThreadStatic]
+        private static Utf8JsonWriter? t_jsonWriter;
+
+        // Upper bound for the per-thread buffers we keep cached between events. A single unusually
+        // large event (e.g. a huge property value) must not permanently inflate steady-state memory
+        // on long-lived thread-pool threads. This mirrors ConsoleLogger, which caps its thread-static
+        // StringBuilder at the same size.
+        private const int MaxCachedBufferSize = 1024;
+
         public EventSourceLogger(string categoryName, int factoryID, LoggingEventSource eventSource, EventSourceLogger? next)
         {
             CategoryName = categoryName;
@@ -258,17 +269,6 @@ namespace Microsoft.Extensions.Logging.EventSource
 
             return Array.Empty<KeyValuePair<string, string?>>();
         }
-
-        [ThreadStatic]
-        private static MemoryStream? t_jsonStream;
-        [ThreadStatic]
-        private static Utf8JsonWriter? t_jsonWriter;
-
-        // Upper bound for the per-thread buffers we keep cached between events. A single unusually
-        // large event (e.g. a huge property value) must not permanently inflate steady-state memory
-        // on long-lived thread-pool threads. This mirrors ConsoleLogger, which caps its thread-static
-        // StringBuilder at the same size.
-        private const int MaxCachedBufferSize = 1024;
 
         private static string ToJson(IReadOnlyList<KeyValuePair<string, string?>> keyValues)
         {
