@@ -163,7 +163,8 @@ public class WasmArgumentLayoutTests
         InstructionSetSupport instructionSetSupport = new(default, default, TargetArchitecture.Wasm32);
         TargetDetails target = new(TargetArchitecture.Wasm32, TargetOS.Browser, TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
-        ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes, bubbleIncludesCoreModule: true, instructionSetSupport, oldTypeSystemContext: null)
+        // Wasm cannot generate code at runtime, matching what crossgen2's Program computes for this target.
+        ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes, bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: false, instructionSetSupport, oldTypeSystemContext: null)
         {
             InputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { { "System.Private.CoreLib", coreLibPath } },
             ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
