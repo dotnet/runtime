@@ -70,13 +70,13 @@ namespace System.Runtime.Caching
             try
             {
                 _counters = new DiagnosticCounter[NUM_COUNTERS];
-                _counters[(int)CounterName.Entries] = CreatePollingCounter("entries", "Cache Entries", () => _counterValues.Entries);
-                _counters[(int)CounterName.Hits] = CreatePollingCounter("hits", "Cache Hits", () => _counterValues.Hits);
-                _counters[(int)CounterName.Misses] = CreatePollingCounter("misses", "Cache Misses", () => _counterValues.Misses);
-                _counters[(int)CounterName.Trims] = CreatePollingCounter("trims", "Cache Trims", () => _counterValues.Trims);
+                _counters[(int)CounterName.Entries] = CreatePollingCounter("entries", "Cache Entries", () => Interlocked.Read(ref _counterValues.Entries));
+                _counters[(int)CounterName.Hits] = CreatePollingCounter("hits", "Cache Hits", () => Interlocked.Read(ref _counterValues.Hits));
+                _counters[(int)CounterName.Misses] = CreatePollingCounter("misses", "Cache Misses", () => Interlocked.Read(ref _counterValues.Misses));
+                _counters[(int)CounterName.Trims] = CreatePollingCounter("trims", "Cache Trims", () => Interlocked.Read(ref _counterValues.Trims));
 
                 _counters[(int)CounterName.Turnover] = new IncrementingPollingCounter("turnover", this,
-                    () => _counterValues.Turnover)
+                    () => Interlocked.Read(ref _counterValues.Turnover))
                 {
                     DisplayName = "Cache Turnover Rate",
                 };
@@ -86,13 +86,14 @@ namespace System.Runtime.Caching
                 // incremented on every hit and every miss). Neither raw value is observable - only the
                 // percentage computed below is - and they are exactly redundant with Hits and Hits + Misses.
                 // Deriving the ratio lets the Get() hot path do a single Interlocked op instead of three.
-                // 0 hits and 0 misses still yields NaN, as it did with the raw counters, and the result can
-                // no longer transiently exceed 100% the way separate reads of HitRatio/HitRatioBase could.
+                // 0 hits and 0 misses still yields NaN, as it did with the raw counters. Hits is read once
+                // and reused for both the numerator and the denominator, so unlike the separate
+                // HitRatio/HitRatioBase reads the result can never transiently exceed 100%.
                 _counters[(int)CounterName.HitRatio] = new PollingCounter("hit-ratio", this,
                     () =>
                     {
-                        double hits = _counterValues.Hits;
-                        return (hits / (hits + _counterValues.Misses)) * 100d;
+                        double hits = Interlocked.Read(ref _counterValues.Hits);
+                        return (hits / (hits + Interlocked.Read(ref _counterValues.Misses))) * 100d;
                     })
                 {
                     DisplayName = "Cache Hit Ratio",
