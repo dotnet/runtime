@@ -200,8 +200,14 @@ namespace System.Threading
             }
 #endif
 
-            _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback!, timedOut);
-            CompleteCallbackRequest();
+            try
+            {
+                _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(Callback!, timedOut);
+            }
+            finally
+            {
+                CompleteCallbackRequest();
+            }
         }
 
         /// <summary>
@@ -224,6 +230,9 @@ namespace System.Threading
         /// Called when the wait thread removes this handle registration. This will signal the user's event if there are no callbacks pending,
         /// or note that the user's event must be signaled when the callbacks complete.
         /// </summary>
+        /// <remarks>
+        /// This function must be called only after some thread has called <see cref="Unregister"/>.
+        /// </remarks>
         internal void OnRemoveWait()
         {
             s_callbackLock.Acquire();

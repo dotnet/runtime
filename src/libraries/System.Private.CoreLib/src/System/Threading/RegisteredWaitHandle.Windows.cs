@@ -71,7 +71,9 @@ namespace System.Threading
 
         internal void UnregisterWaitPortableCore()
         {
-            _waitCompletionPacket!.UnregisterWait();
+            Debug.Assert(_waitCompletionPacket is not null);
+            _waitCompletionPacket.UnregisterWait();
+            _waitCompletionPacket = null;
         }
 
         public bool Unregister(WaitHandle? waitObject) =>
