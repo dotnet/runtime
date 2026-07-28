@@ -47,7 +47,11 @@ public class GetTotalAllocatedBytesServerGC
         // the benign fluctuation so the test cannot false-fail on a correct runtime.
         const long Tolerance = 64L * 1024 * 1024;
 
-        int burstThreads = Math.Max(2, Environment.ProcessorCount);
+        // Cap the allocator count: we only need enough parallel allocators to drive DATAS
+        // heap-count oscillation, not one per core. Scaling 1:1 with ProcessorCount would spawn
+        // hundreds of threads on high-core machines, oversubscribing the box and making the test
+        // needlessly heavy and flaky without improving repro reliability.
+        int burstThreads = Math.Clamp(Environment.ProcessorCount, 2, 16);
         using var cts = new CancellationTokenSource();
         CancellationToken token = cts.Token;
 
