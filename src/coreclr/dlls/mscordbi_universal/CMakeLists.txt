@@ -1,9 +1,6 @@
 
-# mscordbi_universal is a parallel build of the debugger interface (DBI) that owns
-# its own PAL instead of sharing the DAC's PAL through the DAC_-prefixed import
-# redefines. It exposes the same entrypoints as mscordbi (including the path-based
-# OpenVirtualProcessImpl2 flow) and is selected opt-in for the universal/cDAC path.
-# The regular mscordbi remains unchanged for the legacy shared-DAC-PAL path.
+# mscordbi_universal is a parallel build of the DBI that owns its own PAL instead
+# of sharing the DAC's PAL.
 
 # Set the RPATH of mscordbi_universal so that it can find dependencies without needing to set LD_LIBRARY_PATH
 # For more information: http://www.cmake.org/Wiki/CMake_RPATH_handling.
@@ -30,6 +27,10 @@ set(MSCORDBI_UNIVERSAL_SOURCES
     ${MSCORDBI_DIR}/mscordbi.cpp
 )
 
+# Reuse the sibling precompiled header and the shared DBI entry-point source, but keep a
+# local export list: the universal binary omits the HMODULE-based OpenVirtualProcess
+# entrypoints (see mscordbi_universal.src / mscordbi_universal_unixexports.src).
+
 # Unlike mscordbi, the DAC PAL export redefines file (palredefines.S) is deliberately
 # not linked here: this binary provides its own PAL rather than importing the DAC's.
 
@@ -50,7 +51,7 @@ if(CLR_CMAKE_HOST_WIN32)
 
     list(APPEND MSCORDBI_UNIVERSAL_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/mscordbi_universal.def)
 else(CLR_CMAKE_HOST_WIN32)
-    set(DEF_SOURCES ${MSCORDBI_DIR}/mscordbi_unixexports.src)
+    set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/mscordbi_universal_unixexports.src)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/mscordbi_universal.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 

@@ -1,7 +1,10 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-; The export set here must stay identical to dlls/mscordbi/mscordbi.src; only the
+; This binary owns its own PAL and only supports the path-based OpenVirtualProcessImpl2
+; activation flow, so the HMODULE-taking OpenVirtualProcessImpl and the deprecated
+; OpenVirtualProcess/OpenVirtualProcess2 entrypoints exported by dlls/mscordbi/mscordbi.src
+; are intentionally omitted here. The remaining export set matches mscordbi.src; only the
 ; LIBRARY name differs so the module's internal name matches mscordbi_universal.dll.
 
 LIBRARY         mscordbi_universal
@@ -10,16 +13,8 @@ EXPORTS
     // COM-instantiation
     DllGetClassObjectInternal private
 
-    // In-proc (Whidbey-style) creation path from the shim - CDIFV and it's replacement
-    CreateCordbObject private
-
     // Out-of-proc creation path from the shim - ICLRDebugging
-    OpenVirtualProcessImpl
     OpenVirtualProcessImpl2
-
-    // DEPRECATED - use OpenVirtualProcessImpl
-    OpenVirtualProcess private
-    OpenVirtualProcess2
 
     CoreCLRCreateCordbObject private
     CoreCLRCreateCordbObjectEx private
