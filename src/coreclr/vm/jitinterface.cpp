@@ -6434,6 +6434,35 @@ bool CEEInfo::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return ret;
 }
 
+bool CEEInfo::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result = true;
+
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE(ftn != NULL);
+
+    MethodDesc* pMD = GetMethod(ftn);
+    _ASSERTE(!pMD->IsStatic());
+
+    // ECMA augment III.1.7.7 allows making this escaping assumption based on
+    // RefSafetyRules and UnscopedRef attributes.
+    if (pMD->GetModule()->OptsIntoRefSafetyRulesV11())
+    {
+        result = (pMD->GetCustomAttribute(WellKnownAttribute::UnscopedRef, NULL, NULL) == S_OK);
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 bool CEEInfo::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 {
     CONTRACTL {
@@ -9587,6 +9616,13 @@ void CEEInfo::getBoundaries(CORINFO_METHOD_HANDLE ftn,
 void CEEInfo::getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
                          bool *extendOthers)
 {
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
+void CEECodeGenInfo::getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
+                         bool *extendOthers)
+{
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -9598,7 +9634,7 @@ void CEEInfo::getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::
 #ifdef DEBUGGING_SUPPORTED
     if (g_pDebugInterface)
     {
-        g_pDebugInterface->getVars(GetMethod(ftn), cVars, vars, extendOthers);
+        g_pDebugInterface->getVars(GetMethod(ftn), cVars, vars, extendOthers, m_MethodInfo.ILCodeSize);
     }
     else
     {
@@ -12885,7 +12921,7 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
     if (pMD->IsEligibleForTieredCompilation())
     {
-        hr = PgoManager::allocPgoInstrumentationBySchema(pMD, pSchema, countSchemaItems, pInstrumentationData);
+        hr = PgoManager::allocPgoInstrumentationBySchema(pMD, m_ILHeader, pSchema, countSchemaItems, pInstrumentationData);
     }
     else
     {
@@ -12953,7 +12989,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
         m_foundPgoData = newPgoData;
         newPgoData.SuppressRelease();
 
-        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, &newPgoData->m_allocatedData, &newPgoData->m_schema,
+        newPgoData->m_hr = PgoManager::getPgoInstrumentationResults(pMD, m_ILHeader, &newPgoData->m_allocatedData, &newPgoData->m_schema,
             &newPgoData->m_cSchemaElems, &newPgoData->m_pInstrumentationData, &newPgoData->m_pgoSource);
         pDataCur = m_foundPgoData;
     }

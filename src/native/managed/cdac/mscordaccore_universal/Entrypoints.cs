@@ -12,6 +12,9 @@ internal static class Entrypoints
 {
     private const string CDAC = "cdac_reader_";
 
+    // Native CONTEXT and DT_CONTEXT declarations require 16-byte alignment.
+    private const nuint ContextAlignment = 16;
+
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}init")]
     private static unsafe int Init(
         ulong descriptor,
@@ -61,15 +64,14 @@ internal static class Entrypoints
             {
                 setThreadContextDelegate = (uint threadId, ReadOnlySpan<byte> context) =>
                 {
-                    const nuint RequiredAlignment = 16;
                     fixed (byte* contextPtr = context)
                     {
-                        if (((nuint)contextPtr & (RequiredAlignment - 1)) == 0)
+                        if (((nuint)contextPtr & (ContextAlignment - 1)) == 0)
                         {
                             return writeThreadContext(threadId, (uint)context.Length, contextPtr, delegateContext);
                         }
 
-                        byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)context.Length, RequiredAlignment);
+                        byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)context.Length, ContextAlignment);
                         try
                         {
                             context.CopyTo(new Span<byte>(alignedBuffer, context.Length));
@@ -102,15 +104,14 @@ internal static class Entrypoints
                 },
                 (threadId, contextFlags, buffer) =>
                 {
-                    const nuint RequiredAlignment = 16;
                     fixed (byte* bufferPtr = buffer)
                     {
-                        if (((nuint)bufferPtr & (RequiredAlignment - 1)) == 0)
+                        if (((nuint)bufferPtr & (ContextAlignment - 1)) == 0)
                         {
                             return readThreadContext(threadId, contextFlags, (uint)buffer.Length, bufferPtr, delegateContext);
                         }
 
-                        byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)buffer.Length, RequiredAlignment);
+                        byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)buffer.Length, ContextAlignment);
                         NativeMemory.Clear(alignedBuffer, (nuint)buffer.Length);
                         try
                         {
@@ -257,15 +258,16 @@ internal static class Entrypoints
     private static unsafe int DacDbiInterfaceInstance(
         IntPtr /*ICorDebugDataTarget*/ pTarget,
         ulong runtimeBase,
+        ulong contractDescriptorAddress,
         IntPtr /*IDacDbiInterface::IAllocator*/ pAllocator,
         IntPtr /*IDacDbiInterface::IMetaDataLookup*/ pMetaDataLookup,
         void** iface)
     {
-        // Match the native DAC export (DacDbiInterfaceInstance in dacdbiimpl.cpp), which only
-        // validates the target, base address, and out parameter. The allocator and metadata
-        // lookup pointers are not used by the managed implementation, so don't require them.
+        // The allocator and metadata lookup pointers are not used by the managed implementation,
+        // so, unlike the native DAC export, they are not required.
         if (pTarget == IntPtr.Zero
             || runtimeBase == 0
+            || contractDescriptorAddress == 0
             || iface == null)
         {
             return HResults.E_INVALIDARG;
@@ -276,17 +278,7 @@ internal static class Entrypoints
         try
         {
             object dataTarget = ComInterfaceMarshaller<ICorDebugDataTarget>.ConvertToManaged((void*)pTarget)!;
-            if (dataTarget is ICLRRuntimeLocator runtimeLocator)
-            {
-                ulong locatedRuntimeBase;
-                int hr = runtimeLocator.GetRuntimeBase(&locatedRuntimeBase);
-                if (hr < 0)
-                    return hr;
-                if (locatedRuntimeBase != runtimeBase)
-                    return HResults.E_INVALIDARG;
-            }
-
-            ContractDescriptorTarget target = CreateTargetFromCorDebugDataTarget(dataTarget);
+            ContractDescriptorTarget target = CreateTargetFromCorDebugDataTarget(dataTarget, contractDescriptorAddress);
             Legacy.DacDbiImpl impl = new(target, legacyObj: null);
             *iface = ComInterfaceMarshaller<IDacDbiInterface>.ConvertToUnmanaged(impl);
             return HResults.S_OK;
@@ -422,15 +414,14 @@ internal static class Entrypoints
             },
             (threadId, context) =>
             {
-                const nuint RequiredAlignment = 16;
                 fixed (byte* contextPtr = context)
                 {
-                    if (((nuint)contextPtr & (RequiredAlignment - 1)) == 0)
+                    if (((nuint)contextPtr & (ContextAlignment - 1)) == 0)
                     {
                         return dataTarget.SetThreadContext(threadId, (uint)context.Length, contextPtr);
                     }
 
-                    byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)context.Length, RequiredAlignment);
+                    byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)context.Length, ContextAlignment);
                     try
                     {
                         context.CopyTo(new Span<byte>(alignedBuffer, context.Length));
@@ -463,20 +454,11 @@ internal static class Entrypoints
         return 0;
     }
 
-    private static unsafe ContractDescriptorTarget CreateTargetFromCorDebugDataTarget(object targetObject)
+    private static unsafe ContractDescriptorTarget CreateTargetFromCorDebugDataTarget(object targetObject, ulong contractAddress)
     {
         ICorDebugDataTarget dataTarget = targetObject as ICorDebugDataTarget ?? throw new ArgumentException(
             $"Data target does not implement {nameof(ICorDebugDataTarget)}", nameof(targetObject));
-        ICLRContractLocator contractLocator = targetObject as ICLRContractLocator ?? throw new ArgumentException(
-            $"Data target does not implement {nameof(ICLRContractLocator)}", nameof(targetObject));
-
-        ulong contractAddress;
-        int hr = contractLocator.GetContractDescriptor(&contractAddress);
-        if (hr != 0)
-        {
-            throw new InvalidOperationException(
-                $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.");
-        }
+        ICorDebugMutableDataTarget? mutableDataTarget = targetObject as ICorDebugMutableDataTarget;
 
         if (!ContractDescriptorTarget.TryCreate(
             contractAddress,
@@ -485,18 +467,76 @@ internal static class Entrypoints
                 fixed (byte* bufferPtr = buffer)
                 {
                     uint bytesRead;
-                    return dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
+                    int hr = dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
+                    return hr >= 0 && bytesRead != (uint)buffer.Length
+                        ? CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE
+                        : hr;
                 }
             },
-            (address, buffer) => HResults.E_NOTIMPL,
+            (address, buffer) =>
+            {
+                if (mutableDataTarget is null)
+                    return CorDbgHResults.CORDBG_E_TARGET_READONLY;
+
+                fixed (byte* bufferPtr = buffer)
+                {
+                    return mutableDataTarget.WriteVirtual(address, bufferPtr, (uint)buffer.Length);
+                }
+            },
             (threadId, contextFlags, bufferToFill) =>
             {
                 fixed (byte* bufferPtr = bufferToFill)
                 {
-                    return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
+                    if (((nuint)bufferPtr & (ContextAlignment - 1)) == 0)
+                    {
+                        return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
+                    }
+
+                    byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)bufferToFill.Length, ContextAlignment);
+                    NativeMemory.Clear(alignedBuffer, (nuint)bufferToFill.Length);
+                    try
+                    {
+                        int hr = dataTarget.GetThreadContext(
+                            threadId,
+                            contextFlags,
+                            (uint)bufferToFill.Length,
+                            alignedBuffer);
+                        if (hr >= 0)
+                        {
+                            new ReadOnlySpan<byte>(alignedBuffer, bufferToFill.Length).CopyTo(bufferToFill);
+                        }
+                        return hr;
+                    }
+                    finally
+                    {
+                        NativeMemory.AlignedFree(alignedBuffer);
+                    }
                 }
             },
-            (threadId, context) => HResults.E_NOTIMPL,
+            (threadId, context) =>
+            {
+                if (mutableDataTarget is null)
+                    return CorDbgHResults.CORDBG_E_TARGET_READONLY;
+
+                fixed (byte* contextPtr = context)
+                {
+                    if (((nuint)contextPtr & (ContextAlignment - 1)) == 0)
+                    {
+                        return mutableDataTarget.SetThreadContext(threadId, (uint)context.Length, contextPtr);
+                    }
+
+                    byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)context.Length, ContextAlignment);
+                    try
+                    {
+                        context.CopyTo(new Span<byte>(alignedBuffer, context.Length));
+                        return mutableDataTarget.SetThreadContext(threadId, (uint)context.Length, alignedBuffer);
+                    }
+                    finally
+                    {
+                        NativeMemory.AlignedFree(alignedBuffer);
+                    }
+                }
+            },
             (ulong size, out ulong allocatedAddress) =>
             {
                 allocatedAddress = 0;
