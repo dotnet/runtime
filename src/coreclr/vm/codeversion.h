@@ -148,6 +148,13 @@ private:
 
 #ifdef FEATURE_CODE_VERSIONING
 
+enum CodeVersionSource : uint32_t
+{
+    kUnknown = 0,
+    kReJIT,
+    kEnC
+};
+
 enum class RejitFlags : uint32_t
 {
     // The profiler has requested a ReJit, so we've allocated stuff, but we haven't
@@ -164,9 +171,11 @@ enum class RejitFlags : uint32_t
     // and call GetReJITParameters() again.
     kStateGettingReJITParameters = 0x00000001,
 
-    // We have asked the profiler about this method via ICorProfilerFunctionControl,
+    // This is set in two scenarios:
+    // 1. We have asked the profiler about this method via ICorProfilerFunctionControl,
     // and have thus stored the IL and codegen flags the profiler specified.
     // [cDAC] [ReJIT]: Contract depends on this value.
+    // 2. This method and its IL has been updated via EnC.
     kStateActive = 0x00000002,
 
     // [cDAC] [ReJIT]: Contract depends on this value.
@@ -205,6 +214,8 @@ public:
 #endif
     PTR_COR_ILMETHOD GetIL() const;
     DWORD GetJitFlags() const;
+    CodeVersionSource GetSource() const;
+    SIZE_T GetEnCVersion() const;
     const InstrumentedILOffsetMapping* GetInstrumentedILMap() const;
 
 #ifndef DACCESS_COMPILE
@@ -393,7 +404,7 @@ class ILCodeVersionNode
 public:
     ILCodeVersionNode();
 #ifndef DACCESS_COMPILE
-    ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJITID id, BOOL isDeoptimized);
+    ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJITID id, BOOL isDeoptimized, CodeVersionSource source, SIZE_T encVersion);
 #endif
     PTR_Module GetModule() const;
     mdMethodDef GetMethodDef() const;
@@ -402,6 +413,8 @@ public:
     DWORD GetJitFlags() const;
     const InstrumentedILOffsetMapping* GetInstrumentedILMap() const;
     RejitFlags GetRejitState() const;
+    CodeVersionSource GetSource() const;
+    SIZE_T GetEnCVersion() const;
     BOOL GetEnableReJITCallback() const;
     PTR_ILCodeVersionNode GetNextILVersionNode() const;
     BOOL IsDeoptimized() const;
@@ -422,6 +435,8 @@ private:
     Volatile<RejitFlags> m_rejitState;
     VolatilePtr<COR_ILMETHOD, PTR_COR_ILMETHOD> m_pIL;
     Volatile<DWORD> m_jitFlags;
+    CodeVersionSource m_source;
+    SIZE_T m_encVersion;
     InstrumentedILOffsetMapping m_instrumentedILMap;
     BOOL m_deoptimized;
 
@@ -437,6 +452,8 @@ struct cdac_data<ILCodeVersionNode>
     static constexpr size_t ILAddress = offsetof(ILCodeVersionNode, m_pIL);
     static constexpr size_t InstrumentedILMap = offsetof(ILCodeVersionNode, m_instrumentedILMap);
     static constexpr size_t Deoptimized = offsetof(ILCodeVersionNode, m_deoptimized);
+    static constexpr size_t Source = offsetof(ILCodeVersionNode, m_source);
+    static constexpr size_t EnCVersion = offsetof(ILCodeVersionNode, m_encVersion);
 };
 
 class ILCodeVersionCollection
@@ -599,7 +616,7 @@ public:
         HRESULT hrStatus;
     };
 
-    HRESULT AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ILCodeVersion* pILCodeVersion, BOOL isDeoptimized);
+    HRESULT AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ILCodeVersion* pILCodeVersion, BOOL isDeoptimized, CodeVersionSource source, SIZE_T encVersion = CorDB_DEFAULT_ENC_FUNCTION_VERSION);
     HRESULT AddNativeCodeVersion(ILCodeVersion ilCodeVersion, MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, NativeCodeVersion* pNativeCodeVersion,
         PatchpointInfo* patchpointInfo = NULL, unsigned ilOffset = 0);
     PCODE PublishVersionableCodeIfNecessary(

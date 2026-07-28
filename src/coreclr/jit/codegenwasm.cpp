@@ -116,6 +116,28 @@ void CodeGen::genBeginFnProlog()
         GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
         localsCount += decl.Count;
     }
+
+    genInitImageBaseLocal(func);
+}
+
+//------------------------------------------------------------------------
+// genInitImageBaseLocal: initialize the wasm local caching the image base, if this
+//   function has one.
+//
+// Arguments:
+//   func - the function or funclet whose prolog is being generated
+//
+// Notes:
+//   Emitted in the prolog, which dominates every use. The imageBase global is immutable,
+//   so the cached value never needs refreshing.
+//
+void CodeGen::genInitImageBaseLocal(FuncInfoDsc* func)
+{
+    if (func->funWasmImageBaseLocalIndex != UINT_MAX)
+    {
+        GetEmitter()->emitImageBaseGlobal();
+        GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, func->funWasmImageBaseLocalIndex);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -442,6 +464,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
         localsCount += decl.Count;
     }
+
+    genInitImageBaseLocal(func);
 
     // All the funclet params are used from their home registers, so nothing
     // needs homing here.
@@ -2272,7 +2296,19 @@ void CodeGen::genRangeCheck(GenTree* tree)
     assert(tree->OperIs(GT_BOUNDS_CHECK));
     GenTreeBoundsChk* boundsCheck = tree->AsBoundsChk();
     genConsumeOperands(boundsCheck);
-    GetEmitter()->emitIns(INS_I_ge_u);
+#ifdef FEATURE_SIMD
+    if (varTypeIsSIMD(boundsCheck->GetIndex()->TypeGet()))
+    {
+        GetEmitter()->emitIns(INS_i8x16_splat);
+        GetEmitter()->emitIns(INS_i8x16_ge_u);
+        GetEmitter()->emitIns(INS_v128_any_true);
+    }
+    else
+#endif
+    {
+        GetEmitter()->emitIns(INS_I_ge_u);
+    }
+
     genJumpToThrowHlpBlk(boundsCheck->gtThrowKind);
 }
 
@@ -2791,18 +2827,29 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     assert(tree->OperIs(GT_IND));
 
     var_types type = tree->TypeGet();
+    GenTree*  addr = tree->Addr();
 
-    genConsumeAddress(tree->Addr());
+    genConsumeAddress(addr);
 
     if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
     {
-        regNumber addrReg = GetMultiUseOperandReg(tree->Addr());
+        regNumber addrReg = GetMultiUseOperandReg(addr);
         genEmitNullCheck(addrReg);
     }
 
     // TODO-WASM: Memory barriers
 
-    if (type == TYP_SIMD12)
+    if (addr->isContained())
+    {
+        // A contained address constant folds into the memarg offset, so emit just the image base here.
+        //
+        assert(addr->IsIconHandle() && !tree->TypeIs(TYP_SIMD12));
+        assert(addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler));
+        GetEmitter()->emitImageBase();
+        GetEmitter()->emitIns_MemargAddress(ins_Load(type), emitActualTypeSize(type),
+                                            (void*)addr->AsIntConCommon()->IntegralValue());
+    }
+    else if (type == TYP_SIMD12)
     {
         genLoadIndTypeSimd12(tree);
     }

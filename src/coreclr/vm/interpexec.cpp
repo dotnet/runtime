@@ -411,6 +411,20 @@ MethodDesc* GetTargetPInvokeMethodDesc(PCODE target)
     return NULL;
 }
 
+static NOINLINE CallStubHeader *InvokeManagedMethodHelper(MethodDesc *pMD, PCODE target)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pMD));
+    }
+    CONTRACTL_END
+
+    GCX_PREEMP();
+    return UpdateCallStubForMethod(pMD, target == (PCODE)NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
+}
+
 void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
 {
     CONTRACTL
@@ -426,7 +440,7 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
     CallStubHeader *pHeader = pMD->GetCalliCookie();
     if (pHeader == NULL)
     {
-        pHeader = UpdateCallStubForMethod(pMD, target == (PCODE)NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
+        pHeader = InvokeManagedMethodHelper(pMD, target);
     }
 
     if (target != (PCODE)NULL)
@@ -463,6 +477,20 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
     InvokeManagedMethod(targetMethod, pArgs, pRet, callTarget, NULL);
 }
 
+static NOINLINE CallStubHeader *InvokeDelegateInvokeMethodHelper(MethodDesc *pMDDelegateInvoke)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pMDDelegateInvoke));
+    }
+    CONTRACTL_END
+
+    GCX_PREEMP();
+    return UpdateCallStubForMethod(pMDDelegateInvoke, (PCODE)pMDDelegateInvoke->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+}
+
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
 {
     CONTRACTL
@@ -478,7 +506,7 @@ void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, in
     CallStubHeader *stubHeaderTemplate = pMDDelegateInvoke->GetCalliCookie();
     if (stubHeaderTemplate == NULL)
     {
-        stubHeaderTemplate = UpdateCallStubForMethod(pMDDelegateInvoke, (PCODE)pMDDelegateInvoke->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+        stubHeaderTemplate = InvokeDelegateInvokeMethodHelper(pMDDelegateInvoke);
     }
 
     // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
@@ -3235,8 +3263,9 @@ SWITCH_OPCODE:
                     {
                         // miss, resolve the virtual method and cache it
                         targetMethod = CallWithSEHWrapper(
-                            [&pMD, &pThisArg]() {
-                                return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
+                            [&pMD, &pThisArg, pObjMT]() {
+                                GCX_PREEMP();
+                                return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pObjMT, pMD->GetMethodTable());
                             });
                         g_InterpDispatchCache.Insert(dispatchToken, pObjMT, targetMethod, (uint16_t)dispatchTokenHash);
                     }
@@ -3402,7 +3431,9 @@ SWITCH_OPCODE:
                             NULL_CHECK(*pThisArg);
                             targetMethod = CallWithSEHWrapper(
                                 [&targetMethod, &pThisArg]() {
-                                    return targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, targetMethod->GetMethodTable());
+                                    MethodTable* pMT = (*pThisArg)->GetMethodTable();
+                                    GCX_PREEMP();
+                                    return targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, pMT, targetMethod->GetMethodTable());
                                 });
                         }
                         else

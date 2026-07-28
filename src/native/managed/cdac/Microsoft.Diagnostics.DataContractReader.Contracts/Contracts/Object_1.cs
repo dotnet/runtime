@@ -23,7 +23,7 @@ internal readonly struct Object_1 : IObject
     internal Object_1(Target target)
     {
         _target = target;
-        _methodTableOffset = (ulong)target.GetTypeInfo(DataType.Object).Fields["m_pMethTab"].Offset;
+        _methodTableOffset = (ulong)Data.Object.GetMethodTableOffset(target);
         _objectToMethodTableUnmask = target.ReadGlobal<byte>(Constants.Globals.ObjectToMethodTableUnmask);
         _stringMethodTable = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
         _syncBlockIsHashOrSyncBlockIndex = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex);
@@ -82,7 +82,6 @@ internal readonly struct Object_1 : IObject
         Data.Array array = _target.ProcessedData.GetOrAdd<Data.Array>(address);
         count = array.NumComponents;
 
-        Target.TypeInfo arrayTypeInfo = _target.GetTypeInfo(DataType.Array);
         CorElementType corType = typeSystemContract.GetSignatureCorElementType(typeHandle);
         Debug.Assert(corType is CorElementType.Array or CorElementType.SzArray);
         if (corType == CorElementType.Array)
@@ -92,18 +91,18 @@ internal readonly struct Object_1 : IObject
             //   << fields that are part of the array type info >>
             //   int32_t bounds[rank];
             //   int32_t lowerBounds[rank];
-            boundsStart = address + (ulong)arrayTypeInfo.Size!;
+            boundsStart = address + Data.Array.GetSize(_target);
             lowerBounds = boundsStart + (rank * sizeof(int));
         }
         else
         {
             // Single-dimensional, zero-based - doesn't have bounds
-            boundsStart = address + (ulong)arrayTypeInfo.Fields[Constants.FieldNames.Array.NumComponents].Offset;
+            boundsStart = address + (ulong)Data.Array.GetNumComponentsOffset(_target);
             lowerBounds = _target.ReadGlobalPointer(Constants.Globals.ArrayBoundsZero);
         }
 
         // Sync block is before `this` pointer, so substract the object header size
-        ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - Data.ObjectHeader.GetSize(_target);
         return address + dataOffset;
     }
 
@@ -122,7 +121,7 @@ internal readonly struct Object_1 : IObject
 
     int IObject.TryGetHashCode(TargetPointer address)
     {
-        ulong objectHeaderSize = _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        ulong objectHeaderSize = Data.ObjectHeader.GetSize(_target);
         Data.ObjectHeader header = _target.ProcessedData.GetOrAdd<Data.ObjectHeader>(address - objectHeaderSize);
         uint syncBlockValue = header.SyncBlockValue;
 
@@ -148,7 +147,7 @@ internal readonly struct Object_1 : IObject
 
     public TargetPointer GetSyncBlockAddress(TargetPointer address)
     {
-        ulong objectHeaderSize = _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        ulong objectHeaderSize = Data.ObjectHeader.GetSize(_target);
         Data.ObjectHeader header = _target.ProcessedData.GetOrAdd<Data.ObjectHeader>(address - objectHeaderSize);
         uint syncBlockValue = header.SyncBlockValue;
 

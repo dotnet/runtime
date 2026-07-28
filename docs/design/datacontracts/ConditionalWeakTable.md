@@ -14,30 +14,35 @@ bool TryGetValue(TargetPointer conditionalWeakTable, TargetPointer key, out Targ
 
 This contract reads the field layout of `ConditionalWeakTable<TKey, TValue>` and its nested types
 (`Container`, `Container+Entry`) via the [`ManagedTypeSource`](ManagedTypeSource.md) contract rather
-than cDAC data descriptors. Field offsets are resolved by name at runtime.
+than cDAC data descriptors. Most field offsets are resolved by name at runtime.
 
+<!-- BEGIN GENERATED: usage contract=ConditionalWeakTable version=c1 -->
 ### Data descriptors used
 
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `Array` | `m_NumComponents` | Number of elements in the array |
-
-### Managed types used
-
-| Fully-qualified name | Module | Members read | Purpose |
+| Data Descriptor | Field | Type | Meaning |
 | --- | --- | --- | --- |
-| ``System.Runtime.CompilerServices.ConditionalWeakTable`2`` | `System.Private.CoreLib` | `_container` | Pointer to the active container |
-| ``System.Runtime.CompilerServices.ConditionalWeakTable`2+Container`` | `System.Private.CoreLib` | `_buckets`, `_entries` | `int[]` bucket map and `Entry[]` storage |
-| ``System.Runtime.CompilerServices.ConditionalWeakTable`2+Entry`` | `System.Private.CoreLib` | `HashCode`, `Next`, `depHnd` | Hash code, next-in-chain index, and dependent handle for each entry |
+| `Array` | *(type size)* | `uint32` | Size of the fixed portion of an array object |
+| `Array` | `m_NumComponents` | `uint32` | Number of items in the array |
+| ``System.Runtime.CompilerServices.ConditionalWeakTable`2`` | `_container` | `pointer` | Active container that owns the table's buckets and entries |
+| ``System.Runtime.CompilerServices.ConditionalWeakTable`2+Container`` | `_buckets` | `pointer` | Array of entry indexes at the head of each hash bucket; -1 denotes an empty bucket |
+| ``System.Runtime.CompilerServices.ConditionalWeakTable`2+Container`` | `_entries` | `pointer` | Array containing the table's dependent handles and hash-chain links |
+| ``System.Runtime.CompilerServices.ConditionalWeakTable`2+Entry`` | `depHnd` | `pointer` | Dependent handle that weakly references the key and conditionally keeps the value alive |
+| ``System.Runtime.CompilerServices.ConditionalWeakTable`2+Entry`` | `HashCode` | `int32` | Cached nonnegative identity hash code of the entry's key; -1 denotes a removed entry |
+| ``System.Runtime.CompilerServices.ConditionalWeakTable`2+Entry`` | `Next` | `int32` | Index of the next entry in the hash bucket chain, or -1 for the end |
+
+### Global variables used
+
+_None._
 
 ### Contracts used
 
 | Contract Name |
 | --- |
-| `Object` |
 | `GC` |
-| `ManagedTypeSource` |
+| `Object` |
 | `RuntimeTypeSystem` |
+<!-- END GENERATED: usage contract=ConditionalWeakTable version=c1 -->
+
 
 The algorithm looks up the `_container` field of the `ConditionalWeakTable` object, then reads the
 `_buckets` and `_entries` fields from the container. It resolves `Entry` field offsets (`HashCode`,

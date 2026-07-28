@@ -2160,6 +2160,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         call->gtFlags &= ~GTF_EXCEPT;
     }
 
+    // Calls themselves don't originate an ordering side effect.
+    // Instead, derive it from the call args via flagsSummary
+    call->gtFlags &= ~GTF_ORDER_SIDEEFF;
+
     // Union in the side effect flags from the call's operands
     call->gtFlags |= flagsSummary & GTF_ALL_EFFECT;
 
@@ -9768,7 +9772,10 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
                 }
 
-                op2Cns->EvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType);
+                if (!op2Cns->TryEvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType))
+                {
+                    break;
+                }
                 fgUpdateConstTreeValueNumber(op2);
 
                 op1         = ExtractEffectiveOp(GT_NEG, op1Intrin, /* destroyNodes */ true);
@@ -9876,7 +9883,10 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
                 }
 
-                op2Cns->EvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType);
+                if (!op2Cns->TryEvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType))
+                {
+                    break;
+                }
                 fgUpdateConstTreeValueNumber(op2);
 
                 op1         = ExtractEffectiveOp(GT_NEG, op1Intrin, /* destroyNodes */ true);
@@ -10006,7 +10016,10 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                 }
 
-                op2->AsVecCon()->EvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType);
+                if (!op2->AsVecCon()->TryEvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType))
+                {
+                    break;
+                }
                 fgUpdateConstTreeValueNumber(op2);
 
                 ExtractEffectiveOp(GT_NEG, node, /* destroyNodes */ true);
@@ -11953,7 +11966,10 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 
             if (op2->IsCnsVec())
             {
-                op2->AsVecCon()->EvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType);
+                if (!op2->AsVecCon()->TryEvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType))
+                {
+                    break;
+                }
                 fgUpdateConstTreeValueNumber(op2);
 
                 NamedIntrinsic addIntrinsic =
@@ -14674,21 +14690,22 @@ GenTree* Compiler::fgInitThisClass()
                 vtTree             = gtNewMethodTableLookup(vtTree);
                 GenTree* methodHnd = gtNewIconEmbMethHndNode(info.compMethodHnd);
 
-                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, TYP_VOID, vtTree, methodHnd);
+                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, HelperInitClassRetType, vtTree, methodHnd);
             }
 
             case CORINFO_LOOKUP_CLASSPARAM:
             {
                 GenTree* vtTree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
                 vtTree->gtFlags |= GTF_VAR_CONTEXT;
-                return gtNewHelperCallNode(CORINFO_HELP_INITCLASS, TYP_VOID, vtTree);
+                return gtNewHelperCallNode(CORINFO_HELP_INITCLASS, HelperInitClassRetType, vtTree);
             }
 
             case CORINFO_LOOKUP_METHODPARAM:
             {
                 GenTree* methHndTree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
                 methHndTree->gtFlags |= GTF_VAR_CONTEXT;
-                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, TYP_VOID, gtNewIconNode(0), methHndTree);
+                return gtNewHelperCallNode(CORINFO_HELP_INITINSTCLASS, HelperInitClassRetType, gtNewIconNode(0),
+                                           methHndTree);
             }
 
             default:

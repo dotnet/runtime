@@ -5,7 +5,6 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(FeatureDynamicCodeCompiled)' == 'true'">$(DefineConstants);FEATURE_DYNAMIC_CODE_COMPILED</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Platforms>x64;x86;arm;arm64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -24,6 +23,8 @@
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\ILCompiler.Diagnostics\ILCompiler.Diagnostics.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+
+    <InternalsVisibleTo Include="ILCompiler.ReadyToRun.Tests" />
 
     <PackageReference Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
       <PrivateAssets>all</PrivateAssets>
@@ -239,6 +240,7 @@
     <Compile Include="Compiler\CompositeImageSettings.cs" />
     <Compile Include="Compiler\CryptographicHashProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AllMethodsOnTypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ArrayInterfaceMethodsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InheritedVirtualMethodsNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" Link="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />

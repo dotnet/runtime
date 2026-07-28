@@ -511,7 +511,15 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         uint token = rts.GetMethodToken(mdh);
         ILoader loader = _target.Contracts.Loader;
-        TargetPointer ilHeader = loader.GetILHeader(moduleHandle, token);
+
+        TargetPointer ilHeader = TargetPointer.Null;
+        ICodeVersions cv = _target.Contracts.CodeVersions;
+        ILCodeVersionHandle activeVersion = cv.GetActiveILCodeVersion(mdh.Address);
+        if (activeVersion.IsValid && activeVersion.IsExplicit && cv.GetSource(activeVersion) != CodeVersionSource.ReJIT)
+            ilHeader = cv.GetIL(activeVersion);
+
+        if (ilHeader == TargetPointer.Null)
+            ilHeader = loader.GetILHeader(moduleHandle, token);
         if (ilHeader == TargetPointer.Null)
         {
             mdReader = null!;
@@ -946,14 +954,31 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         if (context.TryReadRegister((int)registerNumber, out TargetNUInt value))
             return value.Value;
 
-        // REGNUM_AMBIENT_SP is beyond the normal register range on every architecture.
-        // It represents the entry-time SP, not necessarily the current SP.
-        // Map it to the stack pointer as a best-effort approximation (see util.cpp).
-        int spRegisterNumber = GetStackPointerRegisterNumber(target);
-        if (spRegisterNumber >= 0 && context.TryReadRegister(spRegisterNumber, out value))
-            return value.Value;
+        if (registerNumber == GetAmbientStackPointerRegisterNumber(target))
+        {
+            // REGNUM_AMBIENT_SP represents the entry-time SP, not necessarily the
+            // current SP. Map it to SP as a best-effort approximation (see util.cpp).
+            int spRegisterNumber = GetStackPointerRegisterNumber(target);
+            if (spRegisterNumber >= 0 && context.TryReadRegister(spRegisterNumber, out value))
+                return value.Value;
+        }
 
         return 0;
+    }
+
+    private static uint GetAmbientStackPointerRegisterNumber(Target target)
+    {
+        RuntimeInfoArchitecture arch = target.Contracts.RuntimeInfo.GetTargetArchitecture();
+        return arch switch
+        {
+            RuntimeInfoArchitecture.X64 => 33,
+            RuntimeInfoArchitecture.X86 => 9,
+            RuntimeInfoArchitecture.Arm64 => 66,
+            RuntimeInfoArchitecture.Arm => 17,
+            RuntimeInfoArchitecture.LoongArch64 => 34,
+            RuntimeInfoArchitecture.RiscV64 => 34,
+            _ => uint.MaxValue,
+        };
     }
 
     private static int GetStackPointerRegisterNumber(Target target)

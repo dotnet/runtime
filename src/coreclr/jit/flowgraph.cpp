@@ -766,7 +766,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             break;
 
         case CORINFO_HELP_INITCLASS:
-            type = TYP_VOID;
+            type = HelperInitClassRetType;
             break;
 
         default:
@@ -3159,8 +3159,9 @@ PhaseStatus Compiler::fgCreateFunclets()
         funcInfo[i].funFramePointerReg = REG_NA;
 #endif
 #ifdef TARGET_WASM
-        funcInfo[i].funWasmLocalDecls       = nullptr;
-        funcInfo[i].funWasmExnRefLocalIndex = UINT_MAX;
+        funcInfo[i].funWasmLocalDecls          = nullptr;
+        funcInfo[i].funWasmExnRefLocalIndex    = UINT_MAX;
+        funcInfo[i].funWasmImageBaseLocalIndex = UINT_MAX;
 #endif
     }
 #endif

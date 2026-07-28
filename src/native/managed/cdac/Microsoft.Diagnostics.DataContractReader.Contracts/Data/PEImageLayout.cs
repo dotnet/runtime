@@ -6,8 +6,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.PEImageLayout))]
 internal sealed partial class PEImageLayout : IData<PEImageLayout>
 {
-    [Field] public TargetPointer Base { get; }
-    [Field] public uint Size { get; }
-    [Field] public uint Flags { get; }
-    [Field] public uint Format { get; }
+    [Field] public partial TargetPointer Base { get; }
+    [Field] public partial uint Size { get; }
+    [Field] public partial uint Flags { get; }
+    [Field] public partial uint Format { get; }
 }

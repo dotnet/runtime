@@ -37,6 +37,43 @@ public unsafe class DacDbiImplTests
         return (dacDbi, target);
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsThreadSuspendedOrHijacked_NullOutput_ReturnsEPointer(MockTarget.Architecture arch)
+    {
+        var mockThread = new Mock<IThread>();
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(mockThread)
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null);
+
+        int hr = dacDbi.IsThreadSuspendedOrHijacked(0, null);
+
+        Assert.Equal(System.HResults.E_POINTER, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsThreadSuspendedOrHijacked_ContractFailure_InitializesOutput(MockTarget.Architecture arch)
+    {
+        const ulong ThreadAddress = 0x1000;
+        InvalidOperationException exception = new();
+        var mockThread = new Mock<IThread>();
+        mockThread
+            .Setup(t => t.GetThreadData(new TargetPointer(ThreadAddress)))
+            .Throws(exception);
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(mockThread)
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        Interop.BOOL result = Interop.BOOL.TRUE;
+
+        int hr = dacDbi.IsThreadSuspendedOrHijacked(ThreadAddress, &result);
+
+        Assert.Equal(exception.HResult, hr);
+        Assert.Equal(Interop.BOOL.FALSE, result);
+    }
+
     [Fact]
     public void DacSetTargetConsistencyChecks_Standalone_ReturnsSuccess()
     {
@@ -1225,6 +1262,95 @@ public unsafe class DacDbiImplTests
     }
 
     [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetStackWalkCurrentFrameInfo_MissingOptionalMemory_PreservesAvailableData(MockTarget.Architecture arch)
+    {
+        TargetPointer methodDescPointer = new(0x1000);
+        MethodDescHandle methodDesc = new(methodDescPointer);
+        TargetPointer methodTablePointer = new(0x2000);
+        ITypeHandle methodTable = new TargetTypeHandle(methodTablePointer);
+        TargetCodePointer controlPC = new(0x3000);
+        CodeBlockHandle codeBlock = new(new TargetPointer(0x4000));
+        const uint MethodToken = 0x06000001;
+        const ulong NativeOffset = 0x20;
+
+        var frameHandle = new Mock<IStackDataFrameHandle>();
+        frameHandle.SetupGet(h => h.State).Returns(StackWalkState.Frameless);
+        frameHandle.SetupGet(h => h.IsInterrupted).Returns(true);
+        frameHandle.SetupGet(h => h.HasFaulted).Returns(false);
+
+        var stackWalk = new Mock<IStackWalk>();
+        stackWalk
+            .Setup(s => s.CreateStackWalk(It.IsAny<ThreadData>(), It.IsAny<byte[]>(), true))
+            .Returns([frameHandle.Object]);
+        stackWalk.Setup(s => s.GetMethodDescPtr(frameHandle.Object)).Returns(methodDescPointer);
+        stackWalk.Setup(s => s.GetRuntimeFramePointer(frameHandle.Object)).Returns(new TargetPointer(0x5000));
+        stackWalk.Setup(s => s.GetContextFramePointer(frameHandle.Object)).Returns(new TargetPointer(0x6000));
+        stackWalk.Setup(s => s.GetStackPointer(frameHandle.Object)).Returns(new TargetPointer(0x7000));
+        uint parentNativeOffset = 0;
+        stackWalk.Setup(s => s.GetFuncletRootId(frameHandle.Object, out parentNativeOffset)).Returns(new TargetPointer(0x8000));
+        stackWalk.Setup(s => s.GetExactGenericArgsToken(frameHandle.Object)).Throws<VirtualReadException>();
+        stackWalk.Setup(s => s.GetInstructionPointer(frameHandle.Object)).Returns(controlPC);
+
+        var rts = new Mock<IRuntimeTypeSystem>();
+        rts.Setup(r => r.GetMethodDescHandle(methodDescPointer)).Returns(methodDesc);
+        rts.SetupSequence(r => r.GetMethodTable(methodDesc))
+            .Returns(methodTablePointer)
+            .Throws<VirtualReadException>();
+        rts.Setup(r => r.GetTypeHandle(methodTablePointer)).Returns(methodTable);
+        rts.Setup(r => r.GetModule(methodTable)).Throws<VirtualReadException>();
+        rts.Setup(r => r.GetGenericContextLoc(methodDesc)).Returns(GenericContextLoc.InstArgMethodDesc);
+        rts.Setup(r => r.GetMethodToken(methodDesc)).Returns(MethodToken);
+
+        var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetCodeBlockHandle(controlPC)).Returns(codeBlock);
+        executionManager.Setup(e => e.GetStartAddress(codeBlock)).Throws<VirtualReadException>();
+        executionManager.Setup(e => e.GetRelativeOffset(codeBlock)).Returns(new TargetNUInt(NativeOffset));
+        TargetPointer gcInfoAddress = new(0x9000);
+        uint gcVersion = 0;
+        executionManager.Setup(e => e.GetGCInfo(codeBlock, out gcInfoAddress, out gcVersion));
+
+        var gcInfo = new Mock<IGCInfo>();
+        IGCInfoHandle gcInfoHandle = Mock.Of<IGCInfoHandle>();
+        gcInfo.Setup(g => g.DecodePlatformSpecificGCInfo(gcInfoAddress, gcVersion)).Returns(gcInfoHandle);
+        gcInfo.Setup(g => g.GetAmbientSP(gcInfoHandle, (uint)NativeOffset, new TargetPointer(0x6000), new TargetPointer(0x7000)))
+            .Returns(TargetPointer.Null);
+
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(stackWalk)
+            .AddMockContract(rts)
+            .AddMockContract(executionManager)
+            .AddMockContract(gcInfo)
+            .AddMockContract(new Mock<ILoader>())
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        StackWalkHandleData handleData = new(stackWalk.Object, default);
+        handleData.Reset([], isFirst: true);
+        nuint stackWalkHandle = handleData.GetHandle();
+
+        try
+        {
+            Debugger_STRData data = default;
+            Legacy.FrameType frameType;
+            int hr = dacDbi.GetStackWalkCurrentFrameInfo(stackWalkHandle, (nint)(&data), &frameType);
+
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal(Legacy.FrameType.ManagedStackFrame, frameType);
+            Assert.Equal(0UL, data.v.exactGenericArgsToken);
+            Assert.Equal(MethodToken, data.v.funcData.funcMetadataToken);
+            Assert.Equal(0UL, data.v.funcData.vmAssembly);
+            Assert.Equal(0UL, data.v.jitFuncData.nativeStartAddressPtr);
+            Assert.Equal(NativeOffset, data.v.jitFuncData.nativeOffset);
+            Assert.Equal(Interop.BOOL.FALSE, data.v.jitFuncData.isInstantiatedGeneric);
+            Assert.Equal(Interop.BOOL.TRUE, data.v.jitFuncData.justAfterILThrow);
+        }
+        finally
+        {
+            Assert.Equal(System.HResults.S_OK, dacDbi.DeleteStackWalk(stackWalkHandle));
+        }
+    }
+
+    [Theory]
     [InlineData(DebugVarLocKind.Register, false, false, VarLocType.VLT_REG)]
     [InlineData(DebugVarLocKind.Register, false, true, VarLocType.VLT_REG_FP)]
     [InlineData(DebugVarLocKind.Register, true, false, VarLocType.VLT_REG_BYREF)]
@@ -1416,5 +1542,104 @@ public unsafe class DacDbiImplTests
         Assert.Equal(VarLocType.VLT_STK, nvi.loc.vlType);
         Assert.Equal(5u, nvi.loc.vlsBaseReg);
         Assert.Equal(-0x28, nvi.loc.vlsOffset);
+    }
+
+    private static DacDbiImpl CreateDacDbiForModule(
+        MockTarget.Architecture arch,
+        ulong vmModule,
+        Contracts.ModuleHandle handle,
+        ModuleFlags flags,
+        Mock<IEcmaMetadata> mockEcmaMetadata)
+    {
+        var mockLoader = new Mock<ILoader>();
+        mockLoader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(vmModule))).Returns(handle);
+        mockLoader.Setup(l => l.GetFlags(handle)).Returns(flags);
+
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddMockContract(mockLoader)
+            .AddMockContract(mockEcmaMetadata)
+            .Build();
+        return new DacDbiImpl(target, legacyObj: null);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetMetadata_NonDynamicModule(MockTarget.Architecture arch)
+    {
+        ulong vmModule = 0x1000;
+        TargetPointer moduleAddr = new(0x1000);
+        TargetPointer metadataAddr = new(0xabc0);
+        uint metadataSize = 0x200;
+
+        Contracts.ModuleHandle handle = new(moduleAddr);
+        var mockEcmaMetadata = new Mock<IEcmaMetadata>();
+        mockEcmaMetadata.Setup(e => e.GetReadOnlyMetadataAddress(handle)).Returns(new TargetSpan(metadataAddr, metadataSize));
+
+        DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, (ModuleFlags)0, mockEcmaMetadata);
+
+        DacDbiTargetBuffer buffer;
+        int hr = dacDbi.GetMetadata(vmModule, &buffer);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(metadataAddr.Value, buffer.pAddress);
+        Assert.Equal(metadataSize, buffer.cbSize);
+        mockEcmaMetadata.Verify(e => e.GetReadWriteSavedMetadataAddress(It.IsAny<Contracts.ModuleHandle>()), Times.Never);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetMetadata_DynamicModule(MockTarget.Architecture arch)
+    {
+        ulong vmModule = 0x1000;
+        TargetPointer moduleAddr = new(0x1000);
+        TargetPointer metadataAddr = new(0xdef0);
+        uint metadataSize = 0x80;
+
+        Contracts.ModuleHandle handle = new(moduleAddr);
+        var mockEcmaMetadata = new Mock<IEcmaMetadata>();
+        mockEcmaMetadata.Setup(e => e.GetReadWriteSavedMetadataAddress(handle)).Returns(new TargetSpan(metadataAddr, metadataSize));
+
+        DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, ModuleFlags.ReflectionEmit, mockEcmaMetadata);
+
+        DacDbiTargetBuffer buffer;
+        int hr = dacDbi.GetMetadata(vmModule, &buffer);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(metadataAddr.Value, buffer.pAddress);
+        Assert.Equal(metadataSize, buffer.cbSize);
+        mockEcmaMetadata.Verify(e => e.GetReadOnlyMetadataAddress(It.IsAny<Contracts.ModuleHandle>()), Times.Never);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetMetadata_EmptyMetadata(MockTarget.Architecture arch)
+    {
+        ulong vmModule = 0x1000;
+        TargetPointer moduleAddr = new(0x1000);
+
+        Contracts.ModuleHandle handle = new(moduleAddr);
+        var mockEcmaMetadata = new Mock<IEcmaMetadata>();
+        mockEcmaMetadata.Setup(e => e.GetReadOnlyMetadataAddress(handle)).Returns(new TargetSpan(TargetPointer.Null, 0));
+
+        DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, (ModuleFlags)0, mockEcmaMetadata);
+
+        DacDbiTargetBuffer buffer;
+        int hr = dacDbi.GetMetadata(vmModule, &buffer);
+
+        Assert.Equal(CorDbgHResults.CORDBG_E_MISSING_METADATA, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetMetadata_NullBuffer(MockTarget.Architecture arch)
+    {
+        ulong vmModule = 0x1000;
+        Contracts.ModuleHandle handle = new(new TargetPointer(vmModule));
+        var mockEcmaMetadata = new Mock<IEcmaMetadata>();
+        DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, (ModuleFlags)0, mockEcmaMetadata);
+
+        int hr = dacDbi.GetMetadata(vmModule, null);
+        Assert.Equal(System.HResults.E_POINTER, hr);
     }
 }

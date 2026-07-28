@@ -1271,3 +1271,76 @@ public unsafe partial interface ISOSDacInterface17
         DacComNullableByRef<ISOSMemoryEnum> ppEnum);
 
 }
+
+// GCInfo data structures for ISOSDacInterface18
+
+[StructLayout(LayoutKind.Sequential)]
+public struct SOSCodeRange
+{
+    public uint BeginOffset;
+    public uint EndOffset;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct SOSGCInfoHeader
+{
+    public uint SizeOf;
+    public uint GcInfoVersion;
+    public uint CodeSize;
+    public uint PrologSize;
+    public uint StackBaseRegister;
+    public uint SizeOfStackParameterArea;
+    public int IsVarArg;
+    public int WantsReportOnlyLeaf;
+    public int HasTailCalls;
+    public int GSCookieIsPresent;
+    public int GSCookieStackSlot;
+    public uint GSCookieValidRangeStart;
+    public uint GSCookieValidRangeEnd;
+    public int PSPSymIsPresent;
+    public int PSPSymStackSlot;
+    public int GenericsInstContextIsPresent;
+    public int GenericsInstContextStackSlot;
+    public uint GenericsInstContextKind;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct SOSGCSlotLifetime
+{
+    public uint BeginOffset;
+    public uint EndOffset;
+    public int IsRegister;
+    public uint RegisterNumber;
+    public int SpOffset;
+    public uint BaseRegister;
+    public uint GcFlags;
+}
+
+[GeneratedComInterface]
+[Guid("3dccf95b-bca2-40ee-8b83-d8d7574a1df0")]
+public unsafe partial interface ISOSDacInterface18
+{
+    [PreserveSig]
+    int GetGCInfoHeader(ClrDataAddress ip, SOSGCInfoHeader* header);
+
+    [PreserveSig]
+    int GetGCInfoInterruptibleRanges(
+        ClrDataAddress ip,
+        uint count,
+        [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSCodeRange[]? ranges,
+        uint* pNeeded);
+
+    [PreserveSig]
+    int GetGCInfoSafePoints(
+        ClrDataAddress ip,
+        uint count,
+        [In, Out, MarshalUsing(CountElementName = nameof(count))] uint[]? offsets,
+        uint* pNeeded);
+
+    [PreserveSig]
+    int GetGCInfoSlotLifetimes(
+        ClrDataAddress ip,
+        uint count,
+        [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSGCSlotLifetime[]? lifetimes,
+        uint* pNeeded);
+}

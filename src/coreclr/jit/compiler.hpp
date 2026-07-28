@@ -102,11 +102,14 @@ inline bool genExactlyOneBit(T value)
 inline regMaskTP genFindLowestBit(regMaskTP value)
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    // If we ever need to use this method for predicate
-    // registers, then handle it.
-    assert(value.getHigh() == RBM_NONE);
-#endif
+    if (value.getLow() != RBM_NONE)
+    {
+        return regMaskTP(genFindLowestBit(value.getLow()));
+    }
+    return regMaskTP(RBM_NONE, genFindLowestBit(value.getHigh()));
+#else
     return regMaskTP(genFindLowestBit(value.getLow()));
+#endif
 }
 
 /*****************************************************************************
@@ -117,11 +120,18 @@ inline regMaskTP genFindLowestBit(regMaskTP value)
 inline bool genMaxOneBit(regMaskTP value)
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    // If we ever need to use this method for predicate
-    // registers, then handle it.
-    assert(value.getHigh() == RBM_NONE);
-#endif
+    if (value.getLow() == RBM_NONE)
+    {
+        return genMaxOneBit(value.getHigh());
+    }
+    if (value.getHigh() == RBM_NONE)
+    {
+        return genMaxOneBit(value.getLow());
+    }
+    return false;
+#else
     return genMaxOneBit(value.getLow());
+#endif
 }
 
 /*****************************************************************************
@@ -859,6 +869,38 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
     return funcIdx;
 }
 
+/*****************************************************************************
+ *  Are two blocks physically contained in the same function region (funclet)?
+ *  The main method is region 0. Unlike funGetFuncIdx, this works for an
+ *  arbitrary block (not just a funclet entry), distinguishing a filter
+ *  funclet (FUNC_FILTER) from its filter-handler. Only valid after funclets
+ *  are created.
+ *
+ */
+inline bool Compiler::bbIsInSameFunclet(BasicBlock* block1, BasicBlock* block2)
+{
+    assert(fgFuncletsCreated);
+
+    auto funcRegionOf = [this](BasicBlock* blk) -> unsigned {
+        if (!blk->hasHndIndex())
+        {
+            return 0;
+        }
+
+        EHblkDsc* const eh      = ehGetDsc(blk->getHndIndex());
+        unsigned        funcIdx = eh->ebdFuncIndex;
+
+        if (eh->HasFilter() && eh->InFilterRegionBBRange(blk))
+        {
+            // The filter is the funclet immediately preceding its filter-handler.
+            funcIdx--;
+        }
+
+        return funcIdx;
+    };
+
+    return funcRegionOf(block1) == funcRegionOf(block2);
+}
 #if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------------------------
 // genRegNumFromMask : Maps a single register mask to a register number.
