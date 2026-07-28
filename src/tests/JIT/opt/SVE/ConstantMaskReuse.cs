@@ -46,6 +46,8 @@ public class ConstantMaskReuse
         Consume(PTrueMultipleAllBitsMask(a, b, c));
         Consume(PTrueMultipleEmbeddedMask(a, b, c));
         Consume(PTrueMultipleMixedSources(a, b, c));
+        Consume(PTrueDifferentPatterns(a, b, c));
+        Consume(PTrueDifferentElementSizes(a));
         Consume(PTrueMultipleConversionTrueMask(mask1, mask2));
         Consume(PTrueSeparatedByCall(a, b));
         Consume(PTrueSeparateBlocks(a, Environment.TickCount != 0));
@@ -121,7 +123,7 @@ public class ConstantMaskReuse
     {
         //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: cmpgt {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-FULL-LINE-NEXT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #-1
         return Sve.CompareGreaterThan(a, b);
     }
 
@@ -131,7 +133,7 @@ public class ConstantMaskReuse
         //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: cmpgt {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, {{z[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: brka {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b
-        //ARM64-FULL-LINE-NEXT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-FULL-LINE-NEXT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #-1
         return Sve.CreateBreakAfterMask(Sve.CompareGreaterThan(a, b), Sve.CreateTrueMaskInt32());
     }
 
@@ -142,7 +144,7 @@ public class ConstantMaskReuse
         //ARM64-FULL-LINE-NEXT: cmpgt {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, {{z[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: ptrue {{p[0-9]+}}.b, vl1
         //ARM64-FULL-LINE-NEXT: brka {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b
-        //ARM64-FULL-LINE-NEXT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-FULL-LINE-NEXT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #-1
         return Sve.CreateBreakAfterMask(Sve.CompareGreaterThan(a, b), Sve.CreateTrueMaskInt32(SveMaskPattern.VectorCount1));
     }
 
@@ -153,7 +155,7 @@ public class ConstantMaskReuse
         //ARM64-FULL-LINE-NEXT: cmpgt {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, {{z[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: pfalse {{p[0-9]+}}.b
         //ARM64-FULL-LINE-NEXT: brka {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b
-        //ARM64-FULL-LINE-NEXT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
+        //ARM64-FULL-LINE-NEXT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #-1
         return Sve.CreateBreakAfterMask(Sve.CompareGreaterThan(a, b), Sve.CreateFalseMaskInt32());
     }
 
@@ -309,6 +311,39 @@ public class ConstantMaskReuse
         Vector<int> result1 = Sve.ConditionalSelect(mask, Sve.AbsoluteDifference(a, b), a);
         Vector<int> result2 = Sve.ConditionalSelect(Vector<int>.AllBitsSet, Sve.Abs(c), c);
         return Sve.Add(result1, result2);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<int> PTrueDifferentPatterns(Vector<int> a, Vector<int> b, Vector<int> c)
+    {
+        //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
+        //ARM64-FULL-LINE-NEXT: cmpgt {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, {{z[0-9]+}}.s
+        //ARM64-FULL-LINE-NEXT: ptrue {{p[0-9]+}}.b, vl1
+        //ARM64-FULL-LINE-NEXT: brka {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b
+        //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.s, {{p[0-9]+}}, {{z[0-9]+}}.s, {{z[0-9]+}}.s
+        //ARM64-FULL-LINE-NEXT: cmpgt {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, {{z[0-9]+}}.s
+        //ARM64-FULL-LINE-NEXT: ptrue {{p[0-9]+}}.s, vl2
+        //ARM64-FULL-LINE-NEXT: brka {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b
+        //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.s, {{p[0-9]+}}, {{z[0-9]+}}.s, {{z[0-9]+}}.s
+        //ARM64-FULL-LINE-NEXT: add {{z[0-9]+}}.s, {{z[0-9]+}}.s, {{z[0-9]+}}.s
+        Vector<int> mask1 = Sve.CreateBreakAfterMask(Sve.CompareGreaterThan(a, b), Sve.CreateTrueMaskInt32(SveMaskPattern.VectorCount1));
+        Vector<int> mask2 = Sve.CreateBreakAfterMask(Sve.CompareLessThan(a, b), Sve.CreateTrueMaskInt32(SveMaskPattern.VectorCount2));
+        Vector<int> result1 = Sve.ConditionalSelect(mask1, a, b);
+        Vector<int> result2 = Sve.ConditionalSelect(mask2, b, c);
+        return Sve.Add(result1, result2);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector<int> PTrueDifferentElementSizes(Vector<int> value)
+    {
+        //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
+        //ARM64-FULL-LINE-NEXT: abs {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s
+        //ARM64-FULL-LINE-NEXT: ptrue {{p[0-9]+}}.h
+        //ARM64-FULL-LINE-NEXT: neg {{z[0-9]+}}.h, {{p[0-9]+}}/m, {{z[0-9]+}}.h
+        //ARM64-FULL-LINE-NEXT: add {{z[0-9]+}}.s, {{z[0-9]+}}.s, {{z[0-9]+}}.s
+        Vector<int> result1 = Sve.Abs(value);
+        Vector<short> result2 = Sve.Negate((Vector<short>)value);
+        return Sve.Add(result1, (Vector<int>)result2);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

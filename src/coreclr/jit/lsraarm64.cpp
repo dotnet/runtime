@@ -1404,6 +1404,25 @@ struct SveMaskConstant
 };
 
 //------------------------------------------------------------------------
+// NormalizeSveMaskPattern: Canonicalize equivalent SVE mask patterns.
+//
+// Arguments:
+//    pattern - The SVE mask pattern.
+//
+// Return Value:
+//    The canonical pattern.
+//
+static int NormalizeSveMaskPattern(int pattern)
+{
+    if (pattern == SveMaskPatternLargestPowerOf2)
+    {
+        return SveMaskPatternAll;
+    }
+
+    return pattern;
+}
+
+//------------------------------------------------------------------------
 // TryGetSvePTrueOpt: Get the instruction option for an SVE ptrue base type.
 //
 // Arguments:
@@ -1469,7 +1488,7 @@ static bool TryGetSveMaskConstant(GenTree* node, SveMaskConstant* value)
             if (pattern != SveMaskPatternNone)
             {
                 bool found     = TryGetSvePTrueOpt(type, &value->opt);
-                value->pattern = static_cast<int>(pattern);
+                value->pattern = NormalizeSveMaskPattern(static_cast<int>(pattern));
                 assert(found);
                 return true;
             }
@@ -1502,56 +1521,26 @@ static bool TryGetSveMaskConstant(GenTree* node, SveMaskConstant* value)
         return false;
     }
 
-    value->pattern = static_cast<int>(pattern->AsIntConCommon()->IntegralValue());
+    value->pattern = NormalizeSveMaskPattern(static_cast<int>(pattern->AsIntConCommon()->IntegralValue()));
     return true;
 }
 
 //------------------------------------------------------------------------
-// tryGetReusableSveMaskInterval: Find or record a reusable interval for an SVE mask constant.
+// areMatchingSveMaskConstants: Check whether two nodes materialize the same SVE mask constant.
 //
 // Arguments:
-//    tree     - The SVE mask constant node.
-//    interval - [out] The reusable interval, or nullptr for a new reuse group.
+//    tree1 - The first node.
+//    tree2 - The second node.
 //
 // Return Value:
-//    True if tree represents an SVE mask constant; otherwise false.
+//    True if both nodes represent the same SVE mask constant; otherwise false.
 //
-bool LinearScan::tryGetReusableSveMaskInterval(GenTree* tree, Interval** interval)
+bool LinearScan::areMatchingSveMaskConstants(GenTree* tree1, GenTree* tree2)
 {
-    if (!m_compiler->opts.OptimizationEnabled())
-    {
-        return false;
-    }
-
-    SveMaskConstant value;
-    if (!TryGetSveMaskConstant(tree, &value))
-    {
-        return false;
-    }
-
-    for (SveMaskIntervalEntry* entry = reusableSveMaskIntervals; entry != nullptr; entry = entry->next)
-    {
-        SveMaskConstant entryValue;
-        if (TryGetSveMaskConstant(entry->tree, &entryValue) && (value.opt == entryValue.opt) &&
-            (value.pattern == entryValue.pattern))
-        {
-            *interval = entry->interval;
-            JITDUMP("SVE mask constant [%06u] reuses interval %u from [%06u]\n", Compiler::dspTreeID(tree),
-                    entry->interval->intervalIndex, Compiler::dspTreeID(entry->tree));
-            return true;
-        }
-    }
-
-    // Keep one interval for equivalent masks. This extends the lifetime of the
-    // materialized predicate and lets later definitions reuse its register.
-    SveMaskIntervalEntry* entry = new (m_compiler, CMK_LSRA) SveMaskIntervalEntry;
-    entry->tree                 = tree;
-    entry->interval             = nullptr;
-    entry->next                 = reusableSveMaskIntervals;
-    reusableSveMaskIntervals    = entry;
-    *interval                   = nullptr;
-    JITDUMP("SVE mask constant [%06u] starts a reuse group\n", Compiler::dspTreeID(tree));
-    return true;
+    SveMaskConstant value1;
+    SveMaskConstant value2;
+    return TryGetSveMaskConstant(tree1, &value1) && TryGetSveMaskConstant(tree2, &value2) &&
+           (value1.opt == value2.opt) && (value1.pattern == value2.pattern);
 }
 
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -1726,7 +1715,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else if ((dstCount == 1) || (dstCount == 2))
     {
-        BuildDef(intrinsicTree);
+        RefPosition* def = BuildDef(intrinsicTree);
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        SveMaskConstant value;
+        if (m_compiler->opts.OptimizationEnabled() && TryGetSveMaskConstant(intrinsicTree, &value))
+        {
+            def->getInterval()->isConstant = true;
+        }
+#endif
 
         if (dstCount == 2)
         {
