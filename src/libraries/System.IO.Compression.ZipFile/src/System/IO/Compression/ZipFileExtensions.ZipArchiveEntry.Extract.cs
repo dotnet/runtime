@@ -230,13 +230,13 @@ namespace System.IO.Compression
 
             fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, sanitizedEntryPath));
 
-            // Verify the resolved path stays within the destination root. On case-insensitive platforms
-            // (Windows, macOS, iOS, tvOS) the comparison below is OrdinalIgnoreCase, which alone cannot
-            // detect a ".." segment that pops the root's final segment and re-descends into a
-            // differently-cased sibling directory (e.g. "../dest/pwn.txt" extracted into a root named
-            // "Dest"). Path.GetFullPath never re-cases the segments we supplied, so a prefix that matches
-            // only case-insensitively is the signature of exactly that escape. Require an ordinal match of
-            // the root prefix on those platforms to reject it, while still allowing benign in-root "..".
+            // Reject entries that resolve outside the destination root. GetFullPath collapses "." and ".."
+            // but never re-cases the segments it keeps. The root is combined in verbatim with a trailing
+            // separator. That means a resolved path that shares the root's exact casing never climbed above the root;
+            // one that matches the root only case-insensitively did climb out and re-descend under a
+            // different spelling (e.g. "../dest/x" into root "Dest"), which is a distinct directory on a
+            // case-sensitive volume. The two terms below together require that ordinal match. Symlinks and
+            // junctions are not resolved here, so a reparse point inside the root is a separate concern.
             if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison) ||
                 (!PathInternal.IsCaseSensitive && !fileDestinationPath.StartsWith(destinationDirectoryFullPath, StringComparison.Ordinal)))
             {
