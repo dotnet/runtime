@@ -215,15 +215,8 @@ inline BOOL MethodDesc::IsQCall()
 inline CLRToCOMCallInfo *CLRToCOMCallInfo::FromMethodDesc(MethodDesc *pMD)
 {
     LIMITED_METHOD_CONTRACT;
-    if (pMD->IsCLRToCOMCall())
-    {
-        return ((CLRToCOMCallMethodDesc *)pMD)->m_pCLRToCOMCallInfo;
-    }
-    else
-    {
-        _ASSERTE(pMD->IsEEImpl());
-        return ((DelegateEEClass *)pMD->GetClass())->m_pCLRToCOMCallInfo;
-    }
+    _ASSERTE(pMD->IsCLRToCOMCall());
+    return ((CLRToCOMCallMethodDesc *)pMD)->m_pCLRToCOMCallInfo;
 }
 
 #endif //FEATURE_COMINTEROP
