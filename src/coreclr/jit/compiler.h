@@ -3312,11 +3312,22 @@ public:
 
 #if defined(FEATURE_SIMD)
     GenTreeVecCon* gtNewVconNode(var_types type);
-    GenTreeVecCon* gtNewVconNode(var_types type, void* data);
+    GenTreeVecCon* gtNewVconNode(var_types type, const void* data);
+#if defined(TARGET_ARM64)
+    GenTreeVecCon* gtNewSimdVconNode(var_types type, var_types baseType, SimdScalableKind kind, uint64_t index, uint64_t step = 0);
+
+    inline GenTreeVecCon* gtNewSimdVconNode(var_types type, const simdscalable_t* con)
+    {
+        return gtNewSimdVconNode(type, con->gtSimdScalableBaseType, con->gtSimdScalableKind, con->gtSimdScalableIndex, con->gtSimdScalableStep);
+    }
+#endif // TARGET_ARM64
 #endif // FEATURE_SIMD
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     GenTreeMskCon* gtNewMskConNode(var_types type);
+#if defined(TARGET_ARM64)
+    GenTreeMskCon* gtNewMskConNode(var_types type, var_types baseType, bool index);
+#endif // TARGET_ARM64
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     GenTree* gtNewAllBitsSetConNode(var_types type);
@@ -3433,7 +3444,7 @@ public:
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
 
 #if defined(TARGET_ARM64)
-    GenTree* gtNewSimdAllTrueMaskNode(var_types simdBaseType);
+    GenTree* gtNewSimdTrueMaskNode(var_types simdBaseType);
     GenTree* gtNewSimdFalseMaskByteNode();
 #endif
 
@@ -4075,7 +4086,7 @@ public:
 #endif // FEATURE_HW_INTRINSICS
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(FEATURE_MASKED_HW_INTRINSICS)
-    GenTreeMskCon* gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon);
+    GenTree* gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     // Options to control behavior of gtTryRemoveBoxUpstreamEffects
@@ -8458,7 +8469,7 @@ public:
                 double        m_dconVal;
                 IntegralRange m_range;
                 simd16_t      m_simdVal;    // for O2K_CONST_VEC, inline storage for TYP_SIMD8/12/16.
-                simd_t*       m_bigSimdVal; // for O2K_CONST_VEC, heap-allocated storage for TYP_SIMD32/64.
+                simd_t*       m_bigSimdVal; // for O2K_CONST_VEC, heap-allocated storage for larger payloads.
                 struct
                 {
                     ssize_t   m_iconVal;
@@ -8492,7 +8503,7 @@ public:
             }
 
             // Returns a pointer to the SIMD constant payload. The valid byte length is GetSimdSize().
-            // For TYP_SIMD8/12/16 the storage is inline; for TYP_SIMD32/64 it is heap-allocated.
+            // For TYP_SIMD8/12/16 the storage is inline; larger payloads are heap-allocated.
             const void* GetSimdConstant() const
             {
                 assert(KindIs(O2K_CONST_VEC));
@@ -8958,8 +8969,14 @@ public:
                 dsc.m_op2.m_kind = O2K_CONST_VEC;
 
                 assert(varTypeIsSIMD(cns));
-                const unsigned simdSize = genTypeSize(cns->TypeGet());
-                dsc.m_op2.m_simdSize    = static_cast<uint8_t>(simdSize);
+                unsigned simdSize = genTypeSize(cns->TypeGet());
+#if defined(TARGET_ARM64)
+                if (cns->TypeIs(TYP_SIMD))
+                {
+                    simdSize = sizeof(simdscalable_t);
+                }
+#endif // TARGET_ARM64
+                dsc.m_op2.m_simdSize = static_cast<uint8_t>(simdSize);
 
                 if (simdSize <= sizeof(simd16_t))
                 {
