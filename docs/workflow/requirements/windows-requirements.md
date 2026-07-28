@@ -94,10 +94,10 @@ winget install -e --id Kitware.CMake
 winget install -e --id Python.Python.3.14
 winget install -e --id Git.Git
 winget install -e --id Ninja-build.Ninja
-winget install -e --id Microsoft.VisualStudio.Community --override "--passive --wait --config <path-to-runtime-repo>\.vsconfig"
+winget install -e --id Microsoft.VisualStudio.Community --override "--passive --wait --config $PWD\.vsconfig"
 ```
 
-Passing the repo's [`.vsconfig`](https://github.com/dotnet/runtime/blob/main/.vsconfig) file to the Visual Studio installer ensures all the components required by the repo get installed, including the Arm64 build tools and the C++/CLI support needed to build the tests.
+Passing the repo's [`.vsconfig`](https://github.com/dotnet/runtime/blob/main/.vsconfig) file to the Visual Studio installer ensures all the components required by the repo get installed, including the Arm64 build tools and the C++/CLI support needed to build the tests. The last command assumes it is run from the root of your runtime clone. `$PWD` is expanded by *Powershell* before the arguments are handed over, which is required because the installer is launched from a temporary directory and would not resolve a relative path.
 
 **NOTE for Arm64 machines:** The Visual Studio winget manifest only publishes an x64 bootstrapper. `winget` runs it under emulation, and it installs the native Arm64 Visual Studio, so the command above works as-is. If `winget` reports that no applicable installer was found, add `-a x64` to the command. All the other packages listed above have native Arm64 installers.
 
