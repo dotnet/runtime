@@ -2832,7 +2832,7 @@ void ObjectAllocator::RewriteUses()
 
                         // Rewrite the call to make the box accesses explicit in jitted code.
                         // user = COMMA(
-                        //           CALL(UNBOX_HELPER_TYPETEST, obj->MethodTable, type),
+                        //           CALL(UNBOX_HELPER_TYPETEST, type, obj->MethodTable),
                         //           ADD(obj, TARGET_POINTER_SIZE))
                         //
                         JITDUMP("Rewriting to invoke box type test helper%s\n", isForEffect ? " for side effect" : "");
@@ -2843,10 +2843,8 @@ void ObjectAllocator::RewriteUses()
                         call->gtType        = TYP_VOID;
                         call->gtReturnType  = TYP_VOID;
                         GenTree* const mt   = m_compiler->gtNewMethodTableLookup(lcl, /* onStack */ true);
-                        // Unbox takes (target, obj) but Unbox_TypeTest takes (source, target), and names
-                        // them in that order in the cast exception message.
                         call->gtArgs.Remove(secondArg);
-                        call->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(mt));
+                        call->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(mt));
 
                         if (isForEffect)
                         {
