@@ -15,6 +15,11 @@
     <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <!-- Key the output directory on the full target RID rather than on Arcade's $(PlatformName),
+         which is just the architecture and so cannot tell browser-wasm from wasi-wasm or linux-x64
+         from windows-x64. src/coreclr/Directory.Build.props already makes the same correction for
+         the intermediate directory. -->
+    <OutputPath>$(BaseOutputPath)$(TargetRid)\$(Configuration)\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
