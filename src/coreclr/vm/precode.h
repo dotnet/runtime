@@ -151,6 +151,12 @@ struct StubPrecode
         return GetData()->Target;
     }
 
+    PCODE *GetTargetSlot()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &GetData()->Target;
+    }
+
     BYTE GetType();
 
     static BOOL IsStubPrecodeByASM(PCODE addr);

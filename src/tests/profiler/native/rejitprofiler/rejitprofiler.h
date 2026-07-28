@@ -61,9 +61,19 @@ private:
     FunctionID _targetFuncId;
     ModuleID _targetModuleId;
     mdMethodDef _targetMethodDef;
+    bool _tieredMode;
+    bool _virtualMode;
+    FunctionID _virtualTargetFuncId;
+    ModuleID _virtualTargetModuleId;
+    mdMethodDef _virtualTargetMethodDef;
 
     const String ReJITTriggerMethodName = WCHAR("TriggerReJIT");
     const String RevertTriggerMethodName = WCHAR("TriggerRevert");
+    const String ReJITFinalTierTriggerMethodName = WCHAR("TriggerReJITFinalTier");
+    const String RevertFinalTierTriggerMethodName = WCHAR("TriggerRevertFinalTier");
+    const String VirtualReJITTriggerMethodName = WCHAR("TriggerVirtualReJIT");
+    const String VirtualRevertTriggerMethodName = WCHAR("TriggerVirtualRevert");
     const String TargetMethodName = WCHAR("InlineeTarget");
+    const String VirtualTargetMethodName = WCHAR("VirtualTarget");
     const String TargetModuleName = WCHAR("rejit.dll");
 };
