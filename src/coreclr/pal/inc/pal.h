@@ -201,7 +201,7 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_InitializeCoreCLR(
-    const char *szExePath, BOOL runningInExe);
+    BOOL runningInExe);
 
 /// <summary>
 /// This function shuts down PAL WITHOUT exiting the current process.
@@ -266,14 +266,17 @@ PAL_SetLogManagedCallstackForSignalCallback(
 /// Callback invoked from the fatal-signal path to write an in-proc crash
 /// report. The callback runs inside the signal handler and must therefore
 /// be async-signal-safe. siginfo is opaque (siginfo_t*) and context is the
-/// raw ucontext_t pointer received by the PAL signal handler.
+/// raw ucontext_t pointer received by the PAL signal handler. serialize
+/// mirrors createdump behavior: when true, callback implementations may
+/// serialize concurrent reporters because the caller expects process teardown;
+/// when false, callbacks should not block other threads indefinitely.
 ///
 /// Registration is opt-in: if no callback is installed the PAL falls back
 /// to its default crash-dump path (createdump where available). The PAL
 /// itself has no source-level dependency on the in-proc reporter library;
 /// it only knows about this callback ABI.
 /// </summary>
-typedef VOID (*PINPROCCRASHREPORT_CALLBACK)(int signal, void* siginfo, void* context);
+typedef VOID (*PINPROCCRASHREPORT_CALLBACK)(int signal, void* siginfo, void* context, bool serialize);
 
 PALIMPORT
 VOID
@@ -416,7 +419,6 @@ typedef struct _SECURITY_ATTRIBUTES {
 #define FILE_ATTRIBUTE_NORMAL                   0x00000080
 
 #define FILE_FLAG_WRITE_THROUGH    0x80000000
-#define FILE_FLAG_NO_BUFFERING     0x20000000
 #define FILE_FLAG_RANDOM_ACCESS    0x10000000
 #define FILE_FLAG_SEQUENTIAL_SCAN  0x08000000
 #define FILE_FLAG_BACKUP_SEMANTICS 0x02000000
@@ -3136,9 +3138,6 @@ Define_InterlockMethod(
         Exchange /* The value to be stored */)
 )
 
-#define InterlockedCompareExchangeAcquire InterlockedCompareExchange
-#define InterlockedCompareExchangeRelease InterlockedCompareExchange
-
 Define_InterlockMethod(
     LONGLONG,
     InterlockedCompareExchange64(IN OUT LONGLONG volatile *Destination, IN LONGLONG Exchange, IN LONGLONG Comperand),
@@ -3303,15 +3302,6 @@ VOID
 PALAPI
 SetLastError(
          IN DWORD dwErrCode);
-
-PALIMPORT
-LPWSTR
-PALAPI
-GetCommandLineW();
-
-#ifdef UNICODE
-#define GetCommandLine GetCommandLineW
-#endif
 
 PALIMPORT
 VOID
@@ -3523,7 +3513,15 @@ PAL_FreeExceptionRecords(
 #define EXCEPTION_EXECUTE_HANDLER   1
 #define EXCEPTION_CONTINUE_EXECUTION -1
 
-struct PAL_SEHException
+struct
+#ifdef __OpenBSD__
+// OpenBSD's libc++ compares exception type_info by pointer (relying on ld.so to merge
+// type_info across shared objects) instead of falling back to a name compare like Linux's
+// libstdc++. Default visibility lets ld.so merge type_info into one instance so a
+// PAL_SEHException thrown in one PAL DSO is caught in another (e.g. the pal_sxs test).
+__attribute__((visibility("default")))
+#endif
+PAL_SEHException
 {
 private:
     static const SIZE_T NoTargetFrameSp = (SIZE_T)SIZE_MAX;

@@ -205,6 +205,33 @@ namespace System.Globalization
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static char ToLowerOrdinal(char c)
+        {
+            if (GlobalizationMode.Invariant)
+            {
+                return char.IsAscii(c)
+                    ? ToLowerAsciiInvariant(c)
+                    : PreserveOrdinalLowerCasingClass(c, InvariantModeCasing.ToLower(c));
+            }
+
+            if (GlobalizationMode.UseNls)
+            {
+                return char.IsAscii(c)
+                    ? ToLowerAsciiInvariant(c)
+                    : PreserveOrdinalLowerCasingClass(c, Invariant.ChangeCase(c, toUpper: false));
+            }
+
+            return OrdinalCasing.ToLower(c);
+        }
+
+        // Ordinal lower casing must never move a character out of its ordinal upper-casing class, otherwise it
+        // would stop being consistent with OrdinalIgnoreCase (for example the Kelvin, Ohm and Angstrom signs). The
+        // ICU ordinal table encodes this directly, but invariant and NLS simple lowering do not, so keep the original
+        // character whenever its simple lower mapping would change its ordinal upper-casing form.
+        private static char PreserveOrdinalLowerCasingClass(char c, char lower) =>
+            lower == c || ToUpperOrdinal(lower) == ToUpperOrdinal(c) ? lower : c;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ChangeCaseToLower(ReadOnlySpan<char> source, Span<char> destination)
         {
             Debug.Assert(destination.Length >= source.Length);

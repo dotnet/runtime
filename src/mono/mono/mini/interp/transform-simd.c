@@ -517,7 +517,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 	if (csignature->hasthis)
 		return FALSE;
 
-#ifdef HOST_BROWSER
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
 	if (emit_sri_packedsimd (td, cmethod, csignature))
 		return TRUE;
 #endif
@@ -731,7 +731,7 @@ opcode_added:
 static gboolean
 emit_sri_vector128_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
-#ifdef HOST_BROWSER
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
 	if (emit_sri_packedsimd (td, cmethod, csignature))
 		return TRUE;
 #endif
@@ -775,7 +775,7 @@ opcode_added:
 static gboolean
 emit_sn_vector_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature, gboolean newobj)
 {
-#ifdef HOST_BROWSER
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
 	if (emit_sri_packedsimd (td, cmethod, csignature))
 		return TRUE;
 #endif
@@ -876,7 +876,7 @@ opcode_added:
 	return TRUE;
 }
 
-#if HOST_BROWSER
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
 
 #define PSIMD_ARGTYPE_I1 MONO_TYPE_I1
 #define PSIMD_ARGTYPE_I2 MONO_TYPE_I2
@@ -1122,7 +1122,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			// We don't want to emit the IsSupported or IsHardwareAccelerated methods for Vector* here
 			return FALSE;
 		}
-#if HOST_BROWSER
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
 		interp_add_ins (td, MINT_LDC_I4_1);
 #else
 		interp_add_ins (td, MINT_LDC_I4_0);
@@ -1133,7 +1133,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg))
 		return FALSE;
 
-#if HOST_BROWSER
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
 	if (!is_packedsimd) {
 		// transform the method name from the Vector(128|) name to the packed simd name
 		// FIXME: This is a hack, but it works for now.
@@ -1311,9 +1311,9 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 
 	interp_add_ins (td, simd_opcode);
 	td->last_ins->data [0] = simd_intrins;
-#else // HOST_BROWSER
+#else // defined(HOST_BROWSER) || defined(HOST_WASI)
 	return FALSE;
-#endif // HOST_BROWSER
+#endif // defined(HOST_BROWSER) || defined(HOST_WASI)
 
 opcode_added:
 	emit_common_simd_epilogue (td, vector_klass, csignature, vector_size, TRUE);

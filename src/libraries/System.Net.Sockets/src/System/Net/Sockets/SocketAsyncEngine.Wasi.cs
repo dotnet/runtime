@@ -24,7 +24,8 @@ namespace System.Net.Sockets
             engine = s_engine;
 
             nint entryPtr = default;
-            error = Interop.Sys.GetWasiSocketDescriptor(socketHandle, &entryPtr);
+            int socketType = 0;
+            error = Interop.Sys.GetWasiSocketDescriptor(socketHandle, &entryPtr, &socketType);
             if (error != Interop.Error.SUCCESS)
             {
                 return false;
@@ -55,28 +56,31 @@ namespace System.Net.Sockets
             // fail fast if the handle is not found in the descriptor table
             // probably because the socket was closed and the entry was removed, without unregistering the poll hook
             nint entryPtr = default;
+            int socketType = 0;
             IntPtr socketHandle = context._socket.DangerousGetHandle();
-            var error = Interop.Sys.GetWasiSocketDescriptor(socketHandle, &entryPtr);
+            var error = Interop.Sys.GetWasiSocketDescriptor(socketHandle, &entryPtr, &socketType);
             if (error != Interop.Error.SUCCESS)
             {
                 Environment.FailFast("Can't resolve libc descriptor for socket handle " + socketHandle);
             }
 
-            var entry = (descriptor_table_entry_t*)entryPtr;
-            switch (entry->tag)
+            // wasi-libc no longer exposes a tagged union for descriptor entries; entryPtr points
+            // directly at the socket struct and socketType (1 = TCP/stream, 2 = UDP/datagram)
+            // is derived natively via SO_TYPE.
+            switch (socketType)
             {
-                case descriptor_table_entry_tag.DESCRIPTOR_TABLE_ENTRY_TCP_SOCKET:
+                case 1:
                 {
-                    tcp_socket_t* socket = &(entry->entry.tcp_socket);
+                    tcp_socket_t* socket = (tcp_socket_t*)entryPtr;
                     switch (socket->state.tag)
                     {
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_CONNECTING:
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_LISTENING:
-                            pollableHandles.Add(socket->socket_pollable.handle);
+                            pollableHandles.Add(EnsurePollable(SubscribeKindTcpSocket, socket->socket.handle, ref socket->socket_pollable.handle));
                             break;
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_CONNECTED:
-                            pollableHandles.Add(socket->state.state.connected.input_pollable.handle);
-                            pollableHandles.Add(socket->state.state.connected.output_pollable.handle);
+                            pollableHandles.Add(EnsurePollable(SubscribeKindInputStream, socket->state.state.connected.input.handle, ref socket->state.state.connected.input_pollable.handle));
+                            pollableHandles.Add(EnsurePollable(SubscribeKindOutputStream, socket->state.state.connected.output.handle, ref socket->state.state.connected.output_pollable.handle));
                             break;
                         case tcp_socket_state_tag.TCP_SOCKET_STATE_CONNECT_FAILED:
                             context.HandleEventsInline(Sys.SocketEvents.Error);
@@ -89,9 +93,9 @@ namespace System.Net.Sockets
                     }
                     break;
                 }
-                case descriptor_table_entry_tag.DESCRIPTOR_TABLE_ENTRY_UDP_SOCKET:
+                case 2:
                 {
-                    udp_socket_t* socket = &(entry->entry.udp_socket);
+                    udp_socket_t* socket = (udp_socket_t*)entryPtr;
                     switch (socket->state.tag)
                     {
                         case udp_socket_state_tag.UDP_SOCKET_STATE_UNBOUND:
@@ -111,8 +115,8 @@ namespace System.Net.Sockets
                             {
                                 streams = &(socket->state.state.connected.streams);
                             }
-                            pollableHandles.Add(streams->incoming_pollable.handle);
-                            pollableHandles.Add(streams->outgoing_pollable.handle);
+                            pollableHandles.Add(EnsurePollable(SubscribeKindIncomingDatagramStream, streams->incoming.handle, ref streams->incoming_pollable.handle));
+                            pollableHandles.Add(EnsurePollable(SubscribeKindOutgoingDatagramStream, streams->outgoing.handle, ref streams->outgoing_pollable.handle));
                             break;
                         }
 
@@ -122,9 +126,34 @@ namespace System.Net.Sockets
                     break;
                 }
                 default:
-                    throw new NotImplementedException("TYPE" + entry->tag);
+                    throw new NotImplementedException("TYPE" + socketType);
             }
             return pollableHandles;
+        }
+
+        // Kinds understood by SystemNative_WasiSubscribeSocketPollable.
+        private const int SubscribeKindInputStream = 0;
+        private const int SubscribeKindOutputStream = 1;
+        private const int SubscribeKindTcpSocket = 2;
+        private const int SubscribeKindIncomingDatagramStream = 4;
+        private const int SubscribeKindOutgoingDatagramStream = 5;
+
+        // In the new wasi-libc, the pollables embedded in the socket state are created lazily:
+        // their handle stays 0 until the matching `subscribe` import is called. Subscribe on demand
+        // and store the handle back into the socket state so wasi-libc owns and later drops it.
+        private static int EnsurePollable(int kind, int streamOrSocketHandle, ref int pollableHandle)
+        {
+            if (pollableHandle == 0)
+            {
+                pollableHandle = Interop.Sys.WasiSubscribeSocketPollable(kind, streamOrSocketHandle);
+            }
+            // A 0 handle is not a valid pollable. Adding it to the poll set would corrupt the
+            // WASI poll loop, so fail fast instead of silently registering an invalid handle.
+            if (pollableHandle == 0)
+            {
+                Environment.FailFast("Failed to subscribe WASI pollable for kind " + kind + " and handle " + streamOrSocketHandle);
+            }
+            return pollableHandle;
         }
 
         public static void HandleSocketEvent(object? state)

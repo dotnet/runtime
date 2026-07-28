@@ -981,6 +981,11 @@ static size_t GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCoun
             // Didn't throw, just use this buffer size.
             break;
         }
+#if BIGENDIAN
+        if (self->treatAsLE)
+            *pTarget = (((CHAR16_T)ch) << 8 | ((CHAR16_T)ch) >> 8);
+        else
+#endif
         *pTarget = (CHAR16_T)ch;
         ENSURE_BUFFER_INC
 
@@ -1008,6 +1013,11 @@ static size_t GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCoun
 
                 if (ch > 0x7F) goto ProcessChar;
 
+#if BIGENDIAN
+                if (self->treatAsLE)
+                    *pTarget = ((CHAR16_T)ch)<<8;
+                else
+#endif
                 *pTarget = (CHAR16_T)ch;
                 ENSURE_BUFFER_INC
             }
@@ -1031,7 +1041,11 @@ static size_t GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCoun
             pSrc++;
 
             if (ch > 0x7F) goto LongCode;
-
+#if BIGENDIAN
+            if (self->treatAsLE)
+                *pTarget = ((CHAR16_T)ch)<<8;
+            else
+#endif
             *pTarget = (CHAR16_T)ch;
             ENSURE_BUFFER_INC
 
@@ -1041,7 +1055,11 @@ static size_t GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCoun
                 ch = *pSrc;
                 pSrc++;
                 if (ch > 0x7F) goto LongCode;
-
+#if BIGENDIAN
+                if (self->treatAsLE)
+                    *pTarget = ((CHAR16_T)ch)<<8;
+                else
+#endif
                 *pTarget = (CHAR16_T)ch;
                 ENSURE_BUFFER_INC
             }
@@ -1071,10 +1089,17 @@ static size_t GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCoun
                 else
 #endif
                 {
+#if BIGENDIAN
+                    *pTarget = ((CHAR16_T)((ch >> 8) & 0x7F))<<8;
+                    pSrc += 2;
+                    *(pTarget + 1) = ((CHAR16_T)(ch & 0x7F))<<8;
+                    pTarget += 2;
+#else
                     *pTarget = (CHAR16_T)(ch & 0x7F);
                     pSrc += 2;
                     *(pTarget + 1) = (CHAR16_T)((ch >> 8) & 0x7F);
                     pTarget += 2;
+#endif
                 }
             }
 
@@ -1109,6 +1134,18 @@ static size_t GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCoun
                 else
 #endif
                 {
+#if BIGENDIAN
+                    *pTarget = ((CHAR16_T)((ch >> 24) & 0x7F)) << 8;
+                    *(pTarget + 1) = ((CHAR16_T)((ch >> 16) & 0x7F)) << 8;
+                    *(pTarget + 2) = ((CHAR16_T)((ch >> 8) & 0x7F)) << 8;
+                    *(pTarget + 3) = ((CHAR16_T)(ch & 0x7F)) << 8;
+                    pSrc += 8;
+                    *(pTarget + 4) = ((CHAR16_T)((chb >> 24) & 0x7F)) << 8;
+                    *(pTarget + 5) = ((CHAR16_T)((chb >> 16) & 0x7F)) << 8;
+                    *(pTarget + 6) = ((CHAR16_T)((chb >> 8) & 0x7F)) << 8;
+                    *(pTarget + 7) = ((CHAR16_T)(chb & 0x7F)) << 8;
+                    pTarget += 8;
+#else
                     *pTarget = (CHAR16_T)(ch & 0x7F);
                     *(pTarget + 1) = (CHAR16_T)((ch >> 8) & 0x7F);
                     *(pTarget + 2) = (CHAR16_T)((ch >> 16) & 0x7F);
@@ -1119,6 +1156,7 @@ static size_t GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCoun
                     *(pTarget + 6) = (CHAR16_T)((chb >> 16) & 0x7F);
                     *(pTarget + 7) = (CHAR16_T)((chb >> 24) & 0x7F);
                     pTarget += 8;
+#endif
                 }
             }
             break;
@@ -1141,6 +1179,11 @@ static size_t GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCoun
             pSrc++;
             if (ch <= 0x7F)
             {
+#if BIGENDIAN
+                if (self->treatAsLE)
+                    *pTarget = ((CHAR16_T)ch)<<8;
+                else
+#endif
                 *pTarget = (CHAR16_T)ch;
                 ENSURE_BUFFER_INC
                 continue;
@@ -1393,6 +1436,11 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
 
         // read next char. The JIT optimization seems to be getting confused when
         // compiling "ch = *pSrc++;", so rather use "ch = *pSrc; pSrc++;" instead
+#if BIGENDIAN
+        if (self->treatAsLE)
+            ch = (CHAR16_T)(((*pSrc) >> 8) | ((*pSrc) << 8));
+        else
+#endif
         ch = *pSrc;
         pSrc++;
 
@@ -1531,6 +1579,11 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
             CHAR16_T* pLocalEnd = pEnd; // hint to get pLocalEnd enregistered
             while (pSrc < pLocalEnd)
             {
+#if BIGENDIAN
+                if (self->treatAsLE)
+                    ch = (CHAR16_T)(((*pSrc) >> 8) | ((*pSrc) << 8));
+                else
+#endif
                 ch = *pSrc;
                 pSrc++;
 
@@ -1564,6 +1617,11 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
 
         while (pSrc < pStop)
         {
+#if BIGENDIAN
+            if (self->treatAsLE)
+                ch = (CHAR16_T)(((*pSrc) >> 8) | ((*pSrc) << 8));
+            else
+#endif
             ch = *pSrc;
             pSrc++;
 
@@ -1575,6 +1633,11 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
             // get pSrc aligned
             if (((size_t)pSrc & 0x2) != 0)
             {
+#if BIGENDIAN
+                if (self->treatAsLE)
+                    ch = (CHAR16_T)(((*pSrc) >> 8) | ((*pSrc) << 8));
+                else
+#endif
                 ch = *pSrc;
                 pSrc++;
                 if (ch > 0x7F) goto LongCode;
@@ -1588,9 +1651,11 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
             {
                 ch = *(int*)pSrc;
                 int chc = *(int*)(pSrc + 2);
-
+#if BIGENDIAN
+                if (((ch | chc) & (int)0x80FF80FF) != 0) goto LongCodeWithMask;
+#else
                 if (((ch | chc) & (int)0xFF80FF80) != 0) goto LongCodeWithMask;
-
+#endif
                 if (pTarget + 4 > pAllocatedBufferEnd)
                 {
                     errno = MINIPAL_ERROR_INSUFFICIENT_BUFFER;
@@ -1611,12 +1676,21 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
                 else
 #endif
                 {
+#if BIGENDIAN
+                    *(pTarget)= (unsigned char)((ch >> 16) >> 8);
+                    *(pTarget+1) = (unsigned char)(ch >> 8);
+                    pSrc += 4;
+                    *(pTarget + 2) = (unsigned char)((chc >> 16) >> 8);
+                    *(pTarget + 3) = (unsigned char)(chc >> 8);
+                    pTarget += 4;
+#else
                     *pTarget = (unsigned char)ch;
                     *(pTarget + 1) = (unsigned char)(ch >> 16);
                     pSrc += 4;
                     *(pTarget + 2) = (unsigned char)chc;
                     *(pTarget + 3) = (unsigned char)(chc >> 16);
                     pTarget += 4;
+#endif
                 }
             }
             continue;
@@ -1787,7 +1861,13 @@ static size_t GetByteCount(UTF8Encoding* self, CHAR16_T *chars, size_t count)
 
             // use separate helper variables for local contexts so that the jit optimizations
             // won't get confused about the variable lifetimes
-            int cha = *pSrc;
+           int cha;
+#if BIGENDIAN
+            if (self->treatAsLE)
+                cha = (*pSrc) >> 8;
+            else
+#endif
+            cha = *pSrc;
 
             // count the pending surrogate
             byteCount++;
@@ -1825,6 +1905,11 @@ static size_t GetByteCount(UTF8Encoding* self, CHAR16_T *chars, size_t count)
 
         // read next char. The JIT optimization seems to be getting confused when
         // compiling "ch = *pSrc++;", so rather use "ch = *pSrc; pSrc++;" instead
+#if BIGENDIAN
+        if (self->treatAsLE)
+            ch = (*pSrc) >> 8;
+        else
+#endif
         ch = *pSrc;
         pSrc++;
 
@@ -1900,8 +1985,13 @@ static size_t GetByteCount(UTF8Encoding* self, CHAR16_T *chars, size_t count)
             CHAR16_T* pLocalEnd = pEnd; // hint to get pLocalEnd enregistered
             while (pSrc < pLocalEnd)
             {
-                ch = *pSrc;
-                pSrc++;
+#if BIGENDIAN
+               if (self->treatAsLE)
+                    ch = (*pSrc) >> 8;
+               else
+#endif
+               ch = *pSrc;
+               pSrc++;
                 if (ch > 0x7F) goto ProcessChar;
             }
 
@@ -1922,6 +2012,11 @@ static size_t GetByteCount(UTF8Encoding* self, CHAR16_T *chars, size_t count)
 
         while (pSrc < pStop)
         {
+#if BIGENDIAN
+            if (self->treatAsLE)
+                ch = (*pSrc) >> 8;
+            else
+#endif
             ch = *pSrc;
             pSrc++;
 
@@ -1939,6 +2034,11 @@ static size_t GetByteCount(UTF8Encoding* self, CHAR16_T *chars, size_t count)
             // get pSrc aligned
             if (((size_t)pSrc & 0x2) != 0)
             {
+#if BIGENDIAN
+                if (self->treatAsLE)
+                    ch = (*pSrc) >> 8;
+                else
+#endif
                 ch = *pSrc;
                 pSrc++;
                 if (ch > 0x7F)                                              // Not ASCII
@@ -1958,6 +2058,13 @@ static size_t GetByteCount(UTF8Encoding* self, CHAR16_T *chars, size_t count)
             {
                 ch = *(int*)pSrc;
                 int chc = *(int*)(pSrc + 2);
+#if BIGENDIAN
+                if (self->treatAsLE)
+                {
+                    ch = ((((ch) & 0xff000000u) >> 24) | (((ch) & 0x00ff0000u) >> 8) | (((ch) & 0x0000ff00u) << 8) | (((ch) & 0x000000ffu) << 24));
+                    chc = ((((chc) & 0xff000000u) >> 24) | (((chc) & 0x00ff0000u) >> 8) | (((chc) & 0x0000ff00u) << 8) | (((chc) & 0x000000ffu) << 24));
+                }
+#endif
                 if (((ch | chc) & (int)0xFF80FF80) != 0)         // See if not ASCII
                 {
                     if (((ch | chc) & (int)0xF800F800) != 0)     // See if not 2 Byte
@@ -1979,6 +2086,14 @@ static size_t GetByteCount(UTF8Encoding* self, CHAR16_T *chars, size_t count)
 
                 ch = *(int*)pSrc;
                 chc = *(int*)(pSrc + 2);
+#if BIGENDIAN
+                if (self->treatAsLE)
+                {
+                    ch = ((((ch) & 0xff000000u) >> 24) | (((ch) & 0x00ff0000u) >> 8) | (((ch) & 0x0000ff00u) << 8) | (((ch) & 0x000000ffu) << 24));
+                    chc = ((((chc) & 0xff000000u) >> 24) | (((chc) & 0x00ff0000u) >> 8) | (((chc) & 0x0000ff00u) << 8) | (((chc) & 0x000000ffu) << 24));
+                }
+#endif
+
                 if (((ch | chc) & (int)0xFF80FF80) != 0)         // See if not ASCII
                 {
                     if (((ch | chc) & (int)0xF800F800) != 0)     // See if not 2 Byte
@@ -2002,10 +2117,17 @@ static size_t GetByteCount(UTF8Encoding* self, CHAR16_T *chars, size_t count)
         LongCodeWithMask:
 #if BIGENDIAN
         // be careful about the sign extension
-        if (!self->treatAsLE) ch = (int)(((unsigned int)ch) >> 16);
+        if (self->treatAsLE)
+        {
+            ch = (CHAR16_T)(((ch & 0xFF) << 8) | ((ch >> 8) & 0xFF));
+        }
         else
-#endif
+        {
+            ch = (int)(((unsigned int)ch) >> 16);
+        }
+#else
         ch = (CHAR16_T)ch;
+#endif
 
         pSrc++;
 
@@ -2022,8 +2144,13 @@ static size_t GetByteCount(UTF8Encoding* self, CHAR16_T *chars, size_t count)
                 if (InRange(ch, HIGH_SURROGATE_START, LOW_SURROGATE_END))
                 {
                     // 4 byte encoding - high surrogate + low surrogate
-
-                    int chd = *pSrc;
+                    int chd;
+#if BIGENDIAN
+                    if (self->treatAsLE)
+                        chd = (*pSrc) >> 8;
+                    else
+#endif
+                    chd = *pSrc;
                     if (
                         ch > HIGH_SURROGATE_END ||
                         !InRange(chd, LOW_SURROGATE_START, LOW_SURROGATE_END))

@@ -34,7 +34,7 @@ namespace App {
             icCreat++;
         }
 
-        public ReflectObj( int l )
+        internal ReflectObj( int l )
         {
             obj = new long[l];
             icCreat++;
@@ -52,6 +52,7 @@ namespace App {
         }
 
         [ActiveIssue("needs triage", TestRuntimes.Mono)]
+        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {
@@ -69,7 +70,7 @@ namespace App {
         class CreateObj
         {
             private Object[] v;
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             private Type myClass;
             private Type [] rtype;
             private ConstructorInfo CInfo;
@@ -81,7 +82,7 @@ namespace App {
                 for( int i=0; i< 2000; i++ )
                 {
                     v[0] = i;
-                    Activator.CreateInstance(myClass, v );
+                    Activator.CreateInstance(myClass, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, v, null);
                 }
             }
 

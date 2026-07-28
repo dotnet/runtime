@@ -135,7 +135,7 @@ CrossLoaderAllocatorHash<TRAITS>::LAHashKeyToTrackers::~LAHashKeyToTrackers()
     }
     else
     {
-        static_cast<LAHashDependentHashTracker *>(trackerOrTrackerSet)->DecRefCount();
+        static_cast<LAHashDependentHashTracker *>(trackerOrTrackerSet)->Release();
     }
 }
 
@@ -831,7 +831,7 @@ CrossLoaderAllocatorHash<TRAITS>::GetDependentTrackerForLoaderAllocator(LoaderAl
     }
 
     NewHolder<LADependentKeyToValuesHash> laDependentKeyToValuesHashHolder = new LADependentKeyToValuesHash();
-    typename LAHashDependentHashTracker::NewTrackerHolder dependentTrackerHolder =
+    ReleaseHolder<LAHashDependentHashTracker> dependentTrackerHolder =
         new LAHashDependentHashTracker(pLoaderAllocator, laDependentKeyToValuesHashHolder);
     laDependentKeyToValuesHashHolder.SuppressRelease();
 
@@ -862,7 +862,7 @@ CrossLoaderAllocatorHash<TRAITS>::GetKeyToValueCrossLAHashForHashkeyToTrackers(
     {
         dependentTracker = GetDependentTrackerForLoaderAllocator(pValueLoaderAllocator);
         hashKeyToTrackers->_trackerOrTrackerSet = dependentTracker;
-        dependentTracker->IncRefCount();
+        dependentTracker->AddRef();
     }
     else if (!hashKeyToTrackers->_trackerOrTrackerSet->IsTrackerSet())
     {
@@ -879,8 +879,8 @@ CrossLoaderAllocatorHash<TRAITS>::GetKeyToValueCrossLAHashForHashkeyToTrackers(
             if (!dependentTrackerMaybe->IsLoaderAllocatorLive())
             {
                 hashKeyToTrackers->_trackerOrTrackerSet = dependentTracker;
-                dependentTrackerMaybe->DecRefCount();
-                dependentTracker->IncRefCount();
+                dependentTrackerMaybe->Release();
+                dependentTracker->AddRef();
             }
             else
             {
@@ -890,7 +890,7 @@ CrossLoaderAllocatorHash<TRAITS>::GetKeyToValueCrossLAHashForHashkeyToTrackers(
                     new LAHashDependentHashTrackerSetWrapper();
                 LAHashDependentHashTrackerHash *dependentTrackerHash = dependentTrackerHashWrapperHolder->GetTrackerSet();
                 dependentTrackerHash->Add(dependentTracker);
-                dependentTracker->IncRefCount();
+                dependentTracker->AddRef();
                 dependentTrackerHash->Add(dependentTrackerMaybe);
                 hashKeyToTrackers->_trackerOrTrackerSet = dependentTrackerHashWrapperHolder.Extract();
             }
@@ -909,7 +909,7 @@ CrossLoaderAllocatorHash<TRAITS>::GetKeyToValueCrossLAHashForHashkeyToTrackers(
             // Get dependent tracker
             dependentTracker = GetDependentTrackerForLoaderAllocator(pValueLoaderAllocator);
             dependentTrackerHash->Add(dependentTracker);
-            dependentTracker->IncRefCount();
+            dependentTracker->AddRef();
         }
     }
 

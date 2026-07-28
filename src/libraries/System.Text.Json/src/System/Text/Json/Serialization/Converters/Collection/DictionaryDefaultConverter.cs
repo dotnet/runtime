@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization.Converters
             ref WriteStack state)
         {
             IEnumerator<KeyValuePair<TKey, TValue>> enumerator;
-            if (state.Current.CollectionEnumerator == null)
+            if (state.Current.CollectionEnumerator is null)
             {
                 enumerator = value.GetEnumerator();
                 state.Current.CollectionEnumerator = enumerator;

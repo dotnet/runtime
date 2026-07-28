@@ -185,6 +185,15 @@ public:
     void repRecordRelocation(void* location, void* target, CorInfoReloc fRelocType, int32_t addlDelta);
     void applyRelocs(RelocContext* rc, unsigned char* block1, ULONG blocksize1, void* originalAddr);
 
+    // Find the recorded relocation (if any) whose location falls in the half-open
+    // buffer range [originalBufferOffset, originalBufferOffset + windowSize) relative
+    // to `originalBufferStart`. Used by the wasm32 near-differ to map a coredistools
+    // opcode-byte block offset to a JIT-recorded reloc on the immediate-payload byte.
+    // Returns nullptr if no reloc is recorded in the range.
+    const Agnostic_RecordRelocation* findRelocationInRange(size_t originalBufferStart,
+                                                           size_t originalBufferOffset,
+                                                           size_t windowSize);
+
     void recProcessName(const char* name);
     void dmpProcessName(DWORD key, DWORD value);
     const char* repProcessName();

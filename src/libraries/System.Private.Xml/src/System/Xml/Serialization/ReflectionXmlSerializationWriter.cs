@@ -153,6 +153,10 @@ namespace System.Xml.Serialization
 
         private void WriteArrayItems(ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, object o, object? choiceSources)
         {
+            // When the member is an array-like value serialized as XML text (e.g. [XmlText] string[]),
+            // its items are written as a single whitespace-separated list so that the value round-trips.
+            bool isListText = text != null && text.IsList && elements.Length == 0;
+
             IList? list = o as IList;
             if (list is not null && list.Count == 0)
             {
@@ -171,6 +175,17 @@ namespace System.Xml.Serialization
                 {
                     object? ai = list[i];
                     object? choiceSource = choiceArray?.GetValue(i);
+
+                    if (isListText && i > 0)
+                    {
+                        // Separate list items with a single space. The separator is written purely by
+                        // position, even when an item serializes to empty (e.g. a null string). Per the
+                        // XSD list rules, whitespace in list content is normalized on read (runs collapse
+                        // and leading/trailing whitespace is trimmed), so empty items cannot survive a
+                        // round-trip regardless; callers must not rely on null/empty items in a text list.
+                        WriteValue(" ");
+                    }
+
                     WriteElements(ai, choiceSource, elements, text, choice, true, true);
                 }
             }
@@ -187,6 +202,12 @@ namespace System.Xml.Serialization
                     {
                         object ai = e.Current;
                         object? choiceSource = choiceArray?.GetValue(c++);
+
+                        if (isListText && c > 0)
+                        {
+                            WriteValue(" ");
+                        }
+
                         WriteElements(ai, choiceSource, elements, text, choice, true, true);
                     }
                 }

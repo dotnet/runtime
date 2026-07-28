@@ -13,10 +13,23 @@ internal static partial class Interop
     internal static partial class AndroidCrypto
     {
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainCreateContext")]
-        internal static partial SafeX509ChainContextHandle X509ChainCreateContext(
+        private static partial SafeX509ChainContextHandle X509ChainCreateContext(
             SafeX509Handle cert,
             IntPtr[] extraStore,
             int extraStoreLen);
+
+        internal static SafeX509ChainContextHandle X509ChainCreateContext(SafeX509Handle cert, IntPtr[] extraStore)
+        {
+            SafeX509ChainContextHandle chainContext = X509ChainCreateContext(cert, extraStore, extraStore.Length);
+
+            if (chainContext.IsInvalid)
+            {
+                chainContext.Dispose();
+                throw new CryptographicException(SR.Cryptography_AndroidX509ChainContextInitializationFailed);
+            }
+
+            return chainContext;
+        }
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ChainDestroyContext")]
         internal static partial void X509ChainDestroyContext(IntPtr ctx);
@@ -59,9 +72,9 @@ internal static partial class Interop
             }
             finally
             {
-                // The native side can populate part of certPtrs and then fail (returning 0) if a JNI
-                // exception is thrown mid-loop, so release every non-null entry rather than only the
-                // first `res` entries.
+                // X509Certificate2 above duplicates each global ref, so release the native-returned
+                // refs here. On failure the native side already released and cleared its entries, so
+                // the surviving non-null entries are the ones we still own.
                 for (int i = 0; i < certPtrs.Length; i++)
                 {
                     if (certPtrs[i] != IntPtr.Zero)
@@ -99,6 +112,8 @@ internal static partial class Interop
         internal static ValidationError[] X509ChainGetErrors(SafeX509ChainContextHandle ctx)
         {
             int count = Interop.AndroidCrypto.X509ChainGetErrorCount(ctx);
+            if (count < 0)
+                throw new CryptographicException();
             if (count == 0)
                 return Array.Empty<ValidationError>();
 

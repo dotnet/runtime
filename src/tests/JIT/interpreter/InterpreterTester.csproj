@@ -5,10 +5,6 @@
     <DisableProjectBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64' and '$(TargetArchitecture)' != 'riscv64' and '$(TargetArchitecture)' != 'loongarch64' and '$(TargetArchitecture)' != 'armel'">true</DisableProjectBuild>
     <!-- Interpreter is CoreCLR-VM specific -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
-    <!-- Temporarily disabled due to https://github.com/dotnet/runtime/issues/112827 -->
-    <GCStressIncompatible>true</GCStressIncompatible>
-    <!-- Temporarily disabled due to problems with generating interpreter bytecode for methods with existing prestub -->
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InterpreterTester.cs" />

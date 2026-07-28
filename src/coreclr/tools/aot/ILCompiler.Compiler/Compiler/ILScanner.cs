@@ -318,26 +318,19 @@ namespace ILCompiler
 
             internal override VTableSliceNode GetSlice(TypeDesc type)
             {
-                // TODO: move ownership of compiler-generated entities to CompilerTypeSystemContext.
-                // https://github.com/dotnet/corert/issues/3873
-                if (type.GetTypeDefinition() is Internal.TypeSystem.Ecma.EcmaType)
+                if (!_vtableSlices.TryGetValue(type, out MethodDesc[] slots))
                 {
-                    if (!_vtableSlices.TryGetValue(type, out MethodDesc[] slots))
-                    {
-                        // If we couldn't find the vtable slice information for this type, it's because the scanner
-                        // didn't correctly predict what will be needed.
-                        // To troubleshoot, compare the dependency graph of the scanner and the compiler.
-                        // Follow the path from the node that requested this node to the root.
-                        // On the path, you'll find a node that exists in both graphs, but it's predecessor
-                        // only exists in the compiler's graph. That's the place to focus the investigation on.
-                        // Use the ILCompiler-DependencyGraph-Viewer tool to investigate.
-                        string typeName = ExceptionTypeNameFormatter.Instance.FormatName(type);
-                        throw new ScannerFailedException($"VTable of type '{typeName}' not computed by the IL scanner.");
-                    }
-                    return new LazilyBuiltVTableSliceNode(type, slots);
+                    // If we couldn't find the vtable slice information for this type, it's because the scanner
+                    // didn't correctly predict what will be needed.
+                    // To troubleshoot, compare the dependency graph of the scanner and the compiler.
+                    // Follow the path from the node that requested this node to the root.
+                    // On the path, you'll find a node that exists in both graphs, but it's predecessor
+                    // only exists in the compiler's graph. That's the place to focus the investigation on.
+                    // Use the ILCompiler-DependencyGraph-Viewer tool to investigate.
+                    string typeName = ExceptionTypeNameFormatter.Instance.FormatName(type);
+                    throw new ScannerFailedException($"VTable of type '{typeName}' not computed by the IL scanner.");
                 }
-                else
-                    return new LazilyBuiltVTableSliceNode(type);
+                return new LazilyBuiltVTableSliceNode(type, slots);
             }
         }
 
@@ -446,24 +439,13 @@ namespace ILCompiler
 
                 if (methodOrType is TypeDesc type)
                 {
-                    // TODO: move ownership of compiler-generated entities to CompilerTypeSystemContext.
-                    // https://github.com/dotnet/corert/issues/3873
-                    if (type.GetTypeDefinition() is Internal.TypeSystem.Ecma.EcmaType)
-                        return GetPrecomputedLayout(type);
-                    else
-                        return new LazilyBuiltDictionaryLayoutNode(type);
+                    return GetPrecomputedLayout(type);
                 }
                 else
                 {
                     Debug.Assert(methodOrType is MethodDesc);
                     MethodDesc method = (MethodDesc)methodOrType;
-
-                    // TODO: move ownership of compiler-generated entities to CompilerTypeSystemContext.
-                    // https://github.com/dotnet/corert/issues/3873
-                    if (method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod)
-                        return GetPrecomputedLayout(method);
-                    else
-                        return new LazilyBuiltDictionaryLayoutNode(method);
+                    return GetPrecomputedLayout(method);
                 }
             }
         }

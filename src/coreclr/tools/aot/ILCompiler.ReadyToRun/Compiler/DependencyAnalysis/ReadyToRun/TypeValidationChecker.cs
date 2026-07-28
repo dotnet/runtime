@@ -228,7 +228,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         if (methodDef.Attributes.HasFlag(MethodAttributes.RTSpecialName))
                         {
-                            if (!method.Name.SequenceEqual(".cctor"u8) && !method.Name.StartsWith("_VtblGap"u8))
+                            if (method.Name != ".cctor"u8 && !method.Name.StartsWith("_VtblGap"u8))
                             {
                                 AddTypeValidationError(type, $"Special name method {method} defined on interface");
                                 return false;

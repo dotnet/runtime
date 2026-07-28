@@ -29,7 +29,6 @@ function libBrowserHostFactory() {
     ];
     let commonDeps = [
         "$DOTNET",
-        "$DOTNET_INTEROP",
         "$ENV",
         "$FS",
         "$libBrowserHostFn",

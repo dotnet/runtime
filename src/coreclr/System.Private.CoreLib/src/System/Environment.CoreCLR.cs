@@ -12,10 +12,10 @@ namespace System
 {
     public static partial class Environment
     {
-        public static extern int CurrentManagedThreadId
+        public static int CurrentManagedThreadId
         {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Threading.ManagedThreadId.Current;
         }
 
         // Terminates this process with the given exit code.
@@ -134,6 +134,7 @@ namespace System
 
         [UnmanagedCallersOnly]
         [StackTraceHidden]
+        [DebuggerHidden]
         internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, int* pReturnValue, bool captureException, Exception* pException)
         {
             try

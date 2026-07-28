@@ -147,7 +147,7 @@ enum
 {
     SHADOW_SP_IN_FILTER = 0x1,
     SHADOW_SP_FILTER_DONE = 0x2,
-    SHADOW_SP_BITS = 0x3
+    SHADOW_SP_BITS = 0x3 // [cDAC] [GCInfo]: Contract depends on this value.
 };
 
 #ifdef TARGET_X86
@@ -262,7 +262,7 @@ virtual size_t GetFunctionSize(GCInfoToken gcInfoToken) = 0;
 *  returns true.
 *  If hijacking is not possible for some reason, it return false.
 */
-virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind)) = 0;
+virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind) X86_ARG(bool* hasAsyncRet)) = 0;
 
 #ifndef USE_GC_INFO_DECODER
 /*
@@ -478,7 +478,7 @@ size_t GetFunctionSize(GCInfoToken gcInfoToken);
 *  returns true.
 *  If hijacking is not possible for some reason, it return false.
 */
-virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind));
+virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind) X86_ARG(bool* hasAsyncRet));
 
 #ifndef USE_GC_INFO_DECODER
 /*
@@ -627,7 +627,7 @@ bool IsInPrologOrEpilog(
 virtual
 size_t GetFunctionSize(GCInfoToken gcInfoToken);
 
-virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind))
+virtual bool GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind) X86_ARG(bool* hasAsyncRet))
 {
     // Interpreter-TODO: Implement this if needed
     _ASSERTE(FALSE);

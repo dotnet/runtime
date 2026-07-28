@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+using Internal.Text;
+
 namespace Internal.TypeSystem
 {
     /// <summary>
@@ -520,7 +522,7 @@ namespace Internal.TypeSystem
         /// If signature is not specified and there are multiple matches, the first one
         /// is returned. Returns null if method not found.
         /// </summary>
-        public MethodDesc GetMethod(ReadOnlySpan<byte> name, MethodSignature signature)
+        public MethodDesc GetMethod(Utf8Span name, MethodSignature signature)
         {
             return GetMethod(name, signature, default(Instantiation));
         }
@@ -532,11 +534,11 @@ namespace Internal.TypeSystem
         /// is returned. If substitution is not null, then substitution will be applied to
         /// possible target methods before signature comparison. Returns null if method not found.
         /// </summary>
-        public virtual MethodDesc GetMethod(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
+        public virtual MethodDesc GetMethod(Utf8Span name, MethodSignature signature, Instantiation substitution)
         {
             foreach (var method in GetMethods())
             {
-                if (method.Name.SequenceEqual(name))
+                if (method.Name == name)
                 {
                     if (signature == null || signature.Equals(method.Signature.ApplySubstitution(substitution)))
                         return method;
@@ -545,11 +547,11 @@ namespace Internal.TypeSystem
             return null;
         }
 
-        public virtual MethodDesc GetMethodWithEquivalentSignature(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
+        public virtual MethodDesc GetMethodWithEquivalentSignature(Utf8Span name, MethodSignature signature, Instantiation substitution)
         {
             foreach (var method in GetMethods())
             {
-                if (method.Name.SequenceEqual(name))
+                if (method.Name == name)
                 {
                     if (signature == null || signature.EquivalentTo(method.Signature.ApplySubstitution(substitution)))
                         return method;
@@ -589,11 +591,11 @@ namespace Internal.TypeSystem
         /// </summary>
         // TODO: Substitutions, generics, modopts, ...
         // TODO: field signature
-        public virtual FieldDesc GetField(ReadOnlySpan<byte> name)
+        public virtual FieldDesc GetField(Utf8Span name)
         {
             foreach (var field in GetFields())
             {
-                if (field.Name.SequenceEqual(name))
+                if (field.Name == name)
                     return field;
             }
             return null;

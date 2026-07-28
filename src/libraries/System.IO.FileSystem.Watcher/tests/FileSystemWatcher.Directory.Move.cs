@@ -26,6 +26,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalTheory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/127651", TestPlatforms.OSX)]
         [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData(1)]
         [InlineData(2)]
@@ -53,7 +54,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [SkipOnPlatform(TestPlatforms.FreeBSD, "Not supported on FreeBSD.")]
+        [SkipOnPlatform(TestPlatforms.FreeBSD | TestPlatforms.OpenBSD, "Not supported on FreeBSD and OpenBSD.")]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
@@ -114,6 +115,20 @@ namespace System.IO.Tests
                 ExpectEvent(watcher, WatcherChangeTypes.Renamed, action, cleanup, targetPath);
                 Assert.True(invoker.BeginInvoke_Called);
             }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows directory handles follow the directory on move; no error is raised.
+        public void FileSystemWatcher_WatchedDirectory_Move()
+        {
+            string dir = CreateTestDirectory(TestDirectory, "watched");
+            string targetDir = Path.Combine(TestDirectory, "moved");
+            using var watcher = new FileSystemWatcher(dir);
+
+            Action action = () => Directory.Move(dir, targetDir);
+            Action cleanup = () => Directory.Move(targetDir, dir);
+
+            ExpectError(watcher, action, cleanup);
         }
 
         #region Test Helpers

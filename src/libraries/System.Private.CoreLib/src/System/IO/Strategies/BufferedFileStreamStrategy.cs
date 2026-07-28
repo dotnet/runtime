@@ -388,6 +388,7 @@ namespace System.IO.Strategies
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask<int> ReadAsyncSlowPath(Task semaphoreLockTask, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             Debug.Assert(_asyncActiveSemaphore != null);
@@ -671,6 +672,7 @@ namespace System.IO.Strategies
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask WriteAsyncSlowPath(Task semaphoreLockTask, ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             Debug.Assert(_asyncActiveSemaphore != null);

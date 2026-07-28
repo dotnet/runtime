@@ -429,6 +429,7 @@ HRESULT Target_CMiniMdRW::ReadFrom(DataTargetReader & reader)
         IfFailRet(reader.ReadPointer(&dbg_m_pLock));
     }
     IfFailRet(reader.Read8((BYTE*)&m_fMinimalDelta));
+    IfFailRet(reader.Read8((BYTE*)&m_fAll4ByteColumns));
     IfFailRet(reader.ReadPointer(&m_rENCRecs));
     return S_OK;
 }

@@ -738,7 +738,7 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
                 uint32_t alignment;
                 if (bytesNeeded >= 8)
                     alignment = 8;
-                if (bytesNeeded >= 4)
+                else if (bytesNeeded >= 4)
                     alignment = 4;
                 else if (bytesNeeded >= 2)
                     alignment = 2;
@@ -1031,6 +1031,8 @@ bool CanJITOptimizeTLSAccess()
     // Optimization is disabled for FreeBSD/arm64
 #elif defined(TARGET_ANDROID)
     // Optimation is disabled for Android until emulated TLS is supported.
+#elif defined(TARGET_OPENBSD)
+    // Optimization is disabled for OpenBSD, which has no addressable __tls_get_addr.
 #elif !defined(TARGET_APPLE) && defined(TARGET_UNIX) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
     bool tlsResolverValid = IsValidTLSResolver();
     if (tlsResolverValid)
@@ -1172,12 +1174,16 @@ void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 
     pInfo->threadVarsSection = GetThreadVarsSectionAddress();
 
-#elif defined(TARGET_AMD64)
+#elif defined(TARGET_AMD64) && !defined(TARGET_OPENBSD)
 
     // For Linux/x64, get the address of tls_get_addr system method and the base address
     // of struct that we will pass to it.
     pInfo->tlsGetAddrFtnPtr = reinterpret_cast<void*>(&__tls_get_addr);
     pInfo->tlsIndexObject = GetTlsIndexObjectAddress();
+
+#elif defined(TARGET_OPENBSD)
+
+    // Unreachable: TLS optimization is disabled on OpenBSD (no addressable __tls_get_addr).
 
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 

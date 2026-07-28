@@ -15,6 +15,12 @@
 
   <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">
     <Compile Include="System\Net\Dns.cs" />
+    <Compile Include="System\Net\Dns.Resolve.cs" />
+    <Compile Include="System\Net\DnsRecords.cs" />
+    <Compile Include="System\Net\DnsResolver.cs" />
+    <Compile Include="System\Net\DnsResolverOptions.cs" />
+    <Compile Include="System\Net\DnsResponseCode.cs" />
+    <Compile Include="System\Net\DnsResult.cs" />
     <Compile Include="System\Net\IPHostEntry.cs" />
     <Compile Include="System\Net\NetEventSource.NameResolution.cs" Condition="'$(TargetPlatformIdentifier)' != 'wasi'" />
     <Compile Include="System\Net\NameResolutionMetrics.cs" />
@@ -37,6 +43,12 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Net\NameResolutionPal.Windows.cs" />
+    <Compile Include="System\Net\DnsResolverPal.Windows.cs" />
+    <!-- Dnsapi interop -->
+    <Compile Include="$(CommonPath)Interop\Windows\Dnsapi\Interop.DnsApi.cs"
+             Link="Common\Interop\Windows\Dnsapi\Interop.DnsApi.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Dnsapi\Interop.DnsTypes.cs"
+             Link="Common\Interop\Windows\Dnsapi\Interop.DnsTypes.cs" />
     <Compile Include="$(CommonPath)System\NullableBool.cs"
              Link="Common\System\NullableBool.cs" />
     <!-- Debug only -->
@@ -76,6 +88,7 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
+    <Compile Include="System\Net\DnsResolverPal.Unsupported.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
              Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
@@ -115,6 +128,7 @@
              Link="Common\Interop\Unix\System.Native\Interop.ErrNo.cs"/>
 
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
+    <Compile Include="System\Net\DnsResolverPal.Unsupported.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
              Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"

@@ -658,10 +658,16 @@ ExitThread(
     pThread->SetExitCode(dwExitCode);
 
     /* kill the thread (itself), resulting in a call to InternalEndCurrentThread */
+#if defined(TARGET_WASI)
+    // wasi-libc pthread_exit is a _Static_assert stub. PAL only reaches here
+    // on the orderly-shutdown path which is not exercised on WASI.
+    abort();
+#else
     pthread_exit(NULL);
 
     ASSERT("pthread_exit should not return!\n");
     while (true);
+#endif
 }
 
 /*++
@@ -922,6 +928,14 @@ CorUnix::InternalSetThreadPriority(
 
     /* get the previous thread schedule parameters.  We need to know the
        scheduling policy to determine the priority range */
+#if defined(TARGET_WASI)
+    // wasi-libc replaces pthread scheduling functions with _Static_assert
+    // stubs (single-threaded). Record the requested priority but skip the
+    // pthread plumbing.
+    pTargetThread->m_iThreadPriority = iNewPriority;
+    palError = NO_ERROR;
+    goto InternalSetThreadPriorityExit;
+#else
     if (pthread_getschedparam(
             pTargetThread->GetPThreadSelf(),
             &policy,
@@ -1017,6 +1031,7 @@ CorUnix::InternalSetThreadPriority(
     }
 
     pTargetThread->m_iThreadPriority = iNewPriority;
+#endif // !TARGET_WASI
 
 InternalSetThreadPriorityExit:
 
@@ -1265,6 +1280,12 @@ CorUnix::GetThreadTimesInternal(
     close(fd);
 
     ts = status.pr_utime;
+#elif defined(TARGET_WASI)
+    // WASI 0.2.8 has no per-thread CPU time clock. Report zero rather than
+    // fail the build.
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = 0;
 #else // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
 #error "Don't know how to obtain user cpu time on this platform."
 #endif // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
@@ -1423,7 +1444,7 @@ CPalThread::ThreadEntry(
                     // vendor-modified Android kernels with strict SELinux policy) block
                     // sched_setaffinity even when passed a mask extracted via sched_getaffinity.
                     // Treat this as non-fatal — the thread will continue running on any
-                    // available CPU rather than the originally affinitized one. 
+                    // available CPU rather than the originally affinitized one.
                     WARN("sched_setaffinity failed with EPERM/EACCES, ignoring\n");
                 }
                 else
@@ -2316,6 +2337,12 @@ CPalThread::GetStackBase()
 #ifdef TARGET_APPLE
     // This is a Mac specific method
     stackBase = pthread_get_stackaddr_np(pthread_self());
+#elif defined(TARGET_OPENBSD)
+    stack_t stack;
+    int status = pthread_stackseg_np(pthread_self(), &stack);
+    _ASSERT_MSG(status == 0, "pthread_stackseg_np call failed");
+
+    stackBase = stack.ss_sp;
 #else
     pthread_attr_t attr;
     void* stackAddr;
@@ -2327,7 +2354,14 @@ CPalThread::GetStackBase()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
-#ifndef TARGET_BROWSER
+#if defined(TARGET_WASI)
+    // wasm-component-ld places the stack first with -Wl,-z,stack-size (see
+    // corerun CMakeLists.txt). Keep in sync with that value.
+    (void)thread; (void)stackAddr; (void)stackSize; (void)status;
+    pthread_attr_destroy(&attr);
+    constexpr size_t s_wasiStackSize = 8 * 1024 * 1024;
+    stackBase = (void*)s_wasiStackSize;
+#elif !defined(TARGET_BROWSER)
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
@@ -2361,6 +2395,14 @@ CPalThread::GetStackLimit()
     // This is a Mac specific method
     stackLimit = ((BYTE *)pthread_get_stackaddr_np(pthread_self()) -
                    pthread_get_stacksize_np(pthread_self()));
+#elif defined(TARGET_OPENBSD)
+    stack_t stack;
+    int status = pthread_stackseg_np(pthread_self(), &stack);
+    _ASSERT_MSG(status == 0, "pthread_stackseg_np call failed");
+
+    // ss_sp is the stack base (highest address) and ss_size is the size, so the
+    // limit (lowest address) is ss_sp - ss_size. The stack grows down from ss_sp.
+    stackLimit = (void*)((size_t)stack.ss_sp - stack.ss_size);
 #else
     pthread_attr_t attr;
     size_t stackSize;
@@ -2371,7 +2413,13 @@ CPalThread::GetStackLimit()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
-#ifndef TARGET_BROWSER
+#if defined(TARGET_WASI)
+    // See GetStackBase. CoreCLR rejects NULL stack limits, so return a
+    // small non-null placeholder.
+    (void)thread; (void)stackSize; (void)status;
+    pthread_attr_destroy(&attr);
+    stackLimit = (void*)4096;
+#elif !defined(TARGET_BROWSER)
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP

@@ -681,6 +681,7 @@ const char* relocationTypeToString(CorInfoReloc fRelocType)
         ADD_CASE(ARM64_BRANCH26);
         ADD_CASE(ARM64_PAGEBASE_REL21);
         ADD_CASE(ARM64_PAGEOFFSET_12A);
+        ADD_CASE(ARM64_PAGEOFFSET_12L);
         ADD_CASE(ARM64_LIN_TLSDESC_ADR_PAGE21);
         ADD_CASE(ARM64_LIN_TLSDESC_LD64_LO12);
         ADD_CASE(ARM64_LIN_TLSDESC_ADD_LO12);
@@ -749,6 +750,15 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
     if (blocksize1 == 0)
         return;
 
+    // For wasm32, the JIT writes padded ULEB128/SLEB128 placeholders (PADDED_RELOC_SIZE
+    // bytes of `80 80 ... 80 00` that decode to zero) in place of the real handle at
+    // every reloc site. Both baseline and diff JITs write the same placeholder bytes,
+    // so byte-by-byte comparison naturally succeeds at reloc sites without any
+    // patching here. The near-differ validates reloc-target equivalence via
+    // `compareOffsetsWasm` when the surrounding immediate bytes happen to differ.
+    if (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_WASM32)
+        return;
+
     size_t section_begin = (size_t)block1;
     size_t section_end   = (size_t)block1 + (size_t)blocksize1; // address is exclusive
 
@@ -811,15 +821,15 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
                 case CorInfoReloc::ARM32_THUMB_BRANCH24:
                 {
-                    INT32 delta = (INT32)(tmp.target - fixupLocation);
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
-                        if (!FitsInThumb2BlRel24(delta))
-                        {
-                            DWORDLONG target = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
-                            delta            = (INT32)(target - fixupLocation);
-                        }
-                        PutThumb2BlRel24((UINT16*)address, delta);
+                        // Like the arm64 ARM64_BRANCH26 and x64 RELATIVE32 handling, hardcode the
+                        // bottom bits of the target into the instruction so the encoding does not
+                        // depend on where SuperPMI allocated the code buffer. Otherwise a BL whose
+                        // target is out of the +-16MB range for one of the two compared blocks would
+                        // get a buffer-dependent placeholder, producing spurious asm diffs.
+                        DWORDLONG target = tmp.target + (int32_t)tmp.addlDelta;
+                        PutThumb2BlRel24((UINT16*)address, (INT32)(target & 0x00FFFFFE));
                     }
                     wasRelocHandled = true;
                 }
@@ -837,7 +847,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
             DWORDLONG target = tmp.target + (int32_t)tmp.addlDelta;
             if (relocType == CorInfoReloc::ARM64_PAGEBASE_REL21 || relocType == CorInfoReloc::ARM64_LIN_TLSDESC_ADR_PAGE21 ||
-                relocType == CorInfoReloc::ARM64_PAGEOFFSET_12A)
+                relocType == CorInfoReloc::ARM64_PAGEOFFSET_12A || relocType == CorInfoReloc::ARM64_PAGEOFFSET_12L)
             {
                 if ((rc->originalRoDataAddress2 <= (size_t)target) &&
                     ((size_t)target < rc->originalRoDataAddress2 + rc->roDataSize2))
@@ -899,6 +909,17 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                     {
                         INT32 imm12 = (INT32)(SIZE_T)target & 0xFFFLL;
                         PutArm64Rel12((UINT32*)address, imm12);
+                    }
+                    wasRelocHandled = true;
+                }
+                break;
+
+                case CorInfoReloc::ARM64_PAGEOFFSET_12L: // LDR 12 bit page offset
+                {
+                    if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
+                    {
+                        INT32 imm12 = (INT32)(SIZE_T)target & 0xFFFLL;
+                        PutArm64Rel12Ldr((UINT32*)address, imm12);
                     }
                     wasRelocHandled = true;
                 }
@@ -1164,6 +1185,37 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
             LogError("Unknown reloc type %u", tmp.fRelocType);
         }
     }
+}
+
+const Agnostic_RecordRelocation* CompileResult::findRelocationInRange(size_t originalBufferStart,
+                                                                      size_t originalBufferOffset,
+                                                                      size_t windowSize)
+{
+    if (RecordRelocation == nullptr)
+        return nullptr;
+
+    if (windowSize == 0)
+        return nullptr;
+
+    const size_t rangeLo = originalBufferStart + originalBufferOffset;
+    const size_t rangeHi = rangeLo + windowSize;
+
+    // Guard against size_t wraparound (rangeLo near SIZE_MAX). Bail rather than
+    // scan with an inverted half-open range that could match unrelated relocs.
+    if (rangeHi < rangeLo)
+        return nullptr;
+
+    const unsigned int count = RecordRelocation->GetCount();
+    const Agnostic_RecordRelocation* items = RecordRelocation->GetRawItems();
+    for (unsigned int i = 0; i < count; i++)
+    {
+        const size_t loc = (size_t)items[i].location;
+        if ((rangeLo <= loc) && (loc < rangeHi))
+        {
+            return &items[i];
+        }
+    }
+    return nullptr;
 }
 
 void CompileResult::recProcessName(const char* name)

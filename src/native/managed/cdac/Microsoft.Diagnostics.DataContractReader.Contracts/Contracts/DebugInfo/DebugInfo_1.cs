@@ -59,8 +59,7 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
             {
                 Data.PatchpointInfo patchpointInfo = _target.ProcessedData.GetOrAdd<Data.PatchpointInfo>(debugInfo);
 
-                if (_target.GetTypeInfo(DataType.PatchpointInfo).Size is not uint patchpointSize)
-                    throw new InvalidOperationException("PatchpointInfo type size is not defined.");
+                uint patchpointSize = Data.PatchpointInfo.GetSize(_target);
                 debugInfo += patchpointSize + (patchpointInfo.LocalCount * sizeof(uint));
 
                 flagByte &= ~ExtraDebugInfoFlags_1.EXTRA_DEBUG_INFO_PATCHPOINT;

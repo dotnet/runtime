@@ -211,19 +211,29 @@ ThePreStubPatchLabel:
         NESTED_END PInvokeImportThunk, _TEXT
 
 // ------------------------------------------------------------------
-// void ResolveWorkerAsmStub(r0, r1, r2, r3, r4:IndirectionCellAndFlags, r12:DispatchToken)
+// void ResolveWorkerAsmStub(r0, r1, r2, r3, [sp]:IndirectionCellAndFlags, r12:DispatchToken)
 //
 // The stub dispatch thunk which transfers control to VSD_ResolveWorker.
         NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
 
-        PROLOG_WITH_TRANSITION_BLOCK
+        // Match what the virtual dispatch slow path has pushed.
+        .save {r3}
 
-        add         r0, sp, #__PWTB_TransitionBlock // pTransitionBlock
+        PROLOG_PUSH  "{r0-r2}"
+
+        PROLOG_WITH_TRANSITION_BLOCK 0, 1, DoNotPushArgRegs
+
         mov         r2, r12                         // token
 
-        // indirection cell in r4 - should be consistent with REG_ARM_STUB_SPECIAL
-        bic         r1, r4, #3          // indirection cell
-        and         r3, r4, #3          // flags
+        // Load the indirection cell and flags
+        ldr         r12, [sp,#(__PWTB_TransitionBlock+12*4)]
+
+        // Spill the actual method argument
+        str         r3, [sp,#(__PWTB_TransitionBlock+12*4)]
+
+        add         r0, sp, #__PWTB_TransitionBlock // pTransitionBlock
+        bic         r1, r12, #3                     // indirection cell
+        and         r3, r12, #3                     // flags
 
         bl          C_FUNC(VSD_ResolveWorker)
 
@@ -235,7 +245,7 @@ ThePreStubPatchLabel:
         NESTED_END ResolveWorkerAsmStub, _TEXT
 
 // ------------------------------------------------------------------
-// void ResolveWorkerChainLookupAsmStub(r0, r1, r2, r3, r4:IndirectionCellAndFlags, r12:DispatchToken)
+// void ResolveWorkerChainLookupAsmStub(r0, r1, r2, r3, [sp]:IndirectionCellAndFlags, r12:DispatchToken)
         NESTED_ENTRY ResolveWorkerChainLookupAsmStub, _TEXT, NoHandler
 
         // ARMSTUB TODO: implement chained lookup
@@ -598,28 +608,6 @@ LOCAL_LABEL(stackProbe_loop):
     LEAF_END_MARKED \name, _TEXT
     .endm
 
-    .macro JIT_BYREFWRITEBARRIER name, mp, post
-    LEAF_ENTRY \name, _TEXT
-        START_WRITE_BARRIER \name
-        .if(\mp)
-            dmb
-        .endif
-
-        ldr r2, [r1]
-        str r2, [r0]
-        CHECK_GC_HEAP_RANGE \name, r0, 1f
-        UPDATE_GC_SHADOW \name, r0, r2
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        UPDATE_WRITE_WATCH_TABLE \name, r0, \mp, r12
-#endif
-        UPDATE_CARD_TABLE \name, r0, r2, \mp, \post, r2
-1:
-        add r0, #4
-        add r1, #4
-        bx lr
-    LEAF_END_MARKED \name, _TEXT
-    .endm
-
     .macro JIT_WRITEBARRIER_DESCRIPTOR name
 1:
         .word \name-1b
@@ -645,11 +633,6 @@ LOCAL_LABEL(stackProbe_loop):
     JIT_CHECKEDWRITEBARRIER_MP JIT_CheckedWriteBarrier_MP_Pre,  0
     JIT_CHECKEDWRITEBARRIER_MP JIT_CheckedWriteBarrier_MP_Post, 1
 
-    JIT_BYREFWRITEBARRIER JIT_ByRefWriteBarrier_SP_Pre,  0, 0
-    JIT_BYREFWRITEBARRIER JIT_ByRefWriteBarrier_SP_Post, 0, 1
-    JIT_BYREFWRITEBARRIER JIT_ByRefWriteBarrier_MP_Pre,  1, 0
-    JIT_BYREFWRITEBARRIER JIT_ByRefWriteBarrier_MP_Post, 1, 1
-
 //    .section .clrwb, "d"
 g_rgWriteBarrierDescriptors:
 
@@ -662,11 +645,6 @@ g_rgWriteBarrierDescriptors:
     JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_SP_Post
     JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_MP_Pre
     JIT_WRITEBARRIER_DESCRIPTOR JIT_CheckedWriteBarrier_MP_Post
-
-    JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_SP_Pre
-    JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_SP_Post
-    JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_MP_Pre
-    JIT_WRITEBARRIER_DESCRIPTOR JIT_ByRefWriteBarrier_MP_Post
 
     // Sentinel value
     .word 0

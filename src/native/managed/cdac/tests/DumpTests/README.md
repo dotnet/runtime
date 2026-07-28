@@ -42,6 +42,7 @@ features and then calls `Environment.FailFast()` to produce a crash dump.
 | ExceptionHandlingInfo | EH clause reading test | Heap |
 | LocalVariables | Info about local variables | Heap |
 | AsyncContinuation | Reading async continuation method tables | Heap |
+| CollectibleGenericInst | Generic instantiation with a type argument from a collectible ALC | Heap |
 
 The dump type is configured per-debuggee via the `DumpTypes` property in each debuggee's
 `.csproj` (default: `Heap`, set in `Debuggees/Directory.Build.props`). Debuggees that
@@ -69,6 +70,7 @@ use. Tests are `[ConditionalTheory]` methods parameterized by `TestConfiguration
 | RCWCleanupListDumpTests | BuiltInCOM | RCWCleanupList |
 | RCWDumpTests | BuiltInCOM | RCW |
 | ComWrappersDumpTests | ComWrappers | ComWrappers |
+| CollectibleGenericInstDumpTests | RuntimeTypeSystem | CollectibleGenericInst |
 
 ### Runtime Versions
 

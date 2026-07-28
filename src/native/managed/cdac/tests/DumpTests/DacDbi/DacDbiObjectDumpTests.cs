@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
-using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -56,7 +57,7 @@ public class DacDbiObjectDumpTests : DumpTestBase
         DacDbiImpl dbi = CreateDacDbi();
 
         TargetPointer objectMT = Target.ReadPointer(Target.ReadGlobalPointer("ObjectMethodTable"));
-        TypeHandle objectHandle = Target.Contracts.RuntimeTypeSystem.GetTypeHandle(objectMT);
+        ITypeHandle objectHandle = Target.Contracts.RuntimeTypeSystem.GetTypeHandle(objectMT);
 
         COR_TYPE_LAYOUT layout;
         int hr = dbi.GetTypeLayout(objectMT.Value, &layout);
@@ -78,8 +79,8 @@ public class DacDbiObjectDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer arrayMT = Target.ReadPointer(Target.ReadGlobalPointer("ObjectArrayMethodTable"));
-        TypeHandle arrayHandle = rts.GetTypeHandle(arrayMT);
-        TypeHandle componentHandle = rts.GetTypeParam(arrayHandle);
+        ITypeHandle arrayHandle = rts.GetTypeHandle(arrayMT);
+        ITypeHandle componentHandle = rts.GetTypeParam(arrayHandle);
         Assert.True(rts.IsArray(arrayHandle, out uint rank));
 
         COR_ARRAY_LAYOUT layout;
@@ -97,6 +98,44 @@ public class DacDbiObjectDumpTests : DumpTestBase
         Assert.Equal((uint)sizeof(uint), layout.rankSize);
         Assert.Equal(rank, layout.numRanks);
         Assert.Equal((uint)Target.PointerSize, layout.rankOffset);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void IsValidObject_HandleObjects_AreValid(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+        IGC gc = Target.Contracts.GC;
+
+        int validCount = 0;
+        foreach (HandleData handleData in gc.GetHandles([HandleType.Strong]))
+        {
+            TargetPointer objectAddress = Target.ReadPointer(handleData.Handle);
+            if (objectAddress == TargetPointer.Null)
+                continue;
+
+            Interop.BOOL result;
+            int hr = dbi.IsValidObject(objectAddress.Value, &result);
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal(Interop.BOOL.TRUE, result);
+            validCount++;
+        }
+
+        Assert.True(validCount > 0, "Expected at least one valid object from strong handles.");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void IsValidObject_InvalidAddress_ReturnsFalse(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+
+        Interop.BOOL result;
+        int hr = dbi.IsValidObject(0x12345678, &result);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(Interop.BOOL.FALSE, result);
     }
 
     [ConditionalTheory]
@@ -174,7 +213,7 @@ public class DacDbiObjectDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer stringMT = Target.ReadPointer(Target.ReadGlobalPointer("StringMethodTable"));
-        TypeHandle stringHandle = rts.GetTypeHandle(stringMT);
+        ITypeHandle stringHandle = rts.GetTypeHandle(stringMT);
         uint expectedCount = GetIntroducedInstanceFieldCount(rts, stringHandle);
 
         uint fetched = 0;
@@ -192,7 +231,7 @@ public class DacDbiObjectDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer stringMT = Target.ReadPointer(Target.ReadGlobalPointer("StringMethodTable"));
-        TypeHandle stringHandle = rts.GetTypeHandle(stringMT);
+        ITypeHandle stringHandle = rts.GetTypeHandle(stringMT);
         uint cFields = GetIntroducedInstanceFieldCount(rts, stringHandle);
         Assert.True(cFields >= 1, $"Expected System.String to have at least one introduced instance field, got {cFields}");
 
@@ -208,7 +247,7 @@ public class DacDbiObjectDumpTests : DumpTestBase
         Assert.Equal(cFields, fetched);
 
         TargetPointer[] fieldDescList = rts.GetFieldDescList(stringHandle).Take((int)cFields).ToArray();
-        uint firstFieldOffset = rts.IsObjRef(stringHandle) ? Target.GetTypeInfo(DataType.Object).Size!.Value : 0;
+        uint firstFieldOffset = rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(stringHandle)) ? Target.GetTypeInfo(DataType.Object).Size!.Value : 0;
 
         for (uint i = 0; i < cFields; i++)
         {
@@ -223,13 +262,13 @@ public class DacDbiObjectDumpTests : DumpTestBase
         }
     }
 
-    private static uint GetIntroducedInstanceFieldCount(IRuntimeTypeSystem rts, TypeHandle handle)
+    private static uint GetIntroducedInstanceFieldCount(IRuntimeTypeSystem rts, ITypeHandle handle)
     {
         uint count = rts.GetNumInstanceFields(handle);
         TargetPointer parentMT = rts.GetParentMethodTable(handle);
         if (parentMT != TargetPointer.Null)
         {
-            TypeHandle parentHandle = rts.GetTypeHandle(parentMT);
+            ITypeHandle parentHandle = rts.GetTypeHandle(parentMT);
             count -= rts.GetNumInstanceFields(parentHandle);
         }
         return count;

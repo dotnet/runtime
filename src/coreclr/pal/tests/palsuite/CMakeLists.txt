@@ -177,7 +177,6 @@ add_executable_clr(paltests
 #  filemapping_memmgt/GetProcAddress/test1/testlib.cpp
   filemapping_memmgt/GetProcAddress/test2/test2.cpp
 #  filemapping_memmgt/GetProcAddress/test2/testlib.cpp
-  filemapping_memmgt/MapViewOfFile/test1/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test2/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test3/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test4/mapviewoffile.cpp
@@ -292,7 +291,6 @@ add_executable_clr(paltests
   miscellaneous/FormatMessageW/test6/test.cpp
   miscellaneous/FreeEnvironmentStringsW/test1/test.cpp
   miscellaneous/FreeEnvironmentStringsW/test2/test.cpp
-  miscellaneous/GetCommandLineW/test1/test.cpp
   miscellaneous/GetEnvironmentStringsW/test1/test.cpp
   miscellaneous/GetEnvironmentVariableA/test1/test.cpp
   miscellaneous/GetEnvironmentVariableA/test2/test.cpp
@@ -401,6 +399,14 @@ target_link_libraries(paltests
   PUBLIC
   ${COMMON_TEST_LIBRARIES}
 )
+
+if(CLR_CMAKE_TARGET_OPENBSD)
+  # A few PAL tests (e.g. VirtualAlloc/VirtualProtect) deliberately request simultaneous
+  # W+X (PAGE_EXECUTE_READWRITE) mappings to exercise the PAL API. OpenBSD rejects those
+  # unless the binary carries the PT_OPENBSD_WXNEEDED note and runs from a wxallowed mount.
+  # The runtime itself never needs this (it uses W^X double-mapping), so scope it here.
+  target_link_options(paltests PRIVATE "-Wl,-z,wxneeded")
+endif(CLR_CMAKE_TARGET_OPENBSD)
 
 install (TARGETS paltests DESTINATION paltests COMPONENT paltests EXCLUDE_FROM_ALL)
 add_dependencies(paltests_install paltests)

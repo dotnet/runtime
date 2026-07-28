@@ -775,17 +775,28 @@ extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHan
 
     BEGIN_QCALL;
 
-    GCX_COOP();
-
-    OBJECTREF target = FinalizerThread::GetNextFinalizableObject();
-
-    if (target != NULL)
+    MethodTable *pTargetMT = NULL;
     {
-        pObj.Set(target);
+        GCX_COOP();
 
-        MethodTable* pMT = target->GetMethodTable();
+        OBJECTREF target = FinalizerThread::GetNextFinalizableObject();
 
-        funcPtr = pMT->GetRestoredSlot(g_pObjectFinalizerMD->GetSlot());
+        if (target != NULL)
+        {
+            pObj.Set(target);
+
+            pTargetMT = target->GetMethodTable();
+        }
+    }
+
+    if (pTargetMT != NULL)
+    {
+        funcPtr = pTargetMT->GetRestoredSlot(g_pObjectFinalizerMD->GetSlot());
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // RunFinalizers invokes the finalizer via the function pointer, so its portable entrypoint must
+        // resolve to real code if possible.
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(funcPtr);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     END_QCALL;
@@ -946,7 +957,6 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise()
     return allocated;
 }
 
-#ifdef FEATURE_BASICFREEZE
 
 /*===============================RegisterFrozenSegment===============================
 **Action: Registers the frozen segment
@@ -1002,7 +1012,6 @@ extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void* segment)
     END_QCALL;
 }
 
-#endif // FEATURE_BASICFREEZE
 
 /*==============================SuppressFinalize================================
 **Action: Indicate that an object's finalizer should not be run by the system
@@ -1918,8 +1927,11 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
             else
             {
                 // got another value type. Get the type
-                TypeHandle fieldTH = field->GetFieldTypeHandleThrowing();
+                // The type itself may be generic. We need to get the instantiated
+                // type for the field to properly call its method.
+                TypeHandle fieldTH = field->GetExactFieldType(TypeHandle(mt));
                 _ASSERTE(!fieldTH.IsNull());
+                _ASSERTE(!fieldTH.IsSharedByGenericInstantiations());
                 MethodTable* fieldMT = fieldTH.GetMethodTable();
                 if (CanCompareBitsOrUseFastGetHashCode(fieldMT))
                 {
