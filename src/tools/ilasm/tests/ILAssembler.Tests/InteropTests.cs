@@ -1120,5 +1120,297 @@ namespace ILAssembler.Tests
             Assert.Equal("value", reader.GetString(parameter.Name));
             return parameter.GetMarshallingDescriptor();
         }
+
+        private static MethodDefinition GetMethod(MetadataReader reader, string name) =>
+            reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == name);
+
+        [Fact]
+        public void PseudoCustomAttribute_PreserveSig_LowersToImplFlagAndIsDropped()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.Runtime.InteropServices.PreserveSigAttribute::.ctor() = ( 01 00 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = GetMethod(reader, "M");
+
+            Assert.Equal(MethodImplAttributes.PreserveSig, method.ImplAttributes & MethodImplAttributes.PreserveSig);
+            Assert.Empty(method.GetCustomAttributes());
+        }
+
+        private static string DllImportSource(string blob) => $$"""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .module test.dll
+            .class public auto ansi Test extends [mscorlib]System.Object
+            {
+                .method public static void Native() cil managed
+                {
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.DllImportAttribute::.ctor(string) = {{blob}}
+                    ret
+                }
+            }
+            """;
+
+        [Fact]
+        public void PseudoCustomAttribute_DllImport_CreatesImplMapAndIsDropped()
+        {
+            // DllImportAttribute("kernel32.dll") with no named arguments.
+            string blob = "( 01 00 0C 6B 65 72 6E 65 6C 33 32 2E 64 6C 6C 00 00 )";
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(DllImportSource(blob), new Options());
+            var reader = pe.GetMetadataReader();
+            var method = GetMethod(reader, "Native");
+
+            Assert.Equal(MethodAttributes.PinvokeImpl, method.Attributes & MethodAttributes.PinvokeImpl);
+            Assert.Equal(MethodImplAttributes.PreserveSig, method.ImplAttributes & MethodImplAttributes.PreserveSig);
+            Assert.Empty(method.GetCustomAttributes());
+
+            var import = method.GetImport();
+            Assert.Equal("kernel32.dll", reader.GetString(reader.GetModuleReference(import.Module).Name));
+            // The entry point defaults to the method name.
+            Assert.Equal("Native", reader.GetString(import.Name));
+            Assert.Equal(MethodImportAttributes.CallingConventionWinApi, import.Attributes & MethodImportAttributes.CallingConventionMask);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_DllImport_NamedArgumentsSetImportAttributes()
+        {
+            // DllImportAttribute("kernel32.dll") with EntryPoint = "GetLastError", CharSet = Unicode (3),
+            // CallingConvention = Cdecl (2), SetLastError = true, ExactSpelling = true and PreserveSig = false.
+            string blob = "( 01 00 0C 6B 65 72 6E 65 6C 33 32 2E 64 6C 6C 06 00 "
+                + "53 0E 0A 45 6E 74 72 79 50 6F 69 6E 74 0C 47 65 74 4C 61 73 74 45 72 72 6F 72 "
+                + "53 55 26 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 68 61 72 53 65 74 07 43 68 61 72 53 65 74 03 00 00 00 "
+                + "53 55 30 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 61 6C 6C 69 6E 67 43 6F 6E 76 65 6E 74 69 6F 6E 11 43 61 6C 6C 69 6E 67 43 6F 6E 76 65 6E 74 69 6F 6E 02 00 00 00 "
+                + "53 02 0C 53 65 74 4C 61 73 74 45 72 72 6F 72 01 "
+                + "53 02 0D 45 78 61 63 74 53 70 65 6C 6C 69 6E 67 01 "
+                + "53 02 0B 50 72 65 73 65 72 76 65 53 69 67 00 )";
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(DllImportSource(blob), new Options());
+            var reader = pe.GetMetadataReader();
+            var method = GetMethod(reader, "Native");
+            var import = method.GetImport();
+
+            Assert.Equal("GetLastError", reader.GetString(import.Name));
+            Assert.Equal(MethodImportAttributes.CharSetUnicode, import.Attributes & MethodImportAttributes.CharSetMask);
+            Assert.Equal(MethodImportAttributes.CallingConventionCDecl, import.Attributes & MethodImportAttributes.CallingConventionMask);
+            Assert.Equal(MethodImportAttributes.SetLastError, import.Attributes & MethodImportAttributes.SetLastError);
+            Assert.Equal(MethodImportAttributes.ExactSpelling, import.Attributes & MethodImportAttributes.ExactSpelling);
+            Assert.Equal(default, method.ImplAttributes & MethodImplAttributes.PreserveSig);
+            Assert.Empty(method.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_DllImport_EmptyModuleName_ReportsInvalidValue()
+        {
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
+                DllImportSource("( 01 00 00 00 00 )"),
+                new Options());
+
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, diagnostic.Id);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_DllImport_ExplicitPinvokeImplWinsButModuleReferenceIsStillCreated()
+        {
+            // The native assembler emits the ImplMap row for an explicit pinvokeimpl clause in a
+            // later phase than the one that applies the attribute, so the clause takes precedence.
+            // The attribute's module reference is still resolved, and so is still emitted.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .module test.dll
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static pinvokeimpl("explicit.dll" as "ExplicitEntry" cdecl) void Native() cil managed
+                    {
+                        .custom instance void [mscorlib]System.Runtime.InteropServices.DllImportAttribute::.ctor(string) = ( 01 00 08 61 74 74 72 2E 64 6C 6C 00 00 )
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var import = GetMethod(reader, "Native").GetImport();
+
+            Assert.Equal("explicit.dll", reader.GetString(reader.GetModuleReference(import.Module).Name));
+            Assert.Equal("ExplicitEntry", reader.GetString(import.Name));
+            Assert.Equal(MethodImportAttributes.CallingConventionCDecl, import.Attributes & MethodImportAttributes.CallingConventionMask);
+
+            Assert.Contains(
+                "attr.dll",
+                Enumerable.Range(1, reader.GetTableRowCount(TableIndex.ModuleRef))
+                    .Select(rid => reader.GetString(
+                        reader.GetModuleReference(MetadataTokens.ModuleReferenceHandle(rid)).Name)));
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_MarshalAs_OnParameter_CreatesFieldMarshalAndIsDropped()
+        {
+            // MarshalAsAttribute(UnmanagedType.Bool) applied to the parameter via .param [1].
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M(int32 value) cil managed
+                    {
+                        .param [1]
+                        .custom instance void [mscorlib]System.Runtime.InteropServices.MarshalAsAttribute::.ctor(int16) = ( 01 00 02 00 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = GetMethod(reader, "M");
+            var parameter = reader.GetParameter(Assert.Single(method.GetParameters()));
+
+            Assert.Equal(ParameterAttributes.HasFieldMarshal, parameter.Attributes & ParameterAttributes.HasFieldMarshal);
+            Assert.Equal([(byte)UnmanagedType.Bool], reader.GetBlobBytes(parameter.GetMarshallingDescriptor()));
+            Assert.Empty(parameter.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_MarshalAs_ByValArrayOnField_EncodesSizeAndSubType()
+        {
+            // MarshalAsAttribute(UnmanagedType.ByValArray) with SizeConst = 4 and ArraySubType = I4.
+            string blob = "( 01 00 1E 00 00 00 02 00 "
+                + "53 08 09 53 69 7A 65 43 6F 6E 73 74 04 00 00 00 "
+                + "53 55 2C 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 55 6E 6D 61 6E 61 67 65 64 54 79 70 65 "
+                + "0C 41 72 72 61 79 53 75 62 54 79 70 65 07 00 00 00 )";
+
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public sequential ansi sealed Test extends [mscorlib]System.ValueType
+                {
+                    .field public int32[] Values
+                    .custom (field int32[] Test::Values) instance void [mscorlib]System.Runtime.InteropServices.MarshalAsAttribute::.ctor(int32) = {{blob}}
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
+
+            Assert.Equal(FieldAttributes.HasFieldMarshal, field.Attributes & FieldAttributes.HasFieldMarshal);
+            Assert.Equal(
+                [(byte)UnmanagedType.ByValArray, 0x04, (byte)UnmanagedType.I4],
+                reader.GetBlobBytes(field.GetMarshallingDescriptor()));
+            Assert.Empty(field.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_MarshalAs_ByValArrayOnParameter_ReportsInvalidTarget()
+        {
+            // UnmanagedType.ByValArray is only valid on fields.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M(int32[] value) cil managed
+                    {
+                        .param [1]
+                        .custom instance void [mscorlib]System.Runtime.InteropServices.MarshalAsAttribute::.ctor(int32) = ( 01 00 1E 00 00 00 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidTarget, diagnostic.Id);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_MarshalAs_OnProperty_AppliesToAccessorParameters()
+        {
+            // MarshalAsAttribute(UnmanagedType.Bool) on a property fans out to the getter's return
+            // parameter and to the setter's last parameter.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public instance int32 get_Value() cil managed
+                    {
+                        ldc.i4.0
+                        ret
+                    }
+                    .method public instance void set_Value(int32 'value') cil managed
+                    {
+                        ret
+                    }
+                    .property instance int32 Value()
+                    {
+                        .custom instance void [mscorlib]System.Runtime.InteropServices.MarshalAsAttribute::.ctor(int16) = ( 01 00 02 00 00 00 )
+                        .get instance int32 Test::get_Value()
+                        .set instance void Test::set_Value(int32)
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var property = reader.GetPropertyDefinition(Assert.Single(reader.PropertyDefinitions));
+            Assert.Empty(property.GetCustomAttributes());
+
+            var getterReturn = reader.GetParameter(GetMethod(reader, "get_Value").GetParameters().Single());
+            Assert.Equal(0, getterReturn.SequenceNumber);
+            Assert.Equal([(byte)UnmanagedType.Bool], reader.GetBlobBytes(getterReturn.GetMarshallingDescriptor()));
+
+            var setterValue = reader.GetParameter(GetMethod(reader, "set_Value").GetParameters()
+                .Single(handle => reader.GetParameter(handle).SequenceNumber == 1));
+            Assert.Equal([(byte)UnmanagedType.Bool], reader.GetBlobBytes(setterValue.GetMarshallingDescriptor()));
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_MarshalAs_CustomMarshaler_EncodesMarshalerAndCookie()
+        {
+            // MarshalAsAttribute(UnmanagedType.CustomMarshaler) with MarshalType = "M" and MarshalCookie = "C".
+            string blob = "( 01 00 2C 00 00 00 02 00 "
+                + "53 0E 0B 4D 61 72 73 68 61 6C 54 79 70 65 01 4D "
+                + "53 0E 0D 4D 61 72 73 68 61 6C 43 6F 6F 6B 69 65 01 43 )";
+
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M(object value) cil managed
+                    {
+                        .param [1]
+                        .custom instance void [mscorlib]System.Runtime.InteropServices.MarshalAsAttribute::.ctor(int32) = {{blob}}
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var parameter = reader.GetParameter(Assert.Single(GetMethod(reader, "M").GetParameters()));
+
+            // Native type, empty GUID placeholder, empty native type name placeholder, marshaler name, cookie.
+            Assert.Equal(
+                [(byte)UnmanagedType.CustomMarshaler, 0x00, 0x00, 0x01, (byte)'M', 0x01, (byte)'C'],
+                reader.GetBlobBytes(parameter.GetMarshallingDescriptor()));
+        }
     }
 }

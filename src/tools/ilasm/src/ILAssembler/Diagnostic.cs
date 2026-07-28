@@ -52,6 +52,12 @@ public static class DiagnosticIds
     public const string DuplicateMethod = "ILA0030";
     public const string MissingExportedTypeImplementation = "ILA0031";
     public const string KeyFileError = "ILA0032";
+    public const string PseudoCustomAttributeInvalidTarget = "ILA0034";
+    public const string PseudoCustomAttributeInvalidValue = "ILA0035";
+    public const string PseudoCustomAttributeInvalidBlob = "ILA0036";
+    public const string PseudoCustomAttributeInvalidGuid = "ILA0037";
+    public const string PseudoCustomAttributeUnknownArgument = "ILA0038";
+    public const string PseudoCustomAttributeRepeatedArgument = "ILA0039";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -87,4 +93,10 @@ internal static class DiagnosticMessageTemplates
     public const string ParameterIndexOutOfRange = "Parameter index {0} is out of range";
     public const string DuplicateMethod = "Duplicate method definition";
     public const string MissingExportedTypeImplementation = "Undefined implementation in ExportedType '{0}' -- ExportedType not emitted";
+    public const string PseudoCustomAttributeInvalidTarget = "Custom attribute '{0}' cannot be applied to this target";
+    public const string PseudoCustomAttributeInvalidValue = "Custom attribute '{0}' has an invalid argument value";
+    public const string PseudoCustomAttributeInvalidBlob = "Custom attribute '{0}' has a malformed value blob";
+    public const string PseudoCustomAttributeInvalidGuid = "Custom attribute '{0}' does not specify a valid GUID";
+    public const string PseudoCustomAttributeUnknownArgument = "Custom attribute '{0}' does not have a field or property named '{1}'";
+    public const string PseudoCustomAttributeRepeatedArgument = "Custom attribute '{0}' specifies '{1}' more than once";
 }
