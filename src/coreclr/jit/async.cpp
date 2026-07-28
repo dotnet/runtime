@@ -1962,7 +1962,10 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
 
         if (thisArg != nullptr)
         {
-            if (!thisArg->GetNode()->OperIsAnyLocal())
+            // The value may have been folded to a constant (e.g. when the
+            // indicator is provably zero at this point), which is still fine to
+            // compare and to remove from the call.
+            if (!thisArg->GetNode()->OperIsAnyLocal() && !thisArg->GetNode()->IsInvariant())
             {
                 JITDUMP("    No; %s argument is too complex\n", getWellKnownArgName(arg));
                 return false;
@@ -2007,7 +2010,7 @@ void AsyncTransformation::HandleReusedSuspension(BasicBlock* callBlock, GenTreeC
         CallArg* arg = call->gtArgs.FindWellKnownArg(wka);
         if (arg != nullptr)
         {
-            assert(arg->GetNode()->OperIsAnyLocal());
+            assert(arg->GetNode()->OperIsAnyLocal() || arg->GetNode()->IsInvariant());
             LIR::AsRange(callBlock).Remove(arg->GetNode());
             call->gtArgs.RemoveUnsafe(arg);
         }
