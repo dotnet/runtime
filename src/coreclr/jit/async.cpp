@@ -2594,8 +2594,7 @@ void AsyncTransformation::FinishContextHandlingAndSuspensionWithHelper(BasicBloc
     CallArg* resumedArg     = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse);
     CallArg* execContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
     CallArg* syncContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
-    assert((resumedArg != nullptr) && (execContextArg != nullptr));
-    assert((execContextArg != nullptr) && (syncContextArg != nullptr));
+    assert((resumedArg != nullptr) && (execContextArg != nullptr) && (syncContextArg != nullptr));
 
     // Get the contexts from the call node:
     // 1. For shared finish, store it directly to the shared locals in the same block
@@ -3769,7 +3768,7 @@ void AsyncTransformation::InsertFinishContextHandlingCall(BasicBlock*           
     use.ReplaceWith(execContextAddrOffset);
     LIR::AsRange(block).Remove(execContextAddrPlaceholder);
 
-    // Replace resumedPlaceholder with actual "continuationParameter != null" arg
+    // Replace resumedPlaceholder with the resumed value
     gotUse = LIR::AsRange(block).TryGetUse(resumedPlaceholder, &use);
     assert(gotUse);
 
