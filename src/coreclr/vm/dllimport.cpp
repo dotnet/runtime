@@ -726,13 +726,12 @@ public:
                 {
                     // Forward CLR->COM stubs are generated as transient IL on the CLR->COM method
                     // itself, so the interface the call is dispatched on is known here and can be
-                    // baked into the IL.
+                    // baked into the IL as a type token.
                     _ASSERTE(pStubMD != NULL && pStubMD->IsCLRToCOMCall());
                     MethodTable* pInterfaceMT = CLRToCOMCallInfo::FromMethodDesc(pStubMD)->m_pInterfaceMT;
                     _ASSERTE(pInterfaceMT != NULL);
 
-                    pcsDispatch->EmitLDC((DWORD_PTR)pInterfaceMT);
-                    pcsDispatch->EmitCONV_I();
+                    pcsDispatch->EmitLDTOKEN(pcsDispatch->GetToken(pInterfaceMT));
                     pcsDispatch->EmitLDLOC(m_slIL.GetTargetInterfacePointerLocalNum());
 
                     pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_COM_HR_EXCEPTION_OBJECT, 3, 1);

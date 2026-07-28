@@ -169,7 +169,7 @@
 
 
 // static methods:
-DEFINE_METASIG_T(SM(Int_IntPtr_IntPtr_RetException, i I I, C(EXCEPTION)))
+DEFINE_METASIG_T(SM(Int_RuntimeTypeHandle_IntPtr_RetException, i g(RT_TYPE_HANDLE) I, C(EXCEPTION)))
 DEFINE_METASIG_T(SM(Type_CharPtr_RuntimeAssembly_Bool_Bool_IntPtr_RetRuntimeType, P(u) C(ASSEMBLY) F F I, C(CLASS)))
 DEFINE_METASIG(SM(RefIntPtr_IntPtr_IntPtr_Int_RetObj, r(I) I I i, j))
 DEFINE_METASIG(SM(VoidPtr_RetVoidPtr, P(v), P(v)))

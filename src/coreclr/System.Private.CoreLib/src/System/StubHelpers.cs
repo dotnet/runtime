@@ -2204,10 +2204,9 @@ namespace System.StubHelpers
         }
 
 #if FEATURE_COMINTEROP
-        internal static unsafe Exception GetCOMHRExceptionObject(int hr, IntPtr pInterfaceMT, IntPtr pUnk)
+        internal static Exception GetCOMHRExceptionObject(int hr, RuntimeTypeHandle interfaceTypeHandle, IntPtr pUnk)
         {
-            Debug.Assert(pInterfaceMT != IntPtr.Zero);
-            RuntimeType interfaceType = RuntimeTypeHandle.GetRuntimeType((MethodTable*)pInterfaceMT);
+            RuntimeType interfaceType = interfaceTypeHandle.GetRuntimeTypeChecked();
             Exception ex = Marshal.GetExceptionForHR(hr, interfaceType.GUID, pUnk)!;
             ex.InternalPreserveStackTrace();
             return ex;
