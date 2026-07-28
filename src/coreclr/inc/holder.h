@@ -999,7 +999,7 @@ struct ReleaseHolderTraits final
     static void Free(Type value)
     {
         STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_GC_NOTRIGGER;
+        STATIC_CONTRACT_GC_TRIGGERS;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
 
         if (value != NULL)
