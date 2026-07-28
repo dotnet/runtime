@@ -2436,9 +2436,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
         }
 
-        // nint/nuint are the only Vector64 shuffle overloads with a 64-bit element type, and only on
-        // a 64-bit platform. The indices are passed through a non-inlined call so they stay variable,
-        // which is what selects the index fix-up path in the JIT.
+        // nint/nuint are the only Vector64 shuffle overloads with a pointer-sized element, so on a
+        // 64-bit platform they are the only way to reach a 64-bit element type (a 1D arrangement).
+        // The indices are passed through a non-inlined call so they stay variable, which is what
+        // selects the index fix-up path in the JIT.
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Vector64<nint> ShuffleNativeNoInline(Vector64<nint> vector, Vector64<nint> indices) => Vector64.ShuffleNative(vector, indices);
