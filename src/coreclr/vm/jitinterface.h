@@ -539,6 +539,8 @@ public:
     }
 
     // ICorDebugInfo stuff.
+    void getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
+                 bool *extendOthers) override final;
     void setBoundaries(CORINFO_METHOD_HANDLE ftn,
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,

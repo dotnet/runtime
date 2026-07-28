@@ -34,6 +34,7 @@ public sealed class ExecutionManager_1 : IExecutionManager
     public List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetExceptionClauses(codeInfoHandle);
     public JitManagerInfo GetEEJitManagerInfo() => _executionManagerCore.GetEEJitManagerInfo();
     public IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => _executionManagerCore.GetCodeHeapInfos();
+    public IReadOnlyList<TargetPointer> GetDynamicFunctionTableEntries(TargetPointer tableAddress) => _executionManagerCore.GetDynamicFunctionTableEntries(tableAddress);
     public CodeKind GetCodeKind(TargetCodePointer codeAddress) => _executionManagerCore.GetCodeKind(codeAddress);
     public TargetPointer FindReadyToRunModule(TargetPointer address) => _executionManagerCore.FindReadyToRunModule(address);
     public void Flush(FlushScope scope) => _executionManagerCore.Flush(scope);

@@ -311,7 +311,7 @@ class Stub
         {
             LIMITED_METHOD_CONTRACT;
             _ASSERTE(m_signature == kUsedStub);
-            return (m_refcount == 1);
+            return m_refcount == 1;
         }
 
         //-------------------------------------------------------------------
@@ -391,7 +391,7 @@ class Stub
             WRAPPER_NO_CONTRACT;
             SUPPORTS_DAC;
 
-            return (m_numCodeBytesAndFlags & CODEBYTES_MASK);
+            return m_numCodeBytesAndFlags & CODEBYTES_MASK;
         }
 
         //-------------------------------------------------------------------
@@ -416,7 +416,7 @@ class Stub
         //-------------------------------------------------------------------
         static Stub* RecoverStubAndSize(PCODE pEntryPoint, DWORD *pSize)
         {
-            CONTRACT(Stub*)
+            CONTRACTL
             {
                 NOTHROW;
                 GC_NOTRIGGER;
@@ -424,11 +424,11 @@ class Stub
 
                 PRECONDITION(pEntryPoint && pSize);
             }
-            CONTRACT_END;
+            CONTRACTL_END;
 
             Stub *pStub = Stub::RecoverStub(pEntryPoint);
             *pSize = sizeof(Stub) + pStub->GetNumCodeBytes();
-            RETURN pStub;
+            return pStub;
         }
 
         HRESULT CloneStub(BYTE *pBuffer, DWORD dwBufferSize)
