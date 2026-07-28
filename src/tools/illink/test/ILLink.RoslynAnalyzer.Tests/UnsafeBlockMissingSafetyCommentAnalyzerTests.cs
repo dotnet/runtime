@@ -37,6 +37,8 @@ namespace ILLink.RoslynAnalyzer.Tests
         [Theory]
         [InlineData("// SAFETY: p is validated by the caller")]
         [InlineData("// SAFETY:")]
+        [InlineData("//SAFETY: no space after the comment marker")]
+        [InlineData("// Reads one element. SAFETY: p is validated by the caller")]
         [InlineData("/* SAFETY: p is validated by the caller */")]
         public async Task DoesNotReportDocumentedUnsafeBlock(string comment)
         {
@@ -46,6 +48,60 @@ namespace ILLink.RoslynAnalyzer.Tests
                     unsafe void M(int* p)
                     {
                         {{comment}}
+                        unsafe
+                        {
+                            int x = *p;
+                        }
+                    }
+                }
+                """;
+
+            await UnsafeMigrationTestHelpers
+                .CreateAnalyzerTest<UnsafeBlockMissingSafetyCommentAnalyzer>(source)
+                .RunAsync();
+        }
+
+        [Theory]
+        // The marker is matched as a whole word, so these are not safety comments.
+        [InlineData("// UNSAFETY: this is a different word")]
+        [InlineData("// SAFETYNET: this is a different word")]
+        // It is case-sensitive so the convention stays greppable.
+        [InlineData("// safety: lowercase does not count")]
+        [InlineData("// Safety: mixed case does not count")]
+        // The marker has to be followed by a colon.
+        [InlineData("// SAFETY concerns are handled elsewhere")]
+        public async Task ReportsUnsafeBlockWithoutTheSafetyMarker(string comment)
+        {
+            string source = $$"""
+                class C
+                {
+                    unsafe void M(int* p)
+                    {
+                        {{comment}}
+                        {|IL5009:unsafe|}
+                        {
+                            int x = *p;
+                        }
+                    }
+                }
+                """;
+
+            await UnsafeMigrationTestHelpers
+                .CreateAnalyzerTest<UnsafeBlockMissingSafetyCommentAnalyzer>(source)
+                .RunAsync();
+        }
+
+        [Fact]
+        public async Task DoesNotReportMarkerOnInnerLineOfBlockComment()
+        {
+            string source = """
+                class C
+                {
+                    unsafe void M(int* p)
+                    {
+                        /*
+                         * SAFETY: p is validated by the caller
+                         */
                         unsafe
                         {
                             int x = *p;

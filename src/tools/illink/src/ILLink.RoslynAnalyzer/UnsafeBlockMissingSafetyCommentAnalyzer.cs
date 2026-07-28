@@ -2,9 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if DEBUG
-using System;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.RegularExpressions;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -28,7 +28,15 @@ namespace ILLink.RoslynAnalyzer
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class UnsafeBlockMissingSafetyCommentAnalyzer : DiagnosticAnalyzer
     {
-        internal const string SafetyCommentPrefix = "SAFETY";
+        /// <summary>
+        /// Matches the <c>SAFETY:</c> marker anywhere inside a comment.
+        /// </summary>
+        /// <remarks>
+        /// The marker is matched as a whole word so that <c>// UNSAFETY:</c> or <c>// SAFETYNET</c> do not count,
+        /// and it is case-sensitive to keep the convention greppable across a code base. Matching anywhere in the
+        /// comment allows the marker to sit on an inner line of a block comment.
+        /// </remarks>
+        private static readonly Regex s_safetyComment = new(@"\bSAFETY\s*:", RegexOptions.CultureInvariant);
 
         private static readonly DiagnosticDescriptor s_rule =
             DiagnosticDescriptors.GetDiagnosticDescriptor(
@@ -117,7 +125,7 @@ namespace ILLink.RoslynAnalyzer
         private static bool ContainsSafetyComment(SyntaxTriviaList trivia) =>
             trivia.Any(static t =>
                 (t.IsKind(SyntaxKind.SingleLineCommentTrivia) || t.IsKind(SyntaxKind.MultiLineCommentTrivia))
-                && t.ToString().IndexOf(SafetyCommentPrefix, StringComparison.Ordinal) >= 0);
+                && s_safetyComment.IsMatch(t.ToString()));
     }
 }
 #endif
