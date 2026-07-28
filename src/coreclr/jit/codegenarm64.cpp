@@ -5970,7 +5970,7 @@ void CodeGen::genPoisonUnknownSizeVariable(int varNum, char poisonVal)
 
     assert(varDsc->IsAddressExposed());
 
-    if (varDsc->TypeGet() == TYP_SIMD)
+    if (varDsc->TypeIs(TYP_SIMD))
     {
         // mov z9.b, #poisonVal
         GetEmitter()->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_SCRATCH_V, (ssize_t)poisonVal, INS_OPTS_SCALABLE_B);
@@ -5979,7 +5979,7 @@ void CodeGen::genPoisonUnknownSizeVariable(int varNum, char poisonVal)
     }
     else
     {
-        assert(varDsc->TypeGet() == TYP_MASK);
+        assert(varDsc->TypeIs(TYP_MASK));
         // At the moment we don't have a single instruction to produce an arbitrary value in a predicate register,
         // since it would have to fit some common element masking pattern. We can, however, produce a repeating
         // 64-bit value in a vector, then convert this to a predicate using cmpne.

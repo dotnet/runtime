@@ -8252,20 +8252,26 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         isSimple = false;
         reg2     = REG_UNKBASE;
 
+        var_types localType = TYP_UNDEF;
+
         if (varx >= 0)
         {
-            imm = m_compiler->unkSizeFrame.GetAddressingOffset(m_compiler->lvaGetDesc(varx));
+            LclVarDsc* varDsc = m_compiler->lvaGetDesc(varx);
+            imm               = m_compiler->unkSizeFrame.GetAddressingOffset(varDsc);
+            localType         = varDsc->TypeGet();
         }
         else
         {
-            imm = m_compiler->unkSizeFrame.GetAddressingOffset(codeGen->regSet.tmpGetNum(varx));
+            TempDsc* tmpDsc = codeGen->regSet.tmpGetNum(varx);
+            imm             = m_compiler->unkSizeFrame.GetAddressingOffset(tmpDsc);
+            localType       = tmpDsc->tdTempType();
         }
 
         switch (ins)
         {
             case INS_lea:
-                // We shouldn't be materializing the address of a mask.
-                assert(m_compiler->lvaGetActualType(varx) != TYP_MASK);
+                // TODO-SVE: Support materializing address of a mask local / temp.
+                assert(localType != TYP_MASK);
                 if (isValidSimm<6>(imm))
                 {
                     // addvl reg1, x19, #imm
