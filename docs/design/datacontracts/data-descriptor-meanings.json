@@ -142,7 +142,7 @@
     "EnCAddedField.Next": "Pointer to the next EnCAddedField entry in the per-object linked list hanging off the SyncBlock.",
     "EnCAddedFieldElement.FieldDesc": "Address of the embedded EnCFieldDesc (layout-compatible with FieldDesc).",
     "EnCAddedFieldElement.Next": "Pointer to the next EnCAddedFieldElement in the linked list.",
-    "EnCAddedStaticField.FieldData": "Address of the first byte of static field storage on this entry.",
+    "EnCAddedStaticField.FieldData": "Address of the inline storage for a primitive field, or of a pointer to GC-tracked storage for a class or value-type field.",
     "EnCEEClassData.AddedInstanceFields": "Head of the linked list of EnCAddedFieldElement for added instance fields.",
     "EnCEEClassData.AddedStaticFields": "Head of the linked list of EnCAddedFieldElement for added static fields.",
     "EnCEEClassData.MethodTable": "Pointer to the MethodTable whose EnC data is held by this entry.",
