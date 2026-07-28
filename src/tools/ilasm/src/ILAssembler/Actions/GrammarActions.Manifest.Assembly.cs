@@ -150,7 +150,7 @@ internal sealed partial class GrammarActions
                 target.Culture = locale.Value;
                 break;
             case AssemblyCustomAttributeDirectiveValue customAttribute:
-                if (MaterializeCustomAttributeDeclaration(customAttribute.Value) is { } attribute)
+                if (MaterializeCustomAttributeDeclaration(customAttribute.Value, customAttribute.Location) is { } attribute)
                 {
                     attribute.Owner ??= target;
                 }

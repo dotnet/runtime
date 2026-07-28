@@ -62,6 +62,12 @@ public static class DiagnosticIds
     public const string InvalidVTableWidth = "ILA0042";
     public const string InvalidVTableEntry = "ILA0043";
     public const string DuplicateExportOrdinal = "ILA0044";
+    public const string PseudoCustomAttributeInvalidTarget = "ILA0045";
+    public const string PseudoCustomAttributeInvalidValue = "ILA0046";
+    public const string PseudoCustomAttributeInvalidBlob = "ILA0047";
+    public const string PseudoCustomAttributeInvalidGuid = "ILA0048";
+    public const string PseudoCustomAttributeUnknownArgument = "ILA0049";
+    public const string PseudoCustomAttributeRepeatedArgument = "ILA0050";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -110,4 +116,10 @@ internal static class DiagnosticMessageTemplates
     public const string InvalidVTableEntry = "Method '{0}' references invalid VTable entry {1}";
     public const string InvalidVTableSlot = "Method '{0}' references invalid VTable slot {1}; VTable entry {2} contains {3} slots";
     public const string DuplicateExportOrdinal = "Export '{0}' uses ordinal {1}, which is already assigned to a different VTable target";
+    public const string PseudoCustomAttributeInvalidTarget = "Custom attribute '{0}' cannot be applied to this target";
+    public const string PseudoCustomAttributeInvalidValue = "Custom attribute '{0}' has an invalid argument value";
+    public const string PseudoCustomAttributeInvalidBlob = "Custom attribute '{0}' has a malformed value blob";
+    public const string PseudoCustomAttributeInvalidGuid = "Custom attribute '{0}' does not specify a valid GUID";
+    public const string PseudoCustomAttributeUnknownArgument = "Custom attribute '{0}' does not have a field or property named '{1}'";
+    public const string PseudoCustomAttributeRepeatedArgument = "Custom attribute '{0}' specifies '{1}' more than once";
 }
