@@ -731,7 +731,7 @@ ErrExit:
 //--------------------------------------------------------------------------------
 // Release helper, must be called in preemptive mode.  Only use this variant if
 // you already know you're in preemptive mode for other reasons.
-ULONG SafeReleasePreemp(IUnknown * pUnk, RCW * pRCW)
+ULONG SafeReleasePreemp(IUnknown * pUnk)
 {
     CONTRACTL {
         NOTHROW;
@@ -751,7 +751,7 @@ ULONG SafeReleasePreemp(IUnknown * pUnk, RCW * pRCW)
 
 //--------------------------------------------------------------------------------
 // Release helper, enables and disables GC during call-outs
-ULONG SafeRelease(IUnknown* pUnk, RCW* pRCW)
+ULONG SafeRelease(IUnknown* pUnk)
 {
     CONTRACTL {
         NOTHROW;

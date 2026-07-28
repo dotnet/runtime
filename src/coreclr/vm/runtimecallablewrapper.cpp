@@ -780,7 +780,7 @@ void RCWCache::ReleaseWrappersWorker(LPVOID pCtxCookie)
             RCWInterfacePointer &intfPtr = InterfacePointerList[i];
 
             RCW_VTABLEPTR(intfPtr.m_pRCW);
-            SafeRelease(intfPtr.m_pUnk, intfPtr.m_pRCW);
+            SafeRelease(intfPtr.m_pUnk);
 
             intfPtr.m_pCtxEntry->Release();
         }
@@ -792,7 +792,7 @@ void RCWCache::ReleaseWrappersWorker(LPVOID pCtxCookie)
             RCWInterfacePointer &intfPtr = AggregatedInterfacePointerList[i];
 
             RCW_VTABLEPTR(intfPtr.m_pRCW);
-            SafeRelease(intfPtr.m_pUnk, intfPtr.m_pRCW);
+            SafeRelease(intfPtr.m_pUnk);
 
             intfPtr.m_pCtxEntry->Release();
         }
@@ -2104,7 +2104,7 @@ void RCW::ReleaseAllInterfaces()
     RCW_VTABLEPTR(this);
 
     // Release the pUnk held by IUnkEntry
-    m_UnkEntry.ReleaseInterface(this);
+    m_UnkEntry.ReleaseInterface();
 
     // If this wrapper is not an Extensible RCW, free all the interface entries that have been allocated.
     if (!IsURTAggregated())
@@ -2116,7 +2116,7 @@ void RCW::ReleaseAllInterfaces()
 
             if (!m_aInterfaceEntries[i].IsFree())
             {
-                DWORD cbRef = SafeReleasePreemp(m_aInterfaceEntries[i].m_pUnknown, this);
+                DWORD cbRef = SafeReleasePreemp(m_aInterfaceEntries[i].m_pUnknown);
                 LogInteropRelease(m_aInterfaceEntries[i].m_pUnknown, cbRef, "RCW::ReleaseAllInterfaces: Releasing ref from InterfaceEntry table");
             }
         }

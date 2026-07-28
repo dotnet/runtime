@@ -492,7 +492,7 @@ void IUnkEntry::Init(
 
 //================================================================
 // Release the interface pointer held by the IUnkEntry.
-VOID IUnkEntry::ReleaseInterface(RCW *pRCW)
+VOID IUnkEntry::ReleaseInterface()
 {
     CONTRACTL
     {
@@ -513,7 +513,7 @@ VOID IUnkEntry::ReleaseInterface(RCW *pRCW)
         // now release the IUnknown that we hold
         if ((m_pUnknown != 0) && (m_pUnknown != (IUnknown *)0xBADF00D))
         {
-            ULONG cbRef = SafeReleasePreemp(m_pUnknown, pRCW);
+            ULONG cbRef = SafeReleasePreemp(m_pUnknown);
             LogInteropRelease(m_pUnknown, cbRef, "IUnkEntry::Free: Releasing the held ref");
         }
 

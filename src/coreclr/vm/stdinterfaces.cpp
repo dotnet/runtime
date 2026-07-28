@@ -666,9 +666,9 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
     ComMethodTable *pComMT              = NULL;
     MethodTable* pOriginalClass         = pClass;
     HRESULT                 hr          = S_OK;
-    ReleaseHolderAnyMode<ITypeLib> pITLB;
-    ReleaseHolderAnyMode<ITypeInfo> pTI;
-    ReleaseHolderAnyMode<ITypeInfo> pTIDef;  // Default typeinfo of a coclass.
+    ReleaseHolder<ITypeLib> pITLB;
+    ReleaseHolder<ITypeInfo> pTI;
+    ReleaseHolder<ITypeInfo> pTIDef;  // Default typeinfo of a coclass.
     ComCallWrapperTemplate *pTemplate   = NULL;
 
     // Get the typeinfo.
