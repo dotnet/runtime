@@ -87,8 +87,9 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public async Task PreservesExistingLeadingComment()
+        public async Task PlacesCommentBelowExistingLeadingComment()
         {
+            // The safety comment belongs next to the region it describes, so it goes below an existing comment.
             string source = """
                 class C
                 {
@@ -108,13 +109,45 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     unsafe void M(int* p)
                     {
-                        // SAFETY: TODO
                         // Read the first element.
+                        // SAFETY: TODO
                         unsafe
                         {
                             int x = *p;
                         }
                     }
+                }
+                """;
+
+            var test = UnsafeMigrationTestHelpers
+                .CreateCodeFixTest<UnsafeBlockMissingSafetyCommentAnalyzer, AddSafetyCommentCodeFixProvider>(
+                    source,
+                    fixedSource);
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task PlacesCommentBelowXmlDocumentation()
+        {
+            // XML documentation keeps its place directly above the declaration it documents.
+            string source = """
+                class C
+                {
+                    static unsafe int Read() => 0;
+
+                    /// <summary>The initial value.</summary>
+                    static int Value = {|IL5009:unsafe|}(Read());
+                }
+                """;
+
+            string fixedSource = """
+                class C
+                {
+                    static unsafe int Read() => 0;
+
+                    /// <summary>The initial value.</summary>
+                    // SAFETY: TODO
+                    static int Value = unsafe(Read());
                 }
                 """;
 

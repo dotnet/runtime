@@ -72,31 +72,29 @@ namespace ILLink.CodeFix
         {
             var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
 
-            // The comment goes on its own line directly above the target, keeping any existing leading trivia
-            // such as XML documentation or other comments in place.
+            // The comment goes on its own line immediately above the target, below any existing leading trivia,
+            // so that it stays adjacent to the code it describes and XML documentation keeps its place on top.
             SyntaxTriviaList leadingTrivia = target.GetLeadingTrivia();
-            int insertionIndex = GetInsertionIndex(leadingTrivia);
-            SyntaxTriviaList updated = leadingTrivia.InsertRange(
-                insertionIndex,
-                new[] { SyntaxFactory.Comment(SafetyComment), SyntaxFactory.ElasticCarriageReturnLineFeed });
+            SyntaxTriviaList indentation = GetIndentation(leadingTrivia);
+            SyntaxTriviaList updated = leadingTrivia
+                .Add(SyntaxFactory.Comment(SafetyComment))
+                .Add(SyntaxFactory.ElasticCarriageReturnLineFeed)
+                .AddRange(indentation);
 
             editor.ReplaceNode(target, target.WithLeadingTrivia(updated));
             return editor.GetChangedDocument();
         }
 
         /// <summary>
-        /// Inserts after any trivia that must stay attached to the line above, such as directives.
+        /// Returns the whitespace that indents the target, so the inserted comment and the target line up.
         /// </summary>
-        private static int GetInsertionIndex(SyntaxTriviaList leadingTrivia)
+        private static SyntaxTriviaList GetIndentation(SyntaxTriviaList leadingTrivia)
         {
-            int index = 0;
-            for (int i = 0; i < leadingTrivia.Count; i++)
-            {
-                if (leadingTrivia[i].IsDirective || leadingTrivia[i].IsKind(SyntaxKind.DisabledTextTrivia))
-                    index = i + 1;
-            }
+            int start = leadingTrivia.Count;
+            while (start > 0 && leadingTrivia[start - 1].IsKind(SyntaxKind.WhitespaceTrivia))
+                start--;
 
-            return index;
+            return SyntaxFactory.TriviaList(leadingTrivia.Skip(start));
         }
 
         /// <summary>
