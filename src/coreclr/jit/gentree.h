@@ -2546,18 +2546,18 @@ public:
 
     bool IsReuseRegVal() const
     {
-        return (OperIsConst() || OperIsHWIntrinsic()) && ((gtFlags & GTF_REUSE_REG_VAL) != 0);
+        return OperIsConst() && ((gtFlags & GTF_REUSE_REG_VAL) != 0);
     }
 
     void SetReuseRegVal()
     {
-        assert(OperIsConst() || OperIsHWIntrinsic());
+        assert(OperIsConst());
         gtFlags |= GTF_REUSE_REG_VAL;
     }
 
     void ResetReuseRegVal()
     {
-        assert(OperIsConst() || OperIsHWIntrinsic());
+        assert(OperIsConst());
         gtFlags &= ~GTF_REUSE_REG_VAL;
     }
 
