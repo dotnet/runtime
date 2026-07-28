@@ -97,6 +97,8 @@ winget install -e --id Ninja-build.Ninja
 winget install -e --id Microsoft.VisualStudio.Community --override "--passive --wait --config $PWD\.vsconfig"
 ```
 
+The last command installs the components listed in the repo's [`.vsconfig`](https://github.com/dotnet/runtime/blob/main/.vsconfig), so run it from the root of your clone.
+
 ## Setting Environment Variables on Windows
 
 As mentioned in the sections above, the commands that run the development tools have to be in your `PATH` environment variable. Their installers usually have the option to do it automatically for you enabled by the default, but if for any reason you need to set them yourself, here is how you can do it. There are two options. You can make them last only for that terminal instance, or you can set them directly to the system to make them permanent.
