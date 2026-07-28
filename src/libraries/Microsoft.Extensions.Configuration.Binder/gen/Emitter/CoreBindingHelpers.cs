@@ -383,6 +383,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             {
                                 if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding)
                                 {
+                                    if (member.TypeRef.CanBeNull)
+                                    {
+                                        // For nullable types, a null configuration value is valid;
+                                        // just assign from the section value without throwing.
+                                        _writer.WriteLine($@"{parsedMemberDeclarationLhs} = {Identifier.configuration}[""{configKeyName}""];");
+                                        _writer.WriteLine();
+                                        return;
+                                    }
+
                                     string condition = $@"if ({Identifier.configuration}[""{configKeyName}""] is not {parsedMemberDeclarationLhs})";
                                     EmitThrowBlock(condition);
                                     _writer.WriteLine();

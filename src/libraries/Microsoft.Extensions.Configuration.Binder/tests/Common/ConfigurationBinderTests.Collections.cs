@@ -2449,5 +2449,35 @@ namespace Microsoft.Extensions
         // Test behavior for root level arrays.
 
         // Tests for TypeConverter usage.
+
+        [Fact]
+        public void BindIEnumerableOfPositionalRecordWithNullProperty()
+        {
+            var json = """
+                {
+                    "EnableFeatureX": null,
+                    "Users": [
+                        { "Id": 1, "Name": "Noah" },
+                        { "Id": 2, "Name": null }
+                    ]
+                }
+                """;
+
+            var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddJsonStream(stream);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<OptionsWithPositionalRecordCollection>();
+
+            Assert.NotNull(options);
+            Assert.Null(options.EnableFeatureX);
+            var users = options.Users.ToList();
+            Assert.Equal(2, users.Count);
+            Assert.Equal(1, users[0].Id);
+            Assert.Equal("Noah", users[0].Name);
+            Assert.Equal(2, users[1].Id);
+            Assert.Null(users[1].Name);
+        }
     }
 }

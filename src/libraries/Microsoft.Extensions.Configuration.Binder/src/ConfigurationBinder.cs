@@ -1157,7 +1157,7 @@ namespace Microsoft.Extensions.Configuration
                 options,
                 false);
 
-            if (propertyBindingPoint.Value is null)
+            if (propertyBindingPoint.Value is null && !propertyBindingPoint.HasNewValue)
             {
                 if (ParameterDefaultValue.TryGetDefaultValue(parameter, out object? defaultValue))
                 {
