@@ -18,7 +18,8 @@ CoreCLRCreateCordbObject3
 ; Out-of-proc creation path from the shim - ICLRDebugging
 OpenVirtualProcessImpl2
 
-; PAL module registration
+; DllMain is exported for the Unix PAL loader to discover via dlsym; DbgDllMain calls
+; PAL_InitializeDLL itself, so the private PAL still initializes. PAL_RegisterModule and
+; PAL_UnregisterModule are intentionally not exported: the loader treats registration as
+; optional, and the path-based ABI never hands a cross-PAL module handle to this binary.
 DllMain
-PAL_RegisterModule
-PAL_UnregisterModule
