@@ -1472,11 +1472,24 @@ namespace System.Xml.Serialization
             ilg.ExitScope();
         }
 
+        private static bool HasUsableIntIndexer([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
+        {
+            foreach (PropertyInfo p in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                ParameterInfo[] pars = p.GetIndexParameters();
+                if (pars.Length == 1 && pars[0].ParameterType == typeof(int) && p.GetMethod != null)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private void WriteArrayItems(ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, TypeDesc arrayTypeDesc, string arrayName, string? choiceName)
         {
             TypeDesc arrayElementTypeDesc = arrayTypeDesc.ArrayElementTypeDesc!;
 
-            if (arrayTypeDesc.IsEnumerable)
+            if (arrayTypeDesc.IsEnumerable || (arrayTypeDesc.UsesCollectionBuilder && !HasUsableIntIndexer(arrayTypeDesc.Type!)))
             {
                 LocalBuilder eLoc = ilg.DeclareLocal(typeof(IEnumerator), "e");
                 ilg.LoadAddress(ilg.GetVariable(arrayName));
