@@ -1249,6 +1249,7 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
 
     if (GetInterfaceType()->GetMethodTable()->HasVirtualStaticMethods())
     {
+        // cSlotsTotal is an overestimate. Computing an exact value would require iterating all methods.
         cSlotsTotal = GetInterfaceType()->GetMethodTable()->GetNumMethods();
     }
 
@@ -10999,7 +11000,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         BYTE  *pbTypicalMap = pTypicalDispatchMap->GetEncodedMapData();
         UINT32 cbTypicalMap = pTypicalDispatchMap->GetMapSize();
 
-#ifdef _DEBUG
         // Validate that the DispatchMap we just built for this specific instantiation is
         // byte-for-byte identical to the typical instantiation's DispatchMap. If this fires,
         // the DispatchMap is not actually instantiation-independent and cannot be reused.
@@ -11007,7 +11007,8 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
             "Typical instantiation DispatchMap size differs from the specific instantiation's DispatchMap");
         _ASSERTE_MSG((cbTypicalMap == 0) || (memcmp(pbTypicalMap, pbDispatchMapTemp, cbTypicalMap) == 0),
             "Typical instantiation DispatchMap contents differ from the specific instantiation's DispatchMap");
-#else
+
+#ifndef _DEBUG
         // Reuse the typical instantiation's encoded DispatchMap directly. It is fully constructed
         // and immutable; the DispatchMap constructor below copies the bytes into this type's map.
         pbDispatchMapTemp = pbTypicalMap;
@@ -11015,7 +11016,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         dispatchMapAllocationSize = (size_t) DispatchMap::GetObjectSize(cbDispatchMapTemp);
 #endif // _DEBUG
     }
-#ifdef _DEBUG
     else if (dispatchMapReuseKind == DispatchMapReuseKind::KnownEmpty)
     {
         // The typical instantiation has no DispatchMap, so this instantiation's DispatchMap must be
@@ -11024,7 +11024,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         _ASSERTE_MSG(bmtVT->pDispatchMapBuilder->Count() == 0,
             "Non-typical instantiation produced DispatchMap entries even though its typical instantiation has no DispatchMap");
     }
-#endif // _DEBUG
 
     // Add space for optional members here. Same as GetOptionalMembersSize()
     cbTotalSize += MethodTable::GetOptionalMembersAllocationSize((dwNumInterfaces != 0) /* hasInterfaceMap */);
