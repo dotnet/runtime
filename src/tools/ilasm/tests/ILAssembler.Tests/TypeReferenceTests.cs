@@ -344,5 +344,135 @@ namespace ILAssembler.Tests
             DocumentCompilerTestHelpers.AssertTypeDefToken(reader, token, "MyType");
         }
 
+        [Fact]
+        public void ThisBaseNesterAndMetadataTokenTypeReferences_EmitExpectedTypeTokens()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Base extends [mscorlib]System.Object { }
+                .class public auto ansi Outer extends Base
+                {
+                    .method public static void UseThisAndBase(object value) cil managed
+                    {
+                        ldarg.0
+                        box .this
+                        pop
+                        ldarg.0
+                        box .base
+                        pop
+                        ldarg.0
+                        box mdtoken(0x02000002)
+                        pop
+                        ret
+                    }
+
+                    .class nested public auto ansi Inner extends [mscorlib]System.Object
+                    {
+                        .method public static void UseNester(object value) cil managed
+                        {
+                            ldarg.0
+                            box .nester
+                            pop
+                            ret
+                        }
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            ImmutableArray<int> outerTokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "UseThisAndBase", ILOpcode.box);
+            ImmutableArray<int> innerTokens =
+                DocumentCompilerTestHelpers.GetTokenOperands(pe, reader, "UseNester", ILOpcode.box);
+
+            Assert.Equal(
+                new[] { "Outer", "Base", "Base" },
+                outerTokens.Select(token => GetTypeName(reader, MetadataTokens.EntityHandle(token))));
+            Assert.Equal(
+                "Outer",
+                GetTypeName(reader, MetadataTokens.EntityHandle(Assert.Single(innerTokens))));
+        }
+
+        [Fact]
+        public void ModuleScopedTypeReference_EmitsModuleReferenceResolutionScope()
+        {
+            string source = """
+                .assembly test { }
+                .module extern Native.netmodule
+                .class public auto ansi Test
+                {
+                    .field public class [.module Native.netmodule]Contoso.External Value
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(Assert.Single(reader.FieldDefinitions));
+            var typeReference = reader.TypeReferences
+                .Select(handle => (Handle: handle, Type: reader.GetTypeReference(handle)))
+                .Single(item => reader.GetString(item.Type.Name) == "External");
+
+            Assert.Equal(
+                "[.module Native.netmodule]Contoso.External",
+                field.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
+            Assert.Equal(HandleKind.ModuleReference, typeReference.Type.ResolutionScope.Kind);
+            Assert.Equal(
+                "Native.netmodule",
+                reader.GetString(reader.GetModuleReference((ModuleReferenceHandle)typeReference.Type.ResolutionScope).Name));
+        }
+
+        [Fact]
+        public void TypelistMscorlibAndSemicolonControls_EmitExpectedMetadata()
+        {
+            string source = """
+                .assembly extern External.Assembly { }
+                .assembly test { }
+                .mscorlib
+                .typelist {
+                    [External.Assembly]Contoso.First
+                    [External.Assembly]Contoso.Outer/Nested
+                }
+                ;
+                .class public auto ansi Test
+                {
+                    ;
+                    .method public static void M() cil managed
+                    {
+                        ;
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var typeReferences = reader.TypeReferences
+                .Select(reader.GetTypeReference)
+                .Select(type => (Namespace: reader.GetString(type.Namespace), Name: reader.GetString(type.Name)))
+                .ToArray();
+
+            Assert.Contains(("Contoso", "First"), typeReferences);
+            Assert.Contains(("Contoso", "Outer"), typeReferences);
+            Assert.Contains((string.Empty, "Nested"), typeReferences);
+
+            var testType = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Single(type => reader.GetString(type.Name) == "Test");
+            var method = reader.GetMethodDefinition(Assert.Single(testType.GetMethods()));
+            Assert.Equal("M", reader.GetString(method.Name));
+            Assert.Equal([0x2A], pe.GetMethodBody(method.RelativeVirtualAddress).GetILBytes());
+        }
+
+        private static string GetTypeName(MetadataReader reader, EntityHandle handle) => handle.Kind switch
+        {
+            HandleKind.TypeDefinition =>
+                reader.GetString(reader.GetTypeDefinition((TypeDefinitionHandle)handle).Name),
+            HandleKind.TypeReference =>
+                reader.GetString(reader.GetTypeReference((TypeReferenceHandle)handle).Name),
+            _ => throw new InvalidOperationException($"Unexpected type handle kind {handle.Kind}."),
+        };
+
     }
 }

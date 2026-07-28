@@ -902,5 +902,90 @@ namespace ILAssembler.Tests
             var catchRegion = ehRegions.First(r => r.Kind == ExceptionRegionKind.Catch);
             Assert.Equal(HandleKind.TypeDefinition, catchRegion.CatchType.Kind);
         }
+
+        [Fact]
+        public void AssemblyReferenceMetadata_EmitsExpectedIdentity()
+        {
+            string source = """
+                .assembly extern Sample.Dependency
+                {
+                    .ver 2:5:0:7
+                    .locale "en-US"
+                    .publickeytoken = (01 23 45 67 89 AB CD EF)
+                    .hash = (AA BB CC)
+                }
+                .assembly TestAssembly { }
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var assemblyRef = reader.GetAssemblyReference(MetadataTokens.AssemblyReferenceHandle(1));
+            Assert.Equal("Sample.Dependency", reader.GetString(assemblyRef.Name));
+            Assert.Equal(new Version(2, 5, 0, 7), assemblyRef.Version);
+            Assert.Equal("en-US", reader.GetString(assemblyRef.Culture));
+            Assert.Equal([0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF], reader.GetBlobBytes(assemblyRef.PublicKeyOrToken));
+            Assert.Equal([0xAA, 0xBB, 0xCC], reader.GetBlobBytes(assemblyRef.HashValue));
+        }
+
+        [Fact]
+        public void AssemblyAndAliasedReferenceDeclarations_EmitKeysWildcardsLocalesAndAttributes()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly extern Original.Dependency as Alias
+                {
+                    .publicKey = (01 02 03 04)
+                    .ver *:2:*:4
+                    .locale = (65 00 6E 00)
+                    .hash = (AA BB)
+                    auto
+                    .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                    ;
+                }
+                .assembly test
+                {
+                    .publicKey = (10 20 30 40)
+                    .ver *:5:*:7
+                    .locale = (66 00 72 00)
+                    .custom instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = (01 00 01 00 00)
+                    ;
+                }
+                .class public auto ansi Test
+                {
+                    .field public class [Alias]Contoso.External Value
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var assembly = reader.GetAssemblyDefinition();
+            var dependencyHandle = reader.AssemblyReferences
+                .Single(handle => reader.GetString(reader.GetAssemblyReference(handle).Name) == "Original.Dependency");
+            var dependency = reader.GetAssemblyReference(dependencyHandle);
+            var externalType = reader.TypeReferences
+                .Select(reader.GetTypeReference)
+                .Single(type => reader.GetString(type.Name) == "External");
+
+            Assert.Equal(new Version(0, 5, 0, 7), assembly.Version);
+            Assert.Equal("fr", reader.GetString(assembly.Culture));
+            Assert.True(assembly.Flags.HasFlag(AssemblyFlags.PublicKey));
+            Assert.Equal([0x10, 0x20, 0x30, 0x40], reader.GetBlobBytes(assembly.PublicKey));
+            CustomAttributeValue<string> assemblyAttribute = reader
+                .GetCustomAttribute(Assert.Single(reader.GetAssemblyDefinition().GetCustomAttributes()))
+                .DecodeValue(DocumentCompilerTestHelpers.Decoder);
+            Assert.Equal(true, Assert.Single(assemblyAttribute.FixedArguments).Value);
+
+            Assert.Equal(new Version(0, 2, 0, 4), dependency.Version);
+            Assert.Equal("en", reader.GetString(dependency.Culture));
+            Assert.True(dependency.Flags.HasFlag(AssemblyFlags.PublicKey));
+            Assert.Equal([0x01, 0x02, 0x03, 0x04], reader.GetBlobBytes(dependency.PublicKeyOrToken));
+            Assert.Equal([0xAA, 0xBB], reader.GetBlobBytes(dependency.HashValue));
+            Assert.Single(reader.GetCustomAttributes(dependencyHandle));
+            Assert.Equal(dependencyHandle, externalType.ResolutionScope);
+        }
     }
 }

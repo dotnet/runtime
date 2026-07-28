@@ -190,16 +190,15 @@ internal sealed class VTableExportPEBuilder : ManagedPEBuilder
     /// </summary>
     private void PatchCorHeaderVTableFixups(BlobBuilder textSection, int _)
     {
-        // The COR header is at offset SizeOfImportAddressTable in the text section
-        // VTableFixups directory is at offset 52 within the COR header (after CodeManagerTable at 44)
+        // The COR header is at offset SizeOfImportAddressTable in the text section.
         bool is32Bit = Header.Machine == Machine.I386 || Header.Machine == 0;
-        int sizeOfImportAddressTable = (is32Bit || Header.Machine == 0) ? 8 : 0;
+        int sizeOfImportAddressTable = is32Bit ? 8 : 0;
 
         // COR header offset in text section
         int corHeaderOffset = sizeOfImportAddressTable;
 
-        // VTableFixups directory entry is at offset 52 within COR header
-        const int vtableFixupsOffset = 52;
+        // VTableFixups follows the 8-byte CodeManagerTable directory at offset 40.
+        const int vtableFixupsOffset = 48;
         int patchOffset = corHeaderOffset + vtableFixupsOffset;
 
         // Find the blob containing this offset and patch it
@@ -371,8 +370,18 @@ internal sealed class VTableExportPEBuilder : ManagedPEBuilder
 
         _sdataRva = location.RelativeVirtualAddress;
 
-        // Calculate sizes for VTableFixups directory
-        int vtfDirSize = _vtableFixups.Length * 8; // 8 bytes per IMAGE_COR_VTABLEFIXUP entry
+        var vtableEntryBuilder =
+            ImmutableArray.CreateBuilder<VTableFixupSupport.VTableFixupEntry>(_vtableFixups.Length);
+        foreach (VTableFixupInfo info in _vtableFixups)
+        {
+            vtableEntryBuilder.Add(new VTableFixupSupport.VTableFixupEntry(
+                info.SlotCount,
+                info.Flags,
+                info.DataLabel));
+        }
+        ImmutableArray<VTableFixupSupport.VTableFixupEntry> vtableEntries =
+            vtableEntryBuilder.MoveToImmutable();
+        int vtfDirSize = VTableFixupSupport.CalculateVTableFixupsDirectorySize(vtableEntries);
 
         // Calculate slot data size and build slot offset map
         var slotOffsets = new Dictionary<(int EntryIndex, int SlotIndex), int>();
@@ -391,13 +400,27 @@ internal sealed class VTableExportPEBuilder : ManagedPEBuilder
             slotDataOffset += vtf.SlotCount * slotSize;
         }
 
-        int slotDataEndOffset = slotDataOffset;
+        int slotDataEndOffset =
+            vtfDirSize +
+            VTableFixupSupport.CalculateVTableSlotDataSize(vtableEntries);
 
         // Calculate export-related sizes
         int exportStubsOffset = slotDataEndOffset;
         int numExports = _exports.Length;
         int exportStubSize = GetExportStubSize();
         int exportStubsTotalSize = numExports * exportStubSize;
+        int baseOrdinal = int.MaxValue;
+        int maxOrdinal = 0;
+        foreach (ExportInfo export in _exports)
+        {
+            baseOrdinal = Math.Min(baseOrdinal, export.Ordinal);
+            maxOrdinal = Math.Max(maxOrdinal, export.Ordinal);
+        }
+        if (baseOrdinal == int.MaxValue)
+        {
+            baseOrdinal = 1;
+        }
+        int numFunctions = numExports > 0 ? maxOrdinal - baseOrdinal + 1 : 0;
 
         // Export directory comes after export stubs
         int exportDirOffset = Align(exportStubsOffset + exportStubsTotalSize, 4);
@@ -410,7 +433,7 @@ internal sealed class VTableExportPEBuilder : ManagedPEBuilder
         // - Export names (null-terminated strings)
         // - DLL name (null-terminated string)
         int exportAddrTableOffset = exportDirOffset + 40;
-        int exportNamePtrTableOffset = exportAddrTableOffset + numExports * 4;
+        int exportNamePtrTableOffset = exportAddrTableOffset + numFunctions * 4;
         int exportOrdinalTableOffset = exportNamePtrTableOffset + numExports * 4;
 
         // Calculate name table size
@@ -428,38 +451,26 @@ internal sealed class VTableExportPEBuilder : ManagedPEBuilder
         // Store total size for COR header patching (only vtfixup directory, not stubs/exports)
         _sdataSize = vtfDirSize;
 
-        // Write VTableFixups directory (array of IMAGE_COR_VTABLEFIXUP structures)
+        var slotDataRvas = new int[_vtableFixups.Length];
         int currentSlotDataOffset = vtfDirSize;
-        foreach (var vtf in _vtableFixups)
+        for (int i = 0; i < _vtableFixups.Length; i++)
         {
-            int slotDataRva = location.RelativeVirtualAddress + currentSlotDataOffset;
-            builder.WriteInt32(slotDataRva);              // RVA to slot data
-            builder.WriteUInt16((ushort)vtf.SlotCount);   // Count
-            builder.WriteUInt16(vtf.Flags);               // Type/Flags
-
+            VTableFixupInfo vtf = _vtableFixups[i];
+            slotDataRvas[i] = location.RelativeVirtualAddress + currentSlotDataOffset;
             bool is64Bit = (vtf.Flags & VTableFixupSupport.COR_VTABLE_64BIT) != 0;
             int slotSize = is64Bit ? 8 : 4;
             currentSlotDataOffset += vtf.SlotCount * slotSize;
         }
 
-        // Write slot data (method tokens that get patched by the runtime)
-        foreach (var vtf in _vtableFixups)
-        {
-            bool is64Bit = (vtf.Flags & VTableFixupSupport.COR_VTABLE_64BIT) != 0;
-
-            for (int i = 0; i < vtf.SlotCount; i++)
+        VTableFixupSupport.WriteVTableFixupsDirectory(builder, vtableEntries, slotDataRvas);
+        VTableFixupSupport.WriteVTableSlotData(
+            builder,
+            vtableEntries,
+            (entryIndex, slotIndex) =>
             {
-                int token = i < vtf.MethodTokens.Length ? vtf.MethodTokens[i] : 0;
-                if (is64Bit)
-                {
-                    builder.WriteInt64(token);
-                }
-                else
-                {
-                    builder.WriteInt32(token);
-                }
-            }
-        }
+                ImmutableArray<int> tokens = _vtableFixups[entryIndex - 1].MethodTokens;
+                return slotIndex <= tokens.Length ? tokens[slotIndex - 1] : 0;
+            });
 
         // Write export stubs if we have exports
         if (numExports > 0)
@@ -491,46 +502,33 @@ internal sealed class VTableExportPEBuilder : ManagedPEBuilder
             _exportDirectoryRva = location.RelativeVirtualAddress + builder.Count;
 
             // Write IMAGE_EXPORT_DIRECTORY
-            int baseOrdinal = int.MaxValue;
-            int maxOrdinal = 0;
-            foreach (var export in _exports)
-            {
-                if (export.Ordinal < baseOrdinal) baseOrdinal = export.Ordinal;
-                if (export.Ordinal > maxOrdinal) maxOrdinal = export.Ordinal;
-            }
-            if (baseOrdinal == int.MaxValue) baseOrdinal = 1;
-            int numFunctions = maxOrdinal - baseOrdinal + 1;
-
             int exportDirStart = builder.Count;
 
             builder.WriteUInt32(0);                    // Characteristics
             builder.WriteUInt32(0);                    // TimeDateStamp (filled later or 0)
             builder.WriteUInt16(0);                    // MajorVersion
             builder.WriteUInt16(0);                    // MinorVersion
-            builder.WriteInt32(location.RelativeVirtualAddress + exportDirStart + 40 +
-                numExports * 4 + numExports * 4 + numExports * 2 + nameTableSize); // Name RVA (DLL name)
+            builder.WriteInt32(location.RelativeVirtualAddress + dllNameOffset); // Name RVA (DLL name)
             builder.WriteInt32(baseOrdinal);          // Base
-            builder.WriteInt32(numExports);           // NumberOfFunctions
+            builder.WriteInt32(numFunctions);         // NumberOfFunctions
             builder.WriteInt32(numExports);           // NumberOfNames
             builder.WriteInt32(location.RelativeVirtualAddress + exportDirStart + 40); // AddressOfFunctions
-            builder.WriteInt32(location.RelativeVirtualAddress + exportDirStart + 40 + numExports * 4); // AddressOfNames
-            builder.WriteInt32(location.RelativeVirtualAddress + exportDirStart + 40 + numExports * 4 * 2); // AddressOfNameOrdinals
+            builder.WriteInt32(location.RelativeVirtualAddress + exportDirStart + 40 + numFunctions * 4); // AddressOfNames
+            builder.WriteInt32(location.RelativeVirtualAddress + exportDirStart + 40 + numFunctions * 4 + numExports * 4); // AddressOfNameOrdinals
 
             // Sort exports by name for binary search
             var sortedExports = _exports.AsSpan().ToArray();
             Array.Sort(sortedExports, (a, b) => string.CompareOrdinal(a.Name, b.Name));
 
-            // Write Export Address Table (RVAs to stubs)
             var exportsArray = _exports.AsSpan().ToArray();
-            foreach (var export in sortedExports)
+            for (int ordinal = baseOrdinal; ordinal <= maxOrdinal; ordinal++)
             {
-                int stubIndex = Array.FindIndex(exportsArray, e => e.Ordinal == export.Ordinal);
-                builder.WriteInt32(exportStubRvas[stubIndex]);
+                int stubIndex = Array.FindIndex(exportsArray, export => export.Ordinal == ordinal);
+                builder.WriteInt32(stubIndex >= 0 ? exportStubRvas[stubIndex] : 0);
             }
 
             // Write Export Name Pointer Table (RVAs to names)
-            int nameOffset = location.RelativeVirtualAddress + exportDirStart + 40 +
-                numExports * 4 + numExports * 4 + numExports * 2;
+            int nameOffset = location.RelativeVirtualAddress + exportNamesOffset;
             foreach (var export in sortedExports)
             {
                 builder.WriteInt32(nameOffset);

@@ -665,5 +665,220 @@ namespace ILAssembler.Tests
             Assert.Equal(16, layout.Size);
         }
 
+        [Fact]
+        public void QuotedTypeName_WithConsecutiveDots_SplitsAtLastDot()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit 'Contoso.Tools..ctor' extends [mscorlib]System.Object
+                {
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var typeDef = reader.TypeDefinitions
+                .Select(handle => reader.GetTypeDefinition(handle))
+                .Single(type => reader.GetString(type.Name) == "ctor");
+
+            Assert.Equal("ctor", reader.GetString(typeDef.Name));
+            Assert.Equal("Contoso.Tools.", reader.GetString(typeDef.Namespace));
+        }
+
+        [Fact]
+        public void ClassAttributes_EmitExpectedFlagsAndImplicitBaseTypes()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+
+                .class public auto ansi Outer extends [mscorlib]System.Object
+                {
+                    .class nested private auto ansi NestedPrivate extends [mscorlib]System.Object { }
+                    .class nested family auto ansi NestedFamily extends [mscorlib]System.Object { }
+                    .class nested assembly auto ansi NestedAssembly extends [mscorlib]System.Object { }
+                    .class nested famandassem auto ansi NestedFamAndAssem extends [mscorlib]System.Object { }
+                    .class nested famorassem auto ansi NestedFamOrAssem extends [mscorlib]System.Object { }
+                }
+
+                .class public auto unicode import serializable windowsruntime UnicodeImported extends [mscorlib]System.Object { }
+                .class public value ValueTypeByKeyword { }
+                .class public enum EnumTypeByKeyword { }
+                .class flags(0x00100001) FlaggedType extends [mscorlib]System.Object { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var types = reader.TypeDefinitions
+                .Select(handle => (Handle: handle, Definition: reader.GetTypeDefinition(handle)))
+                .ToDictionary(item => reader.GetString(item.Definition.Name));
+
+            Assert.Equal(
+                TypeAttributes.NestedPrivate,
+                types["NestedPrivate"].Definition.Attributes & TypeAttributes.VisibilityMask);
+            Assert.Equal(
+                TypeAttributes.NestedFamily,
+                types["NestedFamily"].Definition.Attributes & TypeAttributes.VisibilityMask);
+            Assert.Equal(
+                TypeAttributes.NestedAssembly,
+                types["NestedAssembly"].Definition.Attributes & TypeAttributes.VisibilityMask);
+            Assert.Equal(
+                TypeAttributes.NestedFamANDAssem,
+                types["NestedFamAndAssem"].Definition.Attributes & TypeAttributes.VisibilityMask);
+            Assert.Equal(
+                TypeAttributes.NestedFamORAssem,
+                types["NestedFamOrAssem"].Definition.Attributes & TypeAttributes.VisibilityMask);
+
+            TypeAttributes unicodeImported = types["UnicodeImported"].Definition.Attributes;
+            Assert.Equal(TypeAttributes.UnicodeClass, unicodeImported & TypeAttributes.StringFormatMask);
+            Assert.True(unicodeImported.HasFlag(TypeAttributes.Import));
+            Assert.True(unicodeImported.HasFlag(TypeAttributes.Serializable));
+            Assert.True(unicodeImported.HasFlag(TypeAttributes.WindowsRuntime));
+
+            Assert.True(types["ValueTypeByKeyword"].Definition.Attributes.HasFlag(TypeAttributes.Sealed));
+            Assert.Equal("ValueType", GetBaseTypeName(reader, types["ValueTypeByKeyword"].Definition));
+            Assert.Equal("Enum", GetBaseTypeName(reader, types["EnumTypeByKeyword"].Definition));
+
+            Assert.Equal((TypeAttributes)0x00100001, types["FlaggedType"].Definition.Attributes);
+        }
+
+        [Fact]
+        public void LegacyClassFlagSentinels_EmitImplicitValueTypeAndEnumBases()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class flags(0x80100001) FlagValueType { }
+                .class flags(0x40100001) FlagEnumType { }
+                """;
+
+            var compiler = new DocumentCompiler();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(source, "test.il"),
+                _ => { Assert.Fail("Expected no includes"); return default; },
+                _ => { Assert.Fail("Expected no resources"); return default; },
+                new Options { ErrorTolerant = true });
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == DiagnosticIds.UnsealedValueType);
+            Assert.NotNull(result);
+
+            var image = new BlobBuilder();
+            result!.Serialize(image);
+            using var pe = new PEReader(image.ToImmutableArray());
+            var reader = pe.GetMetadataReader();
+            var types = reader.TypeDefinitions
+                .Select(handle => reader.GetTypeDefinition(handle))
+                .ToDictionary(type => reader.GetString(type.Name));
+
+            Assert.True(types["FlagValueType"].Attributes.HasFlag(TypeAttributes.BeforeFieldInit));
+            Assert.True(types["FlagValueType"].Attributes.HasFlag(TypeAttributes.Sealed));
+            Assert.Equal("ValueType", GetBaseTypeName(reader, types["FlagValueType"]));
+            Assert.True(types["FlagEnumType"].Attributes.HasFlag(TypeAttributes.BeforeFieldInit));
+            Assert.Equal("Enum", GetBaseTypeName(reader, types["FlagEnumType"]));
+        }
+
+        [Fact]
+        public void NestedType_EmitsDeclaringTypeMetadata()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit Outer extends [mscorlib]System.Object
+                {
+                    .class nested public auto ansi beforefieldinit Inner extends [mscorlib]System.Object
+                    {
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var outerHandle = reader.TypeDefinitions
+                .First(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Outer");
+            var innerHandle = reader.TypeDefinitions
+                .First(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Inner");
+
+            var inner = reader.GetTypeDefinition(innerHandle);
+            Assert.Equal(TypeAttributes.NestedPublic, inner.Attributes & TypeAttributes.VisibilityMask);
+            Assert.Equal("Outer", reader.GetString(reader.GetTypeDefinition(outerHandle).Name));
+            Assert.Equal(1, reader.GetTableRowCount(TableIndex.NestedClass));
+        }
+
+        [Fact]
+        public void InterfaceImplementation_EmitsInterfaceImplRow()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class interface public abstract auto ansi IWorker
+                {
+                    .method public hidebysig newslot abstract virtual instance void Run() cil managed { }
+                }
+                .class public auto ansi beforefieldinit Worker extends [mscorlib]System.Object implements IWorker
+                {
+                    .method public hidebysig newslot virtual instance void Run() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var workerHandle = reader.TypeDefinitions
+                .First(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Worker");
+            var worker = reader.GetTypeDefinition(workerHandle);
+            var interfaceImplHandle = Assert.Single(worker.GetInterfaceImplementations());
+            var interfaceImpl = reader.GetInterfaceImplementation(interfaceImplHandle);
+
+            Assert.Equal(HandleKind.TypeDefinition, interfaceImpl.Interface.Kind);
+            Assert.Equal("IWorker", reader.GetString(reader.GetTypeDefinition((TypeDefinitionHandle)interfaceImpl.Interface).Name));
+        }
+
+        [Fact]
+        public void InterfaceImplementationDirective_EmitsCustomAttributeOnInterfaceImpl()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class interface public abstract auto ansi IWorker
+                {
+                }
+                .class public auto ansi Worker extends [mscorlib]System.Object implements IWorker
+                {
+                    .interfaceimpl type IWorker
+                        .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var worker = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "Worker");
+            var implementationHandle = Assert.Single(worker.GetInterfaceImplementations());
+            var implementation = reader.GetInterfaceImplementation(implementationHandle);
+            var attribute = reader.GetCustomAttribute(
+                Assert.Single(reader.GetCustomAttributes(implementationHandle)));
+
+            Assert.Equal(HandleKind.TypeDefinition, implementation.Interface.Kind);
+            Assert.Equal(
+                "IWorker",
+                reader.GetString(reader.GetTypeDefinition((TypeDefinitionHandle)implementation.Interface).Name));
+            Assert.Equal(
+                [0x01, 0x00, 0x00, 0x00],
+                reader.GetBlobBytes(attribute.Value));
+        }
+
+        private static string GetBaseTypeName(MetadataReader reader, TypeDefinition type)
+        {
+            Assert.Equal(HandleKind.TypeReference, type.BaseType.Kind);
+            return reader.GetString(reader.GetTypeReference((TypeReferenceHandle)type.BaseType).Name);
+        }
+
     }
 }

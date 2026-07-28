@@ -143,5 +143,51 @@ namespace ILAssembler.Tests
             Assert.Empty(diagnostics);
         }
 
+        [Fact]
+        public void Typedef_FieldAndCustomAttributeForms_EmitResolvableMetadata()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .typedef field int32 Test::Value as ValueAlias
+                .typedef .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00) as AttributeAlias
+                .typedef .custom (Test) instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = (01 00 01 00 00) as OwnedAttributeAlias
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .field public static int32 Value
+                    AttributeAlias
+                    .method public static int32 Read() cil managed
+                    {
+                        ldsfld ValueAlias
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var testTypeHandle = reader.TypeDefinitions
+                .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Test");
+            var testType = reader.GetTypeDefinition(testTypeHandle);
+            var fieldHandle = Assert.Single(testType.GetFields());
+            int fieldToken =
+                DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "Read", ILOpcode.ldsfld);
+
+            Assert.Equal(MetadataTokens.GetToken(fieldHandle), fieldToken);
+
+            var attributes = reader.GetCustomAttributes(testTypeHandle)
+                .Select(reader.GetCustomAttribute)
+                .Select(attribute => attribute.DecodeValue(DocumentCompilerTestHelpers.Decoder))
+                .ToArray();
+            Assert.Equal(2, attributes.Length);
+            Assert.Contains(attributes, attribute => attribute.FixedArguments.Length == 0);
+            Assert.Contains(
+                attributes,
+                attribute =>
+                    attribute.FixedArguments.Length == 1 &&
+                    attribute.FixedArguments[0].Type == "bool" &&
+                    Equals(attribute.FixedArguments[0].Value, true));
+        }
+
     }
 }
