@@ -59,13 +59,14 @@ public class GetTotalAllocatedBytesServerGC
             {
                 var burst = new List<Thread>();
                 using var burstCts = new CancellationTokenSource();
+                CancellationToken burstToken = burstCts.Token;
                 for (int i = 0; i < burstThreads; i++)
                 {
                     var t = new Thread(() =>
                     {
                         var rnd = new Random(Environment.CurrentManagedThreadId);
                         object local = null;
-                        while (!burstCts.IsCancellationRequested)
+                        while (!burstToken.IsCancellationRequested)
                         {
                             for (int j = 0; j < 2000; j++)
                                 local = new byte[rnd.Next(16, 4096)];
