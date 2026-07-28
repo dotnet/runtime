@@ -258,6 +258,7 @@ public unsafe static class ExceptionInterop
         Assert.False(reportedUnhandledException, "Exception should not be reported as unhandled");
     }
 
+    [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnMono("Exception interop not supported on Mono.")]
     public static void ThrowNativeExceptionFromCatchInUnmanagedCallersOnlyCallback()
@@ -278,6 +279,7 @@ public unsafe static class ExceptionInterop
         Assert.IsType<SEHException>(exception);
     }
 
+    [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnMono("Exception interop not supported on Mono.")]
     public static void ThrowManagedExceptionFromCatchInUnmanagedCallersOnlyCallback()
