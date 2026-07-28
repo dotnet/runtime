@@ -22,13 +22,12 @@ internal static class TestPaths
     private static string Crossgen2ExeName => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "crossgen2.exe" : "crossgen2";
 
     /// <summary>
-    /// The OS and architecture this root build targets, e.g. <c>linux</c>/<c>x64</c> or
-    /// <c>browser</c>/<c>wasm</c>. Every test case compiles for this target.
+    /// Path to System.Private.CoreLib.dll. It lives in the runtime pack native/ dir in full builds
+    /// (placed by externals.csproj BinPlace during libs.pretest), but partial builds that skip
+    /// libs.pretest only have it in the CoreCLR artifacts directory.
     /// </summary>
-    /// <remarks>
-    /// The test assembly itself always runs on the build machine; this is what crossgen2 compiles
-    /// <em>for</em>, which is independent of what the tests run <em>on</em>.
-    /// </remarks>
+    public static string SystemPrivateCoreLibPath => Path.Combine(LibrariesDir, "System.Private.CoreLib.dll");
+
     public static string TargetOS => GetRequiredConfig("R2RTest.TargetOS");
     public static string TargetArchitecture => GetRequiredConfig("R2RTest.TargetArchitecture");
 

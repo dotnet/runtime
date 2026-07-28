@@ -25,15 +25,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="TestCases/*/**/*.cs" />
-    <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="../ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
+    <ProjectReference Include="../ILCompiler.ReadyToRun/ILCompiler.ReadyToRun.csproj" Aliases="crossgen2" />
     <ProjectReference Include="../crossgen2/crossgen2_inbuild.csproj" ReferenceOutputAssembly="false" OutputItemType="Crossgen2InbuildOutputItems" Private="false">
       <SetConfiguration>Configuration=$(CoreCLRConfiguration);CopyAllJitLibrariesToAotCompilerOutput=true;TargetArchitecture=$(TargetArchitecture);TargetOS=$(TargetOS)</SetConfiguration>
     </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="TestCases/*/**/*.cs" />
+    <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <Target Name="SetupCopyCrossgen2CompilationAssets"

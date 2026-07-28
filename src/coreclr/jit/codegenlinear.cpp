@@ -460,6 +460,13 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     }
 #endif
 
+#ifdef TARGET_ARM64
+    if (m_compiler->compUsesUnknownSizeFrame && block->IsFirst())
+    {
+        genZeroInitializeUnknownSizeFrame();
+    }
+#endif
+
 #ifndef TARGET_WASM // TODO-WASM: enable genPoisonFrame
     // Emit poisoning into the init BB that comes right after prolog.
     // We cannot emit this code in the prolog as it might use a helper call that kills argument regs.
@@ -981,6 +988,8 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 {
 }
 
+#endif // !TARGET_WASM
+
 //------------------------------------------------------------------------
 // genRecordAsyncResume:
 //   Record information about an async resume point in the async resume info tabl.e
@@ -999,6 +1008,8 @@ void CodeGen::genRecordAsyncResume(GenTreeVal* asyncResume)
 
     asyncResumeInfo->Locations()[index] = emitLocation(GetEmitter());
 }
+
+#ifndef TARGET_WASM
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
