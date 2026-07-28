@@ -10476,7 +10476,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHa
 
 CORINFO_METHOD_HANDLE CEEInfo::getAwaitAwaiterInContinuationCall(
     CORINFO_METHOD_HANDLE callerHandle,
-    CORINFO_SIG_INFO* callSig,
+    CORINFO_RESOLVED_TOKEN* pResolvedToken,
     bool isUnsafe,
     CORINFO_CONTEXT_HANDLE* contextHandle,
     CORINFO_LOOKUP* instArg)
@@ -10491,8 +10491,9 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitAwaiterInContinuationCall(
 
     JIT_TO_EE_TRANSITION();
 
-    _ASSERTE(callSig->sigInst.methInstCount == 1);
-    TypeHandle awaiterType(callSig->sigInst.methInst[0]);
+    MethodDesc* pAwaitAwaiterMD = GetMethod(pResolvedToken->hMethod);
+    _ASSERTE(pAwaitAwaiterMD->GetNumGenericMethodArgs() == 1);
+    TypeHandle awaiterType = pAwaitAwaiterMD->GetMethodInstantiation()[0];
 
     instArg->lookupKind.needsRuntimeLookup = false;
     instArg->constLookup.accessType = IAT_VALUE;
@@ -10510,7 +10511,10 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitAwaiterInContinuationCall(
     {
         if (awaiterType.IsCanonicalSubtype())
         {
-            ComputeRuntimeLookupForAwaitAwaiterInContinuationCall(pCallerMD, pTypicalAwaitMD, callSig, instArg);
+            // We need the exact instantiation from the call site to be able to
+            // create the runtime lookup.
+            _ASSERTE(pResolvedToken->pMethodSpec != NULL);
+            ComputeRuntimeLookupForAwaitAwaiterInContinuationCall(pCallerMD, pTypicalAwaitMD, pResolvedToken, instArg);
         }
         else
         {
@@ -10595,7 +10599,7 @@ void CEEInfo::ComputeRuntimeLookupForAwaitCall(MethodDesc* pCallerMD, MethodDesc
 void CEEInfo::ComputeRuntimeLookupForAwaitAwaiterInContinuationCall(
     MethodDesc* pCallerMD,
     MethodDesc* pTypicalAwaitMD,
-    CORINFO_SIG_INFO* callSig,
+    CORINFO_RESOLVED_TOKEN* pResolvedToken,
     CORINFO_LOOKUP* lookup)
 {
     lookup->lookupKind.needsRuntimeLookup = true;
@@ -10638,15 +10642,15 @@ void CEEInfo::ComputeRuntimeLookupForAwaitAwaiterInContinuationCall(
     sigBuilder.AppendData(RidFromToken(pTypicalAwaitMD->GetMemberDef()));
     sigBuilder.AppendData(1);
 
-    _ASSERTE(callSig->pSig != NULL);
-    SigPointer instantiation(callSig->pSig, callSig->cbSig);
+    _ASSERTE(pResolvedToken->pMethodSpec != NULL);
+    SigPointer instantiation(pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
     BYTE callingConvention;
     IfFailThrow(instantiation.GetByte(&callingConvention));
     _ASSERTE(callingConvention == IMAGE_CEE_CS_CALLCONV_GENERICINST);
     uint32_t numArgs;
     IfFailThrow(instantiation.GetData(&numArgs));
     _ASSERTE(numArgs == 1);
-    instantiation.ConvertToInternalExactlyOne(GetModule(callSig->scope), NULL, &sigBuilder);
+    instantiation.ConvertToInternalExactlyOne(GetModule(pResolvedToken->tokenScope), NULL, &sigBuilder);
 
     FinishComputeRuntimeLookup(sigBuilder, pCallerMD, lookup);
 }

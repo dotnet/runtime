@@ -508,7 +508,7 @@ CORINFO_METHOD_HANDLE getAwaitReturnCall(
 
 CORINFO_METHOD_HANDLE getAwaitAwaiterInContinuationCall(
           CORINFO_METHOD_HANDLE callerHandle,
-          CORINFO_SIG_INFO* callSig,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool isUnsafe,
           CORINFO_CONTEXT_HANDLE* contextHandle,
           CORINFO_LOOKUP* instArg) override;

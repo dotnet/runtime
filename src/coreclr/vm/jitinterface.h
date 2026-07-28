@@ -416,7 +416,7 @@ public:
     void ComputeRuntimeLookupForAwaitAwaiterInContinuationCall(
         MethodDesc* pCallerMD,
         MethodDesc* pTypicalAwaitMD,
-        CORINFO_SIG_INFO* callSig,
+        CORINFO_RESOLVED_TOKEN* pResolvedToken,
         CORINFO_LOOKUP* lookup);
 
 #if defined(FEATURE_GDBJIT)

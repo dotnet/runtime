@@ -5250,7 +5250,6 @@ protected:
 
     void impTryOptimizeAwaitAwaiter(GenTreeCall*              call,
                                     CORINFO_RESOLVED_TOKEN*   pResolvedToken,
-                                    CORINFO_SIG_INFO*         sig,
                                     CORINFO_CALL_INFO*        callInfo,
                                     CORINFO_METHOD_HANDLE*    methHnd,
                                     CORINFO_CONTEXT_HANDLE*   exactContextHnd,

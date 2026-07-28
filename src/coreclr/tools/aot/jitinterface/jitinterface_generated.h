@@ -133,7 +133,7 @@ struct JitInterfaceCallbacks
     void (* getEEInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_EE_INFO* pEEInfoOut);
     void (* getAsyncInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_ASYNC_INFO* pAsyncInfoOut);
     CORINFO_METHOD_HANDLE (* getAwaitReturnCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
-    CORINFO_METHOD_HANDLE (* getAwaitAwaiterInContinuationCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHandle, CORINFO_SIG_INFO* callSig, bool isUnsafe, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
+    CORINFO_METHOD_HANDLE (* getAwaitAwaiterInContinuationCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHandle, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isUnsafe, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
     mdMethodDef (* getMethodDefFromMethod)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hMethod);
     size_t (* printMethodName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     const char* (* getMethodNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, const char** className, const char** namespaceName, const char** enclosingClassNames, size_t maxEnclosingClassNames);
@@ -1387,13 +1387,13 @@ public:
 
     virtual CORINFO_METHOD_HANDLE getAwaitAwaiterInContinuationCall(
           CORINFO_METHOD_HANDLE callerHandle,
-          CORINFO_SIG_INFO* callSig,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool isUnsafe,
           CORINFO_CONTEXT_HANDLE* contextHandle,
           CORINFO_LOOKUP* instArg)
 {
     CorInfoExceptionClass* pException = nullptr;
-    CORINFO_METHOD_HANDLE temp = _callbacks->getAwaitAwaiterInContinuationCall(_thisHandle, &pException, callerHandle, callSig, isUnsafe, contextHandle, instArg);
+    CORINFO_METHOD_HANDLE temp = _callbacks->getAwaitAwaiterInContinuationCall(_thisHandle, &pException, callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
     if (pException != nullptr) throw pException;
     return temp;
 }
