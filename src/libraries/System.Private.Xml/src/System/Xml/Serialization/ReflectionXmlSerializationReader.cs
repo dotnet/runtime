@@ -1037,7 +1037,7 @@ namespace System.Xml.Serialization
                                 // rather than overwriting it with null. Still perform the choice and
                                 // specified bookkeeping the ILGen reader does unconditionally.
                                 UnknownNode(null);
-                                member?.ChoiceSource?.Invoke(element.Name);
+                                member?.ChoiceSource?.Invoke(elementIndex);
                                 member?.CheckSpecifiedSource?.Invoke(true);
                                 return value;
                             }
