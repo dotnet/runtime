@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Xunit;
@@ -83,6 +84,81 @@ namespace ILAssembler.Tests
 
             Assert.Equal("Value", reader.GetString(property.Name));
             Assert.Equal("Changed", reader.GetString(@event.Name));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void PseudoCustomAttribute_SpecialNameOnPropertyOrEvent_LowersToFlagAndDropsAttribute(bool onProperty)
+        {
+            string propertyAttribute = onProperty
+                ? ".custom instance void [mscorlib]System.Runtime.CompilerServices.SpecialNameAttribute::.ctor() = ( 01 00 00 00 )"
+                : "";
+            string eventAttribute = onProperty
+                ? ""
+                : ".custom instance void [mscorlib]System.Runtime.CompilerServices.SpecialNameAttribute::.ctor() = ( 01 00 00 00 )";
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi MyDelegate extends [mscorlib]System.MulticastDelegate
+                {
+                    .method public specialname rtspecialname instance void .ctor(object 'object', native int 'method') runtime managed
+                    {
+                    }
+                    .method public virtual instance void Invoke() runtime managed
+                    {
+                    }
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public hidebysig specialname instance int32 get_Value() cil managed
+                    {
+                        ldc.i4.0
+                        ret
+                    }
+
+                    .method public hidebysig specialname instance void add_Changed(class MyDelegate value) cil managed
+                    {
+                        ret
+                    }
+
+                    .method public hidebysig specialname instance void remove_Changed(class MyDelegate value) cil managed
+                    {
+                        ret
+                    }
+
+                    .property int32 Value()
+                    {
+                        {{propertyAttribute}}
+                        .get instance int32 Test::get_Value()
+                    }
+
+                    .event MyDelegate Changed
+                    {
+                        {{eventAttribute}}
+                        .addon instance void Test::add_Changed(class MyDelegate)
+                        .removeon instance void Test::remove_Changed(class MyDelegate)
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var property = reader.GetPropertyDefinition(reader.PropertyDefinitions.Single());
+            var @event = reader.GetEventDefinition(reader.EventDefinitions.Single());
+
+            if (onProperty)
+            {
+                Assert.Equal(PropertyAttributes.SpecialName, property.Attributes & PropertyAttributes.SpecialName);
+                Assert.Empty(property.GetCustomAttributes());
+                Assert.Equal(default, @event.Attributes & EventAttributes.SpecialName);
+            }
+            else
+            {
+                Assert.Equal(EventAttributes.SpecialName, @event.Attributes & EventAttributes.SpecialName);
+                Assert.Empty(@event.GetCustomAttributes());
+                Assert.Equal(default, property.Attributes & PropertyAttributes.SpecialName);
+            }
         }
     }
 }

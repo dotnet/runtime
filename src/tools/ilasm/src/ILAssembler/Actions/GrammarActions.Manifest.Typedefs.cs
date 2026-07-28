@@ -55,7 +55,7 @@ internal sealed partial class GrammarActions
                 break;
             case CustomAttributeTypedefDeclarationValue customAttribute:
                 EntityRegistry.CustomAttributeEntity attribute =
-                    MaterializeCustomAttribute(customAttribute.Attribute);
+                    MaterializeCustomAttribute(customAttribute.Attribute, customAttribute.Location);
                 EntityRegistry.EntityBase? owner = attribute.Owner;
                 attribute.Owner = null;
                 _typedefs[customAttribute.Alias] =
