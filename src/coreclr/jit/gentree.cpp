@@ -3046,7 +3046,9 @@ AGAIN:
                         (op1->AsIndexAddr()->gtElemType != op2->AsIndexAddr()->gtElemType) ||
                         (op1->AsIndexAddr()->gtStructElemClass != op2->AsIndexAddr()->gtStructElemClass) ||
                         (op1->AsIndexAddr()->gtLenOffset != op2->AsIndexAddr()->gtLenOffset) ||
-                        (op1->AsIndexAddr()->gtElemOffset != op2->AsIndexAddr()->gtElemOffset))
+                        (op1->AsIndexAddr()->gtElemOffset != op2->AsIndexAddr()->gtElemOffset) ||
+                        ((op1->gtFlags & (GTF_INX_RNGCHK | GTF_INX_ADDR_NONNULL)) !=
+                         (op2->gtFlags & (GTF_INX_RNGCHK | GTF_INX_ADDR_NONNULL))))
                     {
                         return false;
                     }
@@ -3627,6 +3629,8 @@ AGAIN:
                                                     tree->AsIndexAddr()->gtStructElemClass)));
                     hash = genTreeHashAdd(hash, tree->AsIndexAddr()->gtLenOffset);
                     hash = genTreeHashAdd(hash, tree->AsIndexAddr()->gtElemOffset);
+                    hash = genTreeHashAdd(hash, static_cast<unsigned>(tree->gtFlags &
+                                                                      (GTF_INX_RNGCHK | GTF_INX_ADDR_NONNULL)));
                     break;
 
 #ifdef FEATURE_HW_INTRINSICS

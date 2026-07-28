@@ -3,6 +3,7 @@
 
 namespace Runtime_131459;
 
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -112,5 +113,37 @@ public class Runtime_131459
     {
         double[] da = new double[2];
         Assert.Equal(42.0, ArrayElementTypeMerge(false, da, da));
+    }
+
+    // GT_INDEX_ADDR also carries the "needs a range check" and "known non-null" bits.
+    // MemoryMarshal.GetArrayDataReference expands to an IndexAddr with the range check
+    // cleared, so if GenTree::Compare ignores those bits, tail merge can fold the two arms
+    // below and drop the range check on the a[0] path. The two trees only line up when the
+    // index constants have the same type, which is the case on 32-bit targets.
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static int BoundsCheckMerge(bool useDataReference, S16[] array)
+    {
+        S16 element;
+        if (useDataReference)
+        {
+            element = MemoryMarshal.GetArrayDataReference(array);
+        }
+        else
+        {
+            element = array[0];
+        }
+
+        return element.Value + 1;
+    }
+
+    [Fact]
+    public static void BoundsCheck()
+    {
+        S16[] nonEmpty = new S16[2];
+        Assert.Equal(1, BoundsCheckMerge(true, nonEmpty));
+        Assert.Equal(1, BoundsCheckMerge(false, nonEmpty));
+
+        S16[] empty = new S16[0];
+        Assert.Throws<IndexOutOfRangeException>(() => BoundsCheckMerge(false, empty));
     }
 }
