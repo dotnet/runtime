@@ -1832,7 +1832,7 @@ bool Lowering::TryLowerSvePredicateBitwiseClear(GenTreeHWIntrinsic* node, NamedI
         return true;
     }
 
-    return true;
+    return false;
 }
 #endif // TARGET_ARM64 && FEATURE_HW_INTRINSICS && FEATURE_MASKED_HW_INTRINSICS
 

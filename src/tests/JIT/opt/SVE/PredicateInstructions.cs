@@ -48,6 +48,7 @@ public class PredicateInstructions
             BitwiseClearMaskWithOnes(vecs, vecs);
             ZipLowMaskWithOnes(vecs, vecs);
             ConditionalSelectMaskWithOnes(vecs, vecs);
+            VectorAndNot(vecs, vecs);
 
             PredicateCastFloatLoad(s_floatValues, 0, s_floatValues.Length);
             PredicateCastFloatLocalLoad(s_floatValues, 0, s_floatValues.Length);
@@ -283,6 +284,14 @@ public class PredicateInstructions
         return Sve.CreateBreakAfterMask(
             Sve.ConditionalSelect(Sve.CompareGreaterThan(a, b), Vector.Create<short>(1), Sve.CompareEqual(a, b)),
             Sve.CreateFalseMaskInt16());
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> VectorAndNot(Vector<short> a, Vector<short> b)
+    {
+        // Verify that ordinary vector AND-NOT expressions still reach AdvSimd BitwiseClear lowering.
+        //ARM64-FULL-LINE: bic {{v[0-9]+}}.8h, {{v[0-9]+}}.8h, {{v[0-9]+}}.8h
+        return ~a & b;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
