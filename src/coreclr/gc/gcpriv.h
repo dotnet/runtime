@@ -3548,7 +3548,7 @@ private:
 
 #ifndef USE_REGIONS
     PER_HEAP_FIELD_SINGLE_GC heap_segment* new_heap_segment;
-#endif //USE_REGIONS
+#endif //!USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
 #ifdef USE_REGIONS
