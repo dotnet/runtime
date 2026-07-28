@@ -74,11 +74,9 @@ namespace System.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetCommandLineArgs_Fallback_Returns()
         {
-            if (PlatformDetection.IsNotMonoRuntime
-                && PlatformDetection.IsNotNativeAot
-                && PlatformDetection.IsWindows)
+            if (PlatformDetection.IsNotMonoRuntime)
             {
-                // Currently fallback command line is only implemented on Windows coreclr
+                // Currently fallback command line is not implemented by mono
                 RemoteExecutor.Invoke(CheckCommandLineArgsFallback).Dispose();
             }
         }
@@ -104,12 +102,7 @@ namespace System.Tests
             return RemoteExecutor.SuccessExitCode;
         }
 
-        public static bool IsWindowsCoreCLRJit
-            => PlatformDetection.IsWindows
-            && PlatformDetection.IsNotMonoRuntime
-            && PlatformDetection.IsNotNativeAot;
-
-        [ConditionalTheory(typeof(GetCommandLineArgs), nameof(IsWindowsCoreCLRJit))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsNotMonoRuntime))]
         [InlineData(@"cmd ""abc"" d e", new[] { "cmd", "abc", "d", "e" })]
         [InlineData(@"cmd a\\b d""e f""g h", new[] { "cmd", @"a\\b", "de fg", "h" })]
         [InlineData(@"cmd a\\\""b c d", new[] { "cmd", @"a\""b", "c", "d" })]

@@ -2523,6 +2523,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetProcessPath.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetProcessPath.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetCommandLine.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.GetCommandLine.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs</Link>
     </Compile>
