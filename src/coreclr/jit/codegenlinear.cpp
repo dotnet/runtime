@@ -460,6 +460,13 @@ void CodeGen::genCodeForBlock(BasicBlock* block)
     }
 #endif
 
+#ifdef TARGET_ARM64
+    if (m_compiler->compUsesUnknownSizeFrame && block->IsFirst())
+    {
+        genZeroInitializeUnknownSizeFrame();
+    }
+#endif
+
 #ifndef TARGET_WASM // TODO-WASM: enable genPoisonFrame
     // Emit poisoning into the init BB that comes right after prolog.
     // We cannot emit this code in the prolog as it might use a helper call that kills argument regs.
