@@ -1393,6 +1393,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append(')');
                     break;
 
+                case ReadyToRunFixupKind.StoreMultiCallableAddrOfCode:
+                    uint targetCodeRVA = BitConverter.ToUInt32(_image, Offset);
+                    SkipBytes(4);
+                    uint storeLocationRVA = BitConverter.ToUInt32(_image, Offset);
+                    SkipBytes(4);
+                    builder.Append($" (STORE_MULTI_CALLABLE_ADDR_OF_CODE Target:RVA[0x{targetCodeRVA:X}] Location:RVA[0x{storeLocationRVA:X}])");
+                    break;
+
                 case ReadyToRunFixupKind.Check_VirtualFunctionOverride:
                 case ReadyToRunFixupKind.Verify_VirtualFunctionOverride:
                     ReadyToRunVirtualFunctionOverrideFlags flags = (ReadyToRunVirtualFunctionOverrideFlags)ReadUInt();

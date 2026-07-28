@@ -5,7 +5,6 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(FeatureDynamicCodeCompiled)' == 'true'">$(DefineConstants);FEATURE_DYNAMIC_CODE_COMPILED</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Platforms>x64;x86;arm;arm64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -148,6 +147,7 @@
     <Compile Include="..\..\Common\Compiler\IProxyTypeMapNode.cs" Link="Compiler\DependencyAnalysis\IProxyTypeMapNode.cs" />
     <Compile Include="..\..\Common\Compiler\InstructionSetSupport.cs" Link="Compiler\InstructionSetSupport.cs" />
     <Compile Include="..\..\Common\Compiler\Int128FieldLayoutAlgorithm.cs" Link="Compiler\Int128FieldLayoutAlgorithm.cs" />
+    <Compile Include="..\..\Common\Compiler\DecimalFieldLayoutAlgorithm.cs" Link="Compiler\DecimalFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\Compiler\InternalCompilerErrorException.cs" Link="Compiler\InternalCompilerErrorException.cs" />
     <Compile Include="..\..\Common\Compiler\MethodExtensions.cs" Link="Compiler\MethodExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\NameMangler.cs" Link="Compiler\NameMangler.cs" />
@@ -197,6 +197,7 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\StringTableBuilder.cs" Link="Compiler\ObjectWriter\StringTableBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\TypeString.cs" Link="Compiler\ObjectWriter\TypeString.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmObjectWriter.cs" Link="Compiler\ObjectWriter\WasmObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmGlobalImports.cs" Link="Compiler\ObjectWriter\WasmGlobalImports.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmNative.cs" Link="Compiler\ObjectWriter\WasmNative.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmInstructions.cs" Link="Compiler\ObjectWriter\WasmInstructions.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\CodeDataLayoutMode.cs" Link="Compiler\ObjectWriter\CodeDataLayoutMode.cs" />
@@ -298,6 +299,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunHelperSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunInstructionSetSupportSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ResumptionStubEntryPointSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StoreMultiCallableAddrOfCodeSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InjectStringThunksSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StringDiscoverableAssemblyStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsGCInfoNode.cs" />

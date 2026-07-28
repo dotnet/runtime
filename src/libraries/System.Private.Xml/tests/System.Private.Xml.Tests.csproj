@@ -439,7 +439,6 @@
 
   <ItemGroup>
     <Compile Include="XmlSerializer\XmlSerializerTests.cs" />
-    <Compile Include="XmlSerializer\XmlSerializerTests.Internal.cs" />
     <Compile Include="XmlSerializer\XmlSerializerTests.RuntimeOnly.cs" />
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.RuntimeOnly.cs" />
     <None Include="..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />

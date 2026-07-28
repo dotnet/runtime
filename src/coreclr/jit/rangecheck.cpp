@@ -1742,7 +1742,17 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     if (op->OperIs(GT_PHI_ARG))
     {
         const BasicBlock* pred = op->AsPhiArg()->gtPredBB;
-        assertions             = m_compiler->optGetEdgeAssertions(block, pred);
+
+        // Flow edits (e.g. RBO jump threading) can orphan a block without removing it or
+        // updating phis that name it as gtPredBB. Assertions on an edge out of an unreachable
+        // block don't hold, so don't merge them. Symmetric to the guard in
+        // Compiler::optVisitReachingAssertions (compiler.hpp).
+        if ((pred->bbPreds == nullptr) && (pred != m_compiler->fgFirstBB) && !m_compiler->bbIsHandlerBeg(pred))
+        {
+            return;
+        }
+
+        assertions = m_compiler->optGetEdgeAssertions(block, pred);
         if (!BitVecOps::MayBeUninit(assertions))
         {
             JITDUMP("Merge assertions created by " FMT_BB " for " FMT_BB "\n", pred->bbNum, block->bbNum);

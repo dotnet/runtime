@@ -903,7 +903,7 @@ HRESULT ReJitManager::BindILVersion(
     // Either there was no ILCodeVersion yet for this MethodDesc OR whatever we've found
     // couldn't be reused (and needed to be reverted).  Create a new ILCodeVersion to return
     // to the caller.
-    HRESULT hr = pCodeVersionManager->AddILCodeVersion(pModule, methodDef, pILCodeVersion, FALSE);
+    HRESULT hr = pCodeVersionManager->AddILCodeVersion(pModule, methodDef, pILCodeVersion, FALSE, CodeVersionSource::kReJIT);
     pILCodeVersion->SetEnableReJITCallback(fDoCallback);
     return hr;
 }
@@ -1138,7 +1138,7 @@ ReJITID ReJitManager::GetReJitId(PTR_MethodDesc pMD, PCODE pCodeStart)
     }
 
     NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(pMD, pCodeStart);
-    if (nativeCodeVersion.IsNull())
+    if (nativeCodeVersion.IsNull() || nativeCodeVersion.GetILCodeVersion().GetSource() != CodeVersionSource::kReJIT)
     {
         return 0;
     }
@@ -1189,7 +1189,7 @@ HRESULT ReJitManager::GetReJITIDs(PTR_MethodDesc pMD, ULONG cReJitIds, ULONG * p
     {
         ILCodeVersion curILVersion = *iter;
 
-        if (curILVersion.GetRejitState() == RejitFlags::kStateActive)
+        if (curILVersion.GetSource() == CodeVersionSource::kReJIT && curILVersion.GetRejitState() == RejitFlags::kStateActive)
         {
             if (cnt < cReJitIds)
             {
