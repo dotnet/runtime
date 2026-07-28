@@ -246,6 +246,7 @@ struct Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS
     DWORDLONG stackPointer;
     DWORDLONG imageBase;
     DWORDLONG tableBase;
+    DWORDLONG asyncContinuation;
 };
 
 struct Agnostic_GetAwaitReturnCallResult

@@ -229,6 +229,8 @@ protected:
     void                       genEmitBeginBlock(WasmValueType blockType = WasmValueType::Invalid);
     void                       genEmitEndBlock();
     void                       genEmitFunctionEnd(bool emitTerminalUnreachable = true);
+    void                       genStoreAsyncContinuationGlobal();
+    void                       genClearAsyncContinuationGlobal();
 #endif
 
     void genEmitStartBlock(BasicBlock* block);

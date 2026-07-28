@@ -41,6 +41,7 @@ void emitImageBase();
 void emitImageBaseGlobal();
 void emitAddressConstant(void* address);
 void emitFuncletAddressConstant(cnsval_ssize_t funcletId);
+void emitDataOffsetConstant(UNATIVE_OFFSET dataOffs);
 void emitIns_MemargAddress(instruction ins, emitAttr attr, void* address);
 
 static unsigned SizeOfULEB128(uint64_t value);
