@@ -35,6 +35,10 @@ extern "C" bool TryGetSymbol(
     const char* symbolName,
     uint64_t* symbolAddress);
 
+#if defined(MSCORDBI_LINKS_PRIVATE_PAL) && defined(HOST_UNIX)
+HRESULT EnsureUniversalDbiInitialized();
+#endif // MSCORDBI_LINKS_PRIVATE_PAL && HOST_UNIX
+
 // Keep this around for retail debugging. It's very very useful because
 // it's global state that we can always find, regardless of how many locals the compiler
 // optimizes away ;)
@@ -185,6 +189,13 @@ STDAPI DLLEXPORT OpenVirtualProcessImpl2(
     IUnknown ** ppInstance,
     CLR_DEBUGGING_PROCESS_FLAGS* pFlagsOut)
 {
+#if defined(MSCORDBI_LINKS_PRIVATE_PAL) && defined(HOST_UNIX)
+    HRESULT hrInit = EnsureUniversalDbiInitialized();
+    if (FAILED(hrInit))
+    {
+        return hrInit;
+    }
+#endif
 #ifdef TARGET_WINDOWS
     HMODULE hDac = WszLoadLibrary(pDacModulePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
 #else

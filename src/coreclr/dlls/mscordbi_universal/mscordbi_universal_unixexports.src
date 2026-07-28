@@ -1,25 +1,14 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-; This export set intentionally differs from dlls/mscordbi/mscordbi_unixexports.src:
-; the HMODULE-taking OpenVirtualProcessImpl is not exported here. Because this binary
-; owns its own PAL, an HMODULE handed in by a caller is not a valid module in this PAL,
-; so only the path-based OpenVirtualProcessImpl2 activation flow is supported.
+; This export set intentionally differs from the traditional DBI.
+; This binary is only ever loaded by cDAC-aware dbgshim that's collocated, which resolves exactly
+; two DBI entrypoints on it: OpenVirtualProcessImpl2 (out-of-proc / data-target activation)
+; and CoreCLRCreateCordbObject3 (in-proc creation).
+; All other exports that tried to do COM/Windows emulation are dropped so the module can have a private PAL.
 
-; COM-instantiation
-DllGetClassObjectInternal
-DllGetClassObject
-
-; CoreClr API
-CoreCLRCreateCordbObject
-CoreCLRCreateCordbObjectEx
+; In-proc creation path from the shim
 CoreCLRCreateCordbObject3
 
 ; Out-of-proc creation path from the shim - ICLRDebugging
 OpenVirtualProcessImpl2
-
-; DllMain is exported for the Unix PAL loader to discover via dlsym; DbgDllMain calls
-; PAL_InitializeDLL itself, so the private PAL still initializes. PAL_RegisterModule and
-; PAL_UnregisterModule are intentionally not exported: the loader treats registration as
-; optional, and the path-based ABI never hands a cross-PAL module handle to this binary.
-DllMain
