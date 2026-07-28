@@ -10204,14 +10204,14 @@ bool CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
 }
 
 /*********************************************************************/
-// Generate a cookie based on the signature that would needs to be passed
-// to CORINFO_HELP_PINVOKE_CALLI
+// Unused; unmanaged calli is expanded inline or converted to a call to a marshalling
+// stub by convertPInvokeCalliToCall.
 LPVOID CEEInfo::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig,
                                             void **ppIndirection)
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
 
-    return getVarArgsHandle(szMetaSig, NULL, ppIndirection);
+    UNREACHABLE_RET();
 }
 
 // Check any constraints on method type arguments

@@ -216,6 +216,8 @@
     DYNAMICJITHELPER(CORINFO_HELP_PROF_FCN_TAILCALL, JIT_ProfilerEnterLeaveTailcallStub, METHOD__NIL)
 
     // Miscellaneous
+    // CORINFO_HELP_PINVOKE_CALLI is unused; unmanaged calli is expanded inline or converted to a
+    // call to a marshalling stub by convertPInvokeCalliToCall.
     JITHELPER(CORINFO_HELP_PINVOKE_CALLI,       NULL,                     METHOD__NIL)
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)

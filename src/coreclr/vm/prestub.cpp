@@ -1126,9 +1126,14 @@ bool MethodDesc::TryGenerateTransientILImplementation(DynamicResolver** resolver
 
     if (IsILStub() && AsDynamicMethodDesc()->UsesTransientIL())
     {
-        _ASSERTE(AsDynamicMethodDesc()->IsPInvokeCalliStub());
-        *methodILDecoder = PInvoke::CreateCalliStubIL(this, resolver);
-        return true;
+        if (AsDynamicMethodDesc()->IsPInvokeCalliStub())
+        {
+            *methodILDecoder = PInvoke::CreateCalliStubIL(this, resolver);
+            return true;
+        }
+
+        _ASSERTE(!"IL stub with no generated IL has no transient IL generator");
+        return false;
     }
 
     if (TryGenerateAsyncThunk(resolver, methodILDecoder))
