@@ -474,18 +474,14 @@ public:
     void    EmitLogNativeArgument(ILCodeStream* pslILEmit, DWORD dwPinnedLocal);
     void    LoadCleanupWorkList(ILCodeStream* pcsEmit);
 #ifdef PROFILING_SUPPORTED
-    DWORD   EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEmit, DWORD dwStubFlags);
+    DWORD   EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEmit, MethodDesc* pStubMD, DWORD dwStubFlags);
     void    EmitProfilerEndTransitionCallback(ILCodeStream* pcsEmit, DWORD dwStubFlags, DWORD dwMethodDescLocalNum);
 #endif
 #ifdef VERIFY_HEAP
-    void    EmitValidateLocal(ILCodeStream* pcsEmit, DWORD dwLocalNum, bool fIsByref, DWORD dwStubFlags);
-    void    EmitObjectValidation(ILCodeStream* pcsEmit, DWORD dwStubFlags);
+    void    EmitValidateLocal(ILCodeStream* pcsEmit, MethodDesc* pStubMD, DWORD dwLocalNum, bool fIsByref, DWORD dwStubFlags);
+    void    EmitObjectValidation(ILCodeStream* pcsEmit, MethodDesc* pStubMD, DWORD dwStubFlags);
 #endif // VERIFY_HEAP
     void    EmitLoadStubContext(ILCodeStream* pcsEmit, DWORD dwStubFlags);
-    // Specifies the MethodDesc that the stub context refers to. When the stub is generated as
-    // transient IL for a specific MethodDesc, the context is known at IL generation time and can
-    // be baked into the IL instead of being passed in the hidden "secret argument".
-    void    SetStubContextMD(MethodDesc* pStubContextMD);
     void    GenerateInteropParamException(ILCodeStream* pcsEmit);
     void    NeedsCleanupList();
 
@@ -569,9 +565,6 @@ protected:
     UINT                m_ErrorResID;
     UINT                m_ErrorParamIdx;
     int                 m_iLCIDParamIdx;
-
-    // Non-NULL when the stub context is known at IL generation time (see SetStubContextMD).
-    MethodDesc*         m_pStubContextMD;
 
     DWORD               m_dwStubFlags;
 };

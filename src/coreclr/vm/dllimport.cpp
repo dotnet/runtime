@@ -664,7 +664,7 @@ public:
             && !SF_IsReverseCOMStub(m_dwStubFlags)
             && !SF_IsReverseDelegateStub(m_dwStubFlags))
         {
-            dwMethodDescLocalNum = m_slIL.EmitProfilerBeginTransitionCallback(pcsDispatch, m_dwStubFlags);
+            dwMethodDescLocalNum = m_slIL.EmitProfilerBeginTransitionCallback(pcsDispatch, pStubMD, m_dwStubFlags);
             _ASSERTE(dwMethodDescLocalNum != (DWORD)-1);
         }
 #endif // PROFILING_SUPPORTED
@@ -690,7 +690,7 @@ public:
         if (SF_IsForwardStub(m_dwStubFlags) && g_pConfig->InteropValidatePinnedObjects())
         {
             // call StubHelpers.ValidateObject/StubHelpers.ValidateByref on pinned locals
-            m_slIL.EmitObjectValidation(pcsDispatch, m_dwStubFlags);
+            m_slIL.EmitObjectValidation(pcsDispatch, pStubMD, m_dwStubFlags);
         }
 #endif // VERIFY_HEAP
 
@@ -724,7 +724,15 @@ public:
 #ifdef FEATURE_COMINTEROP
                 if (SF_IsCOMStub(m_dwStubFlags))
                 {
-                    m_slIL.EmitLoadStubContext(pcsDispatch, m_dwStubFlags);
+                    // Forward CLR->COM stubs are generated as transient IL on the CLR->COM method
+                    // itself, so the interface the call is dispatched on is known here and can be
+                    // baked into the IL.
+                    _ASSERTE(pStubMD != NULL && pStubMD->IsCLRToCOMCall());
+                    MethodTable* pInterfaceMT = CLRToCOMCallInfo::FromMethodDesc(pStubMD)->m_pInterfaceMT;
+                    _ASSERTE(pInterfaceMT != NULL);
+
+                    pcsDispatch->EmitLDC((DWORD_PTR)pInterfaceMT);
+                    pcsDispatch->EmitCONV_I();
                     pcsDispatch->EmitLDLOC(m_slIL.GetTargetInterfacePointerLocalNum());
 
                     pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_COM_HR_EXCEPTION_OBJECT, 3, 1);
@@ -787,8 +795,8 @@ public:
         }
         else if (SF_IsForwardCOMStub(m_dwStubFlags))
         {
-            // Forward CLR->COM stubs bake the stub context into the IL, so they don't
-            // use the secret parameter.
+            // Forward CLR->COM stubs bake everything they need to know about the target
+            // into the IL, so they don't use the secret parameter.
         }
         else
         {
@@ -1338,10 +1346,6 @@ public:
         if (SF_IsForwardStub(dwStubFlags))
         {
             m_slIL.SetCallingConvention(CorInfoCallConvExtension::Stdcall, SF_IsVarArgStub(dwStubFlags));
-
-            // Forward CLR->COM stubs are generated as transient IL on the CLR->COM method itself,
-            // so the stub context is known here and doesn't need to be passed as a secret argument.
-            m_slIL.SetStubContextMD(pTargetMD);
         }
     }
 
@@ -1359,15 +1363,24 @@ public:
         // convert 'this' to COM IP and the target method entry point
         m_slIL.EmitLoadRCWThis(pcsDispatch, m_dwStubFlags);
 
-        m_slIL.EmitLoadStubContext(pcsDispatch, dwStubFlags);
+        // Forward CLR->COM stubs are generated as transient IL on the CLR->COM method itself, so the
+        // interface and the slot within it are known here and can be baked into the IL.
+        MethodDesc* pTargetMD = m_slIL.GetTargetMD();
+        _ASSERTE(pTargetMD != NULL && pTargetMD->IsCLRToCOMCall());
+        CLRToCOMCallInfo* pComInfo = CLRToCOMCallInfo::FromMethodDesc(pTargetMD);
+        _ASSERTE(pComInfo->m_pInterfaceMT != NULL);
+
+        pcsDispatch->EmitLDC((DWORD_PTR)pComInfo->m_pInterfaceMT);
+        pcsDispatch->EmitCONV_I();
+        pcsDispatch->EmitLDC(pComInfo->m_cachedComSlot);
 
         pcsDispatch->EmitLDLOCA(m_slIL.GetTargetEntryPointLocalNum());
 
         DWORD dwIPRequiresCleanupLocalNum = pcsDispatch->NewLocal(ELEMENT_TYPE_BOOLEAN);
         pcsDispatch->EmitLDLOCA(dwIPRequiresCleanupLocalNum);
 
-        // StubHelpers.GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
-        pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_COM_IP_FROM_RCW, 4, 1);
+        // StubHelpers.GetCOMIPFromRCW(object objSrc, IntPtr pInterfaceMT, int comSlot, out IntPtr ppTarget, out bool pfNeedsRelease)
+        pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_COM_IP_FROM_RCW, 5, 1);
 
         // save it because we'll need it to compute the CALLI target and release it
         pcsDispatch->EmitDUP();
@@ -1492,10 +1505,6 @@ public:
     {
         STANDARD_VM_CONTRACT;
         m_wrapperTypes.ReSizeThrows(m_signature.NumFixedArgs());
-
-        // Late bound CLR->COM stubs are generated as transient IL on the CLR->COM method itself,
-        // so the stub context is known here and doesn't need to be passed as a secret argument.
-        m_slIL.SetStubContextMD(pTargetMD);
 
         MethodDesc* pInterfaceMD = pTargetMD;
         if (!pInterfaceMD->IsInterface())
@@ -1886,7 +1895,6 @@ PInvokeStubLinker::PInvokeStubLinker(
     m_ErrorResID(-1),
     m_ErrorParamIdx(-1),
     m_iLCIDParamIdx(iLCIDParamIdx),
-    m_pStubContextMD(NULL),
     m_dwStubFlags(dwStubFlags)
 {
     STANDARD_VM_CONTRACT;
@@ -2479,7 +2487,7 @@ void PInvokeStubLinker::EmitLogNativeArgument(ILCodeStream* pslILEmit, DWORD dwP
 }
 
 #ifdef PROFILING_SUPPORTED
-DWORD PInvokeStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEmit, DWORD dwStubFlags)
+DWORD PInvokeStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEmit, MethodDesc* pStubMD, DWORD dwStubFlags)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2493,8 +2501,12 @@ DWORD PInvokeStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
 #ifdef FEATURE_COMINTEROP
     else if (SF_IsCOMStub(dwStubFlags))
     {
-        // COM interop should have a non-null 'secret argument'.
-        EmitLoadStubContext(pcsEmit, dwStubFlags);
+        // Forward CLR->COM stubs are generated as transient IL on the CLR->COM method itself,
+        // so the MethodDesc to report is known at IL generation time.
+        _ASSERTE(SF_IsForwardStub(dwStubFlags));
+        _ASSERTE(pStubMD != NULL && pStubMD->IsCLRToCOMCall());
+        pcsEmit->EmitLDC((DWORD_PTR)pStubMD);
+        pcsEmit->EmitCONV_I();
     }
 #endif // FEATURE_COMINTEROP
     else if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags))
@@ -2529,7 +2541,7 @@ void PInvokeStubLinker::EmitProfilerEndTransitionCallback(ILCodeStream* pcsEmit,
 #endif // PROFILING_SUPPPORTED
 
 #ifdef VERIFY_HEAP
-void PInvokeStubLinker::EmitValidateLocal(ILCodeStream* pcsEmit, DWORD dwLocalNum, bool fIsByref, DWORD dwStubFlags)
+void PInvokeStubLinker::EmitValidateLocal(ILCodeStream* pcsEmit, MethodDesc* pStubMD, DWORD dwLocalNum, bool fIsByref, DWORD dwStubFlags)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2543,7 +2555,12 @@ void PInvokeStubLinker::EmitValidateLocal(ILCodeStream* pcsEmit, DWORD dwLocalNu
 #ifdef FEATURE_COMINTEROP
     else if (SF_IsCOMStub(dwStubFlags))
     {
-        EmitLoadStubContext(pcsEmit, dwStubFlags);
+        // Forward CLR->COM stubs are generated as transient IL on the CLR->COM method itself,
+        // so the MethodDesc to report is known at IL generation time.
+        _ASSERTE(SF_IsForwardStub(dwStubFlags));
+        _ASSERTE(pStubMD != NULL && pStubMD->IsCLRToCOMCall());
+        pcsEmit->EmitLDC((DWORD_PTR)pStubMD);
+        pcsEmit->EmitCONV_I();
     }
 #endif // FEATURE_COMINTEROP
     else
@@ -2563,7 +2580,7 @@ void PInvokeStubLinker::EmitValidateLocal(ILCodeStream* pcsEmit, DWORD dwLocalNu
     }
 }
 
-void PInvokeStubLinker::EmitObjectValidation(ILCodeStream* pcsEmit, DWORD dwStubFlags)
+void PInvokeStubLinker::EmitObjectValidation(ILCodeStream* pcsEmit, MethodDesc* pStubMD, DWORD dwStubFlags)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2590,7 +2607,7 @@ void PInvokeStubLinker::EmitObjectValidation(ILCodeStream* pcsEmit, DWORD dwStub
         {
             IfFailThrow(ptr.GetByte(NULL));
             IfFailThrow(ptr.PeekByte(&modifier));
-            EmitValidateLocal(pcsEmit, i, (modifier == ELEMENT_TYPE_BYREF), dwStubFlags);
+            EmitValidateLocal(pcsEmit, pStubMD, i, (modifier == ELEMENT_TYPE_BYREF), dwStubFlags);
         }
 
         IfFailThrow(ptr.SkipExactlyOne());
@@ -2605,24 +2622,13 @@ void PInvokeStubLinker::EmitLoadStubContext(ILCodeStream* pcsEmit, DWORD dwStubF
 
     CONSISTENCY_CHECK(!SF_IsForwardDelegateStub(dwStubFlags));
     CONSISTENCY_CHECK(!SF_IsFieldGetterStub(dwStubFlags) && !SF_IsFieldSetterStub(dwStubFlags));
-
-    if (m_pStubContextMD != NULL)
-    {
-        // The stub is generated for one specific MethodDesc, so the context is a constant
-        // that can be baked into the IL instead of being passed in the secret argument.
-        pcsEmit->EmitLDC((DWORD_PTR)m_pStubContextMD);
-        pcsEmit->EmitCONV_I();
-        return;
-    }
+    // Forward CLR->COM stubs are compiled as transient IL on the CLR->COM method itself, so the JIT
+    // does not publish a secret argument for them (see ILStubState::FinishEmit). Any data such a stub
+    // needs must be baked into the IL at generation time instead.
+    CONSISTENCY_CHECK(!SF_IsForwardCOMStub(dwStubFlags));
 
     // get the secret argument via intrinsic
     pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
-}
-
-void PInvokeStubLinker::SetStubContextMD(MethodDesc* pStubContextMD)
-{
-    LIMITED_METHOD_CONTRACT;
-    m_pStubContextMD = pStubContextMD;
 }
 
 namespace
