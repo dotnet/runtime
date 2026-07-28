@@ -231,7 +231,9 @@ namespace System.Runtime
             RhUnbox(obj, ref data, pUnboxToEEType);
         }
 
-        public static unsafe void RhUnboxTypeTest(MethodTable* pType, MethodTable* pBoxType)
+        // Takes (source, target) to match CoreCLR's CastHelpers.Unbox_TypeTest, which names them in
+        // that order in the cast exception message.
+        public static unsafe void RhUnboxTypeTest(MethodTable* pBoxType, MethodTable* pType)
         {
             Debug.Assert(pType->IsValueType);
 
