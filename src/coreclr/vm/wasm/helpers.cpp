@@ -705,11 +705,6 @@ EXTERN_C VOID STDCALL ResetCurrentContext()
 {
 }
 
-extern "C" void STDCALL GenericPInvokeCalliHelper(void)
-{
-    PORTABILITY_ASSERT("GenericPInvokeCalliHelper is not implemented on wasm");
-}
-
 // Does the pinvoke frame transition; the naked wrappers below have already set the wasm
 // __stack_pointer global to callersStackPointer so it is safe to run native code here.
 EXTERN_C void JIT_PInvokeBeginImpl(uintptr_t callersStackPointer, InlinedCallFrame* pFrame)

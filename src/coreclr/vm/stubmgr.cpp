@@ -1749,12 +1749,12 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     }
     else if (pStubMD->IsPInvokeCalliStub())
     {
-        // This is unmanaged CALLI stub, the argument is the target
-        target = (PCODE)arg;
-
-        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Unmanaged CALLI case %p\n",
-             reinterpret_cast<void*>(target)));
-        trace->InitForUnmanaged(target);
+        // This is an unmanaged CALLI stub. The native target is passed as the last argument
+        // of the stub rather than in a hidden argument, so we cannot recover it from the
+        // register context here.
+        LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Unmanaged CALLI stub -
+             reinterpret_cast<void*>(target is not traceable\n")));
+        return FALSE;
     }
     else if (pStubMD->IsStepThroughStub())
     {
@@ -1901,7 +1901,7 @@ BOOL PInvokeStubManager::DoTraceStub(PCODE stubStartAddress,
 #endif // !DACCESS_COMPILE
 }
 
-// This is used to recognize VarargPInvokeStub, and GenericPInvokeCalliHelper.
+// This is used to recognize VarargPInvokeStub.
 
 #ifndef DACCESS_COMPILE
 
@@ -1948,12 +1948,6 @@ BOOL InteropDispatchStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     {
         return true;
     }
-
-    if (stubStartAddress == GetEEFuncEntryPoint(GenericPInvokeCalliHelper))
-    {
-        return true;
-    }
-
 #endif // !DACCESS_COMPILE
     return false;
 }
@@ -2012,19 +2006,6 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
         PCODE target = (PCODE)pNMD->GetPInvokeTarget();
 
         LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Vararg P/Invoke case %p\n",
-             reinterpret_cast<void*>(target)));
-        trace->InitForUnmanaged(target);
-#endif //defined(TARGET_ARM64) && defined(__APPLE__)
-    }
-    else if (stubIP == GetEEFuncEntryPoint(GenericPInvokeCalliHelper))
-    {
-#if defined(TARGET_ARM64) && defined(__APPLE__)
-        //On ARM64 Mac, we cannot put a breakpoint inside of GenericPInvokeCalliHelper
-        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Skipping on arm64-macOS\n"));
-        return FALSE;
-#else
-        PCODE target = (PCODE)arg;
-        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Unmanaged CALLI case %p\n",
              reinterpret_cast<void*>(target)));
         trace->InitForUnmanaged(target);
 #endif //defined(TARGET_ARM64) && defined(__APPLE__)

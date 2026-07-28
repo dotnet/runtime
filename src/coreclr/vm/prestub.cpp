@@ -749,7 +749,7 @@ namespace
         {
             return GetAndVerifyMetadataILHeader(pMD, pConfig, pIlDecoderMemory);
         }
-        else if (pMD->IsILStub())
+        else if (pMD->IsILStub() && !pMD->AsDynamicMethodDesc()->UsesTransientIL())
         {
             ILStubResolver* pResolver = pMD->AsDynamicMethodDesc()->GetILStubResolver();
             return pResolver->GetILHeader();
@@ -795,9 +795,17 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
             }
             else
             {
-                unsigned int ilSize, unused;
+                unsigned int ilSize = 0;
+                unsigned int unused;
                 CorInfoOptions corOptions;
-                LPCBYTE ilHeaderPointer = this->AsDynamicMethodDesc()->GetResolver()->GetCodeInfo(&ilSize, &unused, &corOptions, &unused);
+                LPCBYTE ilHeaderPointer = NULL;
+
+                // Stubs backed by transient IL have no IL yet - it is generated as part of the
+                // compilation that is just starting.
+                if (!AsDynamicMethodDesc()->UsesTransientIL())
+                {
+                    ilHeaderPointer = AsDynamicMethodDesc()->GetResolver()->GetCodeInfo(&ilSize, &unused, &corOptions, &unused);
+                }
 
                 (&g_profControlBlock)->DynamicMethodJITCompilationStarted((FunctionID)this, TRUE, ilHeaderPointer, ilSize);
             }
@@ -1113,6 +1121,13 @@ bool MethodDesc::TryGenerateTransientILImplementation(DynamicResolver** resolver
     if (IsPInvoke())
     {
         *methodILDecoder = PInvoke::CreatePInvokeMethodIL(static_cast<PInvokeMethodDesc*>(this), resolver);
+        return true;
+    }
+
+    if (IsILStub() && AsDynamicMethodDesc()->UsesTransientIL())
+    {
+        _ASSERTE(AsDynamicMethodDesc()->IsPInvokeCalliStub());
+        *methodILDecoder = PInvoke::CreateCalliStubIL(this, resolver);
         return true;
     }
 
