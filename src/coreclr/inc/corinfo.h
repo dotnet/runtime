@@ -481,7 +481,8 @@ enum CorInfoHelpFunc
 
     /* Miscellaneous */
 
-    CORINFO_HELP_PINVOKE_CALLI,         // Indirect pinvoke call
+    CORINFO_HELP_PINVOKE_CALLI,         // Unused; unmanaged calli is expanded inline or converted to a call
+                                        // to a marshalling stub by convertPInvokeCalliToCall
     CORINFO_HELP_TAILCALL,              // Perform a tail call
 
     CORINFO_HELP_GETCURRENTMANAGEDTHREADID,
@@ -3392,7 +3393,8 @@ public:
             CORINFO_CONST_LOOKUP *  pLookup
             ) = 0;
 
-    // Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
+    // Unused; unmanaged calli is expanded inline or converted to a call to a marshalling stub
+    // by convertPInvokeCalliToCall.
     virtual void* GetCookieForPInvokeCalliSig(
             CORINFO_SIG_INFO*   szMetaSig,
             void**              ppIndirection = NULL
