@@ -2605,10 +2605,7 @@ BOOL MethodDesc::RequiresMDContextArg()
     // Interop marshalling of varargs needs MethodDesc calling convention
     // to support ldftn <PInvoke method with varargs>. It is not possible
     // to smuggle the MethodDesc* via vararg cookie in this case.
-    if (IsPInvoke() && IsVarArg())
-        return TRUE;
-
-    return FALSE;
+    return IsPInvoke() && IsVarArg();
 }
 
 //*******************************************************************************
