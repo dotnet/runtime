@@ -165,7 +165,7 @@
     <AllSubsetsExpansion>clr.nativeprereqs+clr.iltools+clr.runtime+clr.native+clr.aot+clr.nativeaotlibs+clr.nativeaotruntime+clr.crossarchtools</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+clr.paltests+clr.paltestlist+clr.hosts+clr.jit+clr.alljits+clr.alljitscommunity+clr.spmi+clr.corelib+clr.nativecorelib+clr.tools+clr.toolstests+clr.packages</AllSubsetsExpansion>
     <AllSubsetsExpansion Condition="$([MSBuild]::IsOsPlatform(Windows))">$(AllSubsetsExpansion)+linuxdac+alpinedac</AllSubsetsExpansion>
-    <AllSubsetsExpansion>$(AllSubsetsExpansion)+mono.runtime+provision.emsdk+mono.aotcross+mono.corelib+mono.manifests+mono.packages+mono.tools+mono.wasmruntime+mono.wasiruntime+mono.wasmworkload+mono.mscordbi+mono.workloads</AllSubsetsExpansion>
+    <AllSubsetsExpansion>$(AllSubsetsExpansion)+mono.runtime+provision.emsdk+mono.aotcross+mono.corelib+mono.manifests+mono.packages+mono.tools+mono.wasmruntime+mono.wasiruntime+mono.wasmworkload+mono.mscordbi</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+tools.illink+tools.cdac+tools.illinktests+tools.cdactests+tools.cdacdumptests</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+host.native+host.pkg+host.tools+host.pretest+host.tests</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+libs.native+libs.sfx+libs.oob+libs.pretest+libs.tests</AllSubsetsExpansion>
@@ -246,7 +246,6 @@
     <SubsetName Include="Mono.WasiRuntime" Description="The WASI runtime." />
     <SubsetName Include="Mono.WasmWorkload" Description="*Helper* subset for building some pre-requisites for wasm workload testing, useful on CI." />
     <SubsetName Include="Mono.MsCorDbi" Description="The implementation of ICorDebug interface." />
-    <SubsetName Include="Mono.Workloads" OnDemand="true" Description="Builds the installers and the insertion metadata for Blazor workloads." />
 
     <!-- Tools -->
     <SubsetName Include="Tools" Description="Additional runtime tools projects. Equivalent to: $(DefaultToolsSubsets)" />
