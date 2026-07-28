@@ -6096,7 +6096,7 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         // This is not true for the System V systems since there is no
         // outgoing args space. Assign the dependently promoted fields properly.
 
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86) || defined(TARGET_WASM)
         // ARM: lo/hi parts of a promoted long arg need to be updated.
         //
         // For System V platforms there is no outgoing args space.
@@ -6105,12 +6105,17 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         // The offset of these structs is already calculated in lvaAssignVirtualFrameOffsetToArg method.
         // Make sure the code below is not executed for these structs and the offset is not changed.
         //
+        // Wasm: params arrive in Wasm locals and are homed by the prolog, so parameter fields never get an
+        // offset from lvaAssignVirtualFrameOffsetToArg. Without processing them here a dependently promoted
+        // parameter field keeps offset zero and, once the frame delta is applied, aliases the end of the
+        // frame instead of its parent's home.
+        //
         const bool mustProcessParams = true;
 #else
         // OSR/Swift must also assign offsets here.
         //
         const bool mustProcessParams = opts.IsOSR() || (info.compCallConv == CorInfoCallConvExtension::Swift);
-#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86)
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86) || defined(TARGET_WASM)
 
         if (varDsc->lvIsStructField && (!varDsc->lvIsParam || mustProcessParams))
         {

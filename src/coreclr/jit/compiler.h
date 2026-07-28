@@ -1776,6 +1776,7 @@ struct FuncInfoDsc
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
     unsigned funWasmFrameSize;
     unsigned funWasmExnRefLocalIndex = UINT_MAX;
+    unsigned funWasmImageBaseLocalIndex = UINT_MAX;
     bool needsUnwindableFrame;
     emitLocation* startLoc;
     emitLocation* endLoc;
@@ -4085,6 +4086,7 @@ public:
         BR_REMOVE_BUT_NOT_NARROW,              // remove effects, return original source tree
         BR_DONT_REMOVE,                        // check if removal is possible, return copy source tree
         BR_DONT_REMOVE_WANT_TYPE_HANDLE,       // check if removal is possible, return type handle tree
+        BR_MAKE_LOCAL_COPY                     // revise box to copy to temp local and return local's address
     };
 
     GenTree* gtTryRemoveBoxUpstreamEffects(GenTree* tree, BoxRemovalOptions options = BR_REMOVE_AND_NARROW);

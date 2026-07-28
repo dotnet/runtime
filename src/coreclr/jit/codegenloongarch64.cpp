@@ -2221,8 +2221,9 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         {
             ins = INS_amswap_db_b;
         }
-        else if (varTypeIsShort(treeNode->TypeGet()))
+        else
         {
+            assert(varTypeIsShort(treeNode));
             ins = INS_amswap_db_h;
         }
         emit->emitIns_R_R_R(ins, dataSize, targetReg, dataReg, addrReg);
