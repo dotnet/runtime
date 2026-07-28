@@ -123,6 +123,148 @@ namespace ILLink.RoslynAnalyzer.Tests
             await test.RunAsync();
         }
         [Fact]
+        public async Task AddsUnsafeToIndexerImplementingPart()
+        {
+            string source = """
+                partial class C
+                {
+                    public unsafe partial int this[int i] { get; }
+                }
+
+                partial class C
+                {
+                    public partial int {|CS0764:this|}[int i] => 0;
+                }
+                """;
+
+            string fixedSource = """
+                partial class C
+                {
+                    public unsafe partial int this[int i] { get; }
+                }
+
+                partial class C
+                {
+                    public unsafe partial int this[int i] => 0;
+                }
+                """;
+
+            var test = UnsafeMigrationTestHelpers
+                .CreateCodeFixTest<DynamicallyAccessedMembersAnalyzer, MatchPartialSafetyModifierCodeFixProvider>(
+                    source,
+                    fixedSource);
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task AddsUnsafeToIndexerDefiningPart()
+        {
+            string source = """
+                partial class C
+                {
+                    public partial int this[int i] { get; }
+                }
+
+                partial class C
+                {
+                    public unsafe partial int {|CS0764:this|}[int i] => 0;
+                }
+                """;
+
+            string fixedSource = """
+                partial class C
+                {
+                    public unsafe partial int this[int i] { get; }
+                }
+
+                partial class C
+                {
+                    public unsafe partial int this[int i] => 0;
+                }
+                """;
+
+            var test = UnsafeMigrationTestHelpers
+                .CreateCodeFixTest<DynamicallyAccessedMembersAnalyzer, MatchPartialSafetyModifierCodeFixProvider>(
+                    source,
+                    fixedSource);
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task AddsUnsafeToConstructorImplementingPart()
+        {
+            string source = """
+                partial class C
+                {
+                    public unsafe partial C(int x);
+                }
+
+                partial class C
+                {
+                    public partial {|CS0764:C|}(int x) { }
+                }
+                """;
+
+            string fixedSource = """
+                partial class C
+                {
+                    public unsafe partial C(int x);
+                }
+
+                partial class C
+                {
+                    public unsafe partial C(int x) { }
+                }
+                """;
+
+            var test = UnsafeMigrationTestHelpers
+                .CreateCodeFixTest<DynamicallyAccessedMembersAnalyzer, MatchPartialSafetyModifierCodeFixProvider>(
+                    source,
+                    fixedSource);
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task AddsUnsafeToFieldLikeEventDefiningPart()
+        {
+            // The defining part's symbol reference points at the variable declarator, not the declaration that
+            // carries the modifier.
+            string source = """
+                using System;
+
+                partial class C
+                {
+                    public partial event Action E;
+                }
+
+                partial class C
+                {
+                    public unsafe partial event Action {|CS0764:E|} { add { } remove { } }
+                }
+                """;
+
+            string fixedSource = """
+                using System;
+
+                partial class C
+                {
+                    public unsafe partial event Action E;
+                }
+
+                partial class C
+                {
+                    public unsafe partial event Action E { add { } remove { } }
+                }
+                """;
+
+            var test = UnsafeMigrationTestHelpers
+                .CreateCodeFixTest<DynamicallyAccessedMembersAnalyzer, MatchPartialSafetyModifierCodeFixProvider>(
+                    source,
+                    fixedSource);
+            await test.RunAsync();
+        }
+
+        [Fact]
         public async Task DoesNotOfferFixWhenPartsDisagreeInOppositeDirections()
         {
             // The parts declare conflicting contracts, so the compiler reports both CS0764 and CS9390. Adding

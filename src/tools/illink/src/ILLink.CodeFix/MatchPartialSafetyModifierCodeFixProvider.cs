@@ -106,6 +106,12 @@ namespace ILLink.CodeFix
                     continue;
 
                 SyntaxNode declaration = reference.GetSyntax(cancellationToken);
+
+                // A field-like event's reference points at the variable declarator, but the modifier lives on the
+                // declaration that contains it.
+                if (declaration is VariableDeclaratorSyntax variable && variable.Parent?.Parent is BaseFieldDeclarationSyntax field)
+                    declaration = field;
+
                 if (HasModifier(declaration, modifier))
                     continue;
 
@@ -141,9 +147,11 @@ namespace ILLink.CodeFix
             };
 
         private static SyntaxNode? FindPartialDeclaration(SyntaxNode node) =>
-            node.AncestorsAndSelf().FirstOrDefault(static ancestor => ancestor is MethodDeclarationSyntax
-                or PropertyDeclarationSyntax
-                or EventDeclarationSyntax);
+            // BaseMethodDeclarationSyntax covers partial methods and constructors, BasePropertyDeclarationSyntax
+            // covers partial properties, indexers and events, and a field-like event is its own declaration kind.
+            node.AncestorsAndSelf().FirstOrDefault(static ancestor => ancestor is BaseMethodDeclarationSyntax
+                or BasePropertyDeclarationSyntax
+                or EventFieldDeclarationSyntax);
     }
 }
 #endif
