@@ -831,10 +831,29 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 .GetAllDiagnosticsAsync();
         }
 
-        [Fact]
-        public async Task KeywordNamedConstructorParameters()
+        [Theory]
+        // Keyword-named constructor parameters bound to locals.
+        [InlineData("""
+            class MyConfiguration(string @base, string @event)
+            {
+                public string Base { get; } = @base;
+                public string Event { get; } = @event;
+            }
+            """)]
+        // Keyword-named settable properties bound through member access on the instance.
+        [InlineData("""
+            class MyConfiguration
+            {
+                public string @base { get; set; }
+                public string @event { get; set; }
+            }
+            """)]
+        // Positional record properties keep the keyword names of their matching constructor parameters,
+        // so both sides of the emitted object initializer need escaping.
+        [InlineData("record MyConfiguration(string @base, string @event);")]
+        public async Task KeywordNamedMembers(string configurationType)
         {
-            string source = """
+            string source = $$"""
                 using Microsoft.Extensions.Configuration;
 
                 public class Program
@@ -848,11 +867,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     }
                 }
 
-                class MyConfiguration(string @base, string @event)
-                {
-                    public string Base { get; } = @base;
-                    public string Event { get; } = @event;
-                }
+                {{configurationType}}
                 """;
 
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
