@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
@@ -128,6 +129,18 @@ internal static class SignatureMapper
     /// </summary>
     private static string? TypeToSignatureToken(Type t, LogAdapter log, out bool isByRefStruct)
     {
+        // Types the wasm ABI splits across several by-value slots are rejected in interop rather
+        // than encoded. Exposing them here means teaching the thunk generator that one signature
+        // token can map to several native parameters, which is a larger design question; today no
+        // InternalCall or PInvoke signature uses one.
+        if (IsMultiSlotType(t))
+        {
+            log.Error("WASM0068",
+                $"SignatureMapper: '{t.FullName ?? t.Name}' is passed across multiple wasm slots, which interop signatures do not support");
+            isByRefStruct = false;
+            return null;
+        }
+
         char? c = TypeToChar(t, log, out isByRefStruct, out int structSize);
         if (c is null)
             return null;
@@ -136,6 +149,71 @@ internal static class SignatureMapper
             return $"S{structSize}";
 
         return c.Value.ToString();
+    }
+
+    /// <summary>
+    /// True for a type the wasm ABI passes across several by-value slots: Int128/UInt128 and
+    /// Decimal128 as i64 slots, a 256- or 512-bit vector as v128 slots. A single-field wrapper is
+    /// passed as the type it wraps, so unwrap first, exactly as crossgen2 and the runtime do.
+    /// </summary>
+    private static bool IsMultiSlotType(Type t)
+    {
+        for (int depth = 0; depth <= 5; depth++)
+        {
+            switch (t.Namespace, t.Name)
+            {
+                case ("System", "Int128"):
+                case ("System", "UInt128"):
+                case ("System.Numerics", "Decimal128"):
+                    return true;
+                case ("System.Runtime.Intrinsics", "Vector256`1") when HasNumericElementType(t):
+                case ("System.Runtime.Intrinsics", "Vector512`1") when HasNumericElementType(t):
+                    return true;
+            }
+
+            if (!t.IsValueType || t.IsPrimitive || t.IsEnum)
+            {
+                return false;
+            }
+
+            // Only unwrap a wrapper its field fills exactly. Sizes cannot be measured here: these
+            // types come from a MetadataLoadContext, where Marshal.SizeOf always throws. A single
+            // field fills its struct unless the struct sets a size of its own or places the field
+            // at an offset, so treat either as padded and keep the struct ABI.
+            FieldInfo[] fields = t.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (fields.Length != 1 ||
+                t.StructLayoutAttribute is not { Size: 0, Value: not LayoutKind.Explicit })
+            {
+                return false;
+            }
+
+            t = fields[0].FieldType;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// The other two encoders only treat a vector as a sequence of wasm values when its element type
+    /// is a primitive numeric, so Vector256&lt;bool&gt; and Vector256&lt;char&gt; use the struct ABI.
+    /// </summary>
+    private static bool HasNumericElementType(Type t)
+    {
+        Type[] arguments = t.GetGenericArguments();
+        if (arguments.Length != 1)
+        {
+            return false;
+        }
+
+        // An enum reports its underlying numeric type code, but crossgen2 and the runtime both
+        // reject enums as a vector element type.
+        if (arguments[0].IsEnum)
+        {
+            return false;
+        }
+
+        return Type.GetTypeCode(arguments[0]) is >= TypeCode.SByte and <= TypeCode.Double
+            || arguments[0] == typeof(IntPtr) || arguments[0] == typeof(UIntPtr);
     }
 
     public static string? MethodToSignature(MethodInfo method, LogAdapter log, bool includeThis = false)
@@ -175,7 +253,8 @@ internal static class SignatureMapper
 
     /// <summary>
     /// Parses a signature string into individual tokens.
-    /// Single-char types produce one-char tokens; S&lt;N&gt; produces a multi-char token like "S8" or "S64".
+    /// Single-char types produce one-char tokens; S&lt;N&gt; produces a multi-char token like "S8" or "S64",
+    /// and a multi-slot parameter produces a two-char token like "l2" or "V4".
     /// The 'a' and 'p' suffixes are included as their own tokens.
     /// </summary>
     public static List<string> ParseSignatureTokens(string signature)
@@ -192,6 +271,11 @@ internal static class SignatureMapper
                     i++;
                 tokens.Add(signature.Substring(start, i - start));
             }
+            else if (signature[i] is 'l' or 'V' && i + 1 < signature.Length && char.IsDigit(signature[i + 1]))
+            {
+                tokens.Add(signature.Substring(i, 2));
+                i += 2;
+            }
             else
             {
                 tokens.Add(signature[i].ToString());
@@ -202,42 +286,67 @@ internal static class SignatureMapper
         return tokens;
     }
 
-    public static string TokenToNativeType(string token) => token[0] switch
-    {
-        'v' => "void",
-        'i' => "int32_t",
-        'l' => "int64_t",
-        'f' => "float",
-        'd' => "double",
-        'S' => "int32_t",
-        'T' => "int32_t",
-        'p' => "PCODE",
-        _ => throw new InvalidSignatureCharException(token[0])
-    };
+    /// <summary>
+    /// True for a token describing a type passed by value across several wasm parameters
+    /// ("l2", "V2", "V4"). Interop signatures do not use these today.
+    /// </summary>
+    private static bool IsMultiSlotToken(string token)
+        => token.Length == 2 && token[0] is 'l' or 'V' && char.IsDigit(token[1]);
 
-    public static string TokenToNameType(string token) => token[0] switch
+    private static void RejectMultiSlotToken(string token)
     {
-        'v' => "Void",
-        'i' => "I32",
-        'l' => "I64",
-        'f' => "F32",
-        'd' => "F64",
-        'S' => token, // e.g. "S8", "S64" — encodes size in the name
-        'T' => "This",
-        'p' => "PE",
-        _ => throw new InvalidSignatureCharException(token[0])
-    };
+        if (IsMultiSlotToken(token))
+            throw new NotSupportedException($"Multi-slot signature token '{token}' is not supported in interop thunks");
+    }
 
-    public static string TokenToArgType(string token) => token[0] switch
+    public static string TokenToNativeType(string token)
     {
-        'i' => "ARG_I32",
-        'l' => "ARG_I64",
-        'f' => "ARG_F32",
-        'd' => "ARG_F64",
-        'S' => "ARG_IND",
-        'T' => "ARG_I32",
-        _ => throw new InvalidSignatureCharException(token[0])
-    };
+        RejectMultiSlotToken(token);
+        return token[0] switch
+        {
+            'v' => "void",
+            'i' => "int32_t",
+            'l' => "int64_t",
+            'f' => "float",
+            'd' => "double",
+            'S' => "int32_t",
+            'T' => "int32_t",
+            'p' => "PCODE",
+            _ => throw new InvalidSignatureCharException(token[0])
+        };
+    }
+
+    public static string TokenToNameType(string token)
+    {
+        RejectMultiSlotToken(token);
+        return token[0] switch
+        {
+            'v' => "Void",
+            'i' => "I32",
+            'l' => "I64",
+            'f' => "F32",
+            'd' => "F64",
+            'S' => token, // e.g. "S8", "S64" — encodes size in the name
+            'T' => "This",
+            'p' => "PE",
+            _ => throw new InvalidSignatureCharException(token[0])
+        };
+    }
+
+    public static string TokenToArgType(string token)
+    {
+        RejectMultiSlotToken(token);
+        return token[0] switch
+        {
+            'i' => "ARG_I32",
+            'l' => "ARG_I64",
+            'f' => "ARG_F32",
+            'd' => "ARG_F64",
+            'S' => "ARG_IND",
+            'T' => "ARG_I32",
+            _ => throw new InvalidSignatureCharException(token[0])
+        };
+    }
 
     /// <summary>
     /// Returns the number of INTERP_STACK_SLOT_SIZE slots consumed by a token.
