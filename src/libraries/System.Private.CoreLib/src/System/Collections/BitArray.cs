@@ -132,8 +132,18 @@ namespace System.Collections
         /// <exception cref="ArgumentNullException"><paramref name="bytes"/> is null.</exception>
         /// <exception cref="ArgumentException">The length of <paramref name="bytes"/> in bits is greater than <see cref="int.MaxValue"/>.</exception>
         public BitArray(byte[] bytes)
+            : this(new ReadOnlySpan<byte>(bytes ?? throw new ArgumentNullException(nameof(bytes))))
         {
-            ArgumentNullException.ThrowIfNull(bytes);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BitArray"/> class that contains bit values copied
+        /// from the specified read-only span of bytes.
+        /// </summary>
+        /// <param name="bytes">A read-only span of bytes containing the values to copy, where each byte represents eight consecutive bits.</param>
+        /// <exception cref="ArgumentException">The length of <paramref name="bytes"/> in bits is greater than <see cref="int.MaxValue"/>.</exception>
+        public BitArray(ReadOnlySpan<byte> bytes)
+        {
             if (bytes.Length > int.MaxValue / BitsPerByte)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerByte), nameof(bytes));
@@ -142,7 +152,7 @@ namespace System.Collections
             _bitLength = bytes.Length * BitsPerByte;
             _array = AllocateByteArray(_bitLength);
 
-            Array.Copy(bytes, _array, bytes.Length);
+            bytes.CopyTo(_array);
         }
 
         /// <summary>
@@ -152,9 +162,17 @@ namespace System.Collections
         /// <param name="values">An array of Booleans to copy.</param>
         /// <exception cref="ArgumentNullException"><paramref name="values"/> is null.</exception>
         public BitArray(bool[] values)
+            : this(new ReadOnlySpan<bool>(values ?? throw new ArgumentNullException(nameof(values))))
         {
-            ArgumentNullException.ThrowIfNull(values);
+        }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BitArray"/> class that contains bit values
+        /// copied from the specified read-only span of Booleans.
+        /// </summary>
+        /// <param name="values">A read-only span of Booleans to copy.</param>
+        public BitArray(ReadOnlySpan<bool> values)
+        {
             _array = AllocateByteArray(values.Length);
             _bitLength = values.Length;
 
@@ -167,10 +185,10 @@ namespace System.Collections
 
             // Comparing with 1s would get rid of the final negation, however this would not work for some CLR bools
             // (true for any non-zero values, false for 0) - any values between 2-255 will be interpreted as false.
-            // Instead, We compare with zeroes (== false) then negate the result to ensure compatibility.
+            // Instead, we compare with zeroes (== false) then negate the result to ensure compatibility.
 
             ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(_array);
-            ReadOnlySpan<byte> valuesAsBytes = MemoryMarshal.AsBytes(values.AsSpan());
+            ReadOnlySpan<byte> valuesAsBytes = MemoryMarshal.AsBytes(values);
             if (Vector512.IsHardwareAccelerated)
             {
                 while (valuesAsBytes.Length >= Vector512<byte>.Count)
@@ -220,7 +238,7 @@ namespace System.Collections
         Remainder:
             for (; i < (uint)values.Length; i++)
             {
-                if (values[i])
+                if (values[(int)i])
                 {
                     (uint byteIndex, uint bitOffset) = Math.DivRem(i, BitsPerByte);
                     _array[byteIndex] |= (byte)(1 << (int)bitOffset);
@@ -242,8 +260,24 @@ namespace System.Collections
         /// "<paramref name="values"/>[0] &amp; 4" represents bit 2, and so on.
         /// </remarks>
         public BitArray(int[] values)
+            : this(new ReadOnlySpan<int>(values ?? throw new ArgumentNullException(nameof(values))))
         {
-            ArgumentNullException.ThrowIfNull(values);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BitArray"/> class that contains bit values
+        /// copied from the specified read-only span of 32-bit integers.
+        /// </summary>
+        /// <param name="values">A read-only span of 32-bit integers containing the values to copy, where each integer represents 32 consecutive bits.</param>
+        /// <exception cref="ArgumentException">The length of <paramref name="values"/> in bits is greater than <see cref="int.MaxValue"/>.</exception>
+        /// <remarks>
+        /// The number in the first <paramref name="values"/> span element represents bits 0 through 31, the second number in the span represents
+        /// bits 32 through 63, and so on. The least significant bit of each integer represents the lowest index value:
+        /// "<paramref name="values"/>[0] &amp; 1" represents bit 0, "<paramref name="values"/>[0] &amp; 2" represents bit 1,
+        /// "<paramref name="values"/>[0] &amp; 4" represents bit 2, and so on.
+        /// </remarks>
+        public BitArray(ReadOnlySpan<int> values)
+        {
             if (values.Length > int.MaxValue / BitsPerInt32)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerInt32), nameof(values));
