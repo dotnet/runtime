@@ -876,5 +876,39 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
+
+        [Theory]
+        [InlineData("quoted\"key")]
+        [InlineData(@"path\key")]
+        [InlineData("line\nbreak")]
+        public async Task ConfigurationKeyNamesRequiringEscaping(string configurationKeyName)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        MyConfiguration options = config.GetSection("My").Get<MyConfiguration>()!;
+                    }
+                }
+
+                class MyConfiguration
+                {
+                    [ConfigurationKeyName({{SymbolDisplay.FormatLiteral(configurationKeyName, quote: true)}})]
+                    public string Value { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
     }
 }

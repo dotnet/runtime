@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
@@ -54,7 +55,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     Debug.Assert(_typeIndex.HasBindableMembers(objectType));
 
                     HashSet<string>? keys = null;
-                    static string GetCacheElement(MemberSpec member) => $@"""{member.ConfigurationKeyName}""";
+                    static string GetCacheElement(MemberSpec member) => SymbolDisplay.FormatLiteral(member.ConfigurationKeyName, quote: true);
 
                     if (objectType.ConstructorParameters?.Select(m => GetCacheElement(m)) is IEnumerable<string> paramNames)
                     {
@@ -384,7 +385,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             {
                                 if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding)
                                 {
-                                    string condition = $@"if ({Identifier.configuration}[""{configKeyName}""] is not {parsedMemberDeclarationLhs})";
+                                    string condition = $"if ({Identifier.configuration}[{SymbolDisplay.FormatLiteral(configKeyName, quote: true)}] is not {parsedMemberDeclarationLhs})";
                                     EmitThrowBlock(condition);
                                     _writer.WriteLine();
                                     return;
@@ -895,7 +896,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             {
                                 EmitBlankLineIfRequired();
                                 string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
-                                EmitStartBlock($@"if ({Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: ""{member.ConfigurationKeyName}"", out string? {valueIdentifier}))");
+                                EmitStartBlock($"if ({Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: {SymbolDisplay.FormatLiteral(member.ConfigurationKeyName, quote: true)}, out string? {valueIdentifier}))");
 
                                 // Decide to emit the null check block for nullable types (e.g. int?).
                                 // We don't emit this block for types that can be assigned directly from IConfigurationSection.Value as the valueIdentifier value can assigned
@@ -1357,7 +1358,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static string GetSectionFromConfigurationExpression(string configurationKeyName, bool addQuotes = true)
             {
-                string argExpr = addQuotes ? $@"""{configurationKeyName}""" : configurationKeyName;
+                string argExpr = addQuotes ? SymbolDisplay.FormatLiteral(configurationKeyName, quote: true) : configurationKeyName;
                 return $@"{Identifier.configuration}.{Identifier.GetSection}({argExpr})";
             }
 
