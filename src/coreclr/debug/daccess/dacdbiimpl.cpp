@@ -4095,7 +4095,17 @@ namespace
 
 void DacDbiInterfaceImpl::SerializeReadWriteMetadata(Module * pModule, BYTE ** ppBlob, ULONG32 * pcbBlob)
 {
+    if (pModule == NULL)
+    {
+        ThrowHR(E_INVALIDARG);
+    }
+
     PEAssembly * pPEAssembly = pModule->GetPEAssembly();
+    if (pPEAssembly == NULL)
+    {
+        ThrowHR(E_INVALIDARG);
+    }
+
     TADDR mdRWAddr = pPEAssembly->GetMDInternalRWAddress();
     if (mdRWAddr == (TADDR)NULL)
     {
@@ -4294,7 +4304,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::FillReadWriteMetadata(VMPTR_Modul
     {
         if (pBuffer == NULL)
         {
-            ThrowHR(E_INVALIDARG);
+            ThrowHR(E_POINTER);
         }
 
         Module * pModule = vmModule.GetDacPtr();

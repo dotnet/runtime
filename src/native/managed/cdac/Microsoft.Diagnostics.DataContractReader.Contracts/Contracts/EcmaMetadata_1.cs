@@ -8,6 +8,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -179,7 +180,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         builder.WriteUInt32(0);
 
         string version = targetEcmaMetadata.Schema.MetadataVersion;
-        builder.WriteInt32(AlignUp(version.Length + 1, 4));
+        builder.WriteInt32(AlignUp(Encoding.UTF8.GetByteCount(version) + 1, 4));
         Write4ByteAlignedString(builder, version);
 
         // reserved
@@ -307,9 +308,10 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
             builder.WriteUTF8(value);
             builder.WriteByte(0);
             int stringEnd = builder.Count;
+            int byteCount = Encoding.UTF8.GetByteCount(value);
             // The name field occupies the null-terminated string padded to a 4-byte boundary,
             // i.e. AlignUp(length + 1, 4) bytes (the +1 accounts for the null terminator).
-            for (int i = stringEnd; i < bufferStart + AlignUp(value.Length + 1, 4); i++)
+            for (int i = stringEnd; i < bufferStart + AlignUp(byteCount + 1, 4); i++)
             {
                 builder.WriteByte(0);
             }
