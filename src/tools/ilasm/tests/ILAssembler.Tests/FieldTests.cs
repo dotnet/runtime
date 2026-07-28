@@ -125,6 +125,48 @@ namespace ILAssembler.Tests
             Assert.Equal(0, fields[2].GetOffset());
         }
 
+        [Fact]
+        public void FieldAttributes_EmitExpectedFlagsAndNullConstant()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .field family initonly int32 FamilyInitOnly
+                    .field assembly int32 AssemblyField
+                    .field famandassem int32 FamAndAssemField
+                    .field famorassem int32 FamOrAssemField
+                    .field privatescope int32 PrivateScopeField
+                    .field public notserialized int32 NotSerializedField
+                    .field flags(0x36) int32 FlaggedField
+                    .field public volatile int32 VolatileField
+                    .field public static literal string NullString = nullref
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var fields = reader.FieldDefinitions
+                .Select(reader.GetFieldDefinition)
+                .ToDictionary(field => reader.GetString(field.Name));
+
+            Assert.Equal(FieldAttributes.Family, fields["FamilyInitOnly"].Attributes & FieldAttributes.FieldAccessMask);
+            Assert.True(fields["FamilyInitOnly"].Attributes.HasFlag(FieldAttributes.InitOnly));
+            Assert.Equal(FieldAttributes.Assembly, fields["AssemblyField"].Attributes & FieldAttributes.FieldAccessMask);
+            Assert.Equal(FieldAttributes.FamANDAssem, fields["FamAndAssemField"].Attributes & FieldAttributes.FieldAccessMask);
+            Assert.Equal(FieldAttributes.FamORAssem, fields["FamOrAssemField"].Attributes & FieldAttributes.FieldAccessMask);
+            Assert.Equal(FieldAttributes.PrivateScope, fields["PrivateScopeField"].Attributes & FieldAttributes.FieldAccessMask);
+#pragma warning disable SYSLIB0050
+            Assert.True(fields["NotSerializedField"].Attributes.HasFlag(FieldAttributes.NotSerialized));
+#pragma warning restore SYSLIB0050
+            Assert.Equal((FieldAttributes)0x36, fields["FlaggedField"].Attributes);
+            Assert.Equal(FieldAttributes.Public, fields["VolatileField"].Attributes & FieldAttributes.FieldAccessMask);
+
+            var nullConstant = reader.GetConstant(fields["NullString"].GetDefaultValue());
+            Assert.Equal(ConstantTypeCode.NullReference, nullConstant.TypeCode);
+        }
+
 
         [Fact]
         public void FieldRVA_MultipleDataSections()
