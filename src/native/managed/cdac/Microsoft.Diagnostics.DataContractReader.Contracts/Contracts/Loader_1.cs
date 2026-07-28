@@ -30,6 +30,7 @@ internal readonly struct Loader_1 : ILoader
     private const int DebuggerInfoShift = 10;
 
     private const uint DEBUGGER_ALLOW_JIT_OPTS_PRIV = 0x00000800;
+    private const ulong IS_FIELD_MEMBER_REF = 0x00000002;
 
     private enum PEImageFlags : uint
     {
@@ -594,6 +595,13 @@ internal readonly struct Loader_1 : ILoader
         (TargetPointer rval, uint _) = IterateModuleLookupMap(table, rid, SearchLookupMap).FirstOrDefault();
         flags = new TargetNUInt(rval & supportedFlagsMask);
         return rval & ~supportedFlagsMask;
+    }
+
+    TargetPointer ILoader.LookupMemberRefAsMethod(ModuleHandle handle, uint token)
+    {
+        ModuleLookupTables lookupTables = ((ILoader)this).GetLookupTables(handle);
+        TargetPointer result = ((ILoader)this).GetModuleLookupMapElement(lookupTables.MemberRefToDesc, token, out TargetNUInt flags);
+        return (flags.Value & IS_FIELD_MEMBER_REF) == 0 ? result : TargetPointer.Null;
     }
 
     IEnumerable<(TargetPointer, uint)> ILoader.EnumerateModuleLookupMap(TargetPointer table)

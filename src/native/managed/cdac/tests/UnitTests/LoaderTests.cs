@@ -28,6 +28,7 @@ public unsafe class LoaderTests
             [DataType.Assembly] = TargetTestHelpers.CreateTypeInfo(loader.AssemblyLayout),
             [DataType.EEConfig] = TargetTestHelpers.CreateTypeInfo(loader.EEConfigLayout),
             [DataType.CGrowableSymbolStream] = TargetTestHelpers.CreateTypeInfo(loader.CGrowableSymbolStreamLayout),
+            [DataType.ModuleLookupMap] = TargetTestHelpers.CreateTypeInfo(loader.ModuleLookupMapLayout),
         };
 
     private static ILoader CreateLoaderContract(MockTarget.Architecture arch, Action<MockLoaderBuilder> configure)
@@ -93,6 +94,27 @@ public unsafe class LoaderTests
         // The absent code-versioning map reads as null; a present map still resolves to an address.
         Assert.Null(module.MethodDefToILCodeVersioningStateMap);
         Assert.NotEqual(TargetPointer.Null, module.MethodDefToDescMap);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void LookupMemberRefAsMethod_FiltersFieldMemberRefs(MockTarget.Architecture arch)
+    {
+        const uint MethodMemberRef = 0x0a000001;
+        const uint FieldMemberRef = 0x0a000002;
+        TargetPointer methodDesc = new(0x3000);
+        TargetPointer fieldDesc = new(0x4000);
+        MockLoaderModule module = null!;
+
+        ILoader contract = CreateLoaderContract(arch, loader =>
+        {
+            module = loader.AddModule();
+            loader.SetMemberRefToDescMap(module, methodDesc.Value, fieldDesc.Value | 2);
+        });
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(new TargetPointer(module.Address));
+        Assert.Equal(methodDesc, contract.LookupMemberRefAsMethod(handle, MethodMemberRef));
+        Assert.Equal(TargetPointer.Null, contract.LookupMemberRefAsMethod(handle, FieldMemberRef));
     }
 
     [Theory]

@@ -326,7 +326,7 @@ typedef DPTR(class MemberRef) PTR_MemberRef;
 
 
 // flag used to mark member ref pointers to field descriptors in the member ref cache
-#define IS_FIELD_MEMBER_REF ((TADDR)0x00000002)
+#define IS_FIELD_MEMBER_REF ((TADDR)0x00000002) // [cDAC] [Loader]: Contract depends on this value.
 
 
 //

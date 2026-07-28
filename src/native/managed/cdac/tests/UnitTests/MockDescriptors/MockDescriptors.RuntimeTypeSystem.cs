@@ -132,6 +132,12 @@ internal sealed class MockEEClass : TypedView
         set => WritePointerField(MethodTableFieldName, value);
     }
 
+    public ulong MethodDescChunk
+    {
+        get => ReadPointerField(MethodDescChunkFieldName);
+        set => WritePointerField(MethodDescChunkFieldName, value);
+    }
+
     public uint CorTypeAttr
     {
         get => ReadUInt32Field(CorTypeAttrFieldName);

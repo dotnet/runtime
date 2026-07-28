@@ -327,6 +327,7 @@ public interface IRuntimeTypeSystem : IContract
     OptimizationTier GetMethodDescOptimizationTier(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
     bool IsEligibleForTieredCompilation(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
     AsyncMethodFlags GetAsyncMethodFlags(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    TargetPointer GetAsyncVariant(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     bool IsWrapperStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
     bool IsUnboxingStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
