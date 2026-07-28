@@ -150,7 +150,6 @@ inline bool MethodDesc::IsInteropStub()
         case DynamicMethodDesc::StubPInvokeCalli:
         case DynamicMethodDesc::StubPInvokeVarArg:
         case DynamicMethodDesc::StubReversePInvoke:
-        case DynamicMethodDesc::StubCLRToCOMInterop:
         case DynamicMethodDesc::StubCOMToCLRInterop:
         case DynamicMethodDesc::StubStructMarshalInterop:
             return true;
