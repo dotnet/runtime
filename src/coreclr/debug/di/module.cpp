@@ -507,8 +507,9 @@ void CordbModule::RefreshMetaData()
             IfFailThrow(GetProcess()->GetDAC()->FillReadWriteMetadata(m_vmModule, pBuffer, cbSize));
             IMetaDataDispenserEx * pDisp = GetProcess()->GetDispenser();
             _ASSERTE(pDisp != NULL);
-            IfFailThrow(pDisp->OpenScopeOnMemory(pBuffer, cbSize, ofTakeOwnership, IID_IMetaDataImport, (IUnknown**)&m_pIMImport));
+            HRESULT hr = pDisp->OpenScopeOnMemory(pBuffer, cbSize, ofTakeOwnership, IID_IMetaDataImport, (IUnknown**)&m_pIMImport);
             pBuffer.Detach();
+            IfFailThrow(hr);
             UpdateInternalMetaData();
             return;
         }
