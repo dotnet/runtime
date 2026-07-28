@@ -51,6 +51,7 @@ namespace ILCompiler
         private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
         private Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
+        private DecimalFieldLayoutAlgorithm _decimalFieldLayoutAlgorithm;
         private TypeWithRepeatedFieldsFieldLayoutAlgorithm _typeWithRepeatedFieldsFieldLayoutAlgorithm;
         private RuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
 
@@ -88,6 +89,7 @@ namespace ILCompiler
 
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType);
             _int128FieldLayoutAlgorithm = new Int128FieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
+            _decimalFieldLayoutAlgorithm = new DecimalFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
             _typeWithRepeatedFieldsFieldLayoutAlgorithm = new TypeWithRepeatedFieldsFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
@@ -122,6 +124,10 @@ namespace ILCompiler
             else if (Int128FieldLayoutAlgorithm.IsIntegerType(type))
             {
                 return _int128FieldLayoutAlgorithm;
+            }
+            else if (DecimalFieldLayoutAlgorithm.IsDecimalFloatingPointType(type))
+            {
+                return _decimalFieldLayoutAlgorithm;
             }
             else if (type is TypeWithRepeatedFields)
             {
