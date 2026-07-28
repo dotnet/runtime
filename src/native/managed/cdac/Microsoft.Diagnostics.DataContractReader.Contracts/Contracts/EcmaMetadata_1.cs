@@ -135,7 +135,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
             }
             case AvailableMetadataType.ReadWrite:
             {
-                var targetEcmaMetadata = GetReadWriteMetadata(handle);
+                TargetEcmaMetadata targetEcmaMetadata = GetTargetEcmaMetadata(handle);
 
                 // From the multiple different target spans, we need to build a single
                 // contiguous ECMA-335 metadata blob.
@@ -296,6 +296,15 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         }
     }
 
+    public unsafe byte[] GetReadWriteMetadata(ModuleHandle handle)
+    {
+        if (GetAvailableMetadataType(handle) != AvailableMetadataType.ReadWrite)
+            throw new ArgumentException("Module does not have read/write metadata.", nameof(handle));
+
+        MetadataReader reader = GetMetadata(handle)!;
+        return new ReadOnlySpan<byte>(reader.MetadataPointer, reader.MetadataLength).ToArray();
+    }
+
     private struct EcmaMetadataSchema
     {
         public EcmaMetadataSchema(string metadataVersion, bool largeStringHeap, bool largeBlobHeap, bool largeGuidHeap, int[] rowCount, bool[] isSorted, bool variableSizedColumnsAre4BytesLong)
@@ -401,7 +410,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         return new TargetSpan(dynamicMetadata.Data, dynamicMetadata.Size);
     }
 
-    private TargetEcmaMetadata GetReadWriteMetadata(ModuleHandle handle)
+    private TargetEcmaMetadata GetTargetEcmaMetadata(ModuleHandle handle)
     {
         TargetPointer peAssemblyPtr = target.Contracts.Loader.GetPEAssembly(handle);
         Data.PEAssembly peAssembly = target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);

@@ -8,6 +8,7 @@ This contract provides methods to get a view of the ECMA-335 metadata for a give
 TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle);
 TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle);
 System.Reflection.Metadata.MetadataReader? GetMetadata(ModuleHandle handle);
+byte[] GetReadWriteMetadata(ModuleHandle handle);
 ```
 
 Types from other contracts:
@@ -171,6 +172,10 @@ MetadataReader? GetMetadata(ModuleHandle handle)
     }
 }
 ```
+
+`GetReadWriteMetadata` reconstructs the module's writable `MDInternalRW` metadata as a contiguous
+ECMA-335 metadata image and returns its bytes. It throws `ArgumentException` when the module does
+not have writable metadata.
 
 ### Helper Methods
 

@@ -205,12 +205,14 @@ class MDInternalRW;
 class UTSemReadWrite;
 
 template <class MiniMd> class CLiteWeightStgdb;
+class DacDbiInterfaceImpl;
 //*****************************************************************************
 // Read/Write MiniMd.
 //*****************************************************************************
 class CMiniMdRW : public CMiniMdTemplate<CMiniMdRW>
 {
 public:
+    friend class ::DacDbiInterfaceImpl;
     friend class CLiteWeightStgdb<CMiniMdRW>;
     friend class CLiteWeightStgdbRW;
     friend class CMiniMdTemplate<CMiniMdRW>;

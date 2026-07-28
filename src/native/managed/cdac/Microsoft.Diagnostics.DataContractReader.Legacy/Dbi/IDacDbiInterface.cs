@@ -929,4 +929,10 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);
+
+    [PreserveSig]
+    int GetReadWriteMetadataSize(ulong vmModule, uint* pSize);
+
+    [PreserveSig]
+    int FillReadWriteMetadata(ulong vmModule, byte* pBuffer, uint cbBuffer);
 }

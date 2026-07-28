@@ -27,6 +27,7 @@ class StgIO;
 #endif
 
 class TiggerStorage;
+class DacDbiInterfaceImpl;
 
 //*****************************************************************************
 // This class provides common definitions for heap segments.  It is both the
@@ -37,6 +38,7 @@ template <class MiniMd>
 class CLiteWeightStgdb
 {
     friend class VerifyLayoutsMD;
+    friend class ::DacDbiInterfaceImpl;
 public:
     CLiteWeightStgdb() : m_pvMd(NULL), m_cbMd(0)
     {}

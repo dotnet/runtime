@@ -2226,6 +2226,15 @@ public:
         VMPTR_MethodDesc vmMethod,
         OUT UINT32* pTokenIndex) = 0;
 
+    virtual HRESULT STDMETHODCALLTYPE GetReadWriteMetadataSize(
+        VMPTR_Module vmModule,
+        OUT ULONG32* pSize) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE FillReadWriteMetadata(
+        VMPTR_Module vmModule,
+        BYTE* pBuffer,
+        ULONG32 cbBuffer) = 0;
+
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL
 

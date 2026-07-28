@@ -31,6 +31,12 @@
 #include "request_common.h"
 #include "conditionalweaktable.h"
 
+#include "metamodelro.h"
+#include "metamodelrw.h"
+#include "liteweightstgdb.h"
+#include "mdinternalrw.h"
+#include "stgpool.h"
+
 #ifndef USE_DAC_TABLE_RVA
 #include <clrconfignocache.h>
 #define CAN_USE_CDAC
@@ -3891,6 +3897,418 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMetadata(VMPTR_Module vmModule
             ThrowHR(CORDBG_E_MISSING_METADATA);
         }
 
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
+}
+
+namespace
+{
+    const BYTE HEAP_STRING_4 = 0x01;
+    const BYTE HEAP_GUID_4 = 0x02;
+    const BYTE HEAP_BLOB_4 = 0x04;
+
+    const ULONG64 MaxPoolBytes = 100000000;
+    const ULONG32 MaxPoolSegments = 1000;
+    const ULONG32 MaxTableCount = 64;
+
+    FORCEINLINE ULONG32 AlignUp4(ULONG32 value)
+    {
+        return (value + 3) & ~(ULONG32)3;
+    }
+
+    struct PoolData
+    {
+        NewArrayHolder<BYTE> Data;
+        ULONG32 Size;
+
+        PoolData() : Data(NULL), Size(0) {}
+    };
+
+    void ReadStoragePool(TADDR poolAddress, PoolData & result)
+    {
+        TADDR segData[MaxPoolSegments];
+        ULONG32 segSize[MaxPoolSegments];
+        ULONG32 segCount = 0;
+        ULONG64 totalSize = 0;
+
+        StgPool * pPool = dac_cast<DPTR(StgPool)>(poolAddress);
+        StgPoolSeg * pSeg = pPool;
+        for (ULONG32 iteration = 0; ; iteration++)
+        {
+            ULONG32 dataSize = pSeg->GetDataSize();
+            if (iteration >= MaxPoolSegments ||
+                totalSize > MaxPoolBytes ||
+                dataSize > MaxPoolBytes - totalSize)
+            {
+                ThrowHR(CLDB_E_FILE_CORRUPT);
+            }
+            if (dataSize > 0)
+            {
+                segData[segCount] = (TADDR)pSeg->GetSegData();
+                segSize[segCount] = dataSize;
+                segCount++;
+                totalSize += dataSize;
+            }
+
+            TADDR nextSegment = (TADDR)pSeg->GetNextSeg();
+            if (nextSegment == (TADDR)NULL)
+            {
+                break;
+            }
+            pSeg = dac_cast<DPTR(StgPoolSeg)>(nextSegment);
+        }
+
+        result.Size = (ULONG32)totalSize;
+        result.Data = new BYTE[result.Size == 0 ? 1 : result.Size];
+        ULONG32 offset = 0;
+        for (ULONG32 i = 0; i < segCount; i++)
+        {
+            DacReadAll(segData[i], result.Data + offset, segSize[i], true);
+            offset += segSize[i];
+        }
+    }
+
+    class MetadataBlobBuilder
+    {
+    public:
+        MetadataBlobBuilder() : m_pData(NULL), m_count(0), m_capacity(0) {}
+        ~MetadataBlobBuilder() { delete[] m_pData; }
+
+        ULONG32 Count() const { return m_count; }
+        const BYTE * Data() const { return m_pData; }
+
+        void WriteByte(BYTE value)
+        {
+            EnsureAdditionalCapacity(1);
+            m_pData[m_count++] = value;
+        }
+
+        void WriteUInt16(UINT16 value) { WriteRaw(&value, sizeof(value)); }
+        void WriteUInt32(UINT32 value) { WriteRaw(&value, sizeof(value)); }
+        void WriteUInt64(UINT64 value) { WriteRaw(&value, sizeof(value)); }
+        void WriteBytes(const BYTE * pData, ULONG32 size)
+        {
+            if (size != 0)
+            {
+                WriteRaw(pData, size);
+            }
+        }
+
+        void WriteZeros(ULONG32 count)
+        {
+            EnsureAdditionalCapacity(count);
+            memset(m_pData + m_count, 0, count);
+            m_count += count;
+        }
+
+        ULONG32 Reserve4()
+        {
+            ULONG32 offset = m_count;
+            WriteUInt32(0);
+            return offset;
+        }
+
+        void PatchUInt32(ULONG32 offset, UINT32 value)
+        {
+            memcpy(m_pData + offset, &value, sizeof(value));
+        }
+
+        void WriteAlignedString(const char * value, ULONG32 length)
+        {
+            if (length == UINT32_MAX)
+            {
+                ThrowHR(CLDB_E_FILE_CORRUPT);
+            }
+
+            ULONG32 total = AlignUp4(length + 1);
+            EnsureAdditionalCapacity(total);
+            if (length != 0)
+            {
+                memcpy(m_pData + m_count, value, length);
+            }
+            memset(m_pData + m_count + length, 0, total - length);
+            m_count += total;
+        }
+
+        void WriteAlignedHeap(const BYTE * pData, ULONG32 size)
+        {
+            WriteBytes(pData, size);
+            WriteZeros(AlignUp4(size) - size);
+        }
+
+    private:
+        void WriteRaw(const void * pData, ULONG32 size)
+        {
+            EnsureAdditionalCapacity(size);
+            memcpy(m_pData + m_count, pData, size);
+            m_count += size;
+        }
+
+        void EnsureAdditionalCapacity(ULONG32 additional)
+        {
+            if (additional > UINT32_MAX - m_count)
+            {
+                ThrowHR(CLDB_E_FILE_CORRUPT);
+            }
+
+            ULONG32 needed = m_count + additional;
+            if (needed <= m_capacity)
+            {
+                return;
+            }
+
+            ULONG32 newCapacity = (m_capacity == 0) ? 256 : m_capacity;
+            while (newCapacity < needed)
+            {
+                if (newCapacity > UINT32_MAX / 2)
+                {
+                    newCapacity = needed;
+                    break;
+                }
+                newCapacity *= 2;
+            }
+
+            BYTE * pNew = new BYTE[newCapacity];
+            if (m_count != 0)
+            {
+                memcpy(pNew, m_pData, m_count);
+            }
+            delete[] m_pData;
+            m_pData = pNew;
+            m_capacity = newCapacity;
+        }
+
+        BYTE * m_pData;
+        ULONG32 m_count;
+        ULONG32 m_capacity;
+    };
+
+    ULONG32 WriteStreamHeader(MetadataBlobBuilder & builder, const char * name, ULONG32 size)
+    {
+        ULONG32 offsetField = builder.Reserve4();
+        builder.WriteUInt32(size);
+        builder.WriteAlignedString(name, (ULONG32)strlen(name));
+        return offsetField;
+    }
+}
+
+void DacDbiInterfaceImpl::SerializeReadWriteMetadata(Module * pModule, BYTE ** ppBlob, ULONG32 * pcbBlob)
+{
+    PEAssembly * pPEAssembly = pModule->GetPEAssembly();
+    TADDR mdRWAddr = pPEAssembly->GetMDInternalRWAddress();
+    if (mdRWAddr == (TADDR)NULL)
+    {
+        ThrowHR(E_INVALIDARG);
+    }
+
+    MDInternalRW * pMDInternalRW = dac_cast<DPTR(MDInternalRW)>(mdRWAddr);
+    CLiteWeightStgdbRW * pStgdb = dac_cast<DPTR(CLiteWeightStgdbRW)>((TADDR)pMDInternalRW->m_pStgdb);
+    CMiniMdRW * pMiniMd = dac_cast<DPTR(CMiniMdRW)>(PTR_HOST_MEMBER_TADDR(CLiteWeightStgdbRW, pStgdb, m_MiniMd));
+
+    ULONG32 tableCount = pMiniMd->GetCountTables();
+    if (tableCount > MaxTableCount)
+    {
+        ThrowHR(CLDB_E_FILE_CORRUPT);
+    }
+
+    ULONG32 rowCounts[MaxTableCount];
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        rowCounts[i] = pMiniMd->m_Schema.m_cRecs[i];
+    }
+
+    ULONG64 sorted = pMiniMd->m_Schema.m_sorted;
+    BYTE heaps = pMiniMd->m_Schema.m_heaps;
+
+    bool largeStringHeap = (heaps & HEAP_STRING_4) != 0;
+    bool largeGuidHeap = (heaps & HEAP_GUID_4) != 0;
+    bool largeBlobHeap = (heaps & HEAP_BLOB_4) != 0;
+    bool all4ByteColumns = pMiniMd->m_fAll4ByteColumns != FALSE;
+
+    PoolData stringHeap;
+    PoolData blobHeap;
+    PoolData userStringHeap;
+    PoolData guidHeap;
+    ReadStoragePool(PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_StringHeap), stringHeap);
+    ReadStoragePool(PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_BlobHeap), blobHeap);
+    ReadStoragePool(PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_UserStringHeap), userStringHeap);
+    ReadStoragePool(PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_GuidHeap), guidHeap);
+
+    NewArrayHolder<PoolData> tables = new PoolData[tableCount == 0 ? 1 : tableCount];
+    TADDR tablesBase = PTR_HOST_MEMBER_TADDR(CMiniMdRW, pMiniMd, m_Tables);
+    ULONG32 tableStride = (ULONG32)sizeof(MetaData::TableRW);
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        ReadStoragePool(tablesBase + i * tableStride, tables[i]);
+    }
+
+    const ULONG32 MetadataRootVersionLengthOffset = 12;
+    const ULONG32 MetadataRootVersionStringOffset = 16;
+    const ULONG32 MaxMetadataVersionLength = 256;
+    BYTE versionBuffer[MaxMetadataVersionLength];
+    ULONG32 versionLength = 0;
+    TADDR metadataRootAddress = (TADDR)pStgdb->m_pvMd;
+    if (metadataRootAddress != (TADDR)NULL)
+    {
+        ULONG32 rawVersionLength = *dac_cast<DPTR(ULONG32)>(metadataRootAddress + MetadataRootVersionLengthOffset);
+        if (rawVersionLength != 0)
+        {
+            ULONG32 toRead = rawVersionLength < MaxMetadataVersionLength ? rawVersionLength : MaxMetadataVersionLength;
+            DacReadAll(metadataRootAddress + MetadataRootVersionStringOffset, versionBuffer, toRead, true);
+            for (versionLength = 0; versionLength < toRead; versionLength++)
+            {
+                if (versionBuffer[versionLength] == 0)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    MetadataBlobBuilder builder;
+    builder.WriteUInt32(0x424A5342);
+    builder.WriteUInt16(1);
+    builder.WriteUInt16(1);
+    builder.WriteUInt32(0);
+    builder.WriteUInt32(AlignUp4(versionLength + 1));
+    builder.WriteAlignedString((const char *)versionBuffer, versionLength);
+    builder.WriteUInt16(0);
+
+    UINT16 numStreams = 5;
+    if (all4ByteColumns)
+    {
+        numStreams++;
+    }
+    builder.WriteUInt16(numStreams);
+
+    if (all4ByteColumns)
+    {
+        ULONG32 jtdOffset = WriteStreamHeader(builder, "#JTD", 0);
+        builder.PatchUInt32(jtdOffset, builder.Count());
+    }
+
+    ULONG32 stringsOffset = WriteStreamHeader(builder, "#Strings", AlignUp4(stringHeap.Size));
+    ULONG32 blobOffset = WriteStreamHeader(builder, "#Blob", AlignUp4(blobHeap.Size));
+    ULONG32 guidOffset = WriteStreamHeader(builder, "#GUID", AlignUp4(guidHeap.Size));
+    ULONG32 userStringOffset = WriteStreamHeader(builder, "#US", AlignUp4(userStringHeap.Size));
+    ULONG32 tablesOffset = builder.Reserve4();
+    ULONG32 tablesSize = builder.Reserve4();
+    builder.WriteAlignedString("#-", 2);
+
+    builder.PatchUInt32(stringsOffset, builder.Count());
+    builder.WriteAlignedHeap(stringHeap.Data, stringHeap.Size);
+    builder.PatchUInt32(blobOffset, builder.Count());
+    builder.WriteAlignedHeap(blobHeap.Data, blobHeap.Size);
+    builder.PatchUInt32(guidOffset, builder.Count());
+    builder.WriteAlignedHeap(guidHeap.Data, guidHeap.Size);
+    builder.PatchUInt32(userStringOffset, builder.Count());
+    builder.WriteAlignedHeap(userStringHeap.Data, userStringHeap.Size);
+
+    ULONG32 tableStreamStart = builder.Count();
+    builder.PatchUInt32(tablesOffset, tableStreamStart);
+    builder.WriteUInt32(0);
+    builder.WriteByte(2);
+    builder.WriteByte(0);
+    BYTE heapSizes =
+        (BYTE)((largeStringHeap ? HEAP_STRING_4 : 0) |
+               (largeGuidHeap ? HEAP_GUID_4 : 0) |
+               (largeBlobHeap ? HEAP_BLOB_4 : 0));
+    builder.WriteByte(heapSizes);
+    builder.WriteByte(1);
+
+    ULONG64 validTables = 0;
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        if (rowCounts[i] != 0)
+        {
+            validTables |= (ULONG64)1 << i;
+        }
+    }
+
+    ULONG64 sortedTables = 0;
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        if ((sorted & ((ULONG64)1 << i)) != 0)
+        {
+            sortedTables |= (ULONG64)1 << i;
+        }
+    }
+
+    builder.WriteUInt64(validTables);
+    builder.WriteUInt64(sortedTables);
+
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        if (rowCounts[i] != 0)
+        {
+            builder.WriteUInt32(rowCounts[i]);
+        }
+    }
+
+    for (ULONG32 i = 0; i < tableCount; i++)
+    {
+        builder.WriteBytes(tables[i].Data, tables[i].Size);
+    }
+
+    builder.PatchUInt32(tablesSize, builder.Count() - tableStreamStart);
+
+    ULONG32 blobSize = builder.Count();
+    BYTE * pBlob = new BYTE[blobSize == 0 ? 1 : blobSize];
+    memcpy(pBlob, builder.Data(), blobSize);
+    *ppBlob = pBlob;
+    *pcbBlob = blobSize;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetReadWriteMetadataSize(VMPTR_Module vmModule, OUT ULONG32 * pSize)
+{
+    DD_ENTER_MAY_THROW;
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        if (pSize == NULL)
+        {
+            ThrowHR(E_POINTER);
+        }
+
+        *pSize = 0;
+
+        Module * pModule = vmModule.GetDacPtr();
+        BYTE * pRawBlob = NULL;
+        ULONG32 blobSize = 0;
+        SerializeReadWriteMetadata(pModule, &pRawBlob, &blobSize);
+        NewArrayHolder<BYTE> blob(pRawBlob);
+        *pSize = blobSize;
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer)
+{
+    DD_ENTER_MAY_THROW;
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        if (pBuffer == NULL)
+        {
+            ThrowHR(E_INVALIDARG);
+        }
+
+        Module * pModule = vmModule.GetDacPtr();
+        BYTE * pRawBlob = NULL;
+        ULONG32 blobSize = 0;
+        SerializeReadWriteMetadata(pModule, &pRawBlob, &blobSize);
+        NewArrayHolder<BYTE> blob(pRawBlob);
+
+        if (cbBuffer < blobSize)
+        {
+            ThrowHR(HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER));
+        }
+
+        memcpy(pBuffer, pRawBlob, blobSize);
     }
     EX_CATCH_HRESULT(hr);
     return hr;
