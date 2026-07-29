@@ -251,11 +251,11 @@ PhaseStatus Compiler::SaveAsyncContexts()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // OSR context handling concerns the root frame only. An inlinee inside an OSR method
-    // still starts a fresh logical frame: it must capture its own contexts, its resumed
-    // indicator starts out false regardless of how the OSR method was entered, and its
-    // locals have no home in the tier0 frame.
-    bool isOSRRootFrame = opts.IsOSR() && !compIsForInlining();
+    // Note this only ever applies to the root frame: JIT_FLAG_OSR is cleared for inlinees
+    // in compInitOptions. An inlinee inside an OSR method starts a fresh logical frame and
+    // so captures its own contexts, with a resumed indicator that starts out false however
+    // the OSR method was entered.
+    bool isOSRRootFrame = opts.IsOSR();
 
     // Create locals for Thread, ExecutionContext and SynchronizationContext
     lvaAsyncThreadObjectVar                     = lvaGrabTemp(false DEBUGARG("Async Thread"));
