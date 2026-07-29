@@ -1236,6 +1236,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitBindingLogic(memberAccessExpr, initKind);
                 }
 
+                /// <summary>
+                /// Emits the instantiation (when required by <paramref name="initKind"/>) and the <c>BindCore</c> call
+                /// that binds <paramref name="instanceToBindExpr"/>.
+                /// </summary>
+                /// <param name="instanceToBindExpr">The local or member expression the value is bound into.</param>
+                /// <param name="initKind">How (or whether) <paramref name="instanceToBindExpr"/> is instantiated before binding.</param>
+                /// <param name="tempIdentifierStoringExpr">
+                /// An optional statement (emitted verbatim after a successful bind) that assigns the just-bound
+                /// temporary back into the enclosing binding target - the local the caller is binding into. Value-type
+                /// members are bound through a temporary (a value type cannot be bound in place through a property that
+                /// returns a copy), so this propagates the bound value back up the temporary chain; the write into the
+                /// member itself (which invokes its setter) is emitted separately by the caller's <c>writeOnSuccess</c>.
+                /// </param>
                 void EmitBindingLogic(string instanceToBindExpr, InitializationKind initKind, string? tempIdentifierStoringExpr = null)
                 {
                     string boundThroughConstructorArg = string.Empty;
