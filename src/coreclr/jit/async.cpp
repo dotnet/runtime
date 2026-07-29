@@ -53,10 +53,66 @@ ContinuationMember ContinuationMember::CustomAwaiterOfLayout(ClassLayout* layout
     return member;
 }
 
+ContinuationMember ContinuationMember::InlineFrameExecutionContext(unsigned inlineDepth)
+{
+    ContinuationMember member;
+    member.Type          = ContinuationMemberType::InlineFrameExecutionContext;
+    member.m_inlineDepth = inlineDepth;
+    return member;
+}
+
+ContinuationMember ContinuationMember::InlineFrameContinuationContext(unsigned inlineDepth)
+{
+    ContinuationMember member;
+    member.Type          = ContinuationMemberType::InlineFrameContinuationContext;
+    member.m_inlineDepth = inlineDepth;
+    return member;
+}
+
+ContinuationMember ContinuationMember::InlineFrameFlags(unsigned inlineDepth)
+{
+    ContinuationMember member;
+    member.Type          = ContinuationMemberType::InlineFrameFlags;
+    member.m_inlineDepth = inlineDepth;
+    return member;
+}
+
 ClassLayout* ContinuationMember::GetCustomAwaiterLayout() const
 {
     assert(Type == ContinuationMemberType::CustomAwaiterOfLayout);
     return m_customAwaiterLayout;
+}
+
+unsigned ContinuationMember::GetInlineDepth() const
+{
+    assert((Type == ContinuationMemberType::InlineFrameExecutionContext) ||
+           (Type == ContinuationMemberType::InlineFrameContinuationContext) ||
+           (Type == ContinuationMemberType::InlineFrameFlags));
+    return m_inlineDepth;
+}
+
+//------------------------------------------------------------------------
+// ContinuationMember::GetStorageType:
+//   Get the type of the storage this member occupies in the continuation.
+//
+// Returns:
+//   TYP_STRUCT for custom awaiters (described by GetCustomAwaiterLayout), otherwise
+//   the primitive type stored.
+//
+var_types ContinuationMember::GetStorageType() const
+{
+    switch (Type)
+    {
+        case ContinuationMemberType::CustomAwaiterOfLayout:
+            return TYP_STRUCT;
+        case ContinuationMemberType::InlineFrameExecutionContext:
+        case ContinuationMemberType::InlineFrameContinuationContext:
+            return TYP_REF;
+        case ContinuationMemberType::InlineFrameFlags:
+            return TYP_INT;
+        default:
+            unreached();
+    }
 }
 
 bool ContinuationMember::AreCompatible(const ContinuationMember& a, const ContinuationMember& b)
@@ -70,6 +126,15 @@ bool ContinuationMember::AreCompatible(const ContinuationMember& a, const Contin
     {
         case ContinuationMemberType::CustomAwaiterOfLayout:
             return ClassLayout::AreCompatible(a.m_customAwaiterLayout, b.m_customAwaiterLayout);
+        case ContinuationMemberType::InlineFrameExecutionContext:
+        case ContinuationMemberType::InlineFrameContinuationContext:
+        case ContinuationMemberType::InlineFrameFlags:
+            // Keyed by inline depth rather than by individual inline frame. Two frames at
+            // the same depth can share storage because their live ranges cannot overlap:
+            // the value is written at a frame's first suspension and consumed by that same
+            // frame's post-inline IR, and one frame at a given depth must be left before
+            // another can be entered.
+            return a.m_inlineDepth == b.m_inlineDepth;
         default:
             unreached();
     }
@@ -82,6 +147,15 @@ void ContinuationMember::Print() const
     {
         case ContinuationMemberType::CustomAwaiterOfLayout:
             printf("CustomAwaiter<%s>", m_customAwaiterLayout->GetClassName());
+            break;
+        case ContinuationMemberType::InlineFrameExecutionContext:
+            printf("ExecutionContext for inline depth %u", m_inlineDepth);
+            break;
+        case ContinuationMemberType::InlineFrameContinuationContext:
+            printf("Continuation context for inline depth %u", m_inlineDepth);
+            break;
+        case ContinuationMemberType::InlineFrameFlags:
+            printf("Continuation flags for inline depth %u", m_inlineDepth);
             break;
         default:
             unreached();
@@ -1674,13 +1748,28 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
             continue;
         }
 
-        ClassLayout* memberLayout = m_compiler->GetContinuationMember(memberIndex).GetCustomAwaiterLayout();
-        unsigned     alignment =
-            memberLayout->IsCustomLayout()
+        const ContinuationMember& member = m_compiler->GetContinuationMember(memberIndex);
+
+        unsigned alignment;
+        unsigned size;
+        if (member.Type == ContinuationMemberType::CustomAwaiterOfLayout)
+        {
+            ClassLayout* memberLayout = member.GetCustomAwaiterLayout();
+            alignment =
+                memberLayout->IsCustomLayout()
                     ? (memberLayout->HasGCPtr() ? TARGET_POINTER_SIZE : 1)
                     : m_compiler->info.compCompHnd->getClassAlignmentRequirement(memberLayout->GetClassHandle());
+            size = memberLayout->GetSize();
+        }
+        else
+        {
+            var_types storageType = member.GetStorageType();
+            alignment             = genTypeAlignments[storageType];
+            size                  = genTypeSize(storageType);
+        }
+
         layout->ContinuationMemberOffsets[memberIndex] =
-            allocLayout(std::min(alignment, (unsigned)TARGET_POINTER_SIZE), memberLayout->GetSize());
+            allocLayout(std::min(alignment, (unsigned)TARGET_POINTER_SIZE), size);
     }
 
     if (m_needsKeepAlive)
@@ -1735,8 +1824,11 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
     {
         if (layout->ContinuationMemberOffsets[i] != UINT_MAX)
         {
-            bitmapBuilder.SetType(layout->ContinuationMemberOffsets[i], TYP_STRUCT,
-                                  m_compiler->GetContinuationMember(i).GetCustomAwaiterLayout());
+            const ContinuationMember& member       = m_compiler->GetContinuationMember(i);
+            ClassLayout*              memberLayout = member.Type == ContinuationMemberType::CustomAwaiterOfLayout
+                                                         ? member.GetCustomAwaiterLayout()
+                                                         : nullptr;
+            bitmapBuilder.SetType(layout->ContinuationMemberOffsets[i], member.GetStorageType(), memberLayout);
         }
     }
 

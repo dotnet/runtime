@@ -793,6 +793,18 @@ public:
         return m_Parent;
     }
 
+    // Get the inline depth of this context. The root context has depth 0.
+    unsigned GetDepth() const
+    {
+        unsigned depth = 0;
+        for (InlineContext* parent = m_Parent; parent != nullptr; parent = parent->m_Parent)
+        {
+            depth++;
+        }
+
+        return depth;
+    }
+
     // Get the sibling context.
     InlineContext* GetSibling() const
     {

@@ -3,7 +3,18 @@
 
 enum class ContinuationMemberType
 {
+    // A custom awaiter, stored so that it can be awaited from the continuation.
+    // Deduplicated by layout: all awaits of compatible awaiter types share one slot.
     CustomAwaiterOfLayout,
+    // The ExecutionContext an inlined async frame captured when it logically returned
+    // to its caller. Deduplicated by inline depth.
+    InlineFrameExecutionContext,
+    // The continuation context an inlined async frame captured when it logically
+    // returned to its caller. Deduplicated by inline depth.
+    InlineFrameContinuationContext,
+    // The ContinuationFlags describing the above continuation context. Deduplicated by
+    // inline depth.
+    InlineFrameFlags,
 };
 
 struct ContinuationMember
@@ -11,12 +22,22 @@ struct ContinuationMember
     ContinuationMemberType Type;
 
     void Print() const;
+
 private:
     ClassLayout* m_customAwaiterLayout;
+    unsigned     m_inlineDepth;
 
 public:
-    ClassLayout*              GetCustomAwaiterLayout() const;
+    ClassLayout* GetCustomAwaiterLayout() const;
+    unsigned     GetInlineDepth() const;
+
+    // The type of the storage this member requires in the continuation.
+    var_types GetStorageType() const;
+
     static ContinuationMember CustomAwaiterOfLayout(ClassLayout* layout);
+    static ContinuationMember InlineFrameExecutionContext(unsigned inlineDepth);
+    static ContinuationMember InlineFrameContinuationContext(unsigned inlineDepth);
+    static ContinuationMember InlineFrameFlags(unsigned inlineDepth);
     static bool               AreCompatible(const ContinuationMember& a, const ContinuationMember& b);
 };
 
