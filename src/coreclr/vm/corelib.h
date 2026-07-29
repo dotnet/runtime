@@ -256,6 +256,8 @@ DEFINE_FIELD(DELEGATEWRAPPER, VALUE,              Value)
 DEFINE_CLASS(INT128,               System,                 Int128)
 DEFINE_CLASS(UINT128,              System,                 UInt128)
 
+DEFINE_CLASS(DECIMAL128,           Numerics,               Decimal128)
+
 DEFINE_CLASS(MATH,                  System,                 Math)
 DEFINE_METHOD(MATH,                 CONVERT_TO_INT32_CHECKED,    ConvertToInt32Checked,    NoSig)
 DEFINE_METHOD(MATH,                 CONVERT_TO_UINT32_CHECKED,   ConvertToUInt32Checked,   NoSig)

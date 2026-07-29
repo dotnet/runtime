@@ -9,6 +9,7 @@ function libCoreRunFactory() {
         "$FS",
         "corerun_shutdown",
         "__stack_pointer",
+        "__async_continuation",
         "$UTF8ToString"
     ];
     if (LibraryManager.library.$NODEFS) {
@@ -227,6 +228,9 @@ function libCoreRunFactory() {
                 if (typeof (wasmExports.__coreclr_wasm_rtlrestorecontext_tag) === "undefined") {
                     throw new Error("__coreclr_wasm_rtlrestorecontext_tag was not preserved by the linker or optimizer");
                 }
+                if (typeof (wasmExports.__async_continuation) === "undefined") {
+                    throw new Error("__async_continuation was not preserved by the linker or optimizer");
+                }
                 payloadPtr = HEAPU32[ptrPtr >>> 2 >>> 0];
                 wasmInstance = new WebAssembly.Instance(wasmModule, {
                     webcil: {
@@ -235,7 +239,9 @@ function libCoreRunFactory() {
                         rtlRestoreContextTag: wasmExports.__coreclr_wasm_rtlrestorecontext_tag,
                         table: wasmTable,
                         tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
-                        imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr)
+                        imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr),
+                        // Runtime-async continuation return value, shared with the runtime module.
+                        asyncContinuation: wasmExports.__async_continuation
                     }
                 });
             } catch (e) {

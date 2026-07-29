@@ -14,6 +14,7 @@ namespace System.Numerics
     /// Represents a decimal floating-point number that uses the IEEE 754 <c>decimal32</c> interchange format, providing 7 decimal digits of precision.
     /// </summary>
     /// <remarks>The IEEE 754 standard defines two interchange encodings for decimal floating-point: binary integer decimal (BID) and densely packed decimal (DPD). Which encoding is used is determined by the underlying ABI for the platform and defaults to BID where the ABI does not otherwise specify.</remarks>
+    [Intrinsic]
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct Decimal32
         : IComparable,
