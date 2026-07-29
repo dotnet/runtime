@@ -217,14 +217,10 @@ typedef DPTR(ThreadStressLog) PTR_ThreadStressLog;
 struct StressLogChunk;
 typedef DPTR(StressLogChunk) PTR_StressLogChunk;
 struct DacpStressLogEnumCBArgs;
-extern "C" void PopulateDebugHeaders();
-
-
 //==========================================================================================
 // StressLog - per-thread circular queue of stresslog messages
 //
 class StressLog {
-    friend void PopulateDebugHeaders();
 public:
 // private:
     unsigned facilitiesToLog;               // Bitvector of facilities to log (see loglf.h)
@@ -453,7 +449,6 @@ public:
     static const int64_t maxOffset = (int64_t)1 << (formatOffsetLowBits + formatOffsetHighBits);
     static constexpr size_t maxMsgSize = sizeof(uint64_t) * 2 + maxArgCnt * sizeof(void*);
 
-    friend void PopulateDebugHeaders();
 };
 
 static_assert(sizeof(StressMsg) == sizeof(uint64_t) * 2, "StressMsg bitfields aren't aligned correctly");
@@ -534,7 +529,6 @@ class ThreadStressLog {
     StressMsg * origCurPtr;     // this holds the original curPtr before we start the dump
 
     template<typename T> friend struct ::cdac_data;
-    friend void PopulateDebugHeaders();
     friend class StressLog;
 
 #ifndef DACCESS_COMPILE

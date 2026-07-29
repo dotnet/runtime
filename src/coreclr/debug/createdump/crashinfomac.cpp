@@ -3,8 +3,6 @@
 
 #include "createdump.h"
 
-extern uint8_t g_debugHeaderCookie[4];
-
 int g_readProcessMemoryResult = KERN_SUCCESS;
 
 bool
@@ -268,19 +266,11 @@ void CrashInfo::VisitModule(MachOModule& module)
         else if (m_appModel == AppModelType::NativeAOT)
         {
             uint64_t symbolOffset;
-            if (module.TryLookupSymbol("DotNetRuntimeDebugHeader", &symbolOffset))
+            if (module.TryLookupSymbol("DotNetRuntimeContractDescriptor", &symbolOffset))
             {
                 m_coreclrPath = GetDirectory(module.Name());
                 m_runtimeBaseAddress = module.BaseAddress();
-
-                uint8_t cookie[sizeof(g_debugHeaderCookie)];
-                if (ReadMemory(module.BaseAddress() + symbolOffset, cookie, sizeof(cookie)))
-                {
-                    if (memcmp(cookie, g_debugHeaderCookie, sizeof(g_debugHeaderCookie)) == 0)
-                    {
-                        TRACE("Found valid NativeAOT runtime module\n");
-                    }
-                }
+                TRACE("Found valid NativeAOT runtime module\n");
             }
         }
     }

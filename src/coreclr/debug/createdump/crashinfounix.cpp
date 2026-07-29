@@ -8,7 +8,6 @@
 #endif
 
 extern CrashInfo* g_crashInfo;
-extern uint8_t g_debugHeaderCookie[4];
 
 int g_readProcessMemoryErrno = 0;
 
@@ -402,19 +401,11 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
             if (PopulateForSymbolLookup(baseAddress))
             {
                 uint64_t symbolOffset;
-                if (TryLookupSymbol("DotNetRuntimeDebugHeader", &symbolOffset))
+                if (TryLookupSymbol("DotNetRuntimeContractDescriptor", &symbolOffset))
                 {
                     m_coreclrPath = GetDirectory(moduleName);
                     m_runtimeBaseAddress = baseAddress;
-
-                    uint8_t cookie[sizeof(g_debugHeaderCookie)];
-                    if (ReadMemory(baseAddress + symbolOffset, cookie, sizeof(cookie)))
-                    {
-                        if (memcmp(cookie, g_debugHeaderCookie, sizeof(g_debugHeaderCookie)) == 0)
-                        {
-                            TRACE("Found valid NativeAOT runtime module\n");
-                        }
-                    }
+                    TRACE("Found valid NativeAOT runtime module\n");
                 }
             }
         }

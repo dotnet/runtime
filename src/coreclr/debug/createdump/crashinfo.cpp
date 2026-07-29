@@ -9,9 +9,6 @@ typedef HINSTANCE (PALAPI_NOEXPORT *PFN_REGISTER_MODULE)(LPCSTR);           /* u
 // This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
 CrashInfo* g_crashInfo;
 
-// This is the NativeAOT DotNetRuntimeDebugHeader signature
-uint8_t g_debugHeaderCookie[4] = { 0x44, 0x4E, 0x44, 0x48 };
-
 static bool ModuleInfoCompare(const ModuleInfo* lhs, const ModuleInfo* rhs) { return lhs->BaseAddress() < rhs->BaseAddress(); }
 
 CrashInfo::CrashInfo(const CreateDumpOptions& options) :
