@@ -169,7 +169,6 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg) do { } while (0)
 #define NYI_WASM(msg) do { } while (0)
-#define NYI_WASM_SIMD(msg) do { } while (0)
 
 #elif defined(TARGET_X86)
 
@@ -180,7 +179,6 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg) do { } while (0)
 #define NYI_WASM(msg) do { } while (0)
-#define NYI_WASM_SIMD(msg) do { } while (0)
 
 #elif defined(TARGET_ARM)
 
@@ -191,7 +189,6 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg) do { } while (0)
 #define NYI_WASM(msg) do { } while (0)
-#define NYI_WASM_SIMD(msg) do { } while (0)
 
 #elif defined(TARGET_ARM64)
 
@@ -202,7 +199,6 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg) do { } while (0)
 #define NYI_WASM(msg) do { } while (0)
-#define NYI_WASM_SIMD(msg) do { } while (0)
 
 #elif defined(TARGET_LOONGARCH64)
 #define NYI_AMD64(msg)  do { } while (0)
@@ -212,7 +208,6 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_LOONGARCH64(msg) NYIRAW("NYI_LOONGARCH64: " msg)
 #define NYI_RISCV64(msg) do { } while (0)
 #define NYI_WASM(msg) do { } while (0)
-#define NYI_WASM_SIMD(msg) do { } while (0)
 
 #elif defined(TARGET_RISCV64)
 #define NYI_AMD64(msg)  do { } while (0)
@@ -222,7 +217,6 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg) NYIRAW("NYI_RISCV64: " msg)
 #define NYI_WASM(msg) do { } while (0)
-#define NYI_WASM_SIMD(msg) do { } while (0)
 
 #elif defined(TARGET_WASM)
 #define NYI_AMD64(msg)  do { } while (0)
@@ -235,10 +229,6 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_WASM(msg) do { if (JitConfig.JitWasmNyiToR2RUnsupported() > 0) \
    { JITDUMP("NYI_WASM: " msg); implReadyToRunUnsupported(); } \
    else { NYIRAW("NYI_WASM: " msg); } } while (0)
-
-#define NYI_WASM_SIMD(msg) do { if (JitConfig.JitWasmSimdNyiToR2RUnsupported() > 0) \
-   { JITDUMP("NYI_WASM_SIMD: " msg); implReadyToRunUnsupported(); } \
-   else { NYIRAW("NYI_WASM_SIMD: " msg); } } while (0)
 
 #else
 

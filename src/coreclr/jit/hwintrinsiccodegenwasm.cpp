@@ -100,7 +100,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             default:
             {
-                NYI_WASM_SIMD("CodeGen::genHWIntrinsic: Unsupported category for table-driven intrinsic");
+                unreached();
             }
         }
     }
@@ -120,7 +120,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             default:
             {
-                NYI_WASM_SIMD("!codeGenIsTableDriven");
+                unreached();
             }
         }
     }
@@ -249,8 +249,7 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
                 }
                 default:
                 {
-                    NYI_WASM_SIMD(
-                        "CodeGen::genHWIntrinsicJumpTableFallback: Unsupported category for jump table intrinsic");
+                    unreached();
                 }
             }
             // proper branch depth is immUpperBound + 1 - i; The $inner block accounts for the + 1.
