@@ -972,6 +972,34 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: checked
+          platforms:
+          - linux_x64
+          jobParameters:
+            timeoutInMinutes: 120
+            nameSuffix: CLR_R2R_Tests_ios_arm64
+            # No prebuilt artifact can supply this leg: the iOS jobs run on macOS, so their cross
+            # components are Mach-O and unusable here. The cross components are built from source
+            # instead - they target the build host (linux-x64), not iOS, so no Apple SDK is needed.
+            # libs.sfx rather than libs, because libs.native does require the Apple SDK.
+            buildArgs: -s clr.crossarchtools+clr.corelib+libs.sfx -os ios -arch arm64 -rf CoreCLR -lc Release -c $(_BuildConfig)
+            enablePublishTestResults: true
+            testResultsFormat: 'xunit'
+            postBuildSteps:
+              # A separate invocation because clr.r2rtests is ordered ahead of libs.sfx in
+              # Subsets.props, so a single build would run the tests before their inputs exist.
+              - template: /eng/pipelines/common/templates/global-build-step.yml
+                parameters:
+                  buildArgs: -s clr.r2rtests -os ios -arch arm64 -rf CoreCLR -lc Release -c $(_BuildConfig) -test
+                  displayName: Build and run R2R tests
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
       #
       # Build CrossDacs
       #

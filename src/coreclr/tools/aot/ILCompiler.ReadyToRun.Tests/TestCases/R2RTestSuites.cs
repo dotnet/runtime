@@ -634,7 +634,6 @@ public class R2RTestSuites
                 new(nameof(RuntimeAsyncStripILBodiesPreservesTaskReturningIL), [new CrossgenAssembly(stripILBodies)])
                 {
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize, Crossgen2Option.StripILBodies],
-                    AdditionalArgs = ["--targetarch:x64"],
                     Validate = Validate,
                 },
             ]));
@@ -670,7 +669,7 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsIosArm64Target))]
     public void AppleMobileStripILBodiesUsesFixedInstructionSet()
     {
         var stripILBodies = new CompiledAssembly
@@ -690,7 +689,6 @@ public class R2RTestSuites
                 new(nameof(AppleMobileStripILBodiesUsesFixedInstructionSet), [new CrossgenAssembly(stripILBodies)])
                 {
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize, Crossgen2Option.StripILBodies],
-                    AdditionalArgs = ["--targetos:ios", "--targetarch:arm64"],
                     Validate = Validate,
                 },
             ]));

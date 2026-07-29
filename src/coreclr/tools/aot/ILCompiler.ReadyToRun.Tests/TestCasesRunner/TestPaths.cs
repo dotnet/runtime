@@ -47,6 +47,8 @@ internal static class TestPaths
 
     public static bool IsWindowsTarget => TargetOS is "windows" or "win";
 
+    public static bool IsIosArm64Target => TargetOS is "ios" && TargetArchitecture is "arm64";
+
     /// <summary>
     /// Path to the crossgen2 that compiles for this build's target.
     /// </summary>
