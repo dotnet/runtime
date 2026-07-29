@@ -4314,7 +4314,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::FillReadWriteMetadata(VMPTR_Modul
     {
         if (pBuffer == NULL)
         {
-            ThrowHR(E_INVALIDARG);
+            ThrowHR(E_POINTER);
         }
 
         Module * pModule = vmModule.GetDacPtr();

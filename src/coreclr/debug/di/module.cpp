@@ -499,6 +499,10 @@ void CordbModule::RefreshMetaData()
             ULONG32 cbSize = 0;
             IfFailThrow(GetProcess()->GetDAC()->GetReadWriteMetadataSize(m_vmModule, &cbSize));
             CoTaskMemHolder<BYTE> pBuffer{ (BYTE*)CoTaskMemAlloc(cbSize) };
+            if (pBuffer == NULL)
+            {
+                ThrowOutOfMemory();
+            }
 
             IfFailThrow(GetProcess()->GetDAC()->FillReadWriteMetadata(m_vmModule, pBuffer, cbSize));
             IMetaDataDispenserEx *  pDisp = GetProcess()->GetDispenser();
