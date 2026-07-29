@@ -55,12 +55,12 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject);
 
 //--------------------------------------------------------------------------------
  // Release helper, enables and disables GC during call-outs
-ULONG SafeRelease(IUnknown* pUnk, RCW* pRCW = NULL);
+ULONG SafeRelease(IUnknown* pUnk);
 
 //--------------------------------------------------------------------------------
 // Release helper, must be called in preemptive mode.  Only use this variant if
 // you already know you're in preemptive mode for other reasons.
-ULONG SafeReleasePreemp(IUnknown* pUnk, RCW* pRCW = NULL);
+ULONG SafeReleasePreemp(IUnknown* pUnk);
 
 //--------------------------------------------------------------------------------
 // Determines if a COM object can be cast to the specified type.
