@@ -331,7 +331,7 @@ namespace ILAssembler.Tests
             var methodHandle = reader.MethodDefinitions.Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "TestMethod");
 
             var embeddedPdbEntry = pe.ReadDebugDirectory().Single(entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
-            var pdbProvider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry);
+            using var pdbProvider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry);
             var pdbReader = pdbProvider.GetMetadataReader();
             var debugHandle = MetadataTokens.MethodDebugInformationHandle(MetadataTokens.GetRowNumber(methodHandle));
             var debugInfo = pdbReader.GetMethodDebugInformation(debugHandle);
