@@ -24,7 +24,7 @@ inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum re
     return g_JITToCorDbgReg[reg];
 }
 
-inline LPVOID CORDbgGetIP(DT_CONTEXT *context)
+inline LPVOID CORDbgGetIP(T_CONTEXT *context)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -66,11 +66,11 @@ inline void CORDbgInsertBreakpointExImpl(UNALIGNED CORDB_ADDRESS_TYPE *address)
 // After a breakpoint exception, the CPU points to _after_ the break instruction.
 // Adjust the IP so that it points at the break instruction. This lets us patch that
 // opcode and re-execute what was underneath the bp.
-inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
+inline void CORDbgAdjustPCForBreakInstruction(T_CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_ARM64)
+#if defined(HOST_ARM64)
     pContext->Pc -= CORDbg_BREAK_INSTRUCTION_SIZE;
 #else
     // @ARMTODO: ARM appears to leave the PC at the start of the breakpoint (at least according to Windbg,
@@ -88,13 +88,13 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE* address)
 
 class Thread;
 // Enable single stepping.
-void SetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
+void SetSSFlag(T_CONTEXT *pCtx, Thread *pThread);
 
 // Disable single stepping
-void UnsetSSFlag(DT_CONTEXT *pCtx, Thread *pThread);
+void UnsetSSFlag(T_CONTEXT *pCtx, Thread *pThread);
 
 // Check if single stepping is enabled.
-bool IsSSFlagEnabled(DT_CONTEXT *pCtx, Thread *pThread);
+bool IsSSFlagEnabled(T_CONTEXT *pCtx, Thread *pThread);
 
 inline bool PRDIsEqual(PRD_TYPE p1, PRD_TYPE p2)
 {

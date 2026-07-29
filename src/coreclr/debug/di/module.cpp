@@ -3842,15 +3842,14 @@ HRESULT CordbVariableHome::GetRegister(CorDebugRegister *pRegister)
     switch (m_nativeVarInfo.loc.vlType)
     {
     case ICorDebugInfo::VLT_REG:
-        *pRegister = ConvertRegNumToCorDebugRegister(m_nativeVarInfo.loc.vlReg.vlrReg);
-        break;
+        return m_pCode->GetProcess()->ConvertJitRegNumToCorDebugRegister(
+            m_nativeVarInfo.loc.vlReg.vlrReg, pRegister);
     case ICorDebugInfo::VLT_STK:
-        *pRegister = ConvertRegNumToCorDebugRegister(m_nativeVarInfo.loc.vlStk.vlsBaseReg);
-        break;
+        return m_pCode->GetProcess()->ConvertJitRegNumToCorDebugRegister(
+            m_nativeVarInfo.loc.vlStk.vlsBaseReg, pRegister);
     default:
         return E_FAIL;
     }
-    return S_OK;
 }
 
 //-----------------------------------------------------------------------------

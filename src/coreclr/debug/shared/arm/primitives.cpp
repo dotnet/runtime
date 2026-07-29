@@ -16,28 +16,34 @@
 // CopyThreadContext() does an intelligent copy from pSrc to pDst,
 // respecting the ContextFlags of both contexts.
 //
-void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
+void CORDbgCopyThreadContext(BYTE* pDstBuffer, ULONG32 cbDst, const BYTE* pSrcBuffer, ULONG32 cbSrc)
 {
+    _ASSERTE(cbDst >= sizeof(DT_CONTEXT));
+    _ASSERTE(cbSrc >= sizeof(DT_CONTEXT));
+
+    DT_CONTEXT* pDst = reinterpret_cast<DT_CONTEXT*>(pDstBuffer);
+    const DT_CONTEXT* pSrc = reinterpret_cast<const DT_CONTEXT*>(pSrcBuffer);
+
     DWORD dstFlags = pDst->ContextFlags;
     DWORD srcFlags = pSrc->ContextFlags;
     LOG((LF_CORDB, LL_INFO1000000,
          "CP::CTC: pDst=0x%08x dstFlags=0x%x, pSrc=0x%08x srcFlags=0x%x\n",
          pDst, dstFlags, pSrc, srcFlags));
 
-    if ((dstFlags & srcFlags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
+    if ((dstFlags & srcFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
         CopyContextChunk(&(pDst->Sp), &(pSrc->Sp), &(pDst->Fpscr),
                          DT_CONTEXT_CONTROL);
 
-    if ((dstFlags & srcFlags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
+    if ((dstFlags & srcFlags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
         CopyContextChunk(&(pDst->R0), &(pSrc->R0), &(pDst->Sp),
-                         DT_CONTEXT_INTEGER);
+                         CONTEXT_INTEGER);
 
-    if ((dstFlags & srcFlags & DT_CONTEXT_FLOATING_POINT) == DT_CONTEXT_FLOATING_POINT)
+    if ((dstFlags & srcFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
         CopyContextChunk(&(pDst->Fpscr), &(pSrc->Fpscr), &(pDst->Bvr[0]),
-                         DT_CONTEXT_FLOATING_POINT);
+                         CONTEXT_FLOATING_POINT);
 
-    if ((dstFlags & srcFlags & DT_CONTEXT_DEBUG_REGISTERS) ==
-        DT_CONTEXT_DEBUG_REGISTERS)
-        CopyContextChunk(&(pDst->Bvr[0]), &(pSrc->Bvr[0]), &(pDst->Wcr[DT_ARM_MAX_WATCHPOINTS]),
-                         DT_CONTEXT_DEBUG_REGISTERS);
+    if ((dstFlags & srcFlags & CONTEXT_DEBUG_REGISTERS) ==
+        CONTEXT_DEBUG_REGISTERS)
+        CopyContextChunk(&(pDst->Bvr[0]), &(pSrc->Bvr[0]), &(pDst->Wcr[ARM_MAX_WATCHPOINTS]),
+                         CONTEXT_DEBUG_REGISTERS);
 }
