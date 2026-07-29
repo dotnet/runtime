@@ -66,6 +66,7 @@ namespace ILCompiler.Compiler.Tests
                         stackPointer: new WebAssembly.Global({ value: "i32", mutable: true }, 65000),
                         imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, 0),
                         tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, 0),
+                        asyncContinuation: new WebAssembly.Global({ value: "i32", mutable: true }, 0),
                         table: new WebAssembly.Table({ initial: 4096, element: "anyfunc" }),
                         rtlRestoreContextTag: new WebAssembly.Tag({ parameters: [] }),
                         memory: new WebAssembly.Memory({ initial: 16 }),

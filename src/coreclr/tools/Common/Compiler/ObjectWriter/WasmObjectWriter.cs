@@ -1043,7 +1043,7 @@ namespace ILCompiler.ObjectWriter
 #if READYTORUN
                             if (symbolWebcilSection is null)
                             {
-                                throw new InvalidDataException($"WebCIL section for symbol '{reloc.SymbolName}' not found");
+                                throw new InvalidDataException($"WASM_MEMORY_ADDR_REL_SLEB: symbol '{reloc.SymbolName}' (sectionIndex {definedSymbol.SectionIndex}, section type {_sections[definedSymbol.SectionIndex]?.GetType().Name}) is not in a WebcilSection. Reloc in section {sectionIndex} ({_sections[sectionIndex]?.GetType().Name}), offset {reloc.Offset:X}.");
                             }
 
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
@@ -1064,7 +1064,7 @@ namespace ILCompiler.ObjectWriter
 #if READYTORUN
                             if (symbolWebcilSection is null)
                             {
-                                throw new InvalidDataException($"WebCIL section for symbol '{reloc.SymbolName}' not found");
+                                throw new InvalidDataException($"WASM_MEMORY_ADDR_REL_LEB: symbol '{reloc.SymbolName}' (sectionIndex {definedSymbol.SectionIndex}, section type {_sections[definedSymbol.SectionIndex]?.GetType().Name}) is not in a WebcilSection. Reloc in section {sectionIndex} ({_sections[sectionIndex]?.GetType().Name}), offset {reloc.Offset:X}.");
                             }
 
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
