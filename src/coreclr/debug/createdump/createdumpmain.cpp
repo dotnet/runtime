@@ -199,7 +199,7 @@ int createdump_main(const int argc, const char* argv[])
 
     g_ticksPerMS = minipal_hires_tick_frequency() / 1000UL;
     g_startTime = minipal_hires_ticks();
-    TRACE("TickFrequency: %d ticks per ms\n", g_ticksPerMS);
+    TRACE("TickFrequency: %" PRIu64 " ticks per ms\n", g_ticksPerMS);
 
     AStringHolder tmpPath = new char[MAX_LONGPATH];
     if (options.DumpPathTemplate == nullptr)
@@ -220,11 +220,11 @@ int createdump_main(const int argc, const char* argv[])
 
     if (CreateDump(options))
     {
-        printf_status("Dump successfully written in %llums\n", (minipal_hires_ticks() - g_startTime) / g_ticksPerMS);
+        printf_status("Dump successfully written in %" PRIu64 "ms\n", (minipal_hires_ticks() - g_startTime) / g_ticksPerMS);
     }
     else
     {
-        printf_error("Failure took %llums\n", (minipal_hires_ticks() - g_startTime) / g_ticksPerMS);
+        printf_error("Failure took %" PRIu64 "ms\n", (minipal_hires_ticks() - g_startTime) / g_ticksPerMS);
         exitCode = -1;
     }
 

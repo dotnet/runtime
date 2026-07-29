@@ -995,12 +995,12 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	g_assert (threads);
 
 	if (!mono_g_hash_table_lookup_extended (threads, GUINT_TO_POINTER (thread->tid), NULL, (gpointer*) &value)) {
-		g_error ("%s: thread %p (tid: %p) should not have been removed yet from threads", __func__, thread, thread->tid);
+		g_error ("%s: thread %p (tid: %" G_GSIZE_FORMAT ") should not have been removed yet from threads", __func__, thread, (gsize)thread->tid);
 	} else if (thread != value) {
 		/* We have to check whether the thread object for the tid is still the same in the table because the
 		 * thread might have been destroyed and the tid reused in the meantime, in which case the tid would be in
 		 * the table, but with another thread object. */
-		g_error ("%s: thread %p (tid: %p) do not match with value %p (tid: %p)", __func__, thread, thread->tid, value, value->tid);
+		g_error ("%s: thread %p (tid: %" G_GSIZE_FORMAT ") do not match with value %p (tid: %" G_GSIZE_FORMAT ")", __func__, thread, (gsize)thread->tid, value, (gsize)value->tid);
 	}
 
 	removed = mono_g_hash_table_remove (threads, GUINT_TO_POINTER (thread->tid));
@@ -2773,7 +2773,7 @@ wait_for_tids (struct wait_data *wait, guint32 timeout, gboolean check_state_cha
 
 		mono_threads_lock ();
 		if (mono_g_hash_table_lookup (threads, GUINT_TO_POINTER (internal->tid)) == internal)
-			g_error ("%s: failed to call mono_thread_detach_internal on thread %p, InternalThread: %p", __func__, internal->tid, internal);
+			g_error ("%s: failed to call mono_thread_detach_internal on thread %" G_GSIZE_FORMAT ", InternalThread: %p", __func__, (gsize)internal->tid, internal);
 		mono_threads_unlock ();
 	}
 }

@@ -54,7 +54,7 @@ CordbAppDomain::CordbAppDomain(CordbProcess *  pProcess, VMPTR_AppDomain vmAppDo
     // of whether our ADID is valid or not, and requery if necessary.
     IfFailThrow(m_pProcess->GetDAC()->GetAppDomainId(m_vmAppDomain, &m_AppDomainId));
 
-    LOG((LF_CORDB,LL_INFO10000, "CAD::CAD: this:0x%x (void*)this:0x%x<%d>\n", this, (void *)this, m_AppDomainId));
+    LOG((LF_CORDB,LL_INFO10000, "CAD::CAD: this:%p (void*)this:%p<%d>\n", this, (void *)this, m_AppDomainId));
 
 #ifdef _DEBUG
     m_assemblies.DebugSetRSLock(pProcess->GetProcessLock());

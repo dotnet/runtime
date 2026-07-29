@@ -13,6 +13,7 @@
 #endif // _CRT_SECURE_NO_WARNINGS
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>

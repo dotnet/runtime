@@ -87,7 +87,7 @@ void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, MulticoreJitCode
             MulticoreJitTrace((
                 "%p %p %d %d StoredMethodCode",
                 pMD,
-                codeInfo.GetEntryPoint(),
+                (void*)codeInfo.GetEntryPoint(),
                 (int)codeInfo.WasTier0(),
                 (int)codeInfo.JitSwitchedToOptimized()));
         }
@@ -145,7 +145,7 @@ MulticoreJitCodeInfo MulticoreJitCodeStorage::QueryAndRemoveMethodCode(MethodDes
                 MulticoreJitTrace((
                     "%p %p %d %d QueryAndRemoveMethodCode",
                     pMethod,
-                    codeInfo.GetEntryPoint(),
+                    (void*)codeInfo.GetEntryPoint(),
                     (int)codeInfo.WasTier0(),
                     (int)codeInfo.JitSwitchedToOptimized()));
             }
@@ -1127,9 +1127,12 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     unsigned nSize = m_nFileSize;
 
-    MulticoreJitTrace(("PlayProfile %d bytes in (%s)",
-        nSize,
-        GetAppDomain()->GetFriendlyName()));
+    {
+        MAKE_UTF8PTR_FROMWIDE(pFriendlyName, GetAppDomain()->GetFriendlyName());
+        MulticoreJitTrace(("PlayProfile %d bytes in (%s)",
+            nSize,
+            pFriendlyName));
+    }
 
     while ((SUCCEEDED(hr)) && (nSize > sizeof(unsigned)))
     {

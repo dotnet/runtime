@@ -91,7 +91,7 @@ static void printMetric(int value)
 //
 static void printMetric(int64_t value)
 {
-    printf("%lld", value);
+    printf("%lld", (long long)value);
 }
 
 //------------------------------------------------------------------------

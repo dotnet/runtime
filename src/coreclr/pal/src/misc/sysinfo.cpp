@@ -27,7 +27,6 @@ Revision History:
 #include <minipal/utils.h>
 #include <minipal/ospagesize.h>
 #include <minipal/cpucount.h>
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <sys/types.h>
 
