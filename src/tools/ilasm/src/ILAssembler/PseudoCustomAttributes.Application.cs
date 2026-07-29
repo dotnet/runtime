@@ -12,7 +12,7 @@ namespace ILAssembler;
 internal static partial class PseudoCustomAttributes
 {
 
-    private static bool Apply(in LoweringContext context, KnownAttribute known)
+    private static bool Apply(LoweringContext context, KnownAttribute known)
     {
         if ((known.Targets & GetTarget(context.Owner)) == 0)
         {
@@ -54,31 +54,31 @@ internal static partial class PseudoCustomAttributes
         };
     }
 
-    private static bool AddTypeFlags(in LoweringContext context, TypeAttributes flags)
+    private static bool AddTypeFlags(LoweringContext context, TypeAttributes flags)
     {
         ((EntityRegistry.TypeDefinitionEntity)context.Owner).Attributes |= flags;
         return true;
     }
 
-    private static bool AddFieldFlags(in LoweringContext context, FieldAttributes flags)
+    private static bool AddFieldFlags(LoweringContext context, FieldAttributes flags)
     {
         ((EntityRegistry.FieldDefinitionEntity)context.Owner).Attributes |= flags;
         return true;
     }
 
-    private static bool AddParameterFlags(in LoweringContext context, ParameterAttributes flags)
+    private static bool AddParameterFlags(LoweringContext context, ParameterAttributes flags)
     {
         ((EntityRegistry.ParameterEntity)context.Owner).Attributes |= flags;
         return true;
     }
 
-    private static bool AddMethodImplFlags(in LoweringContext context, MethodImplAttributes flags)
+    private static bool AddMethodImplFlags(LoweringContext context, MethodImplAttributes flags)
     {
         ((EntityRegistry.MethodDefinitionEntity)context.Owner).ImplementationAttributes |= flags;
         return true;
     }
 
-    private static bool ApplySpecialName(in LoweringContext context)
+    private static bool ApplySpecialName(LoweringContext context)
     {
         switch (context.Owner)
         {
@@ -103,7 +103,7 @@ internal static partial class PseudoCustomAttributes
     }
 
     private static bool ValidateNonNegative(
-        in LoweringContext context,
+        LoweringContext context,
         ImmutableArray<CustomAttributeTypedArgument<SerializationTypeCode>> arguments)
     {
         foreach (CustomAttributeTypedArgument<SerializationTypeCode> argument in arguments)
@@ -118,8 +118,8 @@ internal static partial class PseudoCustomAttributes
     }
 
     private static bool ApplyGuid(
-        in LoweringContext context,
-        in CustomAttributeValue<SerializationTypeCode> arguments)
+        LoweringContext context,
+        CustomAttributeValue<SerializationTypeCode> arguments)
     {
         // The value is only validated; the attribute itself is still emitted.
         string guid = GetString(arguments.FixedArguments[0].Value);
@@ -129,8 +129,8 @@ internal static partial class PseudoCustomAttributes
     }
 
     private static bool ApplyFieldOffset(
-        in LoweringContext context,
-        in CustomAttributeValue<SerializationTypeCode> arguments)
+        LoweringContext context,
+        CustomAttributeValue<SerializationTypeCode> arguments)
     {
         uint offset = GetUInt32(arguments.FixedArguments[0].Value);
         if (offset > int.MaxValue)
@@ -143,9 +143,9 @@ internal static partial class PseudoCustomAttributes
     }
 
     private static bool ApplyMethodImpl(
-        in LoweringContext context,
+        LoweringContext context,
         KnownAttributeKind kind,
-        in CustomAttributeValue<SerializationTypeCode> arguments)
+        CustomAttributeValue<SerializationTypeCode> arguments)
     {
         var method = (EntityRegistry.MethodDefinitionEntity)context.Owner;
         CustomAttributeNamedArgument<SerializationTypeCode>? codeTypeArgument =
@@ -183,9 +183,9 @@ internal static partial class PseudoCustomAttributes
     }
 
     private static bool ApplyStructLayout(
-        in LoweringContext context,
+        LoweringContext context,
         KnownAttributeKind kind,
-        in CustomAttributeValue<SerializationTypeCode> arguments)
+        CustomAttributeValue<SerializationTypeCode> arguments)
     {
         var type = (EntityRegistry.TypeDefinitionEntity)context.Owner;
 
@@ -259,8 +259,8 @@ internal static partial class PseudoCustomAttributes
     }
 
     private static bool ApplyDllImport(
-        in LoweringContext context,
-        in CustomAttributeValue<SerializationTypeCode> arguments)
+        LoweringContext context,
+        CustomAttributeValue<SerializationTypeCode> arguments)
     {
         var method = (EntityRegistry.MethodDefinitionEntity)context.Owner;
 
