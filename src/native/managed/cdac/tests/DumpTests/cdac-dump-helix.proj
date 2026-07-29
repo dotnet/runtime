@@ -131,6 +131,10 @@
     <!-- WoW64 view only needed for x86 processes -->
     <HelixPreCommand Condition="'$(TargetArchitecture)' == 'x86'" Include="$(DacRegAdd32) 2&gt;nul || (echo DisableAuxProviderSignatureCheck /reg:32 registry write skipped &amp; exit /b 0)" />
     <HelixPreCommand Include="set DOTNET_DbgEnableMiniDump=1" />
+    <!-- cdac-lite mode: createdump selects managed memory with cdac-lite instead of the legacy DAC.
+         It loads cdaclite.dll from next to the target's coreclr.dll (placed in the testhost payload
+         by prepare-cdac-helix-steps.yml). -->
+    <HelixPreCommand Condition="'$(UseCdacLite)' == 'true'" Include="set DOTNET_DbgUseCdacLite=1" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' != 'windows'">
     <!-- Check available disk space before running tests -->
@@ -139,6 +143,10 @@
     <HelixPreCommand Include="ulimit -c 0" />
     <HelixPreCommand Include="export DOTNET_DbgEnableMiniDump=1" />
     <HelixPreCommand Include="chmod +x $HELIX_CORRELATION_PAYLOAD/dotnet" />
+    <!-- cdac-lite mode (Linux/macOS): createdump loads libcdaclite.so/.dylib from next to the
+         target's coreclr (placed in the testhost payload by prepare-cdac-helix-steps.yml) and
+         selects the managed memory instead of the legacy DAC. -->
+    <HelixPreCommand Condition="'$(UseCdacLite)' == 'true'" Include="export DOTNET_DbgUseCdacLite=1" />
   </ItemGroup>
 
   <!-- Test mode: set CDAC_DUMP_ROOT for tests to find dumps -->

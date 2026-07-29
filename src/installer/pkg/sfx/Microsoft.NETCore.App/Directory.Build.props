@@ -132,6 +132,9 @@
     <PlatformManifestFileEntry Include="mscordbi.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordbi.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordbi.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="cdaclite.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libcdaclite.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libcdaclite.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="mscorrc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="ucrtbase.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="msquic.dll" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" />

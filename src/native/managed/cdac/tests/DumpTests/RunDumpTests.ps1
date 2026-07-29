@@ -60,6 +60,14 @@
     'reportgenerator' to be restored (dotnet tool restore).
     The report is written to artifacts\coverage\cdac-dump-tests\.
 
+.PARAMETER UseCdacLite
+    When set, generates the crash dumps with cdac-lite selecting the managed memory
+    instead of the legacy DAC (createdump honors DOTNET_DbgUseCdacLite and loads the
+    cdac-lite DLL from the coreclr build output). The cDAC DumpTests then run unchanged
+    against the cdac-lite-generated dumps. Windows only. Use a clean dump directory
+    (delete artifacts\dumps\cdac or pass -Force) when switching between DAC and cdac-lite
+    modes, since existing dumps are reused as-is.
+
 .PARAMETER VerboseOutput
     When set, increases MSBuild and dotnet verbosity to normal (default: minimal/quiet).
 
@@ -108,6 +116,8 @@ param(
     [switch]$SetSignatureCheck,
 
     [switch]$Coverage,
+
+    [switch]$UseCdacLite,
 
     [switch]$VerboseOutput
 )
@@ -338,6 +348,11 @@ if ($Action -in @("dumps", "all")) {
 
     if ($SetSignatureCheck) {
         $msbuildArgs += "/p:SetDisableAuxProviderSignatureCheck=true"
+    }
+
+    if ($UseCdacLite) {
+        # Generate dumps with cdac-lite (instead of the legacy DAC) selecting the managed memory.
+        $msbuildArgs += "/p:UseCdacLite=true"
     }
 
     & $dotnet @msbuildArgs 2>&1 | ForEach-Object { Write-Host "  $_" }
