@@ -1302,7 +1302,12 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 #endif // HOST_AMD64 || HOST_ARM64
 }
 
-#if !HAVE_MACH_EXCEPTIONS
+// GetNativeContextPC, GetNativeContextSP, and CONTEXTGetExceptionCodeForSignal decode a
+// signal handler's siginfo_t/native ucontext_t via the arch-specific MCREG_* macros, which
+// are available on every supported platform (including Apple's pointer-based uc_mcontext).
+// They are unrelated to how hardware faults are first dispatched (Mach exception ports vs.
+// POSIX signals) and are needed on all platforms wherever a raw signal context is available,
+// so they are intentionally compiled regardless of HAVE_MACH_EXCEPTIONS.
 
 /*++
 Function :
@@ -1583,7 +1588,7 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
 }
 #endif  // ILL_ILLOPC
 
-#else // !HAVE_MACH_EXCEPTIONS
+#if HAVE_MACH_EXCEPTIONS
 
 #include <mach/message.h>
 #include <mach/thread_act.h>
@@ -2157,7 +2162,7 @@ EXIT:
     return ret;
 }
 
-#endif // !HAVE_MACH_EXCEPTIONS
+#endif // HAVE_MACH_EXCEPTIONS
 
 /*++
 Function:

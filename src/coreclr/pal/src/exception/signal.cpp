@@ -452,9 +452,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
 
     if (is_fatal_error_handler_signal(code))
     {
-        int faultCode = (int)CONTEXTGetExceptionCodeForSignal(siginfo, (native_context_t *)context);
-        void *faultAddress = GetNativeContextPC((native_context_t *)context);
-        if (PROCInvokeFatalErrorHandlerCallback(faultCode, faultAddress, siginfo, context, action) == 1)
+        if (PROCInvokeFatalErrorHandlerCallback(siginfo, context, action) == 1)
         {
             restore_signal(code, action);
             return;

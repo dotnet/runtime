@@ -286,12 +286,11 @@ PAL_SetInProcCrashReportCallback(
 /// crash information, generates a crash dump, or chains to the previous signal
 /// handler) to give a user-registered fatal error handler a chance to run.
 /// The callback runs inside the signal handler and must therefore be
-/// async-signal-safe. faultCode is the Win32 exception code the signal maps to
-/// (via CONTEXTGetExceptionCodeForSignal), faultAddress is the faulting
-/// instruction pointer (from the signal context), siginfo is opaque
-/// (siginfo_t*), context is the raw ucontext_t pointer, and previousAction is
-/// the previous struct sigaction* for the signal (so the handler can inspect or
-/// replicate the runtime's signal chaining).
+/// async-signal-safe. faultAddress is the faulting instruction pointer (from
+/// the signal context), siginfo is opaque (siginfo_t*), context is the raw
+/// ucontext_t pointer, and previousAction is the previous struct sigaction*
+/// for the signal (so the handler can inspect or replicate the runtime's
+/// signal chaining).
 ///
 /// Returns 1 if the handler asked the runtime to skip its default crash
 /// handling: the PAL then restores the previous signal action and returns, so
@@ -301,7 +300,7 @@ PAL_SetInProcCrashReportCallback(
 /// proceed with its default handling (crash information, crash dump, and
 /// chaining to the previous handler).
 /// </summary>
-typedef int (*PFATALERRORHANDLER_CALLBACK)(int faultCode, void* faultAddress, void* siginfo, void* context, void* previousAction);
+typedef int (*PFATALERRORHANDLER_CALLBACK)(void* faultAddress, void* siginfo, void* context, void* previousAction);
 
 PALIMPORT
 VOID

@@ -31,6 +31,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/virtual.h"
 #include "pal/stackstring.hpp"
 #include "pal/signal.hpp"
+#include "pal/context.h"
 
 #include <generatedumpflags.h>
 #include <clrconfignocache.h>
@@ -578,11 +579,10 @@ Function:
 
 Abstract:
   Invokes the registered fatal error handler callback (if any) from the
-  fatal-signal path and returns its disposition.
+  fatal-signal path and returns its disposition. Resolves the faulting
+  instruction pointer from context before invoking the callback.
 
 Parameters:
-  faultCode - Win32 exception code the signal maps to
-  faultAddress - faulting instruction pointer or nullptr
   siginfo - POSIX signal info or nullptr
   context - signal context or nullptr
   previousAction - previous struct sigaction* for the signal or nullptr
@@ -591,7 +591,7 @@ Return value:
   1 if the handler asked the runtime to skip its default crash handling, or 0
   to proceed with default handling (also returned when no handler is set).
 --*/
-int PROCInvokeFatalErrorHandlerCallback(int faultCode, void* faultAddress, siginfo_t* siginfo, void* context, struct sigaction* previousAction)
+int PROCInvokeFatalErrorHandlerCallback(siginfo_t* siginfo, void* context, struct sigaction* previousAction)
 {
     PFATALERRORHANDLER_CALLBACK callback = g_fatalErrorHandlerCallback;
     if (callback == nullptr)
@@ -599,7 +599,8 @@ int PROCInvokeFatalErrorHandlerCallback(int faultCode, void* faultAddress, sigin
         return 0;
     }
 
-    return callback(faultCode, faultAddress, siginfo, context, previousAction);
+    void* faultAddress = GetNativeContextPC((native_context_t*)context);
+    return callback(faultAddress, siginfo, context, previousAction);
 }
 
 // Build the semaphore names using the PID and a value that can be used for distinguishing

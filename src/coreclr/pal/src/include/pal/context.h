@@ -1622,8 +1622,6 @@ Return value :
 void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContext,
                               ULONG contextFlags);
 
-#if !HAVE_MACH_EXCEPTIONS
-
 /*++
 Function :
     GetNativeContextPC
@@ -1671,8 +1669,6 @@ Return value :
 --*/
 DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                                        const native_context_t *context);
-
-#endif  // HAVE_MACH_EXCEPTIONS else
 
 
 #ifdef __cplusplus

@@ -49,7 +49,7 @@ public:
     // Bridges the PAL fatal-signal path to the user-registered fatal error handler.
     // Registered with the PAL via PAL_SetFatalErrorHandlerCallback. Returns 1 if the
     // runtime should skip its default crash handling, or 0 to proceed with it.
-    static int InvokeFatalErrorHandlerForSignal(int faultCode, void* faultAddress, void* siginfo, void* context, void* previousAction);
+    static int InvokeFatalErrorHandlerForSignal(void* faultAddress, void* siginfo, void* context, void* previousAction);
 #endif // TARGET_UNIX
 
 private:

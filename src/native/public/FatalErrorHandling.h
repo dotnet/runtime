@@ -5,6 +5,14 @@
 // ExceptionHandling.SetFatalErrorHandler API. A native fatal error handler
 // receives an HRESULT and a property-getter callback through which it can
 // request additional crash information on demand.
+//
+// The HRESULT reflects the runtime's own classification of the failure on the
+// managed fatal-error path (for example COR_E_STACKOVERFLOW, COR_E_FAILFAST).
+// When the handler is instead invoked from a raw POSIX signal (a hardware
+// fault such as SIGSEGV/SIGILL/SIGFPE/SIGBUS, or SIGABRT) there is no managed
+// exit code to report, so the HRESULT is always E_UNEXPECTED; a handler that
+// needs to know the actual signal should inspect FEP_PosixSigInfo
+// (siginfo_t::si_signo) instead of relying on the HRESULT value.
 
 #ifndef FATAL_ERROR_HANDLING_H
 #define FATAL_ERROR_HANDLING_H

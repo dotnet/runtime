@@ -932,7 +932,7 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
 // itself: a genuine native fault may be recovered and resumed by the chained previous
 // handler, so the handler stays armed and can run again for a later fault, possibly from
 // more than one crashing thread.
-int EEPolicy::InvokeFatalErrorHandlerForSignal(int faultCode, void* faultAddress, void* siginfo, void* context, void* previousAction)
+int EEPolicy::InvokeFatalErrorHandlerForSignal(void* faultAddress, void* siginfo, void* context, void* previousAction)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -954,7 +954,7 @@ int EEPolicy::InvokeFatalErrorHandlerForSignal(int faultCode, void* faultAddress
     t_crashContext = context;
     t_crashPreviousAction = previousAction;
 
-    int result = pfnHandler(faultCode, FatalErrorPropertyGetterImpl);
+    int result = pfnHandler(E_UNEXPECTED, FatalErrorPropertyGetterImpl);
 
     // The crash context pointers are only valid while the signal handler runs; clear
     // them so a later invocation on this thread does not observe stale pointers.

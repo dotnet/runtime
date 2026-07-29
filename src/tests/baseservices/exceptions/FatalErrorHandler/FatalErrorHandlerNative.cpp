@@ -16,6 +16,7 @@
 #include <windows.h>
 #else
 #include <unistd.h>
+#include <signal.h>
 #endif
 
 // Write raw bytes to stderr without any managed runtime involvement.
@@ -135,10 +136,12 @@ static int DOTNET_CALLCONV HandlerCheckNativeInfo(int /*hresult*/, FatalErrorPro
 // Handler for the PAL fatal-signal path (invoke_previous_action) on Unix. A genuine
 // native crash (for example an access violation whose faulting instruction pointer is
 // native code, or a native abort()) does not flow through the managed fatal path, so it
-// reaches the handler through the signal path instead. Reports the Win32 exception code
-// the handler received (the signal converted via CONTEXTGetExceptionCodeForSignal, passed
-// as the first argument on this path) and whether the POSIX crash context (siginfo_t /
-// ucontext_t / previous struct sigaction) was surfaced.
+// reaches the handler through the signal path instead. Reports the fault code the handler
+// received (always E_UNEXPECTED on this path, since there is no managed exit code to
+// report for a raw signal), whether the POSIX crash context (siginfo_t / ucontext_t /
+// previous struct sigaction) was surfaced, and (when siginfo_t is available) the actual
+// si_signo value, so callers can distinguish which signal (e.g. SIGABRT vs SIGSEGV)
+// triggered the fatal path.
 static int DOTNET_CALLCONV HandlerCheckSignalInfo(int faultCode, FatalErrorPropertyGetter getProperty)
 {
     WriteStdErr("FATAL_HANDLER_INVOKED\n");
@@ -150,6 +153,14 @@ static int DOTNET_CALLCONV HandlerCheckSignalInfo(int faultCode, FatalErrorPrope
     const void* pSigInfo = NULL;
     bool sigInfoPopulated = getProperty(FEP_PosixSigInfo, &pSigInfo) != 0 && pSigInfo != NULL;
     WriteStdErr(sigInfoPopulated ? "FATAL_SIGINFO:siginfo=true\n" : "FATAL_SIGINFO:siginfo=false\n");
+
+    if (sigInfoPopulated)
+    {
+        const siginfo_t* pPosixSigInfo = reinterpret_cast<const siginfo_t*>(pSigInfo);
+        WriteStdErr("FATAL_SIGNO:");
+        WriteStdErrHex(static_cast<uint32_t>(pPosixSigInfo->si_signo));
+        WriteStdErr("\n");
+    }
 
     const void* pContext = NULL;
     bool contextPopulated = getProperty(FEP_UContext, &pContext) != 0 && pContext != NULL;

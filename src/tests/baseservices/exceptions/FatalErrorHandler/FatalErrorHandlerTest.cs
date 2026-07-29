@@ -19,13 +19,16 @@ unsafe class FatalErrorHandlerTest
     const string DiagJsonOkMarker = "FATAL_DIAG_JSON:ok";
     const string DiagLogOkMarker = "FATAL_DIAG_LOG:ok";
     const string FaultCodeMarker = "FATAL_FAULTCODE:";
+    const string SignoMarker = "FATAL_SIGNO:";
 
-    // Win32 exception codes (produced by CONTEXTGetExceptionCodeForSignal) surfaced to
-    // the handler on the fatal-signal path. A native access violation maps to
-    // EXCEPTION_ACCESS_VIOLATION; SIGABRT has no dedicated mapping and falls back to
-    // EXCEPTION_ILLEGAL_INSTRUCTION.
-    const string AccessViolationFaultCode = "0xC0000005";
-    const string IllegalInstructionFaultCode = "0xC000001D";
+    // The fatal-signal path always reports E_UNEXPECTED as the fault code: there is no
+    // managed exit code to report for a raw signal, so a handler that needs to know the
+    // actual signal must inspect FEP_PosixSigInfo instead of the fault code.
+    const string UnexpectedFaultCode = "0x8000FFFF";
+
+    // POSIX signal numbers (consistent across Linux/macOS/BSD), used to verify si_signo.
+    const int SIGABRT = 6;
+    const int SIGSEGV = 11;
 
     //
     // P/Invoke declarations for the native handler library.
@@ -492,13 +495,15 @@ unsafe class FatalErrorHandlerTest
 
     // Verifies that a genuine native crash reaches the user handler through the native
     // fatal-signal path on Unix, carrying the POSIX crash context (fault code, siginfo_t,
-    // ucontext_t, and previous struct sigaction). Both CoreCLR and NativeAOT route
-    // hardware faults and surface the same properties, but they hook different signals:
-    // CoreCLR handles SIGSEGV/SIGILL/SIGFPE/SIGBUS/SIGABRT, while NativeAOT hooks only
-    // SIGSEGV/SIGFPE. So the SIGSEGV (access violation) scenario runs on both runtimes,
-    // whereas the abort()/SIGABRT scenario is CoreCLR-only. Windows uses SEH, not signals.
+    // ucontext_t, and previous struct sigaction), and that siginfo_t.si_signo matches the
+    // expected signal for the scenario (SIGSEGV for the access-violation scenario, SIGABRT
+    // for the abort() scenario). Both CoreCLR and NativeAOT route hardware faults and
+    // surface the same properties, but they hook different signals: CoreCLR handles
+    // SIGSEGV/SIGILL/SIGFPE/SIGBUS/SIGABRT, while NativeAOT hooks only SIGSEGV/SIGFPE. So
+    // the SIGSEGV (access violation) scenario runs on both runtimes, whereas the
+    // abort()/SIGABRT scenario is CoreCLR-only. Windows uses SEH, not signals.
     // Hardware faults (SIGSEGV) are delivered as Mach exceptions on macOS.
-    static bool TestNativeSignal(string scenario, string expectedFaultCode, bool linuxOnly, bool runsOnNativeAot)
+    static bool TestNativeSignal(string scenario, string expectedFaultCode, int expectedSignal, bool linuxOnly, bool runsOnNativeAot)
     {
         Console.WriteLine($"=== TestNativeSignal ({scenario}) ===");
 
@@ -519,17 +524,20 @@ unsafe class FatalErrorHandlerTest
         bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
         bool faultCodeReported = stderr.Contains($"{FaultCodeMarker}{expectedFaultCode}");
         bool sigInfoOk = stderr.Contains("siginfo=true");
+        bool signalMatches = stderr.Contains($"{SignoMarker}0x{expectedSignal:X8}");
         bool ucontextOk = stderr.Contains("ucontext=true");
         bool prevActionOk = stderr.Contains("prevaction=true");
         bool exited = exitCode != 0;
 
-        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, fault code {expectedFaultCode} reported: {faultCodeReported}, siginfo ok: {sigInfoOk}, ucontext ok: {ucontextOk}, prevaction ok: {prevActionOk}, exited: {exited}");
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, fault code {expectedFaultCode} reported: {faultCodeReported}, siginfo ok: {sigInfoOk}, signal {expectedSignal} reported: {signalMatches}, ucontext ok: {ucontextOk}, prevaction ok: {prevActionOk}, exited: {exited}");
         if (!handlerInvoked)
             Console.WriteLine("  FAIL: Handler was not invoked from the fatal-signal path");
         if (!faultCodeReported)
             Console.WriteLine($"  FAIL: Handler did not receive the expected fault code ({expectedFaultCode})");
         if (!sigInfoOk)
             Console.WriteLine("  FAIL: siginfo_t was not surfaced on the fatal-signal path");
+        if (!signalMatches)
+            Console.WriteLine($"  FAIL: Handler did not observe the expected signal number ({expectedSignal}) in siginfo_t.si_signo");
         if (!ucontextOk)
             Console.WriteLine("  FAIL: ucontext_t was not surfaced on the fatal-signal path");
         if (!prevActionOk)
@@ -537,7 +545,7 @@ unsafe class FatalErrorHandlerTest
         if (!exited)
             Console.WriteLine("  FAIL: Expected non-zero exit code");
 
-        return handlerInvoked && faultCodeReported && sigInfoOk && ucontextOk && prevActionOk && exited;
+        return handlerInvoked && faultCodeReported && sigInfoOk && signalMatches && ucontextOk && prevActionOk && exited;
     }
 
     static bool TestFailFastInvokesHandlerOnce()
@@ -635,8 +643,8 @@ unsafe class FatalErrorHandlerTest
         allPassed &= TestLogHandler();
         allPassed &= TestNativeException("native-exception");
         allPassed &= TestNativeCodeException();
-        allPassed &= TestNativeSignal("native-signal-av", AccessViolationFaultCode, linuxOnly: true, runsOnNativeAot: true);
-        allPassed &= TestNativeSignal("native-signal-abort", IllegalInstructionFaultCode, linuxOnly: false, runsOnNativeAot: false);
+        allPassed &= TestNativeSignal("native-signal-av", UnexpectedFaultCode, SIGSEGV, linuxOnly: true, runsOnNativeAot: true);
+        allPassed &= TestNativeSignal("native-signal-abort", UnexpectedFaultCode, SIGABRT, linuxOnly: false, runsOnNativeAot: false);
         allPassed &= TestDiagnosticData("diagnostic-data", "FailFast");
         allPassed &= TestDiagnosticData("diagnostic-data-av", "managed access violation");
         allPassed &= TestNestedHardwareFault();

@@ -165,11 +165,12 @@ Function:
   PROCInvokeFatalErrorHandlerCallback
 
   Invokes the registered fatal error handler callback (if any) from the
-  fatal-signal path.
+  fatal-signal path. Resolves the faulting instruction pointer from context
+  and reports a fixed E_UNEXPECTED HRESULT for faultCode, since this path has
+  no managed exit code to report; a handler that needs to know the actual
+  signal can inspect siginfo (FEP_PosixSigInfo) itself.
 
 Parameters:
-  faultCode - Win32 exception code the signal maps to
-  faultAddress - faulting instruction pointer or nullptr
   siginfo - POSIX signal info or nullptr
   context - signal context or nullptr
   previousAction - previous struct sigaction* for the signal or nullptr
@@ -178,7 +179,7 @@ Return value:
   1 if the handler asked the runtime to skip its default crash handling, or 0 to
   proceed with default handling (also returned when no handler is registered).
 --*/
-int PROCInvokeFatalErrorHandlerCallback(int faultCode, void* faultAddress, siginfo_t* siginfo, void* context, struct sigaction* previousAction);
+int PROCInvokeFatalErrorHandlerCallback(siginfo_t* siginfo, void* context, struct sigaction* previousAction);
 
 /*++
 Function:
