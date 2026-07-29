@@ -163,6 +163,31 @@ void ContinuationMember::Print() const
 }
 #endif
 
+//------------------------------------------------------------------------
+// CollectWellKnownArgs:
+//   Collect the nodes of all arguments of a call with a specific well-known kind, in
+//   argument order.
+//
+// Parameters:
+//   call  - The call
+//   wka   - The well-known argument kind
+//   nodes - [out] Stack to push the argument nodes onto
+//
+// Remarks:
+//   Async context pseudo-args can appear multiple times on a call: general async
+//   inlining adds one set per enclosing inlined frame.
+//
+static void CollectWellKnownArgs(GenTreeCall* call, WellKnownArg wka, ArrayStack<GenTree*>& nodes)
+{
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        if (arg.GetWellKnownArg() == wka)
+        {
+            nodes.Push(arg.GetNode());
+        }
+    }
+}
+
 size_t Compiler::GetContinuationMemberIndex(const ContinuationMember& member)
 {
     // Members describe the root method's continuation, so they are always registered
@@ -2208,35 +2233,46 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
         }
     }
 
+    // These can be duplicated: general async inlining adds one set of context args per
+    // enclosing inlined frame, describing the chain of frames whose handling a suspension
+    // has to run. All of them must agree for a suspension to be reusable.
     static const WellKnownArg validateArgs[] = {WellKnownArg::AsyncAwaiter, WellKnownArg::AsyncResumedUse,
                                                 WellKnownArg::AsyncResumedDef, WellKnownArg::AsyncExecutionContext,
                                                 WellKnownArg::AsyncSynchronizationContext};
+    ArrayStack<GenTree*>      thisNodes(m_compiler->getAllocator(CMK_Async));
+    ArrayStack<GenTree*>      otherNodes(m_compiler->getAllocator(CMK_Async));
     for (WellKnownArg arg : validateArgs)
     {
-        CallArg* thisArg  = call->gtArgs.FindWellKnownArg(arg);
-        CallArg* otherArg = predAsyncCall->gtArgs.FindWellKnownArg(arg);
+        thisNodes.Reset();
+        otherNodes.Reset();
+        CollectWellKnownArgs(call, arg, thisNodes);
+        CollectWellKnownArgs(predAsyncCall, arg, otherNodes);
 
-        if ((thisArg == nullptr) != (otherArg == nullptr))
+        if (thisNodes.Height() != otherNodes.Height())
         {
-            JITDUMP("    No; disagreement on presence of %s argument\n", getWellKnownArgName(arg));
+            JITDUMP("    No; disagreement on number of %s arguments (%d vs %d)\n", getWellKnownArgName(arg),
+                    thisNodes.Height(), otherNodes.Height());
             return false;
         }
 
-        if (thisArg != nullptr)
+        for (int i = 0; i < thisNodes.Height(); i++)
         {
+            GenTree* thisNode  = thisNodes.Bottom(i);
+            GenTree* otherNode = otherNodes.Bottom(i);
+
             // The value may have been folded to a constant (e.g. when the
             // indicator is provably zero at this point), which is still fine to
             // compare and to remove from the call.
-            if (!thisArg->GetNode()->OperIsAnyLocal() && !thisArg->GetNode()->IsInvariant())
+            if (!thisNode->OperIsAnyLocal() && !thisNode->IsInvariant())
             {
                 JITDUMP("    No; %s argument is too complex\n", getWellKnownArgName(arg));
                 return false;
             }
 
-            if (!GenTree::Compare(thisArg->GetNode(), otherArg->GetNode()))
+            if (!GenTree::Compare(thisNode, otherNode))
             {
                 JITDUMP("    No; disagreement on value of %s argument ([%06u] vs [%06u])\n", getWellKnownArgName(arg),
-                        Compiler::dspTreeID(thisArg->GetNode()), Compiler::dspTreeID(otherArg->GetNode()));
+                        Compiler::dspTreeID(thisNode), Compiler::dspTreeID(otherNode));
                 return false;
             }
         }
@@ -2269,8 +2305,10 @@ void AsyncTransformation::HandleReusedSuspension(BasicBlock* callBlock, GenTreeC
                                                 WellKnownArg::AsyncSynchronizationContext};
     for (WellKnownArg wka : argsToRemove)
     {
-        CallArg* arg = call->gtArgs.FindWellKnownArg(wka);
-        if (arg != nullptr)
+        // These can be duplicated: general async inlining adds one set of context args
+        // per enclosing inlined frame. All of them must go.
+        for (CallArg* arg = call->gtArgs.FindWellKnownArg(wka); arg != nullptr;
+             arg          = call->gtArgs.FindWellKnownArg(wka))
         {
             assert(arg->GetNode()->OperIsAnyLocal() || arg->GetNode()->IsInvariant());
             LIR::AsRange(callBlock).Remove(arg->GetNode());

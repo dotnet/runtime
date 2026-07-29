@@ -7518,6 +7518,7 @@ private:
     Statement* fgInlinePrependStatements(InlineInfo* inlineInfo);
     void fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmt);
     void fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicBlock* joinBlock);
+    void fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo);
     void fgSetupAsyncFrameSwitchCall(GenTreeCall* call, InlineContext* inlineeContext, const DebugInfo& di);
     void fgMarkAsyncHelperInlineCandidate(GenTreeCall* call);
     GenTree* gtNewContinuationMemberIndir(const struct ContinuationMember& member, var_types type);
