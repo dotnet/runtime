@@ -38,6 +38,7 @@ Ported so far:
 | `IntroSort.cs` | `introsort.h` |
 | `Interface/GCInterfaceEnums.cs` | `gcinterface.h`, `gcinterface.ee.h` (enums) |
 | `Interface/GCInterfaceStructs.cs` | `gcinterface.h`, `gcinterface.ee.h` (shared structs) |
+| `Interface/GCInterfaceVtables.cs` | `gcinterface.h`, `gcinterface.ee.h` (abstract classes) |
 | `Interface/GCInterfaceLayout.cs` | layout check against `GCInterfaceOffsets.h` |
 
 Nothing here is wired into the runtime build yet.

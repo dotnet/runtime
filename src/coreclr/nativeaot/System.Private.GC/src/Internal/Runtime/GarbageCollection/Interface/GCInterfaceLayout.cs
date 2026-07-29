@@ -145,6 +145,18 @@ namespace Internal.Runtime.GarbageCollection
                 return false;
             }
 
+            // The vtable structs have one pointer-sized field per virtual slot, so their size is
+            // the only thing that can be checked mechanically; the order of the slots has to match
+            // the declaration order in the C++ header, which is enforced by review.
+            if (sizeof(IGCHandleStoreVtable) != IGCHandleStoreVtable.SlotCount * sizeof(void*)
+                || sizeof(IGCHandleManagerVtable) != IGCHandleManagerVtable.SlotCount * sizeof(void*)
+                || sizeof(IGCHeapVtable) != IGCHeapVtable.SlotCount * sizeof(void*)
+                || sizeof(IGCToCLRVtable) != IGCToCLRVtable.SlotCount * sizeof(void*)
+                || sizeof(IGCToCLREventSinkVtable) != IGCToCLREventSinkVtable.SlotCount * sizeof(void*))
+            {
+                return false;
+            }
+
             return true;
         }
 

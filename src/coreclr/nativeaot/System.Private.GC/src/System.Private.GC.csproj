@@ -28,6 +28,7 @@
     <Compile Include="Internal\Runtime\GarbageCollection\Interface\GCInterfaceEnums.cs" />
     <Compile Include="Internal\Runtime\GarbageCollection\Interface\GCInterfaceLayout.cs" />
     <Compile Include="Internal\Runtime\GarbageCollection\Interface\GCInterfaceStructs.cs" />
+    <Compile Include="Internal\Runtime\GarbageCollection\Interface\GCInterfaceVtables.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
     <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Full\GCInterfaceOffsets.cs" />
