@@ -368,35 +368,29 @@ namespace System
             fixed (TChar* stringPointer = &MemoryMarshal.GetReference(value))
             {
                 TChar* str = stringPointer;
-
-                // When TChar is byte, value is one of NumberFormatInfo's UTF-8 caches, which are plain
-                // byte[] rather than NUL terminated strings, so the end has to be tracked explicitly.
                 TChar* strEnd = stringPointer + value.Length;
 
-                if (TChar.CastToUInt32(*str) != '\0')
+                while (true)
                 {
+                    uint cp = (p < pEnd) ? TChar.CastToUInt32(*p) : '\0';
+                    uint val = TChar.CastToUInt32(*str);
+
                     // We only hurt the failure case
                     // This fix is for cultures that use NBSP (U+00A0) or narrow NBSP (U+202F) as group/decimal separators
                     // (e.g., French, Kazakh, Ukrainian). Since a user cannot easily type these characters,
                     // we accept regular space (U+0020) as equivalent.
                     // We also need to handle the reverse case where the input has NBSP and the format string has space.
-                    while (true)
+                    if (cp != val && NormalizeSpaceReplacingChar(cp) != NormalizeSpaceReplacingChar(val))
                     {
-                        uint cp = (p < pEnd) ? TChar.CastToUInt32(*p) : '\0';
-                        uint val = TChar.CastToUInt32(*str);
+                        break;
+                    }
 
-                        if (cp != val && NormalizeSpaceReplacingChar(cp) != NormalizeSpaceReplacingChar(val))
-                        {
-                            break;
-                        }
+                    p++;
+                    str++;
 
-                        p++;
-                        str++;
-
-                        if ((str == strEnd) || (TChar.CastToUInt32(*str) == '\0'))
-                        {
-                            return p;
-                        }
+                    if (str == strEnd)
+                    {
+                        return p;
                     }
                 }
             }
