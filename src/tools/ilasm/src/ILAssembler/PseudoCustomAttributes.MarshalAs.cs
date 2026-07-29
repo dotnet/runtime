@@ -341,13 +341,13 @@ internal static partial class PseudoCustomAttributes
 
                 if (sizeParamIndexArgument is { } sizeParamIndex)
                 {
-                    int sizeParamIndexValue = GetInt32(sizeParamIndex.Value);
+                    int sizeParamIndexValue = GetInt16(sizeParamIndex.Value);
                     if (sizeParamIndexValue < 0)
                     {
                         return context.InvalidValue();
                     }
 
-                    if (!TryWriteCompressed(context, descriptor, GetInt16(sizeParamIndex.Value)))
+                    if (!TryWriteCompressed(context, descriptor, sizeParamIndexValue))
                     {
                         return false;
                     }
