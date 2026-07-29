@@ -5543,8 +5543,8 @@ AGAIN:
 #elif defined(TARGET_RISCV64)
         assert((sizeDif == 0) || (sizeDif == 4) || (sizeDif == 8));
 #elif defined(TARGET_WASM)
-        // TODO-WASM: likely the whole thing needs to be made unreachable.
-        NYI_WASM("emitJumpDistBind");
+        // We should never call emitJumpDistBind() for wasm, as wasm has no variable-length jumps.
+        unreached();
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -7690,7 +7690,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
 #elif defined(TARGET_WASM)
-                    NYI_WASM("Short jump distance adjustment");
+                    unreached();
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -7706,7 +7706,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
 #elif defined(TARGET_WASM)
-                    NYI_WASM("Jump distance adjustment");
+                    unreached();
 #else
 #error Unsupported or unset target architecture
 #endif
