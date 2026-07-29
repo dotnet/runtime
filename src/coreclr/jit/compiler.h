@@ -4391,6 +4391,12 @@ public:
     // Variable representing "have we resumed?" for async methods
     unsigned lvaResumedIndicator = BAD_VAR_NUM;
 
+    // For async methods with CORINFO_ASYNC_SAVE_CONTEXTS: whether the body contains any
+    // async call, i.e. any point at which this method may suspend. Computed by
+    // SaveAsyncContexts. When false for an inlinee, its resumed indicator is provably
+    // always false and no post-inline async frame IR needs to be emitted for it.
+    bool compAsyncBodyMaySuspend = false;
+
 #if defined(DEBUG) && defined(TARGET_XARCH)
 
     unsigned lvaReturnSpCheck = BAD_VAR_NUM; // Stores SP to confirm it is not corrupted on return.

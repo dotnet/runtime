@@ -7413,7 +7413,10 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
 
         if (!inheritsCallerContexts)
         {
-            if (!generalAsyncInliningEnabled())
+            // OSR methods are entered with the tier0 method's continuation, whose layout
+            // differs from the one this method computes, so the inlined frame's members
+            // cannot be read from it. Not supported for now.
+            if (!generalAsyncInliningEnabled() || impInlineRoot()->opts.IsOSR())
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
                 return;

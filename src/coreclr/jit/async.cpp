@@ -394,13 +394,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
 
     for (BasicBlock* block : Blocks())
     {
-        // Async calls that inherited their context handling from the inlining call
-        // already have these args; AddContextArgsToAsyncCalls skips those. Only general
-        // async inlining introduces inlinee async calls that need their own contexts.
-        if (!compIsForInlining() || generalAsyncInliningEnabled())
-        {
-            AddContextArgsToAsyncCalls(block);
-        }
+        AddContextArgsToAsyncCalls(block);
 
         if (!block->KindIs(BBJ_RETURN) || (block == newReturnBB))
         {
@@ -494,12 +488,23 @@ void Compiler::AddContextArgsToAsyncCalls(BasicBlock* block)
 
             GenTreeCall* call = tree->AsCall();
 
+            // Record that this body has a suspension point. Inlinees without one keep the
+            // cheap shape: no post-inline IR and no capture chain is emitted for them.
+            m_compiler->compAsyncBodyMaySuspend = true;
+
             if (call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse) != nullptr)
             {
                 // Already has context args: this is an async call in an inlinee that
                 // inherited them from the inlining call (see
                 // impInheritAsyncContextsFromInliner).
                 assert(m_compiler->compIsForInlining());
+                return WALK_CONTINUE;
+            }
+
+            if (m_compiler->compIsForInlining() && !generalAsyncInliningEnabled())
+            {
+                // Only general async inlining introduces inlinee async calls that need
+                // their own contexts.
                 return WALK_CONTINUE;
             }
 
