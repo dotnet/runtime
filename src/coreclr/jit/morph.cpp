@@ -64,7 +64,7 @@ PhaseStatus Compiler::fgMorphInit()
             {
                 // confirm that the argument is a GC pointer (for debugging (GC stress))
                 GenTree* op = gtNewLclvNode(i, TYP_REF);
-                op          = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, op);
+                op          = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_REF, op);
 
                 fgNewStmtAtBeg(fgFirstBB, op);
                 madeChanges = true;
