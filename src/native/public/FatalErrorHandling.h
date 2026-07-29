@@ -77,9 +77,15 @@ enum FatalErrorProperty : int32_t
     // (arm_thread_state64_t* on arm64, x86_thread_state64_t* on x64).
     FEP_MachExceptionInfo = 0x7,
 
+    // Value: struct sigaction*. The previous signal handler action for the
+    // failing signal on signal-based Unix platforms, captured before the
+    // runtime chains to it. A handler can use this to replicate the runtime's
+    // default signal chaining/restoration itself. May be unavailable.
+    FEP_PosixPreviousAction = 0x8,
+
     // Value: DiagnosticDataFunc. Entry point for producing diagnostic data
     // on demand, streamed back to the handler through a caller-provided sink.
-    FEP_DiagnosticDataFunc = 0x8,
+    FEP_DiagnosticDataFunc = 0x9,
 };
 
 // Property-getter callback passed to the fatal error handler. The handler
@@ -115,9 +121,10 @@ enum DiagnosticDataType : int32_t
 // continue, or false to abort.
 typedef bool (DOTNET_CALLCONV *DiagnosticDataOutputFunc)(const char* data, size_t length, void* userContext);
 
-// Base configuration shared by every diagnostic data type. Each concrete
-// configuration struct embeds this as its first member, so a pointer to any
-// concrete configuration can be treated as a pointer to DiagnosticDataConfig
+// Configuration shared by every diagnostic data type. Concrete diagnostic data
+// types that need no additional fields alias this type directly (see below);
+// a future type that requires extra fields would embed this as its first member
+// so a pointer to it can still be treated as a pointer to DiagnosticDataConfig
 // and, after validating 'type', cast back to the concrete type.
 //
 //   type        - the DiagnosticDataType being requested; selects the concrete
@@ -125,25 +132,30 @@ typedef bool (DOTNET_CALLCONV *DiagnosticDataOutputFunc)(const char* data, size_
 //   size        - sizeof the concrete configuration struct.
 //   pfnOutput   - sink that receives the produced data (must not be NULL).
 //   userContext - opaque value forwarded to pfnOutput (can be NULL).
+//   signal      - POSIX signal number describing the fault the report should
+//                 reflect (for example, the value passed to the fatal error
+//                 handler, or retrieved via FEP_PosixSigInfo). Pass 0 to let
+//                 the runtime substitute its default.
+//   context     - platform crash context describing the faulting thread (for
+//                 example the value retrieved via FEP_UContext). Pass NULL to
+//                 let the runtime substitute its default (no context).
 struct DiagnosticDataConfig
 {
     int32_t                  type;
     uint32_t                 size;
     DiagnosticDataOutputFunc pfnOutput;
     void*                    userContext;
+    int32_t                  signal;
+    void*                    context;
 };
 
-// Configuration for DiagnosticDataType::JsonCrashReport.
-struct JsonCrashReportConfig
-{
-    DiagnosticDataConfig base;
-};
+// Configuration for DiagnosticDataType::JsonCrashReport. Adds no fields beyond
+// the shared configuration, so it is an alias for DiagnosticDataConfig.
+typedef DiagnosticDataConfig JsonCrashReportConfig;
 
-// Configuration for DiagnosticDataType::LogCrashReport.
-struct LogCrashReportConfig
-{
-    DiagnosticDataConfig base;
-};
+// Configuration for DiagnosticDataType::LogCrashReport. Adds no fields beyond
+// the shared configuration, so it is an alias for DiagnosticDataConfig.
+typedef DiagnosticDataConfig LogCrashReportConfig;
 
 // Function pointer retrieved through the property getter as the value of
 // FEP_DiagnosticDataFunc. It produces the diagnostic data described by 'config'

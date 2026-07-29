@@ -18,6 +18,14 @@ unsafe class FatalErrorHandlerTest
     const string DiagNegOkMarker = "FATAL_DIAG_NEG:ok";
     const string DiagJsonOkMarker = "FATAL_DIAG_JSON:ok";
     const string DiagLogOkMarker = "FATAL_DIAG_LOG:ok";
+    const string FaultCodeMarker = "FATAL_FAULTCODE:";
+
+    // Win32 exception codes (produced by CONTEXTGetExceptionCodeForSignal) surfaced to
+    // the handler on the fatal-signal path. A native access violation maps to
+    // EXCEPTION_ACCESS_VIOLATION; SIGABRT has no dedicated mapping and falls back to
+    // EXCEPTION_ILLEGAL_INSTRUCTION.
+    const string AccessViolationFaultCode = "0xC0000005";
+    const string IllegalInstructionFaultCode = "0xC000001D";
 
     //
     // P/Invoke declarations for the native handler library.
@@ -42,7 +50,13 @@ unsafe class FatalErrorHandlerTest
     private static extern delegate* unmanaged<int, void*, int> GetHandlerCheckDiagnosticData();
 
     [DllImport("FatalErrorHandlerNative")]
+    private static extern delegate* unmanaged<int, void*, int> GetHandlerCheckSignalInfo();
+
+    [DllImport("FatalErrorHandlerNative")]
     private static extern void TriggerNativeAccessViolation();
+
+    [DllImport("FatalErrorHandlerNative")]
+    private static extern void TriggerNativeAbort();
 
     //
     // Child process entry points — register handler, trigger FailFast.
@@ -98,6 +112,25 @@ unsafe class FatalErrorHandlerTest
         // Trigger an access violation from *native* code (inside the P/Invoked
         // TriggerNativeAccessViolation).
         TriggerNativeAccessViolation();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunChildNativeSignalAccessViolation()
+    {
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerCheckSignalInfo());
+        // A genuinely-unmanaged access violation. On CoreCLR/Linux this reaches the
+        // handler through the PAL fatal-signal path as SIGSEGV,
+        // not through the managed fatal path.
+        TriggerNativeAccessViolation();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunChildNativeSignalAbort()
+    {
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerCheckSignalInfo());
+        // A native abort() raises SIGABRT, which reaches the handler through the PAL
+        // fatal-signal path on Unix without flowing through the managed fatal path.
+        TriggerNativeAbort();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -320,11 +353,14 @@ unsafe class FatalErrorHandlerTest
         Console.WriteLine("=== TestNativeCodeException ===");
 
         // A genuinely unmanaged fatal fault (an access violation whose faulting
-        // instruction pointer is inside native code). NativeAOT routes this on all
-        // platforms; CoreCLR routes it on Windows. CoreCLR on Unix/macOS is not yet wired.
-        if (!TestLibrary.Utilities.IsNativeAot && !OperatingSystem.IsWindows())
+        // instruction pointer is inside native code). It reaches the fatal error handler
+        // through the native fatal-signal/SEH path: NativeAOT routes it on all platforms,
+        // CoreCLR routes it on Windows (SEH) and on Linux/other signal-based Unix.
+        // CoreCLR/macOS is the one gap: SIGSEGV is delivered as a Mach exception there,
+        // bypassing the signal path.
+        if (!TestLibrary.Utilities.IsNativeAot && OperatingSystem.IsMacOS())
         {
-            Console.WriteLine("  SKIP: only implemented on NativeAOT and CoreCLR/Windows");
+            Console.WriteLine("  SKIP: CoreCLR/macOS delivers SIGSEGV via Mach exceptions, bypassing the fatal-signal path");
             return true;
         }
 
@@ -454,6 +490,93 @@ unsafe class FatalErrorHandlerTest
         return handlerInvoked && addressReported && addressPopulated && exited;
     }
 
+    // Verifies that a genuine native crash reaches the user handler through the native
+    // fatal-signal path on Unix, carrying the POSIX crash context (fault code, siginfo_t,
+    // ucontext_t, and previous struct sigaction). Both CoreCLR and NativeAOT route
+    // hardware faults and surface the same properties, but they hook different signals:
+    // CoreCLR handles SIGSEGV/SIGILL/SIGFPE/SIGBUS/SIGABRT, while NativeAOT hooks only
+    // SIGSEGV/SIGFPE. So the SIGSEGV (access violation) scenario runs on both runtimes,
+    // whereas the abort()/SIGABRT scenario is CoreCLR-only. Windows uses SEH, not signals.
+    // Hardware faults (SIGSEGV) are delivered as Mach exceptions on macOS.
+    static bool TestNativeSignal(string scenario, string expectedFaultCode, bool linuxOnly, bool runsOnNativeAot)
+    {
+        Console.WriteLine($"=== TestNativeSignal ({scenario}) ===");
+
+        bool isNativeAot = TestLibrary.Utilities.IsNativeAot;
+        bool applicable = !OperatingSystem.IsWindows() &&
+                          (runsOnNativeAot || !isNativeAot) &&
+                          (!linuxOnly || OperatingSystem.IsLinux());
+        if (!applicable)
+        {
+            string platforms = linuxOnly ? "Linux" : "Unix";
+            string runtimes = runsOnNativeAot ? "CoreCLR/NativeAOT" : "CoreCLR";
+            Console.WriteLine($"  SKIP: fatal-signal-path handler is only wired for {runtimes} on {platforms}");
+            return true;
+        }
+
+        var (exitCode, stderr) = LaunchChild(scenario);
+
+        bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
+        bool faultCodeReported = stderr.Contains($"{FaultCodeMarker}{expectedFaultCode}");
+        bool sigInfoOk = stderr.Contains("siginfo=true");
+        bool ucontextOk = stderr.Contains("ucontext=true");
+        bool prevActionOk = stderr.Contains("prevaction=true");
+        bool exited = exitCode != 0;
+
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, fault code {expectedFaultCode} reported: {faultCodeReported}, siginfo ok: {sigInfoOk}, ucontext ok: {ucontextOk}, prevaction ok: {prevActionOk}, exited: {exited}");
+        if (!handlerInvoked)
+            Console.WriteLine("  FAIL: Handler was not invoked from the fatal-signal path");
+        if (!faultCodeReported)
+            Console.WriteLine($"  FAIL: Handler did not receive the expected fault code ({expectedFaultCode})");
+        if (!sigInfoOk)
+            Console.WriteLine("  FAIL: siginfo_t was not surfaced on the fatal-signal path");
+        if (!ucontextOk)
+            Console.WriteLine("  FAIL: ucontext_t was not surfaced on the fatal-signal path");
+        if (!prevActionOk)
+            Console.WriteLine("  FAIL: previous struct sigaction was not surfaced on the fatal-signal path");
+        if (!exited)
+            Console.WriteLine("  FAIL: Expected non-zero exit code");
+
+        return handlerInvoked && faultCodeReported && sigInfoOk && ucontextOk && prevActionOk && exited;
+    }
+
+    static bool TestFailFastInvokesHandlerOnce()
+    {
+        Console.WriteLine("=== TestFailFastInvokesHandlerOnce ===");
+
+        // FailFast with a RunDefaultHandler handler lets the runtime proceed with its
+        // default fatal handling, which on Unix terminates the process via abort() ->
+        // SIGABRT. That re-enters the PAL fatal-signal path, which must NOT invoke the
+        // user handler a second time for the same fatal event: the managed fatal path
+        // latches a one-shot flag before it aborts. Verify the handler ran exactly
+        // once.
+        var (exitCode, stderr) = LaunchChild("run-handler");
+
+        int invocationCount = CountOccurrences(stderr, HandlerInvokedMarker);
+        bool exited = exitCode != 0;
+
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invocation count: {invocationCount}, exited: {exited}");
+        if (invocationCount != 1)
+            Console.WriteLine($"  FAIL: Expected the handler to be invoked exactly once, but it ran {invocationCount} time(s)");
+        if (!exited)
+            Console.WriteLine("  FAIL: Expected non-zero exit code");
+
+        return invocationCount == 1 && exited;
+    }
+
+    static int CountOccurrences(string haystack, string needle)
+    {
+        int count = 0;
+        int index = 0;
+        while ((index = haystack.IndexOf(needle, index, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            index += needle.Length;
+        }
+
+        return count;
+    }
+
     static bool TestSetNull()
     {
         Console.WriteLine("=== TestSetNull ===");
@@ -493,6 +616,8 @@ unsafe class FatalErrorHandlerTest
                 case "log-handler":  RunChildLogHandler();  return 1;
                 case "native-exception":        RunChildNativeException();         return 1;
                 case "native-code-exception":   RunChildNativeCodeException();      return 1;
+                case "native-signal-av":        RunChildNativeSignalAccessViolation(); return 1;
+                case "native-signal-abort":     RunChildNativeSignalAbort();       return 1;
                 case "diagnostic-data":         RunChildDiagnosticData();          return 1;
                 case "diagnostic-data-av":      RunChildDiagnosticDataAccessViolation(); return 1;
                 case "nested-native-exception": RunChildNestedNativeException();   return 1;
@@ -510,11 +635,14 @@ unsafe class FatalErrorHandlerTest
         allPassed &= TestLogHandler();
         allPassed &= TestNativeException("native-exception");
         allPassed &= TestNativeCodeException();
+        allPassed &= TestNativeSignal("native-signal-av", AccessViolationFaultCode, linuxOnly: true, runsOnNativeAot: true);
+        allPassed &= TestNativeSignal("native-signal-abort", IllegalInstructionFaultCode, linuxOnly: false, runsOnNativeAot: false);
         allPassed &= TestDiagnosticData("diagnostic-data", "FailFast");
         allPassed &= TestDiagnosticData("diagnostic-data-av", "managed access violation");
         allPassed &= TestNestedHardwareFault();
         allPassed &= TestSetNull();
         allPassed &= TestSetTwice();
+        allPassed &= TestFailFastInvokesHandlerOnce();
 
         Console.WriteLine();
         Console.WriteLine(allPassed ? "ALL TESTS PASSED" : "SOME TESTS FAILED");

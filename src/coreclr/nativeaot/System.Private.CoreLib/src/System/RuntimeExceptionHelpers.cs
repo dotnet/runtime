@@ -39,6 +39,7 @@ namespace System
             UContext = 0x5,
             PosixSigInfo = 0x6,
             MachExceptionInfo = 0x7,
+            PosixPreviousAction = 0x8,
         }
 
         // The crash address surfaced to the handler through the property getter,
@@ -51,6 +52,11 @@ namespace System
         // EXCEPTION_RECORD/CONTEXT or the Unix siginfo_t/ucontext_t.
         private static unsafe void* s_fatalErrorPlatformData0;
         private static unsafe void* s_fatalErrorPlatformData1;
+
+        // The Unix previous struct sigaction* for the faulting signal, surfaced through
+        // FEP_PosixPreviousAction so the handler can inspect or replicate the runtime's
+        // signal chaining. Null on Windows and on the managed fatal path.
+        private static unsafe void* s_fatalErrorPreviousAction;
 
         // The composed crash-log text for the current fatal error. It is built once on the
         // crashing thread in FailFast and replayed on demand by GetFatalErrorLog (for the
@@ -166,6 +172,12 @@ namespace System
                     *value = s_fatalErrorPlatformData1;
                     return 1;
 
+                case FatalErrorProperty.PosixPreviousAction when !OperatingSystem.IsWindows():
+                    if (s_fatalErrorPreviousAction == null)
+                        return 0;
+                    *value = s_fatalErrorPreviousAction;
+                    return 1;
+
                 default:
                     // The remaining platform-native records not applicable to the
                     // current platform (and Mach thread state) are surfaced by other
@@ -182,7 +194,7 @@ namespace System
         /// </summary>
         [UnmanagedCallersOnly]
         internal static unsafe int InvokeFatalErrorHandlerForNativeException(
-            int errorCode, void* faultAddress, void* pPlatformData0, void* pPlatformData1)
+            int errorCode, void* faultAddress, void* pPlatformData0, void* pPlatformData1, void* pPreviousAction)
         {
             IntPtr fatalHandler = Volatile.Read(ref ExceptionHandling.s_fatalErrorHandler);
             if (fatalHandler == IntPtr.Zero)
@@ -191,6 +203,7 @@ namespace System
             s_fatalErrorAddress = faultAddress;
             s_fatalErrorPlatformData0 = pPlatformData0;
             s_fatalErrorPlatformData1 = pPlatformData1;
+            s_fatalErrorPreviousAction = pPreviousAction;
 
             // Invoke the user-installed fatal error handler.
             // See src/native/public/FatalErrorHandling.h for the handler contract.
@@ -199,6 +212,7 @@ namespace System
             s_fatalErrorAddress = null;
             s_fatalErrorPlatformData0 = null;
             s_fatalErrorPlatformData1 = null;
+            s_fatalErrorPreviousAction = null;
 
             return handlerResult;
         }

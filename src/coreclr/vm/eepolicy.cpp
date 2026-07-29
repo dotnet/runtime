@@ -738,6 +738,8 @@ using FatalErrorHandlerFunc = int (DOTNET_CALLCONV *)(int hresult, FatalErrorPro
 
 void* s_fatalErrorHandler = NULL;
 
+static volatile LONG s_fatalErrorHandlerFired = 0;
+
 // Stored crash context for on-demand replay by GetFatalErrorLogFunc.
 static thread_local UINT t_crashExitCode;
 static thread_local LPCWSTR t_crashMessage;
@@ -756,6 +758,16 @@ static thread_local void* t_crashAddress;
 static thread_local PEXCEPTION_RECORD t_crashExceptionRecord;
 static thread_local PCONTEXT t_crashContextRecord;
 #endif // TARGET_WINDOWS
+
+#ifdef TARGET_UNIX
+// Signal-path (Unix) only: the POSIX crash context surfaced to the handler through
+// FEP_PosixSigInfo / FEP_UContext / FEP_PosixPreviousAction, published while the
+// fatal signal handler runs. Null on the managed fatal path, which does not
+// surface these.
+static thread_local void* t_crashSigInfo;
+static thread_local void* t_crashContext;
+static thread_local void* t_crashPreviousAction;
+#endif // TARGET_UNIX
 
 static void StoreCrashContext(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
 {
@@ -804,10 +816,12 @@ static bool DOTNET_CALLCONV DiagnosticDataFuncImpl(const DiagnosticDataConfig* c
         return false;
     }
 
+    int reportSignal = (config->signal != 0) ? config->signal : SIGABRT;
+
     return InProcCrashReportCreateReport(
         format,
-        SIGABRT,
-        /*context*/ nullptr,
+        reportSignal,
+        config->context,
         config->pfnOutput,
         config->userContext);
 }
@@ -851,6 +865,26 @@ static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(FatalErrorProperty p
         return 1;
 #endif // TARGET_WINDOWS
 
+#ifdef TARGET_UNIX
+    case FEP_UContext:
+        if (t_crashContext == nullptr)
+            return 0;
+        *value = t_crashContext;
+        return 1;
+
+    case FEP_PosixSigInfo:
+        if (t_crashSigInfo == nullptr)
+            return 0;
+        *value = t_crashSigInfo;
+        return 1;
+
+    case FEP_PosixPreviousAction:
+        if (t_crashPreviousAction == nullptr)
+            return 0;
+        *value = t_crashPreviousAction;
+        return 1;
+#endif // TARGET_UNIX
+
 #ifdef FEATURE_INPROC_CRASHREPORT
     case FEP_DiagnosticDataFunc:
         *value = reinterpret_cast<const void*>(reinterpret_cast<uintptr_t>(DiagnosticDataFuncImpl));
@@ -862,8 +896,11 @@ static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(FatalErrorProperty p
     }
 }
 
-// Invokes the user-registered fatal error handler if one has been set.
-// Returns true if the handler indicated that default handling should be skipped.
+// Invokes the user-registered fatal error handler if one has been set, from the
+// managed fatal error path. Returns true if the handler indicated that default handling
+// should be skipped. The fatal error managed path is latched one-shot: it terminates the
+// process and may re-enter through SIGABRT, so the handler must not run twice for the
+// same fatal event.
 static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
 {
     WRAPPER_NO_CONTRACT;
@@ -873,6 +910,9 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
     if (pfnHandler == NULL)
         return false;
 
+    if (InterlockedCompareExchange(&s_fatalErrorHandlerFired, 1, 0) != 0)
+        return false;
+
     // Capture the crash address for the property getter.
     t_crashAddress = reinterpret_cast<void*>(address);
 
@@ -880,6 +920,52 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
     int result = pfnHandler(static_cast<int>(exitCode), FatalErrorPropertyGetterImpl);
     return result == SkipDefaultHandler;
 }
+
+#ifdef TARGET_UNIX
+// Bridges the PAL fatal-signal path (invoke_previous_action) to the user-registered
+// fatal error handler. Publishes the crash address (faulting instruction pointer) and
+// POSIX crash context for the property getter, invokes the handler, and returns its
+// disposition to the PAL: 1 to skip the runtime's default crash handling, or 0 to let
+// the PAL proceed with default handling. This honors the managed fatal error path's
+// one-shot latch so a runtime-initiated abort() that re-enters here through
+// SIGABRT does not invoke the handler again, but it deliberately does NOT set the latch
+// itself: a genuine native fault may be recovered and resumed by the chained previous
+// handler, so the handler stays armed and can run again for a later fault, possibly from
+// more than one crashing thread.
+int EEPolicy::InvokeFatalErrorHandlerForSignal(int faultCode, void* faultAddress, void* siginfo, void* context, void* previousAction)
+{
+    WRAPPER_NO_CONTRACT;
+
+    // The terminal managed fatal path latches the handler before it aborts; honor that
+    // latch so the abort()->SIGABRT re-entry does not invoke the handler a second time.
+    if (s_fatalErrorHandlerFired != 0)
+        return 0;
+
+    void* pHandler = VolatileLoad(&s_fatalErrorHandler);
+    FatalErrorHandlerFunc pfnHandler = reinterpret_cast<FatalErrorHandlerFunc>(pHandler);
+    if (pfnHandler == NULL)
+        return 0;
+
+    // Publish the crash address (faulting instruction pointer) and the POSIX crash
+    // context so the handler can retrieve them through the property getter and, if
+    // desired, replicate the runtime's signal chaining.
+    t_crashAddress = faultAddress;
+    t_crashSigInfo = siginfo;
+    t_crashContext = context;
+    t_crashPreviousAction = previousAction;
+
+    int result = pfnHandler(faultCode, FatalErrorPropertyGetterImpl);
+
+    // The crash context pointers are only valid while the signal handler runs; clear
+    // them so a later invocation on this thread does not observe stale pointers.
+    t_crashAddress = NULL;
+    t_crashSigInfo = NULL;
+    t_crashContext = NULL;
+    t_crashPreviousAction = NULL;
+
+    return (result == SkipDefaultHandler) ? 1 : 0;
+}
+#endif // TARGET_UNIX
 
 #ifdef TARGET_WINDOWS
 

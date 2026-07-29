@@ -6,6 +6,7 @@
 // from a third-party C++ library.
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <platformdefines.h>
 
@@ -28,6 +29,21 @@ static void WriteStdErr(const char* msg)
     ssize_t unused = write(STDERR_FILENO, msg, strlen(msg));
     (void)unused;
 #endif // _WIN32
+}
+
+// Write a 32-bit value to stderr as 0xXXXXXXXX without touching the CRT's buffered
+// I/O, so it is safe to call from a signal handler context.
+static void WriteStdErrHex(uint32_t value)
+{
+    static const char digits[] = "0123456789ABCDEF";
+    char buf[11];
+    buf[0] = '0';
+    buf[1] = 'x';
+    for (int i = 0; i < 8; i++)
+        buf[2 + i] = digits[(value >> ((7 - i) * 4)) & 0xF];
+    buf[10] = '\0';
+
+    WriteStdErr(buf);
 }
 
 // Handler that skips the default fatal error handling.
@@ -113,6 +129,39 @@ static int DOTNET_CALLCONV HandlerCheckNativeInfo(int /*hresult*/, FatalErrorPro
     WriteStdErr(contextPopulated ? "FATAL_UCONTEXT:ucontext=true\n" : "FATAL_UCONTEXT:ucontext=false\n");
 #endif
 
+    return SkipDefaultHandler;
+}
+
+// Handler for the PAL fatal-signal path (invoke_previous_action) on Unix. A genuine
+// native crash (for example an access violation whose faulting instruction pointer is
+// native code, or a native abort()) does not flow through the managed fatal path, so it
+// reaches the handler through the signal path instead. Reports the Win32 exception code
+// the handler received (the signal converted via CONTEXTGetExceptionCodeForSignal, passed
+// as the first argument on this path) and whether the POSIX crash context (siginfo_t /
+// ucontext_t / previous struct sigaction) was surfaced.
+static int DOTNET_CALLCONV HandlerCheckSignalInfo(int faultCode, FatalErrorPropertyGetter getProperty)
+{
+    WriteStdErr("FATAL_HANDLER_INVOKED\n");
+
+    WriteStdErr("FATAL_FAULTCODE:");
+    WriteStdErrHex(static_cast<uint32_t>(faultCode));
+    WriteStdErr("\n");
+
+    const void* pSigInfo = NULL;
+    bool sigInfoPopulated = getProperty(FEP_PosixSigInfo, &pSigInfo) != 0 && pSigInfo != NULL;
+    WriteStdErr(sigInfoPopulated ? "FATAL_SIGINFO:siginfo=true\n" : "FATAL_SIGINFO:siginfo=false\n");
+
+    const void* pContext = NULL;
+    bool contextPopulated = getProperty(FEP_UContext, &pContext) != 0 && pContext != NULL;
+    WriteStdErr(contextPopulated ? "FATAL_UCONTEXT:ucontext=true\n" : "FATAL_UCONTEXT:ucontext=false\n");
+
+    const void* pPrevAction = NULL;
+    bool prevActionPopulated = getProperty(FEP_PosixPreviousAction, &pPrevAction) != 0 && pPrevAction != NULL;
+    WriteStdErr(prevActionPopulated ? "FATAL_PREVACTION:prevaction=true\n" : "FATAL_PREVACTION:prevaction=false\n");
+
+    // Skip the runtime's default crash handling. The PAL restores the previous signal
+    // action and returns, so the fault re-executes and terminates through the previous
+    // handler (the OS's natural fatal mechanism) instead of the runtime dumping / chaining.
     return SkipDefaultHandler;
 }
 
@@ -248,11 +297,25 @@ extern "C" DLL_EXPORT FatalErrorHandler GetHandlerCheckDiagnosticData()
     return HandlerCheckDiagnosticData;
 }
 
-// Triggers an access violation from native code — a genuinely-unmanaged fatal fault whose
+extern "C" DLL_EXPORT FatalErrorHandler GetHandlerCheckSignalInfo()
+{
+    return HandlerCheckSignalInfo;
+}
+
+// Triggers an access violation from native code - a genuinely-unmanaged fatal fault whose
 // faulting instruction pointer is not managed code, so the runtime does not translate it
 // into a managed exception. Reaches the runtime's unmanaged fatal chokepoint directly.
 extern "C" DLL_EXPORT void TriggerNativeAccessViolation()
 {
     volatile int* p = NULL;
     *p = 0;
+}
+
+// Triggers a native abort() - raises SIGABRT, which the PAL delivers to its signal
+// handler and, on Unix, reaches invoke_previous_action without flowing through the
+// managed fatal path. Used to validate that the fatal error handler is invoked from the
+// fatal-signal path for SIGABRT.
+extern "C" DLL_EXPORT void TriggerNativeAbort()
+{
+    abort();
 }

@@ -550,13 +550,13 @@ extern void* g_pfnFatalErrorHandlerForNativeException;
 // RhpRegisterFatalErrorHandlerForNativeException. It forwards the live signal structures to
 // the user's fatal error handler and returns 1 (SkipDefaultHandler) if the runtime should
 // terminate immediately without its default crash handling, or 0 (RunDefaultHandler).
-typedef int32_t (*FatalErrorHandlerForNativeExceptionFn)(int32_t errorCode, void* faultAddress, void* pSigInfo, void* pUContext);
+typedef int32_t (*FatalErrorHandlerForNativeExceptionFn)(int32_t errorCode, void* faultAddress, void* pSigInfo, void* pUContext, void* pPreviousAction);
 
 // For a genuinely-unmanaged fatal fault (one that HardwareExceptionHandler did not translate
 // to a managed exception), forward the live siginfo_t/ucontext_t to a user-installed fatal
 // error handler, if one is registered. Returns true when the handler asked the runtime to
 // skip its default fatal handling (previous signal action chaining and crash dump).
-static bool ShouldSkipDefaultHandlingForNativeException(siginfo_t *siginfo, void *context)
+static bool ShouldSkipDefaultHandlingForNativeException(siginfo_t *siginfo, void *context, struct sigaction *previousAction)
 {
     void* pCallback = VolatileLoad(&g_pfnFatalErrorHandlerForNativeException);
     if (pCallback == NULL)
@@ -571,7 +571,7 @@ static bool ShouldSkipDefaultHandlingForNativeException(siginfo_t *siginfo, void
     NativeContextToPalContext(context, &palContext);
     void* faultAddress = (void*)palContext.IP;
     uint32_t faultCode = GetExceptionCodeForSignal(siginfo, context);
-    return ((FatalErrorHandlerForNativeExceptionFn)pCallback)((int32_t)faultCode, faultAddress, siginfo, context) == 1;
+    return ((FatalErrorHandlerForNativeExceptionFn)pCallback)((int32_t)faultCode, faultAddress, siginfo, context, previousAction) == 1;
 }
 
 // Handler for the SIGSEGV signal
@@ -583,7 +583,7 @@ void SIGSEGVHandler(int code, siginfo_t *siginfo, void *context)
         return;
     }
 
-    if (ShouldSkipDefaultHandlingForNativeException(siginfo, context))
+    if (ShouldSkipDefaultHandlingForNativeException(siginfo, context, &g_previousSIGSEGV))
     {
         // The handler asked the runtime to skip its default handling (crash log and
         // createdump). Restore the pre-runtime signal disposition and return; the faulting
@@ -615,7 +615,7 @@ void SIGFPEHandler(int code, siginfo_t *siginfo, void *context)
         return;
     }
 
-    if (ShouldSkipDefaultHandlingForNativeException(siginfo, context))
+    if (ShouldSkipDefaultHandlingForNativeException(siginfo, context, &g_previousSIGFPE))
     {
         // The handler asked the runtime to skip its default handling (crash log and
         // createdump). Restore the pre-runtime signal disposition and return; the faulting

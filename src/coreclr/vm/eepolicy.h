@@ -45,6 +45,13 @@ public:
     static void LogManagedCallstackForSignal(LPCWSTR signalName);
 #endif
 
+#ifdef TARGET_UNIX
+    // Bridges the PAL fatal-signal path to the user-registered fatal error handler.
+    // Registered with the PAL via PAL_SetFatalErrorHandlerCallback. Returns 1 if the
+    // runtime should skip its default crash handling, or 0 to proceed with it.
+    static int InvokeFatalErrorHandlerForSignal(int faultCode, void* faultAddress, void* siginfo, void* context, void* previousAction);
+#endif // TARGET_UNIX
+
 private:
     static void LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString=NULL);
 };

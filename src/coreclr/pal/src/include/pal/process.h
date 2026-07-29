@@ -162,6 +162,26 @@ VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context,
 
 /*++
 Function:
+  PROCInvokeFatalErrorHandlerCallback
+
+  Invokes the registered fatal error handler callback (if any) from the
+  fatal-signal path.
+
+Parameters:
+  faultCode - Win32 exception code the signal maps to
+  faultAddress - faulting instruction pointer or nullptr
+  siginfo - POSIX signal info or nullptr
+  context - signal context or nullptr
+  previousAction - previous struct sigaction* for the signal or nullptr
+
+Return value:
+  1 if the handler asked the runtime to skip its default crash handling, or 0 to
+  proceed with default handling (also returned when no handler is registered).
+--*/
+int PROCInvokeFatalErrorHandlerCallback(int faultCode, void* faultAddress, siginfo_t* siginfo, void* context, struct sigaction* previousAction);
+
+/*++
+Function:
   PROCLogManagedCallstackForSignal
 
   Invokes the registered callback to log the managed callstack for a signal.

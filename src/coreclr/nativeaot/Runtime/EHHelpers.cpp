@@ -462,7 +462,7 @@ EXTERN_C void RhpContinueOnFatalErrors()
 
 // Signature of the class-library bridge registered through
 // RhpRegisterFatalErrorHandlerForNativeException.
-typedef int32_t (*FatalErrorHandlerForNativeExceptionFn)(int32_t errorCode, void* faultAddress, void* pExceptionRecord, void* pContextRecord);
+typedef int32_t (*FatalErrorHandlerForNativeExceptionFn)(int32_t errorCode, void* faultAddress, void* pExceptionRecord, void* pContextRecord, void* pPreviousAction);
 
 // The unhandled-exception filter that was installed before ours (if any). Preserved so the
 // runtime chains to it when the fatal error handler is not registered or requests default handling.
@@ -514,7 +514,7 @@ LONG WINAPI RhpUnhandledExceptionFilter(PEXCEPTION_POINTERS pExPtrs)
             // remains available to the handler through the forwarded PEXCEPTION_RECORD.
             void* faultAddress = (void*)((NATIVE_CONTEXT*)pExPtrs->ContextRecord)->GetIp();
             int32_t result = ((FatalErrorHandlerForNativeExceptionFn)pCallback)(
-                (int32_t)faultCode, faultAddress, pExPtrs->ExceptionRecord, pExPtrs->ContextRecord);
+                (int32_t)faultCode, faultAddress, pExPtrs->ExceptionRecord, pExPtrs->ContextRecord, NULL);
             if (result == 1)
             {
                 // SkipDefaultHandler: terminate immediately without the OS's default crash

@@ -416,6 +416,21 @@ static bool IsSigIgn(struct sigaction* action)
             action->sa_handler == SIG_IGN;
 }
 
+static bool is_fatal_error_handler_signal(int code)
+{
+    switch (code)
+    {
+    case SIGSEGV:
+    case SIGILL:
+    case SIGFPE:
+    case SIGBUS:
+    case SIGABRT:
+        return true;
+    default:
+        return false;
+    }
+}
+
 /*++
 Function :
     invoke_previous_action
@@ -434,6 +449,17 @@ Parameters :
 static void invoke_previous_action(struct sigaction* action, int code, siginfo_t *siginfo, void *context, bool signalRestarts = true)
 {
     _ASSERTE(action != NULL);
+
+    if (is_fatal_error_handler_signal(code))
+    {
+        int faultCode = (int)CONTEXTGetExceptionCodeForSignal(siginfo, (native_context_t *)context);
+        void *faultAddress = GetNativeContextPC((native_context_t *)context);
+        if (PROCInvokeFatalErrorHandlerCallback(faultCode, faultAddress, siginfo, context, action) == 1)
+        {
+            restore_signal(code, action);
+            return;
+        }
+    }
 
     if (IsSigIgn(action))
     {

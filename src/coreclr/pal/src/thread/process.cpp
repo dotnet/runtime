@@ -176,6 +176,15 @@ const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 // via PAL_InitializeCoreCLR).
 static Volatile<PINPROCCRASHREPORT_CALLBACK> g_inProcCrashReportCallback = nullptr;
 
+// Invoked from the fatal-signal path (invoke_previous_action) to give a
+// user-registered fatal error handler a chance to run before the runtime
+// prints crash information, generates a crash dump, or chains to the previous
+// signal handler. Written once during startup via PAL_SetFatalErrorHandlerCallback;
+// use Volatile<> to match the publication ordering of the other signal-path
+// callbacks. When no callback is registered the fatal-signal path behaves as
+// before.
+static Volatile<PFATALERRORHANDLER_CALLBACK> g_fatalErrorHandlerCallback = nullptr;
+
 //
 // Key used for associating CPalThread's with the underlying pthread
 // (through pthread_setspecific)
@@ -541,6 +550,56 @@ PAL_SetInProcCrashReportCallback(
 {
     _ASSERTE(g_inProcCrashReportCallback == nullptr);
     g_inProcCrashReportCallback = callback;
+}
+
+/*++
+Function:
+  PAL_SetFatalErrorHandlerCallback
+
+Abstract:
+  Sets a callback that is invoked from the fatal-signal path to let a
+  user-registered fatal error handler run before the runtime prints crash
+  information, generates a crash dump, or chains to the previous signal handler.
+
+  NOTE: Currently only one callback can be set at a time.
+--*/
+VOID
+PALAPI
+PAL_SetFatalErrorHandlerCallback(
+    IN PFATALERRORHANDLER_CALLBACK callback)
+{
+    _ASSERTE(g_fatalErrorHandlerCallback == nullptr);
+    g_fatalErrorHandlerCallback = callback;
+}
+
+/*++
+Function:
+  PROCInvokeFatalErrorHandlerCallback
+
+Abstract:
+  Invokes the registered fatal error handler callback (if any) from the
+  fatal-signal path and returns its disposition.
+
+Parameters:
+  faultCode - Win32 exception code the signal maps to
+  faultAddress - faulting instruction pointer or nullptr
+  siginfo - POSIX signal info or nullptr
+  context - signal context or nullptr
+  previousAction - previous struct sigaction* for the signal or nullptr
+
+Return value:
+  1 if the handler asked the runtime to skip its default crash handling, or 0
+  to proceed with default handling (also returned when no handler is set).
+--*/
+int PROCInvokeFatalErrorHandlerCallback(int faultCode, void* faultAddress, siginfo_t* siginfo, void* context, struct sigaction* previousAction)
+{
+    PFATALERRORHANDLER_CALLBACK callback = g_fatalErrorHandlerCallback;
+    if (callback == nullptr)
+    {
+        return 0;
+    }
+
+    return callback(faultCode, faultAddress, siginfo, context, previousAction);
 }
 
 // Build the semaphore names using the PID and a value that can be used for distinguishing
