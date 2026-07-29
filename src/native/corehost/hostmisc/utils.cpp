@@ -4,6 +4,8 @@
 #include "utils.h"
 #include "trace.h"
 #include "bundle/info.h"
+#include <minipal/strings.h>
+
 #if defined(TARGET_WINDOWS)
 #include <_version.h>
 #else
@@ -417,7 +419,7 @@ pal::string_t get_host_version_description()
 pal::string_t to_lower(const pal::char_t* in) {
     pal::string_t ret = in;
     std::transform(ret.begin(), ret.end(), ret.begin(),
-        [](pal::char_t c) { return static_cast<pal::char_t>(::tolower(c)); });
+        [](pal::char_t c) { return static_cast<pal::char_t>(minipal_tolower_invariant(static_cast<CHAR16_T>(c))); });
     return ret;
 }
 
