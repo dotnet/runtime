@@ -242,6 +242,7 @@
     <SubsetName Include="Mono" Description="The Mono runtime and CoreLib. Equivalent to: $(DefaultMonoSubsets)" />
     <SubsetName Include="Mono.Runtime" Description="The Mono .NET runtime." />
     <SubsetName Include="Provision.EmSDK" Description="The emsdk provisioning." />
+    <SubsetName Include="Clean.WasmTools" Description="Prunes unreferenced entries from the shared wasm tool cache." />
     <SubsetName Include="Mono.AotCross" Description="The cross-compiler runtime for Mono AOT." />
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
     <SubsetName Include="Mono.Manifests" Description="The NuGet packages with manifests defining the mobile and Blazor workloads." />
@@ -307,6 +308,10 @@
   <!-- emscripten provisioning, needs to be placed before runtime projects -->
   <ItemGroup Condition="$(_subset.Contains('+provision.emsdk+'))">
     <ProjectToBuild Include="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.proj" Category="provision" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+clean.wasmtools+'))">
+    <ProjectToBuild Include="$(RepositoryEngineeringDir)wasm\PruneWasmToolCache.proj" Category="provision" />
   </ItemGroup>
 
   <!-- CoreClr sets -->

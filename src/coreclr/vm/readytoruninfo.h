@@ -224,6 +224,12 @@ public:
 #ifdef TARGET_WASM
     DWORD GetMinFunctionTableIndex() const { return m_minFunctionTableIndex; }
     TADDR GetMinVirtualIP() const { return m_minVirtualIP; }
+    PCODE R2RRelativeFunctionIndexToVirtualIP(DWORD r2rFunctionIndex) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(r2rFunctionIndex < m_nRuntimeFunctions);
+        return (PCODE)(GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[r2rFunctionIndex]));
+    }
     void RegisterVirtualIPRange(Module* pModule);
 #endif // TARGET_WASM
 

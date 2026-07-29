@@ -231,6 +231,7 @@ public unsafe class IXCLRDataProcessTests
 
             Mock<ILoader> loader = new(MockBehavior.Strict);
             loader.Setup(l => l.GetAppDomain()).Returns(new TargetPointer(AppDomainAddress));
+            loader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(ModuleAddress))).Returns(module);
             loader.Setup(l => l.GetModuleHandles(
                 new TargetPointer(AppDomainAddress),
                 AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution)).Returns([module]);
@@ -238,6 +239,8 @@ public unsafe class IXCLRDataProcessTests
             loader.Setup(l => l.GetPEAssembly(module)).Returns(new TargetPointer(PeAssemblyAddress));
             loader.Setup(l => l.GetILAddr(new TargetPointer(PeAssemblyAddress), 0x10)).Returns(new TargetPointer(FirstHeaderAddress));
             loader.Setup(l => l.GetILAddr(new TargetPointer(PeAssemblyAddress), 0x20)).Returns(new TargetPointer(SecondHeaderAddress));
+            loader.Setup(l => l.GetILHeader(module, FirstToken)).Returns(new TargetPointer(FirstHeaderAddress));
+            loader.Setup(l => l.GetILHeader(module, SecondToken)).Returns(new TargetPointer(SecondHeaderAddress));
 
             Mock<IEcmaMetadata> ecmaMetadata = new(MockBehavior.Strict);
             ecmaMetadata.Setup(e => e.GetMetadata(module)).Returns(reader);
@@ -292,6 +295,10 @@ public unsafe class IXCLRDataProcessTests
                 DacComNullableByRef<IXCLRDataModule> nullModule = new(isNullRef: true);
                 Assert.Equal(HResults.S_OK, method.GetTokenAndScope(&token, nullModule));
                 Assert.Equal(FirstToken, token);
+                AssertMethodDefinitionExtent(
+                    method,
+                    FirstHeaderAddress + TinyHeaderSize,
+                    FirstHeaderAddress + TinyHeaderSize + TinyCodeSize - 1);
 
                 DacComNullableByRef<IXCLRDataMethodDefinition> endOut = new(isNullRef: false);
                 Assert.Equal(HResults.S_FALSE, process.EnumMethodDefinitionByAddress(&handle, endOut));
@@ -314,6 +321,10 @@ public unsafe class IXCLRDataProcessTests
                 DacComNullableByRef<IXCLRDataModule> nullModule = new(isNullRef: true);
                 Assert.Equal(HResults.S_OK, method.GetTokenAndScope(&token, nullModule));
                 Assert.Equal(SecondToken, token);
+                AssertMethodDefinitionExtent(
+                    method,
+                    SecondHeaderAddress + 12,
+                    SecondHeaderAddress + 12 + FatCodeSize - 1);
             }
             finally
             {
@@ -337,6 +348,70 @@ public unsafe class IXCLRDataProcessTests
             Assert.Equal(0ul, handle);
             Assert.Equal(HResults.E_INVALIDARG, process.EndEnumMethodDefinitionsByAddress(handle));
         }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void MethodDefinitionWithoutIL(MockTarget.Architecture arch)
+    {
+        const ulong ModuleAddress = 0x2000;
+        const uint Token = 0x06000001;
+        ModuleHandle module = new(new TargetPointer(ModuleAddress));
+        Mock<ILoader> loader = new(MockBehavior.Strict);
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(ModuleAddress))).Returns(module);
+        loader.Setup(l => l.GetILHeader(module, Token)).Returns(TargetPointer.Null);
+        TestPlaceholderTarget.Builder builder = new(arch);
+        builder.AddMockContract(loader.Object);
+        IXCLRDataMethodDefinition method = new ClrDataMethodDefinition(
+            builder.Build(),
+            new TargetPointer(ModuleAddress),
+            Token,
+            legacyImpl: null);
+
+        ulong handle;
+        Assert.Equal(HResults.S_FALSE, method.StartEnumExtents(&handle));
+        Assert.Equal(0ul, handle);
+
+        ClrDataAddress address;
+        Assert.Equal(CorDbgHResults.E_UNEXPECTED, method.GetRepresentativeEntryAddress(&address));
+    }
+
+    private static void AssertMethodDefinitionExtent(
+        IXCLRDataMethodDefinition method,
+        ClrDataAddress expectedStart,
+        ClrDataAddress expectedEnd)
+    {
+        Assert.Equal(HResults.E_POINTER, method.StartEnumExtents(null));
+        Assert.Equal(HResults.E_POINTER, method.GetRepresentativeEntryAddress(null));
+
+        ulong invalidHandle = 0;
+        ClrDataMethodDefinitionExtent extent;
+        Assert.Equal(HResults.E_INVALIDARG, method.EnumExtent(&invalidHandle, &extent));
+
+        ulong handle;
+        Assert.Equal(HResults.S_OK, method.StartEnumExtents(&handle));
+        Assert.NotEqual(0ul, handle);
+        try
+        {
+            Assert.Equal(HResults.E_POINTER, method.EnumExtent(null, &extent));
+            Assert.Equal(HResults.E_POINTER, method.EnumExtent(&handle, null));
+            Assert.Equal(HResults.S_OK, method.EnumExtent(&handle, &extent));
+            Assert.Equal(expectedStart, extent.startAddress);
+            Assert.Equal(expectedEnd, extent.endAddress);
+            Assert.Equal(0u, extent.enCVersion);
+            Assert.Equal(CLRDataMethodDefinitionExtentType.CLRDATA_METHDEF_IL, extent.type);
+            Assert.Equal(HResults.S_FALSE, method.EnumExtent(&handle, &extent));
+        }
+        finally
+        {
+            Assert.Equal(HResults.S_OK, method.EndEnumExtents(handle));
+        }
+
+        Assert.Equal(HResults.S_OK, method.EndEnumExtents(0));
+
+        ClrDataAddress address;
+        Assert.Equal(HResults.S_OK, method.GetRepresentativeEntryAddress(&address));
+        Assert.Equal(expectedStart, address);
     }
 
     private static byte[] BuildMethodDefinitionMetadata()

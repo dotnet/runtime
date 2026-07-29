@@ -27,10 +27,43 @@
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
+  <!-- Resolve the shared wasm tool cache the same way eng/wasm/WasmToolCache.props does. It is
+       duplicated here because this file is consumed from outside the runtime repo, where those
+       targets and the properties they depend on are not available. -->
+  <PropertyGroup Condition="'$(RuntimeSrcDir)' != '' and '$(WasmBuildSupportDir)' == ''">
+    <_WasmToolHostOS Condition="$([MSBuild]::IsOSPlatform('Windows'))">windows</_WasmToolHostOS>
+    <_WasmToolHostOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_WasmToolHostOS>
+    <_WasmToolHostOS Condition="'$(_WasmToolHostOS)' == ''">linux</_WasmToolHostOS>
+    <_WasmToolHostRid>$(_WasmToolHostOS)-$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</_WasmToolHostRid>
+
+    <!-- Anchor at the main checkout when $(RuntimeSrcDir) is a git worktree, mirroring
+         eng/wasm/WasmToolCache.props so an in-tree build and an out-of-tree consumer agree. Only
+         an absolute gitdir is trusted; otherwise fall back to $(RuntimeSrcDir). -->
+    <_WasmToolGitPath>$([MSBuild]::NormalizePath('$(RuntimeSrcDir)', '.git'))</_WasmToolGitPath>
+    <_WasmToolGitFileText Condition="$([System.IO.File]::Exists('$(_WasmToolGitPath)'))">$([System.IO.File]::ReadAllText('$(_WasmToolGitPath)').Trim().Replace('\', '/'))</_WasmToolGitFileText>
+    <_WasmToolGitDir Condition="$(_WasmToolGitFileText.StartsWith('gitdir:'))">$(_WasmToolGitFileText.Substring(7).Trim())</_WasmToolGitDir>
+    <_WasmToolWorktreePrefix Condition="$(_WasmToolGitDir.Contains('/.git/worktrees/'))">$(_WasmToolGitDir.Substring(0, $(_WasmToolGitDir.IndexOf('/.git/worktrees/'))))</_WasmToolWorktreePrefix>
+    <_WasmToolAnchorRoot>$([MSBuild]::EnsureTrailingSlash('$(RuntimeSrcDir)'))</_WasmToolAnchorRoot>
+    <_WasmToolAnchorRoot Condition="'$(_WasmToolWorktreePrefix)' != '' and $([System.IO.Path]::IsPathRooted('$(_WasmToolWorktreePrefix)'))">$([MSBuild]::EnsureTrailingSlash('$(_WasmToolWorktreePrefix)'))</_WasmToolAnchorRoot>
+
+    <_WasmToolCacheDir Condition="'$(DOTNET_WASM_TOOL_CACHE_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash('$(DOTNET_WASM_TOOL_CACHE_DIR)'))</_WasmToolCacheDir>
+    <_WasmToolCacheDir Condition="'$(_WasmToolCacheDir)' == ''">$([MSBuild]::NormalizeDirectory('$(_WasmToolAnchorRoot)', '.dotnet', 'wasm-tools'))</_WasmToolCacheDir>
+
+    <_EmscriptenVersionFile>$([MSBuild]::NormalizePath('$(RuntimeSrcDir)', 'src', 'mono', 'browser', 'emscripten-version.txt'))</_EmscriptenVersionFile>
+    <_WasiSdkVersionFile>$([MSBuild]::NormalizePath('$(RuntimeSrcDir)', 'eng', 'wasm', 'wasi-sdk-version.txt'))</_WasiSdkVersionFile>
+    <_EmscriptenVersion Condition="Exists('$(_EmscriptenVersionFile)')">$([System.IO.File]::ReadAllText('$(_EmscriptenVersionFile)').Trim())</_EmscriptenVersion>
+    <_WasiSdkVersion Condition="Exists('$(_WasiSdkVersionFile)')">$([System.IO.File]::ReadAllText('$(_WasiSdkVersionFile)').Trim())</_WasiSdkVersion>
+
+    <!-- Only adopt a cache path once its '.complete' sentinel exists, mirroring the in-tree props;
+         otherwise leave EMSDK_PATH/WASI_SDK_PATH empty so on-demand provisioning still triggers. -->
+    <_EmscriptenCacheStamp Condition="'$(_WasmToolCacheDir)' != '' and '$(_EmscriptenVersion)' != ''">$([MSBuild]::NormalizePath('$(_WasmToolCacheDir)', 'emscripten', '$(_EmscriptenVersion)-$(_WasmToolHostRid).complete'))</_EmscriptenCacheStamp>
+    <_WasiSdkCacheStamp Condition="'$(_WasmToolCacheDir)' != '' and '$(_WasiSdkVersion)' != ''">$([MSBuild]::NormalizePath('$(_WasmToolCacheDir)', 'wasi-sdk', '$(_WasiSdkVersion)-$(_WasmToolHostRid).complete'))</_WasiSdkCacheStamp>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(RuntimeSrcDir)' != '' and '$(WasmBuildSupportDir)' == ''">
     <ArtifactsBinDir>$(RuntimeSrcDir)\artifacts\bin\</ArtifactsBinDir>
-    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == ''">$(RuntimeSrcDir)\src\mono\browser\emsdk\</EMSDK_PATH>
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$([MSBuild]::NormalizeDirectory($(RuntimeSrcDir), 'artifacts', 'wasi-sdk'))</WASI_SDK_PATH>
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(_EmscriptenCacheStamp)' != '' and Exists('$(_EmscriptenCacheStamp)')">$([MSBuild]::NormalizeDirectory('$(_WasmToolCacheDir)', 'emscripten', '$(_EmscriptenVersion)-$(_WasmToolHostRid)'))</EMSDK_PATH>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' and '$(_WasiSdkCacheStamp)' != '' and Exists('$(_WasiSdkCacheStamp)')">$([MSBuild]::NormalizeDirectory('$(_WasmToolCacheDir)', 'wasi-sdk', '$(_WasiSdkVersion)-$(_WasmToolHostRid)'))</WASI_SDK_PATH>
 
     <MicrosoftNetCoreAppRuntimePackLocationToUse>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'microsoft.netcore.app.runtime.$(RuntimeIdentifier)', $(RuntimeConfig)))</MicrosoftNetCoreAppRuntimePackLocationToUse>
 
