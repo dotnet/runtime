@@ -260,7 +260,7 @@ FrameCallbackAdapter(
 
     Module* pModule = pMD->GetModule();
 
-    bool canResolveOffsets = !pCF->HasFaulted() && pCF->IsFrameless();
+    bool canResolveOffsets = pCF->IsFrameless();
     uint32_t nativeOffset = canResolveOffsets ? pCF->GetRelOffset() : 0;
     uint32_t ilOffset = 0;
     PCODE ip = (PCODE)0;
