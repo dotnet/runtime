@@ -5295,11 +5295,18 @@ namespace ILAssembler
             BlobBuilder objSeqBlob = new();
             foreach (var item in context.serInit())
             {
-                if (item.serInit() is null)
+                // Each element in object[] is encoded as FieldOrPropType + value,
+                // where FieldOrPropType is the concrete type (bool, int32, string, etc.),
+                // NOT TaggedObject (0x51). The object(...) wrapper is used to explicitly
+                // box a value but does not change the element's concrete type in the encoding.
+                // Unwrap any object(...) wrappers to get the actual typed inner element.
+                CILParser.SerInitContext actualItem = item;
+                while (actualItem.serInit() is { } inner)
                 {
-                    WriteCustomAttributeFieldOrPropType(objSeqBlob, item);
+                    actualItem = inner;
                 }
-                objSeqBlob.LinkSuffix(VisitSerInit(item).Value);
+                WriteCustomAttributeFieldOrPropType(objSeqBlob, actualItem);
+                objSeqBlob.LinkSuffix(VisitSerInit(actualItem).Value);
             }
             return new(objSeqBlob);
         }
