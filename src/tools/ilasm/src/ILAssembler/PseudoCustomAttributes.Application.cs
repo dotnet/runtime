@@ -33,8 +33,10 @@ internal static partial class PseudoCustomAttributes
                 GetUInt16(arguments.FixedArguments[0].Value) < (ushort)ComInterfaceType.Last || context.InvalidValue(),
             KnownAttributeKind.ClassInterface =>
                 GetUInt16(arguments.FixedArguments[0].Value) < (ushort)ClassInterfaceType.Last || context.InvalidValue(),
-            KnownAttributeKind.Serializable => AddTypeFlags(context, TypeAttributes.SerializableFlag),
-            KnownAttributeKind.NonSerialized => AddFieldFlags(context, FieldAttributes.NotSerializedFlag),
+#pragma warning disable SYSLIB0050 // Formatter-based serialization APIs are obsolete.
+            KnownAttributeKind.Serializable => AddTypeFlags(context, TypeAttributes.Serializable),
+            KnownAttributeKind.NonSerialized => AddFieldFlags(context, FieldAttributes.NotSerialized),
+#pragma warning restore SYSLIB0050 // Formatter-based serialization APIs are obsolete.
             KnownAttributeKind.MethodImpl1 or KnownAttributeKind.MethodImpl2 or KnownAttributeKind.MethodImpl3 =>
                 ApplyMethodImpl(context, known.Kind, arguments),
             KnownAttributeKind.MarshalAs1 or KnownAttributeKind.MarshalAs2 => ApplyMarshalAs(context, arguments),
