@@ -1526,6 +1526,17 @@ namespace System.Runtime.CompilerServices
             return true;
         }
 
+        // Restore the ExecutionContext that an inlined async frame captured when it logically
+        // returned to its caller.
+        //
+        // Unlike the synchronous restore at the end of a method, this runs only after a
+        // resumption, so it must target the thread we were resumed on rather than the one
+        // whose contexts were captured on entry.
+        private static void RestoreInlinedFrameExecutionContext(ExecutionContext? previousExecCtx)
+        {
+            RestoreExecutionContext(Thread.CurrentThreadAssumedInitialized, previousExecCtx);
+        }
+
         // Suspend and resume in the specified continuation context.
         //
         // Used by the JIT when inlining runtime async calls: when an inlined callee logically

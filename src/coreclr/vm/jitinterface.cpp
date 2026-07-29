@@ -10389,7 +10389,7 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->captureContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_CONTEXTS));
     pAsyncInfoOut->restoreContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_CONTEXTS));
     pAsyncInfoOut->restoreContextsOnSuspensionMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_CONTEXTS_ON_SUSPENSION));
-    pAsyncInfoOut->restoreExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_EXECUTION_CONTEXT));
+    pAsyncInfoOut->restoreInlinedFrameExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_INLINED_FRAME_EXECUTION_CONTEXT));
     pAsyncInfoOut->isOnRightContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__IS_ON_RIGHT_CONTEXT));
     pAsyncInfoOut->switchContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__SWITCH_CONTEXT));
     pAsyncInfoOut->finishSuspensionNoContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINISH_SUSPENSION_NO_CONTINUATION_CONTEXT));
