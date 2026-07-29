@@ -17,8 +17,6 @@ namespace ILCompiler.DependencyAnalysis.Wasm
     {
 #if READYTORUN
         public WasmFunctionBody FunctionBody = null;
-#else
-        internal ObjectDataBuilder Builder;
 #endif
 
         private readonly NodeFactory _factory;
@@ -30,8 +28,6 @@ namespace ILCompiler.DependencyAnalysis.Wasm
             _relocsOnly = relocsOnly;
 #if READYTORUN
             FunctionBody = null;
-#else
-            Builder = new ObjectDataBuilder(factory, relocsOnly);
 #endif
         }
 
@@ -49,9 +45,7 @@ namespace ILCompiler.DependencyAnalysis.Wasm
     
             return new ObjectNode.ObjectData(encodedThunk, relocs, 1, new ISymbolDefinitionNode[] { symbolDefinitionNode });
 #else
-            Builder.RequireInitialAlignment(1);
-            Builder.AddSymbol(symbolDefinitionNode);
-            return Builder.ToObjectData();
+            throw new PlatformNotSupportedException("NativeAOT WebAssembly assembly stubs are not supported.");
 #endif
         }
     }

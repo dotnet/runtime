@@ -19,13 +19,20 @@ namespace ILCompiler.Compiler.Tests
         private const string ExportName = "ILCompiler_Compiler_Tests_Assets_SwitchTest__TestEntryPoint";
         private static readonly byte[] WasmHeader = [0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00];
 
-        public static bool IsNodeWithWasmExceptionHandlingAvailable =>
+        public static bool IsWasmCompilationSupported =>
+            string.Equals(
+                AppContext.GetData("NativeAotWasmTest.IsSupported") as string,
+                "true",
+                StringComparison.OrdinalIgnoreCase);
+
+        public static bool IsWasmExecutionSupported =>
+            IsWasmCompilationSupported &&
             RunProcess(
                 "node",
                 ["-e", "process.exit(typeof WebAssembly.Tag === 'function' ? 0 : 1)"],
                 throwOnError: false).ExitCode == 0;
 
-        [Fact]
+        [ConditionalFact(nameof(IsWasmCompilationSupported))]
         public void NativeAotWasmSingleMethodCompiles()
         {
             string outputPath = CompileSwitchTest();
@@ -41,7 +48,7 @@ namespace ILCompiler.Compiler.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNodeWithWasmExceptionHandlingAvailable))]
+        [ConditionalFact(nameof(IsWasmExecutionSupported))]
         public void NativeAotWasmSingleMethodExecutes()
         {
             string outputPath = CompileSwitchTest();

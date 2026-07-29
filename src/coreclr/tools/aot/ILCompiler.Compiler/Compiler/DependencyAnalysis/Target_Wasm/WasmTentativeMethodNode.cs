@@ -7,7 +7,7 @@ using ILCompiler.DependencyAnalysis.Wasm;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public partial class TentativeMethodNode : IMethodCodeNodeWithTypeSignature
+    public partial class TentativeMethodNode
     {
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter encoder, bool relocsOnly)
         {

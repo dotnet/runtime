@@ -49,23 +49,14 @@
     <Compile Include="WasmSingleMethodTests.cs" />
   </ItemGroup>
 
-  <!-- The end-to-end WASM tests invoke ILC with a WASM cross-JIT, so build that JIT as part of the test project. -->
   <PropertyGroup>
-    <_BuildWasmJitCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">true</_BuildWasmJitCrossArch>
-    <_BuildWasmJitProperties>ClrWasmJitSubset=true;Configuration=$(CoreCLRConfiguration)</_BuildWasmJitProperties>
-    <_BuildWasmJitProperties Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(_BuildWasmJitProperties);Ninja=true</_BuildWasmJitProperties>
-    <_BuildWasmJitProperties Condition="'$(_BuildWasmJitCrossArch)' == 'true'">$(_BuildWasmJitProperties);HostArchitecture=$(BuildArchitecture);HostCrossOS=$(HostOS);CrossBuild=false;BuildSubdirectory=$(BuildArchitecture);CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1;PgoInstrument=false;NoPgoOptimize=true</_BuildWasmJitProperties>
+    <_NativeAotWasmTestSupported Condition="('$(BuildArchitecture)' == 'x64' or '$(BuildArchitecture)' == 'arm64') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</_NativeAotWasmTestSupported>
   </PropertyGroup>
 
-  <Target Name="BuildWasmJitForCompilerTests"
-          BeforeTargets="ResolveProjectReferences"
-          Condition="'$(DesignTimeBuild)' != 'true'">
-    <MSBuild Projects="$(CoreClrProjectRoot)runtime.proj"
-             Targets="Build"
-             Properties="$(_BuildWasmJitProperties)" />
-  </Target>
-
   <ItemGroup>
+    <RuntimeHostConfigurationOption Include="NativeAotWasmTest.IsSupported">
+      <Value>$(_NativeAotWasmTestSupported)</Value>
+    </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="NativeAotWasmTest.BuildArchitecture">
       <Value>$(BuildArchitecture)</Value>
     </RuntimeHostConfigurationOption>

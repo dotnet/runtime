@@ -951,6 +951,11 @@ namespace ILCompiler.ObjectWriter
 
                 // The virtual address of the relocation we are resolving
 #if READYTORUN
+                if (definedSymbol is null)
+                {
+                    throw new InvalidDataException($"Symbol definition '{reloc.SymbolName}' not found");
+                }
+
                 uint virtualRelocOffset = 0;
                 if (curSectionAsWebcil is not null)
                 {
@@ -965,7 +970,7 @@ namespace ILCompiler.ObjectWriter
                 // TODO-Wasm: Enforce the below boolean as an assert once we are emitting proper Wasm code
                 // relocs for all code containing nodes
                 // ---> bool betweenWebcilSections = false;
-                if (definedSymbol is not null && _sections[definedSymbol.SectionIndex] is WebcilSection targetSection)
+                if (_sections[definedSymbol.SectionIndex] is WebcilSection targetSection)
                 {
                     symbolWebcilSection = targetSection;
                     virtualSymbolImageOffset = symbolWebcilSection.Header.VirtualAddress + (uint)definedSymbol.Value;
@@ -1036,23 +1041,17 @@ namespace ILCompiler.ObjectWriter
                             // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
                             // flag mapping
 #if READYTORUN
-                            Debug.Assert(symbolWebcilSection is not null);
+                            if (symbolWebcilSection is null)
+                            {
+                                throw new InvalidDataException($"WebCIL section for symbol '{reloc.SymbolName}' not found");
+                            }
+
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
-#else
-                            if (definedSymbol is null)
-                            {
-                                throw new InvalidDataException($"Symbol definition '{reloc.SymbolName}' not found");
-                            }
-
-                            if (_sections[definedSymbol.SectionIndex].Type == WasmSectionType.Data)
-                            {
-                                throw new PlatformNotSupportedException(
-                                    $"NativeAOT WebAssembly data symbol '{reloc.SymbolName}' is not supported.");
-                            }
-
-                            Relocation.WriteValue(reloc.Type, pData, definedSymbol.Value + addend);
-#endif
                             break;
+#else
+                            throw new PlatformNotSupportedException(
+                                $"NativeAOT WebAssembly memory address relocation for '{reloc.SymbolName}' is not supported.");
+#endif
                         }
                         case RelocType.WASM_MEMORY_ADDR_REL_LEB:
                         {
@@ -1063,23 +1062,17 @@ namespace ILCompiler.ObjectWriter
                             // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
                             // flag mapping
 #if READYTORUN
-                            Debug.Assert(symbolWebcilSection is not null);
+                            if (symbolWebcilSection is null)
+                            {
+                                throw new InvalidDataException($"WebCIL section for symbol '{reloc.SymbolName}' not found");
+                            }
+
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
-#else
-                            if (definedSymbol is null)
-                            {
-                                throw new InvalidDataException($"Symbol definition '{reloc.SymbolName}' not found");
-                            }
-
-                            if (_sections[definedSymbol.SectionIndex].Type == WasmSectionType.Data)
-                            {
-                                throw new PlatformNotSupportedException(
-                                    $"NativeAOT WebAssembly data symbol '{reloc.SymbolName}' is not supported.");
-                            }
-
-                            Relocation.WriteValue(reloc.Type, pData, definedSymbol.Value + addend);
-#endif
                             break;
+#else
+                            throw new PlatformNotSupportedException(
+                                $"NativeAOT WebAssembly memory address relocation for '{reloc.SymbolName}' is not supported.");
+#endif
                         }
                         case RelocType.WASM_TABLE_INDEX_I32:
                         case RelocType.WASM_TABLE_INDEX_I64:

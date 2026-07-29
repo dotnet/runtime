@@ -7,7 +7,7 @@ using ILCompiler.DependencyAnalysis.Wasm;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public partial class UnboxingStubNode : IMethodCodeNodeWithTypeSignature
+    public partial class UnboxingStubNode
     {
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter encoder, bool relocsOnly)
         {
