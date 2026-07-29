@@ -17,11 +17,13 @@
     <BuildX509Loader Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">true</BuildX509Loader>
     <!-- PQC is new in .NET 10, so build it for .NET 9, .NET Standard, and .NET Framework -->
     <BuildPqc Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">true</BuildPqc>
-    <OmitResources Condition="'$(BuildX509Loader)' != 'true' and '$(BuildPqc)' != 'true'">true</OmitResources>
+    <!-- X25519DiffieHellman is new in .NET 11. For this package, build it only for .NET Framework. -->
+    <BuildX25519 Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</BuildX25519>
+    <OmitResources Condition="'$(BuildX509Loader)' != 'true' and '$(BuildPqc)' != 'true' and '$(BuildX25519)' != 'true'">true</OmitResources>
   </PropertyGroup>
 
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(BuildX509Loader)' == 'true'" />
-  <Import Project="$(CommonPath)System\Security\Cryptography\AsnWriter\System.Security.Cryptography.AsnWriter.Shared.projitems" Condition="'$(BuildX509Loader)' == 'true' or '$(BuildPqc)' == 'true' " />
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(BuildX509Loader)' == 'true' or '$(BuildX25519)' == 'true'" />
+  <Import Project="$(CommonPath)System\Security\Cryptography\AsnWriter\System.Security.Cryptography.AsnWriter.Shared.projitems" Condition="'$(BuildX509Loader)' == 'true' or '$(BuildPqc)' == 'true' or '$(BuildX25519)' == 'true' " />
 
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Experimentals.cs"
@@ -31,7 +33,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateKeyAccessors.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' != '.NETCoreApp' or '$(BuildPqc)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' != '.NETCoreApp' or '$(BuildPqc)' == 'true' or '$(BuildX25519)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
              Link="Common\Internal\Windows\Kernel32\Interop.FormatMessage.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoThrowHelper.Windows.cs"
@@ -77,10 +79,13 @@
     <Compile Include="$(CommonPath)System\Security\Cryptography\Utf8DataEncoding.cs"
              Link="Common\System\Security\Cryptography\Utf8DataEncoding.cs" />
 
-    <Compile Include="System\Security\Cryptography\NetStandardShims.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildX25519)' == 'true' or '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="System\Security\Cryptography\NetStandardShims.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
@@ -90,7 +95,7 @@
              Link="Common\System\Security\Cryptography\PbeParameters.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(BuildX509Loader)' == 'true' or '$(BuildPqc)' == 'true' ">
+  <ItemGroup Condition="'$(BuildX509Loader)' == 'true' or '$(BuildPqc)' == 'true' or '$(BuildX25519)' == 'true' ">
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml</Link>
     </AsnXml>
@@ -348,7 +353,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.ProcessedPkcs12.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(BuildX509Loader)' == 'true'">
+  <ItemGroup Condition="'$(BuildX509Loader)' == 'true' or '$(BuildX25519)' == 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
   </ItemGroup>
 
@@ -373,9 +378,54 @@
              Link="Common\System\Security\Cryptography\ECCng.ImportExport.NamedCurve.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(BuildPqc)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+  <ItemGroup Condition="('$(BuildPqc)' == 'true' or '$(BuildX25519)' == 'true') and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs" />
     <Compile Include="System\Security\Cryptography\PemEncoding.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildPqc)' == 'true' or '$(BuildX25519)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Cng.cs"
+             Link="Common\Interop\Windows\BCrypt\Cng.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDeriveKey.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDeriveKey.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroySecret.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroySecret.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptExportKey.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptExportKey.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptFinalizeKey.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptFinalizeKey.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenerateKeyPair.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenerateKeyPair.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptImportKeyPair.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptImportKeyPair.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptSecretAgreement.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptSecretAgreement.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptSetProperty.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptSetProperty.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptSecretHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeBCryptSecretHandle.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\AsymmetricAlgorithmHelpers.Der.cs"
+             Link="Common\System\Security\Cryptography\AsymmetricAlgorithmHelpers.Der.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\KeyPropertyName.cs"
+             Link="Common\System\Security\Cryptography\KeyPropertyName.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PemKeyHelpers.Factory.cs"
+             Link="Common\System\Security\Cryptography\PemKeyHelpers.Factory.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PemLabels.cs"
+             Link="Common\System\Security\Cryptography\PemLabels.cs" />
+    <Compile Include="System\Security\Cryptography\PinAndClear.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildX25519)' == 'true'">
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X25519DiffieHellman.cs"
+             Link="Common\System\Security\Cryptography\X25519DiffieHellman.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X25519DiffieHellmanImplementation.Windows.cs"
+             Link="Common\System\Security\Cryptography\X25519DiffieHellmanImplementation.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X25519WindowsHelpers.cs"
+             Link="Common\System\Security\Cryptography\X25519WindowsHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildPqc)' == 'true'">
@@ -393,28 +443,10 @@
       <Link>System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml.cs</Link>
       <DependentUpon>System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Cng.cs"
-             Link="Common\Interop\Windows\BCrypt\Cng.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\AsymmetricAlgorithmHelpers.Der.cs"
-             Link="Common\System\Security\Cryptography\AsymmetricAlgorithmHelpers.Der.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.AsymmetricEncryption.Types.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDecapsulateEncapsulate.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDecapsulateEncapsulate.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptExportKey.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptExportKey.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptFinalizeKey.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptFinalizeKey.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenerateKeyPair.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenerateKeyPair.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptImportKeyPair.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptImportKeyPair.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptSetProperty.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptSetProperty.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptSignHash.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptSignHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptVerifySignature.cs"
@@ -445,10 +477,6 @@
              Link="Common\System\Security\Cryptography\MLKemImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemPkcs8.cs"
             Link="Common\System\Security\Cryptography\MLKemPkcs8.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\PemKeyHelpers.Factory.cs"
-             Link="Common\System\Security\Cryptography\PemKeyHelpers.Factory.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\PemLabels.cs"
-             Link="Common\System\Security\Cryptography\PemLabels.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.cs"
              Link="Common\System\Security\Cryptography\PqcBlobHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsa.cs"
@@ -467,8 +495,36 @@
              Link="Common\System\Security\Cryptography\MLDsaImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\ErrorCode.cs"
              Link="Common\System\Security\Cryptography\X509Certificates\ErrorCode.cs" />
+  </ItemGroup>
 
-    <Compile Include="System\Security\Cryptography\PinAndClear.cs" />
+  <ItemGroup Condition="('$(BuildPqc)' == 'true' or '$(BuildX25519)' == 'true') and '$(TargetFrameworkIdentifier)' != '.NETStandard'">
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CngHelpers.cs"
+             Link="Common\System\Security\Cryptography\CngHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.Shared.cs"
+             Link="Common\System\Security\Cryptography\CngPkcs8.Shared.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.ErrorCode.cs"
+             Link="Common\Interop\Windows\NCrypt\Interop.ErrorCode.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.Keys.cs"
+             Link="Common\Interop\Windows\NCrypt\Interop.Keys.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.NCryptBuffer.cs"
+             Link="Common\Interop\Windows\NCrypt\Interop.NCryptBuffer.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.NCryptDeriveKeyMaterial.cs"
+             Link="Common\Internal\Windows\NCrypt\Interop.NCryptDeriveKeyMaterial.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.NCryptDeriveSecretAgreement.cs"
+             Link="Common\Internal\Windows\NCrypt\Interop.NCryptDeriveSecretAgreement.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.NCryptOpenStorageProvider.cs"
+             Link="Common\Interop\Windows\NCrypt\Interop.NCryptOpenStorageProvider.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.Properties.cs"
+             Link="Common\Interop\Windows\NCrypt\Interop.Properties.cs" />
+
+    <Compile Include="System\Security\Cryptography\CngExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="('$(BuildPqc)' == 'true' or '$(BuildX25519)' == 'true') and '$(TargetFrameworkIdentifier)' != '.NETStandard' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
+    <Compile Include="$(CommonPath)System\Security\Cryptography\ECCng.ImportExport.NamedCurve.cs"
+             Link="Common\System\Security\Cryptography\ECCng.ImportExport.NamedCurve.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildPqc)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETStandard'">
@@ -482,20 +538,12 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeCryptMsgHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CngHelpers.cs"
-             Link="Common\System\Security\Cryptography\CngHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CngHelpers.SignVerify.cs"
              Link="Common\System\Security\Cryptography\CngHelpers.SignVerify.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CngPkcs8.Shared.cs"
-             Link="Common\System\Security\Cryptography\CngPkcs8.Shared.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaCng.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaCng.Windows.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaCng.Windows.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\KeyPropertyName.cs"
-             Link="Common\System\Security\Cryptography\KeyPropertyName.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaCng.cs"
              Link="Common\System\Security\Cryptography\MLDsaCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLDsaCng.Windows.cs"
@@ -568,24 +616,20 @@
              Link="Common\Interop\Windows\Crypt32\Interop.MsgEncodingType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs"
              Link="Common\Interop\Windows\NCrypt\Interop.AsymmetricPaddingMode.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.ErrorCode.cs"
-             Link="Common\Interop\Windows\NCrypt\Interop.ErrorCode.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.Keys.cs"
-             Link="Common\Interop\Windows\NCrypt\Interop.Keys.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.NCryptBuffer.cs"
-             Link="Common\Interop\Windows\NCrypt\Interop.NCryptBuffer.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.NCryptDecapsulateEncapsulate.cs"
              Link="Common\Internal\Windows\NCrypt\Interop.NCryptDecapsulateEncapsulate.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.NCryptOpenStorageProvider.cs"
-             Link="Common\Interop\Windows\NCrypt\Interop.NCryptOpenStorageProvider.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.Properties.cs"
-             Link="Common\Interop\Windows\NCrypt\Interop.Properties.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NCrypt\Interop.SignVerify.cs"
              Link="Common\Interop\Windows\NCrypt\Interop.SignVerify.cs" />
 
-    <Compile Include="System\Security\Cryptography\CngExtensions.cs" />
     <Compile Include="System\Security\Cryptography\CngIdentifierExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildX25519)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETStandard'">
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X25519DiffieHellmanCng.cs"
+             Link="Common\System\Security\Cryptography\X25519DiffieHellmanCng.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X25519DiffieHellmanCng.Windows.cs"
+             Link="Common\System\Security\Cryptography\X25519DiffieHellmanCng.Windows.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

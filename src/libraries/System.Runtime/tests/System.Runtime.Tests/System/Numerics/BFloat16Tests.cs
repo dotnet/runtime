@@ -15,6 +15,43 @@ namespace System.Numerics.Tests
     {
         private static BFloat16 CrossPlatformMachineEpsilon => (BFloat16)3.90625e-03f;
 
+        public static IEnumerable<object[]> ExplicitConversion_FromDecimal_TestData()
+        {
+            // The conversion must be correctly rounded. Several of these values round differently when the
+            // conversion goes through float first (double rounding).
+            yield return new object[] { -1581274941607765457496390303.8m, (ushort)0xECA3 };
+            yield return new object[] { -3826300436344451.456231826282m, (ushort)0xD959 };
+            yield return new object[] { 22615687970.33198252129800241m, (ushort)0x50A9 };
+            yield return new object[] { 6569984.003526253797906448743m, (ushort)0x4AC9 };
+            yield return new object[] { -746.000005337263383695030642m, (ushort)0xC43B };
+            yield return new object[] { 128917739299112.37073918939888m, (ushort)0x56EB };
+            yield return new object[] { 100000000000000000000m, (ushort)0x60AD };
+        }
+
+        [Theory]
+        [MemberData(nameof(ExplicitConversion_FromDecimal_TestData))]
+        public static void ExplicitConversion_FromDecimal(decimal value, ushort expectedBits)
+        {
+            BFloat16 actual = (BFloat16)value;
+            Assert.Equal(expectedBits, BitConverter.BFloat16ToUInt16Bits(actual));
+        }
+
+        [Theory]
+        [InlineData((ushort)0x0000)] // +zero
+        [InlineData((ushort)0x3F80)] // 1
+        [InlineData((ushort)0x3F00)] // 0.5
+        [InlineData((ushort)0x3E00)] // 0.125
+        [InlineData((ushort)0x4000)] // 2
+        [InlineData((ushort)0xC020)] // -2.5
+        [InlineData((ushort)0x42C8)] // 100
+        [InlineData((ushort)0x4380)] // 256
+        public static void ExplicitConversion_ToDecimal_RoundTrips(ushort bits)
+        {
+            // These BFloat16 values are exactly representable as a decimal, so BFloat16 -> decimal -> BFloat16 is lossless.
+            BFloat16 value = BitConverter.UInt16BitsToBFloat16(bits);
+            Assert.Equal(value, (BFloat16)(decimal)value);
+        }
+
         [Fact]
         public static void Epsilon()
         {
@@ -472,8 +509,11 @@ namespace System.Numerics.Tests
                 (float.NegativeInfinity, BFloat16.NegativeInfinity), // Overflow
                 (float.NaN, BFloat16.NaN), // Quiet Negative NaN
                 (BitConverter.UInt32BitsToSingle(0x7FC00000), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1000000)), // Quiet Positive NaN
-                (BitConverter.UInt32BitsToSingle(0xFFD55555), BitConverter.UInt16BitsToBFloat16(0b1_11111111_1010101)), // Signalling Negative NaN
-                (BitConverter.UInt32BitsToSingle(0x7FD55555), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1010101)), // Signalling Positive NaN
+                (BitConverter.UInt32BitsToSingle(0xFFD55555), BitConverter.UInt16BitsToBFloat16(0b1_11111111_1010101)), // Quiet Negative NaN with payload
+                (BitConverter.UInt32BitsToSingle(0x7FD55555), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1010101)), // Quiet Positive NaN with payload
+                (BitConverter.UInt32BitsToSingle(0x7F800001), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1000000)), // Positive NaN with payload only in the low 16 bits (must stay NaN, not Infinity)
+                (BitConverter.UInt32BitsToSingle(0xFF800001), BitConverter.UInt16BitsToBFloat16(0b1_11111111_1000000)), // Negative NaN with payload only in the low 16 bits (must stay NaN, not Infinity)
+                (BitConverter.UInt32BitsToSingle(0x7FA00000), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1100000)), // Signalling Positive NaN with surviving high payload bit
                 (float.Epsilon, BitConverter.UInt16BitsToBFloat16(0)), // Underflow
                 (-float.Epsilon, BitConverter.UInt16BitsToBFloat16(0b1_00000000_0000000)), // Underflow
                 (1f, BitConverter.UInt16BitsToBFloat16(0b0_01111111_0000000)), // 1
@@ -721,6 +761,132 @@ namespace System.Numerics.Tests
             AssertEqual(expected, b16);
         }
 
+        public static IEnumerable<object[]> ExplicitConversion_FromInt64_TestData()
+        {
+            (long, BFloat16)[] data =
+            {
+                (0, BFloat16.Zero),
+                // 25-bit value is inexact in float, so a two-step conversion would double-round
+                (0x100_FFFF, BitConverter.UInt16BitsToBFloat16(0x4B80)), // 16842752 - 1 rounds lower
+                (0x101_0000, BitConverter.UInt16BitsToBFloat16(0x4B80)), // 16842752 rounds to even
+                (0x101_0001, BitConverter.UInt16BitsToBFloat16(0x4B81)), // 16842752 + 1 rounds higher
+                // high-magnitude boundary near 2^62 (2^62 + 2^54)
+                (0x403F_FFFF_FFFF_FFFF, BitConverter.UInt16BitsToBFloat16(0x5E80)), // rounds lower
+                (0x4040_0000_0000_0000, BitConverter.UInt16BitsToBFloat16(0x5E80)), // rounds to even
+                (0x4040_0000_0000_0001, BitConverter.UInt16BitsToBFloat16(0x5E81)), // rounds higher
+                (long.MaxValue, BitConverter.UInt16BitsToBFloat16(0x5F00)),
+                (-0x4040_0000_0000_0001, BitConverter.UInt16BitsToBFloat16(0xDE81)), // rounds lower
+                (long.MinValue, BitConverter.UInt16BitsToBFloat16(0xDF00)),
+            };
+
+            foreach ((long original, BFloat16 expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromInt64_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromInt64(long i, BFloat16 expected)
+        {
+            BFloat16 b16 = (BFloat16)i;
+            AssertEqual(expected, b16);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromUInt64_TestData()
+        {
+            (ulong, BFloat16)[] data =
+            {
+                (0, BFloat16.Zero),
+                // 25-bit value is inexact in float, so a two-step conversion would double-round
+                (0x100_FFFF, BitConverter.UInt16BitsToBFloat16(0x4B80)), // 16842752 - 1 rounds lower
+                (0x101_0000, BitConverter.UInt16BitsToBFloat16(0x4B80)), // 16842752 rounds to even
+                (0x101_0001, BitConverter.UInt16BitsToBFloat16(0x4B81)), // 16842752 + 1 rounds higher
+                // high-magnitude boundary near 2^63 (2^63 + 2^55)
+                (0x807F_FFFF_FFFF_FFFF, BitConverter.UInt16BitsToBFloat16(0x5F00)), // rounds lower
+                (0x8080_0000_0000_0000, BitConverter.UInt16BitsToBFloat16(0x5F00)), // rounds to even
+                (0x8080_0000_0000_0001, BitConverter.UInt16BitsToBFloat16(0x5F01)), // rounds higher
+                (ulong.MaxValue, BitConverter.UInt16BitsToBFloat16(0x5F80)),
+            };
+
+            foreach ((ulong original, BFloat16 expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromUInt64_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromUInt64(ulong i, BFloat16 expected)
+        {
+            BFloat16 b16 = (BFloat16)i;
+            AssertEqual(expected, b16);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromInt128_TestData()
+        {
+            Int128 highBit = Int128.One << 100;
+            Int128 roundBit = Int128.One << 92;
+
+            (Int128, BFloat16)[] data =
+            {
+                (0, BFloat16.Zero),
+                // 25-bit value is inexact in float, so a two-step conversion would double-round
+                ((Int128)0x101_0001, BitConverter.UInt16BitsToBFloat16(0x4B81)), // rounds higher
+                // high-magnitude boundary near 2^100 (2^100 + 2^92)
+                (highBit + roundBit - 1, BitConverter.UInt16BitsToBFloat16(0x7180)), // rounds lower
+                (highBit + roundBit, BitConverter.UInt16BitsToBFloat16(0x7180)), // rounds to even
+                (highBit + roundBit + 1, BitConverter.UInt16BitsToBFloat16(0x7181)), // rounds higher
+                (Int128.MaxValue, BitConverter.UInt16BitsToBFloat16(0x7F00)),
+                (-(highBit + roundBit + 1), BitConverter.UInt16BitsToBFloat16(0xF181)), // rounds lower
+                (Int128.MinValue, BitConverter.UInt16BitsToBFloat16(0xFF00)),
+            };
+
+            foreach ((Int128 original, BFloat16 expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromInt128_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromInt128(Int128 i, BFloat16 expected)
+        {
+            BFloat16 b16 = (BFloat16)i;
+            AssertEqual(expected, b16);
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromUInt128_TestData()
+        {
+            UInt128 highBit = UInt128.One << 127;
+            UInt128 roundBit = UInt128.One << 119;
+
+            (UInt128, BFloat16)[] data =
+            {
+                (0, BFloat16.Zero),
+                // 25-bit value is inexact in float, so a two-step conversion would double-round
+                ((UInt128)0x101_0001, BitConverter.UInt16BitsToBFloat16(0x4B81)), // rounds higher
+                // high-magnitude boundary near 2^127 (2^127 + 2^119)
+                (highBit + roundBit - 1, BitConverter.UInt16BitsToBFloat16(0x7F00)), // rounds lower
+                (highBit + roundBit, BitConverter.UInt16BitsToBFloat16(0x7F00)), // rounds to even
+                (highBit + roundBit + 1, BitConverter.UInt16BitsToBFloat16(0x7F01)), // rounds higher
+                (UInt128.MaxValue, BitConverter.UInt16BitsToBFloat16(0x7F80)), // overflow to infinity
+            };
+
+            foreach ((UInt128 original, BFloat16 expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromUInt128_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromUInt128(UInt128 i, BFloat16 expected)
+        {
+            BFloat16 b16 = (BFloat16)i;
+            AssertEqual(expected, b16);
+        }
+
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             NumberStyles defaultStyle = NumberStyles.Float | NumberStyles.AllowThousands;
@@ -809,6 +975,12 @@ namespace System.Numerics.Tests
             // Overflow to infinity
             yield return new object[] { "0x1p128", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
             yield return new object[] { "-0x1p128", NumberStyles.HexFloat, invariantFormat, float.NegativeInfinity };
+
+            // Special values (Infinity/NaN) are supported with HexFloat
+            yield return new object[] { "Infinity", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
+            yield return new object[] { "+Infinity", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
+            yield return new object[] { "-Infinity", NumberStyles.HexFloat, invariantFormat, float.NegativeInfinity };
+            yield return new object[] { "NaN", NumberStyles.HexFloat, invariantFormat, float.NaN };
         }
 
         [Theory]
@@ -889,8 +1061,6 @@ namespace System.Numerics.Tests
             yield return new object[] { "0x1.0p0garbage", NumberStyles.HexFloat, null, typeof(FormatException) }; // Trailing garbage
             yield return new object[] { "+-0x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double sign
             yield return new object[] { "0x1.0p+-1", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double exponent sign
-            yield return new object[] { "NaN", NumberStyles.HexFloat, null, typeof(FormatException) }; // NaN not valid for HexFloat
-            yield return new object[] { "Infinity", NumberStyles.HexFloat, null, typeof(FormatException) }; // Infinity not valid for HexFloat
             yield return new object[] { "0xX1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double X
             yield return new object[] { "x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0 before x
             yield return new object[] { "0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix

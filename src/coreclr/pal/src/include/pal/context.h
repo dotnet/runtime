@@ -30,6 +30,19 @@ extern "C"
 #endif // HAVE_UCONTEXT_H
 
 typedef ucontext_t native_context_t;
+#elif defined(TARGET_WASI)
+// WASI (wasm32-wasip2 in wasi-sdk 33) has no signal/ucontext support: <ucontext.h>
+// is absent and <signal.h> hides siginfo_t/FPE_*/ILL_* behind
+// __wasilibc_unmodified_upstream. PAL declarations still reference these types
+// at the header level even though the call sites are excluded from compilation
+// on WASI (exception/signal.cpp, exception/seh-unwind.cpp). Provide opaque
+// native_context_t here; siginfo_t lives in pal/wasi/pal_wasi_missing.h
+// which is pulled in below.
+//
+// TODO: delete when wasi-libc exposes siginfo_t and a ucontext_t (no upstream
+// plan as of WASI 0.2.8).
+typedef struct { int _placeholder; } native_context_t;
+#include "pal/wasi/pal_wasi_missing.h"
 #else   // HAVE_UCONTEXT_T
 #error Native context type is not known on this platform!
 #endif  // HAVE_UCONTEXT_T

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Buffers
@@ -50,6 +51,7 @@ namespace System.Buffers
         /// <summary>Gets an ID for the pool to use with events.</summary>
         private int Id => GetHashCode();
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public override T[] Rent(int minimumLength)
         {
             // Arrays can't be smaller than zero.  We allow requesting zero-length arrays (even though
@@ -111,6 +113,7 @@ namespace System.Buffers
             return buffer;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public override void Return(T[] array, bool clearArray = false)
         {
             ArgumentNullException.ThrowIfNull(array);

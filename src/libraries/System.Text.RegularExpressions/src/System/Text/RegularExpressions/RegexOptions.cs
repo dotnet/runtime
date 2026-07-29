@@ -122,7 +122,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>
         /// Enable matching using an approach that avoids backtracking and guarantees linear-time processing
-        /// in the length of the input. For more information, see the
+        /// in the length of the input. For more information, see the "NonBacktracking mode" section in the
         /// <see href="https://learn.microsoft.com/dotnet/standard/base-types/regular-expression-options">
         /// Regular Expression Options</see> article.
         /// </summary>

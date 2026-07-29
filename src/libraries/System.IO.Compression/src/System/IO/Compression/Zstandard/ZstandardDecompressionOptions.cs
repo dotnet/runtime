@@ -9,14 +9,14 @@ namespace System.IO.Compression
     public sealed class ZstandardDecompressionOptions
     {
 
-        /// <summary>Gets or sets the maximum allowed window size when decompressing payloads, expressed as base 2 logarithm.</summary>
-        /// <value>The maximum window size for decompression, expressed as base 2 logarithm.</value>
+        /// <summary>Gets or sets the maximum allowed base-2 logarithm of the window size when decompressing payloads.</summary>
+        /// <value>The maximum allowed base-2 logarithm of the window size for decompression.</value>
         /// <remarks>
-        /// The valid range is from <see cref="ZstandardCompressionOptions.MinWindowLog"/> to <see cref="ZstandardCompressionOptions.MaxWindowLog"/>.
+        /// The valid range is from <see cref="ZstandardCompressionOptions.MinWindowLog2"/> to <see cref="ZstandardCompressionOptions.MaxWindowLog2"/>.
         /// Value 0 indicates the implementation-defined default window size.
         /// </remarks>
-        /// <exception cref="ArgumentOutOfRangeException">The value is not 0 and is not between <see cref="ZstandardCompressionOptions.MinWindowLog"/> and <see cref="ZstandardCompressionOptions.MaxWindowLog"/>.</exception>
-        public int MaxWindowLog
+        /// <exception cref="ArgumentOutOfRangeException">The value is not 0 and is not between <see cref="ZstandardCompressionOptions.MinWindowLog2"/> and <see cref="ZstandardCompressionOptions.MaxWindowLog2"/>.</exception>
+        public int MaxWindowLog2
         {
             get;
             set

@@ -16,6 +16,7 @@
     <ProjectReference Include="Boxing/xlang/sinlib_il.ilproj" Aliases="sinlib_il" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BypassReadyToRunAttribute.cs" />
     <Compile Include="Arrays\lcs\lcs.cs" />
     <Compile Include="Arrays\lcs\lcs2.cs" />
     <Compile Include="Arrays\lcs\lcsbas.cs" />
@@ -86,6 +87,7 @@
     <Compile Include="eh\basics\throwinfinallyerrpathfn.cs" />
     <Compile Include="eh\basics\throwoutside.cs" />
     <Compile Include="eh\basics\trycatch.cs" />
+    <Compile Include="eh\interp\interpr2rfunclets.cs" />
     <Compile Include="eh\basics\trycatchtrycatch.cs" />
     <Compile Include="eh\basics\tryfinally.cs" />
     <Compile Include="eh\basics\tryfinallytrycatch.cs" />

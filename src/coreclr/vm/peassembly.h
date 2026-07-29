@@ -346,8 +346,6 @@ public:
       // ------------------------------------------------------------
 
       static void PathToUrl(SString& string);
-      static void UrlToPath(SString& string);
-      static BOOL FindLastPathSeparator(const SString& path, SString::Iterator& i);
 
 private:
     // ------------------------------------------------------------
@@ -434,8 +432,29 @@ struct cdac_data<PEAssembly>
 {
     static constexpr size_t PEImage = offsetof(PEAssembly, m_PEImage);
     static constexpr size_t AssemblyBinder = offsetof(PEAssembly, m_pAssemblyBinder);
+#ifndef DACCESS_COMPILE
+    static constexpr size_t MDImport = offsetof(PEAssembly, m_pMDImport);
+#endif
 };
 
-typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;
+struct PEAssemblyHolderTraits final
+{
+    using Type = PEAssembly*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_ANY;
+        } CONTRACTL_END;
+
+        if (value != NULL)
+            value->Release();
+    }
+};
+
+typedef LifetimeHolder<PEAssemblyHolderTraits> PEAssemblyHolder;
 
 #endif  // PEASSEMBLY_H_

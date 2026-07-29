@@ -207,11 +207,9 @@ extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_
 extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj);
 
 extern "C" void QCALLTYPE GCInterface_WaitForPendingFinalizers();
-#ifdef FEATURE_BASICFREEZE
 extern "C" void* QCALLTYPE GCInterface_RegisterFrozenSegment(void *pSection, SIZE_T sizeSection);
 
 extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void *segmentHandle);
-#endif // FEATURE_BASICFREEZE
 
 extern "C" int QCALLTYPE GCInterface_WaitForFullGCApproach(int millisecondsTimeout);
 

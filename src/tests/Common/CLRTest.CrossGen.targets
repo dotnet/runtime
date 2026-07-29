@@ -130,6 +130,10 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo --targetos:$(TargetOS) >> "$__ResponseFile"
         echo --verify-type-and-field-layout >> "$__ResponseFile"
         echo --method-layout:random >> "$__ResponseFile"
+        if [ "$(CrossGen2OutputFormat)" == "wasm" ]; then
+            echo --codegenopt:JitWasmNyiToR2RUnsupported=1 >> "$__ResponseFile"
+            echo --codegenopt:JitWasmSimdNyiToR2RUnsupported=1 >> "$__ResponseFile"
+        fi
         if [ ! -z ${CrossGen2SynthesizePgo+x} ]%3B then
             echo --synthesize-random-mibc >> "$__ResponseFile"
             echo --embed-pgo-data >> "$__ResponseFile"
@@ -154,7 +158,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         cat "$__ResponseFile"
 
         # Suppress some DOTNET variables for the duration of Crossgen2 execution
-        export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+        export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_GCHeapAffinitizeRanges
         # FIXME: Remove this?
         # work around problems in 6.0 OSR
         export -n DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
@@ -175,7 +179,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         $__R2RDumpCommand
         __r2rDumpExitCode=$?
 
-        export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+        export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_GCHeapAffinitizeRanges
         export DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
         date +%H:%M:%S
       }
@@ -339,6 +343,10 @@ if defined RunCrossGen2 (
     echo --targetos:$(TargetOS)>>!__ResponseFile!
     echo --verify-type-and-field-layout>>!__ResponseFile!
     echo --method-layout:random>>!__ResponseFile!
+    if "$(CrossGen2OutputFormat)"=="wasm" (
+        echo "--codegenopt:JitWasmNyiToR2RUnsupported=1">>!__ResponseFile!
+        echo "--codegenopt:JitWasmSimdNyiToR2RUnsupported=1">>!__ResponseFile!
+    )
     if not "$(CrossGen2OutputFormat)"=="" (
         echo -f:$(CrossGen2OutputFormat)>>!__ResponseFile!
     )
@@ -368,6 +376,7 @@ if defined RunCrossGen2 (
     set "DOTNET_GCStress="
     set "DOTNET_HeapVerify="
     set "DOTNET_ReadyToRun="
+    set "DOTNET_GCHeapAffinitizeRanges="
 
     REM FIXME: remove this?
     REM work around problems in 6.0 OSR

@@ -6,8 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.Delegate))]
 internal sealed partial class Delegate : IData<Delegate>
 {
-    [Field] public TargetPointer Target { get; }
-    [Field] public TargetCodePointer MethodPtr { get; }
-    [Field] public TargetCodePointer MethodPtrAux { get; }
-    [Field] public TargetNInt InvocationCount { get; }
+    [Field] public partial TargetPointer HelperObject { get; }
+    [Field] public partial TargetPointer Target { get; }
+    [Field] public partial TargetCodePointer MethodPtr { get; }
+    [Field] public partial TargetCodePointer MethodPtrAux { get; }
+    [Field] public partial TargetNInt ExtraData { get; }
 }

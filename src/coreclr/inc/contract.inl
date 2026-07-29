@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // ---------------------------------------------------------------------------
 // Contract.inl
-//
-
-// ! I am the owner for issues in the contract *infrastructure*, not for every
-// ! CONTRACT_VIOLATION dialog that comes up. If you interrupt my work for a routine
-// ! CONTRACT_VIOLATION, you will become the new owner of this file.
 // ---------------------------------------------------------------------------
 
 #ifndef CONTRACT_INL_
@@ -492,7 +487,6 @@ void CONTRACT_ASSERT(const char *szElaboration,
     if (_check.EnterAssert())
     {
         char Buf[512*20 + 2048 + 1024];
-
         sprintf_s(Buf,ARRAY_SIZE(Buf), "CONTRACT VIOLATION by %s at \"%s\":%d\n\n%s\n", szFunction, szFile, lineNum, szElaboration);
 
         int count = 20;

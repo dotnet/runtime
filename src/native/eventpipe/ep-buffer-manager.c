@@ -13,6 +13,7 @@
 #include "ep-file.h"
 #include "ep-session.h"
 #include "ep-stack-contents.h"
+#include "ep-thread.h"
 
 #define EP_MAX(a,b) (((a) > (b)) ? (a) : (b))
 #define EP_MIN(a,b) (((a) < (b)) ? (a) : (b))
@@ -54,14 +55,17 @@ buffer_manager_try_peek_sequence_point (
 
 // Allocate a new buffer for the specified thread.
 // This function will store the buffer in the thread's buffer list for future use and also return it here.
-// A NULL return value means that a buffer could not be allocated.
+// Returns NULL if a buffer could not be allocated. *should_block is set true only when the failure was
+// buffer-capacity exhaustion (the writer was enqueued on the fair wait queue, so a reader will wake it and
+// the caller may park); it stays false for every other failure (e.g. OOM allocating the buffer bytes),
+// which the caller must drop - there is no wakeup for those.
 static
 EventPipeBuffer *
 buffer_manager_allocate_buffer_for_thread (
 	EventPipeBufferManager *buffer_manager,
 	EventPipeThreadSessionState *thread_session_state,
 	uint32_t request_size,
-	bool *write_suspended);
+	bool *should_block);
 
 static
 void
@@ -82,6 +86,34 @@ void
 buffer_manager_release_buffer (
 	EventPipeBufferManager *buffer_manager,
 	uint32_t size);
+
+static
+void
+buffer_manager_free_buffer_and_release_budget (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeBuffer *buffer,
+	uint32_t budget_size);
+
+static
+bool
+buffer_manager_try_reserve_buffer_fair (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeThread *thread,
+	uint32_t request_size);
+
+static
+void
+buffer_manager_signal_front_waiter (EventPipeBufferManager *buffer_manager);
+
+static
+void
+buffer_manager_wait_queue_push_back (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeThread *thread);
+
+static
+void
+buffer_manager_wait_queue_pop_front (EventPipeBufferManager *buffer_manager);
 
 // An iterator that can enumerate all the events which have been written into this buffer manager.
 // Initially the iterator starts uninitialized and get_current_event () returns NULL. The iterator
@@ -302,6 +334,23 @@ buffer_manager_release_buffer (
 	} while (new_size_of_all_buffers >= 0 && ep_rt_atomic_compare_exchange_size_t (&buffer_manager->size_of_all_buffers, old_size_of_all_buffers, new_size_of_all_buffers) != old_size_of_all_buffers);
 }
 
+// Free a buffer's memory and then release its reserved budget, never the other way around: while the memory
+// is still outstanding it must keep counting against the budget. Releasing first would let a concurrent
+// producer observe the freed budget and allocate before this buffer is reclaimed, briefly pushing real
+// memory use above the cap.
+static
+void
+buffer_manager_free_buffer_and_release_budget (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeBuffer *buffer,
+	uint32_t budget_size)
+{
+	EP_ASSERT (buffer_manager != NULL);
+
+	ep_buffer_free (buffer);
+	buffer_manager_release_buffer (buffer_manager, budget_size);
+}
+
 #ifdef EP_CHECKED_BUILD
 bool
 ep_buffer_list_ensure_consistency (EventPipeBufferList *buffer_list)
@@ -452,11 +501,16 @@ buffer_manager_allocate_buffer_for_thread (
 	EventPipeBufferManager *buffer_manager,
 	EventPipeThreadSessionState *thread_session_state,
 	uint32_t request_size,
-	bool *write_suspended)
+	bool *should_block)
 {
 	EP_ASSERT (buffer_manager != NULL);
 	EP_ASSERT (thread_session_state != NULL);
 	EP_ASSERT (request_size > 0);
+	EP_ASSERT (should_block != NULL);
+
+	// Set true only on the fair-reserve (capacity) failure path below, where the writer is enqueued for a
+	// wakeup; every other NULL return leaves it false so the caller drops.
+	*should_block = false;
 
 	EventPipeBuffer *new_buffer = NULL;
 	EventPipeSequencePoint* sequence_point = NULL;
@@ -490,9 +544,26 @@ buffer_manager_allocate_buffer_for_thread (
 	// Make the buffer size fit into with pagesize-aligned block, since ep_rt_valloc0 expects page-aligned sizes to be passed as arguments
 	buffer_size = (buffer_size + ep_rt_system_get_alloc_granularity () - 1) & ~(uint32_t)(ep_rt_system_get_alloc_granularity () - 1);
 
-	// Attempt to reserve the necessary buffer size
+	// Attempt to reserve the necessary buffer size. A normal Block-mode producer reserves through the fair
+	// FIFO path: a failed reserve enqueues it and returns NULL so the caller parks and retries (surfaced
+	// upstream as EP_WRITE_EVENT_RESULT_BLOCKED). A rundown writer must never park: rundown runs synchronously
+	// on the teardown thread after the streaming drain thread has already exited, so no drain thread is left to
+	// free capacity and a parked rundown writer would block forever. It takes the plain reserve and drops on
+	// failure, exactly as Drop mode does.
 	EP_ASSERT(buffer_size > 0);
-	ep_return_null_if_nok(buffer_manager_try_reserve_buffer (buffer_manager, buffer_size));
+	EventPipeThread *writer_thread = ep_thread_session_state_get_thread (thread_session_state);
+	if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK && !ep_thread_is_rundown_thread (writer_thread)) {
+		if (!buffer_manager_try_reserve_buffer_fair (buffer_manager, writer_thread, buffer_size)) {
+			// Capacity is full and we were enqueued on the fair wait queue, so a reader will wake us: tell
+			// the caller it may park. Any allocation failure below is not enqueued, leaving should_block
+			// false, so the caller drops it instead.
+			*should_block = true;
+			return NULL;
+		}
+	} else
+	{
+		ep_return_null_if_nok(buffer_manager_try_reserve_buffer (buffer_manager, buffer_size));
+	}
 
 	// The sequence counter is exclusively mutated on this thread so this is a thread-local read.
 	sequence_number = ep_thread_session_state_get_volatile_sequence_number (thread_session_state);
@@ -535,10 +606,8 @@ ep_on_error:
 	ep_sequence_point_free (sequence_point);
 	sequence_point = NULL;
 
-	ep_buffer_free (new_buffer);
+	buffer_manager_free_buffer_and_release_budget (buffer_manager, new_buffer, buffer_size);
 	new_buffer = NULL;
-
-	buffer_manager_release_buffer (buffer_manager, buffer_size);
 
 	ep_exit_error_handler ();
 }
@@ -552,11 +621,13 @@ buffer_manager_deallocate_buffer (
 	EP_ASSERT (buffer_manager != NULL);
 
 	if (buffer) {
-		buffer_manager_release_buffer (buffer_manager, ep_buffer_get_size (buffer));
-		ep_buffer_free (buffer);
+		buffer_manager_free_buffer_and_release_budget (buffer_manager, buffer, ep_buffer_get_size (buffer));
 #ifdef EP_CHECKED_BUILD
 		buffer_manager->num_buffers_allocated--;
 #endif
+
+		if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK)
+			buffer_manager_signal_front_waiter (buffer_manager);
 	}
 }
 
@@ -816,7 +887,9 @@ buffer_manager_convert_buffer_to_read_only (
 		// Both session_use_in_progress and write_buffer are accessed via atomic operations. By setting the write_buffer to NULL above while holding
 		// the buffer manager lock, the wait is correct only because the writer thread sets session_use_in_progress before caching the write_buffer
 		// and resets it after it's done using the cached write_buffer.
-		EP_YIELD_WHILE (ep_thread_get_session_use_in_progress (thread) == index &&
+		// Match on the WRITE_BUFFER_IN_USE bit, not just the index: a parked Block-mode producer holds
+		// the index with the bit cleared, which is exactly when we are free to drain its buffer.
+		EP_YIELD_WHILE (ep_thread_get_session_use_in_progress (thread) == (index | EP_SESSION_USE_WRITE_BUFFER_IN_USE) &&
 						ep_thread_session_state_get_volatile_write_buffer (thread_session_state) == NULL);
 	}
 
@@ -839,7 +912,8 @@ EventPipeBufferManager *
 ep_buffer_manager_alloc (
 	EventPipeSession *session,
 	size_t max_size_of_all_buffers,
-	size_t sequence_point_allocation_budget)
+	size_t sequence_point_allocation_budget,
+	EventPipeBufferingMode buffering_mode)
 {
 	EventPipeBufferManager *instance = ep_rt_object_alloc (EventPipeBufferManager);
 	ep_raise_error_if_nok (instance != NULL);
@@ -855,6 +929,11 @@ ep_buffer_manager_alloc (
 
 	ep_rt_wait_event_alloc (&instance->rt_wait_event, false, true);
 	ep_raise_error_if_nok (ep_rt_wait_event_is_valid (&instance->rt_wait_event));
+
+	instance->buffering_mode = buffering_mode;
+	instance->aborting = 0;
+	instance->wait_queue_head_thread = NULL;
+	instance->wait_queue_tail_thread = NULL;
 
 	instance->thread_session_state_list_snapshot = dn_list_alloc ();
 	ep_raise_error_if_nok (instance->thread_session_state_list_snapshot != NULL);
@@ -914,9 +993,188 @@ ep_buffer_manager_free (EventPipeBufferManager * buffer_manager)
 
 	ep_rt_wait_event_free (&buffer_manager->rt_wait_event);
 
+	EP_ASSERT (buffer_manager->wait_queue_head_thread == NULL);
+
 	ep_rt_spin_lock_free (&buffer_manager->rt_lock);
 
 	ep_rt_object_free (buffer_manager);
+}
+
+static
+void
+buffer_manager_wait_queue_push_back (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeThread *thread)
+{
+	ep_buffer_manager_requires_lock_held (buffer_manager);
+	EP_ASSERT (ep_thread_get_buffer_wait_queue_next_thread (thread) == NULL);
+
+	if (buffer_manager->wait_queue_tail_thread != NULL)
+		ep_thread_set_buffer_wait_queue_next_thread (buffer_manager->wait_queue_tail_thread, thread);
+	else
+		buffer_manager->wait_queue_head_thread = thread;
+	buffer_manager->wait_queue_tail_thread = thread;
+}
+
+static
+void
+buffer_manager_wait_queue_pop_front (EventPipeBufferManager *buffer_manager)
+{
+	ep_buffer_manager_requires_lock_held (buffer_manager);
+
+	EventPipeThread *front = buffer_manager->wait_queue_head_thread;
+	EP_ASSERT (front != NULL);
+
+	buffer_manager->wait_queue_head_thread = ep_thread_get_buffer_wait_queue_next_thread (front);
+	if (buffer_manager->wait_queue_head_thread == NULL)
+		buffer_manager->wait_queue_tail_thread = NULL;
+	ep_thread_set_buffer_wait_queue_next_thread (front, NULL);
+}
+
+// Block mode: wake the producer at the front of the wait queue - the only one allowed to reserve next.
+static
+void
+buffer_manager_signal_front_waiter (EventPipeBufferManager *buffer_manager)
+{
+	EP_ASSERT (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK);
+
+	ep_buffer_manager_requires_lock_held (buffer_manager);
+	EventPipeThread *front = buffer_manager->wait_queue_head_thread;
+	if (front != NULL) {
+		// A queued thread always has a valid event: it was allocated when the thread got its Block-mode
+		// session state, before it could ever reach the write/park path.
+		EP_ASSERT (ep_rt_wait_event_is_valid (ep_thread_get_buffer_wait_event_ref (front)));
+		ep_rt_wait_event_set (ep_thread_get_buffer_wait_event_ref (front));
+	}
+}
+
+// Block mode: reserve budget for a producer while honoring strict FIFO fairness. Returns true with the
+// budget reserved (and the thread removed from the queue if it had been waiting), or false having put/kept
+// the thread in the wait queue so the caller parks and retries.
+static
+bool
+buffer_manager_try_reserve_buffer_fair (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeThread *thread,
+	uint32_t request_size)
+{
+	EP_ASSERT (buffer_manager != NULL);
+	EP_ASSERT (thread != NULL);
+	EP_ASSERT (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK);
+	EP_ASSERT (!ep_thread_is_rundown_thread (thread));
+	// The park event is allocated when the thread gets its Block-mode session state, before it could reach
+	// this path, so it is always valid here.
+	EP_ASSERT (ep_rt_wait_event_is_valid (ep_thread_get_buffer_wait_event_ref (thread)));
+
+	ep_buffer_manager_requires_lock_not_held (buffer_manager);
+
+	bool reserved = false;
+
+	// The wait queue is guarded by rt_lock (the reader frees budget and wakes the front while already holding
+	// rt_lock, and CoreCLR forbids nesting spin locks, so the queue cannot take a second lock of its own).
+	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
+		bool enqueued = ep_thread_get_buffer_wait_enqueued (thread) != 0;
+		// We may reserve only if we are at the head of the line: either already the front of the queue, or
+		// the queue is empty (no one is waiting, so we are not barging anyone).
+		bool at_head = enqueued
+			? (buffer_manager->wait_queue_head_thread == thread)
+			: (buffer_manager->wait_queue_head_thread == NULL);
+
+		if (at_head && buffer_manager_try_reserve_buffer (buffer_manager, request_size)) {
+			if (enqueued) {
+				buffer_manager_wait_queue_pop_front (buffer_manager);
+				ep_thread_set_buffer_wait_enqueued (thread, 0);
+			}
+			// We just took budget and left the queue. If more producers are still waiting, wake the new
+			// front: a single large freed buffer can then satisfy several smaller FIFO waiters in turn (each
+			// reserves its slice and wakes the next; the chain stops when a waiter finds no room and re-parks).
+			buffer_manager_signal_front_waiter (buffer_manager);
+			reserved = true;
+		} else if (!enqueued && ep_rt_volatile_load_uint32_t (&buffer_manager->aborting) == 0) {
+			// Not our turn, or no room yet: take our place in line (strict FIFO) so the reader wakes us when
+			// budget frees. We re-check aborting here under the same rt_lock that teardown drains the queue
+			// under, so we never enqueue after teardown has already woken everyone (which would strand us
+			// waiting for a signal that will never come).
+			buffer_manager_wait_queue_push_back (buffer_manager, thread);
+			ep_thread_set_buffer_wait_enqueued (thread, 1);
+		}
+	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1)
+
+ep_on_exit:
+	return reserved;
+
+ep_on_error:
+	ep_exit_error_handler ();
+}
+
+void
+ep_buffer_manager_writer_wait_for_capacity (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeThread *thread)
+{
+	EP_ASSERT (buffer_manager != NULL);
+	EP_ASSERT (thread != NULL);
+
+	// We normally reach here enqueued: the fair reserve enqueues us whenever it cannot immediately reserve, and
+	// enqueuing is allocation-free so it never fails. The only way to be un-enqueued is that teardown drained
+	// the queue between the caller's abort check and now; in that case the caller observes the abort on return,
+	// so there is nothing to wait for. Otherwise park on our own event until the reader frees a buffer and
+	// wakes us (or teardown aborts and wakes us).
+	bool enqueued = false;
+	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
+		enqueued = ep_thread_get_buffer_wait_enqueued (thread) != 0;
+	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1)
+
+	if (enqueued) {
+		EP_ASSERT (ep_rt_wait_event_is_valid (ep_thread_get_buffer_wait_event_ref (thread)));
+		ep_rt_wait_event_wait (ep_thread_get_buffer_wait_event_ref (thread), EP_INFINITE_WAIT, false);
+	}
+
+ep_on_exit:
+	return;
+
+ep_on_error:
+	ep_exit_error_handler ();
+}
+
+bool
+ep_buffer_manager_is_aborting (const EventPipeBufferManager *buffer_manager)
+{
+	EP_ASSERT (buffer_manager != NULL);
+	return ep_rt_volatile_load_uint32_t (&buffer_manager->aborting) != 0;
+}
+
+void
+ep_buffer_manager_abort_blocked_writers (EventPipeBufferManager *buffer_manager)
+{
+	EP_ASSERT (buffer_manager != NULL);
+	ep_requires_lock_held ();
+
+	if (buffer_manager->buffering_mode != EP_BUFFERING_MODE_BLOCK)
+		return;
+
+	// Raise the abort flag so a producer that has not parked yet gives up, and none newly enqueue
+	// (buffer_manager_try_reserve_buffer_fair re-checks this flag under rt_lock before joining the queue).
+	// Then wake and remove every already-parked producer so each observes the abort, gives up, and clears
+	// its session index. ep_session_wait_for_inflight_thread_ops then only has to wait those indices out.
+	ep_rt_volatile_store_uint32_t (&buffer_manager->aborting, 1);
+
+	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
+		while (buffer_manager->wait_queue_head_thread != NULL) {
+			EventPipeThread *waiter = buffer_manager->wait_queue_head_thread;
+			buffer_manager_wait_queue_pop_front (buffer_manager);
+			ep_thread_set_buffer_wait_enqueued (waiter, 0);
+			// Same invariant as buffer_manager_signal_front_waiter: a queued thread always has a valid event.
+			EP_ASSERT (ep_rt_wait_event_is_valid (ep_thread_get_buffer_wait_event_ref (waiter)));
+			ep_rt_wait_event_set (ep_thread_get_buffer_wait_event_ref (waiter));
+		}
+	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1)
+
+ep_on_exit:
+	return;
+
+ep_on_error:
+	ep_exit_error_handler ();
 }
 
 #ifdef EP_CHECKED_BUILD
@@ -955,7 +1213,7 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
-bool
+EventPipeWriteEventResult
 ep_buffer_manager_write_event (
 	EventPipeBufferManager *buffer_manager,
 	ep_rt_thread_handle_t thread,
@@ -967,7 +1225,7 @@ ep_buffer_manager_write_event (
 	ep_rt_thread_handle_t event_thread,
 	EventPipeStackContents *stack)
 {
-	bool result = false;
+	EventPipeWriteEventResult result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 	bool alloc_new_buffer = false;
 	EventPipeBuffer *buffer = NULL;
 	EventPipeThreadSessionState *session_state = NULL;
@@ -981,7 +1239,8 @@ ep_buffer_manager_write_event (
 	EP_ASSERT (thread == ep_rt_thread_get_handle ());
 
 	// Before we pick a buffer, make sure the event is enabled.
-	ep_return_false_if_nok (ep_event_is_enabled (ep_event));
+	if (!ep_event_is_enabled (ep_event))
+		return EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
 	// Check to see if an event thread was specified. If not, then use the current thread.
 	if (event_thread == NULL)
@@ -992,9 +1251,20 @@ ep_buffer_manager_write_event (
 	ep_raise_error_if_nok (current_thread != NULL);
 
 	// session_state won't be freed if use_in_progress is set.
-	EP_ASSERT (ep_thread_get_session_use_in_progress (current_thread) == ep_session_get_index (session));
+	EP_ASSERT ((ep_thread_get_session_use_in_progress (current_thread) & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) == ep_session_get_index (session));
 	session_state = ep_thread_get_volatile_session_state (current_thread, session);
 	if (session_state == NULL) {
+		// Block mode parks a producer on its own per-thread event when buffer budget is exhausted. Allocate
+		// that event now - once per thread, when the thread first gets a Block-mode session state - so the
+		// write/park path never allocates and can assume it exists. Any failure folds into the same drop path
+		// as the session-state allocation failure below.
+		if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK) {
+			ep_rt_wait_event_handle_t *wait_event = ep_thread_get_buffer_wait_event_ref (current_thread);
+			if (!ep_rt_wait_event_is_valid (wait_event)) {
+				ep_rt_wait_event_alloc (wait_event, false, false);
+				ep_raise_error_if_nok (ep_rt_wait_event_is_valid (wait_event));
+			}
+		}
 		// slow path should only happen once per thread per session
 		EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
 			// No need to re-check session_state inside the lock, this thread is the only one allowed to create it.
@@ -1010,7 +1280,7 @@ ep_buffer_manager_write_event (
 	{
 		ep_rt_atomic_inc_int64_t (&buffer_manager->num_oversized_events_dropped);
 		ep_thread_session_state_increment_sequence_number (session_state);
-		return false;
+		return EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 	}
 
 	current_stack_contents = ep_stack_contents_init (&stack_contents);
@@ -1020,7 +1290,7 @@ ep_buffer_manager_write_event (
 	}
 
 	// buffer won't be converted to read-only if use_in_progress is set
-	EP_ASSERT (ep_thread_get_session_use_in_progress (current_thread) == ep_session_get_index(session));
+	EP_ASSERT ((ep_thread_get_session_use_in_progress (current_thread) & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) == ep_session_get_index (session));
 	buffer = ep_thread_session_state_get_volatile_write_buffer (session_state);
 	if (!buffer) {
 		alloc_new_buffer = true;
@@ -1040,13 +1310,19 @@ ep_buffer_manager_write_event (
 	// Check to see if we need to allocate a new buffer, and if so, do it here.
 	if (alloc_new_buffer) {
 		uint32_t request_size = sizeof (EventPipeEventInstance) + ep_event_payload_get_size (payload);
-		bool write_suspended = false;
-		buffer = buffer_manager_allocate_buffer_for_thread (buffer_manager, session_state, request_size, &write_suspended);
+		bool should_block = false;
+		buffer = buffer_manager_allocate_buffer_for_thread (buffer_manager, session_state, request_size, &should_block);
 		if (!buffer) {
-			// We treat this as the write_event call occurring after this session stopped listening for events, effectively the
-			// same as if ep_event_is_enabled test above returned false.
-			ep_raise_error_if_nok (!write_suspended);
-			ep_thread_session_state_increment_sequence_number (session_state);
+			// Park only when the pool was full and the fair-reserve path enqueued this writer (should_block),
+			// and teardown is not aborting - a reader will wake it when capacity frees. Every other allocation
+			// failure (e.g. OOM allocating the buffer bytes) has no wakeup, so it drops: Block is non-lossy up
+			// to buffer capacity, not against host memory exhaustion.
+			if (should_block && !ep_rt_volatile_load_uint32_t (&buffer_manager->aborting)) {
+				result = EP_WRITE_EVENT_RESULT_BLOCKED;
+			} else
+			{
+				ep_thread_session_state_increment_sequence_number (session_state);
+			}
 		} else {
 			current_thread = ep_thread_get ();
 			EP_ASSERT (current_thread != NULL);
@@ -1064,14 +1340,15 @@ ep_buffer_manager_write_event (
 		// Indicate that there is new data to be read
 		ep_rt_wait_event_set (&buffer_manager->rt_wait_event);
 
-#ifdef EP_CHECKED_BUILD
 	if (!alloc_new_buffer)
+		result = EP_WRITE_EVENT_RESULT_WRITTEN;
+
+#ifdef EP_CHECKED_BUILD
+	if (result == EP_WRITE_EVENT_RESULT_WRITTEN)
 		ep_rt_atomic_inc_int64_t (&buffer_manager->num_events_stored);
-	else
+	else if (result == EP_WRITE_EVENT_RESULT_NOT_WRITTEN)
 		ep_rt_atomic_inc_int64_t (&buffer_manager->num_events_dropped);
 #endif
-
-	result = !alloc_new_buffer;
 
 ep_on_exit:
 	ep_stack_contents_fini (current_stack_contents);

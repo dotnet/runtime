@@ -116,16 +116,19 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(box != null);
 
-                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
                 {
-                    box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box);
-                }
+                    if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                    {
+                        box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box, flags);
+                    }
 
-                // If tracing is enabled, delegate the Action-based implementation.
-                if (TplEventSource.Log.IsEnabled())
-                {
-                    QueueContinuation(box.MoveNextAction, flowContext: false);
-                    return;
+                    // If tracing is enabled, delegate the Action-based implementation.
+                    if (AsyncInstrumentation.IsEnabled.Tpl(flags))
+                    {
+                        QueueContinuation(box.MoveNextAction, flowContext: false);
+                        return;
+                    }
                 }
 
                 // Otherwise, this is the same logic as in QueueContinuation, except using

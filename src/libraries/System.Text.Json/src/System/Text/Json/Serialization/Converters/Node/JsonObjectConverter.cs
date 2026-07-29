@@ -28,7 +28,7 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(obj is JsonObject);
             JsonObject jObject = (JsonObject)obj;
 
-            Debug.Assert(value == null || value is JsonNode);
+            Debug.Assert(value is null || value is JsonNode);
             JsonNode? jNodeValue = value;
 
             if (options.AllowDuplicateProperties)

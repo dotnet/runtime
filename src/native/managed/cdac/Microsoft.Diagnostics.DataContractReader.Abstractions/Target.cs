@@ -37,6 +37,14 @@ public abstract class Target
     public abstract bool TryGetThreadContext(ulong threadId, uint contextFlags, Span<byte> buffer);
 
     /// <summary>
+    /// Sets the context of the given thread from the supplied buffer
+    /// </summary>
+    /// <param name="threadId">The identifier of the thread whose context is to be set. The identifier is defined by the operating system.</param>
+    /// <param name="context">Buffer containing the new thread context. The contents must be a platform context structure of the size expected by the target.</param>
+    /// <returns>true if successful, false otherwise</returns>
+    public abstract bool TrySetThreadContext(ulong threadId, ReadOnlySpan<byte> context);
+
+    /// <summary>
     /// Reads a well-known global pointer value from the target process
     /// </summary>
     /// <param name="global">The name of the global</param>
@@ -330,6 +338,16 @@ public abstract class Target
     /// A cache of the contracts for the target process
     /// </summary>
     public abstract ContractRegistry Contracts { get; }
+
+    /// <summary>
+    /// <see langword="true"/> when the named sub-descriptor has been published by the target and
+    /// parsed into the registry (or was never advertised). A sub-descriptor is written lazily by a
+    /// subordinate module (for example the GC), so a target attached very early - before that module
+    /// publishes its sub-descriptor address (see dotnet/runtime#128215) - reports <see langword="false"/>
+    /// for that name until a later <see cref="Flush"/> picks it up.
+    /// </summary>
+    /// <param name="name">The sub-descriptor name (for example <c>"GC"</c>).</param>
+    public virtual bool IsSubDescriptorResolved(string name) => true;
 
     /// <summary>
     /// Clear cached data held by this target for the given <paramref name="scope"/>.

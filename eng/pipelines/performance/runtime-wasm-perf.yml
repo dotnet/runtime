@@ -4,11 +4,15 @@
 
 trigger: none
 
-# Disabled: the perf wasm v8 job installs V8 via jsvu, and the V8 binary it currently
-# installs does not support --experimental-wasm-exnref yet, so the MicroBenchmarks Helix
-# job aborts at startup. Re-enable once an exnref-capable V8 is pinned. See
-# ActiveIssue https://github.com/dotnet/runtime/issues/129849
-pr: none
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - eng/pipelines/performance/*
+    - eng/testing/performance/*
+    - eng/testing/BrowserVersions.props
 
 resources:
   repositories:

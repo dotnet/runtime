@@ -224,6 +224,12 @@ public:
 #ifdef TARGET_WASM
     DWORD GetMinFunctionTableIndex() const { return m_minFunctionTableIndex; }
     TADDR GetMinVirtualIP() const { return m_minVirtualIP; }
+    PCODE R2RRelativeFunctionIndexToVirtualIP(DWORD r2rFunctionIndex) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(r2rFunctionIndex < m_nRuntimeFunctions);
+        return (PCODE)(GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[r2rFunctionIndex]));
+    }
     void RegisterVirtualIPRange(Module* pModule);
 #endif // TARGET_WASM
 
@@ -442,6 +448,9 @@ struct cdac_data<ReadyToRunInfo>
     static constexpr size_t EntryPointToMethodDescMap = offsetof(ReadyToRunInfo, m_entryPointToMethodDescMap);
     static constexpr size_t LoadedImageBase = offsetof(ReadyToRunInfo, m_pLoadedImageBase);
     static constexpr size_t Composite = offsetof(ReadyToRunInfo, m_pComposite);
+#ifdef TARGET_WASM
+    static constexpr size_t MinVirtualIP = offsetof(ReadyToRunInfo, m_minVirtualIP);
+#endif // TARGET_WASM
 };
 
 class DynamicHelpers

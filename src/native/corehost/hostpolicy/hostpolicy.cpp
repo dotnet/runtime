@@ -350,9 +350,6 @@ void trace_corehost_init(
             case host_mode_t::apphost:
                 host_mode_str = _X("apphost");
                 break;
-            case host_mode_t::split_fx:
-                host_mode_str = _X("split_fx");
-                break;
             case host_mode_t::libhost:
                 host_mode_str = _X("libhost");
                 break;

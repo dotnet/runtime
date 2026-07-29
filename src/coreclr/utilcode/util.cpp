@@ -2424,7 +2424,7 @@ namespace Util
 #ifdef HOST_WINDOWS
     // Struct used to scope suspension of client impersonation for the current thread.
     // https://learn.microsoft.com/windows/desktop/secauthz/client-impersonation
-    class SuspendImpersonation
+    class SuspendImpersonation final
     {
     public:
         SuspendImpersonation()
@@ -2448,11 +2448,14 @@ namespace Util
         ~SuspendImpersonation()
         {
             if (_token != nullptr)
+            {
                 ::SetThreadToken(nullptr, _token);
+                ::CloseHandle(_token);
+            }
         }
 
     private:
-        HandleHolder _token;
+        HANDLE _token;
     };
 
     struct ProcessIntegrityResult

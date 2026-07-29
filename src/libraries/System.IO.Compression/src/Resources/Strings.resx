@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -321,7 +322,7 @@
     <value>Found truncated data while decoding.</value>
   </data>
   <data name="ZstandardDecoder_WindowTooLarge" xml:space="preserve">
-    <value>Data requires too much memory for decoding. Consider increasing the 'maxWindowLog' parameter.</value>
+    <value>Data requires too much memory for decoding. Consider increasing the 'maxWindowLog2' parameter.</value>
   </data>
   <data name="ZstandardDecoder_DictionaryWrong" xml:space="preserve">
     <value>The provided dictionary is not valid for decoding the current data.</value>
@@ -374,6 +375,30 @@
   <data name="IO_SeekBeforeBegin" xml:space="preserve">
     <value>An attempt was made to move the position before the beginning of the stream.</value>
   </data>
+  <data name="InvalidWinZipSize" xml:space="preserve">
+    <value>The encrypted data size in the archive is invalid.</value>
+  </data>
+  <data name="InvalidPassword" xml:space="preserve">
+    <value>The password did not match.</value>
+  </data>
+  <data name="WinZipAuthCodeMismatch" xml:space="preserve">
+    <value>The authentication code does not match. The archive may be corrupted.</value>
+  </data>
+  <data name="EntryNotEncrypted" xml:space="preserve">
+    <value>Entry is not encrypted.</value>
+  </data>
+  <data name="PasswordRequired" xml:space="preserve">
+    <value>A password is required for encrypted entries.</value>
+  </data>
+  <data name="EmptyPassword" xml:space="preserve">
+    <value>A non-empty password is required for creating an encrypted entry.</value>
+  </data>
+  <data name="InvalidAesStrength" xml:space="preserve">
+    <value>Invalid AES strength value.</value>
+  </data>
+  <data name="TruncatedZipCryptoHeader" xml:space="preserve">
+    <value>The encryption header is truncated.</value>
+  </data>
   <data name="IO_NotSupported_UnreadableStream" xml:space="preserve">
     <value>Stream does not support reading.</value>
   </data>
@@ -388,5 +413,20 @@
   </data>
   <data name="UnexpectedStreamLength" xml:space="preserve">
     <value>The decompressed data length does not match the expected value from the archive.</value>
+  </data>
+  <data name="EncryptionNotSpecified" xml:space="preserve">
+    <value>Encryption type is not specified.</value>
+  </data>
+  <data name="EncryptionReadMode" xml:space="preserve">
+    <value>Encryption method should not be specified in read mode.</value>
+  </data>
+  <data name="EncryptionUpdateMode" xml:space="preserve">
+    <value>Encryption method should not be specified in update mode.</value>
+  </data>
+  <data name="WinZipEncryptionNotSupportedOnBrowser" xml:space="preserve">
+    <value>WinZip AES encryption is not supported on the browser platform.</value>
+  </data>
+  <data name="UnsupportedEncryptionMethod" xml:space="preserve">
+    <value>The entry's encryption method is not supported.</value>
   </data>
 </root>

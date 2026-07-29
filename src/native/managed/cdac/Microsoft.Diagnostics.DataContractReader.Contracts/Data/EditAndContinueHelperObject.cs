@@ -7,5 +7,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class EditAndContinueHelperObject : IData<EditAndContinueHelperObject>
 {
     [FieldAddress("_objectReference")]
-    public TargetPointer ObjectReferenceAddress { get; }
+    public partial TargetPointer ObjectReferenceAddress { get; }
 }

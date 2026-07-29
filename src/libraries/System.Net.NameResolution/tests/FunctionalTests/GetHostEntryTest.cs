@@ -421,8 +421,8 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAnyAsync<Exception>(() => Dns.GetHostEntryAsync(hostName));
         }
 
-        // "localhost." (with trailing dot) should NOT be treated as a subdomain.
-        // It's equivalent to plain "localhost" and should resolve via OS resolver.
+        // "localhost." is equivalent to plain "localhost".
+        // The OS resolver is tried first, falling back to plain "localhost" if resolution fails or returns no addresses.
         [Fact]
         public async Task DnsGetHostEntry_LocalhostWithTrailingDot_ReturnsLoopback()
         {

@@ -694,17 +694,17 @@
       </trans-unit>
       <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceDescription">
         <source>Source-generated COM interface properties do not support the 'static', 'extern', 'required', or 'init' modifiers/accessors.</source>
-        <target state="new">Source-generated COM interface properties do not support the 'static', 'extern', 'required', or 'init' modifiers/accessors.</target>
+        <target state="translated">소스 생성 COM 인터페이스 속성은 'static', 'extern', 'required' 또는 'init' 한정자/접근자를 지원하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceMessage">
         <source>The property '{0}' on interface '{1}' uses '{2}', which is not supported on a source-generated COM interface property</source>
-        <target state="new">The property '{0}' on interface '{1}' uses '{2}', which is not supported on a source-generated COM interface property</target>
+        <target state="translated">인터페이스 '{1}'의 속성 '{0}'은(는) 소스 생성 COM 인터페이스 속성에서 지원되지 않는 '{2}'을(를) 사용합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceTitle">
         <source>Property uses an unsupported modifier or accessor for a source-generated COM interface</source>
-        <target state="new">Property uses an unsupported modifier or accessor for a source-generated COM interface</target>
+        <target state="translated">속성에서 소스 생성 COM 인터페이스에 지원되지 않는 한정자 또는 접근자를 사용합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
@@ -849,17 +849,17 @@
       </trans-unit>
       <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberDescription">
         <source>Marshalling attributes such as 'MarshalUsing' and 'MarshalAs' on a default-implemented (body-bearing) member of a source-generated COM interface have no effect. Default implementations are pure managed code that bypasses the COM marshalling pipeline and does not get a generated stub.</source>
-        <target state="new">Marshalling attributes such as 'MarshalUsing' and 'MarshalAs' on a default-implemented (body-bearing) member of a source-generated COM interface have no effect. Default implementations are pure managed code that bypasses the COM marshalling pipeline and does not get a generated stub.</target>
+        <target state="translated">소스 생성 COM 인터페이스의 기본 구현(본문 포함) 멤버에서 'MarshalUsing' 및 'MarshalAs' 같은 마샬링 특성은 효과가 없습니다. 기본 구현은 COM 마샬링 파이프라인을 우회하고 생성된 스텁을 가져오지 않는 순수 관리 코드입니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberMessage">
         <source>The marshalling attribute on the default-implemented member '{0}' on interface '{1}' will be ignored because default implementations do not generate COM marshalling code</source>
-        <target state="new">The marshalling attribute on the default-implemented member '{0}' on interface '{1}' will be ignored because default implementations do not generate COM marshalling code</target>
+        <target state="translated">인터페이스 '{1}'의 기본 구현 멤버 '{0}'에 대한 마샬링 특성은 기본 구현에서 COM 마샬링 코드를 생성하지 않으므로 무시됩니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberTitle">
         <source>Marshalling attribute on a default-implemented member of a source-generated COM interface has no effect</source>
-        <target state="new">Marshalling attribute on a default-implemented member of a source-generated COM interface has no effect</target>
+        <target state="translated">소스 생성 COM 인터페이스의 기본 구현 멤버에 대한 마샬링 특성은 영향을 주지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalModeMustBeValidEnumValue">
@@ -869,17 +869,17 @@
       </trans-unit>
       <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeDescription">
         <source>When 'MarshalUsing' is applied to a source-generated COM interface property accessor (via '[return: MarshalUsing(...)]' on a getter or '[param: MarshalUsing(...)]' on a setter), it must supply a marshaller type via the constructor argument. Count-only or depth-only forms ('MarshalUsing(ConstantElementCount = ...)', 'MarshalUsing(CountElementName = ...)', or 'MarshalUsing(ElementIndirectionDepth = ...)' on an accessor) would silently override or partially conflict with a property-level 'MarshalUsing'. Combine the marshaller type and count information on a single 'MarshalUsing' attribute on the accessor. 'ConstantElementCount' and 'ElementIndirectionDepth' may also be supplied via a property-level 'MarshalUsing'; 'CountElementName' is not supported on property or indexer accessors because peer-parameter lookups are not available in that context.</source>
-        <target state="new">When 'MarshalUsing' is applied to a source-generated COM interface property accessor (via '[return: MarshalUsing(...)]' on a getter or '[param: MarshalUsing(...)]' on a setter), it must supply a marshaller type via the constructor argument. Count-only or depth-only forms ('MarshalUsing(ConstantElementCount = ...)', 'MarshalUsing(CountElementName = ...)', or 'MarshalUsing(ElementIndirectionDepth = ...)' on an accessor) would silently override or partially conflict with a property-level 'MarshalUsing'. Combine the marshaller type and count information on a single 'MarshalUsing' attribute on the accessor. 'ConstantElementCount' and 'ElementIndirectionDepth' may also be supplied via a property-level 'MarshalUsing'; 'CountElementName' is not supported on property or indexer accessors because peer-parameter lookups are not available in that context.</target>
+        <target state="translated">'MarshalUsing'을 소스 생성 COM 인터페이스 속성 접근자에 적용하는 경우(getter의 '[return: MarshalUsing(...)]' 또는 setter의 '[param: MarshalUsing(...)]'을 통해) 생성자 인수를 통해 마샬러 형식을 제공해야 합니다. 접근자에서 개수만 지정하는 형식이나 깊이만 지정하는 형식('MarshalUsing(ConstantElementCount = ...)', 'MarshalUsing(CountElementName = ...)' 또는 'MarshalUsing(ElementIndirectionDepth = ...)')는 속성 수준 'MarshalUsing'을 자동으로 재정의거나 부분적으로 충돌합니다. 접근자에서 단일 'MarshalUsing' 특성에 마샬러 형식과 개수 정보를 결합합니다. 'ConstantElementCount' 및 'ElementIndirectionDepth'는 속성 수준 'MarshalUsing'을 통해서도 지정할 수 있습니다. 'CountElementName'은 해당 컨텍스트에서 피어 매개 변수 조회를 사용할 수 없으므로 속성 또는 인덱서 접근자에서는 지원되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeMessage">
         <source>The 'MarshalUsing' attribute on an accessor of property '{0}' on interface '{1}' must specify a marshaller type. Combine the marshaller type and count on a single 'MarshalUsing' on the accessor, or specify 'ConstantElementCount' or 'ElementIndirectionDepth' on the property declaration.</source>
-        <target state="new">The 'MarshalUsing' attribute on an accessor of property '{0}' on interface '{1}' must specify a marshaller type. Combine the marshaller type and count on a single 'MarshalUsing' on the accessor, or specify 'ConstantElementCount' or 'ElementIndirectionDepth' on the property declaration.</target>
+        <target state="translated">인터페이스 '{1}'의 속성 '{0}'에 있는 접근자의 'MarshalUsing' 특성에는 마샬러 형식을 지정해야 합니다. 접근자에서 마샬러 형식과 개수를 단일 'MarshalUsing'에 결합하거나, 속성 선언에서 'ConstantElementCount' 또는 'ElementIndirectionDepth'를 지정하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeTitle">
         <source>'MarshalUsing' applied to a source-generated COM interface property accessor must specify a marshaller type</source>
-        <target state="new">'MarshalUsing' applied to a source-generated COM interface property accessor must specify a marshaller type</target>
+        <target state="translated">소스 생성 COM 인터페이스 속성 접근자에 적용된 'MarshalUsing'은 마샬러 형식을 지정해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
@@ -1014,17 +1014,17 @@
       </trans-unit>
       <trans-unit id="PropertyAccessorsMustBeAllOrNothingDescription">
         <source>On a source-generated COM interface, a property is either fully abstract (no accessor bodies, treated as a COM property occupying vtable slots) or fully default-implemented (every accessor has a body, treated as managed-only code that bypasses COM marshalling). Mixing the two shapes within a single property is not supported.</source>
-        <target state="new">On a source-generated COM interface, a property is either fully abstract (no accessor bodies, treated as a COM property occupying vtable slots) or fully default-implemented (every accessor has a body, treated as managed-only code that bypasses COM marshalling). Mixing the two shapes within a single property is not supported.</target>
+        <target state="translated">소스 생성 COM 인터페이스에서 속성은 완전히 추상적이거나, 아니면 완전히 기본 구현되어야 합니다. 완전히 추상적인 속성은 접근자 본문이 없으며 vtable 슬롯을 차지하는 COM 속성으로 처리됩니다. 완전히 기본 구현된 속성은 모든 접근자에 본문이 있고, COM 마샬링을 우회하는 관리 코드로만 처리됩니다. 하나의 속성에서 이 두 형태를 섞을 수는 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="PropertyAccessorsMustBeAllOrNothingMessage">
         <source>The property '{0}' on interface '{1}' mixes abstract and default-implemented accessors. Either all accessors must have bodies or none must have bodies.</source>
-        <target state="new">The property '{0}' on interface '{1}' mixes abstract and default-implemented accessors. Either all accessors must have bodies or none must have bodies.</target>
+        <target state="translated">인터페이스 '{1}'의 속성 '{0}'은(는) 추상 접근자와 기본 구현 접근자를 함께 사용합니다. 모든 접근자에 본문이 있거나 모두 본문이 없어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="PropertyAccessorsMustBeAllOrNothingTitle">
         <source>Property accessors on a source-generated COM interface must either all have bodies or none have bodies</source>
-        <target state="new">Property accessors on a source-generated COM interface must either all have bodies or none have bodies</target>
+        <target state="translated">소스 생성 COM 인터페이스의 속성 접근자는 모두 본문이 있거나 모두 본문이 없어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">

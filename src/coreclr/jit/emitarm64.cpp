@@ -429,7 +429,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_DR_2A: // DR_2A   X..........mmmmm ......nnnnn.....         Rn Rm
             assert(isValidGeneralDatasize(id->idOpSize()));
-            assert(isGeneralRegister(id->idReg1()));
+            assert(isGeneralRegisterOrZR(id->idReg1()));
             assert(isGeneralRegister(id->idReg2()));
             break;
 
@@ -4596,18 +4596,17 @@ void emitter::emitIns_R_R(instruction     ins,
                 fmt = IF_DV_2M;
                 break;
             }
-            if (ins == INS_cnt)
-            {
-                // Doesn't have general register version(s)
-                break;
-            }
-
+            // INS_cnt on general registers requires FEAT_CSSC; fall through to the DR_2G encoding.
+            assert((ins != INS_cnt) || m_compiler->compIsaSupportedDebugOnly(InstructionSet_Cssc));
             FALLTHROUGH;
 
+        case INS_ctz:
         case INS_rev:
             assert(insOptsNone(opt));
             assert(isGeneralRegister(reg1));
             assert(isGeneralRegister(reg2));
+            // INS_ctz on general registers requires FEAT_CSSC.
+            assert((ins != INS_ctz) || m_compiler->compIsaSupportedDebugOnly(InstructionSet_Cssc));
             if (ins == INS_rev32)
             {
                 assert(size == EA_8BYTE);
@@ -6101,6 +6100,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
             FALLTHROUGH;
 
         case INS_sadalp:
+        case INS_sm4e:
         case INS_suqadd:
         case INS_uadalp:
         case INS_usqadd:
@@ -8252,22 +8252,43 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         isSimple = false;
         reg2     = REG_UNKBASE;
 
+        var_types localType = TYP_UNDEF;
+
         if (varx >= 0)
         {
-            imm = m_compiler->unkSizeFrame.GetAddressingOffset(m_compiler->lvaGetDesc(varx));
+            LclVarDsc* varDsc = m_compiler->lvaGetDesc(varx);
+            imm               = m_compiler->unkSizeFrame.GetAddressingOffset(varDsc);
+            localType         = varDsc->TypeGet();
         }
         else
         {
-            imm = m_compiler->unkSizeFrame.GetAddressingOffset(codeGen->regSet.tmpGetNum(varx));
+            TempDsc* tmpDsc = codeGen->regSet.tmpGetNum(varx);
+            imm             = m_compiler->unkSizeFrame.GetAddressingOffset(tmpDsc);
+            localType       = tmpDsc->tdTempType();
         }
 
         switch (ins)
         {
             case INS_lea:
-                // We shouldn't be materializing the address of a mask.
-                assert(m_compiler->lvaGetActualType(varx) != TYP_MASK);
-                // addvl reg1, x19, #imm
-                emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, reg1, REG_UNKBASE, imm);
+                // TODO-SVE: Support materializing address of a mask local / temp.
+                assert(localType != TYP_MASK);
+                if (isValidSimm<6>(imm))
+                {
+                    // addvl reg1, x19, #imm
+                    emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, reg1, REG_UNKBASE, imm);
+                }
+                else
+                {
+                    // Cannot encode immediate, generate `addr = fp + imm * VL`.
+                    //
+                    // set reg1 = imm
+                    // rdvl rsvd, #1
+                    // madd reg1, reg1, rsvd, x19
+                    regNumber rsvd = codeGen->rsGetRsvdReg();
+                    codeGen->instGen_Set_Reg_To_Imm(EA_8BYTE, reg1, imm);
+                    emitIns_R_I(INS_sve_rdvl, EA_8BYTE, rsvd, 1);
+                    emitIns_R_R_R_R(INS_madd, EA_8BYTE, reg1, reg1, rsvd, REG_UNKBASE);
+                }
                 return;
 
             case INS_sve_ldr:
@@ -15017,8 +15038,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     // First load/store tmpReg with the large offset constant
                     codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
                     // Then add the base register
-                    //      rd = rd + base
-                    emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, memBase->GetRegNum());
+                    //      rd = base + rd
+                    emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), tmpReg);
 
                     noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
                     noway_assert(tmpReg != index->GetRegNum());
@@ -17617,9 +17638,12 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
     ssize_t     prevImm = emitGetInsSC(emitLastIns);
     instruction optIns  = (ins == INS_ldr) ? INS_ldp : INS_stp;
 
+    // For IF_LS_2C (ldur/stur) the immediate is already the raw byte offset; for the scaled
+    // formats it must be multiplied by the operand size to recover the byte offset that
+    // emitIns_R_R_R_I_LdStPair / emitIns_R_R_I expect.
     emitAttr prevReg1Attr;
-    ssize_t  prevImmSize   = prevImm * size;
-    ssize_t  newImmSize    = imm * size;
+    ssize_t  prevImmSize   = (emitLastIns->idInsFmt() == IF_LS_2C) ? prevImm : (prevImm * size);
+    ssize_t  newImmSize    = (fmt == IF_LS_2C) ? imm : (imm * size);
     bool     isLastLclVar  = emitLastIns->idIsLclVar();
     int      prevOffset    = -1;
     int      prevLclVarNum = -1;
@@ -17655,7 +17679,7 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
     if ((ins == INS_str) && (reg1 == REG_ZR) && (prevReg1 == REG_ZR) && (size == EA_4BYTE))
     {
         // The first register is at the lower offset for the ascending order
-        ssize_t offset = (optimizationOrder == eRO_ascending ? prevImm : imm) * size;
+        ssize_t offset = (optimizationOrder == eRO_ascending ? prevImmSize : newImmSize);
         emitIns_R_R_I(INS_str, EA_8BYTE, REG_ZR, reg2, offset, INS_OPTS_NONE);
         return true;
     }
@@ -17725,13 +17749,28 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
     emitAttr  prevSize   = emitLastIns->idOpSize();
     ssize_t   prevImm    = emitGetInsSC(emitLastIns);
 
-    // If we have this format, the 'imm' and/or 'prevImm' are not scaled(encoded),
-    // therefore we cannot proceed.
-    // TODO: In this context, 'imm' and 'prevImm' are assumed to be scaled(encoded).
-    //       They should never be scaled(encoded) until its about to be written to the buffer.
-    if (fmt == IF_LS_2C || lastInsFmt == IF_LS_2C)
+    // For IF_LS_2C (ldur/stur) the immediate is the raw, unscaled byte offset, whereas for the
+    // scaled formats (IF_LS_2B) it has already been divided by the operand size. Normalize both
+    // immediates to the scaled representation so that the range and adjacency checks below operate
+    // on consistent units. A raw byte offset that is not a multiple of the operand size cannot be
+    // re-encoded as a scaled ldp/stp offset, so in that case the accesses cannot be merged.
+    const unsigned scale     = NaturalScale_helper(size);
+    const ssize_t  scaleMask = ((ssize_t)1 << scale) - 1;
+    if (fmt == IF_LS_2C)
     {
-        return eRO_none;
+        if ((imm & scaleMask) != 0)
+        {
+            return eRO_none;
+        }
+        imm >>= scale;
+    }
+    if (lastInsFmt == IF_LS_2C)
+    {
+        if ((prevImm & scaleMask) != 0)
+        {
+            return eRO_none;
+        }
+        prevImm >>= scale;
     }
 
     // Signed, *raw* immediate value fits in 7 bits, so for LDP/ STP the raw value is from -64 to +63.
@@ -18075,6 +18114,15 @@ bool emitter::TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber
     }
 
     void* sym = prevId->idAddr()->iiaAddr;
+
+    // PAGEOFFSET_12L encodes the :lo12: page offset scaled by 8, so the reloc target must be at
+    // least 8-byte aligned. Only fold when the VM guarantees that alignment for 'sym' (e.g. in
+    // NativeAOT a byte-packed non-GC static region may be only 4-byte aligned, which the linker
+    // rejects for R_AARCH64_LDST64_ABS_LO12_NC).
+    if (m_compiler->eeGetAddressAlignment(sym) < 8)
+    {
+        return false;
+    }
 
     // Drop the "add"; the preceding "adrp" already put the page base of 'sym' into reg1.
     emitRemoveLastInstruction();

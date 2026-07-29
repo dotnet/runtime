@@ -187,5 +187,10 @@ namespace System.Text.Json.Serialization
         /// Specifies the default value of <see cref="JsonSerializerOptions.AllowDuplicateProperties"/> when set.
         /// </summary>
         public bool AllowDuplicateProperties { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.InferClosedTypePolymorphism"/> when set.
+        /// </summary>
+        public bool InferClosedTypePolymorphism { get; set; }
     }
 }

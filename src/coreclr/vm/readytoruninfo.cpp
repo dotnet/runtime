@@ -20,9 +20,7 @@
 #include "ilstubcache.h"
 #include "sigbuilder.h"
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #ifndef DACCESS_COMPILE
 extern "C" PCODE g_pMethodWithSlotAndModule;
@@ -277,12 +275,12 @@ BOOL ReadyToRunInfo::GetEnclosingToken(IMDInternalImport * pImport, ModuleBase* 
 
     case mdtTypeRef:
         if (SUCCEEDED(pImport->GetResolutionScopeOfTypeRef(mdType, pEnclosingToken)))
-            return ((TypeFromToken(*pEnclosingToken) == mdtTypeRef) && (*pEnclosingToken != mdTypeRefNil));
+            return (TypeFromToken(*pEnclosingToken) == mdtTypeRef) && (*pEnclosingToken != mdTypeRefNil);
         break;
 
     case mdtExportedType:
         if (SUCCEEDED(pImport->GetExportedTypeProps(mdType, NULL, NULL, pEnclosingToken, NULL, NULL)))
-            return ((TypeFromToken(*pEnclosingToken) == mdtExportedType) && (*pEnclosingToken != mdExportedTypeNil));
+            return (TypeFromToken(*pEnclosingToken) == mdtExportedType) && (*pEnclosingToken != mdExportedTypeNil);
         break;
     }
 
@@ -537,7 +535,14 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
         return NULL;
 
     LPCUTF8 ownerCompositeExecutableName = NULL;
-    if (pLayout->IsMapped())
+    if (pLayout->IsWebcilFormat())
+    {
+        // Webcil is wasm-only and flat-mapped by construction (PointerToRawData == VirtualAddress),
+        // so this is equivalent to GetBase() + virtualAddress; use the decoder's GetRvaData as the
+        // format-correct idiom for resolving an RVA.
+        ownerCompositeExecutableName = (LPCUTF8)pLayout->GetRvaData(virtualAddress);
+    }
+    else if (pLayout->IsMapped())
     {
         ownerCompositeExecutableName = (LPCUTF8)pLayout->GetBase() + virtualAddress;
     }
@@ -1277,6 +1282,11 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
         sizeof(s_resumptionStubSig),
         &amTracker);
 
+#ifdef TARGET_WASM
+    // SetMethodDescForEntryPointInNativeImage needs to have the virtual IP
+    uint32_t id = stubEntryPoint - m_pCompositeInfo->GetMinFunctionTableIndex();
+    stubEntryPoint = R2RRelativeFunctionIndexToVirtualIP(id);
+#endif
     // Register the stub's entry point so GC can find it during stack walks.
     // SetMethodDescForEntryPointInNativeImage handles the race - if another thread
     // already registered a MethodDesc for this entry point, ours is simply discarded
@@ -1419,7 +1429,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     PCODE actualEntryPoint;
     actualEntryPoint = GetMinFunctionTableIndex() + id;
     PCODE virtualEntrypointIP;
-    virtualEntrypointIP = GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[id]);
+    virtualEntrypointIP = R2RRelativeFunctionIndexToVirtualIP(id);
     pEntryPoint = pMD->GetTemporaryEntryPoint();
     PortableEntryPoint::SetActualCode(pEntryPoint, actualEntryPoint);
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(virtualEntrypointIP, pMD);
@@ -1625,7 +1635,7 @@ MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc_NoRestore()
 
     _ASSERTE(id < m_pInfo->m_nRuntimeFunctions);
 #ifdef TARGET_WASM
-    PCODE pEntryPoint = m_pInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pInfo->m_pRuntimeFunctions[id]);
+    PCODE pEntryPoint = m_pInfo->R2RRelativeFunctionIndexToVirtualIP(id);
 #else
     PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->GetImage()->GetBase()) + RUNTIME_FUNCTION__BeginAddress(&m_pInfo->m_pRuntimeFunctions[id]);
 #endif
@@ -2199,7 +2209,7 @@ public:
     }
     Module *GetModuleIfLoaded(mdFile kFile) final
     {
-        CONTRACT(Module *)
+        CONTRACTL
         {
             INSTANCE_CHECK;
             NOTHROW;
@@ -2207,11 +2217,10 @@ public:
             MODE_ANY;
             PRECONDITION(TypeFromToken(kFile) == mdtFile
                         || TypeFromToken(kFile) == mdtModuleRef);
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
             FORBID_FAULT;
             SUPPORTS_DAC;
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         // Native manifest module functionality isn't actually multi-module assemblies, and File tokens are not useable
         if (TypeFromToken(kFile) == mdtFile)
@@ -2220,12 +2229,14 @@ public:
         _ASSERTE(TypeFromToken(kFile) == mdtModuleRef);
         Module* module = m_ModuleReferencesMap.GetElement(RidFromToken(kFile));
         if (module != NULL)
-            RETURN module;
+            {
+                return module;
+            }
 
         LPCSTR moduleName;
         if (FAILED(GetMDImport()->GetModuleRefProps(kFile, &moduleName)))
         {
-            RETURN NULL;
+            return NULL;
         }
 
         LPCSTR assemblyNameInModuleRef;
@@ -2254,7 +2265,7 @@ public:
                     mdToken assemblyRef;
                     if (FAILED(GetAssemblyRefTokenOfIndirectDependency(module, assemblyNameInModuleRef, assemblyNameLen, &assemblyRef)))
                     {
-                        RETURN NULL;
+                        return NULL;
                     }
 
                     if (assemblyRef == mdTokenNil)
@@ -2275,7 +2286,7 @@ public:
         if (module != NULL)
             m_ModuleReferencesMap.TrySetElement(RidFromToken(kFile), module);
 #endif
-        RETURN module;
+        return module;
     }
 
     Module *LoadModule(mdFile kFile) final
@@ -2438,7 +2449,7 @@ bool ReadyToRun_TypeGenericInfoMap::IsGeneric(mdTypeDef input, IMDInternalImport
     {
         HENUMInternalHolder hEnumTyPars(pImport);
         hEnumTyPars.EnumInit(mdtGenericParam, input);
-        return (pImport->EnumGetCount(&hEnumTyPars) != 0);
+        return pImport->EnumGetCount(&hEnumTyPars) != 0;
     }
     return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
 }
@@ -2542,9 +2553,7 @@ PCODE CreateDynamicHelperPrecode(LoaderAllocator *pAllocator, AllocMemTracker *p
 
     FlushCacheForDynamicMappedStub(pPrecode, sizeof(StubPrecode));
 
-#ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)pPrecode, size, PerfMapStubType::IndividualWithinBlock);
-#endif
 
     return ((Precode*)pPrecode)->GetEntryPoint();
 }

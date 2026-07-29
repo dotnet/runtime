@@ -15,7 +15,7 @@ using Microsoft.Build.Utilities;
 
 namespace Microsoft.NET.Sdk.WebAssembly
 {
-    public class BootJsonBuilderHelper(TaskLoggingHelper Log, string DebugLevel, bool IsMultiThreaded, bool IsPublish, Version TargetFrameworkVersion)
+    public class BootJsonBuilderHelper(TaskLoggingHelper Log, string DebugLevel, bool IsMultiThreaded, bool IsPublish, Version TargetFrameworkVersion, bool IsMonoRuntime)
     {
 #pragma warning disable SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
         internal static readonly Regex mergeWithPlaceholderRegex = new Regex(@"/\*!\s*dotnetBootConfig\s*\*/\s*{}");
@@ -24,6 +24,10 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
         private static readonly string[] coreAssemblyNames = [
             "System.Private.CoreLib",
+        ];
+
+        // These assemblies are needed to start the Mono runtime, but are not required to start the CoreCLR runtime.
+        private static readonly string[] monoCoreAssemblyNames = [
             "System.Runtime.InteropServices.JavaScript",
         ];
 
@@ -46,6 +50,9 @@ namespace Microsoft.NET.Sdk.WebAssembly
         {
             var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
             if (coreAssemblyNames.Contains(fileNameWithoutExtension))
+                return true;
+
+            if (IsMonoRuntime && monoCoreAssemblyNames.Contains(fileNameWithoutExtension))
                 return true;
 
             if (IsMultiThreaded && extraMultiThreadedCoreAssemblyName.Contains(fileNameWithoutExtension))

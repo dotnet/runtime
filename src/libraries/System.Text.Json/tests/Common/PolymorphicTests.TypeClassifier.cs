@@ -649,7 +649,7 @@ namespace System.Text.Json.Serialization.Tests
                     new JsonDerivedType(typeof(ClassifiedCat), "cat"),
                     new JsonDerivedType(typeof(ClassifiedParrot), "parrot"),},
                                     "kind");
-            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
+            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, Serializer.DefaultOptions);
 
             var options = CreateOptionsWithClassifier<ClassifiedAnimalBase>(classify);
 
@@ -670,7 +670,7 @@ namespace System.Text.Json.Serialization.Tests
                     new JsonDerivedType(typeof(ClassifiedDog), "dog"),
                     new JsonDerivedType(typeof(ClassifiedCat), "cat"),},
                                     "kind");
-            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
+            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, Serializer.DefaultOptions);
 
             var options = CreateOptionsWithClassifier<ClassifiedAnimalBase>(classify);
 
@@ -692,7 +692,7 @@ namespace System.Text.Json.Serialization.Tests
                     new JsonDerivedType(typeof(ClassifiedDog), 1),
                     new JsonDerivedType(typeof(ClassifiedCat), 2),},
                                     "type_id");
-            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
+            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, Serializer.DefaultOptions);
 
             var options = CreateOptionsWithClassifier<ClassifiedAnimalBase>(classify);
 
@@ -996,7 +996,7 @@ namespace System.Text.Json.Serialization.Tests
                     new JsonDerivedType(typeof(ClassifiedDog), "dog"),
                     new JsonDerivedType(typeof(ClassifiedCat), "cat"),},
                                     "kind");
-            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
+            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, Serializer.DefaultOptions);
 
             var options = CreateOptionsWithClassifier<ClassifiedAnimalBase>(classify);
             string json = """[{"kind":"dog","Name":"Rex","Breed":"Lab"},{"kind":"cat","Name":"Whiskers","Lives":9}]""";
@@ -1115,7 +1115,7 @@ namespace System.Text.Json.Serialization.Tests
                     new JsonDerivedType(typeof(ClassifiedDog), "dog"),
                     new JsonDerivedType(typeof(ClassifiedCat), "cat"),},
                                     "kind");
-            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
+            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, Serializer.DefaultOptions);
 
             JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {
@@ -1239,7 +1239,7 @@ namespace System.Text.Json.Serialization.Tests
                     new JsonDerivedType(typeof(ClassifiedDog), "dog"),
                     new JsonDerivedType(typeof(ClassifiedCat), "cat"),},
                                     "kind");
-            JsonTypeClassifier animalClassify = animalFactory.CreateJsonClassifier(animalContext, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
+            JsonTypeClassifier animalClassify = animalFactory.CreateJsonClassifier(animalContext, Serializer.DefaultOptions);
 
             JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {
@@ -1462,7 +1462,7 @@ namespace System.Text.Json.Serialization.Tests
                     new JsonDerivedType(typeof(ClassifiedDog), "dog"),
                     new JsonDerivedType(typeof(ClassifiedCat), "cat"),},
                                     "kind");
-            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
+            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, Serializer.DefaultOptions);
 
             JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {

@@ -791,6 +791,9 @@ inline CONTEXT * GETREDIRECTEDCONTEXT(Thread * thread) { LIMITED_METHOD_CONTRACT
 typedef DPTR(class TransitionFrame) PTR_TransitionFrame;
 
 #ifdef TARGET_WASM
+// Wasm has no native return address for an R2R inline P/Invoke. This sentinel marks the frame as
+// active; stack walkers recover the caller virtual IP from m_pCallSiteSP.
+static constexpr TADDR INLINED_PINVOKE_FROM_R2R = 1;
 TADDR GetWasmVirtualIPFromStackPointer(TADDR sp);
 #endif
 
@@ -1061,6 +1064,7 @@ public:
     }
 
     void UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock);
+    void SetContext(T_CONTEXT *pContext);
 #endif
 
     TADDR GetReturnAddressPtr_Impl()
@@ -1359,6 +1363,14 @@ public:
         trace->InitForUnmanaged(GetPInvokeCalliTarget());
         return TRUE;
     }
+
+    friend struct ::cdac_data<PInvokeCalliFrame>;
+};
+
+template <>
+struct cdac_data<PInvokeCalliFrame>
+{
+    static constexpr size_t VASigCookiePtr = offsetof(PInvokeCalliFrame, m_pVASigCookie);
 };
 
 // Some context-related forwards.

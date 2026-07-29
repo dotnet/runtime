@@ -1468,6 +1468,7 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
     pRD->SSP = pOtherRD->SSP;
 #endif
 
+#ifndef TARGET_WASM
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = (pRD->pCurrentContextPointers->regname == NULL) ? pOtherRD->pCurrentContext->regname : *pRD->pCurrentContextPointers->regname;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -1475,6 +1476,11 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = pOtherRD->pCurrentContext->regname;
     ENUM_FP_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
+#else // TARGET_WASM
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = pOtherRD->pCurrentContext->regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#endif // !TARGET_WASM
 
     pRD->IsCallerContextValid = pOtherRD->IsCallerContextValid;
     if (pRD->IsCallerContextValid)
@@ -1487,6 +1493,7 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
         SetFirstArgReg(pRD->pCallerContext, GetFirstArgReg(pOtherRD->pCallerContext));
 #endif
 
+#ifndef TARGET_WASM
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = (pRD->pCallerContextPointers->regname == NULL) ? pOtherRD->pCallerContext->regname : *pRD->pCallerContextPointers->regname;
         ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
@@ -1494,6 +1501,11 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = pOtherRD->pCallerContext->regname;
         ENUM_FP_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
+#else // TARGET_WASM
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCallerContext->regname = pOtherRD->pCallerContext->regname;
+        ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#endif // !TARGET_WASM
     }
     SyncRegDisplayToCurrentContext(pRD);
 }
@@ -2317,6 +2329,18 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             _ASSERTE(adr != (PCODE)POISONC);
 
             _ASSERTE(!pInlinedFrame || adr);
+
+#ifdef TARGET_WASM
+            if ((pInlinedFrame != NULL) && (adr == (PCODE)INLINED_PINVOKE_FROM_R2R))
+            {
+                adr = GetWasmVirtualIPFromStackPointer(dac_cast<TADDR>(((InlinedCallFrame*)pInlinedFrame)->GetCallSiteSP()));
+                if (adr == (PCODE)NULL)
+                {
+                    retVal = SWA_FAILED;
+                    goto Cleanup;
+                }
+            }
+#endif // TARGET_WASM
 
             if (adr)
             {

@@ -1596,6 +1596,7 @@ namespace System.Text.Json.Tests
         [Theory]
         [OuterLoop]
         [MemberData(nameof(SpecialNumTestCases))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129973", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void TestPartialJsonReaderSlicesSpecialNumbers(TestCaseType type, string jsonString)
         {
             _ = type;

@@ -9,6 +9,7 @@
 include AsmMacros.inc
 
 EXTERN RhpCidResolve : PROC
+EXTERN RhpCidResolve_Worker : PROC
 EXTERN _RhpUniversalTransitionTailCall@0 : PROC
 
 EXTERN _g_pDispatchCache : DWORD
@@ -139,5 +140,117 @@ ALTERNATE_ENTRY _RhpInterfaceDispatch
         jmp     _RhpUniversalTransitionTailCall@0
 
 FASTCALL_ENDFUNC
+
+;; Resolve helper for the standard managed calling convention.
+;; ecx = object instance, edx = dispatch cell, result returned in eax.
+RhpDispatchResolve PROC public
+ALTERNATE_ENTRY _RhpDispatchResolve
+
+        ;; Load the MethodTable from the object instance in ecx.
+        ;; Trigger an AV if we're dispatching on a null this.
+        ;; The exception handling infrastructure is aware of the fact that this is the first
+        ;; instruction of the dispatch stub and uses it to translate an AV here
+        ;; to a NullReferenceException at the callsite.
+        mov     eax, dword ptr [ecx]     ;; eax = MethodTable
+
+        cmp     dword ptr [edx], eax     ;; is this the monomorphic MethodTable?
+        jne     DispatchResolveHashtable
+
+        mov     eax, dword ptr [edx + 4] ;; return cached monomorphic resolved code address
+        ret
+
+      DispatchResolveHashtable:
+
+        ;; eax = MethodTable, ecx = this, edx = cell
+        ;; Look up the target in the dispatch cache hashtable (GenericCache<Key, nint>).
+        push    ebx
+        push    esi
+        push    edi
+        push    ecx                      ;; save this
+        push    edx                      ;; save cell
+        push    eax                      ;; save MethodTable
+
+        ;; Stack layout from esp:
+        ;; [esp+0]  = MethodTable
+        ;; [esp+4]  = cell
+        ;; [esp+8]  = this
+        ;; [esp+12] = saved edi
+        ;; [esp+16] = saved esi
+        ;; [esp+20] = saved ebx
+        ;; [esp+24] = return address
+
+        ;; Load the _table field (Entry[]) from the cache struct.
+        mov     edi, dword ptr [_g_pDispatchCache]
+        mov     edi, dword ptr [edi]
+
+        ;; Compute 32-bit hash from Key.GetHashCode():
+        ;; hash = RotateLeft(dispatchCell, 16) ^ objectType
+        ;; On 32-bit, IntPtr.GetHashCode() is identity.
+        mov     ecx, edx
+        rol     ecx, 10h
+        xor     ecx, eax
+
+        ;; HashToBucket: bucket = ((uint)hash * 0x9E3779B9) >> hashShift
+        imul    ebx, ecx, -1640531527
+        movzx   ecx, byte ptr [edi + 8]
+        shr     ebx, cl
+        xor     ecx, ecx
+
+      DispatchResolveProbeLoop:
+        ;; Compute entry address: table + 8 + (index + 1) * 16
+        lea     eax, [ebx + 1]
+        shl     eax, 4
+        lea     eax, [edi + eax + 8]
+
+        ;; Read version snapshot before key comparison (seqlock protocol).
+        mov     edx, dword ptr [eax]
+        test    edx, 1
+        jne     DispatchResolveProbeMiss
+
+        ;; Compare key (dispatchCell, objectType)
+        mov     esi, dword ptr [esp + 4]
+        cmp     esi, dword ptr [eax + 4]
+        jne     DispatchResolveProbeMiss
+        mov     esi, dword ptr [esp]
+        cmp     esi, dword ptr [eax + 8]
+        jne     DispatchResolveProbeMiss
+
+        ;; Read the cached code pointer, then re-verify the version has not changed.
+        mov     esi, dword ptr [eax + 0Ch]
+        cmp     edx, dword ptr [eax]
+        jne     DispatchResolveCacheMiss
+
+        ;; Return cached target.
+        mov     eax, esi
+        add     esp, 12                  ;; discard MethodTable, cell, this
+        pop     edi
+        pop     esi
+        pop     ebx
+        ret
+
+      DispatchResolveProbeMiss:
+        ;; If version is zero the rest of the bucket is unclaimed - stop probing.
+        test    edx, edx
+        je      DispatchResolveCacheMiss
+
+        ;; Quadratic reprobe: i++; index = (index + i) & tableMask
+        inc     ecx
+        add     ebx, ecx
+        mov     eax, dword ptr [edi + 4]
+        add     eax, -2
+        and     ebx, eax
+        cmp     ecx, 8
+        jl      DispatchResolveProbeLoop
+
+      DispatchResolveCacheMiss:
+        add     esp, 4                   ;; discard MethodTable
+        pop     edx                      ;; cell
+        pop     ecx                      ;; this
+        pop     edi
+        pop     esi
+        pop     ebx
+        jmp     RhpCidResolve_Worker
+
+RhpDispatchResolve ENDP
 
 end

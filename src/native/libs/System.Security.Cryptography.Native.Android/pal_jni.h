@@ -10,7 +10,6 @@
 
 #define FAIL 0
 #define SUCCESS 1
-#define UNSUPPORTED_API_LEVEL  2
 #define INSUFFICIENT_BUFFER -1
 
 extern JavaVM* gJvm;
@@ -495,6 +494,16 @@ extern jmethodID g_KeyAgreementGenerateSecret;
 // javax/net/ssl/TrustManager
 extern jclass g_TrustManager;
 
+// javax/net/ssl/TrustManagerFactory
+extern jclass    g_TrustManagerFactory;
+extern jmethodID g_TrustManagerFactoryGetInstance;
+extern jmethodID g_TrustManagerFactoryGetDefaultAlgorithm;
+extern jmethodID g_TrustManagerFactoryInit;
+extern jmethodID g_TrustManagerFactoryGetTrustManagers;
+
+// javax/net/ssl/X509TrustManager
+extern jclass g_X509TrustManager;
+
 // net/dot/android/crypto/DotnetProxyTrustManager
 extern jclass    g_DotnetProxyTrustManager;
 extern jmethodID g_DotnetProxyTrustManagerCtor;
@@ -602,8 +611,6 @@ JNIEnv* GetJNIEnv(void);
 // The function must be called from the embedder's `JNI_OnLoad` function prior to using any
 // APIs in this library.
 jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved);
-
-int GetEnumAsInt(JNIEnv *env, jobject enumObj) ARGS_NON_NULL_ALL;
 
 void* xmalloc (size_t size) __mallocfunc __BIONIC_ALLOC_SIZE(1) __wur;
 void* xcalloc (size_t nmemb, size_t size) __mallocfunc __BIONIC_ALLOC_SIZE(1,2) __wur;

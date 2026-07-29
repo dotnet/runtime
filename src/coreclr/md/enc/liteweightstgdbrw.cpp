@@ -186,6 +186,7 @@ CLiteWeightStgdbRW::InitFileForRead(
     if (SUCCEEDED(pStorage->OpenStream(MINIMAL_MD_STREAM, &cbData, &pvData)))
     {
         m_MiniMd.m_fMinimalDelta = TRUE;
+        m_MiniMd.m_fAll4ByteColumns = TRUE;
     }
 
     // Load the string pool.
