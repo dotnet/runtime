@@ -831,7 +831,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 .GetAllDiagnosticsAsync();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         // Keyword-named constructor parameters bound to locals.
         [InlineData("""
             class MyConfiguration(string @base, string @event)
@@ -877,7 +877,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         [InlineData("quoted\"key")]
         [InlineData(@"path\key")]
         [InlineData("line\nbreak")]
