@@ -249,8 +249,8 @@ namespace System.Numerics.Tests
         [Fact]
         public static void LeadingZeroCountTest()
         {
-            Assert.Equal((BigInteger)(nint.Size * 8), BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Zero));
-            Assert.Equal((BigInteger)(nint.Size * 8 - 1), BinaryIntegerHelper<BigInteger>.LeadingZeroCount(One));
+            Assert.Equal((BigInteger)32, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Zero));
+            Assert.Equal((BigInteger)31, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(One));
             Assert.Equal((BigInteger)1, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Int64MaxValue));
 
             Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Int64MinValue));
@@ -258,6 +258,47 @@ namespace System.Numerics.Tests
 
             Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(Int64MaxValuePlusOne));
             Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.LeadingZeroCount(UInt64MaxValue));
+
+            // Small values stored in _sign: LZC is based on 32-bit width.
+            Assert.Equal((BigInteger)32, BigInteger.LeadingZeroCount(new BigInteger(0)));
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(new BigInteger(1)));
+            Assert.Equal((BigInteger)30, BigInteger.LeadingZeroCount(new BigInteger(2)));
+            Assert.Equal((BigInteger)1, BigInteger.LeadingZeroCount(new BigInteger(int.MaxValue)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(new BigInteger(-1)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(new BigInteger(-2)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(new BigInteger(int.MinValue)));
+
+            // Large positive values: LZC is the leading zero count of the most significant 32-bit word.
+            // 2^31 (= int.MaxValue+1): MSW = 0x80000000, LZC = 0
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("080000000", NumberStyles.HexNumber)));
+            // uint.MaxValue (0xFFFFFFFF): MSW = 0xFFFFFFFF, LZC = 0
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("0FFFFFFFF", NumberStyles.HexNumber)));
+            // 2^32 (= uint.MaxValue+1): MSW = 0x00000001, LZC = 31
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Parse("0100000000", NumberStyles.HexNumber)));
+            // long.MaxValue (0x7FFFFFFFFFFFFFFF): MSW = 0x7FFFFFFF, LZC = 1
+            Assert.Equal((BigInteger)1, BigInteger.LeadingZeroCount(BigInteger.Parse("07FFFFFFFFFFFFFFF", NumberStyles.HexNumber)));
+            // 2^63 (= long.MaxValue+1): MSW = 0x80000000, LZC = 0
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("08000000000000000", NumberStyles.HexNumber)));
+            // ulong.MaxValue (0xFFFFFFFFFFFFFFFF): MSW = 0xFFFFFFFF, LZC = 0
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("0FFFFFFFFFFFFFFFF", NumberStyles.HexNumber)));
+            // 2^64 (= ulong.MaxValue+1): MSW = 0x00000001, LZC = 31
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Parse("010000000000000000", NumberStyles.HexNumber)));
+            // 2^127: MSW = 0x80000000, LZC = 0
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Parse("080000000000000000000000000000000", NumberStyles.HexNumber)));
+            // 2^128: MSW = 0x00000001, LZC = 31
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Parse("0100000000000000000000000000000000", NumberStyles.HexNumber)));
+
+            // Large negative values always return 0.
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(-BigInteger.Parse("080000000", NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(-BigInteger.Parse("0100000000", NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(-BigInteger.Parse("08000000000000000", NumberStyles.HexNumber)));
+
+            // Results must be the same on 32-bit and 64-bit platforms.
+            Assert.Equal((BigInteger)32, BigInteger.LeadingZeroCount(BigInteger.Zero));
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.One));
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Pow(2, 32)));
+            Assert.Equal((BigInteger)0, BigInteger.LeadingZeroCount(BigInteger.Pow(2, 63)));
+            Assert.Equal((BigInteger)31, BigInteger.LeadingZeroCount(BigInteger.Pow(2, 64)));
         }
 
         [Fact]
@@ -268,10 +309,66 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)63, BinaryIntegerHelper<BigInteger>.PopCount(Int64MaxValue));
 
             Assert.Equal((BigInteger)1, BinaryIntegerHelper<BigInteger>.PopCount(Int64MinValue));
-            Assert.Equal((BigInteger)(nint.Size * 8), BinaryIntegerHelper<BigInteger>.PopCount(NegativeOne));
+            Assert.Equal((BigInteger)32, BinaryIntegerHelper<BigInteger>.PopCount(NegativeOne));
 
             Assert.Equal((BigInteger)1, BinaryIntegerHelper<BigInteger>.PopCount(Int64MaxValuePlusOne));
             Assert.Equal((BigInteger)64, BinaryIntegerHelper<BigInteger>.PopCount(UInt64MaxValue));
+
+            // Small values stored in _sign: PopCount uses 32-bit width.
+            Assert.Equal((BigInteger)0, BigInteger.PopCount(new BigInteger(0)));
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(new BigInteger(1)));
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(new BigInteger(2)));
+            Assert.Equal((BigInteger)2, BigInteger.PopCount(new BigInteger(3)));
+            Assert.Equal((BigInteger)31, BigInteger.PopCount(new BigInteger(int.MaxValue)));
+            Assert.Equal((BigInteger)32, BigInteger.PopCount(new BigInteger(-1)));
+            Assert.Equal((BigInteger)31, BigInteger.PopCount(new BigInteger(-2)));
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(new BigInteger(int.MinValue)));
+
+            // Large positive values via _bits path.
+            // 2^31 (0x80000000): one bit set
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Parse("080000000", NumberStyles.HexNumber)));
+            // uint.MaxValue (0xFFFFFFFF): 32 bits set
+            Assert.Equal((BigInteger)32, BigInteger.PopCount(BigInteger.Parse("0FFFFFFFF", NumberStyles.HexNumber)));
+            // 2^32 (0x100000000): one bit set
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Parse("0100000000", NumberStyles.HexNumber)));
+            // long.MaxValue (0x7FFFFFFFFFFFFFFF): 63 bits set
+            Assert.Equal((BigInteger)63, BigInteger.PopCount(BigInteger.Parse("07FFFFFFFFFFFFFFF", NumberStyles.HexNumber)));
+            // ulong.MaxValue (0xFFFFFFFFFFFFFFFF): 64 bits set
+            Assert.Equal((BigInteger)64, BigInteger.PopCount(BigInteger.Parse("0FFFFFFFFFFFFFFFF", NumberStyles.HexNumber)));
+            // 2^64 (0x10000000000000000): one bit set
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Parse("010000000000000000", NumberStyles.HexNumber)));
+            // 2^128: one bit set
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Parse("0100000000000000000000000000000000", NumberStyles.HexNumber)));
+
+            // Large negative values via _bits path (two's complement).
+            // -(2^31): two's complement of 0x80000000 within 32 bits = 0x80000000 → PopCount = 1
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(-BigInteger.Parse("080000000", NumberStyles.HexNumber)));
+            // -(2^32): two's complement of [0x00000000, 0x00000001] = [0x00000000, 0xFFFFFFFF] → PopCount = 32
+            Assert.Equal((BigInteger)32, BigInteger.PopCount(-BigInteger.Parse("0100000000", NumberStyles.HexNumber)));
+            // -(2^64): one's complement of upper limbs = all 1s, lowest limb = 0 → PopCount depends on limb count
+            Assert.Equal((BigInteger)32, BigInteger.PopCount(-BigInteger.Parse("010000000000000000", NumberStyles.HexNumber)));
+
+            // Mixed-bit negative multiword cases: exercises the PopCount formula
+            // PopCount(2^W - m) = W - PopCount(m) - TZC(m) + 1 with non-trivial magnitudePopCount and magnitudeTZC.
+            // -(2^32 + 7): magnitude [0x00000007, 0x00000001], W=64, PopCount(m)=4, TZC(m)=0 → 64-4-0+1 = 61
+            Assert.Equal((BigInteger)61, BigInteger.PopCount(-(BigInteger.Pow(2, 32) + 7)));
+            // -(2^33 + 5): magnitude [0x00000005, 0x00000002], W=64, PopCount(m)=3, TZC(m)=0 → 64-3-0+1 = 62
+            Assert.Equal((BigInteger)62, BigInteger.PopCount(-(BigInteger.Pow(2, 33) + 5)));
+            // -(2^64 + 3): magnitude [0x00000003, 0x00000000, 0x00000001], W=96, PopCount(m)=3, TZC(m)=0 → 96-3-0+1 = 94
+            Assert.Equal((BigInteger)94, BigInteger.PopCount(-(BigInteger.Pow(2, 64) + 3)));
+            // -(2^64 + 4): magnitude with non-trivial TZC, W=96, PopCount(m)=2, TZC(m)=2 → 96-2-2+1 = 93
+            Assert.Equal((BigInteger)93, BigInteger.PopCount(-(BigInteger.Pow(2, 64) + 4)));
+            // -(2^65 + 12): magnitude with mixed bits and TZC=2, W=96, PopCount(m)=3, TZC(m)=2 → 96-3-2+1 = 92
+            Assert.Equal((BigInteger)92, BigInteger.PopCount(-(BigInteger.Pow(2, 65) + 12)));
+
+            // Results must be the same on 32-bit and 64-bit platforms.
+            Assert.Equal((BigInteger)0, BigInteger.PopCount(BigInteger.Zero));
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.One));
+            Assert.Equal((BigInteger)32, BigInteger.PopCount(new BigInteger(-1)));
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Pow(2, 32)));
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Pow(2, 63)));
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Pow(2, 64)));
+            Assert.Equal((BigInteger)1, BigInteger.PopCount(BigInteger.Pow(2, 1000)));
         }
 
         [Fact]
@@ -282,8 +379,8 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateLeft(Zero, 33));
 
             Assert.Equal((BigInteger)0x00000002, BinaryIntegerHelper<BigInteger>.RotateLeft(One, 1));
-            Assert.Equal(BigInteger.One << (32 % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateLeft(One, 32));
-            Assert.Equal(BigInteger.One << (33 % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateLeft(One, 33));
+            Assert.Equal((BigInteger)0x00000001, BinaryIntegerHelper<BigInteger>.RotateLeft(One, 32));
+            Assert.Equal((BigInteger)0x00000002, BinaryIntegerHelper<BigInteger>.RotateLeft(One, 33));
 
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFE, BinaryIntegerHelper<BigInteger>.RotateLeft(Int64MaxValue, 1));
             Assert.Equal((BigInteger)0xFFFFFFFF7FFFFFFF, BinaryIntegerHelper<BigInteger>.RotateLeft(Int64MaxValue, 32));
@@ -309,8 +406,8 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateLeft(Zero, -32));
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateLeft(Zero, -33));
 
-            Assert.Equal(BigInteger.One << (nint.Size * 8 - 1), BinaryIntegerHelper<BigInteger>.RotateLeft(One, -1));
-            Assert.Equal(BigInteger.One << ((nint.Size * 8 - 32) % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateLeft(One, -32));
+            Assert.Equal((BigInteger)0x80000000, BinaryIntegerHelper<BigInteger>.RotateLeft(One, -1));
+            Assert.Equal((BigInteger)0x00000001, BinaryIntegerHelper<BigInteger>.RotateLeft(One, -32));
             Assert.Equal((BigInteger)0x80000000, BinaryIntegerHelper<BigInteger>.RotateLeft(One, -33));
 
             Assert.Equal((BigInteger)0xBFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateLeft(Int64MaxValue, -1));
@@ -332,6 +429,20 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateLeft(UInt64MaxValue, -1));
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateLeft(UInt64MaxValue, -32));
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateLeft(UInt64MaxValue, -33));
+
+            // Small values in _sign path: 32-bit rotation semantics.
+            Assert.Equal((BigInteger)0x00000004, BigInteger.RotateLeft(new BigInteger(2), 1));
+            Assert.Equal((BigInteger)0x00000002, BigInteger.RotateLeft(new BigInteger(2), 32));
+            Assert.Equal((BigInteger)0x00000001, BigInteger.RotateLeft(new BigInteger(2), 31));
+            Assert.Equal((BigInteger)0x80000000, BigInteger.RotateLeft(new BigInteger(1), 31));
+            Assert.Equal(unchecked((BigInteger)(int)0xFFFFFFFD), BigInteger.RotateLeft(new BigInteger(-2), 1));
+            Assert.Equal(unchecked((BigInteger)(int)0xFFFFFFFE), BigInteger.RotateLeft(new BigInteger(-2), 32));
+
+            // Platform-independence: results must be the same on 32-bit and 64-bit.
+            Assert.Equal((BigInteger)0x00000001, BigInteger.RotateLeft(BigInteger.One, 32));
+            Assert.Equal((BigInteger)0x80000000, BigInteger.RotateLeft(BigInteger.One, -1));
+            Assert.Equal(BigInteger.MinusOne, BigInteger.RotateLeft(BigInteger.MinusOne, 1));
+            Assert.Equal(BigInteger.MinusOne, BigInteger.RotateLeft(BigInteger.MinusOne, 32));
         }
 
         [Fact]
@@ -341,8 +452,8 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateRight(Zero, 32));
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateRight(Zero, 33));
 
-            Assert.Equal(BigInteger.One << (nint.Size * 8 - 1), BinaryIntegerHelper<BigInteger>.RotateRight(One, 1));
-            Assert.Equal(BigInteger.One << ((nint.Size * 8 - 32) % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateRight(One, 32));
+            Assert.Equal((BigInteger)0x80000000, BinaryIntegerHelper<BigInteger>.RotateRight(One, 1));
+            Assert.Equal((BigInteger)0x00000001, BinaryIntegerHelper<BigInteger>.RotateRight(One, 32));
             Assert.Equal((BigInteger)0x80000000, BinaryIntegerHelper<BigInteger>.RotateRight(One, 33));
 
             Assert.Equal((BigInteger)0xBFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateRight(Int64MaxValue, 1));
@@ -370,8 +481,8 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0x00000000, BinaryIntegerHelper<BigInteger>.RotateRight(Zero, -33));
 
             Assert.Equal((BigInteger)0x00000002, BinaryIntegerHelper<BigInteger>.RotateRight(One, -1));
-            Assert.Equal(BigInteger.One << (32 % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateRight(One, -32));
-            Assert.Equal(BigInteger.One << (33 % (nint.Size * 8)), BinaryIntegerHelper<BigInteger>.RotateRight(One, -33));
+            Assert.Equal((BigInteger)0x00000001, BinaryIntegerHelper<BigInteger>.RotateRight(One, -32));
+            Assert.Equal((BigInteger)0x00000002, BinaryIntegerHelper<BigInteger>.RotateRight(One, -33));
 
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFE, BinaryIntegerHelper<BigInteger>.RotateRight(Int64MaxValue, -1));
             Assert.Equal((BigInteger)0xFFFFFFFF7FFFFFFF, BinaryIntegerHelper<BigInteger>.RotateRight(Int64MaxValue, -32));
@@ -392,12 +503,26 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateRight(UInt64MaxValue, -1));
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateRight(UInt64MaxValue, -32));
             Assert.Equal((BigInteger)0xFFFFFFFFFFFFFFFF, BinaryIntegerHelper<BigInteger>.RotateRight(UInt64MaxValue, -33));
+
+            // Small values in _sign path: 32-bit rotation semantics.
+            Assert.Equal((BigInteger)0x00000001, BigInteger.RotateRight(new BigInteger(2), 1));
+            Assert.Equal((BigInteger)0x00000002, BigInteger.RotateRight(new BigInteger(2), 32));
+            Assert.Equal((BigInteger)0x00000004, BigInteger.RotateRight(new BigInteger(2), 31));
+            Assert.Equal((BigInteger)0x00000002, BigInteger.RotateRight(new BigInteger(1), 31));
+            Assert.Equal(new BigInteger(int.MaxValue), BigInteger.RotateRight(new BigInteger(-2), 1));
+            Assert.Equal(unchecked((BigInteger)(int)0xFFFFFFFE), BigInteger.RotateRight(new BigInteger(-2), 32));
+
+            // Platform-independence: results must be the same on 32-bit and 64-bit.
+            Assert.Equal((BigInteger)0x00000001, BigInteger.RotateRight(BigInteger.One, 32));
+            Assert.Equal((BigInteger)0x80000000, BigInteger.RotateRight(BigInteger.One, 1));
+            Assert.Equal(BigInteger.MinusOne, BigInteger.RotateRight(BigInteger.MinusOne, 1));
+            Assert.Equal(BigInteger.MinusOne, BigInteger.RotateRight(BigInteger.MinusOne, 32));
         }
 
         [Fact]
         public static void TrailingZeroCountTest()
         {
-            Assert.Equal((BigInteger)(nint.Size * 8), BinaryIntegerHelper<BigInteger>.TrailingZeroCount(Zero));
+            Assert.Equal((BigInteger)32, BinaryIntegerHelper<BigInteger>.TrailingZeroCount(Zero));
             Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.TrailingZeroCount(One));
             Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.TrailingZeroCount(Int64MaxValue));
 
@@ -409,6 +534,44 @@ namespace System.Numerics.Tests
 
             Assert.Equal((BigInteger)1000, BinaryIntegerHelper<BigInteger>.TrailingZeroCount(BigInteger.Pow(2, 1000)));
             Assert.Equal((BigInteger)1000, BinaryIntegerHelper<BigInteger>.TrailingZeroCount(-BigInteger.Pow(2, 1000)));
+
+            // Small values stored in _sign: TrailingZeroCount uses 32-bit width.
+            Assert.Equal((BigInteger)32, BigInteger.TrailingZeroCount(new BigInteger(0)));
+            Assert.Equal((BigInteger)0, BigInteger.TrailingZeroCount(new BigInteger(1)));
+            Assert.Equal((BigInteger)1, BigInteger.TrailingZeroCount(new BigInteger(2)));
+            Assert.Equal((BigInteger)0, BigInteger.TrailingZeroCount(new BigInteger(3)));
+            Assert.Equal((BigInteger)0, BigInteger.TrailingZeroCount(new BigInteger(int.MaxValue)));
+            Assert.Equal((BigInteger)0, BigInteger.TrailingZeroCount(new BigInteger(-1)));
+            Assert.Equal((BigInteger)1, BigInteger.TrailingZeroCount(new BigInteger(-2)));
+            Assert.Equal((BigInteger)31, BigInteger.TrailingZeroCount(new BigInteger(int.MinValue)));
+
+            // Large positive values via _bits path.
+            // 2^31 (0x80000000): 31 trailing zeros
+            Assert.Equal((BigInteger)31, BigInteger.TrailingZeroCount(BigInteger.Parse("080000000", NumberStyles.HexNumber)));
+            // uint.MaxValue (0xFFFFFFFF): 0 trailing zeros
+            Assert.Equal((BigInteger)0, BigInteger.TrailingZeroCount(BigInteger.Parse("0FFFFFFFF", NumberStyles.HexNumber)));
+            // 2^32 (0x100000000): 32 trailing zeros
+            Assert.Equal((BigInteger)32, BigInteger.TrailingZeroCount(BigInteger.Parse("0100000000", NumberStyles.HexNumber)));
+            // 2^63 (0x8000000000000000): 63 trailing zeros
+            Assert.Equal((BigInteger)63, BigInteger.TrailingZeroCount(BigInteger.Parse("08000000000000000", NumberStyles.HexNumber)));
+            // 2^64 (0x10000000000000000): 64 trailing zeros
+            Assert.Equal((BigInteger)64, BigInteger.TrailingZeroCount(BigInteger.Parse("010000000000000000", NumberStyles.HexNumber)));
+            // 2^128: 128 trailing zeros
+            Assert.Equal((BigInteger)128, BigInteger.TrailingZeroCount(BigInteger.Parse("0100000000000000000000000000000000", NumberStyles.HexNumber)));
+
+            // Large negative values via _bits path (two's complement shares trailing zeros with magnitude).
+            Assert.Equal((BigInteger)31, BigInteger.TrailingZeroCount(-BigInteger.Parse("080000000", NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)32, BigInteger.TrailingZeroCount(-BigInteger.Parse("0100000000", NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)63, BigInteger.TrailingZeroCount(-BigInteger.Parse("08000000000000000", NumberStyles.HexNumber)));
+            Assert.Equal((BigInteger)64, BigInteger.TrailingZeroCount(-BigInteger.Parse("010000000000000000", NumberStyles.HexNumber)));
+
+            // Results must be the same on 32-bit and 64-bit platforms.
+            Assert.Equal((BigInteger)32, BigInteger.TrailingZeroCount(BigInteger.Zero));
+            Assert.Equal((BigInteger)0, BigInteger.TrailingZeroCount(BigInteger.One));
+            Assert.Equal((BigInteger)32, BigInteger.TrailingZeroCount(BigInteger.Pow(2, 32)));
+            Assert.Equal((BigInteger)63, BigInteger.TrailingZeroCount(BigInteger.Pow(2, 63)));
+            Assert.Equal((BigInteger)64, BigInteger.TrailingZeroCount(BigInteger.Pow(2, 64)));
+            Assert.Equal((BigInteger)1000, BigInteger.TrailingZeroCount(BigInteger.Pow(2, 1000)));
         }
 
         [Fact]

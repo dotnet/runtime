@@ -1451,7 +1451,18 @@ GenTree* ScalarEvolutionContext::Materialize(Scev* scev)
 {
     ValueNumPair vnp;
     GenTree*     result;
-    return Materialize(scev, true, &result, &vnp) ? result : nullptr;
+
+    // Materializing IR may create nodes before failing partway through (e.g.
+    // when a subexpression cannot be materialized). Snapshot the gen tree ID so
+    // that we can roll it back and avoid leaking IDs for the orphaned nodes.
+    INDEBUG(unsigned prevGenTreeID = m_compiler->compGenTreeID);
+    if (Materialize(scev, true, &result, &vnp))
+    {
+        return result;
+    }
+
+    INDEBUG(m_compiler->compGenTreeID = prevGenTreeID);
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -1469,6 +1480,7 @@ ValueNumPair ScalarEvolutionContext::MaterializeVN(Scev* scev)
     return Materialize(scev, false, nullptr, &vnp) ? vnp : ValueNumPair();
 }
 
+#ifdef DEBUG
 //------------------------------------------------------------------------
 // RelopEvaluationResultString: Convert a RelopEvaluationResult to a string.
 //
@@ -1492,6 +1504,7 @@ static const char* RelopEvaluationResultString(RelopEvaluationResult result)
             return "n/a";
     }
 }
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // EvaluateRelop:
@@ -1638,12 +1651,12 @@ bool ScalarEvolutionContext::MayOverflowBeforeExit(ScevAddRec* lhs, Scev* rhs, V
     }
 
     // A step count of 1/-1 will always exit for "or equal" checks.
-    if ((stepCns == 1) && ((exitOp == VNFunc(GT_GE)) || (exitOp == VNF_GE_UN)))
+    if ((stepCns == 1) && ((exitOp == VNF_GE) || (exitOp == VNF_GE_UN)))
     {
         return false;
     }
 
-    if ((stepCns == -1) && ((exitOp == VNFunc(GT_LE)) || (exitOp == VNF_LE_UN)))
+    if ((stepCns == -1) && ((exitOp == VNF_LE) || (exitOp == VNF_LE_UN)))
     {
         return false;
     }

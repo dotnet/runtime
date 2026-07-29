@@ -72,6 +72,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(bool?))]
         [JsonSerializable(typeof(int?))]
         [JsonSerializable(typeof(double?))]
+        [JsonSerializable(typeof(float?))]
+#if NET
+        [JsonSerializable(typeof(Half?))]
+#endif
         [JsonSerializable(typeof(Guid?))]
         [JsonSerializable(typeof(JsonElement?))]
         [JsonSerializable(typeof(IntEnum?))]
@@ -87,6 +91,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(PocoWithCustomNaming))]
         [JsonSerializable(typeof(PocoWithCustomNumberHandling))]
         [JsonSerializable(typeof(PocoWithCustomNumberHandlingOnProperties))]
+        [JsonSerializable(typeof(PocoWithNullableFloatingPoint))]
         [JsonSerializable(typeof(PocoWithRecursiveMembers))]
         [JsonSerializable(typeof(PocoWithRecursiveCollectionElement))]
         [JsonSerializable(typeof(PocoWithRecursiveDictionaryValue))]
@@ -110,8 +115,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(PocoCombiningPolymorphicTypeAndDerivedTypes))]
         [JsonSerializable(typeof(ClassWithComponentModelAttributes))]
         [JsonSerializable(typeof(ClassWithJsonPointerEscapablePropertyNames))]
+        [JsonSerializable(typeof(ClassWithPropertyNameRequiringFragmentEncoding))]
         [JsonSerializable(typeof(ClassWithOptionalObjectParameter))]
         [JsonSerializable(typeof(ClassWithPropertiesUsingCustomConverters))]
+#pragma warning disable CS0612 // Type or member is obsolete
+        [JsonSerializable(typeof(MyObsoleteType))]
+#pragma warning restore CS0612 // Type or member is obsolete
         // Collection types
         [JsonSerializable(typeof(int[]))]
         [JsonSerializable(typeof(List<bool>))]

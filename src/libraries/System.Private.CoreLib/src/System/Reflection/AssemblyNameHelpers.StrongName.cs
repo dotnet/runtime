@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
@@ -8,7 +8,7 @@ namespace System.Reflection
 {
     internal static partial class AssemblyNameHelpers
     {
-        public static byte[]? ComputePublicKeyToken(byte[]? publicKey)
+        public static unsafe byte[]? ComputePublicKeyToken(byte[]? publicKey)
         {
             if (publicKey == null)
                 return null;

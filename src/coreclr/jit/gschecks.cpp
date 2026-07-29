@@ -498,8 +498,6 @@ bool Compiler::gsCreateShadowingLocals()
         shadowVarDsc->SetAddressExposed(varDsc->IsAddressExposed() DEBUGARG(varDsc->GetAddrExposedReason()));
         shadowVarDsc->lvDoNotEnregister       = varDsc->lvDoNotEnregister;
         shadowVarDsc->lvSingleDefRegCandidate = varDsc->lvSingleDefRegCandidate;
-        // The old variable will not be used in handlers anymore, allow it to stay enregistered
-        varDsc->lvLiveInOutOfHndlr = false;
 #ifdef DEBUG
         shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
         shadowVarDsc->SetDefinedViaAddress(varDsc->IsDefinedViaAddress());
@@ -604,7 +602,7 @@ void Compiler::gsCopyIntoShadow(unsigned lclNum, unsigned shadowLclNum)
                 shadowLclNum);
         CORINFO_METHOD_HANDLE copyHelper =
             info.compCompHnd->getSpecialCopyHelper(varDsc->GetLayout()->GetClassHandle());
-        GenTreeCall* call = gtNewCallNode(CT_USER_FUNC, copyHelper, TYP_VOID);
+        GenTreeCall* call = gtNewUserCallNode(copyHelper, TYP_VOID);
 
         GenTree* src = gtNewLclVarAddrNode(lclNum);
         GenTree* dst = gtNewLclVarAddrNode(shadowLclNum);

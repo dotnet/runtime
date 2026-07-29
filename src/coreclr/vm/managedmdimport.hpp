@@ -27,33 +27,33 @@ typedef struct
 class MetaDataImport
 {
 public:
-    static FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectModuleBaseObject* pModuleUNSAFE);
-    static FCDECL2(HRESULT, GetScopeProps, IMDInternalImport* pScope, GUID* pmvid);
-    static FCDECL3(HRESULT, GetMemberRefProps, IMDInternalImport* pScope, mdMemberRef mr, ConstArray* ppvSigBlob);
+    FCDECL1(static IMDInternalImport*, GetMetadataImport, ReflectModuleBaseObject* pModuleUNSAFE);
+    FCDECL2(static HRESULT, GetScopeProps, IMDInternalImport* pScope, GUID* pmvid);
+    FCDECL3(static HRESULT, GetMemberRefProps, IMDInternalImport* pScope, mdMemberRef mr, ConstArray* ppvSigBlob);
 
-    static FCDECL4(HRESULT, GetCustomAttributeProps, IMDInternalImport* pScope, mdCustomAttribute cv, mdToken* ptkType, ConstArray* ppBlob);
+    FCDECL4(static HRESULT, GetCustomAttributeProps, IMDInternalImport* pScope, mdCustomAttribute cv, mdToken* ptkType, ConstArray* ppBlob);
 
-    static FCDECL6(HRESULT, GetDefaultValue, IMDInternalImport* pScope, mdToken tk, INT64* pDefaultValue, LPCWSTR* pStringValue, INT32* pLength, INT32* pCorElementType);
-    static FCDECL3(HRESULT, GetName, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName);
-    static FCDECL4(HRESULT, GetUserString, IMDInternalImport* pScope, mdToken tk, LPCWSTR* pszName, ULONG* pCount);
-    static FCDECL3(HRESULT, GetNamespace, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName);
-    static FCDECL3(HRESULT, GetParentToken, IMDInternalImport* pScope, mdToken tk, mdToken* ptk);
-    static FCDECL4(HRESULT, GetParamDefProps, IMDInternalImport* pScope, mdToken tk, INT32* pSequence, INT32* pAttributes);
-    static FCDECL5(HRESULT, GetPInvokeMap, IMDInternalImport* pScope, mdToken tk, DWORD* pMappingFlags, LPCSTR* pszImportName, LPCSTR* pszImportDll);
+    FCDECL6(static HRESULT, GetDefaultValue, IMDInternalImport* pScope, mdToken tk, INT64* pDefaultValue, LPCWSTR* pStringValue, INT32* pLength, INT32* pCorElementType);
+    FCDECL3(static HRESULT, GetName, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName);
+    FCDECL4(static HRESULT, GetUserString, IMDInternalImport* pScope, mdToken tk, LPCWSTR* pszName, ULONG* pCount);
+    FCDECL3(static HRESULT, GetNamespace, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName);
+    FCDECL3(static HRESULT, GetParentToken, IMDInternalImport* pScope, mdToken tk, mdToken* ptk);
+    FCDECL4(static HRESULT, GetParamDefProps, IMDInternalImport* pScope, mdToken tk, INT32* pSequence, INT32* pAttributes);
+    FCDECL5(static HRESULT, GetPInvokeMap, IMDInternalImport* pScope, mdToken tk, DWORD* pMappingFlags, LPCSTR* pszImportName, LPCSTR* pszImportDll);
 
-    static FCDECL4(HRESULT, GetClassLayout, IMDInternalImport* pScope, mdTypeDef td, DWORD* pdwPackSize, ULONG* pulClassSize);
-    static FCDECL5(HRESULT, GetFieldOffset, IMDInternalImport* pScope, mdTypeDef td, mdFieldDef target, DWORD* pdwFieldOffsetGetFieldOffset, CLR_BOOL* found);
+    FCDECL4(static HRESULT, GetClassLayout, IMDInternalImport* pScope, mdTypeDef td, DWORD* pdwPackSize, ULONG* pulClassSize);
+    FCDECL5(static HRESULT, GetFieldOffset, IMDInternalImport* pScope, mdTypeDef td, mdFieldDef target, DWORD* pdwFieldOffsetGetFieldOffset, CLR_BOOL* found);
 
-    static FCDECL4(HRESULT, GetEventProps, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName, INT32 *pdwEventFlags);
-    static FCDECL3(HRESULT, GetGenericParamProps, IMDInternalImport* pScope, mdToken tk, DWORD* pAttributes);
-    static FCDECL3(HRESULT, GetFieldDefProps, IMDInternalImport* pScope, mdToken tk, INT32 *pdwFieldFlags);
-    static FCDECL5(HRESULT, GetPropertyProps, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName, INT32 *pdwPropertyFlags, ConstArray* ppvSigBlob);
+    FCDECL4(static HRESULT, GetEventProps, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName, INT32 *pdwEventFlags);
+    FCDECL3(static HRESULT, GetGenericParamProps, IMDInternalImport* pScope, mdToken tk, DWORD* pAttributes);
+    FCDECL3(static HRESULT, GetFieldDefProps, IMDInternalImport* pScope, mdToken tk, INT32 *pdwFieldFlags);
+    FCDECL5(static HRESULT, GetPropertyProps, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName, INT32 *pdwPropertyFlags, ConstArray* ppvSigBlob);
 
-    static FCDECL3(HRESULT, GetSignatureFromToken, IMDInternalImport* pScope, mdToken tk, ConstArray* pSig);
-    static FCDECL3(HRESULT, GetSigOfFieldDef, IMDInternalImport* pScope, mdToken tk, ConstArray* pMarshalInfo);
-    static FCDECL3(HRESULT, GetSigOfMethodDef, IMDInternalImport* pScope, mdToken tk, ConstArray* pMarshalInfo);
-    static FCDECL3(HRESULT, GetFieldMarshal, IMDInternalImport* pScope, mdToken tk, ConstArray* pMarshalInfo);
-    static FCDECL2(FC_BOOL_RET, IsValidToken, IMDInternalImport* pScope, mdToken tk);
+    FCDECL3(static HRESULT, GetSignatureFromToken, IMDInternalImport* pScope, mdToken tk, ConstArray* pSig);
+    FCDECL3(static HRESULT, GetSigOfFieldDef, IMDInternalImport* pScope, mdToken tk, ConstArray* pMarshalInfo);
+    FCDECL3(static HRESULT, GetSigOfMethodDef, IMDInternalImport* pScope, mdToken tk, ConstArray* pMarshalInfo);
+    FCDECL3(static HRESULT, GetFieldMarshal, IMDInternalImport* pScope, mdToken tk, ConstArray* pMarshalInfo);
+    FCDECL2(static FC_BOOL_RET, IsValidToken, IMDInternalImport* pScope, mdToken tk);
 };
 
 extern "C" BOOL QCALLTYPE MetadataImport_GetMarshalAs(

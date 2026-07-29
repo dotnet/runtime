@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
     // including parameter validation and async behavior.
     internal static class HMACStatic<THMAC> where THMAC : IHMACStatic
     {
-        internal static bool Verify(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> hash)
+        internal static unsafe bool Verify(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> hash)
         {
             if (hash.Length != THMAC.HashSizeInBytes)
                 throw new ArgumentException(SR.Format(SR.Argument_HashImprecise, THMAC.HashSizeInBytes), nameof(hash));
@@ -167,7 +167,7 @@ namespace System.Security.Cryptography
             return Verify(new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(source), new ReadOnlySpan<byte>(hash));
         }
 
-        internal static bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash)
+        internal static unsafe bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash)
         {
             ArgumentNullException.ThrowIfNull(source);
 

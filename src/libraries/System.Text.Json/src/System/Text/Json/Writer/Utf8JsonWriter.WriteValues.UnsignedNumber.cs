@@ -109,7 +109,7 @@ namespace System.Text.Json
             BytesPending += bytesWritten;
         }
 
-        internal void WriteNumberValueAsString(ulong value)
+        internal unsafe void WriteNumberValueAsString(ulong value)
         {
             Span<byte> utf8Number = stackalloc byte[JsonConstants.MaximumFormatUInt64Length];
             bool result = Utf8Formatter.TryFormat(value, utf8Number, out int bytesWritten);

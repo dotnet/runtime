@@ -11,7 +11,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
     public class ServiceProviderCompilationTest
     {
-        [Theory]
+        // Runs the compilation on a dedicated thread with a small stack size, which requires multithreading support.
+        // On single-threaded wasm (browser CoreCLR interpreter) Thread.Start throws PlatformNotSupportedException.
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(ServiceProviderMode.Default, typeof(I999))]
         [InlineData(ServiceProviderMode.Dynamic, typeof(I999))]
         [InlineData(ServiceProviderMode.Runtime, typeof(I999))]

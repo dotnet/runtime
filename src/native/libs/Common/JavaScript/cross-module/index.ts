@@ -136,9 +136,10 @@ export function dotnetUpdateInternalsSubscriber() {
             addOnExitListener: table[14],
             abortStartup: table[15],
             quitNow: table[16],
-            normalizeException: table[17],
-            fetchSatelliteAssemblies: table[18],
-            fetchLazyAssembly: table[19],
+            exit: table[17],
+            normalizeException: table[18],
+            fetchSatelliteAssemblies: table[19],
+            fetchLazyAssembly: table[20],
         };
         Object.assign(dotnetLoaderExports, loaderExportsLocal);
         Object.assign(logger, loggerLocal);
@@ -178,6 +179,7 @@ export function dotnetUpdateInternalsSubscriber() {
             getWasmMemory: table[0],
             getWasmTable: table[1],
             SystemJS_ScheduleDiagnosticServer: table[2],
+            SystemJS_GetMethodName: table[3],
         };
         Object.assign(interop, interopLocal);
     }
@@ -192,6 +194,7 @@ export function dotnetUpdateInternalsSubscriber() {
             ds_rt_websocket_poll: table[4],
             ds_rt_websocket_recv: table[5],
             ds_rt_websocket_close: table[6],
+            ds_rt_browser_performance_measure: table[7],
         };
         Object.assign(interop, interopLocal);
     }
@@ -206,7 +209,7 @@ export function dotnetUpdateInternalsSubscriber() {
             stringToUTF8: table[4],
             utf8ToStringRelaxed: table[5],
             zeroRegion: table[6],
-            isSharedArrayBuffer: table[7],
+            arrayBufferNeedsCopy: table[7],
             viewOrCopy: table[8],
             abortBackgroundTimers: table[9],
             abortPosix: table[10],

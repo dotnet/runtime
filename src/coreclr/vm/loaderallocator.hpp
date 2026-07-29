@@ -182,6 +182,13 @@ private:
     SArray<TADDR> _starts;
     void* _id;
     bool _collectible;
+    friend struct ::cdac_data<CodeRangeMapRangeList>;
+};
+
+template<>
+struct cdac_data<CodeRangeMapRangeList>
+{
+    static constexpr size_t RangeListType = offsetof(CodeRangeMapRangeList, _rangeListType);
 };
 
 // Iterator over Assemblies in the same ALC
@@ -452,16 +459,18 @@ private:
 
     struct FailedTypeInitCleanupListItem
     {
-        SLink m_Link;
+        // Next pointer for SList linkage.
+        DPTR(FailedTypeInitCleanupListItem) m_pNext;
         ListLockEntry *m_pListLockEntry;
         explicit FailedTypeInitCleanupListItem(ListLockEntry *pListLockEntry)
                 :
+            m_pNext(PTR_NULL),
             m_pListLockEntry(pListLockEntry)
         {
         }
     };
 
-    SList<FailedTypeInitCleanupListItem> m_failedTypeInitCleanupList;
+    SListTail<FailedTypeInitCleanupListItem> m_failedTypeInitCleanupList;
 
     SegmentedHandleIndexStack m_freeHandleIndexesStack;
 #ifdef FEATURE_COMINTEROP
@@ -491,6 +500,15 @@ private:
 #endif
 
     PTR_AsyncContinuationsManager m_asyncContinuationsManager;
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Methods whose PortableEntryPoint was initialized without an R2R-to-interpreter thunk
+    // because the thunk wasn't yet loaded. When a new R2R module injects string thunks,
+    // these methods are re-checked and resolved if a thunk is now available.
+    // Protected by s_pendingThunkResolutionLock (not m_crstLoaderAllocator).
+    SArray<MethodDesc*> m_pendingPortableEntryPointThunks;
+    bool m_registeredForPendingThunkResolution;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #ifndef DACCESS_COMPILE
 
@@ -904,6 +922,12 @@ public:
 
     PTR_AsyncContinuationsManager GetAsyncContinuationsManager();
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Add a MethodDesc to the pending list of methods waiting for an R2R-to-interpreter thunk.
+    // Takes s_pendingThunkResolutionLock internally.
+    void AddPendingPortableEntryPointThunk(MethodDesc* pMD);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
 #ifndef DACCESS_COMPILE
 public:
     virtual void RegisterDependentHandleToNativeObjectForCleanup(LADependentHandleToNativeObject *dependentHandle) {};
@@ -912,6 +936,11 @@ public:
 #endif
 
     friend struct ::cdac_data<LoaderAllocator>;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    friend void AddPendingPortableEntryPointThunkUnderLock(LoaderAllocator*, MethodDesc*);
+    friend void UnregisterLoaderAllocatorForPendingThunkResolution(LoaderAllocator*);
+    friend void ResolvePendingPortableEntryPointThunksGlobal();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 };  // class LoaderAllocator
 
 template<>
@@ -934,6 +963,8 @@ struct cdac_data<LoaderAllocator>
 #endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
     static constexpr size_t VirtualCallStubManager = offsetof(LoaderAllocator, m_pVirtualCallStubManager);
     static constexpr size_t ObjectHandle = offsetof(LoaderAllocator, m_hLoaderAllocatorObjectHandle);
+    static constexpr size_t IsCollectible = offsetof(LoaderAllocator, m_IsCollectible);
+    static constexpr size_t CreationNumber = offsetof(LoaderAllocator, m_nLoaderAllocator);
 };
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
@@ -1013,16 +1044,18 @@ public:
 private:
     struct HandleCleanupListItem
     {
-        SLink m_Link;
+        // Next pointer for SList linkage.
+        DPTR(HandleCleanupListItem) m_pNext;
         OBJECTHANDLE m_handle;
         explicit HandleCleanupListItem(OBJECTHANDLE handle)
                 :
+            m_pNext(PTR_NULL),
             m_handle(handle)
         {
         }
     };
 
-    SList<HandleCleanupListItem> m_handleCleanupList;
+    SListTail<HandleCleanupListItem> m_handleCleanupList;
 #if !defined(DACCESS_COMPILE)
     CustomAssemblyBinder* m_binderToRelease;
 #endif

@@ -11,6 +11,7 @@
 **==========================================================================*/
 
 #include <palsuite.h>
+#include <minipal/utf8.h>
 
 PALTEST(locale_info_MultiByteToWideChar_test4_paltest_multibytetowidechar_test4, "locale_info/MultiByteToWideChar/test4/paltest_multibytetowidechar_test4")
 {    
@@ -222,6 +223,58 @@ PALTEST(locale_info_MultiByteToWideChar_test4_paltest_multibytetowidechar_test4,
         
         free(wideBuffer);
     }
+
+    {
+        // U+6F22 — code unit > U+00FF catches long-code-path bugs that move
+        // only the low byte instead of performing a full 16-bit byte swap.
+        const char utf8[] = "\xE6\xBC\xA2";
+        WCHAR wide[1] = { 0 };
+        size_t n = minipal_convert_utf8_to_utf16(utf8, sizeof(utf8) - 1, (CHAR16_T*)wide, 1, 0);
+        if (n != 1 || wide[0] != 0x6F22)
+            Fail("utf8->utf16 produced 0x%04x (n=%zu)\n", wide[0], n);
+
+#if BIGENDIAN
+        wide[0] = 0;
+        n = minipal_convert_utf8_to_utf16(utf8, sizeof(utf8) - 1, (CHAR16_T*)wide, 1, MINIPAL_TREAT_AS_LITTLE_ENDIAN);
+        if (n != 1 || wide[0] != 0x226F)
+            Fail("treat-as-LE utf8->utf16 produced 0x%04x (n=%zu)\n", wide[0], n);
+#endif
+    }
+
+#if BIGENDIAN
+    {
+        const char* ascii = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456";
+        const size_t asciiLengthWithTerminator = strlen(ascii) + 1;
+        const unsigned int flags = MINIPAL_TREAT_AS_LITTLE_ENDIAN;
+
+        size_t requiredLength = minipal_get_length_utf8_to_utf16(ascii, asciiLengthWithTerminator, flags);
+        if (requiredLength != asciiLengthWithTerminator)
+        {
+            Fail("minipal_get_length_utf8_to_utf16 with MINIPAL_TREAT_AS_LITTLE_ENDIAN returned %zu, expected %zu\n",
+                requiredLength, asciiLengthWithTerminator);
+        }
+
+        WCHAR wideBuffer[64];
+        size_t convertedLength = minipal_convert_utf8_to_utf16(ascii, asciiLengthWithTerminator,
+            (CHAR16_T*)wideBuffer, sizeof(wideBuffer) / sizeof(wideBuffer[0]), flags);
+
+        if (convertedLength != asciiLengthWithTerminator)
+        {
+            Fail("minipal_convert_utf8_to_utf16 with MINIPAL_TREAT_AS_LITTLE_ENDIAN returned %zu, expected %zu\n",
+                convertedLength, asciiLengthWithTerminator);
+        }
+
+        for (size_t i = 0; i < asciiLengthWithTerminator; i++)
+        {
+            WCHAR expected = (WCHAR)(((unsigned char)ascii[i]) << 8);
+            if (wideBuffer[i] != expected)
+            {
+                Fail("minipal_convert_utf8_to_utf16 with MINIPAL_TREAT_AS_LITTLE_ENDIAN mismatch at %zu: got 0x%04x expected 0x%04x\n",
+                    i, wideBuffer[i], expected);
+            }
+        }
+    }
+#endif
    
     PAL_Terminate();
 

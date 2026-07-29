@@ -1650,5 +1650,23 @@ namespace System.Net.Http.Tests
             Assert.Throws<InvalidOperationException>(() => { headers.Add("Expires", "v"); });
             Assert.Throws<InvalidOperationException>(() => { headers.Add("Last-Modified", "v"); });
         }
+
+        [Fact]
+        public void Contains_DisallowedContentHeaderOnRequestHeaders_ReturnsFalse()
+        {
+            HttpRequestHeaders headers = new HttpRequestMessage().Headers;
+            Assert.False(headers.Contains("Content-Type"));
+            Assert.False(headers.Contains("Content-Encoding"));
+            Assert.False(headers.Contains("content-length"));
+        }
+
+        [Fact]
+        public void Remove_DisallowedContentHeaderOnRequestHeaders_ReturnsFalse()
+        {
+            HttpRequestHeaders headers = new HttpRequestMessage().Headers;
+            Assert.False(headers.Remove("Content-Type"));
+            Assert.False(headers.Remove("Content-Encoding"));
+            Assert.False(headers.Remove("content-length"));
+        }
     }
 }

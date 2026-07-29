@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.X509Certificates
             return maybeOid;
         }
 
-        public void FindByThumbprint(byte[] thumbprint)
+        public unsafe void FindByThumbprint(byte[] thumbprint)
         {
             static bool FindPredicate(byte[] thumbprint, X509Certificate2 certificate)
             {

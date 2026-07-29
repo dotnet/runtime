@@ -53,7 +53,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
         assert(size->isContained());
         srcCount = 0;
 
-        size_t sizeVal = size->AsIntCon()->gtIconVal;
+        size_t sizeVal = size->AsIntCon()->IconValue();
         if (sizeVal == 0)
         {
             internalIntCount = 0;
@@ -270,11 +270,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_INTRINSIC:
         {
-            // TODO-ARM: Implement other type of intrinsics (round, sqrt and etc.)
-            // Both operand and its result must be of the same floating point type.
             GenTree* op1 = tree->gtGetOp1();
-            assert(varTypeIsFloating(op1));
-            assert(op1->TypeGet() == tree->TypeGet());
             BuildUse(op1);
             srcCount = 1;
 
@@ -282,6 +278,19 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 case NI_System_Math_Abs:
                 case NI_System_Math_Sqrt:
+                    // Both operand and result must be of the same floating-point type.
+                    assert(varTypeIsFloating(op1));
+                    assert(op1->TypeGet() == tree->TypeGet());
+                    assert(dstCount == 1);
+                    BuildDef(tree);
+                    break;
+                case NI_PRIMITIVE_SaturateToInt8:
+                case NI_PRIMITIVE_SaturateToInt16:
+                case NI_PRIMITIVE_SaturateToUInt8:
+                case NI_PRIMITIVE_SaturateToUInt16:
+                    // Integer-domain saturation via SSAT/USAT: operand and result are TYP_INT.
+                    assert(op1->TypeGet() == TYP_INT);
+                    assert(tree->TypeGet() == TYP_INT);
                     assert(dstCount == 1);
                     BuildDef(tree);
                     break;
@@ -690,6 +699,13 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_MEMORYBARRIER:
         case GT_RETURN_SUSPEND:
             srcCount = BuildSimple(tree);
+            break;
+
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            // NYI on ARM32
+            srcCount = 0;
+            NYI_ARM("GT_PATCHPOINT");
             break;
 
         case GT_JTRUE:

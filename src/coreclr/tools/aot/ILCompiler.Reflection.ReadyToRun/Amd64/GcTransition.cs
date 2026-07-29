@@ -75,6 +75,9 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                         regType = typeof(RiscV64.Registers);
                         break;
 
+                    case WasmMachine.Wasm32:
+                        throw new NotImplementedException($"No implementation for machine type Wasm32.");
+
                     default:
                         throw new NotImplementedException();
                 }

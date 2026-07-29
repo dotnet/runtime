@@ -54,7 +54,7 @@ namespace System.Text.Json
 
         private static JsonTypeInfo GetTypeInfo(JsonSerializerContext context, Type inputType)
         {
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
             Debug.Assert(inputType != null);
 
             JsonTypeInfo? info = context.GetTypeInfo(inputType);
@@ -144,7 +144,7 @@ namespace System.Text.Json
 
         private static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForRootLevelValueMode<T>(JsonTypeInfo<T> elementTypeInfo)
         {
-            if (elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo != null)
+            if (elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo is not null)
             {
                 return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo;
             }
@@ -162,7 +162,7 @@ namespace System.Text.Json
 
         private static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForArrayMode<T>(JsonTypeInfo<T> elementTypeInfo)
         {
-            if (elementTypeInfo._asyncEnumerableArrayTypeInfo != null)
+            if (elementTypeInfo._asyncEnumerableArrayTypeInfo is not null)
             {
                 return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableArrayTypeInfo;
             }
@@ -177,6 +177,26 @@ namespace System.Text.Json
             listTypeInfo.EnsureConfigured();
             elementTypeInfo._asyncEnumerableArrayTypeInfo = listTypeInfo;
             return listTypeInfo;
+        }
+
+        private static JsonTypeInfo<IAsyncEnumerable<T>> GetOrAddIAsyncEnumerableTypeInfoForSerialize<T>(JsonTypeInfo<T> elementTypeInfo)
+        {
+            if (elementTypeInfo._asyncEnumerableRootLevelSerializer is not null)
+            {
+                return (JsonTypeInfo<IAsyncEnumerable<T>>)elementTypeInfo._asyncEnumerableRootLevelSerializer;
+            }
+
+            // Synthesize the IAsyncEnumerable<T> type info from the element type info so we don't depend on the
+            // resolver (e.g. a source-generated context) having registered IAsyncEnumerable<T> explicitly.
+            var converter = new IAsyncEnumerableOfTConverter<IAsyncEnumerable<T>, T>();
+            var asyncEnumerableTypeInfo = new JsonTypeInfo<IAsyncEnumerable<T>>(converter, elementTypeInfo.Options)
+            {
+                ElementTypeInfo = elementTypeInfo,
+            };
+
+            asyncEnumerableTypeInfo.EnsureConfigured();
+            elementTypeInfo._asyncEnumerableRootLevelSerializer = asyncEnumerableTypeInfo;
+            return asyncEnumerableTypeInfo;
         }
     }
 }

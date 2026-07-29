@@ -44,25 +44,16 @@ namespace System.Diagnostics.Tests
                 using StreamReader streamReader = new(new FileStream(outputReadPipe, FileAccess.Read, bufferSize: 1, outputReadPipe.IsAsync));
                 Assert.Equal("ping", streamReader.ReadLine());
 
-                // We can get the process by id only when it's still running,
-                // so we wait with "pong" until we obtain the process instance.
-                // When we introduce SafeProcessHandle.WaitForExit* APIs, it's not needed.
-                using Process fetchedProcess = Process.GetProcessById(processHandle.ProcessId);
-
                 using StreamWriter streamWriter = new(new FileStream(inputWritePipe, FileAccess.Write, bufferSize: 1, inputWritePipe.IsAsync))
                 {
                     AutoFlush = true
                 };
 
-                try
-                {
-                    streamWriter.WriteLine("pong");
-                }
-                finally
-                {
-                    fetchedProcess.Kill();
-                    fetchedProcess.WaitForExit();
-                }
+                streamWriter.WriteLine("pong");
+
+                ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
+                Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
+                Assert.False(exitStatus.Canceled);
             }
         }
 
@@ -129,11 +120,11 @@ namespace System.Diagnostics.Tests
             });
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
-            using Process fetchedProcess = Process.GetProcessById(processHandle.ProcessId);
 
             processHandle.Kill();
 
-            Assert.True(fetchedProcess.WaitForExit(WaitInMS));
+            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
+            Assert.NotEqual(0, exitStatus.ExitCode);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -149,8 +140,10 @@ namespace System.Diagnostics.Tests
             handle.Kill();
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void Signal_SIGKILL_RunningProcess_ReturnsTrue()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Signal_SIGKILL_RunningProcess_ReturnsTrue(bool testHandle)
         {
             Process process = CreateProcess(static () =>
             {
@@ -161,28 +154,37 @@ namespace System.Diagnostics.Tests
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
             using Process fetchedProcess = Process.GetProcessById(processHandle.ProcessId);
 
-            bool delivered = processHandle.Signal(PosixSignal.SIGKILL);
+            bool delivered = testHandle
+                ? processHandle.Signal(PosixSignal.SIGKILL)
+                : fetchedProcess.Signal(PosixSignal.SIGKILL);
 
             Assert.True(delivered);
-            Assert.True(fetchedProcess.WaitForExit(WaitInMS));
+            Assert.True(fetchedProcess.TryWaitForExitStatus(TimeSpan.FromMilliseconds(WaitInMS), out ProcessExitStatus? exitStatus));
+            Assert.NotNull(exitStatus);
+            Assert.NotEqual(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
+            Assert.Equal(OperatingSystem.IsWindows() ? null : PosixSignal.SIGKILL, exitStatus.Signal);
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void Signal_SIGKILL_AlreadyExited_ReturnsFalse()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Signal_SIGKILL_AlreadyExited_ReturnsFalse(bool testHandle)
         {
-            Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
+            using Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
             process.Start();
             SafeProcessHandle handle = process.SafeHandle;
 
             Assert.True(process.WaitForExit(WaitInMS));
 
             // Signal after the process has exited should return false.
-            Assert.False(handle.Signal(PosixSignal.SIGKILL));
+            Assert.False(testHandle ? handle.Signal(PosixSignal.SIGKILL) : process.Signal(PosixSignal.SIGKILL));
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void Signal_NonSIGKILL_OnWindows_ThrowsPlatformNotSupportedException()
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Signal_NonSIGKILL_OnWindows_ThrowsPlatformNotSupportedException(bool testHandle)
         {
             Process process = CreateProcess(static () =>
             {
@@ -195,7 +197,9 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                Assert.Throws<PlatformNotSupportedException>(() => processHandle.Signal(PosixSignal.SIGTERM));
+                Assert.Throws<PlatformNotSupportedException>(() => testHandle
+                    ? processHandle.Signal(PosixSignal.SIGTERM)
+                    : fetchedProcess.Signal(PosixSignal.SIGTERM));
             }
             finally
             {
@@ -204,10 +208,13 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.Windows, "SIGTERM is not supported on Windows.")]
-        public void Signal_SIGTERM_RunningProcess_ReturnsTrue()
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Signal_SIGTERM_RunningProcess_ReturnsTrue(bool testHandle)
         {
+            const PosixSignal SIGTERM = PosixSignal.SIGTERM;
             Process process = CreateProcess(static () =>
             {
                 Thread.Sleep(Timeout.Infinite);
@@ -217,10 +224,15 @@ namespace System.Diagnostics.Tests
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
             using Process fetchedProcess = Process.GetProcessById(processHandle.ProcessId);
 
-            bool delivered = processHandle.Signal(PosixSignal.SIGTERM);
+            bool delivered = testHandle
+                ? processHandle.Signal(SIGTERM)
+                : fetchedProcess.Signal(SIGTERM);
 
             Assert.True(delivered);
-            Assert.True(fetchedProcess.WaitForExit(WaitInMS));
+            Assert.True(fetchedProcess.TryWaitForExitStatus(TimeSpan.FromMilliseconds(WaitInMS), out ProcessExitStatus? exitStatus));
+            Assert.NotNull(exitStatus);
+            Assert.NotEqual(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
+            Assert.Equal(OperatingSystem.IsWindows() ? null : SIGTERM, exitStatus.Signal);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

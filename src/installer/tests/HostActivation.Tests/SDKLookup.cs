@@ -1177,6 +1177,30 @@ namespace HostActivation.Tests
             }
         }
 
+        [Fact]
+        public void DispatchToAotSdk()
+        {
+            GlobalJson.CreateEmpty(SharedState.CurrentWorkingDir);
+
+            AddAvailableSdkVersions("9999.1.0");
+
+            string sdkDir = Path.Combine(ExecutableDotNet.BinPath, "sdk", "9999.1.0");
+            string aotSdkPath = Path.Combine(sdkDir, Binaries.DotNetAot.FileName);
+            File.Copy(Binaries.DotNetAot.MockPath, aotSdkPath);
+
+            RunTest()
+                .Should().Pass()
+                .And.HaveStdErrContaining($"Using AOT-ed SDK=[{aotSdkPath}]")
+                .And.HaveStdOutContaining("mock AOT SDK invoked")
+                .And.HaveStdOutContaining($"mock host_path: {ExecutableDotNet.DotnetExecutablePath}")
+                .And.HaveStdOutContaining($"mock dotnet_root: {ExecutableDotNet.BinPath}")
+                .And.HaveStdOutContaining($"mock sdk_dir: {sdkDir}")
+                .And.HaveStdOutContaining($"mock hostfxr_path: {ExecutableDotNet.GreatestVersionHostFxrFilePath}")
+                .And.HaveStdOutContaining("mock argc: 1")
+                .And.HaveStdOutContaining("mock argv[0]: help")
+                .And.NotHaveStdErrContaining("Using .NET SDK dll=");
+        }
+
         private static void AddSdkToCustomPath(string sdkRoot, string version)
         {
             DotNetBuilder.AddMockSDK(sdkRoot, version, version);

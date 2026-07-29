@@ -11,69 +11,26 @@ using Internal.Text;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal enum LengthEncodeFormat
-    {
-        ULEB128,
-        None,
-    }
-
     internal struct SectionWriter
     {
         private readonly ObjectWriter _objectWriter;
         private readonly SectionData _sectionData;
 
-        private readonly Params _params;
-
         public int SectionIndex { get; init; }
         public readonly IBufferWriter<byte> Buffer => _sectionData.BufferWriter;
-
-        public struct Params
-        {
-            public LengthEncodeFormat LengthEncodeFormat;
-        }
-
-        public bool HasLengthPrefix => _params.LengthEncodeFormat != LengthEncodeFormat.None;
 
         internal SectionWriter(
             ObjectWriter objectWriter,
             int sectionIndex,
-            SectionData sectionData,
-            Params ps)
+            SectionData sectionData)
         {
             _objectWriter = objectWriter;
             SectionIndex = sectionIndex;
             _sectionData = sectionData;
-            _params = ps;
-        }
-
-        public readonly void EmitLengthPrefix(ulong length)
-        {
-            switch (_params.LengthEncodeFormat)
-            {
-                case LengthEncodeFormat.ULEB128:
-                    WriteULEB128(length);
-                    break;
-                case LengthEncodeFormat.None:
-                    break;
-                default:
-                    throw new InvalidOperationException("Length prefix encoding not specified");
-            }
-        }
-
-        public readonly uint LengthPrefixSize(int length)
-        {
-            switch (_params.LengthEncodeFormat)
-            {
-                case LengthEncodeFormat.ULEB128:
-                    return DwarfHelper.SizeOfULEB128((ulong)length);
-                default:
-                    return 0;
-            }
         }
 
         public readonly void EmitData(ReadOnlyMemory<byte> data)
         {
-            EmitLengthPrefix((ulong)data.Length);
             _sectionData.AppendData(data);
         }
 

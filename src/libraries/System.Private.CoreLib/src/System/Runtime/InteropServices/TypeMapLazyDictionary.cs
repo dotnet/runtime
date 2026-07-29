@@ -79,7 +79,6 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_ProcessAttributes")]
-        [RequiresUnsafe]
         private static unsafe partial void ProcessAttributes(
             QCallAssembly assembly,
             QCallTypeHandle groupType,
@@ -134,7 +133,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe Interop.BOOL NewPrecachedExternalTypeMap(CallbackContext* context)
         {
             Debug.Assert(context != null);
@@ -153,7 +151,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe Interop.BOOL NewPrecachedProxyTypeMap(CallbackContext* context)
         {
             Debug.Assert(context != null);
@@ -172,7 +169,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe Interop.BOOL NewExternalTypeEntry(CallbackContext* context, ProcessAttributesCallbackArg* arg)
         {
             Debug.Assert(context != null);
@@ -200,7 +196,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe Interop.BOOL NewProxyTypeEntry(CallbackContext* context, ProcessAttributesCallbackArg* arg)
         {
             Debug.Assert(context != null);
@@ -239,7 +234,6 @@ namespace System.Runtime.InteropServices
             return Interop.BOOL.TRUE; // Continue processing.
         }
 
-        [RequiresUnsafe]
         private static unsafe CallbackContext CreateMaps(
             RuntimeType groupType,
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newExternalTypeEntry,
@@ -363,7 +357,6 @@ namespace System.Runtime.InteropServices
 
         private unsafe struct TypeNameUtf8
         {
-            [RequiresUnsafe]
             public required void* Utf8TypeName { get; init; }
             public required int Utf8TypeNameLen { get; init; }
         }

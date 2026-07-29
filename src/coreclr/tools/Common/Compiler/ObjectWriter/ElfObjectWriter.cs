@@ -279,6 +279,7 @@ namespace ILCompiler.ObjectWriter
                 var section = _sections[definition.SectionIndex];
                 var type =
                     (section.SectionHeader.Flags & SHF_TLS) == SHF_TLS ? STT_TLS :
+                    (section.SectionHeader.Flags & SHF_EXECINSTR) != SHF_EXECINSTR ? STT_OBJECT :
                     definition.Size > 0 ? STT_FUNC : STT_NOTYPE;
                 sortedSymbols.Add(new ElfSymbol
                 {

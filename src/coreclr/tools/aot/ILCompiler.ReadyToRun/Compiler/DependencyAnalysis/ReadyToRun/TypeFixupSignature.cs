@@ -213,6 +213,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dependencies.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
             }
 
+            factory.AddVirtualMethodDiscoveryDependencies(ref dependencies, _typeDesc);
+
             if (_fixupKind == ReadyToRunFixupKind.TypeHandle)
             {
                 AddDependenciesForAsyncStateMachineBox(ref dependencies, factory, _typeDesc);

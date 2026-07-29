@@ -91,17 +91,71 @@ namespace System.Security.Cryptography.Tests
             Assert.False(isEqualB, "value missing last byte, value");
         }
 
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(1, 0)]
+        [InlineData(128 / 8, 0)]
+        [InlineData(256 / 8, 1)]
+        [InlineData(512 / 8, 0x7F)]
+        [InlineData(96, 0x80)]
+        [InlineData(1024, 0xFF)]
+        public static void EqualScalarReturnsTrue(int byteLength, byte value)
+        {
+            byte[] rented = ArrayPool<byte>.Shared.Rent(byteLength);
+            Span<byte> testSpan = new Span<byte>(rented, 0, byteLength);
+            testSpan.Fill(value);
+
+            bool isEqual = CryptographicOperations.FixedTimeEquals(testSpan, value);
+
+            ArrayPool<byte>.Shared.Return(rented);
+
+            AssertExtensions.TrueExpression(isEqual);
+        }
+
+        [Theory]
+        [InlineData(1, 0)]
+        [InlineData(128 / 8, 0)]
+        [InlineData(256 / 8, 1)]
+        [InlineData(512 / 8, 0x7F)]
+        [InlineData(96, 0x80)]
+        [InlineData(1024, 0xFF)]
+        public static void UnequalScalarReturnsFalse(int byteLength, byte value)
+        {
+            byte[] rented = ArrayPool<byte>.Shared.Rent(byteLength);
+            Span<byte> testSpan = new Span<byte>(rented, 0, byteLength);
+            testSpan.Fill(value);
+            testSpan[value % testSpan.Length] = (byte)(value ^ 0xFF);
+
+            bool isEqual = CryptographicOperations.FixedTimeEquals(testSpan, value);
+
+            ArrayPool<byte>.Shared.Return(rented);
+
+            AssertExtensions.FalseExpression(isEqual);
+        }
+
         [Fact]
         public static void HasCorrectMethodImpl()
         {
             Type t = typeof(CryptographicOperations);
-            MethodInfo mi = t.GetMethod(nameof(CryptographicOperations.FixedTimeEquals));
+            MethodInfo spanOverload = t.GetMethod(
+                nameof(CryptographicOperations.FixedTimeEquals),
+                new[] { typeof(ReadOnlySpan<byte>), typeof(ReadOnlySpan<byte>) });
 
-            // This method cannot be optimized, or it loses its fixed time guarantees.
-            // It cannot be inlined, or it loses its no-optimization guarantee.
-            Assert.Equal(
-                MethodImplAttributes.NoInlining | MethodImplAttributes.NoOptimization,
-                mi.MethodImplementationFlags);
+            MethodInfo scalarOverload = t.GetMethod(
+                nameof(CryptographicOperations.FixedTimeEquals),
+                new[] { typeof(ReadOnlySpan<byte>), typeof(byte) });
+
+            AssertCorrectMethodImpl(spanOverload);
+            AssertCorrectMethodImpl(scalarOverload);
+
+            static void AssertCorrectMethodImpl(MethodInfo mi)
+            {
+                // This method cannot be optimized, or it loses its fixed time guarantees.
+                // It cannot be inlined, or it loses its no-optimization guarantee.
+                Assert.Equal(
+                    MethodImplAttributes.NoInlining | MethodImplAttributes.NoOptimization,
+                    mi.MethodImplementationFlags);
+            }
         }
     }
 }

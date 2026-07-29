@@ -109,11 +109,9 @@ namespace System.Threading
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
-        [RequiresUnsafe]
         private static unsafe partial Interop.BOOL StartInternal(ThreadHandle t, int stackSize, int priority, Interop.BOOL isThreadPool, char* pThreadName, ObjectHandleOnStack exception);
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void StartCallback(Thread* pThread)
         {
             StartHelper? startHelper = pThread->_startHelper;
@@ -325,8 +323,6 @@ namespace System.Threading
             GC.KeepAlive(this);
         }
 
-        // Temporary workaround for https://github.com/dotnet/runtime/issues/122479
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         internal void ClearWaitSleepJoinState()
         {
             // This method is called when the thread is no longer in a wait, sleep, or join state.
@@ -494,8 +490,21 @@ namespace System.Threading
         [DebuggerStepThrough]
         internal static unsafe StaticsHelpers.ThreadLocalData* GetThreadStaticsBase()
         {
+#if TARGET_WASM
+            // On wasm, reading &DirectOnThreadLocalData.pNativeThread goes through the general
+            // thread-static-base helper (StaticsHelpers.GetNonGCThreadStaticBase), which itself needs
+            // this base, causing infinite recursion. Read the ThreadLocalData base directly via an
+            // FCall to break the bootstrap cycle.
+            return (StaticsHelpers.ThreadLocalData*)GetThreadStaticsBaseNative();
+#else
             return (StaticsHelpers.ThreadLocalData*)(((byte*)Unsafe.AsPointer(ref DirectOnThreadLocalData.pNativeThread)) - sizeof(StaticsHelpers.ThreadLocalData));
+#endif
         }
+
+#if TARGET_WASM
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe void* GetThreadStaticsBaseNative();
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetFinalizerThread()
@@ -587,7 +596,6 @@ namespace System.Threading
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void OnThreadExited(Thread* pThread, Exception* pException)
         {
             try
@@ -601,7 +609,6 @@ namespace System.Threading
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReentrantWaitAny")]
-        [RequiresUnsafe]
         internal static unsafe partial int ReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles);
 
         internal static void CheckForPendingInterrupt()

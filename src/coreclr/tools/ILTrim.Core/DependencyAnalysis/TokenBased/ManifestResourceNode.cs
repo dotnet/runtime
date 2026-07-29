@@ -32,6 +32,8 @@ namespace ILCompiler.DependencyAnalysis
 
             _skipWritingResource = false;
 
+            DependencyList dependencies = null;
+
             if (resource.Implementation.IsNil)
             {
                 string resourceName = _module.MetadataReader.GetString(resource.Name);
@@ -40,29 +42,25 @@ namespace ILCompiler.DependencyAnalysis
                     string assemblyName = _module.Assembly.GetName().Name;
                     _skipWritingResource = factory.Settings.Optimizations.IsEnabled(CodeOptimizations.RemoveDescriptors, assemblyName);
 
-                    if (factory.Settings.IgnoreDescriptors)
-                        return null;
-
-                    PEMemoryBlock resourceDirectory = _module.PEReader.GetSectionData(_module.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
-                    BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
-                    int length = (int)reader.ReadUInt32();
-
-                    UnmanagedMemoryStream ms;
-                    unsafe
+                    if (!factory.Settings.IgnoreDescriptors)
                     {
-                        ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
-                    }
+                        PEMemoryBlock resourceDirectory = _module.PEReader.GetSectionData(_module.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
+                        BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
+                        int length = (int)reader.ReadUInt32();
 
-                    return DescriptorMarker.GetDependencies(factory.Logger, factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), factory.Settings.FeatureSettings);
-                }
-                else
-                {
-                    return null;
+                        UnmanagedMemoryStream ms;
+                        unsafe
+                        {
+                            ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
+                        }
+
+                        dependencies = DescriptorMarker.GetDependencies(factory.Logger, factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), factory.Settings.FeatureSettings);
+                    }
                 }
             }
             else
             {
-                DependencyList dependencies = new();
+                dependencies = new();
                 switch (resource.Implementation.Kind)
                 {
                     case HandleKind.AssemblyReference:
@@ -73,8 +71,10 @@ namespace ILCompiler.DependencyAnalysis
                         // TODO: Handle AssemblyFile
                         throw new InvalidOperationException(resource.Implementation.Kind.ToString());
                 }
-                return dependencies;
             }
+
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, resource.GetCustomAttributes());
+            return dependencies;
         }
 
         public override void BuildTokens(TokenMap.Builder builder)

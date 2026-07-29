@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -33,6 +32,10 @@ namespace ILCompiler.DependencyAnalysis
 
             DependencyList dependencies = new DependencyList();
 
+            // We intentionally do NOT root accessor methods here. The accessor methods are kept
+            // independently when they are called. The property definition is pulled in by the
+            // accessor → property back-reference in MethodDefinitionNode. This avoids keeping
+            // unused accessors (e.g. an unused setter when only the getter is called).
             EcmaSignatureAnalyzer.AnalyzePropertySignature(
                 _module,
                 reader.GetBlobReader(property.Signature),
@@ -42,13 +45,6 @@ namespace ILCompiler.DependencyAnalysis
             dependencies.Add(factory.TypeDefinition(_module, declaringTypeHandle), "Property owning type");
 
             CustomAttributeNode.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _module, property.GetCustomAttributes());
-
-            PropertyAccessors accessors = property.GetAccessors();
-            if (!accessors.Getter.IsNil)
-                dependencies.Add(factory.MethodDefinition(_module, accessors.Getter), "Property getter");
-            if (!accessors.Setter.IsNil)
-                dependencies.Add(factory.MethodDefinition(_module, accessors.Setter), "Property setter");
-            Debug.Assert(accessors.Others.Length == 0);
 
             return dependencies;
         }
@@ -72,17 +68,17 @@ namespace ILCompiler.DependencyAnalysis
                 builder.GetOrAddString(reader.GetString(property.Name)),
                 builder.GetOrAddBlob(signatureBlob));
 
-            // Add MethodSemantics rows to link properties with accessor methods.
-            // MethodSemantics rows may be added in any order.
+            // Add MethodSemantics rows only for accessor methods that are actually marked.
+            // An unused setter (or getter) won't have its MethodSemantics row emitted.
             PropertyAccessors accessors = property.GetAccessors();
-            if (!accessors.Getter.IsNil)
+            if (!accessors.Getter.IsNil && writeContext.Factory.MethodDefinition(_module, accessors.Getter).Marked)
             {
                 builder.AddMethodSemantics(
                     targetPropertyHandle,
                     MethodSemanticsAttributes.Getter,
                     (MethodDefinitionHandle)writeContext.TokenMap.MapToken(accessors.Getter));
             }
-            if (!accessors.Setter.IsNil)
+            if (!accessors.Setter.IsNil && writeContext.Factory.MethodDefinition(_module, accessors.Setter).Marked)
             {
                 builder.AddMethodSemantics(
                     targetPropertyHandle,

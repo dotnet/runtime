@@ -181,6 +181,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
 #if NET
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/126867", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsX64Process))]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
     public sealed class PlatformHandlerTest_Cookies_Http2 : HttpClientHandlerTest_Cookies
     {

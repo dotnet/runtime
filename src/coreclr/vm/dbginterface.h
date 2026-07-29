@@ -20,6 +20,7 @@ typedef DPTR(struct ICorDebugInfo::NativeVarInfo) PTR_NativeVarInfo;
 typedef void (*FAVORCALLBACK)(void *);
 
 class DebuggerSteppingInfo;
+class COR_ILMETHOD_DECODER;
 
 //
 // The purpose of this object is to serve as an entry point to the
@@ -211,7 +212,8 @@ public:
 
     virtual void getVars(MethodDesc * ftn,
                  ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
-                 bool *extendOthers) = 0;
+                 bool *extendOthers,
+                 unsigned ilCodeSize) = 0;
 
     virtual BOOL CheckGetPatchedOpcode(CORDB_ADDRESS_TYPE *address, /*OUT*/ PRD_TYPE *pOpcode) = 0;
 
@@ -248,11 +250,6 @@ public:
     virtual void SendCustomDebuggerNotification(Thread * pThread, Assembly * pAssembly, mdTypeDef classToken) = 0;
 
     virtual bool IsJMCMethod(Module* pModule, mdMethodDef tkMethod) = 0;
-
-    virtual void SendLogSwitchSetting (int iLevel,
-                                       int iReason,
-                                       _In_z_ LPCWSTR pLogSwitchName,
-                                       _In_z_ LPCWSTR pParentSwitchName) = 0;
 
     virtual bool IsLoggingEnabled (void) = 0;
 
@@ -348,11 +345,6 @@ public:
     // Used by the interpreter to avoid calling OnMethodEnter when not stepping.
     virtual bool IsMethodEnterEnabled() = 0;
 
-    // notification for SQL fiber debugging support
-    virtual void CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName) = 0;
-    virtual void DestroyConnection(CONNID dwConnectionId) = 0;
-    virtual void ChangeConnection(CONNID dwConnectionId) = 0;
-
     //
     // This function is used to identify the helper thread.
     //
@@ -388,6 +380,10 @@ public:
     virtual HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult) = 0;
     virtual void MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count) = 0;
     virtual void ExternalMethodFixupNextStep(PCODE address) = 0;
+    virtual void ProcessAnyPendingEvals(Thread* pThread) = 0;
+
+    virtual void SendCreateThreadAtInterpreterEntry(Thread* pRuntimeThread) = 0;
+
 #endif //DACCESS_COMPILE
 };
 

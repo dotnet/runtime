@@ -573,8 +573,7 @@ namespace TestNeg
         [MethodImpl(MethodImplOptions.NoInlining)]
         static uint NegLSR(uint a)
         {
-            //ARM64-FULL-LINE: lsr {{w[0-9]+}}, {{w[0-9]+}},  #20
-            //ARM64-FULL-LINE: neg {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: neg {{w[0-9]+}}, {{w[0-9]+}}, LSR #20
             return (uint)-(a >> 20);
         }
 

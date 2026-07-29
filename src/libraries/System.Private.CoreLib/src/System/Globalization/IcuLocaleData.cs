@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -3802,7 +3802,7 @@ namespace System.Globalization
         }
 
         // Returns index of the culture or less than 0 if it fail finding any match
-        private static int SearchCultureName(string name)
+        private static unsafe int SearchCultureName(string name)
         {
             if (name.Length > LocaleLongestName)
                 return -1;

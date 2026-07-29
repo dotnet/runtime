@@ -20,9 +20,9 @@ if /i "%__Os%" == "browser" (
             echo Error: Should set EMSDK_PATH environment variable pointing to emsdk root.
             exit /B 1
         )
-        set EMSDK_QUIET=1 && call "%__repoRoot%\src\mono\browser\emsdk\emsdk_env"
+        set "EMSDK_QUIET=1" && call "%__repoRoot%\src\mono\browser\emsdk\emsdk_env.cmd"
     ) else (
-        set EMSDK_QUIET=1 && call "%EMSDK_PATH%\emsdk_env"
+        set "EMSDK_QUIET=1" && call "%EMSDK_PATH%\emsdk_env.cmd"
     )
 )
 
@@ -57,6 +57,8 @@ if /i "%__Arch%" == "wasm" (
     )
     if /i "%__Os%" == "browser" (
         set CMakeToolPrefix=emcmake
+        rem Use WASM-specific tryrun cache to speed up CMake configure
+        set __ExtraCmakeParams="-C %__repoRoot%/eng/native/tryrun.browser.cmake" !__ExtraCmakeParams!
     )
     if /i "%__Os%" == "wasi" (
         if "%WASI_SDK_PATH%" == "" (
@@ -68,7 +70,7 @@ if /i "%__Arch%" == "wasm" (
             set "WASI_SDK_PATH=%__repoRoot%\artifacts\wasi-sdk"
         )
         set __CmakeGenerator=Ninja
-        set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=wasi "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk-p2.cmake" "-DCMAKE_CROSSCOMPILING_EMULATOR=node --experimental-wasm-bigint --experimental-wasi-unstable-preview1"
+        set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=wasi "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk-p2.cmake"
     )
 ) else (
     set __ExtraCmakeParams=%__ExtraCmakeParams%  "-DCMAKE_SYSTEM_VERSION=10.0"
@@ -76,7 +78,7 @@ if /i "%__Arch%" == "wasm" (
 
 if /i "%__Os%" == "android" (
     :: Keep in sync with $(AndroidApiLevelMin) in Directory.Build.props in the repository rooot
-    set __ANDROID_API_LEVEL=21
+    set __ANDROID_API_LEVEL=24
     if "%ANDROID_NDK_ROOT%" == "" (
         echo Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root.
         exit /B 1

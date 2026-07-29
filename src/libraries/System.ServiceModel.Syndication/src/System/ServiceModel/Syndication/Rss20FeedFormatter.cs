@@ -28,7 +28,7 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public Rss20FeedFormatter(Type feedTypeToCreate) : base()
+        public Rss20FeedFormatter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type feedTypeToCreate) : base()
         {
             ArgumentNullException.ThrowIfNull(feedTypeToCreate);
 
@@ -66,6 +66,7 @@ namespace System.ServiceModel.Syndication
 
         public override string Version => SyndicationVersions.Rss20;
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         protected Type FeedType { get; }
 
         public override bool CanRead(XmlReader reader)

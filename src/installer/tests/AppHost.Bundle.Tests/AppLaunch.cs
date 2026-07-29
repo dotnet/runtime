@@ -110,6 +110,24 @@ namespace AppHost.Bundle.Tests
             }
         }
 
+        // Regression test: on macOS Apple Silicon, compressed self-contained single-file
+        // apps intermittently hit an AccessViolationException based on how we load images.
+        // This was observed via concurrent child process launches, so this test launches
+        // multiple child processes in parallel as a regression test.
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void SelfContained_Compressed_SpawnsChildren()
+        {
+            string singleFile = sharedTestState.SelfContainedApp.Bundle(BundleOptions.EnableCompression);
+
+            Command.Create(singleFile, "launch_self")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World!");
+        }
+
         [Theory(
             SkipType = typeof(Binaries.CetCompat),
             SkipUnless = nameof(Binaries.CetCompat.IsSupported),

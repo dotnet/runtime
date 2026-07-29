@@ -371,8 +371,7 @@ static HRESULT CoCreateProfiler(
     }
 
     // Ok, safe to transfer ownership to caller's [out] param
-    *ppCallback = pCallback2FromQI.Extract();
-    pCallback2FromQI = NULL;
+    *ppCallback = pCallback2FromQI.Detach();
 
     return S_OK;
 }
@@ -681,10 +680,8 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
 
     // Save profiler pointers into this.  The reference ownership now
     // belongs to this class, so NULL out locals without allowing them to release
-    m_pCallback2 = pCallback2.Extract();
-    pCallback2 = NULL;
-    m_hmodProfilerDLL = hmodProfilerDLL.Extract();
-    hmodProfilerDLL = NULL;
+    m_pCallback2 = pCallback2.Detach();
+    m_hmodProfilerDLL = hmodProfilerDLL.Detach();
 
     // ATTENTION: Please update EEToProfInterfaceImpl::~EEToProfInterfaceImpl() after adding the next ICorProfilerCallback interface here !!!
 
@@ -696,8 +693,7 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
     if (SUCCEEDED(hr) && (pCallback11 != NULL))
     {
         _ASSERTE(m_pCallback11 == NULL);
-        m_pCallback11 = pCallback11.Extract();
-        pCallback11 = NULL;
+        m_pCallback11 = pCallback11.Detach();
     }
 
     if (m_pCallback11 == NULL)
@@ -709,8 +705,7 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
         if (SUCCEEDED(hr) && (pCallback10 != NULL))
         {
             _ASSERTE(m_pCallback10 == NULL);
-            m_pCallback10 = pCallback10.Extract();
-            pCallback10 = NULL;
+            m_pCallback10 = pCallback10.Detach();
         }
     }
     else
@@ -732,8 +727,7 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
         if (SUCCEEDED(hr) && (pCallback9 != NULL))
         {
             _ASSERTE(m_pCallback9 == NULL);
-            m_pCallback9 = pCallback9.Extract();
-            pCallback9 = NULL;
+            m_pCallback9 = pCallback9.Detach();
         }
     }
     else
@@ -752,8 +746,7 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
         if (SUCCEEDED(hr) && (pCallback8 != NULL))
         {
             _ASSERTE(m_pCallback8 == NULL);
-            m_pCallback8 = pCallback8.Extract();
-            pCallback8 = NULL;
+            m_pCallback8 = pCallback8.Detach();
         }
     }
     else
@@ -772,8 +765,7 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
         if (SUCCEEDED(hr) && (pCallback7 != NULL))
         {
             _ASSERTE(m_pCallback7 == NULL);
-            m_pCallback7 = pCallback7.Extract();
-            pCallback7 = NULL;
+            m_pCallback7 = pCallback7.Detach();
         }
     }
     else
@@ -792,8 +784,7 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
         if (SUCCEEDED(hr) && (pCallback6 != NULL))
         {
             _ASSERTE(m_pCallback6 == NULL);
-            m_pCallback6 = pCallback6.Extract();
-            pCallback6 = NULL;
+            m_pCallback6 = pCallback6.Detach();
         }
     }
     else
@@ -812,8 +803,7 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
         if (SUCCEEDED(hr) && (pCallback5 != NULL))
         {
             _ASSERTE(m_pCallback5 == NULL);
-            m_pCallback5 = pCallback5.Extract();
-            pCallback5 = NULL;
+            m_pCallback5 = pCallback5.Detach();
         }
     }
     else
@@ -832,8 +822,7 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
         if (SUCCEEDED(hr) && (pCallback4 != NULL))
         {
             _ASSERTE(m_pCallback4 == NULL);
-            m_pCallback4 = pCallback4.Extract();
-            pCallback4 = NULL;
+            m_pCallback4 = pCallback4.Detach();
         }
     }
     else
@@ -852,8 +841,7 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
         if (SUCCEEDED(hr) && (pCallback3 != NULL))
         {
             _ASSERTE(m_pCallback3 == NULL);
-            m_pCallback3 = pCallback3.Extract();
-            pCallback3 = NULL;
+            m_pCallback3 = pCallback3.Detach();
         }
     }
     else

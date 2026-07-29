@@ -1807,15 +1807,16 @@ void PrintANSILine(FILE* pF, _In_ __nullterminated char* sz)
 /**************************************************************************/
 void AsmParse::error(const char* fmt, ...)
 {
+    if(assem->OnErrGo) return;
     char *sz = (char*)(&wzUniBuf[(dwUniBuf >> 1)]);
     char *psz=&sz[0];
-    FILE* pF = ((!assem->m_fReportProgress)&&(assem->OnErrGo)) ? stdout : stderr;
+    FILE* pF = stderr;
     success = false;
     va_list args;
     va_start(args, fmt);
 
     if((penv) && (penv->in)) psz+=sprintf_s(psz, (dwUniBuf >> 1), "%s(%d) : ", penv->in->name(), penv->curLine);
-    psz+=sprintf_s(psz, (dwUniBuf >> 1), assem->OnErrGo ? "warning : " : "error : ");
+    psz+=sprintf_s(psz, (dwUniBuf >> 1), "error : ");
     _vsnprintf_s(psz, (dwUniBuf >> 1),(dwUniBuf >> 1)-strlen(sz)-1, fmt, args);
     PrintANSILine(pF,sz);
 }

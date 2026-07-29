@@ -178,7 +178,11 @@ public:
     {
         if (IsShort(env))
         {
-            return BitSetSupport::CountBitsInIntegral(size_t(bs));
+#if HOST_64BIT
+            return BitOperations::PopCount(uint64_t(bs));
+#else
+            return BitOperations::PopCount(uint32_t(bs));
+#endif
         }
         else
         {
@@ -757,7 +761,11 @@ unsigned BitSetOps</*BitSetType*/ BitSetShortLongRep,
     unsigned res = 0;
     for (unsigned i = 0; i < len; i++)
     {
-        res += BitSetSupport::CountBitsInIntegral(bs[i]);
+#if HOST_64BIT
+        res += BitOperations::PopCount(uint64_t(bs[i]));
+#else
+        res += BitOperations::PopCount(uint32_t(bs[i]));
+#endif
     }
     return res;
 }

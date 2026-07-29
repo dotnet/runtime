@@ -19,7 +19,7 @@ add_definitions(-DOPENSSL_API_COMPAT=0x10100000L)
 # is installed under versioned eopenssl* prefixes. In distro-agnostic mode,
 # prefer the newest packaged OpenSSL discovered in the sysroot.
 if (CLR_CMAKE_TARGET_OPENBSD AND FEATURE_DISTRO_AGNOSTIC_SSL)
-    file(GLOB _openbsd_eopenssl_configs "${CMAKE_SYSROOT}/lib/eopenssl*/cmake/OpenSSL/OpenSSLConfig.cmake")
+    file(GLOB _openbsd_eopenssl_configs "${CMAKE_SYSROOT}/usr/local/lib/eopenssl*/cmake/OpenSSL/OpenSSLConfig.cmake")
     if (_openbsd_eopenssl_configs)
         list(SORT _openbsd_eopenssl_configs)
         list(REVERSE _openbsd_eopenssl_configs)
@@ -34,8 +34,8 @@ if (CLR_CMAKE_TARGET_OPENBSD AND FEATURE_DISTRO_AGNOSTIC_SSL)
         unset(OPENSSL_SSL_LIBRARY CACHE)
         set(OpenSSL_DIR "${_openbsd_openssl_dir}" CACHE PATH "OpenSSL config directory" FORCE)
 
-        if (EXISTS "${CMAKE_SYSROOT}/include/${_openbsd_openssl_name}")
-            set(OPENSSL_INCLUDE_DIR "${CMAKE_SYSROOT}/include/${_openbsd_openssl_name}" CACHE PATH "OpenSSL include directory" FORCE)
+        if (EXISTS "${CMAKE_SYSROOT}/usr/local/include/${_openbsd_openssl_name}")
+            set(OPENSSL_INCLUDE_DIR "${CMAKE_SYSROOT}/usr/local/include/${_openbsd_openssl_name}" CACHE PATH "OpenSSL include directory" FORCE)
         endif()
     endif()
 endif()
@@ -72,6 +72,7 @@ set(NATIVECRYPTO_SOURCES
     pal_evp_pkey_raw_signverify.c
     pal_evp_pkey_ml_dsa.c
     pal_evp_pkey_slh_dsa.c
+    pal_evp_pkey_x25519.c
     pal_hmac.c
     pal_ocsp.c
     pal_pkcs7.c

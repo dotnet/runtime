@@ -142,6 +142,8 @@ public:
     LCGMethodResolver(DynamicMethodDesc* pDynamicMethod, DynamicMethodTable* pDynamicMethodTable)
         : m_pDynamicMethod{ pDynamicMethod }
         , m_pDynamicMethodTable{ pDynamicMethodTable }
+        , m_initialCodePointer{}
+        , m_DynamicCodePointers{ &m_initialCodePointer }
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -227,6 +229,10 @@ private:
     DynamicMethodDesc* m_next;
     ChunkAllocator m_jitMetaHeap;
     ChunkAllocator m_jitTempData;
+    // m_DynamicCodePointers has its entries allocated in chunks (via m_jitTempData).
+    // Having a field for the initial code pointer avoids the chunk allocation in the common
+    // case of a single code pointer. We want to avoid allocations while taking m_CodeHeapLock to reduce contention.
+    DynamicCodePointer m_initialCodePointer;
     DynamicCodePointer* m_DynamicCodePointers;
     DynamicStringLiteral* m_DynamicStringLiterals;
     IndCellList* m_UsedIndCellList;    // list to keep track of all the indirection cells used by the jitted code

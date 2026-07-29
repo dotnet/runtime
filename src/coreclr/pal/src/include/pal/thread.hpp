@@ -35,13 +35,6 @@ Abstract:
 
 namespace CorUnix
 {
-    enum PalThreadType
-    {
-        UserCreatedThread,
-        PalWorkerThread,
-        SignalHandlerThread
-    };
-
     PAL_ERROR
     InternalCreateThread(
         CPalThread *pThread,
@@ -50,7 +43,6 @@ namespace CorUnix
         LPTHREAD_START_ROUTINE lpStartAddress,
         LPVOID lpParameter,
         DWORD dwCreationFlags,
-        PalThreadType eThreadType,
         SIZE_T* pThreadId,
         HANDLE *phThread
         );
@@ -162,7 +154,6 @@ namespace CorUnix
                 LPTHREAD_START_ROUTINE,
                 LPVOID,
                 DWORD,
-                PalThreadType,
                 SIZE_T*,
                 HANDLE*
                 );
@@ -253,7 +244,6 @@ namespace CorUnix
         BOOL m_bCreateSuspended;
 
         int m_iThreadPriority;
-        PalThreadType m_eThreadType;
 
         //
         // pthread mutex / condition variable for gating thread startup.
@@ -321,7 +311,6 @@ namespace CorUnix
             m_lpStartParameter(NULL),
             m_bCreateSuspended(FALSE),
             m_iThreadPriority(THREAD_PRIORITY_NORMAL),
-            m_eThreadType(UserCreatedThread),
             m_fStartItemsInitialized(FALSE),
             m_fStartStatus(FALSE),
             m_fStartStatusSet(FALSE),
@@ -521,14 +510,6 @@ namespace CorUnix
             )
         {
             return m_bCreateSuspended;
-        };
-
-        PalThreadType
-        GetThreadType(
-            void
-            )
-        {
-            return m_eThreadType;
         };
 
         int

@@ -7,11 +7,11 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
+using Xunit;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -214,7 +214,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             // public KeptByAttribute(Type dependencyProvider, string reason) { }
             // public KeptByAttribute(Type dependencyProvider, string memberName, string reason) { }
 
-            Assert.AreEqual(nameof(KeptByAttribute), attribute.AttributeType.Name);
+            Assert.Equal(nameof(KeptByAttribute), attribute.AttributeType.Name);
 
             // Create the expected TestDependencyRecorder.Dependency that should be in the recorded dependencies
             TestDependencyRecorder.Dependency expectedDependency = new();
@@ -1297,7 +1297,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         IEnumerable<string> VerifyGenericParameters(IGenericParameterProvider src, IGenericParameterProvider linked, bool skipKeptItemsValidation)
         {
-            Assert.AreEqual(src.HasGenericParameters, linked.HasGenericParameters);
+            Assert.Equal(src.HasGenericParameters, linked.HasGenericParameters);
             if (src.HasGenericParameters)
             {
                 for (int i = 0; i < src.GenericParameters.Count; ++i)

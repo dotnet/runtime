@@ -361,7 +361,7 @@ namespace System.Net
             return new IPAddress(address);
         }
 
-        private static IPAddress CreateIPv6Address(ReadOnlySpan<byte> socketAddress)
+        private static unsafe IPAddress CreateIPv6Address(ReadOnlySpan<byte> socketAddress)
         {
             Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
             SocketAddressPal.GetIPv6Address(socketAddress, address, out uint scope);

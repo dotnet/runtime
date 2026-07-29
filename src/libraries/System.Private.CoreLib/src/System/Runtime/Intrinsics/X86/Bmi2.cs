@@ -50,7 +50,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>The above native signature does not directly correspond to the managed signature.</para>
             ///   <para>This intrinsic is only available on 64-bit processes</para>
             /// </summary>
-            [RequiresUnsafe]
             public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* low) => MultiplyNoFlags(left, right, low);
 
             /// <summary>
@@ -86,7 +85,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  MULX r32a, r32b, r/m32</para>
         ///   <para>The above native signature does not directly correspond to the managed signature.</para>
         /// </summary>
-        [RequiresUnsafe]
         public static unsafe uint MultiplyNoFlags(uint left, uint right, uint* low) => MultiplyNoFlags(left, right, low);
 
         /// <summary>

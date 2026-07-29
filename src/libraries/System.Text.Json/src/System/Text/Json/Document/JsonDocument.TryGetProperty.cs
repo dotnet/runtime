@@ -8,7 +8,7 @@ namespace System.Text.Json
 {
     public sealed partial class JsonDocument
     {
-        internal bool TryGetNamedPropertyValue(int index, ReadOnlySpan<char> propertyName, out JsonElement value)
+        internal unsafe bool TryGetNamedPropertyValue(int index, ReadOnlySpan<char> propertyName, out JsonElement value)
         {
             CheckNotDisposed();
 
@@ -132,7 +132,7 @@ namespace System.Text.Json
                 out value);
         }
 
-        private bool TryGetNamedPropertyValue(
+        private unsafe bool TryGetNamedPropertyValue(
             int startIndex,
             int endIndex,
             ReadOnlySpan<byte> propertyName,
@@ -201,7 +201,7 @@ namespace System.Text.Json
                             }
                             finally
                             {
-                                if (rented != null)
+                                if (rented is not null)
                                 {
                                     rented.AsSpan(0, written).Clear();
                                     ArrayPool<byte>.Shared.Return(rented);

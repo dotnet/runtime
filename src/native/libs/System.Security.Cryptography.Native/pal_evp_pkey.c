@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <assert.h>
+#include <stdlib.h>
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_slh_dsa.h"
 #include "pal_utilities.h"
@@ -9,27 +10,6 @@
 #ifdef NEED_OPENSSL_3_0
 c_static_assert(OSSL_STORE_INFO_PKEY == 4);
 c_static_assert(OSSL_STORE_INFO_PUBKEY == 3);
-
-#pragma clang diagnostic push
-// There's no way to specify explicit memory ordering for increment/decrement with C atomics.
-#pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
-static void CryptoNative_EvpPkeyExtraHandleDestroy(EvpPKeyExtraHandle* handle)
-{
-    int count = --handle->refCount;
-    assert(count >= 0);
-
-    if (count == 0)
-    {
-        assert(handle->prov != NULL);
-        assert(handle->libCtx != NULL);
-
-        OSSL_PROVIDER_unload(handle->prov);
-        OSSL_LIB_CTX_free(handle->libCtx);
-        free(handle);
-    }
-}
-#pragma clang diagnostic pop
-
 #endif
 
 EVP_PKEY* CryptoNative_EvpPkeyCreate(void)
@@ -38,23 +18,12 @@ EVP_PKEY* CryptoNative_EvpPkeyCreate(void)
     return EVP_PKEY_new();
 }
 
-void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey, void* extraHandle)
+void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey)
 {
     if (pkey != NULL)
     {
         EVP_PKEY_free(pkey);
     }
-
-#ifdef NEED_OPENSSL_3_0
-    if (extraHandle != NULL)
-    {
-        EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)extraHandle;
-        CryptoNative_EvpPkeyExtraHandleDestroy(extra);
-    }
-#else
-    (void)extraHandle;
-    assert(extraHandle == NULL);
-#endif
 }
 
 int32_t CryptoNative_EvpPKeyBits(EVP_PKEY* pkey)
@@ -67,32 +36,16 @@ int32_t CryptoNative_EvpPKeyBits(EVP_PKEY* pkey)
     return EVP_PKEY_get_bits(pkey);
 }
 
-#pragma clang diagnostic push
-// There's no way to specify explicit memory ordering for increment/decrement with C atomics.
-#pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
-int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey, void* extraHandle)
+int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey)
 {
     if (!pkey)
     {
         return 0;
     }
 
-#ifdef NEED_OPENSSL_3_0
-    EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)extraHandle;
-
-    if (extra != NULL)
-    {
-        extra->refCount++;
-    }
-#else
-    (void)extraHandle;
-    assert(extraHandle == NULL);
-#endif
-
     // No error queue impact.
     return EVP_PKEY_up_ref(pkey);
 }
-#pragma clang diagnostic pop
 
 int32_t CryptoNative_EvpPKeyType(EVP_PKEY* key)
 {
@@ -895,13 +848,22 @@ EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const cha
     return NULL;
 }
 
-EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle, int32_t* haveProvider)
+EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char** providerNames,
+                                           int32_t providerNameCount,
+                                           const char* keyUri,
+                                           const char* propertyQuery,
+                                           void** extraHandle,
+                                           int32_t* haveProvider)
 {
     ERR_clear_error();
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-    if (!API_EXISTS(OSSL_PROVIDER_load))
+    if (!API_EXISTS(OSSL_LIB_CTX_new) ||
+        !API_EXISTS(OSSL_PROVIDER_load) ||
+        !API_EXISTS(OSSL_PROVIDER_unload) ||
+        !API_EXISTS(OSSL_STORE_open_ex))
     {
+        *extraHandle = NULL;
         *haveProvider = 0;
         return NULL;
     }
@@ -909,25 +871,50 @@ EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char*
 
 #ifdef NEED_OPENSSL_3_0
     *haveProvider = 1;
+    OSSL_LIB_CTX* libCtx = (OSSL_LIB_CTX*)*extraHandle;
     EVP_PKEY* ret = NULL;
-    OSSL_LIB_CTX* libCtx = OSSL_LIB_CTX_new();
-    OSSL_PROVIDER* prov = NULL;
     OSSL_STORE_CTX* store = NULL;
     OSSL_STORE_INFO* firstPubKey = NULL;
+    OSSL_PROVIDER** loadedProviders = NULL;
+    int32_t loadedProviderCount = 0;
 
     if (libCtx == NULL)
     {
-        goto end;
+        libCtx = OSSL_LIB_CTX_new();
+
+        if (libCtx == NULL)
+        {
+            goto end;
+        }
+
+        loadedProviders = (OSSL_PROVIDER**)calloc(Int32ToSizeT(providerNameCount), sizeof(OSSL_PROVIDER*));
+
+        if (loadedProviders == NULL)
+        {
+            OSSL_LIB_CTX_free(libCtx);
+            ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
+            libCtx = NULL;
+            goto end;
+        }
+
+        for (int32_t i = 0; i < providerNameCount; i++)
+        {
+            // If all providers load successfully, these providers are cached in the OSSL_LIB_CTX and never unloaded.
+            OSSL_PROVIDER* loadedProvider = OSSL_PROVIDER_load(libCtx, providerNames[i]);
+
+            if (loadedProvider == NULL)
+            {
+                goto end;
+            }
+
+            loadedProviders[loadedProviderCount++] = loadedProvider;
+        }
+
+        // Only set the extraHandle value after all providers are loaded to indicate that the full set of providers loaded.
+        *extraHandle = libCtx;
     }
 
-    prov = OSSL_PROVIDER_load(libCtx, providerName);
-
-    if (prov == NULL)
-    {
-        goto end;
-    }
-
-    store = OSSL_STORE_open_ex(keyUri, libCtx, NULL, NULL, NULL, NULL, NULL, NULL);
+    store = OSSL_STORE_open_ex(keyUri, libCtx, propertyQuery, NULL, NULL, NULL, NULL, NULL);
     if (store == NULL)
     {
         goto end;
@@ -950,6 +937,7 @@ EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char*
         if (type == OSSL_STORE_INFO_PKEY)
         {
             ret = OSSL_STORE_INFO_get1_PKEY(info);
+            OSSL_STORE_INFO_free(info);
             break;
         }
         else if (type == OSSL_STORE_INFO_PUBKEY && firstPubKey == NULL)
@@ -984,38 +972,31 @@ end:
         OSSL_STORE_close(store);
     }
 
-    if (ret == NULL)
+    if (loadedProviders != NULL)
     {
-        if (prov != NULL)
+        // We didn't get all of the providers loaded, unload them.
+        if (*extraHandle == NULL)
         {
-            assert(libCtx != NULL);
-            // we still want a separate check for libCtx as only prov could be NULL
-            OSSL_PROVIDER_unload(prov);
-        }
+            for (int32_t i = loadedProviderCount - 1; i >= 0; i--)
+            {
+                OSSL_PROVIDER_unload(loadedProviders[i]);
+            }
 
-        if (libCtx != NULL)
-        {
             OSSL_LIB_CTX_free(libCtx);
         }
 
-        *extraHandle = NULL;
-    }
-    else
-    {
-        EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)malloc(sizeof(EvpPKeyExtraHandle));
-        extra->prov = prov;
-        extra->libCtx = libCtx;
-        atomic_init(&extra->refCount, 1);
-        *extraHandle = extra;
+        free(loadedProviders);
     }
 
     return ret;
 #else
-    (void)providerName;
+    (void)providerNames;
+    (void)providerNameCount;
     (void)keyUri;
-    ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
+    (void)propertyQuery;
     *extraHandle = NULL;
     *haveProvider = 0;
+    ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
     return NULL;
 #endif
 }
@@ -1027,8 +1008,7 @@ EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle)
 #ifdef NEED_OPENSSL_3_0
     if (API_EXISTS(EVP_PKEY_CTX_new_from_pkey))
     {
-        EvpPKeyExtraHandle* handle = (EvpPKeyExtraHandle*)extraHandle;
-        OSSL_LIB_CTX* libCtx = (handle != NULL) ? handle->libCtx : NULL;
+        OSSL_LIB_CTX* libCtx = (OSSL_LIB_CTX*)extraHandle;
         return EVP_PKEY_CTX_new_from_pkey(libCtx, pkey, NULL);
     }
     else

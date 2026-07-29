@@ -116,13 +116,11 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RequiresUnsafe]
 #if MONO
         [DynamicDependency("Ctor(System.Char*)")]
 #endif
         public extern unsafe String(char* value);
 
-        [RequiresUnsafe]
         private static unsafe string Ctor(char* ptr)
         {
             if (ptr == null)
@@ -144,13 +142,11 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RequiresUnsafe]
 #if MONO
         [DynamicDependency("Ctor(System.Char*,System.Int32,System.Int32)")]
 #endif
         public extern unsafe String(char* value, int startIndex, int length);
 
-        [RequiresUnsafe]
         private static unsafe string Ctor(char* ptr, int startIndex, int length)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(length);
@@ -180,13 +176,11 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RequiresUnsafe]
 #if MONO
         [DynamicDependency("Ctor(System.SByte*)")]
 #endif
         public extern unsafe String(sbyte* value);
 
-        [RequiresUnsafe]
         private static unsafe string Ctor(sbyte* value)
         {
             byte* pb = (byte*)value;
@@ -200,13 +194,11 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RequiresUnsafe]
 #if MONO
         [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32)")]
 #endif
         public extern unsafe String(sbyte* value, int startIndex, int length);
 
-        [RequiresUnsafe]
         private static unsafe string Ctor(sbyte* value, int startIndex, int length)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
@@ -230,7 +222,6 @@ namespace System
         }
 
         // Encoder for String..ctor(sbyte*) and String..ctor(sbyte*, int, int)
-        [RequiresUnsafe]
         private static unsafe string CreateStringForSByteConstructor(byte* pb, int numBytes)
         {
             Debug.Assert(numBytes >= 0);
@@ -259,13 +250,11 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RequiresUnsafe]
 #if MONO
         [DynamicDependency("Ctor(System.SByte*,System.Int32,System.Int32,System.Text.Encoding)")]
 #endif
         public extern unsafe String(sbyte* value, int startIndex, int length, Encoding enc);
 
-        [RequiresUnsafe]
         private static unsafe string Ctor(sbyte* value, int startIndex, int length, Encoding? enc)
         {
             if (enc == null)
@@ -541,7 +530,6 @@ namespace System
 
         // Helper for encodings so they can talk to our buffer directly
         // stringLength must be the exact size we'll expect
-        [RequiresUnsafe]
         internal static unsafe string CreateStringFromEncoding(
             byte* bytes, int byteLength, Encoding encoding)
         {
@@ -624,10 +612,8 @@ namespace System
             return new StringRuneEnumerator(this);
         }
 
-        [RequiresUnsafe]
         internal static unsafe int wcslen(char* ptr) => SpanHelpers.IndexOfNullCharacter(ptr);
 
-        [RequiresUnsafe]
         internal static unsafe int strlen(byte* ptr) => SpanHelpers.IndexOfNullByte(ptr);
 
         //

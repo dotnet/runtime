@@ -173,8 +173,8 @@ namespace System.Collections.Immutable
                 return -1;
             }
 
-            Requires.Range(startIndex >= 0 && startIndex < self.Length, nameof(startIndex));
-            Requires.Range(count >= 0 && startIndex + count <= self.Length, nameof(count));
+            Requires.Range(startIndex >= 0 && startIndex <= self.Length, nameof(startIndex));
+            Requires.Range(count >= 0 && (uint)(startIndex + count) <= (uint)self.Length, nameof(count));
 
             equalityComparer ??= EqualityComparer<T>.Default;
             if (equalityComparer == EqualityComparer<T>.Default)

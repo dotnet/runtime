@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 #if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 #endif
 
@@ -299,6 +300,23 @@ namespace System.IO.Hashing
                         Vector128<ushort> wprod2 = AdvSimd.MultiplyWideningLower(bytes2.GetLower(), tap2.AsByte().GetLower());
                         wprod2 = AdvSimd.MultiplyWideningUpperAndAdd(wprod2, bytes2, tap2.AsByte());
                         vs2 = AdvSimd.AddPairwiseWideningAndAdd(vs2, wprod2);
+                    }
+                    else if (PackedSimd.IsSupported)
+                    {
+                        // Widening byte sum: each byte -> ushort pair sum -> uint pair sum, then accumulate into vs1.
+                        // Because weights are all positive (1-32), unsigned byte * unsigned byte multiply is valid for vs2.
+                        Vector128<ushort> sumPairs1 = PackedSimd.AddPairwiseWidening(bytes1);
+                        Vector128<ushort> sumPairs2 = PackedSimd.AddPairwiseWidening(bytes2);
+                        vs1 += PackedSimd.AddPairwiseWidening(sumPairs1) + PackedSimd.AddPairwiseWidening(sumPairs2);
+
+                        // bytes * weights -> 8 ushorts low + 8 ushorts high, sum pairwise to 4 uints + 4 uints.
+                        Vector128<ushort> wprod1Lo = PackedSimd.MultiplyWideningLower(bytes1, tap1.AsByte());
+                        Vector128<ushort> wprod1Hi = PackedSimd.MultiplyWideningUpper(bytes1, tap1.AsByte());
+                        vs2 += PackedSimd.AddPairwiseWidening(wprod1Lo) + PackedSimd.AddPairwiseWidening(wprod1Hi);
+
+                        Vector128<ushort> wprod2Lo = PackedSimd.MultiplyWideningLower(bytes2, tap2.AsByte());
+                        Vector128<ushort> wprod2Hi = PackedSimd.MultiplyWideningUpper(bytes2, tap2.AsByte());
+                        vs2 += PackedSimd.AddPairwiseWidening(wprod2Lo) + PackedSimd.AddPairwiseWidening(wprod2Hi);
                     }
                     else
                     {

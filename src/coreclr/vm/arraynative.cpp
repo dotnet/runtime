@@ -24,7 +24,7 @@ FCIMPL1(INT32, ArrayNative::GetCorElementTypeOfElementType, ArrayBase* arrayUNSA
 
     _ASSERTE(arrayUNSAFE != NULL);
 
-    return arrayUNSAFE->GetArrayElementTypeHandle().GetVerifierCorElementType();
+    return arrayUNSAFE->GetArrayElementTypeHandle().GetInternalCorElementType();
 }
 FCIMPLEND
 
@@ -71,9 +71,6 @@ void memmoveGCRefs(void *dest, const void *src, size_t len)
     _ASSERTE(IS_ALIGNED(dest, sizeof(SIZE_T)));
     _ASSERTE(IS_ALIGNED(src, sizeof(SIZE_T)));
     _ASSERTE(IS_ALIGNED(len, sizeof(SIZE_T)));
-
-    _ASSERTE(CheckPointer(dest));
-    _ASSERTE(CheckPointer(src));
 
     if (len != 0 && dest != src)
     {

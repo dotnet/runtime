@@ -41,7 +41,7 @@ class DiagnosticConnectionWS extends DiagnosticConnectionBase implements IDiagno
     }
 
     send(message: Uint8Array): number {
-        dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer();
+        dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer(0);
         // copy the message
         if (this.ws!.readyState == WebSocket.CLOSED || this.ws!.readyState == WebSocket.CLOSING) {
             return -1;
@@ -50,13 +50,18 @@ class DiagnosticConnectionWS extends DiagnosticConnectionBase implements IDiagno
             return super.store(message);
         }
 
-        this.ws!.send(message as any);
+        try {
+            this.ws!.send(message as any);
+        } catch {
+            dotnetLogger.warn("Diagnostic server WebSocket connection failed unexpectedly.");
+            return -1;
+        }
 
         return message.length;
     }
 
     close(): number {
-        dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer();
+        dotnetNativeBrowserExports.SystemJS_ScheduleDiagnosticServer(0);
         this.ws.close();
         return 0;
     }

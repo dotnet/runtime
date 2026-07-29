@@ -152,8 +152,6 @@ public:
 
     Module *MethodDescGetModule(MethodDesc *pFD);
 
-    COR_ILMETHOD* MethodDescGetILHeader(MethodDesc *pFD);
-
     MethodDesc *FindLoadedMethodRefOrDef(Module* pModule,
                                           mdToken memberRef);
 
@@ -277,9 +275,6 @@ public:
                            SIZE_T *pEEThreadDebuggerFilterContextOffset,
                            SIZE_T *pEEFrameNextOffset,
                            DWORD  *pEEIsManagedExceptionStateMask);
-
-    void DebuggerModifyingLogSwitch (int iNewLevel,
-                                     const WCHAR *pLogSwitchName);
 
     HRESULT SetIPFromSrcToDst(Thread *pThread,
                               SLOT addrStart,

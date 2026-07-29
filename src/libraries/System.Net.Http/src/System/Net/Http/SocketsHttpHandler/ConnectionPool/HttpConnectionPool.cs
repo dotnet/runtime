@@ -13,6 +13,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Text;
 using System.Threading;
@@ -52,6 +53,9 @@ namespace System.Net.Http
         internal uint _lastSeenHttp2MaxHeaderListSize;
         internal uint _lastSeenHttp3MaxHeaderListSize;
 
+        // Same as the above, but for SETTINGS_MAX_CONCURRENT_STREAMS.
+        internal uint _lastSeenHttp2MaxConcurrentStreams = Http2Connection.InitialMaxConcurrentStreams;
+
         /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
@@ -82,9 +86,12 @@ namespace System.Net.Http
             _maxHttp11Connections = Settings._maxConnectionsPerServer;
             _telemetryServerAddress = telemetryServerAddress;
 
-            // The only case where 'host' will not be set is if this is a Proxy connection pool.
+            // The only case where 'host' will not be set is if this is a Proxy connection pool. In that case the
+            // connection targets the proxy itself, so use the proxy's host and port for the origin authority.
             Debug.Assert(host is not null || (kind == HttpConnectionKind.Proxy && proxyUri is not null));
-            _originAuthority = new HttpAuthority(host ?? proxyUri!.IdnHost, port);
+            _originAuthority = host is not null
+                ? new HttpAuthority(host, port)
+                : new HttpAuthority(proxyUri!.IdnHost, proxyUri.Port);
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
 
@@ -127,7 +134,9 @@ namespace System.Net.Http
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri != null);
 
-                    _http2Enabled = false;
+                    // A CONNECT tunnel to the origin server behaves like a direct connection once established,
+                    // so cleartext HTTP/2 (h2c) can be used over it. HTTP/1.1 WebSockets keep working because
+                    // the WebSocket upgrade request uses HTTP/1.1 and never attempts HTTP/2.
                     _http3Enabled = false;
                     break;
 
@@ -397,6 +406,11 @@ namespace System.Net.Http
             int retryCount = 0;
             while (true)
             {
+                // Reset any connection id stamped by a previous attempt. Each connection sets it again in its
+                // SendAsync, so if this attempt is abandoned (e.g. we time out while waiting for the next
+                // connection after a graceful retry) the request won't point at a connection that didn't serve it.
+                request.ConnectionId = null;
+
                 HttpConnectionWaiter<HttpConnection>? http11ConnectionWaiter = null;
                 HttpConnectionWaiter<Http2Connection?>? http2ConnectionWaiter = null;
                 try
@@ -440,7 +454,8 @@ namespace System.Net.Http
                         // Use HTTP/2 if possible.
                         if (_http2Enabled &&
                             (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
-                            (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure)) // prefer HTTP/1.1 if connection is not secured and downgrade is possible
+                            (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure) && // prefer HTTP/1.1 if connection is not secured and downgrade is possible
+                            !(_http2SessionAuthSeen && CanFallBackToHttp11(request))) // skip HTTP/2 for requests that can use HTTP/1.1 after session auth challenge
                         {
                             if (!TryGetPooledHttp2Connection(request, out Http2Connection? connection, out http2ConnectionWaiter) &&
                                 http2ConnectionWaiter != null)
@@ -534,6 +549,17 @@ namespace System.Net.Http
                     // Eat exception and try again on a lower protocol version.
                     request.Version = HttpVersion.Version11;
                 }
+                catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnSessionAuthenticationChallenge)
+                {
+                    // Server sent a session-based authentication challenge (Negotiate/NTLM) on HTTP/2.
+                    // These authentication schemes require a persistent connection and don't work properly over HTTP/2.
+                    // The pool flag was already set in Http2Connection.SendAsync so future requests that can use
+                    // HTTP/1.1 will go directly to HTTP/1.1. Retry this request on HTTP/1.1.
+                    Debug.Assert(CanFallBackToHttp11(request));
+                    Debug.Assert(_http2SessionAuthSeen);
+
+                    request.Version = HttpVersion.Version11;
+                }
                 finally
                 {
                     // We never cancel both attempts at the same time. When downgrade happens, it's possible that both waiters are non-null,
@@ -545,12 +571,17 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<(Stream, TransportContext?, Activity?, IPEndPoint?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private async ValueTask<(Stream, TransportContext?, Activity?, IPEndPoint?, long)> ConnectAsync(HttpRequestMessage request, bool async, bool isForHttp2, CancellationToken cancellationToken)
         {
             Stream? stream = null;
             IPEndPoint? remoteEndPoint = null;
             Exception? exception = null;
             TransportContext? transportContext = null;
+
+            // Allocate the connection id up front so it can be surfaced to a custom ConnectCallback (via
+            // SocketsHttpConnectionContext) and reused as the final connection's Id, allowing the caller to
+            // correlate connect-time state with the connection (e.g. in the ShouldEvictConnection callback).
+            long connectionId = HttpConnectionBase.GetNextConnectionId();
 
             Activity? activity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(IsSecure, _telemetryServerAddress, OriginAuthority.Port);
 
@@ -561,7 +592,7 @@ namespace System.Net.Http
                     case HttpConnectionKind.Http:
                     case HttpConnectionKind.Https:
                     case HttpConnectionKind.ProxyConnect:
-                        stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
+                        stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, connectionId, cancellationToken).ConfigureAwait(false);
                         // remoteEndPoint is returned for diagnostic purposes.
                         remoteEndPoint = GetRemoteEndPoint(stream);
                         if (_kind == HttpConnectionKind.ProxyConnect && _sslOptionsProxy != null)
@@ -571,7 +602,7 @@ namespace System.Net.Http
                         break;
 
                     case HttpConnectionKind.Proxy:
-                        stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+                        stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, connectionId, cancellationToken).ConfigureAwait(false);
                         // remoteEndPoint is returned for diagnostic purposes.
                         remoteEndPoint = GetRemoteEndPoint(stream);
                         if (_sslOptionsProxy != null)
@@ -593,7 +624,7 @@ namespace System.Net.Http
 
                     case HttpConnectionKind.SocksTunnel:
                     case HttpConnectionKind.SslSocksTunnel:
-                        stream = await EstablishSocksTunnel(request, async, cancellationToken).ConfigureAwait(false);
+                        stream = await EstablishSocksTunnel(request, async, connectionId, cancellationToken).ConfigureAwait(false);
                         // remoteEndPoint is returned for diagnostic purposes.
                         remoteEndPoint = GetRemoteEndPoint(stream);
                         break;
@@ -606,7 +637,7 @@ namespace System.Net.Http
                     SslStream? sslStream = stream as SslStream;
                     if (sslStream == null)
                     {
-                        sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, cancellationToken).ConfigureAwait(false);
+                        sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request, isForHttp2), request, async, stream, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
@@ -632,12 +663,12 @@ namespace System.Net.Http
                 }
             }
 
-            return (stream, transportContext, activity, remoteEndPoint);
+            return (stream, transportContext, activity, remoteEndPoint, connectionId);
 
             static IPEndPoint? GetRemoteEndPoint(Stream stream) => (stream as NetworkStream)?.Socket?.RemoteEndPoint as IPEndPoint;
         }
 
-        private async ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
+        private async ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, long connectionId, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -648,7 +679,7 @@ namespace System.Net.Http
                 // If a ConnectCallback was supplied, use that to establish the connection.
                 if (Settings._connectCallback != null)
                 {
-                    ValueTask<Stream> streamTask = Settings._connectCallback(new SocketsHttpConnectionContext(endPoint, initialRequest), cancellationToken);
+                    ValueTask<Stream> streamTask = Settings._connectCallback(new SocketsHttpConnectionContext(endPoint, initialRequest, connectionId), cancellationToken);
 
                     if (!async && !streamTask.IsCompleted)
                     {
@@ -698,9 +729,11 @@ namespace System.Net.Http
             }
         }
 
-        private SslClientAuthenticationOptions GetSslOptionsForRequest(HttpRequestMessage request)
+        private SslClientAuthenticationOptions GetSslOptionsForRequest(HttpRequestMessage request, bool isForHttp2)
         {
-            if (_http2Enabled)
+            // Even if a request could use HTTP/2, we may have chosen to establish an HTTP/1.1 connection
+            // for it instead (e.g. when _http2SessionAuthSeen is set for downgradeable requests).
+            if (_http2Enabled && isForHttp2)
             {
                 if (request.Version.Major >= 2 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                 {
@@ -715,7 +748,7 @@ namespace System.Net.Http
             return _sslOptionsHttp11!;
         }
 
-        private async ValueTask<Stream> ApplyPlaintextFilterAsync(bool async, Stream stream, Version httpVersion, HttpRequestMessage request, CancellationToken cancellationToken)
+        private async ValueTask<Stream> ApplyPlaintextFilterAsync(bool async, Stream stream, Version httpVersion, HttpRequestMessage request, long connectionId, CancellationToken cancellationToken)
         {
             if (Settings._plaintextStreamFilter is null)
             {
@@ -725,7 +758,7 @@ namespace System.Net.Http
             Stream newStream;
             try
             {
-                ValueTask<Stream> streamTask = Settings._plaintextStreamFilter(new SocketsHttpPlaintextStreamFilterContext(stream, httpVersion, request), cancellationToken);
+                ValueTask<Stream> streamTask = Settings._plaintextStreamFilter(new SocketsHttpPlaintextStreamFilterContext(stream, httpVersion, request, connectionId), cancellationToken);
 
                 if (!async && !streamTask.IsCompleted)
                 {
@@ -788,11 +821,11 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<Stream> EstablishSocksTunnel(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private async ValueTask<Stream> EstablishSocksTunnel(HttpRequestMessage request, bool async, long connectionId, CancellationToken cancellationToken)
         {
             Debug.Assert(_proxyUri != null);
 
-            Stream stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+            Stream stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, connectionId, cancellationToken).ConfigureAwait(false);
 
             try
             {
@@ -857,14 +890,28 @@ namespace System.Net.Http
             throw ex;
         }
 
+        /// <summary>
+        /// Determines whether a request that was sent over HTTP/2 can fall back to HTTP/1.1.
+        /// This matches the version negotiation logic: a request can use HTTP/1.1 if its
+        /// <see cref="HttpRequestMessage.Version"/> is less than 2.0 or if its
+        /// <see cref="HttpRequestMessage.VersionPolicy"/> is <see cref="HttpVersionPolicy.RequestVersionOrLower"/>.
+        /// </summary>
+        internal static bool CanFallBackToHttp11(HttpRequestMessage request) =>
+            request.Version.Major < 2 || request.VersionPolicy == HttpVersionPolicy.RequestVersionOrLower;
+
         private bool CheckExpirationOnGet(HttpConnectionBase connection)
         {
             Debug.Assert(!HasSyncObjLock);
 
+            if (connection.MarkedForEviction)
+            {
+                return true;
+            }
+
             TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
             if (pooledConnectionLifetime != Timeout.InfiniteTimeSpan)
             {
-                return connection.GetLifetimeTicks(Environment.TickCount64) > pooledConnectionLifetime.TotalMilliseconds;
+                return connection.Age > pooledConnectionLifetime;
             }
 
             return false;
@@ -872,13 +919,95 @@ namespace System.Net.Http
 
         private bool CheckExpirationOnReturn(HttpConnectionBase connection)
         {
+            if (connection.MarkedForEviction)
+            {
+                return true;
+            }
+
             TimeSpan lifetime = _poolManager.Settings._pooledConnectionLifetime;
             if (lifetime != Timeout.InfiniteTimeSpan)
             {
-                return lifetime == TimeSpan.Zero || connection.GetLifetimeTicks(Environment.TickCount64) > lifetime.TotalMilliseconds;
+                return lifetime == TimeSpan.Zero || connection.Age > lifetime;
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Incremented at the start of each eviction evaluation pass. Connections record the generation at which they
+        /// were last evaluated, so an HTTP/1.1 connection that was busy during a pass (and therefore not visible to it)
+        /// can be re-evaluated in the background when it is returned to the pool.
+        /// </summary>
+        internal int EvictionGeneration { get; private set; }
+
+        /// <summary>
+        /// Invokes the user-supplied <see cref="SocketsHttpHandler.ShouldEvictConnection"/> callback for each
+        /// pooled connection and marks for eviction those the callback selects. List snapshots are taken under
+        /// the pool lock; the per-connection checks are started outside the lock and intentionally not awaited.
+        /// </summary>
+        private void EvaluateConnectionsForEviction()
+        {
+            Debug.Assert(!HasSyncObjLock);
+
+            EvictionGeneration++;
+
+            try
+            {
+                // Each connection's eviction check is started but deliberately not awaited. The user callback may
+                // block or take a long time, and awaiting the checks one by one would let a single slow callback
+                // stall the evaluation of every other connection (and every subsequent eviction pass). Each
+                // connection guards against overlapping runs of its own callback, so a connection whose callback is
+                // still pending is simply skipped by later passes. A callback that completes synchronously still
+                // completes inline here, so this only changes behavior when a callback does not complete promptly.
+
+                // HTTP/1.1: the idle stack is lock-free and its enumerator returns a snapshot, so we can inspect
+                // connections without removing them. Connections currently in use (and therefore not on the stack)
+                // are evaluated by ReturnHttp11Connection when they are returned to the pool.
+                foreach (HttpConnection connection in _http11Connections)
+                {
+                    _ = connection.EvaluateForEvictionAsync();
+                }
+
+                // HTTP/2: Get the list of available connections under the lock, then evaluate outside of it.
+                ReadOnlySpan<Http2Connection> http2Connections = default;
+                lock (SyncObj)
+                {
+                    if (_availableHttp2Connections is { Count: > 0 } http2)
+                    {
+                        http2Connections = CollectionsMarshal.AsSpan(http2);
+                    }
+                }
+
+                foreach (Http2Connection connection in http2Connections)
+                {
+                    // The span may be modified concurrently, so check for null connections
+                    _ = connection?.EvaluateForEvictionAsync();
+                }
+
+                if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3)
+                {
+                    ReadOnlySpan<Http3Connection> http3Connections = default;
+                    lock (SyncObj)
+                    {
+                        if (_availableHttp3Connections is { Count: > 0 } http3)
+                        {
+                            http3Connections = CollectionsMarshal.AsSpan(http3);
+                        }
+                    }
+
+                    foreach (Http3Connection connection in http3Connections)
+                    {
+                        // The span may be modified concurrently, so check for null connections
+                        _ = connection?.EvaluateForEvictionAsync();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.Fail($"Unexpected exception while evaluating connections for eviction: {e}");
+
+                if (NetEventSource.Log.IsEnabled()) Trace($"Unexpected exception while evaluating connections for eviction: {e}");
+            }
         }
 
         /// <summary>
@@ -954,6 +1083,15 @@ namespace System.Net.Http
             TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
             TimeSpan pooledConnectionIdleTimeout = _poolManager.Settings._pooledConnectionIdleTimeout;
             long nowTicks = Environment.TickCount64;
+
+            // If the user supplied an eviction callback, give them a chance to mark pooled connections for
+            // eviction before we scavenge. The callback is asynchronous and may be slow (e.g. perform a DNS
+            // lookup), so it runs off the maintenance timer thread; connections it evicts are retired by a later
+            // scavenge pass or by the get/return paths.
+            if (_poolManager.Settings._shouldEvictConnection is not null)
+            {
+                EvaluateConnectionsForEviction();
+            }
 
             List<HttpConnectionBase>? toDispose = null;
 

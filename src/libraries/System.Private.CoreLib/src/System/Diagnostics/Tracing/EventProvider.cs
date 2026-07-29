@@ -210,20 +210,6 @@ namespace System.Diagnostics.Tracing
             return _eventProvider.IsEnabled();
         }
 
-        /// <summary>
-        /// IsEnabled, method used to test if event is enabled
-        /// </summary>
-        /// <param name="level">
-        /// Level  to test
-        /// </param>
-        /// <param name="keywords">
-        /// Keyword  to test
-        /// </param>
-        public bool IsEnabled(byte level, long keywords)
-        {
-            return _eventProvider.IsEnabled(level, keywords);
-        }
-
         public static WriteEventErrorCode GetLastWriteEventError()
         {
             return s_returnCode;
@@ -237,7 +223,6 @@ namespace System.Diagnostics.Tracing
             s_returnCode = error;
         }
 
-        [RequiresUnsafe]
         private static unsafe object? EncodeObject(ref object? data, ref EventData* dataDescriptor, ref byte* dataBuffer, ref uint totalEventSize)
         /*++
 
@@ -463,183 +448,178 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventPayload">
         /// Payload for the ETW event.
         /// </param>
-        [RequiresUnsafe]
         internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, object?[] eventPayload)
         {
             WriteEventErrorCode status = WriteEventErrorCode.NoError;
+            int argCount = eventPayload.Length;
 
-            if (IsEnabled(eventDescriptor.Level, eventDescriptor.Keywords))
+            if (argCount > EtwMaxNumberArguments)
             {
-                int argCount = eventPayload.Length;
+                s_returnCode = WriteEventErrorCode.TooManyArgs;
+                return false;
+            }
 
-                if (argCount > EtwMaxNumberArguments)
+            uint totalEventSize = 0;
+            int index;
+            int refObjIndex = 0;
+
+            Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(InlineArray8<>)}");
+            InlineArray8<object?> eightObjectStack = default;
+            Span<int> refObjPosition = stackalloc int[EtwAPIMaxRefObjCount];
+            Span<object?> dataRefObj = eightObjectStack;
+
+            EventData* userData = stackalloc EventData[2 * argCount];
+            for (int i = 0; i < 2 * argCount; i++)
+                userData[i] = default;
+
+            EventData* userDataPtr = userData;
+            byte* dataBuffer = stackalloc byte[BasicTypeAllocationBufferSize * 2 * argCount]; // Assume 16 chars for non-string argument
+            byte* currentBuffer = dataBuffer;
+
+            //
+            // The loop below goes through all the arguments and fills in the data
+            // descriptors. For strings save the location in the dataString array.
+            // Calculates the total size of the event by adding the data descriptor
+            // size value set in EncodeObject method.
+            //
+            bool hasNonStringRefArgs = false;
+            for (index = 0; index < eventPayload.Length; index++)
+            {
+                if (eventPayload[index] != null)
                 {
-                    s_returnCode = WriteEventErrorCode.TooManyArgs;
-                    return false;
-                }
+                    object? supportedRefObj = EncodeObject(ref eventPayload[index], ref userDataPtr, ref currentBuffer, ref totalEventSize);
 
-                uint totalEventSize = 0;
-                int index;
-                int refObjIndex = 0;
-
-                Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(InlineArray8<>)}");
-                InlineArray8<object?> eightObjectStack = default;
-                Span<int> refObjPosition = stackalloc int[EtwAPIMaxRefObjCount];
-                Span<object?> dataRefObj = eightObjectStack;
-
-                EventData* userData = stackalloc EventData[2 * argCount];
-                for (int i = 0; i < 2 * argCount; i++)
-                    userData[i] = default;
-
-                EventData* userDataPtr = userData;
-                byte* dataBuffer = stackalloc byte[BasicTypeAllocationBufferSize * 2 * argCount]; // Assume 16 chars for non-string argument
-                byte* currentBuffer = dataBuffer;
-
-                //
-                // The loop below goes through all the arguments and fills in the data
-                // descriptors. For strings save the location in the dataString array.
-                // Calculates the total size of the event by adding the data descriptor
-                // size value set in EncodeObject method.
-                //
-                bool hasNonStringRefArgs = false;
-                for (index = 0; index < eventPayload.Length; index++)
-                {
-                    if (eventPayload[index] != null)
+                    if (supportedRefObj != null)
                     {
-                        object? supportedRefObj = EncodeObject(ref eventPayload[index], ref userDataPtr, ref currentBuffer, ref totalEventSize);
-
-                        if (supportedRefObj != null)
+                        // EncodeObject advanced userDataPtr to the next empty slot
+                        int idx = (int)(userDataPtr - userData - 1);
+                        if (supportedRefObj is not string)
                         {
-                            // EncodeObject advanced userDataPtr to the next empty slot
-                            int idx = (int)(userDataPtr - userData - 1);
-                            if (supportedRefObj is not string)
+                            if (eventPayload.Length + idx + 1 - index > EtwMaxNumberArguments)
                             {
-                                if (eventPayload.Length + idx + 1 - index > EtwMaxNumberArguments)
-                                {
-                                    s_returnCode = WriteEventErrorCode.TooManyArgs;
-                                    return false;
-                                }
-                                hasNonStringRefArgs = true;
+                                s_returnCode = WriteEventErrorCode.TooManyArgs;
+                                return false;
                             }
-
-                            if (refObjIndex >= dataRefObj.Length)
-                            {
-                                Span<object?> newDataRefObj = new object?[dataRefObj.Length * 2];
-                                dataRefObj.CopyTo(newDataRefObj);
-                                dataRefObj = newDataRefObj;
-
-                                Span<int> newRefObjPosition = new int[refObjPosition.Length * 2];
-                                refObjPosition.CopyTo(newRefObjPosition);
-                                refObjPosition = newRefObjPosition;
-                            }
-
-                            dataRefObj[refObjIndex] = supportedRefObj;
-                            refObjPosition[refObjIndex] = idx;
-                            refObjIndex++;
+                            hasNonStringRefArgs = true;
                         }
-                    }
-                    else
-                    {
-                        s_returnCode = WriteEventErrorCode.NullInput;
-                        return false;
-                    }
-                }
 
-                // update argCount based on actual number of arguments written to 'userData'
-                argCount = (int)(userDataPtr - userData);
-
-                if (totalEventSize > TraceEventMaximumSize)
-                {
-                    s_returnCode = WriteEventErrorCode.EventTooBig;
-                    return false;
-                }
-
-                // the optimized path (using "fixed" instead of allocating pinned GCHandles
-                if (!hasNonStringRefArgs && (refObjIndex <= EtwAPIMaxRefObjCount))
-                {
-                    // Fast path: at most 8 string arguments
-
-                    // ensure we have at least s_etwAPIMaxStringCount in dataString, so that
-                    // the "fixed" statement below works
-                    while (refObjIndex < EtwAPIMaxRefObjCount)
-                    {
-                        dataRefObj[refObjIndex] = null;
-                        refObjPosition[refObjIndex] = -1;
-                        ++refObjIndex;
-                    }
-
-                    //
-                    // now fix any string arguments and set the pointer on the data descriptor
-                    //
-                    fixed (char* v0 = (string?)dataRefObj[0], v1 = (string?)dataRefObj[1], v2 = (string?)dataRefObj[2], v3 = (string?)dataRefObj[3],
-                            v4 = (string?)dataRefObj[4], v5 = (string?)dataRefObj[5], v6 = (string?)dataRefObj[6], v7 = (string?)dataRefObj[7])
-                    {
-                        userDataPtr = userData;
-                        if (dataRefObj[0] != null)
+                        if (refObjIndex >= dataRefObj.Length)
                         {
-                            userDataPtr[refObjPosition[0]].Ptr = (ulong)v0;
-                        }
-                        if (dataRefObj[1] != null)
-                        {
-                            userDataPtr[refObjPosition[1]].Ptr = (ulong)v1;
-                        }
-                        if (dataRefObj[2] != null)
-                        {
-                            userDataPtr[refObjPosition[2]].Ptr = (ulong)v2;
-                        }
-                        if (dataRefObj[3] != null)
-                        {
-                            userDataPtr[refObjPosition[3]].Ptr = (ulong)v3;
-                        }
-                        if (dataRefObj[4] != null)
-                        {
-                            userDataPtr[refObjPosition[4]].Ptr = (ulong)v4;
-                        }
-                        if (dataRefObj[5] != null)
-                        {
-                            userDataPtr[refObjPosition[5]].Ptr = (ulong)v5;
-                        }
-                        if (dataRefObj[6] != null)
-                        {
-                            userDataPtr[refObjPosition[6]].Ptr = (ulong)v6;
-                        }
-                        if (dataRefObj[7] != null)
-                        {
-                            userDataPtr[refObjPosition[7]].Ptr = (ulong)v7;
+                            Span<object?> newDataRefObj = new object?[dataRefObj.Length * 2];
+                            dataRefObj.CopyTo(newDataRefObj);
+                            dataRefObj = newDataRefObj;
+
+                            Span<int> newRefObjPosition = new int[refObjPosition.Length * 2];
+                            refObjPosition.CopyTo(newRefObjPosition);
+                            refObjPosition = newRefObjPosition;
                         }
 
-                        status = _eventProvider.EventWriteTransfer(in eventDescriptor, eventHandle, activityID, childActivityID, argCount, userData);
+                        dataRefObj[refObjIndex] = supportedRefObj;
+                        refObjPosition[refObjIndex] = idx;
+                        refObjIndex++;
                     }
                 }
                 else
                 {
-                    // Slow path: use pinned handles
-                    userDataPtr = userData;
+                    s_returnCode = WriteEventErrorCode.NullInput;
+                    return false;
+                }
+            }
 
-                    GCHandle[] rgGCHandle = new GCHandle[refObjIndex];
-                    for (int i = 0; i < refObjIndex; ++i)
+            // update argCount based on actual number of arguments written to 'userData'
+            argCount = (int)(userDataPtr - userData);
+
+            if (totalEventSize > TraceEventMaximumSize)
+            {
+                s_returnCode = WriteEventErrorCode.EventTooBig;
+                return false;
+            }
+
+            // the optimized path (using "fixed" instead of allocating pinned GCHandles
+            if (!hasNonStringRefArgs && (refObjIndex <= EtwAPIMaxRefObjCount))
+            {
+                // Fast path: at most 8 string arguments
+
+                // ensure we have at least s_etwAPIMaxStringCount in dataString, so that
+                // the "fixed" statement below works
+                while (refObjIndex < EtwAPIMaxRefObjCount)
+                {
+                    dataRefObj[refObjIndex] = null;
+                    refObjPosition[refObjIndex] = -1;
+                    ++refObjIndex;
+                }
+
+                //
+                // now fix any string arguments and set the pointer on the data descriptor
+                //
+                fixed (char* v0 = (string?)dataRefObj[0], v1 = (string?)dataRefObj[1], v2 = (string?)dataRefObj[2], v3 = (string?)dataRefObj[3],
+                        v4 = (string?)dataRefObj[4], v5 = (string?)dataRefObj[5], v6 = (string?)dataRefObj[6], v7 = (string?)dataRefObj[7])
+                {
+                    userDataPtr = userData;
+                    if (dataRefObj[0] != null)
                     {
-                        // below we still use "fixed" to avoid taking dependency on the offset of the first field
-                        // in the object (the way we would need to if we used GCHandle.AddrOfPinnedObject)
-                        rgGCHandle[i] = GCHandle.Alloc(dataRefObj[i], GCHandleType.Pinned);
-                        if (dataRefObj[i] is string)
-                        {
-                            fixed (char* p = (string?)dataRefObj[i])
-                                userDataPtr[refObjPosition[i]].Ptr = (ulong)p;
-                        }
-                        else
-                        {
-                            fixed (byte* p = (byte[]?)dataRefObj[i])
-                                userDataPtr[refObjPosition[i]].Ptr = (ulong)p;
-                        }
+                        userDataPtr[refObjPosition[0]].Ptr = (ulong)v0;
+                    }
+                    if (dataRefObj[1] != null)
+                    {
+                        userDataPtr[refObjPosition[1]].Ptr = (ulong)v1;
+                    }
+                    if (dataRefObj[2] != null)
+                    {
+                        userDataPtr[refObjPosition[2]].Ptr = (ulong)v2;
+                    }
+                    if (dataRefObj[3] != null)
+                    {
+                        userDataPtr[refObjPosition[3]].Ptr = (ulong)v3;
+                    }
+                    if (dataRefObj[4] != null)
+                    {
+                        userDataPtr[refObjPosition[4]].Ptr = (ulong)v4;
+                    }
+                    if (dataRefObj[5] != null)
+                    {
+                        userDataPtr[refObjPosition[5]].Ptr = (ulong)v5;
+                    }
+                    if (dataRefObj[6] != null)
+                    {
+                        userDataPtr[refObjPosition[6]].Ptr = (ulong)v6;
+                    }
+                    if (dataRefObj[7] != null)
+                    {
+                        userDataPtr[refObjPosition[7]].Ptr = (ulong)v7;
                     }
 
                     status = _eventProvider.EventWriteTransfer(in eventDescriptor, eventHandle, activityID, childActivityID, argCount, userData);
+                }
+            }
+            else
+            {
+                // Slow path: use pinned handles
+                userDataPtr = userData;
 
-                    for (int i = 0; i < refObjIndex; ++i)
+                GCHandle[] rgGCHandle = new GCHandle[refObjIndex];
+                for (int i = 0; i < refObjIndex; ++i)
+                {
+                    // below we still use "fixed" to avoid taking dependency on the offset of the first field
+                    // in the object (the way we would need to if we used GCHandle.AddrOfPinnedObject)
+                    rgGCHandle[i] = GCHandle.Alloc(dataRefObj[i], GCHandleType.Pinned);
+                    if (dataRefObj[i] is string)
                     {
-                        rgGCHandle[i].Free();
+                        fixed (char* p = (string?)dataRefObj[i])
+                            userDataPtr[refObjPosition[i]].Ptr = (ulong)p;
                     }
+                    else
+                    {
+                        fixed (byte* p = (byte[]?)dataRefObj[i])
+                            userDataPtr[refObjPosition[i]].Ptr = (ulong)p;
+                    }
+                }
+
+                status = _eventProvider.EventWriteTransfer(in eventDescriptor, eventHandle, activityID, childActivityID, argCount, userData);
+
+                for (int i = 0; i < refObjIndex; ++i)
+                {
+                    rgGCHandle[i].Free();
                 }
             }
 
@@ -674,7 +654,6 @@ namespace System.Diagnostics.Tracing
         /// <param name="data">
         /// pointer  do the event data
         /// </param>
-        [RequiresUnsafe]
         protected internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, int dataCount, IntPtr data)
         {
             if (childActivityID != null)
@@ -696,7 +675,6 @@ namespace System.Diagnostics.Tracing
             return true;
         }
 
-        [RequiresUnsafe]
         internal unsafe bool WriteEventRaw(
             ref EventDescriptor eventDescriptor,
             IntPtr eventHandle,
@@ -769,7 +747,6 @@ namespace System.Diagnostics.Tracing
             _liveSessions = null;
         }
 
-        [RequiresUnsafe]
         protected override unsafe void HandleEnableNotification(
                                     EventProvider target,
                                     byte *additionalData,
@@ -870,7 +847,6 @@ namespace System.Diagnostics.Tracing
         }
 
         // Write an event.
-        [RequiresUnsafe]
         internal override unsafe EventProvider.WriteEventErrorCode EventWriteTransfer(
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
@@ -904,7 +880,6 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        [RequiresUnsafe]
         internal override unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
             uint level, byte* pMetadata, uint metadataLength)
         {
@@ -1153,7 +1128,6 @@ namespace System.Diagnostics.Tracing
             set => _allKeywordMask = unchecked((long)value);
         }
 
-        [RequiresUnsafe]
         protected virtual unsafe void HandleEnableNotification(
                                     EventProvider target,
                                     byte *additionalData,
@@ -1170,44 +1144,6 @@ namespace System.Diagnostics.Tracing
         public bool IsEnabled()
         {
             return _enabled;
-        }
-
-        /// <summary>
-        /// IsEnabled, method used to test if event is enabled
-        /// </summary>
-        /// <param name="level">
-        /// Level  to test
-        /// </param>
-        /// <param name="keywords">
-        /// Keyword  to test
-        /// </param>
-        public bool IsEnabled(byte level, long keywords)
-        {
-            //
-            // If not enabled at all, return false.
-            //
-            if (!_enabled)
-            {
-                return false;
-            }
-
-            // This also covers the case of Level == 0.
-            if ((level <= _level) ||
-                (_level == 0))
-            {
-                //
-                // Check if Keyword is enabled
-                //
-
-                if ((keywords == 0) ||
-                    (((keywords & _anyKeywordMask) != 0) &&
-                     ((keywords & _allKeywordMask) == _allKeywordMask)))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         internal void Enable(byte level, long anyKeyword, long allKeyword)
@@ -1234,7 +1170,6 @@ namespace System.Diagnostics.Tracing
         {
         }
 
-        [RequiresUnsafe]
         internal virtual unsafe EventProvider.WriteEventErrorCode EventWriteTransfer(
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
@@ -1252,14 +1187,12 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        [RequiresUnsafe]
         internal virtual unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
             uint level, byte* pMetadata, uint metadataLength)
         {
             return IntPtr.Zero;
         }
 
-        [RequiresUnsafe]
         protected unsafe void ProviderCallback(
                         EventProvider target,
                         byte *additionalData,
@@ -1341,7 +1274,6 @@ namespace System.Diagnostics.Tracing
             return args;
         }
 
-        [RequiresUnsafe]
         protected unsafe bool MarshalFilterData(Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data)
         {
             Debug.Assert(filterData != null);

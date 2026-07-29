@@ -81,7 +81,7 @@ static IErrorInfo *CheckForFuncEvalAbortNoThrow(HRESULT hr)
             if (SafeQueryInterface(pErrorInfo, IID_IFuncEvalAbort, &pUnk) == S_OK)
             {
                 // QI succeeded, this is a func eval abort
-                return pErrorInfo.Extract();
+                return pErrorInfo.Detach();
             }
             else
             {
@@ -120,17 +120,16 @@ static void CheckForFuncEvalAbort(HRESULT hr)
 //
 STDAPI_(LPSTREAM) CreateMemStm(DWORD cb, BYTE** ppBuf)
 {
-    CONTRACT(LPSTREAM)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(CONTRACT_RETURN NULL);
+        INJECT_FAULT(return NULL);
         PRECONDITION(CheckPointer(ppBuf, NULL_OK));
         PRECONDITION(CheckPointer(ppBuf, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     LPSTREAM        pstm = NULL;
 
@@ -144,7 +143,7 @@ STDAPI_(LPSTREAM) CreateMemStm(DWORD cb, BYTE** ppBuf)
     if(ppBuf)
         *ppBuf = pMem;
 
-    RETURN pstm;
+    return pstm;
 }
 
 //=====================================================================
@@ -338,18 +337,15 @@ CtxEntry* CtxEntryCache::FindCtxEntry(LPVOID pCtxCookie, Thread *pThread)
     CtxEntry *pCtxEntry = NULL;
     Thread *pSTAThread = NULL;
 
-    CONTRACT (CtxEntry*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pCtxCookie));
-        POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(pCtxCookie == pCtxEntry->GetCtxCookie());
-        POSTCONDITION(pSTAThread == pCtxEntry->GetSTAThread());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Find our STA (if any)
     if (pThread->GetApartment() == Thread::AS_InSTA)
@@ -393,7 +389,9 @@ CtxEntry* CtxEntryCache::FindCtxEntry(LPVOID pCtxCookie, Thread *pThread)
     }
 
     // Returned the found or allocated entry.
-    RETURN pCtxEntry;
+    _ASSERTE(pCtxCookie == pCtxEntry->GetCtxCookie());
+    _ASSERTE(pSTAThread == pCtxEntry->GetSTAThread());
+    return pCtxEntry;
 }
 
 
@@ -494,7 +492,7 @@ void IUnkEntry::Init(
 
 //================================================================
 // Release the interface pointer held by the IUnkEntry.
-VOID IUnkEntry::ReleaseInterface(RCW *pRCW)
+VOID IUnkEntry::ReleaseInterface()
 {
     CONTRACTL
     {
@@ -515,7 +513,7 @@ VOID IUnkEntry::ReleaseInterface(RCW *pRCW)
         // now release the IUnknown that we hold
         if ((m_pUnknown != 0) && (m_pUnknown != (IUnknown *)0xBADF00D))
         {
-            ULONG cbRef = SafeReleasePreemp(m_pUnknown, pRCW);
+            ULONG cbRef = SafeReleasePreemp(m_pUnknown);
             LogInteropRelease(m_pUnknown, cbRef, "IUnkEntry::Free: Releasing the held ref");
         }
 
@@ -570,14 +568,13 @@ VOID IUnkEntry::Free()
 // Get IUnknown for the current context from IUnkEntry
 IUnknown* IUnkEntry::GetIUnknownForCurrContext(bool fNoAddRef)
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, (fNoAddRef ? NULL_OK : NULL_NOT_OK)));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     IUnknown* pUnk = NULL;
     LPVOID pCtxCookie = GetCurrentCtxCookie();
@@ -600,22 +597,21 @@ IUnknown* IUnkEntry::GetIUnknownForCurrContext(bool fNoAddRef)
     if (pUnk == NULL && !fNoAddRef)
         pUnk = UnmarshalIUnknownForCurrContext();
 
-    RETURN pUnk;
+    return pUnk;
 }
 
 //================================================================
 // Unmarshal IUnknown for the current context from IUnkEntry
 IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(!IsFreeThreaded());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     HRESULT     hrCDH               = S_OK;
     IUnknown*   pUnk                = NULL;
@@ -759,7 +755,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
         pUnk = UnmarshalIUnknownForCurrContextHelper();
     }
 
-    RETURN pUnk;
+    return pUnk;
 }
 
 //================================================================
@@ -887,19 +883,18 @@ HRESULT IUnkEntry::MarshalIUnknownToStreamCallback2(LPVOID pData)
 // Unmarshal IUnknown for the current context if the lock is held
 IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
 {
-    CONTRACT (IUnknown*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(!IsFreeThreaded());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     HRESULT hrCDH = S_OK;
     IUnknown * pUnk = NULL;
-    SafeComHolder<IStream> spStream;
+    ReleaseHolderAnyMode<IStream> spStream;
 
     CheckValidIUnkEntry();
 
@@ -938,7 +933,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
         // GetInterface for the current context
         HRESULT hr;
         hr = CoUnmarshalInterface(spStream, IID_IUnknown, reinterpret_cast<void**>(&pUnk));
-        spStream.Release();
+        spStream.Free();
 
         if (FAILED(hr))
         {
@@ -954,7 +949,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
         }
     }
 
-    RETURN pUnk;
+    return pUnk;
 }
 
 //================================================================
@@ -1020,7 +1015,7 @@ bool IUnkEntry::IsComponentFreeThreaded(IUnknown *pUnk)
     CONTRACTL_END;
 
     // First see if the object implements the IAgileObject marker interface
-    SafeComHolderPreemp<IAgileObject> pAgileObject;
+    ReleaseHolder<IAgileObject> pAgileObject;
     HRESULT hr = SafeQueryInterfacePreemp(pUnk, IID_IAgileObject, (IUnknown**)&pAgileObject);
     LogInteropQI(pUnk, IID_IAgileObject, hr, "IUnkEntry::IsComponentFreeThreaded: QI for IAgileObject");
 
@@ -1030,7 +1025,7 @@ bool IUnkEntry::IsComponentFreeThreaded(IUnknown *pUnk)
     }
     else
     {
-        SafeComHolderPreemp<IMarshal> pMarshal = NULL;
+        ReleaseHolder<IMarshal> pMarshal;
 
         // If not, then we can try to determine if the component aggregates the FTM via IMarshal.
         hr = SafeQueryInterfacePreemp(pUnk, IID_IMarshal, (IUnknown **)&pMarshal);
@@ -1115,7 +1110,7 @@ bool IUnkEntry::TryUpdateEntry()
     if (((DWORD_PTR)pOldEntry & 1) == 0)
     {
         CtxEntry *pNewEntry = (CtxEntry *)((DWORD_PTR)pOldEntry | 1);
-        return (InterlockedExchangeT(&m_pCtxEntry, pNewEntry) == pOldEntry);
+        return InterlockedExchangeT(&m_pCtxEntry, pNewEntry) == pOldEntry;
     }
     return false;
 }
@@ -1321,7 +1316,7 @@ HRESULT CtxEntry::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
     CallbackInfo.m_UserCallbackHR = E_FAIL;
 
     // Retrieve the IContextCallback interface from the IObjectContext.
-    SafeComHolderPreemp<IContextCallback> pCallback;
+    ReleaseHolder<IContextCallback> pCallback;
     hr = SafeQueryInterfacePreemp(m_pObjCtx, IID_IContextCallback, (IUnknown**)&pCallback);
     LogInteropQI(m_pObjCtx, IID_IContextCallback, hr, "QI for IID_IContextCallback");
     _ASSERTE(SUCCEEDED(hr) && pCallback);
@@ -1346,7 +1341,7 @@ HRESULT CtxEntry::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
     {
         // If the transition failed because of an aborted func eval, simply propagate
         // the HRESULT/IErrorInfo back to the caller as we cannot throw here.
-        SafeComHolder<IErrorInfo> pErrorInfo = CheckForFuncEvalAbortNoThrow(hr);
+        ReleaseHolder<IErrorInfo> pErrorInfo{ CheckForFuncEvalAbortNoThrow(hr) };
         if (pErrorInfo != NULL)
         {
             LOG((LF_INTEROP, LL_INFO100, "Entering into context 0x08X has failed since the debugger is blocking it\n", m_pCtxCookie));

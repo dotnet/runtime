@@ -24,7 +24,6 @@
 #include "gccover.h"
 #include "virtualcallstub.h"
 #include "threadsuspend.h"
-#include "cdacstress.h"
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM)
 #include "gcinfodecoder.h"
@@ -878,7 +877,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     }
 
     _ASSERTE(sizeof(OBJECTREF) == sizeof(DWORD_PTR));
-    GCFrame gcFrame(pThread, (OBJECTREF*)protRegs, 2, TRUE);
+    GCFrame gcFrame(pThread, (OBJECTREF*)protRegs, 2, GC_CALL_INTERIOR);
 
     MethodDesc *pMD = nativeCodeVersion.GetMethodDesc();
     LOG((LF_GCROOTS, LL_EVERYTHING, "GCCOVER: Doing GC at method %s::%s offset 0x%x\n",
@@ -887,8 +886,6 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     //-------------------------------------------------------------------------
     // Do the actual stress work
     //
-
-    CdacStress::MaybeVerify<cdac_on_instr>(pThread, regs);
 
     // BUG(github #10318) - when not using allocation contexts, the alloc lock
     // must be acquired here. Until fixed, this assert prevents random heap corruption.
@@ -1197,8 +1194,6 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     //-------------------------------------------------------------------------
     // Do the actual stress work
     //
-
-    CdacStress::MaybeVerify<cdac_on_instr>(pThread, regs);
 
     // BUG(github #10318)- when not using allocation contexts, the alloc lock
     // must be acquired here. Until fixed, this assert prevents random heap corruption.

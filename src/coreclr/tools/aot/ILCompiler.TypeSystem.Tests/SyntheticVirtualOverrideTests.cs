@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Xunit;
@@ -143,8 +144,8 @@ namespace TypeSystemTests
             {
                 MetadataType mdType = type as MetadataType;
 
-                if (mdType.Name.SequenceEqual("StructWithNoEqualsAndGetHashCode"u8)
-                    || mdType.Name.SequenceEqual("ClassWithInjectedEqualsAndGetHashCode"u8))
+                if (mdType.Name == "StructWithNoEqualsAndGetHashCode"u8
+                    || mdType.Name == "ClassWithInjectedEqualsAndGetHashCode"u8)
                 {
                     yield return GetEqualsMethod(type);
                     yield return GetGetHashCodeMethod(type);
@@ -158,8 +159,8 @@ namespace TypeSystemTests
             {
                 MetadataType mdType = type as MetadataType;
 
-                if (mdType.Name.SequenceEqual("StructWithNoEqualsAndGetHashCode"u8)
-                    || mdType.Name.SequenceEqual("ClassWithInjectedEqualsAndGetHashCode"u8))
+                if (mdType.Name == "StructWithNoEqualsAndGetHashCode"u8
+                    || mdType.Name == "ClassWithInjectedEqualsAndGetHashCode"u8)
                 {
                     yield return GetEqualsMethod(type);
                     yield return GetGetHashCodeMethod(type);
@@ -212,7 +213,7 @@ namespace TypeSystemTests
                 }
             }
 
-            public override ReadOnlySpan<byte> Name
+            public override Utf8Span Name
             {
                 get
                 {

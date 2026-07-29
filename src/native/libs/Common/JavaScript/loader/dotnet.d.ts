@@ -106,8 +106,12 @@ interface DotnetHostBuilder {
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
     /**
      * Downloads all the assets but doesn't create the runtime instance.
+     * @param httpCacheOnly If true, resources are only fetched into the browser HTTP cache
+     *   and discarded. A subsequent create() call will re-fetch from cache and do full init.
+     *   If false (default), resources are downloaded and loaded into WASM memory, so that
+     *   a subsequent create() call only needs to initialize the managed runtime.
      */
-    download(): Promise<void>;
+    download(httpCacheOnly?: boolean): Promise<void>;
     /**
      * Starts the runtime and returns promise of the API object.
      */
@@ -241,7 +245,6 @@ interface Assets {
     lazyAssembly?: AssemblyAsset[];
     corePdb?: PdbAsset[];
     pdb?: PdbAsset[];
-    jsModuleWorker?: JsAsset[];
     jsModuleDiagnostics?: JsAsset[];
     jsModuleNative: JsAsset[];
     jsModuleRuntime: JsAsset[];
@@ -254,7 +257,6 @@ interface Assets {
     modulesAfterConfigLoaded?: JsAsset[];
     modulesAfterRuntimeReady?: JsAsset[];
     extensions?: ResourceExtensions;
-    coreVfs?: VfsAsset[];
     vfs?: VfsAsset[];
 }
 type Asset = {
@@ -338,51 +340,6 @@ interface LoadingResource {
     url: string;
     response: Promise<Response>;
 }
-interface AssetEntry {
-    /**
-     * the name of the asset, including extension.
-     */
-    name: string;
-    /**
-     * determines how the asset will be handled once loaded
-     */
-    behavior: AssetBehaviors;
-    /**
-     * this should be absolute url to the asset
-     */
-    resolvedUrl?: string;
-    /**
-     * the integrity hash of the asset (if any)
-     */
-    hash?: string | null | "";
-    /**
-     * If specified, overrides the path of the asset in the virtual filesystem and similar data structures once downloaded.
-     */
-    virtualPath?: string;
-    /**
-     * Culture code
-     */
-    culture?: string;
-    /**
-     * If true, the runtime startup would not fail if the asset download was not successful.
-     */
-    isOptional?: boolean;
-    /**
-     * If provided, runtime doesn't have to fetch the data.
-     * Runtime would set the buffer to null after instantiation to free the memory.
-     */
-    buffer?: ArrayBuffer | Promise<ArrayBuffer>;
-    /**
-     * If provided, runtime doesn't have to import it's JavaScript modules.
-     * This will not work for multi-threaded runtime.
-     */
-    moduleExports?: any | Promise<any>;
-    /**
-     * It's metadata + fetch-like Promise<Response>
-     * If provided, the runtime doesn't have to initiate the download. It would just await the response.
-     */
-    pendingDownload?: LoadingResource;
-}
 type SingleAssetBehaviors = 
 /**
  * The binary of the .NET runtime.
@@ -392,10 +349,6 @@ type SingleAssetBehaviors =
  * The javascript module for loader.
  */
  | "js-module-dotnet"
-/**
- * The javascript module for threads.
- */
- | "js-module-threads"
 /**
  * The javascript module for diagnostic server and client.
  */
@@ -756,4 +709,4 @@ declare global {
 }
 
 export { GlobalizationMode, createDotnetRuntime as default, dotnet, exit };
-export type { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, LoaderConfig, ModuleAPI, RuntimeAPI };
+export type { AssemblyAsset, Asset, AssetBehaviors, Assets, BootModule, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, IcuAsset, JsAsset, LoadBootResourceCallback, LoaderConfig, LoadingResource, ModuleAPI, PdbAsset, ResourceExtensions, ResourceList, RuntimeAPI, SymbolsAsset, VfsAsset, WasmAsset, WebAssemblyBootResourceType };

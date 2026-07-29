@@ -384,6 +384,14 @@ namespace System.Net.Mime
             public const string Rtf = "text/rtf";
             public const string Xml = "text/xml";
         }
+        public static partial class Video
+        {
+            public const string Mp4 = "video/mp4";
+            public const string Mpeg = "video/mpeg";
+            public const string Ogg = "video/ogg";
+            public const string QuickTime = "video/quicktime";
+            public const string WebM = "video/webm";
+        }
     }
     public static partial class MediaTypeMap
     {

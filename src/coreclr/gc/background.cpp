@@ -1,6 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
 
 // static
 
@@ -221,47 +230,6 @@ void gc_heap::concurrent_print_time_delta (const char* msg)
 }
 
 #ifdef BACKGROUND_GC
-inline
-BOOL gc_heap::background_marked (uint8_t* o)
-{
-    return mark_array_marked (o);
-}
-
-inline
-BOOL gc_heap::background_mark1 (uint8_t* o)
-{
-    BOOL to_mark = !mark_array_marked (o);
-
-    dprintf (3, ("b*%zx*b(%d)", (size_t)o, (to_mark ? 1 : 0)));
-    if (to_mark)
-    {
-        mark_array_set_marked (o);
-        dprintf (4, ("n*%zx*n", (size_t)o));
-        return TRUE;
-    }
-    else
-        return FALSE;
-}
-
-// TODO: we could consider filtering out NULL's here instead of going to
-// look for it on other heaps
-inline
-BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
-{
-    BOOL marked = FALSE;
-    if ((o >= low) && (o < high))
-        marked = background_mark1 (o);
-#ifdef MULTIPLE_HEAPS
-    else if (o)
-    {
-        gc_heap* hp = heap_of (o);
-        assert (hp);
-        if ((o >= hp->background_saved_lowest_address) && (o < hp->background_saved_highest_address))
-            marked = background_mark1 (o);
-    }
-#endif //MULTIPLE_HEAPS
-    return marked;
-}
 
 #ifdef USE_REGIONS
 void gc_heap::set_background_overflow_p (uint8_t* oo)
@@ -544,16 +512,22 @@ void gc_heap::background_promote (Object** ppObject, ScanContext* sc, uint32_t f
 
     uint8_t* o = (uint8_t*)*ppObject;
 
-    if (!is_in_find_object_range (o))
-    {
-        return;
-    }
-
 #ifdef DEBUG_DestroyedHandleValue
     // we can race with destroy handle during concurrent scan
     if (o == (uint8_t*)DEBUG_DestroyedHandleValue)
         return;
 #endif //DEBUG_DestroyedHandleValue
+
+    if (!is_in_find_object_range (o))
+    {
+#ifdef _DEBUG
+        if ((o != NULL) && !(flags & GC_CALL_INTERIOR))
+        {
+            ((CObjectHeader*)o)->Validate();
+        }
+#endif //_DEBUG
+        return;
+    }
 
     HEAP_FROM_THREAD;
 
@@ -2050,7 +2024,7 @@ void gc_heap::background_mark_phase ()
         bgc_uoh_current_size[loh_generation - uoh_start_generation],
         bgc_uoh_current_size[poh_generation - uoh_start_generation]));
 
-#if defined(FEATURE_BASICFREEZE) && !defined(USE_REGIONS)
+#ifndef USE_REGIONS
     if (ro_segments_in_range)
     {
         dprintf (2, ("nonconcurrent marking in range ro segments"));
@@ -2058,7 +2032,7 @@ void gc_heap::background_mark_phase ()
         //concurrent_print_time_delta ("nonconcurrent marking in range ro segments");
         concurrent_print_time_delta ("NRRO");
     }
-#endif //FEATURE_BASICFREEZE && !USE_REGIONS
+#endif //!USE_REGIONS
 
     dprintf (2, ("nonconcurrent marking stack roots"));
     GCScan::GcScanRoots(background_promote,
@@ -2741,6 +2715,12 @@ void gc_heap::background_promote_callback (Object** ppObject, ScanContext* sc,
 
     if (!is_in_find_object_range (o))
     {
+#ifdef _DEBUG
+        if ((o != NULL) && !(flags & GC_CALL_INTERIOR))
+        {
+            ((CObjectHeader*)o)->Validate();
+        }
+#endif //_DEBUG
         return;
     }
 
@@ -3453,7 +3433,6 @@ void gc_heap::process_background_segment_end (heap_segment* seg,
     bgc_verify_mark_array_cleared (seg);
 }
 
-inline
 BOOL gc_heap::fgc_should_consider_object (uint8_t* o,
                                           heap_segment* seg,
                                           BOOL consider_bgc_mark_p,
@@ -3796,9 +3775,7 @@ void gc_heap::background_sweep()
     current_sweep_pos = 0;
 #endif //DOUBLY_LINKED_FL
 
-#ifdef FEATURE_BASICFREEZE
     sweep_ro_segments();
-#endif //FEATURE_BASICFREEZE
 
     dprintf (3, ("lh state: planning"));
 
@@ -4134,8 +4111,6 @@ void gc_heap::background_sweep()
                 seg->flags |= heap_segment_flags_swept;
                 current_sweep_pos = end;
             }
-
-            verify_soh_segment_list();
 
 #ifdef DOUBLY_LINKED_FL
             while (next_seg && heap_segment_background_allocated (next_seg) == 0)
@@ -4599,3 +4574,5 @@ size_t gc_heap::get_mark_array_size (heap_segment* seg)
 }
 
 #endif //USE_REGIONS
+
+} // namespace WKS/SVR

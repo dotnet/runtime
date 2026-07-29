@@ -170,44 +170,50 @@ namespace System.Collections
             // Instead, We compare with zeroes (== false) then negate the result to ensure compatibility.
 
             ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(_array);
-            ref byte value = ref Unsafe.As<bool, byte>(ref MemoryMarshal.GetArrayDataReference<bool>(values));
+            ReadOnlySpan<byte> valuesAsBytes = MemoryMarshal.AsBytes(values.AsSpan());
             if (Vector512.IsHardwareAccelerated)
             {
-                for (; i <= (uint)values.Length - Vector512<byte>.Count; i += (uint)Vector512<byte>.Count)
+                while (valuesAsBytes.Length >= Vector512<byte>.Count)
                 {
-                    Vector512<byte> vector = Vector512.LoadUnsafe(ref value, i);
+                    Vector512<byte> vector = Vector512.Create(valuesAsBytes);
                     Vector512<byte> isFalse = Vector512.Equals(vector, Vector512<byte>.Zero);
 
                     ulong result = isFalse.ExtractMostSignificantBits();
                     Unsafe.WriteUnaligned(ref Unsafe.Add(ref arrayRef, sizeof(ulong) * (i / 64u)), ~result);
+                    i += (uint)Vector512<byte>.Count;
+                    valuesAsBytes = valuesAsBytes.Slice(Vector512<byte>.Count);
                 }
             }
             else if (Vector256.IsHardwareAccelerated)
             {
-                for (; i <= (uint)values.Length - Vector256<byte>.Count; i += (uint)Vector256<byte>.Count)
+                while (valuesAsBytes.Length >= Vector256<byte>.Count)
                 {
-                    Vector256<byte> vector = Vector256.LoadUnsafe(ref value, i);
+                    Vector256<byte> vector = Vector256.Create(valuesAsBytes);
                     Vector256<byte> isFalse = Vector256.Equals(vector, Vector256<byte>.Zero);
 
                     uint result = isFalse.ExtractMostSignificantBits();
                     Unsafe.WriteUnaligned(ref Unsafe.Add(ref arrayRef, sizeof(uint) * (i / 32u)), ~result);
+                    i += (uint)Vector256<byte>.Count;
+                    valuesAsBytes = valuesAsBytes.Slice(Vector256<byte>.Count);
                 }
             }
             else if (Vector128.IsHardwareAccelerated)
             {
-                for (; i <= (uint)values.Length - Vector128<byte>.Count * 2u; i += (uint)Vector128<byte>.Count * 2u)
+                while (valuesAsBytes.Length >= Vector128<byte>.Count * 2)
                 {
-                    Vector128<byte> lowerVector = Vector128.LoadUnsafe(ref value, i);
+                    Vector128<byte> lowerVector = Vector128.Create(valuesAsBytes);
                     Vector128<byte> lowerIsFalse = Vector128.Equals(lowerVector, Vector128<byte>.Zero);
                     uint lowerResult = lowerIsFalse.ExtractMostSignificantBits();
 
-                    Vector128<byte> upperVector = Vector128.LoadUnsafe(ref value, i + (uint)Vector128<byte>.Count);
+                    Vector128<byte> upperVector = Vector128.Create(valuesAsBytes.Slice(Vector128<byte>.Count));
                     Vector128<byte> upperIsFalse = Vector128.Equals(upperVector, Vector128<byte>.Zero);
                     uint upperResult = upperIsFalse.ExtractMostSignificantBits();
 
                     Unsafe.WriteUnaligned(
                         ref Unsafe.Add(ref arrayRef, sizeof(uint) * (i / 32u)),
                         ~((upperResult << 16) | lowerResult));
+                    i += (uint)Vector128<byte>.Count * 2u;
+                    valuesAsBytes = valuesAsBytes.Slice(Vector128<byte>.Count * 2);
                 }
             }
 

@@ -84,6 +84,12 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
     public List<Crossgen2Option> Options { get; init; } = new();
 
     /// <summary>
+    /// Additional raw command-line arguments to pass to crossgen2 (e.g. "--determinism-stress=2").
+    /// Use this for options that take a value or are not modeled by <see cref="Crossgen2Option"/>.
+    /// </summary>
+    public List<string> AdditionalArgs { get; init; } = new();
+
+    /// <summary>
     /// Optional validator for this compilation's R2R output image.
     /// </summary>
     public Action<ReadyToRunReader>? Validate { get; init; }
@@ -99,8 +105,13 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
     /// to avoid colliding with component stubs that crossgen2 creates alongside the composite image.
     /// </summary>
     public string FilePath => _outputDir != null
-        ? Path.Combine(_outputDir, "CG2", Name + (IsComposite ? "-composite" : "") + ".dll")
+        ? Path.Combine(_outputDir, "CG2", Name + (IsComposite ? "-composite" : "") + OutputFileExtension)
         : throw new InvalidOperationException("Output directory not set");
+
+    /// <summary>
+    /// File extension for the crossgen2 output image.
+    /// </summary>
+    public string OutputFileExtension { get; init; } = ".dll";
 
     public void SetOutputDir(string outputDir)
     {
@@ -296,6 +307,9 @@ internal sealed class R2RTestRunner
         foreach (var option in compilation.Options)
             args.Add(option.ToArg());
 
+        // Caller-supplied raw args (for options that take values, e.g. --determinism-stress=N)
+        args.AddRange(compilation.AdditionalArgs);
+
         // Global refs (runtime pack + System.Private.CoreLib)
         AddRefArgs(args, refPaths);
 
@@ -327,21 +341,7 @@ internal sealed class R2RTestRunner
 
         paths.Add(Path.Combine(_paths.RuntimePackDir, "*.dll"));
 
-        // SPCL lives in the runtime pack native/ dir in full builds (placed by
-        // externals.csproj BinPlace during libs.pretest).  In partial CI builds
-        // that skip libs.pretest, the runtime pack layout may not exist, but the
-        // CoreCLR artifacts directory always has SPCL after clr.nativecorelib.
-        string spcl = Path.Combine(_paths.RuntimePackNativeDir, "System.Private.CoreLib.dll");
-        if (!File.Exists(spcl))
-        {
-            string fallback = Path.Combine(_paths.CoreCLRArtifactsDir, "System.Private.CoreLib.dll");
-            if (File.Exists(fallback))
-            {
-                _output.WriteLine($"[R2RTestRunner] SPCL not found at '{spcl}'; using CoreCLR artifacts fallback '{fallback}'");
-                spcl = fallback;
-            }
-        }
-
+        string spcl = _paths.SystemPrivateCoreLibPath;
         Assert.True(File.Exists(spcl),
             $"System.Private.CoreLib.dll not found at '{spcl}'. " +
             $"Searched RuntimePackNativeDir='{_paths.RuntimePackNativeDir}' and " +

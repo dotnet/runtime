@@ -82,6 +82,14 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public static string MockPath = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, MockName);
         }
 
+        public static class DotNetAot
+        {
+            public static string FileName = GetSharedLibraryFileNameForCurrentPlatform("dotnet-aot");
+
+            public static string MockName = GetSharedLibraryFileNameForCurrentPlatform("mockaotsdk");
+            public static string MockPath = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, MockName);
+        }
+
         public static class NetHost
         {
             public static string FileName = GetSharedLibraryFileNameForCurrentPlatform("nethost");

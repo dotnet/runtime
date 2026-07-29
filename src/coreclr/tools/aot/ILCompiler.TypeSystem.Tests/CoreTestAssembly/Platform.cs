@@ -214,6 +214,7 @@ namespace System.Runtime.InteropServices
     public sealed class MarshalAsAttribute : Attribute
     {
         public MarshalAsAttribute(UnmanagedType unmanagedType) { }
+        public int IidParameterIndex { get; set; }
     }
 
     public sealed class ComImportAttribute : Attribute
@@ -290,5 +291,30 @@ namespace System.Runtime.Intrinsics
     {
         private readonly Vector256<T> _lower;
         private readonly Vector256<T> _upper;
+    }
+}
+
+namespace System.Numerics
+{
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct Decimal32
+    {
+        private readonly uint _value;
+    }
+
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct Decimal64
+    {
+        private readonly ulong _value;
+    }
+
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct Decimal128
+    {
+        private readonly ulong _lower;
+        private readonly ulong _upper;
     }
 }

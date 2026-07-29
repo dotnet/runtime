@@ -65,6 +65,7 @@ struct CREATE_MARSHALER_CARRAY_OPERANDS
     UINT32          multiplier;
     UINT32          additive;
     VARTYPE         elementType;
+    CorNativeType   elementNativeType;
     UINT16          countParamIdx;
     BYTE            bestfitmapping;
     BYTE            throwonunmappablechar;
@@ -398,6 +399,7 @@ public:
         WRAPPER_NO_CONTRACT;
         pMopsOut->methodTable = m_hndArrayElemType.AsMethodTable();
         pMopsOut->elementType = m_arrayElementType;
+        pMopsOut->elementNativeType = m_arrayElementNativeType;
         pMopsOut->countParamIdx = m_countParamIdx;
         pMopsOut->multiplier  = m_multiplier;
         pMopsOut->additive    = m_additive;
@@ -480,6 +482,7 @@ private:
     MethodDesc*     m_pMD;  // Save MethodDesc for later inspection so that we can pass SizeParamIndex by ref
     TypeHandle      m_hndArrayElemType;
     VARTYPE         m_arrayElementType;
+    CorNativeType   m_arrayElementNativeType;
     int             m_iArrayRank;
     BOOL            m_nolowerbounds;  // if managed type is SZARRAY, don't allow lower bounds
 
@@ -545,6 +548,7 @@ class ArrayMarshalInfo
 public:
     ArrayMarshalInfo(ArrayMarshalInfoFlags flags)
     : m_vtElement(VT_EMPTY)
+    , m_ntElement(NATIVE_TYPE_DEFAULT)
     , m_errorResourceId(0)
     , m_flags(flags)
 #ifdef FEATURE_COMINTEROP
@@ -592,6 +596,12 @@ public:
         }
     }
 
+    CorNativeType GetElementNativeType()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_ntElement;
+    }
+
     BOOL IsValid()
     {
         CONTRACTL
@@ -602,7 +612,7 @@ public:
         }
         CONTRACTL_END;
 
-        return m_vtElement != VT_EMPTY;
+        return m_vtElement != VT_EMPTY || m_ntElement != NATIVE_TYPE_DEFAULT;
     }
 
     BOOL IsSafeArraySubTypeExplicitlySpecified()
@@ -654,6 +664,7 @@ protected:
     TypeHandle m_thElement;
     TypeHandle m_thInterfaceArrayElementClass;
     VARTYPE m_vtElement;
+    CorNativeType m_ntElement;
     DWORD m_errorResourceId;
     ArrayMarshalInfoFlags m_flags;
 

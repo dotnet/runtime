@@ -19,16 +19,21 @@ internal class ARMUnwinder(Target target)
 
     public bool Unwind(ref ARMContext context)
     {
-        if (_eman.GetCodeBlockHandle(context.InstructionPointer.Value) is not CodeBlockHandle cbh)
+        if (_eman.GetCodeBlockHandle(context.InstructionPointer) is not CodeBlockHandle cbh)
         {
-            throw new InvalidOperationException("Unwind failed, unable to find code block for the instruction pointer.");
+            return false;
         }
 
         uint startingPc = context.Pc;
         uint startingSp = context.Sp;
 
         TargetPointer imageBase = _eman.GetUnwindInfoBaseAddress(cbh);
-        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(_eman.GetUnwindInfo(cbh));
+        TargetPointer unwindInfoAddr = _eman.GetUnwindInfo(cbh);
+
+        if (unwindInfoAddr == TargetPointer.Null)
+            return false;
+
+        Data.RuntimeFunction functionEntry = _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(unwindInfoAddr);
 
         if ((functionEntry.UnwindData & 0x3) != 0)
         {

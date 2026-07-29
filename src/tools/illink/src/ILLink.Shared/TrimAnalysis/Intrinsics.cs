@@ -26,6 +26,9 @@ namespace ILLink.Shared.TrimAnalysis
                 // System.Type.TypeHandle getter
                 "get_TypeHandle" when calledMethod.IsDeclaredOnType("System.Type") => IntrinsicId.Type_get_TypeHandle,
 
+                // System.Type.Assembly getter
+                "get_Assembly" when calledMethod.IsDeclaredOnType("System.Type") => IntrinsicId.Type_get_Assembly,
+
                 // static System.Reflection.MethodBase.GetMethodFromHandle(RuntimeMethodHandle handle)
                 // static System.Reflection.MethodBase.GetMethodFromHandle(RuntimeMethodHandle handle, RuntimeTypeHandle declaringType)
                 "GetMethodFromHandle" when calledMethod.IsDeclaredOnType("System.Reflection.MethodBase")
@@ -372,6 +375,13 @@ namespace ILLink.Shared.TrimAnalysis
                 "CreateInstance" when calledMethod.IsDeclaredOnType("System.Reflection.Assembly")
                     && calledMethod.HasParameterOfType((ParameterIndex)1, "System.String")
                     => IntrinsicId.Assembly_CreateInstance,
+
+                // System.Reflection.Assembly.GetType(string)
+                // System.Reflection.Assembly.GetType(string, bool)
+                // System.Reflection.Assembly.GetType(string, bool, bool)
+                "GetType" when calledMethod.IsDeclaredOnType("System.Reflection.Assembly")
+                    && calledMethod.HasParameterOfType((ParameterIndex)1, "System.String")
+                    => IntrinsicId.Assembly_GetType,
 
                 // System.Reflection.Assembly.Location getter
                 "get_Location" when calledMethod.IsDeclaredOnType("System.Reflection.Assembly")

@@ -498,6 +498,26 @@ namespace System.Net.Http.Tests
             Assert.Throws<InvalidOperationException>(() => { _headers.Add("Warning", "v"); });
         }
 
+        [Fact]
+        public void Contains_DisallowedRequestHeaderOnContentHeaders_ReturnsFalse()
+        {
+            using var content = new StringContent("test");
+            HttpContentHeaders headers = content.Headers;
+            Assert.False(headers.Contains("Accept"));
+            Assert.False(headers.Contains("Accept-Encoding"));
+            Assert.False(headers.Contains("Host"));
+        }
+
+        [Fact]
+        public void Remove_DisallowedRequestHeaderOnContentHeaders_ReturnsFalse()
+        {
+            using var content = new StringContent("test");
+            HttpContentHeaders headers = content.Headers;
+            Assert.False(headers.Remove("Accept"));
+            Assert.False(headers.Remove("Accept-Encoding"));
+            Assert.False(headers.Remove("Host"));
+        }
+
         private sealed class ComputeLengthHttpContent : HttpContent
         {
             private readonly Func<long?> _tryComputeLength;

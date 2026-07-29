@@ -66,7 +66,7 @@ namespace Microsoft.Interop
             ImmutableDictionary<string, TypedConstant> namedArgs = ImmutableDictionary.CreateRange(attributeData.NamedArguments);
             CountInfo countInfo = ParseCountInfo(attributeData, elementInfoProvider, marshallingInfoCallback);
             int elementIndirectionDepth = namedArgs.TryGetValue(ManualTypeMarshallingHelper.MarshalUsingProperties.ElementIndirectionDepth, out TypedConstant value) ? (int)value.Value! : 0;
-            return new UseSiteAttributeData(elementIndirectionDepth, countInfo, attributeData);
+            return new UseSiteAttributeData(elementIndirectionDepth, countInfo, attributeData, IidParameterIndexInfo: null);
         }
 
         private CountInfo ParseCountInfo(AttributeData attributeData, IElementInfoProvider elementInfoProvider, GetMarshallingInfoCallback marshallingInfoCallback)

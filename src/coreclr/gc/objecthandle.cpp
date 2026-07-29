@@ -744,95 +744,6 @@ void Ref_Shutdown()
     }
 }
 
-bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        WRAPPER(GC_TRIGGERS);
-        INJECT_FAULT(return false);
-    }
-    CONTRACTL_END;
-
-    HandleTableBucket *result = bucket;
-    HandleTableMap *walk = &g_HandleTableMap;
-
-    HandleTableMap *last = NULL;
-    uint32_t offset = 0;
-
-    result->pTable = NULL;
-
-    // create handle table set for the bucket
-    int n_slots = getNumberOfSlots();
-
-    HandleTableBucketHolder bucketHolder(result, n_slots);
-
-    result->pTable = new (nothrow) HHANDLETABLE[n_slots];
-    if (!result->pTable)
-    {
-        return false;
-    }
-
-    ZeroMemory(result->pTable, n_slots * sizeof(HHANDLETABLE));
-
-    for (int uCPUindex=0; uCPUindex < n_slots; uCPUindex++) {
-        result->pTable[uCPUindex] = HndCreateHandleTable(s_rgTypeFlags, ARRAY_SIZE(s_rgTypeFlags));
-        if (!result->pTable[uCPUindex])
-            return false;
-    }
-
-    for (;;) {
-        // Do we have free slot
-        while (walk) {
-            for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++) {
-                if (walk->pBuckets[i] == 0) {
-                    for (int uCPUindex=0; uCPUindex < n_slots; uCPUindex++)
-                        HndSetHandleTableIndex(result->pTable[uCPUindex], i+offset);
-
-                    result->HandleTableIndex = i+offset;
-                    if (Interlocked::CompareExchangePointer(&walk->pBuckets[i], result, NULL) == 0) {
-                        // Get a free slot.
-                        bucketHolder.SuppressRelease();
-                        return true;
-                    }
-                }
-            }
-            last = walk;
-            offset = walk->dwMaxIndex;
-            walk = walk->pNext;
-        }
-
-        // No free slot.
-        // Let's create a new node
-        HandleTableMap *newMap = new (nothrow) HandleTableMap;
-        if (!newMap)
-        {
-            return false;
-        }
-
-        newMap->pBuckets = new (nothrow) HandleTableBucket * [ INITIAL_HANDLE_TABLE_ARRAY_SIZE ];
-        if (!newMap->pBuckets)
-        {
-            delete newMap;
-            return false;
-        }
-
-        newMap->dwMaxIndex = last->dwMaxIndex + INITIAL_HANDLE_TABLE_ARRAY_SIZE;
-        newMap->pNext = NULL;
-        ZeroMemory(newMap->pBuckets,
-                INITIAL_HANDLE_TABLE_ARRAY_SIZE * sizeof (HandleTableBucket *));
-
-        if (Interlocked::CompareExchangePointer(&last->pNext, newMap, NULL) != NULL)
-        {
-            // This thread loses.
-            delete [] newMap->pBuckets;
-            delete newMap;
-        }
-        walk = last->pNext;
-        offset = last->dwMaxIndex;
-    }
-}
-
 void Ref_RemoveHandleTableBucket(HandleTableBucket *pBucket)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1904,6 +1815,7 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_VARIABLE_HANDLES
         HNDTYPE_VARIABLE,
 #endif
+        HNDTYPE_DEPENDENT,
 #ifdef FEATURE_REFCOUNTED_HANDLES
         HNDTYPE_REFCOUNTED,
 #endif
@@ -1957,13 +1869,13 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
         HNDTYPE_WEAK_SHORT,
         HNDTYPE_WEAK_LONG,
 
-
         HNDTYPE_STRONG,
 
         HNDTYPE_PINNED,
 #ifdef FEATURE_VARIABLE_HANDLES
         HNDTYPE_VARIABLE,
 #endif
+        HNDTYPE_DEPENDENT,
 #ifdef FEATURE_REFCOUNTED_HANDLES
         HNDTYPE_REFCOUNTED,
 #endif

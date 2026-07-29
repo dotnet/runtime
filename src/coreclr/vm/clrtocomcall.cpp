@@ -180,14 +180,6 @@ namespace
             &stubLinker
         );
 
-#if defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
-        if (pStubMD->IsDynamicMethod())
-        {
-            DynamicMethodDesc* pDMD = pStubMD->AsDynamicMethodDesc();
-            pDMD->SetNativeStackArgSize(2 * TARGET_POINTER_SIZE); // The native stack arg size is constant since the signature for struct stubs is constant.
-        }
-#endif // FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
-
         szMetaSig.SuppressRelease();
 
         return pStubMD;

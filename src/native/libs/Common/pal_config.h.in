@@ -16,6 +16,7 @@
 #cmakedefine01 HAVE_FORK
 #cmakedefine01 HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
 #cmakedefine01 HAVE_VFORK
+#cmakedefine01 HAVE_PR_SET_PDEATHSIG
 #cmakedefine01 HAVE_CLOSE_RANGE
 #cmakedefine01 HAVE_FDWALK
 #cmakedefine01 HAVE_CHMOD

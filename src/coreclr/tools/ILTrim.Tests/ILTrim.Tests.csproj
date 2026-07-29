@@ -7,13 +7,13 @@
     <IsPackable>false</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Platforms>x64;x86</Platforms>
-    <TestRunnerName>MSTest</TestRunnerName>
     <!-- Suppress analyzer warnings in old prototype code -->
     <NoWarn>$(NoWarn);CS8602;CS8604</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
 
     <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" />
     <ProjectReference Include="../ILTrim.Core/ILTrim.Core.csproj" />

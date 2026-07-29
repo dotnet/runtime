@@ -9,11 +9,7 @@ namespace System.Collections.ObjectModel
     {
         internal static void ValidateCopyToArguments(int sourceCount, Array array, int index)
         {
-#if NET
             ArgumentNullException.ThrowIfNull(array);
-#else
-            ArgumentNullException.ThrowIfNull(array);
-#endif
 
             if (array.Rank != 1)
             {

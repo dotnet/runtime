@@ -19,6 +19,7 @@ try {
             exitOnUnhandledError: true,
             logExitCode: true,
             jsThreadBlockingMode: "WarnWhenBlockingWait",
+            pthreadPoolInitialSize: 15,
         })
         .create();
 

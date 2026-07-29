@@ -14,7 +14,7 @@
 // returns pointer to IL code
 BYTE* ILStubResolver::GetCodeInfo(unsigned* pCodeSize, unsigned* pStackSize, CorInfoOptions* pOptions, unsigned* pEHSize)
 {
-    CONTRACT(BYTE*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pCodeSize));
@@ -22,9 +22,8 @@ BYTE* ILStubResolver::GetCodeInfo(unsigned* pCodeSize, unsigned* pStackSize, Cor
         PRECONDITION(CheckPointer(pOptions));
         PRECONDITION(CheckPointer(pEHSize));
         PRECONDITION(CheckPointer(m_pCompileTimeState));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
     CORINFO_METHOD_INFO methodInfo;
@@ -35,10 +34,10 @@ BYTE* ILStubResolver::GetCodeInfo(unsigned* pCodeSize, unsigned* pStackSize, Cor
     *pOptions = methodInfo.options;
     *pEHSize = methodInfo.EHcount;
 
-    RETURN methodInfo.ILCode;
+    return methodInfo.ILCode;
 #else // DACCESS_COMPILE
     DacNotImpl();
-    RETURN NULL;
+    return NULL;
 #endif // DACCESS_COMPILE
 }
 
@@ -333,13 +332,13 @@ ILStubResolver::ILStubResolver() :
 bool ILStubResolver::IsCompiled()
 {
     LIMITED_METHOD_CONTRACT;
-    return (dac_cast<TADDR>(m_pCompileTimeState) == ILGeneratedAndFreed);
+    return dac_cast<TADDR>(m_pCompileTimeState) == ILGeneratedAndFreed;
 }
 
 bool ILStubResolver::IsILGenerated()
 {
     LIMITED_METHOD_CONTRACT;
-    return (dac_cast<TADDR>(m_pCompileTimeState) != ILNotYetGenerated);
+    return dac_cast<TADDR>(m_pCompileTimeState) != ILNotYetGenerated;
 }
 
 MethodDesc* ILStubResolver::GetStubMethodDesc()
@@ -453,7 +452,7 @@ COR_ILMETHOD_DECODER* ILStubResolver::AllocGeneratedIL(
 
 } // ILStubResolver::AllocGeneratedIL
 
-COR_ILMETHOD_DECODER* ILStubResolver::FinalizeILStub(ILStubLinker* sl)
+COR_ILMETHOD_DECODER* ILStubResolver::FinalizeILStub(ILStubLinker* sl, CORJIT_FLAGS corJitFlags)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(!IsILGenerated());
@@ -479,7 +478,7 @@ COR_ILMETHOD_DECODER* ILStubResolver::FinalizeILStub(ILStubLinker* sl)
 
     // Store the token lookup map
     SetTokenLookupMap(sl->GetTokenLookupMap());
-    SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
+    SetJitFlags(corJitFlags);
 
     return pILHeader;
 }

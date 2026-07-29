@@ -28,6 +28,7 @@
 #include "RhConfig.h"
 
 #include <unistd.h>
+#include <minipal/cpucount.h>
 #include <sched.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -50,6 +51,10 @@
 #endif
 
 #if HAVE_PTHREAD_GETTHREADID_NP
+#include <pthread_np.h>
+#endif
+
+#if defined(__OpenBSD__)
 #include <pthread_np.h>
 #endif
 
@@ -456,10 +461,10 @@ void InitializeCurrentProcessCpuCount()
     {
 #if HAVE_SCHED_GETAFFINITY
 
-        int configuredCpuCount = sysconf(_SC_NPROCESSORS_CONF);
+        int configuredCpuCount = minipal_get_cpu_max_possible_count();
         if (configuredCpuCount == -1)
         {
-            // In the unlikely event that sysconf(_SC_NPROCESSORS_CONF) fails, just assume a reasonable default maximum number of CPUs to avoid failing.
+            // In the unlikely event that minipal_get_cpu_max_possible_count() fails, just assume a reasonable default maximum number of CPUs to avoid failing.
             configuredCpuCount = CPU_SETSIZE;
         }
 
@@ -504,7 +509,7 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
 static pthread_key_t key;
 #endif
 
@@ -548,7 +553,7 @@ bool PalInit()
     }
 #endif
 
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
     if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
     {
         return false;
@@ -558,7 +563,7 @@ bool PalInit()
     return true;
 }
 
-#if !defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
+#if !defined(TARGET_LINUX)
 struct TlsDestructionMonitor
 {
     void* m_thread = nullptr;
@@ -604,7 +609,7 @@ FCIMPLEND
 //  thread        - thread to attach
 void PalAttachThread(void* thread)
 {
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
     if (pthread_setspecific(key, thread) != 0)
     {
         _ASSERTE(!"pthread_setspecific failed");
@@ -867,6 +872,11 @@ void PalPrintFatalError(const char* message)
 char* PalCopyTCharAsChar(const TCHAR* toCopy)
 {
     NewArrayHolder<char> copy {new (nothrow) char[strlen(toCopy) + 1]};
+    if (copy.IsNull())
+    {
+        return nullptr;
+    }
+
     strcpy(copy, toCopy);
     return copy.Extract();
 }
@@ -1187,6 +1197,15 @@ bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHi
     // This is a Mac specific method
     pStackHighOut = pthread_get_stackaddr_np(pthread_self());
     pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));
+#elif defined(__OpenBSD__)
+    // OpenBSD provides the stack segment of the current thread via pthread_stackseg_np.
+    // ss_sp points to the top (highest address) of the stack.
+    stack_t stack;
+    int status = pthread_stackseg_np(pthread_self(), &stack);
+    ASSERT_MSG(status == 0, "pthread_stackseg_np call failed");
+
+    pStackHighOut = stack.ss_sp;
+    pStackLowOut = (uint8_t*)stack.ss_sp - stack.ss_size;
 #else // __APPLE__
     pthread_attr_t attr;
     size_t stackSize;

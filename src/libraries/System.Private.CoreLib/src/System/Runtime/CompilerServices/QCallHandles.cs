@@ -24,7 +24,6 @@ namespace System.Runtime.CompilerServices
     {
         private object* _ptr;
 
-        [RequiresUnsafe]
         private ObjectHandleOnStack(object* pObject)
         {
             _ptr = pObject;

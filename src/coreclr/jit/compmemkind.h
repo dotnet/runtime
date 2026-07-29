@@ -62,7 +62,6 @@ CompMemKindMacro(SideEffects)
 CompMemKindMacro(ObjectAllocator)
 CompMemKindMacro(VariableLiveRanges)
 CompMemKindMacro(ClassLayout)
-CompMemKindMacro(TailMergeThrows)
 CompMemKindMacro(EarlyProp)
 CompMemKindMacro(ZeroInit)
 CompMemKindMacro(Pgo)
@@ -72,6 +71,8 @@ CompMemKindMacro(Async)
 CompMemKindMacro(RangeCheckCloning)
 CompMemKindMacro(WasmSccTransform)
 CompMemKindMacro(WasmCfgLowering)
+CompMemKindMacro(WasmEH)
+CompMemKindMacro(WasmSpillRefs)
 //clang-format on
 
 #undef CompMemKindMacro

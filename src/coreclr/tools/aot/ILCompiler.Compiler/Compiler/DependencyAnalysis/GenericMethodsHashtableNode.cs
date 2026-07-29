@@ -67,9 +67,11 @@ namespace ILCompiler.DependencyAnalysis
                     }
 
                     int flags = 0;
-                    MethodDesc methodForMetadata = GetMethodForMetadata(method, out bool isAsyncVariant);
+                    MethodDesc methodForMetadata = GetMethodForMetadata(method, out bool isAsyncVariant, out bool isReturnDroppingAsyncThunk);
                     if (isAsyncVariant)
                         flags |= GenericMethodsHashtableConstants.IsAsyncVariant;
+                    if (isReturnDroppingAsyncThunk)
+                        flags |= GenericMethodsHashtableConstants.IsReturnDroppingAsyncThunk;
 
                     int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, methodForMetadata);
 
@@ -108,18 +110,26 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(argNode, "GenericMethodsHashtable entry instantiation argument"));
             }
 
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, GetMethodForMetadata(method, out _));
+            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, GetMethodForMetadata(method, out _, out _));
         }
 
-        private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant)
+        private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant, out bool isReturnDroppingAsyncThunk)
         {
             MethodDesc result = method.GetTypicalMethodDefinition();
+            if (result is ReturnDroppingAsyncThunk rdThunk)
+            {
+                isAsyncVariant = false;
+                isReturnDroppingAsyncThunk = true;
+                return rdThunk.AsyncVariantTarget.Target;
+            }
             if (result is AsyncMethodVariant asyncVariant)
             {
                 isAsyncVariant = true;
+                isReturnDroppingAsyncThunk = false;
                 return asyncVariant.Target;
             }
             isAsyncVariant = false;
+            isReturnDroppingAsyncThunk = false;
             return result;
         }
 

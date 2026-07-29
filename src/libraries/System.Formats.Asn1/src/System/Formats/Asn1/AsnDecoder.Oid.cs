@@ -76,7 +76,7 @@ namespace System.Formats.Asn1
             return ret;
         }
 
-        private static void ReadSubIdentifier(
+        private static unsafe void ReadSubIdentifier(
             ReadOnlySpan<byte> source,
             out int bytesRead,
             out long? smallValue,

@@ -12,13 +12,17 @@ public sealed class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<Cont
     public T Context;
 
     public uint Size => Context.Size;
-    public uint DefaultContextFlags => Context.DefaultContextFlags;
+    public uint ContextControlFlags => Context.ContextControlFlags;
+    public uint FullContextFlags => Context.FullContextFlags;
+    public uint AllContextFlags => Context.AllContextFlags;
 
     public int StackPointerRegister => Context.StackPointerRegister;
 
     public TargetPointer StackPointer { get => Context.StackPointer; set => Context.StackPointer = value; }
-    public TargetPointer InstructionPointer { get => Context.InstructionPointer; set => Context.InstructionPointer = value; }
+    public TargetCodePointer InstructionPointer { get => Context.InstructionPointer; set => Context.InstructionPointer = value; }
     public TargetPointer FramePointer { get => Context.FramePointer; set => Context.FramePointer = value; }
+
+    public uint RawContextFlags { get => Context.RawContextFlags; set => Context.RawContextFlags = value; }
 
     public unsafe void ReadFromAddress(Target target, TargetPointer address)
     {
@@ -48,6 +52,7 @@ public sealed class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<Cont
     public IPlatformAgnosticContext Clone() => new ContextHolder<T>() { Context = Context };
     public void Clear() => Context = default;
     public void Unwind(Target target) => Context.Unwind(target);
+    public void UnsetSingleStepFlag() => Context.UnsetSingleStepFlag();
 
     public bool TrySetRegister(string fieldName, TargetNUInt value) => Context.TrySetRegister(fieldName, value);
     public bool TryReadRegister(string fieldName, out TargetNUInt value) => Context.TryReadRegister(fieldName, out value);

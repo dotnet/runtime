@@ -96,8 +96,8 @@ extern "C" FCDECL1(VOID, FCComCtor, LPVOID pV);
 class GCReporting final
 {
 public:
-    static FCDECL1(void, Register, GCFrame*);
-    static FCDECL1(void, Unregister, GCFrame*);
+    FCDECL1(static void, Register, GCFrame*);
+    FCDECL1(static void, Unregister, GCFrame*);
 };
 
 #endif // _ECALL_H_

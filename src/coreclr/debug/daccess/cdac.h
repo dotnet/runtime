@@ -18,7 +18,7 @@ public:
     CDAC(CDAC&& other)
         : m_module{ other.m_module }
         , m_cdac_handle{ other.m_cdac_handle }
-        , m_target{ other.m_target.Extract() }
+        , m_target{ other.m_target.Detach() }
         , m_legacyImpl{ other.m_legacyImpl }
     {
         other.m_module = NULL;
@@ -31,7 +31,7 @@ public:
     {
         m_module = other.m_module;
         m_cdac_handle = other.m_cdac_handle;
-        m_target = other.m_target.Extract();
+        m_target = other.m_target.Detach();
         m_legacyImpl = other.m_legacyImpl;
 
         other.m_module = NULL;

@@ -94,7 +94,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67531", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Invoke_TwoDimensionalArray_CustomBinder_IncorrectTypeArguments()
         {
             var ctor = typeof(int[,]).GetConstructor(new[] { typeof(int), typeof(int) });
@@ -106,7 +105,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67531", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Invoke_TwoParameters_CustomBinder_IncorrectTypeArgument()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
@@ -133,6 +131,19 @@ namespace System.Reflection.Tests
             Assert.True(constructors[0].IsPublic);
         }
 
+        [Fact]
+        public void GetGenericArguments_ReturnsEmptyArray()
+        {
+            ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
+            Assert.All(constructors, constructorInfo => Assert.Empty(constructorInfo.GetGenericArguments()));
+
+            ConstructorInfo[] genericTypeConstructors = GetConstructors(typeof(GenericClassWithConstructor<int>));
+            Assert.All(genericTypeConstructors, constructorInfo => Assert.Empty(constructorInfo.GetGenericArguments()));
+
+            ConstructorInfo[] openGenericTypeConstructors = GetConstructors(typeof(GenericClassWithConstructor<>));
+            Assert.All(openGenericTypeConstructors, constructorInfo => Assert.Empty(constructorInfo.GetGenericArguments()));
+        }
+
         // Use this class only from the Invoke_StaticConstructorMultipleTimes method
         public static class ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection
         {
@@ -157,6 +168,12 @@ namespace System.Reflection.Tests
     public class ConstructorInfoDerived : ConstructorInfoAbstractBase
     {
         public ConstructorInfoDerived() { }
+    }
+
+    public class GenericClassWithConstructor<T>
+    {
+        public GenericClassWithConstructor() { }
+        public GenericClassWithConstructor(T value) { }
     }
 
     public class ClassWith3Constructors

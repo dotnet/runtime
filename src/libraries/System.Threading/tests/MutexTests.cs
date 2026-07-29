@@ -836,6 +836,82 @@ namespace System.Threading.Tests
             }
         }
 
+        [ConditionalTheory(typeof(MutexTests), nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
+        [MemberData(nameof(NameOptionCombinations_MemberData))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void CrossProcess_NamedMutex_ConcurrentCreateOrOpen(bool currentUserOnly, bool currentSessionOnly)
+        {
+            NamedWaitHandleOptions options =
+                new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly };
+
+            Action<string, string> createMutexInOtherProcess =
+                (mutexName, encodedArgs) =>
+                {
+                    string[] args = encodedArgs.Split('|');
+                    NamedWaitHandleOptions options =
+                        new()
+                        {
+                            CurrentUserOnly = int.Parse(args[0]) != 0,
+                            CurrentSessionOnly = int.Parse(args[1]) != 0
+                        };
+                    string readyFilePath = args[2];
+                    string startFilePath = args[3];
+                    string resultFilePath = args[4];
+                    string releaseFilePath = args[5];
+                    int timeoutMs = int.Parse(args[6]);
+
+                    File.WriteAllText(readyFilePath, "ready");
+                    Assert.True(SpinWait.SpinUntil(() => File.Exists(startFilePath), timeoutMs));
+
+                    using var mutex = new Mutex(false, mutexName, options, out bool createdNew);
+                    File.WriteAllText(resultFilePath, createdNew ? "1" : "0");
+                    Assert.True(SpinWait.SpinUntil(() => File.Exists(releaseFilePath), timeoutMs));
+                };
+
+            const int IterationCount = 10;
+            for (int i = 0; i < IterationCount; ++i)
+            {
+                string mutexName = Guid.NewGuid().ToString("N");
+                string readyFilePath1 = GetTestFilePath();
+                string readyFilePath2 = GetTestFilePath();
+                string startFilePath = GetTestFilePath();
+                string releaseFilePath = GetTestFilePath();
+                string resultFilePath1 = GetTestFilePath();
+                string resultFilePath2 = GetTestFilePath();
+
+                using (var remote1 =
+                    RemoteExecutor.Invoke(
+                        createMutexInOtherProcess,
+                        mutexName,
+                        $"{(options.CurrentUserOnly ? "1" : "0")}|{(options.CurrentSessionOnly ? "1" : "0")}|{readyFilePath1}|{startFilePath}|{resultFilePath1}|{releaseFilePath}|{RemoteExecutor.FailWaitTimeoutMilliseconds}"))
+                using (var remote2 =
+                    RemoteExecutor.Invoke(
+                        createMutexInOtherProcess,
+                        mutexName,
+                        $"{(options.CurrentUserOnly ? "1" : "0")}|{(options.CurrentSessionOnly ? "1" : "0")}|{readyFilePath2}|{startFilePath}|{resultFilePath2}|{releaseFilePath}|{RemoteExecutor.FailWaitTimeoutMilliseconds}"))
+                {
+                    Assert.True(
+                        SpinWait.SpinUntil(
+                            () => File.Exists(readyFilePath1) && File.Exists(readyFilePath2),
+                            RemoteExecutor.FailWaitTimeoutMilliseconds));
+
+                    File.WriteAllText(startFilePath, "start");
+                    Assert.True(
+                        SpinWait.SpinUntil(
+                            () => File.Exists(resultFilePath1) && File.Exists(resultFilePath2),
+                            RemoteExecutor.FailWaitTimeoutMilliseconds));
+                    File.WriteAllText(releaseFilePath, "release");
+                }
+
+                Assert.True(File.Exists(resultFilePath1));
+                Assert.True(File.Exists(resultFilePath2));
+                int createdNewCount =
+                    int.Parse(File.ReadAllText(resultFilePath1)) +
+                    int.Parse(File.ReadAllText(resultFilePath2));
+                Assert.Equal(1, createdNewCount);
+            }
+        }
+
         private static void IncrementValueInFileNTimes(Mutex mutex, string fileName, int n)
         {
             for (int i = 0; i < n; i++)

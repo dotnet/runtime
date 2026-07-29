@@ -20,7 +20,7 @@ namespace System.Runtime.Serialization.Json
 
         internal XmlObjectSerializerReadContextComplexJson(DataContractJsonSerializer serializer, DataContract rootTypeDataContract)
 #pragma warning disable SYSLIB0050 // StreamingContext ctor is obsolete
-            : base(serializer, serializer.MaxItemsInObjectGraph, new StreamingContext(StreamingContextStates.All), serializer.IgnoreExtensionDataObject)
+            : base(serializer, serializer.MaxItemsInObjectGraph, new StreamingContext(StreamingContextStates.All), serializer.IgnoreExtensionDataObject, serializer.SerializationSurrogateProvider)
 #pragma warning restore SYSLIB0050
         {
             this.rootTypeDataContract = rootTypeDataContract;

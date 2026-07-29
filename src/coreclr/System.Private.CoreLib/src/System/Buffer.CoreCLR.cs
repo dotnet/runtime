@@ -14,7 +14,6 @@ namespace System
         private static extern void BulkMoveWithWriteBarrierInternal(ref byte destination, ref byte source, nuint byteCount);
 
         // Used by ilmarshalers.cpp
-        [RequiresUnsafe]
         internal static unsafe void Memcpy(byte* dest, byte* src, int len)
         {
             Debug.Assert(len >= 0, "Negative length in memcpy!");
@@ -22,7 +21,6 @@ namespace System
         }
 
         // Used by ilmarshalers.cpp
-        [RequiresUnsafe]
         internal static unsafe void Memcpy(byte* pDest, int destIndex, byte[] src, int srcIndex, int len)
         {
             Debug.Assert((srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");

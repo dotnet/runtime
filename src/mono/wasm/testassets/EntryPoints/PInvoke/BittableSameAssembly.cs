@@ -3,19 +3,23 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [assembly: DisableRuntimeMarshalling]
-public class Test
+
+namespace WasmAppBuilderTests
 {
-    public static int Main()
+    public class Test
     {
-        var x = new S { Value = 5 };
+        public static int Main()
+        {
+            var x = new S { Value = 5 };
 
-        Console.WriteLine("TestOutput -> Main running " + x.Value);
-        return 42;
+            Console.WriteLine("TestOutput -> Main running " + x.Value);
+            return 42;
+        }
+
+        [StructLayout(LayoutKind.Auto)]
+        public struct S { public int Value; public float Value2; }
+
+        [UnmanagedCallersOnly]
+        public static void M(S myStruct) { }
     }
-
-    [StructLayout(LayoutKind.Auto)]
-    public struct S { public int Value; public float Value2; }
-
-    [UnmanagedCallersOnly]
-    public static void M(S myStruct) { }
 }

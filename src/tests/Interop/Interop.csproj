@@ -12,6 +12,7 @@
     <SupportProject Include="$(TestLibraryProjectPath)" />
     <SupportProject Include="PInvoke/Miscellaneous/CopyCtor/CopyCtorUtil.ilproj" />
     <SupportProject Include="PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/ManagedDll*/*.csproj" />
+    <SupportProject Include="PInvoke/Varargs/CrossAssembly/VarArgsPInvokeLib/*.csproj" />
     <MergedWrapperProjectReference Include="*/**/*.??proj" Exclude="@(SupportProject)" />
     <ProjectReference Include="@(SupportProject)" />
   </ItemGroup>
@@ -33,6 +34,7 @@
     <Compile Include="PInvoke/CustomMarshalers/**/*.cs" />
     <Compile Include="PInvoke/DateTime/**/*.cs" />
     <Compile Include="PInvoke/Decimal/**/*.cs" />
+    <Compile Include="PInvoke/Decimal128/**/*.cs" />
     <Compile Include="PInvoke/Delegate/**/*.cs" />
     <Compile Include="PInvoke/Generics/**/*.cs" />
     <Compile Include="PInvoke/IEnumerator/**/*.cs" />
@@ -42,7 +44,7 @@
     <Compile Include="PInvoke/SafeHandles/**/*.cs" />
     <Compile Include="PInvoke/SetLastError/**/*.cs" />
     <Compile Include="PInvoke/SizeParamIndex/**/*.cs" />
-    <Compile Include="PInvoke/Varargs/**/*.cs" />
+    <Compile Include="PInvoke/Varargs/**/*.cs" Exclude="PInvoke/Varargs/CrossAssembly/VarArgsPInvokeLib/*.cs" />
     <Compile Include="PInvoke/Vector2_3_4/**/*.cs" />
 
     <!-- Reference the CMake projects for the directly-compiled-in tests -->

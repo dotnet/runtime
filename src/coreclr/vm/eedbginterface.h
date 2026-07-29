@@ -259,8 +259,6 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-    virtual COR_ILMETHOD* MethodDescGetILHeader(MethodDesc *pFD) = 0;
-
     virtual void MarkDebuggerAttached(void) = 0;
 
     virtual void MarkDebuggerUnattached(void) = 0;
@@ -315,9 +313,6 @@ public:
 #endif // #ifndef DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-
-    virtual void DebuggerModifyingLogSwitch (int iNewLevel,
-                                             const WCHAR *pLogSwitchName) = 0;
 
     virtual HRESULT SetIPFromSrcToDst(Thread *pThread,
                           SLOT addrStart,

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -17,7 +18,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class RCWCleanupListDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "RCWCleanupList";
-    protected override string DumpType => "full";
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]

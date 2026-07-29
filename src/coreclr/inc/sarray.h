@@ -114,7 +114,7 @@ class SArray
 
  public:
 
-    class EMPTY_BASES_DECL Iterator : public CheckedIteratorBase<SArray<ELEMENT, BITWISE_COPY> >,
+    class EMPTY_BASES Iterator : public CheckedIteratorBase<SArray<ELEMENT, BITWISE_COPY> >,
                                       public Indexer<ELEMENT, Iterator>
     {
         friend class SArray;
@@ -184,7 +184,7 @@ class SArray
 // ================================================================================
 
 template <typename ELEMENT, COUNT_T SIZE, BOOL BITWISE_COPY = TRUE>
-class EMPTY_BASES_DECL InlineSArray : public SArray<ELEMENT, BITWISE_COPY>
+class EMPTY_BASES InlineSArray : public SArray<ELEMENT, BITWISE_COPY>
 {
  private:
 #ifdef TARGET_WINDOWS
@@ -209,7 +209,7 @@ class EMPTY_BASES_DECL InlineSArray : public SArray<ELEMENT, BITWISE_COPY>
 #define STACK_ALLOC 256
 
 template <typename ELEMENT, BOOL BITWISE_COPY = TRUE>
-class EMPTY_BASES_DECL StackSArray : public InlineSArray<ELEMENT, STACK_ALLOC/sizeof(ELEMENT), BITWISE_COPY>
+class EMPTY_BASES StackSArray : public InlineSArray<ELEMENT, STACK_ALLOC/sizeof(ELEMENT), BITWISE_COPY>
 {
 };
 
