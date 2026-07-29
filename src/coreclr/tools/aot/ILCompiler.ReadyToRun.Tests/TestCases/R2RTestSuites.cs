@@ -447,7 +447,11 @@ public class R2RTestSuites
         }
     }
 
-    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWindowsTarget))]
+    /// <summary>
+    /// Requires a Windows host for <c>--pdb</c> (see <see cref="TestPaths.IsWindowsHost"/>), and a
+    /// Windows target because the padding being verified is in the composite PE image.
+    /// </summary>
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWindowsHost), nameof(TestPaths.IsWindowsTarget))]
     public void CompositeManifestAssemblyMvidsArePaddedWhenPdbPresent()
     {
         var compositeLib = new CompiledAssembly
@@ -536,10 +540,11 @@ public class R2RTestSuites
     /// <summary>
     /// Complements <see cref="CompositeManifestSectionsAreAligned"/> using the same trigger as the
     /// MVID-table test: --pdb emits an odd-sized debug directory section that shifts the manifest
-    /// sections off a 4-byte boundary without the fix. Windows-only because it relies on Windows PDB
-    /// generation.
+    /// sections off a 4-byte boundary without the fix. Requires a Windows host for <c>--pdb</c>
+    /// (see <see cref="TestPaths.IsWindowsHost"/>), and a Windows target because the padding being
+    /// verified is in the composite PE image.
     /// </summary>
-    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWindowsTarget))]
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWindowsHost), nameof(TestPaths.IsWindowsTarget))]
     public void CompositeManifestSectionsArePaddedWhenPdbPresent()
     {
         var compositeLib = new CompiledAssembly

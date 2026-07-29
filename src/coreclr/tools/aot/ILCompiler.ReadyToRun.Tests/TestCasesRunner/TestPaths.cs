@@ -8,8 +8,8 @@ using System.Runtime.InteropServices;
 namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
 /// <summary>
-/// Provides paths to build artifacts needed by the test infrastructure.
-/// All paths come from RuntimeHostConfigurationOption items in the csproj.
+/// Provides paths to build artifacts needed by the test infrastructure, and the target and host
+/// predicates that gate test cases.
 /// </summary>
 internal static class TestPaths
 {
@@ -21,26 +21,15 @@ internal static class TestPaths
 
     private static string Crossgen2ExeName => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "crossgen2.exe" : "crossgen2";
 
-    /// <summary>
-    /// Path to System.Private.CoreLib.dll. It lives in the runtime pack native/ dir in full builds
-    /// (placed by externals.csproj BinPlace during libs.pretest), but partial builds that skip
-    /// libs.pretest only have it in the CoreCLR artifacts directory.
-    /// </summary>
     public static string SystemPrivateCoreLibPath => Path.Combine(LibrariesDir, "System.Private.CoreLib.dll");
 
     public static string TargetOS => GetRequiredConfig("R2RTest.TargetOS");
     public static string TargetArchitecture => GetRequiredConfig("R2RTest.TargetArchitecture");
 
-    private static string TargetDescription => $"{TargetOS}-{TargetArchitecture}";
+    private static string TargetRid => $"{TargetOS}-{TargetArchitecture}";
 
     public static bool IsWasmTarget => TargetArchitecture == "wasm";
 
-    /// <summary>
-    /// Gates the test cases that are not wasm-specific. crossgen2's wasm backend cannot yet compile
-    /// most of what these tests exercise, and the R2R images it does produce are wasm modules rather
-    /// than PE files, so <see cref="ILCompiler.Reflection.ReadyToRun.ReadyToRunReader"/> cannot read
-    /// them back to validate. Test cases are therefore opt-in for wasm rather than opt-out.
-    /// </summary>
     public static bool IsNotWasmTarget => !IsWasmTarget;
 
     public static bool IsArmTarget => TargetArchitecture is "arm" or "armel";
@@ -49,14 +38,11 @@ internal static class TestPaths
 
     public static bool IsIosArm64Target => TargetOS is "ios" && TargetArchitecture is "arm64";
 
+    public static bool IsWindowsHost => OperatingSystem.IsWindows();
+
     /// <summary>
     /// Path to the crossgen2 that compiles for this build's target.
     /// </summary>
-    /// <remarks>
-    /// A build stages the crossgen2 it built next to the test assembly. A crossgen2 built for one
-    /// target does not carry the cross-targeting JIT for any other, so substituting a different one
-    /// either fails with a DllNotFoundException or silently compiles for the wrong architecture.
-    /// </remarks>
     public static string Crossgen2Exe
     {
         get
@@ -65,8 +51,8 @@ internal static class TestPaths
             if (!File.Exists(exe))
             {
                 throw new FileNotFoundException(
-                    $"No crossgen2 staged for {TargetDescription} at '{exe}'. Build the clr and libs subsets for " +
-                    $"{TargetDescription}, then rebuild this test project.");
+                    $"No crossgen2 staged for {TargetRid} at '{exe}'. Build the clr and libs subsets for " +
+                    $"{TargetRid}, then rebuild this test project.");
             }
 
             return exe;
@@ -84,8 +70,8 @@ internal static class TestPaths
             if (!Directory.Exists(dir))
             {
                 throw new DirectoryNotFoundException(
-                    $"No shared framework assemblies staged for {TargetDescription} at '{dir}'. Build the clr and " +
-                    $"libs subsets for {TargetDescription}, then rebuild this test project.");
+                    $"No shared framework assemblies staged for {TargetRid} at '{dir}'. Build the clr and " +
+                    $"libs subsets for {TargetRid}, then rebuild this test project.");
             }
 
             return dir;
