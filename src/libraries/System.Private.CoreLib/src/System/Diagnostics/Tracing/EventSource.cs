@@ -3894,9 +3894,9 @@ namespace System.Diagnostics.Tracing
             // See https://github.com/dotnet/runtime/issues/126591. We avoid that by pre-creating the FrameworkEventSource here.
             _ = FrameworkEventSource.Log;
             // MetricsEventSource.ParseSpecs uses string interpolation which calls SharedArrayPool<char>.Rent(), which accesses
-            // ArrayPoolEventSource.Log and triggers its static constructor. This is called while holding the EventListenerLock
-            // (inside DoCommand), so if another thread is concurrently running the ArrayPoolEventSource static constructor
-            // (which also acquires the EventListenerLock), a deadlock occurs.
+            // ArrayPoolEventSource.Log and can require ArrayPoolEventSource type initialization. ParseSpecs runs while holding
+            // EventListener.EventListenersLock (inside DoCommand), so if another thread is currently running ArrayPoolEventSource's
+            // type initializer (holding the type-init lock) and then tries to take EventListenersLock, a deadlock can occur.
             // See https://github.com/dotnet/runtime/issues/119014. We avoid that by pre-creating ArrayPoolEventSource here.
             _ = System.Buffers.ArrayPoolEventSource.Log;
 #if !TARGET_BROWSER
