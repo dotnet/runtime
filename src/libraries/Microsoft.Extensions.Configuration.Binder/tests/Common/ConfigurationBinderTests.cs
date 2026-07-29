@@ -2357,12 +2357,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.True(options.WasOtherCodeStringSet);
             Assert.Equal("default", options.PocoWithDefault.Example);
             Assert.Equal(1, options.PocoListWithDefault.Count);
-
-#if !BUILDING_SOURCE_GENERATOR_TESTS
-            // Source generator omits calls to setters for nested objects and collections
             Assert.True(options.WasPocoWithDefaultSet);
             Assert.True(options.WasPocoListWithDefaultSet);
-#endif
 
             // These don't exist in configuration and setters are not called since they are nullable.
             Assert.Equal(0, options.OtherCodeNullable);
