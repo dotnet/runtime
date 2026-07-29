@@ -72,7 +72,7 @@ internal static partial class PseudoCustomAttributes
     }
 
     private static unsafe bool TryParseArguments(
-        in LoweringContext context,
+        LoweringContext context,
         KnownAttribute known,
         out CustomAttributeValue<SerializationTypeCode> arguments)
     {
@@ -129,7 +129,7 @@ internal static partial class PseudoCustomAttributes
     }
 
     private static bool TryParseNamedArguments(
-        in LoweringContext context,
+        LoweringContext context,
         KnownAttribute known,
         ref BlobReader reader,
         out ImmutableArray<CustomAttributeNamedArgument<SerializationTypeCode>> namedArguments)
@@ -231,7 +231,7 @@ internal static partial class PseudoCustomAttributes
     }
 
     private static CustomAttributeNamedArgument<SerializationTypeCode>? FindNamedArgument(
-        in CustomAttributeValue<SerializationTypeCode> arguments,
+        CustomAttributeValue<SerializationTypeCode> arguments,
         string name)
     {
         foreach (CustomAttributeNamedArgument<SerializationTypeCode> argument in arguments.NamedArguments)
