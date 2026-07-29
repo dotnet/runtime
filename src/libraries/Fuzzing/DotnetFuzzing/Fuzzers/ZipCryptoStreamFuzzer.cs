@@ -99,7 +99,7 @@ internal sealed class ZipCryptoStreamFuzzer : IFuzzer
             Stream wrongStream = async
                 ? await readEntry.OpenAsync("wrong-password".AsSpan())
                 : readEntry.Open("wrong-password".AsSpan());
-            using (wrongStream)
+            try
             {
                 if (async)
                 {
@@ -110,7 +110,17 @@ internal sealed class ZipCryptoStreamFuzzer : IFuzzer
                     wrongStream.CopyTo(Stream.Null);
                 }
             }
-        }
+            finally
+            {
+                if (async)
+                {
+                    await wrongStream.DisposeAsync();
+                }
+                else
+                {
+                    wrongStream.Dispose();
+                }
+            }
         catch (InvalidDataException)
         {
             // Expected: the check byte rejects the wrong key.

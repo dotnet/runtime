@@ -109,7 +109,7 @@ internal sealed class WinZipAesStreamFuzzer : IFuzzer
             Stream wrongStream = async
                 ? await readEntry.OpenAsync("wrong-password".AsSpan())
                 : readEntry.Open("wrong-password".AsSpan());
-            using (wrongStream)
+            try
             {
                 if (async)
                 {
@@ -120,7 +120,17 @@ internal sealed class WinZipAesStreamFuzzer : IFuzzer
                     wrongStream.CopyTo(Stream.Null);
                 }
             }
-        }
+            finally
+            {
+                if (async)
+                {
+                    await wrongStream.DisposeAsync();
+                }
+                else
+                {
+                    wrongStream.Dispose();
+                }
+            }
         catch (InvalidDataException)
         {
             // Expected: the AES password verifier / HMAC rejects the wrong key.
