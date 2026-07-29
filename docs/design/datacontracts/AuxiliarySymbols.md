@@ -1,7 +1,8 @@
 # Contract AuxiliarySymbols
 
-This contract provides name resolution for helper functions for which we do not have or
-do not wish to load symbols.
+This contract provides name resolution for helper functions
+* whose executing code resides at dynamically-determined addresses or
+* that are native helpers used to implement new.
 
 ## APIs of contract
 
