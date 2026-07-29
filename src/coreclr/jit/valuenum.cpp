@@ -11129,23 +11129,25 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 switch (cnsVal.gtSimdScalableKind)
                 {
                     case SimdScalableRepeated:
-                        printf("0x%016llx, 0x%016llx, 0x%016llx...]", cnsVal.gtSimdScalableIndex,
-                               cnsVal.gtSimdScalableIndex, cnsVal.gtSimdScalableIndex);
+                        printf("0x%016llx, 0x%016llx, 0x%016llx...]",
+                               (unsigned long long)cnsVal.gtSimdScalableIndex,
+                               (unsigned long long)cnsVal.gtSimdScalableIndex,
+                               (unsigned long long)cnsVal.gtSimdScalableIndex);
                         break;
 
                     case SimdScalableSequence:
                     {
                         uint64_t index = cnsVal.gtSimdScalableIndex;
-                        printf("0x%016llx, ", index);
+                        printf("0x%016llx, ", (unsigned long long)index);
                         index += cnsVal.gtSimdScalableStep;
-                        printf("0x%016llx, ", index);
+                        printf("0x%016llx, ", (unsigned long long)index);
                         index += cnsVal.gtSimdScalableStep;
-                        printf("0x%016llx...]", index);
+                        printf("0x%016llx...]", (unsigned long long)index);
                         break;
                     }
 
                     case SimdScalableScalar:
-                        printf("0x%016llx, 0x0, 0x0...]", cnsVal.gtSimdScalableIndex);
+                        printf("0x%016llx, 0x0, 0x0...]", (unsigned long long)cnsVal.gtSimdScalableIndex);
                         break;
 
                     default:

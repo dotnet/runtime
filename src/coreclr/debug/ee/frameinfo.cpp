@@ -436,8 +436,9 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
     EX_END_CATCH
 
     LOG((LF_CORDB, LL_INFO100000,
-         "DWSP: TYPE_EXIT: returnIP=0x%08x, returnSP=0x%08x, frame=0x%08x, threadFrame=0x%08x, regSP=0x%08x\n",
-         returnIP, returnSP, pFrame, pData->GetThread()->GetFrame(), GetRegdisplaySP(&pData->regDisplay)));
+         "DWSP: TYPE_EXIT: returnIP=0x%08x, returnSP=0x%08x, frame=%p, threadFrame=%p, regSP=0x%08x\n",
+         returnIP, returnSP, static_cast<void*>(pFrame), static_cast<void*>(pData->GetThread()->GetFrame()),
+         GetRegdisplaySP(&pData->regDisplay)));
 
     if (pPotentialFP != NULL)
     {
