@@ -14,8 +14,8 @@ internal static partial class PseudoCustomAttributes
 {
 
     private static bool ApplyMarshalAs(
-        in LoweringContext context,
-        in CustomAttributeValue<SerializationTypeCode> arguments)
+        LoweringContext context,
+        CustomAttributeValue<SerializationTypeCode> arguments)
     {
         var descriptor = new BlobBuilder();
         if (!TryBuildMarshallingDescriptor(context, arguments, descriptor))
@@ -164,8 +164,8 @@ internal static partial class PseudoCustomAttributes
     }
 
     private static bool TryBuildMarshallingDescriptor(
-        in LoweringContext context,
-        in CustomAttributeValue<SerializationTypeCode> arguments,
+        LoweringContext context,
+        CustomAttributeValue<SerializationTypeCode> arguments,
         BlobBuilder descriptor)
     {
         CustomAttributeNamedArgument<SerializationTypeCode>? arraySubTypeArgument =
@@ -408,7 +408,7 @@ internal static partial class PseudoCustomAttributes
         return true;
     }
 
-    private static bool TryWriteCompressed(in LoweringContext context, BlobBuilder builder, int value)
+    private static bool TryWriteCompressed(LoweringContext context, BlobBuilder builder, int value)
     {
         if (value < 0 || value > 0x1FFFFFFF)
         {
@@ -419,7 +419,7 @@ internal static partial class PseudoCustomAttributes
         return true;
     }
 
-    private static bool TryWriteCountedString(in LoweringContext context, BlobBuilder builder, string value)
+    private static bool TryWriteCountedString(LoweringContext context, BlobBuilder builder, string value)
     {
         byte[] bytes = Encoding.UTF8.GetBytes(value);
         if (!TryWriteCompressed(context, builder, bytes.Length))

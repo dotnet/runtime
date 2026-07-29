@@ -83,7 +83,7 @@ internal static partial class PseudoCustomAttributes
         registry.RemoveCustomAttributes(lowered);
     }
 
-    private readonly struct LoweringContext(
+    private sealed class LoweringContext(
         EntityRegistry registry,
         ImmutableArray<Diagnostic>.Builder diagnostics,
         EntityRegistry.CustomAttributeEntity attribute,
