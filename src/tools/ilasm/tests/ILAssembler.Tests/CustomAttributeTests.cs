@@ -815,11 +815,6 @@ namespace ILAssembler.Tests
                 });
         }
 
-        private const TypeAttributes SerializableType = (TypeAttributes)0x00002000;
-        private const TypeAttributes WindowsRuntimeType = (TypeAttributes)0x00004000;
-        private const TypeAttributes ExtendedLayoutType = (TypeAttributes)0x00000018;
-        private const FieldAttributes NotSerializedField = (FieldAttributes)0x0080;
-
         private static string TypeWithAttribute(string attributeType, string constructor = ".ctor()", string value = "( 01 00 00 00 )") => $$"""
             .assembly extern mscorlib { }
             .assembly test { }
@@ -836,9 +831,9 @@ namespace ILAssembler.Tests
         public static TheoryData<string, TypeAttributes> PseudoAttributeTypeFlagData => new()
         {
             { "System.Runtime.InteropServices.ComImportAttribute", TypeAttributes.Import },
-            { "System.SerializableAttribute", SerializableType },
+            { "System.SerializableAttribute", TypeAttributes.Serializable },
             { "System.Runtime.CompilerServices.SpecialNameAttribute", TypeAttributes.SpecialName },
-            { "System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeImportAttribute", WindowsRuntimeType },
+            { "System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeImportAttribute", TypeAttributes.WindowsRuntime },
         };
 
         [Theory]
@@ -903,7 +898,7 @@ namespace ILAssembler.Tests
 
         [Theory]
         [InlineData("( 01 00 00 00 00 00 00 00 )", TypeAttributes.SequentialLayout)]
-        [InlineData("( 01 00 01 00 00 00 00 00 )", ExtendedLayoutType)]
+        [InlineData("( 01 00 01 00 00 00 00 00 )", TypeAttributes.ExtendedLayout)]
         [InlineData("( 01 00 02 00 00 00 00 00 )", TypeAttributes.ExplicitLayout)]
         [InlineData("( 01 00 03 00 00 00 00 00 )", TypeAttributes.AutoLayout)]
         public void PseudoCustomAttribute_StructLayout_SetsLayoutMask(string value, TypeAttributes expected)
@@ -1098,7 +1093,7 @@ namespace ILAssembler.Tests
 
             var first = reader.GetTypeDefinition(reader.TypeDefinitions
                 .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "First"));
-            Assert.Equal(SerializableType, first.Attributes & SerializableType);
+            Assert.Equal(TypeAttributes.Serializable, first.Attributes & TypeAttributes.Serializable);
         }
 
         [Fact]
@@ -1113,7 +1108,7 @@ namespace ILAssembler.Tests
             var reader = pe.GetMetadataReader();
             var testType = GetTestType(reader);
 
-            Assert.Equal(SerializableType, testType.Attributes & SerializableType);
+            Assert.Equal(TypeAttributes.Serializable, testType.Attributes & TypeAttributes.Serializable);
             Assert.Empty(testType.GetCustomAttributes());
         }
 
