@@ -145,7 +145,7 @@ namespace
             peLoadedImage = loaded;
         }
 
-        if (peLoadedImage.IsNull())
+        if (peLoadedImage == NULL)
         {
             EX_TRY
             {
@@ -192,7 +192,7 @@ namespace
             }
             EX_END_CATCH
 
-            if (peLoadedImage.IsNull())
+            if (peLoadedImage == NULL)
             {
                 // Failed to locate the native composite R2R image
 #ifdef LOGGING
@@ -221,11 +221,13 @@ namespace
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         }
 
-        return new ReadyToRunLoadedImage(
+        ReadyToRunLoadedImage* r2rImg = new ReadyToRunLoadedImage(
             (TADDR)peLoadedImage->GetBase(),
             peLoadedImage->GetVirtualSize(),
-            peLoadedImage.Extract(),
+            peLoadedImage,
             [](void* img) { delete (PEImageLayout*)img; });
+        peLoadedImage.Detach();
+        return r2rImg;
     }
 }
 

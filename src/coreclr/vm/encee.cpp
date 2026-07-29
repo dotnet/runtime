@@ -83,6 +83,31 @@ void EditAndContinueModule::Destruct()
     Module::Destruct();
 }
 
+// This holder trait is slightly different from ReleaseHolderTraits
+// to account for the narrow contract.
+template <typename TYPE>
+struct EncReleaseHolderTraits final
+{
+    using Type = TYPE*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
+
+        if (value != NULL)
+            value->Release();
+    }
+};
+
+template<typename _TYPE>
+using EncReleaseHolder = LifetimeHolder<EncReleaseHolderTraits<_TYPE>>;
+
 //---------------------------------------------------------------------------------------
 //
 // ApplyEditAndContinue - updates this module for an EnC
@@ -152,10 +177,6 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
 
     HRESULT hr = S_OK;
 
-    CONTRACT_VIOLATION(GCViolation);    // ComHolderAnyMode goes to preemptive mode, which will trigger a GC
-    ComHolderAnyMode<IMDInternalImportENC> pIMDInternalImportENC;
-    ComHolderAnyMode<IMetaDataEmit> pEmitter;
-
     // Apply the changes. Note that ApplyEditAndContinue() requires read/write metadata. If the metadata is
     // not already RW, then ApplyEditAndContinue() will perform the conversion, invalidate the current
     // metadata importer, and return us a new one.  We can't let that happen. Other parts of the system are
@@ -191,9 +212,11 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     }
 
     // get the delta interface
+    EncReleaseHolder<IMDInternalImportENC> pIMDInternalImportENC;
     IfFailRet(pMDImport->QueryInterface(IID_IMDInternalImportENC, (void **)&pIMDInternalImportENC));
 
     // get an emitter interface
+    EncReleaseHolder<IMetaDataEmit> pEmitter;
     IfFailRet(GetMDPublicInterfaceFromInternal(pMDImport, IID_IMetaDataEmit, (void **)&pEmitter));
 
     // Copy the delta IL into our RVA-able IL memory
@@ -253,14 +276,13 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                     ilCodeVersion.SetIL((COR_ILMETHOD*)&pLocalILMemory[dwMethodRVA]);
                     ilCodeVersion.SetRejitState(RejitFlags::kStateActive);
                 }
+
+                if (FAILED(hr = pCodeVersionManager->SetActiveILCodeVersions(&ilCodeVersion, 1, NULL)))
                 {
-                    GCX_PREEMP();
-                    if (FAILED(hr = pCodeVersionManager->SetActiveILCodeVersions(&ilCodeVersion, 1, NULL)))
-                    {
-                        LOG((LF_ENC, LL_INFO100, "EACM::AEAC: Error SetActiveILCodeVersions returned hr 0x%x\n", hr));
-                        return hr;
-                    }
+                    LOG((LF_ENC, LL_INFO100, "EACM::AEAC: Error SetActiveILCodeVersions returned hr 0x%x\n", hr));
+                    return hr;
                 }
+
                 // use module to resolve to method
                 pMethod = LookupMethodDef(token);
                 if (pMethod)

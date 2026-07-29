@@ -253,6 +253,8 @@ namespace System.Runtime
             RH_EH_FIRST_RETHROW_FRAME = 2,
         }
 
+        [StackTraceHidden]
+        [DebuggerHidden]
         private static void AppendExceptionStackFrameViaClasslib(object exception, IntPtr ip,
             UIntPtr sp, ref ExInfo exInfo,
             ref bool isFirstRethrowFrame, ref bool isFirstFrame)
@@ -994,6 +996,8 @@ namespace System.Runtime
             return codeOffset;
         }
 
+        [StackTraceHidden]
+        [DebuggerHidden]
         private static void UpdateStackTrace(object exceptionObj, UIntPtr curFramePtr, IntPtr ip, UIntPtr sp,
             ref bool isFirstRethrowFrame, ref UIntPtr prevFramePtr, ref bool isFirstFrame, ref ExInfo exInfo)
         {
