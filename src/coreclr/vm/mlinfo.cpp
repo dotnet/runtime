@@ -1758,6 +1758,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 }
                 m_type = MARSHAL_TYPE_HANDLEREF;
             }
+#ifdef FEATURE_VARARGS
             else if (sig.IsClassThrowing(pModule, "System.ArgIterator", pTypeContext))
             {
                 if (m_ms == MARSHAL_SCENARIO_FIELD)
@@ -1770,6 +1771,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 }
                 m_type = MARSHAL_TYPE_ARGITERATOR;
             }
+#endif // FEATURE_VARARGS
 #ifdef FEATURE_COMINTEROP
             else if (sig.IsClassThrowing(pModule, g_ColorClassName, pTypeContext))
             {

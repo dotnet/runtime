@@ -467,14 +467,14 @@ static void ConvToJitSig(
         uint32_t data;
         IfFailThrow(sig.GetCallingConvInfo(&data));
 
-#if defined(TARGET_UNIX) || defined(TARGET_ARM)
+#ifndef FEATURE_VARARGS
         if ((isCallConv(data, IMAGE_CEE_CS_CALLCONV_VARARG)) ||
             (isCallConv(data, IMAGE_CEE_CS_CALLCONV_NATIVEVARARG)))
         {
             // This signature corresponds to a method that uses varargs, which are not supported.
              COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
         }
-#endif // defined(TARGET_UNIX) || defined(TARGET_ARM)
+#endif // !FEATURE_VARARGS
 
         // We have an internal calling convention for async used for signatures
         // in IL stubs. Translate that to the flag representation in
@@ -4089,7 +4089,13 @@ CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
         result = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__METHOD_HANDLE));
         break;
     case CLASSID_ARGUMENT_HANDLE:
+#ifdef FEATURE_VARARGS
         result = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__ARGUMENT_HANDLE));
+#else // !FEATURE_VARARGS
+        // Only the vararg intrinsics ask for this class, and ConvToJitSig rejects vararg
+        // signatures before the JIT can import one.
+        _ASSERTE(!"CLASSID_ARGUMENT_HANDLE is unreachable without FEATURE_VARARGS");
+#endif // FEATURE_VARARGS
         break;
     case CLASSID_STRING:
         result = CORINFO_CLASS_HANDLE(g_pStringClass);
@@ -6255,6 +6261,7 @@ CORINFO_VARARGS_HANDLE CEEInfo::getVarArgsHandle(CORINFO_SIG_INFO *sig,
 
     JIT_TO_EE_TRANSITION();
 
+#ifdef FEATURE_VARARGS
     Module* module = GetModule(sig->scope);
 
     Instantiation classInst = Instantiation((TypeHandle*) sig->sigInst.classInst, sig->sigInst.classInstCount);
@@ -6262,6 +6269,11 @@ CORINFO_VARARGS_HANDLE CEEInfo::getVarArgsHandle(CORINFO_SIG_INFO *sig,
     SigTypeContext typeContext = SigTypeContext(classInst, methodInst);
 
     result = CORINFO_VARARGS_HANDLE(module->GetVASigCookie(Signature(sig->pSig, sig->cbSig), &typeContext));
+#else // !FEATURE_VARARGS
+    // The JIT can only ask for a vararg cookie after importing a vararg signature, and
+    // ConvToJitSig rejects those on this target.
+    _ASSERTE(!"getVarArgsHandle is unreachable without FEATURE_VARARGS");
+#endif // FEATURE_VARARGS
 
     EE_TO_JIT_TRANSITION();
 
