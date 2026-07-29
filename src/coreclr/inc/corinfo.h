@@ -1840,6 +1840,9 @@ struct CORINFO_ASYNC_INFO
     // Method handle for AsyncHelpers.IsOnRightContext, used to check whether an inlined async callee
     // can logically return to its caller without switching continuation context
     CORINFO_METHOD_HANDLE isOnRightContextMethHnd;
+    // Method handle for AsyncHelpers.SwitchContext, used to switch to the continuation context of an
+    // inlined async callee's caller when IsOnRightContext reports a mismatch
+    CORINFO_METHOD_HANDLE switchContextMethHnd;
     // Finish suspension without saving continuation context (i.e. custom awaiter or ConfigureAwait(false))
     CORINFO_METHOD_HANDLE finishSuspensionNoContinuationContextMethHnd;
     // Finish suspension with saving continuation context (i.e. normal task await)

@@ -239,6 +239,7 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG restoreContextsOnSuspensionMethHnd;
     DWORDLONG restoreExecutionContextMethHnd;
     DWORDLONG isOnRightContextMethHnd;
+    DWORDLONG switchContextMethHnd;
     DWORDLONG finishSuspensionNoContinuationContextMethHnd;
     DWORDLONG finishSuspensionWithContinuationContextMethHnd;
 };

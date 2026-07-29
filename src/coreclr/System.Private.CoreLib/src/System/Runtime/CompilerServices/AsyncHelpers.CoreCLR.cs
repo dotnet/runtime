@@ -1526,6 +1526,49 @@ namespace System.Runtime.CompilerServices
             return true;
         }
 
+        // Suspend and resume in the specified continuation context.
+        //
+        // Used by the JIT when inlining runtime async calls: when an inlined callee logically
+        // returns to its caller after having been resumed, and IsOnRightContext reports that the
+        // current context does not match the one the caller's continuation captured, we must get
+        // back onto that context before continuing.
+        //
+        // 'flags' must contain only ContinuationFlags.AllContinuationFlags bits.
+        //
+        // Suspending on an already completed task makes the dispatcher re-dispatch the continuation
+        // immediately. Because that dispatch happens with canInline: false, it always posts or
+        // schedules onto the requested context rather than running inline here, which is what we
+        // want -- the JIT only calls this when we are known to be on the wrong context.
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        private static unsafe void SwitchContext(object? continuationContext, ContinuationFlags flags)
+        {
+            Debug.Assert((flags & ~ContinuationFlags.AllContinuationFlags) == 0);
+
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+
+            RuntimeAsyncTaskContinuation? taskCont = state.CachedTaskContinuation;
+            if (taskCont != null)
+            {
+                state.CachedTaskContinuation = null;
+            }
+            else
+            {
+                taskCont = new RuntimeAsyncTaskContinuation();
+            }
+
+            taskCont.Initialize(Task.CompletedTask);
+            taskCont.ContinuationContext = continuationContext;
+            taskCont.Flags |= flags;
+
+            sentinelContinuation.Next = taskCont;
+            state.StackState->TaskContinuation = taskCont;
+
+            state.CaptureContexts();
+            AsyncSuspend(taskCont);
+        }
+
         // Finish suspension in the common case of a custom await or for a ConfigureAwait(false) task await:
         // - Capture current ExecutionContext into the continuation
         // - Restore ExecutionContext and SynchronizationContext to the current Thread object
