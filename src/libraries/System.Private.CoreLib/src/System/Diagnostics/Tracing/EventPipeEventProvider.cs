@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Diagnostics.Tracing
 {
@@ -12,6 +13,11 @@ namespace System.Diagnostics.Tracing
         private readonly WeakReference<EventProvider> _eventProvider;
         private IntPtr _provHandle;
         private GCHandle<EventPipeEventProvider> _gcHandle;
+
+        // Tracks the EventPipeEventProvider whose callback is currently executing on the current thread.
+        // Used to detect re-entrant Unregister() calls that would otherwise deadlock.
+        [ThreadStatic]
+        private static EventPipeEventProvider? t_callbackProvider;
 
         internal EventPipeEventProvider(EventProvider eventProvider)
         {
@@ -66,7 +72,16 @@ namespace System.Diagnostics.Tracing
             EventPipeEventProvider _this = GCHandle<EventPipeEventProvider>.FromIntPtr((IntPtr)callbackContext).Target;
             if (_this._eventProvider.TryGetTarget(out EventProvider? target))
             {
-                _this.ProviderCallback(target, sourceId, isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+                EventPipeEventProvider? previousProvider = t_callbackProvider;
+                t_callbackProvider = _this;
+                try
+                {
+                    _this.ProviderCallback(target, sourceId, isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+                }
+                finally
+                {
+                    t_callbackProvider = previousProvider;
+                }
             }
         }
 
@@ -86,17 +101,42 @@ namespace System.Diagnostics.Tracing
         }
 
         // Unregister an event provider.
-        // Calling Unregister within a Callback will result in a deadlock
-        // as deleting the provider with an active tracing session will block
-        // until all of the provider's callbacks are completed.
         internal override void Unregister()
         {
-            if (_provHandle != 0)
+            if (t_callbackProvider == this)
             {
-                EventPipeInternal.DeleteProvider(_provHandle);
+                // Calling EventPipeInternal.DeleteProvider from within a callback for this provider
+                // would deadlock: ep_delete_provider blocks until all in-flight callbacks complete,
+                // but we are currently executing from within a callback. Defer the unregistration
+                // to a background thread so it runs after the callback returns and the pending
+                // callback count is decremented.
+                IntPtr handleToDelete = _provHandle;
                 _provHandle = 0;
+                GCHandle<EventPipeEventProvider> gcHandleToDispose = _gcHandle;
+                _gcHandle = default;
+
+                if (handleToDelete != 0)
+                {
+                    ThreadPool.UnsafeQueueUserWorkItem(_ =>
+                    {
+                        EventPipeInternal.DeleteProvider(handleToDelete);
+                        gcHandleToDispose.Dispose();
+                    }, null);
+                }
+                else
+                {
+                    gcHandleToDispose.Dispose();
+                }
             }
-            _gcHandle.Dispose();
+            else
+            {
+                if (_provHandle != 0)
+                {
+                    EventPipeInternal.DeleteProvider(_provHandle);
+                    _provHandle = 0;
+                }
+                _gcHandle.Dispose();
+            }
         }
 
         // Write an event.
