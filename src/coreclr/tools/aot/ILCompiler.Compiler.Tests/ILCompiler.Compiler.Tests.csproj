@@ -26,6 +26,9 @@
     <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\ILCompiler.RyuJit\ILCompiler.RyuJit.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+    <ProjectReference Include="..\ILCompiler\ILCompiler_inbuild.csproj" ReferenceOutputAssembly="false">
+      <SetConfiguration Condition="'$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
+    </ProjectReference>
 
     <ProjectReference Include="..\..\..\nativeaot\Test.CoreLib\src\Test.CoreLib.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -43,5 +46,31 @@
     <Compile Include="DependencyGraphTests.cs" />
     <Compile Include="DevirtualizationTests.cs" />
     <Compile Include="SwiftLoweringTests.cs" />
+    <Compile Include="WasmSingleMethodTests.cs" />
+  </ItemGroup>
+
+  <!-- The end-to-end WASM tests invoke ILC with a WASM cross-JIT, so build that JIT as part of the test project. -->
+  <PropertyGroup>
+    <_BuildWasmJitCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">true</_BuildWasmJitCrossArch>
+    <_BuildWasmJitProperties>ClrWasmJitSubset=true;Configuration=$(CoreCLRConfiguration)</_BuildWasmJitProperties>
+    <_BuildWasmJitProperties Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(_BuildWasmJitProperties);Ninja=true</_BuildWasmJitProperties>
+    <_BuildWasmJitProperties Condition="'$(_BuildWasmJitCrossArch)' == 'true'">$(_BuildWasmJitProperties);HostArchitecture=$(BuildArchitecture);HostCrossOS=$(HostOS);CrossBuild=false;BuildSubdirectory=$(BuildArchitecture);CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1;PgoInstrument=false;NoPgoOptimize=true</_BuildWasmJitProperties>
+  </PropertyGroup>
+
+  <Target Name="BuildWasmJitForCompilerTests"
+          BeforeTargets="ResolveProjectReferences"
+          Condition="'$(DesignTimeBuild)' != 'true'">
+    <MSBuild Projects="$(CoreClrProjectRoot)runtime.proj"
+             Targets="Build"
+             Properties="$(_BuildWasmJitProperties)" />
+  </Target>
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="NativeAotWasmTest.BuildArchitecture">
+      <Value>$(BuildArchitecture)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="NativeAotWasmTest.CoreCLRArtifactsDir">
+      <Value>$(CoreCLRArtifactsPath)</Value>
+    </RuntimeHostConfigurationOption>
   </ItemGroup>
 </Project>

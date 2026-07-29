@@ -399,11 +399,12 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 ObjectNodeSection section = node.GetSection(_nodeFactory);
+                ObjectNodeSection emitSection = GetEmitSection(section);
                 SectionWriter sectionWriter = ShouldShareSymbol(node, section) ?
                     GetOrCreateSection(section, currentSymbolName, currentSymbolName) :
                     GetOrCreateSection(section);
 
-                if (section.NeedsAlignment)
+                if (emitSection.NeedsAlignment)
                 {
                     sectionWriter.EmitAlignment(nodeContents.Alignment);
                 }
@@ -713,6 +714,7 @@ namespace ILCompiler.ObjectWriter
             ObjectWriter objectWriter =
                 factory.Target.IsApplePlatform ? new MachObjectWriter(factory, options) :
                 factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
+                factory.Target.Architecture == Internal.TypeSystem.TargetArchitecture.Wasm32 ? new WasmObjectWriter(factory, options) :
                 new ElfObjectWriter(factory, options);
 
             using Stream outputFileStream = new FileStream(objectFilePath, FileMode.Create);

@@ -66,22 +66,28 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
     JITDUMP("Begin lowering PEP call\n");
     DISPTREERANGE(BlockRange(), call);
 
-    // PEP call must always have a control expression
-    assert(call->gtControlExpr != nullptr);
-    LIR::Use callTargetUse(BlockRange(), &call->gtControlExpr, call);
+    GenTree* callTargetForArg;
+    if (call->gtControlExpr != nullptr)
+    {
+        LIR::Use callTargetUse(BlockRange(), &call->gtControlExpr, call);
 
-    JITDUMP("Creating new local variable for PEP");
-    unsigned int   callTargetLclNum    = callTargetUse.ReplaceWithLclVar(m_compiler);
-    GenTreeLclVar* callTargetLclForArg = m_compiler->gtNewLclvNode(callTargetLclNum, TYP_I_IMPL);
+        JITDUMP("Creating new local variable for PEP");
+        unsigned int callTargetLclNum = callTargetUse.ReplaceWithLclVar(m_compiler);
+        callTargetForArg              = m_compiler->gtNewLclvNode(callTargetLclNum, TYP_I_IMPL);
+    }
+    else
+    {
+        assert(call->gtDirectCallAddress != nullptr);
+        callTargetForArg = AddrGen(call->gtDirectCallAddress);
+    }
     DISPTREE(call);
 
     JITDUMP("Add new arg to call arg list corresponding to PEP target");
-    NewCallArg pepTargetArg =
-        NewCallArg::Primitive(callTargetLclForArg).WellKnown(WellKnownArg::WasmPortableEntryPoint);
-    CallArg* pepArg = call->gtArgs.PushBack(m_compiler, pepTargetArg);
+    NewCallArg pepTargetArg = NewCallArg::Primitive(callTargetForArg).WellKnown(WellKnownArg::WasmPortableEntryPoint);
+    CallArg*   pepArg       = call->gtArgs.PushBack(m_compiler, pepTargetArg);
 
     pepArg->SetEarlyNode(nullptr);
-    pepArg->SetLateNode(callTargetLclForArg);
+    pepArg->SetLateNode(callTargetForArg);
     call->gtArgs.PushLateBack(pepArg);
 
     // Set up ABI information for this arg; PEP's should be passed as the last param to a wasm function
@@ -90,11 +96,17 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
     pepArg->AbiInfo =
         ABIPassingInformation::FromSegmentByValue(m_compiler,
                                                   ABIPassingSegment::InRegister(pepReg, 0, TARGET_POINTER_SIZE));
-    BlockRange().InsertBefore(call, callTargetLclForArg);
+    BlockRange().InsertBefore(call, callTargetForArg);
 
     // Lower the new PEP arg now that the call abi info is updated and lcl var is inserted
     LowerArg(call, pepArg);
     DISPTREE(call);
+
+    if (call->gtControlExpr == nullptr)
+    {
+        JITDUMP("Finished lowering direct PEP call\n");
+        return;
+    }
 
     JITDUMP("Rewrite PEP call's control expression to indirect through the new local variable\n");
 

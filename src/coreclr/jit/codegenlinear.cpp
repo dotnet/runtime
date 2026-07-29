@@ -872,6 +872,12 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
             break;
 
         case BBJ_SWITCH:
+#if defined(TARGET_WASM)
+            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+            {
+                genEmitFunctionEnd();
+            }
+#endif
             break;
 
         case BBJ_ALWAYS:
@@ -922,7 +928,6 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
                 genEmitFunctionEnd();
             }
 #endif // defined(TARGET_WASM)
-
             break;
 
         case BBJ_COND:
@@ -933,6 +938,12 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
             SetLoopAlignBackEdge(block, block->GetFalseTarget());
 #endif // FEATURE_LOOP_ALIGN
 
+#if defined(TARGET_WASM)
+            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+            {
+                genEmitFunctionEnd();
+            }
+#endif
             break;
 
         default:

@@ -7,11 +7,11 @@ using ILCompiler.DependencyAnalysis.Wasm;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public partial class TentativeMethodNode
+    public partial class TentativeMethodNode : IMethodCodeNodeWithTypeSignature
     {
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter encoder, bool relocsOnly)
         {
-            throw new NotImplementedException();
+            throw new PlatformNotSupportedException("NativeAOT WebAssembly tentative method stubs are not supported.");
         }
     }
 }

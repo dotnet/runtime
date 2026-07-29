@@ -13,14 +13,30 @@ using ILCompiler.ObjectWriter.WasmInstructions;
 
 namespace ILCompiler.DependencyAnalysis.Wasm
 {
-    public struct WasmEmitter(NodeFactory factory, bool relocsOnly)
+    public struct WasmEmitter
     {
 #if READYTORUN
         public WasmFunctionBody FunctionBody = null;
+#else
+        internal ObjectDataBuilder Builder;
 #endif
 
-        public bool Is64Bit => factory.Target.PointerSize == 8;
-        public bool RelocsOnly => relocsOnly;
+        private readonly NodeFactory _factory;
+        private readonly bool _relocsOnly;
+
+        public WasmEmitter(NodeFactory factory, bool relocsOnly)
+        {
+            _factory = factory;
+            _relocsOnly = relocsOnly;
+#if READYTORUN
+            FunctionBody = null;
+#else
+            Builder = new ObjectDataBuilder(factory, relocsOnly);
+#endif
+        }
+
+        public bool Is64Bit => _factory.Target.PointerSize == 8;
+        public bool RelocsOnly => _relocsOnly;
 
         public ObjectNode.ObjectData Encode(ISymbolDefinitionNode symbolDefinitionNode)
         {
@@ -33,7 +49,9 @@ namespace ILCompiler.DependencyAnalysis.Wasm
     
             return new ObjectNode.ObjectData(encodedThunk, relocs, 1, new ISymbolDefinitionNode[] { symbolDefinitionNode });
 #else
-            return default(ObjectNode.ObjectData);
+            Builder.RequireInitialAlignment(1);
+            Builder.AddSymbol(symbolDefinitionNode);
+            return Builder.ToObjectData();
 #endif
         }
     }
