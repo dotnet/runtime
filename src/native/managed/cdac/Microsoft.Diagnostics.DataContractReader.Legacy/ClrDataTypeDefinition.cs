@@ -101,7 +101,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
         }
 
 #if DEBUG
-        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
+        if (_legacyImpl is not null)
         {
             uint nameLenLocal = 0;
             char[] nameBufLocal = new char[bufLen > 0 ? bufLen : 1];
@@ -158,7 +158,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
         }
 
 #if DEBUG
-        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
+        if (_legacyImpl is not null)
         {
             bool validateToken = token is not null;
             uint tokenLocal = 0;
@@ -193,7 +193,7 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
         }
 
 #if DEBUG
-        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
+        if (_legacyImpl is not null)
         {
             uint typeLocal = 0;
             int hrLocal = _legacyImpl.GetCorElementType(type is null ? null : &typeLocal);
