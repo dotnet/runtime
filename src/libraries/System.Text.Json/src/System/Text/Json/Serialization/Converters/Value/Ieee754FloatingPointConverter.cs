@@ -20,7 +20,9 @@ namespace System.Text.Json.Serialization.Converters
         // Formatting of the IEEE 754 decimal types only uses scientific notation when it is
         // required or more compact, so large-magnitude values expand to many digits.
         private const int StackBufferLength = 64;
-        private const int MaxUnescapedFormatLength = JsonConstants.MaximumFloatingPointConstantLength * JsonConstants.MaxExpansionFactorWhileEscaping;
+        // This buffer only ever holds one of the named literals "NaN", "Infinity" or "-Infinity",
+        // so it is sized from their maximum length rather than from any numeric format length.
+        private const int MaxEscapedNamedLiteralLength = JsonConstants.MaximumFloatingPointConstantLength * JsonConstants.MaxExpansionFactorWhileEscaping;
 
         private readonly NumericType _numericType;
 
@@ -206,13 +208,13 @@ namespace System.Text.Json.Serialization.Converters
 
             if (reader.ValueIsEscaped)
             {
-                if (reader.ValueLength > MaxUnescapedFormatLength)
+                if (reader.ValueLength > MaxEscapedNamedLiteralLength)
                 {
                     value = default;
                     return false;
                 }
 
-                buffer = stackalloc byte[MaxUnescapedFormatLength];
+                buffer = stackalloc byte[MaxEscapedNamedLiteralLength];
             }
             else
             {

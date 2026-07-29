@@ -133,6 +133,27 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task FullPrecisionValues_RoundtripAsKeysAndStrings()
+        {
+            // Reading a string or property name buffers the token, so exercise the widest significand
+            // each type can represent: 7, 16 and 34 significant digits for the decimal types.
+            await AssertFullPrecision(Parse<Decimal32>("-1.234567E-95"));
+            await AssertFullPrecision(Parse<Decimal64>("-1.234567890123456E-383"));
+            await AssertFullPrecision(Parse<Decimal128>("-1.234567890123456789012345678901234E-6143"));
+            await AssertFullPrecision(BFloat16.Epsilon);
+
+            async Task AssertFullPrecision<T>(T value) where T : struct, IFloatingPointIeee754<T>
+            {
+                string text = value.ToString(null, CultureInfo.InvariantCulture);
+
+                await AssertDictionaryKeyRoundtrip(value, text);
+
+                var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+                Assert.Equal(value, await Serializer.DeserializeWrapper<T>($"\"{text}\"", options));
+            }
+        }
+
+        [Fact]
         public async Task NumberOverflowingToInfinity_IsReadAsInfinity()
         {
             // IEEE 754 rounds a magnitude beyond the largest finite value to infinity, and the JSON
