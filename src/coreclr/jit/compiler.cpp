@@ -4998,6 +4998,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_DFS_BLOCKS_WASM, &Compiler::fgDfsBlocksAndRemove);
 
+    // Repair any multiple-entry try regions back to single entry.
+    //
+    DoPhase(this, PHASE_WASM_REPAIR_TRY_ENTRIES, &Compiler::fgWasmRepairTryEntries);
+
     // Transform any strongly connected components into reducible flow.
     //
     DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
