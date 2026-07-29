@@ -340,7 +340,7 @@ ShimRemoteDataTarget::ReadVirtual(
         // pread on /proc/<pid>/mem treats the offset as a file position, not a virtual address,
         // so the kernel does not apply TBI -- tagged pointers cause EINVAL.
         // See https://www.kernel.org/doc/html/latest/arch/arm64/tagged-address-abi.html
-#ifdef TARGET_ARM64
+#ifdef HOST_ARM64
         address &= 0x00FFFFFFFFFFFFFFULL;
 #endif
         ssize_t r = pread((int)m_memoryHandle, pBuffer, cbRequestSize, (off_t)address);

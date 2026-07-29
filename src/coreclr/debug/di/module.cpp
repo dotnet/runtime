@@ -883,7 +883,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
     }
 
     return hr;
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 }
 
 //---------------------------------------------------------------------------------------
@@ -2412,7 +2412,7 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
         ReleaseHolder<ISymUnmanagedBinder> pBinder;
         if (symFormat == IDacDbiInterface::kSymbolFormatPDB)
         {
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
             // PDB format - use diasymreader.dll with COM activation
             InlineSString<MAX_PATH> ssBuf;
             IfFailThrow(GetClrModuleDirectory(ssBuf));
