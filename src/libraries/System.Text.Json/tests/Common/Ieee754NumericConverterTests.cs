@@ -60,17 +60,16 @@ namespace System.Text.Json.Serialization.Tests
         public Task Decimal128_Roundtrip(string json) => AssertRoundtrip<Decimal128>(json);
 
         [Fact]
-        public async Task Decimal128_LargeMagnitudeValue_Roundtrips()
+        public async Task Decimal128_ExtremeValues_Roundtrip()
         {
-            // Exercises the pooled-buffer growth path of the converter: the general format of the
-            // IEEE 754 decimal types is fully positional, so extreme values expand to thousands of digits.
-            Decimal128 value = Decimal128.MaxValue;
-            string expected = value.ToString(null, CultureInfo.InvariantCulture);
-            Assert.True(expected.Length > 64, $"Expected an expanded representation, got '{expected}'.");
-
-            string json = await Serializer.SerializeWrapper(value);
-            Assert.Equal(expected, json);
-            Assert.Equal(value, await Serializer.DeserializeWrapper<Decimal128>(json));
+            // MaxValue and Epsilon are the values most likely to exercise the converter's pooled-buffer
+            // growth path, since their general format is the longest the type can produce.
+            foreach (Decimal128 value in new[] { Decimal128.MaxValue, Decimal128.MinValue, Decimal128.Epsilon })
+            {
+                string json = await Serializer.SerializeWrapper(value);
+                Assert.Equal(value.ToString(null, CultureInfo.InvariantCulture), json);
+                Assert.Equal(value, await Serializer.DeserializeWrapper<Decimal128>(json));
+            }
         }
 
         [Theory]
@@ -131,6 +130,57 @@ namespace System.Text.Json.Serialization.Tests
             await AssertDictionaryKeyRoundtrip(Parse<Decimal32>("1.5"), "1.5");
             await AssertDictionaryKeyRoundtrip(Parse<Decimal64>("1.5"), "1.5");
             await AssertDictionaryKeyRoundtrip(Parse<Decimal128>("1.5"), "1.5");
+        }
+
+        [Fact]
+        public async Task NumberOverflowingToInfinity_IsReadAsInfinity()
+        {
+            // IEEE 754 rounds a magnitude beyond the largest finite value to infinity, and the JSON
+            // number grammar cannot express infinity, so overflow is only detectable by inspecting the
+            // parsed result. Matches the behavior of float and double.
+            const string Json = "1e999999";
+
+            Assert.Equal(BFloat16.PositiveInfinity, await Serializer.DeserializeWrapper<BFloat16>(Json));
+            Assert.Equal(Decimal32.PositiveInfinity, await Serializer.DeserializeWrapper<Decimal32>(Json));
+            Assert.Equal(Decimal64.PositiveInfinity, await Serializer.DeserializeWrapper<Decimal64>(Json));
+            Assert.Equal(Decimal128.PositiveInfinity, await Serializer.DeserializeWrapper<Decimal128>(Json));
+
+            Assert.Equal(BFloat16.NegativeInfinity, await Serializer.DeserializeWrapper<BFloat16>("-" + Json));
+            Assert.Equal(Decimal128.NegativeInfinity, await Serializer.DeserializeWrapper<Decimal128>("-" + Json));
+        }
+
+        [Fact]
+        public async Task StringOverflowingToInfinity_Throws()
+        {
+            // Unlike number tokens, strings are rejected when they do not parse to a finite value.
+            // Matches the behavior of float and double.
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            const string Json = "\"1e999999\"";
+
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<BFloat16>(Json, options));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Decimal32>(Json, options));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Decimal64>(Json, options));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Decimal128>(Json, options));
+        }
+
+        [Fact]
+        public async Task NonFiniteValues_WithoutNamedLiterals_Throw()
+        {
+            // NaN and infinity have no JSON number representation, so serializing them without
+            // AllowNamedFloatingPointLiterals reports the same error float and double do.
+            await AssertNotSupported(BFloat16.NaN, BFloat16.PositiveInfinity);
+            await AssertNotSupported(Decimal32.NaN, Decimal32.PositiveInfinity);
+            await AssertNotSupported(Decimal64.NaN, Decimal64.PositiveInfinity);
+            await AssertNotSupported(Decimal128.NaN, Decimal128.NegativeInfinity);
+
+            async Task AssertNotSupported<T>(T nan, T infinity) where T : struct, IFloatingPointIeee754<T>
+            {
+                await Assert.ThrowsAsync<ArgumentException>(() => Serializer.SerializeWrapper(nan));
+                await Assert.ThrowsAsync<ArgumentException>(() => Serializer.SerializeWrapper(infinity));
+
+                var dictionary = new Dictionary<T, int> { [infinity] = 42 };
+                await Assert.ThrowsAsync<ArgumentException>(() => Serializer.SerializeWrapper(dictionary));
+            }
         }
 
         [Fact]

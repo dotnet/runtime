@@ -17,8 +17,8 @@ namespace System.Text.Json.Serialization.Converters
         where T : struct, IFloatingPointIeee754<T>
     {
         // Values that need more room than this are formatted into a pooled buffer.
-        // The IEEE 754 decimal types are formatted without scientific notation, so
-        // their worst-case length is in the thousands of digits.
+        // Formatting of the IEEE 754 decimal types only uses scientific notation when it is
+        // required or more compact, so large-magnitude values expand to many digits.
         private const int StackBufferLength = 64;
         private const int MaxUnescapedFormatLength = JsonConstants.MaximumFloatingPointConstantLength * JsonConstants.MaxExpansionFactorWhileEscaping;
 
@@ -44,7 +44,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowInvalidOperationException_ExpectedNumber(reader.TokenType);
             }
 
-            return ReadCore(ref reader);
+            return ReadCore(ref reader, isStringValue: false);
         }
 
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
@@ -61,11 +61,13 @@ namespace System.Text.Json.Serialization.Converters
         internal override T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
-            return ReadCore(ref reader);
+            return ReadCore(ref reader, isStringValue: true);
         }
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
+            ValidateFinite(value);
+
             Span<byte> stackBuffer = stackalloc byte[StackBufferLength];
             byte[]? rented = Format(value, stackBuffer, out ReadOnlySpan<byte> formatted);
             writer.WritePropertyName(formatted);
@@ -83,7 +85,7 @@ namespace System.Text.Json.Serialization.Converters
                         return value;
                     }
 
-                    return ReadCore(ref reader);
+                    return ReadCore(ref reader, isStringValue: true);
                 }
                 else if ((JsonNumberHandling.AllowNamedFloatingPointLiterals & handling) != 0)
                 {
@@ -101,7 +103,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowInvalidOperationException_ExpectedNumber(reader.TokenType);
             }
 
-            return ReadCore(ref reader);
+            return ReadCore(ref reader, isStringValue: false);
         }
 
         internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, T value, JsonNumberHandling handling)
@@ -129,7 +131,12 @@ namespace System.Text.Json.Serialization.Converters
         internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) =>
             GetSupportedJsonValueTypesForNumericType(numberHandling);
 
-        private T ReadCore(ref Utf8JsonReader reader)
+        // Reads the current token as a number. When the token is a string or property name,
+        // non-finite results are rejected: the underlying parsers accept named literals such as "naN"
+        // that are not valid JSON, and a string that overflows to infinity is rejected for consistency
+        // with float and double. Number tokens are already constrained to the JSON number grammar by
+        // the reader, so they are permitted to overflow to infinity per IEEE 754.
+        private T ReadCore(ref Utf8JsonReader reader, bool isStringValue)
         {
             byte[]? rentedByteBuffer = null;
             int bufferLength = reader.ValueLength;
@@ -141,7 +148,7 @@ namespace System.Text.Json.Serialization.Converters
             int written = reader.CopyValue(byteBuffer);
             byteBuffer = byteBuffer.Slice(0, written);
 
-            bool success = TryParse(byteBuffer, out T result);
+            bool success = TryParse(byteBuffer, out T result) && (!isStringValue || T.IsFinite(result));
             Return(rentedByteBuffer);
 
             if (!success)
@@ -149,16 +156,28 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowFormatException(_numericType);
             }
 
-            Debug.Assert(!T.IsNaN(result) && !T.IsInfinity(result));
             return result;
         }
 
         private static void WriteCore(Utf8JsonWriter writer, T value)
         {
+            ValidateFinite(value);
+
             Span<byte> stackBuffer = stackalloc byte[StackBufferLength];
             byte[]? rented = Format(value, stackBuffer, out ReadOnlySpan<byte> formatted);
             writer.WriteRawValue(formatted);
             Return(rented);
+        }
+
+        // NaN and infinity have no representation in the JSON number grammar. Reject them with the
+        // same error Utf8JsonWriter reports for float and double, which points callers at
+        // JsonNumberHandling.AllowNamedFloatingPointLiterals.
+        private static void ValidateFinite(T value)
+        {
+            if (!T.IsFinite(value))
+            {
+                ThrowHelper.ThrowArgumentException_ValueNotSupported();
+            }
         }
 
         private static void WriteFloatingPointConstant(Utf8JsonWriter writer, T value)
@@ -234,22 +253,11 @@ namespace System.Text.Json.Serialization.Converters
             return false;
         }
 
-        private static bool TryParse(ReadOnlySpan<byte> buffer, out T result)
-        {
-            bool success = T.TryParse(buffer, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out result);
+        private static bool TryParse(ReadOnlySpan<byte> buffer, out T result) =>
+            T.TryParse(buffer, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out result);
 
-            // The underlying parsers are more lax with floating-point literals than S.T.Json
-            // e.g: they parse "naN" successfully. Only succeed with the exact match.
-            return success &&
-                (!T.IsNaN(result) || buffer.SequenceEqual(JsonConstants.NaNValue)) &&
-                (!T.IsPositiveInfinity(result) || buffer.SequenceEqual(JsonConstants.PositiveInfinityValue)) &&
-                (!T.IsNegativeInfinity(result) || buffer.SequenceEqual(JsonConstants.NegativeInfinityValue));
-        }
-
-        /// <summary>
-        /// Formats <paramref name="value"/> into <paramref name="initialBuffer"/>, growing into a
-        /// pooled buffer if necessary. Returns the rented array, if any, which the caller must return.
-        /// </summary>
+        // Formats value into initialBuffer, growing into a pooled buffer if necessary.
+        // Returns the rented array, if any, which the caller must return.
         private static byte[]? Format(T value, Span<byte> initialBuffer, out ReadOnlySpan<byte> formatted)
         {
             byte[]? rented = null;
