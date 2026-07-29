@@ -169,10 +169,28 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 // an error for config properties that don't map to object properties.
                                 _namespaces.Add("System.Collections.Generic");
 
-                                if (_typeIndex.HasBindableMembers(objectSpec))
+                                bool hasBindableMembers = _typeIndex.HasBindableMembers(objectSpec);
+
+                                // A type with a parameterized constructor gets its constructor parameters bound
+                                // in the Initialize method regardless of whether it also has other bindable
+                                // members; that binding capability must be registered even when
+                                // HasBindableMembers is false (e.g. the only member is a ctor parameter backed
+                                // by a non-bindable read-only collection type), otherwise the emitter can end up
+                                // calling an Initialize method that was never generated.
+                                bool needsInitializeMethod = objectSpec is { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor, InitExceptionMessage: null };
+
+                                if (hasBindableMembers || needsInitializeMethod)
                                 {
                                     foreach (PropertySpec property in objectSpec.Properties!)
                                     {
+                                        // Skip types reachable only through non-bindable properties, unless the
+                                        // property backs a constructor parameter. Constructor parameters are always
+                                        // bound in the Initialize method, so their types must still be registered.
+                                        if (!_typeIndex.ShouldBindTo(property) && property.MatchingCtorParam is null)
+                                        {
+                                            continue;
+                                        }
+
                                         TryRegisterTransitiveTypesForMethodGen(property.TypeRef);
 
                                         if (_typeIndex.GetTypeSpec(property.TypeRef) is ComplexTypeSpec)
@@ -181,10 +199,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                         }
                                     }
 
-                                    bool registeredForBindCore = TryRegisterTypeForBindCoreGen(objectSpec);
-                                    Debug.Assert(registeredForBindCore);
+                                    if (hasBindableMembers)
+                                    {
+                                        bool registeredForBindCore = TryRegisterTypeForBindCoreGen(objectSpec);
+                                        Debug.Assert(registeredForBindCore);
+                                    }
 
-                                    if (objectSpec is { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor, InitExceptionMessage: null })
+                                    if (needsInitializeMethod)
                                     {
                                         RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.Initialize, objectSpec);
                                     }

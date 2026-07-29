@@ -199,7 +199,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (m_pRCW != NULL);
+        return m_pRCW != NULL;
     }
 #else // !DACCESS_COMPILE
     TADDR DacGetRawRCW()
@@ -450,14 +450,13 @@ class SyncBlock
     // Gets the InteropInfo block, creates a new one if none is present.
     InteropSyncBlockInfo* GetInteropInfo()
     {
-        CONTRACT (InteropSyncBlockInfo*)
+        CONTRACTL
         {
             THROWS;
             GC_TRIGGERS;
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         if (!m_pInteropInfo)
         {
@@ -467,22 +466,22 @@ class SyncBlock
                 pInteropInfo.SuppressRelease();
         }
 
-        RETURN m_pInteropInfo;
+        _ASSERTE(m_pInteropInfo != NULL);
+        return m_pInteropInfo;
     }
 
     PTR_InteropSyncBlockInfo GetInteropInfoNoCreate()
     {
-        CONTRACT (PTR_InteropSyncBlockInfo)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             SUPPORTS_DAC;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pInteropInfo;
+        return m_pInteropInfo;
     }
 
     // Returns false if the InteropInfo block was already set - does not overwrite the previous value.
@@ -886,7 +885,7 @@ class ObjHeader
     BOOL HasSyncBlockIndex()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (GetHeaderSyncBlockIndex() != 0);
+        return GetHeaderSyncBlockIndex() != 0;
     }
 
     // retrieve or allocate a sync block for this object
@@ -928,5 +927,3 @@ typedef DPTR(class ObjHeader) PTR_ObjHeader;
 #endif // TARGET_X86
 
 #endif // _SYNCBLK_H_
-
-
