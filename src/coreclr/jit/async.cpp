@@ -1076,6 +1076,15 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
         excludedLocals.AddOrUpdate(m_compiler->lvaAsyncExecutionContextVar, true);
     }
 
+#ifdef TARGET_WASM
+    // The Wasm shadow stack pointer is a Wasm local set by the caller, not
+    // continuation state, so exclude it from the save/restore set.
+    if (m_compiler->lvaWasmSpArg != BAD_VAR_NUM)
+    {
+        excludedLocals.AddOrUpdate(m_compiler->lvaWasmSpArg, true);
+    }
+#endif // TARGET_WASM
+
     analyses.GetLiveLocals(layoutBuilder, [&](unsigned lclNum) {
         return !excludedLocals.Contains(lclNum);
     });

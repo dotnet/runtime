@@ -2,7 +2,10 @@ trigger: none
 pr:
   branches:
     include:
-    - main
+    - '*'
+    exclude:
+    - release/*
+    - internal/release/*
   paths:
     include:
     - eng/pipelines/coreclr/hardware-intrinsics-wasm.yml

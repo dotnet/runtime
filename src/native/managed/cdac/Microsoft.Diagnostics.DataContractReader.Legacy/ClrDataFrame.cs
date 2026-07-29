@@ -511,7 +511,15 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         uint token = rts.GetMethodToken(mdh);
         ILoader loader = _target.Contracts.Loader;
-        TargetPointer ilHeader = loader.GetILHeader(moduleHandle, token);
+
+        TargetPointer ilHeader = TargetPointer.Null;
+        ICodeVersions cv = _target.Contracts.CodeVersions;
+        ILCodeVersionHandle activeVersion = cv.GetActiveILCodeVersion(mdh.Address);
+        if (activeVersion.IsValid && activeVersion.IsExplicit && cv.GetSource(activeVersion) != CodeVersionSource.ReJIT)
+            ilHeader = cv.GetIL(activeVersion);
+
+        if (ilHeader == TargetPointer.Null)
+            ilHeader = loader.GetILHeader(moduleHandle, token);
         if (ilHeader == TargetPointer.Null)
         {
             mdReader = null!;

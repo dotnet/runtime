@@ -1243,6 +1243,7 @@ public:
     {
         CONTRACTL {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         HRESULT hr = EnumInitNoThrow(tkKind, tkParent);
@@ -1259,6 +1260,7 @@ public:
     {
         CONTRACTL {
             NOTHROW;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         _ASSERTE(!m_fAcquired);
@@ -1275,6 +1277,7 @@ public:
     {
         CONTRACTL {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         _ASSERTE(!m_fAcquired);
