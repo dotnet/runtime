@@ -3636,7 +3636,7 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
        were statically declared */
 
     if (info.varargs) {
-#ifdef FEATURE_NATIVEAOT
+#if defined(FEATURE_NATIVEAOT) || !defined(FEATURE_VARARGS)
         PORTABILITY_ASSERT("EnumGCRefs: VarArgs");
 #else
         LOG((LF_GCINFO, LL_INFO100, "Reporting incoming vararg GC refs\n"));

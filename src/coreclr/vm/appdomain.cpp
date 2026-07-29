@@ -717,7 +717,9 @@ void SystemDomain::Attach()
     RangeSectionStubManager::Init();
     ILStubManager::Init();
     PInvokeStubManager::Init();
+#ifdef FEATURE_VARARGS
     InteropDispatchStubManager::Init();
+#endif // FEATURE_VARARGS
     StubLinkStubManager::Init();
     TailCallStubManager::Init();
     AsyncThunkStubManager::Init();

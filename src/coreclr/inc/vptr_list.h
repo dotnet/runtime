@@ -33,7 +33,9 @@ VPTR_CLASS(VirtualCallStubManagerManager)
 VPTR_CLASS(RangeSectionStubManager)
 VPTR_CLASS(ILStubManager)
 VPTR_CLASS(PInvokeStubManager)
+#ifdef FEATURE_VARARGS
 VPTR_CLASS(InteropDispatchStubManager)
+#endif
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 VPTR_CLASS(TailCallStubManager)
 #endif
