@@ -753,5 +753,55 @@ namespace ILAssembler.Tests
                 reader.GetBlobBytes(attribute.Value));
         }
 
+        [Fact]
+        public void CustomAttribute_ObjectArrayWithNestedObjectWrapper_DecodesProperly()
+        {
+            // Regression test: object(object(...)) elements in object[] were previously encoded with
+            // a TaggedObject (0x51) type code, which caused BadImageFormatException when decoding.
+            // The fix ensures object(...) wrappers are unwrapped to the concrete inner type.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi sealed ObjArrAttribute extends [mscorlib]System.Attribute
+                {
+                    .method public specialname rtspecialname instance void .ctor(object[] values) cil managed
+                    {
+                        ldarg.0
+                        call instance void [mscorlib]System.Attribute::.ctor()
+                        ret
+                    }
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .custom instance void ObjArrAttribute::.ctor(object[]) = {
+                        object[2](object(bool(true)) object(int32(42)))
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var testType = reader.TypeDefinitions
+                .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Test");
+            var attribute = reader.GetCustomAttribute(Assert.Single(reader.GetCustomAttributes(testType)));
+            CustomAttributeValue<string> value = attribute.DecodeValue(DocumentCompilerTestHelpers.Decoder);
+
+            Assert.Single(value.FixedArguments);
+            ImmutableArray<CustomAttributeTypedArgument<string>> elements =
+                Assert.IsType<ImmutableArray<CustomAttributeTypedArgument<string>>>(value.FixedArguments[0].Value);
+            Assert.Collection(
+                elements,
+                item =>
+                {
+                    Assert.Equal("bool", item.Type);
+                    Assert.Equal(true, item.Value);
+                },
+                item =>
+                {
+                    Assert.Equal("int32", item.Type);
+                    Assert.Equal(42, item.Value);
+                });
+        }
+
     }
 }
