@@ -1359,8 +1359,7 @@ static var_types NormalizeCmpMaskSimdBaseType(var_types simdBaseType)
 //
 static bool IsHWIntrinsicCmpMaskExtractMsb(Compiler* comp, GenTreeHWIntrinsic* node)
 {
-    if ((node->GetHWIntrinsicId() != NI_Vector64_ExtractMostSignificantBits) &&
-        (node->GetHWIntrinsicId() != NI_Vector128_ExtractMostSignificantBits))
+    if (node->GetHWIntrinsicId() != NI_Vector_ExtractMostSignificantBits)
     {
         return false;
     }
@@ -1461,13 +1460,57 @@ static void ScalarizeHWIntrinsicCmpMaskReduction(GenTreeHWIntrinsic* node,
                                                  var_types           simdBaseType,
                                                  unsigned            simdSize)
 {
-    NamedIntrinsic intrinsic = (simdSize == 8) ? NI_Vector64_ToScalar : NI_Vector128_ToScalar;
-
     node->gtType = genActualType(simdBaseType);
-    node->ChangeHWIntrinsicId(intrinsic);
+    node->ChangeHWIntrinsicId(NI_Vector_ToScalar);
     node->SetSimdSize(8);
     node->SetSimdBaseType(simdBaseType);
     node->Op(1) = reduction;
+}
+
+//----------------------------------------------------------------------------------------------
+// CreateHWIntrinsicCmpMaskReduction: Create a horizontal reduction of a comparison mask.
+//
+// Arguments:
+//    comp              - The compiler instance
+//    blockRange        - The LIR range containing the input
+//    op1               - The vector to reduce
+//    acrossIntrinsic   - The horizontal reduction intrinsic
+//    pairwiseIntrinsic - The pairwise fallback intrinsic for Vector64<uint>
+//    simdBaseType      - The SIMD base type of the reduction
+//    simdSize          - The SIMD size of the input
+//
+static GenTree* CreateHWIntrinsicCmpMaskReduction(Compiler*      comp,
+                                                  LIR::Range&    blockRange,
+                                                  GenTree*       op1,
+                                                  NamedIntrinsic acrossIntrinsic,
+                                                  NamedIntrinsic pairwiseIntrinsic,
+                                                  var_types      simdBaseType,
+                                                  unsigned       simdSize)
+{
+    if ((simdSize == 8) && (simdBaseType == TYP_UINT))
+    {
+        // Vector64<uint> has only two lanes and AdvSimd does not provide a 2S across form.
+        // Use a pairwise reduction with the same vector as both operands instead.
+
+        LIR::Use op1Use;
+        LIR::Use::MakeDummyUse(blockRange, op1, &op1Use);
+
+        // The pairwise form consumes op1 twice, so spill it to a temp before cloning the use.
+        op1Use.ReplaceWithLclVar(comp);
+        op1 = op1Use.Def();
+
+        GenTree* op2 = comp->gtClone(op1);
+        blockRange.InsertAfter(op1, op2);
+
+        GenTree* reduction =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, pairwiseIntrinsic, simdBaseType, simdSize);
+        blockRange.InsertAfter(op2, reduction);
+        return reduction;
+    }
+
+    GenTree* reduction = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, acrossIntrinsic, simdBaseType, simdSize);
+    blockRange.InsertAfter(op1, reduction);
+    return reduction;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -1538,33 +1581,8 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsb(GenTree** use, Compiler::
     // ExtractMostSignificantBits result is only being compared against zero, use a horizontal max
     // reduction to determine if any element was all-bits-set without materializing the full mask.
 
-    GenTree* tmp;
-
-    if ((simdSize == 8) && (simdBaseType == TYP_UINT))
-    {
-        // Vector64<uint> has only two lanes and AdvSimd does not provide a 2S MaxAcross form.
-        // Use a pairwise reduction with the same vector as both operands instead.
-
-        LIR::Use op1Use;
-        LIR::Use::MakeDummyUse(BlockRange(), op1, &op1Use);
-
-        // The pairwise form consumes op1 twice, so spill it to a temp before cloning the use.
-        op1Use.ReplaceWithLclVar(m_compiler);
-        op1 = op1Use.Def();
-
-        GenTree* op2 = m_compiler->gtClone(op1);
-        BlockRange().InsertAfter(op1, op2);
-
-        tmp = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, NI_AdvSimd_MaxPairwise, simdBaseType, simdSize);
-        BlockRange().InsertAfter(op2, tmp);
-    }
-    else
-    {
-        tmp = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_MaxAcross, simdBaseType, simdSize);
-        BlockRange().InsertAfter(op1, tmp);
-    }
-
-    op1 = tmp;
+    op1 = CreateHWIntrinsicCmpMaskReduction(m_compiler, BlockRange(), op1, NI_AdvSimd_Arm64_MaxAcross,
+                                            NI_AdvSimd_MaxPairwise, simdBaseType, simdSize);
 
     ScalarizeHWIntrinsicCmpMaskReduction(node, op1, simdBaseType, simdSize);
 
@@ -1638,33 +1656,8 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbPopCount(GenTree** use, Co
     BlockRange().InsertAfter(shiftAmount, shift);
     op1 = shift;
 
-    GenTree* add;
-
-    if ((simdSize == 8) && (simdBaseType == TYP_UINT))
-    {
-        // Vector64<uint> has only two lanes and AdvSimd does not provide a 2S AddAcross form.
-        // Use a pairwise reduction with the same vector as both operands instead.
-
-        LIR::Use op1Use;
-        LIR::Use::MakeDummyUse(BlockRange(), op1, &op1Use);
-
-        // The pairwise form consumes op1 twice, so spill it to a temp before cloning the use.
-        op1Use.ReplaceWithLclVar(m_compiler);
-        op1 = op1Use.Def();
-
-        GenTree* op2 = m_compiler->gtClone(op1);
-        BlockRange().InsertAfter(op1, op2);
-
-        add = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, NI_AdvSimd_AddPairwise, simdBaseType, simdSize);
-        BlockRange().InsertAfter(op2, add);
-    }
-    else
-    {
-        add = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseType, simdSize);
-        BlockRange().InsertAfter(op1, add);
-    }
-
-    op1 = add;
+    op1 = CreateHWIntrinsicCmpMaskReduction(m_compiler, BlockRange(), op1, NI_AdvSimd_Arm64_AddAcross,
+                                            NI_AdvSimd_AddPairwise, simdBaseType, simdSize);
 
     ScalarizeHWIntrinsicCmpMaskReduction(extractNode, op1, simdBaseType, simdSize);
 
@@ -1788,33 +1781,8 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(GenTree** use, C
     BlockRange().InsertAfter(otherVec, select);
     op1 = select;
 
-    GenTree* min;
-
-    if ((simdSize == 8) && (simdBaseType == TYP_UINT))
-    {
-        // Vector64<uint> has only two lanes and AdvSimd does not provide a 2S MinAcross form.
-        // Use a pairwise reduction with the same vector as both operands instead.
-
-        LIR::Use op1Use;
-        LIR::Use::MakeDummyUse(BlockRange(), op1, &op1Use);
-
-        // The pairwise form consumes op1 twice, so spill it to a temp before cloning the use.
-        op1Use.ReplaceWithLclVar(m_compiler);
-        op1 = op1Use.Def();
-
-        GenTree* op2 = m_compiler->gtClone(op1);
-        BlockRange().InsertAfter(op1, op2);
-
-        min = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, NI_AdvSimd_MinPairwise, simdBaseType, simdSize);
-        BlockRange().InsertAfter(op2, min);
-    }
-    else
-    {
-        min = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_MinAcross, simdBaseType, simdSize);
-        BlockRange().InsertAfter(op1, min);
-    }
-
-    op1 = min;
+    op1 = CreateHWIntrinsicCmpMaskReduction(m_compiler, BlockRange(), op1, NI_AdvSimd_Arm64_MinAcross,
+                                            NI_AdvSimd_MinPairwise, simdBaseType, simdSize);
 
     ScalarizeHWIntrinsicCmpMaskReduction(extractNode, op1, simdBaseType, simdSize);
 

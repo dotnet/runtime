@@ -92,7 +92,7 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
 {
     NamedIntrinsic intrinsic = tree->GetHWIntrinsicId();
 
-    if ((intrinsic != NI_Vector64_ExtractMostSignificantBits) && (intrinsic != NI_Vector128_ExtractMostSignificantBits))
+    if (intrinsic != NI_Vector_ExtractMostSignificantBits)
     {
         return;
     }

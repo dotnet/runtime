@@ -27501,7 +27501,7 @@ GenTree* Compiler::gtNewSimdWasmTwoSourceShuffleNode(
     assert(varTypeIsArithmetic(simdBaseType));
 
     uint32_t  simdCount = getSIMDVectorLength(simdSize, simdBaseType);
-    var_types indexType = getIndexTypeForShuffle(simdBaseType);
+    var_types indexType = getUnsignedSimdBaseType(simdBaseType);
 
     GenTreeVecCon* indices1 = gtNewVconNode(type);
     GenTreeVecCon* indices2 = gtNewVconNode(type);
@@ -29834,7 +29834,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
     // only lane 0 is ever read.
 
     unsigned  vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
-    var_types indexType    = getIndexTypeForShuffle(simdBaseType);
+    var_types indexType    = getUnsignedSimdBaseType(simdBaseType);
 
     for (unsigned stride = 1; stride < vectorLength; stride *= 2)
     {
@@ -30469,7 +30469,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, var_typ
 
         // WASM only has f64x2.promote_low_f32x4, so move the upper two floats into the low lanes
         // with a shuffle and then promote them; the resulting upper lanes are unused by the promote.
-        var_types      indexType = getIndexTypeForShuffle(simdBaseType);
+        var_types      indexType = getUnsignedSimdBaseType(simdBaseType);
         uint32_t       simdCount = getSIMDVectorLength(simdSize, simdBaseType);
         GenTreeVecCon* indices   = gtNewVconNode(type);
 
