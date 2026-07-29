@@ -1,13 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
+using System.Numerics;
+using System.Text;
 using Xunit;
 
 namespace System.Formats.Asn1.Tests.Writer
 {
     public class WriteBMPString : WriteCharacterString
     {
+        public static IEnumerable<object[]> VectorBoundaryLengths
+        {
+            get
+            {
+                yield return new object[] { Vector<ushort>.Count - 1 };
+                yield return new object[] { Vector<ushort>.Count };
+                yield return new object[] { Vector<ushort>.Count + 1 };
+            }
+        }
+
         public static IEnumerable<object[]> ShortValidCases { get; } = new object[][]
         {
             new object[]
@@ -74,6 +87,55 @@ namespace System.Formats.Asn1.Tests.Writer
             writer.WriteCharacterString(UniversalTagNumber.BMPString, s, tag);
 
         internal override Asn1Tag StandardTag => new Asn1Tag(UniversalTagNumber.BMPString);
+
+        [Theory]
+        [MemberData(nameof(VectorBoundaryLengths))]
+        public void WriteBMPString_DoesNotAccessOutsideBounds(int charCount)
+        {
+            using BoundedMemory<char> value = BoundedMemory.Allocate<char>(charCount);
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                value.Span[i] = i % 2 == 0 ? '\uD7FF' : '\uE000';
+            }
+
+            value.MakeReadonly();
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.BMPString, value.Span);
+            byte[] encoded = writer.Encode();
+
+            string decoded = AsnDecoder.ReadCharacterString(
+                encoded,
+                AsnEncodingRules.DER,
+                UniversalTagNumber.BMPString,
+                out int bytesConsumed);
+            Assert.Equal(encoded.Length, bytesConsumed);
+            Assert.Equal(charCount, decoded.Length);
+
+            for (int i = 0; i < decoded.Length; i++)
+            {
+                Assert.Equal(i % 2 == 0 ? '\uD7FF' : '\uE000', decoded[i]);
+            }
+        }
+
+        [Theory]
+        [InlineData(true, '\uD800')]
+        [InlineData(true, '\uDFFF')]
+        [InlineData(false, '\uD800')]
+        [InlineData(false, '\uDFFF')]
+        public void WriteBMPString_InvalidSurrogateInVectorOrTail(bool invalidInVector, char invalidValue)
+        {
+            int invalidIndex = invalidInVector ? 1 : Vector<ushort>.Count;
+            char[] value = new string('A', Vector<ushort>.Count + 1).ToCharArray();
+            value[invalidIndex] = invalidValue;
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            EncoderFallbackException exception = Assert.Throws<EncoderFallbackException>(
+                () => writer.WriteCharacterString(UniversalTagNumber.BMPString, value));
+            Assert.Equal(invalidIndex, exception.Index);
+            Assert.Equal(0, writer.GetEncodedLength());
+        }
 
         [Theory]
         [MemberData(nameof(ShortValidCases))]

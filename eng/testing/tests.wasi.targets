@@ -21,9 +21,22 @@
        for WBT, and debugger tests -->
   <Import Project="$(MSBuildThisFileDirectory)wasi-provisioning.targets" />
 
+  <!-- CoreCLR-WASI: WasiApp.CoreCLR.targets links the wasihost corehost per-app (so
+       library/test reverse P/Invoke thunks are covered), and the host preloads icudt.dat,
+       so the leg runs with full ICU globalization. -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+  </PropertyGroup>
+
   <PropertyGroup>
     <_AppArgs Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).wasm</_AppArgs>
-    <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.wasm WasmTestRunner</_AppArgs>
+    <!-- Mono launches dotnet.wasm with the entry assembly name; CoreCLR launches the
+         per-app-linked wasihost host with the managed entry assembly (.dll). The host is
+         linked into managed/ (as 'corerun') alongside the framework and finds the runtime via
+         CORE_ROOT (see WasiApp.CoreCLR.targets). Validated locally: discovers + runs the full
+         System.Runtime.Tests suite under wasmtime. -->
+    <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true' and '$(RuntimeFlavor)' != 'CoreCLR'">dotnet.wasm WasmTestRunner</_AppArgs>
+    <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">managed/corerun managed/WasmTestRunner.dll</_AppArgs>
 
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmSingleFileBundle)' != 'true'">$(_AppArgs) managed/$(AssemblyName).dll</_AppArgs>
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmSingleFileBundle)' == 'true'">$(_AppArgs) $(AssemblyName).dll</_AppArgs>
@@ -52,6 +65,11 @@
     <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--wasi --engine-arg=allow-ip-name-lookup</_XHarnessArgs>
     <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--wasi --engine-arg=hostcall-fuel=4294967295</_XHarnessArgs>
     <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--env --engine-arg=DOTNET_WASI_PRINT_EXIT_CODE=1</_XHarnessArgs>
+    <!-- CoreCLR-WASI: enable the wasm exception-handling proposal (the host relies on it)
+         and point the host at the bundled framework via CORE_ROOT=/managed. Validated
+         locally: host+runtime live in managed/ and init succeeds under wasmtime. -->
+    <_XHarnessArgs Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XHarnessArgs) --engine-arg=-W --engine-arg=exceptions=y</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XHarnessArgs) --engine-arg=--env --engine-arg=CORE_ROOT=/managed</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
 
     <_InvariantGlobalization Condition="'$(InvariantGlobalization)' == 'true'">--env=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true</_InvariantGlobalization>

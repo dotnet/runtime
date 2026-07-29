@@ -86,6 +86,7 @@
     <Compile Include="System\Decimal128Tests.cs" />
     <Compile Include="System\Decimal32Tests.cs" />
     <Compile Include="System\Decimal64Tests.cs" />
+    <Compile Include="System\DecimalIeee754GenericSurface.cs" />
     <Compile Include="System\DecimalIeee754IntelTestData.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\ExperimentalAttributeTests.cs" />
     <Compile Include="System\NumberFormatTestHelper.cs" />

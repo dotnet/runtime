@@ -1014,7 +1014,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      SveSha3_Arm64
     { NI_Illegal, NI_Illegal },                                 //      SveSm4_Arm64
 #elif defined(TARGET_WASM)
-    { NI_Illegal, NI_Illegal },                                 //      WasmBase
+    { FIRST_NI_WasmBase, LAST_NI_WasmBase },                    // WasmBase
     { FIRST_NI_PackedSimd, LAST_NI_PackedSimd },                // PackedSimd
     { FIRST_NI_Vector, LAST_NI_Vector },                        // Vector128
 #else
@@ -2766,7 +2766,23 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     if (setMethodHandle && (retNode != nullptr))
     {
-        retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+        GenTree* userCall = retNode;
+
+#if defined(TARGET_XARCH)
+        if (userCall->OperIsConvertMaskToVector())
+        {
+            // A mask-producing intrinsic was wrapped in a mask-to-vector conversion, but the user call
+            // replaces the inner node, so attach the handle there to keep its operands. ConvertMaskToVector
+            // is always unary, so its sole operand is the mask node being tagged.
+            GenTreeHWIntrinsic* cvtMaskToVector = userCall->AsHWIntrinsic();
+            assert(cvtMaskToVector->GetOperandCount() == 1);
+
+            userCall = cvtMaskToVector->Op(1);
+            assert(userCall->TypeIs(TYP_MASK));
+        }
+#endif // TARGET_XARCH
+
+        userCall->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
     }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)

@@ -12,7 +12,9 @@ MSBUILD_ARGS+=/p:KeepNativeSymbols=true
 
 DOTNET=$(TOP)/dotnet.sh
 
-EMSDK_PATH?=$(TOP)/src/mono/browser/emsdk
+# Resolve emsdk from the shared wasm tool cache (see eng/wasm/WasmToolCache.props). Leave
+# EMSDK_PATH unset when it can't be resolved so the build provisions it on demand.
+EMSDK_PATH?=$(shell . $(TOP)/eng/wasm/wasm-tool-cache.sh && wasm_tool_cache_dir emscripten $(TOP)/src/mono/browser/emscripten-version.txt $(TOP))
 CONFIG?=Release
 BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj

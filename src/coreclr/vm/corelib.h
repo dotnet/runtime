@@ -250,8 +250,13 @@ DEFINE_METHOD(DELEGATE,       CTOR_COLLECTIBLE_CLOSED_STATIC,     CtorCollectibl
 DEFINE_METHOD(DELEGATE,       CTOR_COLLECTIBLE_OPEN,              CtorCollectibleOpen,                   NoSig)
 DEFINE_METHOD(DELEGATE,       CTOR_COLLECTIBLE_VIRTUAL_DISPATCH,  CtorCollectibleVirtualDispatch,        NoSig)
 
+DEFINE_CLASS(DELEGATEWRAPPER, System,             Delegate+Wrapper)
+DEFINE_FIELD(DELEGATEWRAPPER, VALUE,              Value)
+
 DEFINE_CLASS(INT128,               System,                 Int128)
 DEFINE_CLASS(UINT128,              System,                 UInt128)
+
+DEFINE_CLASS(DECIMAL128,           Numerics,               Decimal128)
 
 DEFINE_CLASS(MATH,                  System,                 Math)
 DEFINE_METHOD(MATH,                 CONVERT_TO_INT32_CHECKED,    ConvertToInt32Checked,    NoSig)

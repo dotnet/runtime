@@ -168,12 +168,19 @@
     <TestExclusionListTasksAssemblyPath>$([MSBuild]::NormalizePath('$(TestExclusionListTasksDir)', 'TestExclusionListTasks.dll'))</TestExclusionListTasksAssemblyPath>
     <CoreCLRToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)'))</CoreCLRToolPath>
     <ILAsmToolPath Condition="'$(DotNetBuildSourceOnly)' == 'true' or '$(BuildArchitecture)' == 's390x' or '$(BuildArchitecture)' == 'ppc64le'">$(CoreCLRToolPath)</ILAsmToolPath>
-    <!-- force download temmporarily https://github.com/dotnet/runtime/issues/101528
-    <WasmtimeDir Condition="'$(WasmtimeDir)' == '' and '$(WASMTIME_PATH)' != '' and Exists($(WASMTIME_PATH))">$(WASMTIME_PATH)</WasmtimeDir>
-    -->
-    <WasmtimeDir Condition="'$(WasmtimeDir)' == ''">$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'wasmtime'))</WasmtimeDir>
-    <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists($(WasmtimeDir))">true</InstallWasmtimeForTests>
     <WasmCommonTargetsPath>$([MSBuild]::NormalizeDirectory($(WasmProjectRoot), 'build'))</WasmCommonTargetsPath>
+  </PropertyGroup>
+
+  <!-- Shared cache locations for externally acquired wasm tools. Needs $(BrowserProjectRoot),
+       $(WasiProjectRoot) and $(ArtifactsDir) from above. -->
+  <Import Project="$(RepositoryEngineeringDir)wasm\WasmToolCache.props" />
+
+  <PropertyGroup>
+    <!-- Overriding with a local wasmtime is disabled for now: https://github.com/dotnet/runtime/issues/101528
+    <WasmtimeDir Condition="'$(WasmtimeDir)' == '' and '$(WASMTIME_PATH)' != '' and Exists('$(WASMTIME_PATH)')">$([MSBuild]::EnsureTrailingSlash('$(WASMTIME_PATH)'))</WasmtimeDir>
+    -->
+    <WasmtimeDir Condition="'$(WasmtimeDir)' == ''">$(WasmtimeCacheDir)</WasmtimeDir>
+    <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists('$(WasmtimeStampFile)')">true</InstallWasmtimeForTests>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">

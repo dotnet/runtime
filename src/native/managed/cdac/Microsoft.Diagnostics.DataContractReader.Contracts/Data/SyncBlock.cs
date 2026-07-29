@@ -6,12 +6,17 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.SyncBlock))]
 internal sealed partial class SyncBlock : IData<SyncBlock>
 {
-    [Field] public uint ThinLock { get; }
-    [Field] public TargetPointer LinkNext { get; }
-    [Field] public uint HashCode { get; }
+    [Field] public partial uint ThinLock { get; }
+    [Field] public partial TargetPointer LinkNext { get; }
+    [Field] public partial uint HashCode { get; }
 
+    [DataDescriptorDependency(nameof(InteropInfo), "pointer")]
     public InteropSyncBlockInfo? InteropInfo { get; private set; }
+
+    [DataDescriptorDependency(nameof(Lock), "ObjectHandle")]
     public ObjectHandle? Lock { get; private set; }
+
+    [DataDescriptorDependency(nameof(EnCInfo), "pointer")]
     public TargetPointer? EnCInfo { get; private set; }
 
     partial void OnInit(Target target, TargetPointer address)
