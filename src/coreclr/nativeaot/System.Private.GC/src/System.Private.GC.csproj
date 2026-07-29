@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Nullable>disable</Nullable>
+    <!-- The GC runs with the world suspended and must never allocate; nothing here may
+         depend on the ref assembly surface of System.Private.CoreLib. -->
+    <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
+    <!-- The port is not consumed by ILC yet, so keep it out of the aotsdk folder (which is
+         shipped wholesale in the NativeAOT packs) while still building it in every build. -->
+    <OutputPath>$(RuntimeBinDir)managedgc/</OutputPath>
+    <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Internal\Runtime\GarbageCollection\GCEventEnums.cs" />
+    <Compile Include="Internal\Runtime\GarbageCollection\GCEventStatus.cs" />
+    <Compile Include="Internal\Runtime\GarbageCollection\IntroSort.cs" />
+  </ItemGroup>
+</Project>
