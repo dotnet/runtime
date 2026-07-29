@@ -19,7 +19,7 @@ internal static partial class PseudoCustomAttributes
     /// Handles the two attributes that the native emitter recognizes by name outside the known
     /// attribute table.
     /// </summary>
-    private static bool ApplySecurityAttribute(in LoweringContext context, string @namespace, string name, out bool keep)
+    private static bool ApplySecurityAttribute(LoweringContext context, string @namespace, string name, out bool keep)
     {
         keep = true;
         string fullName = @namespace.Length == 0 ? name : @namespace + "." + name;
