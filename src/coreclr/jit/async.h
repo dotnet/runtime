@@ -560,6 +560,16 @@ class AsyncTransformation
     const ContinuationLayout* CreateResumptionsAndSuspensions(ArrayStack<GenTree*>& continuationMemberOffsets);
     void                      CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyncResumedDef);
 
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, BasicBlock*> InlinedFrameTailMap;
+    // Suspension tails handling the frames enclosing an inlined async frame, keyed by the
+    // innermost frame's resumed indicator local. Shared by all suspensions in that frame.
+    InlinedFrameTailMap* m_inlinedFrameTails = nullptr;
+
+    BasicBlock* CreateInlinedFrameSuspensionTail(BasicBlock*               callBlock,
+                                                 GenTreeCall*              call,
+                                                 const ContinuationLayout& layout);
+    GenTree*    ContinuationMemberAddress(const ContinuationLayout& layout, const ContinuationMember& member);
+
 public:
     AsyncTransformation(Compiler* comp)
         : m_compiler(comp)

@@ -4397,6 +4397,7 @@ void MethodContext::recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo)
     value.restoreInlinedFrameExecutionContextMethHnd = CastHandle(pAsyncInfo->restoreInlinedFrameExecutionContextMethHnd);
     value.isOnRightContextMethHnd = CastHandle(pAsyncInfo->isOnRightContextMethHnd);
     value.switchContextMethHnd = CastHandle(pAsyncInfo->switchContextMethHnd);
+    value.captureInlinedFrameTransitionMethHnd = CastHandle(pAsyncInfo->captureInlinedFrameTransitionMethHnd);
     value.finishSuspensionNoContinuationContextMethHnd = CastHandle(pAsyncInfo->finishSuspensionNoContinuationContextMethHnd);
     value.finishSuspensionWithContinuationContextMethHnd = CastHandle(pAsyncInfo->finishSuspensionWithContinuationContextMethHnd);
 
@@ -4426,6 +4427,7 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->restoreInlinedFrameExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.restoreInlinedFrameExecutionContextMethHnd;
     pAsyncInfoOut->isOnRightContextMethHnd = (CORINFO_METHOD_HANDLE)value.isOnRightContextMethHnd;
     pAsyncInfoOut->switchContextMethHnd = (CORINFO_METHOD_HANDLE)value.switchContextMethHnd;
+    pAsyncInfoOut->captureInlinedFrameTransitionMethHnd = (CORINFO_METHOD_HANDLE)value.captureInlinedFrameTransitionMethHnd;
     pAsyncInfoOut->finishSuspensionNoContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.finishSuspensionNoContinuationContextMethHnd;
     pAsyncInfoOut->finishSuspensionWithContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.finishSuspensionWithContinuationContextMethHnd;
     DEBUG_REP(dmpGetAsyncInfo(0, value));

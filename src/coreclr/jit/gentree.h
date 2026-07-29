@@ -4529,6 +4529,14 @@ enum class ContinuationContextHandling
 };
 
 // Additional async call info.
+// Async context locals of one inlined frame.
+struct AsyncFrameLocals
+{
+    unsigned Resumed;
+    unsigned ExecutionContext;
+    unsigned SynchronizationContext;
+};
+
 struct AsyncCallInfo
 {
     // DebugInfo with SOURCE_TYPE_ASYNC pointing at the await call IL instruction
@@ -4553,6 +4561,24 @@ struct AsyncCallInfo
     // these the JIT can skip the check for a null continuation after the call
     // and suspend unconditionally.
     bool AlwaysSuspends = false;
+
+    // Depth of the inlined frame this call belongs to, counting only frames that have
+    // async context handling. 0 is the root method's frame.
+    //
+    // On suspension every enclosing frame that has not yet resumed must capture the
+    // contexts it would hand to its caller. Those live in continuation members keyed by
+    // this depth, and the enclosing frames' depths follow by decrementing while draining
+    // the call's chain of context args.
+    unsigned InlineFrameDepth = 0;
+
+    // Async context locals of this call's own inlined frame followed by its enclosing
+    // frames, ending with the root method's. Null when the call is not inside an inlined
+    // async frame; otherwise it holds InlineFrameDepth + 1 entries.
+    //
+    // The matching context args on the call keep these values live and reported up to the
+    // async transformation. This records which locals they are, since optimizations may
+    // rewrite the arg nodes themselves.
+    AsyncFrameLocals* InlineFrameLocals = nullptr;
 
     bool NeedsToSaveAndRestoreExecutionContext() const
     {
@@ -5268,6 +5294,12 @@ struct GenTreeCall final : public GenTree
     bool IsAsync() const;
 
     const AsyncCallInfo& GetAsyncInfo() const
+    {
+        assert(IsAsync());
+        return *asyncInfo;
+    }
+
+    AsyncCallInfo& GetAsyncInfo()
     {
         assert(IsAsync());
         return *asyncInfo;

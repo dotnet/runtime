@@ -2923,7 +2923,12 @@ void AsyncTransformation::FinishContextHandlingAndSuspension(BasicBlock*        
 
     assert(suspendBB->KindIs(BBJ_RETURN));
 
-    if (m_sharedReturnBB != nullptr)
+    BasicBlock* const frameTail = CreateInlinedFrameSuspensionTail(callBlock, call, layout);
+    if (frameTail != nullptr)
+    {
+        suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(frameTail, suspendBB));
+    }
+    else if (m_sharedReturnBB != nullptr)
     {
         suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(m_sharedReturnBB, suspendBB));
     }
@@ -3008,7 +3013,12 @@ void AsyncTransformation::FinishContextHandlingAndSuspensionWithHelper(BasicBloc
     LIR::AsRange(callBlock).Remove(syncContext);
     call->gtArgs.RemoveUnsafe(syncContextArg);
 
-    if (sharedFinish != nullptr)
+    // A call inside an inlined async frame needs the enclosing frames' handling to run
+    // after this one, so it cannot use a finish block shared with suspensions in other
+    // frames.
+    BasicBlock* const frameTail = CreateInlinedFrameSuspensionTail(callBlock, call, layout);
+
+    if ((sharedFinish != nullptr) && (frameTail == nullptr))
     {
         // Store the vars to the shared locals that the shared finish block will take them from.
         if (m_sharedFinishContextHandlingResumedVar != BAD_VAR_NUM)
@@ -3039,8 +3049,13 @@ void AsyncTransformation::FinishContextHandlingAndSuspensionWithHelper(BasicBloc
         // Otherwise insert a new call
         InsertFinishContextHandlingCall(suspendBB, layout, helper, resumed, execContext, syncContext);
 
-        // And return either via a new GT_RETURN_SUSPEND or via the shared return BB.
-        if (m_sharedReturnBB != nullptr)
+        // And continue with the enclosing frames, or return either via a new
+        // GT_RETURN_SUSPEND or via the shared return BB.
+        if (frameTail != nullptr)
+        {
+            suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(frameTail, suspendBB));
+        }
+        else if (m_sharedReturnBB != nullptr)
         {
             suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(m_sharedReturnBB, suspendBB));
         }
@@ -3051,6 +3066,184 @@ void AsyncTransformation::FinishContextHandlingAndSuspensionWithHelper(BasicBloc
             LIR::AsRange(suspendBB).InsertAtEnd(newContinuation, ret);
         }
     }
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::CreateInlinedFrameSuspensionTail:
+//   Create, or reuse, the block that runs the context handling of the frames enclosing
+//   an inlined async frame on suspension.
+//
+// Parameters:
+//   callBlock - The block containing the async call
+//   call      - The async call
+//   layout    - Information about the continuation layout
+//
+// Returns:
+//   The block to continue suspension in, or nullptr if this call is not inside an
+//   inlined async frame.
+//
+// Remarks:
+//   Each frame that has not yet resumed must capture the contexts it would hand to its
+//   caller, and restore its caller's contexts onto the thread, as if its physical frame
+//   had returned. A frame having resumed implies its caller has too, so the frames can be
+//   walked outward as a straight line: once one frame has resumed, the helpers for it and
+//   every frame outside it no-op.
+//
+//   The result depends only on the chain of frames, so it is shared by all suspensions in
+//   the same frame.
+//
+BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*               callBlock,
+                                                                  GenTreeCall*              call,
+                                                                  const ContinuationLayout& layout)
+{
+    // Remove the context args of the enclosing frames. They exist only to keep the values
+    // live and reported up to here; which locals they are is recorded in the call info,
+    // since optimizations may have rewritten the arg nodes themselves.
+    while (true)
+    {
+        CallArg* resumedArg     = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse);
+        CallArg* execContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
+        CallArg* syncContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
+        if (resumedArg == nullptr)
+        {
+            assert((execContextArg == nullptr) && (syncContextArg == nullptr));
+            break;
+        }
+
+        assert((execContextArg != nullptr) && (syncContextArg != nullptr));
+
+        for (CallArg* arg : {resumedArg, execContextArg, syncContextArg})
+        {
+            GenTree* node = arg->GetNode();
+            if (LIR::AsRange(callBlock).Contains(node))
+            {
+                LIR::AsRange(callBlock).Remove(node);
+            }
+
+            call->gtArgs.RemoveUnsafe(arg);
+        }
+    }
+
+    const AsyncFrameLocals* const frameLocals = call->GetAsyncInfo().InlineFrameLocals;
+    if (frameLocals == nullptr)
+    {
+        JITDUMP("    Call [%06u] is not inside an inlined async frame\n", Compiler::dspTreeID(call));
+        return nullptr;
+    }
+
+    unsigned const innermostDepth = call->GetAsyncInfo().InlineFrameDepth;
+    unsigned const numFrames      = innermostDepth + 1;
+    assert(numFrames >= 2);
+
+    JITDUMP("    Call [%06u] is inside an inlined async frame; %u frames in chain\n", Compiler::dspTreeID(call),
+            numFrames);
+
+    unsigned const key = frameLocals[0].Resumed;
+    if (m_inlinedFrameTails == nullptr)
+    {
+        m_inlinedFrameTails = new (m_compiler, CMK_Async) InlinedFrameTailMap(m_compiler->getAllocator(CMK_Async));
+    }
+    else
+    {
+        BasicBlock* existing;
+        if (m_inlinedFrameTails->Lookup(key, &existing))
+        {
+            JITDUMP("    Reusing inlined frame suspension tail " FMT_BB "\n", existing->bbNum);
+            return existing;
+        }
+    }
+
+    if (m_sharedReturnBB == nullptr)
+    {
+        CreateSharedReturnBB();
+    }
+
+    BasicBlock* tailBB = m_compiler->fgNewBBbefore(BBJ_ALWAYS, m_sharedReturnBB, false);
+    tailBB->bbSetRunRarely();
+    tailBB->clearTryIndex();
+    tailBB->clearHndIndex();
+    tailBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(m_sharedReturnBB, tailBB));
+
+    if (m_compiler->fgIsUsingProfileWeights())
+    {
+        tailBB->SetFlags(BBF_PROF_WEIGHT);
+    }
+
+    JITDUMP("    Created inlined frame suspension tail " FMT_BB " for %u frames\n", tailBB->bbNum, numFrames);
+
+    for (unsigned i = 0; i + 1 < numFrames; i++)
+    {
+        const AsyncFrameLocals& frame = frameLocals[i];
+        const AsyncFrameLocals& outer = frameLocals[i + 1];
+        unsigned const          depth = innermostDepth - i;
+
+        // Capture what this frame hands to its caller.
+        GenTreeCall* captureCall =
+            m_compiler->gtNewUserCallNode(m_asyncInfo->captureInlinedFrameTransitionMethHnd, TYP_VOID);
+        captureCall->gtArgs
+            .PushFront(m_compiler,
+                       NewCallArg::Primitive(
+                           ContinuationMemberAddress(layout, ContinuationMember::InlineFrameExecutionContext(depth))));
+        captureCall->gtArgs.PushFront(m_compiler,
+                                      NewCallArg::Primitive(
+                                          ContinuationMemberAddress(layout,
+                                                                    ContinuationMember::InlineFrameFlags(depth))));
+        captureCall->gtArgs.PushFront(m_compiler,
+                                      NewCallArg::Primitive(
+                                          ContinuationMemberAddress(layout,
+                                                                    ContinuationMember::InlineFrameContinuationContext(
+                                                                        depth))));
+        captureCall->gtArgs.PushFront(m_compiler,
+                                      NewCallArg::Primitive(m_compiler->gtNewLclvNode(frame.Resumed, TYP_INT)));
+
+        m_compiler->compCurBB = tailBB;
+        m_compiler->fgMorphTree(captureCall);
+        LIR::AsRange(tailBB).InsertAtEnd(LIR::SeqTree(m_compiler, captureCall));
+
+        // Then restore the caller's contexts, as its physical frame's return would have.
+        GenTreeCall* restoreCall =
+            m_compiler->gtNewUserCallNode(m_asyncInfo->restoreContextsOnSuspensionMethHnd, TYP_VOID);
+        restoreCall->gtArgs.PushFront(m_compiler,
+                                      NewCallArg::Primitive(
+                                          m_compiler->gtNewLclvNode(outer.SynchronizationContext, TYP_REF)));
+        restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(
+                                                      m_compiler->gtNewLclvNode(outer.ExecutionContext, TYP_REF)));
+        restoreCall->gtArgs.PushFront(m_compiler,
+                                      NewCallArg::Primitive(m_compiler->gtNewLclvNode(outer.Resumed, TYP_INT)));
+
+        m_compiler->compCurBB = tailBB;
+        m_compiler->fgMorphTree(restoreCall);
+        LIR::AsRange(tailBB).InsertAtEnd(LIR::SeqTree(m_compiler, restoreCall));
+    }
+
+    DISPRANGE(LIR::AsRange(tailBB));
+
+    m_inlinedFrameTails->Set(key, tailBB);
+    return tailBB;
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::ContinuationMemberAddress:
+//   Create the address of a continuation member in the newly created continuation.
+//
+// Parameters:
+//   layout - Information about the continuation layout
+//   member - The member
+//
+// Returns:
+//   IR node computing the address.
+//
+GenTree* AsyncTransformation::ContinuationMemberAddress(const ContinuationLayout& layout,
+                                                        const ContinuationMember& member)
+{
+    size_t const memberIndex = m_compiler->GetContinuationMemberIndex(member);
+    assert(memberIndex < layout.ContinuationMemberOffsets.size());
+    assert(layout.ContinuationMemberOffsets[memberIndex] != UINT_MAX);
+
+    unsigned const offset       = OFFSETOF__CORINFO_Continuation__data + layout.ContinuationMemberOffsets[memberIndex];
+    GenTree* const continuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    return m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, continuation,
+                                     m_compiler->gtNewIconNode((ssize_t)offset, TYP_I_IMPL));
 }
 
 //------------------------------------------------------------------------

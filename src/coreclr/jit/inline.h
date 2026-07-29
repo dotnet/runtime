@@ -793,13 +793,22 @@ public:
         return m_Parent;
     }
 
-    // Get the inline depth of this context. The root context has depth 0.
-    unsigned GetDepth() const
+    // Depth of the inlined frame this context represents, counting only frames that have
+    // async context handling. The root method's frame is depth 0, so the shallowest
+    // inlined frame with context handling is depth 1.
+    //
+    // Continuation members holding the contexts captured at frame transitions are keyed
+    // by this, so frames at the same depth share storage. That is safe because their live
+    // ranges cannot overlap.
+    unsigned GetAsyncFrameDepth() const
     {
-        unsigned depth = 0;
+        unsigned depth = 1;
         for (InlineContext* parent = m_Parent; parent != nullptr; parent = parent->m_Parent)
         {
-            depth++;
+            if (parent->HasAsyncFrameLocals())
+            {
+                depth++;
+            }
         }
 
         return depth;

@@ -2462,14 +2462,16 @@ void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
         return;
     }
 
-    struct AsyncFrameLocals
-    {
-        unsigned Resumed;
-        unsigned ExecutionContext;
-        unsigned SynchronizationContext;
-    };
-
+    // AsyncFrameLocals is declared alongside AsyncCallInfo, which is where the chain is
+    // recorded for the async transformation.
     ArrayStack<AsyncFrameLocals> frames(getAllocator(CMK_Async));
+
+    // The inlinee's own frame comes first: the suspension needs its resumed indicator to
+    // decide whether to capture the contexts it hands to its caller. Its other context
+    // args were consumed by the innermost handling by then.
+    frames.Push({InlineeCompiler->lvaResumedIndicator, InlineeCompiler->lvaAsyncExecutionContextVar,
+                 InlineeCompiler->lvaAsyncSynchronizationContextVar});
+
     for (InlineContext* ctx = inlineInfo->inlineContext->GetParent(); ctx != nullptr; ctx = ctx->GetParent())
     {
         if (ctx->HasAsyncFrameLocals())
@@ -2482,6 +2484,12 @@ void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
     // The root method's frame is always the outermost one.
     frames.Push({lvaResumedIndicator, lvaAsyncExecutionContextVar, lvaAsyncSynchronizationContextVar});
 
+    AsyncFrameLocals* const frameLocals = new (this, CMK_Async) AsyncFrameLocals[frames.Height()];
+    for (int i = 0; i < frames.Height(); i++)
+    {
+        frameLocals[i] = frames.Bottom(i);
+    }
+
     unsigned const inlineeResumed = InlineeCompiler->lvaResumedIndicator;
 
     struct Visitor : GenTreeVisitor<Visitor>
@@ -2492,11 +2500,16 @@ void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
         };
 
         ArrayStack<AsyncFrameLocals>& m_frames;
+        AsyncFrameLocals*             m_frameLocals;
         unsigned                      m_inlineeResumed;
 
-        Visitor(Compiler* comp, ArrayStack<AsyncFrameLocals>& frames, unsigned inlineeResumed)
+        Visitor(Compiler*                     comp,
+                ArrayStack<AsyncFrameLocals>& frames,
+                AsyncFrameLocals*             frameLocals,
+                unsigned                      inlineeResumed)
             : GenTreeVisitor(comp)
             , m_frames(frames)
+            , m_frameLocals(frameLocals)
             , m_inlineeResumed(inlineeResumed)
         {
         }
@@ -2544,11 +2557,17 @@ void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
 
             JITDUMP("Added %d enclosing frame context arg sets to async call [%06u]\n", m_frames.Height(),
                     Compiler::dspTreeID(call));
+
+            // The chain holds this call's own frame followed by its enclosing frames,
+            // ending with the root, so its depth in that numbering is one less than the
+            // number of entries.
+            call->GetAsyncInfo().InlineFrameDepth  = (unsigned)m_frames.Height() - 1;
+            call->GetAsyncInfo().InlineFrameLocals = m_frameLocals;
             return WALK_CONTINUE;
         }
     };
 
-    Visitor visitor(this, frames, inlineeResumed);
+    Visitor visitor(this, frames, frameLocals, inlineeResumed);
     for (BasicBlock* block = InlineeCompiler->fgFirstBB; block != nullptr; block = block->Next())
     {
         for (Statement* const stmt : block->Statements())
@@ -2742,9 +2761,9 @@ void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicB
     assert(resumedCaller != BAD_VAR_NUM);
 
     unsigned const resumedInlinee = InlineeCompiler->lvaResumedIndicator;
-    unsigned const inlineDepth    = inlineContext->GetDepth();
+    unsigned const inlineDepth    = inlineContext->GetAsyncFrameDepth();
 
-    JITDUMP("Adding async frame transition IR for inline depth %u: resumed V%02u -> V%02u\n", inlineDepth,
+    JITDUMP("Adding async frame transition IR for async frame depth %u: resumed V%02u -> V%02u\n", inlineDepth,
             resumedInlinee, resumedCaller);
 
     const DebugInfo& di = inlineInfo->iciStmt->GetDebugInfo();
@@ -2792,7 +2811,7 @@ void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicB
         fgMarkAsyncHelperInlineCandidate(restoreCall);
         fgInsertStmtAtEnd(restoreBlock, gtNewStmt(restoreCall));
 
-        GenTreeCall* const isOnRightContextCall = gtNewUserCallNode(asyncInfo->isOnRightContextMethHnd, TYP_INT);
+        GenTreeCall* const isOnRightContextCall = gtNewUserCallNode(asyncInfo->isOnRightContextMethHnd, TYP_UBYTE);
         isOnRightContextCall->gtArgs
             .PushFront(this,
                        NewCallArg::Primitive(
@@ -2805,12 +2824,15 @@ void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicB
         fgMarkAsyncHelperInlineCandidate(isOnRightContextCall);
 
         // Inline candidates must be statement roots; the value is consumed through a
-        // GT_RET_EXPR placeholder that the inliner substitutes.
+        // GT_RET_EXPR placeholder that the inliner substitutes. The candidate info has to
+        // point back at it so that a failed inline can put the call back.
         GenTree* isOnRightContext;
         if (isOnRightContextCall->IsInlineCandidate())
         {
             fgInsertStmtAtEnd(restoreBlock, gtNewStmt(isOnRightContextCall));
-            isOnRightContext = gtNewInlineCandidateReturnExpr(isOnRightContextCall, TYP_INT);
+            GenTreeRetExpr* const retExpr = gtNewInlineCandidateReturnExpr(isOnRightContextCall, TYP_UBYTE);
+            isOnRightContextCall->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+            isOnRightContext                                              = retExpr;
         }
         else
         {

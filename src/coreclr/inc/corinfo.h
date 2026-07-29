@@ -1843,6 +1843,9 @@ struct CORINFO_ASYNC_INFO
     // Method handle for AsyncHelpers.SwitchContext, used to switch to the continuation context of an
     // inlined async callee's caller when IsOnRightContext reports a mismatch
     CORINFO_METHOD_HANDLE switchContextMethHnd;
+    // Method handle for AsyncHelpers.CaptureInlinedFrameTransition, used on suspension to capture
+    // the contexts each inlined async frame hands to its caller
+    CORINFO_METHOD_HANDLE captureInlinedFrameTransitionMethHnd;
     // Finish suspension without saving continuation context (i.e. custom awaiter or ConfigureAwait(false))
     CORINFO_METHOD_HANDLE finishSuspensionNoContinuationContextMethHnd;
     // Finish suspension with saving continuation context (i.e. normal task await)

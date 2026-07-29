@@ -7578,6 +7578,42 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
     call->gtArgs.PushFront(this, NewCallArg::Primitive(execNode).WellKnown(WellKnownArg::AsyncExecutionContext));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedDefNode).WellKnown(WellKnownArg::AsyncResumedDef));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedUseNode).WellKnown(WellKnownArg::AsyncResumedUse));
+
+    // The inlining call may carry further sets describing the frames enclosing it, which
+    // this call inherits as well: it ends up in the same frame, so a suspension in it has
+    // to run the same chain of frame transitions. Dropping them would silently lose the
+    // handling for every frame outside the immediate one.
+    bool skippedFirst = false;
+    for (CallArg& arg : inlCall->gtArgs.Args())
+    {
+        WellKnownArg wka = arg.GetWellKnownArg();
+        if ((wka != WellKnownArg::AsyncResumedUse) && (wka != WellKnownArg::AsyncExecutionContext) &&
+            (wka != WellKnownArg::AsyncSynchronizationContext))
+        {
+            continue;
+        }
+
+        if ((wka == WellKnownArg::AsyncResumedUse) && !skippedFirst)
+        {
+            // Already inherited above, along with the resumed def that only the innermost
+            // frame has.
+            skippedFirst = true;
+            continue;
+        }
+
+        if (&arg == execArg || &arg == syncArg)
+        {
+            continue;
+        }
+
+        call->gtArgs.PushBack(this, NewCallArg::Primitive(gtCloneExpr(arg.GetNode())).WellKnown(wka));
+    }
+
+    if (call->IsAsync())
+    {
+        call->GetAsyncInfo().InlineFrameDepth  = inlCall->GetAsyncInfo().InlineFrameDepth;
+        call->GetAsyncInfo().InlineFrameLocals = inlCall->GetAsyncInfo().InlineFrameLocals;
+    }
 }
 
 //------------------------------------------------------------------------

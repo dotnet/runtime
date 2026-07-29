@@ -1580,6 +1580,30 @@ namespace System.Runtime.CompilerServices
             AsyncSuspend(taskCont);
         }
 
+        // Capture the contexts an inlined async frame hands to its caller when it logically
+        // returns during a suspension, i.e. what the caller's continuation would have captured
+        // had the callee's frame been physically present.
+        //
+        // No-ops when the frame has already resumed: in that case the caller's continuation
+        // already exists and keeps the values it captured when the frame first suspended.
+        //
+        // The suspension walks the inlined frames outward, and a frame having resumed implies
+        // its caller has too, so these can be emitted as a straight line: once one frame has
+        // resumed, this and every subsequent restore for the frames outside it no-op.
+        private static void CaptureInlinedFrameTransition(bool resumed,
+                                                          ref object? continuationContext,
+                                                          ref ContinuationFlags flags,
+                                                          ref ExecutionContext? execContext)
+        {
+            if (resumed)
+            {
+                return;
+            }
+
+            CaptureContinuationContext(ref continuationContext, ref flags);
+            execContext = CaptureExecutionContext();
+        }
+
         // Finish suspension in the common case of a custom await or for a ConfigureAwait(false) task await:
         // - Capture current ExecutionContext into the continuation
         // - Restore ExecutionContext and SynchronizationContext to the current Thread object

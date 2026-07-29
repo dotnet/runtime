@@ -240,6 +240,7 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG restoreInlinedFrameExecutionContextMethHnd;
     DWORDLONG isOnRightContextMethHnd;
     DWORDLONG switchContextMethHnd;
+    DWORDLONG captureInlinedFrameTransitionMethHnd;
     DWORDLONG finishSuspensionNoContinuationContextMethHnd;
     DWORDLONG finishSuspensionWithContinuationContextMethHnd;
 };

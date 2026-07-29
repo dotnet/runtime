@@ -3624,6 +3624,7 @@ namespace Internal.JitInterface
             pAsyncInfoOut.restoreInlinedFrameExecutionContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreInlinedFrameExecutionContext"u8, null));
             pAsyncInfoOut.isOnRightContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("IsOnRightContext"u8, null));
             pAsyncInfoOut.switchContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("SwitchContext"u8, null));
+            pAsyncInfoOut.captureInlinedFrameTransitionMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransition"u8, null));
             pAsyncInfoOut.finishSuspensionNoContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null));
             pAsyncInfoOut.finishSuspensionWithContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null));
         }
