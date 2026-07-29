@@ -1703,7 +1703,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             public Vertex EncodeReferenceToMethod(NativeWriter writer, MethodDesc method)
                 => writer.GetUnsignedConstant(table.GetIndex(factory.MethodEntrypoint(method)));
-            public Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type)
+            public Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type, ModuleDesc module = null)
                 => writer.GetUnsignedConstant(table.GetIndex(factory.NecessaryTypeSymbol(type)));
         }
 
