@@ -3467,6 +3467,12 @@ BOOL PInvoke::MarshalingRequired(
                     return TRUE;
                 }
 
+                if (hndArgType.GetMethodTable()->IsDecimalFloatingPointOrHasDecimalFloatingPointFields())
+                {
+                    // Decimal32/Decimal64/Decimal128 cannot be marshalled by value at this time
+                    return TRUE;
+                }
+
                 // When the runtime runtime marshalling system is disabled, we don't support
                 // any types that contain gc pointers, but all "unmanaged" types are treated as blittable
                 // as long as they aren't auto-layout and don't have any auto-layout fields.

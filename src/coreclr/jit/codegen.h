@@ -229,6 +229,8 @@ protected:
     void                       genEmitBeginBlock(WasmValueType blockType = WasmValueType::Invalid);
     void                       genEmitEndBlock();
     void                       genEmitFunctionEnd(bool emitTerminalUnreachable = true);
+    void                       genStoreAsyncContinuationGlobal();
+    void                       genClearAsyncContinuationGlobal();
 #endif
 
     void genEmitStartBlock(BasicBlock* block);
@@ -441,6 +443,7 @@ protected:
 
 #if defined(TARGET_ARM64)
     void genUnknownSizeFrame();
+    void genZeroInitializeUnknownSizeFrame();
 #endif
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -467,6 +470,9 @@ protected:
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
     void genPoisonFrame(regMaskTP bbRegLiveIn);
+#ifdef TARGET_ARM64
+    void genPoisonUnknownSizeVariable(int varNum, char poisonVal);
+#endif
 
 #if defined(TARGET_ARM)
 

@@ -423,6 +423,12 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Invalid;
                 }
 
+                if (!isField && ((DefType)type).IsDecimalFloatingPointOrHasDecimalFloatingPointFields && !isByRef)
+                {
+                    // Decimal32/64/128 types or structs that contain them cannot be passed by value
+                    return MarshallerKind.Invalid;
+                }
+
                 if (!isField && ((DefType)type).IsVectorTOrHasVectorTFields)
                 {
                     // Vector<T> types or structs that contain them cannot be passed by value
@@ -922,6 +928,7 @@ namespace Internal.TypeSystem.Interop
                 if (!defType.ContainsGCPointers
                     && !defType.IsAutoLayoutOrHasAutoLayoutFields
                     && !defType.IsInt128OrHasInt128Fields
+                    && !defType.IsDecimalFloatingPointOrHasDecimalFloatingPointFields
                     && IsValidForGenericMarshalling(defType, isFieldScenario, builtInMarshallingEnabled: false))
                 {
                     return MarshallerKind.BlittableValue;
