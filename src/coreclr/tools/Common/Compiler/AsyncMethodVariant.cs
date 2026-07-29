@@ -150,14 +150,25 @@ namespace ILCompiler
             return method.GetTypicalMethodDefinition() is ReturnDroppingAsyncThunk;
         }
 
+        /// <summary>
+        /// Returns true if the natural calling convention of the MethodDesc's definition requires adaptation to match
+        /// the calling convention of the MethodDesc itself. This is true when the MethodDesc's "async-ness" is
+        /// different than the "async-ness" defined in metadata (its definition's .IsAsync property), or for
+        /// return-dropping async thunks. This may necessitate a thunk to convert between the two calling conventions,
+        /// or a JIT transformation (see CORINFO_ASYNC_VERSION).
+        /// </summary>
         public static bool IsAsyncThunk(this MethodDesc method)
         {
             return (method.IsAsyncVariant() ^ method.IsAsync) || method.IsReturnDroppingAsyncThunk();
         }
 
+        /// <summary>
+        /// Returns true if the method body is a compiler-generated thunk created for runtime-async machinery.
+        /// This includes thunks that convert to or from async calling convention, as well as resumption stubs.
+        /// </summary>
         public static bool IsCompilerGeneratedILBodyForAsync(this MethodDesc method)
         {
-            return method.IsAsyncThunk() || method is AsyncResumptionStub;
+            return (method.IsAsyncThunk() && !method.SupportsAsyncVersionCodegen()) || method is AsyncResumptionStub;
         }
 
         public static bool RequiresSaveRestoreOfAsyncContexts(this MethodDesc method)

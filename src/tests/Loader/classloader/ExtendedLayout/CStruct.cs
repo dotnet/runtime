@@ -17,7 +17,7 @@ public static class CStructTests
     {
         var c = default(CStructBlittablePrimitiveFields);
 
-        Assert.Equal(12, Unsafe.SizeOf<CStructBlittablePrimitiveFields>());
+        Assert.Equal(12, sizeof(CStructBlittablePrimitiveFields));
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CStructBlittablePrimitiveFields, byte>(ref c), ref Unsafe.As<int, byte>(ref c.a)));
         Assert.Equal(4, Unsafe.ByteOffset(ref Unsafe.As<CStructBlittablePrimitiveFields, byte>(ref c), ref Unsafe.As<float, byte>(ref c.b)));
         Assert.Equal(8, Unsafe.ByteOffset(ref Unsafe.As<CStructBlittablePrimitiveFields, byte>(ref c), ref c.c));
@@ -28,8 +28,8 @@ public static class CStructTests
     public static void NonBlittableUnmanagedPrimitiveFields_TreatedAsBlittable()
     {
         var c = default(CStructNonBlittablePrimitiveFields);
-        Assert.Equal(Unsafe.SizeOf<CStructNonBlittablePrimitiveFields>(), Marshal.SizeOf<CStructNonBlittablePrimitiveFields>());
-        Assert.Equal(4, Unsafe.SizeOf<CStructNonBlittablePrimitiveFields>());
+        Assert.Equal(sizeof(CStructNonBlittablePrimitiveFields), Marshal.SizeOf<CStructNonBlittablePrimitiveFields>());
+        Assert.Equal(4, sizeof(CStructNonBlittablePrimitiveFields));
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CStructNonBlittablePrimitiveFields, byte>(ref c), ref Unsafe.As<bool, byte>(ref c.b)));
         Assert.Equal(2, Unsafe.ByteOffset(ref Unsafe.As<CStructNonBlittablePrimitiveFields, byte>(ref c), ref Unsafe.As<char, byte>(ref c.c)));
     }
@@ -55,7 +55,7 @@ public static class CStructTests
             }
         };
 
-        Assert.Equal(4, Unsafe.SizeOf<CStructCustomCStructField>());
+        Assert.Equal(4, sizeof(CStructCustomCStructField));
     }
 
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
@@ -70,7 +70,7 @@ public static class CStructTests
             }
         };
 
-        Assert.Equal(4, Unsafe.SizeOf<CStructCustomSeqStructField>());
+        Assert.Equal(4, sizeof(CStructCustomSeqStructField));
     }
 
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
@@ -100,14 +100,14 @@ public static class CStructTests
     [Fact]
     public static void ExplicitSize_Ignored()
     {
-        Assert.Equal(4, Unsafe.SizeOf<CStructWithSize>());
+        Assert.Equal(4, sizeof(CStructWithSize));
     }
 
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Pack_Ignored()
     {
-        Assert.Equal(8, Unsafe.SizeOf<CStructWithPack>());
+        Assert.Equal(8, sizeof(CStructWithPack));
 
         CStructWithPack c = default;
 

@@ -25,6 +25,18 @@
         <ProfilingSupportedBuild>false</ProfilingSupportedBuild>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
+        <!-- Match the WASI native build (src/coreclr/CMakeLists.txt sets
+             FEATURE_PERFTRACING=0 for CLR_CMAKE_TARGET_WASI). Keeping
+             FEATURE_PERFTRACING on in managed CoreLib while the native
+             side has it off causes EventPipeInternal QCalls (e.g.
+             EventPipeInternal_CreateProvider) to resolve to NULL at
+             runtime; any EventSource activation (e.g. ArrayPoolEventSource
+             via DefaultInterpolatedStringHandler) then traps on a NULL
+             function pointer. -->
+        <FeaturePerfTracing>false</FeaturePerfTracing>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
         <FeatureXplatEventSource Condition="'$(FeatureXplatEventSource)' == '' AND '$(TargetOS)' == 'linux'">true</FeatureXplatEventSource>
         <FeatureComWrappers>true</FeatureComWrappers>
@@ -50,6 +62,14 @@
         <FeatureInterpreter>true</FeatureInterpreter>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(FeatureDynamicCodeCompiled)' != 'true'">
+        <FeatureCachedInterfaceDispatch>true</FeatureCachedInterfaceDispatch>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="('$(Platform)' == 'x64' OR '$(Platform)' == 'arm64') AND ('$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked')">
+        <FeatureCachedInterfaceDispatch>true</FeatureCachedInterfaceDispatch>
+    </PropertyGroup>
+
     <PropertyGroup>
         <DefineConstants Condition="'$(FeatureJavaMarshal)' == 'true'">$(DefineConstants);FEATURE_JAVAMARSHAL</DefineConstants>
         <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">$(DefineConstants);FEATURE_COMWRAPPERS</DefineConstants>
@@ -62,6 +82,7 @@
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureInterpreter)' == 'true'">$(DefineConstants);FEATURE_INTERPRETER</DefineConstants>
         <DefineConstants Condition="'$(FeatureDynamicCodeCompiled)' == 'true'">$(DefineConstants);FEATURE_DYNAMIC_CODE_COMPILED</DefineConstants>
+        <DefineConstants Condition="'$(FeatureCachedInterfaceDispatch)' == 'true'">$(DefineConstants);FEATURE_CACHED_INTERFACE_DISPATCH</DefineConstants>
         <DefineConstants Condition="'$(FeaturePortableEntryPoints)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_ENTRYPOINTS</DefineConstants>
         <DefineConstants Condition="'$(FeaturePortableHelpers)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_HELPERS</DefineConstants>
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>

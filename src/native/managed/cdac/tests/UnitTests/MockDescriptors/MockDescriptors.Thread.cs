@@ -20,6 +20,8 @@ internal sealed class MockExceptionInfo : TypedView
     private const string CallerOfActualHandlerFrameFieldName = "CallerOfActualHandlerFrame";
     private const string ClauseForCatchHandlerStartPCFieldName = "ClauseForCatchHandlerStartPC";
     private const string ClauseForCatchHandlerEndPCFieldName = "ClauseForCatchHandlerEndPC";
+    private const string ExceptionRecordFieldName = "ExceptionRecord";
+    private const string ContextRecordFieldName = "ContextRecord";
 
     public static Layout<MockExceptionInfo> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("ExceptionInfo", architecture)
@@ -35,12 +37,26 @@ internal sealed class MockExceptionInfo : TypedView
             .AddPointerField(CallerOfActualHandlerFrameFieldName)
             .AddUInt32Field(ClauseForCatchHandlerStartPCFieldName)
             .AddUInt32Field(ClauseForCatchHandlerEndPCFieldName)
+            .AddPointerField(ExceptionRecordFieldName)
+            .AddPointerField(ContextRecordFieldName)
             .Build<MockExceptionInfo>();
 
     public ulong ThrownObject
     {
         get => ReadPointerField(ThrownObjectFieldName);
         set => WritePointerField(ThrownObjectFieldName, value);
+    }
+
+    public ulong ExceptionRecord
+    {
+        get => ReadPointerField(ExceptionRecordFieldName);
+        set => WritePointerField(ExceptionRecordFieldName, value);
+    }
+
+    public ulong ContextRecord
+    {
+        get => ReadPointerField(ContextRecordFieldName);
+        set => WritePointerField(ContextRecordFieldName, value);
     }
 }
 

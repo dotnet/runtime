@@ -10,8 +10,8 @@ internal sealed partial class ImageOptionalHeader : IData<ImageOptionalHeader>
     private const int SizeOfImageOffset = 56;
 
     [RawOffset(SectionAlignmentOffset, LittleEndian = true)]
-    public uint SectionAlignment { get; }
+    public partial uint SectionAlignment { get; }
 
     [RawOffset(SizeOfImageOffset, LittleEndian = true)]
-    public uint SizeOfImage { get; }
+    public partial uint SizeOfImage { get; }
 }

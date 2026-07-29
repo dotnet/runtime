@@ -11,17 +11,15 @@
 
 inline void PEImageLayout::AddRef()
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         PRECONDITION(m_refCount>0 && m_refCount < COUNT_T_MAX);
         NOTHROW;
         GC_NOTRIGGER;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     InterlockedIncrement(&m_refCount);
-
-    RETURN;
 }
 
 inline ULONG PEImageLayout::Release()
@@ -637,7 +635,7 @@ inline PTR_CVOID PEImageLayout::GetNativeManifestMetadata(COUNT_T *pSize) const
 inline BOOL PEImageLayout::IsComponentAssembly() const
 {
     WRAPPER_NO_CONTRACT;
-    PE_OR_WEBCIL(IsComponentAssembly(), FALSE)
+    DECODER_DISPATCH(IsComponentAssembly())
 }
 
 inline BOOL PEImageLayout::HasReadyToRunHeader() const

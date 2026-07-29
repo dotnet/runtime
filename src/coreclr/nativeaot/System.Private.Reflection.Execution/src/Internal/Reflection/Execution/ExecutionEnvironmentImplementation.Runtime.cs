@@ -13,7 +13,6 @@ using Internal.Reflection.Execution.FieldAccessors;
 using Internal.Reflection.Execution.MethodInvokers;
 using Internal.Reflection.Execution.PayForPlayExperience;
 using Internal.Reflection.Extensions.NonPortable;
-using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
 
 namespace Internal.Reflection.Execution
@@ -66,34 +65,6 @@ namespace Internal.Reflection.Execution
         public sealed override FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle)
         {
             return new LiteralFieldAccessor(value, fieldTypeHandle);
-        }
-
-        public sealed override void GetEnumInfo(RuntimeTypeHandle typeHandle, out string[] names, out object[] values, out bool isFlags)
-        {
-            // Handle the weird case of an enum type nested under a generic type that makes the
-            // enum itself generic
-            RuntimeTypeHandle typeDefHandle = typeHandle;
-            if (RuntimeAugments.IsGenericType(typeHandle))
-            {
-                typeDefHandle = RuntimeAugments.GetGenericDefinition(typeHandle);
-            }
-
-            QTypeDefinition qTypeDefinition = ReflectionExecution.ExecutionEnvironment.GetMetadataForNamedType(typeDefHandle);
-
-            if (qTypeDefinition.IsNativeFormatMetadataBased)
-            {
-                NativeFormatEnumInfo.GetEnumValuesAndNames(
-                    qTypeDefinition.NativeFormatReader,
-                    qTypeDefinition.NativeFormatHandle,
-                    out values,
-                    out names,
-                    out isFlags);
-                return;
-            }
-            names = Array.Empty<string>();
-            values = Array.Empty<object>();
-            isFlags = false;
-            return;
         }
 
         public override IntPtr GetDynamicInvokeThunk(MethodBaseInvoker invoker)

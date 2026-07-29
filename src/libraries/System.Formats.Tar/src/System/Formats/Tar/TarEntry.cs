@@ -370,7 +370,7 @@ namespace System.Formats.Tar
             string? fileDestinationPath = GetFullDestinationPath(
                                                 destinationDirectoryPath,
                                                 Path.IsPathFullyQualified(name) ? name : Path.Join(destinationDirectoryPath, name));
-            if (fileDestinationPath == null)
+            if (fileDestinationPath is null || FilePathEscapesDirectory(destinationDirectoryPath, fileDestinationPath))
             {
                 throw new IOException(SR.Format(SR.TarExtractingResultsFileOutside, name, destinationDirectoryPath));
             }
@@ -391,7 +391,7 @@ namespace System.Formats.Tar
                 string? linkDestination = GetFullDestinationPath(
                                             destinationDirectoryPath,
                                             Path.IsPathFullyQualified(linkName) ? linkName : Path.Join(Path.GetDirectoryName(fileDestinationPath), linkName));
-                if (linkDestination is null)
+                if (linkDestination is null || FilePathEscapesDirectory(destinationDirectoryPath, linkDestination))
                 {
                     throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
                 }
@@ -406,7 +406,7 @@ namespace System.Formats.Tar
                 string? linkDestination = GetFullDestinationPath(
                                             destinationDirectoryPath,
                                             Path.Join(destinationDirectoryPath, linkName));
-                if (linkDestination is null)
+                if (linkDestination is null || FilePathEscapesDirectory(destinationDirectoryPath, linkDestination))
                 {
                     throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkName, destinationDirectoryPath));
                 }
@@ -415,6 +415,106 @@ namespace System.Formats.Tar
             }
 
             return (fileDestinationPath, linkTargetPath);
+        }
+
+        // Prevent an archive from escaping the extraction root through symlinks that were created by earlier entries in the same archive.
+        // This protection applies only to links introduced by the archive itself. It is not intended to defend against preexisting symlinks
+        // already present on disk before extraction
+        private static bool FilePathEscapesDirectory(string destinationDirectoryPath, string fileDestinationPath)
+        {
+            // Windows is case insensitive while Linux is case sensitive
+            // This ensures the comparison is consistent with how the OS would resolve the paths
+            StringComparison pathComparison = OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+
+            string resolvedDest = ResolvePhysicalPath(destinationDirectoryPath);
+
+            // Use the logical destination path for computing the relative path
+            string logicalDest = Path.GetFullPath(destinationDirectoryPath);
+            string logicalPrefix = logicalDest.EndsWith(Path.DirectorySeparatorChar)
+                ? logicalDest
+                : logicalDest + Path.DirectorySeparatorChar;
+
+            string destPrefix = resolvedDest.EndsWith(Path.DirectorySeparatorChar)
+                ? resolvedDest
+                : resolvedDest + Path.DirectorySeparatorChar;
+
+            // Normalize file path (resolves .. and . but not symlinks)
+            string normalizedFile = Path.GetFullPath(fileDestinationPath);
+
+            // Guard with StartsWith before computing relative path
+            if (!normalizedFile.StartsWith(logicalPrefix, pathComparison) &&
+                !normalizedFile.Equals(logicalDest, pathComparison))
+            {
+                return true;
+            }
+
+            // Walk relative components, resolving symlinks at each step
+            string relative = normalizedFile.Substring(logicalPrefix.Length)
+                .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+            string[] components = relative.Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
+                StringSplitOptions.RemoveEmptyEntries);
+
+            string current = resolvedDest;
+
+            foreach (string component in components)
+            {
+                current = Path.Combine(current, component);
+                current = ResolveSymlink(current);
+
+                string normalizedCurrent = Path.GetFullPath(current);
+                if (!normalizedCurrent.StartsWith(destPrefix, pathComparison) &&
+                    !normalizedCurrent.Equals(resolvedDest, pathComparison))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string ResolveSymlink(string path)
+        {
+            var info = new FileInfo(path);
+
+            // Check LinkTarget first so dangling symlinks/junctions (whose final target doesn't exist yet)
+            // are still resolved to their raw target, rather than being treated as a non-link.
+            if (info.LinkTarget is null)
+            {
+                return Path.GetFullPath(path);
+            }
+
+            FileSystemInfo target = info.ResolveLinkTarget(returnFinalTarget: true) ?? info;
+            return target.FullName;
+        }
+
+        // Resolves the full path of the specified path, resolving symlinks at each step.
+        // This is needed to mitigate malicious entries in the archive that could lead to writing files outside of the intended directory.
+        private static string ResolvePhysicalPath(string path)
+        {
+            string fullPath = Path.GetFullPath(path);
+            string? root = Path.GetPathRoot(fullPath);
+
+            if (root is null)
+            {
+                return fullPath;
+            }
+
+            string[] components = fullPath.Substring(root.Length)
+                .Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+            string current = root;
+            foreach (string component in components)
+            {
+                current = Path.Combine(current, component);
+                if (Path.Exists(current))
+                {
+                    current = ResolveSymlink(current);
+                }
+            }
+
+            return current;
         }
 
         // Returns the full destination path if the path is the destinationDirectory or a subpath. Otherwise, returns null.

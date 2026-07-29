@@ -149,6 +149,7 @@ namespace System.Runtime.CompilerServices
                 Resume = &ResumeTaskContinuation,
             };
 
+            [StackTraceHidden]
             private static Continuation? ResumeTaskContinuation(Continuation cont, ref byte result)
             {
                 var taskCont = (RuntimeAsyncTaskContinuation)cont;

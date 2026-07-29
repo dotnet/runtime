@@ -62,10 +62,16 @@
         <WasmPInvokeModule Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
       </ItemGroup>
 
-      <Message Importance="high" Text="Running ManagedToNativeGenerator on @(WasmPInvokeAssembly)" />
+      <PropertyGroup>
+        <_RunGeneratorTargetOS Condition="'$(TargetOS)' == ''">browser</_RunGeneratorTargetOS>
+        <_RunGeneratorTargetOS Condition="'$(TargetOS)' != ''">$(TargetOS)</_RunGeneratorTargetOS>
+      </PropertyGroup>
+
+      <Message Importance="high" Text="Running ManagedToNativeGenerator on @(WasmPInvokeAssembly) for TargetOS=$(_RunGeneratorTargetOS)" />
       <ManagedToNativeGenerator
           Assemblies="@(WasmPInvokeAssembly)"
           PInvokeModules="@(WasmPInvokeModule)"
+          TargetOS="$(_RunGeneratorTargetOS)"
           PInvokeOutputPath="$(GeneratorOutputPath)callhelpers-pinvoke.cpp"
           ReversePInvokeOutputPath="$(GeneratorOutputPath)callhelpers-reverse.cpp"
           InterpToNativeOutputPath="$(GeneratorOutputPath)callhelpers-interp-to-managed.cpp">

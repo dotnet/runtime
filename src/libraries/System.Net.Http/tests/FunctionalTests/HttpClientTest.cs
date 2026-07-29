@@ -1123,7 +1123,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop]
-        [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.Browser, "Synchronous Send is not supported on Android or Browser")]
         public async Task Send_TimeoutRequestContent_Throws()
         {
             var semaphore = new SemaphoreSlim(0);

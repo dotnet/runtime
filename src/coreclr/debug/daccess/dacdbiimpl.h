@@ -24,6 +24,7 @@ DLLEXPORT
 DacDbiInterfaceInstance(
     ICorDebugDataTarget * pTarget,
     CORDB_ADDRESS baseAddress,
+    CLRDATA_ADDRESS contractDescriptorAddress,
     IDacDbiInterface::IAllocator * pAllocator,
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup,
     IDacDbiInterface ** ppInterface);
@@ -66,9 +67,6 @@ public:
         bool fThrowEx);
 
 
-    // Check whether the version of the DBI matches the version of the runtime.
-    HRESULT STDMETHODCALLTYPE CheckDbiVersion(const DbiVersion * pVersion);
-
     // Flush the DAC cache. This should be called when target memory changes.
     HRESULT STDMETHODCALLTYPE FlushCache();
 
@@ -105,7 +103,7 @@ public:
 
 
     // Initialize the native/IL sequence points and native var info for a function.
-    HRESULT STDMETHODCALLTYPE GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT NativeVarData * pNativeVarData, OUT SequencePoints * pSequencePoints);
+    HRESULT STDMETHODCALLTYPE GetNativeCodeSequencePointsAndVarInfo(VMPTR_MethodDesc vmMethodDesc, CORDB_ADDRESS startAddress, BOOL fCodeAvailable, OUT ULONG32 * pFixedArgCount, FP_NATIVEVARINFO_CALLBACK fpVarInfoCallback, FP_SEQUENCEPOINT_CALLBACK fpSeqPointCallback, CALLBACK_DATA pUserData);
 
     HRESULT STDMETHODCALLTYPE IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT BOOL * pResult);
 
@@ -138,6 +136,7 @@ public:
     HRESULT STDMETHODCALLTYPE GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW);
 #ifdef FEATURE_CODE_VERSIONING
     HRESULT STDMETHODCALLTYPE GetActiveRejitILCodeVersionNode(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ILCodeVersionNode* pVmILCodeVersionNode);
+    HRESULT STDMETHODCALLTYPE GetEnCILCodeAndSig(VMPTR_Module vmModule, mdMethodDef methodTk, SIZE_T enCVersion, OUT TargetBuffer * pCodeInfo, OUT mdSignature * pLocalSigToken);
     HRESULT STDMETHODCALLTYPE GetNativeCodeVersionNode(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_NativeCodeVersionNode* pVmNativeCodeVersionNode);
     HRESULT STDMETHODCALLTYPE GetILCodeVersionNode(VMPTR_NativeCodeVersionNode vmNativeCodeVersionNode, VMPTR_ILCodeVersionNode* pVmILCodeVersionNode);
     HRESULT STDMETHODCALLTYPE GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode vmILCodeVersionNode, DacSharedReJitInfo* pData);
@@ -148,7 +147,7 @@ public:
     HRESULT STDMETHODCALLTYPE EnableGCNotificationEvents(BOOL fEnable);
     HRESULT STDMETHODCALLTYPE GetAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_Assembly *pvmAssembly);
     HRESULT STDMETHODCALLTYPE ParseContinuation(CORDB_ADDRESS continuationAddress,
-                                              OUT PCODE *pDiagnosticIP,
+                                              OUT CORDB_ADDRESS *pDiagnosticIP,
                                               OUT CORDB_ADDRESS *pNextContinuation,
                                               OUT UINT32 *pState);
     HRESULT STDMETHODCALLTYPE EnumerateAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, FP_ASYNC_LOCAL_CALLBACK fpCallback, CALLBACK_DATA pUserData);
@@ -161,17 +160,6 @@ private:
 
     // Get the number of fixed arguments to a function, i.e., the explicit args and the "this" pointer.
     SIZE_T GetArgCount(MethodDesc * pMD);
-
-    // Get locations and code offsets for local variables and arguments in a function
-    void GetNativeVarData(MethodDesc *    pMethodDesc,
-                          CORDB_ADDRESS   startAddr,
-                          SIZE_T          fixedArgCount,
-                          NativeVarData * pVarInfo);
-
-    // Get the native/IL sequence points for a function
-    void GetSequencePoints(MethodDesc *    pMethodDesc,
-                           CORDB_ADDRESS    startAddr,
-                           SequencePoints * pNativeMap);
 
 public:
 //----------------------------------------------------------------------------------
@@ -717,9 +705,6 @@ public:
 
     // Return the stack parameter size of the given method.
     ULONG32 GetStackParameterSize(EECodeInfo * pCodeInfo);
-
-    // Return the FramePointer of the current frame at which the stackwalker is stopped.
-    HRESULT STDMETHODCALLTYPE GetFramePointer(StackWalkHandle pSFIHandle, OUT FramePointer * pRetVal);
 
     FramePointer GetFramePointerWorker(StackFrameIterator * pIter);
 

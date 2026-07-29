@@ -16,7 +16,10 @@ public interface IData<TSelf> where TSelf : IData<TSelf>
 
 Instances are produced lazily and cached by the target's
 `ProcessedData.GetOrAdd<T>(address)` helper, so a given (`T`, `address`)
-pair is materialized at most once per target session.
+pair is materialized at most once per target session. Individual fields
+are read lazily too: each property reads from the target on first access
+and memoizes the result, so constructing an instance performs no reads.
+See [Lazy field reads and versioning](#lazy-field-reads-and-versioning).
 
 ## Authoring an IData class
 
@@ -53,17 +56,31 @@ analyzer. It scans for classes carrying `[CdacType]` and emits a
 * A `public TargetPointer Address { get; }` property (always emitted --
   the instance remembers the address it was constructed from).
 * A `public {Name}(Target target, TargetPointer address)` constructor
-  that resolves the type name against native descriptors and managed
-  metadata, then does per-field reads through the `LayoutSet` cascade.
+  that records the address and calls `OnInit`. It performs **no** field
+  reads -- fields are read lazily (see
+  [Lazy field reads and versioning](#lazy-field-reads-and-versioning)).
+* A lazily-read `partial` property implementation for each `[Field]` /
+  `[FieldAddress]` / `[InstanceDataStart]` / `[RawOffset]` declaration.
+  Each getter resolves the type name against native descriptors and
+  managed metadata through the `LayoutSet` cascade on first access,
+  reads the field, and memoizes the value. A required field missing from
+  the descriptor throws `InvalidOperationException` from the layout
+  lookup at read time; `VirtualReadException` is thrown only if the
+  target read itself fails.
 * A `static {Name} IData<{Name}>.Create(...) => new {Name}(target, address);`
   one-liner.
 * A `private static readonly string[] _typeNames = { ... }` array
   holding the candidate type names from `[CdacType]`.
+* A `private readonly Target _target` field (captured in the
+  constructor) for any type with instance members, so lazy getters and
+  `Write{Name}` methods can read/write without a `Target` parameter.
+* An explicit `IReadableData.EnsureAllFieldsRead()` implementation (for
+  any type with instance members) that touches every field so a caller
+  can force a full eager read.
 * For types with `HasTypeHandle = true`: a
-  `public static TypeHandle TypeHandle(Target target)` accessor.
+  `public static ITypeHandle TypeHandle(Target target)` accessor.
 * For each `[Field(Writable = true)]` property: a
-  `public void Write{Name}(T value)` method. The class captures the
-  `Target` in a private `_target` field when any writable fields exist.
+  `public void Write{Name}(T value)` method.
 * For each `[StaticAddress]` / `[StaticReference]` partial method
   declaration: a corresponding implementation that tries native globals
   first (`TypeName.fieldName`), then falls back to `ManagedTypeSource`.
@@ -77,15 +94,81 @@ The user provides the property declarations and (optionally) the
 
 * Mark the class `internal sealed partial`.
 * Implement `IData<T>` on the class declaration.
-* Declare data properties as `public T Prop { get; }` (get-only auto
-  properties). For properties that the generator or hand-written code
-  needs to assign outside the constructor, use
-  `{ get; private set; }`. For non-nullable reference-typed properties
-  that are populated only inside `OnInit`, prefer annotating `OnInit`
+* Declare data properties as `public partial T Prop { get; }`. The
+  property **must** be `partial`: the generator owns the getter body
+  (a lazy read). Add a setter -- `{ get; private set; }` (or
+  `{ get; set; }`) -- when the generated `Write{Name}` method or
+  hand-written code needs to assign it; the generated setter stores the
+  value in the property's memoized backing field. For non-nullable
+  reference-typed properties that are populated only inside `OnInit`
+  (i.e. **not** decorated with a cdac attribute), keep a plain
+  `{ get; private set; }` auto-property and prefer annotating `OnInit`
   with `[MemberNotNull(nameof(X), ...)]` over `required` or
   `= null!;` -- it lets the compiler verify the property is assigned
   along every path through `OnInit` without forcing callers to use
   object-initializer syntax or accepting a deliberately-lying null.
+
+## Lazy field reads and versioning
+
+Fields are read **lazily**. The constructor records the address and runs
+`OnInit`; it performs no descriptor field reads. Each `[Field]` /
+`[FieldAddress]` / `[InstanceDataStart]` / `[RawOffset]` property is a
+generated `partial` property whose getter, on first access, resolves the
+layout, reads the field from the target, and memoizes the value.
+
+The laziness is **invisible**: a getter throws exactly what the old eager
+constructor would have thrown for that field, just deferred to first
+access instead of construction. This has two consequences:
+
+* **Constructing an instance never fails for a missing or unreadable
+  field.** A descriptor that omits a field this build doesn't read still
+  yields a usable instance; only reading the absent field fails. This is
+  what lets a single `IData` class span runtime versions where some
+  fields exist and others don't -- a consumer that never touches an
+  absent field never sees an error.
+* **Reading a field fails exactly as the eager path did.** A non-nullable
+  `[Field]` whose descriptor entry is absent throws
+  `InvalidOperationException` from the layout lookup (the same exception
+  `LayoutSet.Select` threw at construction). A field that *is* in the
+  descriptor but whose target memory is unreadable throws
+  `VirtualReadException` from the read itself. The generator does not
+  substitute one for the other -- it looks the field up and, if found,
+  performs the real read. Optional (`T?`) fields instead yield `null`
+  when absent (see the [`[Field]`](#property-level-field) table).
+
+`OnInit` still runs eagerly at construction, so reads performed directly
+in `OnInit` (rather than through generated properties) happen when the
+instance is created, not lazily.
+
+### Forcing a full read: `IReadableData`
+
+Because reads are deferred, constructing an instance no longer proves the
+whole structure is readable. Every generated type with instance members
+implements `IReadableData.EnsureAllFieldsRead()`, which touches every
+field to force a full eager read. Materializing a field can throw either
+lazy-read exception: `InvalidOperationException` if a required field is
+missing from the descriptor, or `VirtualReadException` if the field's
+target memory cannot be read. A caller catches whichever it cares about --
+for example, to validate that the target memory is readable:
+
+```csharp
+T data = target.ProcessedData.GetOrAdd<T>(address);
+try
+{
+    (data as IReadableData)?.EnsureAllFieldsRead();
+    // ... the entire structure is readable
+}
+catch (VirtualReadException)
+{
+    // ... the structure is only partially readable
+}
+```
+
+This is how `RuntimeTypeSystem` validation confirms a candidate
+`MethodTable` / `EEClass` is fully readable before trusting it. Its
+descriptor fields are always present, so only `VirtualReadException` is
+relevant there; a caller that also needs to tolerate a missing descriptor
+field would additionally catch `InvalidOperationException`.
 
 ## Attribute surface
 
@@ -163,10 +246,10 @@ Parameters:
   raw `TargetPointer` and let the consumer materialize on demand.
 * `[Field(Writable = true)]` -- emit a
   `public void Write{Name}(T value)` method that writes the value back
-  to the target's memory and updates the in-memory snapshot. When any
-  writable fields exist, the generator emits a `private readonly Target
-  _target` field that is captured in the constructor, so Write methods
-  do not need a `Target` parameter. The property must have a setter
+  to the target's memory and updates the in-memory snapshot. The
+  generator captures the `Target` in a private `_target` field (present
+  for any type with instance members), so Write methods do not need a
+  `Target` parameter. The property must have a setter
   (`set` or `private set`), the read kind must be `Primitive`, `Bool`,
   or `NUInt`, and the class must use a descriptor (`[CdacType("Name")]`
   or `[CdacType("Name1", "Name2")]` -- writes go through the descriptor
@@ -180,9 +263,9 @@ way `[Field]` infers it.
 
 | Form | Generated |
 |---|---|
-| `[RawOffset(12)] public uint X { get; }` | `X = target.Read<uint>(address + 12);` |
-| `[RawOffset(60, LittleEndian = true)] public int Lfanew { get; }` | `Lfanew = target.ReadLittleEndian<int>(address + 60);` |
-| `[RawOffset(4)] public ImageFileHeader Hdr { get; }` | `Hdr = target.ProcessedData.GetOrAdd<ImageFileHeader>(address + 4);` |
+| `[RawOffset(12)] public partial uint X { get; }` | `X = target.Read<uint>(address + 12);` |
+| `[RawOffset(60, LittleEndian = true)] public partial int Lfanew { get; }` | `Lfanew = target.ReadLittleEndian<int>(address + 60);` |
+| `[RawOffset(4)] public partial ImageFileHeader Hdr { get; }` | `Hdr = target.ProcessedData.GetOrAdd<ImageFileHeader>(address + 4);` |
 
 Used for well-known external file-format layouts (PE/COFF, Webcil)
 where the offsets are fixed by the format spec rather than the runtime
@@ -195,7 +278,7 @@ Materialize a `TargetPointer` to the *address* of a descriptor field,
 without reading its contents.
 
 ```csharp
-[FieldAddress] public TargetPointer Header { get; }
+[FieldAddress] public partial TargetPointer Header { get; }
 // generates: Header = address + (ulong)type.Fields["Header"].Offset;
 ```
 
@@ -212,7 +295,7 @@ payload.
 
 ```csharp
 [InstanceDataStart]
-public TargetPointer Data { get; }
+public partial TargetPointer Data { get; }
 // generates: Data = address + type.Size!.Value;
 ```
 
@@ -305,14 +388,14 @@ that mutates the target's memory and updates the in-memory snapshot:
 [CdacType(nameof(DataType.Module))]
 internal sealed partial class Module : IData<Module>
 {
-    [Field(Writable = true)] public uint Flags { get; private set; }
+    [Field(Writable = true)] public partial uint Flags { get; private set; }
     // ...
 }
 
-// Generated (the class captures _target when any writable fields exist):
+// Generated (the class captures _target for any type with instance members):
 public void WriteFlags(uint value)
 {
-    LayoutSet layouts = LayoutSet.Resolve(_target, _typeNames);
+    LayoutSet layouts = EnsureLayouts();
     layouts.Select(Address, out var t, out var b, out var n, "Flags");
     _target.WriteField<uint>(b, t, n, value);
     Flags = value;
@@ -384,9 +467,9 @@ first, then managed:
 [CdacType("Lock", "System.Threading.Lock")]
 internal sealed partial class Lock : IData<Lock>
 {
-    [Field("_owningThreadId")] public int  OwningThreadId  { get; }
-    [Field("_state")]          public uint State           { get; }
-    [Field("_recursionCount")] public uint RecursionCount  { get; }
+    [Field("_owningThreadId")] public partial int  OwningThreadId  { get; }
+    [Field("_state")]          public partial uint State           { get; }
+    [Field("_recursionCount")] public partial uint RecursionCount  { get; }
 }
 ```
 
@@ -405,9 +488,9 @@ source:
 [CdacType("Lock", "System.Threading.Lock")]
 internal sealed partial class Lock : IData<Lock>
 {
-    [Field("OwningThreadId", "_owningThreadId")] public int  OwningThreadId  { get; }
-    [Field("State",          "_state")]          public uint State           { get; }
-    [Field("RecursionCount", "_recursionCount")] public uint RecursionCount  { get; }
+    [Field("OwningThreadId", "_owningThreadId")] public partial int  OwningThreadId  { get; }
+    [Field("State",          "_state")]          public partial uint State           { get; }
+    [Field("RecursionCount", "_recursionCount")] public partial uint RecursionCount  { get; }
 }
 ```
 
@@ -427,7 +510,7 @@ against each source:
 internal sealed partial class Thread : IData<Thread>
 {
     // Native field was renamed from "m_id" to "Id" in a recent runtime.
-    [Field("Id", "m_id")] public uint Id { get; }
+    [Field("Id", "m_id")] public partial uint Id { get; }
 }
 ```
 
@@ -467,10 +550,10 @@ reduces to `address + type.Size` exactly as before.
 [CdacType(nameof(DataType.MethodTable))]
 internal sealed partial class MethodTable : IData<MethodTable>
 {
-    [Field] public uint MTFlags { get; }
-    [Field] public uint BaseSize { get; }
-    [Field] public TargetPointer EEClassOrCanonMT { get; }
-    [Field] public TargetPointer Module { get; }
+    [Field] public partial uint MTFlags { get; }
+    [Field] public partial uint BaseSize { get; }
+    [Field] public partial TargetPointer EEClassOrCanonMT { get; }
+    [Field] public partial TargetPointer Module { get; }
     // ...
 }
 ```
@@ -482,10 +565,10 @@ internal sealed partial class MethodTable : IData<MethodTable>
 internal sealed partial class Object : IData<Object>
 {
     [Field("m_pMethTab", Pointer = true)]
-    public MethodTable MethodTable { get; }
+    public partial MethodTable MethodTable { get; }
 
     [InstanceDataStart]
-    public TargetPointer Data { get; }
+    public partial TargetPointer Data { get; }
 }
 ```
 
@@ -495,9 +578,9 @@ internal sealed partial class Object : IData<Object>
 [CdacType("System.Threading.Lock")]
 internal sealed partial class Lock : IData<Lock>
 {
-    [Field("_state")]          public uint State { get; }
-    [Field("_owningThreadId")] public int OwningThreadId { get; }
-    [Field("_recursionCount")] public uint RecursionCount { get; }
+    [Field("_state")]          public partial uint State { get; }
+    [Field("_owningThreadId")] public partial int OwningThreadId { get; }
+    [Field("_recursionCount")] public partial uint RecursionCount { get; }
 }
 ```
 
@@ -507,9 +590,9 @@ internal sealed partial class Lock : IData<Lock>
 [CdacType(nameof(DataType.Exception), "System.Exception")]
 internal sealed partial class Exception : IData<Exception>
 {
-    [Field("_message")]          public TargetPointer Message { get; }
-    [Field("_innerException")]   public TargetPointer InnerException { get; }
-    [Field("_HResult")]          public int HResult { get; }
+    [Field("_message")]          public partial TargetPointer Message { get; }
+    [Field("_innerException")]   public partial TargetPointer InnerException { get; }
+    [Field("_HResult")]          public partial int HResult { get; }
     // ...
 }
 ```
@@ -524,10 +607,10 @@ layout).
 [CdacType("...+Entry")]
 internal sealed partial class ConditionalWeakTableEntry : IData<ConditionalWeakTableEntry>
 {
-    [Field("HashCode")] public int HashCode { get; }
-    [Field("Next")]     public int Next { get; }
+    [Field("HashCode")] public partial int HashCode { get; }
+    [Field("Next")]     public partial int Next { get; }
     [FieldAddress("depHnd")]
-    public TargetPointer DepHndAddress { get; }
+    public partial TargetPointer DepHndAddress { get; }
 }
 ```
 
@@ -538,7 +621,7 @@ internal sealed partial class ConditionalWeakTableEntry : IData<ConditionalWeakT
 internal sealed partial class ImageDosHeader : IData<ImageDosHeader>
 {
     [RawOffset(60, LittleEndian = true)]
-    public int Lfanew { get; }
+    public partial int Lfanew { get; }
 }
 ```
 
@@ -566,8 +649,8 @@ required.
 [CdacType(nameof(DataType.Module))]
 internal sealed partial class Module : IData<Module>
 {
-    [Field(Writable = true)] public uint Flags { get; private set; }
-    [Field] public TargetPointer Assembly { get; }
+    [Field(Writable = true)] public partial uint Flags { get; private set; }
+    [Field] public partial TargetPointer Assembly { get; }
     // ...
 }
 
@@ -582,9 +665,9 @@ module.WriteFlags(newFlags);
 [CdacType(nameof(DataType.RangeSectionFragment))]
 internal sealed partial class RangeSectionFragment : IData<RangeSectionFragment>
 {
-    [Field] public TargetPointer RangeBegin { get; }
-    [Field] public TargetPointer RangeEndOpen { get; }
-    [Field] public TargetPointer RangeSection { get; }
+    [Field] public partial TargetPointer RangeBegin { get; }
+    [Field] public partial TargetPointer RangeEndOpen { get; }
+    [Field] public partial TargetPointer RangeSection { get; }
 
     // The Next pointer uses the low bit as a collectible flag; strip it.
     public TargetPointer Next { get; private set; }
@@ -654,7 +737,7 @@ IData class. Bad:
 [CdacType(nameof(DataType.Thread))]
 internal sealed partial class Thread : IData<Thread>
 {
-    [Field] public uint State { get; }
+    [Field] public partial uint State { get; }
 
     // BAD: classifies state into an enum-shaped result; that's
     // contract-level interpretation, not a field read.
@@ -668,7 +751,7 @@ Better:
 [CdacType(nameof(DataType.Thread))]
 internal sealed partial class Thread : IData<Thread>
 {
-    [Field] public uint State { get; }
+    [Field] public partial uint State { get; }
 }
 
 // In Contracts\Thread_1.cs:
@@ -757,7 +840,7 @@ internal sealed partial class Thread : IData<Thread>
     // BAD: forces a runtime-null-vs-non-null story onto every consumer
     // through the IData property's nullability.
     [Field(Pointer = true)]
-    public RuntimeThreadLocals? RuntimeThreadLocals { get; }
+    public partial RuntimeThreadLocals? RuntimeThreadLocals { get; }
 }
 ```
 
@@ -770,7 +853,7 @@ internal sealed partial class Thread : IData<Thread>
     // Pointer only. Caller materializes if/when needed:
     // if (thread.RuntimeThreadLocals != TargetPointer.Null)
     //     target.ProcessedData.GetOrAdd<RuntimeThreadLocals>(thread.RuntimeThreadLocals)
-    [Field] public TargetPointer RuntimeThreadLocals { get; }
+    [Field] public partial TargetPointer RuntimeThreadLocals { get; }
 }
 ```
 
@@ -788,7 +871,7 @@ internal sealed partial class LoaderAllocator : IData<LoaderAllocator>
 {
     // OK: ObjectHandle is laid out inline inside LoaderAllocator;
     // ReadDataField<ObjectHandle> materializes the embedded struct.
-    [Field] public ObjectHandle ObjectHandle { get; }
+    [Field] public partial ObjectHandle ObjectHandle { get; }
 }
 ```
 

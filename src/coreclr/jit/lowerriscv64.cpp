@@ -1219,7 +1219,59 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 //
 void Lowering::ContainCheckSelect(GenTreeOp* node)
 {
-    noway_assert(!"GT_SELECT nodes are not supported on riscv64");
+    assert(node->OperIs(GT_SELECT));
+    // GT_SELECT is only produced/codegen'd on riscv64 when Zicond is available; integer-only.
+    assert(m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zicond));
+    assert(varTypeIsIntegralOrI(node));
+
+    GenTreeConditional* sel = node->AsConditional();
+
+    // czero already compares its register operand with zero, so the various relop+xori
+    // sequences that genCodeForCompare would emit are redundant when the SELECT's cond
+    // is itself a comparison.
+    GenTree* cond = sel->gtCond;
+    if (cond->OperIsCompare())
+    {
+        GenTreeOp* relop = cond->AsOp();
+
+        // SELECT(EQ(x,0), T, F) -> SELECT(x, F, T) and SELECT(NE(x,0), T, F) -> SELECT(x, T, F):
+        // czero with x as the predicate is equivalent to comparing x against zero.
+        if (relop->OperIs(GT_EQ, GT_NE))
+        {
+            GenTree* relopOp2 = relop->gtGetOp2();
+            if (relopOp2->IsIntegralConst(0))
+            {
+                sel->gtCond = relop->gtGetOp1();
+                if (relop->OperIs(GT_EQ))
+                {
+                    std::swap(sel->gtOp1, sel->gtOp2);
+                }
+                BlockRange().Remove(relopOp2);
+                BlockRange().Remove(relop);
+            }
+        }
+
+        // For polarities where genCodeForCompare would emit a trailing xori 1 (like GE/LE or
+        // floating-point unordered), reverse the condition in-place and swap the SELECT arms.
+        // czero.{eqz,nez} encode both polarities directly, dropping the need for xori.
+        else if (relop->OperIs(GT_GE, GT_LE) ||
+                 (varTypeIsFloating(relop->gtGetOp1()) && (relop->gtFlags & GTF_RELOP_NAN_UN) != 0))
+        {
+            bool reversed = m_compiler->gtTryReverseCond(cond);
+            assert(reversed); // gtTryReverseCond always succeeds for OperIsCompare()
+
+            std::swap(sel->gtOp1, sel->gtOp2);
+        }
+    }
+
+    // czero.{eqz,nez} take a register source and a register condition, so the only
+    // contained form is an integral-zero operand that can be expressed via REG_ZERO.
+    GenTree* op1 = sel->gtOp1;
+    GenTree* op2 = sel->gtOp2;
+    if (op1->IsIntegralConst(0) && !op1->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+        MakeSrcContained(node, op1);
+    if (op2->IsIntegralConst(0) && !op2->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+        MakeSrcContained(node, op2);
 }
 
 //------------------------------------------------------------------------

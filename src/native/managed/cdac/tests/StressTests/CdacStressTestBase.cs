@@ -157,12 +157,8 @@ public abstract class CdacStressTestBase
 
     /// <summary>
     /// Asserts the GCREFS stress run produced a <c>[GC_STATS]</c> summary
-    /// with at least one verification and no hard failures.
-    /// <see cref="CdacStressResults.KnownIssues"/> is intentionally
-    /// tolerated (the native harness emits <c>[KNOWN_ISSUE]</c> for acknowledged
-    /// divergences via <c>s_knownIssueCount</c>, separate from
-    /// <c>s_failCount</c>) but is logged so regressions in the known-issue
-    /// count are visible during triage.
+    /// with at least one verification, no hard failures, and no deferred
+    /// (known-issue) frames.
     /// </summary>
     internal static void AssertAllPassed(CdacStressResults results, string debuggeeName)
     {
@@ -178,13 +174,13 @@ public abstract class CdacStressTestBase
             "did not initialize correctly.\n" +
             $"Log: {results.LogFilePath}");
 
-        if (results.Failed > 0)
+        if (results.Failed > 0 || results.KnownIssues > 0)
         {
             string analysis = results.AnalyzeFailures(maxFailures: 3);
             Assert.Fail(
                 $"GCREFS stress test '{debuggeeName}' had {results.Failed} failure(s) " +
-                $"out of {results.TotalVerifications} verifications " +
-                $"({results.KnownIssues} known issue(s) tolerated).\n" +
+                $"and {results.KnownIssues} known issue(s) out of " +
+                $"{results.TotalVerifications} verifications.\n" +
                 $"Log: {results.LogFilePath}\n\n{analysis}");
         }
     }

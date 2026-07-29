@@ -6,13 +6,14 @@
 #define __HOLDER_H_
 
 #include "cor.h"
-#include "staticcontract.h"
+#include "contract.h"
 #include "volatile.h"
 #include "palclr.h"
 #include <minipal/com/memory.h>
 
 #include <utility>
 #include <type_traits>
+#include <memory>
 
 #if defined(FEATURE_COMINTEROP) && !defined(STRIKE)
 #include <Inspectable.h>
@@ -813,37 +814,6 @@ public:
 };
 
 //-----------------------------------------------------------------------------
-// NOTE: THIS IS UNSAFE TO USE IN THE VM for interop COM objects!!
-//  WE DO NOT CORRECTLY CHANGE TO PREEMPTIVE MODE BEFORE CALLING RELEASE!!
-//  USE SafeComHolder
-//
-// ReleaseHolder : COM Interface holder for use outside the VM (or on well known instances
-//                  which do not need preemptive Release)
-//
-// Usage example:
-//
-//  {
-//      ReleaseHolder<IFoo> foo;
-//      hr = FunctionToGetRefOfFoo(&foo);
-//      // Note ComHolder doesn't call AddRef - it assumes you already have a ref (if non-0).
-//  } // foo->Release() on out of scope (WITHOUT RESPECT FOR GC MODE!!)
-//
-//-----------------------------------------------------------------------------
-
-template <typename TYPE>
-FORCEINLINE void DoTheRelease(TYPE *value)
-{
-    STATIC_CONTRACT_WRAPPER;
-    if (value)
-    {
-        value->Release();
-    }
-}
-
-template<typename _TYPE>
-using ReleaseHolder = SpecializedWrapper<_TYPE, DoTheRelease<_TYPE>>;
-
-//-----------------------------------------------------------------------------
 // NewHolder : New'ed memory holder
 //
 //  {
@@ -941,20 +911,8 @@ protected:
     ULONG32 m_cElements;
 };
 
-
 //-----------------------------------------------------------------------------
-// Wrap win32 functions using HANDLE
-//-----------------------------------------------------------------------------
-
-FORCEINLINE void VoidCloseHandle(HANDLE h) { if (h != NULL) CloseHandle(h); }
-
-// (UINT_PTR) -1 is INVALID_HANDLE_VALUE
-//@TODO: Dangerous default value. Some Win32 functions return INVALID_HANDLE_VALUE, some return NULL (such as CreatEvent).
-typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidCloseHandle, (UINT_PTR) -1> HandleHolder;
-
-
-//-----------------------------------------------------------------------------
-// Misc holders
+// Holders
 //-----------------------------------------------------------------------------
 
 template<typename T>
@@ -979,7 +937,7 @@ public:
     LifetimeHolder& operator=(LifetimeHolder&& other)
     {
         STATIC_CONTRACT_WRAPPER;
-        if (this != &other)
+        if (this != std::addressof(other))
         {
             Free();
             m_value = other.Detach();
@@ -1032,6 +990,41 @@ public:
         return value;
     }
 };
+
+template <typename TYPE>
+struct ReleaseHolderTraits final
+{
+    using Type = TYPE*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        STATIC_CONTRACT_NOTHROW;
+        STATIC_CONTRACT_GC_TRIGGERS;
+        STATIC_CONTRACT_MODE_PREEMPTIVE;
+
+        if (value != NULL)
+            value->Release();
+    }
+};
+
+template<typename _TYPE>
+using ReleaseHolder = LifetimeHolder<ReleaseHolderTraits<_TYPE>>;
+
+//-----------------------------------------------------------------------------
+// Wrap win32 functions using HANDLE
+//-----------------------------------------------------------------------------
+struct HandleTraits final
+{
+    using Type = HANDLE;
+    static Type Default() { return INVALID_HANDLE_VALUE; }
+    static void Free(Type h)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (h != NULL && h != Default())
+            CloseHandle(h);
+    }
+};
+using HandleHolder = LifetimeHolder<HandleTraits>;
 
 struct MapViewTraits final
 {
@@ -1377,7 +1370,7 @@ namespace clr
     {
         STATIC_CONTRACT_LIMITED_METHOD;
         //@TODO: Would be good to add runtime validation that the return value is used.
-        return SafeAddRef(pItf.GetValue());
+        return SafeAddRef(static_cast<ItfT*>(pItf));
     }
 
     namespace detail

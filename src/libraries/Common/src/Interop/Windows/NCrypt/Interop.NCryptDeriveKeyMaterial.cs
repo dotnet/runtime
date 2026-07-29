@@ -32,7 +32,7 @@ internal static partial class Interop
             SafeNCryptSecretHandle hSharedSecret,
             string pwszKDF,
             IntPtr pParameterList,
-            Span<byte> pbDerivedKey,
+            byte* pbDerivedKey,
             int cbDerivedKey,
             out int pcbResult,
             SecretAgreementFlags dwFlags);
@@ -254,7 +254,7 @@ internal static partial class Interop
             SafeNCryptSecretHandle secretAgreement,
             SecretAgreementFlags flags)
         {
-            if (!OperatingSystem.IsWindowsVersionAtLeast(10))
+            if (!IsWindows10OrGreater())
             {
                 throw new PlatformNotSupportedException();
             }
@@ -270,20 +270,42 @@ internal static partial class Interop
             return result;
         }
 
+        private static bool IsWindows10OrGreater()
+        {
+#if NET
+            return OperatingSystem.IsWindowsVersionAtLeast(10);
+#elif NETSTANDARD
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major >= 10;
+#elif NETFRAMEWORK
+            return Environment.OSVersion.Version.Major >= 10;
+#else
+#error Unhandled platform target
+#endif
+        }
+
         internal static bool TryDeriveKeyMaterialTruncate(
             SafeNCryptSecretHandle secretAgreement,
             SecretAgreementFlags flags,
             Span<byte> destination,
             out int bytesWritten)
         {
-            ErrorCode error = NCryptDeriveKey(
-                secretAgreement,
-                BCryptNative.KeyDerivationFunction.Raw,
-                IntPtr.Zero,
-                destination,
-                destination.Length,
-                out int localWritten,
-                flags);
+            ErrorCode error;
+            int localWritten;
+
+            unsafe
+            {
+                fixed (byte* pDestination = destination)
+                {
+                    error = NCryptDeriveKey(
+                        secretAgreement,
+                        BCryptNative.KeyDerivationFunction.Raw,
+                        IntPtr.Zero,
+                        pDestination,
+                        destination.Length,
+                        out localWritten,
+                        flags);
+                }
+            }
 
             switch (error)
             {

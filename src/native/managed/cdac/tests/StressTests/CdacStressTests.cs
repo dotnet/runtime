@@ -50,19 +50,13 @@ public class CdacStressTests : CdacStressTestBase
     [MemberData(nameof(Debuggees))]
     public async Task GCRefStress_AllVerificationsPass(Debuggee debuggee)
     {
-        GetTargetPlatform(out OSPlatform os, out Architecture arch);
+        GetTargetPlatform(out OSPlatform os, out _);
 
         if (debuggee.WindowsOnly && os != OSPlatform.Windows)
             throw new SkipTestException($"{debuggee.Name} debuggee is Windows-only.");
 
         if (debuggee.SkipGCRefs)
             throw new SkipTestException($"{debuggee.Name} is excluded from GCREFS pending follow-up work.");
-
-        // The GCREFS sub-check has only been validated on architectures where
-        // the cDAC GC root enumeration is at parity with the runtime. x86 has
-        // not been brought up yet (a separate effort); skip there until it is.
-        if (arch == Architecture.X86)
-            throw new SkipTestException("GCREFS stress is not yet validated on x86 (ARGITER stress runs there instead)");
 
         CdacStressResults results = await RunGCRefStressAsync(debuggee.Name);
         AssertAllPassed(results, debuggee.Name);
@@ -72,19 +66,10 @@ public class CdacStressTests : CdacStressTestBase
     [MemberData(nameof(Debuggees))]
     public async Task ArgIterStress_AllVerificationsPass(Debuggee debuggee)
     {
-        GetTargetPlatform(out OSPlatform os, out Architecture arch);
+        GetTargetPlatform(out OSPlatform os, out _);
 
         if (debuggee.WindowsOnly && os != OSPlatform.Windows)
             throw new SkipTestException($"{debuggee.Name} debuggee is Windows-only.");
-
-        // Scope of this PR: ARGITER is validated on Windows x86 / x64
-        // only. Other architectures hit known gaps that need follow-up
-        // work (SystemV-AMD64 / ARM64 struct-in-register classification,
-        // arm32 ABI port). Skip there until those land.
-        if (os != OSPlatform.Windows || arch is not (Architecture.X86 or Architecture.X64))
-            throw new SkipTestException(
-                "ARGITER stress is validated for windows-x86 / windows-x64 in this PR; " +
-                "other targets need follow-up work (SystemV / ARM64 struct-in-registers, ARM32 ABI port).");
 
         CdacStressResults results = await RunArgIterStressAsync(debuggee.Name);
         AssertAllArgIterPassed(results, debuggee.Name);

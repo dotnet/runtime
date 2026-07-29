@@ -83,11 +83,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             else
             {
                 MethodDesc method = ((MethodFixupSignature)(_import.Signature)).Method;
+                MethodSignature signature = method.Signature;
+
+                if (method.IsInternalCall && method.OwningType.IsWellKnownType(WellKnownType.String) && method.IsConstructor)
+                {
+                    // Special case for string ctors, which are internal calls but have a managed signature.
+                    signature = WasmLowering.GetStringCtorActualSignature(signature);
+                }
                 // The import thunk always uses managed calling convention ($sp + PE entrypoint)
                 // even if the underlying method is UnmanagedCallersOnly, because the thunk is
                 // called from R2R-generated managed code.
                 WasmLowering.LoweringFlags flags = WasmLowering.GetLoweringFlags(method) & ~WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
-                wasmSignature = WasmLowering.GetSignature(method.Signature, flags);
+                wasmSignature = WasmLowering.GetSignature(signature, flags);
             }
             builder.EmitReloc(factory.WasmImportThunk(wasmSignature, HelperId, _import.Table, UseVirtualCall, UseJumpableStub), tableIndexPointerRelocType);
             builder.EmitReloc(_import, RelocType.IMAGE_REL_BASED_ADDR32NB);

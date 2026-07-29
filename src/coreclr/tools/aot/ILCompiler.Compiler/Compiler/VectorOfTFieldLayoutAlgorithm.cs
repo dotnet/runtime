@@ -78,7 +78,7 @@ namespace ILCompiler
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
             if (type.Context.Target.Architecture == TargetArchitecture.ARM64 &&
-                            type.Instantiation[0].IsPrimitiveNumeric)
+                            VectorFieldLayoutAlgorithm.IsSupportedVectorBaseType(type.Instantiation[0]))
             {
                 return type.InstanceFieldSize.AsInt switch
                 {

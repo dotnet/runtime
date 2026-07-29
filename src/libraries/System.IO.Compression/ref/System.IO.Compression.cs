@@ -29,7 +29,7 @@ namespace System.IO.Compression
     {
         public DeflateEncoder() { }
         public DeflateEncoder(int quality) { }
-        public DeflateEncoder(int quality, int windowLog) { }
+        public DeflateEncoder(int quality, int windowLog2) { }
         public DeflateEncoder(System.IO.Compression.ZLibCompressionOptions options) { }
         public System.Buffers.OperationStatus Compress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) { throw null; }
         public void Dispose() { }
@@ -37,7 +37,7 @@ namespace System.IO.Compression
         public static long GetMaxCompressedLength(long inputLength) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality) { throw null; }
-        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int windowLog) { throw null; }
+        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int windowLog2) { throw null; }
     }
     public partial class DeflateStream : System.IO.Stream
     {
@@ -86,7 +86,7 @@ namespace System.IO.Compression
     {
         public GZipEncoder() { }
         public GZipEncoder(int quality) { }
-        public GZipEncoder(int quality, int windowLog) { }
+        public GZipEncoder(int quality, int windowLog2) { }
         public GZipEncoder(System.IO.Compression.ZLibCompressionOptions options) { }
         public System.Buffers.OperationStatus Compress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) { throw null; }
         public void Dispose() { }
@@ -94,7 +94,7 @@ namespace System.IO.Compression
         public static long GetMaxCompressedLength(long inputLength) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality) { throw null; }
-        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int windowLog) { throw null; }
+        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int windowLog2) { throw null; }
     }
     public partial class GZipStream : System.IO.Stream
     {
@@ -145,6 +145,8 @@ namespace System.IO.Compression
         public static System.Threading.Tasks.Task<System.IO.Compression.ZipArchive> CreateAsync(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen, System.Text.Encoding? entryNameEncoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName) { throw null; }
         public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName, System.IO.Compression.CompressionLevel compressionLevel) { throw null; }
+        public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName, System.IO.Compression.CompressionLevel compressionLevel, System.ReadOnlySpan<char> password, System.IO.Compression.ZipEncryptionMethod encryptionMethod) { throw null; }
+        public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName, System.ReadOnlySpan<char> password, System.IO.Compression.ZipEncryptionMethod encryptionMethod) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
@@ -164,14 +166,21 @@ namespace System.IO.Compression
         public int ExternalAttributes { get { throw null; } set { } }
         public string FullName { get { throw null; } }
         public bool IsEncrypted { get { throw null; } }
+        public System.IO.Compression.ZipEncryptionMethod EncryptionMethod { get { throw null; } }
         public System.DateTimeOffset LastWriteTime { get { throw null; } set { } }
         public long Length { get { throw null; } }
         public string Name { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public ushort VersionMadeBy { get { throw null; } }
         public void Delete() { }
         public System.IO.Stream Open() { throw null; }
-        public System.IO.Stream Open(FileAccess access) { throw null; }
-        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.IO.Stream Open(System.IO.FileAccess access) { throw null; }
+        public System.IO.Stream Open(System.IO.FileAccess access, System.ReadOnlySpan<char> password) { throw null; }
+        public System.IO.Stream Open(System.ReadOnlySpan<char> password) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, System.ReadOnlySpan<char> password, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.ReadOnlySpan<char> password, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override string ToString() { throw null; }
     }
     public enum ZipArchiveMode
@@ -186,15 +195,24 @@ namespace System.IO.Compression
         Deflate = 8,
         Deflate64 = 9,
     }
+    public enum ZipEncryptionMethod
+    {
+        Unknown = -1,
+        None = 0,
+        ZipCrypto = 1,
+        Aes128 = 2,
+        Aes192 = 3,
+        Aes256 = 4,
+    }
     public sealed partial class ZLibCompressionOptions
     {
-        public static int DefaultWindowLog { get { throw null; } }
-        public static int MaxWindowLog { get { throw null; } }
-        public static int MinWindowLog { get { throw null; } }
+        public static int DefaultWindowLog2 { get { throw null; } }
+        public static int MaxWindowLog2 { get { throw null; } }
+        public static int MinWindowLog2 { get { throw null; } }
         public ZLibCompressionOptions() { }
         public int CompressionLevel { get { throw null; } set { } }
         public System.IO.Compression.ZLibCompressionStrategy CompressionStrategy { get { throw null; } set { } }
-        public int WindowLog { get { throw null; } set { } }
+        public int WindowLog2 { get { throw null; } set { } }
     }
     public enum ZLibCompressionStrategy
     {
@@ -215,7 +233,7 @@ namespace System.IO.Compression
     {
         public ZLibEncoder() { }
         public ZLibEncoder(int quality) { }
-        public ZLibEncoder(int quality, int windowLog) { }
+        public ZLibEncoder(int quality, int windowLog2) { }
         public ZLibEncoder(System.IO.Compression.ZLibCompressionOptions options) { }
         public System.Buffers.OperationStatus Compress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) { throw null; }
         public void Dispose() { }
@@ -223,7 +241,7 @@ namespace System.IO.Compression
         public static long GetMaxCompressedLength(long inputLength) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality) { throw null; }
-        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int windowLog) { throw null; }
+        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int windowLog2) { throw null; }
     }
     public sealed partial class ZLibStream : System.IO.Stream
     {
@@ -268,26 +286,26 @@ namespace System.IO.Compression
         public ZstandardCompressionOptions() { }
         public bool AppendChecksum { get { throw null; } set { } }
         public static int DefaultQuality { get { throw null; } }
-        public static int DefaultWindowLog { get { throw null; } }
+        public static int DefaultWindowLog2 { get { throw null; } }
         public System.IO.Compression.ZstandardDictionary? Dictionary { get { throw null; } set { } }
         public bool EnableLongDistanceMatching { get { throw null; } set { } }
         public static int MaxQuality { get { throw null; } }
-        public static int MaxWindowLog { get { throw null; } }
+        public static int MaxWindowLog2 { get { throw null; } }
         public static int MinQuality { get { throw null; } }
-        public static int MinWindowLog { get { throw null; } }
+        public static int MinWindowLog2 { get { throw null; } }
         public int Quality { get { throw null; } set { } }
         public int TargetBlockSize { get { throw null; } set { } }
-        public int WindowLog { get { throw null; } set { } }
+        public int WindowLog2 { get { throw null; } set { } }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
     public sealed partial class ZstandardDecoder : System.IDisposable
     {
         public ZstandardDecoder() { }
-        public ZstandardDecoder(int maxWindowLog) { }
+        public ZstandardDecoder(int maxWindowLog2) { }
         public ZstandardDecoder(System.IO.Compression.ZstandardDecompressionOptions decompressionOptions) { }
         public ZstandardDecoder(System.IO.Compression.ZstandardDictionary dictionary) { }
-        public ZstandardDecoder(System.IO.Compression.ZstandardDictionary dictionary, int maxWindowLog) { }
+        public ZstandardDecoder(System.IO.Compression.ZstandardDictionary dictionary, int maxWindowLog2) { }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
         public void Reset() { }
@@ -302,7 +320,7 @@ namespace System.IO.Compression
     {
         public ZstandardDecompressionOptions() { }
         public System.IO.Compression.ZstandardDictionary? Dictionary { get { throw null; } set { } }
-        public int MaxWindowLog { get { throw null; } set { } }
+        public int MaxWindowLog2 { get { throw null; } set { } }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
@@ -321,10 +339,10 @@ namespace System.IO.Compression
     {
         public ZstandardEncoder() { }
         public ZstandardEncoder(int quality) { }
-        public ZstandardEncoder(int quality, int windowLog) { }
+        public ZstandardEncoder(int quality, int windowLog2) { }
         public ZstandardEncoder(System.IO.Compression.ZstandardCompressionOptions compressionOptions) { }
         public ZstandardEncoder(System.IO.Compression.ZstandardDictionary dictionary) { }
-        public ZstandardEncoder(System.IO.Compression.ZstandardDictionary dictionary, int windowLog) { }
+        public ZstandardEncoder(System.IO.Compression.ZstandardDictionary dictionary, int windowLog2) { }
         public System.Buffers.OperationStatus Compress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) { throw null; }
         public void Dispose() { }
         public System.Buffers.OperationStatus Flush(System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -333,8 +351,8 @@ namespace System.IO.Compression
         public void SetPrefix(System.ReadOnlyMemory<byte> prefix) { }
         public void SetSourceLength(long length) { }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
-        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int windowLog) { throw null; }
-        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, System.IO.Compression.ZstandardDictionary dictionary, int windowLog) { throw null; }
+        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int windowLog2) { throw null; }
+        public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, System.IO.Compression.ZstandardDictionary dictionary, int windowLog2) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]

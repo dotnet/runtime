@@ -14,7 +14,7 @@ long g_pageSize = 0;
 bool
 CreateDump(const CreateDumpOptions& options)
 {
-    ReleaseHolder<CrashInfo> crashInfo = new CrashInfo(options);
+    ReleaseHolder<CrashInfo> crashInfo{ new CrashInfo(options) };
     DumpWriter dumpWriter(*crashInfo);
     std::string dumpPath;
     bool result = false;

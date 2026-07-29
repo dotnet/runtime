@@ -197,6 +197,79 @@ private:
         virtual void         FixupRetExpr()               = 0;
 
         //------------------------------------------------------------------------
+        // SplitCall: spill all side effect uses of the call and the useToSpill into temps.
+        //
+        // Parameters
+        //   block - the block to insert the spill statements into.
+        //   useToSpill - the use of the call to spill into a temp.
+        //
+        void SplitCall(BasicBlock* block, GenTree** useToSpill)
+        {
+            // Find last arg with a side effect. All args with any effect
+            // before that will need to be spilled.
+            GenTree** lastSideEffectUse = nullptr;
+            for (GenTree** use : m_origCall->UseEdges())
+            {
+                if (((*use)->gtFlags & GTF_SIDE_EFFECT) != 0)
+                {
+                    lastSideEffectUse = use;
+                }
+            }
+
+            if (lastSideEffectUse != nullptr)
+            {
+                for (GenTree** use : m_origCall->UseEdges())
+                {
+                    GenTree* node = *use;
+                    if (((node->gtFlags & GTF_ALL_EFFECT) != 0) || m_compiler->gtHasLocalsWithAddrOp(node))
+                    {
+                        SpillUseToTemp(block, use);
+                    }
+
+                    if (use == lastSideEffectUse)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            // We spill the use if it is complex, regardless of side effects.
+            if (!(*useToSpill)->IsLocal())
+            {
+                SpillUseToTemp(block, useToSpill);
+            }
+        }
+
+        //------------------------------------------------------------------------
+        // SpillUseToTemp: spill an argument into a temp.
+        //
+        // Parameters
+        //   arg - The arg to create a temp and local store for.
+        //
+        void SpillUseToTemp(BasicBlock* block, GenTree** use)
+        {
+            unsigned       tmpNum = m_compiler->lvaGrabTemp(true DEBUGARG("indirect call transform spill temp"));
+            GenTree* const node   = *use;
+            GenTree*       store  = m_compiler->gtNewTempStore(tmpNum, node);
+
+            if (node->TypeIs(TYP_REF))
+            {
+                bool                 isExact   = false;
+                bool                 isNonNull = false;
+                CORINFO_CLASS_HANDLE cls       = m_compiler->gtGetClassHandle(node, &isExact, &isNonNull);
+                if (cls != NO_CLASS_HANDLE)
+                {
+                    m_compiler->lvaSetClass(tmpNum, cls, isExact);
+                }
+            }
+
+            Statement* storeStmt = m_compiler->fgNewStmtFromTree(store, m_stmt->GetDebugInfo());
+            m_compiler->fgInsertStmtAtEnd(block, storeStmt);
+
+            *use = m_compiler->gtNewLclVarNode(tmpNum);
+        }
+
+        //------------------------------------------------------------------------
         // CreateRemainder: split current block at the call stmt and
         // insert statements after the call into m_remainderBlock.
         //
@@ -378,6 +451,12 @@ private:
         virtual void CreateCheck(uint8_t checkIdx)
         {
             assert(checkIdx == 0);
+
+            if (m_origCall->IsGenericVirtual(m_compiler))
+            {
+                SplitCall(m_currBlock, &m_origCall->gtControlExpr);
+                m_fptrAddress = m_origCall->gtControlExpr;
+            }
 
             m_checkBlock               = CreateAndInsertBasicBlock(BBJ_ALWAYS, m_currBlock, m_currBlock);
             GenTree*   fatPointerMask  = new (m_compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
@@ -630,41 +709,8 @@ private:
                 prevCheckBlock->SetCond(prevCheckCheckEdge, prevCheckThenEdge);
             }
 
-            // Find last arg with a side effect. All args with any effect
-            // before that will need to be spilled.
-            CallArg* lastSideEffArg = nullptr;
-            for (CallArg& arg : m_origCall->gtArgs.Args())
-            {
-                if ((arg.GetNode()->gtFlags & GTF_SIDE_EFFECT) != 0)
-                {
-                    lastSideEffArg = &arg;
-                }
-            }
-
-            if (lastSideEffArg != nullptr)
-            {
-                for (CallArg& arg : m_origCall->gtArgs.Args())
-                {
-                    GenTree* argNode = arg.GetNode();
-                    if (((argNode->gtFlags & GTF_ALL_EFFECT) != 0) || m_compiler->gtHasLocalsWithAddrOp(argNode))
-                    {
-                        SpillArgToTempBeforeGuard(&arg);
-                    }
-
-                    if (&arg == lastSideEffArg)
-                    {
-                        break;
-                    }
-                }
-            }
-
             CallArg* thisArg = m_origCall->gtArgs.GetThisArg();
-            // We spill 'this' if it is complex, regardless of side effects. It
-            // is going to be used multiple times due to the guard.
-            if (!thisArg->GetNode()->IsLocal())
-            {
-                SpillArgToTempBeforeGuard(thisArg);
-            }
+            SplitCall(m_checkBlock, &thisArg->EarlyNodeRef());
 
             GenTree* thisTree = m_compiler->gtCloneExpr(thisArg->GetNode());
 
@@ -741,35 +787,6 @@ private:
             GenTree*   jmpTree = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, compare);
             Statement* jmpStmt = m_compiler->fgNewStmtFromTree(jmpTree, m_stmt->GetDebugInfo());
             m_compiler->fgInsertStmtAtEnd(m_checkBlock, jmpStmt);
-        }
-
-        //------------------------------------------------------------------------
-        // SpillArgToTempBeforeGuard: spill an argument into a temp in the guard/check block.
-        //
-        // Parameters
-        //   arg - The arg to create a temp and local store for.
-        //
-        void SpillArgToTempBeforeGuard(CallArg* arg)
-        {
-            unsigned       tmpNum  = m_compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
-            GenTree* const argNode = arg->GetNode();
-            GenTree*       store   = m_compiler->gtNewTempStore(tmpNum, argNode);
-
-            if (argNode->TypeIs(TYP_REF))
-            {
-                bool                 isExact   = false;
-                bool                 isNonNull = false;
-                CORINFO_CLASS_HANDLE cls       = m_compiler->gtGetClassHandle(argNode, &isExact, &isNonNull);
-                if (cls != NO_CLASS_HANDLE)
-                {
-                    m_compiler->lvaSetClass(tmpNum, cls, isExact);
-                }
-            }
-
-            Statement* storeStmt = m_compiler->fgNewStmtFromTree(store, m_stmt->GetDebugInfo());
-            m_compiler->fgInsertStmtAtEnd(m_checkBlock, storeStmt);
-
-            arg->SetEarlyNode(m_compiler->gtNewLclVarNode(tmpNum));
         }
 
         //------------------------------------------------------------------------

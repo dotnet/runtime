@@ -115,8 +115,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(PocoCombiningPolymorphicTypeAndDerivedTypes))]
         [JsonSerializable(typeof(ClassWithComponentModelAttributes))]
         [JsonSerializable(typeof(ClassWithJsonPointerEscapablePropertyNames))]
+        [JsonSerializable(typeof(ClassWithPropertyNameRequiringFragmentEncoding))]
         [JsonSerializable(typeof(ClassWithOptionalObjectParameter))]
         [JsonSerializable(typeof(ClassWithPropertiesUsingCustomConverters))]
+#pragma warning disable CS0612 // Type or member is obsolete
+        [JsonSerializable(typeof(MyObsoleteType))]
+#pragma warning restore CS0612 // Type or member is obsolete
         // Collection types
         [JsonSerializable(typeof(int[]))]
         [JsonSerializable(typeof(List<bool>))]
