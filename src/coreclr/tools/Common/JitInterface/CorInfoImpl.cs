@@ -3621,6 +3621,8 @@ namespace Internal.JitInterface
             pAsyncInfoOut.captureContextsMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureContexts"u8, null));
             pAsyncInfoOut.restoreContextsMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreContexts"u8, null));
             pAsyncInfoOut.restoreContextsOnSuspensionMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null));
+            pAsyncInfoOut.restoreExecutionContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null));
+            pAsyncInfoOut.isOnRightContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("IsOnRightContext"u8, null));
             pAsyncInfoOut.finishSuspensionNoContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null));
             pAsyncInfoOut.finishSuspensionWithContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null));
         }

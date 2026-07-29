@@ -237,6 +237,8 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG captureContextsMethHnd;
     DWORDLONG restoreContextsMethHnd;
     DWORDLONG restoreContextsOnSuspensionMethHnd;
+    DWORDLONG restoreExecutionContextMethHnd;
+    DWORDLONG isOnRightContextMethHnd;
     DWORDLONG finishSuspensionNoContinuationContextMethHnd;
     DWORDLONG finishSuspensionWithContinuationContextMethHnd;
 };

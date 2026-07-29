@@ -1834,6 +1834,12 @@ struct CORINFO_ASYNC_INFO
     CORINFO_METHOD_HANDLE restoreContextsMethHnd;
     // Method handle for AsyncHelpers.RestoreContextsOnSuspension, used before suspending in async methods
     CORINFO_METHOD_HANDLE restoreContextsOnSuspensionMethHnd;
+    // Method handle for AsyncHelpers.RestoreExecutionContext, used when an inlined async callee
+    // logically returns to its caller after having been resumed
+    CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
+    // Method handle for AsyncHelpers.IsOnRightContext, used to check whether an inlined async callee
+    // can logically return to its caller without switching continuation context
+    CORINFO_METHOD_HANDLE isOnRightContextMethHnd;
     // Finish suspension without saving continuation context (i.e. custom awaiter or ConfigureAwait(false))
     CORINFO_METHOD_HANDLE finishSuspensionNoContinuationContextMethHnd;
     // Finish suspension with saving continuation context (i.e. normal task await)

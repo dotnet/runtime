@@ -1489,6 +1489,43 @@ namespace System.Runtime.CompilerServices
             flags |= ContinuationFlags.ContinueOnThreadPool;
         }
 
+        // Check whether the current thread already satisfies the continuation context captured in a
+        // continuation, i.e. whether resuming that continuation here would be dispatched inline.
+        //
+        // Used by the JIT when inlining runtime async calls: when an inlined callee logically returns
+        // to its caller after having been resumed, the JIT must ensure it is running in the continuation
+        // context the caller's continuation captured. This mirrors the "can inline" conditions in
+        // RuntimeAsyncTaskContinuation.QueueIfNecessary; the two must be kept in sync.
+        private static bool IsOnRightContext(object? continuationContext, ContinuationFlags flags)
+        {
+            if ((flags & ContinuationFlags.ContinueOnThreadPool) != 0)
+            {
+                SynchronizationContext? syncCtx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
+                if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
+                {
+                    return false;
+                }
+
+                TaskScheduler? sched = TaskScheduler.InternalCurrent;
+                return sched is null || sched == TaskScheduler.Default;
+            }
+
+            if ((flags & ContinuationFlags.ContinueOnCapturedSynchronizationContext) != 0)
+            {
+                Debug.Assert(continuationContext is SynchronizationContext);
+                return (SynchronizationContext)continuationContext! == Thread.CurrentThreadAssumedInitialized._synchronizationContext;
+            }
+
+            if ((flags & ContinuationFlags.ContinueOnCapturedTaskScheduler) != 0)
+            {
+                Debug.Assert(continuationContext is TaskScheduler);
+                return (TaskScheduler)continuationContext! == TaskScheduler.InternalCurrent;
+            }
+
+            // No continuation context was captured, so there is nothing to switch to.
+            return true;
+        }
+
         // Finish suspension in the common case of a custom await or for a ConfigureAwait(false) task await:
         // - Capture current ExecutionContext into the continuation
         // - Restore ExecutionContext and SynchronizationContext to the current Thread object
