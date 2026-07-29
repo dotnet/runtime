@@ -3124,10 +3124,7 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
         for (CallArg* arg : {resumedArg, execContextArg, syncContextArg})
         {
             GenTree* node = arg->GetNode();
-            if (LIR::AsRange(callBlock).Contains(node))
-            {
-                LIR::AsRange(callBlock).Remove(node);
-            }
+            LIR::AsRange(callBlock).Remove(node);
 
             call->gtArgs.RemoveUnsafe(arg);
         }
