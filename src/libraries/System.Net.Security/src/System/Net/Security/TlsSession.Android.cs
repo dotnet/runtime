@@ -11,7 +11,7 @@ namespace System.Net.Security
     public abstract partial class TlsSession
     {
         // Wires a session-owned JavaProxy onto the per-session options bag so
-        // Pal.Android.SafeDeleteSslContext can look it up during construction. The proxy
+        // the Android SafeDeleteSslContext can look it up during construction. The proxy
         // delegates back to VerifyRemoteCertificateForAndroid on this session — mirroring
         // the model SslStream uses via SslStream.Android.VerifyRemoteCertificate(IntPtr),
         // but keeping the JSSE bridge scoped to the session that created it.
