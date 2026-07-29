@@ -84,14 +84,14 @@ namespace ILAssembler.Tests
             // The pointer field should contain the RVA of the target data
             // Read the actual data from the PE at the pointer location
             var pointerSection = pe.GetSectionData(pointerRva);
-            int storedRva = BitConverter.ToInt32(pointerSection.GetContent().AsSpan(0, 4));
+            int storedRva = BinaryPrimitives.ReadInt32LittleEndian(pointerSection.GetContent().AsSpan(0, 4));
 
             // The stored RVA should equal the target's RVA
             Assert.Equal(targetRva, storedRva);
 
             // Verify the target data contains the expected value
             var targetSection = pe.GetSectionData(targetRva);
-            int targetValue = BitConverter.ToInt32(targetSection.GetContent().AsSpan(0, 4));
+            int targetValue = BinaryPrimitives.ReadInt32LittleEndian(targetSection.GetContent().AsSpan(0, 4));
             Assert.Equal(0x12345678, targetValue);
         }
 
@@ -131,8 +131,8 @@ namespace ILAssembler.Tests
             int ptr2Rva = fields["Ptr2Field"].GetRelativeVirtualAddress();
 
             // Read both pointer values
-            int storedRva1 = BitConverter.ToInt32(pe.GetSectionData(ptr1Rva).GetContent().AsSpan(0, 4));
-            int storedRva2 = BitConverter.ToInt32(pe.GetSectionData(ptr2Rva).GetContent().AsSpan(0, 4));
+            int storedRva1 = BinaryPrimitives.ReadInt32LittleEndian(pe.GetSectionData(ptr1Rva).GetContent().AsSpan(0, 4));
+            int storedRva2 = BinaryPrimitives.ReadInt32LittleEndian(pe.GetSectionData(ptr2Rva).GetContent().AsSpan(0, 4));
 
             // Both should point to the target
             Assert.Equal(targetRva, storedRva1);
