@@ -2510,6 +2510,9 @@ namespace System.StubHelpers
             throw new ArgumentException(SR.Argument_WrongSizeArrayInNativeStruct);
         }
 
+#if FEATURE_VARARGS
+        // The vararg calling convention, and therefore the ArgIterator marshaller that
+        // consumes these, is only supported on Windows x86, x64 and arm64.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToManagedVaList")]
         internal static partial void MarshalToManagedVaList(IntPtr va_list, IntPtr pArgIterator);
 
@@ -2518,6 +2521,7 @@ namespace System.StubHelpers
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern uint CalcVaListSize(IntPtr va_list);
+#endif // FEATURE_VARARGS
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void LogPinnedArgument(IntPtr localDesc, IntPtr nativeArg);
