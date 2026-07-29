@@ -870,6 +870,35 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 }
 
 /*****************************************************************************
+ *  Return the index of the function region (funclet) that physically contains
+ *  `block`. The main method is region 0. Unlike funGetFuncIdx, this works for
+ *  an arbitrary block (not just a funclet entry), distinguishing a filter
+ *  funclet (FUNC_FILTER) from its filter-handler. Only valid after funclets
+ *  are created.
+ *
+ */
+inline unsigned Compiler::bbFuncletRegionOf(BasicBlock* block)
+{
+    assert(fgFuncletsCreated);
+
+    if (!block->hasHndIndex())
+    {
+        return 0;
+    }
+
+    EHblkDsc* const eh      = ehGetDsc(block->getHndIndex());
+    unsigned        funcIdx = eh->ebdFuncIndex;
+
+    if (eh->HasFilter() && eh->InFilterRegionBBRange(block))
+    {
+        // The filter is the funclet immediately preceding its filter-handler.
+        funcIdx--;
+    }
+
+    return funcIdx;
+}
+
+/*****************************************************************************
  *  Are two blocks physically contained in the same function region (funclet)?
  *  The main method is region 0. Unlike funGetFuncIdx, this works for an
  *  arbitrary block (not just a funclet entry), distinguishing a filter
@@ -879,27 +908,7 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
  */
 inline bool Compiler::bbIsInSameFunclet(BasicBlock* block1, BasicBlock* block2)
 {
-    assert(fgFuncletsCreated);
-
-    auto funcRegionOf = [this](BasicBlock* blk) -> unsigned {
-        if (!blk->hasHndIndex())
-        {
-            return 0;
-        }
-
-        EHblkDsc* const eh      = ehGetDsc(blk->getHndIndex());
-        unsigned        funcIdx = eh->ebdFuncIndex;
-
-        if (eh->HasFilter() && eh->InFilterRegionBBRange(blk))
-        {
-            // The filter is the funclet immediately preceding its filter-handler.
-            funcIdx--;
-        }
-
-        return funcIdx;
-    };
-
-    return funcRegionOf(block1) == funcRegionOf(block2);
+    return bbFuncletRegionOf(block1) == bbFuncletRegionOf(block2);
 }
 #if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------------------------
