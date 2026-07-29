@@ -7423,6 +7423,15 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
             // gets its own context handling below, exactly like an await in a non-inlined
             // method, and the inlinee's own contexts (created by its SaveAsyncContexts)
             // are used rather than the caller's.
+
+            // Suspending inside a protected region additionally requires catching and
+            // rethrowing around the post-inline handling, which is not implemented yet.
+            if ((compCurBB != nullptr) && (compCurBB->hasTryIndex() || compCurBB->hasHndIndex()))
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT_IN_TRY);
+                return;
+            }
+
             JITDUMP("Call [%06u] is an await in an inlinee that may suspend\n", dspTreeID(call));
             m_nextAsyncCallUsesOwnContexts = true;
         }
