@@ -2766,7 +2766,23 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     if (setMethodHandle && (retNode != nullptr))
     {
-        retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+        GenTree* userCall = retNode;
+
+#if defined(TARGET_XARCH)
+        if (userCall->OperIsConvertMaskToVector())
+        {
+            // A mask-producing intrinsic was wrapped in a mask-to-vector conversion, but the user call
+            // replaces the inner node, so attach the handle there to keep its operands. ConvertMaskToVector
+            // is always unary, so its sole operand is the mask node being tagged.
+            GenTreeHWIntrinsic* cvtMaskToVector = userCall->AsHWIntrinsic();
+            assert(cvtMaskToVector->GetOperandCount() == 1);
+
+            userCall = cvtMaskToVector->Op(1);
+            assert(userCall->TypeIs(TYP_MASK));
+        }
+#endif // TARGET_XARCH
+
+        userCall->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
     }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)

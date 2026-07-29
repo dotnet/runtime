@@ -303,7 +303,7 @@ CrashInfo::InitializeDAC(DumpType dumpType)
         printf_error("InitializeDAC: coreclr not found; not using DAC\n");
         return true;
     }
-    ReleaseHolder<DumpDataTarget> dataTarget = new DumpDataTarget(*this);
+    ReleaseHolder<DumpDataTarget> dataTarget{ new DumpDataTarget(*this) };
     PFN_CLRDataCreateInstance pfnCLRDataCreateInstance = nullptr;
     PFN_DLLMAIN pfnDllMain = nullptr;
     bool result = false;
@@ -483,7 +483,7 @@ CrashInfo::UnwindAllThreads()
     if (m_appModel != AppModelType::NativeAOT)
     {
         TRACE("UnwindAllThreads: STARTED (%d)\n", m_dataTargetPagesAdded);
-        ReleaseHolder<ISOSDacInterface> pSos = nullptr;
+        ReleaseHolder<ISOSDacInterface> pSos;
         if (m_pClrDataProcess != nullptr) {
             m_pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
         }

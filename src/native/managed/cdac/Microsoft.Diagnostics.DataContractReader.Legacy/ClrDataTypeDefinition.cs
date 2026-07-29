@@ -16,21 +16,21 @@ public sealed unsafe partial class ClrDataTypeDefinition : IXCLRDataTypeDefiniti
 {
     private readonly Target _target;
     private readonly TargetPointer _module;
-    private readonly ITypeHandle? _typeHandle;
     private readonly uint _token;
+    private readonly ITypeHandle? _typeHandle;
     private readonly IXCLRDataTypeDefinition? _legacyImpl;
 
     public ClrDataTypeDefinition(
         Target target,
         TargetPointer module,
-        ITypeHandle? typeHandle,
         uint token,
+        ITypeHandle? typeHandle,
         IXCLRDataTypeDefinition? legacyImpl)
     {
         _target = target;
         _module = module;
-        _typeHandle = typeHandle;
         _token = token;
+        _typeHandle = typeHandle;
         _legacyImpl = legacyImpl;
     }
 
