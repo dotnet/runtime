@@ -218,6 +218,12 @@ PhaseStatus Compiler::SaveAsyncContexts()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    // OSR context handling concerns the root frame only. An inlinee inside an OSR method
+    // still starts a fresh logical frame: it must capture its own contexts, its resumed
+    // indicator starts out false regardless of how the OSR method was entered, and its
+    // locals have no home in the tier0 frame.
+    bool isOSRRootFrame = opts.IsOSR() && !compIsForInlining();
+
     // Create locals for Thread, ExecutionContext and SynchronizationContext
     lvaAsyncThreadObjectVar                     = lvaGrabTemp(false DEBUGARG("Async Thread"));
     lvaGetDesc(lvaAsyncThreadObjectVar)->lvType = TYP_REF;
@@ -231,7 +237,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
     lvaResumedIndicator                     = lvaGrabTemp(false DEBUGARG("Async Resumed"));
     lvaGetDesc(lvaResumedIndicator)->lvType = TYP_UBYTE;
 
-    if (opts.IsOSR())
+    if (isOSRRootFrame)
     {
         lvaGetDesc(lvaAsyncThreadObjectVar)->lvIsOSRLocal           = true;
         lvaGetDesc(lvaAsyncExecutionContextVar)->lvIsOSRLocal       = true;
@@ -320,7 +326,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
     // Insert CaptureContexts call before the try (keep it before so the
     // try/finally can be removed if there is no exception side effects).
     // For OSR, we did this in the tier0 method.
-    if (opts.IsOSR())
+    if (isOSRRootFrame)
     {
         // In the OSR method we compute the initial value of the resumption indicator based on the continuation arg.
         GenTree*   continuation       = gtNewLclVarNode(lvaAsyncContinuationArg, TYP_REF);
