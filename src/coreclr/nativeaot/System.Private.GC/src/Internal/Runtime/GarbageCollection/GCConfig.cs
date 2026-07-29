@@ -151,10 +151,10 @@ namespace Internal.Runtime.GarbageCollection
         private static byte s_LogEnabledProvided;
         private static byte s_UpdatedLogEnabled = 0;
 
-        /// <summary>Specifies the name of the GC config log file</summary>
+        /// <summary>Specifies if you want to turn on config logging in GC</summary>
         public static byte GetConfigLogEnabled() => s_ConfigLogEnabled;
 
-        /// <summary>Specifies the name of the GC config log file, or <paramref name="defaultValue"/> if it was not configured.</summary>
+        /// <summary>Specifies if you want to turn on config logging in GC, or <paramref name="defaultValue"/> if it was not configured.</summary>
         public static byte GetConfigLogEnabled(byte defaultValue) => s_ConfigLogEnabledProvided != 0 ? s_ConfigLogEnabled : defaultValue;
 
         /// <summary>Records the value of ConfigLogEnabled reported by <see cref="EnumerateConfigurationValues"/>.</summary>

@@ -18,11 +18,13 @@ class GCInterfaceOffsets
 #define PLAT_GC_OFFSET(offset, cls, member) \
     static_assert(offsetof(cls, member) == 0x##offset, "Bad GC interface offset for '" #cls "." #member "'. Actual offset: " OFFSET_STRING(cls, member));
 
+// static_assert cannot report the actual size, so unlike PLAT_GC_OFFSET there is nothing useful
+// to append to the message here.
 #define PLAT_GC_SIZEOF(size, cls) \
-    static_assert(sizeof(cls) == 0x##size, "Bad GC interface size for '" #cls "'. Actual size: " OFFSET_STRING(cls, 0x##size));
+    static_assert(sizeof(cls) == 0x##size, "Bad GC interface size for '" #cls "'.");
 
 #define PLAT_GC_CONST(constant, expr) \
-    static_assert((expr) == 0x##constant, "Bad GC interface constant for '" #expr "'. Actual value: " OFFSET_STRING(expr, 0x##constant));
+    static_assert((expr) == 0x##constant, "Bad GC interface constant for '" #expr "'.");
 
 #include "../System.Private.GC/GCInterfaceOffsets.h"
 
