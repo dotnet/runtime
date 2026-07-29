@@ -113,7 +113,7 @@ namespace Internal.Runtime.GarbageCollection
 
         public static void VerifySyncTableEntry() => Vtable->VerifySyncTableEntry(g_theGCToCLR);
 
-        public static void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLEvel, int privateKeywords) => Vtable->UpdateGCEventStatus(g_theGCToCLR, publicLevel, publicKeywords, privateLEvel, privateKeywords);
+        public static void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLevel, int privateKeywords) => Vtable->UpdateGCEventStatus(g_theGCToCLR, publicLevel, publicKeywords, privateLevel, privateKeywords);
 
         public static void LogStressMsg(uint level, uint facility, void* msg) => Vtable->LogStressMsg(g_theGCToCLR, level, facility, msg);
 

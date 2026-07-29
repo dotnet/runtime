@@ -12,8 +12,7 @@
 namespace Internal.Runtime.GarbageCollection
 {
     /// <summary>
-    /// Flags that may inhabit the number returned for the HeapVerifyLevel config option.
-    /// Keep this in sync with vm/eeconfig.h if this ever changes.
+    /// Flags that may inhabit the number returned for the HeapVerifyLevel config option. Keep this in sync with vm/eeconfig.h if this ever changes.
     /// </summary>
     internal enum HeapVerifyFlags
     {
@@ -100,10 +99,10 @@ namespace Internal.Runtime.GarbageCollection
         private static byte s_ForceCompactProvided;
         private static byte s_UpdatedForceCompact = 0;
 
-        /// <summary>When set we put the segments that should be deleted on a standby list (instead of "                                                                                                                                                  "releasing them back to the OS) which will be considered to satisfy new segment requests"                                                                                                                                            " (note that the same thing can be specified via API which is the supported way)</summary>
+        /// <summary>When set we put the segments that should be deleted on a standby list (instead of releasing them back to the OS) which will be considered to satisfy new segment requests (note that the same thing can be specified via API which is the supported way)</summary>
         public static byte GetRetainVM() => s_RetainVM;
 
-        /// <summary>When set we put the segments that should be deleted on a standby list (instead of "                                                                                                                                                  "releasing them back to the OS) which will be considered to satisfy new segment requests"                                                                                                                                            " (note that the same thing can be specified via API which is the supported way), or <paramref name="defaultValue"/> if it was not configured.</summary>
+        /// <summary>When set we put the segments that should be deleted on a standby list (instead of releasing them back to the OS) which will be considered to satisfy new segment requests (note that the same thing can be specified via API which is the supported way), or <paramref name="defaultValue"/> if it was not configured.</summary>
         public static byte GetRetainVM(byte defaultValue) => s_RetainVMProvided != 0 ? s_RetainVM : defaultValue;
 
         /// <summary>Records the value of RetainVM reported by <see cref="EnumerateConfigurationValues"/>.</summary>
@@ -321,10 +320,10 @@ namespace Internal.Runtime.GarbageCollection
         private static byte s_SegmentSizeProvided;
         private static long s_UpdatedSegmentSize = 0;
 
-        /// <summary>Specifies the GC latency mode - batch, interactive or low latency (note that the same "                                                                                                                                               "thing can be specified via API which is the supported way</summary>
+        /// <summary>Specifies the GC latency mode - batch, interactive or low latency (note that the same thing can be specified via API which is the supported way</summary>
         public static long GetLatencyMode() => s_LatencyMode;
 
-        /// <summary>Specifies the GC latency mode - batch, interactive or low latency (note that the same "                                                                                                                                               "thing can be specified via API which is the supported way, or <paramref name="defaultValue"/> if it was not configured.</summary>
+        /// <summary>Specifies the GC latency mode - batch, interactive or low latency (note that the same thing can be specified via API which is the supported way, or <paramref name="defaultValue"/> if it was not configured.</summary>
         public static long GetLatencyMode(long defaultValue) => s_LatencyModeProvided != 0 ? s_LatencyMode : defaultValue;
 
         /// <summary>Records the value of LatencyMode reported by <see cref="EnumerateConfigurationValues"/>.</summary>
@@ -334,10 +333,10 @@ namespace Internal.Runtime.GarbageCollection
         private static byte s_LatencyModeProvided;
         private static long s_UpdatedLatencyMode = -1;
 
-        /// <summary>Specifies the GC latency level that you want to optimize for. Must be a number from 0 "                                                                                                                                             "to 3. See documentation for more details on each level.</summary>
+        /// <summary>Specifies the GC latency level that you want to optimize for. Must be a number from 0 to 3. See documentation for more details on each level.</summary>
         public static long GetLatencyLevel() => s_LatencyLevel;
 
-        /// <summary>Specifies the GC latency level that you want to optimize for. Must be a number from 0 "                                                                                                                                             "to 3. See documentation for more details on each level., or <paramref name="defaultValue"/> if it was not configured.</summary>
+        /// <summary>Specifies the GC latency level that you want to optimize for. Must be a number from 0 to 3. See documentation for more details on each level., or <paramref name="defaultValue"/> if it was not configured.</summary>
         public static long GetLatencyLevel(long defaultValue) => s_LatencyLevelProvided != 0 ? s_LatencyLevel : defaultValue;
 
         /// <summary>Records the value of LatencyLevel reported by <see cref="EnumerateConfigurationValues"/>.</summary>
@@ -386,7 +385,7 @@ namespace Internal.Runtime.GarbageCollection
         private static byte s_GCHeapAffinitizeMaskProvided;
         private static long s_UpdatedGCHeapAffinitizeMask = 0;
 
-        /// <summary>Specifies list of processors for Server GC threads. The format is a comma separated "                                                                                                                                                "list of processor numbers or ranges of processor numbers. On Windows, each entry is "                                                                                                                                               "prefixed by the CPU group number. Example: Unix - 1,3,5,7-9,12, Windows - 0:1,1:7-9</summary>
+        /// <summary>Specifies list of processors for Server GC threads. The format is a comma separated list of processor numbers or ranges of processor numbers. On Windows, each entry is prefixed by the CPU group number. Example: Unix - 1,3,5,7-9,12, Windows - 0:1,1:7-9</summary>
         /// <remarks>The returned string is owned by the EE and must be released with <see cref="GCToEEInterface.FreeStringConfigValue"/>.</remarks>
         public static byte* GetGCHeapAffinitizeRanges()
         {
@@ -1086,631 +1085,631 @@ namespace Internal.Runtime.GarbageCollection
         {
             fixed (byte* privateKey = "gcServer\0"u8)
             fixed (byte* publicKey = "System.GC.Server\0"u8)
-                {
-                    byte value = s_ServerGC;
-                    s_ServerGCProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, publicKey, &value);
-                    s_ServerGC = value;
-                }
+            {
+                byte value = s_ServerGC;
+                s_ServerGCProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, publicKey, &value);
+                s_ServerGC = value;
+            }
             s_UpdatedServerGC = s_ServerGC;
 
             fixed (byte* privateKey = "gcConcurrent\0"u8)
             fixed (byte* publicKey = "System.GC.Concurrent\0"u8)
-                {
-                    byte value = s_ConcurrentGC;
-                    s_ConcurrentGCProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, publicKey, &value);
-                    s_ConcurrentGC = value;
-                }
+            {
+                byte value = s_ConcurrentGC;
+                s_ConcurrentGCProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, publicKey, &value);
+                s_ConcurrentGC = value;
+            }
             s_UpdatedConcurrentGC = s_ConcurrentGC;
 
             fixed (byte* privateKey = "gcConservative\0"u8)
-                {
-                    byte value = s_ConservativeGC;
-                    s_ConservativeGCProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, null, &value);
-                    s_ConservativeGC = value;
-                }
+            {
+                byte value = s_ConservativeGC;
+                s_ConservativeGCProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, null, &value);
+                s_ConservativeGC = value;
+            }
             s_UpdatedConservativeGC = s_ConservativeGC;
 
             fixed (byte* privateKey = "gcForceCompact\0"u8)
-                {
-                    byte value = s_ForceCompact;
-                    s_ForceCompactProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, null, &value);
-                    s_ForceCompact = value;
-                }
+            {
+                byte value = s_ForceCompact;
+                s_ForceCompactProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, null, &value);
+                s_ForceCompact = value;
+            }
             s_UpdatedForceCompact = s_ForceCompact;
 
             fixed (byte* privateKey = "GCRetainVM\0"u8)
             fixed (byte* publicKey = "System.GC.RetainVM\0"u8)
-                {
-                    byte value = s_RetainVM;
-                    s_RetainVMProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, publicKey, &value);
-                    s_RetainVM = value;
-                }
+            {
+                byte value = s_RetainVM;
+                s_RetainVMProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, publicKey, &value);
+                s_RetainVM = value;
+            }
             s_UpdatedRetainVM = s_RetainVM;
 
             fixed (byte* privateKey = "GCBreakOnOOM\0"u8)
-                {
-                    byte value = s_BreakOnOOM;
-                    s_BreakOnOOMProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, null, &value);
-                    s_BreakOnOOM = value;
-                }
+            {
+                byte value = s_BreakOnOOM;
+                s_BreakOnOOMProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, null, &value);
+                s_BreakOnOOM = value;
+            }
             s_UpdatedBreakOnOOM = s_BreakOnOOM;
 
             fixed (byte* privateKey = "GCNoAffinitize\0"u8)
             fixed (byte* publicKey = "System.GC.NoAffinitize\0"u8)
-                {
-                    byte value = s_NoAffinitize;
-                    s_NoAffinitizeProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, publicKey, &value);
-                    s_NoAffinitize = value;
-                }
+            {
+                byte value = s_NoAffinitize;
+                s_NoAffinitizeProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, publicKey, &value);
+                s_NoAffinitize = value;
+            }
             s_UpdatedNoAffinitize = s_NoAffinitize;
 
             fixed (byte* privateKey = "GCLogEnabled\0"u8)
-                {
-                    byte value = s_LogEnabled;
-                    s_LogEnabledProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, null, &value);
-                    s_LogEnabled = value;
-                }
+            {
+                byte value = s_LogEnabled;
+                s_LogEnabledProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, null, &value);
+                s_LogEnabled = value;
+            }
             s_UpdatedLogEnabled = s_LogEnabled;
 
             fixed (byte* privateKey = "GCConfigLogEnabled\0"u8)
-                {
-                    byte value = s_ConfigLogEnabled;
-                    s_ConfigLogEnabledProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, null, &value);
-                    s_ConfigLogEnabled = value;
-                }
+            {
+                byte value = s_ConfigLogEnabled;
+                s_ConfigLogEnabledProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, null, &value);
+                s_ConfigLogEnabled = value;
+            }
             s_UpdatedConfigLogEnabled = s_ConfigLogEnabled;
 
             fixed (byte* privateKey = "GCNumaAware\0"u8)
-                {
-                    byte value = s_GCNumaAware;
-                    s_GCNumaAwareProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, null, &value);
-                    s_GCNumaAware = value;
-                }
+            {
+                byte value = s_GCNumaAware;
+                s_GCNumaAwareProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, null, &value);
+                s_GCNumaAware = value;
+            }
             s_UpdatedGCNumaAware = s_GCNumaAware;
 
             fixed (byte* privateKey = "GCCpuGroup\0"u8)
             fixed (byte* publicKey = "System.GC.CpuGroup\0"u8)
-                {
-                    byte value = s_GCCpuGroup;
-                    s_GCCpuGroupProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, publicKey, &value);
-                    s_GCCpuGroup = value;
-                }
+            {
+                byte value = s_GCCpuGroup;
+                s_GCCpuGroupProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, publicKey, &value);
+                s_GCCpuGroup = value;
+            }
             s_UpdatedGCCpuGroup = s_GCCpuGroup;
 
             fixed (byte* privateKey = "GCLargePages\0"u8)
             fixed (byte* publicKey = "System.GC.LargePages\0"u8)
-                {
-                    long value = s_GCLargePages;
-                    s_GCLargePagesProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCLargePages = value;
-                }
+            {
+                long value = s_GCLargePages;
+                s_GCLargePagesProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCLargePages = value;
+            }
             s_UpdatedGCLargePages = s_GCLargePages;
 
             fixed (byte* privateKey = "HeapVerify\0"u8)
-                {
-                    long value = s_HeapVerifyLevel;
-                    s_HeapVerifyLevelProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_HeapVerifyLevel = value;
-                }
+            {
+                long value = s_HeapVerifyLevel;
+                s_HeapVerifyLevelProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_HeapVerifyLevel = value;
+            }
             s_UpdatedHeapVerifyLevel = s_HeapVerifyLevel;
 
             fixed (byte* privateKey = "GCLOHCompact\0"u8)
-                {
-                    long value = s_LOHCompactionMode;
-                    s_LOHCompactionModeProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_LOHCompactionMode = value;
-                }
+            {
+                long value = s_LOHCompactionMode;
+                s_LOHCompactionModeProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_LOHCompactionMode = value;
+            }
             s_UpdatedLOHCompactionMode = s_LOHCompactionMode;
 
             fixed (byte* privateKey = "GCLOHThreshold\0"u8)
             fixed (byte* publicKey = "System.GC.LOHThreshold\0"u8)
-                {
-                    long value = s_LOHThreshold;
-                    s_LOHThresholdProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_LOHThreshold = value;
-                }
+            {
+                long value = s_LOHThreshold;
+                s_LOHThresholdProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_LOHThreshold = value;
+            }
             s_UpdatedLOHThreshold = s_LOHThreshold;
 
             fixed (byte* privateKey = "BGCSpinCount\0"u8)
-                {
-                    long value = s_BGCSpinCount;
-                    s_BGCSpinCountProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCSpinCount = value;
-                }
+            {
+                long value = s_BGCSpinCount;
+                s_BGCSpinCountProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCSpinCount = value;
+            }
             s_UpdatedBGCSpinCount = s_BGCSpinCount;
 
             fixed (byte* privateKey = "BGCSpin\0"u8)
-                {
-                    long value = s_BGCSpin;
-                    s_BGCSpinProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCSpin = value;
-                }
+            {
+                long value = s_BGCSpin;
+                s_BGCSpinProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCSpin = value;
+            }
             s_UpdatedBGCSpin = s_BGCSpin;
 
             fixed (byte* privateKey = "GCHeapCount\0"u8)
             fixed (byte* publicKey = "System.GC.HeapCount\0"u8)
-                {
-                    long value = s_HeapCount;
-                    s_HeapCountProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_HeapCount = value;
-                }
+            {
+                long value = s_HeapCount;
+                s_HeapCountProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_HeapCount = value;
+            }
             s_UpdatedHeapCount = s_HeapCount;
 
             fixed (byte* privateKey = "GCMaxHeapCount\0"u8)
             fixed (byte* publicKey = "System.GC.MaxHeapCount\0"u8)
-                {
-                    long value = s_MaxHeapCount;
-                    s_MaxHeapCountProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_MaxHeapCount = value;
-                }
+            {
+                long value = s_MaxHeapCount;
+                s_MaxHeapCountProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_MaxHeapCount = value;
+            }
             s_UpdatedMaxHeapCount = s_MaxHeapCount;
 
             fixed (byte* privateKey = "GCgen0size\0"u8)
-                {
-                    long value = s_Gen0Size;
-                    s_Gen0SizeProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_Gen0Size = value;
-                }
+            {
+                long value = s_Gen0Size;
+                s_Gen0SizeProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_Gen0Size = value;
+            }
             s_UpdatedGen0Size = s_Gen0Size;
 
             fixed (byte* privateKey = "GCSegmentSize\0"u8)
-                {
-                    long value = s_SegmentSize;
-                    s_SegmentSizeProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_SegmentSize = value;
-                }
+            {
+                long value = s_SegmentSize;
+                s_SegmentSizeProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_SegmentSize = value;
+            }
             s_UpdatedSegmentSize = s_SegmentSize;
 
             fixed (byte* privateKey = "GCLatencyMode\0"u8)
-                {
-                    long value = s_LatencyMode;
-                    s_LatencyModeProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_LatencyMode = value;
-                }
+            {
+                long value = s_LatencyMode;
+                s_LatencyModeProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_LatencyMode = value;
+            }
             s_UpdatedLatencyMode = s_LatencyMode;
 
             fixed (byte* privateKey = "GCLatencyLevel\0"u8)
-                {
-                    long value = s_LatencyLevel;
-                    s_LatencyLevelProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_LatencyLevel = value;
-                }
+            {
+                long value = s_LatencyLevel;
+                s_LatencyLevelProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_LatencyLevel = value;
+            }
             s_UpdatedLatencyLevel = s_LatencyLevel;
 
             fixed (byte* privateKey = "GCLogFileSize\0"u8)
-                {
-                    long value = s_LogFileSize;
-                    s_LogFileSizeProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_LogFileSize = value;
-                }
+            {
+                long value = s_LogFileSize;
+                s_LogFileSizeProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_LogFileSize = value;
+            }
             s_UpdatedLogFileSize = s_LogFileSize;
 
             fixed (byte* privateKey = "GCCompactRatio\0"u8)
-                {
-                    long value = s_CompactRatio;
-                    s_CompactRatioProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_CompactRatio = value;
-                }
+            {
+                long value = s_CompactRatio;
+                s_CompactRatioProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_CompactRatio = value;
+            }
             s_UpdatedCompactRatio = s_CompactRatio;
 
             fixed (byte* privateKey = "GCHeapAffinitizeMask\0"u8)
             fixed (byte* publicKey = "System.GC.HeapAffinitizeMask\0"u8)
-                {
-                    long value = s_GCHeapAffinitizeMask;
-                    s_GCHeapAffinitizeMaskProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapAffinitizeMask = value;
-                }
+            {
+                long value = s_GCHeapAffinitizeMask;
+                s_GCHeapAffinitizeMaskProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapAffinitizeMask = value;
+            }
             s_UpdatedGCHeapAffinitizeMask = s_GCHeapAffinitizeMask;
 
             fixed (byte* privateKey = "GCTrimYoungestKeepPercent\0"u8)
-                {
-                    long value = s_GCTrimYoungestKeepPercent;
-                    s_GCTrimYoungestKeepPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_GCTrimYoungestKeepPercent = value;
-                }
+            {
+                long value = s_GCTrimYoungestKeepPercent;
+                s_GCTrimYoungestKeepPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_GCTrimYoungestKeepPercent = value;
+            }
             s_UpdatedGCTrimYoungestKeepPercent = s_GCTrimYoungestKeepPercent;
 
             fixed (byte* privateKey = "GCHighMemPercent\0"u8)
             fixed (byte* publicKey = "System.GC.HighMemoryPercent\0"u8)
-                {
-                    long value = s_GCHighMemPercent;
-                    s_GCHighMemPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHighMemPercent = value;
-                }
+            {
+                long value = s_GCHighMemPercent;
+                s_GCHighMemPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHighMemPercent = value;
+            }
             s_UpdatedGCHighMemPercent = s_GCHighMemPercent;
 
             fixed (byte* privateKey = "GCProvModeStress\0"u8)
-                {
-                    long value = s_GCProvModeStress;
-                    s_GCProvModeStressProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_GCProvModeStress = value;
-                }
+            {
+                long value = s_GCProvModeStress;
+                s_GCProvModeStressProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_GCProvModeStress = value;
+            }
             s_UpdatedGCProvModeStress = s_GCProvModeStress;
 
             fixed (byte* privateKey = "GCGen0MaxBudget\0"u8)
             fixed (byte* publicKey = "System.GC.Gen0MaxBudget\0"u8)
-                {
-                    long value = s_GCGen0MaxBudget;
-                    s_GCGen0MaxBudgetProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCGen0MaxBudget = value;
-                }
+            {
+                long value = s_GCGen0MaxBudget;
+                s_GCGen0MaxBudgetProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCGen0MaxBudget = value;
+            }
             s_UpdatedGCGen0MaxBudget = s_GCGen0MaxBudget;
 
             fixed (byte* privateKey = "GCGen1MaxBudget\0"u8)
-                {
-                    long value = s_GCGen1MaxBudget;
-                    s_GCGen1MaxBudgetProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_GCGen1MaxBudget = value;
-                }
+            {
+                long value = s_GCGen1MaxBudget;
+                s_GCGen1MaxBudgetProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_GCGen1MaxBudget = value;
+            }
             s_UpdatedGCGen1MaxBudget = s_GCGen1MaxBudget;
 
             fixed (byte* privateKey = "GCLowSkipRatio\0"u8)
-                {
-                    long value = s_GCLowSkipRatio;
-                    s_GCLowSkipRatioProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_GCLowSkipRatio = value;
-                }
+            {
+                long value = s_GCLowSkipRatio;
+                s_GCLowSkipRatioProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_GCLowSkipRatio = value;
+            }
             s_UpdatedGCLowSkipRatio = s_GCLowSkipRatio;
 
             fixed (byte* privateKey = "GCHeapHardLimit\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimit\0"u8)
-                {
-                    long value = s_GCHeapHardLimit;
-                    s_GCHeapHardLimitProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimit = value;
-                }
+            {
+                long value = s_GCHeapHardLimit;
+                s_GCHeapHardLimitProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimit = value;
+            }
             s_UpdatedGCHeapHardLimit = s_GCHeapHardLimit;
 
             fixed (byte* privateKey = "GCHeapHardLimitPercent\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimitPercent\0"u8)
-                {
-                    long value = s_GCHeapHardLimitPercent;
-                    s_GCHeapHardLimitPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimitPercent = value;
-                }
+            {
+                long value = s_GCHeapHardLimitPercent;
+                s_GCHeapHardLimitPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimitPercent = value;
+            }
             s_UpdatedGCHeapHardLimitPercent = s_GCHeapHardLimitPercent;
 
             fixed (byte* privateKey = "GCTotalPhysicalMemory\0"u8)
-                {
-                    long value = s_GCTotalPhysicalMemory;
-                    s_GCTotalPhysicalMemoryProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_GCTotalPhysicalMemory = value;
-                }
+            {
+                long value = s_GCTotalPhysicalMemory;
+                s_GCTotalPhysicalMemoryProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_GCTotalPhysicalMemory = value;
+            }
             s_UpdatedGCTotalPhysicalMemory = s_GCTotalPhysicalMemory;
 
             fixed (byte* privateKey = "GCRegionRange\0"u8)
             fixed (byte* publicKey = "System.GC.RegionRange\0"u8)
-                {
-                    long value = s_GCRegionRange;
-                    s_GCRegionRangeProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCRegionRange = value;
-                }
+            {
+                long value = s_GCRegionRange;
+                s_GCRegionRangeProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCRegionRange = value;
+            }
             s_UpdatedGCRegionRange = s_GCRegionRange;
 
             fixed (byte* privateKey = "GCRegionSize\0"u8)
             fixed (byte* publicKey = "System.GC.RegionSize\0"u8)
-                {
-                    long value = s_GCRegionSize;
-                    s_GCRegionSizeProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCRegionSize = value;
-                }
+            {
+                long value = s_GCRegionSize;
+                s_GCRegionSizeProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCRegionSize = value;
+            }
             s_UpdatedGCRegionSize = s_GCRegionSize;
 
             fixed (byte* privateKey = "GCEnableSpecialRegions\0"u8)
-                {
-                    long value = s_GCEnableSpecialRegions;
-                    s_GCEnableSpecialRegionsProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_GCEnableSpecialRegions = value;
-                }
+            {
+                long value = s_GCEnableSpecialRegions;
+                s_GCEnableSpecialRegionsProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_GCEnableSpecialRegions = value;
+            }
             s_UpdatedGCEnableSpecialRegions = s_GCEnableSpecialRegions;
 
             fixed (byte* privateKey = "BGCFLTuningEnabled\0"u8)
-                {
-                    long value = s_BGCFLTuningEnabled;
-                    s_BGCFLTuningEnabledProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCFLTuningEnabled = value;
-                }
+            {
+                long value = s_BGCFLTuningEnabled;
+                s_BGCFLTuningEnabledProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCFLTuningEnabled = value;
+            }
             s_UpdatedBGCFLTuningEnabled = s_BGCFLTuningEnabled;
 
             fixed (byte* privateKey = "BGCMemGoal\0"u8)
-                {
-                    long value = s_BGCMemGoal;
-                    s_BGCMemGoalProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCMemGoal = value;
-                }
+            {
+                long value = s_BGCMemGoal;
+                s_BGCMemGoalProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCMemGoal = value;
+            }
             s_UpdatedBGCMemGoal = s_BGCMemGoal;
 
             fixed (byte* privateKey = "BGCMemGoalSlack\0"u8)
-                {
-                    long value = s_BGCMemGoalSlack;
-                    s_BGCMemGoalSlackProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCMemGoalSlack = value;
-                }
+            {
+                long value = s_BGCMemGoalSlack;
+                s_BGCMemGoalSlackProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCMemGoalSlack = value;
+            }
             s_UpdatedBGCMemGoalSlack = s_BGCMemGoalSlack;
 
             fixed (byte* privateKey = "BGCFLSweepGoal\0"u8)
-                {
-                    long value = s_BGCFLSweepGoal;
-                    s_BGCFLSweepGoalProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCFLSweepGoal = value;
-                }
+            {
+                long value = s_BGCFLSweepGoal;
+                s_BGCFLSweepGoalProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCFLSweepGoal = value;
+            }
             s_UpdatedBGCFLSweepGoal = s_BGCFLSweepGoal;
 
             fixed (byte* privateKey = "BGCFLSweepGoalLOH\0"u8)
-                {
-                    long value = s_BGCFLSweepGoalLOH;
-                    s_BGCFLSweepGoalLOHProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCFLSweepGoalLOH = value;
-                }
+            {
+                long value = s_BGCFLSweepGoalLOH;
+                s_BGCFLSweepGoalLOHProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCFLSweepGoalLOH = value;
+            }
             s_UpdatedBGCFLSweepGoalLOH = s_BGCFLSweepGoalLOH;
 
             fixed (byte* privateKey = "BGCFLkp\0"u8)
-                {
-                    long value = s_BGCFLkp;
-                    s_BGCFLkpProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCFLkp = value;
-                }
+            {
+                long value = s_BGCFLkp;
+                s_BGCFLkpProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCFLkp = value;
+            }
             s_UpdatedBGCFLkp = s_BGCFLkp;
 
             fixed (byte* privateKey = "BGCFLki\0"u8)
-                {
-                    long value = s_BGCFLki;
-                    s_BGCFLkiProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCFLki = value;
-                }
+            {
+                long value = s_BGCFLki;
+                s_BGCFLkiProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCFLki = value;
+            }
             s_UpdatedBGCFLki = s_BGCFLki;
 
             fixed (byte* privateKey = "BGCFLkd\0"u8)
-                {
-                    long value = s_BGCFLkd;
-                    s_BGCFLkdProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCFLkd = value;
-                }
+            {
+                long value = s_BGCFLkd;
+                s_BGCFLkdProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCFLkd = value;
+            }
             s_UpdatedBGCFLkd = s_BGCFLkd;
 
             fixed (byte* privateKey = "BGCFLff\0"u8)
-                {
-                    long value = s_BGCFLff;
-                    s_BGCFLffProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCFLff = value;
-                }
+            {
+                long value = s_BGCFLff;
+                s_BGCFLffProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCFLff = value;
+            }
             s_UpdatedBGCFLff = s_BGCFLff;
 
             fixed (byte* privateKey = "BGCFLSmoothFactor\0"u8)
-                {
-                    long value = s_BGCFLSmoothFactor;
-                    s_BGCFLSmoothFactorProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCFLSmoothFactor = value;
-                }
+            {
+                long value = s_BGCFLSmoothFactor;
+                s_BGCFLSmoothFactorProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCFLSmoothFactor = value;
+            }
             s_UpdatedBGCFLSmoothFactor = s_BGCFLSmoothFactor;
 
             fixed (byte* privateKey = "BGCFLGradualD\0"u8)
-                {
-                    long value = s_BGCFLGradualD;
-                    s_BGCFLGradualDProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCFLGradualD = value;
-                }
+            {
+                long value = s_BGCFLGradualD;
+                s_BGCFLGradualDProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCFLGradualD = value;
+            }
             s_UpdatedBGCFLGradualD = s_BGCFLGradualD;
 
             fixed (byte* privateKey = "BGCMLkp\0"u8)
-                {
-                    long value = s_BGCMLkp;
-                    s_BGCMLkpProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCMLkp = value;
-                }
+            {
+                long value = s_BGCMLkp;
+                s_BGCMLkpProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCMLkp = value;
+            }
             s_UpdatedBGCMLkp = s_BGCMLkp;
 
             fixed (byte* privateKey = "BGCMLki\0"u8)
-                {
-                    long value = s_BGCMLki;
-                    s_BGCMLkiProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCMLki = value;
-                }
+            {
+                long value = s_BGCMLki;
+                s_BGCMLkiProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCMLki = value;
+            }
             s_UpdatedBGCMLki = s_BGCMLki;
 
             fixed (byte* privateKey = "BGCFLEnableKi\0"u8)
-                {
-                    long value = s_BGCFLEnableKi;
-                    s_BGCFLEnableKiProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCFLEnableKi = value;
-                }
+            {
+                long value = s_BGCFLEnableKi;
+                s_BGCFLEnableKiProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCFLEnableKi = value;
+            }
             s_UpdatedBGCFLEnableKi = s_BGCFLEnableKi;
 
             fixed (byte* privateKey = "BGCFLEnableKd\0"u8)
-                {
-                    long value = s_BGCFLEnableKd;
-                    s_BGCFLEnableKdProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCFLEnableKd = value;
-                }
+            {
+                long value = s_BGCFLEnableKd;
+                s_BGCFLEnableKdProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCFLEnableKd = value;
+            }
             s_UpdatedBGCFLEnableKd = s_BGCFLEnableKd;
 
             fixed (byte* privateKey = "BGCFLEnableSmooth\0"u8)
-                {
-                    long value = s_BGCFLEnableSmooth;
-                    s_BGCFLEnableSmoothProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCFLEnableSmooth = value;
-                }
+            {
+                long value = s_BGCFLEnableSmooth;
+                s_BGCFLEnableSmoothProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCFLEnableSmooth = value;
+            }
             s_UpdatedBGCFLEnableSmooth = s_BGCFLEnableSmooth;
 
             fixed (byte* privateKey = "BGCFLEnableTBH\0"u8)
-                {
-                    long value = s_BGCFLEnableTBH;
-                    s_BGCFLEnableTBHProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCFLEnableTBH = value;
-                }
+            {
+                long value = s_BGCFLEnableTBH;
+                s_BGCFLEnableTBHProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCFLEnableTBH = value;
+            }
             s_UpdatedBGCFLEnableTBH = s_BGCFLEnableTBH;
 
             fixed (byte* privateKey = "BGCFLEnableFF\0"u8)
-                {
-                    long value = s_BGCFLEnableFF;
-                    s_BGCFLEnableFFProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCFLEnableFF = value;
-                }
+            {
+                long value = s_BGCFLEnableFF;
+                s_BGCFLEnableFFProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCFLEnableFF = value;
+            }
             s_UpdatedBGCFLEnableFF = s_BGCFLEnableFF;
 
             fixed (byte* privateKey = "BGCG2RatioStep\0"u8)
-                {
-                    long value = s_BGCG2RatioStep;
-                    s_BGCG2RatioStepProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_BGCG2RatioStep = value;
-                }
+            {
+                long value = s_BGCG2RatioStep;
+                s_BGCG2RatioStepProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_BGCG2RatioStep = value;
+            }
             s_UpdatedBGCG2RatioStep = s_BGCG2RatioStep;
 
             fixed (byte* privateKey = "UOHWaitBGCSizeIncPercent\0"u8)
             fixed (byte* publicKey = "System.GC.UOHWaitBGCSizeIncPercent\0"u8)
-                {
-                    long value = s_UOHWaitBGCSizeIncPercent;
-                    s_UOHWaitBGCSizeIncPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_UOHWaitBGCSizeIncPercent = value;
-                }
+            {
+                long value = s_UOHWaitBGCSizeIncPercent;
+                s_UOHWaitBGCSizeIncPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_UOHWaitBGCSizeIncPercent = value;
+            }
             s_UpdatedUOHWaitBGCSizeIncPercent = s_UOHWaitBGCSizeIncPercent;
 
             fixed (byte* privateKey = "GCHeapHardLimitSOH\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimitSOH\0"u8)
-                {
-                    long value = s_GCHeapHardLimitSOH;
-                    s_GCHeapHardLimitSOHProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimitSOH = value;
-                }
+            {
+                long value = s_GCHeapHardLimitSOH;
+                s_GCHeapHardLimitSOHProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimitSOH = value;
+            }
             s_UpdatedGCHeapHardLimitSOH = s_GCHeapHardLimitSOH;
 
             fixed (byte* privateKey = "GCHeapHardLimitLOH\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimitLOH\0"u8)
-                {
-                    long value = s_GCHeapHardLimitLOH;
-                    s_GCHeapHardLimitLOHProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimitLOH = value;
-                }
+            {
+                long value = s_GCHeapHardLimitLOH;
+                s_GCHeapHardLimitLOHProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimitLOH = value;
+            }
             s_UpdatedGCHeapHardLimitLOH = s_GCHeapHardLimitLOH;
 
             fixed (byte* privateKey = "GCHeapHardLimitPOH\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimitPOH\0"u8)
-                {
-                    long value = s_GCHeapHardLimitPOH;
-                    s_GCHeapHardLimitPOHProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimitPOH = value;
-                }
+            {
+                long value = s_GCHeapHardLimitPOH;
+                s_GCHeapHardLimitPOHProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimitPOH = value;
+            }
             s_UpdatedGCHeapHardLimitPOH = s_GCHeapHardLimitPOH;
 
             fixed (byte* privateKey = "GCHeapHardLimitSOHPercent\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimitSOHPercent\0"u8)
-                {
-                    long value = s_GCHeapHardLimitSOHPercent;
-                    s_GCHeapHardLimitSOHPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimitSOHPercent = value;
-                }
+            {
+                long value = s_GCHeapHardLimitSOHPercent;
+                s_GCHeapHardLimitSOHPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimitSOHPercent = value;
+            }
             s_UpdatedGCHeapHardLimitSOHPercent = s_GCHeapHardLimitSOHPercent;
 
             fixed (byte* privateKey = "GCHeapHardLimitLOHPercent\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimitLOHPercent\0"u8)
-                {
-                    long value = s_GCHeapHardLimitLOHPercent;
-                    s_GCHeapHardLimitLOHPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimitLOHPercent = value;
-                }
+            {
+                long value = s_GCHeapHardLimitLOHPercent;
+                s_GCHeapHardLimitLOHPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimitLOHPercent = value;
+            }
             s_UpdatedGCHeapHardLimitLOHPercent = s_GCHeapHardLimitLOHPercent;
 
             fixed (byte* privateKey = "GCHeapHardLimitPOHPercent\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimitPOHPercent\0"u8)
-                {
-                    long value = s_GCHeapHardLimitPOHPercent;
-                    s_GCHeapHardLimitPOHPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimitPOHPercent = value;
-                }
+            {
+                long value = s_GCHeapHardLimitPOHPercent;
+                s_GCHeapHardLimitPOHPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimitPOHPercent = value;
+            }
             s_UpdatedGCHeapHardLimitPOHPercent = s_GCHeapHardLimitPOHPercent;
 
             fixed (byte* privateKey = "GCEnabledInstructionSets\0"u8)
-                {
-                    long value = s_GCEnabledInstructionSets;
-                    s_GCEnabledInstructionSetsProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_GCEnabledInstructionSets = value;
-                }
+            {
+                long value = s_GCEnabledInstructionSets;
+                s_GCEnabledInstructionSetsProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_GCEnabledInstructionSets = value;
+            }
             s_UpdatedGCEnabledInstructionSets = s_GCEnabledInstructionSets;
 
             fixed (byte* privateKey = "GCConserveMemory\0"u8)
             fixed (byte* publicKey = "System.GC.ConserveMemory\0"u8)
-                {
-                    long value = s_GCConserveMem;
-                    s_GCConserveMemProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCConserveMem = value;
-                }
+            {
+                long value = s_GCConserveMem;
+                s_GCConserveMemProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCConserveMem = value;
+            }
             s_UpdatedGCConserveMem = s_GCConserveMem;
 
             fixed (byte* privateKey = "GCWriteBarrier\0"u8)
-                {
-                    long value = s_GCWriteBarrier;
-                    s_GCWriteBarrierProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_GCWriteBarrier = value;
-                }
+            {
+                long value = s_GCWriteBarrier;
+                s_GCWriteBarrierProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_GCWriteBarrier = value;
+            }
             s_UpdatedGCWriteBarrier = s_GCWriteBarrier;
 
             fixed (byte* privateKey = "GCSpinCountUnit\0"u8)
-                {
-                    long value = s_GCSpinCountUnit;
-                    s_GCSpinCountUnitProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_GCSpinCountUnit = value;
-                }
+            {
+                long value = s_GCSpinCountUnit;
+                s_GCSpinCountUnitProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_GCSpinCountUnit = value;
+            }
             s_UpdatedGCSpinCountUnit = s_GCSpinCountUnit;
 
             fixed (byte* privateKey = "GCDynamicAdaptationMode\0"u8)
             fixed (byte* publicKey = "System.GC.DynamicAdaptationMode\0"u8)
-                {
-                    long value = s_GCDynamicAdaptationMode;
-                    s_GCDynamicAdaptationModeProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCDynamicAdaptationMode = value;
-                }
+            {
+                long value = s_GCDynamicAdaptationMode;
+                s_GCDynamicAdaptationModeProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCDynamicAdaptationMode = value;
+            }
             s_UpdatedGCDynamicAdaptationMode = s_GCDynamicAdaptationMode;
 
             fixed (byte* privateKey = "GCDTargetTCP\0"u8)
             fixed (byte* publicKey = "System.GC.DTargetTCP\0"u8)
-                {
-                    long value = s_GCDTargetTCP;
-                    s_GCDTargetTCPProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCDTargetTCP = value;
-                }
+            {
+                long value = s_GCDTargetTCP;
+                s_GCDTargetTCPProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCDTargetTCP = value;
+            }
             s_UpdatedGCDTargetTCP = s_GCDTargetTCP;
 
             fixed (byte* privateKey = "GCDBGCRatio\0"u8)
-                {
-                    long value = s_GCDBGCRatio;
-                    s_GCDBGCRatioProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
-                    s_GCDBGCRatio = value;
-                }
+            {
+                long value = s_GCDBGCRatio;
+                s_GCDBGCRatioProvided = GCToEEInterface.GetIntConfigValue(privateKey, null, &value);
+                s_GCDBGCRatio = value;
+            }
             s_UpdatedGCDBGCRatio = s_GCDBGCRatio;
 
             fixed (byte* privateKey = "GCDGen0GrowthPercent\0"u8)
             fixed (byte* publicKey = "System.GC.DGen0GrowthPercent\0"u8)
-                {
-                    long value = s_GCDGen0GrowthPercent;
-                    s_GCDGen0GrowthPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCDGen0GrowthPercent = value;
-                }
+            {
+                long value = s_GCDGen0GrowthPercent;
+                s_GCDGen0GrowthPercentProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCDGen0GrowthPercent = value;
+            }
             s_UpdatedGCDGen0GrowthPercent = s_GCDGen0GrowthPercent;
 
             fixed (byte* privateKey = "GCDGen0GrowthMinFactor\0"u8)
             fixed (byte* publicKey = "System.GC.DGen0GrowthMinFactor\0"u8)
-                {
-                    long value = s_GCDGen0GrowthMinFactor;
-                    s_GCDGen0GrowthMinFactorProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCDGen0GrowthMinFactor = value;
-                }
+            {
+                long value = s_GCDGen0GrowthMinFactor;
+                s_GCDGen0GrowthMinFactorProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCDGen0GrowthMinFactor = value;
+            }
             s_UpdatedGCDGen0GrowthMinFactor = s_GCDGen0GrowthMinFactor;
 
             fixed (byte* privateKey = "GCDGen0GrowthMaxFactor\0"u8)
             fixed (byte* publicKey = "System.GC.DGen0GrowthMaxFactor\0"u8)
-                {
-                    long value = s_GCDGen0GrowthMaxFactor;
-                    s_GCDGen0GrowthMaxFactorProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCDGen0GrowthMaxFactor = value;
-                }
+            {
+                long value = s_GCDGen0GrowthMaxFactor;
+                s_GCDGen0GrowthMaxFactorProvided = GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCDGen0GrowthMaxFactor = value;
+            }
             s_UpdatedGCDGen0GrowthMaxFactor = s_GCDGen0GrowthMaxFactor;
 
             fixed (byte* privateKey = "GCCacheSizeFromSysConf\0"u8)
-                {
-                    byte value = s_GCCacheSizeFromSysConf;
-                    s_GCCacheSizeFromSysConfProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, null, &value);
-                    s_GCCacheSizeFromSysConf = value;
-                }
+            {
+                byte value = s_GCCacheSizeFromSysConf;
+                s_GCCacheSizeFromSysConfProvided = GCToEEInterface.GetBooleanConfigValue(privateKey, null, &value);
+                s_GCCacheSizeFromSysConf = value;
+            }
             s_UpdatedGCCacheSizeFromSysConf = s_GCCacheSizeFromSysConf;
 
         }
@@ -1720,74 +1719,74 @@ namespace Internal.Runtime.GarbageCollection
         {
             fixed (byte* privateKey = "GCHeapHardLimit\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimit\0"u8)
-                {
-                    long value = s_GCHeapHardLimit;
-                    GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimit = value;
-                }
+            {
+                long value = s_GCHeapHardLimit;
+                GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimit = value;
+            }
             s_UpdatedGCHeapHardLimit = s_GCHeapHardLimit;
 
             fixed (byte* privateKey = "GCHeapHardLimitPercent\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimitPercent\0"u8)
-                {
-                    long value = s_GCHeapHardLimitPercent;
-                    GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimitPercent = value;
-                }
+            {
+                long value = s_GCHeapHardLimitPercent;
+                GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimitPercent = value;
+            }
             s_UpdatedGCHeapHardLimitPercent = s_GCHeapHardLimitPercent;
 
             fixed (byte* privateKey = "GCHeapHardLimitSOH\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimitSOH\0"u8)
-                {
-                    long value = s_GCHeapHardLimitSOH;
-                    GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimitSOH = value;
-                }
+            {
+                long value = s_GCHeapHardLimitSOH;
+                GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimitSOH = value;
+            }
             s_UpdatedGCHeapHardLimitSOH = s_GCHeapHardLimitSOH;
 
             fixed (byte* privateKey = "GCHeapHardLimitLOH\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimitLOH\0"u8)
-                {
-                    long value = s_GCHeapHardLimitLOH;
-                    GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimitLOH = value;
-                }
+            {
+                long value = s_GCHeapHardLimitLOH;
+                GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimitLOH = value;
+            }
             s_UpdatedGCHeapHardLimitLOH = s_GCHeapHardLimitLOH;
 
             fixed (byte* privateKey = "GCHeapHardLimitPOH\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimitPOH\0"u8)
-                {
-                    long value = s_GCHeapHardLimitPOH;
-                    GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimitPOH = value;
-                }
+            {
+                long value = s_GCHeapHardLimitPOH;
+                GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimitPOH = value;
+            }
             s_UpdatedGCHeapHardLimitPOH = s_GCHeapHardLimitPOH;
 
             fixed (byte* privateKey = "GCHeapHardLimitSOHPercent\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimitSOHPercent\0"u8)
-                {
-                    long value = s_GCHeapHardLimitSOHPercent;
-                    GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimitSOHPercent = value;
-                }
+            {
+                long value = s_GCHeapHardLimitSOHPercent;
+                GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimitSOHPercent = value;
+            }
             s_UpdatedGCHeapHardLimitSOHPercent = s_GCHeapHardLimitSOHPercent;
 
             fixed (byte* privateKey = "GCHeapHardLimitLOHPercent\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimitLOHPercent\0"u8)
-                {
-                    long value = s_GCHeapHardLimitLOHPercent;
-                    GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimitLOHPercent = value;
-                }
+            {
+                long value = s_GCHeapHardLimitLOHPercent;
+                GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimitLOHPercent = value;
+            }
             s_UpdatedGCHeapHardLimitLOHPercent = s_GCHeapHardLimitLOHPercent;
 
             fixed (byte* privateKey = "GCHeapHardLimitPOHPercent\0"u8)
             fixed (byte* publicKey = "System.GC.HeapHardLimitPOHPercent\0"u8)
-                {
-                    long value = s_GCHeapHardLimitPOHPercent;
-                    GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
-                    s_GCHeapHardLimitPOHPercent = value;
-                }
+            {
+                long value = s_GCHeapHardLimitPOHPercent;
+                GCToEEInterface.GetIntConfigValue(privateKey, publicKey, &value);
+                s_GCHeapHardLimitPOHPercent = value;
+            }
             s_UpdatedGCHeapHardLimitPOHPercent = s_GCHeapHardLimitPOHPercent;
 
         }
