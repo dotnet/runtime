@@ -3881,6 +3881,7 @@ void emitter::emitIns_R_R(instruction     ins,
         case INS_lghr:
         case INS_lgr:
         case INS_lr:
+        case INS_vlr:
             fmt = IF_DR_2E;
             break;
 
@@ -4527,6 +4528,29 @@ void emitter::emitIns_R_R(instruction     ins,
 #endif
     } // end switch (ins)
 
+    if (needsVectorEncoding(reg1, reg2))
+    {
+        switch (ins)
+        {
+            case INS_aebr:  ins = INS_wfasb;  break;
+            case INS_adbr:  ins = INS_wfadb;  break;
+            case INS_sebr:  ins = INS_wfssb;  break;
+            case INS_sdbr:  ins = INS_wfsdb;  break;
+            case INS_meebr: ins = INS_wfmsb;  break;
+            case INS_mdbr:  ins = INS_wfmdb;  break;
+            case INS_debr:  ins = INS_wfdsb;  break;
+            case INS_ddbr:  ins = INS_wfddb;  break;
+            case INS_cebr:  ins = INS_wfcsb;  break;
+            case INS_cdbr:  ins = INS_wfcdb;  break;
+            case INS_lcebr: ins = INS_wflcsb; break;
+            case INS_lcdbr: ins = INS_wflcdb; break;
+            case INS_ldgr:  ins = INS_vlvgg;  break;
+            case INS_sqebr: ins = INS_wfsqsb; break;
+            case INS_sqdbr: ins = INS_wfsqdb; break;
+            case INS_lgdr:  ins = INS_vlgvg;  break;
+            default: break;
+        }
+    }
 
     instrDesc* id = emitNewInstrSmall(attr);
 
@@ -5366,6 +5390,17 @@ void emitter::emitIns_R_R_I(instruction     ins,
     }
 #endif
 
+    if (isHighVectorRegister(reg1))
+    {
+        switch (ins)
+        {
+            case INS_ley:  ins = INS_vlef;  break;
+            case INS_ldy:  ins = INS_vleg;  break;
+            case INS_stey: ins = INS_vstef; break;
+            case INS_stdy: ins = INS_vsteg; break;
+            default: break;
+        }
+    }
 
     instrDesc* id = emitNewInstrSC(attr, imm);
 
@@ -7582,6 +7617,19 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         return;
     }
 #endif
+
+    if (isHighVectorRegister(reg1))
+    {
+        switch (ins)
+        {
+            case INS_ley:  ins = INS_vlef;  break;
+            case INS_ldy:  ins = INS_vleg;  break;
+            case INS_stey: ins = INS_vstef; break;
+            case INS_stdy: ins = INS_vsteg; break;
+            default: break;
+        }
+    }
+
     instrDesc* id = emitNewInstrCns(attr, imm);
 
     id->idIns(ins);
@@ -7821,6 +7869,19 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         return;
     }
 #endif
+
+    if (isHighVectorRegister(reg1))
+    {
+        switch (ins)
+        {
+            case INS_ley:  ins = INS_vlef;  break;
+            case INS_ldy:  ins = INS_vleg;  break;
+            case INS_stey: ins = INS_vstef; break;
+            case INS_stdy: ins = INS_vsteg; break;
+            default: break;
+        }
+    }
+
     instrDesc* id = emitNewInstrCns(attr, imm);
 
     id->idIns(ins);
@@ -10132,20 +10193,30 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             op = emitInsCode(ins, fmt);
             imm = emitGetInsSC(id);
             assert((imm >= Min20BitSigned) && (imm <= Max20BitSigned)); // 20 bit imm signed value
-            S390_RXY_a(dst, op, id->idReg1() - 16, 0, id->idReg2(), imm);
+            S390_RXY_a(dst, op, (id->idReg1() - REG_V0), 0, id->idReg2(), imm);
             break;
-
+        
         case INS_ldy:
             op = emitInsCode(ins, fmt);
             imm = emitGetInsSC(id);
             assert((imm >= Min20BitSigned) && (imm <= Max20BitSigned)); // 20 bit imm signed value
-            S390_RXY_a(dst, op, id->idReg1() - 16, 0, id->idReg2(), imm);
+            S390_RXY_a(dst, op, (id->idReg1() - REG_V0), 0, id->idReg2(), imm);
             break;
 
         case INS_lgr:
             op = emitInsCode(ins, fmt);
             S390_RRE(dst, op, id->idReg1(), id->idReg2());
             break;
+
+        case INS_vlr:
+        {
+            op = emitInsCode(INS_vlr, fmt);
+            unsigned v1 = (id->idReg1() - REG_V0) & 0xf;
+            unsigned v2 = (id->idReg2() - REG_V0) & 0xf;
+            uint8_t rxb = calcRXB(id->idReg1(), id->idReg2());
+            S390_VRR_a(dst, op, v1, v2, 0, 0, 0, rxb);
+            break;
+        }
 
         case INS_lgfi:
             imm = emitGetInsSC(id);
@@ -10293,121 +10364,258 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case INS_aebr:
             op = emitInsCode(ins, fmt);
-            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            S390_RRE(dst, op, (id->idReg1() - REG_V0), (id->idReg2() - REG_V0));
             break;
-
-	case INS_cebr:
-            op = emitInsCode(ins, fmt);
-            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
-            break;
-
-	case INS_cdbr:
-            op = emitInsCode(ins, fmt);
-            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
-            break;
-
+        
         case INS_adbr:
             op = emitInsCode(ins, fmt);
-            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            S390_RRE(dst, op, (id->idReg1() - REG_V0), (id->idReg2() - REG_V0));
             break;
-
-        case INS_ldgr:
-            op = emitInsCode(ins, fmt);
-            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2());
-            break;
-
+        
         case INS_sebr:
             op = emitInsCode(ins, fmt);
-            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            S390_RRE(dst, op, (id->idReg1() - REG_V0), (id->idReg2() - REG_V0));
             break;
-
+        
         case INS_sdbr:
             op = emitInsCode(ins, fmt);
-            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            S390_RRE(dst, op, (id->idReg1() - REG_V0), (id->idReg2() - REG_V0));
             break;
-
+        
         case INS_meebr:
             op = emitInsCode(ins, fmt);
-            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            S390_RRE(dst, op, (id->idReg1() - REG_V0), (id->idReg2() - REG_V0));
             break;
-
+        
         case INS_mdbr:
             op = emitInsCode(ins, fmt);
-            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            S390_RRE(dst, op, (id->idReg1() - REG_V0), (id->idReg2() - REG_V0));
             break;
-
+        
         case INS_debr:
             op = emitInsCode(ins, fmt);
-            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            S390_RRE(dst, op, (id->idReg1() - REG_V0), (id->idReg2() - REG_V0));
             break;
-
+        
         case INS_ddbr:
             op = emitInsCode(ins, fmt);
-            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            S390_RRE(dst, op, (id->idReg1() - REG_V0), (id->idReg2() - REG_V0));
+            break;
+        
+        case INS_cebr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, (id->idReg1() - REG_V0), (id->idReg2() - REG_V0));
+            break;
+        
+        case INS_cdbr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, (id->idReg1() - REG_V0), (id->idReg2() - REG_V0));
+            break;
+        
+        case INS_lcebr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, (id->idReg1() - REG_V0), (id->idReg2() - REG_V0));
+            break;
+        
+        case INS_lcdbr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, (id->idReg1() - REG_V0), (id->idReg2() - REG_V0));
+            break;
+        
+        case INS_ldgr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, (id->idReg1() - REG_V0), id->idReg2());
             break;
 
         case INS_stey:
             op = emitInsCode(ins, fmt);
             imm = emitGetInsSC(id);
             assert((imm >= Min20BitSigned) && (imm <= Max20BitSigned)); // 20 bit imm signed value
-            S390_RXY_a(dst, op, id->idReg1() - 16, 0, id->idReg2(), imm);
+            S390_RXY_a(dst, op, (id->idReg1() - REG_V0), 0, id->idReg2(), imm);
             break;
-
+        
         case INS_stdy:
             op = emitInsCode(ins, fmt);
             imm = emitGetInsSC(id);
             assert((imm >= Min20BitSigned) && (imm <= Max20BitSigned)); // 20 bit imm signed value
-            S390_RXY_a(dst, op, id->idReg1() - 16, 0, id->idReg2(), imm);
+            S390_RXY_a(dst, op, (id->idReg1() - REG_V0), 0, id->idReg2(), imm);
             break;
 
+        case INS_wfasb:
+        case INS_wfssb:
+        case INS_wfmsb:
+        case INS_wfdsb:
+        {
+            op = emitInsCode(ins, fmt);
+            unsigned v1 = (id->idReg1() - REG_V0) & 0xf;
+            unsigned v2 = (id->idReg1() - REG_V0) & 0xf;
+            unsigned v3 = (id->idReg2() - REG_V0) & 0xf;
+            uint8_t rxb = calcRXB(id->idReg1(), id->idReg1(), id->idReg2());
+            S390_VRR_c(dst, op, v1, v2, v3, 0, 8, 2, rxb);
+            break;
+        }
+        
+        case INS_wfadb:
+        case INS_wfsdb:
+        case INS_wfmdb:
+        case INS_wfddb:
+        {
+            op = emitInsCode(ins, fmt);
+            unsigned v1 = (id->idReg1() - REG_V0) & 0xf;
+            unsigned v2 = (id->idReg1() - REG_V0) & 0xf;
+            unsigned v3 = (id->idReg2() - REG_V0) & 0xf;
+            uint8_t rxb = calcRXB(id->idReg1(), id->idReg1(), id->idReg2());
+            S390_VRR_c(dst, op, v1, v2, v3, 0, 8, 3, rxb);
+            break;
+        }
+        
+        case INS_wfcsb:
+        {
+            op = emitInsCode(ins, fmt);
+            unsigned v1 = (id->idReg1() - REG_V0) & 0xf;
+            unsigned v2 = (id->idReg2() - REG_V0) & 0xf;
+            uint8_t rxb = calcRXB(id->idReg1(), id->idReg2());
+            S390_VRR_a(dst, op, v1, v2, 0, 0, 2, rxb);
+            break;
+        }
+        
+        case INS_wfcdb:
+        {
+            op = emitInsCode(ins, fmt);
+            unsigned v1 = (id->idReg1() - REG_V0) & 0xf;
+            unsigned v2 = (id->idReg2() - REG_V0) & 0xf;
+            uint8_t rxb = calcRXB(id->idReg1(), id->idReg2());
+            S390_VRR_a(dst, op, v1, v2, 0, 0, 3, rxb);
+            break;
+        }
+        
+        case INS_wflcsb:
+        {
+            op = emitInsCode(ins, fmt);
+            unsigned v1 = (id->idReg1() - REG_V0) & 0xf;
+            unsigned v2 = (id->idReg2() - REG_V0) & 0xf;
+            uint8_t rxb = calcRXB(id->idReg1(), id->idReg2());
+            S390_VRR_a(dst, op, v1, v2, 0, 8, 2, rxb);
+            break;
+        }
+        
+        case INS_wflcdb:
+        {
+            op = emitInsCode(ins, fmt);
+            unsigned v1 = (id->idReg1() - REG_V0) & 0xf;
+            unsigned v2 = (id->idReg2() - REG_V0) & 0xf;
+            uint8_t rxb = calcRXB(id->idReg1(), id->idReg2());
+            S390_VRR_a(dst, op, v1, v2, 0, 8, 3, rxb);
+            break;
+        }
+
+        case INS_wfsqsb:
+        {
+            op = emitInsCode(ins, fmt);
+            uint8_t v1 = (id->idReg1() - REG_V0) & 0xf;
+            uint8_t v2 = (id->idReg2() - REG_V0) & 0xf;
+            uint8_t rxb = calcRXB(id->idReg1(), id->idReg2());
+            S390_VRR_a(dst, op, v1, v2, 0, 0, 2, rxb);
+            break;
+        }
+        case INS_wfsqdb:
+        {
+            op = emitInsCode(ins, fmt);
+            uint8_t v1 = (id->idReg1() - REG_V0) & 0xf;
+            uint8_t v2 = (id->idReg2() - REG_V0) & 0xf;
+            uint8_t rxb = calcRXB(id->idReg1(), id->idReg2());
+            S390_VRR_a(dst, op, v1, v2, 0, 0, 3, rxb);
+            break;
+        }
+        
+        case INS_vlvgg:
+        {
+            op = emitInsCode(ins, fmt);
+            unsigned v1 = (id->idReg1() - REG_V0) & 0xf;
+            uint8_t rxb = calcRXB(id->idReg1());
+            S390_VRS_b(dst, op, v1, id->idReg2(), 0, 0, 3, rxb);
+            break;
+        }
+
+        case INS_vlgvg:
+        {
+            op = emitInsCode(ins, fmt);
+            uint8_t r1 = id->idReg1();
+            uint8_t v3 = (id->idReg2() - REG_V0) & 0xf;
+            uint8_t rxb = calcRXB(REG_V0, REG_V0, id->idReg2());
+            S390_VRS_c(dst, op, r1, v3, 0, 0, 3, rxb);
+            break;
+        }
+        
+        case INS_vlef:
+        case INS_vstef:
+        {
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            unsigned v1 = (id->idReg1() - REG_V0) & 0xf;
+            uint8_t rxb = calcRXB(id->idReg1());
+            S390_VRX(dst, op, v1, 0, id->idReg2(), imm, 0, rxb);
+            break;
+        }
+        
+        case INS_vleg:
+        case INS_vsteg:
+        {
+            op = emitInsCode(ins, fmt);
+            imm = emitGetInsSC(id);
+            unsigned v1 = (id->idReg1() - REG_V0) & 0xf;
+            uint8_t rxb = calcRXB(id->idReg1());
+            S390_VRX(dst, op, v1, 0, id->idReg2(), imm, 0, rxb);
+            break;
+        }
         case INS_cfebr:
             op = emitInsCode(ins, fmt);
-            S390_RRF_2(dst, op, id->idReg1(), 5, id->idReg2());
+            S390_RRF_2(dst, op, id->idReg1(), 5, id->idReg2() - REG_V0);
             break;
 
         case INS_cfdbr:
             op = emitInsCode(ins, fmt);
-            S390_RRF_2(dst, op, id->idReg1(), 5, id->idReg2());
+            S390_RRF_2(dst, op, id->idReg1(), 5, id->idReg2() - REG_V0);
             break;
 
         case INS_cgebr:
             op = emitInsCode(ins, fmt);
-            S390_RRF_2(dst, op, id->idReg1(), 5, id->idReg2());
+            S390_RRF_2(dst, op, id->idReg1(), 5, id->idReg2() - REG_V0);
             break;
 
         case INS_cgdbr:
             op = emitInsCode(ins, fmt);
-            S390_RRF_2(dst, op, id->idReg1(), 5, id->idReg2());
+            S390_RRF_2(dst, op, id->idReg1(), 5, id->idReg2() - REG_V0);
             break;
 
         case INS_clfebr:
             op = emitInsCode(ins, fmt);
-            S390_RRF_4(dst, op, id->idReg1(), 5, id->idReg2(), 0);
+            S390_RRF_4(dst, op, id->idReg1(), 5, id->idReg2() - REG_V0, 0);
             break;
 
         case INS_clfdbr:
             op = emitInsCode(ins, fmt);
-            S390_RRF_4(dst, op, id->idReg1(), 5, id->idReg2(), 0);
+            S390_RRF_4(dst, op, id->idReg1(), 5, id->idReg2() - REG_V0, 0);
             break;
 
         case INS_clgebr:
             op = emitInsCode(ins, fmt);
-            S390_RRF_4(dst, op, id->idReg1(), 5, id->idReg2(), 0);
+            S390_RRF_4(dst, op, id->idReg1(), 5, id->idReg2() - REG_V0, 0);
             break;
 
         case INS_clgdbr:
             op = emitInsCode(ins, fmt);
-            S390_RRF_4(dst, op, id->idReg1(), 5, id->idReg2(), 0);
-            break;
-
-        case INS_ledbr:
-            op = emitInsCode(ins, fmt);
-            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            S390_RRF_4(dst, op, id->idReg1(), 5, id->idReg2() - REG_V0, 0);
             break;
 
         case INS_ldebr:
             op = emitInsCode(ins, fmt);
-            S390_RRE(dst, op, id->idReg1() - 16, id->idReg2() - 16);
+            S390_RRE(dst, op, (id->idReg1() - REG_V0), (id->idReg2() - REG_V0));
+            break;
+
+        case INS_ledbr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, (id->idReg1() - REG_V0), (id->idReg2() - REG_V0));
             break;
 
         case INS_afi:
@@ -10546,8 +10754,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             S390_RR(dst, op, id->idReg1(), id->idReg2());
             break;
 
-        case INS_lcdbr:
-        case INS_lcebr:
         case INS_lcgr:
             op = emitInsCode(ins, fmt);
             S390_RRE(dst, op, id->idReg1(), id->idReg2());

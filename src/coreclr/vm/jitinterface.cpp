@@ -12405,16 +12405,20 @@ static CorJitResult CompileMethodWithEtwWrapper(EEJitManager *jitMgr,
 //
 // Helper function to check if a function name should use interpreter fallback
 //
-static bool isJitted(MethodDesc* ftnDesc,const char* ftnName)
+static bool isJitted(MethodDesc* ftnDesc, const char* ftnName)
 {
     // List of functions to be jitted and fall back if they fail to jit
     static const char* JittedFunctions[] = {
-	    "foo",
-            "s390xHw",
-            "oneArg",
-            "twoArgs",
-            "addTwo",
-            "multipleArgs",
+        "foo",
+        "s390xHw",
+        "oneArg",
+        "addOne",
+        "twoArgs",
+        "addTwo",
+        "addFour",
+        "identityBool",
+        "identityChar",
+        "multipleArgs",
     };
 
     // 2D array for class name and function name combinations to exclude from JIT compilation
@@ -12430,19 +12434,18 @@ static bool isJitted(MethodDesc* ftnDesc,const char* ftnName)
        { "System.Collections.Generic.NonRandomizedStringEqualityComparer", ".ctor"},
        { "System.Collections.Generic.List`1[__Canon]", ".ctor"},
        { "System.Runtime.CompilerServices.QCallTypeHandle", ".ctor"},
-       { "System.Resources.ResourceManager", ".ctor"}, //Assertion failed 'Unhandled TARGET in getReturnTypeForStruct'
+       { "System.Resources.ResourceManager", ".ctor"},
        { "RuntimeTypeCache", ".ctor"},
        { "System.Runtime.CompilerServices.QCallModule", ".ctor"},
        { "System.Runtime.CompilerServices.ObjectHandleOnStack", ".ctor"},
        { "System.Reflection.MetadataImport", ".ctor"},
-       { "System.Runtime.CompilerServices.DefaultInterpolatedStringHandler", ".ctor"}, //Assertion failed 'Unhandled TARGET in getReturnTypeForStruct'
+       { "System.Runtime.CompilerServices.DefaultInterpolatedStringHandler", ".ctor"},
        { "System.Runtime.CompilerServices.ConditionalWeakTable`2[__Canon,__Canon]", ".ctor"},
        { "Container[__Canon,__Canon]", ".ctor"},
     };
 
     const size_t numExclusions = sizeof(jitExclusionList) / sizeof(jitExclusionList[0]);
 
-    // Check if the current class/function combination should be excluded from JIT
     for (size_t i = 0; i < numExclusions; i++)
     {
         if (!strcmp(ftnDesc->m_pszDebugClassName, jitExclusionList[i].className) &&
@@ -12451,7 +12454,7 @@ static bool isJitted(MethodDesc* ftnDesc,const char* ftnName)
             return false;
         }
     }
-    
+
     const size_t numFunctions = sizeof(JittedFunctions) / sizeof(JittedFunctions[0]);
 
     for (size_t i = 0; i < numFunctions; i++)
@@ -12464,7 +12467,7 @@ static bool isJitted(MethodDesc* ftnDesc,const char* ftnName)
 
     return false;
 }
-#endif 
+#endif // TARGET_S390X
 
 //
 // Helper function because can't have dtors in BEGIN_SO_TOLERANT_CODE.
@@ -12517,7 +12520,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     const char* ftnName = ftnDesc->GetName();
 
     forceInterpreter = true;
-    if (isJitted(ftnDesc,ftnName))
+    if (isJitted(ftnDesc, ftnName))
     {
         printf("Jitted Function name is %s\n", ftnName);
         interpreterFallback = true;
@@ -12525,7 +12528,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     else
     {
         printf("Interpreted Function name is %s\n", ftnName);
-	interpreterFallback = false;
+        interpreterFallback = false;
     }
 #endif
 

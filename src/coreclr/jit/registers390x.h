@@ -38,30 +38,7 @@ REGALIAS(R11, FP)
 REGALIAS(R14, LR)
 REGALIAS(R15, SP)
 
-
-#define FBASE 16 
-#define FMASK(x) (1ULL << (FBASE+(x)))
-
-/*
-REGDEF(name,  rnum,       mask,  xname,  wname) */
-REGDEF(F0,    0+FBASE, FMASK(0),  "f0")
-REGDEF(F1,    1+FBASE, FMASK(1),  "f1")
-REGDEF(F2,    2+FBASE, FMASK(2),  "f2")
-REGDEF(F3,    3+FBASE, FMASK(3),  "f3")
-REGDEF(F4,    4+FBASE, FMASK(4),  "f4")
-REGDEF(F5,    5+FBASE, FMASK(5),  "f5")
-REGDEF(F6,    6+FBASE, FMASK(6),  "f6")
-REGDEF(F7,    7+FBASE, FMASK(7),  "f7")
-REGDEF(F8,    8+FBASE, FMASK(8),  "f8")
-REGDEF(F9,    9+FBASE, FMASK(9),  "f9")
-REGDEF(F10,  10+FBASE, FMASK(10), "f10")
-REGDEF(F11,  11+FBASE, FMASK(11), "f11")
-REGDEF(F12,  12+FBASE, FMASK(12), "f12")
-REGDEF(F13,  13+FBASE, FMASK(13), "f13")
-REGDEF(F14,  14+FBASE, FMASK(14), "f14")
-REGDEF(F15,  15+FBASE, FMASK(15), "f15")
-
-#define VBASE 32 
+#define VBASE 16
 #define VMASK(x) (1ULL << (VBASE+(x)))
 
 REGDEF(V0,    0+VBASE, VMASK(0),  "v0")
@@ -97,9 +74,10 @@ REGDEF(V29,  29+VBASE, VMASK(29), "v29")
 REGDEF(V30,  30+VBASE, VMASK(30), "v30")
 REGDEF(V31,  31+VBASE, VMASK(31), "v31")
 
+// F registers are aliases for V0-V15 (FPR0-15 = low 64 bits of VR0-15)
 
-// The registers with values 80 (NBASE) and above are not real register numbers
-#define NBASE 64
+// The registers with values 48 (NBASE) and above are not real register numbers
+#define NBASE 48
 
 REGDEF(FPC,    0+NBASE, 0x0000,    "fpc")
 // This must be last!

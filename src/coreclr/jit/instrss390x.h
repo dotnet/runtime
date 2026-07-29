@@ -253,6 +253,29 @@ INST(ble,           "brcl",           0,    0xC04)
 INST(blt,           "brcl",           0,    0xC04)
 INST(bge,           "brcl",           0,    0xC04)
 
+//// Vector FP (VRR/VRX, 6 bytes) — used for V16-V31 in hybrid approach
+INST(wfasb,     "wfasb",        0,      0xe7e3)
+INST(wfadb,     "wfadb",        0,      0xe7e3)
+INST(wfssb,     "wfssb",        0,      0xe7e2)
+INST(wfsdb,     "wfsdb",        0,      0xe7e2)
+INST(wfmsb,     "wfmsb",        0,      0xe7e7)
+INST(wfmdb,     "wfmdb",        0,      0xe7e7)
+INST(wfdsb,     "wfdsb",        0,      0xe7e5)
+INST(wfddb,     "wfddb",        0,      0xe7e5)
+INST(wfsqsb,    "wfsqsb",       0,      0xe7ce)
+INST(wfsqdb,    "wfsqdb",       0,      0xe7ce)
+INST(wfcsb,     "wfcsb",        0,      0xe7cb)
+INST(wfcdb,     "wfcdb",        0,      0xe7cb)
+INST(wflcsb,    "wflcsb",       0,      0xe7cc)
+INST(wflcdb,    "wflcdb",       0,      0xe7cc)
+INST(vlr,       "vlr",          0,      0xe756)
+INST(vleg,      "vleg",         0,      0xe702)
+INST(vlef,      "vlef",         0,      0xe703)
+INST(vsteg,     "vsteg",        0,      0xe70a)
+INST(vstef,     "vstef",        0,      0xe70b)
+INST(vlgvg,     "vlgvg",        0,      0xe721)
+INST(vlvgg,     "vlvgg",        0,      0xe722)
+
 // clang-format on
 /*****************************************************************************/
 #undef INST

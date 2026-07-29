@@ -1249,6 +1249,27 @@ protected:
                 case INS_oihf:
                 case INS_oilf:
                 case INS_xilf:
+                case INS_wfasb:
+                case INS_wfadb:
+                case INS_wfssb:
+                case INS_wfsdb:
+                case INS_wfmsb:
+                case INS_wfmdb:
+                case INS_wfdsb:
+                case INS_wfddb:
+                case INS_wfsqsb:
+                case INS_wfsqdb:
+                case INS_wfcsb:
+                case INS_wfcdb:
+                case INS_wflcsb:
+                case INS_wflcdb:
+                case INS_vlr:
+                case INS_vleg:
+                case INS_vlef:
+                case INS_vsteg:
+                case INS_vstef:
+                case INS_vlgvg:
+                case INS_vlvgg:
                     size = 6;
                     break;
                 default:

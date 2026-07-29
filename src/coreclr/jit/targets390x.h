@@ -46,10 +46,10 @@
 
 
 					 //
-  #define REG_FP_FIRST             REG_F0
-  #define REG_FP_LAST              REG_F15
-  #define FIRST_FP_ARGREG          REG_F0
-  #define LAST_FP_ARGREG           REG_F6
+  #define REG_FP_FIRST             REG_V0
+  #define REG_FP_LAST              REG_V31
+  #define FIRST_FP_ARGREG          REG_V0
+  #define LAST_FP_ARGREG           REG_V6
 
   #define REGNUM_BITS              7       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register
@@ -66,12 +66,14 @@
   #define CODE_ALIGN               2       // code alignment requirement
   #define STACK_ALIGN              8      // stack alignment requirement
 					  
-  #define FIRST_FLT_CALLEE_SAVED  REG_F8
+  #define FIRST_FLT_CALLEE_SAVED  REG_V8
   #define FIRST_INT_CALLEE_SAVED  REG_R6
   #define RBM_INT_CALLEE_SAVED    (RBM_R6|RBM_R7|RBM_R8|RBM_R9|RBM_R10|RBM_R12|RBM_R13)
   #define RBM_INT_CALLEE_TRASH    (RBM_R0|RBM_R1|RBM_R2|RBM_R3|RBM_R4|RBM_R5)
-  #define RBM_FLT_CALLEE_SAVED    (RBM_F8|RBM_F9|RBM_F10|RBM_F11|RBM_F12|RBM_F13|RBM_F14|RBM_F15)
-  #define RBM_FLT_CALLEE_TRASH    (RBM_F0|RBM_F1|RBM_F2|RBM_F3|RBM_F4|RBM_F5|RBM_F6|RBM_F7)
+  #define RBM_FLT_CALLEE_SAVED    (RBM_V8|RBM_V9|RBM_V10|RBM_V11|RBM_V12|RBM_V13|RBM_V14|RBM_V15)
+  #define RBM_FLT_CALLEE_TRASH    (RBM_V0|RBM_V1|RBM_V2|RBM_V3|RBM_V4|RBM_V5|RBM_V6|RBM_V7| \
+                                   RBM_V16|RBM_V17|RBM_V18|RBM_V19|RBM_V20|RBM_V21|RBM_V22|RBM_V23| \
+                                   RBM_V24|RBM_V25|RBM_V26|RBM_V27|RBM_V28|RBM_V29|RBM_V30|RBM_V31)
 
 
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
@@ -89,8 +91,10 @@
                                    REG_R6, REG_R7, REG_R8, REG_R9, REG_R10,REG_R12,\
                                    REG_R13					   
 
-  #define REG_VAR_ORDER_FLT        REG_F0, REG_F1, REG_F2, REG_F3, REG_F4, REG_F5, REG_F6, REG_F7,   \
-				   REG_F8, REG_F9, REG_F10, REG_F11, REG_F12, REG_F13, REG_F14, REG_F15\
+  #define REG_VAR_ORDER_FLT        REG_V0, REG_V1, REG_V2, REG_V3, REG_V4, REG_V5, REG_V6, REG_V7,   \
+                                   REG_V16, REG_V17, REG_V18, REG_V19, REG_V20, REG_V21, REG_V22, REG_V23, \
+                                   REG_V24, REG_V25, REG_V26, REG_V27, REG_V28, REG_V29, REG_V30, REG_V31, \
+                                   REG_V8, REG_V9, REG_V10, REG_V11, REG_V12, REG_V13, REG_V14, REG_V15
 
   #define RBM_CALL_GC_REGS_ORDER   RBM_R6,RBM_R7,RBM_R8,RBM_R9,RBM_R10,RBM_R12,RBM_R13
   #define RBM_CALL_GC_REGS         (RBM_INT_CALLEE_SAVED|RBM_INTRET|RBM_INTRET_1)
@@ -101,7 +105,7 @@
   #define CNT_CALL_GC_REGS        (7)
 
   #define CNT_CALLEE_SAVED_FLOAT  (8)
-  #define CNT_CALLEE_TRASH_FLOAT  (8)
+  #define CNT_CALLEE_TRASH_FLOAT  (24)
   #define CNT_CALLEE_SAVED_MASK   (0) //s390x doesn't have mask registers,Giri TODO: what should be correct values here ? 
   #define CNT_CALLEE_TRASH_MASK   (0) //s390x doesn't have mask registers,Giri TODO: what should be correct values here ? 
 
@@ -237,9 +241,9 @@
   #define REG_INTRET_1             REG_R3
   #define RBM_INTRET_1             RBM_R3
 
-  #define REG_FLOATRET             REG_F0
-  #define RBM_FLOATRET             RBM_F0
-  #define RBM_DOUBLERET            RBM_F0
+  #define REG_FLOATRET             REG_V0
+  #define RBM_FLOATRET             RBM_V0
+  #define RBM_DOUBLERET            RBM_V0
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
   #define RBM_STOP_FOR_GC_TRASH    RBM_CALLEE_TRASH
@@ -272,12 +276,12 @@
   #define RET_BUFF_ARGNUM          5
 
   #define MAX_REG_ARG              5
-  #define MAX_FLOAT_REG_ARG        8
+  #define MAX_FLOAT_REG_ARG        4
 
   #define REG_ARG_FIRST            REG_R2
   #define REG_ARG_LAST             REG_R6
-  #define REG_ARG_FP_FIRST         REG_F0
-  #define REG_ARG_FP_LAST          REG_F7
+  #define REG_ARG_FP_FIRST         REG_V0
+  #define REG_ARG_FP_LAST          REG_V7
   #define INIT_ARG_STACK_SLOT      0                  // No outgoing reserved stack slots
 
   #define REG_ARG_0                REG_R2
@@ -295,23 +299,23 @@
   #define RBM_ARG_3                RBM_R5
   #define RBM_ARG_4                RBM_R6
 
-  #define REG_FLTARG_0             REG_F0
-  #define REG_FLTARG_1             REG_F1
-  #define REG_FLTARG_2             REG_F2
-  #define REG_FLTARG_3             REG_F3
-  #define REG_FLTARG_4             REG_F4
-  #define REG_FLTARG_5             REG_F5
-  #define REG_FLTARG_6             REG_F6
-  #define REG_FLTARG_7             REG_F7
+  #define REG_FLTARG_0             REG_V0
+  #define REG_FLTARG_1             REG_V1
+  #define REG_FLTARG_2             REG_V2
+  #define REG_FLTARG_3             REG_V3
+  #define REG_FLTARG_4             REG_V4
+  #define REG_FLTARG_5             REG_V5
+  #define REG_FLTARG_6             REG_V6
+  #define REG_FLTARG_7             REG_V7
 
-  #define RBM_FLTARG_0             RBM_F0
-  #define RBM_FLTARG_1             RBM_F1
-  #define RBM_FLTARG_2             RBM_F2
-  #define RBM_FLTARG_3             RBM_F3
-  #define RBM_FLTARG_4             RBM_F4
-  #define RBM_FLTARG_5             RBM_F5
-  #define RBM_FLTARG_6             RBM_F6
-  #define RBM_FLTARG_7             RBM_F7
+  #define RBM_FLTARG_0             RBM_V0
+  #define RBM_FLTARG_1             RBM_V1
+  #define RBM_FLTARG_2             RBM_V2
+  #define RBM_FLTARG_3             RBM_V3
+  #define RBM_FLTARG_4             RBM_V4
+  #define RBM_FLTARG_5             RBM_V5
+  #define RBM_FLTARG_6             RBM_V6
+  #define RBM_FLTARG_7             RBM_V7
 
   #define RBM_ARG_REGS            (RBM_ARG_0|RBM_ARG_1|RBM_ARG_2|RBM_ARG_3|RBM_ARG_4)
   #define RBM_FLTARG_REGS         (RBM_FLTARG_0|RBM_FLTARG_1|RBM_FLTARG_2|RBM_FLTARG_3|RBM_FLTARG_4|RBM_FLTARG_5|RBM_FLTARG_6|RBM_FLTARG_7)

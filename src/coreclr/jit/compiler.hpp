@@ -3603,6 +3603,17 @@ inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
     return regNum - REG_V0;
 #elif defined(UNIX_AMD64_ABI)
     return regNum - REG_FLTARG_0;
+#elif defined(TARGET_S390X)
+    switch (regNum)
+    {
+        case REG_FLTARG_0: return 0;  
+        case REG_FLTARG_1: return 1;
+        case REG_FLTARG_2: return 2;
+        case REG_FLTARG_3: return 3;
+        default:
+            assert(!"invalid s390x float arg register");
+            return BAD_VAR_NUM;
+    }
 #else
 
 #if MAX_FLOAT_REG_ARG >= 1

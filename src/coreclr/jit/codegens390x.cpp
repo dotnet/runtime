@@ -2977,7 +2977,7 @@ void CodeGen::genCall(GenTreeCall* call)
     regMaskTP argRegsUsed = RBM_NONE;
 
     // Process each argument in the call
-    for (CallArg& arg : call->gtArgs.Args())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
         GenTree* argNode = arg.GetNode();
 
@@ -3031,8 +3031,7 @@ void CodeGen::genCall(GenTreeCall* call)
     {
         // User function calls kill all caller-saved registers
         // caller-saved: r0-r5, r14, f0-f7
-        killMask = RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R14 |
-                   RBM_F0 | RBM_F1 | RBM_F2 | RBM_F3 | RBM_F4 | RBM_F5 | RBM_F6 | RBM_F7;
+        killMask = RBM_CALLEE_TRASH | RBM_R14;
     }
 
     if (callType == CT_INDIRECT)
@@ -3097,7 +3096,7 @@ void CodeGen::genCall(GenTreeCall* call)
 
         if (varTypeIsFloating(returnType))
         {
-            returnReg = REG_F0;
+            returnReg = REG_V0;
         }
         else
         {
@@ -4010,40 +4009,39 @@ const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
 {
     { },       // NONE
     { },       // 1
-    { EJ_lt}, // SLT
+    { EJ_lt }, // SLT
     { EJ_le }, // SLE
-    { EJ_ge}, // SGE
+    { EJ_ge }, // SGE
     { EJ_gt }, // SGT
-    { }, // S
-    { }, // NS
+    { },       // S
+    { },       // NS
 
     { EJ_eq }, // EQ
     { EJ_ne }, // NE
-    { }, // ULT
-    { }, // ULE
-    { }, // UGE
-    { }, // UGT
-    { }, // C
-    { }, // NC
-#if 0
-    { EJ_eq },                // FEQ
-    { EJ_gt, GT_AND, EJ_lo }, // FNE
-    { EJ_lo },                // FLT
-    { EJ_ls },                // FLE
-    { EJ_ge },                // FGE
-    { EJ_gt },                // FGT
-    { EJ_vs },                // O
-    { EJ_vc },                // NO
+    { EJ_lt }, // ULT
+    { EJ_le }, // ULE
+    { EJ_ge }, // UGE
+    { EJ_gt }, // UGT
+    { },       // C
+    { },       // NC
 
-    { EJ_eq, GT_OR, EJ_vs },  // FEQU
-    { EJ_ne },                // FNEU
-    { EJ_lt },                // FLTU
-    { EJ_le },                // FLEU
-    { EJ_hs },                // FGEU
-    { EJ_hi },                // FGTU
-    { },                      // P
-    { },                      // NP
-#endif
+    { EJ_eq }, // FEQ
+    { EJ_ne }, // FNE
+    { EJ_lt }, // FLT
+    { EJ_le }, // FLE
+    { EJ_ge }, // FGE
+    { EJ_gt }, // FGT
+    { },       // O
+    { },       // NO
+
+    { EJ_eq }, // FEQU
+    { EJ_ne }, // FNEU
+    { EJ_lt }, // FLTU
+    { EJ_le }, // FLEU
+    { EJ_ge }, // FGEU
+    { EJ_gt }, // FGTU
+    { },       // P
+    { },       // NP
 };
 // clang-format on
 
