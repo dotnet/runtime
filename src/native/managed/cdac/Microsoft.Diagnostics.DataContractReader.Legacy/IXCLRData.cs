@@ -920,12 +920,17 @@ public unsafe partial interface IXCLRDataTypeInstance
         char* nameBuf);
 }
 
+public enum CLRDataMethodDefinitionExtentType : uint
+{
+    CLRDATA_METHDEF_IL,
+}
+
 public struct ClrDataMethodDefinitionExtent
 {
     public ClrDataAddress startAddress;
     public ClrDataAddress endAddress;
     public uint enCVersion;
-    public uint /* CLRDataMethodDefinitionExtentType */ type;
+    public CLRDataMethodDefinitionExtentType type;
 }
 
 [GeneratedComInterface]

@@ -28,6 +28,13 @@
 #include "readonlydatatargetfacade.h"
 #include "metahost.h"
 
+// Defined in dbgutil; resolves a runtime export address from the data target.
+extern "C" bool TryGetSymbol(
+    ICorDebugDataTarget* dataTarget,
+    uint64_t baseAddress,
+    const char* symbolName,
+    uint64_t* symbolAddress);
+
 // Keep this around for retail debugging. It's very very useful because
 // it's global state that we can always find, regardless of how many locals the compiler
 // optimizes away ;)
@@ -577,10 +584,21 @@ CordbProcess::CreateDacDbiInterface()
     IDacDbiInterface::IAllocator * pAllocator = this;
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup = this;
 
+    // The cDAC needs the address of the runtime's contract descriptor to initialize. The legacy
+    // DAC only needs it if it wants to route through cdac or to compare results.
+    CLRDATA_ADDRESS contractDescriptorAddress = 0;
+    {
+        uint64_t address = 0;
+        if (TryGetSymbol(m_pDACDataTarget, m_clrInstanceId, "DotNetRuntimeContractDescriptor", &address))
+        {
+            contractDescriptorAddress = address;
+        }
+    }
 
     typedef HRESULT (STDAPICALLTYPE * PFN_DacDbiInterfaceInstance)(
         ICorDebugDataTarget *,
         CORDB_ADDRESS,
+        CLRDATA_ADDRESS,
         IDacDbiInterface::IAllocator *,
         IDacDbiInterface::IMetaDataLookup *,
         IDacDbiInterface **);
@@ -592,7 +610,7 @@ CordbProcess::CreateDacDbiInterface()
         ThrowLastError();
     }
 
-    hrStatus = pfnEntry(m_pDACDataTarget, m_clrInstanceId, pAllocator, pMetaDataLookup, &pInterfacePtr);
+    hrStatus = pfnEntry(m_pDACDataTarget, m_clrInstanceId, contractDescriptorAddress, pAllocator, pMetaDataLookup, &pInterfacePtr);
     IfFailThrow(hrStatus);
 
     // We now have a resource, pInterfacePtr, that needs to be freed.

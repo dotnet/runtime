@@ -2711,8 +2711,10 @@ namespace Internal.JitInterface
 #endif
 
             // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
-            // not care about since they are considered primitives by the JIT.
-            if (type.IsIntrinsic)
+            // not care about since they are considered primitives by the JIT. The IEEE 754
+            // decimal floating-point types are the System.Numerics intrinsics that are not
+            // SIMD, so the JIT lays them out like any other struct and needs their fields.
+            if (type.IsIntrinsic && !type.IsDecimalFloatingPointOrHasDecimalFloatingPointFields)
             {
                 Utf8Span ns = type.Namespace;
                 if (ns == "System.Runtime.Intrinsics"u8 || ns == "System.Numerics"u8)
@@ -3631,6 +3633,7 @@ namespace Internal.JitInterface
             pWellKnownGlobalsOut.stackPointer = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.StackPointerName)));
             pWellKnownGlobalsOut.imageBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.ImageBaseName)));
             pWellKnownGlobalsOut.tableBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.TableBaseName)));
+            pWellKnownGlobalsOut.asyncContinuation = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.AsyncContinuationName)));
         }
         private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONTEXT_STRUCT** contextHandle, ref CORINFO_LOOKUP instArg)
         {
@@ -4426,6 +4429,8 @@ namespace Internal.JitInterface
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset);
 
+        partial void TryUseWasmMethodCodeStoreFixup(void* target, CorInfoReloc fRelocType, BlockType locationBlock, int relocOffset, int addlDelta, ref bool handled);
+
         private ref ArrayBuilder<Relocation> findRelocBlock(BlockType blockType, out int length)
         {
             switch (blockType)
@@ -4477,6 +4482,7 @@ namespace Internal.JitInterface
                 CorInfoReloc.RISCV64_PCREL_S => RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S,
                 CorInfoReloc.WASM_FUNCTION_INDEX_LEB => RelocType.WASM_FUNCTION_INDEX_LEB,
                 CorInfoReloc.WASM_TABLE_INDEX_SLEB => RelocType.WASM_TABLE_INDEX_SLEB,
+                CorInfoReloc.WASM_TABLE_INDEX_I32 => RelocType.WASM_TABLE_INDEX_I32,
                 CorInfoReloc.WASM_MEMORY_ADDR_LEB => RelocType.WASM_MEMORY_ADDR_LEB,
                 CorInfoReloc.WASM_MEMORY_ADDR_SLEB => RelocType.WASM_MEMORY_ADDR_SLEB,
                 CorInfoReloc.WASM_MEMORY_ADDR_REL_SLEB => RelocType.WASM_MEMORY_ADDR_REL_SLEB,
@@ -4492,6 +4498,17 @@ namespace Internal.JitInterface
             int relocOffset;
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
+
+            // On WebAssembly a direct code pointer to a compiled method cannot be materialized at
+            // build time. When such a reference lands in the method's read-only data blob, replace
+            // the relocation with a method-load-time fixup that stores the target's runtime
+            // MultiCallableAddrOfCode into the location.
+            bool handledByCodeStoreFixup = false;
+            TryUseWasmMethodCodeStoreFixup(target, fRelocType, locationBlock, relocOffset, addlDelta, ref handledByCodeStoreFixup);
+            if (handledByCodeStoreFixup)
+            {
+                return;
+            }
 
             int length;
             ref ArrayBuilder<Relocation> sourceBlock = ref findRelocBlock(locationBlock, out length);
