@@ -444,7 +444,7 @@ public unsafe partial class TargetTests
 
         Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
-        Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts);
+        Contracts.CoreCLRContracts.ValidateForDataAccess(target);
     }
 
     [Theory]
@@ -459,7 +459,7 @@ public unsafe partial class TargetTests
         Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
         ContractMissingException ex = Assert.Throws<ContractMissingException>(
-            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts));
+            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target));
         Assert.Equal(CdacHResults.CDAC_E_CONTRACT_NOT_ADVERTISED, ex.HResult);
         Assert.Equal("RuntimeInfo", ex.ContractName);
     }
@@ -480,7 +480,7 @@ public unsafe partial class TargetTests
             Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
             ContractMissingException ex = Assert.Throws<ContractMissingException>(
-                () => Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts));
+                () => Contracts.CoreCLRContracts.ValidateForDataAccess(target));
             Assert.Equal(CdacHResults.CDAC_E_CONTRACT_NOT_ADVERTISED, ex.HResult);
             Assert.Equal(missingContract, ex.ContractName);
         }
@@ -500,7 +500,7 @@ public unsafe partial class TargetTests
         Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
         ContractUnrecognizedException ex = Assert.Throws<ContractUnrecognizedException>(
-            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts));
+            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target));
         Assert.Equal(CdacHResults.CDAC_E_CONTRACT_UNRECOGNIZED, ex.HResult);
         Assert.Equal("RuntimeInfo", ex.ContractName);
         Assert.Equal("version-from-the-future", ex.ContractVersion);
@@ -525,7 +525,7 @@ public unsafe partial class TargetTests
             registry => registry.RegisterUnsupported<Contracts.IRuntimeInfo>("deprecated-version")));
 
         ContractObsoleteException ex = Assert.Throws<ContractObsoleteException>(
-            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts));
+            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target));
         Assert.Equal(CdacHResults.CDAC_E_CONTRACT_UNSUPPORTED, ex.HResult);
         Assert.Equal("RuntimeInfo", ex.ContractName);
         Assert.Equal("deprecated-version", ex.ContractVersion);
@@ -549,7 +549,7 @@ public unsafe partial class TargetTests
         Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
         ContractMissingException ex = Assert.Throws<ContractMissingException>(
-            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts));
+            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target));
         Assert.Equal(CdacHResults.CDAC_E_CONTRACT_NOT_ADVERTISED, ex.HResult);
         Assert.Equal("WindowsErrorReporting", ex.ContractName);
     }
@@ -568,7 +568,7 @@ public unsafe partial class TargetTests
 
         Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
-        Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts);
+        Contracts.CoreCLRContracts.ValidateForDataAccess(target);
     }
 
     [Theory]
@@ -587,7 +587,7 @@ public unsafe partial class TargetTests
 
         Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
-        Contracts.CoreCLRContracts.ValidateForDataAccess(target.Contracts);
+        Contracts.CoreCLRContracts.ValidateForDataAccess(target);
     }
 
     private static void ValidateGlobals(

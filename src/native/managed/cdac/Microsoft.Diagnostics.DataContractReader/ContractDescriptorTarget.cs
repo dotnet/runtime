@@ -46,7 +46,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
     // pointer slot only ever transitions null -> real-address. Once a slot holds a
     // non-null sub-descriptor address it never changes again, so we never need to
     // re-validate already-loaded sub-descriptors and we can safely drop a slot from this.
-    private readonly List<TargetPointer> _pendingSubDescriptors = [];
+    // Each entry keeps the sub-descriptor's name so a specific provider (for example the GC) can be
+    // queried for whether it has been published yet (IsSubDescriptorResolved).
+    private readonly List<(string Name, TargetPointer Slot)> _pendingSubDescriptors = [];
 
     private IReadOnlyDictionary<string, string> _contracts = new Dictionary<string, string>();
     private IReadOnlyDictionary<string, GlobalValue> _globals = new Dictionary<string, GlobalValue>();
@@ -54,6 +56,19 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public override ContractRegistry Contracts { get; }
     public override DataCache ProcessedData { get; }
+
+    // A named sub-descriptor is resolved once its slot has been parsed (dropped from the pending
+    // list) - or was never advertised at all. A slot that is still pending (the subordinate module
+    // has not published its sub-descriptor address yet) reports false until a later Flush picks it up.
+    public override bool IsSubDescriptorResolved(string name)
+    {
+        foreach ((string pendingName, TargetPointer _) in _pendingSubDescriptors)
+        {
+            if (pendingName == name)
+                return false;
+        }
+        return true;
+    }
 
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
     public delegate int WriteToTargetDelegate(ulong address, Span<byte> bufferToWrite);
@@ -148,12 +163,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
     private void AddDescriptor(Descriptor descriptor)
     {
         _descriptors.Add(descriptor);
-        foreach (TargetPointer pSubDescriptor in GetSubDescriptors(descriptor))
+        foreach ((string name, TargetPointer pSubDescriptor) in GetSubDescriptors(descriptor))
         {
             if (pSubDescriptor == TargetPointer.Null)
                 continue;
 
-            _pendingSubDescriptors.Add(pSubDescriptor);
+            _pendingSubDescriptors.Add((name, pSubDescriptor));
         }
     }
 
@@ -169,7 +184,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
             for (int i = _pendingSubDescriptors.Count - 1; i >= 0; i--)
             {
-                TargetPointer pendingSubDescriptor = _pendingSubDescriptors[i];
+                (_, TargetPointer pendingSubDescriptor) = _pendingSubDescriptors[i];
                 if (TryReadPointer(pendingSubDescriptor, out TargetPointer subDescriptorAddress)
                     && subDescriptorAddress != TargetPointer.Null)
                 {
@@ -298,7 +313,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         public TargetPointer[] PointerData { get; init; }
     }
 
-    private static IEnumerable<TargetPointer> GetSubDescriptors(Descriptor descriptor)
+    private static IEnumerable<(string Name, TargetPointer Slot)> GetSubDescriptors(Descriptor descriptor)
     {
         foreach (KeyValuePair<string, ContractDescriptorParser.GlobalDescriptor> subDescriptor in descriptor.ContractDescriptor?.SubDescriptors ?? [])
         {
@@ -307,7 +322,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
                 if (subDescriptor.Value.NumericValue.Value >= (ulong)descriptor.PointerData.Length)
                     throw DescriptorMalformed($"Invalid pointer data index {subDescriptor.Value.NumericValue.Value}.");
 
-                yield return descriptor.PointerData[(int)subDescriptor.Value.NumericValue];
+                yield return (subDescriptor.Key, descriptor.PointerData[(int)subDescriptor.Value.NumericValue]);
             }
         }
     }
