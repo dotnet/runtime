@@ -688,7 +688,10 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             if (size >= REGSIZE_BYTES)
             {
                 fill *= 0x0101010101010101LL;
-                src->gtType = TYP_LONG;
+                if( fill != 0)
+                {
+                    src->gtType = TYP_LONG;
+                }
             }
             else
             {
