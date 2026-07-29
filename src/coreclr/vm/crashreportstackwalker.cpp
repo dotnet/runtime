@@ -711,6 +711,16 @@ CrashReportInitialize()
 void
 CrashReportConfigure()
 {
+#if !defined(TARGET_ANDROID) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
+    // Preserve createdump's existing ownership of EnableCrashReport* when it is enabled.
+    CLRConfigNoCache enabledMiniDumpCfg = CLRConfigNoCache::Get("DbgEnableMiniDump", /*noprefix*/ false, &getenv);
+    DWORD miniDumpEnabled = 0;
+    if (enabledMiniDumpCfg.IsSet() && enabledMiniDumpCfg.TryAsInteger(10, miniDumpEnabled) && miniDumpEnabled != 0)
+    {
+        return;
+    }
+#endif // !defined(TARGET_ANDROID) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
+
     // Read crash report configuration here rather than in PROCAbortInitialize
     // because on Android the DOTNET_* environment variables are set via JNI
     // after PAL_Initialize has already run.
