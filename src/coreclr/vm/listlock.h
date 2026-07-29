@@ -434,8 +434,26 @@ typedef class ListLockEntryBase<void*> ListLockEntry;
 // Holds the lock of the ListLock
 typedef ListLock::LockHolder ListLockHolder;
 
+struct ListLockEntryHolderTraits final
+{
+    using Type = ListLockEntry*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_ANY;
+        } CONTRACTL_END;
+
+        if (value != NULL)
+            value->Release();
+    }
+};
+
 // Holds the ownership of the lock element
-typedef ReleaseHolder<ListLockEntry> ListLockEntryHolder;
+typedef LifetimeHolder<ListLockEntryHolderTraits> ListLockEntryHolder;
 
 // Holds the lock of the lock element
 typedef ListLockEntry::LockHolder ListLockEntryLockHolder;

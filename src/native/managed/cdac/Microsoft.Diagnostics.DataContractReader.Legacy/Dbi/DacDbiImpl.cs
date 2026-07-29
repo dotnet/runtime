@@ -322,6 +322,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             }
             if (string.IsNullOrEmpty(path))
             {
+                // pStrFilename needs to be set for ICorDebugModule::GetName to succeed.
+                hr = StringHolderAssignCopy(pStrFilename, string.Empty);
                 *pResult = Interop.BOOL.FALSE;
             }
             else

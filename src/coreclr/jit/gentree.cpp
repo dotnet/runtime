@@ -2976,10 +2976,18 @@ AGAIN:
                     }
                     break;
 
+                case GT_ARR_ADDR:
+                    if ((op1->AsArrAddr()->GetElemType() != op2->AsArrAddr()->GetElemType()) ||
+                        (op1->AsArrAddr()->GetElemClassHandle() != op2->AsArrAddr()->GetElemClassHandle()) ||
+                        (op1->AsArrAddr()->GetFirstElemOffset() != op2->AsArrAddr()->GetFirstElemOffset()))
+                    {
+                        return false;
+                    }
+                    break;
+
                 // For the ones below no extra argument matters for comparison.
                 case GT_BOX:
                 case GT_RUNTIMELOOKUP:
-                case GT_ARR_ADDR:
                     break;
 
                 default:
@@ -3034,7 +3042,13 @@ AGAIN:
                     }
                     break;
                 case GT_INDEX_ADDR:
-                    if (op1->AsIndexAddr()->gtElemSize != op2->AsIndexAddr()->gtElemSize)
+                    if ((op1->AsIndexAddr()->gtElemSize != op2->AsIndexAddr()->gtElemSize) ||
+                        (op1->AsIndexAddr()->gtElemType != op2->AsIndexAddr()->gtElemType) ||
+                        (op1->AsIndexAddr()->gtStructElemClass != op2->AsIndexAddr()->gtStructElemClass) ||
+                        (op1->AsIndexAddr()->gtLenOffset != op2->AsIndexAddr()->gtLenOffset) ||
+                        (op1->AsIndexAddr()->gtElemOffset != op2->AsIndexAddr()->gtElemOffset) ||
+                        ((op1->gtFlags & (GTF_INX_RNGCHK | GTF_INX_ADDR_NONNULL)) !=
+                         (op2->gtFlags & (GTF_INX_RNGCHK | GTF_INX_ADDR_NONNULL))))
                     {
                         return false;
                     }
@@ -3112,7 +3126,10 @@ AGAIN:
                 return false;
             }
 
-            // NOTE: gtArrElemSize may need to be handled
+            if (op1->AsArrElem()->gtArrElemSize != op2->AsArrElem()->gtArrElemSize)
+            {
+                return false;
+            }
 
             unsigned dim;
             for (dim = 0; dim < op1->AsArrElem()->gtArrRank; dim++)
@@ -3545,9 +3562,6 @@ AGAIN:
                 case GT_CAST:
                     hash ^= tree->AsCast()->gtCastType;
                     break;
-                case GT_INDEX_ADDR:
-                    hash += tree->AsIndexAddr()->gtElemSize;
-                    break;
                 case GT_ALLOCOBJ:
                     hash = genTreeHashAdd(hash, static_cast<unsigned>(
                                                     reinterpret_cast<uintptr_t>(tree->AsAllocObj()->gtAllocObjClsHnd)));
@@ -3569,7 +3583,13 @@ AGAIN:
 
                 // For the ones below no extra argument matters for comparison.
                 case GT_BOX:
+                    break;
+
                 case GT_ARR_ADDR:
+                    hash = genTreeHashAdd(hash, tree->AsArrAddr()->GetElemType());
+                    hash = genTreeHashAdd(hash, static_cast<unsigned>(reinterpret_cast<uintptr_t>(
+                                                    tree->AsArrAddr()->GetElemClassHandle())));
+                    hash = genTreeHashAdd(hash, tree->AsArrAddr()->GetFirstElemOffset());
                     break;
 
                 default:
@@ -3615,7 +3635,17 @@ AGAIN:
 
                 // For the ones below no extra argument matters for comparison.
                 case GT_QMARK:
+                    break;
+
                 case GT_INDEX_ADDR:
+                    hash = genTreeHashAdd(hash, tree->AsIndexAddr()->gtElemSize);
+                    hash = genTreeHashAdd(hash, tree->AsIndexAddr()->gtElemType);
+                    hash = genTreeHashAdd(hash, static_cast<unsigned>(reinterpret_cast<uintptr_t>(
+                                                    tree->AsIndexAddr()->gtStructElemClass)));
+                    hash = genTreeHashAdd(hash, tree->AsIndexAddr()->gtLenOffset);
+                    hash = genTreeHashAdd(hash, tree->AsIndexAddr()->gtElemOffset);
+                    hash = genTreeHashAdd(hash, static_cast<unsigned>(tree->gtFlags &
+                                                                      (GTF_INX_RNGCHK | GTF_INX_ADDR_NONNULL)));
                     break;
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -3671,6 +3701,8 @@ AGAIN:
         case GT_ARR_ELEM:
 
             hash = genTreeHashAdd(hash, gtHashValue(tree->AsArrElem()->gtArrObj));
+            hash = genTreeHashAdd(hash, tree->AsArrElem()->gtArrRank);
+            hash = genTreeHashAdd(hash, tree->AsArrElem()->gtArrElemSize);
 
             unsigned dim;
             for (dim = 0; dim < tree->AsArrElem()->gtArrRank; dim++)

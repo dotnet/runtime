@@ -4,9 +4,6 @@
 // Contract.h
 //
 
-// ! I am the owner for issues in the contract *infrastructure*, not for every
-// ! CONTRACT_VIOLATION dialog that comes up. If you interrupt my work for a routine
-// ! CONTRACT_VIOLATION, you will become the new owner of this file.
 //--------------------------------------------------------------------------------
 // CONTRACTS - User Reference
 //
@@ -184,9 +181,6 @@
 //
 //--------------------------------------------------------------------------------
 
-
-
-
 #ifndef CONTRACT_H_
 #define CONTRACT_H_
 
@@ -214,6 +208,8 @@
 #include "clrtypes.h"
 #include "check.h"
 #include "staticcontract.h"
+#include "volatile.h"
+#include "cor.h"
 
 #ifdef ENABLE_CONTRACTS_DATA
 
@@ -635,7 +631,7 @@ public:
     UINT GetCombinedLockCount();
 };
 
-#endif // ENABLE_CONTRACTS
+#endif // ENABLE_CONTRACTS_DATA
 
 #ifdef ENABLE_CONTRACTS_IMPL
 // Create ClrDebugState.
@@ -661,8 +657,7 @@ void CONTRACT_ASSERT(const char *szElaboration,
                      const char *szFile,
                      int   lineNum
                      );
-
-#endif
+#endif // ENABLE_CONTRACTS_IMPL
 
 // This needs to be defined up here b/c it is used by ASSERT_CHECK which is used by the contract impl
 #ifdef _DEBUG
@@ -755,7 +750,7 @@ public:
 #define END_DEBUG_ONLY_CODE
 #define ENTER_DEBUG_ONLY_CODE
 #define LEAVE_DEBUG_ONLY_CODE
-#endif
+#endif // ENABLE_CONTRACTS_IMPL
 
 #else // _DEBUG
 #define DEBUG_ONLY_REGION()
@@ -1744,7 +1739,5 @@ extern Volatile<LONG> g_DbgSuppressAllocationAsserts;
     STATIC_CONTRACT_GC_TRIGGERS;        \
     STATIC_CONTRACT_MODE_PREEMPTIVE;
 
-#define AFTER_CONTRACTS
-#include "volatile.h"
 
 #endif  // CONTRACT_H_

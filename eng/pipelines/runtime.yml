@@ -33,9 +33,7 @@ schedules:
 pr:
   branches:
     include:
-    - main
-    - release/*.*
-    - copilot/*
+    - '*'
   paths:
     include:
     - '*'

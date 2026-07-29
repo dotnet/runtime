@@ -164,7 +164,8 @@
       <Output TaskParameter="Lines" ItemName="_WasiSdkVersionLines" />
     </ReadLinesFromFile>
     <PropertyGroup>
-      <_ExpectedWasiSdkVersion>33.0</_ExpectedWasiSdkVersion>
+      <!-- In-tree builds override this from eng/wasm/wasi-sdk-version.txt via WasiApp.InTree.targets. -->
+      <_ExpectedWasiSdkVersion Condition="'$(_ExpectedWasiSdkVersion)' == ''">33.0</_ExpectedWasiSdkVersion>
       <_FoundExpectedWasiSdkVersion Condition="$([System.String]::Copy('%(_WasiSdkVersionLines.Identity)').StartsWith('$(_ExpectedWasiSdkVersion)'))">true</_FoundExpectedWasiSdkVersion>
       <_ToolchainMissingErrorMessage Condition="'$(_FoundExpectedWasiSdkVersion)' == ''">Please use wasi-sdk version $(_ExpectedWasiSdkVersion) and set %24(WASI_SDK_PATH) . It can be obtained from https://github.com/WebAssembly/wasi-sdk/releases</_ToolchainMissingErrorMessage>
       <_ToolchainMissingErrorMessage Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION')">Could not find wasi-sdk. Install wasi-sdk and set %24(WASI_SDK_PATH) . It can be obtained from https://github.com/WebAssembly/wasi-sdk/releases</_ToolchainMissingErrorMessage>

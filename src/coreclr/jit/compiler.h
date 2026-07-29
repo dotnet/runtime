@@ -3374,8 +3374,12 @@ public:
     // On wasm these helpers return void* (InitHelpers.InitClass/InitInstantiatedClass). Model them as
     // value-returning so the call_indirect signature matches the compiled managed helper; the value is unused.
     static constexpr var_types HelperInitClassRetType = TYP_I_IMPL;
+    // Likewise for CastHelpers.Unbox at sites that discard the result. Modeling it TYP_BYREF off
+    // wasm is equally correct but costs code size for no benefit.
+    static constexpr var_types HelperUnboxDiscardedRetType = TYP_BYREF;
 #else
-    static constexpr var_types HelperInitClassRetType = TYP_VOID;
+    static constexpr var_types HelperInitClassRetType      = TYP_VOID;
+    static constexpr var_types HelperUnboxDiscardedRetType = TYP_VOID;
 #endif // TARGET_WASM
 
     GenTreeCall* gtNewVirtualFunctionLookupHelperCallNode(
@@ -9916,6 +9920,7 @@ public:
     void         funSetCurrentFunc(unsigned funcIdx);
     FuncInfoDsc* funGetFunc(unsigned funcIdx);
     unsigned int funGetFuncIdx(BasicBlock* block);
+    unsigned int bbFuncletRegionOf(BasicBlock* block);
     bool         bbIsInSameFunclet(BasicBlock* block1, BasicBlock* block2);
 
     // LIVENESS
