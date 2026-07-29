@@ -963,6 +963,10 @@ public:
 
     COR_ILMETHOD* GetILHeader();
 
+    COR_ILMETHOD* GetActiveILHeader();
+
+    COR_ILMETHOD* GetILHeaderForNativeCode(PCODE nativeCodeStartAddress);
+
     BOOL HasStoredSig()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1225,13 +1229,11 @@ public:
 
 public:
 
-    // True iff it is possible to change the code this method will run using the CodeVersionManager. Note: EnC currently returns
-    // false here because it uses its own separate scheme to manage versionability. We will likely want to converge them at some
-    // point.
+    // True iff it is possible to change the code this method will run using the CodeVersionManager.
     bool IsVersionable()
     {
         WRAPPER_NO_CONTRACT;
-        return IsEligibleForTieredCompilation() || IsEligibleForReJIT();
+        return IsEligibleForTieredCompilation() || IsEligibleForReJIT() || IsEligibleForEnC();
     }
 
     // True iff all calls to the method should funnel through a Precode which can be updated to point to the current method
@@ -1266,10 +1268,24 @@ public:
             !IsWrapperStub() &&
 
             // Functional requirement
-            CodeVersionManager::IsMethodSupported(PTR_MethodDesc(this));
+            CodeVersionManager::IsMethodSupported(PTR_MethodDesc(this)) &&
+            // ReJIT and EnC are mutually exclusive
+            !InEnCEnabledModule();
 #else // FEATURE_REJIT
         return false;
 #endif
+    }
+
+    bool IsEligibleForEnC()
+    {
+        WRAPPER_NO_CONTRACT;
+
+        return
+            InEnCEnabledModule() &&
+
+            // EnC edits are expressed as IL, wrapper stubs have no editable IL body
+            IsIL() &&
+            !IsWrapperStub();
     }
 
 public:
@@ -1365,7 +1381,9 @@ private:
             IsVtableSlot() &&
 
             // Functional requirement - True interface methods are not backpatched, see DoBackpatch()
-            !(IsInterface() && !IsStatic());
+            !(IsInterface() && !IsStatic()) &&
+            // EnC methods use precode
+            !InEnCEnabledModule();
 #else
         // Entry point slot backpatch is disabled for CrossGen
         return false;
@@ -1473,10 +1491,9 @@ public:
     void TrySetInitialCodeEntryPointForVersionableMethod(PCODE entryPoint, bool mayHaveEntryPointSlotsToBackpatch);
 #endif // FEATURE_CODE_VERSIONING
     void SetCodeEntryPoint(PCODE entryPoint);
-#ifdef FEATURE_TIERED_COMPILATION
+#ifdef FEATURE_CODE_VERSIONING
     void ResetCodeEntryPoint();
-#endif // FEATURE_TIERED_COMPILATION
-    void ResetCodeEntryPointForEnC();
+#endif // FEATURE_CODE_VERSIONING
 
 
 public:
@@ -1501,7 +1518,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return !IsVersionable() && !InEnCEnabledModule();
+        return !IsVersionable();
     }
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS

@@ -4,6 +4,48 @@
 
 If you haven't already done so, please read [this document](../../README.md#Build_Requirements) to understand the build requirements for your operating system.
 
+## Wasm tool provisioning
+
+The external tools that the WebAssembly build and test workflows need — the Emscripten SDK, the
+WASI SDK, wasmtime, Chrome, chromedriver, Firefox, geckodriver, and V8 — are downloaded on demand
+into a shared cache under the repository's main checkout:
+
+```
+<main checkout>/.dotnet/wasm-tools/<tool>/<version>-<host rid>/            # the tool
+<main checkout>/.dotnet/wasm-tools/<tool>/<version>-<host rid>.complete    # written once usable
+```
+
+Because the version is part of the path:
+
+- Bumping a version provisions a new entry instead of silently reusing a stale one.
+- Switching between branches that pin different versions reuses both, with no re-download.
+
+The cache is anchored at the **main checkout** (not the individual working directory), so all git
+worktrees of the same clone share a single copy — no per-worktree re-download — while the cache is
+still deleted when you delete the repo. It also lives outside `artifacts/`, so it survives `clean`.
+Set `DOTNET_WASM_TOOL_CACHE_DIR` to relocate it (for example to a user-global `~/.dotnet/wasm-tools`
+shared across unrelated clones, or a CI agent cache). Setting `EMSDK_PATH` or `WASI_SDK_PATH`
+continues to take precedence over the cache for the corresponding SDK. (`WASMTIME_PATH` is *not*
+honored: pointing the build at a local wasmtime is currently disabled, see
+[#101528](https://github.com/dotnet/runtime/issues/101528).)
+
+Versions are pinned in `src/mono/browser/emscripten-version.txt`, `eng/wasm/wasi-sdk-version.txt`,
+`src/mono/wasi/wasmtime-version.txt` and `eng/testing/BrowserVersions.props`.
+
+To provision emscripten without building anything else:
+
+```bash
+./build.sh -s provision.emsdk -os browser
+```
+
+To remove cache entries that the current checkout no longer references:
+
+```bash
+./build.sh -s clean.wasmtools
+```
+
+Add `/p:PruneAllWasmTools=true` to remove the cache entirely.
+
 ## Building
 
 At this time no other build dependencies are necessary to start building for WebAssembly. Emscripten will be downloaded and installed automatically in the build process. To read how to build on specific platforms, see [Building](../../../../src/mono/browser/README.md#building).

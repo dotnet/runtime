@@ -83,6 +83,31 @@ void EditAndContinueModule::Destruct()
     Module::Destruct();
 }
 
+// This holder trait is slightly different from ReleaseHolderTraits
+// to account for the narrow contract.
+template <typename TYPE>
+struct EncReleaseHolderTraits final
+{
+    using Type = TYPE*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
+
+        if (value != NULL)
+            value->Release();
+    }
+};
+
+template<typename _TYPE>
+using EncReleaseHolder = LifetimeHolder<EncReleaseHolderTraits<_TYPE>>;
+
 //---------------------------------------------------------------------------------------
 //
 // ApplyEditAndContinue - updates this module for an EnC
@@ -152,10 +177,6 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
 
     HRESULT hr = S_OK;
 
-    CONTRACT_VIOLATION(GCViolation);    // ComHolderAnyMode goes to preemptive mode, which will trigger a GC
-    ComHolderAnyMode<IMDInternalImportENC> pIMDInternalImportENC;
-    ComHolderAnyMode<IMetaDataEmit> pEmitter;
-
     // Apply the changes. Note that ApplyEditAndContinue() requires read/write metadata. If the metadata is
     // not already RW, then ApplyEditAndContinue() will perform the conversion, invalidate the current
     // metadata importer, and return us a new one.  We can't let that happen. Other parts of the system are
@@ -191,9 +212,11 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     }
 
     // get the delta interface
+    EncReleaseHolder<IMDInternalImportENC> pIMDInternalImportENC;
     IfFailRet(pMDImport->QueryInterface(IID_IMDInternalImportENC, (void **)&pIMDInternalImportENC));
 
     // get an emitter interface
+    EncReleaseHolder<IMetaDataEmit> pEmitter;
     IfFailRet(GetMDPublicInterfaceFromInternal(pMDImport, IID_IMetaDataEmit, (void **)&pEmitter));
 
     // Copy the delta IL into our RVA-able IL memory
@@ -214,6 +237,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
         switch (TypeFromToken(token))
         {
             case mdtMethodDef:
+            {
 
                 // MethodDef token - update/add a method
 
@@ -240,7 +264,24 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                     IfFailRet(E_INVALIDARG);
                 }
 
-                SetDynamicIL(token, (TADDR)(&pLocalILMemory[dwMethodRVA]));
+                ILCodeVersion ilCodeVersion;
+                CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
+                {
+                    CodeVersionManager::LockHolder codeVersioningLockHolder;
+                    if (FAILED(hr = pCodeVersionManager->AddILCodeVersion(this, token, &ilCodeVersion, FALSE, CodeVersionSource::kEnC, m_applyChangesCount)))
+                    {
+                        LOG((LF_ENC, LL_INFO100, "EACM::AEAC: Error AddILCodeVersion returned hr 0x%x\n", hr));
+                        return hr;
+                    }
+                    ilCodeVersion.SetIL((COR_ILMETHOD*)&pLocalILMemory[dwMethodRVA]);
+                    ilCodeVersion.SetRejitState(RejitFlags::kStateActive);
+                }
+
+                if (FAILED(hr = pCodeVersionManager->SetActiveILCodeVersions(&ilCodeVersion, 1, NULL)))
+                {
+                    LOG((LF_ENC, LL_INFO100, "EACM::AEAC: Error SetActiveILCodeVersions returned hr 0x%x\n", hr));
+                    return hr;
+                }
 
                 // use module to resolve to method
                 pMethod = LookupMethodDef(token);
@@ -256,6 +297,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
                 }
 
                 break;
+            }
 
             case mdtFieldDef:
 
@@ -354,41 +396,8 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
         }
     }
 
-    // Notify the JIT that we've got new IL for this method
-    // This will ensure that all new calls to the method will go to the new version.
-    // The runtime does this by never backpatching the methodtable slots in EnC-enabled modules.
     LOG((LF_ENC, LL_INFO100000, "EACM::UM: Updating function %s::%s to version %d\n",
         pMethod->m_pszDebugClassName, pMethod->m_pszDebugMethodName, m_applyChangesCount));
-
-    // Reset any flags relevant to the old code
-    //
-    // Note that this only works since we've very carefully made sure that _all_ references
-    // to the Method's code must be to the call/jmp blob immediately in front of the
-    // MethodDesc itself.  See MethodDesc::InEnCEnabledModule()
-    //
-    if (!pMethod->HasClassOrMethodInstantiation())
-    {
-        // Not a method impacted by generics, so this is the MethodDesc to use.
-        pMethod->ResetCodeEntryPointForEnC();
-    }
-    else
-    {
-        // Generics are involved so we need to search for all related MethodDescs.
-        Module* module = pMethod->GetLoaderModule();
-        mdMethodDef tkMethod = pMethod->GetMemberDef();
-
-        LoadedMethodDescIterator it(
-            AppDomain::GetCurrentDomain(),
-            module,
-            tkMethod,
-            AssemblyIterationFlags(kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
-        while (it.Next(pAssembly.This()))
-        {
-            MethodDesc* pMD = it.Current();
-            pMD->ResetCodeEntryPointForEnC();
-        }
-    }
 
     return S_OK;
 }
@@ -616,7 +625,16 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
             pMD->DoPrestub(NULL);
             LOG((LF_ENC, LL_INFO100, "EACM::ResumeInUpdatedFunction JIT of %p successful\n", pMD));
         }
-        jittedCode = pMD->GetNativeCode();
+#ifdef FEATURE_CODE_VERSIONING
+        {
+            CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
+            jittedCode = pCodeVersionManager->GetActiveILCodeVersion(pMD)
+                             .GetActiveNativeCodeVersion(pMD).GetNativeCode();
+        }
+#else
+        _ASSERTE(!"This code should be unreachable without FEATURE_CODE_VERSIONING");
+#endif
     } EX_CATCH {
 #ifdef _DEBUG
         {

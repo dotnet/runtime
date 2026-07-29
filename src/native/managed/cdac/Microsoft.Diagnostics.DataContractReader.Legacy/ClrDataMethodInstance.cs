@@ -601,7 +601,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             }
             else
             {
-                hr = unchecked((int)0x8000FFFF); // E_UNEXPECTED
+                hr = CorDbgHResults.E_UNEXPECTED;
             }
         }
         catch (System.Exception ex)
