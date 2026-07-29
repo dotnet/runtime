@@ -5632,6 +5632,12 @@ private:
 
     bool m_nextAwaitIsTail = false;
 
+    // Set while importing an inlinee for an async call that gets its own context
+    // handling instead of inheriting it from the inlining call, i.e. an await that may
+    // suspend inside a generally-inlined async callee. Consumed by
+    // impInheritAsyncContextsFromInliner.
+    bool m_nextAsyncCallUsesOwnContexts = false;
+
     bool impSpillStackEntry(unsigned level,
                             unsigned varNum
 #ifdef DEBUG
@@ -11917,6 +11923,14 @@ public:
     bool compIsAsyncVersion() const
     {
         return (info.compMethodInfo->options & CORINFO_ASYNC_VERSION) != 0;
+    }
+
+    // Is general inlining of runtime async calls enabled, i.e. inlining of async callees
+    // that may suspend? When disabled only the restricted cases are inlined: callees
+    // without any awaits, async versions of synchronous methods, and tail awaits.
+    static bool generalAsyncInliningEnabled()
+    {
+        return JitConfig.JitAsyncInlining() != 0;
     }
 
     //------------------------------------------------------------------------

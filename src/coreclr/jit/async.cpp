@@ -394,7 +394,10 @@ PhaseStatus Compiler::SaveAsyncContexts()
 
     for (BasicBlock* block : Blocks())
     {
-        if (!compIsForInlining())
+        // Async calls that inherited their context handling from the inlining call
+        // already have these args; AddContextArgsToAsyncCalls skips those. Only general
+        // async inlining introduces inlinee async calls that need their own contexts.
+        if (!compIsForInlining() || generalAsyncInliningEnabled())
         {
             AddContextArgsToAsyncCalls(block);
         }
@@ -489,11 +492,21 @@ void Compiler::AddContextArgsToAsyncCalls(BasicBlock* block)
                 return WALK_CONTINUE;
             }
 
-            GenTreeCall* call        = tree->AsCall();
-            GenTree*     resumed     = m_compiler->gtNewLclVarNode(m_compiler->lvaResumedIndicator, TYP_INT);
-            GenTree*     resumedAddr = m_compiler->gtNewLclAddrNode(m_compiler->lvaResumedIndicator, 0);
-            GenTree*     execCtx     = m_compiler->gtNewLclVarNode(m_compiler->lvaAsyncExecutionContextVar, TYP_REF);
-            GenTree*     syncCtx = m_compiler->gtNewLclVarNode(m_compiler->lvaAsyncSynchronizationContextVar, TYP_REF);
+            GenTreeCall* call = tree->AsCall();
+
+            if (call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse) != nullptr)
+            {
+                // Already has context args: this is an async call in an inlinee that
+                // inherited them from the inlining call (see
+                // impInheritAsyncContextsFromInliner).
+                assert(m_compiler->compIsForInlining());
+                return WALK_CONTINUE;
+            }
+
+            GenTree* resumed     = m_compiler->gtNewLclVarNode(m_compiler->lvaResumedIndicator, TYP_INT);
+            GenTree* resumedAddr = m_compiler->gtNewLclAddrNode(m_compiler->lvaResumedIndicator, 0);
+            GenTree* execCtx     = m_compiler->gtNewLclVarNode(m_compiler->lvaAsyncExecutionContextVar, TYP_REF);
+            GenTree* syncCtx     = m_compiler->gtNewLclVarNode(m_compiler->lvaAsyncSynchronizationContextVar, TYP_REF);
             JITDUMP(
                 "Adding resumed use [%06u], resumed def [%06u] exec context [%06u], sync context [%06u] to async call [%06u]\n",
                 dspTreeID(resumed), dspTreeID(resumedAddr), dspTreeID(execCtx), dspTreeID(syncCtx), dspTreeID(call));

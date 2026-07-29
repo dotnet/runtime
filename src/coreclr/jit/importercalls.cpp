@@ -7394,38 +7394,55 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
 
     if (compIsForInlining())
     {
-        if (!m_nextAwaitIsTail && !compIsAsyncVersion())
-        {
-            compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
-            return;
-        }
+        // Two cases are inlined cheaply: async versions of synchronous methods, where
+        // all async calls are in tail position, and explicit tail awaits. In both the
+        // inlinee's tail can run in the caller's context, so we can inherit all context
+        // handling from the inlining call and no logical frame transition is needed when
+        // the inlinee returns.
+        bool inheritsCallerContexts    = m_nextAwaitIsTail || compIsAsyncVersion();
+        m_nextAsyncCallUsesOwnContexts = false;
 
-        // We cannot inline if the callee returns valueTask.AsTask() in an
-        // async version. We need to preserve the continuation in this case to
-        // be able to mark it with CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK.
+        // We cannot inline if the callee returns valueTask.AsTask(). We need to preserve
+        // the continuation in this case to be able to mark it with
+        // CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK.
         if ((prefixFlags & PREFIX_IS_ADAPTED_FROM_VALUETASK) != 0)
         {
             compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
             return;
         }
 
-        // For async versions of synchronous methods all async calls are in
-        // tail position. Inlining is simple for these cases: we can just
-        // inherit all context handling from the inlining call.
-        assert(!compIsAsyncVersion() || ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0));
+        if (!inheritsCallerContexts)
+        {
+            if (!generalAsyncInliningEnabled())
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
+                return;
+            }
 
-        GenTreeCall* inlCall = impInlineInfo->iciCall;
-        JITDUMP("Call [%06u] is to function with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
+            // General case: this is a real await inside the inlinee that may suspend. It
+            // gets its own context handling below, exactly like an await in a non-inlined
+            // method, and the inlinee's own contexts (created by its SaveAsyncContexts)
+            // are used rather than the caller's.
+            JITDUMP("Call [%06u] is an await in an inlinee that may suspend\n", dspTreeID(call));
+            m_nextAsyncCallUsesOwnContexts = true;
+        }
+        else
+        {
+            assert(!compIsAsyncVersion() || ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0));
 
-        assert(inlCall->IsAsync());
+            GenTreeCall* inlCall = impInlineInfo->iciCall;
+            JITDUMP("Call [%06u] is to function with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
 
-        asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
-        // Validate that below code won't override the handling
-        assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
+            assert(inlCall->IsAsync());
 
-        asyncInfo.IsTailAwait =
-            inlCall->GetAsyncInfo().IsTailAwait && (m_nextAwaitIsTail || (call->gtReturnType == info.compRetType));
-        m_nextAwaitIsTail = false;
+            asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
+            // Validate that below code won't override the handling
+            assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
+
+            asyncInfo.IsTailAwait =
+                inlCall->GetAsyncInfo().IsTailAwait && (m_nextAwaitIsTail || (call->gtReturnType == info.compRetType));
+            m_nextAwaitIsTail = false;
+        }
     }
     else
     {
@@ -7507,6 +7524,14 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
 {
     if (!compIsForInlining())
     {
+        return;
+    }
+
+    if (m_nextAsyncCallUsesOwnContexts)
+    {
+        // General async inlining: this await may suspend, so it uses the inlinee's own
+        // contexts, which are added by the inlinee's SaveAsyncContexts phase.
+        m_nextAsyncCallUsesOwnContexts = false;
         return;
     }
 
