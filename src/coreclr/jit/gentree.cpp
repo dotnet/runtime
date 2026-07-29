@@ -25100,7 +25100,8 @@ GenTree* Compiler::gtNewSimdFmaNode(
 
     std::swap(op1, op3);
 #elif defined(TARGET_WASM)
-    IMPL_LIMITATION("Wasm has no single-rounding FMA");
+    // Wasm has no single rounding FMA, and this should be guarded against already in import.
+    unreached();
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM

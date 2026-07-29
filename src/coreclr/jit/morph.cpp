@@ -11777,7 +11777,6 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                     {
                         DEBUG_DESTROY_NODE(op2);
                         DEBUG_DESTROY_NODE(tree);
-
 #ifdef FEATURE_MASKED_HW_INTRINSICS
                         if (op1Type != retType)
                         {

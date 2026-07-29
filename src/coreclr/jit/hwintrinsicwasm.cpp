@@ -78,7 +78,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 {
     // On Wasm, for non-const immediate only instructions, we either emit a jump table
     // or re-write to a fallback sequence, so impNonConstFallback should never be used.
-    NO_WAY("Wasm has no non-const intrinsic fallbacks");
+    unreached();
     return nullptr;
 }
 
