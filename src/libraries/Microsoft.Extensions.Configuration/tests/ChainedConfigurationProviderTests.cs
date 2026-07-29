@@ -286,7 +286,7 @@ namespace Microsoft.Extensions.Configuration.Test
         public void ChainedConfiguration_NullValueIsNotContributed(Func<IConfigurationRoot, IConfiguration> selectConfiguration)
         {
             var inner = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string> { { "Key", null }, { "Section:Key", null } })
+                .AddInMemoryCollection(new Dictionary<string, string?> { { "Key", null }, { "Section:Key", null } })
                 .Build();
 
             var outer = new ConfigurationBuilder()
