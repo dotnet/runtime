@@ -974,7 +974,15 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         }
     }
 
-#if FEATURE_FIXED_OUT_ARGS
+#if defined(TARGET_WASM)
+
+    // Wasm passes the shadow stack pointer as an implicit first argument, and GT_LCLHEAP
+    // updates it. Arguments are pushed onto the Wasm operand stack in order, so any
+    // GT_LCLHEAP in an argument must be evaluated before the stack pointer is pushed.
+    //
+    const bool hasStackArgsWeCareAbout = comp->compLocallocUsed;
+
+#elif FEATURE_FIXED_OUT_ARGS
 
     // For Arm/x64 we only care because we can't reorder a register
     // argument that uses GT_LCLHEAP.  This is an optimization to
@@ -986,7 +994,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 
     const bool hasStackArgsWeCareAbout = m_hasStackArgs;
 
-#endif // FEATURE_FIXED_OUT_ARGS
+#endif // defined(TARGET_WASM)
 
     // If we have any stack args we have to force the evaluation
     // of any arguments passed in registers that might throw an exception
@@ -1008,7 +1016,15 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
             {
                 if (hasStackArgsWeCareAbout)
                 {
-#if !FEATURE_FIXED_OUT_ARGS
+#if defined(TARGET_WASM)
+                    // On Wasm only GT_LCLHEAP matters; see the comment above.
+                    //
+                    if (comp->gtTreeContainsOper(argx, GT_LCLHEAP))
+                    {
+                        SetNeedsTemp(&arg);
+                        continue;
+                    }
+#elif !FEATURE_FIXED_OUT_ARGS
                     // On x86 we previously recorded a stack depth of zero when
                     // morphing the register arguments of any GT_IND with a GTF_IND_RNGCHK flag
                     // Thus we can not reorder the argument after any stack based argument.
