@@ -90,6 +90,7 @@ INST(i32_const,         "i32.const",         0, IF_SLEB128, 0x41)
 INST(i32_const_address,    "i32.const_address",    0, IF_MEMADDR, 0x41)
 INST(i32_const_funcptr,    "i32.const_funcptr",    0, IF_FUNCPTR, 0x41)
 INST(i32_const_funcletptr, "i32.const_funcletptr", 0, IF_FUNCLETPTR, 0x41)
+INST(i32_const_dataoffs,   "i32.const_dataoffs",   0, IF_DATAOFFS, 0x41)
 // Constants, continued
 INST(i64_const,         "i64.const",         0, IF_SLEB128, 0x42)
 INST(f32_const,         "f32.const",         0, IF_F32,     0x43)

@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible -->
+    <!-- Needed for CLRTestTargetUnsupported -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <GCStressIncompatible>true</GCStressIncompatible>
     <!--
         Test unsupported outside of windows
         On platform other than Windows, this test could get killed by the OOM killer
@@ -12,5 +11,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="largearraytest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

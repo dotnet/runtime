@@ -1670,7 +1670,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             case NI_Vector_CreateScalarUnsafe:
-                if (intrin.op1->isContainedFltOrDblImmed())
+            {
+                var_types simdType = Compiler::getSIMDTypeForSize(node->GetSimdSize());
+
+                if (simdType == TYP_SIMD)
+                {
+                    emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+
+                    if (varTypeIsFloating(intrin.baseType))
+                    {
+                        regNumber tmpReg  = internalRegisters.Extract(node, RBM_ALLINT);
+                        insOpts   fmovOpt = (emitSize == EA_8BYTE) ? INS_OPTS_D_TO_8BYTE : INS_OPTS_S_TO_4BYTE;
+                        GetEmitter()->emitIns_Mov(INS_fmov, emitSize, tmpReg, op1Reg, /* canSkip */ false, fmovOpt);
+                        op1Reg = tmpReg;
+                    }
+
+                    GetEmitter()->emitInsSve_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                }
+                else if (intrin.op1->isContainedFltOrDblImmed())
                 {
                     // fmov reg, #imm8
                     const double dataValue = intrin.op1->AsDblCon()->DconValue();
@@ -1700,6 +1717,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                 }
                 break;
+            }
 
             case NI_AdvSimd_AddWideningLower:
             case NI_AdvSimd_AddWideningUpper:
@@ -3103,6 +3121,29 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 opt = INS_OPTS_SCALABLE_D;
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_Vector_Create:
+            {
+                emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+
+                if (varTypeIsFloating(intrin.baseType))
+                {
+                    regNumber tmpReg  = internalRegisters.Extract(node, RBM_ALLINT);
+                    insOpts   fmovOpt = (emitSize == EA_8BYTE) ? INS_OPTS_D_TO_8BYTE : INS_OPTS_S_TO_4BYTE;
+                    GetEmitter()->emitIns_Mov(INS_fmov, emitSize, tmpReg, op1Reg, /* canSkip */ false, fmovOpt);
+                    op1Reg = tmpReg;
+                }
+
+                GetEmitter()->emitInsSve_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                break;
+            }
+
+            case NI_Vector_CreateSequence:
+            {
+                emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
             }
 

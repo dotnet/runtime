@@ -81,7 +81,7 @@ namespace Microsoft.Interop
             context.RegisterConcatenatedSyntaxOutputs(generateSingleStub, "LibraryImports.g.cs");
         }
 
-        private static List<AttributeSyntax> GenerateSyntaxForForwardedAttributes(AttributeData? suppressGCTransitionAttribute, AttributeData? unmanagedCallConvAttribute, AttributeData? defaultDllImportSearchPathsAttribute, AttributeData? wasmImportLinkageAttribute, AttributeData? stackTraceHiddenAttribute)
+        private static List<AttributeSyntax> GenerateSyntaxForForwardedAttributes(AttributeData? suppressGCTransitionAttribute, AttributeData? unmanagedCallConvAttribute, AttributeData? defaultDllImportSearchPathsAttribute, AttributeData? wasmImportLinkageAttribute, AttributeData? stackTraceHiddenAttribute, AttributeData? debuggerHiddenAttribute)
         {
             const string CallConvsField = "CallConvs";
             // Manually rehydrate the forwarded attributes with fully qualified types so we don't have to worry about any using directives.
@@ -95,6 +95,11 @@ namespace Microsoft.Interop
             if (stackTraceHiddenAttribute is not null)
             {
                 attributes.Add(Attribute(NameSyntaxes.System_Diagnostics_StackTraceHiddenAttribute));
+            }
+
+            if (debuggerHiddenAttribute is not null)
+            {
+                attributes.Add(Attribute(NameSyntaxes.System_Diagnostics_DebuggerHiddenAttribute));
             }
 
             if (unmanagedCallConvAttribute is not null)
@@ -208,6 +213,7 @@ namespace Microsoft.Interop
             INamedTypeSymbol? defaultDllImportSearchPathsAttrType = environment.DefaultDllImportSearchPathsAttrType;
             INamedTypeSymbol? wasmImportLinkageAttrType = environment.WasmImportLinkageAttrType;
             INamedTypeSymbol? stackTraceHiddenAttrType = environment.StackTraceHiddenAttrType;
+            INamedTypeSymbol? debuggerHiddenAttrType = environment.DebuggerHiddenAttrType;
             // Get any attributes of interest on the method
             AttributeData? generatedDllImportAttr = null;
             AttributeData? suppressGCTransitionAttribute = null;
@@ -215,6 +221,7 @@ namespace Microsoft.Interop
             AttributeData? defaultDllImportSearchPathsAttribute = null;
             AttributeData? wasmImportLinkageAttribute = null;
             AttributeData? stackTraceHiddenAttribute = null;
+            AttributeData? debuggerHiddenAttribute = null;
             foreach (AttributeData attr in symbol.GetAttributes())
             {
                 if (attr.AttributeClass is not null
@@ -241,6 +248,10 @@ namespace Microsoft.Interop
                 else if (stackTraceHiddenAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, stackTraceHiddenAttrType))
                 {
                     stackTraceHiddenAttribute = attr;
+                }
+                else if (debuggerHiddenAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, debuggerHiddenAttrType))
+                {
+                    debuggerHiddenAttribute = attr;
                 }
             }
 
@@ -269,7 +280,7 @@ namespace Microsoft.Interop
 
             var methodSyntaxTemplate = new ContainingSyntax(originalSyntax.Modifiers, SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
 
-            List<AttributeSyntax> additionalAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultDllImportSearchPathsAttribute, wasmImportLinkageAttribute, stackTraceHiddenAttribute);
+            List<AttributeSyntax> additionalAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultDllImportSearchPathsAttribute, wasmImportLinkageAttribute, stackTraceHiddenAttribute, debuggerHiddenAttribute);
             return new IncrementalStubGenerationContext(
                 signatureContext,
                 containingTypeContext,

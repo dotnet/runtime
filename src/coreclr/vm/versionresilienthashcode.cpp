@@ -378,11 +378,10 @@ bool AddVersionResilientHashCodeForInstruction(ILInstructionParser *parser, xxHa
     return true;
 }
 
-bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, int* hashCode, unsigned* ilSize)
+bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, const COR_ILMETHOD_DECODER* header, int* hashCode, unsigned* ilSize)
 {
     uint32_t maxStack;
     uint32_t EHCount;
-    COR_ILMETHOD* pILHeader;
     const BYTE* pILCode;
     uint32_t cbILCode;
     bool initLocals;
@@ -403,21 +402,19 @@ bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, int* hashCode, unsigned*
 
         initLocals = (options & CORINFO_OPT_INIT_LOCALS) == CORINFO_OPT_INIT_LOCALS;
     }
-    else if (pMD->MayHaveILHeader() && (pILHeader = pMD->GetILHeader()) != NULL)
+    else if (pMD->MayHaveILHeader() && header != NULL)
     {
-        COR_ILMETHOD_DECODER header(pILHeader, pMD->GetMDImport(), NULL);
-
-        pILCode = header.Code;
-        cbILCode = header.GetCodeSize();
-        maxStack = header.GetMaxStack();
-        EHCount = header.EHCount();
-        initLocals = (header.GetFlags() & CorILMethod_InitLocals) == CorILMethod_InitLocals;
-        localSig = SigParser(header.LocalVarSig, header.cbLocalVarSig);
+        pILCode = header->Code;
+        cbILCode = header->GetCodeSize();
+        maxStack = header->GetMaxStack();
+        EHCount = header->EHCount();
+        initLocals = (header->GetFlags() & CorILMethod_InitLocals) == CorILMethod_InitLocals;
+        localSig = SigParser(header->LocalVarSig, header->cbLocalVarSig);
 
         for (uint32_t ehClause = 0; ehClause < EHCount; ehClause++)
         {
             IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT ehClauseBuf;
-            auto ehInfo = header.EH->EHClause(ehClause, &ehClauseBuf);
+            auto ehInfo = header->EH->EHClause(ehClause, &ehClauseBuf);
 
             hashILData.Add(ehInfo->Flags);
             hashILData.Add(ehInfo->TryOffset);
