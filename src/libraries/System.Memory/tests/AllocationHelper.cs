@@ -26,7 +26,8 @@ namespace System.SpanTests
 
             try
             {
-                memory = (IntPtr)NativeMemory.Alloc((nuint)size);
+                // .NETFramework has no IntPtr -> nuint conversion; round-trip through a pointer instead.
+                memory = (IntPtr)NativeMemory.Alloc((nuint)(void*)size);
             }
             catch (OutOfMemoryException)
             {

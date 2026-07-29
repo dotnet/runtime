@@ -123,17 +123,21 @@ namespace Internal.JitInterface
             }
 
             // Vector128<T> is always a 16-byte v128.
-            if (Internal.TypeSystem.Interop.InteropTypes.IsSystemRuntimeIntrinsicsVector128T(type.Context, type))
-            {
-                return true;
-            }
-
+            //
             // Vector<T> is target-sized, so it is only a v128 when the target's maximum SIMD width is
             // 128-bit (i.e. it is exactly 16 bytes). This matches the JIT recognizing it as TYP_SIMD16
             // via getVectorTByteLength() and keeps the ABI correct should wasm later gain wider vectors.
-            return type is DefType vectorOfT &&
-                   VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(vectorOfT) &&
-                   type.GetElementSize().AsInt == 16;
+            bool isV128 = Internal.TypeSystem.Interop.InteropTypes.IsSystemRuntimeIntrinsicsVector128T(type.Context, type) ||
+                          (type is DefType vectorOfT &&
+                           VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(vectorOfT) &&
+                           type.GetElementSize().AsInt == 16);
+
+            // The wasm ABI gives every v128 a 16-byte aligned argument slot, so a smaller metadata
+            // alignment would silently misplace it relative to the runtime's own ArgIterator layout.
+            Debug.Assert(!isV128 || ((DefType)type).InstanceFieldAlignment.AsInt == 16,
+                $"v128 type {type} must be 16-byte aligned");
+
+            return isV128;
         }
 
         public static WasmValueType LowerType(TypeDesc type)
@@ -219,8 +223,7 @@ namespace Internal.JitInterface
             'l' => context.GetWellKnownType(WellKnownType.Int64),
             'f' => context.GetWellKnownType(WellKnownType.Single),
             'd' => context.GetWellKnownType(WellKnownType.Double),
-            'V' => ((CompilerTypeSystemContext)context).CachedV128Type
-                   ?? throw new InvalidOperationException("Encountered 'V' in signature but no v128 type was cached during lowering"),
+            'V' => ((CompilerTypeSystemContext)context).WasmV128Type,
             _ => throw new InvalidOperationException($"Unknown signature char: {c}")
         };
 
@@ -260,10 +263,34 @@ namespace Internal.JitInterface
                 pos++;
             }
 
-            // Parse parameters (everything until 'p' suffix or end of string)
             List<TypeDesc> parameters = new List<TypeDesc>();
             bool hasThis = false;
+            bool isAsyncCall = false;
+            bool hasGenericContextBeforeAsync = false;
 
+            if (pos < sig.Length && sig[pos] == 'T')
+            {
+                hasThis = true;
+                pos++;
+            }
+
+            // A generic context precedes the async marker in the Wasm ABI; it is encoded with the
+            // hidden-pointer char (matching the encode side), i32 on wasm32 and i64 on wasm64.
+            char hiddenParamChar = (context.Target.PointerSize == 4) ? 'i' : 'l';
+            if ((pos + 1 < sig.Length) && (sig[pos] == hiddenParamChar) && (sig[pos + 1] == 'a'))
+            {
+                hasGenericContextBeforeAsync = true;
+                parameters.Add(RaiseSigChar(sig[pos], context));
+                pos++;
+            }
+
+            if (pos < sig.Length && sig[pos] == 'a')
+            {
+                isAsyncCall = true;
+                pos++;
+            }
+
+            // Parse explicit parameters (everything until the portable-entrypoint suffix or end of string).
             while (pos < sig.Length && sig[pos] != 'p')
             {
                 char c = sig[pos];
@@ -304,9 +331,16 @@ namespace Internal.JitInterface
 
             MethodSignature result = new MethodSignature(flags, 0, returnType, parameters.ToArray());
 
-            WasmSignature roundtripped = GetSignature(result, LoweringFlags.None);
-            Debug.Assert(roundtripped.Equals(wasmSignature),
-                $"RaiseSignature roundtrip failed: input='{wasmSignature.SignatureString}', roundtripped='{roundtripped.SignatureString}'");
+            WasmSignature roundtripped = GetSignature(result, isAsyncCall ? LoweringFlags.IsAsyncCall : LoweringFlags.None);
+            string roundtrippedStr = roundtripped.SignatureString;
+            if (hasGenericContextBeforeAsync && isAsyncCall)
+            {
+                // The roundtrip re-encodes the generic context as a leading parameter, so it emits the
+                // async marker before the hidden-pointer char; swap them back to match the input ordering.
+                roundtrippedStr = roundtrippedStr.Replace($"a{hiddenParamChar}", $"{hiddenParamChar}a");
+            }
+            Debug.Assert(roundtrippedStr.Equals(wasmSignature.SignatureString, StringComparison.Ordinal),
+                $"RaiseSignature roundtrip failed: input='{wasmSignature.SignatureString}', roundtripped='{roundtrippedStr}'");
 
             return result;
         }
@@ -402,12 +436,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                WasmValueType returnWasmType = LowerType(loweredReturnType);
-                if (returnWasmType == WasmValueType.V128)
-                {
-                    ((CompilerTypeSystemContext)returnType.Context).CacheV128Type(loweredReturnType);
-                }
-                sigBuilder.Append(WasmValueTypeToSigChar(returnWasmType));
+                sigBuilder.Append(WasmValueTypeToSigChar(LowerType(loweredReturnType)));
             }
 
             // Reserve space for potential implicit this, stack pointer parameter, portable entrypoint parameter,
@@ -456,7 +485,7 @@ namespace Internal.JitInterface
             if (flags.HasFlag(LoweringFlags.IsAsyncCall))
             {
                 result.Add(pointerType); // async continuation
-                sigBuilder.Append(hiddenParamChar);
+                sigBuilder.Append('a');
             }
 
             for (int i = explicitThis ? 1 : 0; i < signature.Length; i++)
@@ -484,10 +513,6 @@ namespace Internal.JitInterface
                 else
                 {
                     WasmValueType paramWasmType = LowerType(loweredParamType);
-                    if (paramWasmType == WasmValueType.V128)
-                    {
-                        ((CompilerTypeSystemContext)paramType.Context).CacheV128Type(loweredParamType);
-                    }
                     sigBuilder.Append(WasmValueTypeToSigChar(paramWasmType));
                     result.Add(paramWasmType);
                 }
