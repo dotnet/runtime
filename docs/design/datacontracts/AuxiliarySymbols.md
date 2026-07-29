@@ -1,7 +1,7 @@
 # Contract AuxiliarySymbols
 
-This contract provides name resolution for helper functions whose executing code
-resides at dynamically-determined addresses.
+This contract provides name resolution for helper functions for which we do not have or
+do not wish to load symbols.
 
 ## APIs of contract
 
@@ -20,7 +20,7 @@ bool TryGetAuxiliarySymbolName(TargetPointer ip, out string symbolName);
 | Data Descriptor | Field | Type | Meaning |
 | --- | --- | --- | --- |
 | `AuxiliarySymbolInfo` | *(type size)* | `uint32` | Size in bytes of each entry in the auxiliary symbol array |
-| `AuxiliarySymbolInfo` | `Address` | `CodePointer` | Code pointer to the dynamically-located helper function |
+| `AuxiliarySymbolInfo` | `Address` | `CodePointer` | Code pointer to the helper function |
 | `AuxiliarySymbolInfo` | `Name` | `pointer` | Pointer to a null-terminated char string with the helper name |
 
 ### Global variables used
