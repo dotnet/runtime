@@ -1,0 +1,279 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Buffers;
+using System.Diagnostics;
+using System.Globalization;
+using System.Numerics;
+using System.Text.Json.Schema;
+
+namespace System.Text.Json.Serialization.Converters
+{
+    /// <summary>
+    /// Converter for IEEE 754 floating-point types that share the same JSON number representation,
+    /// such as <see cref="BFloat16"/> and the IEEE 754 decimal types.
+    /// </summary>
+    internal sealed class Ieee754FloatingPointConverter<T> : JsonPrimitiveConverter<T>
+        where T : struct, IFloatingPointIeee754<T>
+    {
+        // Values that need more room than this are formatted into a pooled buffer.
+        // The IEEE 754 decimal types are formatted without scientific notation, so
+        // their worst-case length is in the thousands of digits.
+        private const int StackBufferLength = 64;
+        private const int MaxUnescapedFormatLength = JsonConstants.MaximumFloatingPointConstantLength * JsonConstants.MaxExpansionFactorWhileEscaping;
+
+        private readonly NumericType _numericType;
+
+        public Ieee754FloatingPointConverter(NumericType numericType)
+        {
+            _numericType = numericType;
+            IsInternalConverterForNumberType = true;
+        }
+
+        internal override bool IsIeeeFloatingPointConverter => true;
+
+        public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
+            {
+                return ReadNumberWithCustomHandling(ref reader, options.NumberHandling, options);
+            }
+
+            if (reader.TokenType != JsonTokenType.Number)
+            {
+                ThrowHelper.ThrowInvalidOperationException_ExpectedNumber(reader.TokenType);
+            }
+
+            return ReadCore(ref reader);
+        }
+
+        public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+        {
+            if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
+            {
+                WriteNumberWithCustomHandling(writer, value, options.NumberHandling);
+                return;
+            }
+
+            WriteCore(writer, value);
+        }
+
+        internal override T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
+            return ReadCore(ref reader);
+        }
+
+        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        {
+            Span<byte> stackBuffer = stackalloc byte[StackBufferLength];
+            byte[]? rented = Format(value, stackBuffer, out ReadOnlySpan<byte> formatted);
+            writer.WritePropertyName(formatted);
+            Return(rented);
+        }
+
+        internal override T ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.String)
+            {
+                if ((JsonNumberHandling.AllowReadingFromString & handling) != 0)
+                {
+                    if (TryGetFloatingPointConstant(ref reader, out T value))
+                    {
+                        return value;
+                    }
+
+                    return ReadCore(ref reader);
+                }
+                else if ((JsonNumberHandling.AllowNamedFloatingPointLiterals & handling) != 0)
+                {
+                    if (!TryGetFloatingPointConstant(ref reader, out T value))
+                    {
+                        ThrowHelper.ThrowFormatException(_numericType);
+                    }
+
+                    return value;
+                }
+            }
+
+            if (reader.TokenType != JsonTokenType.Number)
+            {
+                ThrowHelper.ThrowInvalidOperationException_ExpectedNumber(reader.TokenType);
+            }
+
+            return ReadCore(ref reader);
+        }
+
+        internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, T value, JsonNumberHandling handling)
+        {
+            if ((JsonNumberHandling.WriteAsString & handling) != 0)
+            {
+                Span<byte> stackBuffer = stackalloc byte[StackBufferLength];
+                byte[]? rented = Format(value, stackBuffer, out ReadOnlySpan<byte> formatted);
+                writer.WriteNumberValueAsStringUnescaped(formatted);
+                Return(rented);
+            }
+            else if ((JsonNumberHandling.AllowNamedFloatingPointLiterals & handling) != 0)
+            {
+                WriteFloatingPointConstant(writer, value);
+            }
+            else
+            {
+                WriteCore(writer, value);
+            }
+        }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling) =>
+            GetSchemaForNumericType(JsonSchemaType.Number, numberHandling, isIeeeFloatingPoint: true);
+
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) =>
+            GetSupportedJsonValueTypesForNumericType(numberHandling);
+
+        private T ReadCore(ref Utf8JsonReader reader)
+        {
+            byte[]? rentedByteBuffer = null;
+            int bufferLength = reader.ValueLength;
+
+            Span<byte> byteBuffer = bufferLength <= JsonConstants.StackallocByteThreshold
+                ? stackalloc byte[JsonConstants.StackallocByteThreshold]
+                : (rentedByteBuffer = ArrayPool<byte>.Shared.Rent(bufferLength));
+
+            int written = reader.CopyValue(byteBuffer);
+            byteBuffer = byteBuffer.Slice(0, written);
+
+            bool success = TryParse(byteBuffer, out T result);
+            Return(rentedByteBuffer);
+
+            if (!success)
+            {
+                ThrowHelper.ThrowFormatException(_numericType);
+            }
+
+            Debug.Assert(!T.IsNaN(result) && !T.IsInfinity(result));
+            return result;
+        }
+
+        private static void WriteCore(Utf8JsonWriter writer, T value)
+        {
+            Span<byte> stackBuffer = stackalloc byte[StackBufferLength];
+            byte[]? rented = Format(value, stackBuffer, out ReadOnlySpan<byte> formatted);
+            writer.WriteRawValue(formatted);
+            Return(rented);
+        }
+
+        private static void WriteFloatingPointConstant(Utf8JsonWriter writer, T value)
+        {
+            if (T.IsNaN(value))
+            {
+                writer.WriteNumberValueAsStringUnescaped(JsonConstants.NaNValue);
+            }
+            else if (T.IsPositiveInfinity(value))
+            {
+                writer.WriteNumberValueAsStringUnescaped(JsonConstants.PositiveInfinityValue);
+            }
+            else if (T.IsNegativeInfinity(value))
+            {
+                writer.WriteNumberValueAsStringUnescaped(JsonConstants.NegativeInfinityValue);
+            }
+            else
+            {
+                WriteCore(writer, value);
+            }
+        }
+
+        private static bool TryGetFloatingPointConstant(ref Utf8JsonReader reader, out T value)
+        {
+            scoped Span<byte> buffer;
+
+            if (reader.ValueIsEscaped)
+            {
+                if (reader.ValueLength > MaxUnescapedFormatLength)
+                {
+                    value = default;
+                    return false;
+                }
+
+                buffer = stackalloc byte[MaxUnescapedFormatLength];
+            }
+            else
+            {
+                if (reader.ValueLength > JsonConstants.MaximumFloatingPointConstantLength)
+                {
+                    value = default;
+                    return false;
+                }
+
+                buffer = stackalloc byte[JsonConstants.MaximumFloatingPointConstantLength];
+            }
+
+            int written = reader.CopyValue(buffer);
+            return TryGetFloatingPointConstant(buffer.Slice(0, written), out value);
+        }
+
+        private static bool TryGetFloatingPointConstant(ReadOnlySpan<byte> span, out T value)
+        {
+            if (span.SequenceEqual(JsonConstants.NaNValue))
+            {
+                value = T.NaN;
+                return true;
+            }
+
+            if (span.SequenceEqual(JsonConstants.PositiveInfinityValue))
+            {
+                value = T.PositiveInfinity;
+                return true;
+            }
+
+            if (span.SequenceEqual(JsonConstants.NegativeInfinityValue))
+            {
+                value = T.NegativeInfinity;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        private static bool TryParse(ReadOnlySpan<byte> buffer, out T result)
+        {
+            bool success = T.TryParse(buffer, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out result);
+
+            // The underlying parsers are more lax with floating-point literals than S.T.Json
+            // e.g: they parse "naN" successfully. Only succeed with the exact match.
+            return success &&
+                (!T.IsNaN(result) || buffer.SequenceEqual(JsonConstants.NaNValue)) &&
+                (!T.IsPositiveInfinity(result) || buffer.SequenceEqual(JsonConstants.PositiveInfinityValue)) &&
+                (!T.IsNegativeInfinity(result) || buffer.SequenceEqual(JsonConstants.NegativeInfinityValue));
+        }
+
+        /// <summary>
+        /// Formats <paramref name="value"/> into <paramref name="initialBuffer"/>, growing into a
+        /// pooled buffer if necessary. Returns the rented array, if any, which the caller must return.
+        /// </summary>
+        private static byte[]? Format(T value, Span<byte> initialBuffer, out ReadOnlySpan<byte> formatted)
+        {
+            byte[]? rented = null;
+            Span<byte> destination = initialBuffer;
+            int written;
+
+            while (!value.TryFormat(destination, out written, format: default, provider: CultureInfo.InvariantCulture))
+            {
+                byte[]? toReturn = rented;
+                rented = ArrayPool<byte>.Shared.Rent(destination.Length * 2);
+                destination = rented;
+                Return(toReturn);
+            }
+
+            formatted = destination.Slice(0, written);
+            return rented;
+        }
+
+        private static void Return(byte[]? rented)
+        {
+            if (rented is not null)
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+        }
+    }
+}

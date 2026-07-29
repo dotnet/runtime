@@ -419,6 +419,10 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IReadOnlySetOfTConverter.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\Ieee754FloatingPointConverter.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CommonPath)Polyfills\StreamMemoryPolyfills.cs" Link="Common\Polyfills\StreamMemoryPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\StringBuilderPolyfills.cs" Link="Common\Polyfills\StringBuilderPolyfills.cs" />
