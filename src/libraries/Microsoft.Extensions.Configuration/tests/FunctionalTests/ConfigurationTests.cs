@@ -19,8 +19,10 @@ namespace Microsoft.Extensions.Configuration.Test
 {
     public class ConfigurationTests : IDisposable
     {
-        private const int _retries = 100;
+        private const int _retries = 150;
         private const int _msDelay = 200;
+
+        private static readonly TimeSpan s_maxWaitForReload = TimeSpan.FromSeconds(30);
 
         private readonly DisposableFileSystem _fileSystem;
         private readonly PhysicalFileProvider _fileProvider;
@@ -508,6 +510,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task ReloadOnChangeWorksAfterError()
         {
             _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue1""}");
@@ -519,16 +522,18 @@ IniKey1=IniValue2");
             Assert.Equal("JsonValue1", config["JsonKey1"]);
 
             // Introduce an error and make sure the old key is removed
-            await WaitForReload(
-                () => _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": "),
+            _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ");
+
+            await WaitForChange(
                 () => config["JsonKey1"] == null,
                 "Notification failed for loading after error.");
 
             Assert.Null(config["JsonKey1"]);
 
             // Update the file again to make sure the config is updated
-            await WaitForReload(
-                () => _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue2""}"),
+            _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue2""}");
+
+            await WaitForChange(
                 () => config["JsonKey1"] == "JsonValue2",
                 "Notification failed for updating after error.");
 
@@ -536,6 +541,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TouchingFileWillReload()
         {
             _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue1""}");
@@ -555,13 +561,11 @@ IniKey1=IniValue2");
             var token = config.GetReloadToken();
 
             // Update files
-            await WaitForReload(
-                () =>
-                {
-                    _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue2""}");
-                    _fileSystem.WriteFile("reload.ini", @"IniKey1 = IniValue2");
-                    _fileSystem.WriteFile("reload.xml", @"<settings XmlKey1=""XmlValue2""/>");
-                },
+            _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue2""}");
+            _fileSystem.WriteFile("reload.ini", @"IniKey1 = IniValue2");
+            _fileSystem.WriteFile("reload.xml", @"<settings XmlKey1=""XmlValue2""/>");
+
+            await WaitForChange(
                 () => config["JsonKey1"] == "JsonValue2"
                     && config["IniKey1"] == "IniValue2"
                     && config["XmlKey1"] == "XmlValue2",
@@ -908,31 +912,55 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TouchingFileWillReloadForUserSecrets()
         {
-            string userSecretsId = "Test";
+            // A unique id keeps concurrently running assemblies from sharing the same secrets folder.
+            string userSecretsId = $"Test_{Guid.NewGuid():N}";
             var userSecretsPath = PathHelper.GetSecretsPathFromSecretsId(userSecretsId);
             var userSecretsFolder = Path.GetDirectoryName(userSecretsPath);
 
-            _fileSystem.CreateFolder(userSecretsFolder);
-            _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue1""}");
+            // The secrets path is absolute and lives under the real user profile, so DisposableFileSystem
+            // writes straight through it and cannot clean it up for us.
+            IConfigurationRoot config = null;
 
-            var config = CreateBuilder()
-                .AddUserSecrets(userSecretsId, reloadOnChange: true)
-                .Build();
+            try
+            {
+                _fileSystem.CreateFolder(userSecretsFolder);
+                _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue1""}");
 
-            Assert.Equal("UserSecretValue1", config["UserSecretKey1"]);
+                config = CreateBuilder()
+                    .AddUserSecrets(userSecretsId, reloadOnChange: true)
+                    .Build();
 
-            var token = config.GetReloadToken();
+                Assert.Equal("UserSecretValue1", config["UserSecretKey1"]);
 
-            // Update file
-            await WaitForReload(
-                () => _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue2""}"),
-                () => config["UserSecretKey1"] == "UserSecretValue2",
-                "Reload failed after create-delete-create.");
+                var token = config.GetReloadToken();
 
-            Assert.Equal("UserSecretValue2", config["UserSecretKey1"]);
-            Assert.True(token.HasChanged);
+                // Update file
+                _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue2""}");
+
+                await WaitForChange(
+                    () => config["UserSecretKey1"] == "UserSecretValue2",
+                    "Reload failed after create-delete-create.");
+
+                Assert.Equal("UserSecretValue2", config["UserSecretKey1"]);
+                Assert.True(token.HasChanged);
+            }
+            finally
+            {
+                // Stop watching before removing the folder the watcher is pointed at.
+                (config as IDisposable)?.Dispose();
+
+                try
+                {
+                    Directory.Delete(userSecretsFolder, true);
+                }
+                catch
+                {
+                    // Don't throw if this fails.
+                }
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
@@ -1001,25 +1029,6 @@ IniKey1=IniValue2");
             }
         }
 
-        // A single file-change notification (inotify on Linux especially) can be dropped or arbitrarily
-        // delayed under load, so re-apply the file write on each attempt until the expected reload is
-        // observed instead of relying on one notification being delivered within the timeout.
-        private async Task WaitForReload(Action writeFiles, Func<bool> reloaded, string failureMessage, int multiplier = 1)
-        {
-            for (int attempt = 0; attempt < _retries * multiplier; attempt++)
-            {
-                writeFiles();
-                await Task.Delay(_msDelay);
-
-                if (reloaded())
-                {
-                    return;
-                }
-            }
-
-            throw new Exception(failureMessage);
-        }
-
         private sealed class MyOptions
         {
             public string CmdKey1 { get; set; }
@@ -1033,44 +1042,66 @@ IniKey1=IniValue2");
             public string XmlKey1 { get; set; }
         }
 
-        private async Task WatchOverConfigJsonFileAndUpdateIt(string filePath)
+        private async Task WatchOverConfigJsonFileAndUpdateIt(string relativePathPrefix)
         {
-            var config = new ConfigurationBuilder().AddJsonFile(filePath, optional: true, reloadOnChange: true).Build();
+            // Use a unique file name so that repeated or concurrent runs sharing the same output
+            // directory cannot observe each other's files.
+            string fileName = $"testFileToReload_{Guid.NewGuid():N}.json";
 
-            var reloadedSignal = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            using IDisposable subscription = ChangeToken.OnChange(config.GetReloadToken, () => reloadedSignal.TrySetResult(true));
+            // The prefix is concatenated rather than combined on purpose: preserving the unnormalized
+            // "./" or ".\" is the whole point of the test, and Path.Combine would strip it.
+            string configuredPath = relativePathPrefix + fileName;
 
-            // A relative path is watched relative to the default file provider root (AppContext.BaseDirectory),
-            // so write to that exact location instead of the raw relative path; otherwise the test would depend
-            // on the current working directory matching AppContext.BaseDirectory.
-            string watchedFilePath = Path.Combine(AppContext.BaseDirectory, Path.GetFileName(filePath));
+            // A relative path is resolved against the default file provider root (AppContext.BaseDirectory)
+            // rather than the current working directory, so the file has to be written there for the
+            // watcher to see it.
+            string watchedFilePath = Path.Combine(_basePath, fileName);
 
-            // A single file-change notification (inotify on Linux) can be dropped or arbitrarily delayed under
-            // load, so re-write the file on each attempt until the reload is observed instead of relying on one
-            // notification being delivered within the timeout.
-            for (int attempt = 0; attempt < _retries; attempt++)
+            IConfigurationRoot config = new ConfigurationBuilder()
+                .AddJsonFile(configuredPath, optional: true, reloadOnChange: true)
+                .Build();
+
+            IFileProvider defaultFileProvider = config.Providers
+                .OfType<FileConfigurationProvider>()
+                .Single()
+                .Source.FileProvider;
+
+            try
             {
-                File.WriteAllText(watchedFilePath, $"{{\"Prop2\":\"Value{attempt}\"}}");
+                var reloadedSignal = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                using IDisposable subscription = ChangeToken.OnChange(config.GetReloadToken, () => reloadedSignal.TrySetResult(true));
 
-                if (await Task.WhenAny(reloadedSignal.Task, Task.Delay(_msDelay)) == reloadedSignal.Task)
+                File.WriteAllText(watchedFilePath, @"{""Prop2"": ""Value2""}");
+                await Task.WhenAny(reloadedSignal.Task, Task.Delay(s_maxWaitForReload));
+                Assert.True(reloadedSignal.Task.IsCompleted, "on file change event handler did not get executed");
+                Assert.Equal("Value2", config["Prop2"]);
+            }
+            finally
+            {
+                (config as IDisposable)?.Dispose();
+                (defaultFileProvider as IDisposable)?.Dispose();
+
+                try
                 {
-                    return;
+                    File.Delete(watchedFilePath);
+                }
+                catch
+                {
+                    // Don't throw if this fails; a cleanup error must not mask an assertion failure.
                 }
             }
-
-            throw new Exception("on file change event handler did not get executed");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public async Task OnChangeGetFiredForRelativeWindowsPath()
         {
-            await WatchOverConfigJsonFileAndUpdateIt(".\\testFileToReload.json");
+            await WatchOverConfigJsonFileAndUpdateIt(".\\");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
         public async Task OnChangeGetFiredForRelativeLinuxPath()
         {
-            await WatchOverConfigJsonFileAndUpdateIt("./testFileToReload.json");
+            await WatchOverConfigJsonFileAndUpdateIt("./");
         }
     }
 }
