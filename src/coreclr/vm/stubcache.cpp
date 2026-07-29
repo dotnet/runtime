@@ -77,12 +77,11 @@ StubCacheBase::~StubCacheBase()
 //---------------------------------------------------------
 Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
 {
-    CONTRACT (Stub*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     STUBHASHENTRY *phe = NULL;
 
@@ -100,7 +99,7 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
             // IncRef as we're returning a reference to our caller.
             stubWriterHolder.GetRW()->IncRef();
 
-            RETURN pstub.Detach();
+            return pstub.Detach();
         }
     }
 
@@ -160,7 +159,7 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
         COMPlusThrowOM();
     }
 
-    RETURN pstub.Detach();
+            return pstub.Detach();
 }
 
 
@@ -169,7 +168,6 @@ void StubCacheBase::AddStub(const BYTE* pRawStub, Stub* pNewStub)
     LIMITED_METHOD_CONTRACT;
 
     // By default, don't do anything.
-    return;
 }
 
 

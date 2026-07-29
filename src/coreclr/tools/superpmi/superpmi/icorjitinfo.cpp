@@ -31,6 +31,12 @@ bool MyICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return jitInstance->mc->repIsIntrinsic(ftn);
 }
 
+bool MyICJI::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
+{
+    jitInstance->mc->cr->AddCall("canValueClassInstancePointerEscape");
+    return jitInstance->mc->repCanValueClassInstancePointerEscape(ftn);
+}
+
 bool MyICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 {
     jitInstance->mc->cr->AddCall("notifyMethodInfoUsage");
