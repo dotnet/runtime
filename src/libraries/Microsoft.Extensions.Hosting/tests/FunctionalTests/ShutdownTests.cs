@@ -24,19 +24,26 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
         private static readonly TimeSpan s_shutdownExitTimeout = TimeSpan.FromSeconds(30);
         private readonly ITestOutputHelper _output;
 
+        // The deployer launches the test app through the dotnet muxer. The NativeAOT and ReadyToRun
+        // test legs publish the test itself as a self-contained app, so there is no muxer sitting next
+        // to the running host for Process.Start to resolve. The child app would run on the ordinary
+        // shared framework anyway, so those legs gain nothing from these tests; the single file test
+        // runner turns RemoteExecutor off for the same reason.
+        public static bool IsPortableAppLaunchSupported => PlatformDetection.IsNotNativeAot && !PlatformDetection.IsReadyToRunCompiled;
+
         public ShutdownTests(ITestOutputHelper output)
         {
             _output = output;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(ShutdownTests), nameof(IsPortableAppLaunchSupported))]
         [PlatformSpecific(TestPlatforms.Linux)]
         public async Task ShutdownTestRun()
         {
             await ExecuteShutdownTest(nameof(ShutdownTestRun), "Run");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(ShutdownTests), nameof(IsPortableAppLaunchSupported))]
         [PlatformSpecific(TestPlatforms.Linux)]
         public async Task ShutdownTestWaitForShutdown()
         {
