@@ -16,7 +16,7 @@ public class AuxiliarySymbolsDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Allocation helpers are not included in the .NET 10 auxiliary symbol table")]
-    public void NewJitHelpersAreReachableByAddress(TestConfiguration config)
+    public void JitHelpersAreReachableByAddress(TestConfiguration config)
     {
         InitializeDumpTest(config);
 
