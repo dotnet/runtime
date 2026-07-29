@@ -360,9 +360,18 @@ namespace System
             Debug.Assert((pEnd != null) || (p == pEnd));
             Debug.Assert(p <= pEnd);
 
+            if (value.IsEmpty)
+            {
+                return null;
+            }
+
             fixed (TChar* stringPointer = &MemoryMarshal.GetReference(value))
             {
                 TChar* str = stringPointer;
+
+                // When TChar is byte, value is one of NumberFormatInfo's UTF-8 caches, which are plain
+                // byte[] rather than NUL terminated strings, so the end has to be tracked explicitly.
+                TChar* strEnd = stringPointer + value.Length;
 
                 if (TChar.CastToUInt32(*str) != '\0')
                 {
@@ -384,7 +393,7 @@ namespace System
                         p++;
                         str++;
 
-                        if (TChar.CastToUInt32(*str) == '\0')
+                        if ((str == strEnd) || (TChar.CastToUInt32(*str) == '\0'))
                         {
                             return p;
                         }

@@ -849,6 +849,17 @@ namespace System.Tests
             var customFormat4 = new NumberFormatInfo();
             customFormat4.NumberDecimalSeparator = ".";
 
+            // Signs, separators, and symbols that encode to more than one UTF-8 byte, modeled on
+            // he/ar (NegativeSign is "\u200E-") and fa-IR (CurrencySymbol is "\u0631\u06CC\u0627\u0644").
+            var multiByteFormat = new NumberFormatInfo();
+            multiByteFormat.NegativeSign = "\u200E-";
+            multiByteFormat.PositiveSign = "\u200E+";
+            multiByteFormat.NumberGroupSeparator = "\u2009";
+            multiByteFormat.NumberDecimalSeparator = "\u066B";
+            multiByteFormat.CurrencySymbol = "\u0631\u06CC\u0627\u0644";
+            multiByteFormat.CurrencyGroupSeparator = "\u2009";
+            multiByteFormat.CurrencyDecimalSeparator = "\u066B";
+
             yield return new object[] { "-123", defaultStyle, null, -123m };
             yield return new object[] { "0", defaultStyle, null, 0m };
             yield return new object[] { "123", defaultStyle, null, 123m };
@@ -878,6 +889,11 @@ namespace System.Tests
 
             // Number buffer limit ran out (string too long)
             yield return new object[] { "1234567890123456789012345.678456", defaultStyle, customFormat4, 1234567890123456789012345.6785m };
+
+            yield return new object[] { "\u200E-1\u2009234\u066B5", defaultStyle, multiByteFormat, -1234.5m };
+            yield return new object[] { "\u200E+1\u2009234\u066B5", defaultStyle, multiByteFormat, 1234.5m };
+            yield return new object[] { "\u0631\u06CC\u0627\u06441\u2009234\u066B5", NumberStyles.Currency, multiByteFormat, 1234.5m };
+            yield return new object[] { "\u200E-\u0631\u06CC\u0627\u06441\u2009234", NumberStyles.Currency, multiByteFormat, -1234m };
         }
 
         [Theory]
