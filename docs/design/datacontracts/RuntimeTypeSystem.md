@@ -1876,7 +1876,7 @@ And the various apis are implemented with the following algorithms
     public bool IsPInvoke(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
-        return methodDesc.Classification == MethodDescClassification.PInvoke;
+        return methodDesc.Classification == MethodClassification.PInvoke;
     }
 
     public bool IsIL(MethodDescHandle methodDescHandle)

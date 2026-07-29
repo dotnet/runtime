@@ -931,7 +931,9 @@ void StubManager::DbgGetLog(SString * pStringOut)
 extern "C" void STDCALL ThePreStubPatchLabel(void);
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
+#ifndef DACCESS_COMPILE
 const TADDR g_cdacThePreStubPatchLabel = GetEEFuncEntryPoint(ThePreStubPatchLabel);
+#endif // !DACCESS_COMPILE
 #endif
 
 //-----------------------------------------------------------
