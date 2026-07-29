@@ -371,7 +371,7 @@ usage_list+=("-allTargets - Build managed tests for all target platforms (includ
 usage_list+=("-use-bootstrap - Use artifacts produced by the bootstrap subset for local targeting, runtime, and apphost packs.")
 usage_list+=("")
 usage_list+=("-runtests - Run tests after building them.")
-usage_list+=("-bxl - Build tests via the BuildXL-backed flow (Linux x64 Checked CoreCLR with Release libraries only).")
+usage_list+=("--bxl - Build tests via the BuildXL-backed flow (Linux x64 Checked CoreCLR with Release libraries only).")
 usage_list+=("-mono, -excludemonofailures - Build the tests for the Mono runtime honoring mono-specific issues.")
 usage_list+=("-coreclr - Build tests targeting the CoreCLR runtime (default; opposite of -mono/-excludemonofailures).")
 usage_list+=("-mono_aot - Use Mono AOT mode.")
@@ -483,7 +483,7 @@ handle_arguments_local() {
             __RunTests=1
             ;;
 
-        bxl|-bxl)
+        bxl|-bxl|--bxl)
             __UseBxl=1
             ;;
 
