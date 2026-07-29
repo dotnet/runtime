@@ -11165,6 +11165,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_JMP:
             case GT_RECORD_ASYNC_RESUME:
             case GT_ASYNC_RESUME_INFO:
+            case GT_CONTINUATION_MEMBER_OFFSET:
                 copy = new (this, oper) GenTreeVal(oper, tree->gtType, tree->AsVal()->gtVal1);
                 goto DONE;
 
