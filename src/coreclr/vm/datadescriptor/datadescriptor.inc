@@ -629,6 +629,7 @@ CDAC_TYPE_BEGIN(TypeVarTypeDesc)
 CDAC_TYPE_INDETERMINATE(TypeVarTypeDesc)
 CDAC_TYPE_FIELD(TypeVarTypeDesc, T_POINTER, Module, cdac_data<TypeVarTypeDesc>::Module)
 CDAC_TYPE_FIELD(TypeVarTypeDesc, T_UINT32, Token, cdac_data<TypeVarTypeDesc>::Token)
+CDAC_TYPE_FIELD(TypeVarTypeDesc, T_UINT32, Index, cdac_data<TypeVarTypeDesc>::Index)
 CDAC_TYPE_END(TypeVarTypeDesc)
 
 CDAC_TYPE_BEGIN(FnPtrTypeDesc)
@@ -1135,7 +1136,18 @@ CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, EndAddress, offsetof(HeapList, endA
 CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, MapBase, offsetof(HeapList, mapBase))
 CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, HeaderMap, offsetof(HeapList, pHdrMap))
 CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, Heap, offsetof(HeapList, pHeap))
+#ifdef TARGET_64BIT
+CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, CLRPersonalityRoutine, offsetof(HeapList, CLRPersonalityRoutine))
+#endif
 CDAC_TYPE_END(CodeHeapListNode)
+
+#if !defined(TARGET_UNIX) && !defined(TARGET_X86)
+CDAC_TYPE_BEGIN(DynamicFunctionTable)
+CDAC_TYPE_INDETERMINATE(DynamicFunctionTable)
+CDAC_TYPE_FIELD(DynamicFunctionTable, T_POINTER, MinimumAddress, offsetof(DYNAMIC_FUNCTION_TABLE, MinimumAddress))
+CDAC_TYPE_FIELD(DynamicFunctionTable, T_POINTER, Context, offsetof(DYNAMIC_FUNCTION_TABLE, Context))
+CDAC_TYPE_END(DynamicFunctionTable)
+#endif // !defined(TARGET_UNIX) && !defined(TARGET_X86)
 
 CDAC_TYPE_BEGIN(CodeHeap)
 CDAC_TYPE_INDETERMINATE(CodeHeap)
@@ -1186,6 +1198,8 @@ CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, RejitState, cdac_data<ILCodeVersion
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, ILAddress, cdac_data<ILCodeVersionNode>::ILAddress)
 CDAC_TYPE_FIELD(ILCodeVersionNode, TYPE(InstrumentedILOffsetMapping), InstrumentedILMap, cdac_data<ILCodeVersionNode>::InstrumentedILMap)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, Deoptimized, cdac_data<ILCodeVersionNode>::Deoptimized)
+CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, Source, cdac_data<ILCodeVersionNode>::Source)
+CDAC_TYPE_FIELD(ILCodeVersionNode, T_NUINT, EnCVersion, cdac_data<ILCodeVersionNode>::EnCVersion)
 CDAC_TYPE_END(ILCodeVersionNode)
 
 CDAC_TYPE_BEGIN(InstrumentedILOffsetMapping)
@@ -1672,6 +1686,9 @@ CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
 CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_GLOBAL_POINTER(ThePreStub, &g_cdacThePreStub)
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)

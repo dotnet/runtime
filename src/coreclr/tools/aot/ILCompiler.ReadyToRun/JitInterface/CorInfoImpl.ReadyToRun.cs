@@ -2592,12 +2592,17 @@ namespace Internal.JitInterface
                             pResult->codePointerOrStubLookup.constLookup = default;
                         }
                         else if (MethodBeingCompiled is AsyncResumptionStub resumptionStub
-                            && nonUnboxingMethod == resumptionStub.TargetMethod)
+                            && nonUnboxingMethod == resumptionStub.TargetMethod
+                            && !_compilation.NodeFactory.Target.IsWasm)
                         {
                             // Async resumption stubs must call the exact code version that created
                             // the continuation, since the continuation layout is coupled to the
                             // compilation. Use a direct call to the compiled method body so tiering
                             // backpatching cannot redirect this call to a different code version.
+                            //
+                            // TODO-WASM: Using indirect calls on Wasm for now. Adjust once we understand
+                            // how code versioning should work along with R2R / portable entry points.
+                            //
                             MethodDesc compilableTarget = nonUnboxingMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                             MethodWithGCInfo targetCodeNode = _compilation.NodeFactory.CompiledMethodNode(compilableTarget);
                             pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(targetCodeNode);
@@ -3156,6 +3161,50 @@ namespace Internal.JitInterface
                 }
             }
             blockType = BlockType.Unknown;
+        }
+
+        partial void TryUseWasmMethodCodeStoreFixup(void* target, CorInfoReloc fRelocType, BlockType locationBlock, int relocOffset, int addlDelta, ref bool handled)
+        {
+            // Only applicable on WebAssembly, for a direct pointer to a compiled method (MethodWithGCInfo)
+            // that lands in the current method's read-only data blob. In practice the target is an async
+            // resumption stub whose callable code pointer can only be produced at runtime.
+            if (!_compilation.NodeFactory.Target.IsWasm)
+                return;
+
+            if (fRelocType != CorInfoReloc.DIRECT)
+                return;
+
+            if ((locationBlock != BlockType.ROData) && (locationBlock != BlockType.RWData))
+                return;
+
+            ISymbolNode dataBlobNode = (locationBlock == BlockType.ROData) ? _roDataBlob : _rwDataBlob;
+
+            // This fixup stores a bare code address; it cannot encode an addend applied to the target.
+            if (addlDelta != 0)
+                return;
+
+            // The target must be an external symbol (a handle), not a pointer into one of this
+            // method's own emitted blocks. HandleToObject is only valid for handle pointers.
+            if (findKnownBlock(target, out _) != BlockType.Unknown)
+                return;
+
+            if (HandleToObject(target) is not MethodWithGCInfo targetMethodNode)
+                return;
+
+            Debug.Assert(dataBlobNode != null, "Data location without a data blob");
+
+            // Emit a method-load-time fixup that, at runtime, resolves the target method and stores its
+            // MultiCallableAddrOfCode into the location (dataBlobNode + relocOffset). This fixup must be
+            // processed after the target's ResumptionStubEntryPoint fixup, which registers the target
+            // entry point so it can be resolved to a MethodDesc; ordering is guaranteed by the ClassCode
+            // of StoreMultiCallableAddrOfCodeSignature (see that type for details).
+            PrecodeHelperImport fixup = new PrecodeHelperImport(
+                _compilation.NodeFactory,
+                new StoreMultiCallableAddrOfCodeSignature(targetMethodNode, dataBlobNode, relocOffset));
+
+            AddPrecodeFixup(fixup);
+
+            handled = true;
         }
 
         private unsafe HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema* pSchema, uint countSchemaItems, byte** pInstrumentationData)
