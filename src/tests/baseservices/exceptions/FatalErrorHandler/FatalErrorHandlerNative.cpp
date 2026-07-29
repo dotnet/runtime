@@ -111,6 +111,12 @@ static int DOTNET_CALLCONV HandlerCheckNativeInfo(int /*hresult*/, FatalErrorPro
     const void* pContext = NULL;
     bool contextPopulated = getProperty(FEP_UContext, &pContext) != 0 && pContext != NULL;
     WriteStdErr(contextPopulated ? "FATAL_UCONTEXT:ucontext=true\n" : "FATAL_UCONTEXT:ucontext=false\n");
+
+#ifdef __APPLE__
+    const void* pMachExceptionInfo = NULL;
+    bool machExceptionInfoPopulated = getProperty(FEP_MachExceptionInfo, &pMachExceptionInfo) != 0 && pMachExceptionInfo != NULL;
+    WriteStdErr(machExceptionInfoPopulated ? "FATAL_MACHINFO:machinfo=true\n" : "FATAL_MACHINFO:machinfo=false\n");
+#endif // __APPLE__
 #endif
 
     return SkipDefaultHandler;

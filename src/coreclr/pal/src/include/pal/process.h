@@ -120,6 +120,13 @@ Function:
 --*/
 VOID PROCNotifyProcessShutdown(bool isExecutingOnAltStack = false);
 
+BOOL PROCInvokeFatalErrorHandlerForNativeException(
+    DWORD exceptionCode,
+    LPVOID faultAddress,
+    PEXCEPTION_POINTERS exceptionInfo,
+    PFATALERRORPLATFORMPROPERTYGETTER getPlatformProperty,
+    LPVOID context);
+
 /*++
 Function:
   PROCCreateCrashDumpIfEnabled
@@ -156,4 +163,3 @@ VOID PROCLogManagedCallstackForSignal(int signal);
 #endif // __cplusplus
 
 #endif //PAL_PROCESS_H_
-

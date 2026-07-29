@@ -753,12 +753,39 @@ static thread_local LPCWSTR t_crashExceptionString;
 // captured immediately before the handler is invoked.
 static thread_local void* t_crashAddress;
 
+// Synchronous provider for the live platform-native state of a genuinely-unmanaged fatal fault.
+static thread_local FatalErrorPlatformPropertyGetter t_getPlatformProperty;
+static thread_local void* t_platformPropertyContext;
+
 #ifdef TARGET_WINDOWS
-// Path B (Windows) only: the live platform-native fault records for a genuinely-unmanaged
-// fatal fault, surfaced through FEP_WindowsExceptionRecord/FEP_WindowsContextRecord. Null on
-// the managed fatal path (Path A), which does not surface these records.
-static thread_local PEXCEPTION_RECORD t_crashExceptionRecord;
-static thread_local PCONTEXT t_crashContextRecord;
+struct WindowsFatalErrorContext
+{
+    PEXCEPTION_RECORD ExceptionRecord;
+    PCONTEXT ContextRecord;
+};
+
+static int32_t GetWindowsFatalErrorProperty(void* context, int32_t property, const void** value)
+{
+    WindowsFatalErrorContext* fatalErrorContext = static_cast<WindowsFatalErrorContext*>(context);
+
+    switch (static_cast<FatalErrorProperty>(property))
+    {
+    case FEP_WindowsExceptionRecord:
+        if (fatalErrorContext->ExceptionRecord == nullptr)
+            return 0;
+        *value = fatalErrorContext->ExceptionRecord;
+        return 1;
+
+    case FEP_WindowsContextRecord:
+        if (fatalErrorContext->ContextRecord == nullptr)
+            return 0;
+        *value = fatalErrorContext->ContextRecord;
+        return 1;
+
+    default:
+        return 0;
+    }
+}
 #endif // TARGET_WINDOWS
 
 static void StoreCrashContext(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
@@ -784,19 +811,19 @@ static void DOTNET_CALLCONV GetFatalErrorLogFunc(FatalErrorLogAction pfnLogActio
     EmitCrashInfo(writer, t_crashExitCode, t_crashMessage, t_crashExceptionInfo, t_crashErrorSource, t_crashExceptionString);
 }
 
-// Property getter passed to the user's fatal error handler. Surfaces the crash-log
-// entry point and stored crash address. On Windows the live EXCEPTION_RECORD/CONTEXT are
-// additionally surfaced for a genuinely-unmanaged fatal fault (Path B); they are unavailable
-// on the managed fatal path (Path A). Returns a nonzero value when the requested property is
-// available (and *value is written), or 0 otherwise.
-static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(FatalErrorProperty prop, const void** value)
+// Property getter passed to the user's fatal error handler. Surfaces the crash-log entry point
+// and stored crash address. Platform-native fault state is additionally surfaced for a
+// genuinely-unmanaged fatal fault (Path B); it is unavailable on the managed fatal path
+// (Path A). Returns a nonzero value when the requested property is available (and *value is
+// written), or 0 otherwise.
+static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(int32_t prop, const void** value)
 {
     WRAPPER_NO_CONTRACT;
 
     if (value == nullptr)
         return 0;
 
-    switch (prop)
+    switch (static_cast<FatalErrorProperty>(prop))
     {
     case FEP_FatalErrorLogFunc:
         *value = reinterpret_cast<const void*>(reinterpret_cast<uintptr_t>(GetFatalErrorLogFunc));
@@ -808,22 +835,10 @@ static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(FatalErrorProperty p
         *value = t_crashAddress;
         return 1;
 
-#ifdef TARGET_WINDOWS
-    case FEP_WindowsExceptionRecord:
-        if (t_crashExceptionRecord == nullptr)
-            return 0;
-        *value = t_crashExceptionRecord;
-        return 1;
-
-    case FEP_WindowsContextRecord:
-        if (t_crashContextRecord == nullptr)
-            return 0;
-        *value = t_crashContextRecord;
-        return 1;
-#endif // TARGET_WINDOWS
-
     default:
-        return 0;
+        if (t_getPlatformProperty == nullptr)
+            return 0;
+        return t_getPlatformProperty(t_platformPropertyContext, static_cast<int32_t>(prop), value);
     }
 }
 
@@ -875,6 +890,51 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
     // Call user-defined fatal error handler.
     int result = pfnHandler(static_cast<int>(exitCode), FatalErrorPropertyGetterImpl);
     return result == SkipDefaultHandler;
+}
+
+BOOL EEPolicy::HandleFatalErrorForNativeException(
+    DWORD exceptionCode,
+    void* faultAddress,
+    PEXCEPTION_POINTERS pExceptionInfo,
+    FatalErrorPlatformPropertyGetter getPlatformProperty,
+    void* context)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return InvokeFatalErrorHandlerForNativeException(
+        exceptionCode,
+        faultAddress,
+        pExceptionInfo,
+        getPlatformProperty,
+        context,
+        nullptr,
+        nullptr,
+        nullptr);
+}
+
+BOOL EEPolicy::InvokeFatalErrorHandlerForNativeException(
+    DWORD exceptionCode,
+    void* faultAddress,
+    PEXCEPTION_POINTERS pExceptionInfo,
+    FatalErrorPlatformPropertyGetter getPlatformProperty,
+    void* context,
+    LPCWSTR message,
+    LPCWSTR errorSource,
+    LPCWSTR exceptionString)
+{
+    WRAPPER_NO_CONTRACT;
+
+    FatalErrorPlatformPropertyGetter previousGetter = t_getPlatformProperty;
+    void* previousContext = t_platformPropertyContext;
+    t_getPlatformProperty = getPlatformProperty;
+    t_platformPropertyContext = context;
+    StoreCrashContext(exceptionCode, message, pExceptionInfo, errorSource, exceptionString);
+
+    BOOL skipDefaultHandler = InvokeFatalErrorHandler(exceptionCode, reinterpret_cast<UINT_PTR>(faultAddress));
+
+    t_getPlatformProperty = previousGetter;
+    t_platformPropertyContext = previousContext;
+    return skipDefaultHandler;
 }
 
 #ifdef TARGET_WINDOWS
@@ -1191,10 +1251,6 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
 
         g_fFastExitProcess = 2;
 
-        // Store crash context for on-demand replay by the fatal error handler's
-        // pfnGetFatalErrorLog callback.
-        StoreCrashContext(exitCode, pszMessage, pExceptionInfo, errorSource, argExceptionString);
-
         // Invoke the user's fatal error handler before Watson / RaiseFailFastException.
         // On Windows, WatsonLastChance (called from LogFatalError) invokes RaiseFailFastException
         // which terminates the process, so the handler must run first.
@@ -1209,23 +1265,43 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
             faultAddress = reinterpret_cast<UINT_PTR>(pExceptionInfo->ExceptionRecord->ExceptionAddress);
         }
 
+        bool skipDefaultHandler;
+
 #ifdef TARGET_WINDOWS
-        // Path B (Windows): a genuinely-unmanaged fatal fault (a live hardware fault whose
-        // faulting instruction pointer is native code) is never translated into a managed
-        // exception, so surface the live EXCEPTION_RECORD/CONTEXT to the handler through the
-        // property getter. Faults whose IP is managed code flow through the managed fatal path
-        // and surface only the fault address, so they are excluded here.
+        // A genuinely-unmanaged fatal fault is never translated into a managed exception.
+        // Route it through the common native-exception entry point with a provider for the
+        // live Windows exception records.
         if (hasHardwareExceptionInfo
             && pExceptionInfo->ExceptionRecord != NULL
             && IsFatalHardwareExceptionForFatalErrorHandler(pExceptionInfo->ExceptionRecord->ExceptionCode)
             && !ExecutionManager::IsManagedCode(static_cast<PCODE>(faultAddress)))
         {
-            t_crashExceptionRecord = pExceptionInfo->ExceptionRecord;
-            t_crashContextRecord = pExceptionInfo->ContextRecord;
-        }
-#endif // TARGET_WINDOWS
+            WindowsFatalErrorContext fatalErrorContext =
+            {
+                pExceptionInfo->ExceptionRecord,
+                pExceptionInfo->ContextRecord
+            };
 
-        if (InvokeFatalErrorHandler(exitCode, faultAddress))
+            skipDefaultHandler = InvokeFatalErrorHandlerForNativeException(
+                exitCode,
+                reinterpret_cast<void*>(faultAddress),
+                pExceptionInfo,
+                GetWindowsFatalErrorProperty,
+                &fatalErrorContext,
+                pszMessage,
+                errorSource,
+                argExceptionString);
+        }
+        else
+#endif // TARGET_WINDOWS
+        {
+            // Store crash context for on-demand replay by the fatal error handler's
+            // pfnGetFatalErrorLog callback.
+            StoreCrashContext(exitCode, pszMessage, pExceptionInfo, errorSource, argExceptionString);
+            skipDefaultHandler = InvokeFatalErrorHandler(exitCode, faultAddress);
+        }
+
+        if (skipDefaultHandler)
         {
             // SkipDefaultHandler — suppress crash output and crash dump, proceed to exit.
             SafeExitProcess(exitCode, SCA_ExitProcessWhenShutdownComplete);

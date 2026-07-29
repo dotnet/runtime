@@ -24,6 +24,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/palinternal.h"
 
 #include <clrconfignocache.h>
+#include <public/fatal_error_handling.h>
 
 #include <errno.h>
 #include <signal.h>
@@ -88,6 +89,47 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 static void handle_signal(int signal_id, SIGFUNC sigfunc, struct sigaction *previousAction, int additionalFlags = 0, bool skipIgnored = false);
 static void restore_signal(int signal_id, struct sigaction *previousAction);
 static void restore_signal_and_resend(int code, struct sigaction* action);
+
+#if !HAVE_MACH_EXCEPTIONS
+struct PosixFatalErrorContext
+{
+    siginfo_t* SigInfo;
+    void* UContext;
+};
+
+static int32_t GetPosixFatalErrorProperty(void* context, int32_t property, const void** value)
+{
+    PosixFatalErrorContext* fatalErrorContext = static_cast<PosixFatalErrorContext*>(context);
+
+    switch (static_cast<FatalErrorProperty>(property))
+    {
+        case FEP_PosixSigInfo:
+            *value = fatalErrorContext->SigInfo;
+            return 1;
+
+        case FEP_UContext:
+            *value = fatalErrorContext->UContext;
+            return 1;
+
+        default:
+            return 0;
+    }
+}
+
+static bool ShouldSkipDefaultHandlingForNativeException(siginfo_t* siginfo, void* context)
+{
+    native_context_t* nativeContext = static_cast<native_context_t*>(context);
+    DWORD exceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, nativeContext);
+    LPVOID faultAddress = GetNativeContextPC(nativeContext);
+    PosixFatalErrorContext fatalErrorContext = { siginfo, context };
+    return PROCInvokeFatalErrorHandlerForNativeException(
+        exceptionCode,
+        faultAddress,
+        nullptr,
+        GetPosixFatalErrorProperty,
+        &fatalErrorContext);
+}
+#endif // !HAVE_MACH_EXCEPTIONS
 
 /* internal data declarations *********************************************/
 
@@ -521,6 +563,14 @@ static void sigill_handler(int code, siginfo_t *siginfo, void *context)
         }
     }
 
+#if !HAVE_MACH_EXCEPTIONS
+    if (ShouldSkipDefaultHandlingForNativeException(siginfo, context))
+    {
+        restore_signal(code, &g_previous_sigill);
+        return;
+    }
+#endif // !HAVE_MACH_EXCEPTIONS
+
     invoke_previous_action(&g_previous_sigill, code, siginfo, context);
 }
 
@@ -544,6 +594,14 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
             return;
         }
     }
+
+#if !HAVE_MACH_EXCEPTIONS
+    if (ShouldSkipDefaultHandlingForNativeException(siginfo, context))
+    {
+        restore_signal(code, &g_previous_sigfpe);
+        return;
+    }
+#endif // !HAVE_MACH_EXCEPTIONS
 
     invoke_previous_action(&g_previous_sigfpe, code, siginfo, context);
 }
@@ -676,6 +734,8 @@ Parameters :
 static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 {
 #if !HAVE_MACH_EXCEPTIONS
+    bool isStackOverflow = false;
+
     if (PALIsInitialized())
     {
         // First check if we have a stack overflow
@@ -686,6 +746,8 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         // we have a stack overflow.
         if ((failureAddress - (sp - GetVirtualPageSize())) < 2 * GetVirtualPageSize())
         {
+            isStackOverflow = true;
+
             if (GetCurrentPalThread())
             {
 #if defined(TARGET_TVOS)
@@ -758,6 +820,12 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
             }
         }
     }
+
+    if (!isStackOverflow && ShouldSkipDefaultHandlingForNativeException(siginfo, context))
+    {
+        restore_signal(code, &g_previous_sigsegv);
+        return;
+    }
 #endif // !HAVE_MACH_EXCEPTIONS
 
     invoke_previous_action(&g_previous_sigsegv, code, siginfo, context);
@@ -811,6 +879,14 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
             return;
         }
     }
+
+#if !HAVE_MACH_EXCEPTIONS
+    if (ShouldSkipDefaultHandlingForNativeException(siginfo, context))
+    {
+        restore_signal(code, &g_previous_sigbus);
+        return;
+    }
+#endif // !HAVE_MACH_EXCEPTIONS
 
     invoke_previous_action(&g_previous_sigbus, code, siginfo, context);
 }

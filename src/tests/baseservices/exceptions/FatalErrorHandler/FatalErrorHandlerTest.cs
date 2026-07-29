@@ -296,13 +296,7 @@ unsafe class FatalErrorHandlerTest
         Console.WriteLine("=== TestNativeCodeException ===");
 
         // A genuinely unmanaged fatal fault (an access violation whose faulting
-        // instruction pointer is inside native code). NativeAOT routes this on all
-        // platforms; CoreCLR routes it on Windows. CoreCLR on Unix/macOS is not yet wired.
-        if (!TestLibrary.Utilities.IsNativeAot && !OperatingSystem.IsWindows())
-        {
-            Console.WriteLine("  SKIP: only implemented on NativeAOT and CoreCLR/Windows");
-            return true;
-        }
+        // instruction pointer is inside native code).
 
         var (exitCode, stderr) = LaunchChild("native-code-exception");
 
@@ -312,38 +306,35 @@ unsafe class FatalErrorHandlerTest
         bool addressPopulated = stderr.Contains("addr=true");
         bool exited = exitCode != 0;
 
-        bool firstStructPopulated;
-        bool secondStructPopulated;
-        string firstStructName;
-        string secondStructName;
+        bool platformInfoPopulated;
+        string platformInfoName;
         if (OperatingSystem.IsWindows())
         {
-            firstStructPopulated = stderr.Contains("excrec=true");
-            secondStructPopulated = stderr.Contains("ctxrec=true");
-            firstStructName = "EXCEPTION_RECORD";
-            secondStructName = "CONTEXT";
+            platformInfoPopulated = stderr.Contains("excrec=true") && stderr.Contains("ctxrec=true");
+            platformInfoName = "EXCEPTION_RECORD/CONTEXT";
+        }
+        else if (OperatingSystem.IsMacOS() && !TestLibrary.Utilities.IsNativeAot)
+        {
+            platformInfoPopulated = stderr.Contains("machinfo=true");
+            platformInfoName = "Mach thread state";
         }
         else
         {
-            firstStructPopulated = stderr.Contains("siginfo=true");
-            secondStructPopulated = stderr.Contains("ucontext=true");
-            firstStructName = "siginfo_t";
-            secondStructName = "ucontext_t";
+            platformInfoPopulated = stderr.Contains("siginfo=true") && stderr.Contains("ucontext=true");
+            platformInfoName = "siginfo_t/ucontext_t";
         }
 
-        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, address ok: {addressPopulated}, {firstStructName} ok: {firstStructPopulated}, {secondStructName} ok: {secondStructPopulated}, exited: {exited}");
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, address ok: {addressPopulated}, {platformInfoName} ok: {platformInfoPopulated}, exited: {exited}");
         if (!handlerInvoked)
             Console.WriteLine("  FAIL: Handler was not invoked");
         if (!addressPopulated)
             Console.WriteLine("  FAIL: crash address (IP) was not populated for a native-code exception");
-        if (!firstStructPopulated)
-            Console.WriteLine($"  FAIL: {firstStructName} was not surfaced for a native-code exception");
-        if (!secondStructPopulated)
-            Console.WriteLine($"  FAIL: {secondStructName} was not surfaced for a native-code exception");
+        if (!platformInfoPopulated)
+            Console.WriteLine($"  FAIL: {platformInfoName} was not surfaced for a native-code exception");
         if (!exited)
             Console.WriteLine("  FAIL: Expected non-zero exit code");
 
-        return handlerInvoked && addressPopulated && firstStructPopulated && secondStructPopulated && exited;
+        return handlerInvoked && addressPopulated && platformInfoPopulated && exited;
     }
 
     static bool TestNestedHardwareFault()
