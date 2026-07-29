@@ -4,6 +4,8 @@ pr:
   branches:
     include:
     - '*'
+    exclude:
+    - release/*-staging
   paths:
     include:
     - src/libraries/System.Net.Http/tests/StressTests/HttpStress/**
