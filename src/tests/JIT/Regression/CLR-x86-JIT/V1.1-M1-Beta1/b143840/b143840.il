@@ -45,9 +45,9 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
-      string('https://github.com/dotnet/runtime/issues/129508')
-      int32(0x2) // Mono
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
+      string('This test is not compatible with GC stress.')
+      int32(0xC0) // AnyGCStress
     }
     .entrypoint
     .maxstack  3

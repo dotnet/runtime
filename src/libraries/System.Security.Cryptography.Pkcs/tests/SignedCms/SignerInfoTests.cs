@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Pkcs.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/126697", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
     public static partial class SignerInfoTests
     {
         [Fact]
@@ -813,10 +814,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
             select new object[] { sit, data.hashAlgorithm, data.algorithm };
 
-        // TODO: Windows does not support draft 10 PKCS#8 format yet. Remove this and use MLDsa.IsSupported when it does.
-        private static bool SupportsDraft10Pkcs8 => MLDsa.IsSupported && !PlatformDetection.IsWindows;
-
-        public static bool MLDsaAndRsaSha1SignaturesSupported => SignatureSupport.SupportsRsaSha1Signatures && SupportsDraft10Pkcs8;
+        public static bool MLDsaAndRsaSha1SignaturesSupported => SignatureSupport.SupportsRsaSha1Signatures && MLDsa.IsSupported;
 
         [ConditionalTheory(typeof(SignerInfoTests), nameof(MLDsaAndRsaSha1SignaturesSupported))]
         [MemberData(nameof(AddCounterSignerMLDsaTestData))]

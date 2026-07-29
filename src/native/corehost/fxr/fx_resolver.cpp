@@ -196,7 +196,7 @@ namespace
         assert(!fx_ref.get_fx_version().empty());
 
         fx_ver_t _debug_ver;
-        assert(fx_ver_t::parse(fx_ref.get_fx_version(), &_debug_ver, false));
+        assert(fx_ver_t::parse(fx_ref.get_fx_version(), &_debug_ver));
         assert(_debug_ver == fx_ref.get_fx_version_number());
 #endif // defined(DEBUG)
 
@@ -257,7 +257,7 @@ namespace
                 for (const auto& version : list)
                 {
                     fx_ver_t ver;
-                    if (fx_ver_t::parse(version, &ver, false))
+                    if (fx_ver_t::parse(version, &ver))
                     {
                         if (std::find(disabled_versions.begin(), disabled_versions.end(), version) != disabled_versions.end())
                         {

@@ -9,6 +9,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public interface IStackDataFrameHandle
 {
     StackWalkState State { get; }
+    bool IsInterrupted { get; }
+    bool HasFaulted { get; }
 }
 
 public enum StackWalkState
@@ -48,6 +50,7 @@ public enum StackSourceType
 public class StackReferenceData
 {
     public bool HasRegisterInformation { get; init; }
+    public bool IsInteriorPointer { get; init; }
     public int Register { get; init; }
     public int Offset { get; init; }
     public TargetPointer Address { get; init; }
@@ -79,21 +82,17 @@ public record struct DebuggerEvalData(
     uint MethodToken,
     TargetPointer AssemblyPtr);
 
-[Flags]
-public enum StackwalkFlag
-{
-    Default = 0,
-    X86ESPIgnoresCalleePoppedArgs = 0x1,
-}
-
 public interface IStackWalk : IContract
 {
     static string IContract.Name => nameof(StackWalk);
     IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData) => throw new NotImplementedException();
     IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData, byte[] contextBuffer, bool isFirst = true) => throw new NotImplementedException();
-    IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData) => throw new NotImplementedException();
-    byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle, StackwalkFlag flags = StackwalkFlag.Default) => throw new NotImplementedException();
+    IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData, bool resolveInteriorPointers) => throw new NotImplementedException();
+    byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+    TargetPointer GetRuntimeFramePointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+    TargetPointer GetContextFramePointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+    TargetPointer GetStackPointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     string GetFrameName(TargetPointer frameIdentifier) => throw new NotImplementedException();
     TargetPointer GetMethodDescPtr(TargetPointer framePtr) => throw new NotImplementedException();
     TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
@@ -103,6 +102,8 @@ public interface IStackWalk : IContract
     DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress) => throw new NotImplementedException();
     TargetPointer GetRedirectedContextPointer(ThreadData threadData) => throw new NotImplementedException();
     byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags) => throw new NotImplementedException();
+    TargetPointer GetFuncletRootId(IStackDataFrameHandle stackDataFrameHandle, out uint parentNativeOffset) => throw new NotImplementedException();
+    TargetPointer GetExactGenericArgsToken(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
 }
 
 public struct StackWalk : IStackWalk

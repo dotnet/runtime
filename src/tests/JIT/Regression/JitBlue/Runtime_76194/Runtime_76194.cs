@@ -56,7 +56,7 @@ public unsafe class Runtime_76194
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static byte* GetPointerNearPageEndFor<T>(byte* ptr, nuint pageSize) => ptr + pageSize - Unsafe.SizeOf<T>();
+    public static byte* GetPointerNearPageEndFor<T>(byte* ptr, nuint pageSize) => ptr + pageSize - sizeof(T);
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]

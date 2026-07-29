@@ -34,6 +34,10 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual IThread Thread => GetContract<IThread>();
     /// <summary>
+    /// Gets an instance of the WindowsErrorReporting contract for the target.
+    /// </summary>
+    public virtual IWindowsErrorReporting WindowsErrorReporting => GetContract<IWindowsErrorReporting>();
+    /// <summary>
     /// Gets an instance of the RuntimeTypeSystem contract for the target.
     /// </summary>
     public virtual IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IRuntimeTypeSystem>();
@@ -96,6 +100,10 @@ public abstract class ContractRegistry
     /// Gets an instance of the Notifications contract for the target.
     /// </summary>
     public virtual INotifications Notifications => GetContract<INotifications>();
+    /// <summary>
+    /// Gets an instance of the CallingConvention contract for the target.
+    /// </summary>
+    public virtual ICallingConvention CallingConvention => GetContract<ICallingConvention>();
     /// <summary>
     /// Gets an instance of the CodeNotifications contract for the target.
     /// </summary>

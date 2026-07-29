@@ -13,6 +13,7 @@ internal class StackRefData
     }
 
     public bool HasRegisterInformation { get; set; }
+    public bool IsInteriorPointer { get; set; }
     public int Register { get; set; }
     public int Offset { get; set; }
     public TargetPointer Address { get; set; }

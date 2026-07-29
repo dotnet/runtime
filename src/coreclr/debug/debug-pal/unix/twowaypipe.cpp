@@ -11,6 +11,10 @@
 #include <pal_assert.h>
 #include "twowaypipe.h"
 
+#ifdef TARGET_WASI
+static inline int mkfifo(const char *path, mode_t mode) { (void)path; (void)mode; errno = ENOTSUP; return -1; }
+#endif
+
 // Pipe names stored for use in AbortPipeServerImpl().
 static char s_serverInPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
 static char s_serverOutPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];

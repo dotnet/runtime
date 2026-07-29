@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 using static System.Buffers.StringSearchValuesHelper;
 using static System.Buffers.TeddyHelper;
@@ -150,6 +151,7 @@ namespace System.Buffers
 
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         protected int IndexOfAnyN2(ReadOnlySpan<char> span)
         {
             // The behavior of the rest of the function remains the same if Avx2 or Avx512BW aren't supported
@@ -170,6 +172,7 @@ namespace System.Buffers
 
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         protected int IndexOfAnyN3(ReadOnlySpan<char> span)
         {
             // The behavior of the rest of the function remains the same if Avx2 or Avx512BW aren't supported
@@ -190,6 +193,7 @@ namespace System.Buffers
 
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private int IndexOfAnyN2Vector128(ReadOnlySpan<char> span)
         {
             // See comments in 'IndexOfAnyN3Vector128' below.
@@ -350,6 +354,7 @@ namespace System.Buffers
 
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private int IndexOfAnyN3Vector128(ReadOnlySpan<char> span)
         {
             // We can't process inputs shorter than 18 characters in a vectorized manner here.

@@ -62,6 +62,45 @@ namespace System.IO.Packaging.Tests
             }
         }
 
+        [Theory]
+        [InlineData(FileAccess.Write)]
+        [InlineData(FileAccess.ReadWrite)]
+        public void GetStreamCreate_OverwritesExistingPartContentWithoutLeftoverBytes(FileAccess overwriteAccess)
+        {
+            FileInfo file = GetTempFileInfoWithExtension(".zip");
+            Uri partUri = PackUriHelper.CreatePartUri(new Uri("MyFile.bin", UriKind.Relative));
+            byte[] original = Enumerable.Repeat((byte)'A', 5000).ToArray();
+            byte[] replacement = Enumerable.Repeat((byte)'B', 10).ToArray();
+
+            using (Package package = Package.Open(file.FullName, FileMode.Create, FileAccess.ReadWrite))
+            {
+                PackagePart part = package.CreatePart(partUri, System.Net.Mime.MediaTypeNames.Application.Octet);
+                using Stream s = part.GetStream(FileMode.Create, FileAccess.Write);
+                s.Write(original, 0, original.Length);
+            }
+
+            using (Package package = Package.Open(file.FullName, FileMode.Open, FileAccess.ReadWrite))
+            {
+                PackagePart part = package.GetPart(partUri);
+                using Stream s = part.GetStream(FileMode.Create, overwriteAccess);
+
+                // The optimized discard path must still yield a seekable, empty, length-reporting stream.
+                Assert.True(s.CanSeek);
+                Assert.Equal(0L, s.Length);
+
+                s.Write(replacement, 0, replacement.Length);
+            }
+
+            using (Package package = Package.Open(file.FullName, FileMode.Open, FileAccess.Read))
+            {
+                PackagePart part = package.GetPart(partUri);
+                using Stream s = part.GetStream(FileMode.Open, FileAccess.Read);
+                using MemoryStream actual = new MemoryStream();
+                s.CopyTo(actual);
+                Assert.Equal(replacement, actual.ToArray());
+            }
+        }
+
         [Fact]
         public void T201_FileFormatException()
         {

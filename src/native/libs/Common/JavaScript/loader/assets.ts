@@ -588,8 +588,7 @@ const behaviorToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType
     "webcil": "assembly",
     "js-module-dotnet": "dotnetjs",
     "js-module-native": "dotnetjs",
-    "js-module-runtime": "dotnetjs",
-    "js-module-threads": "dotnetjs"
+    "js-module-runtime": "dotnetjs"
 };
 
 const behaviorToContentTypeMap: { [key: string]: string | undefined } = {
@@ -642,7 +641,6 @@ export async function prefetchAllResources(extraVfs?: VfsAsset[]): Promise<void>
     // Data assets: fetch and discard
     if (resources.coreAssembly) resources.coreAssembly.forEach(a => enqueueAsset(a, "assembly"));
     if (resources.assembly) resources.assembly.forEach(a => enqueueAsset(a, "assembly"));
-    if (resources.coreVfs) resources.coreVfs.forEach(a => enqueueAsset(a, "vfs"));
     if (resources.vfs) resources.vfs.forEach(a => enqueueAsset(a, "vfs"));
     if (extraVfs) extraVfs.forEach(a => enqueueAsset(a, "vfs"));
     if (resources.icu) resources.icu.forEach(a => enqueueAsset(a, "icu"));
@@ -667,7 +665,6 @@ export async function prefetchAllResources(extraVfs?: VfsAsset[]): Promise<void>
         ...(resources.jsModuleNative || []),
         ...(resources.jsModuleRuntime || []),
         ...(resources.jsModuleDiagnostics || []),
-        ...(resources.jsModuleWorker || []),
         ...(resources.modulesAfterConfigLoaded || []),
         ...(resources.modulesAfterRuntimeReady || []),
     ]);

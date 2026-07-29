@@ -6,15 +6,15 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.HeapSegment))]
 internal sealed partial class HeapSegment : IData<HeapSegment>
 {
-    [Field] public TargetPointer Allocated { get; }
-    [Field] public TargetPointer Committed { get; }
-    [Field] public TargetPointer Reserved { get; }
-    [Field] public TargetPointer Used { get; }
-    [Field] public TargetPointer Mem { get; }
-    [Field] public TargetNUInt Flags { get; }
-    [Field] public TargetPointer Next { get; }
-    [Field] public TargetPointer BackgroundAllocated { get; }
+    [Field] public partial TargetPointer Allocated { get; }
+    [Field] public partial TargetPointer Committed { get; }
+    [Field] public partial TargetPointer Reserved { get; }
+    [Field] public partial TargetPointer Used { get; }
+    [Field] public partial TargetPointer Mem { get; }
+    [Field] public partial TargetNUInt Flags { get; }
+    [Field] public partial TargetPointer Next { get; }
+    [Field] public partial TargetPointer BackgroundAllocated { get; }
 
     // Field only exists in MULTIPLE_HEAPS builds
-    [Field] public TargetPointer? Heap { get; }
+    [Field] public partial TargetPointer? Heap { get; }
 }

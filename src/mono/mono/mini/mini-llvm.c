@@ -1374,8 +1374,6 @@ resolve_patch (MonoCompile *cfg, MonoJumpInfoType type, gconstpointer target)
 	return res;
 }
 
-static LLVMValueRef emit_fpnarrow (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype);
-
 /*
  * convert_full:
  *
@@ -1412,23 +1410,6 @@ convert_full (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype, gboolean is_u
 			return LLVMBuildTrunc (ctx->builder, v, dtype, "");
 		if (stype == LLVMDoubleType () && dtype == LLVMFloatType ())
 			return LLVMBuildFPTrunc (ctx->builder, v, dtype, "");
-
-		/*
-		 * Narrowing a float/double to half (IEEE binary16) must preserve NaN. Route it
-		 * through emit_fpnarrow, which detects a NaN input explicitly and selects a
-		 * canonical quiet NaN, so a target that drops the NaN mantissa during the
-		 * fptrunc (yielding +/-Infinity) cannot turn a NaN into an infinity. Handles
-		 * both scalar and vector half destinations. Mono itself does not emit half
-		 * typed IR today, but keep the central converter correct and NaN-safe instead
-		 * of hitting g_assert_not_reached () below.
-		 */
-		if (dtype == LLVMHalfType () && (stype == LLVMFloatType () || stype == LLVMDoubleType ()))
-			return emit_fpnarrow (ctx, v, dtype);
-		if (LLVMGetTypeKind (stype) == LLVMVectorTypeKind && LLVMGetTypeKind (dtype) == LLVMVectorTypeKind &&
-			LLVMGetVectorSize (stype) == LLVMGetVectorSize (dtype) &&
-			LLVMGetElementType (dtype) == LLVMHalfType () &&
-			(LLVMGetElementType (stype) == LLVMFloatType () || LLVMGetElementType (stype) == LLVMDoubleType ()))
-			return emit_fpnarrow (ctx, v, dtype);
 
 #ifdef USE_OPAQUE_POINTERS
 		if (LLVMGetTypeKind (stype) == LLVMPointerTypeKind && LLVMGetTypeKind (dtype) == LLVMPointerTypeKind)
@@ -1468,75 +1449,6 @@ static LLVMValueRef
 convert (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype)
 {
 	return convert_full (ctx, v, dtype, FALSE);
-}
-
-/*
- * quiet_nan_for_fptype:
- *
- *   Return a constant quiet NaN matching the floating point type T. T can be a
- * scalar (half/float/double) or a vector of those.
- */
-#if LLVM_API_VERSION >= 2300
-static LLVMValueRef
-quiet_nan_for_fptype (LLVMTypeRef t)
-{
-	LLVMTypeRef elem_t = LLVMGetTypeKind (t) == LLVMVectorTypeKind ? LLVMGetElementType (t) : t;
-	guint64 bits;
-	LLVMTypeRef int_t;
-
-	switch (LLVMGetTypeKind (elem_t)) {
-	case LLVMHalfTypeKind:
-		bits = 0x7e00;                  /* IEEE binary16 quiet NaN */
-		int_t = LLVMInt16Type ();
-		break;
-	case LLVMFloatTypeKind:
-		bits = 0x7fc00000;              /* IEEE binary32 quiet NaN */
-		int_t = LLVMInt32Type ();
-		break;
-	default:
-		bits = 0x7ff8000000000000ULL;   /* IEEE binary64 quiet NaN */
-		int_t = LLVMInt64Type ();
-		break;
-	}
-
-	LLVMValueRef nan = LLVMConstBitCast (LLVMConstInt (int_t, bits, FALSE), elem_t);
-	if (LLVMGetTypeKind (t) == LLVMVectorTypeKind) {
-		unsigned int n = LLVMGetVectorSize (t);
-		LLVMValueRef elems [MAX_VECTOR_ELEMS];
-		g_assert (n <= MAX_VECTOR_ELEMS);
-		for (unsigned int i = 0; i < n; ++i)
-			elems [i] = nan;
-		nan = LLVMConstVector (elems, n);
-	}
-	return nan;
-}
-#endif
-
-/*
- * emit_fpnarrow:
- *
- *   Emit a floating point narrowing conversion (fptrunc) of V to DTYPE which is
- * guaranteed to preserve NaN.
- *
- * Background: the branchless software float->Half (IEEE binary16) conversion used
- * by System.Half is, starting with LLVM 23, recognized by the optimizer and may be
- * lowered to a hardware narrowing 'fptrunc <float> to <half>'. On some targets
- * (e.g. arm64) that narrowing drops the NaN mantissa, leaving an all-ones exponent
- * with a zero mantissa, i.e. +/-Infinity. The result is that operations which must
- * produce or propagate NaN end up yielding +/-inf. To stay robust against the
- * toolchain mis-handling NaN during FP narrowing, detect NaN inputs explicitly and
- * select a canonical quiet NaN of the destination type.
- */
-static LLVMValueRef
-emit_fpnarrow (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype)
-{
-	LLVMValueRef trunc = LLVMBuildFPTrunc (ctx->builder, v, dtype, "");
-#if LLVM_API_VERSION >= 2300
-	/* 'uno' (unordered) is true iff V is NaN, since a NaN is unordered with itself. */
-	LLVMValueRef is_nan = LLVMBuildFCmp (ctx->builder, LLVMRealUNO, v, v, "");
-	trunc = LLVMBuildSelect (ctx->builder, is_nan, quiet_nan_for_fptype (dtype), trunc, "");
-#endif
-	return trunc;
 }
 
 static void
@@ -7120,7 +7032,7 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = LLVMBuildSIToFP (builder, lhs, LLVMFloatType (), "");
 			break;
 		case OP_FCONV_TO_R4:
-			values [ins->dreg] = emit_fpnarrow (ctx, lhs, LLVMFloatType ());
+			values [ins->dreg] = LLVMBuildFPTrunc (builder, lhs, LLVMFloatType (), "");
 			break;
 		case OP_RCONV_TO_R8:
 			values [ins->dreg] = LLVMBuildFPExt (builder, lhs, LLVMDoubleType (), dname);
@@ -7494,6 +7406,13 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = call_intrins (ctx, INTRINS_LOG, args, dname);
 			break;
 		}
+		case OP_LOGF: {
+			LLVMValueRef args [1];
+
+			args [0] = convert (ctx, lhs, LLVMFloatType ());
+			values [ins->dreg] = call_intrins (ctx, INTRINS_LOGF, args, dname);
+			break;
+		}
 		case OP_TRUNC: {
 			LLVMValueRef args [1];
 
@@ -7700,6 +7619,41 @@ MONO_RESTORE_WARNING
 			default: g_assert_not_reached (); break;
 			}
 			values [ins->dreg] = call_intrins (ctx, iid, args, dname);
+			break;
+		}
+
+		case OP_FMINNUM:
+		case OP_FMAXNUM:
+		case OP_RMINNUM:
+		case OP_RMAXNUM: {
+			/*
+			 * IEEE 754-2019 minimumNumber/maximumNumber (NaN-suppressing and
+			 * sign-of-zero aware), as specified by `float.MinNumber` /
+			 * `double.MinNumber` (and the Max variants, surfaced via
+			 * INumber<TSelf> on the primitive Single/Double/Half types).
+			 *
+			 * We compose this from llvm.minimum/maximum (sign-of-zero aware but
+			 * NaN-propagating) plus an explicit NaN fixup, rather than lowering
+			 * directly to an intrinsic: llvm.minnum/maxnum leave the sign of zero
+			 * unspecified (minnum(+0, -0) may return +0 on x86, see dotnet/runtime
+			 * #131130) and llvm.minimumnum/maximumnum are miscompiled by the x86
+			 * backend in the LLVM version we build against. When exactly one operand
+			 * is NaN we return the other; when both are NaN the NaN flows through.
+			 */
+			gboolean is_r4 = ins->opcode == OP_RMINNUM || ins->opcode == OP_RMAXNUM;
+			gboolean is_max = ins->opcode == OP_FMAXNUM || ins->opcode == OP_RMAXNUM;
+			LLVMTypeRef t = is_r4 ? LLVMFloatType () : LLVMDoubleType ();
+			LLVMValueRef l = convert (ctx, lhs, t);
+			LLVMValueRef r = convert (ctx, rhs, t);
+			LLVMValueRef args [2] = { l, r };
+			IntrinsicId iid = is_max ? (is_r4 ? INTRINS_MAXIMUMF : INTRINS_MAXIMUM)
+			                         : (is_r4 ? INTRINS_MINIMUMF : INTRINS_MINIMUM);
+			LLVMValueRef result = call_intrins (ctx, iid, args, "");
+			LLVMValueRef l_nan = LLVMBuildFCmp (builder, LLVMRealUNO, l, l, "");
+			LLVMValueRef r_nan = LLVMBuildFCmp (builder, LLVMRealUNO, r, r, "");
+			result = LLVMBuildSelect (builder, r_nan, l, result, "");
+			result = LLVMBuildSelect (builder, l_nan, r, result, dname);
+			values [ins->dreg] = result;
 			break;
 		}
 

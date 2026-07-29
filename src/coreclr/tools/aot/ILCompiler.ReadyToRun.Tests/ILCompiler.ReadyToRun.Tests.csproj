@@ -21,13 +21,17 @@
 
   <ItemGroup>
     <ProjectReference Include="../ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
+    <!-- Aliased because it redefines the ReadyToRun* constant enums that
+         ILCompiler.Reflection.ReadyToRun already brings into the global namespace. -->
+    <ProjectReference Include="../ILCompiler.ReadyToRun/ILCompiler.ReadyToRun.csproj" Aliases="crossgen2" />
     <ProjectReference Include="../crossgen2/crossgen2_inbuild.csproj" ReferenceOutputAssembly="false">
       <!-- crossgen2 is a CoreCLR artifact, so publish it in the CoreCLR configuration. This keeps it
            alongside the other CoreCLR artifacts the test consumes (System.Private.CoreLib, the JITs)
            even when this test project is built in a different configuration than CoreCLR was (e.g.
            CoreCLR built Release via 'clr -rc release', but the test built/run as Debug). Mirrors the
            CoreLib SetConfiguration pattern in eng/references.targets. -->
-      <SetConfiguration Condition="'$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
+      <SetConfiguration Condition="'$(Configuration)' == '$(CoreCLRConfiguration)'">CopyAllJitLibrariesToAotCompilerOutput=true</SetConfiguration>
+      <SetConfiguration Condition="'$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration);CopyAllJitLibrariesToAotCompilerOutput=true</SetConfiguration>
     </ProjectReference>
   </ItemGroup>
 
@@ -101,8 +105,8 @@
     <RuntimeHostConfigurationOption Include="R2RTest.TargetOS">
       <Value>$(TargetOS)</Value>
     </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="R2RTest.Configuration">
-      <Value>$(Configuration)</Value>
+    <RuntimeHostConfigurationOption Include="R2RTest.CoreCLRConfiguration">
+      <Value>$(CoreCLRConfiguration)</Value>
     </RuntimeHostConfigurationOption>
   </ItemGroup>
 

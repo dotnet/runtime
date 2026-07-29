@@ -131,9 +131,14 @@ namespace Microsoft.Extensions.Options
                     results ??= new List<ValidationResult>();
 
                     int index = 0;
-                    foreach (object item in enumerable)
+                    foreach (object? item in enumerable)
                     {
-                        res = TryValidateOptions(item, $"{qualifiedName}.{propertyInfo.Name}[{index++}]", results, ref errors, ref visited) && res;
+                        if (item is not null)
+                        {
+                            res = TryValidateOptions(item, $"{qualifiedName}.{propertyInfo.Name}[{index}]", results, ref errors, ref visited) && res;
+                        }
+
+                        index++;
                     }
                 }
             }

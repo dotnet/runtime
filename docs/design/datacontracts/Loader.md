@@ -54,12 +54,7 @@ record struct ModuleLookupTables(
     TargetPointer MethodDefToILCodeVersioningState,
     uint TableDataOffset);
 
-readonly struct LoaderHeapBlockData
-{
-    TargetPointer Address { get; init; }
-    TargetNUInt Size { get; init; }
-    TargetPointer NextBlock { get; init; }
-}
+readonly record struct LoaderHeapBlock(TargetPointer Address, TargetNUInt Size);
 
 enum LoaderAllocatorHeapType
 {
@@ -100,6 +95,7 @@ bool IsReadyToRun(ModuleHandle handle);
 string GetSimpleName(ModuleHandle handle);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
+bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
 TargetPointer GetAssemblyLoadContext(ModuleHandle handle);
@@ -118,10 +114,7 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
-// Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
-TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap);
-// Returns the data for the given loader heap block (address, size, and next block pointer).
-LoaderHeapBlockData GetLoaderHeapBlockData(TargetPointer block);
+IEnumerable<LoaderHeapBlock> EnumerateLoaderHeapBlocks(TargetPointer loaderHeap);
 IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
 
 DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle);
@@ -153,100 +146,111 @@ enum ClrModifiableAssemblies : uint
 
 ## Version 1
 
-### Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
+<!-- BEGIN GENERATED: usage contract=Loader version=c1 -->
+### Data descriptors used
+
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `AppDomain` | `AssemblyList` | `pointer` | Pointer to the list of assemblies in the application domain |
+| `AppDomain` | `FriendlyName` | `pointer` | Pointer to the application domain's friendly name |
+| `AppDomain` | `RootAssembly` | `pointer` | Pointer to the root assembly |
+| `ArrayListBase` | `Count` | `uint32` | Total number of elements in the array list |
+| `ArrayListBase` | `FirstBlock` | `pointer` | Pointer to the first array-list block |
+| `ArrayListBlock` | `ArrayStart` | `pointer` | Pointer to the start of the block's element array |
+| `ArrayListBlock` | `Next` | `pointer` | Pointer to the next array-list block |
+| `ArrayListBlock` | `Size` | `uint32` | Number of elements available in the block |
+| `Assembly` | `Error` | `pointer` | Pointer to the load exception, or null when no error occurred |
+| `Assembly` | `IsCollectible` | `uint8` | Whether the assembly may be collected |
+| `Assembly` | `IsDynamic` | `uint8` | Whether the assembly was created dynamically |
+| `Assembly` | `IsLoaded` | `uint8` | Whether the assembly has finished loading |
+| `Assembly` | `Module` | `pointer` | Pointer to the assembly's manifest module |
+| `Assembly` | `NotifyFlags` | `uint32` | Debugger and profiler notification state for the assembly |
+| `AssemblyBinder` | `AssemblyLoadContext` | `ObjectHandle` | Handle to the managed assembly load context |
+| `CGrowableSymbolStream` | `Buffer` | `pointer` | Pointer to the in-memory symbol stream buffer |
+| `CGrowableSymbolStream` | `Size` | `uint32` | Size of the symbol stream buffer in bytes |
+| `DynamicILBlobTable` | *(type size)* | `uint32` | Size in bytes of each table entry |
+| `DynamicILBlobTable` | `EntryIL` | `pointer` | Offset of the IL pointer within each dynamic IL table entry |
+| `DynamicILBlobTable` | `EntryMethodToken` | `uint32` | Offset of the method token within each dynamic IL table entry |
+| `DynamicILBlobTable` | `Table` | `pointer` | Address of the SHash table |
+| `DynamicILBlobTable` | `TableSize` | `uint32` | Number of entries in the table |
+| `EEConfig` | `ModifiableAssemblies` | `uint32` | Edit and Continue configuration represented by `ClrModifiableAssemblies` |
+| `EETypeHashTable` | `Buckets` | `pointer` | Pointer to the hash table buckets |
+| `EETypeHashTable` | `Count` | `uint32` | Number of elements in the hash table |
+| `EETypeHashTable` | `VolatileEntryNextEntry` | `pointer` | Offset of the next-entry pointer within a hash table entry |
+| `EETypeHashTable` | `VolatileEntryValue` | `pointer` | Offset of the value within a hash table entry |
+| `InstMethodHashTable` | `Buckets` | `pointer` | Pointer to the hash table buckets |
+| `InstMethodHashTable` | `Count` | `uint32` | Number of elements in the hash table |
+| `InstMethodHashTable` | `VolatileEntryNextEntry` | `pointer` | Offset of the next-entry pointer within a hash table entry |
+| `InstMethodHashTable` | `VolatileEntryValue` | `pointer` | Offset of the value within a hash table entry |
+| `LoaderAllocator` | `DynamicHelpersStubHeap` | `pointer` | Dynamic-helper stub heap (optional, present when ReadyToRun dynamic-helper stubs are enabled) |
+| `LoaderAllocator` | `ExecutableHeap` | `pointer` | Executable-code heap |
+| `LoaderAllocator` | `FixupPrecodeHeap` | `pointer` | Fixup-precode heap (optional, present when fixup precodes are supported) |
+| `LoaderAllocator` | `HighFrequencyHeap` | `pointer` | High-frequency allocation heap |
+| `LoaderAllocator` | `LowFrequencyHeap` | `pointer` | Low-frequency allocation heap |
+| `LoaderAllocator` | `NewStubPrecodeHeap` | `pointer` | New-stub-precode heap (optional, absent with portable entry points) |
+| `LoaderAllocator` | `ObjectHandle` | `ObjectHandle` | Handle to the managed loader allocator object |
+| `LoaderAllocator` | `ReferenceCount` | `uint32` | Reference count of the loader allocator |
+| `LoaderAllocator` | `StaticsHeap` | `pointer` | Heap containing statics-related allocations |
+| `LoaderAllocator` | `StubHeap` | `pointer` | Heap containing runtime stubs |
+| `LoaderAllocator` | `VirtualCallStubManager` | `pointer` | Pointer to the virtual-call stub manager |
+| `LoaderHeap` | `FirstBlock` | `pointer` | Pointer to the first loader-heap block |
+| `LoaderHeapBlock` | `Next` | `pointer` | Pointer to the next loader-heap block |
+| `LoaderHeapBlock` | `VirtualAddress` | `pointer` | Start address of the reserved virtual memory |
+| `LoaderHeapBlock` | `VirtualSize` | `nuint` | Size of the reserved virtual memory region in bytes |
+| `Module` | `Assembly` | `pointer` | Pointer to the containing assembly |
+| `Module` | `AvailableTypeParams` | `pointer` | Pointer to the available type-parameter hash table |
+| `Module` | `Base` | `pointer` | Base address of the module's loaded image |
+| `Module` | `DynamicILBlobTable` | `pointer` | Pointer to the table of dynamically supplied IL bodies |
+| `Module` | `FieldDefToDescMap` | `pointer` | Pointer to the field-definition-to-field-descriptor lookup map |
+| `Module` | `FileName` | `pointer` | Pointer to the null-terminated UTF-16 module file name |
+| `Module` | `Flags` | `uint32` | Module state and capability flags |
+| `Module` | `GrowableSymbolStream` | `pointer` | Pointer to the in-memory symbol stream |
+| `Module` | `InstMethodHashTable` | `pointer` | Pointer to the instantiated-method hash table |
+| `Module` | `LoaderAllocator` | `pointer` | Pointer to the module's loader allocator |
+| `Module` | `ManifestModuleReferencesMap` | `pointer` | Pointer to the manifest-module-reference lookup map |
+| `Module` | `MemberRefToDescMap` | `pointer` | Pointer to the member-reference-to-descriptor lookup map |
+| `Module` | `MethodDefToDescMap` | `pointer` | Pointer to the method-definition-to-method-descriptor lookup map |
+| `Module` | `MethodDefToILCodeVersioningStateMap` | `pointer` | Pointer to the method-definition-to-IL-code-versioning-state lookup map |
+| `Module` | `Path` | `pointer` | Pointer to the null-terminated UTF-16 module path |
+| `Module` | `PEAssembly` | `pointer` | Pointer to the module's PE assembly |
+| `Module` | `ReadyToRunInfo` | `pointer` | Pointer to the module's ReadyToRun information |
+| `Module` | `SimpleName` | `pointer` | Pointer to the null-terminated UTF-8 module name |
+| `Module` | `TypeDefToMethodTableMap` | `pointer` | Pointer to the type-definition-to-method-table lookup map |
+| `Module` | `TypeRefToMethodTableMap` | `pointer` | Pointer to the type-reference-to-method-table lookup map |
+| `ModuleLookupMap` | `Count` | `uint32` | Number of pointer-sized entries in this map segment |
+| `ModuleLookupMap` | `Next` | `pointer` | Pointer to the next segment of the lookup map |
+| `ModuleLookupMap` | `SupportedFlagsMask` | `nuint` | Mask of flag bits supported on lookup-map entries |
+| `ModuleLookupMap` | `TableData` | `pointer` | Pointer to the first lookup-map entry |
+| `PEAssembly` | `AssemblyBinder` | `pointer` | Pointer to the assembly binder |
+| `PEAssembly` | `PEImage` | `pointer` | Pointer to the PE image |
+| `PEImage` | `FlatImageLayout` | `pointer` | Pointer to the PEImage's flat PEImageLayout (used when there is no loaded layout, e.g. webcil images) |
+| `PEImage` | `LoadedImageLayout` | `pointer` | Pointer to the loaded image layout |
+| `PEImage` | `ProbeExtensionResult` | `ProbeExtensionResult` | Result of probing the image file extension |
+| `PEImageLayout` | `Base` | `pointer` | Base address of the image layout |
+| `PEImageLayout` | `Flags` | `uint32` | Image layout state flags |
+| `PEImageLayout` | `Format` | `uint32` | Image format discriminator (PE or Webcil) |
+| `PEImageLayout` | `Size` | `uint32` | Size of the image layout in bytes |
+| `ProbeExtensionResult` | `Type` | `int32` | Kind of extension-probe result |
+| `SystemDomain` | `GlobalLoaderAllocator` | `pointer` | Pointer to the global loader allocator |
+| `SystemDomain` | `SystemAssembly` | `pointer` | Pointer to the system assembly |
+| `VirtualCallStubManager` | `CacheEntryHeap` | `pointer` | Cache-entry heap (optional, present with virtual stub dispatch) |
+| `VirtualCallStubManager` | `IndcellHeap` | `pointer` | Indirection-cell heap |
+
+### Global variables used
+
+| Global | Type | Meaning |
 | --- | --- | --- |
-| `Module` | `Assembly` | Assembly of the Module |
-| `Module` | `PEAssembly` | PEAssembly of the Module |
-| `Module` | `Base` | Pointer to start of PE file in memory |
-| `Module` | `Flags` | Assembly of the Module |
-| `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
-| `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
-| `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
-| `Module` | `SimpleName` | Simple name of the Module (UTF-8, null-terminated) |
-| `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
-| `Module` | `AvailableTypeParams` | Pointer to an EETypeHashTable |
-| `Module` | `InstMethodHashTable` | Pointer to an InstMethodHashTable |
-| `Module` | `FieldDefToDescMap` | Mapping table |
-| `Module` | `ManifestModuleReferencesMap` | Mapping table |
-| `Module` | `MemberRefToDescMap` | Mapping table |
-| `Module` | `MethodDefToDescMap` | Mapping table |
-| `Module` | `TypeDefToMethodTableMap` | Mapping table |
-| `Module` | `TypeRefToMethodTableMap` | Mapping table |
-| `Module` | `DynamicILBlobTable` | pointer to the table of dynamic IL |
-| `ModuleLookupMap` | `TableData` | Start of the mapping table's data |
-| `ModuleLookupMap` | `SupportedFlagsMask` | Mask for flag bits on lookup map entries |
-| `ModuleLookupMap` | `Count` | Number of TargetPointer sized entries in this section of the map |
-| `ModuleLookupMap` | `Next` | Pointer to next ModuleLookupMap segment for this map |
-| `Assembly` | `Module` | Pointer to the Assemblies module |
-| `Assembly` | `IsCollectible` | Flag indicating if this module may be collected |
-| `Assembly` | `IsDynamic` | Flag indicating if this module is dynamic |
-| `Assembly` | `Error` | Pointer to exception. No error if nullptr |
-| `Assembly` | `NotifyFlags` | Flags relating to the debugger/profiler notification state of the assembly |
-| `Assembly` | `IsLoaded` | Whether assembly has been loaded |
-| `PEAssembly` | `PEImage` | Pointer to the PEAssembly's PEImage |
-| `PEAssembly` | `AssemblyBinder` | Pointer to the PEAssembly's binder |
-| `AssemblyBinder` | `AssemblyLoadContext` | Pointer to the AssemblyBinder's AssemblyLoadContext |
-| `PEImage` | `LoadedImageLayout` | Pointer to the PEImage's loaded PEImageLayout |
-| `PEImage` | `ProbeExtensionResult` | PEImage's ProbeExtensionResult |
-| `ProbeExtensionResult` | `Type` | Type of ProbeExtensionResult |
-| `PEImageLayout` | `Base` | Base address of the image layout |
-| `PEImageLayout` | `Size` | Size of the image layout |
-| `PEImageLayout` | `Flags` | Flags associated with the PEImageLayout |
-| `PEImageLayout` | `Format` | Format discriminator (PE or Webcil) for the image layout |
-| `CGrowableSymbolStream` | `Buffer` | Pointer to the raw symbol stream buffer start |
-| `CGrowableSymbolStream` | `Size` | Size of the raw symbol stream buffer |
-| `AppDomain` | `RootAssembly` | Pointer to the root assembly |
-| `AppDomain` | `AssemblyList` | ArrayListBase of assemblies in the AppDomain |
-| `AppDomain` | `FriendlyName` | Friendly name of the AppDomain |
-| `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
-| `SystemDomain` | `SystemAssembly` | pointer to the system Assembly |
-| `LoaderAllocator` | `ReferenceCount` | Reference count of LoaderAllocator |
-| `LoaderAllocator` | `HighFrequencyHeap` | High-frequency heap of LoaderAllocator |
-| `LoaderAllocator` | `LowFrequencyHeap` | Low-frequency heap of LoaderAllocator |
-| `LoaderAllocator` | `StubHeap` | Stub heap of LoaderAllocator |
-| `LoaderAllocator` | `StaticsHeap` | Statics heap of LoaderAllocator |
-| `LoaderAllocator` | `ExecutableHeap` | Executable heap of LoaderAllocator |
-| `LoaderAllocator` | `FixupPrecodeHeap` | FixupPrecode heap of LoaderAllocator (optional, present when `HAS_FIXUP_PRECODE`) |
-| `LoaderAllocator` | `NewStubPrecodeHeap` | NewStubPrecode heap of LoaderAllocator (optional, present when not `FEATURE_PORTABLE_ENTRYPOINTS`) |
-| `LoaderAllocator` | `DynamicHelpersStubHeap` | DynamicHelpers stub heap of LoaderAllocator (optional, present when `FEATURE_READYTORUN && FEATURE_STUBPRECODE_DYNAMIC_HELPERS`) |
-| `LoaderAllocator` | `VirtualCallStubManager` | Pointer to the VirtualCallStubManager of LoaderAllocator |
-| `LoaderAllocator` | `ObjectHandle` | object handle of LoaderAllocator |
-| `VirtualCallStubManager` | `IndcellHeap` | Indirection cell heap of VirtualCallStubManager |
-| `VirtualCallStubManager` | `CacheEntryHeap` | Cache entry heap of VirtualCallStubManager (optional, present when `FEATURE_VIRTUAL_STUB_DISPATCH`) |
-| `ArrayListBase` | `Count` | Total number of elements in the ArrayListBase |
-| `ArrayListBase` | `FirstBlock` | First ArrayListBlock |
-| `ArrayListBlock` | `Next` | Next ArrayListBlock in chain |
-| `ArrayListBlock` | `Size` | Size of data section in block |
-| `ArrayListBlock` | `ArrayStart` | Start of data section in block |
-| `EETypeHashTable` | `Buckets` | Pointer to hash table buckets |
-| `EETypeHashTable` | `Count` | Count of elements in the hash table |
-| `EETypeHashTable` | `VolatileEntryValue` | The data stored in the hash table entry |
-| `EETypeHashTable` | `VolatileEntryNextEntry` | Next pointer in the hash table entry |
-| `InstMethodHashTable` | `Buckets` | Pointer to hash table buckets |
-| `InstMethodHashTable` | `Count` | Count of elements in the hash table |
-| `InstMethodHashTable` | `VolatileEntryValue` | The data stored in the hash table entry |
-| `InstMethodHashTable` | `VolatileEntryNextEntry` | Next pointer in the hash table entry |
-| `DynamicILBlobTable` | `Table` | Pointer to IL blob table |
-| `DynamicILBlobTable` | `TableSize` | Number of entries in table |
-| `DynamicILBlobTable` | `EntrySize` | Size of each table entry |
-| `DynamicILBlobTable` | `EntryMethodToken` | Offset of each entry method token from entry address |
-| `DynamicILBlobTable` | `EntryIL` | Offset of each entry IL from entry address |
-| `LoaderHeap` | `FirstBlock` | Pointer to the first `LoaderHeapBlock` in the linked list |
-| `LoaderHeapBlock` | `Next` | Pointer to the next `LoaderHeapBlock` in the linked list |
-| `LoaderHeapBlock` | `VirtualAddress` | Pointer to the start of the reserved virtual memory |
-| `LoaderHeapBlock` | `VirtualSize` | Size in bytes of the reserved virtual memory region |
-| `EEConfig` | `ModifiableAssemblies` | Controls Edit and Continue support (ClrModifiableAssemblies enum) |
+| `AppDomain` | `pointer` | Pointer to the global application domain |
+| `EEConfig` | `pointer` | Pointer to the runtime configuration |
+| `SystemDomain` | `pointer` | Pointer to the global system domain |
 
+### Contracts used
 
-
-### Global variables used:
-| Global Name | Type | Purpose |
-| --- | --- | --- |
-| `AppDomain` | TargetPointer | Pointer to the global AppDomain |
-| `SystemDomain` | TargetPointer | Pointer to the global SystemDomain |
-| `EEConfig` | TargetPointer | Pointer to the global EEConfig (runtime configuration) |
-
+| Contract Name |
+| --- |
+| `EcmaMetadata` |
+| `SHash` |
+<!-- END GENERATED: usage contract=Loader version=c1 -->
 
 ### Contract Constants:
 | Name | Type | Purpose | Value |
@@ -257,12 +261,6 @@ enum ClrModifiableAssemblies : uint
 | `DebuggerInfoMask` | uint | Mask for the debugger info bits within the Module's transient flags | `0x0000FC00` |
 | `DebuggerInfoShift` | int | Bit shift for the debugger info bits within the Module's transient flags | `10` |
 | `DEBUGGER_ALLOW_JIT_OPTS_PRIV` | uint | Debugger allows JIT optimizations (shifted in transient flags) | `0x00000800` |
-
-Contracts used:
-| Contract Name |
-| --- |
-| EcmaMetadata |
-| SHash |
 
 ### Data Structures
 ```csharp
@@ -443,6 +441,14 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
     // try to get loaded PE image (peImage), if not loaded return false
 
     TargetPointer peImageLayout = target.ReadPointer(peImage + /* PEImage::LoadedImageLayout offset */);
+    if (peImageLayout == TargetPointer.Null)
+    {
+        // Images that are never mapped/loaded (e.g. a webcil ReadyToRun image on WASM) have no
+        // loaded layout; their metadata lives in the flat layout (m_pLayouts[IMAGE_FLAT]).
+        peImageLayout = target.ReadPointer(peImage + /* PEImage::FlatImageLayout offset */);
+        if (peImageLayout == TargetPointer.Null)
+            return false;
+    }
 
     baseAddress = target.ReadPointer(peImageLayout + /* PEImageLayout::Base offset */);
     size = target.Read<uint>(peImageLayout + /* PEImageLayout::Size offset */);
@@ -479,7 +485,13 @@ private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNu
 
     TargetPointer peImageLayout = target.ReadPointer(peImage + /* PEImage::LoadedImageLayout offset */);
     if(peImageLayout == TargetPointer.Null)
-        throw new InvalidOperationException("PEImage does not have a LoadedImageLayout associated with it.");
+    {
+        // Images that are never mapped/loaded (e.g. a webcil ReadyToRun image on WASM) have no
+        // loaded layout; fall back to the flat layout (m_pLayouts[IMAGE_FLAT]).
+        peImageLayout = target.ReadPointer(peImage + /* PEImage::FlatImageLayout offset */);
+        if(peImageLayout == TargetPointer.Null)
+            throw new InvalidOperationException("PEImage does not have a usable image layout associated with it.");
+    }
 
     // Get base address and flags from PEImageLayout
     TargetPointer baseAddress = target.ReadPointer(peImageLayout + /* PEImageLayout::Base offset */);
@@ -666,6 +678,19 @@ string GetFileName(ModuleHandle handle)
     return new string(fileName);
 }
 
+bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize)
+{
+    timeStamp = 0;
+    imageSize = 0;
+
+    if (!TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out _, out _))
+        return false;
+    TargetPointer ntHeadersPtr = baseAddress + // offset to NT headers
+    timeStamp = // read from NT header
+    imageSize = // read from NT header
+    return true;
+}
+
 TargetPointer GetLoaderAllocator(ModuleHandle handle)
 {
     return target.ReadPointer(handle.Address + /* Module::LoaderAllocator offset */);
@@ -694,8 +719,12 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle)
         MethodDefToDescMap: target.ReadPointer(handle.Address + /* Module::MethodDefToDescMap */),
         TypeDefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeDefToMethodTableMap */),
         TypeRefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */),
-        MethodDefToILCodeVersioningState: target.ReadPointer(handle.Address + /*
-        Module::MethodDefToILCodeVersioningState */),
+        // Module::MethodDefToILCodeVersioningState is only present when the target was built
+        // with code versioning (FEATURE_CODE_VERSIONING). When absent (e.g. on WASM) it is
+        // treated as a null (empty) table.
+        MethodDefToILCodeVersioningState: HasField(Module::MethodDefToILCodeVersioningState)
+            ? target.ReadPointer(handle.Address + /* Module::MethodDefToILCodeVersioningState */)
+            : TargetPointer.Null,
         TableDataOffset: tableDataOffset);
 }
 
@@ -853,7 +882,6 @@ private sealed class DynamicILBlobTraits : ITraits<uint, DynamicILBlobEntry>
     public bool Equals(uint left, uint right) => left == right;
     public uint Hash(uint key) => key;
     public bool IsNull(DynamicILBlobEntry entry) => entry.EntryMethodToken == 0;
-    public DynamicILBlobEntry Null() => new DynamicILBlobEntry(0, TargetPointer.Null);
     public bool IsDeleted(DynamicILBlobEntry entry) => false;
 }
 
@@ -876,7 +904,7 @@ TargetPointer GetILHeader(ModuleHandle handle, uint token)
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
 {
     TargetPointer dynamicBlobTablePtr = target.ReadPointer(handle.Address + /* Module::DynamicILBlobTable offset */);
-    Contracts.IThread shashContract = target.Contracts.SHash;
+    Contracts.ISHash shashContract = target.Contracts.SHash;
     DynamicILBlobTraits traits = new();
     /* To construct an SHash we must pass a DataType enum.
     We must be able to look up this enum in a dictionary of known types and retrieve a Target.TypeInfo struct.
@@ -884,8 +912,9 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
     and values corresponding to the offset values. Optionally, it contains a Size field.
     */
     SHash<uint, Data.DynamicILBlobEntry> shash = shashContract.CreateSHash<uint, Data.DynamicILBlobEntry>(target, dynamicBlobTablePtr, DataType.DynamicILBlobTable, traits)
-    Data.DynamicILBlobEntry blobEntry = shashContract.LookupSHash(shash, token);
-    return /* blob entry IL address */
+    // LookupSHash returns null when no entry matches the token.
+    Data.DynamicILBlobEntry? blobEntry = shashContract.LookupSHash(shash, token);
+    return blobEntry?.EntryIL ?? TargetPointer.Null;
 }
 
 DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle)
@@ -989,21 +1018,22 @@ class InstMethodHashTable
 }
 ```
 
-#### GetFirstLoaderHeapBlock, GetLoaderHeapBlockData
+#### EnumerateLoaderHeapBlocks
 
 ```csharp
-TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap)
+IEnumerable<LoaderHeapBlock> ILoader.EnumerateLoaderHeapBlocks(TargetPointer loaderHeap)
 {
-    return target.ReadPointer(loaderHeap + /* LoaderHeap::FirstBlock offset */);
-}
-
-LoaderHeapBlockData ILoader.GetLoaderHeapBlockData(TargetPointer block)
-{
-    return new LoaderHeapBlockData
+    TargetPointer block = target.ReadPointer(loaderHeap + /* LoaderHeap::FirstBlock offset */);
+    HashSet<TargetPointer> visited = [];
+    while (block != TargetPointer.Null)
     {
-        Address = target.ReadPointer(block + /* LoaderHeapBlock::VirtualAddress offset */),
-        Size = target.ReadNUInt(block + /* LoaderHeapBlock::VirtualSize offset */),
-        NextBlock = target.ReadPointer(block + /* LoaderHeapBlock::Next offset */),
-    };
+        if (!visited.Add(block))
+            throw new InvalidOperationException();
+
+        yield return new LoaderHeapBlock(
+            target.ReadPointer(block + /* LoaderHeapBlock::VirtualAddress offset */),
+            target.ReadNUInt(block + /* LoaderHeapBlock::VirtualSize offset */));
+        block = target.ReadPointer(block + /* LoaderHeapBlock::Next offset */);
+    }
 }
 ```

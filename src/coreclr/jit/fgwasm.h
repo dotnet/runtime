@@ -404,24 +404,62 @@ public:
 template <typename TFunc>
 BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc func, bool useProfile)
 {
+
+    // True if this block is a try entry or a try side-entry.
+    //
+    auto isGeneralizedTryEntry = [comp](BasicBlock* block) -> bool {
+        EHblkDsc* const ehDsc = comp->ehGetBlockTryDsc(block);
+
+        if (ehDsc == nullptr)
+        {
+            return false;
+        }
+
+        if (comp->bbIsTryBeg(block))
+        {
+            return true;
+        }
+
+        for (BasicBlock* const blockPred : block->PredBlocks())
+        {
+            if (blockPred->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
     // Special case throw helper blocks that are not yet connected in the flow graph.
     //
     Compiler::AddCodeDscMap* const acdMap = comp->fgGetAddCodeDscMap();
     if (acdMap != nullptr)
     {
+        const bool isTrySideEntry = isGeneralizedTryEntry(block);
+
         // Behave as if these blocks have edges from their respective region entry blocks.
         //
-        if ((block == comp->fgFirstBB) || comp->bbIsFuncletBeg(block) || comp->bbIsTryBeg(block))
+        if ((block == comp->fgFirstBB) || comp->bbIsFuncletBeg(block) || isTrySideEntry)
         {
             Compiler::AcdKeyDesignator dsg;
             const unsigned             blockData = comp->bbThrowIndex(block, &dsg);
 
             for (const Compiler::AddCodeDscKey& key : Compiler::AddCodeDscMap::KeyIteration(acdMap))
             {
-                if (key.Data() == blockData)
+                const unsigned acdData = key.Data();
+                bool           matches = (acdData == blockData);
+
+                if (!matches && isTrySideEntry && (key.Designator() == Compiler::AcdKeyDesignator::KD_TRY))
                 {
-                    // This ACD refers to a throw helper block in the right region.
-                    // Make the block a successor.
+                    // Also add edges from all enclosing try regions
+                    matches = comp->bbInTryRegions(key.RegionIndex(), block);
+                }
+
+                if (matches)
+                {
+                    // This ACD refers to a throw helper block in this or an enclosed try region.
+                    // Make the throw helper block a successor of the try entry.
                     //
                     Compiler::AddCodeDsc* acd = nullptr;
                     acdMap->Lookup(key, &acd);
@@ -430,9 +468,35 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
                     //
                     if (acd->acdUsed)
                     {
-                        RETURN_ON_ABORT(func(acd->acdDstBlk));
+                        // bbThrowIndex / bbInTryRegions are purely lexical tests, so a match can
+                        // name a throw helper that lives in a different function region (funclet)
+                        // than this side-entry -- e.g. a main-method helper for an outer try whose
+                        // handler funclet merely nests inside that try. Attaching it here would pull
+                        // the helper into this funclet's layout, interleaving it with funclet blocks
+                        // and corrupting the emitted wasm. Only attach when the helper and the
+                        // side-entry share the same function region.
+                        //
+                        if (comp->bbIsInSameFunclet(block, acd->acdDstBlk))
+                        {
+                            RETURN_ON_ABORT(func(acd->acdDstBlk));
+                        }
                     }
                 }
+            }
+        }
+    }
+
+    // Inject any unreachable in-try blocks as successors of the try entry, so
+    // wasm DFS visits them and the layout pass keeps them inside the try region.
+    //
+    if (comp->bbIsTryBeg(block) && (comp->fgTryRegions != nullptr))
+    {
+        FlowGraphTryRegion* const region = comp->fgTryRegions->GetTryRegionByHeader(block);
+        if (region != nullptr)
+        {
+            for (BasicBlock* const tb : region->UnreachableBlocks())
+            {
+                RETURN_ON_ABORT(func(tb));
             }
         }
     }

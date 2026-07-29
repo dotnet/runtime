@@ -276,7 +276,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalTheory]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.OpenBSD, "Expected behavior is different on OSX, FreeBSD, or OpenBSD")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
         [InlineData(false)]
         [InlineData(true)]

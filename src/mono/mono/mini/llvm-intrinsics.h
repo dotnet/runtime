@@ -88,6 +88,7 @@ INTRINS_OVR(POW, pow, Generic, LLVMDoubleType ())
 INTRINS_OVR(EXP, exp, Generic, LLVMDoubleType ())
 INTRINS_OVR(EXPF, exp, Generic, LLVMFloatType ())
 INTRINS_OVR(LOG, log, Generic, LLVMDoubleType ())
+INTRINS_OVR(LOGF, log, Generic, LLVMFloatType ())
 INTRINS_OVR(LOG2, log2, Generic, LLVMDoubleType ())
 INTRINS_OVR(LOG2F, log2, Generic, LLVMFloatType ())
 INTRINS_OVR(LOG10, log10, Generic, LLVMDoubleType ())
@@ -96,6 +97,12 @@ INTRINS_OVR(TRUNC, trunc, Generic, LLVMDoubleType ())
 INTRINS_OVR(TRUNCF, trunc, Generic, LLVMFloatType ())
 INTRINS_OVR(COPYSIGN, copysign, Generic, LLVMDoubleType ())
 INTRINS_OVR(COPYSIGNF, copysign, Generic, LLVMFloatType ())
+	/*
+	 * `float.MinNumber` / `double.MinNumber` (and the Max variants) are lowered in
+	 * mini-llvm.c by composing llvm.minimum/maximum (above) with an explicit NaN
+	 * fixup; see the OP_FMINNUM case there for why we don't use llvm.minnum/maxnum
+	 * or llvm.minimumnum/maximumnum directly.
+	 */
 INTRINS_OVR(EXPECT_I8, expect, Generic, LLVMInt8Type ())
 INTRINS_OVR(EXPECT_I1, expect, Generic, LLVMInt1Type ())
 INTRINS_OVR(CTPOP_I32, ctpop, Generic, LLVMInt32Type ())

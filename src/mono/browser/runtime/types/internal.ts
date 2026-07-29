@@ -174,7 +174,7 @@ export type LoaderHelpers = {
     isFirefox: boolean
 
     // from wasm-feature-detect npm package
-    exceptions: () => Promise<boolean>,
+    exceptionsFinal: () => Promise<boolean>,
     simd: () => Promise<boolean>,
     relaxedSimd: () => Promise<boolean>,
 }
@@ -226,7 +226,7 @@ export type RuntimeHelpers = {
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
 
-    featureWasmEh: boolean,
+    featureWasmFinalEh: boolean,
     featureWasmSimd: boolean,
     featureWasmRelaxedSimd: boolean,
 
@@ -433,7 +433,6 @@ export declare interface EmscriptenModuleInternal {
 
     __locateFile?: (path: string, prefix?: string) => string;
     locateFile?: (path: string, prefix?: string) => string;
-    mainScriptUrlOrBlob?: string;
     ENVIRONMENT_IS_PTHREAD?: boolean;
     FS: any;
     wasmModule: WebAssembly.Module | null;
@@ -572,7 +571,6 @@ export interface PThreadInfo {
 
 export interface PThreadLibrary {
     unusedWorkers: PThreadWorker[];
-    runningWorkers: PThreadWorker[];
     pthreads: PThreadInfoMap;
     allocateUnusedWorker: () => void;
     loadWasmModuleToWorker: (worker: PThreadWorker) => Promise<PThreadWorker>;

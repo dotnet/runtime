@@ -262,7 +262,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void GetResult_NotCompleted_BlocksUntilCompletion()
         {
             var tcs = new TaskCompletionSource<bool>();

@@ -66,7 +66,6 @@ function mergeResources(target: Assets, source: Assets): Assets {
     source.lazyAssembly = [...target.lazyAssembly!, ...source.lazyAssembly || []];
     source.corePdb = [...target.corePdb!, ...source.corePdb || []];
     source.pdb = [...target.pdb!, ...source.pdb || []];
-    source.jsModuleWorker = [...target.jsModuleWorker!, ...source.jsModuleWorker || []];
     source.jsModuleNative = [...target.jsModuleNative!, ...source.jsModuleNative || []];
     source.jsModuleDiagnostics = [...target.jsModuleDiagnostics!, ...source.jsModuleDiagnostics || []];
     source.jsModuleRuntime = [...target.jsModuleRuntime!, ...source.jsModuleRuntime || []];
@@ -74,7 +73,6 @@ function mergeResources(target: Assets, source: Assets): Assets {
     source.wasmNative = [...target.wasmNative!, ...source.wasmNative || []];
     source.icu = [...target.icu!, ...source.icu || []];
     source.vfs = [...target.vfs!, ...source.vfs || []];
-    source.coreVfs = [...target.coreVfs!, ...source.coreVfs || []];
     source.modulesAfterConfigLoaded = [...target.modulesAfterConfigLoaded!, ...source.modulesAfterConfigLoaded || []];
     source.modulesAfterRuntimeReady = [...target.modulesAfterRuntimeReady!, ...source.modulesAfterRuntimeReady || []];
     source.extensions = { ...target.extensions!, ...source.extensions || {} };
@@ -119,7 +117,6 @@ function normalizeResources(target: Assets) {
     if (!target.lazyAssembly) target.lazyAssembly = [];
     if (!target.corePdb) target.corePdb = [];
     if (!target.pdb) target.pdb = [];
-    if (!target.jsModuleWorker) target.jsModuleWorker = [];
     if (!target.jsModuleNative) target.jsModuleNative = [];
     if (!target.jsModuleDiagnostics) target.jsModuleDiagnostics = [];
     if (!target.jsModuleRuntime) target.jsModuleRuntime = [];
@@ -131,5 +128,4 @@ function normalizeResources(target: Assets) {
     if (!target.satelliteResources) target.satelliteResources = {};
     if (!target.extensions) target.extensions = {};
     if (!target.vfs) target.vfs = [];
-    if (!target.coreVfs) target.coreVfs = [];
 }

@@ -5,6 +5,7 @@ set(SOURCES
     classload/classload.cpp
     dynamicjitoptimization/dynamicjitoptimization.cpp
     eltprofiler/slowpatheltprofiler.cpp
+    elttransitions/elttransitions.cpp
     enumthreadsprofiler/enumthreadsprofiler.cpp
     eventpipeprofiler/eventpipereadingprofiler.cpp
     eventpipeprofiler/eventpipewritingprofiler.cpp

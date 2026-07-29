@@ -70,9 +70,6 @@ function deep_merge_resources (target: Assets, source: Assets): Assets {
     if (providedResources.pdb !== undefined) {
         providedResources.pdb = [...(target.pdb || []), ...(providedResources.pdb || [])];
     }
-    if (providedResources.jsModuleWorker !== undefined) {
-        providedResources.jsModuleWorker = [...(target.jsModuleWorker || []), ...(providedResources.jsModuleWorker || [])];
-    }
     if (providedResources.jsModuleNative !== undefined) {
         providedResources.jsModuleNative = [...(target.jsModuleNative || []), ...(providedResources.jsModuleNative || [])];
     }
@@ -129,7 +126,6 @@ export function normalizeConfig () {
     config.resources = config.resources || {
         assembly: [],
         jsModuleNative: [],
-        jsModuleWorker: [],
         jsModuleRuntime: [],
         wasmNative: [],
         vfs: [],
@@ -162,9 +158,6 @@ export function normalizeConfig () {
                     break;
                 case "dotnetwasm":
                     toMerge.wasmNative = [asset as WasmAsset];
-                    break;
-                case "js-module-threads":
-                    toMerge.jsModuleWorker = [asset as JsAsset];
                     break;
                 case "js-module-runtime":
                     toMerge.jsModuleRuntime = [asset as JsAsset];

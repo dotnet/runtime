@@ -18,7 +18,7 @@ namespace System.Threading.Tasks.Tests
     {
         // Just ensure we eventually complete when many blocked tasks are created.
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunBlockedInjectionTest()
         {
             Debug.WriteLine("* RunBlockedInjectionTest() -- if it deadlocks, it failed");
@@ -209,7 +209,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/89921", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine), nameof(PlatformDetection.IsMonoRuntime))]
         public static void RunSynchronizationContextTaskSchedulerTests()

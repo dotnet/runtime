@@ -324,9 +324,7 @@ export async function createEmscripten (moduleFactory: DotnetModuleConfig | ((ap
 
     registerEmscriptenExitHandlers();
 
-    return emscriptenModule.ENVIRONMENT_IS_PTHREAD
-        ? createEmscriptenWorker()
-        : createEmscriptenMain();
+    return createEmscriptenMain();
 }
 
 let jsModuleRuntimePromise: Promise<RuntimeModuleExportsInternal>;
@@ -453,9 +451,34 @@ async function createEmscriptenWorker (): Promise<EmscriptenModuleInternal> {
     prepareAssetsWorker();
     const promises = importModules();
     const es6Modules = await Promise.all(promises);
+    (globalThis as any).name = "em-pthread";
     await initializeModules(es6Modules as any);
+
+    if (loaderHelpers.config.exitOnUnhandledError) {
+        installUnhandledErrorHandler();
+    }
+    registerEmscriptenExitHandlers();
+    if (ENVIRONMENT_IS_WEB && loaderHelpers.config.forwardConsole && typeof globalThis.WebSocket != "undefined") {
+        setup_proxy_console("main", globalThis.console, globalThis.location.origin);
+    }
+
+    await detect_features_and_polyfill(emscriptenModule);
 
     await mono_download_assets();
 
+    const CMD_LOAD = 1; // emscripten/src/lib/libpthread.js CMD_LOAD
+    self.dispatchEvent(new MessageEvent("message", {
+        data: {
+            cmd: CMD_LOAD,
+            handlers: emscriptenModule.handlers,
+            wasmMemory: emscriptenModule.wasmMemory,
+            wasmModule: emscriptenModule.wasmModule
+        }
+    }));
+
     return emscriptenModule;
+}
+
+if (ENVIRONMENT_IS_WORKER) {
+    void createEmscriptenWorker().catch((err) => mono_exit(1, err));
 }
