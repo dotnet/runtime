@@ -321,12 +321,14 @@ namespace System.Transactions
                 }
 
                 TimeSpan validatedTimeout = ValidateTimeout(value);
+                bool timeoutAdjusted;
                 lock (ClassSyncObject)
                 {
                     Interlocked.Exchange(ref s_defaultTimeoutTicks, validatedTimeout.Ticks);
                     s_defaultTimeoutValidated = true;
+                    timeoutAdjusted = Interlocked.Read(ref s_defaultTimeoutTicks) != value.Ticks;
                 }
-                if (validatedTimeout != value)
+                if (timeoutAdjusted)
                 {
                     if (etwLog.IsEnabled())
                     {
