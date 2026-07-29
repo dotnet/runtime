@@ -165,15 +165,21 @@ void ContinuationMember::Print() const
 
 size_t Compiler::GetContinuationMemberIndex(const ContinuationMember& member)
 {
-    if (m_asyncContinuationMembers == nullptr)
+    // Members describe the root method's continuation, so they are always registered
+    // there: an inlinee's IR ends up in the root and its member offset nodes are
+    // resolved against the root's layout.
+    Compiler* const root = impInlineRoot();
+
+    if (root->m_asyncContinuationMembers == nullptr)
     {
-        m_asyncContinuationMembers = new (this, CMK_Async) jitstd::vector<ContinuationMember>(getAllocator(CMK_Async));
+        root->m_asyncContinuationMembers =
+            new (root, CMK_Async) jitstd::vector<ContinuationMember>(root->getAllocator(CMK_Async));
     }
     else
     {
-        for (size_t i = 0; i < m_asyncContinuationMembers->size(); i++)
+        for (size_t i = 0; i < root->m_asyncContinuationMembers->size(); i++)
         {
-            const ContinuationMember& existingMember = m_asyncContinuationMembers->at(i);
+            const ContinuationMember& existingMember = root->m_asyncContinuationMembers->at(i);
 
             if (ContinuationMember::AreCompatible(member, existingMember))
             {
@@ -182,19 +188,21 @@ size_t Compiler::GetContinuationMemberIndex(const ContinuationMember& member)
         }
     }
 
-    m_asyncContinuationMembers->push_back(member);
-    return m_asyncContinuationMembers->size() - 1;
+    root->m_asyncContinuationMembers->push_back(member);
+    return root->m_asyncContinuationMembers->size() - 1;
 }
 
-size_t Compiler::GetContinuationMemberCount() const
+size_t Compiler::GetContinuationMemberCount()
 {
-    return m_asyncContinuationMembers == nullptr ? 0 : m_asyncContinuationMembers->size();
+    Compiler* const root = impInlineRoot();
+    return root->m_asyncContinuationMembers == nullptr ? 0 : root->m_asyncContinuationMembers->size();
 }
 
 const ContinuationMember& Compiler::GetContinuationMember(size_t index)
 {
-    assert(index < m_asyncContinuationMembers->size());
-    return m_asyncContinuationMembers->at(index);
+    Compiler* const root = impInlineRoot();
+    assert(index < root->m_asyncContinuationMembers->size());
+    return root->m_asyncContinuationMembers->at(index);
 }
 
 //------------------------------------------------------------------------
@@ -956,7 +964,9 @@ PhaseStatus AsyncTransformation::Run()
         assert(continuationLayout->ContinuationMemberOffsets[memberIndex] != UINT_MAX);
         ssize_t offset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) +
                          continuationLayout->ContinuationMemberOffsets[memberIndex];
-        node->BashToConst(offset, TYP_INT);
+        // Preserve the node's type: offsets used in address arithmetic are TYP_I_IMPL,
+        // while those passed to helpers are TYP_INT.
+        node->BashToConst(offset, node->TypeGet());
     }
 
     m_compiler->fgInvalidateDfsTree();

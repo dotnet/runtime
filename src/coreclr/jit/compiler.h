@@ -6266,7 +6266,7 @@ public:
 
     jitstd::vector<ContinuationMember>* m_asyncContinuationMembers = nullptr;
     size_t GetContinuationMemberIndex(const ContinuationMember& member);
-    size_t GetContinuationMemberCount() const;
+    size_t GetContinuationMemberCount();
     const ContinuationMember& GetContinuationMember(size_t index);
 
     PhaseStatus SaveAsyncContexts();
@@ -7517,6 +7517,10 @@ private:
     void fgInsertInlineeArgument(const InlArgInfo& argInfo, BasicBlock* block, Statement** afterStmt, Statement** newStmt, const DebugInfo& callDI);
     Statement* fgInlinePrependStatements(InlineInfo* inlineInfo);
     void fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmt);
+    void fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicBlock* joinBlock);
+    void fgSetupAsyncFrameSwitchCall(GenTreeCall* call, InlineContext* inlineeContext, const DebugInfo& di);
+    void fgMarkAsyncHelperInlineCandidate(GenTreeCall* call);
+    GenTree* gtNewContinuationMemberIndir(const struct ContinuationMember& member, var_types type);
 
 #ifdef DEBUG
     static fgWalkPreFn fgDebugCheckInlineCandidates;

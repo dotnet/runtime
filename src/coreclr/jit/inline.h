@@ -911,6 +911,36 @@ public:
         return (m_PgoInfo.PgoSchema != nullptr) && (m_PgoInfo.PgoSchemaCount > 0) && (m_PgoInfo.PgoData != nullptr);
     }
 
+    // The async context locals of the inlined frame this context represents. Recorded when
+    // the inlinee is spliced in, since the inlinee's Compiler is discarded afterwards.
+    // Used to build the logical frame transitions for general runtime async inlining.
+    void SetAsyncFrameLocals(unsigned resumedIndicator, unsigned executionContextVar, unsigned syncContextVar)
+    {
+        m_asyncResumedIndicator          = resumedIndicator;
+        m_asyncExecutionContextVar       = executionContextVar;
+        m_asyncSynchronizationContextVar = syncContextVar;
+    }
+
+    bool HasAsyncFrameLocals() const
+    {
+        return m_asyncResumedIndicator != BAD_VAR_NUM;
+    }
+
+    unsigned GetAsyncResumedIndicator() const
+    {
+        return m_asyncResumedIndicator;
+    }
+
+    unsigned GetAsyncExecutionContextVar() const
+    {
+        return m_asyncExecutionContextVar;
+    }
+
+    unsigned GetAsyncSynchronizationContextVar() const
+    {
+        return m_asyncSynchronizationContextVar;
+    }
+
 private:
     InlineContext(InlineStrategy* strategy);
 
@@ -930,6 +960,10 @@ private:
     int                    m_CodeSizeEstimate; // in bytes * 10
     unsigned               m_Ordinal;          // Ordinal number of this inline
     bool                   m_Success : 1;      // true if this was a successful inline
+
+    unsigned m_asyncResumedIndicator          = BAD_VAR_NUM;
+    unsigned m_asyncExecutionContextVar       = BAD_VAR_NUM;
+    unsigned m_asyncSynchronizationContextVar = BAD_VAR_NUM;
 
 #if defined(DEBUG)
 
