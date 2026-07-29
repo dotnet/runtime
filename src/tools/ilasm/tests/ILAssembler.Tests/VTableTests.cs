@@ -59,9 +59,9 @@ namespace ILAssembler.Tests
             Assert.True(sdataBytes.Length >= 8, "VTableFixup directory should be at least 8 bytes");
 
             // Read the first VTableFixup entry
-            int slotDataRva = BitConverter.ToInt32(sdataBytes.AsSpan(0, 4));
-            ushort slotCount = BitConverter.ToUInt16(sdataBytes.AsSpan(4, 2));
-            ushort flags = BitConverter.ToUInt16(sdataBytes.AsSpan(6, 2));
+            int slotDataRva = BinaryPrimitives.ReadInt32LittleEndian(sdataBytes.AsSpan(0, 4));
+            ushort slotCount = BinaryPrimitives.ReadUInt16LittleEndian(sdataBytes.AsSpan(4, 2));
+            ushort flags = BinaryPrimitives.ReadUInt16LittleEndian(sdataBytes.AsSpan(6, 2));
 
             Assert.Equal(1, slotCount);
             Assert.True((flags & 0x01) != 0, "Expected COR_VTABLE_32BIT flag");
@@ -73,7 +73,7 @@ namespace ILAssembler.Tests
 
             // Verify the method token in the slot data (should be a valid MethodDef token)
             int slotDataOffset = slotDataRva - sdataSection.VirtualAddress;
-            int methodToken = BitConverter.ToInt32(sdataBytes.AsSpan(slotDataOffset, 4));
+            int methodToken = BinaryPrimitives.ReadInt32LittleEndian(sdataBytes.AsSpan(slotDataOffset, 4));
             Assert.True((methodToken & 0xFF000000) == 0x06000000,
                 $"Expected MethodDef token (0x06xxxxxx), got 0x{methodToken:X8}");
         }
@@ -107,15 +107,15 @@ namespace ILAssembler.Tests
 
             // Read VTableFixup directory entry and verify 64-bit flag
             var sdataBytes = pe.GetSectionData(sdataSection.VirtualAddress).GetContent();
-            ushort flags = BitConverter.ToUInt16(sdataBytes.AsSpan(6, 2));
+            ushort flags = BinaryPrimitives.ReadUInt16LittleEndian(sdataBytes.AsSpan(6, 2));
             Assert.True((flags & 0x02) != 0, "Expected COR_VTABLE_64BIT flag (0x02)");
 
             // Verify slot data is 8 bytes (64-bit token)
-            int slotDataRva = BitConverter.ToInt32(sdataBytes.AsSpan(0, 4));
+            int slotDataRva = BinaryPrimitives.ReadInt32LittleEndian(sdataBytes.AsSpan(0, 4));
             int slotDataOffset = slotDataRva - sdataSection.VirtualAddress;
 
             // 64-bit slot should have method token in lower 32 bits, zeros in upper 32 bits
-            long slotValue = BitConverter.ToInt64(sdataBytes.AsSpan(slotDataOffset, 8));
+            long slotValue = BinaryPrimitives.ReadInt64LittleEndian(sdataBytes.AsSpan(slotDataOffset, 8));
             int methodToken = (int)(slotValue & 0xFFFFFFFF);
             Assert.True((methodToken & 0xFF000000) == 0x06000000,
                 $"Expected MethodDef token (0x06xxxxxx), got 0x{methodToken:X8}");
@@ -157,15 +157,15 @@ namespace ILAssembler.Tests
             var sdataBytes = pe.GetSectionData(sdataSection.VirtualAddress).GetContent();
 
             // Verify VTableFixup directory entry has count of 2
-            ushort slotCount = BitConverter.ToUInt16(sdataBytes.AsSpan(4, 2));
+            ushort slotCount = BinaryPrimitives.ReadUInt16LittleEndian(sdataBytes.AsSpan(4, 2));
             Assert.Equal(2, slotCount);
 
             // Read both method tokens from slot data
-            int slotDataRva = BitConverter.ToInt32(sdataBytes.AsSpan(0, 4));
+            int slotDataRva = BinaryPrimitives.ReadInt32LittleEndian(sdataBytes.AsSpan(0, 4));
             int slotDataOffset = slotDataRva - sdataSection.VirtualAddress;
 
-            int token1 = BitConverter.ToInt32(sdataBytes.AsSpan(slotDataOffset, 4));
-            int token2 = BitConverter.ToInt32(sdataBytes.AsSpan(slotDataOffset + 4, 4));
+            int token1 = BinaryPrimitives.ReadInt32LittleEndian(sdataBytes.AsSpan(slotDataOffset, 4));
+            int token2 = BinaryPrimitives.ReadInt32LittleEndian(sdataBytes.AsSpan(slotDataOffset + 4, 4));
 
             // Both should be valid MethodDef tokens
             Assert.True((token1 & 0xFF000000) == 0x06000000,
