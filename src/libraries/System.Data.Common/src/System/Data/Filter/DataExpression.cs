@@ -140,7 +140,7 @@ namespace System.Data
                     {
                         if (_dataType != null && StorageType.Object != _storageType)
                         {
-                            result = SqlConvert.ChangeType2(result, _storageType, _dataType, _table == null ? System.Globalization.CultureInfo.CurrentCulture : _table.FormatProvider);
+                            result = SqlConvert.ChangeType2(result, _storageType, _dataType, _table?.FormatProvider ?? System.Globalization.CultureInfo.InvariantCulture);
                         }
                     }
                     catch (Exception e) when (ADP.IsCatchableExceptionType(e))
