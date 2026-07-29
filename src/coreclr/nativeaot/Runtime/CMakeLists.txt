@@ -91,6 +91,7 @@ set(STANDALONEGC_ENABLED_SOURCES
 
 set(FULL_RUNTIME_SOURCES
     AsmOffsetsVerify.cpp
+    GCInterfaceOffsetsVerify.cpp
     ThunksMapping.cpp
 )
 

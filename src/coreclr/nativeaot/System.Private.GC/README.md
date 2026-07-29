@@ -36,5 +36,21 @@ Ported so far:
 | `GCEventEnums.cs` | `gcinterface.h` (event level/keyword/provider enums) |
 | `GCEventStatus.cs` | `gceventstatus.h`, `gceventstatus.cpp` |
 | `IntroSort.cs` | `introsort.h` |
+| `Interface/GCInterfaceEnums.cs` | `gcinterface.h`, `gcinterface.ee.h` (enums) |
+| `Interface/GCInterfaceStructs.cs` | `gcinterface.h`, `gcinterface.ee.h` (shared structs) |
+| `Interface/GCInterfaceLayout.cs` | layout check against `GCInterfaceOffsets.h` |
 
 Nothing here is wired into the runtime build yet.
+
+## Layout verification
+
+Types that cross the GC/EE boundary must be laid out exactly like their C++ counterparts.
+`GCInterfaceOffsets.h` is the single source of truth for those layouts, and it is consumed twice:
+
+* `nativeaot/Runtime/GCInterfaceOffsetsVerify.cpp` expands it into `static_assert`s against
+  `gcinterface.h`/`gcinterface.ee.h`, so the native build breaks if the C++ layout drifts.
+* `src/GCInterfaceOffsets.cspp` is preprocessed by the native build into `GCInterfaceOffsets.cs`,
+  a set of C# constants that `GCInterfaceLayout.Verify()` checks the managed structs against.
+
+This mirrors the existing `AsmOffsets.h`/`AsmOffsets.cspp` mechanism used by
+`System.Private.CoreLib`.

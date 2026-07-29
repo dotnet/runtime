@@ -1,0 +1,14 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#define PLAT_GC_OFFSET(offset, cls, member) internal const int OFFSETOF__##cls##__##member = 0x##offset;
+#define PLAT_GC_SIZEOF(offset, cls) internal const int SIZEOF__##cls = 0x##offset;
+#define PLAT_GC_CONST(constant, expr) internal const int expr = 0x##constant;
+
+namespace Internal.Runtime.GarbageCollection
+{
+    internal static class GCInterfaceOffsets
+    {
+#include "../GCInterfaceOffsets.h"
+    }
+}

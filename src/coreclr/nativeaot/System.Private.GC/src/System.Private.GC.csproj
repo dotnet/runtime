@@ -9,6 +9,15 @@
     <OutputPath>$(RuntimeBinDir)managedgc/</OutputPath>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
   </PropertyGroup>
+  <PropertyGroup>
+    <!-- The generated GCInterfaceOffsets.cs is only available when the native runtime is built
+         alongside the managed one, which is the case for all in-tree builds. -->
+    <InPlaceRuntime>true</InPlaceRuntime>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(InPlaceRuntime)' == 'true'">
+    <IntermediatesDir>$(ArtifactsObjDir)\coreclr\$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)</IntermediatesDir>
+    <IntermediatesDir Condition="'$(Ninja)' == 'false' and $([MSBuild]::IsOsPlatform('Windows'))">$(IntermediatesDir)\ide</IntermediatesDir>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
   </ItemGroup>
@@ -16,5 +25,11 @@
     <Compile Include="Internal\Runtime\GarbageCollection\GCEventEnums.cs" />
     <Compile Include="Internal\Runtime\GarbageCollection\GCEventStatus.cs" />
     <Compile Include="Internal\Runtime\GarbageCollection\IntroSort.cs" />
+    <Compile Include="Internal\Runtime\GarbageCollection\Interface\GCInterfaceEnums.cs" />
+    <Compile Include="Internal\Runtime\GarbageCollection\Interface\GCInterfaceLayout.cs" />
+    <Compile Include="Internal\Runtime\GarbageCollection\Interface\GCInterfaceStructs.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
+    <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Full\GCInterfaceOffsets.cs" />
   </ItemGroup>
 </Project>

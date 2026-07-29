@@ -167,10 +167,14 @@ set(ASM_OFFSETS_CSPP ${NATIVEAOT_RUNTIME_DIR}/../Runtime.Base/src/AsmOffsets.csp
 if(WIN32)
     set(COMPILER_LANGUAGE "")
     set(PREPROCESSOR_FLAGS -EP -nologo)
+    # -C keeps comments so the generated .cs retains its license header.
+    set(GC_PREPROCESSOR_FLAGS -EP -nologo -C)
     set(ASM_OFFSETS_CPP ${NATIVEAOT_RUNTIME_DIR}/windows/AsmOffsets.cpp)
 else()
     set(COMPILER_LANGUAGE -x c++)
     set(PREPROCESSOR_FLAGS -E -P)
+    # -C keeps comments so the generated .cs retains its license header.
+    set(GC_PREPROCESSOR_FLAGS -E -P -C)
     set(ASM_OFFSETS_CPP ${NATIVEAOT_RUNTIME_DIR}/unix/AsmOffsets.cpp)
 endif()
 
@@ -180,6 +184,16 @@ add_custom_command(
     POST_BUILD
     COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${PREPROCESSOR_FLAGS}
             -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.cs"
+)
+
+set(GC_INTERFACE_OFFSETS_CSPP ${NATIVEAOT_RUNTIME_DIR}/../System.Private.GC/src/GCInterfaceOffsets.cspp)
+
+add_custom_command(
+    # The GCInterfaceOffsets.cs is consumed later by the System.Private.GC managed build
+    TARGET Runtime.WorkstationGC
+    POST_BUILD
+    COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${GC_PREPROCESSOR_FLAGS}
+            -I"${ARCH_SOURCES_DIR}" "${GC_INTERFACE_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/GCInterfaceOffsets.cs"
 )
 
 add_custom_command(
