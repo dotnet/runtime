@@ -74,7 +74,7 @@ public class DacDbiExactTypeHandleDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer expectedMT = Target.Contracts.Object.GetMethodTableAddress(new TargetPointer(objAddr));
-        TypeHandle expectedTh = rts.GetTypeHandle(expectedMT);
+        ITypeHandle expectedTh = rts.GetTypeHandle(expectedMT);
 
         DebuggerIPCE_ExpandedTypeData expanded;
         int hr = dbi.GetObjectExpandedTypeInfo(AreValueTypesBoxed.NoValueTypeBoxing, objAddr, &expanded);
@@ -99,7 +99,7 @@ public class DacDbiExactTypeHandleDumpTests : DumpTestBase
         }
     }
 
-    private static DebuggerIPCE_BasicTypeData[] BuildArgInfoList(DacDbiImpl dbi, IRuntimeTypeSystem rts, TypeHandle typeHandle)
+    private static DebuggerIPCE_BasicTypeData[] BuildArgInfoList(DacDbiImpl dbi, IRuntimeTypeSystem rts, ITypeHandle typeHandle)
     {
         if (rts.IsArray(typeHandle, out _))
         {
@@ -108,7 +108,7 @@ public class DacDbiExactTypeHandleDumpTests : DumpTestBase
             return one;
         }
 
-        ReadOnlySpan<TypeHandle> instantiation = rts.GetInstantiation(typeHandle);
+        ReadOnlySpan<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
         if (instantiation.Length == 0)
             return Array.Empty<DebuggerIPCE_BasicTypeData>();
 

@@ -13,6 +13,7 @@ SET(CLR_INTEROP_TEST_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
 include_directories(common)
 add_subdirectory(PInvoke/Decimal)
+add_subdirectory(PInvoke/Decimal128)
 add_subdirectory(PInvoke/ArrayWithOffset)
 add_subdirectory(PInvoke/Delegate)
 add_subdirectory(PInvoke/Primitives/Int)

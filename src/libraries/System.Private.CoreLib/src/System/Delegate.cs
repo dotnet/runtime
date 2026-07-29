@@ -6,10 +6,13 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System
 {
+    [ClassInterface(ClassInterfaceType.None)]
+    [ComVisible(true)]
     public abstract partial class Delegate : ICloneable, ISerializable
     {
         public virtual object Clone() => MemberwiseClone();
@@ -68,11 +71,6 @@ namespace System
         public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method) => CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true)!;
         public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true)!;
 
-#if !NATIVEAOT
-        protected Delegate CombineImpl(Delegate? d) => Unsafe.As<MulticastDelegate>(this).CombineImpl(d);
-
-        protected Delegate? RemoveImpl(Delegate? d) => Unsafe.As<MulticastDelegate>(this).RemoveImpl(d);
-
         /// <summary>
         /// Gets a value that indicates whether the <see cref="Delegate"/> has a single invocation target.
         /// </summary>
@@ -84,7 +82,6 @@ namespace System
             Debug.Assert(HasSingleTarget && Target == _target && _target != null);
             return _target;
         }
-#endif
 
         /// <summary>
         /// Gets an enumerator for the invocation targets of this delegate.
@@ -156,7 +153,7 @@ namespace System
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public virtual void GetObjectData(SerializationInfo info, StreamingContext context) => throw new PlatformNotSupportedException();
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context) => throw new SerializationException(SR.Serialization_DelegatesNotSupported);
 
         public MethodInfo Method => GetMethodImpl();
 

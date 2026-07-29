@@ -39,9 +39,17 @@ Before analyzing anything, collect as much relevant **code** context as you can.
    - Note whether new public API was detected. If it was, you **MUST** load and execute the API approval verification procedure during Step 4. Read the file `.github/skills/code-review/api-approval-check.md` (relative to the repository root) and follow its instructions. Do not skip this step — it is blocking.
   
 ### Step 2: Discover Area-Specific Agents
-- Study **review** agents available in  `.github/agents` folder that are capable of reviewing specific areas of the codebase. Their yaml frontmatter description tells when they apply.
-- When performing the review, invoke sub-agents to perform those area-specific reviews as subtasks during all subsequent steps, integrating those results.
-- Depending on the PR, more subagents might be launched. Launch them in parallel. Always continue regular review described here as well - the subagents are addons, not replacements.
+- If the environment supports sub-agent or task invocation, study the **review** agents that
+  actually exist in `.github/agents`. Their yaml frontmatter descriptions tell when they apply.
+- Invoke only existing, matching area-specific review agents as subtasks during the subsequent
+  steps, integrating their results. Do not infer or invent an agent from an instruction file.
+- If the environment lacks sub-agent tooling or no matching agent exists, continue the review
+  yourself. Area agents are additions to, not replacements for, the regular review.
+- Some specialist skills are triggered by diff **content**, not path. In particular, if the diff
+  contains `Vector64`/`Vector128`/`Vector256`/`Vector512`, `Vector<T>`, or any `System.Runtime.Intrinsics.*`
+  namespace usage, also apply the `vectorization` skill's review checklist (correctness vs. the scalar
+  contract, remainder handling, memory safety, cross-platform consistency, and `BoundedMemory`
+  test coverage). This holds regardless of which folder the change lives in.
 
 ### Step 3: Form an Independent Assessment
 
@@ -52,7 +60,7 @@ Based **only** on the code context gathered above (without the PR description or
 3. **Is this the right approach?** Would a simpler alternative be more consistent with the codebase? Could the goal be achieved with existing functionality? Are there correctness, performance, or safety concerns?
 4. **What problems do you see?** Identify bugs, edge cases, missing validation, thread-safety issues, performance regressions, API design problems, test gaps, and anything else that concerns you.
 
-Write down your independent assessment before proceeding. You must produce a holistic assessment (see [Holistic PR Assessment](#holistic-pr-assessment)) at this stage.
+Write down your independent assessment before proceeding. You must produce a holistic assessment (using the criteria from the applicable `.github/instructions/*.instructions.md` files for the diff) at this stage.
 
 ### Step 4: Incorporate PR Narrative and Reconcile
 
@@ -84,7 +92,8 @@ Now read the PR description, labels, linked issues (in full), author information
    - **Trust the author's context.** The author knows their codebase. If a pattern seems odd but is consistent with the repo, assume it's intentional.
    - **Never assert that something "does not exist," "is deprecated," or "is unavailable" based on training data alone.** Your knowledge has a cutoff date. When uncertain, ask rather than assert.
 9. **Ensure code suggestions are valid.** Any code you suggest must be syntactically correct and complete. Ensure any suggestion would result in working code.
-10. **Label in-scope vs. follow-up.** Distinguish between issues the PR should fix and out-of-scope improvements. Be explicit when a suggestion is a follow-up rather than a blocker.
+10. **Format code suggestions correctly.** Any code you suggest must be indented matching the surrounding code and must follow the same formatting and code style.
+11. **Label in-scope vs. follow-up.** Distinguish between issues the PR should fix and out-of-scope improvements. Be explicit when a suggestion is a follow-up rather than a blocker.
 
 ## Multi-Model Review
 
@@ -114,9 +123,7 @@ When presenting the final review (whether as a PR comment or as output to the us
 ### Structure
 
 ```
-## Copilot Code Review
-
-### Holistic Assessment
+## Holistic Review
 
 **Motivation**: <1-2 sentences on whether the PR is justified and the problem is real>
 
@@ -125,8 +132,6 @@ When presenting the final review (whether as a PR comment or as output to the us
 **Summary**: <✅ LGTM / ⚠️ Needs Human Review / ⚠️ Needs Changes / ❌ Reject>. <2-3 sentence summary of the overall verdict and key points. If "Needs Human Review," explicitly state which findings you are uncertain about and what a human reviewer should focus on.>
 
 ---
-<details>
-  <summary>Detailed Findings</summary>
 
 ### Detailed Findings
 
@@ -136,15 +141,16 @@ When presenting the final review (whether as a PR comment or as output to the us
 
 (Repeat for each finding category. Group related findings under a single heading.)
 
-</details>
-
 <!-- AI disclosure note: place any AI-generated content disclosure below this line. -->
 <!-- Example: > [!NOTE] This review was created by GitHub Copilot. -->
 ```
 
 ### Guidelines
 
-- **Holistic Assessment** comes first and covers Motivation, Approach, and Summary.
+- Begin the review body with `## Holistic Review`, immediately followed by the
+  `**Motivation**:`, `**Approach**:`, and `**Summary**:` fields in that order. Do not
+  add a `### Holistic Assessment` subheading, substitute a `Verdict` field, or rename
+  those fields.
 - **Detailed Findings** uses emoji-prefixed category headers:
   - ✅ for things that are correct / look good (use to confirm important aspects were verified)
   - ⚠️ for warnings or impactful suggestions (should fix, or follow-up)
@@ -171,257 +177,24 @@ The summary verdict **must** be consistent with the findings in the body. Follow
 
 ---
 
-## Holistic PR Assessment
+## Where the Review Rules Live
 
-Before reviewing individual lines of code, evaluate the PR as a whole. Consider whether the change is justified, whether it takes the right approach, and whether it will be a net positive for the codebase.
+The detailed review rules -- correctness, performance, API design, style, testing,
+documentation, native/interop, and the Holistic PR Assessment criteria -- are maintained
+as path-specific instruction files under `.github/instructions/` so that the built-in
+Copilot code reviewer and this skill share a single source of truth. **You MUST load the
+files whose `applyTo` paths match the diff and treat them as the rule set for this
+review**, in addition to the process above.
 
-### Motivation & Justification
+Load, based on the paths in the diff:
 
-- **Every PR must articulate what problem it solves and why.** Don't accept vague or absent motivation. Ask "What's the rationale?" and block progress until the contributor provides a clear answer.
-- **Challenge every addition with "Do we need this?"** New code, APIs, abstractions, and flags must justify their existence. If an addition can be avoided without sacrificing correctness or meaningful capability, it should be.
-- **Demand real-world use cases and customer scenarios.** Hypothetical benefits are insufficient motivation for expanding API surface area or adding features. Require evidence that real users need this.
+- **`src/**` changed:** `.github/instructions/review-all-src.instructions.md` -- reviewer mindset, the Holistic PR Assessment criteria (Motivation, Evidence, Approach, Cost-Benefit, Scope, Risk, Codebase Fit), correctness philosophy, PR hygiene, consistency, and documentation. Use these criteria to write the Motivation, Approach, and Summary fields in your output.
+- **`**/*.cs` changed:** `.github/instructions/review-csharp.instructions.md` -- C# error handling, thread safety, security, correctness, performance/allocation, API design, and style rules.
+- **Native files (`*.c` / `*.cpp` / `*.h` / `*.inc` / `*.S` / `*.asm`) changed:** `.github/instructions/review-native.instructions.md` -- C++ style, VM/JIT contracts, GC protection, platform defines, and interop/marshalling rules.
+- **Test files (`**/tests/**`, `src/tests/**`) changed:** `.github/instructions/review-all-tests.instructions.md` -- testing conventions and regression-test requirements.
+- **Area matches:** also load any matching area file under `.github/instructions/` (for example `.github/instructions/review-core-runtime.instructions.md`, `.github/instructions/jit.instructions.md`, `.github/instructions/system-net-*.instructions.md`, `.github/instructions/extensions-*.instructions.md`, `.github/instructions/compression.instructions.md`, `.github/instructions/cdac.instructions.md`). These stack on top of the language rules. An area instruction file does not imply that a corresponding agent exists; invoke an area **agent** under `.github/agents/` only when it actually exists and applies, as described in Step 2.
+- **Content matches (not path-based):** if the diff uses `Vector128`/`Vector256`/`Vector512`, `Vector<T>`, or `System.Runtime.Intrinsics.*` anywhere, apply the `vectorization` skill in addition to the above. SIMD code appears in arbitrary library files, so this trigger is keyed on content, not folder.
 
-### Evidence & Data
-
-- **Require measurable performance data before accepting optimization PRs.** Demand BenchmarkDotNet results or equivalent proof — never accept performance claims at face value.
-- **Distinguish real performance wins from micro-benchmark noise.** Trivial benchmarks with predictable inputs overstate gains from jump tables, branch elimination, and similar tricks. Require evidence from realistic, varied inputs.
-- **Investigate and explain regressions before merging.** Even if a PR shows a net improvement, regressions in specific scenarios must be understood and explicitly addressed — not hand-waved.
-
-### Approach & Alternatives
-
-- **Check whether the PR solves the right problem at the right layer.** Look for whether it addresses root cause or applies a band-aid. Prefer fixing the actual source of an issue over adding workarounds to production code.
-- **When a PR takes a fundamentally wrong approach, redirect early.** Don't iterate on implementation details of a flawed design. Push back on the overall direction before the contributor invests more time.
-- **Ask "Why not just X?" — always prefer the simplest solution.** When a PR uses a complex approach, challenge it with the simplest alternative that could work. The burden of proof is on the complex solution.
-
-### Cost-Benefit & Complexity
-
-- **Explicitly weigh whether the change is a net positive.** A performance trade-off that shifts costs around is not automatically beneficial. Demand clarity that the change is a win in the typical configuration, not just in a narrow scenario.
-- **Reject overengineering — complexity is a first-class cost.** Unnecessary abstraction, extra indirections, and elaborate solutions for marginal gains are actively rejected.
-- **Every addition creates a maintenance obligation.** Long-term maintenance cost outweighs short-term convenience. Code that is hard to maintain, increases surface area, or creates technical debt needs stronger justification.
-
-### Scope & Focus
-
-- **Require large or mixed PRs to be split into focused changes.** Each PR should address one concern. Mixed concerns make review harder and increase regression risk.
-- **Defer tangential improvements to follow-up PRs.** Police scope creep by asking contributors to separate concerns. Even good ideas should wait if they're not part of the PR's core purpose.
-
-### Risk & Compatibility
-
-- **Flag breaking changes and require formal process.** Any behavioral change that could affect downstream consumers needs documentation, API review, and explicit approval — even when the change improves the codebase internally.
-- **Assess regression risk proportional to the change's blast radius.** High-risk changes to stable code need proportionally higher value and more thorough validation.
-
-### Codebase Fit & History
-
-- **Ensure new code matches existing patterns and conventions.** Deviations from established patterns create confusion and inconsistency. If a rename or restructuring is warranted, do it uniformly in a dedicated PR — not piecemeal.
-- **Check whether a similar approach has been tried and rejected before.** If a prior attempt didn't work, require a clear explanation of what's different this time.
-
-## Correctness & Safety
-
-### Error Handling & Assertions
-
-- **Use `Debug.Assert` for internal invariants, not exceptions.** For internal-only callers, assert assumptions rather than throwing `ArgumentException`. Prefer `Debug.Assert(value != null)` over the null-forgiving operator (`!`).
-- **Use `throw` for reachable error paths, `UnreachableException` for exhaustive switches.** When a code path might be hit at runtime, throw an exception rather than asserting. Use `throw new UnreachableException()` for default cases in exhaustive switches. Use `PlatformNotSupportedException` (not `NotSupportedException`) for platform gaps. In native code, use `_ASSERTE(!"message")`.
-- **Include actionable details in exception messages.** Use `nameof` for parameter names. Include the unsupported type or unexpected value. Never throw empty exceptions.
-- **Initialize output parameters in all code paths.** When a method has `out` parameters or pointer outputs (`bytesWritten`, `numLocals`), ensure they are initialized to a defined value in all error paths.
-- **Handle OOM with exceptions or fail-fast, never asserts.** Use `ThrowOutOfMemory` or `EEPOLICY_HANDLE_FATAL_ERROR`, not asserts. In interpreter loops, use `nothrow new` and check for null.
-- **Use `ThrowIf` helpers over manual checks.** Use `ArgumentOutOfRangeException.ThrowIfNegative`, `ObjectDisposedException.ThrowIf`, etc. instead of manual if-then-throw patterns.
-- **Challenge exception swallowing that masks unexpected errors.** When a PR adds try/catch blocks that silently discard exceptions (`catch { continue; }`, `catch { return null; }`), question whether the exception represents a truly expected, recoverable condition or an unexpected error signaling a deeper problem (race conditions, memory corruption, build environment issues). Silently catching exceptions that "shouldn't happen" hides root causes and makes debugging harder. The default disposition should be to let unexpected exceptions propagate or fail fast so the real issue gets investigated.
-
-### Thread Safety
-
-- **Use `Volatile` or `Interlocked` for cross-thread field access.** Fields written on one thread and read on another must use `Volatile<T>`, `Volatile.Read/Write`, or `Interlocked`. The `??=` operator is not thread-safe. `Nullable<T>` is not safe for caching (two-field struct tears). Do not use shared mutable arrays without synchronization.
-- **Use `TickCount64` for timeout calculations.** Use `Environment.TickCount64` (long) instead of `Environment.TickCount` (int) to avoid integer overflow.
-
-### Security
-
-- **Guard integer arithmetic against overflow.** Guard size computations involving multiplication (e.g., `newCapacity * sizeof(T)`) against integer overflow. Use patterns correct by construction.
-- **Clean sensitive cryptographic data after use.** Always clear key material with `CryptographicOperations.ZeroMemory`. When using `PinAndClear` but copying to another buffer, clear the original too. Use non-short-circuit operators (`|`) in verification code to prevent timing leaks.
-- **Don't proactively send credentials without opt-in.** Never send authentication credentials (especially Basic auth) before receiving a challenge.
-- **Limit `stackalloc` to ~1KB and validate size.** Don't stackalloc based on user-controlled or large input sizes. Move stackalloc to just before usage, not before early returns.
-
-### Correctness Patterns
-
-- **Fix root cause, not symptoms or workarounds.** Investigate and fix the root cause rather than adding workarounds or suppressing warnings. Revert broken commits before layering fixes.
-- **Prefer safe code over unsafe micro-optimizations.** Do not introduce `Unsafe.As`, `Unsafe.AsRef`, or raw pointers without demonstrable performance need. Prefer Span-based APIs. If performance is the issue, prefer fixing the JIT.
-- **Use `Unsafe.BitCast` for same-size type punning.** Prefer `Unsafe.BitCast<TFrom, TTo>` over `Unsafe.As<TFrom, TTo>` for type punning between value types of the same size.
-- **Delete dead code and unnecessary wrappers.** Remove dead code, unnecessary wrappers, obsolete fields, and unused variables when encountered or when the only caller changes.
-- **Handle `SafeHandle.IsInvalid` before `Dispose`.** Check `IsInvalid` (not null) on returned SafeHandles. Get the exception before calling `Dispose`, since Dispose might clear the error state.
-- **Seal classes when `Equals` uses exact type matching.** If a class implements `Equals` with `GetType()` comparison, seal the class to prevent subtle inheritance bugs.
-- **Use `Environment.ProcessPath` and `AppContext.BaseDirectory`.** Use these instead of `Process.GetCurrentProcess().MainModule?.FileName` and `Assembly.Location` for NativeAOT/single-file compatibility.
-- **File name casing must match csproj references exactly.** Linux is case-sensitive. New source files must be listed in the `.csproj` if other files in that folder are explicitly listed.
-- **Prefer correct-by-construction designs.** Prefer designs that are correct by construction (e.g., scanning IL) over manually maintained parallel data structures. A missed optimization is better than silent bad codegen.
-- **Allocate on the correct loader allocator for collectibility.** When allocating runtime data structures for generic instantiations, use the correct loader allocator accounting for collectibility of type arguments.
-- **Backport targeted fixes, not refactorings.** When backporting to servicing branches, create small targeted fixes. Backporting large refactorings introduces unnecessary risk.
-
-### JIT-Specific Correctness
-
-- **JIT lowering must not double-lower nodes.** Never call `LowerNode` on an already-lowered node. Return newly created nodes for the caller to lower. Constant folding belongs in import/morph, not lowering.
-- **Mark collectible ALC test methods `NoInlining`.** Methods that touch collectible assembly load contexts must be `[MethodImpl(MethodImplOptions.NoInlining)]` to prevent the JIT from keeping references alive.
----
-
-## Performance & Allocations
-
-### Measurement & Evidence
-
-- **Performance changes require benchmark evidence.** Include BenchmarkDotNet or EgorBot numbers before merging. Validate with real-world scenarios, not just microbenchmarks.
-- **Justify binary size increases with real-world measurements.** Changes that increase binary size require measured wall-clock improvements on real-world apps, not just instruction counts.
-- **Avoid premature optimization with object pools and caches.** Do not introduce global caches or object pools without evidence they are needed. Prefer making the underlying operation faster.
-
-### Allocation Avoidance
-
-- **Avoid closures and allocations in hot paths.** When a lambda captures locals creating a closure, consider using a static delegate with a state parameter (value tuple). Avoid string concatenation; use span-based operations.
-- **Pre-allocate collections when size is known.** Pass capacity to `Dictionary`, `HashSet`, `List` constructors when the expected count is available.
-- **Structs in dictionaries need `IEquatable<T>` and `GetHashCode`.** Without these, the runtime falls back to boxing allocations for equality comparison.
-- **Avoid Pinned Object Heap for non-permanent objects.** POH is never compacted and effectively gen2. Only use for objects surviving as long as the process.
-- **Suppress `ExecutionContext` flow for infrastructure timers.** When allocating `Timer` or similar background infrastructure, suppress EC flow to avoid capturing unrelated `AsyncLocal`s that leak memory.
-
-### Code Structure for Performance
-
-- **Place cheap checks before expensive operations.** Order conditionals so cheapest/most-common checks come first. Move expensive work after early-exit checks.
-- **Allocate resources lazily where possible.** Allocate expensive resources on first use, not during initialization. Avoid forcing type initialization during startup.
-- **Extract throw helpers into `[DoesNotReturn]` methods.** Move throwing logic from error paths into separate static local functions or helper methods to allow the JIT to inline the success path.
-- **Avoid O(n²) patterns in collections and hot paths.** Watch for linear scans inside loops, repeated `RemoveAt` in loops. Use `RemoveAll`, single-pass restructuring, or appropriate data structures.
-- **Cache repeated accessor calls in locals.** Store the result of repeated property/getter calls in a local variable.
-- **Separate hot data from rarely-used data in runtime structures.** Keep frequently accessed data inline; move rarely-used data (GCInfo, DebugInfo) to separate structures.
-- **Compute constant data at compile time, not execution time.** In interpreter and similar hot paths, pre-compute metadata lookups and type checks during the compilation phase.
-- **Consider scalability, not just throughput.** Evaluate whether data structures, caches, and locking strategies will hold up at high cardinality or under concurrent load. Watch for unbounded collection growth, lock contention that worsens with core count, and O(1) assumptions that break at scale.
-
-### Specific API Choices
-
-- **Use `AppContext.TryGetSwitch` with a static readonly property.** Cache AppContext switches in `static bool Prop { get; } = AppContext.TryGetSwitch(...)` so the JIT can dead-code-eliminate unreachable paths.
-- **Do not cache `typeof` expressions in .NET Core.** `typeof(...)` is JITed into a constant; caching it is a de-optimization. Similarly, don't store `ArrayPool.Shared` in variables—it breaks devirtualization.
-- **Use `CollectionsMarshal` for large value-type dictionary lookups.** Use `GetValueRefOrAddDefault` or `GetValueRefOrNullRef` to avoid copying large structs. Use `ValueListBuilder` on hot paths.
-- **Use `sizeof` instead of `Marshal.SizeOf` for blittable structs.** `sizeof` is more correct and significantly faster when no marshalling is involved.
-- **Use the idiomatic `(uint)index >= (uint)length` bounds check.** The JIT recognizes this pattern and optimizes it. Slice spans before iterating to avoid per-element bounds checks.
-- **Source generators must be properly incremental.** Do not store Roslyn symbols (`ISymbol`, `Compilation`) in incremental pipeline steps. Output must be deterministic with Ordinal-sorted lists.
-- **Avoid LINQ and records in low-level compiler codebases.** In CG2/ILC and AOT tools, use direct loops instead of LINQ and readonly structs instead of records. Use concrete types over interfaces in private code.
-- **Use `ValueListBuilder` for dynamic array building in BCL.** Use `ValueListBuilder<T>` (with pooling) or `ArrayBuilder<T>`. Use stackalloc for small sizes, array pool when too large.
----
-
-## API Design & Contracts
-
-- **New public APIs require approved proposals before PR submission.** All new API surface must go through API review. PRs adding unapproved APIs will be closed. The implementation must match exactly what was approved. When new public API surface is detected, the API approval verification procedure (`.github/skills/code-review/api-approval-check.md`) is executed to enforce this rule.
-- **Use `internal` for new APIs pending API review.** If the API is needed immediately for implementation, mark it `internal` and file a review request separately.
-- **Parameter names must match between ref and src.** Renaming a public API parameter (including case changes) is a breaking change affecting named arguments and late-bound scenarios.
-- **Align exception types and validation order across platforms.** Validate arguments first (`ArgumentNullException`, then `ArgumentException`), then `PNSE`, then `ObjectDisposedException`, then perform the operation. Throw the same exception types on all platforms.
-- **`Try` APIs should return `false` only for the common expected failure.** Throw for everything else (corruption, permissions, invalid arguments). Try methods must always throw on invalid arguments.
-- **Don't expose mutable options after construction.** If values are captured at construction time, don't expose a mutable options object. Don't reference private field names or internal types in user-facing error messages.
-- **Use `PlatformNotSupportedException` for platform limitations.** When an operation can't complete in the current environment but could on a different platform, throw PNSE. Don't impose artificial limits beyond OS capabilities.
-- **.NET APIs should compensate for platform quirks.** Public APIs should work consistently across platforms. When adding overloads, check F# compatibility for implicit conversion ambiguities.
-- **Follow the obsoletion process for deprecated APIs.** Pick the next available SYSLIB diagnostic ID, add `[Obsolete]`, and use `[EditorBrowsable(Never)]` with `[OverloadResolutionPriority(-1)]` for overload fixes.
-- **New GC-EE interface methods must be appended last.** Always add new methods as the last method on the interface to preserve vtable slot ordering.
-- **New virtual methods must work with unoverridden derived types.** The default implementation must behave identically to calling the pre-existing equivalent APIs.
-- **Avoid unsigned types for lengths in public APIs.** Prefer `int` or `long` for length parameters. Use named types instead of `ValueTuple` across file boundaries.
-- **Start core component changes with an issue.** Changes to host, VM, or JIT should start with a GitHub issue describing the problem and motivation before submitting a PR.
----
-
-## Code Style & Formatting
-
-- **Use well-named constants instead of magic numbers.** No raw hex or decimal constants without explanation. Don't duplicate magic constants across files.
-- **Use `var` only when the type is obvious from context.** Use explicit types for casts, method returns, and async infrastructure. Never use `var` for numeric types.
-- **Use PascalCase for constants; descriptive names for booleans.** All constant locals and fields use PascalCase (except interop constants matching external names). Boolean fields should be positive and descriptive (`_hasCurrent` not `valid`).
-- **Name methods to accurately reflect their behavior.** Update names when behavior changes. `Get*` implies a return value; use `Print*/Display*` for void. `ThrowIf` not `ThrowExceptionIf`.
-- **Prefer early return to reduce nesting.** Use early returns for short/error cases to avoid unnecessary nesting. Put the error case first, success return last.
-- **Avoid `using static` and `#region` in new code.** `using static` is costly when reading code outside IDEs (e.g., GitHub review). `#region` gets out of date quickly.
-- **Place local functions at method end, fields first in types.** Local functions go at the end of the containing method. Fields are the first members declared in a type.
-- **Narrow warning suppression to smallest scope.** Avoid file-wide `#pragma` suppressions. Disable only around the specific line that triggers the warning.
-- **Use pattern matching and `is`/`or`/`and` patterns.** Prefer `is` patterns and C# pattern matching over manual type checks and comparisons. Use named parameters for boolean arguments.
-- **Do not initialize managed fields to default values (CA1805).** The CLR zero-initializes all fields in managed code. Explicit `= false`, `= 0`, `= null` is redundant. (This does not apply to native C/C++ code, where fields and locals must be explicitly initialized.)
-- **Sealed classes do not need the full Dispose pattern.** A simple `Dispose()` is sufficient since no derived class can introduce a finalizer.
-- **Prefer table-driven approaches over excessive case statements.** For hardware intrinsics and pattern-heavy code, use lookup tables (`AuxiliaryJitType`, `SpecialCodeGen` flags) instead of many explicit case entries.
-- **Order struct fields to minimize padding.** In C/C++ struct definitions, order fields by size (pointers first) to reduce padding.
----
-
-## Consistency with Codebase Patterns
-
-### PR Hygiene
-
-- **Keep PRs focused on their stated scope.** No accidental file modifications, no unrelated refactoring, no whitespace noise, no build artifacts. Each PR should serve a single purpose.
-- **Do large refactorings and renames in separate PRs.** Separate no-diff refactors from functional changes. Mechanical renames should be separate from logic changes.
-- **Merge to main first, then backport to release branches.** Use the `/backport` command. Backports to servicing are limited to security bugs, regressions, and reliability issues.
-
-### Code Reuse & Deduplication
-
-- **Extract duplicated logic into shared helper methods.** Fix improvements inside shared helpers so all callers benefit.
-- **Move shared code to shared files, not duplicated across runtimes.** When identical code exists across CoreCLR and NativeAOT, move it to the shared partition (using `#if !MONO` if needed).
-- **Use existing APIs instead of creating parallel ones.** Before introducing new types, enums, or helpers, check if existing ones serve the same purpose. Fix existing utilities rather than introducing duplicates.
-- **Delete dead code and unused declarations aggressively.** When removing code, also remove helper methods, enum values, function declarations, and resx strings that are no longer used.
-
-### Established Conventions
-
-- **Store error strings in `.resx`, not inline code.** Reference via the `SR` class. When removing code that uses a resx string, delete the unused string entry.
-- **Sort lists and entries alphabetically.** Lists of areas, configuration entries, resx entries, entrypoint/export lists, and ref source members should be maintained in alphabetical order.
-- **Don't modify auto-generated files or `eng/common` manually.** Change the generator or source definition instead. Files in `eng/common` are synced from dotnet/arcade.
-- **Use `DOTNET_` prefix for environment variables, not `COMPlus_`.** New runtime environment variables must use `DOTNET_` exclusively.
-- **Match existing style in modified files.** The existing style in a file takes precedence over general guidelines. Do not change existing code for style alone.
-- **Use the `sizeof` operator consistently.** A pass removed calls to the equivalent `Unsafe` helper; do not reintroduce them.
-
-### Runtime-Specific Patterns
-
-- **Consider NativeAOT parity for runtime changes.** When changing CoreCLR behavior, verify whether the same change is needed for NativeAOT.
-- **Keep interpreter behavior consistent with the regular JIT.** Follow the same patterns, naming, error codes (`CORJIT_BADCODE`), and macros (`NO_WAY`). Use `FEATURE_INTERPRETER` guards.
-- **Source generators: no file locks, diagnostics from analyzers only.** Generators should bypass invalid state gracefully. A separate analyzer should produce diagnostics.
-- **Ref assembly conventions.** No `using` directives (fully qualify types), empty method bodies or `throw null`, genapi-style formatting, alphabetical member order. TFM-specific APIs go in separate files.
----
-
-## Testing
-
-- **Always add regression tests for bug fixes and behavior changes.** Prefer adding `[InlineData]` test cases to existing test files rather than creating new ones. Ensure new test files are included in the csproj.
-- **Use platform-specific test attributes correctly.** Use `[PlatformSpecific]`, `[ConditionalFact]`, or `[ActiveIssue]` for skip logic rather than runtime if-checks. `ConditionalFact` is required for `SkipTestException` to work.
-- **Test edge cases, error paths, and all affected types.** Include empty strings, negative values, boundary conditions, Turkish 'i', surrogate pairs. Test both true and false for boolean options. Choose inputs that can't accidentally pass if output wasn't touched.
-- **Test assertions must be specific.** Assert exact expected values (exact `OperationStatus`, exact byte counts), not broad conditions. Ensure tests actually fail when the fix is reverted.
-- **Delete flaky and low-value tests rather than patching them.** Do not add tests known to be flaky. If a test relies on fragile runtime details and cannot be made reliable, prefer deletion.
-- **Make test data deterministic and culture-independent.** Create `CultureInfo` with explicit format settings. Use `[Theory]` with `[InlineData]` over individual `[Fact]` methods.
-- **Use `PLACEHOLDER` for test passwords.** Avoids false positives from credential scanning tools.
-- **Use checked builds for CI, lower priority for regression tests.** Use checked (not debug) CoreCLR builds for CI. New JIT regression tests should typically be `CLRTestPriority 1`.
-- **Use `RemoteExecutor` for tests with process-wide shared state.** Tests that modify shared state should use `RemoteExecutor` for isolation. Avoid hardcoded paths; use temp files. Do not add heavy dependencies like `Microsoft.CodeAnalysis.CSharp` to test assemblies.
-- **Catch only expected exceptions in fuzz tests.** Catching all exceptions masks bugs like undocumented exceptions escaping the API.
-- **Use modern xUnit patterns for xUnit-based tests.** In xUnit test projects (for example, most libraries tests), use `Assert.*` instead of the legacy `return 100 == success` pattern, use `[Fact]`/`[Theory]`, prefer `ThrowsAnyAsync<OperationCanceledException>` for cancellation, and name regression test classes after the issue number (e.g., `Runtime_117605`). Legacy non-xUnit tests under `src/tests` may continue to use the existing `return 100` convention.
-- **Reduce test output volume.** Avoid megabytes of console output. Use `Thread.Sleep` with fewer iterations instead of busy loops.
-- **Follow naming conventions for regression test directories.** In `src/tests/Regressions/coreclr/`, use `GitHub_<issue_number>` for the directory and `test<issue_number>` for the test name.
----
-
-## Documentation & Comments
-
-- **Comments should explain why, not restate code.** Delete comments like `// Get the types` that just duplicate the code in English. Don't include historical context about why code changed.
-- **Delete or update obsolete comments when code changes.** Stale comments describing old behavior are worse than no comments.
-- **Track deferred work with GitHub issues and searchable TODOs.** Reference a tracking issue in TODO comments with a consistent prefix (e.g., `TODO-Async:`). Remove ancient TODOs that will never be addressed.
-- **Don't duplicate comments on interface implementations.** Documentation comments belong on the interface definition. Duplicating leads to divergence.
-- **Add XML doc comments on all new public APIs.** These seed the official API documentation on learn.microsoft.com. Properties should start with "Gets the ..." or "Gets or sets the ...". Do not add XML docs to test code.
-- **Use SHA-specific or commit-based links in documentation.** Don't use branch-relative links that break when files move.
-- **Reference ECMA-335 and spec sources in metadata code.** When parsing signatures and metadata, cite the relevant ECMA-335 section. Cite CAVP/ACVP sources in crypto test vectors.
-- **File breaking change documentation for behavioral changes.** Open an issue in dotnet/docs using the template, send notification to the .NET Breaking Change Notification DL. Applies even to prerelease-to-prerelease changes.
-- **Use established terminology in user-facing text.** Do not expose internal type names, private field names, or codenames like "Roslyn" in public docs or error messages.
-- **Retain copyright headers and license information.** All C# and C++ source files must include the standard license header, including test files. When porting from other projects, retain original copyright and update THIRD-PARTY-NOTICES.TXT.
----
-
-## Platform & Cross-Platform
-
-- **Use `BinaryPrimitives` for endianness-safe reads.** Use `ReadInt32LittleEndian`/`BigEndian` rather than pointer casts. Separate endianness-specific reads from target-endianness reads.
-- **Use cross-platform vector APIs over ISA-specific intrinsics.** Prefer `Vector128/256/512.IsHardwareAccelerated` and cross-platform APIs (`.Shuffle`, `.Min`) over `Avx512BW`, `SSE2`. Use `BitOperations` for portable bit manipulation.
-- **Use correct platform/feature defines.** Use `TARGET_*`/`HOST_*` defines rather than compiler-provided defines (`__wasm__`). Use `HOST_*` for build machine code, `TARGET_*` for target platform. Use `PORTABILITY_ASSERT` for unimplemented platform code.
----
-
-## Native Code & Interop
-
-### C++ Style
-
-- **Don't use `auto` in the runtime C++ codebase.** Use explicit types. Exception: unspeakable types like lambdas.
-- **Use `nullptr`, `void*`, and native C++ types over legacy aliases.** Prefer `nullptr` over `NULL`, `void*` over `LPVOID`. Use `WCHAR` (not `wchar_t`) in Windows host code. Use `.inc` suffix for multiply-included files.
-- **Match `#endif` comments to `#ifdef` exactly.** Add comments on `#else`/`#endif` for non-trivial blocks. Consistent brace placement and four-space indentation.
-- **Prefer `static_cast` over C-style casts.** C-style casts are more permissive than needed and can silently degrade to `reinterpret_cast`.
-
-### Runtime & VM Patterns
-
-- **Use correct VM contracts and QCall patterns.** QCalls that may throw need `BEGIN_QCALL`/`END_QCALL`. Simple QCalls use `QCALL_CONTRACT_NO_GC_TRANSITION`. All VM methods need `STANDARD_VM_CONTRACT` or `WRAPPER_NO_CONTRACT`.
-- **Keep GC protection correct around managed references.** Ensure all GC references are `GCPROTECT`-ed before GC-triggering calls. After GC-triggering calls, use `ObjectFromHandle(handle)` for a fresh reference.
-- **Avoid dynamic allocation on fatal error paths.** Use stack-allocated buffers. Use simple synchronization (Interlocked with spin-wait) instead of Monitor/lock.
-- **Avoid thread-local objects with destructors in CoreCLR.** Destruction order is arbitrary. Tie lifetime to the CoreCLR Thread object. Prefer `PLATFORM_THREAD_LOCAL` from minipal over C++ `thread_local` in perf-critical paths.
-- **Use `SET_UNALIGNED` macros for potentially unaligned writes.** In code generation stubs, use `SET_UNALIGNED_32/64` rather than direct pointer dereferencing.
-- **Zero-initialize arrays and buffers that may be partially used.** Zero-init allocated arrays whose elements have destructors. Zero-init EH tables, C arrays, and similar structures.
-- **Add static asserts for hardcoded structural offsets.** When using hardcoded offsets to access struct fields (especially in assembly), add static asserts to verify them.
-- **Use minipal for new platform abstractions.** Use minipal (new) instead of PAL (legacy) for platform abstraction in new CoreCLR code. Use `ALTERNATE_ENTRY` (not `LOCAL_LABEL`) for assembly labels called from outside their function.
-- **Use `JITDUMP` and `LOG` macros, not `printf`.** In JIT code use `JITDUMP`. In CoreCLR VM use `LOG()`/`LOGGING` defines. Do not use `printf` or `Console.WriteLine` in production native code.
-
-### P/Invoke & Marshalling
-
-- **Prefer 4-byte `BOOL` for native interop marshalling.** Use `UnmanagedType.Bool`. Verify P/Invoke return types match native signatures exactly—mismatches may work on 64-bit but fail on 32-bit/WASM.
+If a rule in a more specific file conflicts with a general one, the more specific file
+wins. If any required instruction file cannot be loaded, note it in the review and fall
+back to a careful first-principles review of that area.

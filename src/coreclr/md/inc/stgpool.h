@@ -27,6 +27,7 @@
 #include "sarray.h"
 #include "memoryrange.h"
 #include "../datablob.h"
+#include "cdacdata.h"
 
 //*****************************************************************************
 // NOTE:
@@ -48,8 +49,6 @@ const int DFT_CODE_HEAP_SIZE = 8192;
 class StgStringPool;
 class StgBlobPool;
 class StgCodePool;
-
-template<typename T> struct cdac_data;
 
 //  Perform binary search on index table.
 //
@@ -84,6 +83,7 @@ public:
 class StgPoolSeg
 {
     friend class VerifyLayoutsMD;
+    friend struct ::cdac_data<StgPoolSeg>;
 public:
     StgPoolSeg() :
         m_pSegData((BYTE*)m_zeros),
@@ -422,6 +422,7 @@ friend class StgBlobPool;
 friend class RecordPool;
 friend class CBlobPoolHash;
 friend class VerifyLayoutsMD;
+friend struct ::cdac_data<StgPool>;
 
 public:
     StgPool(ULONG ulGrowInc=512, UINT32 nAlignment=4) :
@@ -1209,6 +1210,22 @@ private:
     DAC_ALIGNAS(StgPool) // Align first member to alignment of base class
     CBlobPoolHash m_Hash;                    // Hash table for lookups.
 };  // class StgBlobPool
+
+template<>
+struct cdac_data<StgPoolSeg>
+{
+    static constexpr size_t SegData = offsetof(StgPoolSeg, m_pSegData);
+    static constexpr size_t NextSegment = offsetof(StgPoolSeg, m_pNextSeg);
+    static constexpr size_t DataSize = offsetof(StgPoolSeg, m_cbSegNext);
+};
+
+template<>
+struct cdac_data<StgPool>
+{
+    static constexpr size_t SegData = offsetof(StgPool, m_pSegData);
+    static constexpr size_t NextSegment = offsetof(StgPool, m_pNextSeg);
+    static constexpr size_t DataSize = offsetof(StgPool, m_cbSegNext);
+};
 
 #ifdef _MSC_VER
 #pragma warning (default : 4355)

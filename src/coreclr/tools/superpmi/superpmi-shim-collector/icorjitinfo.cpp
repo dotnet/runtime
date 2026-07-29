@@ -28,6 +28,14 @@ bool interceptor_ICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return temp;
 }
 
+bool interceptor_ICJI::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
+{
+    mc->cr->AddCall("canValueClassInstancePointerEscape");
+    bool temp = original_ICorJitInfo->canValueClassInstancePointerEscape(ftn);
+    mc->recCanValueClassInstancePointerEscape(ftn, temp);
+    return temp;
+}
+
 bool interceptor_ICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 {
     mc->cr->AddCall("notifyMethodInfoUsage");
@@ -1382,6 +1390,12 @@ void interceptor_ICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
     mc->recGetAsyncInfo(pAsyncInfo);
 }
 
+void interceptor_ICJI::getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    mc->cr->AddCall("getWasmWellKnownGlobals");
+    original_ICorJitInfo->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
+    mc->recGetWasmWellKnownGlobals(pWellKnownGlobalsOut);
+}
 CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg)
 {
     mc->cr->AddCall("getAwaitReturnCall");

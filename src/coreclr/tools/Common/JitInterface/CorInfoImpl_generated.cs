@@ -21,6 +21,7 @@ namespace Internal.JitInterface
             static ICorJitInfoCallbacks()
             {
                 s_callbacks.isIntrinsic = &_isIntrinsic;
+                s_callbacks.canValueClassInstancePointerEscape = &_canValueClassInstancePointerEscape;
                 s_callbacks.notifyMethodInfoUsage = &_notifyMethodInfoUsage;
                 s_callbacks.getMethodAttribs = &_getMethodAttribs;
                 s_callbacks.setMethodAttribs = &_setMethodAttribs;
@@ -150,6 +151,7 @@ namespace Internal.JitInterface
                 s_callbacks.getFpStructLowering = &_getFpStructLowering;
                 s_callbacks.getWasmLowering = &_getWasmLowering;
                 s_callbacks.getAddressAlignment = &_getAddressAlignment;
+                s_callbacks.getWasmWellKnownGlobals = &_getWasmWellKnownGlobals;
                 s_callbacks.getThreadTLSIndex = &_getThreadTLSIndex;
                 s_callbacks.getAddrOfCaptureThreadGlobal = &_getAddrOfCaptureThreadGlobal;
                 s_callbacks.getHelperFtn = &_getHelperFtn;
@@ -204,6 +206,7 @@ namespace Internal.JitInterface
             }
 
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte> isIntrinsic;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte> canValueClassInstancePointerEscape;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte> notifyMethodInfoUsage;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint> getMethodAttribs;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CorInfoMethodRuntimeFlags, void> setMethodAttribs;
@@ -333,6 +336,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_FPSTRUCT_LOWERING*, void> getFpStructLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoWasmType> getWasmLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, void*, uint> getAddressAlignment;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_WASM_WELLKNOWN_GLOBALS*, void> getWasmWellKnownGlobals;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, uint> getThreadTLSIndex;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, int*> getAddrOfCaptureThreadGlobal;
             public delegate* unmanaged<IntPtr, IntPtr*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, CORINFO_METHOD_STRUCT_**, void> getHelperFtn;
@@ -398,6 +402,21 @@ namespace Internal.JitInterface
             try
             {
                 return _this.isIntrinsic(ftn) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static byte _canValueClassInstancePointerEscape(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.canValueClassInstancePointerEscape(ftn) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2306,6 +2325,20 @@ namespace Internal.JitInterface
             {
                 *ppException = _this.AllocException(ex);
                 return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static void _getWasmWellKnownGlobals(IntPtr thisHandle, IntPtr* ppException, CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                _this.getWasmWellKnownGlobals(ref *pWellKnownGlobalsOut);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
             }
         }
 

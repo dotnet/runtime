@@ -2150,8 +2150,16 @@ void Compiler::fgInsertInlineeArgument(
             {
                 // Don't put GT_BLK node under a GT_COMMA.
                 // Codegen can't deal with it.
-                // Just hang the address here in case there are side-effect.
-                *newStmt = gtNewStmt(gtUnusedValNode(argNode->AsOp()->gtOp1), callDI);
+                // If the indirection may fault, preserve the null check.
+                GenTree* addr = argNode->AsOp()->gtOp1;
+                if (argNode->IndirMayFault(this))
+                {
+                    *newStmt = gtNewStmt(gtNewNullCheck(addr), callDI);
+                }
+                else
+                {
+                    *newStmt = gtNewStmt(gtUnusedValNode(addr), callDI);
+                }
             }
             else
             {

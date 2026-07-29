@@ -233,7 +233,7 @@ public unsafe class IXCLRDataMethodDefinitionDumpTests : DumpTestBase
 
         TargetPointer systemAssembly = loader.GetSystemAssembly();
         Contracts.ModuleHandle coreLibModule = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
-        TypeHandle listTypeDef = Target.Contracts.ManagedTypeSource.GetTypeHandle(
+        ITypeHandle listTypeDef = Target.Contracts.ManagedTypeSource.GetTypeHandle(
             "System.Collections.Generic.List`1");
         Assert.True(listTypeDef.Address != 0, "Could not find List<> type definition in CoreLib");
 

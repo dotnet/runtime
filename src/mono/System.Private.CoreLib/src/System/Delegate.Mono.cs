@@ -107,11 +107,15 @@ namespace System
 
         public partial bool HasSingleTarget => Unsafe.As<MulticastDelegate>(this).HasSingleTarget;
 
-        public object? Target => Unsafe.As<MulticastDelegate>(this).Target;
+        public object? Target => Unsafe.As<MulticastDelegate>(this).GetTarget();
 
         internal virtual object? GetTarget() => _target;
 
-        public Delegate[] GetInvocationList() => Unsafe.As<MulticastDelegate>(this).GetInvocationList();
+        protected Delegate CombineImpl(Delegate? d) => Unsafe.As<MulticastDelegate>(this).CombineImplImpl(d);
+
+        protected Delegate? RemoveImpl(Delegate? d) => Unsafe.As<MulticastDelegate>(this).RemoveImplImpl(d);
+
+        public Delegate[] GetInvocationList() => Unsafe.As<MulticastDelegate>(this).GetInvocationListImpl();
 
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure)
         {

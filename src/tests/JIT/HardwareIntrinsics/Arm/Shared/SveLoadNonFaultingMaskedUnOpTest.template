@@ -337,7 +337,7 @@ namespace {Namespace}
             for (var i = 0; i < RetElementCount; i++)
             {
                 var expectedOut = ({RetBaseType})((i < (RetElementCount / 2)) ? inArray[i] : 0);
-                var expectedFault = ({GetFfrType}) ((i < (RetElementCount / 2)) ? 1 : 0);
+                var expectedFault = i < (RetElementCount / 2) ? Vector<{GetFfrType}>.AllBitsSet[0] : default;
 
                 if ((outArray[i] != expectedOut) && (faultArray[i] != expectedFault) )
                 {

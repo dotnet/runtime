@@ -21,6 +21,15 @@ bool WrapICorJitInfo::isIntrinsic(
     return temp;
 }
 
+bool WrapICorJitInfo::canValueClassInstancePointerEscape(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    API_ENTER(canValueClassInstancePointerEscape);
+    bool temp = wrapHnd->canValueClassInstancePointerEscape(ftn);
+    API_LEAVE(canValueClassInstancePointerEscape);
+    return temp;
+}
+
 bool WrapICorJitInfo::notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn)
 {
@@ -1277,6 +1286,14 @@ uint32_t WrapICorJitInfo::getAddressAlignment(
     uint32_t temp = wrapHnd->getAddressAlignment(address);
     API_LEAVE(getAddressAlignment);
     return temp;
+}
+
+void WrapICorJitInfo::getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    API_ENTER(getWasmWellKnownGlobals);
+    wrapHnd->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
+    API_LEAVE(getWasmWellKnownGlobals);
 }
 
 uint32_t WrapICorJitInfo::getThreadTLSIndex(

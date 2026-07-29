@@ -32,6 +32,16 @@
         <target state="translated">JsonConverterAttribute에서 파생되는 특성은 소스 생성기에서 지원되지 않습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="DerivedTypeIsNotSupportedMessageFormat">
+        <source>Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type.</source>
+        <target state="new">Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DerivedTypeIsNotSupportedTitle">
+        <source>Derived type is not a supported polymorphic derived type.</source>
+        <target state="new">Derived type is not a supported polymorphic derived type.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named '{0}'. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
         <target state="translated">이름이 '{0}'인 형식이 여러 개 있습니다. 처음 검색된 것에 대한 원본이 생성되었습니다. 이 충돌을 해결하려면 'JsonSerializableAttribute.TypeInfoPropertyName'을 사용하세요.</target>
@@ -50,6 +60,26 @@
       <trans-unit id="FastPathPolymorphismNotSupportedTitle">
         <source>'JsonDerivedTypeAttribute' is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
         <target state="translated">'JsonSourceGenerationMode.Serialization'에서는 'JsonDerivedTypeAttribute'가 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DerivedTypeDiscriminatorCollisionMessageFormat">
+        <source>The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</source>
+        <target state="new">The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DerivedTypeDiscriminatorCollisionTitle">
+        <source>Derived types produce a duplicate type discriminator.</source>
+        <target state="new">Derived types produce a duplicate type discriminator.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InferredDerivedTypeIsNotAccessibleMessageFormat">
+        <source>The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</source>
+        <target state="new">The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InferredDerivedTypeIsNotAccessibleTitle">
+        <source>Inferred derived type is less accessible than the polymorphic base type.</source>
+        <target state="new">Inferred derived type is less accessible than the polymorphic base type.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">

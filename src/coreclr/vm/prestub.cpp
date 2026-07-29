@@ -29,13 +29,15 @@
 #include "interpexec.h"
 #endif
 
+#ifdef TARGET_WASM
+#include "wasmasynccontinuation.h"
+#endif
+
 #ifdef FEATURE_COMINTEROP
 #include "clrtocomcall.h"
 #endif
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #include "methoddescbackpatchinfo.h"
 
@@ -46,6 +48,10 @@
 #ifndef DACCESS_COMPILE
 
 EXTERN_C void STDCALL ThePreStubPatch();
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+const TADDR g_cdacThePreStub = GetEEFuncEntryPoint(ThePreStub);
+#endif
 
 #if defined(HAVE_GCCOVER)
 CrstStatic MethodDesc::m_GCCoverCrst;
@@ -371,10 +377,8 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
             pCode = GetPrecompiledCode(pConfig, shouldTier);
         }
 
-#ifdef FEATURE_PERFMAP
         if (pCode != (PCODE)NULL)
             PerfMap::LogPreCompiledMethod(this, pCode);
-#endif
     }
 
     if (pConfig->IsForMulticoreJit() && pCode == (PCODE)NULL && pConfig->ReadyToRunRejectedPrecompiledCode())
@@ -394,7 +398,16 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
         DACNotifyCompilationFinished(this, pCode);
 
 #if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
-        NotifyGdb::MethodPrepared(this);
+        COR_ILMETHOD* pILHeader = MayHaveILHeader() ? pConfig->GetILHeader() : NULL;
+        if (pILHeader != NULL)
+        {
+            COR_ILMETHOD_DECODER ilHeader(pILHeader, GetMDImport(), NULL);
+            NotifyGdb::MethodPrepared(this, pCode, &ilHeader);
+        }
+        else
+        {
+            NotifyGdb::MethodPrepared(this, pCode, NULL);
+        }
 #endif
     }
 
@@ -705,17 +718,6 @@ namespace
 
         COR_ILMETHOD* ilHeader = pConfig->GetILHeader();
 
-        // For a Runtime Async method the methoddef maps to a Task-returning thunk with runtime-provided implementation,
-        // while the default IL belongs to the Async implementation variant.
-        // Similarly we can get here for an async variant of a task-returning method where we use the original method's
-        // IL and create an async version.
-        // By default the config captures the default methoddesc, which would be a thunk, thus no IL header.
-        // So, if config provides no header and we see an implementation method desc, then just ask the method desc itself.
-        if (ilHeader == NULL && pMD->IsAsyncVariantMethod())
-        {
-            ilHeader = pMD->GetILHeader();
-        }
-
         if (ilHeader == NULL)
             return NULL;
 
@@ -910,12 +912,15 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     }
 #endif // PROFILING_SUPPORTED
 
-#ifdef FEATURE_PERFMAP
 #if defined(FEATURE_INTERPRETER)
     if (isInterpreterCode)
     {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        InterpByteCodeStart* interpreterCode = (InterpByteCodeStart*)PortableEntryPoint::GetInterpreterData(pCode);
+#else
         InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
         InterpByteCodeStart* interpreterCode = (InterpByteCodeStart*)pPrecode->GetData()->ByteCodeAddr;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         PCODE irAddress = PINSTRToPCODE((TADDR)interpreterCode);
         PerfMap::LogInterpreterMethod(this, irAddress, sizeOfCode);
     }
@@ -925,13 +930,12 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         // Save the JIT'd method information so that perf can resolve JIT'd call frames.
         PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
     }
-#endif
 
     // The notification will only occur if someone has registered for this method.
     DACNotifyCompilationFinished(this, pCode);
 
 #if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX)
-    NotifyGdb::MethodPrepared(this);
+    NotifyGdb::MethodPrepared(this, pCode, pilHeader);
 #endif
 
     return pCode;
@@ -1516,12 +1520,11 @@ void MethodDesc::CreateDerivedTargetSig(MetaSig& msig, SigBuilder *stubSigBuilde
 Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
 {
 
-    CONTRACT(Stub*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SigTypeContext typeContext(pTargetMD);
 
@@ -1600,20 +1603,19 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
     pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
     pResolver->SetStubTargetMethodDesc(pTargetMD);
 
-    RETURN Stub::NewStub(JitILStub(pStubMD));
+    return Stub::NewStub(JitILStub(pStubMD));
 
 }
 
 Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 {
 
-    CONTRACT(Stub*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pHiddenArg));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SigTypeContext typeContext;
     MethodTable* pStubMT;
@@ -1694,18 +1696,17 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
     pResolver->SetStubTargetMethodDesc(pTargetMD);
 
-    RETURN Stub::NewStub(JitILStub(pStubMD));
+    return Stub::NewStub(JitILStub(pStubMD));
 }
 
 /* Make a stub that for a value class method that expects a BOXed this pointer */
 Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 {
-    CONTRACT(Stub*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Stub *pstub = NULL;
 
@@ -1742,31 +1743,30 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 
         sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
 
-        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "UnboxingStub");
+        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "UnboxingStub");
     }
 #elif defined(TARGET_X86)
     CPUSTUBLINKER sl;
     if (sl.EmitUnboxMethodStub(pUnboxedMD))
     {
-        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "UnboxingStub");
+        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "UnboxingStub");
     }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
-    RETURN CreateUnboxingILStubForValueTypeMethods(pUnboxedMD);
+    return CreateUnboxingILStubForValueTypeMethods(pUnboxedMD);
 }
 
 #if defined(FEATURE_SHARE_GENERIC_CODE)
 Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
 {
-    CONTRACT(Stub*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(pMD->IsInstantiatingStub());
         PRECONDITION(!pMD->RequiresInstArg());
         PRECONDITION(!pMD->IsSharedByGenericMethodInstantiations());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Note: this should be kept idempotent ... in the sense that
     // if multiple threads get in here for the same pMD
@@ -1798,17 +1798,17 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
         _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
         sl.EmitComputedInstantiatingMethodStub(pSharedMD, &portableShuffle[0], extraArg);
 
-        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "InstantiatingStub");
+        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "InstantiatingStub");
     }
 #elif defined(TARGET_X86)
     CPUSTUBLINKER sl;
     if (sl.EmitInstantiatingMethodStub(pSharedMD, extraArg))
     {
-        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "InstantiatingStub");
+        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "InstantiatingStub");
     }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
-    RETURN CreateInstantiatingILStub(pSharedMD, extraArg);
+    return CreateInstantiatingILStub(pSharedMD, extraArg);
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
 
@@ -2001,7 +2001,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         pPFrame->Pop(CURRENT_THREAD);
     }
 
-    POSTCONDITION(pbRetVal != NULL);
+    _ASSERTE(pbRetVal != 0);
 
     return pbRetVal;
 }
@@ -2103,9 +2103,13 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-#elif defined(TARGET_WASM)
-        // We do not yet have an ABI for WebAssembly native code to handle here.
-#else
+    #elif defined(TARGET_WASM)
+        // Wasm has no async-continuation-return register; write the value to the
+        // shared `asyncContinuation` global (see wasmasynccontinuation.h) that the
+        // R2R caller reads after the call. The transition-block register area is
+        // unused on wasm.
+        RuntimeAsync_StoreAsyncContinuation((uint32_t)(uintptr_t)*frames.interpreterFrame.GetContinuationPtr());
+    #else
         #error Unsupported architecture
 #endif
 
@@ -2193,7 +2197,23 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
             if (targetIp == NULL)
             {
                 _ASSERTE(!PortableEntryPoint::PrefersInterpreterEntryPoint(portableEntrypoint));
-                InvokeManagedMethod(pMethod, args, retBuff, (PCODE)targetIp, nullptr /* WASM-TODO, handle RuntimeAsync */);
+                Object* continuationRet = nullptr;
+                Object** pContinuationRet = nullptr;
+#ifdef TARGET_WASM
+                // Gate on IsAsyncMethod to match InvokeManagedMethod/InvokeCalliStub; don't preload
+                // the global, InvokeCalliStub publishes the callee's continuation into continuationRet.
+                if (pMethod->IsAsyncMethod())
+                {
+                    pContinuationRet = &continuationRet;
+                }
+#endif // TARGET_WASM
+                InvokeManagedMethod(pMethod, args, retBuff, (PCODE)targetIp, pContinuationRet);
+#ifdef TARGET_WASM
+                if (pContinuationRet != nullptr)
+                {
+                    RuntimeAsync_StoreAsyncContinuation((uint32_t)(uintptr_t)continuationRet);
+                }
+#endif // TARGET_WASM
             }
 
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -2335,12 +2355,11 @@ static void TestSEHGuardPageRestore()
 // pointer to the stub, and not a pointer directly to the JITted code.
 PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode)
 {
-    CONTRACT(PCODE)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Stub *pStub = NULL;
     PCODE pCode = (PCODE)NULL;
@@ -2413,7 +2432,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
         GetOrCreatePrecode()->SetTargetInterlocked(pCode);
 
-        RETURN GetStableEntryPoint();
+        return GetStableEntryPoint();
     }
 #endif // FEATURE_COMINTEROP
 
@@ -2509,14 +2528,26 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             if (helperMD->ShouldCallPrestub())
                 (void)helperMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
             void* ilStubInterpData = helperMD->GetInterpreterCode();
-            // WASM-TODO: update this when we will have codegen
-            _ASSERTE(ilStubInterpData != NULL);
-            SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
 
             // Use this method's own PortableEntryPoint rather than the helper's.
             // It is required to maintain 1:1 mapping between MethodDesc and its entrypoint.
             PCODE entryPoint = GetPortableEntryPoint();
-            PortableEntryPoint::SetInterpreterData(entryPoint, (PCODE)(TADDR)ilStubInterpData);
+            if (ilStubInterpData != NULL)
+            {
+                // The managed implementation runs in the interpreter.
+                SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+                PortableEntryPoint::SetInterpreterData(entryPoint, (PCODE)(TADDR)ilStubInterpData);
+            }
+            else
+            {
+                // The managed implementation was compiled to native (R2R) code rather than interpreter
+                // byte code. This happens for String constructors, whose managed Ctor factory method is
+                // R2R-compiled. Publish the helper's native code into this method's own portable
+                // entrypoint so callers dispatch directly to it instead of looping back into the prestub.
+                // In this path helperMD comes from an FCall helper entrypoint, so native code must exist.
+                _ASSERTE(PortableEntryPoint::HasNativeEntryPoint(pCode));
+                PortableEntryPoint::SetActualCode(entryPoint, (PCODE)(TADDR)PortableEntryPoint::GetActualCode(pCode));
+            }
             pCode = entryPoint;
         }
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
@@ -2626,7 +2657,8 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
 Return:
 
-    RETURN pCode;
+    _ASSERTE(pCode != 0);
+    return pCode;
 }
 
 #endif // !DACCESS_COMPILE
@@ -2938,14 +2970,16 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
         if (fVirtual)
         {
-            GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
-
             // Get the stub manager for this module
             VirtualCallStubManager *pMgr = pModule->GetLoaderAllocator()->GetVirtualCallStubManager();
 
             OBJECTREF *protectedObj = pEMFrame->GetThisPtr();
             _ASSERTE(protectedObj != NULL);
-            if (*protectedObj == NULL) {
+            if (!*protectedObj) {
+                // NOTE: This is in a preemptive block, but the ! operator
+                // is safe to use on OBJECTREF even in preemptive mode
+                // (as long as the OBJECTREF is not on a managed object which
+                // in this case it is not)
                 COMPlusThrow(kNullReferenceException);
             }
 
@@ -2984,6 +3018,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 #endif
                 }
 
+                GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
+
                 // We lost the race or the R2R image was generated without cached interface dispatch support, simply do the resolution in pure C++
                 DispatchToken token;
                 if (pMT->IsInterface())
@@ -3009,6 +3045,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                     token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
 
                     StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
+                    GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
                     pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
                 }
                 else
@@ -3849,6 +3886,10 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
                 if (objRef == NULL)
                     COMPlusThrow(kNullReferenceException);
 
+                MethodTable* pMTObjRef = objRef->GetMethodTable();
+
+                GCX_PREEMP();
+
                 // Duplicated logic from JIT_VirtualFunctionPointer_Framed
                 if (!pMD->IsVtableMethod())
                 {
@@ -3856,7 +3897,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
                 }
                 else
                 {
-                    result = pMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, th);
+                    result = pMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, pMTObjRef, th);
                 }
 
                 GCPROTECT_END();

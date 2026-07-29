@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.EnCFieldDesc))]
 internal sealed partial class EnCFieldDesc : IData<EnCFieldDesc>
 {
-    [Field] public int NeedsFixup { get; }
-    [Field] public TargetPointer StaticFieldData { get; }
+    [Field] public partial int NeedsFixup { get; }
+    [Field] public partial TargetPointer StaticFieldData { get; }
 }

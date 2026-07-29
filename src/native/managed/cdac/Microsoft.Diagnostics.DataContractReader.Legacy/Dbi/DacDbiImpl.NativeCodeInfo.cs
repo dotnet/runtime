@@ -60,6 +60,8 @@ public sealed unsafe partial class DacDbiImpl
             (DebugVarLocKind.RegisterStack, _, _) => VarLocType.VLT_REG_STK,
             (DebugVarLocKind.StackRegister, _, _) => VarLocType.VLT_STK_REG,
             (DebugVarLocKind.DoubleStack, _, _) => VarLocType.VLT_STK2,
+            (DebugVarLocKind.FloatingPointStack, _, _) => VarLocType.VLT_FPSTK,
+            (DebugVarLocKind.FixedVarArg, _, _) => VarLocType.VLT_FIXED_VA,
             _ => VarLocType.VLT_INVALID,
         };
 
@@ -89,6 +91,12 @@ public sealed unsafe partial class DacDbiImpl
             case DebugVarLocKind.DoubleStack:
                 loc.vlsBaseReg = varInfo.BaseRegister;
                 loc.vlsOffset = varInfo.StackOffset;
+                break;
+            case DebugVarLocKind.FloatingPointStack:
+                loc.vlfReg = varInfo.FloatingPointStackRegister;
+                break;
+            case DebugVarLocKind.FixedVarArg:
+                loc.vlfvOffset = varInfo.FixedVarArgOffset;
                 break;
         }
 
@@ -231,6 +239,14 @@ public sealed unsafe partial class DacDbiImpl
                         $"VarInfo[{i}] vlsrsOffset mismatch - cDAC: {c.loc.vlsrsOffset}, DAC: {d.loc.vlsrsOffset}");
                     Debug.Assert(c.loc.vlsrReg == d.loc.vlsrReg,
                         $"VarInfo[{i}] vlsrReg mismatch - cDAC: {c.loc.vlsrReg}, DAC: {d.loc.vlsrReg}");
+                    break;
+                case VarLocType.VLT_FPSTK:
+                    Debug.Assert(c.loc.vlfReg == d.loc.vlfReg,
+                        $"VarInfo[{i}] vlfReg mismatch - cDAC: {c.loc.vlfReg}, DAC: {d.loc.vlfReg}");
+                    break;
+                case VarLocType.VLT_FIXED_VA:
+                    Debug.Assert(c.loc.vlfvOffset == d.loc.vlfvOffset,
+                        $"VarInfo[{i}] vlfvOffset mismatch - cDAC: {c.loc.vlfvOffset}, DAC: {d.loc.vlfvOffset}");
                     break;
             }
         }

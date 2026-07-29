@@ -33,20 +33,7 @@ engine:
   id: copilot
   model: claude-opus-4.8
   env:
-    COPILOT_GITHUB_TOKEN: |
-      ${{ case(
-        needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0,
-        needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1,
-        needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2,
-        needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3,
-        needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4,
-        needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5,
-        needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6,
-        needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7,
-        needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8,
-        needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9,
-        'NO COPILOT PAT AVAILABLE')
-      }}
+    COPILOT_GITHUB_TOKEN: ${{ case(needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0, needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1, needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2, needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3, needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4, needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5, needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6, needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7, needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8, needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9, 'NO COPILOT PAT AVAILABLE') }}
 
 concurrency:
   group: "ci-failure-fix"
@@ -220,6 +207,8 @@ codegen-stress failures. No fix or workaround PR is in bounds for them.
 Always try to produce a real candidate change first. Read every file you would modify at `HEAD`, work out the minimal correct change (e.g. wrong expected value in a test, missing `using`, wrong cast, missing `#if`, off-by-one in test setup, a missing platform guard that *enables* correct behavior rather than disabling the test), and stage it. If the change reduces to "do what the source already does", there is nothing to fix -> record `-> skipped: candidate fix already present in source`.
 
 **Already-rooted test-assembly caution.** For any failing leg, when the symptom is a type, assembly, or method *missing at run time* (a `FileNotFoundException` for a `*.TestAssembly.dll`, a reflection lookup returning null, a missing logging/DI provider), first inspect the harness and project sources for existing roots and for whether the missing artifact is already present in the app/layout. If the test assembly or member is already rooted, do **not** propose another `[DynamicDependency]`, `.rd.xml`/`ILLink.Descriptors.xml` root, or `TrimmerRootAssembly` — the change is a no-op reviewers will reject. Similarly, if the assembly is already copied into the app bundle/layout, do **not** propose an additional bundle-copy. Only add a root or copy step when source confirms it is missing. Otherwise pin a concrete product-side root cause, or treat it as no-producible-diff and route to Branch COMMENT (Step 5.5).
+
+**Platform crypto-config caution.** When a `System.Security.Cryptography.*` test fails only on a specific distro/OS crypto configuration (AzureLinux/mariner, `linux_musl`, FIPS, or an OpenSSL-provider variant) and the candidate change would hard-code a platform-specific crypto expectation — a key-size floor, algorithm availability, cipher enable/disable, or a per-distro test-expectation change — do **not** open a confident (Branch FIX) PR. The correct behavior depends on the distro's crypto provider configuration, which is a security-area-owner decision, so a guessed expectation change will be rejected. Route to Branch COMMENT (Step 5.5, loop-in), or Branch HELP (Step 5.4) only when you name the specific platform crypto configuration as the explicit open question for a human to confirm.
 
 Once you have a candidate diff, classify it:
 

@@ -221,8 +221,13 @@ namespace System.Security.Cryptography.X509Certificates
             Interop.Crypto.X509VerifyStatusCode statusCode =
                 X509VerifyStatusCodeUniversal.X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT;
 
-            while (!IsCompleteChain(statusCode))
+            const int DownloadLimit = 2;
+            int downloadsRemaining = DownloadLimit;
+
+            while (downloadsRemaining > 0 && !IsCompleteChain(statusCode))
             {
+                downloadsRemaining--;
+
                 using (SafeX509Handle currentCert = Interop.Crypto.X509StoreCtxGetCurrentCert(storeCtx))
                 {
                     IntPtr currentHandle = currentCert.DangerousGetHandle();
