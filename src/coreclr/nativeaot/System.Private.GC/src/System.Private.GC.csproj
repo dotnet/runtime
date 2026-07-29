@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Internal\Runtime\GarbageCollection\GCConfig.cs" />
     <Compile Include="Internal\Runtime\GarbageCollection\GCEventEnums.cs" />
     <Compile Include="Internal\Runtime\GarbageCollection\GCEventStatus.cs" />
     <Compile Include="Internal\Runtime\GarbageCollection\IntroSort.cs" />
@@ -29,6 +30,7 @@
     <Compile Include="Internal\Runtime\GarbageCollection\Interface\GCInterfaceLayout.cs" />
     <Compile Include="Internal\Runtime\GarbageCollection\Interface\GCInterfaceStructs.cs" />
     <Compile Include="Internal\Runtime\GarbageCollection\Interface\GCInterfaceVtables.cs" />
+    <Compile Include="Internal\Runtime\GarbageCollection\Interface\GCToEEInterface.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
     <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Full\GCInterfaceOffsets.cs" />

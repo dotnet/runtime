@@ -40,6 +40,11 @@ Ported so far:
 | `Interface/GCInterfaceStructs.cs` | `gcinterface.h`, `gcinterface.ee.h` (shared structs) |
 | `Interface/GCInterfaceVtables.cs` | `gcinterface.h`, `gcinterface.ee.h` (abstract classes) |
 | `Interface/GCInterfaceLayout.cs` | layout check against `GCInterfaceOffsets.h` |
+| `Interface/GCToEEInterface.cs` | `gcenv.ee.standalone.inl` |
+| `GCConfig.cs` | `gcconfig.h`, `gcconfig.cpp` |
+
+`ParseGCHeapAffinitizeRanges` is not ported yet: it needs `GCToOSInterface`, which is the next
+step.
 
 Nothing here is wired into the runtime build yet.
 
