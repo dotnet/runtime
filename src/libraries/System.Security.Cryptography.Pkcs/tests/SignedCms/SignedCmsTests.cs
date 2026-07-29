@@ -16,9 +16,6 @@ namespace System.Security.Cryptography.Pkcs.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/126697", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
     public static partial class SignedCmsTests
     {
-        // TODO: Windows does not support draft 10 PKCS#8 format yet. Remove this and use MLDsa.IsSupported when it does.
-        public static bool SupportsDraft10Pkcs8 => MLDsa.IsSupported && !PlatformDetection.IsWindows;
-
         [Fact]
         public static void DefaultStateBehavior()
         {
@@ -668,7 +665,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
             select new object[] { sit, detached, data.hashAlgorithm, data.algorithm };
 
-        [ConditionalTheory(typeof(SignedCmsTests), nameof(SupportsDraft10Pkcs8))]
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         [MemberData(nameof(AddFirstSignerMLDsaTestData))]
         public static void AddFirstSigner_MLDsa(SubjectIdentifierType identifierType, bool detached, string digestOid, MLDsaAlgorithm algorithm)
         {
@@ -1802,7 +1799,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignedCmsTests), nameof(SupportsDraft10Pkcs8))]
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         public static void ComputeSignature_MLDsa_DefaultDigest()
         {
 #if !NETFRAMEWORK

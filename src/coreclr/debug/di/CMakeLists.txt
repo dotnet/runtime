@@ -1,5 +1,4 @@
 add_definitions(
-    -DDBI_COMPILE
     -DFEATURE_METADATA_CUSTOM_DATA_SOURCE
     -DFEATURE_METADATA_DEBUGGEE_DATA_SOURCE
     -DFEATURE_NO_HOST
@@ -78,5 +77,6 @@ endif (CLR_CMAKE_TARGET_WIN32)
 list(APPEND CORDBDI_SOURCES ${CORDBDI_SOURCES_ASM_FILE})
 
 add_library_clr(cordbdi STATIC ${CORDBDI_SOURCES})
+set_target_properties(cordbdi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(cordbdi PRIVATE stdafx.h)
 add_dependencies(cordbdi eventing_headers)

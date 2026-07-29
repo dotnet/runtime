@@ -23,8 +23,8 @@ public:
 
 public:
 
-    static HRESULT getPgoInstrumentationResults(MethodDesc* pMD, BYTE **pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource);
-    static HRESULT allocPgoInstrumentationBySchema(MethodDesc* pMD, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
+    static HRESULT getPgoInstrumentationResults(MethodDesc* pMD, const COR_ILMETHOD_DECODER* ilHeader, BYTE **pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource);
+    static HRESULT allocPgoInstrumentationBySchema(MethodDesc* pMD, const COR_ILMETHOD_DECODER* ilHeader, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
     static HRESULT getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pReadyToRunInfo,
                                                              Module* pModule,
                                                              ReadyToRunLoadedImage* pNativeImage,
@@ -152,13 +152,14 @@ protected:
                                                  ICorJitInfo::PgoSource* pPgoSource);
 
     HRESULT allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
+                                                    const COR_ILMETHOD_DECODER* ilHeader,
                                                     ICorJitInfo::PgoInstrumentationSchema* pSchema,
                                                     UINT32 countSchemaItems,
                                                     BYTE** pInstrumentationData);
 
 private:
     static HRESULT ComputeOffsetOfActualInstrumentationData(const ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, size_t headerInitialSize, UINT *offsetOfActualInstrumentationData);
-    static HRESULT getPgoInstrumentationResultsFromText(MethodDesc* pMD, BYTE** pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData, ICorJitInfo::PgoSource *pPgoSource);
+    static HRESULT getPgoInstrumentationResultsFromText(MethodDesc* pMD, const COR_ILMETHOD_DECODER* ilHeader, BYTE** pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData, ICorJitInfo::PgoSource *pPgoSource);
 
     static void ReadPgoData();
     static void WritePgoData();

@@ -462,21 +462,17 @@ void WrapNonCompliantException(OBJECTREF *ppThrowable)
 // assembly level setting.
 OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly)
 {
-    // Check if we are required to compute the RuntimeWrapExceptions status.
-    BOOL fIsRuntimeWrappedException = ((throwable != NULL) && (throwable->GetMethodTable() == pMT_RuntimeWrappedException));
-    BOOL fRequiresComputingRuntimeWrapExceptionsStatus = (fIsRuntimeWrappedException &&
-                                                          (!(pAssembly->GetModule()->IsRuntimeWrapExceptionsStatusComputed())));
-
     CONTRACTL
     {
         THROWS;
-        // If we are required to compute the status of RuntimeWrapExceptions, then the operation could trigger a GC.
-        // Thus, conditionally setup the contract.
-        if (fRequiresComputingRuntimeWrapExceptionsStatus) GC_TRIGGERS; else GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pAssembly));
     }
     CONTRACTL_END;
+
+    // Check if we are required to compute the RuntimeWrapExceptions status.
+    BOOL fIsRuntimeWrappedException = ((throwable != NULL) && (throwable->GetMethodTable() == pMT_RuntimeWrappedException));
 
     if (fIsRuntimeWrappedException && (!pAssembly->GetModule()->IsRuntimeWrapExceptionsDuringEH()))
     {
