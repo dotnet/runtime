@@ -2832,12 +2832,16 @@ void ObjectAllocator::RewriteUses()
 
                         // Rewrite the call to make the box accesses explicit in jitted code.
                         // user = COMMA(
-                        //           CALL(UNBOX_HELPER_TYPETEST, obj->MethodTable, type),
+                        //           CALL(UNBOX_HELPER_TYPETEST, type, obj->MethodTable),
                         //           ADD(obj, TARGET_POINTER_SIZE))
                         //
                         JITDUMP("Rewriting to invoke box type test helper%s\n", isForEffect ? " for side effect" : "");
 
+                        // Unbox_TypeTest returns void, unlike Unbox. isForEffect above reads the
+                        // original type.
                         call->gtCallMethHnd = m_compiler->eeFindHelper(CORINFO_HELP_UNBOX_TYPETEST);
+                        call->gtType        = TYP_VOID;
+                        call->gtReturnType  = TYP_VOID;
                         GenTree* const mt   = m_compiler->gtNewMethodTableLookup(lcl, /* onStack */ true);
                         call->gtArgs.Remove(secondArg);
                         call->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(mt));
@@ -2902,7 +2906,7 @@ void ObjectAllocator::RewriteUses()
                             call->gtCallType    = CT_INDIRECT;
                             call->gtControlExpr = target;
                             call->gtCallMethHnd = NO_METHOD_HANDLE;
-                            call->gtCallMoreFlags &= ~(GTF_CALL_M_DELEGATE_INV | GTF_CALL_M_WRAPPER_DELEGATE_INV);
+                            call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
                         }
                     }
                 }

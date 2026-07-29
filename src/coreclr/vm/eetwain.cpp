@@ -1718,8 +1718,6 @@ EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UIN
 typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
 #else
 typedef TADDR HandlerFn;
-TADDR GetWasmFramePointerFromStackPointer(TADDR sp);
-
 DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP);
 DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP);
 #endif // TARGET_WASM
@@ -1751,7 +1749,8 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
     UINT_PTR *pFuncletCallerSP = &(pExInfo->m_csfEHClause.SP);
 
 #ifdef TARGET_WASM
-    TADDR wasmFramePointer = GetWasmFramePointerFromStackPointer(GetSP(pRD->pCurrentContext));
+    TADDR wasmFramePointer = GetFP(pRD->pCurrentContext);
+    _ASSERTE(wasmFramePointer != 0);
     TADDR handlerFnIndex = CastHandlerFn(pfnHandler);
     if (throwable != NULL)
     {
@@ -1934,41 +1933,7 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
 {
     TADDR resumeSP = GetSP(pContext);
     TADDR resumeIP = GetIP(pContext);
-#ifdef TARGET_WASM
-    throw ResumeAfterCatchException(resumeSP, resumeIP);
-#else
-    Thread *pThread = GetThread();
-    InterpreterFrame * pInterpreterFrame = (InterpreterFrame*)pThread->GetFrame();
-
-    ClrCaptureContext(pContext);
-
-    TADDR targetSP = pInterpreterFrame->GetInterpExecMethodSP();
-
-    // We are resuming in interpreter frame. So we need to skip all native, JIT and AOT generated frames until we reach
-    // the resumeSP
-    do
-    {
-        if (ExecutionManager::IsManagedCode(GetIP(pContext)))
-        {
-            // JIT / AOT generated managed code
-            Thread::VirtualUnwindCallFrame(pContext);
-        }
-        else
-        {
-#ifdef TARGET_UNIX
-            PAL_VirtualUnwind(pContext);
-#else
-            Thread::VirtualUnwindCallFrame(pContext);
-#endif
-        }
-    }
-    while (GetSP(pContext) != targetSP);
-
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-    targetSSP = pInterpreterFrame->GetInterpExecMethodSSP();
-#endif
-    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, pContext, targetSSP, resumeSP, resumeIP);
-#endif // TARGET_WASM
+    ThrowResumeAfterCatchException(resumeSP, resumeIP);
 }
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)

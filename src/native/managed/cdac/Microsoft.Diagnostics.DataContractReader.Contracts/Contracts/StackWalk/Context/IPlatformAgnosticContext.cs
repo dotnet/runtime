@@ -15,7 +15,7 @@ public interface IPlatformAgnosticContext
     public int StackPointerRegister { get; }
 
     public TargetPointer StackPointer { get; set; }
-    public TargetPointer InstructionPointer { get; set; }
+    public TargetCodePointer InstructionPointer { get; set; }
     public TargetPointer FramePointer { get; set; }
 
     public uint RawContextFlags { get; set; }
@@ -29,7 +29,15 @@ public interface IPlatformAgnosticContext
     public abstract bool TryReadRegister(string fieldName, out TargetNUInt value);
     public abstract bool TrySetRegister(int number, TargetNUInt value);
     public abstract bool TryReadRegister(int number, out TargetNUInt value);
+
     public abstract void Unwind(Target target);
+
+    /// <summary>
+    /// Clears the hardware single-step (trace) flag in the context, if the architecture
+    /// supports a hardware single-step flag. Architectures that emulate single-stepping
+    /// throw <see cref="NotSupportedException"/>.
+    /// </summary>
+    public abstract void UnsetSingleStepFlag();
 
     public static IPlatformAgnosticContext GetContextForPlatform(Target target)
     {
@@ -42,6 +50,7 @@ public interface IPlatformAgnosticContext
             RuntimeInfoArchitecture.Arm64 => new ContextHolder<ARM64Context>(),
             RuntimeInfoArchitecture.LoongArch64 => new ContextHolder<LoongArch64Context>(),
             RuntimeInfoArchitecture.RiscV64 => new ContextHolder<RISCV64Context>(),
+            RuntimeInfoArchitecture.Wasm => new ContextHolder<WasmContext>(),
             RuntimeInfoArchitecture.Unknown => throw new InvalidOperationException($"Processor architecture is required for creating a platform specific context and is not provided by the target"),
             _ => throw new InvalidOperationException($"Unsupported architecture {runtimeInfo.GetTargetArchitecture()}"),
         };

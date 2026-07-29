@@ -55,7 +55,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             { "dotnet.native.js", true },
             { "dotnet.native.js.symbols", true },
             { "dotnet.native.wasm", true },
-            { "dotnet.native.worker.mjs", true },
             { "dotnet.runtime.js", true },
             { "dotnet.runtime.js.map", false },
             { "dotnet.diagnostics.js", true },
@@ -77,10 +76,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
            "dotnet.native.js",
            "dotnet.runtime.js",
         };
-        if (assertOptions.BuildOptions.RuntimeType is RuntimeVariant.MultiThreaded)
-        {
-            res.Add("dotnet.native.worker.mjs");
-        }
 
         if (!assertOptions.BuildOptions.IsPublish)
         {
@@ -162,10 +157,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
         string buildType = assertOptions.BuildOptions.IsPublish ? "publish" : "build";
         var nativeFilesToCheck = new List<string>() { "dotnet.native.wasm", "dotnet.native.js" };
-        if (assertOptions.BuildOptions.RuntimeType == RuntimeVariant.MultiThreaded)
-        {
-            nativeFilesToCheck.Add("dotnet.native.worker.mjs");
-        }
 
         foreach (string nativeFilename in nativeFilesToCheck)
         {
@@ -180,11 +171,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
             if (assertOptions.BuildOptions.ExpectedFileType != NativeFilesType.FromRuntimePack)
             {
-                if (nativeFilename == "dotnet.native.worker.mjs")
-                {
-                    Console.WriteLine($"Skipping the verification whether {nativeFilename} is from the runtime pack. The check wouldn't be meaningful as the runtime pack file has the same size as the relinked file");
-                    continue;
-                }
                 // Confirm that it doesn't match the file from the runtime pack
                 TestUtils.AssertNotSameFile(Path.Combine(runtimeNativeDir, nativeFilename),
                                    actualDotnetFiles[nativeFilename].ActualPath,
@@ -282,19 +268,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             AssertFileNotExists(objDir, file, "obj root");
             if (!isNativeRebuild)
                 AssertFileNotExists(Path.Combine(objDir, "wasm", "for-build"), file, "wasm/for-build");
-        }
-
-        if (buildOptions.RuntimeType == RuntimeVariant.MultiThreaded)
-        {
-            // dotnet.native.worker.mjs is validated for location only and not compared against
-            // the runtime pack — the publish-path AssertBundle skips the runtime-pack comparison
-            // for the same reason (the runtime-pack file has the same size as the relinked file,
-            // so the check is not meaningful).
-            const string multiThreadedWorkerFile = "dotnet.native.worker.mjs";
-            AssertFileExists(nativeDir, multiThreadedWorkerFile);
-            AssertFileNotExists(objDir, multiThreadedWorkerFile, "obj root");
-            if (!isNativeRebuild)
-                AssertFileNotExists(Path.Combine(objDir, "wasm", "for-build"), multiThreadedWorkerFile, "wasm/for-build");
         }
 
         // --- Assembly files: webcil-converted in webcil/ or materialized DLLs in fx/_framework/ ---

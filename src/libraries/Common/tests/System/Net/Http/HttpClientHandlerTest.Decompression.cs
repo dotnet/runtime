@@ -348,6 +348,45 @@ namespace System.Net.Http.Functional.Tests
                 $"Server sent {serverBytesWritten} compressed bytes, expected fewer than the {BufferLimit}-byte buffer limit");
         }
 
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
+        public async Task GetAsync_ZstandardDecompression_ResponseWindowSizeExceedsMaxWindowLog_Fails()
+        {
+            if (IsWinHttpHandler)
+            {
+                // Zstandard not supported on WinHttpHandler
+                return;
+            }
+
+            // Compress data with WindowLog2=24 (16 MB), which exceeds the RFC 9659-mandated decompression limit of WindowLog2=23 (8 MB).
+            byte[] content = new byte[1024];
+            var compressedStream = new MemoryStream();
+            using (var zstdStream = new ZstandardStream(compressedStream, new ZstandardCompressionOptions { WindowLog2 = 24 }, leaveOpen: true))
+            {
+                await zstdStream.WriteAsync(content);
+            }
+            byte[] compressedData = compressedStream.ToArray();
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClientHandler handler = CreateHttpClientHandler();
+                handler.AutomaticDecompression = DecompressionMethods.Zstandard;
+                using HttpClient client = CreateHttpClient(handler);
+
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(
+                    () => client.GetByteArrayAsync(uri));
+                Assert.IsType<IOException>(ex.InnerException);
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestHeaderAsync();
+                    await connection.WriteStringAsync("HTTP/1.1 200 OK\r\nContent-Encoding: zstd\r\n\r\n");
+                    await connection.Stream.WriteAsync(compressedData);
+                });
+            });
+        }
+
         private sealed class ByteCountingStream : DelegatingStream
         {
             public ByteCountingStream(Stream inner) : base(inner) { }

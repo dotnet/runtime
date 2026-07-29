@@ -2836,12 +2836,6 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     {
         m_fEnableTargetConsistencyAsserts = true;
     }
-
-    // Verification asserts are disabled by default because some debuggers (cdb/windbg) probe likely locations
-    // for DAC and having this assert pop up all the time can be annoying.  We let derived classes enable
-    // this if they want.  It can also be overridden at run-time with DOTNET_DbgDACAssertOnMismatch,
-    // see ClrDataAccess::VerifyDlls for details.
-    m_fEnableDllVerificationAsserts = false;
 #endif
 }
 
@@ -5189,9 +5183,6 @@ ClrDataAccess::Initialize(void)
     // DAC is now setup and ready to use
     //
 
-    // Do some validation
-    IfFailRet(VerifyDlls());
-
     // To support EH SxS, utilcode requires the base address of the runtime as part of its initialization
     // so that functions like "WasThrownByUs" work correctly since they use the CLR base address to check
     // if an exception was raised by a given instance of the runtime or not.
@@ -5651,13 +5642,12 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
 MethodDesc * ClrDataAccess::FindLoadedMethodRefOrDef(Module* pModule,
     mdToken memberRef)
 {
-    CONTRACT(MethodDesc *)
+    CONTRACTL
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pModule));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Must have a MemberRef or a MethodDef
     mdToken tkType = TypeFromToken(memberRef);
@@ -5665,10 +5655,10 @@ MethodDesc * ClrDataAccess::FindLoadedMethodRefOrDef(Module* pModule,
 
     if (tkType == mdtMemberRef)
     {
-        RETURN pModule->LookupMemberRefAsMethod(memberRef);
+        return pModule->LookupMemberRefAsMethod(memberRef);
     }
 
-    RETURN pModule->LookupMethodDef(memberRef);
+    return pModule->LookupMethodDef(memberRef);
 } // FindLoadedMethodRefOrDef
 
 //
@@ -5934,6 +5924,27 @@ ClrDataAccess::GetHostJitNotificationTable()
     }
 
     return m_jitNotificationTable;
+}
+
+/* static */ bool
+ClrDataAccess::GetMetaDataFileInfoFromModule(Module *pModule,
+                                             DWORD &dwTimeStamp,
+                                             DWORD &dwSize,
+                                             DWORD &dwDataSize,
+                                             DWORD &dwRvaHint,
+                                             _Out_writes_(cchFilePath) LPWSTR wszFilePath,
+                                             const DWORD cchFilePath)
+{
+    SUPPORTS_DAC_HOST_ONLY;
+
+    if (pModule == NULL)
+        return false;
+
+    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
+    if (pPEAssembly == NULL)
+        return false;
+
+    return ClrDataAccess::GetMetaDataFileInfoFromPEFile(pPEAssembly, dwTimeStamp, dwSize, dwDataSize, dwRvaHint, wszFilePath, cchFilePath);
 }
 
 /* static */ bool
@@ -6252,16 +6263,6 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
     return m_fEnableTargetConsistencyAsserts;
 }
 
-//
-// VerifyDlls - Validate that the mscorwks in the target matches this version of mscordacwks
-// Only done on Windows and Mac builds at the moment.
-// See code:CordbProcess::CordbProcess#DBIVersionChecking for more information regarding version checking.
-//
-HRESULT ClrDataAccess::VerifyDlls()
-{
-    return S_OK;
-}
-
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
 void ClrDataAccess::InitStreamsForWriting(IN CLRDataEnumMemoryFlags flags)
@@ -6539,7 +6540,7 @@ CLRDataCreateInstance(REFIID iid,
 #endif
 
     // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
-    ReleaseHolder<IUnknown> cdacInterface = nullptr;
+    ReleaseHolder<IUnknown> cdacInterface;
 #ifdef CAN_USE_CDAC
     CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
     if (enable.IsSet())

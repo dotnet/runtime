@@ -13,11 +13,9 @@ using Xunit;
 
 namespace System.Security.Cryptography.Pkcs.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/126697", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
     public static partial class SignedCmsTests
     {
-        // TODO: Windows does not support draft 10 PKCS#8 format yet. Remove this and use MLDsa.IsSupported when it does.
-        public static bool SupportsDraft10Pkcs8 => MLDsa.IsSupported && !PlatformDetection.IsWindows;
-
         [Fact]
         public static void DefaultStateBehavior()
         {
@@ -667,7 +665,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
             select new object[] { sit, detached, data.hashAlgorithm, data.algorithm };
 
-        [ConditionalTheory(typeof(SignedCmsTests), nameof(SupportsDraft10Pkcs8))]
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         [MemberData(nameof(AddFirstSignerMLDsaTestData))]
         public static void AddFirstSigner_MLDsa(SubjectIdentifierType identifierType, bool detached, string digestOid, MLDsaAlgorithm algorithm)
         {
@@ -1801,7 +1799,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignedCmsTests), nameof(SupportsDraft10Pkcs8))]
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         public static void ComputeSignature_MLDsa_DefaultDigest()
         {
 #if !NETFRAMEWORK
@@ -1873,6 +1871,58 @@ namespace System.Security.Cryptography.Pkcs.Tests
                         useSigner(new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, cert));
                     }
                 });
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void VerifySignature_MLDsa_WrongSignatureAlgorithmId()
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+
+            using (X509Certificate2 cert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
+                signer.DigestAlgorithm = new Oid(Oids.Sha384, null);
+                cms.ComputeSignature(signer);
+                byte[] cmsBytes = cms.Encode();
+
+                ReadOnlySpan<byte> mldsa65Oid = [0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x12];
+                int scanLength = cmsBytes.Length - MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes;
+                int signerAlgTypeIndex = cmsBytes.AsSpan(0, scanLength).LastIndexOf(mldsa65Oid);
+
+                // Change the last byte of the OID to make it say ML-DSA-87
+                cmsBytes[signerAlgTypeIndex + mldsa65Oid.Length - 1] = 0x13;
+
+                cms.Decode(cmsBytes);
+                Assert.Equal(Oids.MLDsa87, cms.SignerInfos[0].SignatureAlgorithm.Value);
+                Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
+            }
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void VerifySignature_SlhDsa_WrongSignatureAlgorithmId()
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+
+            using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
+                signer.DigestAlgorithm = new Oid(Oids.Sha384, null);
+                cms.ComputeSignature(signer);
+                byte[] cmsBytes = cms.Encode();
+
+                ReadOnlySpan<byte> slhDsaSha2_128sOid = [0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x14];
+                int scanLength = cmsBytes.Length - SlhDsaAlgorithm.SlhDsaSha2_128s.SignatureSizeInBytes;
+                int signerAlgTypeIndex = cmsBytes.AsSpan(0, scanLength).LastIndexOf(slhDsaSha2_128sOid);
+
+                // Change the last byte of the OID to make it say SLH-DSA-SHAKE-256f
+                cmsBytes[signerAlgTypeIndex + slhDsaSha2_128sOid.Length - 1] = 0x1F;
+
+                cms.Decode(cmsBytes);
+                Assert.Equal(Oids.SlhDsaShake256f, cms.SignerInfos[0].SignatureAlgorithm.Value);
+                Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
+            }
         }
 
         private static void AssertSignerHasCorrectDefaultDigest(Action<Action<CmsSigner>> test)

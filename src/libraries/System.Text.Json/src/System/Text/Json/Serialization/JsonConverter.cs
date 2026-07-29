@@ -39,16 +39,14 @@ namespace System.Text.Json.Serialization
 
         internal ConverterStrategy ConverterStrategy
         {
-            get => _converterStrategy;
+            get;
             init
             {
                 CanUseDirectReadOrWrite = value == ConverterStrategy.Value && IsInternalConverter;
                 RequiresReadAhead = value == ConverterStrategy.Value;
-                _converterStrategy = value;
+                field = value;
             }
         }
-
-        private ConverterStrategy _converterStrategy;
 
         /// <summary>
         /// Invoked by the base contructor to populate the initial value of the <see cref="ConverterStrategy"/> property.
@@ -174,6 +172,13 @@ namespace System.Text.Json.Serialization
         /// Cached value of TypeToConvert.IsValueType, which is an expensive call.
         /// </summary>
         internal bool IsValueType { get; init; }
+
+        /// <summary>
+        /// Indicates whether this converter handles IEEE 754 floating-point types
+        /// (double, float, Half) that may emit anyOf schemas with named floating-point
+        /// literals under AllowNamedFloatingPointLiterals.
+        /// </summary>
+        internal virtual bool IsIeeeFloatingPointConverter => false;
 
         /// <summary>
         /// Whether the converter is built-in.

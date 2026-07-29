@@ -202,13 +202,13 @@ public class ContractDescriptorBuilder : MockMemorySpace.Builder
         }
     }
 
-    public bool TryCreateTarget(DescriptorBuilder descriptor, [NotNullWhen(true)] out ContractDescriptorTarget? target)
+    public bool TryCreateTarget(DescriptorBuilder descriptor, [NotNullWhen(true)] out ContractDescriptorTarget? target, Action<ContractRegistry>[]? contractRegistrations = null)
     {
         if (_created)
             throw new InvalidOperationException("Context already created");
         _created = true;
         ulong contractDescriptorAddress = descriptor.CreateSubDescriptor(ContractDescriptorAddr, JsonDescriptorAddr, ContractPointerDataAddr);
         MockMemorySpace.MemoryContext memoryContext = GetMemoryContext();
-        return ContractDescriptorTarget.TryCreate(contractDescriptorAddress, memoryContext.ReadFromTarget, memoryContext.WriteToTarget, (_, _, _) => throw new NotImplementedException("Tests do not provide GetTargetThreadContext"), (ulong _, out ulong _) => throw new NotImplementedException("Tests do not provide AllocVirtual"), [Contracts.CoreCLRContracts.Register], out target);
+        return ContractDescriptorTarget.TryCreate(contractDescriptorAddress, memoryContext.ReadFromTarget, memoryContext.WriteToTarget, (_, _, _) => throw new NotImplementedException("Tests do not provide GetTargetThreadContext"), (_, _) => throw new NotImplementedException("Tests do not provide SetTargetThreadContext"), (ulong _, out ulong _) => throw new NotImplementedException("Tests do not provide AllocVirtual"), contractRegistrations ?? [Contracts.CoreCLRContracts.Register], out target);
     }
 }

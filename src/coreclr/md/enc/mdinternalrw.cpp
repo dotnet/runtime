@@ -196,7 +196,7 @@ STDAPI GetMDInternalInterfaceFromPublic(
 
     if (riid != IID_IMDInternalImport || pIUnkPublic == NULL || ppIUnkInternal == NULL)
         IfFailGo(E_INVALIDARG);
-    IfFailGo( pIUnkPublic->QueryInterface(IID_IGetIMDInternalImport, &pGetIMDInternalImport));
+    IfFailGo( pIUnkPublic->QueryInterface(IID_IGetIMDInternalImport, (void**)&pGetIMDInternalImport));
     IfFailGo( pGetIMDInternalImport->GetIMDInternalImport((IMDInternalImport **)ppIUnkInternal));
 
 ErrExit:
@@ -3481,7 +3481,6 @@ HRESULT
 MDInternalRW::GetUserString(    // Offset into the string blob heap.
     mdString stk,                       // [IN] the string token.
     ULONG   *pcchStringSize,            // [OUT] count of characters in the string.
-    BOOL    *pfIs80Plus,                // [OUT] specifies where there are extended characters >= 0x80.
     LPCWSTR *pwszUserString)
 {
     HRESULT hr;
@@ -3489,10 +3488,6 @@ MDInternalRW::GetUserString(    // Offset into the string blob heap.
 
     // no need to lock this function.
 
-    if (pfIs80Plus != NULL)
-    {
-        *pfIs80Plus = FALSE;
-    }
     *pwszUserString = NULL;
     *pcchStringSize = 0;
 
@@ -3508,16 +3503,6 @@ MDInternalRW::GetUserString(    // Offset into the string blob heap.
     {
         *pwszUserString = NULL;
         return S_OK;
-    }
-
-    if (pfIs80Plus != NULL)
-    {
-        if (userString.GetSize() % sizeof(WCHAR) == 0)
-        {
-            *pfIs80Plus = TRUE; // no indicator, presume the worst
-        }
-        // Return the user string terminator (contains value fIs80Plus)
-        *pfIs80Plus = *(reinterpret_cast<PBYTE>(wszTmp + *pcchStringSize));
     }
 
     *pwszUserString = wszTmp;

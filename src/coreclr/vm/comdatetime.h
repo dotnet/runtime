@@ -5,7 +5,6 @@
 #ifndef _COMDATETIME_H_
 #define _COMDATETIME_H_
 
-#include <oleauto.h>
 #include "fcall.h"
 
 #include <pshpack1.h>

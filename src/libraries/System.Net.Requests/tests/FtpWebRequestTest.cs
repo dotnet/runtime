@@ -29,6 +29,23 @@ namespace System.Net.Tests
             }
         }
 
+        [Theory]
+        [InlineData("ftp://foo.com/bar\r\nbaz")]
+        [InlineData("ftp://foo.com/bar\rbaz")]
+        [InlineData("ftp://foo.com/bar\nbaz")]
+        [InlineData("ftp://foo.com/bar%0D%0Abaz")]
+        [InlineData("ftp://foo.com/bar%0d%0abaz")]
+        [InlineData("ftp://foo.com/bar%0D%0abaz")]
+        [InlineData("ftp://foo.com/bar%0Dbaz")]
+        [InlineData("ftp://foo.com/bar%0dbaz")]
+        [InlineData("ftp://foo.com/bar%0Abaz")]
+        [InlineData("ftp://foo.com/bar%0abaz")]
+        public void Ctor_NewLineInUri_ThrowsFormatException(string uriString)
+        {
+            Uri uri = new Uri(uriString, UriKind.Absolute);
+            Assert.Throws<FormatException>(() => WebRequest.Create(uri));
+        }
+
         [Fact]
         public void Ctor_VerifyDefaults_Success()
         {
@@ -211,17 +228,34 @@ namespace System.Net.Tests
             Assert.Throws<FormatException>(() => WebRequest.Create($"{uri}\r\n{WebRequestMethods.Ftp.AppendFile} {Guid.NewGuid().ToString()}"));
         }
 
-        [ConditionalFact(typeof(FtpWebRequestTest), nameof(LocalServerAvailable))]
-        public void Ftp_Ignore_NewLine_GetRequestStream_And_GetResponse_Throws_FormatException_As_InnerException()
+        [ConditionalTheory(typeof(FtpWebRequestTest), nameof(LocalServerAvailable))]
+        [InlineData("test\r\ntest2")]
+        [InlineData("test\rtest2")]
+        [InlineData("test\ntest2")]
+        public void Ftp_Ignore_NewLine_GetRequestStream_And_GetResponse_Throws_FormatException_As_InnerException(string credential)
         {
             FtpWebRequest ftpWebRequest = (FtpWebRequest)WebRequest.Create(absoluteUri + Guid.NewGuid().ToString());
             ftpWebRequest.Method = "APPE";
-            ftpWebRequest.Credentials = new NetworkCredential("test\r\ntest2", "test\r\ntest2");
+            ftpWebRequest.Credentials = new NetworkCredential(credential, credential);
             var requestException = Assert.Throws<WebException>(() => ftpWebRequest.GetRequestStream());
             Assert.True(requestException.InnerException is FormatException);
 
             var responseException = Assert.Throws<WebException>(() => ftpWebRequest.GetResponse());
             Assert.True(responseException.InnerException is FormatException);
+        }
+
+        [ConditionalTheory(typeof(FtpWebRequestTest), nameof(LocalServerAvailable))]
+        [InlineData("ok\r\nbad")]
+        [InlineData("ok\rbad")]
+        [InlineData("ok\nbad")]
+        public void Ftp_NewLineInRenameTo_GetResponse_Throws_FormatException_As_InnerException(string renameTo)
+        {
+            FtpWebRequest request = (FtpWebRequest)WebRequest.Create(absoluteUri + Guid.NewGuid().ToString());
+            request.Method = WebRequestMethods.Ftp.Rename;
+            request.RenameTo = renameTo;
+
+            WebException ex = Assert.Throws<WebException>(() => request.GetResponse());
+            Assert.IsType<FormatException>(ex.InnerException);
         }
 
         private static async Task<MemoryStream> DoAsync(FtpWebRequest request, MemoryStream requestBody)

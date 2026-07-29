@@ -45,38 +45,3 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
         CopyContextChunk(&(pDst->Bcr[0]), &(pSrc->Bcr[0]), &(pDst->Wvr[ARM64_MAX_WATCHPOINTS]),
                          DT_CONTEXT_DEBUG_REGISTERS);
 }
-
-#if defined(ALLOW_VMPTR_ACCESS) || !defined(RIGHT_SIDE_COMPILE)
-void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* pRD)
-{
-    SUPPORTS_DAC_HOST_ONLY;
-
-    DT_CONTEXT* pContext = reinterpret_cast<DT_CONTEXT*>(pRD->pCurrentContext);
-
-    // We must pay attention to the context flags so that we only use valid portions
-    // of the context.
-    DWORD flags = pContext->ContextFlags;
-    if ((flags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
-    {
-        pDRD->FP = (SIZE_T)CORDbgGetFP(pContext);
-        pDRD->LR = (SIZE_T)pContext->Lr;
-        pDRD->PC = (SIZE_T)pContext->Pc;
-    }
-
-    if ((flags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
-    {
-        for(int i = 0 ; i < 29 ; i++)
-        {
-           pDRD->X[i] = (SIZE_T)pContext->X[i];
-        }
-    }
-
-    pDRD->SP   = pRD->SP;
-
-    LOG( (LF_CORDB, LL_INFO1000, "DT::TASSC:Registers:"
-          "SP = %x",
-          pDRD->SP) );
-}
-#endif // ALLOW_VMPTR_ACCESS || !RIGHT_SIDE_COMPILE
-
-

@@ -144,9 +144,8 @@ unsigned Compiler::getFFRegisterVarNum()
 {
     if (lvaFfrRegister == BAD_VAR_NUM)
     {
-        lvaFfrRegister                                 = lvaGrabTemp(false DEBUGARG("Save the FFR value."));
-        lvaTable[lvaFfrRegister].lvType                = TYP_MASK;
-        lvaTable[lvaFfrRegister].lvUsedInSIMDIntrinsic = true;
+        lvaFfrRegister                  = lvaGrabTemp(false DEBUGARG("Save the FFR value."));
+        lvaTable[lvaFfrRegister].lvType = TYP_MASK;
     }
     return lvaFfrRegister;
 }
@@ -174,7 +173,7 @@ var_types Compiler::getBaseTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls
 //    sizeBytes if non-null is set to size in bytes.
 //
 // Notes:
-//    If the size of the struct is already known call structSizeMightRepresentSIMDType
+//    If the size of the struct is already known call structMightRepresentSIMDType
 //    to determine if this api needs to be called.
 //
 //    The type handle passed here can only be used in a subset of JIT-EE calls
@@ -188,25 +187,6 @@ var_types Compiler::getBaseTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls
 //
 var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes /*= nullptr */)
 {
-    if (m_simdHandleCache == nullptr)
-    {
-        if (impInlineInfo == nullptr)
-        {
-            m_simdHandleCache = new (this, CMK_Generic) SIMDHandlesCache();
-        }
-        else
-        {
-            // Steal the inliner compiler's cache (create it if not available).
-
-            if (impInlineInfo->InlineRoot->m_simdHandleCache == nullptr)
-            {
-                impInlineInfo->InlineRoot->m_simdHandleCache = new (this, CMK_Generic) SIMDHandlesCache();
-            }
-
-            m_simdHandleCache = impInlineInfo->InlineRoot->m_simdHandleCache;
-        }
-    }
-
     if (sizeBytes != nullptr)
     {
         *sizeBytes = 0;
@@ -220,7 +200,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
     const char* namespaceName;
     const char* className = getClassNameFromMetadata(typeHnd, &namespaceName);
 
-    // fast path search using cached type handles of important types
     var_types simdBaseType = TYP_UNDEF;
     unsigned  size         = 0;
 
@@ -236,7 +215,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                 }
 
                 JITDUMP("  Known type Plane\n");
-                m_simdHandleCache->PlaneHandle = typeHnd;
 
                 simdBaseType = TYP_FLOAT;
                 size         = 4 * genTypeSize(TYP_FLOAT);
@@ -251,7 +229,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                 }
 
                 JITDUMP("  Known type Quaternion\n");
-                m_simdHandleCache->QuaternionHandle = typeHnd;
 
                 simdBaseType = TYP_FLOAT;
                 size         = 4 * genTypeSize(TYP_FLOAT);
@@ -270,7 +247,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                     case '\0':
                     {
                         JITDUMP(" Found type Vector\n");
-                        m_simdHandleCache->VectorHandle = typeHnd;
                         break;
                     }
 
@@ -282,7 +258,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                         }
 
                         JITDUMP(" Found Vector2\n");
-                        m_simdHandleCache->Vector2Handle = typeHnd;
 
                         simdBaseType = TYP_FLOAT;
                         size         = 2 * genTypeSize(TYP_FLOAT);
@@ -297,7 +272,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                         }
 
                         JITDUMP(" Found Vector3\n");
-                        m_simdHandleCache->Vector3Handle = typeHnd;
 
                         simdBaseType = TYP_FLOAT;
                         size         = 3 * genTypeSize(TYP_FLOAT);
@@ -312,7 +286,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                         }
 
                         JITDUMP(" Found Vector4\n");
-                        m_simdHandleCache->Vector4Handle = typeHnd;
 
                         simdBaseType = TYP_FLOAT;
                         size         = 4 * genTypeSize(TYP_FLOAT);
@@ -340,6 +313,19 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                         if (size == 0)
                         {
                             return TYP_UNDEF;
+                        }
+
+                        // Vector<T>'s length is target-dependent, so under a cross-targeting altjit (e.g.
+                        // SuperPMI replaying a context captured for a target with a different Vector<T>
+                        // length) our size can disagree with the VM's. Treat it as a regular struct then,
+                        // keeping every size query consistent with the VM rather than emitting SIMD codegen
+                        // against a mismatched size.
+                        if (!info.compMatchedVM)
+                        {
+                            if (size != info.compCompHnd->getClassSize(typeHnd))
+                            {
+                                return TYP_UNDEF;
+                            }
                         }
                         break;
                     }
@@ -472,7 +458,11 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
 
     if (simdBaseType != TYP_UNDEF)
     {
-        assert(size == info.compCompHnd->getClassSize(typeHnd));
+#if defined(TARGET_ARM64)
+        assert((size == info.compCompHnd->getClassSize(typeHnd)) || (size == SIZE_UNKNOWN));
+#else
+        assert((size == info.compCompHnd->getClassSize(typeHnd)));
+#endif // TARGET_ARM64
         setUsesSIMDTypes(true);
     }
 
@@ -500,17 +490,117 @@ GenTree* Compiler::impSIMDPopStack()
     return tree;
 }
 
-//-------------------------------------------------------------------
-// Set the flag that indicates that the lclVar referenced by this tree
-// is used in a SIMD intrinsic.
-// Arguments:
-//      tree - GenTree*
-//
-void Compiler::setLclRelatedToSIMDIntrinsic(GenTree* tree)
+#if defined(TARGET_ARM64)
+
+uint64_t SimdAllBitsSetForElementType(var_types baseType)
 {
-    assert(tree->OperIsScalarLocal() || tree->IsLclVarAddr());
-    LclVarDsc* lclVarDsc             = lvaGetDesc(tree->AsLclVarCommon());
-    lclVarDsc->lvUsedInSIMDIntrinsic = true;
+    switch (genTypeSize(baseType))
+    {
+        case 1:
+            return 0xFF;
+        case 2:
+            return 0xFFFF;
+        case 4:
+            return 0xFFFFFFFFull;
+        case 8:
+            return 0xFFFFFFFFFFFFFFFFull;
+        default:
+            unreached();
+    }
 }
 
+bool simdscalable_t::IsAllBitsSet() const
+{
+    if (gtSimdScalableKind != SimdScalableRepeated)
+    {
+        return false;
+    }
+    const unsigned elementBitSize = genTypeSize(gtSimdScalableBaseType) * 8;
+    const uint64_t allBitsSetMask = (elementBitSize == 64) ? UINT64_MAX : (((uint64_t)1 << elementBitSize) - 1);
+    return gtSimdScalableIndex == allBitsSetMask;
+}
+
+bool simdmaskscalable_t::IsAllBitsSet(var_types simdBaseType) const
+{
+    return (gtSimdMaskScalableIndex == 1) && (genTypeSize(simdBaseType) == genTypeSize(gtSimdMaskScalableBaseType));
+}
+
+bool EvaluateSimdCvtScalableVectorToMask(var_types baseType, simdmaskscalable_t* maskCon, simdscalable_t vecCon)
+{
+    // All zero can always be converted to a mask, regardless of types
+    if (vecCon.IsZero())
+    {
+        maskCon->gtSimdMaskScalableBaseType = baseType;
+        maskCon->gtSimdMaskScalableIndex    = 0;
+        return true;
+    }
+
+    if (vecCon.gtSimdScalableKind != SimdScalableRepeated)
+    {
+        return false;
+    }
+
+    // size of the basetype must match
+    if (genTypeSize(baseType) != genTypeSize(vecCon.gtSimdScalableBaseType))
+    {
+        return false;
+    }
+
+    maskCon->gtSimdMaskScalableBaseType = baseType;
+    maskCon->gtSimdMaskScalableIndex    = (vecCon.gtSimdScalableIndex != 0);
+    return true;
+}
+
+bool EvaluateSimdCvtScalableMaskToVector(var_types baseType, simdscalable_t* vecCon, simdmaskscalable_t maskCon)
+{
+    // All zero can always be converted to a vector, regardless of types
+    if (maskCon.IsZero())
+    {
+        vecCon->gtSimdScalableBaseType = baseType;
+        vecCon->gtSimdScalableKind     = SimdScalableRepeated;
+        vecCon->gtSimdScalableIndex    = 0;
+        vecCon->gtSimdScalableStep     = 0;
+        return true;
+    }
+
+    // size of the basetype must match
+    // TODO: We could work around this for masks?
+    if (genTypeSize(baseType) != genTypeSize(maskCon.gtSimdMaskScalableBaseType))
+    {
+        return false;
+    }
+
+    // Only zero and one are valid
+    if (maskCon.gtSimdMaskScalableIndex != 1)
+    {
+        assert(false);
+        return false;
+    }
+
+    vecCon->gtSimdScalableBaseType = baseType;
+    vecCon->gtSimdScalableKind     = SimdScalableRepeated;
+    vecCon->gtSimdScalableStep     = 0;
+
+    switch (genTypeSize(baseType))
+    {
+        case 1:
+            vecCon->gtSimdScalableIndex = 0xFF;
+            break;
+        case 2:
+            vecCon->gtSimdScalableIndex = 0xFFFF;
+            break;
+        case 4:
+            vecCon->gtSimdScalableIndex = 0xFFFFFFFFull;
+            break;
+        case 8:
+            vecCon->gtSimdScalableIndex = 0xFFFFFFFFFFFFFFFFull;
+            break;
+        default:
+            unreached();
+    }
+
+    return true;
+}
+
+#endif // TARGET_ARM64
 #endif // FEATURE_SIMD

@@ -17,7 +17,15 @@
 #define SPECIAL_DIAGINFO_VERSION 2
 
 #ifdef __APPLE__
+#if defined(HOST_ARM64) || defined(__arm64__) || defined(__aarch64__)
+// Apple Silicon (arm64) macOS user-space VM is 47 bits — addresses above 0x7FFF_FFFF_FFFF
+// are not mappable and lldb's core file reader rejects segments at those addresses. Use a
+// 47-bit-valid address here. The legacy x86_64 macOS address is also probed at read time by
+// SOS/dotnet-dump (see the diagnostics repo) so older dumps remain recognized.
+const uint64_t SpecialDiagInfoAddress = 0x00007ffffff10000;
+#else
 const uint64_t SpecialDiagInfoAddress = 0x7fffffff10000000;
+#endif
 #else
 #if TARGET_64BIT
 const uint64_t SpecialDiagInfoAddress = 0x00007ffffff10000;

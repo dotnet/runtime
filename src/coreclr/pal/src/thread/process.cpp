@@ -52,7 +52,9 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #endif
+#if !defined(TARGET_WASI)
 #include <sys/wait.h>
+#endif
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <debugmacrosext.h>
@@ -60,7 +62,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <stdint.h>
 #include <dlfcn.h>
 #include <limits.h>
-#include <minipal/log.h>
 
 #ifdef __linux__
 #include <linux/membarrier.h>
@@ -1824,12 +1825,11 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
     DoNotOptimize(&context);
 
     // If a host registered an in-proc crash report callback, prefer it: the
-    // host emits its report from this signal frame and the process aborts.
+    // host emits its report from this signal frame.
     PINPROCCRASHREPORT_CALLBACK callback = g_inProcCrashReportCallback;
     if (callback != nullptr)
     {
-        callback(signal, siginfo, context);
-        minipal_log_write_fatal("Aborting process.\n");
+        callback(signal, siginfo, context, serialize);
         return;
     }
 

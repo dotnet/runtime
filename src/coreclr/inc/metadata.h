@@ -818,7 +818,6 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     STDMETHOD(GetUserString)(
         mdString stk,                   // [IN] the string token.
         ULONG   *pchString,             // [OUT] count of characters in the string.
-        BOOL    *pbIs80Plus,            // [OUT] specifies where there are extended characters >= 0x80.
         LPCWSTR *pwszUserString) PURE;
 
     //*****************************************************************************
@@ -1296,6 +1295,7 @@ public:
     {
         CONTRACTL {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         HRESULT hr = EnumInitNoThrow(tkKind, tkParent);
@@ -1312,6 +1312,7 @@ public:
     {
         CONTRACTL {
             NOTHROW;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         _ASSERTE(!m_fAcquired);
@@ -1328,6 +1329,7 @@ public:
     {
         CONTRACTL {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         _ASSERTE(!m_fAcquired);

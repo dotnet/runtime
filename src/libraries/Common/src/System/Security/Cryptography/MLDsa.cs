@@ -2334,7 +2334,5 @@ namespace System.Security.Cryptography
             insufficientCollisionResistance = hashLambda < Algorithm.LambdaCollisionStrength;
             return hashAlgorithmIdentifier;
         }
-
-        private delegate TResult ExportPkcs8PrivateKeyFunc<TResult>(ReadOnlySpan<byte> pkcs8);
     }
 }

@@ -1,6 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
 #ifdef USE_REGIONS
 #ifdef DYNAMIC_HEAP_COUNT
 void gc_heap::check_decommissioned_heap()
@@ -1535,3 +1545,5 @@ void gc_heap::add_to_bgc_hc_history (hc_record_stage stage)
 
 #endif //DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS
+
+} // namespace WKS/SVR

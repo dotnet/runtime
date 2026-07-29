@@ -187,6 +187,19 @@ inline CORINFO_ASYNC_INFO* Compiler::eeGetAsyncInfo()
     return &asyncInfo;
 }
 
+#if defined(TARGET_WASM)
+inline CORINFO_WASM_WELLKNOWN_GLOBALS* Compiler::eeGetWasmWellKnownGlobals()
+{
+    if (!wasmWellKnownGlobalsInitialized)
+    {
+        info.compCompHnd->getWasmWellKnownGlobals(&wasmWellKnownGlobals);
+        wasmWellKnownGlobalsInitialized = true;
+    }
+
+    return &wasmWellKnownGlobals;
+}
+#endif // defined(TARGET_WASM)
+
 /*****************************************************************************
  *
  *  Convert the type returned from the VM to a var_type.

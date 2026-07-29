@@ -87,6 +87,32 @@ namespace System.Text.Json.Serialization.Metadata
 
             JsonPolymorphismOptions? options = JsonPolymorphismOptions.CreateFromAttributeDeclarations(typeInfo.Type, out JsonPolymorphicAttribute? polymorphicAttribute);
 
+            // 'closed' is a C# language feature that can be used on any target framework, including .NET Framework.
+            // When targeting a runtime that predates System.Runtime.CompilerServices.IsClosedTypeAttribute, the C#
+            // compiler polyfills the attribute directly into the consuming assembly. We therefore detect it by full
+            // name (as we do for other compiler-emitted attributes such as RequiredMemberAttribute) instead of via a
+            // compile-time type reference, so that inference works on every target framework and regardless of whether
+            // the attribute is provided by the runtime or polyfilled by the compiler.
+            if (typeInfo.Options.InferClosedTypePolymorphism &&
+                (options is null || options.DerivedTypes.Count == 0) &&
+                GetInferredClosedDerivedTypes(typeInfo.Type) is { Length: > 0 } inferredDerivedTypes)
+            {
+                options ??= new();
+
+                foreach (Type derivedType in inferredDerivedTypes)
+                {
+                    // An inferred derived type must be at least as visible as the base type it is
+                    // being registered under; otherwise there are call sites that can see the base but
+                    // not the derived type, and source-gen could not emit a reference to it.
+                    if (!derivedType.IsAtLeastAsVisibleAs(typeInfo.Type))
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_InferredDerivedTypeIsNotAccessible(typeInfo.Type, derivedType);
+                    }
+
+                    options.DerivedTypes.Add(new JsonDerivedType(derivedType, GetInferredTypeDiscriminator(derivedType)));
+                }
+            }
+
             if (options is not null)
             {
                 ResolveOpenGenericDerivedTypes(typeInfo.Type, options.DerivedTypes);
@@ -110,6 +136,13 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     typeInfo.TypeClassifierResolutionPending = true;
                 }
+            }
+
+            static string GetInferredTypeDiscriminator(Type type)
+            {
+                string name = type.Name;
+                int genericAritySeparatorIndex = name.IndexOf('`');
+                return genericAritySeparatorIndex < 0 ? name : name.Substring(0, genericAritySeparatorIndex);
             }
         }
 
@@ -154,6 +187,74 @@ namespace System.Text.Json.Serialization.Metadata
 
                 derivedTypes[i] = new JsonDerivedType(resolvedType!, entry.TypeDiscriminator);
             }
+        }
+
+        /// <summary>
+        /// Reads the derived-type list from the compiler-emitted
+        /// <c>System.Runtime.CompilerServices.IsClosedTypeAttribute</c> that marks a closed type hierarchy.
+        /// The attribute is matched by full name because the C# compiler polyfills it into assemblies that
+        /// target runtimes without the type, making the polyfilled copy distinct from any runtime-provided one.
+        /// Returns <see langword="null"/> when the type is not a closed hierarchy or declares no derived types.
+        /// </summary>
+        private static Type[]? GetInferredClosedDerivedTypes(Type type)
+        {
+            foreach (CustomAttributeData attributeData in type.GetCustomAttributesData())
+            {
+                Type attributeType = attributeData.AttributeType;
+                if (attributeType.Name != "IsClosedTypeAttribute" ||
+                    attributeType.FullName != "System.Runtime.CompilerServices.IsClosedTypeAttribute")
+                {
+                    continue;
+                }
+
+                foreach (CustomAttributeNamedArgument namedArgument in attributeData.NamedArguments)
+                {
+                    if (namedArgument.MemberName != "DerivedTypes")
+                    {
+                        continue;
+                    }
+
+                    object? value = namedArgument.TypedValue.Value;
+
+                    // Mono materializes array-valued named arguments directly, while CoreCLR wraps
+                    // each element in a CustomAttributeTypedArgument.
+                    if (value is Type[] materializedDerivedTypes)
+                    {
+                        foreach (Type? derivedType in materializedDerivedTypes)
+                        {
+                            if (derivedType is null)
+                            {
+                                return null;
+                            }
+                        }
+
+                        return materializedDerivedTypes;
+                    }
+
+                    if (value is not IList<CustomAttributeTypedArgument> derivedTypeArguments)
+                    {
+                        return null;
+                    }
+
+                    Type[] derivedTypes = new Type[derivedTypeArguments.Count];
+                    for (int i = 0; i < derivedTypes.Length; i++)
+                    {
+                        if (derivedTypeArguments[i].Value is not Type derivedType)
+                        {
+                            return null;
+                        }
+
+                        derivedTypes[i] = derivedType;
+                    }
+
+                    return derivedTypes;
+                }
+
+                // The closed-type marker is present but carries no derived types.
+                return null;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -422,7 +523,7 @@ namespace System.Text.Json.Serialization.Metadata
                     continue;
                 }
 
-                bool hasJsonIncludeAttribute = propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
+                bool hasJsonIncludeAttribute = propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) is not null;
 
                 // Only include properties that either have a public getter or a public setter or have the JsonIncludeAttribute set.
                 if (propertyInfo.GetMethod?.IsPublic == true ||
@@ -444,7 +545,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             foreach (FieldInfo fieldInfo in currentType.GetFields(AllInstanceMembers))
             {
-                bool hasJsonIncludeAttribute = fieldInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
+                bool hasJsonIncludeAttribute = fieldInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) is not null;
                 if (hasJsonIncludeAttribute || (fieldInfo.IsPublic && typeInfo.Options.IncludeFields))
                 {
                     AddMember(
@@ -475,13 +576,13 @@ namespace System.Text.Json.Serialization.Metadata
             ref JsonTypeInfo.PropertyHierarchyResolutionState state)
         {
             JsonPropertyInfo? jsonPropertyInfo = CreatePropertyInfo(typeInfo, typeToConvert, memberInfo, typeNamingPolicy, nullabilityCtx, typeIgnoreCondition, typeInfo.Options, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute);
-            if (jsonPropertyInfo == null)
+            if (jsonPropertyInfo is null)
             {
                 // ignored invalid property
                 return;
             }
 
-            Debug.Assert(jsonPropertyInfo.Name != null);
+            Debug.Assert(jsonPropertyInfo.Name is not null);
             typeInfo.PropertyList.AddPropertyWithConflictResolution(jsonPropertyInfo, ref state);
         }
 
@@ -634,7 +735,7 @@ namespace System.Text.Json.Serialization.Metadata
             bool hasJsonIncludeAttribute,
             JsonNamingPolicy? typeNamingPolicy)
         {
-            Debug.Assert(jsonPropertyInfo.AttributeProvider == null);
+            Debug.Assert(jsonPropertyInfo.AttributeProvider is null);
 
             switch (jsonPropertyInfo.AttributeProvider = memberInfo)
             {
@@ -664,7 +765,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             jsonPropertyInfo.IgnoreCondition = ignoreCondition;
-            jsonPropertyInfo.IsExtensionData = memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(inherit: false) != null;
+            jsonPropertyInfo.IsExtensionData = memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(inherit: false) is not null;
         }
 
         private static void DeterminePropertyPolicies(JsonPropertyInfo propertyInfo, MemberInfo memberInfo)
@@ -683,7 +784,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonPropertyNameAttribute? nameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(inherit: false);
             string? name;
-            if (nameAttribute != null)
+            if (nameAttribute is not null)
             {
                 name = nameAttribute.Name;
             }
@@ -698,7 +799,7 @@ namespace System.Text.Json.Serialization.Metadata
                     : memberInfo.Name;
             }
 
-            if (name == null)
+            if (name is null)
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(propertyInfo);
             }
@@ -709,7 +810,7 @@ namespace System.Text.Json.Serialization.Metadata
         private static void DeterminePropertyIsRequired(JsonPropertyInfo propertyInfo, MemberInfo memberInfo, bool shouldCheckForRequiredKeyword)
         {
             propertyInfo.IsRequired =
-                memberInfo.GetCustomAttribute<JsonRequiredAttribute>(inherit: false) != null
+                memberInfo.GetCustomAttribute<JsonRequiredAttribute>(inherit: false) is not null
                 || (shouldCheckForRequiredKeyword && memberInfo.HasRequiredMemberAttribute());
         }
 

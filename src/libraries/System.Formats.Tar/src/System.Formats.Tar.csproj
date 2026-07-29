@@ -35,6 +35,7 @@
     <Compile Include="System\Formats\Tar\TarWriter.cs" />
     <Compile Include="System\Formats\Tar\TarWriterOptions.cs" />
     <Compile Include="System\Formats\Tar\GnuSparseStream.cs" />
+    <Compile Include="$(CommonPath)System\ReadWriteAdapter.cs" Link="Common\System\ReadWriteAdapter.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\IO\SubReadStream.cs" Link="Common\System\IO\SubReadStream.cs" />
     <Compile Include="$(CommonPath)System\IO\Archiving.Utils.cs" Link="Common\System\IO\Archiving.Utils.cs" />

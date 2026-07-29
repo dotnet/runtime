@@ -387,6 +387,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CommonPath)Polyfills\BitArrayPolyfills.cs" Link="Common\Polyfills\BitArrayPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\BitConverterPolyfills.cs" Link="Common\Polyfills\BitConverterPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\ArrayPolyfills.cs" Link="Common\Polyfills\ArrayPolyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\DictionaryPolyfills.cs" Link="Common\Polyfills\DictionaryPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\RuntimeHelpersPolyfills.cs" Link="Common\Polyfills\RuntimeHelpersPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\StopwatchPolyfills.cs" Link="Common\Polyfills\StopwatchPolyfills.cs" />
   </ItemGroup>
