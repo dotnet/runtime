@@ -121,6 +121,7 @@ internal sealed class ZipCryptoStreamFuzzer : IFuzzer
                     wrongStream.Dispose();
                 }
             }
+        }
         catch (InvalidDataException)
         {
             // Expected: the check byte rejects the wrong key.

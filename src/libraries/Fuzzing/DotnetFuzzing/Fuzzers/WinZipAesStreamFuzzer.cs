@@ -131,6 +131,7 @@ internal sealed class WinZipAesStreamFuzzer : IFuzzer
                     wrongStream.Dispose();
                 }
             }
+        }
         catch (InvalidDataException)
         {
             // Expected: the AES password verifier / HMAC rejects the wrong key.
