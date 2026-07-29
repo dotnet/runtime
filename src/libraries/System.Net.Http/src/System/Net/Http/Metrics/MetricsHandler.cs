@@ -173,7 +173,7 @@ namespace System.Net.Http.Metrics
         {
             Debug.Assert(GlobalHttpSettings.MetricsHandler.IsGloballyEnabled);
 
-            (long startTimestamp, bool recordCurrentRequests) = RequestStart(request);
+            (long startTimestamp, bool recordCurrentRequests, ActiveRequestsTagKey requestTagKey) = RequestStart(request);
             HttpResponseMessage? response = null;
             Exception? exception = null;
             try
@@ -190,7 +190,7 @@ namespace System.Net.Http.Metrics
             }
             finally
             {
-                RequestStop(request, response, exception, startTimestamp, recordCurrentRequests);
+                RequestStop(request, response, exception, startTimestamp, recordCurrentRequests, requestTagKey);
             }
         }
 
@@ -204,24 +204,25 @@ namespace System.Net.Http.Metrics
             base.Dispose(disposing);
         }
 
-        private (long StartTimestamp, bool RecordCurrentRequests) RequestStart(HttpRequestMessage request)
+        private (long StartTimestamp, bool RecordCurrentRequests, ActiveRequestsTagKey RequestTagKey) RequestStart(HttpRequestMessage request)
         {
             bool recordCurrentRequests = _activeRequests.Enabled;
             long startTimestamp = Stopwatch.GetTimestamp();
 
+            ActiveRequestsTagKey requestTagKey = CreateActiveRequestsTagKey(request);
             if (recordCurrentRequests)
             {
-                _activeRequestsTracker.Increment(CreateActiveRequestsTagKey(request));
+                _activeRequestsTracker.Increment(requestTagKey);
             }
 
-            return (startTimestamp, recordCurrentRequests);
+            return (startTimestamp, recordCurrentRequests, requestTagKey);
         }
 
-        private void RequestStop(HttpRequestMessage request, HttpResponseMessage? response, Exception? exception, long startTimestamp, bool recordCurrentRequests)
+        private void RequestStop(HttpRequestMessage request, HttpResponseMessage? response, Exception? exception, long startTimestamp, bool recordCurrentRequests, ActiveRequestsTagKey requestTagKey)
         {
             if (recordCurrentRequests)
             {
-                _activeRequestsTracker.Decrement(CreateActiveRequestsTagKey(request));
+                _activeRequestsTracker.Decrement(requestTagKey);
             }
 
             if (!_requestsDuration.Enabled)
@@ -229,7 +230,7 @@ namespace System.Net.Http.Metrics
                 return;
             }
 
-            TagList tags = InitializeCommonTags(request);
+            TagList tags = requestTagKey.ToTagList();
             if (response is not null)
             {
                 tags.Add("http.response.status_code", DiagnosticsHelper.GetBoxedInt32((int)response.StatusCode));
@@ -252,21 +253,6 @@ namespace System.Net.Http.Metrics
             {
                 HttpMetricsEnrichmentContext.RecordDurationWithEnrichment(callbacks, request, response, exception, durationTime, tags, _requestsDuration);
             }
-        }
-
-        private TagList InitializeCommonTags(HttpRequestMessage request)
-        {
-            TagList tags = default;
-
-            if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
-            {
-                tags.Add("url.scheme", requestUri.Scheme);
-                tags.Add("server.address", DiagnosticsHelper.GetServerAddress(request, _proxy));
-                tags.Add("server.port", DiagnosticsHelper.GetBoxedInt32(requestUri.Port));
-            }
-            tags.Add(DiagnosticsHelper.GetMethodTag(request.Method, out _));
-
-            return tags;
         }
 
         private ActiveRequestsTagKey CreateActiveRequestsTagKey(HttpRequestMessage request)
