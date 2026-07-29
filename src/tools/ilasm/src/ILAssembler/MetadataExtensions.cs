@@ -10,11 +10,6 @@ namespace ILAssembler;
 
 internal static class MetadataExtensions
 {
-    extension(FieldAttributes)
-    {
-        public static FieldAttributes NotSerializedFlag => (FieldAttributes)0x0080;
-    }
-
     extension(MethodImplAttributes)
     {
         public static MethodImplAttributes UserMask =>
@@ -34,7 +29,6 @@ internal static class MetadataExtensions
     {
         public static TypeAttributes ExtendedLayout => (TypeAttributes)0x18;
         public static TypeAttributes Forwarder => (TypeAttributes)0x00200000;
-        public static TypeAttributes SerializableFlag => (TypeAttributes)0x00002000;
     }
 
     extension(UnmanagedType)
