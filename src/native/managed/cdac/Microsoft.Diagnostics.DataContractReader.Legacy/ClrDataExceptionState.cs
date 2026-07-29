@@ -161,7 +161,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
             hr = ex.HResult;
         }
 #if DEBUG
-        if (_legacyImpl is not null && LegacyFallbackHelper.CanFallback())
+        if (_legacyImpl is not null)
         {
             Debug.ValidateHResult(hr, hrLocal);
         }
