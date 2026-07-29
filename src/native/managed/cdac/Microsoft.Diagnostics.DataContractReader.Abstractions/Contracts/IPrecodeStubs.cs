@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 public enum PrecodeType
 {
-    Stub = 1,
+    Stub,
     PInvokeImport,
     Fixup,
     ThisPtrRetBuf,
