@@ -164,33 +164,32 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
 
 void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
 {
-    NYI_WASM("emitIns_R");
+    unreached();
 }
 
 void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, cnsval_ssize_t imm)
 {
-    NYI_WASM("emitIns_R_I");
+    unreached();
 }
 
 void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
 {
-    NYI_WASM("emitIns_Mov");
+    unreached();
 }
 
 void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
 {
-    NYI_WASM("emitIns_R_R");
+    unreached();
 }
 
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs)
 {
-    NYI_WASM("emitIns_S_R");
+    unreached();
 }
 
 bool emitter::emitInsIsStore(instruction ins)
 {
-    NYI_WASM("emitInsIsStore");
-    return false;
+    unreached();
 }
 
 //------------------------------------------------------------------------
@@ -838,7 +837,7 @@ unsigned emitter::instrDesc::idCodeSize() const
 
 void emitter::emitSetShortJump(instrDescJmp* id)
 {
-    NYI_WASM("emitSetShortJump");
+    unreached();
 }
 
 size_t emitter::emitOutputULEB128(uint8_t* destination, uint64_t value)
@@ -1203,8 +1202,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         }
         default:
-            NYI_WASM("emitOutputInstr");
-            break;
+            unreached();
     }
 
 #ifdef DEBUG
