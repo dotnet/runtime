@@ -107,8 +107,8 @@ namespace BasicEventSourceTests
             {
                 try
                 {
-                    using var source = new Microsoft.Diagnostics.Tracing.EventPipeEventSource(session.EventStream);
-                    source.Process();
+                    using var eventPipeSource = new Microsoft.Diagnostics.Tracing.EventPipeEventSource(session.EventStream);
+                    eventPipeSource.Process();
                 }
                 catch (Exception) { }  // Stream is closed when session stops. The exact exception type
                                        // varies by TraceEvent version/platform, so catch broadly here.

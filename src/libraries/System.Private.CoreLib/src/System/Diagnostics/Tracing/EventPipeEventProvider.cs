@@ -119,8 +119,14 @@ namespace System.Diagnostics.Tracing
                 {
                     ThreadPool.UnsafeQueueUserWorkItem(_ =>
                     {
-                        EventPipeInternal.DeleteProvider(handleToDelete);
-                        gcHandleToDispose.Dispose();
+                        try
+                        {
+                            EventPipeInternal.DeleteProvider(handleToDelete);
+                        }
+                        finally
+                        {
+                            gcHandleToDispose.Dispose();
+                        }
                     }, null);
                 }
                 else
