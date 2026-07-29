@@ -138,6 +138,7 @@
       <EmccExportedRuntimeMethod Include="HEAPU64" />
       <EmccExportedRuntimeMethod Include="PThread" Condition="'$(WasmEnableThreads)' == 'true'" />
 
+      <EmccExportedFunction Include="_emscripten_force_exit" Condition="'$(WasmEnableThreads)' == 'true'" />
       <EmccExportedFunction Include="_free" />
       <EmccExportedFunction Include="_htons" />
       <EmccExportedFunction Include="_malloc" />
