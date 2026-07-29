@@ -75,6 +75,10 @@ namespace Internal.Runtime.GarbageCollection
 
             int index = (int)provider;
 
+            // As in the native implementation, the level and the keywords are published with two
+            // separate stores. A concurrent IsEnabled call can therefore briefly observe the new
+            // level with the old keywords (or the reverse); that transient mismatch only affects
+            // whether an individual event is emitted, so it is tolerated rather than serialized.
             Volatile.Write(ref s_enabledLevels[index], (int)level);
             Volatile.Write(ref s_enabledKeywords[index], (int)keywords);
         }
