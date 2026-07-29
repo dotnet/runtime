@@ -465,10 +465,7 @@ mscorlib: '.mscorlib';
 languageDecl:
 	'.language' languageString
 	| '.language' languageString ',' languageString
-	| '.language' languageString ',' languageString ',' languageString
-	// COMPAT: Accept space-separated QSTRING form (used by some IL tools)
-	| '.language' QSTRING QSTRING
-	| '.language' QSTRING QSTRING QSTRING;
+	| '.language' languageString ',' languageString ',' languageString;
 
 languageString: SQSTRING | QSTRING;
 

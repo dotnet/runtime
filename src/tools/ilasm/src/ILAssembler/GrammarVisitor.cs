@@ -3852,18 +3852,11 @@ namespace ILAssembler
         public GrammarResult VisitLanguageDecl(CILParser.LanguageDeclContext context)
         {
             // .language languageString (',' languageString (',' languageString)?)?
-            // or .language QSTRING QSTRING QSTRING (space-separated)
             // First GUID: language (e.g., C#, VB, IL)
             // Second GUID: vendor (optional)
             // Third GUID: document type (optional)
             var strings = context.languageString();
-            // Fall back to QSTRING tokens for space-separated form
-            var qstrings = context.QSTRING();
             if (strings.Length >= 1 && Guid.TryParse(VisitLanguageString(strings[0]).Value, out var languageGuid))
-            {
-                _currentLanguageGuid = languageGuid;
-            }
-            else if (qstrings.Length >= 1 && Guid.TryParse(StringHelpers.ParseQuotedString(qstrings[0].GetText()), out languageGuid))
             {
                 _currentLanguageGuid = languageGuid;
             }
@@ -3871,15 +3864,7 @@ namespace ILAssembler
             {
                 _currentLanguageVendorGuid = vendorGuid;
             }
-            else if (qstrings.Length >= 2 && Guid.TryParse(StringHelpers.ParseQuotedString(qstrings[1].GetText()), out vendorGuid))
-            {
-                _currentLanguageVendorGuid = vendorGuid;
-            }
             if (strings.Length >= 3 && Guid.TryParse(VisitLanguageString(strings[2]).Value, out var docTypeGuid))
-            {
-                _currentDocumentTypeGuid = docTypeGuid;
-            }
-            else if (qstrings.Length >= 3 && Guid.TryParse(StringHelpers.ParseQuotedString(qstrings[2].GetText()), out docTypeGuid))
             {
                 _currentDocumentTypeGuid = docTypeGuid;
             }

@@ -21,13 +21,16 @@ namespace ILAssembler.Tests
 {
     public class SourceDirectiveTests
     {
+        private const string CSharpLanguageGuid = "{3F5162F8-07C6-11D3-9053-00C04FA302A1}";
+        private const string CSharpVendorGuid = "{994B45C4-E6E9-11D2-903F-00C04FA302A1}";
+        private const string DocumentTypeGuid = "{5A869D0B-6611-11D3-BD2A-0000F80849BD}";
 
         [Fact]
         public void LanguageDecl_DoesNotThrow()
         {
-            string source = """
+            string source = $$"""
                 .assembly test { }
-                .language "C#" "3.0"
+                .language "{{CSharpLanguageGuid}}", "{{CSharpVendorGuid}}"
                 .class public auto ansi beforefieldinit Test
                 {
                 }
@@ -36,14 +39,13 @@ namespace ILAssembler.Tests
             var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
             Assert.Empty(diagnostics);
         }
-
 
         [Fact]
         public void LanguageDecl_MultipleParameters_DoesNotThrow()
         {
-            string source = """
+            string source = $$"""
                 .assembly test { }
-                .language "C#" "3.0" "vendor"
+                .language "{{CSharpLanguageGuid}}", "{{CSharpVendorGuid}}", "{{DocumentTypeGuid}}"
                 .class public auto ansi beforefieldinit Test
                 {
                 }
@@ -53,6 +55,20 @@ namespace ILAssembler.Tests
             Assert.Empty(diagnostics);
         }
 
+        [Fact]
+        public void LanguageDecl_NonGuid_DoesNotThrow()
+        {
+            string source = """
+                .assembly test { }
+                .language "C#", "Microsoft", "Not-a-guid"
+                .class public auto ansi beforefieldinit Test
+                {
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            Assert.Empty(diagnostics);
+        }
 
         [Fact]
         public void ExtSourceSpec_LineDirective_DoesNotThrow()
@@ -120,11 +136,9 @@ namespace ILAssembler.Tests
         [Fact]
         public void PdbGeneration_WithLineAndLanguageDirectives_CreatesValidEmbeddedPdb()
         {
-            // Use C# language GUID
-            string csharpGuid = "{3F5162F8-07C6-11D3-9053-00C04FA302A1}";
             string source = $$"""
                 .assembly test { }
-                .language '{{csharpGuid}}'
+                .language '{{CSharpLanguageGuid}}'
                 .class public auto ansi beforefieldinit Test
                 {
                     .method public static void TestMethod() cil managed
@@ -159,7 +173,53 @@ namespace ILAssembler.Tests
             Assert.Contains("test.cs", docName);
 
             var languageGuid = pdbReader.GetGuid(document.Language);
-            Assert.Equal(Guid.Parse(csharpGuid), languageGuid);
+            Assert.Equal(Guid.Parse(CSharpLanguageGuid), languageGuid);
+
+            // Verify method debug info exists (sequence points were recorded)
+            Assert.NotEmpty(pdbReader.MethodDebugInformation);
+        }
+
+        [Fact]
+        public void PdbGeneration_LanguageWithVendorAndDocumentType_CreatesValidEmbeddedPdb()
+        {
+            string source = $$"""
+                .assembly test { }
+                .language '{{CSharpLanguageGuid}}', '{{CSharpVendorGuid}}', '{{DocumentTypeGuid}}'
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .line 10 "test.cs"
+                        nop
+                        .line 15 "test.cs"
+                        nop
+                        .line 20 "test.cs"
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+
+            // Verify debug directory exists with embedded PDB
+            var debugDirectory = pe.ReadDebugDirectory();
+            Assert.NotEmpty(debugDirectory);
+
+            var embeddedPdbEntry = debugDirectory.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
+            Assert.NotEqual(default, embeddedPdbEntry);
+
+            // Read the embedded PDB and verify contents
+            var pdbProvider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry);
+            var pdbReader = pdbProvider.GetMetadataReader();
+
+            // Verify document exists with correct name and language
+            Assert.NotEmpty(pdbReader.Documents);
+            var document = pdbReader.GetDocument(pdbReader.Documents.First());
+            var docName = pdbReader.GetString(document.Name);
+            Assert.Contains("test.cs", docName);
+
+            var languageGuid = pdbReader.GetGuid(document.Language);
+            Assert.Equal(Guid.Parse(CSharpLanguageGuid), languageGuid);
 
             // Verify method debug info exists (sequence points were recorded)
             Assert.NotEmpty(pdbReader.MethodDebugInformation);
