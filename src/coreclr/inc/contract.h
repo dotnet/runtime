@@ -188,18 +188,16 @@
 #pragma warning(disable:4189) //local variable is initialized but not referenced
 #endif
 
-
-// We only enable contracts in _DEBUG builds
-#if defined(_DEBUG) && !defined(DISABLE_CONTRACTS) && !defined(JIT_BUILD)
+#if defined(_DEBUG) && !defined(DISABLE_CONTRACTS)
 #define ENABLE_CONTRACTS_DATA
 #endif
 
-// Also, we won't enable contracts if this is a DAC build.
-#if defined(ENABLE_CONTRACTS_DATA) && !defined(DACCESS_COMPILE) && !defined(CROSS_COMPILE)
+// The DAC builds reference contract data but not implementation,
+// so we disable contracts for those builds.
+#if defined(ENABLE_CONTRACTS_DATA) && !defined(DACCESS_COMPILE)
 #define ENABLE_CONTRACTS
 #endif
 
-// Finally, only define the implementation parts of contracts if this isn't a DAC build.
 #if defined(_DEBUG_IMPL) && defined(ENABLE_CONTRACTS)
 #define ENABLE_CONTRACTS_IMPL
 #endif
@@ -1738,6 +1736,5 @@ extern Volatile<LONG> g_DbgSuppressAllocationAsserts;
     STATIC_CONTRACT_THROWS;             \
     STATIC_CONTRACT_GC_TRIGGERS;        \
     STATIC_CONTRACT_MODE_PREEMPTIVE;
-
 
 #endif  // CONTRACT_H_

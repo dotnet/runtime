@@ -998,9 +998,19 @@ struct ReleaseHolderTraits final
     static constexpr Type Default() { return NULL; }
     static void Free(Type value)
     {
+#ifdef ENABLE_EE_CONTRACTS
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
+#else
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_GC_TRIGGERS;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
+#endif // ENABLE_EE_CONTRACTS
 
         if (value != NULL)
             value->Release();
