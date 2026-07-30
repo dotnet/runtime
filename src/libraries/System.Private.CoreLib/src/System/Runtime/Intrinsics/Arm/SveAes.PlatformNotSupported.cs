@@ -58,24 +58,24 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint16_t svpmullb[_u16](svuint8_t op1, svuint8_t op2)
         ///   PMULLB Zresult.H, Zop1.B, Zop2.B
         /// </summary>
-        public static Vector<ushort> PolynomialMultiplyWideningEven(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> PolynomialMultiplyWideningLower(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svpmullb[_u64](svuint32_t op1, svuint32_t op2)
         ///   PMULLB Zresult.D, Zop1.S, Zop2.S
         /// </summary>
-        public static Vector<ulong> PolynomialMultiplyWideningEven(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> PolynomialMultiplyWideningLower(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint16_t svpmullt[_u16](svuint8_t op1, svuint8_t op2)
         ///   PMULLT Zresult.H, Zop1.B, Zop2.B
         /// </summary>
-        public static Vector<ushort> PolynomialMultiplyWideningOdd(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> PolynomialMultiplyWideningUpper(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svpmullt[_u64](svuint32_t op1, svuint32_t op2)
         ///   PMULLT Zresult.D, Zop1.S, Zop2.S
         /// </summary>
-        public static Vector<ulong> PolynomialMultiplyWideningOdd(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> PolynomialMultiplyWideningUpper(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
     }
 }
