@@ -7429,11 +7429,15 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
         return;
     }
 
-    GenTreeCall* inlCall = impInlineInfo->iciCall;
-    CallArg*     execArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
-    CallArg*     syncArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
+    GenTreeCall* inlCall       = impInlineInfo->iciCall;
+    CallArg*     resumedUseArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse);
+    CallArg*     resumedDefArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
+    CallArg*     execArg       = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
+    CallArg*     syncArg       = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
+    assert((resumedUseArg == nullptr) == (resumedDefArg == nullptr));
+    assert((resumedDefArg == nullptr) == (execArg == nullptr));
     assert((execArg == nullptr) == (syncArg == nullptr));
-    if ((execArg == nullptr) || (syncArg == nullptr))
+    if (resumedUseArg == nullptr)
     {
         // Caller also has no async contexts handling
         return;
@@ -7445,14 +7449,20 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
     // caller's context here. It means we do not need to worry about switching
     // into the caller's context when the inlinee is returning to the caller
     // after the await.
-    assert(execArg->GetNode()->OperIs(GT_LCL_VAR) && syncArg->GetNode()->OperIs(GT_LCL_VAR));
-    JITDUMP("Inheriting contexts [%06u] and [%06u] from caller node\n", dspTreeID(execArg->GetNode()),
+    assert(resumedUseArg->GetNode()->OperIs(GT_LCL_VAR) && resumedDefArg->GetNode()->OperIs(GT_LCL_ADDR) &&
+           execArg->GetNode()->OperIs(GT_LCL_VAR) && syncArg->GetNode()->OperIs(GT_LCL_VAR));
+    JITDUMP("Inheriting resumed use [%06u], resumed def [%06u], and contexts [%06u] and [%06u] from caller node\n",
+            dspTreeID(resumedUseArg->GetNode()), dspTreeID(resumedDefArg->GetNode()), dspTreeID(execArg->GetNode()),
             dspTreeID(syncArg->GetNode()));
 
-    GenTree* execNode = gtCloneExpr(execArg->GetNode());
-    GenTree* syncNode = gtCloneExpr(syncArg->GetNode());
+    GenTree* resumedUseNode = gtCloneExpr(resumedUseArg->GetNode());
+    GenTree* resumedDefNode = gtCloneExpr(resumedDefArg->GetNode());
+    GenTree* execNode       = gtCloneExpr(execArg->GetNode());
+    GenTree* syncNode       = gtCloneExpr(syncArg->GetNode());
     call->gtArgs.PushFront(this, NewCallArg::Primitive(syncNode).WellKnown(WellKnownArg::AsyncSynchronizationContext));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(execNode).WellKnown(WellKnownArg::AsyncExecutionContext));
+    call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedDefNode).WellKnown(WellKnownArg::AsyncResumedDef));
+    call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedUseNode).WellKnown(WellKnownArg::AsyncResumedUse));
 }
 
 //------------------------------------------------------------------------
