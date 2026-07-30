@@ -24,7 +24,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             partiallyUsed.Method(typeof(object));
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         interface IUnused
         {
             [RequiresUnreferencedCode(nameof(Method))]
@@ -38,7 +37,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public void Method(Type type) { }
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         interface ITypeOnly
         {
             [RequiresUnreferencedCode(nameof(Method))]
@@ -52,7 +50,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public void Method(Type type) { }
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         interface IUsed
         {
             [RequiresUnreferencedCode(nameof(Method))]
@@ -66,7 +63,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public void Method(Type type) { }
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         interface IPartiallyUsed
         {
             [RequiresUnreferencedCode(nameof(Method))]
