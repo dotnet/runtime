@@ -27,12 +27,17 @@ public unsafe class DacDbiImplTests
     private const uint DebuggerAllowJitOptsPriv = 0x00000800;
     private const uint DebuggerEncEnabledPriv = 0x00002000;
     private const uint DebuggerIgnorePdbsPriv = 0x00008000;
+    private const ulong CorDBDefaultEnCFunctionVersion = 1;
 
     private static (DacDbiImpl DacDbi, TestPlaceholderTarget Target) CreateDacDbiWithLoader(
         MockTarget.Architecture arch,
         Action<MockLoaderBuilder, TestPlaceholderTarget.Builder> configure)
     {
-        var (_, target) = LoaderTests.CreateLoaderContractWithTarget(arch, configure);
+        var (_, target) = LoaderTests.CreateLoaderContractWithTarget(arch, (loader, builder) =>
+        {
+            builder.AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion));
+            configure(loader, builder);
+        });
         var dacDbi = new DacDbiImpl(target, legacyObj: null);
         return (dacDbi, target);
     }
@@ -319,6 +324,7 @@ public unsafe class DacDbiImplTests
     {
         var target = new TestPlaceholderTarget.Builder(arch)
             .UseReader((_, _) => -1)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
             .AddMockContract(mockLoader)
             .Build();
         return new DacDbiImpl(target, legacyObj: null);
@@ -329,7 +335,8 @@ public unsafe class DacDbiImplTests
         Mock<IObject> mockObject,
         Mock<IRuntimeTypeSystem> mockRts)
     {
-        var builder = new TestPlaceholderTarget.Builder(arch);
+        var builder = new TestPlaceholderTarget.Builder(arch)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion));
         builder.AddMockContract(mockObject);
         builder.AddMockContract(mockRts);
         var target = builder.Build();
@@ -703,6 +710,7 @@ public unsafe class DacDbiImplTests
     private static DacDbiImpl CreateDacDbiWithMockContracts(MockTarget.Architecture arch, Mock<ILoader> loader, Mock<IEcmaMetadata> ecma)
     {
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
             .AddMockContract(loader)
             .AddMockContract(ecma)
             .Build();
@@ -911,6 +919,7 @@ public unsafe class DacDbiImplTests
         var mockThread = new Mock<IThread>();
 
         var target = new TestPlaceholderTarget.Builder(arch)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
             .AddGlobalStrings((Constants.Globals.Architecture, targetArch))
             .AddContract<IRuntimeInfo>(version: "c1")
             .AddMockContract(mockThread)
@@ -946,6 +955,7 @@ public unsafe class DacDbiImplTests
             }));
 
         var target = new TestPlaceholderTarget.Builder(arch)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
             .AddGlobalStrings((Constants.Globals.Architecture, targetArch))
             .AddContract<IRuntimeInfo>(version: "c1")
             .AddMockContract(mockThread)
@@ -958,6 +968,265 @@ public unsafe class DacDbiImplTests
 
     private const uint MdtMethodDef = 0x06000000;
 
+    private delegate void GetMethodRegionInfoCallback(CodeBlockHandle handle, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
+
+    private static ulong AsClrDataAddress(MockTarget.Architecture arch, ulong address)
+        => arch.Is64Bit ? address : unchecked((ulong)(long)(int)address);
+
+    private static DacDbiImpl CreateNativeCodeDacDbi(
+        MockTarget.Architecture arch,
+        Mock<ILoader> loader,
+        Mock<IRuntimeTypeSystem> rts,
+        Mock<IExecutionManager> executionManager,
+        Mock<IPrecodeStubs> precodeStubs,
+        Mock<ICodeVersions> codeVersions,
+        ulong defaultEnCVersion = CorDBDefaultEnCFunctionVersion)
+    {
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, defaultEnCVersion))
+            .AddMockContract(loader)
+            .AddMockContract(rts)
+            .AddMockContract(executionManager)
+            .AddMockContract(precodeStubs)
+            .AddMockContract(codeVersions)
+            .AddMockContract(new Mock<IPlatformMetadata>())
+            .Build();
+        return new DacDbiImpl(target, legacyObj: null);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetNativeCodeInfo_FillsDataForAsyncVariant(MockTarget.Architecture arch)
+    {
+        const ulong Assembly = 0x1000;
+        const uint MethodToken = MdtMethodDef | 1;
+        TargetPointer module = new(0x2000);
+        TargetPointer methodDesc = new(0x3000);
+        TargetPointer asyncVariant = new(0xf0003100);
+        TargetCodePointer interpreterPrecode = new(0xf0005000);
+        TargetCodePointer nativeCode = new(0xf0006000);
+        CodeBlockHandle codeBlock = new(new TargetPointer(0x7000));
+        ILCodeVersionHandle ilCodeVersion = ILCodeVersionHandle.CreateExplicit(new TargetPointer(0x8000));
+
+        var loader = new Mock<ILoader>();
+        ModuleHandle moduleHandle = new(module);
+        ModuleLookupTables lookupTables = new() { MethodDefToDesc = new TargetPointer(0x2100) };
+        loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(new TargetPointer(Assembly))).Returns(moduleHandle);
+        loader.Setup(l => l.GetLookupTables(moduleHandle)).Returns(lookupTables);
+        loader.Setup(l => l.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, MethodToken, out It.Ref<TargetNUInt>.IsAny)).Returns(methodDesc);
+
+        MethodDescHandle methodDescHandle = new(methodDesc);
+        MethodDescHandle asyncVariantHandle = new(asyncVariant);
+        var rts = new Mock<IRuntimeTypeSystem>();
+        rts.Setup(r => r.GetMethodDescHandle(methodDesc)).Returns(methodDescHandle);
+        rts.Setup(r => r.GetMethodDescHandle(asyncVariant)).Returns(asyncVariantHandle);
+        rts.Setup(r => r.GetAsyncMethodFlags(methodDescHandle)).Returns(AsyncMethodFlags.Thunk);
+        rts.Setup(r => r.GetAsyncVariant(methodDescHandle)).Returns(asyncVariant);
+        rts.Setup(r => r.GetNativeCode(asyncVariantHandle)).Returns(interpreterPrecode);
+        rts.Setup(r => r.GetMethodTable(asyncVariantHandle)).Throws(new VirtualReadException());
+
+        var precodeStubs = new Mock<IPrecodeStubs>();
+        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(interpreterPrecode)).Returns(nativeCode);
+
+        var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetCodeBlockHandle(nativeCode)).Returns(codeBlock);
+        executionManager
+            .Setup(e => e.GetMethodRegionInfo(codeBlock, out It.Ref<uint>.IsAny, out It.Ref<TargetPointer>.IsAny, out It.Ref<uint>.IsAny))
+            .Callback(new GetMethodRegionInfoCallback((CodeBlockHandle _, out uint hotSize, out TargetPointer coldStart, out uint coldSize) =>
+            {
+                hotSize = 0x40;
+                coldStart = new TargetPointer(0xf0006800);
+                coldSize = 0x20;
+            }));
+
+        var codeVersions = new Mock<ICodeVersions>();
+        codeVersions.Setup(c => c.GetActiveILCodeVersion(asyncVariant)).Returns(ilCodeVersion);
+        codeVersions.Setup(c => c.GetEnCVersion(ilCodeVersion)).Returns(new TargetNUInt(4));
+
+        DacDbiImpl dacDbi = CreateNativeCodeDacDbi(arch, loader, rts, executionManager, precodeStubs, codeVersions);
+        NativeCodeFunctionData result;
+        int hr = dacDbi.GetNativeCodeInfo(Assembly, MethodToken, &result);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(AsClrDataAddress(arch, nativeCode.Value), result.hotRegion.pAddress);
+        Assert.Equal(0x40u, result.hotRegion.cbSize);
+        Assert.Equal(AsClrDataAddress(arch, 0xf0006800), result.coldRegion.pAddress);
+        Assert.Equal(0x20u, result.coldRegion.cbSize);
+        Assert.Equal(Interop.BOOL.FALSE, result.isInstantiatedGeneric);
+        Assert.Equal(AsClrDataAddress(arch, asyncVariant.Value), result.vmNativeCodeMethodDescToken);
+        Assert.Equal(4ul, result.encVersion);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetNativeCodeInfo_NoNativeCode_ReturnsMethodDesc(MockTarget.Architecture arch)
+    {
+        const ulong Assembly = 0x1000;
+        const ulong DefaultEnCVersion = 0x1_0000_0000;
+        const uint MethodToken = MdtMethodDef | 1;
+        TargetPointer module = new(0x2000);
+        TargetPointer methodDesc = new(0x3000);
+        ModuleHandle moduleHandle = new(module);
+        ModuleLookupTables lookupTables = new() { MethodDefToDesc = new TargetPointer(0x2100) };
+
+        var loader = new Mock<ILoader>();
+        loader.Setup(l => l.GetModuleHandleFromAssemblyPtr(new TargetPointer(Assembly))).Returns(moduleHandle);
+        loader.Setup(l => l.GetLookupTables(moduleHandle)).Returns(lookupTables);
+        loader.Setup(l => l.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, MethodToken, out It.Ref<TargetNUInt>.IsAny)).Returns(methodDesc);
+
+        MethodDescHandle methodDescHandle = new(methodDesc);
+        var rts = new Mock<IRuntimeTypeSystem>();
+        rts.Setup(r => r.GetMethodDescHandle(methodDesc)).Returns(methodDescHandle);
+        rts.Setup(r => r.GetNativeCode(methodDescHandle)).Returns(TargetCodePointer.Null);
+
+        DacDbiImpl dacDbi = CreateNativeCodeDacDbi(
+            arch, loader, rts, new Mock<IExecutionManager>(), new Mock<IPrecodeStubs>(), new Mock<ICodeVersions>(), DefaultEnCVersion);
+        NativeCodeFunctionData result;
+        int hr = dacDbi.GetNativeCodeInfo(Assembly, MethodToken, &result);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(methodDesc.Value, result.vmNativeCodeMethodDescToken);
+        Assert.Equal(0ul, result.hotRegion.pAddress);
+        Assert.Equal(DefaultEnCVersion, result.encVersion);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetNativeCodeInfoForAddr_FillsData(MockTarget.Architecture arch)
+    {
+        const ulong CodeAddress = 0xf0005000;
+        const uint MethodToken = MdtMethodDef | 2;
+        TargetCodePointer nativeCode = new(0x6000);
+        TargetPointer codeStart = new(0xf0006100);
+        TargetPointer methodDesc = new(0xf0003000);
+        TargetPointer methodTable = new(0x4000);
+        TargetPointer module = new(0xf0002000);
+        CodeBlockHandle codeBlock = new(new TargetPointer(0x7000));
+        MethodDescHandle methodDescHandle = new(methodDesc);
+        ITypeHandle typeHandle = new TargetTypeHandle(methodTable);
+        NativeCodeVersionHandle nativeCodeVersion = NativeCodeVersionHandle.CreateSynthetic(methodDesc);
+        ILCodeVersionHandle ilCodeVersion = ILCodeVersionHandle.CreateExplicit(new TargetPointer(0x8000));
+
+        var precodeStubs = new Mock<IPrecodeStubs>();
+        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(new TargetCodePointer(CodeAddress))).Returns(nativeCode);
+
+        var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetCodeBlockHandle(nativeCode)).Returns(codeBlock);
+        executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(codeStart);
+        executionManager.Setup(e => e.GetMethodDesc(codeBlock)).Returns(methodDesc);
+        executionManager
+            .Setup(e => e.GetMethodRegionInfo(codeBlock, out It.Ref<uint>.IsAny, out It.Ref<TargetPointer>.IsAny, out It.Ref<uint>.IsAny))
+            .Callback(new GetMethodRegionInfoCallback((CodeBlockHandle _, out uint hotSize, out TargetPointer coldStart, out uint coldSize) =>
+            {
+                hotSize = 0x40;
+                coldStart = new TargetPointer(0xf0006800);
+                coldSize = 0x20;
+            }));
+
+        var rts = new Mock<IRuntimeTypeSystem>();
+        rts.Setup(r => r.GetMethodDescHandle(methodDesc)).Returns(methodDescHandle);
+        rts.SetupSequence(r => r.GetMethodTable(methodDescHandle))
+            .Throws(new VirtualReadException())
+            .Returns(methodTable);
+        rts.Setup(r => r.GetTypeHandle(methodTable)).Returns(typeHandle);
+        rts.Setup(r => r.GetModule(typeHandle)).Returns(module);
+        rts.Setup(r => r.GetMethodToken(methodDescHandle)).Returns(MethodToken);
+
+        var codeVersions = new Mock<ICodeVersions>();
+        codeVersions.Setup(c => c.GetNativeCodeVersionForIP(new TargetCodePointer(codeStart.Value))).Returns(nativeCodeVersion);
+        codeVersions.Setup(c => c.GetILCodeVersion(nativeCodeVersion)).Returns(ilCodeVersion);
+        codeVersions.Setup(c => c.GetEnCVersion(ilCodeVersion)).Returns(new TargetNUInt(7));
+
+        DacDbiImpl dacDbi = CreateNativeCodeDacDbi(arch, new Mock<ILoader>(), rts, executionManager, precodeStubs, codeVersions);
+        NativeCodeFunctionData result;
+        ulong vmModule;
+        uint functionToken;
+        int hr = dacDbi.GetNativeCodeInfoForAddr(AsClrDataAddress(arch, CodeAddress), &result, &vmModule, &functionToken);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(AsClrDataAddress(arch, codeStart.Value), result.hotRegion.pAddress);
+        Assert.Equal(0x40u, result.hotRegion.cbSize);
+        Assert.Equal(AsClrDataAddress(arch, 0xf0006800), result.coldRegion.pAddress);
+        Assert.Equal(0x20u, result.coldRegion.cbSize);
+        Assert.Equal(Interop.BOOL.FALSE, result.isInstantiatedGeneric);
+        Assert.Equal(AsClrDataAddress(arch, methodDesc.Value), result.vmNativeCodeMethodDescToken);
+        Assert.Equal(7ul, result.encVersion);
+        Assert.Equal(AsClrDataAddress(arch, module.Value), vmModule);
+        Assert.Equal(MethodToken, functionToken);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetNativeCodeInfoForAddr_MissingRegionData_PreservesHotStart(MockTarget.Architecture arch)
+    {
+        const ulong CodeAddress = 0x5000;
+        TargetPointer codeStart = new(0x6100);
+        TargetPointer methodDesc = new(0x3000);
+        TargetPointer methodTable = new(0x4000);
+        CodeBlockHandle codeBlock = new(new TargetPointer(0x7000));
+        MethodDescHandle methodDescHandle = new(methodDesc);
+        ITypeHandle typeHandle = new TargetTypeHandle(methodTable);
+
+        var precodeStubs = new Mock<IPrecodeStubs>();
+        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(new TargetCodePointer(CodeAddress))).Throws(new VirtualReadException());
+
+        var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(CodeAddress))).Returns(codeBlock);
+        executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(codeStart);
+        executionManager.Setup(e => e.GetMethodDesc(codeBlock)).Returns(methodDesc);
+        executionManager
+            .Setup(e => e.GetMethodRegionInfo(codeBlock, out It.Ref<uint>.IsAny, out It.Ref<TargetPointer>.IsAny, out It.Ref<uint>.IsAny))
+            .Throws(new VirtualReadException());
+
+        var rts = new Mock<IRuntimeTypeSystem>();
+        rts.Setup(r => r.GetMethodDescHandle(methodDesc)).Returns(methodDescHandle);
+        rts.SetupSequence(r => r.GetMethodTable(methodDescHandle))
+            .Throws(new VirtualReadException())
+            .Returns(methodTable);
+        rts.Setup(r => r.GetTypeHandle(methodTable)).Returns(typeHandle);
+        rts.Setup(r => r.GetModule(typeHandle)).Returns(new TargetPointer(0x2000));
+        rts.Setup(r => r.GetMethodToken(methodDescHandle)).Returns(MdtMethodDef | 1);
+
+        DacDbiImpl dacDbi = CreateNativeCodeDacDbi(
+            arch, new Mock<ILoader>(), rts, executionManager, precodeStubs, new Mock<ICodeVersions>());
+        NativeCodeFunctionData result;
+        int hr = dacDbi.GetNativeCodeInfoForAddr(CodeAddress, &result, null, null);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(codeStart.Value, result.hotRegion.pAddress);
+        Assert.Equal(0u, result.hotRegion.cbSize);
+        Assert.Equal(CorDBDefaultEnCFunctionVersion, result.encVersion);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetNativeCodeInfoForAddr_ZeroAddress_ClearsOutputs(MockTarget.Architecture arch)
+    {
+        DacDbiImpl dacDbi = CreateNativeCodeDacDbi(
+            arch,
+            new Mock<ILoader>(),
+            new Mock<IRuntimeTypeSystem>(),
+            new Mock<IExecutionManager>(),
+            new Mock<IPrecodeStubs>(),
+            new Mock<ICodeVersions>());
+        NativeCodeFunctionData result = new()
+        {
+            hotRegion = new DacDbiTargetBuffer { pAddress = 1, cbSize = 1 },
+            encVersion = 2,
+        };
+        ulong vmModule = 1;
+        uint functionToken = 1;
+
+        int hr = dacDbi.GetNativeCodeInfoForAddr(0, &result, &vmModule, &functionToken);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(0ul, result.hotRegion.pAddress);
+        Assert.Equal(CorDBDefaultEnCFunctionVersion, result.encVersion);
+        Assert.Equal(0ul, vmModule);
+        Assert.Equal(0u, functionToken);
+    }
+
     private static DacDbiImpl CreateDacDbiWithMockContracts(
         MockTarget.Architecture arch,
         Mock<ILoader> mockLoader,
@@ -966,6 +1235,7 @@ public unsafe class DacDbiImplTests
     {
         var target = new TestPlaceholderTarget.Builder(arch)
             .UseReader((_, _) => -1)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
             .AddMockContract(mockLoader)
             .AddMockContract(mockCodeVersions)
             .AddMockContract(mockReJIT)
@@ -1106,6 +1376,7 @@ public unsafe class DacDbiImplTests
 
         var builder = new TestPlaceholderTarget.Builder(arch)
             .UseReader((_, _) => -1)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
             .AddMockContract(mockObject);
 
         if (hasSyncBlock)
@@ -1557,6 +1828,7 @@ public unsafe class DacDbiImplTests
 
         var target = new TestPlaceholderTarget.Builder(arch)
             .UseReader((_, _) => -1)
+            .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
             .AddMockContract(mockLoader)
             .AddMockContract(mockEcmaMetadata)
             .Build();

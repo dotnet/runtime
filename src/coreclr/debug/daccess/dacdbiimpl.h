@@ -858,8 +858,8 @@ private:
                            VMPTR_MethodDesc vmMethodDesc,
                            mdMethodDef      mdMethod,
                            CORDB_ADDRESS    pNativeStartAddress,
-                           SIZE_T *         pLatestEnCVersion,
-                           SIZE_T *         pJittedInstanceEnCVersion = NULL);
+                           ULONG64 *        pLatestEnCVersion,
+                           ULONG64 *        pJittedInstanceEnCVersion = NULL);
 
     // @dbgtodo - This method should be removed once CordbFunctionBreakpoint and SetIP are moved OOP.
     void SetDJIPointer(Module *                   pModule,
