@@ -35,15 +35,20 @@ HRESULT IjwProfiler::Shutdown()
     bool targetOk = _targetUnmanagedToManaged == COR_PRF_TRANSITION_CALL
                  && _targetManagedToUnmanaged == COR_PRF_TRANSITION_RETURN;
 
-    if (_failures == 0 && _transitions > 0 && targetOk)
+    // The nested reverse-stub transitions surrounding the target must have been
+    // seen and reported a NULL FunctionID (the exact behavior the fix introduced).
+    // Requiring at least one makes this a positive assertion rather than merely
+    // "no bad value was seen".
+    if (_failures == 0 && _transitions > 0 && targetOk && _nestedNullTransitions > 0)
     {
         printf("PROFILER TEST PASSES\n");
     }
     else
     {
-        printf("Test failed _failures=%d _transitions=%d targetU2M=%d targetM2U=%d\n",
+        printf("Test failed _failures=%d _transitions=%d targetU2M=%d targetM2U=%d nestedNull=%d\n",
                _failures.load(), _transitions.load(),
-               (int)_targetUnmanagedToManaged, (int)_targetManagedToUnmanaged);
+               (int)_targetUnmanagedToManaged, (int)_targetManagedToUnmanaged,
+               _nestedNullTransitions.load());
     }
     fflush(stdout);
     return S_OK;
@@ -115,12 +120,19 @@ void IjwProfiler::HandleTransition(bool unmanagedToManaged, FunctionID functionI
     // nested reverse (unmanaged->managed) marshaling stub. Post-fix these report
     // a NULL FunctionID; a non-null value here is exactly the 120151 bug (a
     // resolvable-but-wrong pointer would slip past the check above).
-    if (_insideTarget.load() && functionID != 0)
+    if (_insideTarget.load())
     {
-        _failures++;
-        printf("FAIL: nested %s inside target reported non-null FunctionID=0x%p (reason=%d)\n",
-               which, (void*)functionID, (int)reason);
-        fflush(stdout);
+        if (functionID != 0)
+        {
+            _failures++;
+            printf("FAIL: nested %s inside target reported non-null FunctionID=0x%p (reason=%d)\n",
+                   which, (void*)functionID, (int)reason);
+            fflush(stdout);
+        }
+        else
+        {
+            _nestedNullTransitions++;
+        }
     }
 }
 

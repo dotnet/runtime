@@ -29,6 +29,7 @@ public:
         , _targetUnmanagedToManaged(NO_TRANSITION)
         , _targetManagedToUnmanaged(NO_TRANSITION)
         , _insideTarget(false)
+        , _nestedNullTransitions(0)
     {}
     virtual ~IjwProfiler() = default;
 
@@ -50,6 +51,11 @@ private:
     // Set while executing the managed target so nested transitions can be
     // checked. The profilee is single-threaded around this call.
     std::atomic<bool> _insideTarget;
+
+    // Number of nested reverse-stub transitions observed with a NULL FunctionID
+    // while inside the target. Must be > 0 so the "reverse stub reports NULL"
+    // contract is positively exercised, not merely never violated.
+    std::atomic<int> _nestedNullTransitions;
 
     void HandleTransition(bool unmanagedToManaged, FunctionID functionID, COR_PRF_TRANSITION_REASON reason);
 };
