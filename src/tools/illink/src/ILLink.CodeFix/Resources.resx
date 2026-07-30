@@ -148,7 +148,7 @@
     <value>Remove 'unsafe' from this member</value>
   </data>
   <data name="AddUnsafeToBaseMemberCodeFixTitle" xml:space="preserve">
-    <value>Mark '{0}' 'unsafe'</value>
+    <value>Mark the overridden or implemented member 'unsafe'</value>
   </data>
   <data name="MatchPartialSafetyModifierCodeFixTitle" xml:space="preserve">
     <value>Match the safety modifier on both partial declarations</value>

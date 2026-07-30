@@ -141,12 +141,17 @@ namespace ILLink.CodeFix
         }
 
         private static SyntaxToken GetModifierAnchorToken(SyntaxNode declaration) =>
+            GetAttributeLists(declaration) is { Count: > 0 } attributeLists
+                ? attributeLists[attributeLists.Count - 1].GetLastToken().GetNextToken()
+                : declaration.GetFirstToken();
+
+        private static SyntaxList<AttributeListSyntax> GetAttributeLists(SyntaxNode declaration) =>
             declaration switch
             {
-                MemberDeclarationSyntax { AttributeLists.Count: > 0 } member
-                    => member.AttributeLists[member.AttributeLists.Count - 1].GetLastToken().GetNextToken(),
-                LocalFunctionStatementSyntax localFunction => localFunction.GetFirstToken(),
-                _ => declaration.GetFirstToken(),
+                MemberDeclarationSyntax member => member.AttributeLists,
+                LocalFunctionStatementSyntax localFunction => localFunction.AttributeLists,
+                AccessorDeclarationSyntax accessor => accessor.AttributeLists,
+                _ => default,
             };
 
         /// <summary>

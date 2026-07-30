@@ -16,6 +16,7 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
+using Microsoft.CodeAnalysis.Text;
 
 namespace ILLink.CodeFix
 {
@@ -35,6 +36,12 @@ namespace ILLink.CodeFix
         public const string UnsafeCannotOverrideSafeDiagnosticId = "CS9364";
         public const string UnsafeCannotImplicitlyImplementSafeDiagnosticId = "CS9365";
         public const string UnsafeCannotExplicitlyImplementSafeDiagnosticId = "CS9366";
+
+        // The keys are deliberately independent of the member being fixed, so that "fix all occurrences"
+        // groups every use of the same action rather than one group per member name.
+        private const string RemoveEquivalenceKey = nameof(SynchronizeUnsafeContractCodeFixProvider) + ".Remove";
+        private const string AddToBaseEquivalenceKey = nameof(SynchronizeUnsafeContractCodeFixProvider) + ".AddToBase";
+        private const string ReplaceWithSafeEquivalenceKey = nameof(SynchronizeUnsafeContractCodeFixProvider) + ".ReplaceWithSafe";
 
         private static LocalizableString RemoveTitle =>
             new LocalizableResourceString(
@@ -81,15 +88,14 @@ namespace ILLink.CodeFix
                 // CS9364/CS9365/CS9366 for CS9389. Narrowing the contract to 'safe' is the equivalent edit.
                 if (UnsafeMigrationSyntaxHelpers.SafeKeywordKind != SyntaxKind.None)
                 {
-                    string replaceTitle = ReplaceWithSafeTitle.ToString();
                     context.RegisterCodeFix(
                         CodeAction.Create(
-                            replaceTitle,
+                            ReplaceWithSafeTitle.ToString(),
                             cancellationToken => UnsafeModifierCodeFixHelpers.ReplaceUnsafeWithSafeAsync(
                                 context.Document,
                                 derivedDeclaration,
                                 cancellationToken),
-                            replaceTitle),
+                            ReplaceWithSafeEquivalenceKey),
                         diagnostic);
                 }
             }
@@ -102,32 +108,62 @@ namespace ILLink.CodeFix
                             context.Document,
                             derivedDeclaration,
                             cancellationToken),
-                        removeTitle),
+                        RemoveEquivalenceKey),
                     diagnostic);
             }
 
             if (await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false) is not { } semanticModel
-                || semanticModel.GetDeclaredSymbol(derivedDeclaration, context.CancellationToken) is not { } derivedSymbol)
+                || GetDeclaredSymbol(semanticModel, targetNode, derivedDeclaration, context.CancellationToken) is not { } derivedSymbol)
             {
                 return;
             }
 
-            // Only a base member declared in source can be annotated, and only one that is missing the modifier
-            // on every one of its declarations.
-            if (GetBaseContract(derivedSymbol) is not { } baseSymbol
-                || GetEditableDeclarations(baseSymbol, context.Document.Project.Solution, context.CancellationToken) is not { Count: > 0 } baseDeclarations
-                || baseDeclarations.Any(static pair => UnsafeMigrationSyntaxHelpers.HasSafeModifier(pair.Declaration)))
+            // Only base members declared in source can be annotated, and only ones that are missing the modifier
+            // on every one of their declarations.
+            List<(DocumentId DocumentId, SyntaxNode Declaration)> baseDeclarations = [];
+            foreach (ISymbol baseSymbol in GetBaseContracts(derivedSymbol))
             {
-                return;
+                if (GetEditableDeclarations(baseSymbol, context.Document.Project.Solution, context.CancellationToken) is not { Count: > 0 } declarations
+                    || declarations.Any(static pair => UnsafeMigrationSyntaxHelpers.HasSafeModifier(pair.Declaration)))
+                {
+                    return;
+                }
+
+                baseDeclarations.AddRange(declarations);
             }
 
-            string addToBaseTitle = string.Format(AddToBaseTitle.ToString(), baseSymbol.Name);
+            if (baseDeclarations.Count == 0)
+                return;
+
             context.RegisterCodeFix(
                 CodeAction.Create(
-                    addToBaseTitle,
+                    AddToBaseTitle.ToString(),
                     cancellationToken => AddUnsafeToBaseAsync(context.Document.Project.Solution, baseDeclarations, cancellationToken),
-                    addToBaseTitle),
+                    AddToBaseEquivalenceKey),
                 diagnostic);
+        }
+
+        /// <summary>
+        /// Resolves the symbol whose contract the diagnostic is about.
+        /// </summary>
+        /// <remarks>
+        /// A field or field-like event declaration declares one symbol per variable and has no symbol of its
+        /// own, so the declarator the diagnostic points at is what has to be asked.
+        /// </remarks>
+        private static ISymbol? GetDeclaredSymbol(
+            SemanticModel semanticModel,
+            SyntaxNode targetNode,
+            SyntaxNode declaration,
+            CancellationToken cancellationToken)
+        {
+            if (declaration is BaseFieldDeclarationSyntax)
+            {
+                return targetNode.AncestorsAndSelf().OfType<VariableDeclaratorSyntax>().FirstOrDefault() is { } variable
+                    ? semanticModel.GetDeclaredSymbol(variable, cancellationToken)
+                    : null;
+            }
+
+            return semanticModel.GetDeclaredSymbol(declaration, cancellationToken);
         }
 
         private static async Task<Solution> AddUnsafeToBaseAsync(
@@ -143,11 +179,17 @@ namespace ILLink.CodeFix
                     continue;
 
                 var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
+                var seenSpans = new HashSet<TextSpan>();
                 bool edited = false;
                 foreach ((_, SyntaxNode declaration) in group)
                 {
-                    if (UnsafeMigrationSyntaxHelpers.HasModifier(declaration, SyntaxKind.UnsafeKeyword))
+                    // Two contracts can share one declaration, for example a member that implements both
+                    // 'I<int>.M' and 'I<string>.M', and the editor cannot replace the same node twice.
+                    if (!seenSpans.Add(declaration.Span)
+                        || UnsafeMigrationSyntaxHelpers.HasModifier(declaration, SyntaxKind.UnsafeKeyword))
+                    {
                         continue;
+                    }
 
                     editor.ReplaceNode(
                         declaration,
@@ -220,19 +262,53 @@ namespace ILLink.CodeFix
                     or AccessorDeclarationSyntax)
                 .FirstOrDefault(static ancestor => UnsafeMigrationSyntaxHelpers.HasModifier(ancestor, SyntaxKind.UnsafeKeyword));
 
-        private static ISymbol? GetBaseContract(ISymbol symbol)
+        /// <summary>
+        /// Collects every member whose contract the derived member has to match.
+        /// </summary>
+        /// <remarks>
+        /// The compiler compares an override against the original definition of its chain, so annotating the
+        /// root is enough and the members in between can stay as they are. A member can also override one member
+        /// while implementing another, in which case both have to be annotated for the derived member to be
+        /// legal, and both diagnostics are reported on it.
+        /// </remarks>
+        private static ImmutableArray<ISymbol> GetBaseContracts(ISymbol symbol)
         {
-            if (GetOverriddenMember(symbol) is { } overridden)
-                return overridden;
+            var contracts = new List<ISymbol>();
+            var seen = new HashSet<ISymbol>(SymbolEqualityComparer.Default) { symbol };
 
-            if (GetExplicitInterfaceImplementations(symbol).FirstOrDefault() is { } explicitImplementation)
-                return explicitImplementation;
+            var chain = new List<ISymbol> { symbol };
+            for (ISymbol current = symbol; GetOverriddenMember(current) is { } overridden; current = overridden)
+                chain.Add(overridden);
+
+            if (seen.Add(chain[chain.Count - 1]))
+                contracts.Add(chain[chain.Count - 1]);
+
+            // An interface implementation is attributed to the member that declares it rather than to the most
+            // derived override, so every member of the chain has to be asked about its own interfaces.
+            foreach (ISymbol member in chain)
+            {
+                foreach (ISymbol interfaceMember in GetImplementedInterfaceMembers(member))
+                {
+                    if (seen.Add(interfaceMember))
+                        contracts.Add(interfaceMember);
+                }
+            }
+
+            return [.. contracts];
+        }
+
+        private static IEnumerable<ISymbol> GetImplementedInterfaceMembers(ISymbol symbol)
+        {
+            // An explicit implementation names its interface member directly; its own name is qualified, so the
+            // scan below would not match it.
+            foreach (ISymbol explicitImplementation in GetExplicitInterfaceImplementations(symbol))
+                yield return explicitImplementation;
+
+            if (symbol.ContainingType is not { } containingType)
+                yield break;
 
             // An implicit implementation has no syntactic link to the interface, so the containing type's
-            // interfaces are searched for a member this symbol satisfies.
-            if (symbol.ContainingType is not { } containingType)
-                return null;
-
+            // interfaces are searched for members this symbol satisfies.
             foreach (INamedTypeSymbol interfaceType in containingType.AllInterfaces)
             {
                 foreach (ISymbol interfaceMember in interfaceType.GetMembers())
@@ -243,12 +319,10 @@ namespace ILLink.CodeFix
                             containingType.FindImplementationForInterfaceMember(interfaceMember),
                             symbol))
                     {
-                        return interfaceMember;
+                        yield return interfaceMember;
                     }
                 }
             }
-
-            return null;
         }
 
         private static ISymbol? GetOverriddenMember(ISymbol symbol) =>
