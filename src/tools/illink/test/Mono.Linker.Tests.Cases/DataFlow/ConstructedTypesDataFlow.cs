@@ -170,6 +170,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 second.RequiresPublicMethods();
             }
 
+            class PropertyHolder
+            {
+                public Type AnnotatedProperty;
+            }
+
+            [RequiresUnreferencedCode(nameof(GetPropertyHolder))]
+            static PropertyHolder GetPropertyHolder() => new();
+
+            // The property target's receiver (GetPropertyHolder()) is a side-effecting expression that
+            // must be evaluated exactly once, and (to match left-to-right evaluation order) before the
+            // source values are read - not only after, as part of performing the write.
+            [ExpectedWarning("IL2026", nameof(GetPropertyHolder))]
+            static void DeconstructPropertyTargetSideEffect(Type first, Type second)
+            {
+                object other;
+                (GetPropertyHolder().AnnotatedProperty, other) = (first, second);
+            }
+
             [ExpectedWarning("IL2077")]
             static void DeconstructForeach((Type type, object instance)[] inputs)
             {
@@ -192,6 +210,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 DeconstructTupleLiteral(typeof(string));
                 DeconstructTupleSwapSuccess(typeof(string), typeof(string));
                 DeconstructTupleSwap(typeof(string), typeof(string));
+                DeconstructPropertyTargetSideEffect(typeof(string), typeof(string));
                 DeconstructForeach(new[] { (typeof(string), (object)null) });
             }
         }

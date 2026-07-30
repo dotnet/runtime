@@ -613,6 +613,18 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 return Visit(operation.Value, state);
             }
 
+            // Like ordinary assignments (see ProcessSingleTargetAssignment), any side-effecting
+            // sub-expressions that identify a target location (a property/indexer receiver and its
+            // index arguments, or an array reference and its index) must be evaluated before the
+            // source, matching left-to-right evaluation order. Unlike ordinary assignments, the
+            // actual write can't happen until every target location has been identified and every
+            // source value has been read, so these sub-expressions get visited again for effect
+            // when performing the write in AssignDeconstruction. Revisiting the same IOperation node
+            // for its side effect is safe: the pattern store used for intrinsic method calls merges
+            // patterns keyed by the same IOperation instance (see the analogous existing tolerance
+            // in ProcessAssignment for flow-capture targets with multiple captured references).
+            VisitDeconstructionTargetSideEffects(UnwrapDeconstructionTarget(operation.Target), state);
+
             ITypeSymbol? sourceType = operation.Value.Type;
             IOperation source = UnwrapDeconstructionSource(operation.Value);
             bool sourceValueIsKnown = source is not ITupleOperation;
@@ -834,6 +846,55 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
             Debug.Assert(source is not null);
             return source is null ? TopValue : Visit(source, state);
+        }
+
+        // Visits the side-effecting sub-expressions that identify a deconstruction target location
+        // (a property/indexer receiver and its index arguments, or an array reference and its index),
+        // without performing any write. This runs before the source is visited, so that expressions
+        // like arr[F()] in '(arr[F()], b) = (x, y)' evaluate 'arr' and 'F()' before 'x'/'y' are read,
+        // matching left-to-right evaluation order and Roslyn's own lowering (GetAssignmentTargetsAndSideEffects).
+        private void VisitDeconstructionTargetSideEffects(
+            IOperation target,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            target = UnwrapDeconstructionTarget(target);
+            if (target is ITupleOperation targetTuple)
+            {
+                foreach (var element in targetTuple.Elements)
+                    VisitDeconstructionTargetSideEffects(element, state);
+                return;
+            }
+
+            switch (target)
+            {
+                case IFieldReferenceOperation fieldRef:
+                    Visit(fieldRef.Instance, state);
+                    break;
+                case IPropertyReferenceOperation propertyRef:
+                    // Avoid visiting the property reference itself; see the similar comment in
+                    // ProcessSingleTargetAssignment about https://github.com/dotnet/roslyn/issues/25057.
+                    Visit(propertyRef.Instance, state);
+                    foreach (var argument in propertyRef.Arguments)
+                        Visit(argument, state);
+                    break;
+                case IArrayElementReferenceOperation arrayElementRef:
+                    Visit(arrayElementRef.ArrayReference, state);
+                    foreach (var index in arrayElementRef.Indices)
+                        Visit(index, state);
+                    break;
+                case IInlineArrayAccessOperation inlineArrayAccess:
+                    Visit(inlineArrayAccess.Instance, state);
+                    Visit(inlineArrayAccess.Argument, state);
+                    break;
+                case IImplicitIndexerReferenceOperation indexerRef:
+                    Visit(indexerRef.Instance, state);
+                    Visit(indexerRef.Argument, state);
+                    break;
+                default:
+                    // Locals, parameters, discards, and declaration expressions have no
+                    // side-effecting sub-expression to evaluate ahead of the source.
+                    break;
+            }
         }
 
         private static IOperation UnwrapDeconstructionTarget(IOperation target)
