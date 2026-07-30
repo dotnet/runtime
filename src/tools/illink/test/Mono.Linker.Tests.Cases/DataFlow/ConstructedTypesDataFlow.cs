@@ -188,6 +188,35 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 (GetPropertyHolder().AnnotatedProperty, other) = (first, second);
             }
 
+            class IndexerHolder
+            {
+                public Type this[int index]
+                {
+                    get => null;
+                    set { }
+                }
+            }
+
+            [RequiresUnreferencedCode(nameof(GetIndexerHolder))]
+            static IndexerHolder GetIndexerHolder() => new();
+
+            [RequiresUnreferencedCode(nameof(GetIndex))]
+            static int GetIndex() => 0;
+
+            // Like DeconstructPropertyTargetSideEffect, but for an explicit indexer target. The
+            // receiver (GetIndexerHolder()) and index argument (GetIndex()) are each side-effecting
+            // expressions that must be evaluated exactly once, even though they're visited from two
+            // different places: the receiver ahead of the source (VisitDeconstructionTargetSideEffects),
+            // and the index argument as part of performing the write (ProcessSingleTargetAssignment),
+            // matching the same (pre-existing) evaluation order used for an ordinary indexer assignment.
+            [ExpectedWarning("IL2026", nameof(GetIndexerHolder))]
+            [ExpectedWarning("IL2026", nameof(GetIndex))]
+            static void DeconstructIndexerTargetSideEffect(Type first, Type second)
+            {
+                object other;
+                (GetIndexerHolder()[GetIndex()], other) = (first, second);
+            }
+
             [ExpectedWarning("IL2077")]
             static void DeconstructForeach((Type type, object instance)[] inputs)
             {
@@ -211,6 +240,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 DeconstructTupleSwapSuccess(typeof(string), typeof(string));
                 DeconstructTupleSwap(typeof(string), typeof(string));
                 DeconstructPropertyTargetSideEffect(typeof(string), typeof(string));
+                DeconstructIndexerTargetSideEffect(typeof(string), typeof(string));
                 DeconstructForeach(new[] { (typeof(string), (object)null) });
             }
         }
