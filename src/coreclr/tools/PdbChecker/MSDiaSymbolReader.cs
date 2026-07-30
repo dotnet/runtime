@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using Dia2Lib;
 
@@ -42,7 +43,7 @@ class MSDiaSymbolReader
     /// </summary>
     public uint PdbAge { get; }
 
-    public MSDiaSymbolReader(string pdbFile)
+    public MSDiaSymbolReader(string pdbFile, string? imageFile = null)
     {
         try
         {
@@ -51,7 +52,23 @@ class MSDiaSymbolReader
             diaClassFactory.CreateInstance(null, typeof(IDiaDataSource).GetTypeInfo().GUID, out object comObject);
             
             _diaDataSource = (IDiaDataSource)comObject;
-            _diaDataSource.loadDataFromPdb(pdbFile);
+
+            if (imageFile is not null)
+            {
+                // Validate the PDB against the image's CodeView / RSDS identity. DIA throws if the
+                // PDB-info GUID / age don't match the image (e.g. an all-zero GUID native PDB),
+                // which is exactly the regression this check guards against.
+                (Guid imageGuid, uint imageAge) = ReadImageCodeViewIdentity(imageFile);
+                Console.WriteLine("Image file:     {0}", imageFile);
+                Console.WriteLine("Image GUID:     {0}", imageGuid);
+                Console.WriteLine("Image age:      {0}", imageAge);
+                _diaDataSource.loadAndValidateDataFromPdb(pdbFile, ref imageGuid, 0, imageAge);
+            }
+            else
+            {
+                _diaDataSource.loadDataFromPdb(pdbFile);
+            }
+
             _diaDataSource.openSession(out _diaSession);
 
             IDiaSymbol globalScope = _diaSession.globalScope;
@@ -81,6 +98,25 @@ class MSDiaSymbolReader
         {
             throw new Exception($"Error opening PDB file {pdbFile}", ex);
         }
+    }
+
+    /// <summary>
+    /// Read the CodeView / RSDS debug record identity (GUID and age) from a PE image.
+    /// </summary>
+    private static (Guid Guid, uint Age) ReadImageCodeViewIdentity(string imageFile)
+    {
+        using FileStream imageStream = File.OpenRead(imageFile);
+        using PEReader peReader = new PEReader(imageStream);
+        foreach (DebugDirectoryEntry entry in peReader.ReadDebugDirectory())
+        {
+            if (entry.Type == DebugDirectoryEntryType.CodeView)
+            {
+                CodeViewDebugDirectoryData codeViewData = peReader.ReadCodeViewDebugDirectoryData(entry);
+                return (codeViewData.Guid, (uint)codeViewData.Age);
+            }
+        }
+
+        throw new Exception($"Image file {imageFile} does not contain a CodeView (RSDS) debug directory entry");
     }
 
     public void DumpSymbols()
