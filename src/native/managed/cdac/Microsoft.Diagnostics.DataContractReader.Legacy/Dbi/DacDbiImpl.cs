@@ -5460,8 +5460,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #if DEBUG
         if (_legacy is not null)
         {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.HasReadWriteMetadata(vmPEAssembly, &resultLocal);
+            Interop.BOOL resultLocal = default;
+            int hrLocal = _legacy.HasReadWriteMetadata(vmPEAssembly, pHasReadWriteMetadata is null ? null : &resultLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*pHasReadWriteMetadata == resultLocal, $"cDAC: {*pHasReadWriteMetadata}, DAC: {resultLocal}");
