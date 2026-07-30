@@ -75,8 +75,6 @@ class MSDiaSymbolReader
                 }
             }
 
-            Console.WriteLine("PDB file:       {0}", pdbFile);
-            Console.WriteLine("PDB GUID:       {0}", pdbGuid);
             IDiaSymbol globalScope = _diaSession.globalScope;
             Console.WriteLine("PDB file:       {0}", pdbFile);
             Console.WriteLine("PDB GUID:       {0}", globalScope.guid);
