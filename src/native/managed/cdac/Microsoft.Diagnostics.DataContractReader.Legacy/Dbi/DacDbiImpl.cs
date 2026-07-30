@@ -27,7 +27,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     private readonly Target _target;
     private readonly IDacDbiInterface? _legacy;
-    private readonly ulong _corDBDefaultEnCFunctionVersion;
+    private ulong CorDBDefaultEnCFunctionVersion => _target.ReadGlobalPointer(Constants.Globals.CorDBDefaultEnCFunctionVersion).Value;
 
     // IStringHolder is a native C++ abstract class (not COM) with a single virtual method:
     //   virtual HRESULT AssignCopy(const WCHAR* psz) = 0;
@@ -64,7 +64,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         _target = target;
         _legacy = legacyObj as IDacDbiInterface;
-        _corDBDefaultEnCFunctionVersion = target.ReadGlobal<ulong>(Constants.Globals.CorDBDefaultEnCFunctionVersion);
     }
 
     public int FlushCache()
@@ -2701,7 +2700,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             *pCodeInfo = default;
-            pCodeInfo->encVersion = _corDBDefaultEnCFunctionVersion;
+            pCodeInfo->encVersion = CorDBDefaultEnCFunctionVersion;
             ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle module = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
             TargetPointer methodDesc = FindLoadedMethodRefOrDef(loader, module, functionToken);
@@ -2766,9 +2765,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             *pCodeInfo = default;
-            pCodeInfo->encVersion = _corDBDefaultEnCFunctionVersion;
-            *pVmModule = 0;
-            *pFunctionToken = 0;
+            if (pVmModule != null)
+                *pVmModule = 0;
+            if (pFunctionToken != null)
+                *pFunctionToken = 0;
+            pCodeInfo->encVersion = CorDBDefaultEnCFunctionVersion;
             if (codeAddress != 0)
             {
                 TargetCodePointer code = ((ClrDataAddress)codeAddress).ToTargetCodePointer(_target);
@@ -2828,7 +2829,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #if DEBUG
         if (_legacy is not null)
         {
-            NativeCodeFunctionData codeInfoLocal = new() { encVersion = _corDBDefaultEnCFunctionVersion };
+            NativeCodeFunctionData codeInfoLocal = new() { encVersion = CorDBDefaultEnCFunctionVersion };
             ulong vmModuleLocal = 0;
             uint functionTokenLocal = 0;
             int hrLocal = _legacy.GetNativeCodeInfoForAddr(
