@@ -57,6 +57,10 @@ class Program
 
         if (pdbFile is null)
         {
+            if (imageFile is not null)
+            {
+                throw new Exception("Missing PDB file argument");
+            }
             DisplayUsage();
             return;
         }
