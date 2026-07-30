@@ -3546,13 +3546,15 @@ private:
     PER_HEAP_FIELD_SINGLE_GC bool no_gc_oom_p;
     PER_HEAP_FIELD_SINGLE_GC heap_segment* saved_loh_segment_no_gc;
 
+#ifndef USE_REGIONS
+    PER_HEAP_FIELD_SINGLE_GC heap_segment* new_heap_segment;
+#endif //!USE_REGIONS
+
 #ifdef MULTIPLE_HEAPS
 #ifdef USE_REGIONS
     PER_HEAP_FIELD_SINGLE_GC min_fl_list_info* min_fl_list;
     PER_HEAP_FIELD_SINGLE_GC size_t num_fl_items_rethreaded_stage2;
     PER_HEAP_FIELD_SINGLE_GC size_t* free_list_space_per_heap;
-#else //USE_REGIONS
-    PER_HEAP_FIELD_SINGLE_GC heap_segment* new_heap_segment;
 #endif //USE_REGIONS
 #else //MULTIPLE_HEAPS
     PER_HEAP_FIELD_SINGLE_GC uint8_t* shigh; //keeps track of the highest marked object
