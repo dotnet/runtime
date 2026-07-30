@@ -2,9 +2,17 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if DEBUG
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using ILLink.CodeFix;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeActions;
+using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Text;
 using Xunit;
 using VerifyCS = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
     ILLink.RoslynAnalyzer.DynamicallyAccessedMembersAnalyzer,
@@ -49,17 +57,53 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         /// <summary>
-        /// Verifies that no fix is offered, because neither shape of unsafe context would compile.
+        /// Verifies that the fixer offers nothing for a use site where neither shape of unsafe context would
+        /// compile, and that the source really does contain such a use site.
         /// </summary>
-        private static Task VerifyNoCodeFix(string source)
+        /// <remarks>
+        /// Comparing the fixed source against the input is not enough on its own, because a code action that
+        /// happens to produce no text change would satisfy it too. The registered actions are counted instead.
+        /// </remarks>
+        private static async Task VerifyNoCodeFixOffered(string source)
         {
-            var test = new VerifyCS.Test
+            using var workspace = new AdhocWorkspace();
+            var projectId = ProjectId.CreateNewId();
+            var documentId = DocumentId.CreateNewId(projectId);
+
+            var parseOptions = new CSharpParseOptions(LanguageVersion.Preview)
+                .WithFeatures([new KeyValuePair<string, string>("updated-memory-safety-rules", "")]);
+
+            Solution solution = workspace.CurrentSolution
+                .AddProject(projectId, "Test", "Test", LanguageNames.CSharp)
+                .WithProjectParseOptions(projectId, parseOptions)
+                .WithProjectCompilationOptions(
+                    projectId,
+                    new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true))
+                .AddMetadataReferences(projectId, SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences())
+                .AddDocument(documentId, "Test0.cs", SourceText.From(source));
+
+            Document document = solution.GetDocument(documentId)!;
+            Compilation compilation = (await document.Project.GetCompilationAsync())!;
+
+            var provider = new IntroduceUnsafeContextCodeFixProvider();
+            ImmutableArray<Diagnostic> errors =
+            [
+                .. compilation.GetDiagnostics().Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+            ];
+
+            // The source is only interesting if it still asks for an unsafe context and nothing else is wrong
+            // with it, otherwise an empty set of code actions would prove nothing.
+            Assert.NotEmpty(errors);
+            Assert.All(errors, diagnostic => Assert.Contains(diagnostic.Id, provider.FixableDiagnosticIds));
+
+            List<CodeAction> actions = [];
+            foreach (Diagnostic diagnostic in errors)
             {
-                TestCode = source,
-                FixedCode = source,
-            };
-            test.SolutionTransforms.Add(SetOptions);
-            return test.RunAsync();
+                await provider.RegisterCodeFixesAsync(
+                    new CodeFixContext(document, diagnostic, (action, _) => actions.Add(action), CancellationToken.None));
+            }
+
+            Assert.Empty(actions);
         }
 
         [Fact]
@@ -1167,7 +1211,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             // Neither shape works here: a block would trap the await, and the expression form would put it in an
             // unsafe context. The developer has to restructure the statement.
-            await VerifyNoCodeFix(
+            await VerifyNoCodeFixOffered(
                 """
                 using System.Threading.Tasks;
 
@@ -1177,7 +1221,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     public async Task<int> M()
                     {
-                        int x = {|CS9362:Unsafe(await Task.FromResult(1))|};
+                        int x = Unsafe(await Task.FromResult(1));
                         return x;
                     }
                 }
@@ -1189,13 +1233,13 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             // 'unsafe(...)' is not one of the forms allowed where a statement expression is required, so a void
             // expression body cannot be fixed without turning it into a block body.
-            await VerifyNoCodeFix(
+            await VerifyNoCodeFixOffered(
                 """
                 public class C
                 {
                     public static unsafe void Unsafe() { }
 
-                    public void M() => {|CS9362:Unsafe()|};
+                    public void M() => Unsafe();
                 }
                 """);
         }
@@ -1283,13 +1327,13 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             // The arrow body of a void method is a statement-expression position regardless of what the call
             // itself returns.
-            await VerifyNoCodeFix(
+            await VerifyNoCodeFixOffered(
                 """
                 public class C
                 {
                     public static unsafe int Unsafe() => 0;
 
-                    public void M() => {|CS9362:Unsafe()|};
+                    public void M() => Unsafe();
                 }
                 """);
         }
@@ -1297,7 +1341,7 @@ namespace ILLink.RoslynAnalyzer.Tests
         [Fact]
         public async Task VoidLambdaBodyLeavesTheDiagnostic()
         {
-            await VerifyNoCodeFix(
+            await VerifyNoCodeFixOffered(
                 """
                 using System;
 
@@ -1305,7 +1349,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     public static unsafe int Unsafe() => 0;
 
-                    public Action M() => () => {|CS9362:Unsafe()|};
+                    public Action M() => () => Unsafe();
                 }
                 """);
         }
@@ -1523,13 +1567,13 @@ namespace ILLink.RoslynAnalyzer.Tests
         public async Task ArrayInitializerShorthandLeavesTheDiagnostic()
         {
             // There is nothing to wrap: the braces are only meaningful in the slot they occupy.
-            await VerifyNoCodeFix(
+            await VerifyNoCodeFixOffered(
                 """
                 public class C
                 {
                     public static unsafe int UnsafeProperty => 0;
 
-                    private static readonly int[] s_values = { {|CS9362:UnsafeProperty|} };
+                    private static readonly int[] s_values = { UnsafeProperty };
 
                     public int M() => s_values.Length;
                 }
