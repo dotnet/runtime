@@ -407,8 +407,8 @@ namespace ILAssembler.Tests
         [InlineData(".language '3f5162f8-07c6-11d3-9053-00c04fa302a1'")]
         [InlineData(".language '3f5162f8-07c6-11d3-9053-00c04fa302a1', '994b45c4-e6e9-11d2-903f-00c04fa302a1'")]
         [InlineData(".language '3f5162f8-07c6-11d3-9053-00c04fa302a1', '994b45c4-e6e9-11d2-903f-00c04fa302a1', '5a869d0b-6611-11d3-bd2a-0000f80849bd'")]
-        [InlineData(".language \"3f5162f8-07c6-11d3-9053-00c04fa302a1\" \"994b45c4-e6e9-11d2-903f-00c04fa302a1\"")]
-        [InlineData(".language \"3f5162f8-07c6-11d3-9053-00c04fa302a1\" \"994b45c4-e6e9-11d2-903f-00c04fa302a1\" \"5a869d0b-6611-11d3-bd2a-0000f80849bd\"")]
+        [InlineData(".language \"3f5162f8-07c6-11d3-9053-00c04fa302a1\", \"994b45c4-e6e9-11d2-903f-00c04fa302a1\"")]
+        [InlineData(".language \"3f5162f8-07c6-11d3-9053-00c04fa302a1\", \"994b45c4-e6e9-11d2-903f-00c04fa302a1\", \"5a869d0b-6611-11d3-bd2a-0000f80849bd\"")]
         public void LanguageDirective_SyntaxVariant_EmitsDocumentLanguage(string languageDirective)
         {
             string source = $$"""
