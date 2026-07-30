@@ -783,7 +783,21 @@ namespace System.Text.Json.SourceGeneration
                         }
 
                         string patternTypeFQN = caseSpec.PatternType.FullyQualifiedName;
-                        writer.WriteLine($"{patternTypeFQN} caseValue{deconArmIndex} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)caseValue{deconArmIndex}),");
+
+                        if (patternTypeFQN == typeMetadata.TypeRef.FullyQualifiedName)
+                        {
+                            // Recursive case: the case type is the union type itself. A type
+                            // pattern for it is trivially satisfied by the union value, so the
+                            // designator binds the union rather than its payload. Returning it
+                            // would make the converter recurse on the same value forever, so
+                            // read the payload off the union's Value property instead.
+                            writer.WriteLine($"{patternTypeFQN} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)value.Value),");
+                        }
+                        else
+                        {
+                            writer.WriteLine($"{patternTypeFQN} caseValue{deconArmIndex} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)caseValue{deconArmIndex}),");
+                        }
+
                         deconArmIndex++;
                     }
 
