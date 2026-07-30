@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.CommandLine;
 using System.CommandLine.Parsing;
@@ -287,89 +286,21 @@ internal sealed class Program
 
     private T Get<T>(Option<T> option) => _command.Result.GetValue(option)!;
 
-    private static int Main(string[] args) =>
-        new IlasmRootCommand()
-            .Parse(NormalizeNativeArgs(args))
-            .Invoke();
-
-    /// <summary>
-    /// Pre-process command-line arguments to translate native ilasm compound flags
-    /// (e.g., -DEBUG=IMPL, -OUTPUT=file) into System.CommandLine-compatible forms.
-    /// Native ilasm flags are case-insensitive and use single-dash prefix.
-    /// </summary>
-    private static string[] NormalizeNativeArgs(string[] args)
+    private static int Main(string[] args)
     {
-        List<string> result = new(args.Length);
-        foreach (string arg in args)
+        string[] normalizedArgs;
+        try
         {
-            if (arg.Equals("-DEBUG=IMPL", StringComparison.OrdinalIgnoreCase))
-            {
-                result.Add("--debug-mode");
-                result.Add("Impl");
-                continue;
-            }
-
-            if (arg.Equals("-DEBUG=OPT", StringComparison.OrdinalIgnoreCase))
-            {
-                result.Add("--debug-mode");
-                result.Add("Opt");
-                continue;
-            }
-
-            if (arg.StartsWith("-RESOURCES=", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new ArgumentException($"Unsupported native option '{arg}'. The managed ilasm implementation does not support -RESOURCES.");
-            }
-
-            if (arg.StartsWith('-') && !arg.StartsWith("--"))
-            {
-                int eqIndex = arg.IndexOf('=');
-                string flagPart = eqIndex >= 0 ? arg[..eqIndex] : arg;
-                string? valuePart = eqIndex >= 0 ? arg[(eqIndex + 1)..] : null;
-
-                string upper = flagPart.ToUpperInvariant();
-                if (upper is
-                    "-OUTPUT" or
-                    "-DLL" or
-                    "-EXE" or
-                    "-DEBUG" or
-                    "-OPTIMIZE" or
-                    "-FOLD" or
-                    "-NOLOGO" or
-                    "-QUIET" or
-                    "-NOAUTOINHERIT" or
-                    "-PDB" or
-                    "-APPCONTAINER" or
-                    "-DET" or
-                    "-ERROR" or
-                    "-CLOCK" or
-                    "-KEY" or
-                    "-ANAME" or
-                    "-INC" or
-                    "-SUBSYSTEM" or
-                    "-SSVER" or
-                    "-FLAGS" or
-                    "-ALIGNMENT" or
-                    "-BASE" or
-                    "-STACK" or
-                    "-MDV" or
-                    "-PE64" or
-                    "-HIGHENTROPYVA" or
-                    "-NOCORSTUB" or
-                    "-STRIPRELOC" or
-                    "-X64" or
-                    "-ARM" or
-                    "-ARM64" or
-                    "-32BITPREFERRED")
-                    {
-                        result.Add(valuePart is null ? upper : $"{upper}={valuePart}");
-                        continue;
-                    }
-            }
-
-            result.Add(arg);
+            normalizedArgs = NativeCommandLine.Normalize(args);
+        }
+        catch (ArgumentException e)
+        {
+            Console.Error.WriteLine($"Error: {e.Message}");
+            return 1;
         }
 
-        return result.ToArray();
+        return new IlasmRootCommand()
+            .Parse(normalizedArgs)
+            .Invoke();
     }
 }
