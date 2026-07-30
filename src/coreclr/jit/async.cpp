@@ -3078,8 +3078,8 @@ void AsyncTransformation::FinishContextHandlingAndSuspensionWithHelper(BasicBloc
 
 //------------------------------------------------------------------------
 // AsyncTransformation::CreateInlinedFrameSuspensionTail:
-//   Create, or reuse, the block that runs the context handling of the frames enclosing
-//   an inlined async frame on suspension.
+//   Create the block that runs the context handling of the frames enclosing an inlined
+//   async frame on suspension.
 //
 // Parameters:
 //   callBlock - The block containing the async call
@@ -3097,8 +3097,8 @@ void AsyncTransformation::FinishContextHandlingAndSuspensionWithHelper(BasicBloc
 //   walked outward as a straight line: once one frame has resumed, the helpers for it and
 //   every frame outside it no-op.
 //
-//   The result depends only on the chain of frames, so it is shared by all suspensions in
-//   the same frame.
+//   TODO-Async: suspensions in the same frame could share a tail when they agree on all
+//   of the values below, which would save some cold code.
 //
 BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*               callBlock,
                                                                   GenTreeCall*              call,
@@ -3120,8 +3120,7 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
     // truth for what to store: the optimizer may have rewritten them since they were
     // added, for example folding a "resumed" indicator to a constant, and the stores must
     // reflect that rather than re-reading the locals the args originally named.
-    unsigned const  numValues = numFrames * 3;
-    GenTree** const values    = new (m_compiler, CMK_Async) GenTree*[numValues];
+    ArrayStack<GenTree*> values(m_compiler->getAllocator(CMK_Async));
 
     for (unsigned i = 0; i < numFrames; i++)
     {
@@ -3145,40 +3144,7 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
 
             LIR::AsRange(callBlock).Remove(node);
             call->gtArgs.RemoveUnsafe(arg);
-            values[i * 3 + j] = node;
-        }
-    }
-
-    // The tail depends only on these values, so suspensions that agree on all of them can
-    // share one. That is the common case: every suspension in the same inlined frame sees
-    // the same locals unless the optimizer rewrote one of them differently.
-    if (m_inlinedFrameTails == nullptr)
-    {
-        m_inlinedFrameTails =
-            new (m_compiler, CMK_Async) jitstd::vector<InlinedFrameTail>(m_compiler->getAllocator(CMK_Async));
-    }
-
-    for (const InlinedFrameTail& tail : *m_inlinedFrameTails)
-    {
-        if (tail.NumValues != numValues)
-        {
-            continue;
-        }
-
-        bool match = true;
-        for (unsigned i = 0; i < numValues; i++)
-        {
-            if (!GenTree::Compare(tail.Values[i], values[i]))
-            {
-                match = false;
-                break;
-            }
-        }
-
-        if (match)
-        {
-            JITDUMP("    Reusing inlined frame suspension tail " FMT_BB "\n", tail.Block->bbNum);
-            return tail.Block;
+            values.Push(node);
         }
     }
 
@@ -3202,10 +3168,10 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
 
     for (unsigned i = 0; i + 1 < numFrames; i++)
     {
-        GenTree* const frameResumed = values[i * 3];
-        GenTree* const outerResumed = values[(i + 1) * 3];
-        GenTree* const outerExec    = values[(i + 1) * 3 + 1];
-        GenTree* const outerSync    = values[(i + 1) * 3 + 2];
+        GenTree* const frameResumed = values.Bottom((int)(i * 3));
+        GenTree* const outerResumed = values.Bottom((int)((i + 1) * 3));
+        GenTree* const outerExec    = values.Bottom((int)((i + 1) * 3 + 1));
+        GenTree* const outerSync    = values.Bottom((int)((i + 1) * 3 + 2));
         unsigned const depth        = numFrames - 1 - i;
 
         // Capture what this frame hands to its caller.
@@ -3244,7 +3210,6 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
 
     DISPRANGE(LIR::AsRange(tailBB));
 
-    m_inlinedFrameTails->push_back({numValues, values, tailBB});
     return tailBB;
 }
 

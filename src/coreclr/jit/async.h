@@ -560,20 +560,6 @@ class AsyncTransformation
     const ContinuationLayout* CreateResumptionsAndSuspensions(ArrayStack<GenTree*>& continuationMemberOffsets);
     void                      CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyncResumedDef);
 
-    struct InlinedFrameTail
-    {
-        // Values the tail stores, in the order they were taken off the call: one
-        // resumed/exec/sync triple per frame, innermost first.
-        unsigned    NumValues;
-        GenTree**   Values;
-        BasicBlock* Block;
-    };
-
-    // Suspension tails running the context handling of the frames enclosing an inlined
-    // async frame. Keyed by the values they store, so suspensions that agree on all of
-    // them share one.
-    jitstd::vector<InlinedFrameTail>* m_inlinedFrameTails = nullptr;
-
     BasicBlock* CreateInlinedFrameSuspensionTail(BasicBlock*               callBlock,
                                                  GenTreeCall*              call,
                                                  const ContinuationLayout& layout);
