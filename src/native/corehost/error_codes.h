@@ -54,6 +54,8 @@ enum StatusCode
     HostFeatureDisabled                 = 0x800080a7,   // Support for a requested feature is disabled
 };
 
+#ifdef __cplusplus
 #define STATUS_CODE_SUCCEEDED(status_code) ((static_cast<int>(static_cast<StatusCode>(status_code))) >= 0)
+#endif // __cplusplus
 
 #endif // __ERROR_CODES_H__
