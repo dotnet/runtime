@@ -230,7 +230,8 @@ jobs:
       - eng/Version.Details.xml
       - eng/Versions.props
       - eng/AcquireWasiSdk.targets
-      - eng/download-wasi-sdk.ps1
+      - eng/AcquireEmscriptenSdk.targets
+      - eng/wasm/*
       - eng/testing/scenarios/BuildWasiAppsJobsList.txt
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - eng/testing/scenarios/BuildWasmAppsJobsListCoreCLR.txt

@@ -89,6 +89,17 @@ void emitter::emitIns_BlockTy(instruction ins, WasmValueType valType)
 //
 void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 {
+    // Rewrite `local.set N; local.get N` as `local.tee N`.
+    //
+    if ((ins == INS_local_get) && m_compiler->opts.OptimizationEnabled() && emitCanPeepholeLastIns() &&
+        (emitLastIns->idIns() == INS_local_set) && (emitGetInsSC(emitLastIns) == imm))
+    {
+        JITDUMP("\n -- rewriting 'local.set %d' as 'local.tee %d' since it is followed by a get of the same local.\n",
+                (int)imm, (int)imm);
+        emitLastIns->idIns(INS_local_tee);
+        return;
+    }
+
     instrDesc* id  = emitNewInstrSC(attr, imm);
     insFormat  fmt = emitInsFormat(ins);
 
