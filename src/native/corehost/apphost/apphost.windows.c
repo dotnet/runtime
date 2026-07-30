@@ -120,6 +120,15 @@ static bool try_get_url_from_line(const pal_char_t* line, size_t line_len, pal_c
         return true;
     }
 
+    const pal_char_t url_prefix_before_7_0[] = _X("  - ") DOTNET_CORE_APPLAUNCH_URL _X("?");
+    if (utils_starts_with(line, line_len, url_prefix_before_7_0, STRING_LENGTH(url_prefix_before_7_0), true))
+    {
+        // Strip the "  - " indent so the stored URL begins at the applaunch URL.
+        size_t offset = STRING_LENGTH(_X("  - "));
+        pal_str_printf(url, url_len, _X("%.*s"), (int)(line_len - offset), line + offset);
+        return true;
+    }
+
     return false;
 }
 
@@ -320,17 +329,32 @@ static void show_error_dialog(const pal_char_t* executable_name, int error_code)
         instruction = INSTALL_OR_UPDATE_NET_ERROR_MESSAGE;
 
         const pal_char_t prefix[] = _X("Framework: '");
+        const pal_char_t prefix_before_7_0[] = _X("The framework '");
+        const pal_char_t suffix_before_7_0[] = _X(" was not found.");
 
         const pal_char_t* cursor = g_buffered_errors;
         const pal_char_t* line;
         size_t line_len;
         while ((line = get_next_line(&cursor, &line_len)) != NULL)
         {
-            if (utils_starts_with(line, line_len, prefix, STRING_LENGTH(prefix), true))
+            bool has_prefix = utils_starts_with(line, line_len, prefix, STRING_LENGTH(prefix), true);
+            if (has_prefix
+                || (utils_starts_with(line, line_len, prefix_before_7_0, STRING_LENGTH(prefix_before_7_0), true)
+                    && utils_ends_with(line, line_len, suffix_before_7_0, STRING_LENGTH(suffix_before_7_0), true)))
             {
                 free(details);
-                size_t offset = STRING_LENGTH(prefix) - 1;
-                details = format_alloc(_X("Required: %.*s\n\n"), (int)(line_len - offset), line + offset);
+                if (has_prefix)
+                {
+                    size_t offset = STRING_LENGTH(prefix) - 1;
+                    details = format_alloc(_X("Required: %.*s\n\n"), (int)(line_len - offset), line + offset);
+                }
+                else
+                {
+                    size_t prefix_len = STRING_LENGTH(prefix_before_7_0) - 1;
+                    size_t suffix_len = STRING_LENGTH(suffix_before_7_0);
+                    size_t len = (line_len > prefix_len + suffix_len) ? line_len - prefix_len - suffix_len : 0;
+                    details = format_alloc(_X("Required: %.*s\n\n"), (int)len, line + prefix_len);
+                }
             }
             else if (try_get_url_from_line(line, line_len, url, ARRAY_SIZE(url)))
             {
