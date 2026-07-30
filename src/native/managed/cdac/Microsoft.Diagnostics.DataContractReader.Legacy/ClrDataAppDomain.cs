@@ -16,15 +16,13 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
 
     private readonly Target _target;
     private readonly TargetPointer _appDomain;
-    private readonly IXCLRDataAppDomain? _legacyImpl;
 
     public TargetPointer Address => _appDomain;
 
-    public ClrDataAppDomain(Target target, TargetPointer appDomain, IXCLRDataAppDomain? legacyImpl)
+    public ClrDataAppDomain(Target target, TargetPointer appDomain)
     {
         _target = target;
         _appDomain = appDomain;
-        _legacyImpl = legacyImpl;
     }
 
     int IXCLRDataAppDomain.GetProcess(DacComNullableByRef<IXCLRDataProcess> process)
@@ -61,38 +59,6 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
                 hr = HResults.S_FALSE;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            uint nameLenLocal;
-            char[] legacyNameBuf = new char[bufLen > 0 ? bufLen : 1];
-            int hrLocal;
-            fixed (char* pLegacyName = legacyNameBuf)
-            {
-                hrLocal = _legacyImpl.GetName(bufLen, &nameLenLocal, name is not null ? pLegacyName : null);
-            }
-
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0)
-            {
-                if (nameLen is not null)
-                    Debug.Assert(*nameLen == nameLenLocal, $"cDAC: {*nameLen}, DAC: {nameLenLocal}");
-
-                if (name is not null && bufLen > 0)
-                {
-                    // On truncation (S_FALSE), nameLenLocal is the full required length
-                    // which may exceed bufLen. Cap to the actual buffer size.
-                    int compareLen = (int)Math.Min(nameLenLocal, bufLen) - 1;
-                    if (compareLen > 0)
-                    {
-                        string dacName = new string(legacyNameBuf, 0, compareLen);
-                        string cdacName = new string(name, 0, compareLen);
-                        Debug.Assert(dacName == cdacName, $"cDAC: {cdacName}, DAC: {dacName}");
-                    }
-                }
-            }
-        }
-#endif
 
         return hr;
     }
@@ -112,15 +78,6 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null && hr >= 0)
-        {
-            ulong idLocal;
-            int hrLocal = _legacyImpl.GetUniqueID(&idLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            Debug.Assert(*id == idLocal, $"cDAC: {*id}, DAC: {idLocal}");
-        }
-#endif
 
         return hr;
     }
@@ -141,15 +98,6 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null && hr >= 0)
-        {
-            uint flagsLocal;
-            int hrLocal = _legacyImpl.GetFlags(&flagsLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            Debug.Assert(*flags == flagsLocal, $"cDAC: {*flags}, DAC: {flagsLocal}");
-        }
-#endif
 
         return hr;
     }
@@ -170,13 +118,6 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            int hrLocal = _legacyImpl.IsSameObject(appDomain);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr}, DAC: {hrLocal}");
-        }
-#endif
 
         return hr;
     }

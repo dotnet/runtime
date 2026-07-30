@@ -4,6 +4,7 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <RootNamespace>Microsoft.Diagnostics.DataContractReader.Legacy</RootNamespace>
     <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);IDE0059;IDE0060</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsShipping>false</IsShipping>
     <IsPackable>true</IsPackable>

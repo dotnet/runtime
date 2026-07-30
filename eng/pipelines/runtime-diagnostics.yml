@@ -5,8 +5,12 @@
 #   SOSTests           windows_x64 Release. One shared coreclr+libs build (-c Debug
 #                      -rc release -lc release -clrinterpreter) consumed by 4 SOS
 #                      legs that run on top of it: cDAC, cDAC_fallback, cDAC_verify, DAC.
-#                      Each leg sets testInterpreter: true so interpreter coverage
-#                      is exercised inline (no separate Interpreter leg).
+#                      cDAC runs the standalone production cDAC; cDAC_fallback and
+#                      cDAC_verify run the test-only validation shim, which brokers
+#                      between that same production cDAC and the legacy DAC and
+#                      compares every API. Each leg sets testInterpreter: true so
+#                      interpreter coverage is exercised inline (no separate
+#                      Interpreter leg).
 #
 #   CdacUnitTests      linux_x64 Debug. Builds + tests the cDAC managed-side
 #                      UnitTests + DataGeneratorTests projects (tools.cdactests
@@ -130,7 +134,7 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
-            buildArgs: -s clr+libs+tools.cdac+host+packs -c Debug -rc $(_BuildConfig) -lc $(_BuildConfig) -clrinterpreter
+            buildArgs: -s clr+libs+tools.cdac+tools.cdacvalidationshim+host+packs -c Debug -rc $(_BuildConfig) -lc $(_BuildConfig) -clrinterpreter
             nameSuffix: AllSubsets_CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 360
@@ -163,6 +167,22 @@ extends:
                 tarCompression: $(tarCompression)
                 artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac
                 displayName: cDAC Assets
+            # The validation shim (mscordaccore_cdac_validation_shim) is a test-only binary built by
+            # tools.cdacvalidationshim. It is never part of any product layout, so it is uploaded on
+            # its own for the cDAC_fallback / cDAC_verify legs to deploy next to sos.
+            - powershell: |
+                $shimDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)\artifacts\bin\mscordaccore_cdac_validation_shim\*\win-$(archType)\publish" | Select-Object -ExpandProperty FullName -First 1
+                Write-Host "##vso[task.setvariable variable=shimDir]$shimDir"
+              displayName: 'Set Path to cDAC Validation Shim Artifacts'
+            - template: /eng/pipelines/common/upload-artifact-step.yml
+              parameters:
+                rootFolder: $(shimDir)
+                includeRootFolder: false
+                archiveType: $(archiveType)
+                archiveExtension: $(archiveExtension)
+                tarCompression: $(tarCompression)
+                artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdacshim
+                displayName: cDAC Validation Shim Assets
 
       # SOS test legs: each depends on the shared build above. Differ only in
       # name (artifact namespace) and the cDAC/DAC load mode.
@@ -174,8 +194,10 @@ extends:
           name: cDAC
           dacMode: cdac
 
-      # cDAC_fallback / cDAC_verify: the in-box DAC hosts the cDAC contract reader, with per-API fallback
-      # to the legacy DAC (fallback) or no fallback but still verifying against it (verify).
+      # cDAC_fallback / cDAC_verify: SOS loads the test-only validation shim as its cDAC. The shim
+      # brokers between the production cDAC next to it and the legacy DAC from the runtime under
+      # test, comparing every API. fallback lets unimplemented cDAC APIs delegate to the legacy DAC;
+      # verify (strict) only lets the allowlisted APIs delegate.
       - template: /eng/pipelines/diagnostics/sos-test-leg.yml
         parameters:
           name: cDAC_fallback

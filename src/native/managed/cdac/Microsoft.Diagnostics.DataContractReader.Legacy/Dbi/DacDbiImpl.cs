@@ -26,7 +26,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     private const uint DefaultAppDomainId = 1;
 
     private readonly Target _target;
-    private readonly IDacDbiInterface? _legacy;
 
     // IStringHolder is a native C++ abstract class (not COM) with a single virtual method:
     //   virtual HRESULT AssignCopy(const WCHAR* psz) = 0;
@@ -59,22 +58,19 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return mainProfInterface != TargetPointer.Null || notificationCount > 0;
     }
 
-    public DacDbiImpl(Target target, object? legacyObj)
+    public DacDbiImpl(Target target)
     {
         _target = target;
-        _legacy = legacyObj as IDacDbiInterface;
     }
 
     public int FlushCache()
     {
         _target.Flush(FlushScope.All);
-        return _legacy is not null ? _legacy.FlushCache() : HResults.S_OK;
+        return HResults.S_OK;
     }
 
     public int DacSetTargetConsistencyChecks(Interop.BOOL fEnableAsserts)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null
-            ? _legacy.DacSetTargetConsistencyChecks(fEnableAsserts)
-            : HResults.S_OK;
+        => HResults.S_OK;
 
     public int IsLeftSideInitialized(Interop.BOOL* pResult)
     {
@@ -89,16 +85,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.IsLeftSideInitialized(&resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal);
-        }
-#endif
 
         return hr;
     }
@@ -115,16 +101,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint retValLocal;
-            int hrLocal = _legacy.GetAppDomainId(vmAppDomain, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -140,13 +116,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            int hrLocal = _legacy.GetAppDomainFullName(vmAppDomain, pStrName);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
 
@@ -165,20 +134,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            using var legacyHolder = new NativeStringHolder();
-            int hrLocal = _legacy.GetModuleSimpleName(vmModule, legacyHolder.Ptr);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(
-                    string.Equals(cdacSimpleName, legacyHolder.Value, System.StringComparison.Ordinal),
-                    $"GetModuleSimpleName string mismatch - cDAC: '{cdacSimpleName}', DAC: '{legacyHolder.Value}'");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -205,16 +160,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.GetAssemblyPath(vmAssembly, pStrFilename, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -282,19 +227,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED;
         }
 
-#if DEBUG
-        if (resolved && _legacy is not null)
-        {
-            DacDbiTypeRefData targetLocal = default;
-            int hrLocal = _legacy.ResolveTypeReference(pTypeRefInfo, &targetLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(pTargetRefInfo->vmAssembly == targetLocal.vmAssembly, $"cDAC: {pTargetRefInfo->vmAssembly:x}, DAC: {targetLocal.vmAssembly:x}");
-                Debug.Assert(pTargetRefInfo->typeToken == targetLocal.typeToken, $"cDAC: {pTargetRefInfo->typeToken:x}, DAC: {targetLocal.typeToken:x}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -334,16 +266,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.GetModulePath(vmModule, pStrFilename, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -375,19 +297,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            DacDbiTargetBuffer pTargetBufferLocal = default;
-            int hrLocal = _legacy.GetMetadata(vmModule, pTargetBuffer == null ? null : &pTargetBufferLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(pTargetBuffer->pAddress == pTargetBufferLocal.pAddress, $"pAddress: cDAC: {pTargetBuffer->pAddress:x}, DAC: {pTargetBufferLocal.pAddress:x}");
-                Debug.Assert(pTargetBuffer->cbSize == pTargetBufferLocal.cbSize, $"cbSize: cDAC: {pTargetBuffer->cbSize}, DAC: {pTargetBufferLocal.cbSize}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -422,21 +331,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            DacDbiTargetBuffer bufferLocal;
-            SymbolFormat formatLocal;
-            int hrLocal = _legacy.GetSymbolsBuffer(vmModule, &bufferLocal, &formatLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(pTargetBuffer->pAddress == bufferLocal.pAddress, $"pAddress: cDAC: {pTargetBuffer->pAddress:x}, DAC: {bufferLocal.pAddress:x}");
-                Debug.Assert(pTargetBuffer->cbSize == bufferLocal.cbSize, $"cbSize: cDAC: {pTargetBuffer->cbSize}, DAC: {bufferLocal.cbSize}");
-                Debug.Assert(*pSymbolFormat == formatLocal, $"pSymbolFormat: cDAC: {*pSymbolFormat}, DAC: {formatLocal}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -471,23 +365,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            DacDbiModuleInfo dataLocal;
-            int hrLocal = _legacy.GetModuleData(vmModule, &dataLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(pData->vmAssembly == dataLocal.vmAssembly, $"vmAssembly: cDAC: {pData->vmAssembly:x}, DAC: {dataLocal.vmAssembly:x}");
-                Debug.Assert(pData->vmPEAssembly == dataLocal.vmPEAssembly, $"vmPEAssembly: cDAC: {pData->vmPEAssembly:x}, DAC: {dataLocal.vmPEAssembly:x}");
-                Debug.Assert(pData->fIsDynamic == dataLocal.fIsDynamic, $"fIsDynamic: cDAC: {pData->fIsDynamic}, DAC: {dataLocal.fIsDynamic}");
-                Debug.Assert(pData->fInMemory == dataLocal.fInMemory, $"fInMemory: cDAC: {pData->fInMemory}, DAC: {dataLocal.fInMemory}");
-                Debug.Assert(pData->pPEBaseAddress == dataLocal.pPEBaseAddress, $"pPEBaseAddress: cDAC: {pData->pPEBaseAddress:x}, DAC: {dataLocal.pPEBaseAddress:x}");
-                Debug.Assert(pData->nPESize == dataLocal.nPESize, $"nPESize: cDAC: {pData->nPESize}, DAC: {dataLocal.nPESize}");
-            }
-        }
-#endif
         return hr;
     }
     public int GetModuleForAssembly(ulong vmAssembly, ulong* pModule, Interop.BOOL* pIsModuleLoaded)
@@ -514,21 +391,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong moduleLocal;
-            Interop.BOOL isModuleLoadedLocal;
-            int hrLocal = _legacy.GetModuleForAssembly(vmAssembly, &moduleLocal, &isModuleLoadedLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(*pModule == moduleLocal, $"cDAC: {*pModule:x}, DAC: {moduleLocal:x}");
-                if (pIsModuleLoaded != null)
-                    Debug.Assert(*pIsModuleLoaded == isModuleLoadedLocal, $"cDAC: {*pIsModuleLoaded}, DAC: {isModuleLoadedLocal}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -550,18 +412,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL isManagedLocal;
-            int hrLocal = _legacy.IsManagedCode(address, &isManagedLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(*pIsManaged == isManagedLocal, $"cDAC: {*pIsManaged}, DAC: {isManagedLocal}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -586,20 +436,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL allowJITOptsLocal;
-            Interop.BOOL enableEnCLocal;
-            int hrLocal = _legacy.GetCompilerFlags(vmAssembly, &allowJITOptsLocal, &enableEnCLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(*pfAllowJITOpts == allowJITOptsLocal, $"cDAC: {*pfAllowJITOpts}, DAC: {allowJITOptsLocal}");
-                Debug.Assert(*pfEnableEnC == enableEnCLocal, $"cDAC: {*pfEnableEnC}, DAC: {enableEnCLocal}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -640,22 +476,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            int hrLocal = _legacy.SetCompilerFlags(vmAssembly, fAllowJitOpts, fEnableEnC);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
 
     public int EnumerateAssembliesInAppDomain(ulong vmAppDomain, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData)
     {
         int hr = HResults.S_OK;
-#if DEBUG
-        List<ulong>? cdacAssemblies = _legacy is not null ? new() : null;
-#endif
         try
         {
             if (fpCallback == null)
@@ -675,39 +501,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 TargetPointer assembly = loader.GetAssembly(handle);
                 fpCallback(assembly.Value, pUserData);
-#if DEBUG
-                cdacAssemblies?.Add(assembly.Value);
-#endif
             }
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null && fpCallback != null)
-        {
-            List<ulong> dacAssemblies = new();
-            GCHandle dacHandle = GCHandle.Alloc(dacAssemblies);
-            try
-            {
-                int hrLocal = _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, &CollectEnumerationCallback, GCHandle.ToIntPtr(dacHandle));
-                Debug.ValidateHResult(hr, hrLocal);
-                if (hr == HResults.S_OK)
-                {
-                    Debug.Assert(
-                        cdacAssemblies!.SequenceEqual(dacAssemblies),
-                        $"Assembly enumeration mismatch - "
-                        + $"cDAC: [{string.Join(",", cdacAssemblies!.Select(a => $"0x{a:x}"))}], "
-                        + $"DAC: [{string.Join(",", dacAssemblies.Select(a => $"0x{a:x}"))}]");
-                }
-            }
-            finally
-            {
-                dacHandle.Free();
-            }
-        }
-#endif
         return hr;
     }
 
@@ -722,13 +521,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            int hrLocal = _legacy.RequestSyncAtEvent();
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
 
@@ -743,13 +535,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            int hrLocal = _legacy.SetSendExceptionsOutsideOfJMC(sendExceptionsOutsideOfJMC);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
 
@@ -773,13 +558,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            int hrLocal = _legacy.MarkDebuggerAttachPending();
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
 
         return hr;
     }
@@ -804,13 +582,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            int hrLocal = _legacy.MarkDebuggerAttached(fAttached);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
 
         return hr;
     }
@@ -882,9 +653,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     public int EnumerateThreads(delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData)
     {
         int hr = HResults.S_OK;
-#if DEBUG
-        List<ulong>? cdacThreads = _legacy is not null ? new() : null;
-#endif
         try
         {
             if (fpCallback == null)
@@ -899,9 +667,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 if ((threadData.State & (Contracts.ThreadState.Stopped | Contracts.ThreadState.Unstarted)) == 0)
                 {
                     fpCallback(currentThread.Value, pUserData);
-#if DEBUG
-                    cdacThreads?.Add(currentThread.Value);
-#endif
                 }
                 currentThread = threadData.NextThread;
             }
@@ -910,33 +675,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            List<ulong> dacThreads = new();
-            GCHandle dacHandle = GCHandle.Alloc(dacThreads);
-            int hrLocal = _legacy.EnumerateThreads(&CollectEnumerationCallback, GCHandle.ToIntPtr(dacHandle));
-            dacHandle.Free();
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(
-                    cdacThreads!.SequenceEqual(dacThreads),
-                    $"Thread enumeration mismatch - cDAC: [{string.Join(",", cdacThreads!.Select(t => $"0x{t:x}"))}], DAC: [{string.Join(",", dacThreads.Select(t => $"0x{t:x}"))}]");
-            }
-        }
-#endif
         return hr;
     }
 
-#if DEBUG
-    [UnmanagedCallersOnly]
-    private static void CollectEnumerationCallback(ulong value, nint pUserData)
-    {
-        GCHandle handle = GCHandle.FromIntPtr(pUserData);
-        ((List<ulong>)handle.Target!).Add(value);
-    }
-#endif
 
     public int IsThreadMarkedDead(ulong vmThread, Interop.BOOL* pResult)
     {
@@ -951,16 +692,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.IsThreadMarkedDead(vmThread, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -976,16 +707,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            void* retValLocal = null;
-            int hrLocal = _legacy.GetThreadHandle(vmThread, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {(nuint)(*pRetVal):x}, DAC: {(nuint)retValLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -1005,16 +726,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.GetThreadObject(vmThread, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -1036,19 +747,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            DacDbiThreadAllocInfo allocInfoLocal = default;
-            int hrLocal = _legacy.GetThreadAllocInfo(vmThread, &allocInfoLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(pThreadAllocInfo->allocBytesSOH == allocInfoLocal.allocBytesSOH, $"cDAC: {pThreadAllocInfo->allocBytesSOH}, DAC: {allocInfoLocal.allocBytesSOH}");
-                Debug.Assert(pThreadAllocInfo->allocBytesUOH == allocInfoLocal.allocBytesUOH, $"cDAC: {pThreadAllocInfo->allocBytesUOH}, DAC: {allocInfoLocal.allocBytesUOH}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -1076,13 +774,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            int hrLocal = _legacy.SetDebugState(vmThread, debugState);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
 
@@ -1099,16 +790,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.HasUnhandledException(vmThread, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -1140,16 +821,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            int retValLocal;
-            int hrLocal = _legacy.GetUserState(vmThread, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -1185,16 +856,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            CorDebugUserState retValLocal;
-            int hrLocal = _legacy.GetPartialUserState(vmThread, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -1202,16 +863,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         *pRetVal = 0;
         int hr = HResults.S_OK;
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint retValLocal;
-            int hrLocal = _legacy.GetConnectionID(vmThread, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -1219,16 +870,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         *pRetVal = 0;
         int hr = HResults.S_OK;
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.GetTaskID(vmThread, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -1248,16 +889,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint retValLocal;
-            int hrLocal = _legacy.TryGetVolatileOSThreadID(vmThread, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -1274,16 +905,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint retValLocal;
-            int hrLocal = _legacy.GetUniqueThreadID(vmThread, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -1307,16 +928,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.GetCurrentException(vmThread, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -1356,16 +967,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.GetObjectForCCW(ccwPtr, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -1382,16 +983,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.GetCurrentCustomDebuggerNotification(vmThread, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -1408,16 +999,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.GetCurrentAppDomain(&retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -1441,16 +1022,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.ResolveAssembly(vmScope, tkAssemblyRef, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -1520,16 +1091,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ValidateNativeCodeInfoAgainstLegacy(
-                vmMethodDesc, startAddress, fCodeAvailable,
-                pFixedArgCount, cdacVarInfos, cdacSeqPoints, hr,
-                varInfoRequested: fpVarInfoCallback != null,
-                seqPointsRequested: fpSeqPointCallback != null);
-        }
-#endif
         return hr;
     }
 
@@ -1564,16 +1125,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong pRetValLocal;
-            int hrLocal = _legacy.GetManagedStoppedContext(vmThread, &pRetValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == pRetValLocal, $"cDAC: {*pRetVal:x}, DAC: {pRetValLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -1584,40 +1135,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         handleData.Reset(contextBuf, isFirst);
     }
 
-#if DEBUG
-    private string DescribeContextDiff(ReadOnlySpan<byte> cdac, ReadOnlySpan<byte> legacy)
-    {
-        System.Text.StringBuilder sb = new();
-        sb.Append("CONTEXT byte mismatch (cdac vs legacy):");
-        int diffs = 0;
-        for (int i = 0; i < cdac.Length && diffs < 16; i++)
-        {
-            if (cdac[i] != legacy[i])
-            {
-                sb.Append($" @0x{i:X3} cdac=0x{cdac[i]:X2} dac=0x{legacy[i]:X2};");
-                diffs++;
-            }
-        }
-
-        try
-        {
-            IPlatformAgnosticContext cdacCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
-            IPlatformAgnosticContext dacCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
-            cdacCtx.FillFromBuffer(new Span<byte>(cdac.ToArray()));
-            dacCtx.FillFromBuffer(new Span<byte>(legacy.ToArray()));
-            sb.Append($" | flags cdac=0x{cdacCtx.RawContextFlags:X8} dac=0x{dacCtx.RawContextFlags:X8}");
-            sb.Append($" | IP   cdac=0x{cdacCtx.InstructionPointer.Value:X16} dac=0x{dacCtx.InstructionPointer.Value:X16}");
-            sb.Append($" | SP   cdac=0x{cdacCtx.StackPointer.Value:X16} dac=0x{dacCtx.StackPointer.Value:X16}");
-            sb.Append($" | FP   cdac=0x{cdacCtx.FramePointer.Value:X16} dac=0x{dacCtx.FramePointer.Value:X16}");
-        }
-        catch (System.Exception ex)
-        {
-            sb.Append($" | (decode failed: {ex.GetType().Name}: {ex.Message})");
-        }
-
-        return sb.ToString();
-    }
-#endif
 
     public int CreateStackWalk(ulong vmThread, byte* pInternalContextBuffer, nuint* ppSFIHandle)
     {
@@ -1645,39 +1162,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-        // Mirror the create onto the legacy DBI
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback())
-        {
-            uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(_target).Size;
-            nuint legacyHandle = 0;
-            byte* pLocal = (byte*)NativeMemory.AlignedAlloc(contextSize, 16);
-            try
-            {
-                new Span<byte>(pLocal, (int)contextSize).Clear();
-                int hrLocal = _legacy.CreateStackWalk(vmThread, pLocal, &legacyHandle);
-                Debug.ValidateHResult(hr, hrLocal);
-
-                if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
-                {
-#if DEBUG
-                    ReadOnlySpan<byte> cdacBytes = new(pInternalContextBuffer, (int)contextSize);
-                    ReadOnlySpan<byte> legacyBytes = new(pLocal, (int)contextSize);
-                    if (!cdacBytes.SequenceEqual(legacyBytes))
-                        Debug.Fail(DescribeContextDiff(cdacBytes, legacyBytes));
-#endif
-                    if (handleData is not null)
-                        handleData.LegacyHandle = legacyHandle;
-                }
-                else if (hrLocal == HResults.S_OK)
-                {
-                    _legacy.DeleteStackWalk(legacyHandle);
-                }
-            }
-            finally
-            {
-                NativeMemory.AlignedFree(pLocal);
-            }
-        }
         return hr;
     }
 
@@ -1687,24 +1171,17 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             return HResults.S_OK;
 
         int hr = HResults.S_OK;
-        nuint legacyHandle = 0;
         try
         {
             GCHandle gcHandle = GCHandle.FromIntPtr((nint)ppSFIHandle);
             if (gcHandle.Target is not StackWalkHandleData handleData)
                 throw new ArgumentException("Invalid stack walk handle", nameof(ppSFIHandle));
-            legacyHandle = handleData.LegacyHandle;
             handleData.Dispose();
             gcHandle.Free();
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
-        }
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0)
-        {
-            int hrLocal = _legacy.DeleteStackWalk(legacyHandle);
-            Debug.ValidateHResult(hr, hrLocal);
         }
         return hr;
     }
@@ -1717,14 +1194,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             return HResults.E_POINTER;
 
         int hr = HResults.S_OK;
-        nuint legacyHandle = 0;
         uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(_target).Size;
         try
         {
             GCHandle gcHandle = GCHandle.FromIntPtr((nint)pSFIHandle);
             if (gcHandle.Target is not StackWalkHandleData handleData)
                 throw new ArgumentException("Invalid stack walk handle", nameof(pSFIHandle));
-            legacyHandle = handleData.LegacyHandle;
 
             if (handleData.IsValid)
             {
@@ -1740,29 +1215,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null && legacyHandle != 0)
-        {
-            byte* pLocal = (byte*)NativeMemory.AlignedAlloc(contextSize, 16);
-            try
-            {
-                new Span<byte>(pLocal, (int)contextSize).Clear();
-                int hrLocal = _legacy.GetStackWalkCurrentContext(legacyHandle, pLocal);
-                Debug.ValidateHResult(hr, hrLocal);
-                if (hr == HResults.S_OK)
-                {
-                    ReadOnlySpan<byte> cdacBytes = new(pContext, (int)contextSize);
-                    ReadOnlySpan<byte> legacyBytes = new(pLocal, (int)contextSize);
-                    if (!cdacBytes.SequenceEqual(legacyBytes))
-                        Debug.Fail(DescribeContextDiff(cdacBytes, legacyBytes));
-                }
-            }
-            finally
-            {
-                NativeMemory.AlignedFree(pLocal);
-            }
-        }
-#endif
         return hr;
     }
 
@@ -1774,13 +1226,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             return HResults.E_POINTER;
 
         int hr = HResults.S_OK;
-        nuint legacyHandle = 0;
         try
         {
             GCHandle gcHandle = GCHandle.FromIntPtr((nint)pSFIHandle);
             if (gcHandle.Target is not StackWalkHandleData handleData)
                 throw new ArgumentException("Invalid stack walk handle", nameof(pSFIHandle));
-            legacyHandle = handleData.LegacyHandle;
 
             SeedHandleFromNativeContext(handleData, pContext, isFirst: flag == (int)CorDebugSetContextFlags.SET_CONTEXT_FLAG_ACTIVE_FRAME);
         }
@@ -1789,11 +1239,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
         // Mirror to legacy DBI in all builds so the legacy walker tracks the cDAC walker
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0)
-        {
-            int hrLocal = _legacy.SetStackWalkCurrentContext(vmThread, legacyHandle, flag, pContext);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
         return hr;
     }
 
@@ -1807,13 +1252,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         *pResult = Interop.BOOL.FALSE;
 
         int hr = HResults.S_OK;
-        nuint legacyHandle = 0;
         try
         {
             GCHandle gcHandle = GCHandle.FromIntPtr((nint)pSFIHandle);
             if (gcHandle.Target is not StackWalkHandleData handleData)
                 throw new ArgumentException("Invalid stack walk handle", nameof(pSFIHandle));
-            legacyHandle = handleData.LegacyHandle;
 
             // If the walker is already invalid, treat as end-of-stack.
             if (!handleData.IsValid)
@@ -1834,18 +1277,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
 
         // Mirror to legacy DBI in all builds so the legacy walker tracks the cDAC walker
-        if (_legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0)
-        {
-            Interop.BOOL localResult;
-            int hrLocal = _legacy.UnwindStackWalkFrame(legacyHandle, &localResult);
-            Debug.ValidateHResult(hr, hrLocal);
-#if DEBUG
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(*pResult == localResult, $"cDAC: {*pResult}, DAC: {localResult}");
-            }
-#endif
-        }
         return hr;
     }
 
@@ -1871,13 +1302,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            int hrLocal = _legacy.CheckContext(vmThread, pContext);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
 
@@ -1887,19 +1311,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             return HResults.E_INVALIDARG;
 
         int hr = HResults.S_OK;
-        nuint legacyHandle = 0;
         FrameType ftResult = FrameType.Invalid;
-#if DEBUG
-        bool haveFrameInfo = false;
-        bool isInterrupted = false;
-#endif
         try
         {
             *pRetVal = FrameType.Invalid;
             GCHandle gcHandle = GCHandle.FromIntPtr((nint)pSFIHandle);
             if (gcHandle.Target is not StackWalkHandleData handleData)
                 throw new ArgumentException("Invalid stack walk handle", nameof(pSFIHandle));
-            legacyHandle = handleData.LegacyHandle;
 
             if (!handleData.IsValid)
             {
@@ -1935,10 +1353,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
                 if (initFrameData && pFrameData != 0)
                 {
-#if DEBUG
-                    haveFrameInfo = true;
-                    isInterrupted = handle.IsInterrupted;
-#endif
                     InitFrameData(handle, ftResult, pFrameData);
                 }
             }
@@ -1949,68 +1363,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null && legacyHandle != 0)
-        {
-            uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(_target).Size;
-            byte* pLegacyCtx = (byte*)NativeMemory.AlignedAlloc(contextSize, 16);
-            try
-            {
-                new Span<byte>(pLegacyCtx, (int)contextSize).Clear();
-                Debugger_STRData legacyData = default;
-                legacyData.ctx = (nuint)pLegacyCtx;
-                FrameType legacyRetVal = FrameType.Invalid;
-                int hrLocal = _legacy.GetStackWalkCurrentFrameInfo(legacyHandle, (nint)(&legacyData), &legacyRetVal);
-                Debug.ValidateHResult(hr, hrLocal);
-                if (hr == HResults.S_OK)
-                {
-                    Debug.Assert(ftResult == legacyRetVal, $"FrameType mismatch - cDAC: {ftResult}, DAC: {legacyRetVal}");
-                    if (haveFrameInfo && pFrameData != 0)
-                    {
-                        Debugger_STRData* pcdac = (Debugger_STRData*)pFrameData;
-                        Debug.Assert(pcdac->fp == legacyData.fp, $"fp mismatch - cDAC: 0x{pcdac->fp:x}, DAC: 0x{legacyData.fp:x}");
-                        Debug.Assert(pcdac->vmCurrentAppDomainToken == legacyData.vmCurrentAppDomainToken, $"appDomain mismatch - cDAC: 0x{pcdac->vmCurrentAppDomainToken:x}, DAC: 0x{legacyData.vmCurrentAppDomainToken:x}");
-                        Debug.Assert(pcdac->eType == legacyData.eType, $"eType mismatch - cDAC: {pcdac->eType}, DAC: {legacyData.eType}");
-
-                        if (pcdac->ctx != 0)
-                        {
-                            ReadOnlySpan<byte> cctx = new((byte*)pcdac->ctx, (int)contextSize);
-                            ReadOnlySpan<byte> lctx = new(pLegacyCtx, (int)contextSize);
-                            if (!cctx.SequenceEqual(lctx))
-                                Debug.Fail(DescribeContextDiff(cctx, lctx));
-                        }
-
-                        if (ftResult == FrameType.ManagedStackFrame)
-                        {
-                            DebuggerIPCE_STRData_MethodFrame cv = pcdac->v;
-                            DebuggerIPCE_STRData_MethodFrame lv = legacyData.v;
-                            Debug.Assert(cv.mapping == lv.mapping, $"mapping mismatch - cDAC: {cv.mapping}, DAC: {lv.mapping}");
-                            Debug.Assert(cv.fVarArgs == lv.fVarArgs, $"fVarArgs mismatch - cDAC: {cv.fVarArgs}, DAC: {lv.fVarArgs}");
-                            Debug.Assert(cv.fNoMetadata == lv.fNoMetadata, $"fNoMetadata mismatch - cDAC: {cv.fNoMetadata}, DAC: {lv.fNoMetadata}");
-                            Debug.Assert(cv.taAmbientESP == lv.taAmbientESP, $"taAmbientESP mismatch - cDAC: 0x{cv.taAmbientESP:x}, DAC: 0x{lv.taAmbientESP:x}");
-                            Debug.Assert(cv.exactGenericArgsToken == lv.exactGenericArgsToken, $"exactGenericArgsToken mismatch - cDAC: 0x{cv.exactGenericArgsToken:x}, DAC: 0x{lv.exactGenericArgsToken:x}");
-                            Debug.Assert(cv.dwExactGenericArgsTokenIndex == lv.dwExactGenericArgsTokenIndex, $"dwExactGenericArgsTokenIndex mismatch - cDAC: 0x{cv.dwExactGenericArgsTokenIndex:x}, DAC: 0x{lv.dwExactGenericArgsTokenIndex:x}");
-                            Debug.Assert(cv.funcData.funcMetadataToken == lv.funcData.funcMetadataToken, $"funcMetadataToken mismatch - cDAC: 0x{cv.funcData.funcMetadataToken:x}, DAC: 0x{lv.funcData.funcMetadataToken:x}");
-                            Debug.Assert(cv.funcData.vmAssembly == lv.funcData.vmAssembly, $"vmAssembly mismatch - cDAC: 0x{cv.funcData.vmAssembly:x}, DAC: 0x{lv.funcData.vmAssembly:x}");
-                            Debug.Assert(cv.jitFuncData.nativeStartAddressPtr == lv.jitFuncData.nativeStartAddressPtr, $"nativeStartAddressPtr mismatch - cDAC: 0x{cv.jitFuncData.nativeStartAddressPtr:x}, DAC: 0x{lv.jitFuncData.nativeStartAddressPtr:x}");
-                            Debug.Assert(cv.jitFuncData.nativeOffset == lv.jitFuncData.nativeOffset, $"nativeOffset mismatch - cDAC: 0x{cv.jitFuncData.nativeOffset:x}, DAC: 0x{lv.jitFuncData.nativeOffset:x}");
-                            Debug.Assert(cv.jitFuncData.vmNativeCodeMethodDescToken == lv.jitFuncData.vmNativeCodeMethodDescToken, $"vmNativeCodeMethodDescToken mismatch - cDAC: 0x{cv.jitFuncData.vmNativeCodeMethodDescToken:x}, DAC: 0x{lv.jitFuncData.vmNativeCodeMethodDescToken:x}");
-                            Debug.Assert(cv.jitFuncData.fIsFilterFrame == lv.jitFuncData.fIsFilterFrame, $"fIsFilterFrame mismatch - cDAC: {cv.jitFuncData.fIsFilterFrame}, DAC: {lv.jitFuncData.fIsFilterFrame}");
-                            Debug.Assert(cv.jitFuncData.isInstantiatedGeneric == lv.jitFuncData.isInstantiatedGeneric, $"isInstantiatedGeneric mismatch - cDAC: {cv.jitFuncData.isInstantiatedGeneric}, DAC: {lv.jitFuncData.isInstantiatedGeneric}");
-                            Debug.Assert(cv.jitFuncData.fpParentOrSelf == lv.jitFuncData.fpParentOrSelf, $"fpParentOrSelf mismatch - cDAC: 0x{cv.jitFuncData.fpParentOrSelf:x}, DAC: 0x{lv.jitFuncData.fpParentOrSelf:x}");
-                            Debug.Assert(cv.jitFuncData.parentNativeOffset == lv.jitFuncData.parentNativeOffset, $"parentNativeOffset mismatch - cDAC: 0x{cv.jitFuncData.parentNativeOffset:x}, DAC: 0x{lv.jitFuncData.parentNativeOffset:x}");
-                            if (isInterrupted)
-                                Debug.Assert(cv.jitFuncData.justAfterILThrow == lv.jitFuncData.justAfterILThrow, $"justAfterILThrow mismatch - cDAC: {cv.jitFuncData.justAfterILThrow}, DAC: {lv.jitFuncData.justAfterILThrow}");
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                NativeMemory.AlignedFree(pLegacyCtx);
-            }
-        }
-#endif
         return hr;
     }
 
@@ -2190,25 +1542,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint dacCount;
-            int hrLocal = _legacy.GetCountOfInternalFrames(vmThread, &dacCount);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == dacCount, $"Internal frame count mismatch - cDAC: {*pRetVal}, DAC: {dacCount}");
-        }
-#endif
         return hr;
     }
 
     public int EnumerateInternalFrames(ulong vmThread, delegate* unmanaged<Debugger_STRData*, void*, void> fpCallback, nint pUserData)
     {
         int hr = HResults.S_OK;
-#if DEBUG
-        List<Debugger_STRData>? cdacFrames = _legacy is not null ? new() : null;
-#endif
         try
         {
             TargetPointer threadPtr = new TargetPointer(vmThread);
@@ -2246,9 +1585,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 data.stubFrame.vmAssembly = vmAssembly.Value;
                 data.stubFrame.vmMethodDesc = vmMethodDesc.Value;
                 data.stubFrame.frameType = (int)ToCorDebugInternalFrameType(frame.InternalFrameType);
-#if DEBUG
-                cdacFrames?.Add(data);
-#endif
                 fpCallback(&data, (void*)pUserData);
             }
         }
@@ -2256,44 +1592,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            List<Debugger_STRData> dacFrames = new();
-            GCHandle dacHandle = GCHandle.Alloc(dacFrames);
-            int hrLocal = _legacy.EnumerateInternalFrames(vmThread, (delegate* unmanaged<Debugger_STRData*, void*, void>)&CollectStubFrameCallback, GCHandle.ToIntPtr(dacHandle));
-            dacHandle.Free();
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(cdacFrames!.Count == dacFrames.Count, $"Internal frame count mismatch - cDAC: {cdacFrames!.Count}, DAC: {dacFrames.Count}");
-                int n = Math.Min(cdacFrames!.Count, dacFrames.Count);
-                for (int i = 0; i < n; i++)
-                {
-                    Debugger_STRData c = cdacFrames![i];
-                    Debugger_STRData d = dacFrames[i];
-                    Debug.Assert(c.fp == d.fp, $"Frame[{i}] fp mismatch - cDAC: 0x{c.fp:x}, DAC: 0x{d.fp:x}");
-                    Debug.Assert(c.vmCurrentAppDomainToken == d.vmCurrentAppDomainToken, $"Frame[{i}] vmCurrentAppDomainToken mismatch - cDAC: 0x{c.vmCurrentAppDomainToken:x}, DAC: 0x{d.vmCurrentAppDomainToken:x}");
-                    Debug.Assert(c.eType == d.eType, $"Frame[{i}] eType mismatch - cDAC: {c.eType}, DAC: {d.eType}");
-                    Debug.Assert(c.stubFrame.funcMetadataToken == d.stubFrame.funcMetadataToken, $"Frame[{i}] funcMetadataToken mismatch - cDAC: 0x{c.stubFrame.funcMetadataToken:x}, DAC: 0x{d.stubFrame.funcMetadataToken:x}");
-                    Debug.Assert(c.stubFrame.vmAssembly == d.stubFrame.vmAssembly, $"Frame[{i}] vmAssembly mismatch - cDAC: 0x{c.stubFrame.vmAssembly:x}, DAC: 0x{d.stubFrame.vmAssembly:x}");
-                    Debug.Assert(c.stubFrame.vmMethodDesc == d.stubFrame.vmMethodDesc, $"Frame[{i}] vmMethodDesc mismatch - cDAC: 0x{c.stubFrame.vmMethodDesc:x}, DAC: 0x{d.stubFrame.vmMethodDesc:x}");
-                    Debug.Assert(c.stubFrame.frameType == d.stubFrame.frameType, $"Frame[{i}] frameType mismatch - cDAC: {c.stubFrame.frameType}, DAC: {d.stubFrame.frameType}");
-                }
-            }
-        }
-#endif
         return hr;
     }
 
-#if DEBUG
-    [UnmanagedCallersOnly]
-    private static void CollectStubFrameCallback(Debugger_STRData* data, void* pUserData)
-    {
-        GCHandle handle = GCHandle.FromIntPtr((nint)pUserData);
-        ((List<Debugger_STRData>)handle.Target!).Add(*data);
-    }
-#endif
 
     private void ResolveStubFrameAssemblyAndToken(TargetPointer methodDescPtr, out TargetPointer vmAssembly, out uint funcMetadataToken)
     {
@@ -2363,16 +1664,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint retValLocal;
-            int hrLocal = _legacy.GetStackParameterSize(controlPC, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -2413,16 +1704,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.IsLeafFrame(vmThread, pContext, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -2441,28 +1722,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(_target).Size;
-            byte[] localContextBuf = new byte[contextSize];
-            fixed (byte* pLocal = localContextBuf)
-            {
-                int hrLocal = _legacy.GetContext(vmThread, pLocal);
-                Debug.ValidateHResult(hr, hrLocal);
-
-                if (hr == HResults.S_OK)
-                {
-                    IPlatformAgnosticContext contextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
-                    IPlatformAgnosticContext localContextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
-                    contextStruct.FillFromBuffer(new Span<byte>(pContextBuffer, (int)contextSize));
-                    localContextStruct.FillFromBuffer(localContextBuf);
-
-                    Debug.Assert(contextStruct.Equals(localContextStruct));
-                }
-            }
-        }
-#endif
         return hr;
     }
 
@@ -2487,16 +1746,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            int resultLocal;
-            int hrLocal = _legacy.IsDiagnosticsHiddenOrLCGMethod(vmMethodDesc, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == resultLocal, $"cDAC: {*pRetVal}, DAC: {resultLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -2518,21 +1767,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong argBaseLocal;
-            DacDbiTargetBuffer retValLocal = default;
-            int hrLocal = _legacy.GetVarArgSig(VASigCookieAddr, &argBaseLocal, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(*pArgBase == argBaseLocal, $"cDAC argBase: 0x{*pArgBase:X}, DAC argBase: 0x{argBaseLocal:X}");
-                Debug.Assert(pRetVal->pAddress == retValLocal.pAddress, $"cDAC sigAddr: 0x{pRetVal->pAddress:X}, DAC sigAddr: 0x{retValLocal.pAddress:X}");
-                Debug.Assert(pRetVal->cbSize == retValLocal.cbSize, $"cDAC sigLen: {pRetVal->cbSize}, DAC sigLen: {retValLocal.cbSize}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -2559,16 +1793,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.RequiresAlign8(thExact, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -2611,16 +1835,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.ResolveExactGenericArgsToken(dwExactGenericArgsTokenIndex, rawToken, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -2674,29 +1888,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            DacDbiTargetBuffer bufferLocal = default;
-            uint sigLocal;
-            int hrLocal = _legacy.GetILCodeAndSig(vmAssembly, functionToken, &bufferLocal, &sigLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(pTargetBuffer->pAddress == bufferLocal.pAddress, $"cDAC ILAddr: 0x{pTargetBuffer->pAddress:X}, DAC ILAddr: 0x{bufferLocal.pAddress:X}");
-                Debug.Assert(pTargetBuffer->cbSize == bufferLocal.cbSize, $"cDAC ILSize: {pTargetBuffer->cbSize}, DAC ILSize: {bufferLocal.cbSize}");
-                Debug.Assert(*pLocalSigToken == sigLocal, $"cDAC LocalSig: 0x{*pLocalSigToken:X}, DAC LocalSig: 0x{sigLocal:X}");
-            }
-        }
-#endif
         return hr;
     }
 
     public int GetNativeCodeInfo(ulong vmAssembly, uint functionToken, nint pJitManagerList)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeInfo(vmAssembly, functionToken, pJitManagerList) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     public int GetNativeCodeInfoForAddr(ulong codeAddress, nint pCodeInfo, ulong* pVmModule, uint* pFunctionToken)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetNativeCodeInfoForAddr(codeAddress, pCodeInfo, pVmModule, pFunctionToken) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     public int IsValueType(ulong vmTypeHandle, Interop.BOOL* pResult)
     {
@@ -2712,16 +1911,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.IsValueType(vmTypeHandle, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -2739,16 +1928,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.HasTypeParams(vmTypeHandle, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -2759,10 +1938,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
         nuint cdacObjectSize = 0;
         List<FieldData>? cdacFields = null;
-#if DEBUG
-        if (_legacy is not null)
-            cdacFields = new();
-#endif
         int hr = HResults.S_OK;
         try
         {
@@ -2791,17 +1966,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (hr == HResults.S_OK && pObjectSize != null)
             *pObjectSize = cdacObjectSize;
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ValidateEnumerateFieldsAgainstLegacy(
-                nameof(IDacDbiInterface.EnumerateClassFields),
-                cdacObjectSize,
-                cdacFields,
-                hr,
-                (pSize, pUser) => _legacy!.EnumerateClassFields(thExact, pSize, (delegate* unmanaged<FieldData*, void*, void>)&CollectFieldDataCallback, pUser));
-        }
-#endif
         return hr;
     }
 
@@ -2812,10 +1976,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
         nuint cdacObjectSize = 0;
         List<FieldData>? cdacFields = null;
-#if DEBUG
-        if (_legacy is not null)
-            cdacFields = new();
-#endif
         int hr = HResults.S_OK;
         try
         {
@@ -2837,17 +1997,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (hr == HResults.S_OK && pObjectSize != null)
             *pObjectSize = cdacObjectSize;
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ValidateEnumerateFieldsAgainstLegacy(
-                nameof(IDacDbiInterface.EnumerateInstantiationFields),
-                cdacObjectSize,
-                cdacFields,
-                hr,
-                (pSize, pUser) => _legacy!.EnumerateInstantiationFields(vmAssembly, vmThExact, vmThApprox, pSize, (delegate* unmanaged<FieldData*, void*, void>)&CollectFieldDataCallback, pUser));
-        }
-#endif
         return hr;
     }
 
@@ -2962,9 +2111,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             }
         }
 
-#if DEBUG
-        cdacFields?.Add(fd);
-#endif
         fpCallback(&fd, (void*)pUserData);
     }
 
@@ -2975,52 +2121,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             || type == CorElementType.U;
     }
 
-#if DEBUG
-    [UnmanagedCallersOnly]
-    private static void CollectFieldDataCallback(FieldData* data, void* pUserData)
-    {
-        GCHandle handle = GCHandle.FromIntPtr((nint)pUserData);
-        ((List<FieldData>)handle.Target!).Add(*data);
-    }
-
-    private delegate int LegacyEnumerateFieldsFn(nuint* pObjectSize, nint pUserData);
-
-    private static void ValidateEnumerateFieldsAgainstLegacy(string label, nuint cdacObjectSize, List<FieldData>? cdacFields, int hr, LegacyEnumerateFieldsFn legacyEnumerate)
-    {
-        List<FieldData> dacFields = new();
-        GCHandle dacHandle = GCHandle.Alloc(dacFields);
-        nuint dacObjectSize = 0;
-        int hrLocal = legacyEnumerate(&dacObjectSize, GCHandle.ToIntPtr(dacHandle));
-        dacHandle.Free();
-        Debug.ValidateHResult(hr, hrLocal);
-        if (hr == HResults.S_OK)
-        {
-            Debug.Assert(cdacObjectSize == dacObjectSize, $"{label} object size mismatch - cDAC: {cdacObjectSize}, DAC: {dacObjectSize}");
-            AssertFieldListsEqual(cdacFields, dacFields, label);
-        }
-    }
-
-    private static void AssertFieldListsEqual(List<FieldData>? cdacFields, List<FieldData> dacFields, string label)
-    {
-        Debug.Assert(cdacFields!.Count == dacFields.Count, $"{label} field count mismatch - cDAC: {cdacFields!.Count}, DAC: {dacFields.Count}");
-        int n = Math.Min(cdacFields!.Count, dacFields.Count);
-        for (int i = 0; i < n; i++)
-        {
-            FieldData c = cdacFields![i];
-            FieldData d = dacFields[i];
-            Debug.Assert(c.m_fldMetadataToken == d.m_fldMetadataToken, $"{label} field[{i}] m_fldMetadataToken mismatch - cDAC: 0x{c.m_fldMetadataToken:x}, DAC: 0x{d.m_fldMetadataToken:x}");
-            Debug.Assert(c.m_fFldStorageAvailable == d.m_fFldStorageAvailable, $"{label} field[{i}] m_fFldStorageAvailable mismatch - cDAC: {c.m_fFldStorageAvailable}, DAC: {d.m_fFldStorageAvailable}");
-            Debug.Assert(c.m_fFldIsStatic == d.m_fFldIsStatic, $"{label} field[{i}] m_fFldIsStatic mismatch - cDAC: {c.m_fFldIsStatic}, DAC: {d.m_fFldIsStatic}");
-            Debug.Assert(c.m_fFldIsRVA == d.m_fFldIsRVA, $"{label} field[{i}] m_fFldIsRVA mismatch - cDAC: {c.m_fFldIsRVA}, DAC: {d.m_fFldIsRVA}");
-            Debug.Assert(c.m_fFldIsTLS == d.m_fFldIsTLS, $"{label} field[{i}] m_fFldIsTLS mismatch - cDAC: {c.m_fFldIsTLS}, DAC: {d.m_fFldIsTLS}");
-            Debug.Assert(c.m_fFldIsPrimitive == d.m_fFldIsPrimitive, $"{label} field[{i}] m_fFldIsPrimitive mismatch - cDAC: {c.m_fFldIsPrimitive}, DAC: {d.m_fFldIsPrimitive}");
-            Debug.Assert(c.m_fFldIsCollectibleStatic == d.m_fFldIsCollectibleStatic, $"{label} field[{i}] m_fFldIsCollectibleStatic mismatch - cDAC: {c.m_fFldIsCollectibleStatic}, DAC: {d.m_fFldIsCollectibleStatic}");
-            Debug.Assert(c.m_fldInstanceOffset == d.m_fldInstanceOffset, $"{label} field[{i}] m_fldInstanceOffset mismatch - cDAC: 0x{c.m_fldInstanceOffset:x}, DAC: 0x{d.m_fldInstanceOffset:x}");
-            Debug.Assert(c.m_pFldStaticAddress == d.m_pFldStaticAddress, $"{label} field[{i}] m_pFldStaticAddress mismatch - cDAC: 0x{c.m_pFldStaticAddress:x}, DAC: 0x{d.m_pFldStaticAddress:x}");
-            Debug.Assert(c.m_vmFieldDesc == d.m_vmFieldDesc, $"{label} field[{i}] m_vmFieldDesc mismatch - cDAC: 0x{c.m_vmFieldDesc:x}, DAC: 0x{d.m_vmFieldDesc:x}");
-        }
-    }
-#endif
 
     public int TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, ulong vmTypeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
@@ -3035,18 +2135,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            DebuggerIPCE_ExpandedTypeData dataLocal;
-            int hrLocal = _legacy.TypeHandleToExpandedTypeInfo(boxed, vmTypeHandle, &dataLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                ValidateExpandedTypeData(pTypeInfo, &dataLocal);
-            }
-        }
-#endif
         return hr;
     }
 
@@ -3064,68 +2152,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            DebuggerIPCE_ExpandedTypeData dataLocal;
-            int hrLocal = _legacy.GetObjectExpandedTypeInfo(boxed, addr, &dataLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                ValidateExpandedTypeData(pTypeInfo, &dataLocal);
-            }
-        }
-#endif
         return hr;
     }
 
-#if DEBUG
-    private static void ValidateExpandedTypeData(DebuggerIPCE_ExpandedTypeData* cdac, DebuggerIPCE_ExpandedTypeData* dac)
-    {
-        Debug.Assert(cdac->elementType == dac->elementType,
-            $"cDAC elementType: {cdac->elementType}, DAC: {dac->elementType}");
-        switch ((CorElementType)ReadLittleEndian(cdac->elementType))
-        {
-            case CorElementType.Class:
-            case CorElementType.ValueType:
-                Debug.Assert(cdac->ClassTypeData_metadataToken == dac->ClassTypeData_metadataToken,
-                    $"cDAC ClassTypeData.metadataToken: {cdac->ClassTypeData_metadataToken:x}, DAC: {dac->ClassTypeData_metadataToken:x}");
-                Debug.Assert(cdac->ClassTypeData_vmAssembly == dac->ClassTypeData_vmAssembly,
-                    $"cDAC ClassTypeData.vmAssembly: {cdac->ClassTypeData_vmAssembly:x}, DAC: {dac->ClassTypeData_vmAssembly:x}");
-                Debug.Assert(cdac->ClassTypeData_typeHandle == dac->ClassTypeData_typeHandle,
-                    $"cDAC ClassTypeData.typeHandle: {cdac->ClassTypeData_typeHandle:x}, DAC: {dac->ClassTypeData_typeHandle:x}");
-                break;
-            case CorElementType.Array:
-            case CorElementType.SzArray:
-                Debug.Assert(cdac->ArrayTypeData_arrayRank == dac->ArrayTypeData_arrayRank,
-                    $"cDAC ArrayTypeData.arrayRank: {cdac->ArrayTypeData_arrayRank}, DAC: {dac->ArrayTypeData_arrayRank}");
-                Debug.Assert(cdac->ArrayTypeData_arrayTypeArg.elementType == dac->ArrayTypeData_arrayTypeArg.elementType,
-                    $"cDAC ArrayTypeData.arrayTypeArg.elementType: {cdac->ArrayTypeData_arrayTypeArg.elementType}, DAC: {dac->ArrayTypeData_arrayTypeArg.elementType}");
-                Debug.Assert(cdac->ArrayTypeData_arrayTypeArg.metadataToken == dac->ArrayTypeData_arrayTypeArg.metadataToken,
-                    $"cDAC ArrayTypeData.arrayTypeArg.metadataToken: {cdac->ArrayTypeData_arrayTypeArg.metadataToken:x}, DAC: {dac->ArrayTypeData_arrayTypeArg.metadataToken:x}");
-                Debug.Assert(cdac->ArrayTypeData_arrayTypeArg.vmAssembly == dac->ArrayTypeData_arrayTypeArg.vmAssembly,
-                    $"cDAC ArrayTypeData.arrayTypeArg.vmAssembly: {cdac->ArrayTypeData_arrayTypeArg.vmAssembly:x}, DAC: {dac->ArrayTypeData_arrayTypeArg.vmAssembly:x}");
-                Debug.Assert(cdac->ArrayTypeData_arrayTypeArg.vmTypeHandle == dac->ArrayTypeData_arrayTypeArg.vmTypeHandle,
-                    $"cDAC ArrayTypeData.arrayTypeArg.vmTypeHandle: {cdac->ArrayTypeData_arrayTypeArg.vmTypeHandle:x}, DAC: {dac->ArrayTypeData_arrayTypeArg.vmTypeHandle:x}");
-                break;
-            case CorElementType.Ptr:
-            case CorElementType.Byref:
-                Debug.Assert(cdac->UnaryTypeData_unaryTypeArg.elementType == dac->UnaryTypeData_unaryTypeArg.elementType,
-                    $"cDAC UnaryTypeData.unaryTypeArg.elementType: {cdac->UnaryTypeData_unaryTypeArg.elementType}, DAC: {dac->UnaryTypeData_unaryTypeArg.elementType}");
-                Debug.Assert(cdac->UnaryTypeData_unaryTypeArg.metadataToken == dac->UnaryTypeData_unaryTypeArg.metadataToken,
-                    $"cDAC UnaryTypeData.unaryTypeArg.metadataToken: {cdac->UnaryTypeData_unaryTypeArg.metadataToken:x}, DAC: {dac->UnaryTypeData_unaryTypeArg.metadataToken:x}");
-                Debug.Assert(cdac->UnaryTypeData_unaryTypeArg.vmAssembly == dac->UnaryTypeData_unaryTypeArg.vmAssembly,
-                    $"cDAC UnaryTypeData.unaryTypeArg.vmAssembly: {cdac->UnaryTypeData_unaryTypeArg.vmAssembly:x}, DAC: {dac->UnaryTypeData_unaryTypeArg.vmAssembly:x}");
-                Debug.Assert(cdac->UnaryTypeData_unaryTypeArg.vmTypeHandle == dac->UnaryTypeData_unaryTypeArg.vmTypeHandle,
-                    $"cDAC UnaryTypeData.unaryTypeArg.vmTypeHandle: {cdac->UnaryTypeData_unaryTypeArg.vmTypeHandle:x}, DAC: {dac->UnaryTypeData_unaryTypeArg.vmTypeHandle:x}");
-                break;
-            case CorElementType.FnPtr:
-                Debug.Assert(cdac->NaryTypeData_typeHandle == dac->NaryTypeData_typeHandle,
-                    $"cDAC NaryTypeData.typeHandle: {cdac->NaryTypeData_typeHandle:x}, DAC: {dac->NaryTypeData_typeHandle:x}");
-                break;
-        }
-    }
-#endif
 
     public int GetTypeHandle(ulong vmModule, uint metadataToken, ulong* pRetVal)
     {
@@ -3155,16 +2184,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.GetTypeHandle(vmModule, metadataToken, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -3193,16 +2212,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong vmLocal;
-            int hrLocal = _legacy.GetApproxTypeHandle(pTypeData, &vmLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == vmLocal, $"cDAC: {*pRetVal:x}, DAC: {vmLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -3247,16 +2256,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong vmLocal;
-            int hrLocal = _legacy.GetExactTypeHandle(pTypeData, pArgInfo, &vmLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pVmTypeHandle == vmLocal, $"cDAC: {*pVmTypeHandle:x}, DAC: {vmLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -3356,9 +2355,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         delegate* unmanaged<DebuggerIPCE_ExpandedTypeData*, nint, void> fpCallback, nint pUserData)
     {
         int hr = HResults.S_OK;
-#if DEBUG
-        List<DebuggerIPCE_ExpandedTypeData> entries = new();
-#endif
         uint cClassParams = 0;
         try
         {
@@ -3449,17 +2445,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             for (int i = 0; i < classInst.Length; i++)
             {
                 FillExpandedTypeDataWithCanonFallback(rts, classInst[i], thCanon, &entry);
-#if DEBUG
-                entries.Add(entry);
-#endif
                 fpCallback(&entry, pUserData);
             }
             for (int i = 0; i < methodInst.Length; i++)
             {
                 FillExpandedTypeDataWithCanonFallback(rts, methodInst[i], thCanon, &entry);
-#if DEBUG
-                entries.Add(entry);
-#endif
                 fpCallback(&entry, pUserData);
             }
         }
@@ -3468,38 +2458,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            DebugExpandedTypeInfo.Clear();
-            uint cClassParamsLocal = 0;
-            delegate* unmanaged<DebuggerIPCE_ExpandedTypeData*, nint, void> debugCallbackPtr = &EnumExpandedTypeInfoCallback;
-            int hrLocal = _legacy.EnumerateMethodDescParams(vmMethodDesc, genericsToken, &cClassParamsLocal, debugCallbackPtr, 0);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(cClassParams == cClassParamsLocal,
-                    $"cDAC class params: {cClassParams}, DAC: {cClassParamsLocal}");
-
-                List<DebuggerIPCE_ExpandedTypeData> legacyEntries = DebugExpandedTypeInfo;
-                if (!entries.SequenceEqual(legacyEntries))
-                {
-                    Debug.Assert(entries.Count == legacyEntries.Count,
-                        $"cDAC param count: {entries.Count}, DAC: {legacyEntries.Count}");
-
-                    int compareCount = Math.Min(entries.Count, legacyEntries.Count);
-                    for (int i = 0; i < compareCount; i++)
-                    {
-                        Debug.Assert(entries[i].Equals(legacyEntries[i]),
-                            $"Type param {i} mismatch{Environment.NewLine}" +
-                            $"  cDAC: ({FormatExpandedTypeData(entries[i])}){Environment.NewLine}" +
-                            $"  DAC:  ({FormatExpandedTypeData(legacyEntries[i])})");
-                    }
-                }
-            }
-            DebugExpandedTypeInfo.Clear();
-        }
-#endif
         return hr;
     }
 
@@ -3523,16 +2481,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.GetThreadStaticAddress(vmField, vmRuntimeThread, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -3550,16 +2498,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.GetCollectibleTypeStaticAddress(vmField, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal}, DAC: {retValLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -3623,39 +2561,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            FieldData fieldDataLocal;
-            int hrLocal = _legacy.GetEnCHangingFieldInfo(pEnCFieldInfo, &fieldDataLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(pFieldData->m_fldMetadataToken == fieldDataLocal.m_fldMetadataToken,
-                    $"cDAC m_fldMetadataToken: {pFieldData->m_fldMetadataToken:X}, DAC: {fieldDataLocal.m_fldMetadataToken:X}");
-                Debug.Assert(pFieldData->m_fFldStorageAvailable == fieldDataLocal.m_fFldStorageAvailable,
-                    $"cDAC m_fFldStorageAvailable: {pFieldData->m_fFldStorageAvailable}, DAC: {fieldDataLocal.m_fFldStorageAvailable}");
-                Debug.Assert(pFieldData->m_fFldIsStatic == fieldDataLocal.m_fFldIsStatic,
-                    $"cDAC m_fFldIsStatic: {pFieldData->m_fFldIsStatic}, DAC: {fieldDataLocal.m_fFldIsStatic}");
-                Debug.Assert(pFieldData->m_fFldIsRVA == fieldDataLocal.m_fFldIsRVA,
-                    $"cDAC m_fFldIsRVA: {pFieldData->m_fFldIsRVA}, DAC: {fieldDataLocal.m_fFldIsRVA}");
-                Debug.Assert(pFieldData->m_fFldIsTLS == fieldDataLocal.m_fFldIsTLS,
-                    $"cDAC m_fFldIsTLS: {pFieldData->m_fFldIsTLS}, DAC: {fieldDataLocal.m_fFldIsTLS}");
-                Debug.Assert(pFieldData->m_fFldIsPrimitive == fieldDataLocal.m_fFldIsPrimitive,
-                    $"cDAC m_fFldIsPrimitive: {pFieldData->m_fFldIsPrimitive}, DAC: {fieldDataLocal.m_fFldIsPrimitive}");
-                Debug.Assert(pFieldData->m_fFldIsCollectibleStatic == fieldDataLocal.m_fFldIsCollectibleStatic,
-                    $"cDAC m_fFldIsCollectibleStatic: {pFieldData->m_fFldIsCollectibleStatic}, DAC: {fieldDataLocal.m_fFldIsCollectibleStatic}");
-                Debug.Assert(pFieldData->m_vmFieldDesc == fieldDataLocal.m_vmFieldDesc,
-                    $"cDAC m_vmFieldDesc: {pFieldData->m_vmFieldDesc:X}, DAC: {fieldDataLocal.m_vmFieldDesc:X}");
-                if (pFieldData->m_fFldIsStatic != 0)
-                    Debug.Assert(pFieldData->m_pFldStaticAddress == fieldDataLocal.m_pFldStaticAddress,
-                        $"cDAC static addr: {pFieldData->m_pFldStaticAddress:X}, DAC: {fieldDataLocal.m_pFldStaticAddress:X}");
-                else
-                    Debug.Assert(pFieldData->m_fldInstanceOffset == fieldDataLocal.m_fldInstanceOffset,
-                        $"cDAC instance offset: {pFieldData->m_fldInstanceOffset:X}, DAC: {fieldDataLocal.m_fldInstanceOffset:X}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -3694,9 +2599,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         delegate* unmanaged<DebuggerIPCE_ExpandedTypeData*, nint, void> fpCallback, nint pUserData)
     {
         int hr = HResults.S_OK;
-#if DEBUG
-        List<DebuggerIPCE_ExpandedTypeData> entries = new();
-#endif
         try
         {
             if (fpCallback == null)
@@ -3711,9 +2613,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 TypeHandleToExpandedTypeInfoImpl(rts, AreValueTypesBoxed.NoValueTypeBoxing, instantiation[i], &entry);
                 fpCallback(&entry, pUserData);
-#if DEBUG
-                entries.Add(entry);
-#endif
             }
         }
         catch (System.Exception ex)
@@ -3721,56 +2620,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            DebugExpandedTypeInfo.Clear();
-            delegate* unmanaged<DebuggerIPCE_ExpandedTypeData*, nint, void> debugCallbackPtr = &EnumExpandedTypeInfoCallback;
-            int hrLocal = _legacy.EnumerateTypeHandleParams(vmTypeHandle, debugCallbackPtr, 0);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                List<DebuggerIPCE_ExpandedTypeData> legacyEntries = DebugExpandedTypeInfo;
-                if (!entries.SequenceEqual(legacyEntries))
-                {
-                    Debug.Assert(entries.Count == legacyEntries.Count,
-                        $"cDAC param count: {entries.Count}, DAC: {legacyEntries.Count}");
-
-                    int compareCount = Math.Min(entries.Count, legacyEntries.Count);
-                    for (int i = 0; i < compareCount; i++)
-                    {
-                        Debug.Assert(entries[i].Equals(legacyEntries[i]),
-                            $"Type param {i} mismatch{Environment.NewLine}" +
-                            $"  cDAC: ({FormatExpandedTypeData(entries[i])}){Environment.NewLine}" +
-                            $"  DAC:  ({FormatExpandedTypeData(legacyEntries[i])})");
-                    }
-                }
-            }
-            DebugExpandedTypeInfo.Clear();
-        }
-#endif
         return hr;
     }
 
-#if DEBUG
-    [ThreadStatic]
-    private static List<DebuggerIPCE_ExpandedTypeData>? _debugExpandedTypeInfo;
-
-    private static List<DebuggerIPCE_ExpandedTypeData> DebugExpandedTypeInfo
-        => _debugExpandedTypeInfo ??= new();
-
-    [UnmanagedCallersOnly]
-    private static void EnumExpandedTypeInfoCallback(DebuggerIPCE_ExpandedTypeData* pTypeData, nint _)
-    {
-        DebugExpandedTypeInfo.Add(*pTypeData);
-    }
-
-    private static string FormatExpandedTypeData(DebuggerIPCE_ExpandedTypeData e) =>
-        $"elementType={e.elementType}, " +
-        $"token=0x{e.ClassTypeData_metadataToken:x}, " +
-        $"vmAssembly=0x{e.ClassTypeData_vmAssembly:x}, " +
-        $"vmTypeHandle=0x{e.ClassTypeData_typeHandle:x}";
-#endif
 
     public int GetSimpleType(int simpleType, uint* pMetadataToken, ulong* pVmModule)
     {
@@ -3795,20 +2647,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint metadataTokenLocal;
-            ulong vmModuleLocal;
-            int hrLocal = _legacy.GetSimpleType(simpleType, &metadataTokenLocal, &vmModuleLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(*pMetadataToken == metadataTokenLocal, $"cDAC: {*pMetadataToken}, DAC: {metadataTokenLocal}");
-                Debug.Assert(*pVmModule == vmModuleLocal, $"cDAC: {*pVmModule}, DAC: {vmModuleLocal}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -3839,39 +2677,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.IsExceptionObject(vmObject, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
         return hr;
     }
 
-#if DEBUG
-    [ThreadStatic]
-    private static List<(ulong VmAppDomain, ulong VmAssembly, ulong Ip, uint MethodDef, Interop.BOOL IsLastForeignExceptionFrame)>? _debugEnumerateStackFramesFromException;
-
-    private static List<(ulong VmAppDomain, ulong VmAssembly, ulong Ip, uint MethodDef, Interop.BOOL IsLastForeignExceptionFrame)> DebugEnumerateStackFramesFromException
-        => _debugEnumerateStackFramesFromException ??= new();
-
-    [UnmanagedCallersOnly]
-    private static void EnumerateStackFramesFromExceptionDebugCallback(ulong vmAppDomain, ulong vmAssembly, ulong ip, uint methodDef, Interop.BOOL isLastForeignExceptionFrame, nint _)
-    {
-        DebugEnumerateStackFramesFromException.Add((vmAppDomain, vmAssembly, ip, methodDef, isLastForeignExceptionFrame));
-    }
-#endif
 
     public int EnumerateStackFramesFromException(ulong vmObject, delegate* unmanaged<ulong, ulong, ulong, uint, Interop.BOOL, nint, void> fpCallback, nint pUserData)
     {
         int hr = HResults.S_OK;
-#if DEBUG
-        List<(ulong VmAppDomain, ulong VmAssembly, ulong Ip, uint MethodDef, Interop.BOOL IsLastForeignExceptionFrame)> frames = new();
-#endif
         try
         {
             if (fpCallback is null)
@@ -3884,9 +2696,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 ResolveStubFrameAssemblyAndToken(frame.MethodDesc, out TargetPointer vmAssembly, out uint methodDef);
                 Interop.BOOL isLastForeign = frame.IsLastForeignExceptionFrame ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-#if DEBUG
-                frames.Add((vmAppDomain, vmAssembly.Value, frame.Ip.Value, methodDef, isLastForeign));
-#endif
                 fpCallback(vmAppDomain, vmAssembly.Value, frame.Ip.Value, methodDef, isLastForeign, pUserData);
             }
         }
@@ -3895,26 +2704,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            DebugEnumerateStackFramesFromException.Clear();
-            delegate* unmanaged<ulong, ulong, ulong, uint, Interop.BOOL, nint, void> debugCallbackPtr = &EnumerateStackFramesFromExceptionDebugCallback;
-            int hrLocal = _legacy.EnumerateStackFramesFromException(vmObject, debugCallbackPtr, 0);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                List<(ulong VmAppDomain, ulong VmAssembly, ulong Ip, uint MethodDef, Interop.BOOL IsLastForeignExceptionFrame)> legacyFrames = DebugEnumerateStackFramesFromException;
-                static string FormatFrame((ulong VmAppDomain, ulong VmAssembly, ulong Ip, uint MethodDef, Interop.BOOL IsLastForeignExceptionFrame) f)
-                    => $"(AppDomain=0x{f.VmAppDomain:x}, Assembly=0x{f.VmAssembly:x}, Ip=0x{f.Ip:x}, MethodDef=0x{f.MethodDef:x}, IsLastForeignExceptionFrame={f.IsLastForeignExceptionFrame})";
-                Debug.Assert(frames.SequenceEqual(legacyFrames),
-                    $"Exception stack frame enumeration mismatch - "
-                    + $"cDAC: [{string.Join(",", frames.Select(FormatFrame))}], "
-                    + $"DAC: [{string.Join(",", legacyFrames.Select(FormatFrame))}]");
-            }
-            DebugEnumerateStackFramesFromException.Clear();
-        }
-#endif
         return hr;
     }
 
@@ -3932,32 +2721,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.IsRcw(vmObject, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
         return hr;
     }
 
-#if DEBUG
-    [ThreadStatic]
-    private static List<ulong>? _debugEnumerateRcwCachedInterfacePointers;
-
-    private static List<ulong> DebugEnumerateRcwCachedInterfacePointers
-        => _debugEnumerateRcwCachedInterfacePointers ??= new();
-
-    [UnmanagedCallersOnly]
-    private static void EnumerateRcwCachedInterfacePointersDebugCallback(ulong itfPtr, nint _)
-    {
-        DebugEnumerateRcwCachedInterfacePointers.Add(itfPtr);
-    }
-#endif
 
     public int EnumerateRcwCachedInterfacePointers(ulong vmObject, delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData)
     {
@@ -3988,23 +2754,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            DebugEnumerateRcwCachedInterfacePointers.Clear();
-            delegate* unmanaged<ulong, nint, void> debugCallbackPtr = &EnumerateRcwCachedInterfacePointersDebugCallback;
-            int hrLocal = _legacy.EnumerateRcwCachedInterfacePointers(vmObject, debugCallbackPtr, 0);
-            Debug.ValidateHResult(hr, hrLocal);
-
-            if (hr == HResults.S_OK)
-            {
-                List<ulong> legacyItfPtrs = DebugEnumerateRcwCachedInterfacePointers;
-                Debug.Assert(itfPtrs.SequenceEqual(legacyItfPtrs),
-                    $"cDAC: [{string.Join(",", itfPtrs.Select(p => $"0x{p:x}"))}], DAC: [{string.Join(",", legacyItfPtrs.Select(p => $"0x{p:x}"))}]");
-            }
-            DebugEnumerateRcwCachedInterfacePointers.Clear();
-        }
-#endif
         return hr;
     }
 
@@ -4026,25 +2775,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong objRefLocal = 0;
-            DebuggerIPCE_BasicTypeData typeLocal;
-            int hrLocal = _legacy.GetTypedByRefInfo(pTypedByRef, &objRefLocal, &typeLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            Debug.Assert(*pObjRef == objRefLocal, $"cDAC objRef: 0x{*pObjRef:x}, DAC: 0x{objRefLocal:x}");
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(pTypedByRefType->elementType == typeLocal.elementType,
-                    $"cDAC elementType: {pTypedByRefType->elementType}, DAC: {typeLocal.elementType}");
-                Debug.Assert(pTypedByRefType->metadataToken == typeLocal.metadataToken,
-                    $"cDAC metadataToken: 0x{pTypedByRefType->metadataToken:x}, DAC: 0x{typeLocal.metadataToken:x}");
-                Debug.Assert(pTypedByRefType->vmAssembly == typeLocal.vmAssembly,
-                    $"cDAC vmAssembly: 0x{pTypedByRefType->vmAssembly:x}, DAC: 0x{typeLocal.vmAssembly:x}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -4068,19 +2798,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint lengthLocal, offsetLocal;
-            int hrLocal = _legacy.GetStringData(objectAddress, &lengthLocal, &offsetLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(*pLength == lengthLocal, $"cDAC length: {*pLength}, DAC: {lengthLocal}");
-                Debug.Assert(*pOffsetToStringBase == offsetLocal, $"cDAC offsetToStringBase: {*pOffsetToStringBase}, DAC: {offsetLocal}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -4121,28 +2838,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL isValidLocal;
-            DacDbiArrayInfo arrayInfoLocal;
-            int hrLocal = _legacy.GetArrayData(objectAddress, &isValidLocal, &arrayInfoLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(*pIsValidArray == isValidLocal, $"cDAC isValidArray: {*pIsValidArray}, DAC: {isValidLocal}");
-                if (*pIsValidArray == Interop.BOOL.TRUE)
-                {
-                    Debug.Assert(pArrayInfo->rank == arrayInfoLocal.rank, $"cDAC rank: {pArrayInfo->rank}, DAC: {arrayInfoLocal.rank}");
-                    Debug.Assert(pArrayInfo->componentCount == arrayInfoLocal.componentCount, $"cDAC componentCount: {pArrayInfo->componentCount}, DAC: {arrayInfoLocal.componentCount}");
-                    Debug.Assert(pArrayInfo->offsetToArrayBase == arrayInfoLocal.offsetToArrayBase, $"cDAC offsetToArrayBase: {pArrayInfo->offsetToArrayBase}, DAC: {arrayInfoLocal.offsetToArrayBase}");
-                    Debug.Assert(pArrayInfo->offsetToUpperBounds == arrayInfoLocal.offsetToUpperBounds, $"cDAC offsetToUpperBounds: {pArrayInfo->offsetToUpperBounds}, DAC: {arrayInfoLocal.offsetToUpperBounds}");
-                    Debug.Assert(pArrayInfo->offsetToLowerBounds == arrayInfoLocal.offsetToLowerBounds, $"cDAC offsetToLowerBounds: {pArrayInfo->offsetToLowerBounds}, DAC: {arrayInfoLocal.offsetToLowerBounds}");
-                    Debug.Assert(pArrayInfo->elementSize == arrayInfoLocal.elementSize, $"cDAC elementSize: {pArrayInfo->elementSize}, DAC: {arrayInfoLocal.elementSize}");
-                }
-            }
-        }
-#endif
         return hr;
     }
 
@@ -4186,27 +2881,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL isValidLocal;
-            uint objSizeLocal, objOffsetLocal;
-            DebuggerIPCE_ExpandedTypeData typeDataLocal;
-            int hrLocal = _legacy.GetBasicObjectInfo(objectAddress, &isValidLocal, &objSizeLocal, &objOffsetLocal, &typeDataLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(*pIsValidRef == isValidLocal, $"cDAC isValidRef: {*pIsValidRef}, DAC: {isValidLocal}");
-                if (*pIsValidRef == Interop.BOOL.TRUE)
-                {
-                    Debug.Assert(*pObjSize == objSizeLocal, $"cDAC objSize: {*pObjSize}, DAC: {objSizeLocal}");
-                    Debug.Assert(*pObjOffsetToVars == objOffsetLocal, $"cDAC objOffsetToVars: {*pObjOffsetToVars}, DAC: {objOffsetLocal}");
-                    Debug.Assert(pObjTypeData->elementType == typeDataLocal.elementType,
-                        $"cDAC elementType: {pObjTypeData->elementType}, DAC: {typeDataLocal.elementType}");
-                }
-            }
-        }
-#endif
         return hr;
     }
 
@@ -4222,16 +2896,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.GetDebuggerControlBlockAddress(&retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -4247,16 +2911,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.GetObjectFromRefPtr(ptr, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -4265,16 +2919,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         // Native GetObject wraps the address directly in a VMPTR_Object without dereferencing.
         *pRetVal = ptr;
         int hr = HResults.S_OK;
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.GetObject(ptr, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -4282,16 +2926,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         *pRetVal = handleAddress;
         int hr = HResults.S_OK;
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.GetVmObjectHandle(handleAddress, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -4308,16 +2942,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.IsVmObjectHandleValid(vmHandle, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -4325,16 +2949,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         *pRetVal = vmHandle;
         int hr = HResults.S_OK;
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong retValLocal;
-            int hrLocal = _legacy.GetHandleAddressFromVmHandle(vmHandle, &retValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == retValLocal, $"cDAC: {*pRetVal:x}, DAC: {retValLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -4369,21 +2983,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            DacDbiMonitorLockInfo pRetValLocal;
-            int hrLocal = _legacy.GetThreadOwningMonitorLock(vmObject, &pRetValLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(pRetVal->lockOwner == pRetValLocal.lockOwner,
-                    $"lockOwner mismatch: cDAC={pRetVal->lockOwner}, DAC={pRetValLocal.lockOwner}");
-                Debug.Assert(pRetVal->acquisitionCount == pRetValLocal.acquisitionCount,
-                    $"acquisitionCount mismatch: cDAC={pRetVal->acquisitionCount}, DAC={pRetValLocal.acquisitionCount}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -4402,16 +3001,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            int resultLocal;
-            int hrLocal = _legacy.GetAttachStateFlags(&resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pRetVal == resultLocal);
-        }
-#endif
 
         return hr;
     }
@@ -4456,29 +3045,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint timeStampLocal;
-            uint imageSizeLocal;
-            Interop.BOOL resultLocal;
-            using var legacyHolder = new NativeStringHolder();
-            int hrLocal = _legacy.GetModuleMetaDataFileInfo(vmModule, &timeStampLocal, &imageSizeLocal, legacyHolder.Ptr, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(*pResult == resultLocal, $"GetModuleMetaDataFileInfo result mismatch - cDAC: {*pResult}, DAC: {resultLocal}");
-                if (*pResult == Interop.BOOL.TRUE)
-                {
-                    Debug.Assert(*dwTimeStamp == timeStampLocal, $"GetModuleMetaDataFileInfo timestamp mismatch - cDAC: {*dwTimeStamp}, DAC: {timeStampLocal}");
-                    Debug.Assert(*dwImageSize == imageSizeLocal, $"GetModuleMetaDataFileInfo image size mismatch - cDAC: {*dwImageSize}, DAC: {imageSizeLocal}");
-                    Debug.Assert(
-                        string.Equals(path, legacyHolder.Value, System.StringComparison.Ordinal),
-                        $"GetModuleMetaDataFileInfo path mismatch - cDAC: '{path}', DAC: '{legacyHolder.Value}'");
-                }
-            }
-        }
-#endif
         return hr;
     }
 
@@ -4499,17 +3065,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal = Interop.BOOL.FALSE;
-            Interop.BOOL* resultLocalPtr = pResult is null ? null : &resultLocal;
-            int hrLocal = _legacy.IsThreadSuspendedOrHijacked(vmThread, resultLocalPtr);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal);
-        }
-#endif
         return hr;
     }
 
@@ -4529,20 +3084,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            nuint legacyHandle = 0;
-            int hrLocal = _legacy.CreateHeapWalk(&legacyHandle);
-            // The cDAC walker uses a lazy C# iterator and doesn't pre-validate objects at construction time;
-            // the legacy walker eagerly validates the heap-start object and can refuse if it's corrupt.
-            Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowCdacSuccess);
-            if (hrLocal == HResults.S_OK && walk is not null)
-                walk.LegacyHandle = legacyHandle;
-            else if (hrLocal == HResults.S_OK)
-                _legacy.DeleteHeapWalk(legacyHandle);
-        }
-#endif
         return hr;
     }
 
@@ -4552,13 +3093,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             return HResults.S_OK;
 
         int hr = HResults.S_OK;
-        nuint legacyHandle = 0;
         try
         {
             GCHandle gcHandle = GCHandle.FromIntPtr((nint)handle);
             if (gcHandle.Target is not HeapWalk walk)
                 throw new ArgumentException("Invalid heap walk handle", nameof(handle));
-            legacyHandle = walk.LegacyHandle;
             ((IEnum<COR_HEAPOBJECT>)walk).Dispose();
             gcHandle.Free();
         }
@@ -4566,13 +3105,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null && legacyHandle != 0)
-        {
-            int hrLocal = _legacy.DeleteHeapWalk(legacyHandle);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
 
@@ -4626,49 +3158,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
 
         *fetched = i;
-#if DEBUG
-        if (_legacy is not null && walk.LegacyHandle != 0)
-        {
-            COR_HEAPOBJECT[] objectsLocal = new COR_HEAPOBJECT[count];
-            uint fetchedLocal = 0;
-            int hrLocal;
-            fixed (COR_HEAPOBJECT* objectsLocalPtr = objectsLocal)
-            {
-                hrLocal = _legacy.WalkHeap(walk.LegacyHandle, count, objectsLocalPtr, &fetchedLocal);
-            }
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= HResults.S_OK)
-            {
-                Debug.Assert(*fetched == fetchedLocal,
-                    $"cDAC WalkHeap fetched {*fetched}, legacy fetched {fetchedLocal}");
-                for (uint k = 0; k < fetchedLocal; k++)
-                {
-                    Debug.Assert(objects[k].address == objectsLocal[k].address,
-                        $"cDAC[{k}].address=0x{objects[k].address:x}, legacy=0x{objectsLocal[k].address:x}");
-                    Debug.Assert(objects[k].size == objectsLocal[k].size,
-                        $"cDAC[{k}].size=0x{objects[k].size:x}, legacy=0x{objectsLocal[k].size:x} (addr 0x{objects[k].address:x})");
-                    Debug.Assert(objects[k].type.token1 == objectsLocal[k].type.token1,
-                        $"cDAC[{k}].type.token1=0x{objects[k].type.token1:x}, legacy=0x{objectsLocal[k].type.token1:x} (addr 0x{objects[k].address:x})");
-                }
-            }
-        }
-#endif
         return hr;
     }
 
-#if DEBUG
-    [ThreadStatic]
-    private static List<(ulong Start, ulong End, int Generation, uint Heap)>? _debugEnumerateHeapSegments;
-
-    private static List<(ulong Start, ulong End, int Generation, uint Heap)> DebugEnumerateHeapSegments
-        => _debugEnumerateHeapSegments ??= new();
-
-    [UnmanagedCallersOnly]
-    private static void EnumerateHeapSegmentsDebugCallback(ulong start, ulong end, int generation, uint heap, nint _)
-    {
-        DebugEnumerateHeapSegments.Add((start, end, generation, heap));
-    }
-#endif
 
     public int EnumerateHeapSegments(delegate* unmanaged<ulong, ulong, int, uint, nint, void> fpCallback, nint pUserData)
     {
@@ -4723,33 +3215,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            DebugEnumerateHeapSegments.Clear();
-            delegate* unmanaged<ulong, ulong, int, uint, nint, void> debugCallbackPtr = &EnumerateHeapSegmentsDebugCallback;
-            int hrLocal = _legacy.EnumerateHeapSegments(debugCallbackPtr, 0);
-            Debug.ValidateHResult(hr, hrLocal);
-
-            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
-            {
-                List<(ulong Start, ulong End, int Generation, uint Heap)> legacySegments = DebugEnumerateHeapSegments;
-                if (!segments.SequenceEqual(legacySegments))
-                {
-                    Debug.Assert(segments.Count == legacySegments.Count,
-                        $"cDAC: {segments.Count} segments, DAC: {legacySegments.Count} segments");
-
-                    int compareCount = Math.Min(segments.Count, legacySegments.Count);
-                    for (int i = 0; i < compareCount; i++)
-                    {
-                        Debug.Assert(segments[i] == legacySegments[i],
-                            $"Segment {i} mismatch - cDAC: (0x{segments[i].Start:x}, 0x{segments[i].End:x}, gen={segments[i].Generation}, heap={segments[i].Heap}), DAC: (0x{legacySegments[i].Start:x}, 0x{legacySegments[i].End:x}, gen={legacySegments[i].Generation}, heap={legacySegments[i].Heap})");
-                    }
-                }
-            }
-            DebugEnumerateHeapSegments.Clear();
-        }
-#endif
         return hr;
     }
 
@@ -4804,18 +3269,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
         *pResult = isValid;
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.IsValidObject(obj, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(*pResult == resultLocal, $"cDAC: {*pResult}, DAC: {resultLocal}");
-            }
-        }
-#endif
 
         return hr;
     }
@@ -4837,18 +3290,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            nuint legacyHandle = 0;
-            int hrLocal = _legacy.CreateRefWalk(&legacyHandle, walkStacks, handleWalkMask);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hrLocal == HResults.S_OK && walk is not null)
-                walk.LegacyHandle = legacyHandle;
-            else if (hrLocal == HResults.S_OK)
-                _legacy.DeleteRefWalk(legacyHandle);
-        }
-#endif
         return hr;
     }
 
@@ -4858,13 +3299,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             return HResults.S_OK;
 
         int hr = HResults.S_OK;
-        nuint legacyHandle = 0;
         try
         {
             GCHandle gcHandle = GCHandle.FromIntPtr((nint)handle);
             if (gcHandle.Target is not RefWalk walk)
                 throw new ArgumentException("Handle does not reference a valid RefWalk instance.", nameof(handle));
-            legacyHandle = walk.LegacyHandle;
             ((IEnum<DacGcReference>)walk).Dispose();
             gcHandle.Free();
         }
@@ -4872,13 +3311,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null && legacyHandle != 0)
-        {
-            int hrLocal = _legacy.DeleteRefWalk(legacyHandle);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
 
@@ -4921,50 +3353,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
         *pFetched = i;
 
-#if DEBUG
-        if (_legacy is not null && walk.LegacyHandle != 0 && count > 0)
-        {
-            // Parity check covers the handle prefix only.
-            DacGcReference[] legacyRefs = new DacGcReference[(int)count];
-            uint legacyFetched = 0;
-            int hrLocal = _legacy.WalkRefs(walk.LegacyHandle, count, legacyRefs, &legacyFetched);
-            // The number of reported stack refs is not guaranteed to match between cDAC and legacy DAC.
-            // If this is the case, the cDAC may report S_FALSE while the legacy DAC reports S_OK, or vice versa.
-            // Allow divergent success codes, but still validate the rest of the results.
-            Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowDivergentSuccess);
-            uint cdacHandlePrefix = CountHandlePrefix(refs, i);
-            uint legacyHandlePrefix = CountHandlePrefix(legacyRefs, legacyFetched);
-            Debug.Assert(
-                cdacHandlePrefix == legacyHandlePrefix,
-                $"cDAC handle-prefix count {cdacHandlePrefix}, legacy {legacyHandlePrefix}");
-
-            uint compare = Math.Min(cdacHandlePrefix, legacyHandlePrefix);
-            for (uint j = 0; j < compare; j++)
-            {
-                Debug.Assert(refs[j].dwType == legacyRefs[j].dwType,
-                    $"refs[{j}].dwType cDAC={refs[j].dwType:X}, legacy={legacyRefs[j].dwType:X}");
-                Debug.Assert(refs[j].vmDomain == legacyRefs[j].vmDomain,
-                    $"refs[{j}].vmDomain cDAC=0x{refs[j].vmDomain:X}, legacy=0x{legacyRefs[j].vmDomain:X}");
-                Debug.Assert(refs[j].objHnd == legacyRefs[j].objHnd,
-                    $"refs[{j}].objHnd cDAC=0x{refs[j].objHnd:X}, legacy=0x{legacyRefs[j].objHnd:X}");
-                Debug.Assert(refs[j].i64ExtraData == legacyRefs[j].i64ExtraData,
-                    $"refs[{j}].i64ExtraData cDAC=0x{refs[j].i64ExtraData:X}, legacy=0x{legacyRefs[j].i64ExtraData:X}");
-            }
-        }
-
-        static uint CountHandlePrefix(DacGcReference[] buffer, uint length)
-        {
-            for (uint j = 0; j < length; j++)
-            {
-                CorGCReferenceType dwType = buffer[j].dwType;
-                if (dwType == CorGCReferenceType.CorReferenceStack)
-                {
-                    return j;
-                }
-            }
-            return length;
-        }
-#endif
 
         return hr;
     }
@@ -4984,19 +3372,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            COR_TYPEID resultLocal;
-            int hrLocal = _legacy.GetTypeID(obj, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(pType->token1 == resultLocal.token1);
-                Debug.Assert(pType->token2 == resultLocal.token2);
-            }
-        }
-#endif
 
         return hr;
     }
@@ -5015,19 +3390,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            COR_TYPEID resultLocal;
-            int hrLocal = _legacy.GetTypeIDForType(vmTypeHandle, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(pId->token1 == resultLocal.token1);
-                Debug.Assert(pId->token2 == resultLocal.token2);
-            }
-        }
-#endif
 
         return hr;
     }
@@ -5154,32 +3516,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint fetchedLocal = 0;
-            // Allocate at least one element so the `fixed` pointer is valid even when celt is 0.
-            COR_FIELD[] localFields = new COR_FIELD[celt == 0 ? 1 : celt];
-            fixed (COR_FIELD* localFieldsPtr = localFields)
-            {
-                int hrLocal = _legacy.GetObjectFields(id, celt, layout == null ? null : localFieldsPtr, &fetchedLocal);
-                Debug.ValidateHResult(hr, hrLocal);
-                if (hr >= HResults.S_OK && hrLocal >= HResults.S_OK)
-                {
-                    Debug.Assert(*pceltFetched == fetchedLocal, $"cDAC: {*pceltFetched}, DAC: {fetchedLocal}");
-                    uint written = layout == null ? 0 : Math.Min(celt, cFields);
-                    for (uint i = 0; i < written; ++i)
-                    {
-                        Debug.Assert(layout[i].token == localFieldsPtr[i].token, $"field[{i}].token cDAC: {layout[i].token:x}, DAC: {localFieldsPtr[i].token:x}");
-                        Debug.Assert(layout[i].offset == localFieldsPtr[i].offset, $"field[{i}].offset cDAC: {layout[i].offset}, DAC: {localFieldsPtr[i].offset}");
-                        Debug.Assert(layout[i].fieldType == localFieldsPtr[i].fieldType, $"field[{i}].fieldType cDAC: {layout[i].fieldType}, DAC: {localFieldsPtr[i].fieldType}");
-                        Debug.Assert(layout[i].id.token1 == localFieldsPtr[i].id.token1, $"field[{i}].id.token1 cDAC: {layout[i].id.token1:x}, DAC: {localFieldsPtr[i].id.token1:x}");
-                        Debug.Assert(layout[i].id.token2 == localFieldsPtr[i].id.token2, $"field[{i}].id.token2 cDAC: {layout[i].id.token2:x}, DAC: {localFieldsPtr[i].id.token2:x}");
-                    }
-                }
-            }
-        }
-#endif
 
         return hr;
     }
@@ -5220,23 +3556,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            COR_TYPE_LAYOUT resultLocal;
-            int hrLocal = _legacy.GetTypeLayout(id, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(pLayout->parentID.token1 == resultLocal.parentID.token1, $"cDAC: {pLayout->parentID.token1:x}, DAC: {resultLocal.parentID.token1:x}");
-                Debug.Assert(pLayout->parentID.token2 == resultLocal.parentID.token2, $"cDAC: {pLayout->parentID.token2:x}, DAC: {resultLocal.parentID.token2:x}");
-                Debug.Assert(pLayout->objectSize == resultLocal.objectSize, $"cDAC: {pLayout->objectSize}, DAC: {resultLocal.objectSize}");
-                Debug.Assert(pLayout->numFields == resultLocal.numFields, $"cDAC: {pLayout->numFields}, DAC: {resultLocal.numFields}");
-                Debug.Assert(pLayout->boxOffset == resultLocal.boxOffset, $"cDAC: {pLayout->boxOffset}, DAC: {resultLocal.boxOffset}");
-                Debug.Assert(pLayout->type == resultLocal.type, $"cDAC: {pLayout->type}, DAC: {resultLocal.type}");
-            }
-        }
-#endif
 
         return hr;
     }
@@ -5293,26 +3612,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            COR_ARRAY_LAYOUT resultLocal;
-            int hrLocal = _legacy.GetArrayLayout(id, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(pLayout->componentID.token1 == resultLocal.componentID.token1, $"cDAC: {pLayout->componentID.token1:x}, DAC: {resultLocal.componentID.token1:x}");
-                Debug.Assert(pLayout->componentID.token2 == resultLocal.componentID.token2, $"cDAC: {pLayout->componentID.token2:x}, DAC: {resultLocal.componentID.token2:x}");
-                Debug.Assert(pLayout->componentType == resultLocal.componentType, $"cDAC: {pLayout->componentType}, DAC: {resultLocal.componentType}");
-                Debug.Assert(pLayout->firstElementOffset == resultLocal.firstElementOffset, $"cDAC: {pLayout->firstElementOffset}, DAC: {resultLocal.firstElementOffset}");
-                Debug.Assert(pLayout->elementSize == resultLocal.elementSize, $"cDAC: {pLayout->elementSize}, DAC: {resultLocal.elementSize}");
-                Debug.Assert(pLayout->countOffset == resultLocal.countOffset, $"cDAC: {pLayout->countOffset}, DAC: {resultLocal.countOffset}");
-                Debug.Assert(pLayout->rankSize == resultLocal.rankSize, $"cDAC: {pLayout->rankSize}, DAC: {resultLocal.rankSize}");
-                Debug.Assert(pLayout->numRanks == resultLocal.numRanks, $"cDAC: {pLayout->numRanks}, DAC: {resultLocal.numRanks}");
-                Debug.Assert(pLayout->rankOffset == resultLocal.rankOffset, $"cDAC: {pLayout->rankOffset}, DAC: {resultLocal.rankOffset}");
-            }
-        }
-#endif
 
         return hr;
     }
@@ -5338,28 +3637,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            COR_HEAPINFO resultLocal;
-            int hrLocal = _legacy.GetGCHeapInformation(&resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(pHeapInfo->areGCStructuresValid == resultLocal.areGCStructuresValid);
-                Debug.Assert(pHeapInfo->numHeaps == resultLocal.numHeaps);
-                Debug.Assert(pHeapInfo->pointerSize == resultLocal.pointerSize);
-                Debug.Assert(pHeapInfo->gcType == resultLocal.gcType);
-                Debug.Assert(pHeapInfo->concurrent == resultLocal.concurrent);
-            }
-        }
-#endif
 
         return hr;
     }
 
     public int GetPEFileMDInternalRW(ulong vmPEAssembly, ulong* pAddrMDInternalRW)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetPEFileMDInternalRW(vmPEAssembly, pAddrMDInternalRW) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     public int AreOptimizationsDisabled(ulong vmModule, uint methodTk, Interop.BOOL* pOptimizationsDisabled)
     {
@@ -5399,16 +3682,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL localPOptimizationsDisabled;
-            int hrLocal = _legacy.AreOptimizationsDisabled(vmModule, methodTk, &localPOptimizationsDisabled);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pOptimizationsDisabled == localPOptimizationsDisabled);
-        }
-#endif
 
         return hr;
     }
@@ -5428,16 +3701,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint resultLocal;
-            int hrLocal = _legacy.GetDefinesBitField(&resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pDefines == resultLocal);
-        }
-#endif
 
         return hr;
     }
@@ -5457,16 +3720,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint resultLocal;
-            int hrLocal = _legacy.GetMDStructuresVersion(&resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pMDStructuresVersion == resultLocal);
-        }
-#endif
 
         return hr;
     }
@@ -5510,16 +3763,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong resultLocal;
-            int hrLocal = _legacy.GetActiveRejitILCodeVersionNode(vmModule, methodTk, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pVmILCodeVersionNode == resultLocal, $"cDAC: {*pVmILCodeVersionNode:x}, DAC: {resultLocal:x}");
-        }
-#endif
 
         return hr;
     }
@@ -5548,16 +3791,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong resultLocal;
-            int hrLocal = _legacy.GetNativeCodeVersionNode(vmMethod, codeStartAddress, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pVmNativeCodeVersionNode == resultLocal, $"cDAC: {*pVmNativeCodeVersionNode:x}, DAC: {resultLocal:x}");
-        }
-#endif
 
         return hr;
     }
@@ -5585,16 +3818,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong resultLocal;
-            int hrLocal = _legacy.GetILCodeVersionNode(vmNativeCodeVersionNode, &resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pVmILCodeVersionNode == resultLocal, $"cDAC: {*pVmILCodeVersionNode:x}, DAC: {resultLocal:x}");
-        }
-#endif
 
         return hr;
     }
@@ -5630,20 +3853,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            DacDbiSharedReJitInfo dataLocal = default;
-            int hrLocal = _legacy.GetILCodeVersionNodeData(ilCodeVersionNode, &dataLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(pData->pbIL == dataLocal.pbIL, $"cDAC: {pData->pbIL:x}, DAC: {dataLocal.pbIL:x}");
-                Debug.Assert(pData->cInstrumentedMapEntries == dataLocal.cInstrumentedMapEntries, $"cDAC: {pData->cInstrumentedMapEntries:x}, DAC: {dataLocal.cInstrumentedMapEntries:x}");
-                Debug.Assert(pData->rgInstrumentedMapEntries == dataLocal.rgInstrumentedMapEntries, $"cDAC: {pData->rgInstrumentedMapEntries:x}, DAC: {dataLocal.rgInstrumentedMapEntries:x}");
-            }
-        }
-#endif
 
         return hr;
     }
@@ -5659,13 +3868,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            int hrLocal = _legacy.EnableGCNotificationEvents(fEnable);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
 
@@ -5687,16 +3889,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL pResultLocal;
-            int hrLocal = _legacy.IsDelegate(vmObject, &pResultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == pResultLocal, $"cDAC: {*pResult}, DAC: {pResultLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -5743,20 +3935,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong asmLocal;
-            uint methodDefLocal;
-            int hrLocal = _legacy.GetDelegateFunctionData(delegateObject, &asmLocal, &methodDefLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(*ppFunctionAssembly == asmLocal, $"cDAC: {*ppFunctionAssembly:x}, DAC: {asmLocal:x}");
-                Debug.Assert(*pMethodDef == methodDefLocal, $"cDAC: {*pMethodDef:x}, DAC: {methodDefLocal:x}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -5782,16 +3960,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong targetObjLocal;
-            int hrLocal = _legacy.GetDelegateTargetObject(delegateObject, &targetObjLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*ppTargetObj == targetObjLocal, $"cDAC: {*ppTargetObj:x}, DAC: {targetObjLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -5827,16 +3995,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL isModuleMappedLocal;
-            int hrLocal = _legacy.IsModuleMapped(pModule, &isModuleMappedLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*isModuleMapped == isModuleMappedLocal, $"cDAC: {*isModuleMapped}, DAC: {isModuleMappedLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -5853,16 +4011,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            Interop.BOOL resultLocal;
-            int hrLocal = _legacy.MetadataUpdatesApplied(&resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pResult == resultLocal);
-        }
-#endif
 
         return hr;
     }
@@ -5889,16 +4037,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong assemblyLocal;
-            int hrLocal = _legacy.GetAssemblyFromModule(vmModule, &assemblyLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pVmAssembly == assemblyLocal, $"cDAC: {*pVmAssembly:x}, DAC: {assemblyLocal:x}");
-        }
-#endif
         return hr;
     }
 
@@ -5919,46 +4057,14 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            ulong diagnosticIPLocal;
-            ulong nextLocal;
-            uint stateLocal;
-            int hrLocal = _legacy.ParseContinuation(continuationAddress, &diagnosticIPLocal, &nextLocal, &stateLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(*pDiagnosticIP == diagnosticIPLocal, $"cDAC: {*pDiagnosticIP:x}, DAC: {diagnosticIPLocal:x}");
-                Debug.Assert(*pNextContinuation == nextLocal, $"cDAC: {*pNextContinuation:x}, DAC: {nextLocal:x}");
-                Debug.Assert(*pState == stateLocal, $"cDAC: {*pState}, DAC: {stateLocal}");
-            }
-        }
-#endif
         return hr;
     }
 
-#if DEBUG
-    [ThreadStatic]
-    private static List<AsyncLocalData>? _debugEnumerateAsyncLocals;
-
-    private static List<AsyncLocalData> DebugEnumerateAsyncLocals
-        => _debugEnumerateAsyncLocals ??= new();
-
-    [UnmanagedCallersOnly]
-    private static void EnumerateAsyncLocalsDebugCallback(AsyncLocalData* pLocal, nint _)
-    {
-        DebugEnumerateAsyncLocals.Add(*pLocal);
-    }
-#endif
 
     public int EnumerateAsyncLocals(ulong vmMethod, ulong codeAddr, uint state,
         delegate* unmanaged<AsyncLocalData*, nint, void> fpCallback, nint pUserData)
     {
         int hr = HResults.S_OK;
-#if DEBUG
-        List<AsyncLocalData> locals = new();
-#endif
         try
         {
             if (vmMethod == 0)
@@ -5997,9 +4103,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                                 Offset = localInfos[i].Offset,
                                 IlVarNum = localInfos[i].ILVarNumber,
                             };
-#if DEBUG
-                            locals.Add(local);
-#endif
                             fpCallback(&local, pUserData);
                         }
                     }
@@ -6011,30 +4114,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacy is not null)
-        {
-            DebugEnumerateAsyncLocals.Clear();
-            delegate* unmanaged<AsyncLocalData*, nint, void> debugCallbackPtr = &EnumerateAsyncLocalsDebugCallback;
-            int hrLocal = _legacy.EnumerateAsyncLocals(vmMethod, codeAddr, state, debugCallbackPtr, 0);
-            Debug.ValidateHResult(hr, hrLocal);
-
-            if (hr == HResults.S_OK)
-            {
-                List<AsyncLocalData> legacyLocals = DebugEnumerateAsyncLocals;
-                Debug.Assert(locals.Count == legacyLocals.Count,
-                    $"cDAC: {locals.Count} async locals, DAC: {legacyLocals.Count}");
-                for (int i = 0; i < locals.Count; i++)
-                {
-                    Debug.Assert(locals[i].Offset == legacyLocals[i].Offset,
-                        $"cDAC[{i}].Offset {locals[i].Offset} != DAC {legacyLocals[i].Offset}");
-                    Debug.Assert(locals[i].IlVarNum == legacyLocals[i].IlVarNum,
-                        $"cDAC[{i}].IlVarNum {locals[i].IlVarNum} != DAC {legacyLocals[i].IlVarNum}");
-                }
-            }
-            DebugEnumerateAsyncLocals.Clear();
-        }
-#endif
         return hr;
     }
 
@@ -6070,16 +4149,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint indexLocal;
-            int hrLocal = _legacy.GetGenericArgTokenIndex(vmMethod, &indexLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pIndex == indexLocal, $"cDAC: {*pIndex}, DAC: {indexLocal}");
-        }
-#endif
         return hr;
     }
 

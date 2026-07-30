@@ -46,13 +46,24 @@ jobs:
       # SOS resolves the cDAC from next to sos.dll, which is the copy restored from a referenced runtime
       # package -- not the runtime being tested. Download the freshly built cDAC so the build can overlay
       # it (see -cdacPath in runtime-diag-job.yml / eng/build.* in dotnet/diagnostics).
-      - ${{ if eq(parameters.dacMode, 'cdac') }}:
+      #
+      # The cdacfallback / cdacverify legs additionally need the validation shim, which loads that same
+      # production cDAC from next to itself and the legacy DAC (mscordaccore) out of the runtime
+      # artifacts.
+      - ${{ if in(parameters.dacMode, 'cdac', 'cdacfallback', 'cdacverify') }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
             artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac
             artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts/cdac
             displayName: 'cDAC Build Artifacts'
+      - ${{ if in(parameters.dacMode, 'cdacfallback', 'cdacverify') }}:
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdacshim
+            artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdacshim$(archiveExtension)
+            unpackFolder: $(Build.SourcesDirectory)/artifacts/cdacshim
+            displayName: 'cDAC Validation Shim Artifacts'
       postBuildSteps:
       - task: PublishTestResults@2
         inputs:

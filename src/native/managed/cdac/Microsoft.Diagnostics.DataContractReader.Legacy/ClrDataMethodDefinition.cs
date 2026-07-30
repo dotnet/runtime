@@ -18,17 +18,14 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     private readonly Target _target;
     private readonly TargetPointer _module;
     private readonly uint _token;
-    private readonly IXCLRDataMethodDefinition? _legacyImpl;
     public ClrDataMethodDefinition(
         Target target,
         TargetPointer module,
-        uint token,
-        IXCLRDataMethodDefinition? legacyImpl)
+        uint token)
     {
         _target = target;
         _module = module;
         _token = token;
-        _legacyImpl = legacyImpl;
     }
 
     private TargetPointer TryResolveMethodDesc()
@@ -105,16 +102,8 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     {
         int hr = HResults.S_FALSE;
         *handle = 0;
-
-        // Start the legacy enumeration to keep it in sync with the cDAC enumeration.
-        // EnumInstance passes the legacy method instance to ClrDataMethodInstance,
         // which delegates some operations to it.
         ulong legacyHandle = default;
-        int hrLocal = default;
-        if (_legacyImpl is not null)
-        {
-            hrLocal = _legacyImpl.StartEnumInstances(appDomain, &legacyHandle);
-        }
 
         try
         {
@@ -139,23 +128,12 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         }
         finally
         {
-            // The legacy enumeration is started eagerly (before the cDAC try block) so
             // that EnumInstance can advance both enumerations in lockstep. If the cDAC
             // side fails to produce an enum (no MethodDesc, exception, or emi.Start()
             // returns S_FALSE), the legacy handle would be orphaned because the caller
             // receives *handle == 0 and has no way to call End. Clean it up here.
-            if (_legacyImpl is not null && legacyHandle != default)
-            {
-                _legacyImpl.EndEnumInstances(legacyHandle);
-            }
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
 
         return hr;
     }
@@ -171,25 +149,12 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         if (gcHandle.Target is not SOSDacImpl.EnumMethodInstances emi)
             return HResults.E_INVALIDARG;
 
-        // Advance the legacy enumeration to keep it in sync with the cDAC enumeration.
-        // The legacy method instance is passed to ClrDataMethodInstance for delegation.
-        IXCLRDataMethodInstance? legacyMethod = null;
-        int hrLocal = default;
-        if (_legacyImpl is not null)
-        {
-            ulong legacyHandle = emi.LegacyHandle;
-            DacComNullableByRef<IXCLRDataMethodInstance> legacyMethodOut = new(isNullRef: false);
-            hrLocal = _legacyImpl.EnumInstance(&legacyHandle, legacyMethodOut);
-            legacyMethod = legacyMethodOut.Interface;
-            emi.LegacyHandle = (nuint)legacyHandle;
-        }
-
         try
         {
             if (emi.Enumerator.MoveNext())
             {
                 MethodDescHandle methodDesc = emi.Enumerator.Current;
-                instance.Interface = new ClrDataMethodInstance(_target, methodDesc, emi._appDomain, legacyMethod);
+                instance.Interface = new ClrDataMethodInstance(_target, methodDesc, emi._appDomain);
             }
             else
             {
@@ -198,24 +163,9 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         }
         catch (System.Exception ex)
         {
-            // Fall back to the legacy DAC result when available, otherwise propagate the error.
-            if (_legacyImpl is not null)
-            {
-                hr = hrLocal;
-                instance.Interface = legacyMethod;
-            }
-            else
-            {
-                hr = ex.HResult;
-            }
+            hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
 
         return hr;
     }
@@ -236,12 +186,6 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             ((IEnum<MethodDescHandle>)emi).Dispose();
             gcHandle.Free();
 
-            if (_legacyImpl is not null && emi.LegacyHandle != 0)
-            {
-                int hrLocal = _legacyImpl.EndEnumInstances(emi.LegacyHandle);
-                if (hrLocal < 0)
-                    hr = hrLocal;
-            }
         }
         catch (System.Exception ex)
         {
@@ -293,32 +237,6 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            uint nameLenLocal = 0;
-            char[] nameBufLocal = new char[bufLen > 0 ? bufLen : 1];
-            int hrLocal;
-            fixed (char* pNameBufLocal = nameBufLocal)
-            {
-                hrLocal = _legacyImpl.GetName(flags, bufLen, &nameLenLocal, name is null ? null : pNameBufLocal);
-            }
-
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0 && hrLocal >= 0)
-            {
-                if (nameLen is not null)
-                    Debug.Assert(nameLenLocal == *nameLen, $"cDAC: {*nameLen:x}, DAC: {nameLenLocal:x}");
-
-                if (name is not null && nameLenLocal > 0)
-                {
-                    string dacName = new string(nameBufLocal, 0, (int)nameLenLocal - 1);
-                    string cdacName = new string(name);
-                    Debug.Assert(dacName == cdacName, $"cDAC: {cdacName}, DAC: {dacName}");
-                }
-            }
-        }
-#endif
 
         return hr;
     }
@@ -334,17 +252,8 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             }
             if (!mod.IsNullRef)
             {
-                IXCLRDataModule? legacyMod = null;
-                if (_legacyImpl is not null)
-                {
-                    DacComNullableByRef<IXCLRDataModule> legacyModOut = new(isNullRef: false);
-                    int hrLegacy = _legacyImpl.GetTokenAndScope(null, legacyModOut);
-                    if (hrLegacy < 0)
-                        return hrLegacy;
-                    legacyMod = legacyModOut.Interface;
-                }
 
-                mod.Interface = new ClrDataModule(_module, _target, legacyMod);
+                mod.Interface = new ClrDataModule(_module, _target);
             }
         }
         catch (System.Exception ex)
@@ -352,24 +261,6 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            bool validateToken = token is not null;
-            bool validateMod = !mod.IsNullRef;
-
-            uint tokenLocal = 0;
-            DacComNullableByRef<IXCLRDataModule> legacyModOutLocal = new(isNullRef: !validateMod);
-            int hrLocal = _legacyImpl.GetTokenAndScope(validateToken ? &tokenLocal : null, legacyModOutLocal);
-
-            Debug.ValidateHResult(hr, hrLocal);
-
-            if (validateToken)
-            {
-                Debug.Assert(tokenLocal == *token, $"cDAC: {*token:x}, DAC: {tokenLocal:x}");
-            }
-        }
-#endif
 
         return hr;
     }
@@ -384,13 +275,13 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         => HResults.E_NOTIMPL;
 
     int IXCLRDataMethodDefinition.StartEnumExtents(ulong* handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.StartEnumExtents(handle) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataMethodDefinition.EnumExtent(ulong* handle, ClrDataMethodDefinitionExtent* extent)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EnumExtent(handle, extent) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataMethodDefinition.EndEnumExtents(ulong handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.EndEnumExtents(handle) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataMethodDefinition.GetCodeNotification(uint* flags)
     {
@@ -409,9 +300,6 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             hr = ex.HResult;
         }
 
-        // No #if DEBUG validation: GetCodeNotification is a read, but both cDAC and
-        // legacy DAC allocate the table on-demand when called, which would cause
-        // dual-allocation. Validation is safe at a higher layer when a dump is used.
 
         return hr;
     }
@@ -433,9 +321,6 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             hr = ex.HResult;
         }
 
-        // No #if DEBUG validation: SetCodeNotification is a write operation.
-        // Both the cDAC and legacy DAC independently allocate and write to
-        // g_pNotificationTable via AllocVirtual, causing dual-write corruption.
 
         return hr;
     }
@@ -464,27 +349,12 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            uint revisionLocal = 0;
-            int hrLocal = _legacyImpl.Request(
-                reqCode,
-                inBufferSize,
-                inBuffer,
-                outBufferSize,
-                outBuffer is null ? null : (byte*)&revisionLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*(uint*)outBuffer == revisionLocal);
-        }
-#endif
 
         return hr;
     }
 
     int IXCLRDataMethodDefinition.GetRepresentativeEntryAddress(ClrDataAddress* addr)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetRepresentativeEntryAddress(addr) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataMethodDefinition.HasClassOrMethodInstantiation(int* bGeneric)
     {
@@ -508,19 +378,6 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            int bGenericLocal = 0;
-            int hrLocal = _legacyImpl.HasClassOrMethodInstantiation(&bGenericLocal);
-
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0 && hrLocal >= 0 && bGeneric is not null)
-            {
-                Debug.Assert(bGenericLocal == *bGeneric, $"cDAC: {*bGeneric}, DAC: {bGenericLocal}");
-            }
-        }
-#endif
 
         return hr;
     }

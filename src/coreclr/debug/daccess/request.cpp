@@ -38,8 +38,6 @@
 #include "rejit.h"
 #include "request_common.h"
 
-#include "cdac.h"
-
 // GC headers define these to EE-specific stuff that we don't want.
 #undef EnterCriticalSection
 #undef LeaveCriticalSection

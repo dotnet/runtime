@@ -17,9 +17,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface, IMetaDataImport2, IMetaDataAssemblyImport
 {
     private readonly MetadataReader _reader;
-    private readonly IMetaDataImport? _legacyImport;
-    private readonly IMetaDataImport2? _legacyImport2;
-    private readonly IMetaDataAssemblyImport? _legacyAssemblyImport;
     private Dictionary<int, uint>? _interfaceImplToTypeDef;
     private Dictionary<int, uint>? _paramToMethod;
 
@@ -30,12 +27,9 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
     // ConcurrentDictionary is used because COM objects may be called from multiple threads.
     private readonly ConcurrentDictionary<nint, byte> _cdacEnumHandles = new();
 
-    public MetaDataImportImpl(MetadataReader reader, IMetaDataImport? legacyImport = null)
+    public MetaDataImportImpl(MetadataReader reader)
     {
         _reader = reader;
-        _legacyImport = legacyImport;
-        _legacyImport2 = legacyImport as IMetaDataImport2;
-        _legacyAssemblyImport = legacyImport as IMetaDataAssemblyImport;
     }
 
     CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out nint ppv)
@@ -118,7 +112,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         }
         else
         {
-            _legacyImport?.CloseEnum(hEnum);
+            // No-op without legacy
         }
     }
 
@@ -139,7 +133,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             return HResults.S_OK;
         }
 
-        return _legacyImport is not null ? _legacyImport.CountEnum(hEnum, pulCount) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.ResetEnum(nint hEnum, uint ulPos)
@@ -154,7 +148,7 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             return HResults.S_OK;
         }
 
-        return _legacyImport is not null ? _legacyImport.ResetEnum(hEnum, ulPos) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IMetaDataImport.EnumTypeDefs(nint* phEnum, uint* rTypeDefs, uint cMax, uint* pcTypeDefs)
@@ -180,26 +174,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (tokens is not null && _legacyImport is not null)
-        {
-            nint hEnumLocal = 0;
-            List<uint> legacyTokens = new();
-            uint* buf = stackalloc uint[64];
-            while (true)
-            {
-                uint count;
-                int hrLegacy = _legacyImport.EnumTypeDefs(&hEnumLocal, buf, 64, &count);
-                if (hrLegacy < 0 || count == 0) break;
-                for (uint i = 0; i < count; i++)
-                    legacyTokens.Add(buf[i]);
-            }
-            _legacyImport.CloseEnum(hEnumLocal);
-            Debug.Assert(tokens.Count == legacyTokens.Count, $"EnumTypeDefs count mismatch: cDAC={tokens.Count}, DAC={legacyTokens.Count}");
-            for (int i = 0; i < Math.Min(tokens.Count, legacyTokens.Count); i++)
-                Debug.Assert(tokens[i] == legacyTokens[i], $"EnumTypeDefs token mismatch at [{i}]: cDAC=0x{tokens[i]:X}, DAC=0x{legacyTokens[i]:X}");
-        }
-#endif
         return hr;
     }
 
@@ -228,34 +202,14 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (tokens is not null && _legacyImport is not null)
-        {
-            nint hEnumLocal = 0;
-            List<uint> legacyTokens = new();
-            uint* buf = stackalloc uint[64];
-            while (true)
-            {
-                uint count;
-                int hrLegacy = _legacyImport.EnumInterfaceImpls(&hEnumLocal, td, buf, 64, &count);
-                if (hrLegacy < 0 || count == 0) break;
-                for (uint i = 0; i < count; i++)
-                    legacyTokens.Add(buf[i]);
-            }
-            _legacyImport.CloseEnum(hEnumLocal);
-            Debug.Assert(tokens.Count == legacyTokens.Count, $"EnumInterfaceImpls count mismatch for 0x{td:X}: cDAC={tokens.Count}, DAC={legacyTokens.Count}");
-            for (int i = 0; i < Math.Min(tokens.Count, legacyTokens.Count); i++)
-                Debug.Assert(tokens[i] == legacyTokens[i], $"EnumInterfaceImpls token mismatch at [{i}] for 0x{td:X}: cDAC=0x{tokens[i]:X}, DAC=0x{legacyTokens[i]:X}");
-        }
-#endif
         return hr;
     }
 
     int IMetaDataImport.EnumTypeRefs(nint* phEnum, uint* rTypeRefs, uint cMax, uint* pcTypeRefs)
-        => _legacyImport is not null ? _legacyImport.EnumTypeRefs(phEnum, rTypeRefs, cMax, pcTypeRefs) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumMembers(nint* phEnum, uint cl, uint* rMembers, uint cMax, uint* pcTokens)
-        => _legacyImport is not null ? _legacyImport.EnumMembers(phEnum, cl, rMembers, cMax, pcTokens) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumMethods(nint* phEnum, uint cl, uint* rMethods, uint cMax, uint* pcTokens)
     {
@@ -282,26 +236,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (tokens is not null && _legacyImport is not null)
-        {
-            nint hEnumLocal = 0;
-            List<uint> legacyTokens = new();
-            uint* buf = stackalloc uint[64];
-            while (true)
-            {
-                uint count;
-                int hrLegacy = _legacyImport.EnumMethods(&hEnumLocal, cl, buf, 64, &count);
-                if (hrLegacy < 0 || count == 0) break;
-                for (uint i = 0; i < count; i++)
-                    legacyTokens.Add(buf[i]);
-            }
-            _legacyImport.CloseEnum(hEnumLocal);
-            Debug.Assert(tokens.Count == legacyTokens.Count, $"EnumMethods count mismatch for 0x{cl:X}: cDAC={tokens.Count}, DAC={legacyTokens.Count}");
-            for (int i = 0; i < Math.Min(tokens.Count, legacyTokens.Count); i++)
-                Debug.Assert(tokens[i] == legacyTokens[i], $"EnumMethods token mismatch at [{i}] for 0x{cl:X}: cDAC=0x{tokens[i]:X}, DAC=0x{legacyTokens[i]:X}");
-        }
-#endif
         return hr;
     }
 
@@ -330,31 +264,11 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (tokens is not null && _legacyImport is not null)
-        {
-            nint hEnumLocal = 0;
-            List<uint> legacyTokens = new();
-            uint* buf = stackalloc uint[64];
-            while (true)
-            {
-                uint count;
-                int hrLegacy = _legacyImport.EnumFields(&hEnumLocal, cl, buf, 64, &count);
-                if (hrLegacy < 0 || count == 0) break;
-                for (uint i = 0; i < count; i++)
-                    legacyTokens.Add(buf[i]);
-            }
-            _legacyImport.CloseEnum(hEnumLocal);
-            Debug.Assert(tokens.Count == legacyTokens.Count, $"EnumFields count mismatch for 0x{cl:X}: cDAC={tokens.Count}, DAC={legacyTokens.Count}");
-            for (int i = 0; i < Math.Min(tokens.Count, legacyTokens.Count); i++)
-                Debug.Assert(tokens[i] == legacyTokens[i], $"EnumFields token mismatch at [{i}] for 0x{cl:X}: cDAC=0x{tokens[i]:X}, DAC=0x{legacyTokens[i]:X}");
-        }
-#endif
         return hr;
     }
 
     int IMetaDataImport.EnumCustomAttributes(nint* phEnum, uint tk, uint tkType, uint* rCustomAttributes, uint cMax, uint* pcCustomAttributes)
-        => _legacyImport is not null ? _legacyImport.EnumCustomAttributes(phEnum, tk, tkType, rCustomAttributes, cMax, pcCustomAttributes) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport2.EnumGenericParams(nint* phEnum, uint tk, uint* rGenericParams, uint cMax, uint* pcGenericParams)
     {
@@ -391,26 +305,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (tokens is not null && _legacyImport2 is not null)
-        {
-            nint hEnumLocal = 0;
-            List<uint> legacyTokens = new();
-            uint* buf = stackalloc uint[64];
-            while (true)
-            {
-                uint count;
-                int hrLegacy = _legacyImport2.EnumGenericParams(&hEnumLocal, tk, buf, 64, &count);
-                if (hrLegacy < 0 || count == 0) break;
-                for (uint i = 0; i < count; i++)
-                    legacyTokens.Add(buf[i]);
-            }
-            _legacyImport2.CloseEnum(hEnumLocal);
-            Debug.Assert(tokens.Count == legacyTokens.Count, $"EnumGenericParams count mismatch for 0x{tk:X}: cDAC={tokens.Count}, DAC={legacyTokens.Count}");
-            for (int i = 0; i < Math.Min(tokens.Count, legacyTokens.Count); i++)
-                Debug.Assert(tokens[i] == legacyTokens[i], $"EnumGenericParams token mismatch at [{i}] for 0x{tk:X}: cDAC=0x{tokens[i]:X}, DAC=0x{legacyTokens[i]:X}");
-        }
-#endif
         return hr;
     }
 
@@ -441,30 +335,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint flagsLocal = 0, extendsLocal = 0, pchLocal = 0;
-            char* szLocal = stackalloc char[(int)cchTypeDef];
-            int hrLegacy = _legacyImport.GetTypeDefProps(td, szLocal, cchTypeDef, &pchLocal, &flagsLocal, &extendsLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (pdwTypeDefFlags is not null)
-                    Debug.Assert(*pdwTypeDefFlags == flagsLocal, $"TypeDefFlags mismatch: cDAC=0x{*pdwTypeDefFlags:X}, DAC=0x{flagsLocal:X}");
-                if (ptkExtends is not null)
-                    Debug.Assert(*ptkExtends == extendsLocal, $"Extends mismatch: cDAC=0x{*ptkExtends:X}, DAC=0x{extendsLocal:X}");
-                if (pchTypeDef is not null)
-                    Debug.Assert(*pchTypeDef == pchLocal, $"Name length mismatch: cDAC={*pchTypeDef}, DAC={pchLocal}");
-                if (szTypeDef is not null && cchTypeDef > 0)
-                {
-                    string cdacName = new string(szTypeDef);
-                    string dacName = new string(szLocal);
-                    Debug.Assert(cdacName == dacName, $"TypeDef name mismatch: cDAC='{cdacName}', DAC='{dacName}'");
-                }
-            }
-        }
-#endif
         return hr;
     }
 
@@ -492,28 +362,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint scopeLocal = 0, pchLocal = 0;
-            char* szLocal = stackalloc char[(int)cchName];
-            int hrLegacy = _legacyImport.GetTypeRefProps(tr, &scopeLocal, szLocal, cchName, &pchLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (ptkResolutionScope is not null)
-                    Debug.Assert(*ptkResolutionScope == scopeLocal, $"ResolutionScope mismatch: cDAC=0x{*ptkResolutionScope:X}, DAC=0x{scopeLocal:X}");
-                if (pchName is not null)
-                    Debug.Assert(*pchName == pchLocal, $"Name length mismatch: cDAC={*pchName}, DAC={pchLocal}");
-                if (szName is not null && cchName > 0)
-                {
-                    string cdacName = new string(szName);
-                    string dacName = new string(szLocal);
-                    Debug.Assert(cdacName == dacName, $"TypeRef name mismatch: cDAC='{cdacName}', DAC='{dacName}'");
-                }
-            }
-        }
-#endif
         return hr;
     }
 
@@ -558,39 +406,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint classLocal = 0, attrLocal = 0, rvaLocal = 0, implLocal = 0, pchLocal = 0, cbSigLocal = 0;
-            byte* sigLocal = null;
-            char* szLocal = stackalloc char[(int)cchMethod];
-            int hrLegacy = _legacyImport.GetMethodProps(mb, &classLocal, szLocal, cchMethod, &pchLocal, &attrLocal, &sigLocal, &cbSigLocal, &rvaLocal, &implLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (pClass is not null)
-                    Debug.Assert(*pClass == classLocal, $"Class mismatch: cDAC=0x{*pClass:X}, DAC=0x{classLocal:X}");
-                if (pdwAttr is not null)
-                    Debug.Assert(*pdwAttr == attrLocal, $"Attr mismatch: cDAC=0x{*pdwAttr:X}, DAC=0x{attrLocal:X}");
-                if (pchMethod is not null)
-                    Debug.Assert(*pchMethod == pchLocal, $"Name length mismatch: cDAC={*pchMethod}, DAC={pchLocal}");
-                if (szMethod is not null && cchMethod > 0)
-                {
-                    string cdacName = new string(szMethod);
-                    string dacName = new string(szLocal);
-                    Debug.Assert(cdacName == dacName, $"Method name mismatch: cDAC='{cdacName}', DAC='{dacName}'");
-                }
-                if (pulCodeRVA is not null)
-                    Debug.Assert(*pulCodeRVA == rvaLocal, $"RVA mismatch: cDAC=0x{*pulCodeRVA:X}, DAC=0x{rvaLocal:X}");
-                if (pdwImplFlags is not null)
-                    Debug.Assert(*pdwImplFlags == implLocal, $"ImplFlags mismatch: cDAC=0x{*pdwImplFlags:X}, DAC=0x{implLocal:X}");
-                if (ppvSigBlob is not null)
-                    ValidateBlobsEqual(*ppvSigBlob, pcbSigBlob is not null ? *pcbSigBlob : cbSigLocal, sigLocal, cbSigLocal, "MethodSig");
-                else if (pcbSigBlob is not null)
-                    Debug.Assert(*pcbSigBlob == cbSigLocal, $"SigBlob length mismatch: cDAC={*pcbSigBlob}, DAC={cbSigLocal}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -653,42 +468,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint classLocal = 0, attrLocal = 0, pchLocal = 0, cbSigLocal = 0, cpTypeLocal = 0, cchValueLocal = 0;
-            byte* sigLocal = null;
-            void* valueLocal = null;
-            char* szLocal = stackalloc char[(int)cchField];
-            int hrLegacy = _legacyImport.GetFieldProps(mb, &classLocal, szLocal, cchField, &pchLocal, &attrLocal, &sigLocal, &cbSigLocal, &cpTypeLocal, &valueLocal, &cchValueLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (pClass is not null)
-                    Debug.Assert(*pClass == classLocal, $"Class mismatch: cDAC=0x{*pClass:X}, DAC=0x{classLocal:X}");
-                if (pdwAttr is not null)
-                    Debug.Assert(*pdwAttr == attrLocal, $"Attr mismatch: cDAC=0x{*pdwAttr:X}, DAC=0x{attrLocal:X}");
-                if (pchField is not null)
-                    Debug.Assert(*pchField == pchLocal, $"Name length mismatch: cDAC={*pchField}, DAC={pchLocal}");
-                if (szField is not null && cchField > 0)
-                {
-                    string cdacName = new string(szField);
-                    string dacName = new string(szLocal);
-                    Debug.Assert(cdacName == dacName, $"Field name mismatch: cDAC='{cdacName}', DAC='{dacName}'");
-                }
-                if (pdwCPlusTypeFlag is not null)
-                    Debug.Assert(*pdwCPlusTypeFlag == cpTypeLocal, $"CPlusTypeFlag mismatch: cDAC=0x{*pdwCPlusTypeFlag:X}, DAC=0x{cpTypeLocal:X}");
-                if (ppvSigBlob is not null)
-                    ValidateBlobsEqual(*ppvSigBlob, pcbSigBlob is not null ? *pcbSigBlob : cbSigLocal, sigLocal, cbSigLocal, "FieldSig");
-                else if (pcbSigBlob is not null)
-                    Debug.Assert(*pcbSigBlob == cbSigLocal, $"SigBlob length mismatch: cDAC={*pcbSigBlob}, DAC={cbSigLocal}");
-                if (ppValue is not null)
-                    ValidateBlobsEqual((byte*)*ppValue, pcchValue is not null ? *pcchValue : cchValueLocal, (byte*)valueLocal, cchValueLocal, "FieldConstant");
-                else if (pcchValue is not null)
-                    Debug.Assert(*pcchValue == cchValueLocal, $"Constant length mismatch: cDAC={*pcchValue}, DAC={cchValueLocal}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -747,21 +526,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint classLocal = 0, ifaceLocal = 0;
-            int hrLegacy = _legacyImport.GetInterfaceImplProps(iiImpl, &classLocal, &ifaceLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (pClass is not null)
-                    Debug.Assert(*pClass == classLocal, $"Class mismatch: cDAC=0x{*pClass:X}, DAC=0x{classLocal:X}");
-                if (ptkIface is not null)
-                    Debug.Assert(*ptkIface == ifaceLocal, $"Interface mismatch: cDAC=0x{*ptkIface:X}, DAC=0x{ifaceLocal:X}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -784,16 +548,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint enclosingLocal = 0;
-            int hrLegacy = _legacyImport.GetNestedClassProps(tdNestedClass, &enclosingLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0 && ptdEnclosingClass is not null)
-                Debug.Assert(*ptdEnclosingClass == enclosingLocal, $"Enclosing class mismatch: cDAC=0x{*ptdEnclosingClass:X}, DAC=0x{enclosingLocal:X}");
-        }
-#endif
         return hr;
     }
 
@@ -828,32 +582,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport2 is not null)
-        {
-            uint seqLocal = 0, flagsLocal = 0, ownerLocal = 0, pchLocal = 0;
-            char* szLocal = stackalloc char[(int)cchName];
-            int hrLegacy = _legacyImport2.GetGenericParamProps(gp, &seqLocal, &flagsLocal, &ownerLocal, null, szLocal, cchName, &pchLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (pulParamSeq is not null)
-                    Debug.Assert(*pulParamSeq == seqLocal, $"ParamSeq mismatch: cDAC={*pulParamSeq}, DAC={seqLocal}");
-                if (pdwParamFlags is not null)
-                    Debug.Assert(*pdwParamFlags == flagsLocal, $"ParamFlags mismatch: cDAC=0x{*pdwParamFlags:X}, DAC=0x{flagsLocal:X}");
-                if (ptOwner is not null)
-                    Debug.Assert(*ptOwner == ownerLocal, $"Owner mismatch: cDAC=0x{*ptOwner:X}, DAC=0x{ownerLocal:X}");
-                if (pchName is not null)
-                    Debug.Assert(*pchName == pchLocal, $"Name length mismatch: cDAC={*pchName}, DAC={pchLocal}");
-                if (wzname is not null && cchName > 0)
-                {
-                    string cdacName = new string(wzname);
-                    string dacName = new string(szLocal);
-                    Debug.Assert(cdacName == dacName, $"GenericParam name mismatch: cDAC='{cdacName}', DAC='{dacName}'");
-                }
-            }
-        }
-#endif
         return hr;
     }
 
@@ -891,21 +619,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint rvaLocal = 0, implLocal = 0;
-            int hrLegacy = _legacyImport.GetRVA(tk, &rvaLocal, &implLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (pulCodeRVA is not null)
-                    Debug.Assert(*pulCodeRVA == rvaLocal, $"RVA mismatch: cDAC=0x{*pulCodeRVA:X}, DAC=0x{rvaLocal:X}");
-                if (pdwImplFlags is not null)
-                    Debug.Assert(*pdwImplFlags == implLocal, $"ImplFlags mismatch: cDAC=0x{*pdwImplFlags:X}, DAC=0x{implLocal:X}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -930,22 +643,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint cbLocal = 0;
-            byte* sigLocal = null;
-            int hrLegacy = _legacyImport.GetSigFromToken(mdSig, &sigLocal, &cbLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (ppvSig is not null)
-                    ValidateBlobsEqual(*ppvSig, pcbSig is not null ? *pcbSig : cbLocal, sigLocal, cbLocal, "StandaloneSig");
-                else if (pcbSig is not null)
-                    Debug.Assert(*pcbSig == cbLocal, $"Sig length mismatch: cDAC={*pcbSig}, DAC={cbLocal}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -987,22 +684,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint cbLocal = 0;
-            void* dataLocal = null;
-            int hrLegacy = _legacyImport.GetCustomAttributeByName(tkObj, szName, &dataLocal, &cbLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (ppData is not null)
-                    ValidateBlobsEqual((byte*)*ppData, pcbData is not null ? *pcbData : cbLocal, (byte*)dataLocal, cbLocal, "CustomAttribute");
-                else if (pcbData is not null)
-                    Debug.Assert(*pcbData == cbLocal, $"CustomAttribute length mismatch: cDAC={*pcbData}, DAC={cbLocal}");
-            }
-        }
-#endif
         return hr;
     }
 
@@ -1095,60 +776,50 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint tdLocal = 0;
-            int hrLegacy = _legacyImport.FindTypeDefByName(szTypeDef, tkEnclosingClass, &tdLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0 && ptd is not null)
-                Debug.Assert(*ptd == tdLocal, $"TypeDef mismatch: cDAC=0x{*ptd:X}, DAC=0x{tdLocal:X}");
-        }
-#endif
         return hr;
     }
 
     int IMetaDataImport.GetScopeProps(char* szName, uint cchName, uint* pchName, Guid* pmvid)
-        => _legacyImport is not null ? _legacyImport.GetScopeProps(szName, cchName, pchName, pmvid) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.GetModuleFromScope(uint* pmd)
-        => _legacyImport is not null ? _legacyImport.GetModuleFromScope(pmd) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.ResolveTypeRef(uint tr, Guid* riid, void** ppIScope, uint* ptd)
-        => _legacyImport is not null ? _legacyImport.ResolveTypeRef(tr, riid, ppIScope, ptd) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumMembersWithName(nint* phEnum, uint cl, char* szName, uint* rMembers, uint cMax, uint* pcTokens)
-        => _legacyImport is not null ? _legacyImport.EnumMembersWithName(phEnum, cl, szName, rMembers, cMax, pcTokens) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumMethodsWithName(nint* phEnum, uint cl, char* szName, uint* rMethods, uint cMax, uint* pcTokens)
-        => _legacyImport is not null ? _legacyImport.EnumMethodsWithName(phEnum, cl, szName, rMethods, cMax, pcTokens) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumFieldsWithName(nint* phEnum, uint cl, char* szName, uint* rFields, uint cMax, uint* pcTokens)
-        => _legacyImport is not null ? _legacyImport.EnumFieldsWithName(phEnum, cl, szName, rFields, cMax, pcTokens) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumParams(nint* phEnum, uint mb, uint* rParams, uint cMax, uint* pcTokens)
-        => _legacyImport is not null ? _legacyImport.EnumParams(phEnum, mb, rParams, cMax, pcTokens) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumMemberRefs(nint* phEnum, uint tkParent, uint* rMemberRefs, uint cMax, uint* pcTokens)
-        => _legacyImport is not null ? _legacyImport.EnumMemberRefs(phEnum, tkParent, rMemberRefs, cMax, pcTokens) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumMethodImpls(nint* phEnum, uint td, uint* rMethodBody, uint* rMethodDecl, uint cMax, uint* pcTokens)
-        => _legacyImport is not null ? _legacyImport.EnumMethodImpls(phEnum, td, rMethodBody, rMethodDecl, cMax, pcTokens) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumPermissionSets(nint* phEnum, uint tk, uint dwActions, uint* rPermission, uint cMax, uint* pcTokens)
-        => _legacyImport is not null ? _legacyImport.EnumPermissionSets(phEnum, tk, dwActions, rPermission, cMax, pcTokens) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.FindMember(uint td, char* szName, byte* pvSigBlob, uint cbSigBlob, uint* pmb)
-        => _legacyImport is not null ? _legacyImport.FindMember(td, szName, pvSigBlob, cbSigBlob, pmb) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.FindMethod(uint td, char* szName, byte* pvSigBlob, uint cbSigBlob, uint* pmb)
-        => _legacyImport is not null ? _legacyImport.FindMethod(td, szName, pvSigBlob, cbSigBlob, pmb) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.FindField(uint td, char* szName, byte* pvSigBlob, uint cbSigBlob, uint* pmb)
-        => _legacyImport is not null ? _legacyImport.FindField(td, szName, pvSigBlob, cbSigBlob, pmb) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.FindMemberRef(uint td, char* szName, byte* pvSigBlob, uint cbSigBlob, uint* pmr)
-        => _legacyImport is not null ? _legacyImport.FindMemberRef(td, szName, pvSigBlob, cbSigBlob, pmr) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.GetMemberRefProps(uint mr, uint* ptk, char* szMember, uint cchMember, uint* pchMember,
         byte** ppvSigBlob, uint* pbSig)
@@ -1181,52 +852,25 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint tkLocal = 0, pchLocal = 0, cbSigLocal = 0;
-            byte* sigLocal = null;
-            char* szLocal = stackalloc char[(int)cchMember];
-            int hrLegacy = _legacyImport.GetMemberRefProps(mr, &tkLocal, szLocal, cchMember, &pchLocal, &sigLocal, &cbSigLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (ptk is not null)
-                    Debug.Assert(*ptk == tkLocal, $"Parent mismatch: cDAC=0x{*ptk:X}, DAC=0x{tkLocal:X}");
-                if (pchMember is not null)
-                    Debug.Assert(*pchMember == pchLocal, $"Name length mismatch: cDAC={*pchMember}, DAC={pchLocal}");
-                if (szMember is not null && cchMember > 0)
-                {
-                    string cdacName = new string(szMember);
-                    string dacName = new string(szLocal);
-                    Debug.Assert(cdacName == dacName, $"MemberRef name mismatch: cDAC='{cdacName}', DAC='{dacName}'");
-                }
-                if (ppvSigBlob is not null)
-                    ValidateBlobsEqual(*ppvSigBlob, pbSig is not null ? *pbSig : cbSigLocal, sigLocal, cbSigLocal, "MemberRefSig");
-                else if (pbSig is not null)
-                    Debug.Assert(*pbSig == cbSigLocal, $"SigBlob length mismatch: cDAC={*pbSig}, DAC={cbSigLocal}");
-            }
-        }
-#endif
         return hr;
     }
 
     int IMetaDataImport.EnumProperties(nint* phEnum, uint td, uint* rProperties, uint cMax, uint* pcProperties)
-        => _legacyImport is not null ? _legacyImport.EnumProperties(phEnum, td, rProperties, cMax, pcProperties) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumEvents(nint* phEnum, uint td, uint* rEvents, uint cMax, uint* pcEvents)
-        => _legacyImport is not null ? _legacyImport.EnumEvents(phEnum, td, rEvents, cMax, pcEvents) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.GetEventProps(uint ev, uint* pClass, char* szEvent, uint cchEvent, uint* pchEvent,
         uint* pdwEventFlags, uint* ptkEventType, uint* pmdAddOn, uint* pmdRemoveOn, uint* pmdFire,
         uint* rmdOtherMethod, uint cMax, uint* pcOtherMethod)
-        => _legacyImport is not null ? _legacyImport.GetEventProps(ev, pClass, szEvent, cchEvent, pchEvent, pdwEventFlags, ptkEventType, pmdAddOn, pmdRemoveOn, pmdFire, rmdOtherMethod, cMax, pcOtherMethod) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumMethodSemantics(nint* phEnum, uint mb, uint* rEventProp, uint cMax, uint* pcEventProp)
-        => _legacyImport is not null ? _legacyImport.EnumMethodSemantics(phEnum, mb, rEventProp, cMax, pcEventProp) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.GetMethodSemantics(uint mb, uint tkEventProp, uint* pdwSemanticsFlags)
-        => _legacyImport is not null ? _legacyImport.GetMethodSemantics(mb, tkEventProp, pdwSemanticsFlags) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.GetClassLayout(uint td, uint* pdwPackSize, void* rFieldOffset, uint cMax, uint* pcFieldOffset, uint* pulClassSize)
     {
@@ -1276,31 +920,14 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint packLocal = 0, sizeLocal = 0, fieldCountLocal = 0;
-            int hrLegacy = _legacyImport.GetClassLayout(td, &packLocal, null, 0, &fieldCountLocal, &sizeLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (pdwPackSize is not null)
-                    Debug.Assert(*pdwPackSize == packLocal, $"PackSize mismatch: cDAC={*pdwPackSize}, DAC={packLocal}");
-                if (pulClassSize is not null)
-                    Debug.Assert(*pulClassSize == sizeLocal, $"ClassSize mismatch: cDAC={*pulClassSize}, DAC={sizeLocal}");
-                if (pcFieldOffset is not null)
-                    Debug.Assert(*pcFieldOffset == fieldCountLocal, $"FieldOffset count mismatch: cDAC={*pcFieldOffset}, DAC={fieldCountLocal}");
-            }
-        }
-#endif
         return hr;
     }
 
     int IMetaDataImport.GetFieldMarshal(uint tk, byte** ppvNativeType, uint* pcbNativeType)
-        => _legacyImport is not null ? _legacyImport.GetFieldMarshal(tk, ppvNativeType, pcbNativeType) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.GetPermissionSetProps(uint pm, uint* pdwAction, void** ppvPermission, uint* pcbPermission)
-        => _legacyImport is not null ? _legacyImport.GetPermissionSetProps(pm, pdwAction, ppvPermission, pcbPermission) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.GetModuleRefProps(uint mur, char* szName, uint cchName, uint* pchName)
     {
@@ -1320,31 +947,11 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint pchLocal = 0;
-            char* szLocal = stackalloc char[(int)cchName];
-            int hrLegacy = _legacyImport.GetModuleRefProps(mur, szLocal, cchName, &pchLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (pchName is not null)
-                    Debug.Assert(*pchName == pchLocal, $"Name length mismatch: cDAC={*pchName}, DAC={pchLocal}");
-                if (szName is not null && cchName > 0)
-                {
-                    string cdacName = new string(szName);
-                    string dacName = new string(szLocal);
-                    Debug.Assert(cdacName == dacName, $"ModuleRef name mismatch: cDAC='{cdacName}', DAC='{dacName}'");
-                }
-            }
-        }
-#endif
         return hr;
     }
 
     int IMetaDataImport.EnumModuleRefs(nint* phEnum, uint* rModuleRefs, uint cmax, uint* pcModuleRefs)
-        => _legacyImport is not null ? _legacyImport.EnumModuleRefs(phEnum, rModuleRefs, cmax, pcModuleRefs) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.GetTypeSpecFromToken(uint typespec, byte** ppvSig, uint* pcbSig)
     {
@@ -1367,30 +974,14 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint cbLocal = 0;
-            byte* sigLocal = null;
-            int hrLegacy = _legacyImport.GetTypeSpecFromToken(typespec, &sigLocal, &cbLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (ppvSig is not null)
-                    ValidateBlobsEqual(*ppvSig, pcbSig is not null ? *pcbSig : cbLocal, sigLocal, cbLocal, "TypeSpec");
-                else if (pcbSig is not null)
-                    Debug.Assert(*pcbSig == cbLocal, $"Sig length mismatch: cDAC={*pcbSig}, DAC={cbLocal}");
-            }
-        }
-#endif
         return hr;
     }
 
     int IMetaDataImport.GetNameFromToken(uint tk, byte** pszUtf8NamePtr)
-        => _legacyImport is not null ? _legacyImport.GetNameFromToken(tk, pszUtf8NamePtr) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumUnresolvedMethods(nint* phEnum, uint* rMethods, uint cMax, uint* pcTokens)
-        => _legacyImport is not null ? _legacyImport.EnumUnresolvedMethods(phEnum, rMethods, cMax, pcTokens) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.GetUserString(uint stk, char* szString, uint cchString, uint* pchString)
     {
@@ -1443,44 +1034,21 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint pchLocal = 0;
-            char* szLocal = stackalloc char[(int)cchString];
-            int hrLegacy = _legacyImport.GetUserString(stk, szLocal, cchString, &pchLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (pchString is not null)
-                    Debug.Assert(*pchString == pchLocal, $"String length mismatch: cDAC={*pchString}, DAC={pchLocal}");
-                if (szString is not null && cchString > 0)
-                {
-                    // GetUserString does not null-terminate its output buffer (matching native behavior),
-                    // so we must use length-bounded string construction instead of new string(char*).
-                    int compareLen = Math.Min((int)pchLocal, (int)cchString);
-                    string cdacStr = new string(szString, 0, compareLen);
-                    string dacStr = new string(szLocal, 0, compareLen);
-                    Debug.Assert(cdacStr == dacStr, $"UserString content mismatch: cDAC='{cdacStr}', DAC='{dacStr}'");
-                }
-            }
-        }
-#endif
         return hr;
     }
 
     int IMetaDataImport.GetPinvokeMap(uint tk, uint* pdwMappingFlags, char* szImportName, uint cchImportName,
         uint* pchImportName, uint* pmrImportDLL)
-        => _legacyImport is not null ? _legacyImport.GetPinvokeMap(tk, pdwMappingFlags, szImportName, cchImportName, pchImportName, pmrImportDLL) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumSignatures(nint* phEnum, uint* rSignatures, uint cmax, uint* pcSignatures)
-        => _legacyImport is not null ? _legacyImport.EnumSignatures(phEnum, rSignatures, cmax, pcSignatures) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumTypeSpecs(nint* phEnum, uint* rTypeSpecs, uint cmax, uint* pcTypeSpecs)
-        => _legacyImport is not null ? _legacyImport.EnumTypeSpecs(phEnum, rTypeSpecs, cmax, pcTypeSpecs) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.EnumUserStrings(nint* phEnum, uint* rStrings, uint cmax, uint* pcStrings)
-        => _legacyImport is not null ? _legacyImport.EnumUserStrings(phEnum, rStrings, cmax, pcStrings) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.GetParamForMethodIndex(uint md, uint ulParamSeq, uint* ppd)
     {
@@ -1514,30 +1082,20 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint pdLocal = 0;
-            int hrLegacy = _legacyImport.GetParamForMethodIndex(md, ulParamSeq, &pdLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0 && ppd is not null)
-                Debug.Assert(*ppd == pdLocal, $"Param token mismatch: cDAC=0x{*ppd:X}, DAC=0x{pdLocal:X}");
-        }
-#endif
         return hr;
     }
 
     int IMetaDataImport.GetCustomAttributeProps(uint cv, uint* ptkObj, uint* ptkType, void** ppBlob, uint* pcbSize)
-        => _legacyImport is not null ? _legacyImport.GetCustomAttributeProps(cv, ptkObj, ptkType, ppBlob, pcbSize) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.FindTypeRef(uint tkResolutionScope, char* szName, uint* ptr)
-        => _legacyImport is not null ? _legacyImport.FindTypeRef(tkResolutionScope, szName, ptr) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.GetPropertyProps(uint prop, uint* pClass, char* szProperty, uint cchProperty, uint* pchProperty,
         uint* pdwPropFlags, byte** ppvSig, uint* pbSig, uint* pdwCPlusTypeFlag,
         void** ppDefaultValue, uint* pcchDefaultValue, uint* pmdSetter, uint* pmdGetter,
         uint* rmdOtherMethod, uint cMax, uint* pcOtherMethod)
-        => _legacyImport is not null ? _legacyImport.GetPropertyProps(prop, pClass, szProperty, cchProperty, pchProperty, pdwPropFlags, ppvSig, pbSig, pdwCPlusTypeFlag, ppDefaultValue, pcchDefaultValue, pmdSetter, pmdGetter, rmdOtherMethod, cMax, pcOtherMethod) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.GetParamProps(uint tk, uint* pmd, uint* pulSequence, char* szName, uint cchName, uint* pchName,
         uint* pdwAttr, uint* pdwCPlusTypeFlag, void** ppValue, uint* pcchValue)
@@ -1593,59 +1151,33 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImport is not null)
-        {
-            uint mdLocal = 0, seqLocal = 0, attrLocal = 0, pchLocal = 0;
-            char* szLocal = stackalloc char[(int)cchName];
-            int hrLegacy = _legacyImport.GetParamProps(tk, &mdLocal, &seqLocal, szLocal, cchName, &pchLocal, &attrLocal, null, null, null);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (pmd is not null)
-                    Debug.Assert(*pmd == mdLocal, $"Method mismatch: cDAC=0x{*pmd:X}, DAC=0x{mdLocal:X}");
-                if (pulSequence is not null)
-                    Debug.Assert(*pulSequence == seqLocal, $"Sequence mismatch: cDAC={*pulSequence}, DAC={seqLocal}");
-                if (pdwAttr is not null)
-                    Debug.Assert(*pdwAttr == attrLocal, $"Attr mismatch: cDAC=0x{*pdwAttr:X}, DAC=0x{attrLocal:X}");
-                if (pchName is not null)
-                    Debug.Assert(*pchName == pchLocal, $"Name length mismatch: cDAC={*pchName}, DAC={pchLocal}");
-                if (szName is not null && cchName > 0)
-                {
-                    string cdacName = new string(szName);
-                    string dacName = new string(szLocal);
-                    Debug.Assert(cdacName == dacName, $"Param name mismatch: cDAC='{cdacName}', DAC='{dacName}'");
-                }
-            }
-        }
-#endif
         return hr;
     }
 
     int IMetaDataImport.GetNativeCallConvFromSig(void* pvSig, uint cbSig, uint* pCallConv)
-        => _legacyImport is not null ? _legacyImport.GetNativeCallConvFromSig(pvSig, cbSig, pCallConv) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport.IsGlobal(uint pd, int* pbGlobal)
-        => _legacyImport is not null ? _legacyImport.IsGlobal(pd, pbGlobal) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
-    // IMetaDataImport2 methods — delegate to legacy via _legacyImport2
+    // IMetaDataImport2 methods not implemented by the cDAC yet.
     int IMetaDataImport2.GetMethodSpecProps(uint mi, uint* tkParent, byte** ppvSigBlob, uint* pcbSigBlob)
-        => _legacyImport2 is not null ? _legacyImport2.GetMethodSpecProps(mi, tkParent, ppvSigBlob, pcbSigBlob) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport2.EnumGenericParamConstraints(nint* phEnum, uint tk, uint* rGenericParamConstraints, uint cMax, uint* pcGenericParamConstraints)
-        => _legacyImport2 is not null ? _legacyImport2.EnumGenericParamConstraints(phEnum, tk, rGenericParamConstraints, cMax, pcGenericParamConstraints) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport2.GetGenericParamConstraintProps(uint gpc, uint* ptGenericParam, uint* ptkConstraintType)
-        => _legacyImport2 is not null ? _legacyImport2.GetGenericParamConstraintProps(gpc, ptGenericParam, ptkConstraintType) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport2.GetPEKind(uint* pdwPEKind, uint* pdwMachine)
-        => _legacyImport2 is not null ? _legacyImport2.GetPEKind(pdwPEKind, pdwMachine) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport2.GetVersionString(char* pwzBuf, uint ccBufSize, uint* pccBufSize)
-        => _legacyImport2 is not null ? _legacyImport2.GetVersionString(pwzBuf, ccBufSize, pccBufSize) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataImport2.EnumMethodSpecs(nint* phEnum, uint tk, uint* rMethodSpecs, uint cMax, uint* pcMethodSpecs)
-        => _legacyImport2 is not null ? _legacyImport2.EnumMethodSpecs(phEnum, tk, rMethodSpecs, cMax, pcMethodSpecs) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     // =============================================
     // IMetaDataAssemblyImport
@@ -1717,43 +1249,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyAssemblyImport is not null)
-        {
-            uint pchLocal = 0, hashAlgLocal = 0, flagsLocal = 0, cbPublicKeyLocal = 0;
-            byte* publicKeyLocal = null;
-            ASSEMBLYMETADATA metaLocal = default;
-            char* szLocal = stackalloc char[(int)cchName];
-            int hrLegacy = _legacyAssemblyImport.GetAssemblyProps(mda, &publicKeyLocal, &cbPublicKeyLocal, &hashAlgLocal, szLocal, cchName, &pchLocal, &metaLocal, &flagsLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (pchName is not null)
-                    Debug.Assert(*pchName == pchLocal, $"Name length mismatch: cDAC={*pchName}, DAC={pchLocal}");
-                if (szName is not null && cchName > 0)
-                {
-                    string cdacName = new string(szName);
-                    string dacName = new string(szLocal);
-                    Debug.Assert(cdacName == dacName, $"Assembly name mismatch: cDAC='{cdacName}', DAC='{dacName}'");
-                }
-                if (pulHashAlgId is not null)
-                    Debug.Assert(*pulHashAlgId == hashAlgLocal, $"HashAlgId mismatch: cDAC=0x{*pulHashAlgId:X}, DAC=0x{hashAlgLocal:X}");
-                if (pdwAssemblyFlags is not null)
-                    Debug.Assert(*pdwAssemblyFlags == flagsLocal, $"Flags mismatch: cDAC=0x{*pdwAssemblyFlags:X}, DAC=0x{flagsLocal:X}");
-                if (ppbPublicKey is not null)
-                    ValidateBlobsEqual(*ppbPublicKey, pcbPublicKey is not null ? *pcbPublicKey : cbPublicKeyLocal, publicKeyLocal, cbPublicKeyLocal, "AssemblyPublicKey");
-                else if (pcbPublicKey is not null)
-                    Debug.Assert(*pcbPublicKey == cbPublicKeyLocal, $"PublicKey length mismatch: cDAC={*pcbPublicKey}, DAC={cbPublicKeyLocal}");
-                if (pMetaData is not null)
-                {
-                    Debug.Assert(pMetaData->usMajorVersion == metaLocal.usMajorVersion, $"MajorVersion mismatch: cDAC={pMetaData->usMajorVersion}, DAC={metaLocal.usMajorVersion}");
-                    Debug.Assert(pMetaData->usMinorVersion == metaLocal.usMinorVersion, $"MinorVersion mismatch: cDAC={pMetaData->usMinorVersion}, DAC={metaLocal.usMinorVersion}");
-                    Debug.Assert(pMetaData->usBuildNumber == metaLocal.usBuildNumber, $"BuildNumber mismatch: cDAC={pMetaData->usBuildNumber}, DAC={metaLocal.usBuildNumber}");
-                    Debug.Assert(pMetaData->usRevisionNumber == metaLocal.usRevisionNumber, $"RevisionNumber mismatch: cDAC={pMetaData->usRevisionNumber}, DAC={metaLocal.usRevisionNumber}");
-                }
-            }
-        }
-#endif
         return hr;
     }
 
@@ -1828,51 +1323,12 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyAssemblyImport is not null)
-        {
-            uint pchLocal = 0, flagsLocal = 0, cbPublicKeyLocal = 0, cbHashLocal = 0;
-            byte* publicKeyLocal = null, hashLocal = null;
-            ASSEMBLYMETADATA metaLocal = default;
-            char* szLocal = stackalloc char[(int)cchName];
-            int hrLegacy = _legacyAssemblyImport.GetAssemblyRefProps(mdar, &publicKeyLocal, &cbPublicKeyLocal, szLocal, cchName, &pchLocal, &metaLocal, &hashLocal, &cbHashLocal, &flagsLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (pchName is not null)
-                    Debug.Assert(*pchName == pchLocal, $"Name length mismatch: cDAC={*pchName}, DAC={pchLocal}");
-                if (szName is not null && cchName > 0)
-                {
-                    string cdacName = new string(szName);
-                    string dacName = new string(szLocal);
-                    Debug.Assert(cdacName == dacName, $"AssemblyRef name mismatch: cDAC='{cdacName}', DAC='{dacName}'");
-                }
-                if (pdwAssemblyRefFlags is not null)
-                    Debug.Assert(*pdwAssemblyRefFlags == flagsLocal, $"Flags mismatch: cDAC=0x{*pdwAssemblyRefFlags:X}, DAC=0x{flagsLocal:X}");
-                if (ppbPublicKeyOrToken is not null)
-                    ValidateBlobsEqual(*ppbPublicKeyOrToken, pcbPublicKeyOrToken is not null ? *pcbPublicKeyOrToken : cbPublicKeyLocal, publicKeyLocal, cbPublicKeyLocal, "AssemblyRefPublicKey");
-                else if (pcbPublicKeyOrToken is not null)
-                    Debug.Assert(*pcbPublicKeyOrToken == cbPublicKeyLocal, $"PublicKey length mismatch: cDAC={*pcbPublicKeyOrToken}, DAC={cbPublicKeyLocal}");
-                if (ppbHashValue is not null)
-                    ValidateBlobsEqual(*ppbHashValue, pcbHashValue is not null ? *pcbHashValue : cbHashLocal, hashLocal, cbHashLocal, "AssemblyRefHash");
-                else if (pcbHashValue is not null)
-                    Debug.Assert(*pcbHashValue == cbHashLocal, $"Hash length mismatch: cDAC={*pcbHashValue}, DAC={cbHashLocal}");
-                if (pMetaData is not null)
-                {
-                    Debug.Assert(pMetaData->usMajorVersion == metaLocal.usMajorVersion, $"MajorVersion mismatch: cDAC={pMetaData->usMajorVersion}, DAC={metaLocal.usMajorVersion}");
-                    Debug.Assert(pMetaData->usMinorVersion == metaLocal.usMinorVersion, $"MinorVersion mismatch: cDAC={pMetaData->usMinorVersion}, DAC={metaLocal.usMinorVersion}");
-                    Debug.Assert(pMetaData->usBuildNumber == metaLocal.usBuildNumber, $"BuildNumber mismatch: cDAC={pMetaData->usBuildNumber}, DAC={metaLocal.usBuildNumber}");
-                    Debug.Assert(pMetaData->usRevisionNumber == metaLocal.usRevisionNumber, $"RevisionNumber mismatch: cDAC={pMetaData->usRevisionNumber}, DAC={metaLocal.usRevisionNumber}");
-                }
-            }
-        }
-#endif
         return hr;
     }
 
     int IMetaDataAssemblyImport.GetFileProps(uint mdf, char* szName, uint cchName, uint* pchName,
         byte** ppbHashValue, uint* pcbHashValue, uint* pdwFileFlags)
-        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.GetFileProps(mdf, szName, cchName, pchName, ppbHashValue, pcbHashValue, pdwFileFlags) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataAssemblyImport.GetExportedTypeProps(uint mdct, char* szName, uint cchName, uint* pchName,
         uint* ptkImplementation, uint* ptkTypeDef, uint* pdwExportedTypeFlags)
@@ -1907,54 +1363,24 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyAssemblyImport is not null)
-        {
-            char* szNameLocal = stackalloc char[(int)cchName];
-            uint pchNameLocal = 0;
-            uint tkImplementationLocal = 0;
-            uint tkTypeDefLocal = 0;
-            uint dwExportedTypeFlagsLocal = 0;
-            int hrLegacy = _legacyAssemblyImport.GetExportedTypeProps(mdct, szNameLocal, cchName, &pchNameLocal,
-                &tkImplementationLocal, &tkTypeDefLocal, &dwExportedTypeFlagsLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0)
-            {
-                if (szName is not null && szNameLocal is not null && cchName > 0)
-                {
-                    string cdacName = new string(szName);
-                    string dacName = new string(szNameLocal);
-                    Debug.Assert(cdacName == dacName, $"ExportedType name mismatch: cDAC='{cdacName}', DAC='{dacName}'");
-                }
-                if (pchName is not null)
-                    Debug.Assert(*pchName == pchNameLocal, $"ExportedType name length mismatch: cDAC={*pchName}, DAC={pchNameLocal}");
-                if (ptkImplementation is not null)
-                    Debug.Assert(*ptkImplementation == tkImplementationLocal, $"ExportedType implementation mismatch: cDAC=0x{*ptkImplementation:X}, DAC=0x{tkImplementationLocal:X}");
-                if (ptkTypeDef is not null)
-                    Debug.Assert(*ptkTypeDef == tkTypeDefLocal, $"ExportedType typeDef mismatch: cDAC=0x{*ptkTypeDef:X}, DAC=0x{tkTypeDefLocal:X}");
-                if (pdwExportedTypeFlags is not null)
-                    Debug.Assert(*pdwExportedTypeFlags == dwExportedTypeFlagsLocal, $"ExportedType flags mismatch: cDAC=0x{*pdwExportedTypeFlags:X}, DAC=0x{dwExportedTypeFlagsLocal:X}");
-            }
-        }
-#endif
         return hr;
     }
 
     int IMetaDataAssemblyImport.GetManifestResourceProps(uint mdmr, char* szName, uint cchName, uint* pchName,
         uint* ptkImplementation, uint* pdwOffset, uint* pdwResourceFlags)
-        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.GetManifestResourceProps(mdmr, szName, cchName, pchName, ptkImplementation, pdwOffset, pdwResourceFlags) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataAssemblyImport.EnumAssemblyRefs(nint* phEnum, uint* rAssemblyRefs, uint cMax, uint* pcTokens)
-        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.EnumAssemblyRefs(phEnum, rAssemblyRefs, cMax, pcTokens) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataAssemblyImport.EnumFiles(nint* phEnum, uint* rFiles, uint cMax, uint* pcTokens)
-        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.EnumFiles(phEnum, rFiles, cMax, pcTokens) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataAssemblyImport.EnumExportedTypes(nint* phEnum, uint* rExportedTypes, uint cMax, uint* pcTokens)
-        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.EnumExportedTypes(phEnum, rExportedTypes, cMax, pcTokens) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataAssemblyImport.EnumManifestResources(nint* phEnum, uint* rManifestResources, uint cMax, uint* pcTokens)
-        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.EnumManifestResources(phEnum, rManifestResources, cMax, pcTokens) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IMetaDataAssemblyImport.GetAssemblyFromScope(uint* ptkAssembly)
     {
@@ -1962,16 +1388,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             *ptkAssembly = 0x20000001; // TokenFromRid(1, mdtAssembly)
 
         int hr = HResults.S_OK;
-#if DEBUG
-        if (_legacyAssemblyImport is not null)
-        {
-            uint tkLocal = 0;
-            int hrLegacy = _legacyAssemblyImport.GetAssemblyFromScope(&tkLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0 && ptkAssembly is not null)
-                Debug.Assert(*ptkAssembly == tkLocal, $"Assembly token mismatch: cDAC=0x{*ptkAssembly:X}, DAC=0x{tkLocal:X}");
-        }
-#endif
         return hr;
     }
 
@@ -2018,28 +1434,18 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyAssemblyImport is not null)
-        {
-            uint tkExportedTypeLocal = 0;
-            int hrLegacy = _legacyAssemblyImport.FindExportedTypeByName(szName, mdtExportedType, &tkExportedTypeLocal);
-            Debug.ValidateHResult(hr, hrLegacy);
-            if (hr >= 0 && hrLegacy >= 0 && ptkExportedType is not null)
-                Debug.Assert(*ptkExportedType == tkExportedTypeLocal, $"ExportedType mismatch: cDAC=0x{*ptkExportedType:X}, DAC=0x{tkExportedTypeLocal:X}");
-        }
-#endif
         return hr;
     }
 
     int IMetaDataAssemblyImport.FindManifestResourceByName(char* szName, uint* ptkManifestResource)
-        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.FindManifestResourceByName(szName, ptkManifestResource) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     void IMetaDataAssemblyImport.CloseEnum(nint hEnum)
         => ((IMetaDataImport)this).CloseEnum(hEnum);
 
     int IMetaDataAssemblyImport.FindAssembliesByName(char* szAppBase, char* szPrivateBin, char* szAssemblyName,
         nint* ppIUnk, uint cMax, uint* pcAssemblies)
-        => _legacyAssemblyImport is not null ? _legacyAssemblyImport.FindAssembliesByName(szAppBase, szPrivateBin, szAssemblyName, ppIUnk, cMax, pcAssemblies) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     // Helpers and lookup builders
 
@@ -2065,18 +1471,6 @@ internal sealed unsafe partial class MetaDataImportImpl : ICustomQueryInterface,
         return token == 0x02000001 ? 0 : token;
     }
 
-#if DEBUG
-    private static void ValidateBlobsEqual(byte* cdacBlob, uint cdacLen, byte* dacBlob, uint dacLen, string name)
-    {
-        Debug.Assert(cdacLen == dacLen, $"{name} length mismatch: cDAC={cdacLen}, DAC={dacLen}");
-        if (cdacLen == dacLen && cdacLen > 0 && cdacBlob is not null && dacBlob is not null)
-        {
-            ReadOnlySpan<byte> cdacSpan = new(cdacBlob, (int)cdacLen);
-            ReadOnlySpan<byte> dacSpan = new(dacBlob, (int)dacLen);
-            Debug.Assert(cdacSpan.SequenceEqual(dacSpan), $"{name} content mismatch (length={cdacLen})");
-        }
-    }
-#endif
 
     private Dictionary<int, uint> BuildInterfaceImplLookup()
     {

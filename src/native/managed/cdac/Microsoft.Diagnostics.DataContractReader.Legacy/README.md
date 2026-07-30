@@ -1,12 +1,13 @@
 # Microsoft.Diagnostics.DataContractReader.Legacy
 
 This project contains `SOSDacImpl`, which implements the `ISOSDacInterface*` and
-`IXCLRDataProcess` COM-style APIs by delegating to the cDAC contract layer.
+`IXCLRDataProcess` COM-style APIs by delegating to the cDAC contract layer. It is
+standalone: it never loads or calls the legacy DAC.
 
 ## Implementing a new SOSDacImpl method
 
-When a method currently delegates to `_legacyImpl` (returning `E_NOTIMPL` when null),
-replace it with a cDAC implementation following this pattern:
+`SOSDacImpl` is standalone: it answers every API from the cDAC contract layer alone, and
+returns `E_NOTIMPL` for APIs the cDAC does not implement yet. Follow this pattern:
 
 ```csharp
 int ISOSDacInterface8.ExampleMethod(uint* pResult)
@@ -27,22 +28,13 @@ int ISOSDacInterface8.ExampleMethod(uint* pResult)
         hr = ex.HResult;
     }
 
-    // 3. Cross-validate with legacy DAC in debug builds
-#if DEBUG
-    if (_legacyImpl8 is not null)
-    {
-        uint resultLocal;
-        int hrLocal = _legacyImpl8.ExampleMethod(&resultLocal);
-        Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-        if (hr == HResults.S_OK)
-        {
-            Debug.Assert(*pResult == resultLocal);
-        }
-    }
-#endif
     return hr;
 }
 ```
+
+Cross-validation against the legacy DAC is *not* part of this project. It lives in the
+test-only [validation shim](../mscordaccore_cdac_validation_shim/README.md), which loads
+this cDAC and the legacy DAC side by side and compares them.
 
 ### Key conventions
 
@@ -56,26 +48,16 @@ int ISOSDacInterface8.ExampleMethod(uint* pResult)
   returning NULL), catch `VirtualReadException` specifically and return the same
   HResult the native DAC returns (typically `E_INVALIDARG`). Avoid catching all
   exceptions and mapping to a single HRESULT, as this can mask unrelated bugs.
-- **Debug cross-validation**: In `#if DEBUG`, call the legacy implementation (if
-  available) and assert the results match. This catches discrepancies during testing.
+- **Unimplemented APIs**: return `E_NOTIMPL`. The validation shim treats that as the
+  signal that an API may delegate to the legacy DAC in fallback mode.
 
-### Legacy delegation placement
+### Child objects
 
-Some cDAC methods create child objects (e.g., `ClrDataMethodInstance`,
-`ClrDataFrame`) that delegate certain operations to a legacy counterpart. This is
-a temporary implementation workaround to let us create the cDAC incrementally that
-should be removed before cDAC ships to customers. In these cases, the legacy call
-that obtains the counterpart **must be outside `#if DEBUG`**, because the result is
-used functionally, not just for validation.
-
-For example, `EnumMethodInstanceByAddress` passes `legacyMethod` to
-`ClrDataMethodInstance`, which delegates `GetTokenAndScope` and other calls to it.
-If the legacy enumeration only runs inside `#if DEBUG`, those delegated calls fail
-in Release builds.
-
-**Rule of thumb**: if a legacy call's result is stored and passed to another
-object, keep it outside `#if DEBUG`. Only the assertion that compares
-HResults/values belongs inside `#if DEBUG`.
+Some cDAC methods create child objects (for example `ClrDataMethodInstance` or
+`ClrDataFrame`). They are constructed purely from cDAC state; there is no legacy
+counterpart to pair them with. The validation shim pairs each child the cDAC returns with
+the child the legacy DAC returned for the same call, so a child handed back to the shim is
+always unwrapped to the right side before being forwarded.
 
 ### Sized-buffer protocol
 

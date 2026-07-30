@@ -11,6 +11,7 @@
     <Project Path="Microsoft.Diagnostics.DataContractReader.Legacy/Microsoft.Diagnostics.DataContractReader.Legacy.csproj" />
     <Project Path="gen/Microsoft.Diagnostics.DataContractReader.DataGenerator.csproj" />
     <Project Path="mscordaccore_universal/mscordaccore_universal.csproj" />
+    <Project Path="mscordaccore_cdac_validation_shim/mscordaccore_cdac_validation_shim.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/TestInfrastructure/Microsoft.Diagnostics.DataContractReader.TestInfrastructure.csproj" />

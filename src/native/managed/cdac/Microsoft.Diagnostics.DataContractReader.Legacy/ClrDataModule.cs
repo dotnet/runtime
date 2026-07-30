@@ -25,30 +25,14 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     private bool _extentsSet;
     private CLRDataModuleExtent[] _extents = new CLRDataModuleExtent[2];
 
-#if DEBUG
-    private ulong legacyExtentHandle;
-#endif
-
-
-    private readonly IXCLRDataModule? _legacyModule;
-    private readonly IXCLRDataModule2? _legacyModule2;
-
     // This is an IUnknown pointer for the legacy implementation
-    private readonly nint _legacyModulePointer;
 
     private MetaDataImportImpl? _metaDataImportImpl;
 
-    public ClrDataModule(TargetPointer address, Target target, IXCLRDataModule? legacyImpl)
+    public ClrDataModule(TargetPointer address, Target target)
     {
         _address = address;
         _target = target;
-        _legacyModule = legacyImpl;
-        _legacyModule2 = legacyImpl as IXCLRDataModule2;
-        if (legacyImpl is not null && System.Runtime.InteropServices.ComWrappers.TryGetComInstance(legacyImpl, out _legacyModulePointer))
-        {
-            // Release the AddRef from TryGetComInstance. We rely on the ref-count from holding on to IXCLRDataModule.
-            Marshal.Release(_legacyModulePointer);
-        }
     }
 
     private const uint CORDEBUG_JIT_DEFAULT = 0x1;
@@ -76,7 +60,6 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             if (wrapper is null)
             {
                 MetadataReader? reader = null;
-                IMetaDataImport? legacyImport = null;
 
                 try
                 {
@@ -91,11 +74,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                 try
                 {
                     Guid iidMetaDataImport = typeof(IMetaDataImport).GUID;
-                    if (_legacyModulePointer != 0 && Marshal.QueryInterface(_legacyModulePointer, iidMetaDataImport, out nint ppMdi) >= 0)
-                    {
-                        legacyImport = ComInterfaceMarshaller<IMetaDataImport>.ConvertToManaged((void*)ppMdi);
-                        Marshal.Release(ppMdi);
-                    }
+                    // Legacy metadata import not available in standalone cDAC
                 }
                 catch
                 {
@@ -104,7 +83,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                 if (reader is null)
                     return CustomQueryInterfaceResult.NotHandled;
 
-                wrapper = new MetaDataImportImpl(reader, legacyImport);
+                wrapper = new MetaDataImportImpl(reader);
                 _metaDataImportImpl ??= wrapper;
                 wrapper = _metaDataImportImpl;
             }
@@ -245,18 +224,18 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
         => HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumTypeDefinitions(ulong* handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumTypeDefinitions(handle) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumTypeDefinition(ulong* handle, DacComNullableByRef<IXCLRDataTypeDefinition> typeDefinition)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumTypeDefinition(handle, typeDefinition) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumTypeDefinitions(ulong handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumTypeDefinitions(handle) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumTypeInstances(IXCLRDataAppDomain? appDomain, ulong* handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumTypeInstances(appDomain, handle) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumTypeInstance(ulong* handle, DacComNullableByRef<IXCLRDataTypeInstance> typeInstance)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumTypeInstance(handle, typeInstance) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumTypeInstances(ulong handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumTypeInstances(handle) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumTypeDefinitionsByName(char* name, uint flags, ulong* handle)
         => HResults.E_NOTIMPL;
@@ -279,16 +258,9 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     {
         int hr = HResults.S_OK;
         *handle = 0;
-
-        // Start the legacy enumeration to keep it in sync with the cDAC enumeration.
         ulong handleLocal = default;
-        int hrLocal = default;
         try
         {
-            if (_legacyModule is not null)
-            {
-                hrLocal = _legacyModule.StartEnumMethodDefinitionsByName(name, flags, &handleLocal);
-            }
             if (name == null || *name == '\0')
                 throw new ArgumentException();
             if ((flags & ~((uint)CLRDataByNameFlag.CLRDATA_BYNAME_CASE_SENSITIVE | (uint)CLRDataByNameFlag.CLRDATA_BYNAME_CASE_INSENSITIVE)) != 0)
@@ -309,12 +281,6 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyModule is not null)
-        {
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
 
@@ -337,24 +303,12 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             return ex.HResult;
         }
 
-        // Advance the legacy enumeration to keep it in sync with the cDAC enumeration.
-        IXCLRDataMethodDefinition? legacyMethod = null;
-        int hrLocal = HResults.S_OK;
-        if (_legacyModule is not null)
-        {
-            ulong legacyHandle = emd.LegacyHandle;
-            DacComNullableByRef<IXCLRDataMethodDefinition> legacyMethodOut = new(isNullRef: false);
-            hrLocal = _legacyModule.EnumMethodDefinitionByName(&legacyHandle, legacyMethodOut);
-            legacyMethod = legacyMethodOut.Interface;
-            emd.LegacyHandle = (nuint)legacyHandle;
-        }
-
         try
         {
             if (emd.Enumerator.MoveNext())
             {
                 uint token = emd.Enumerator.Current;
-                method.Interface = new ClrDataMethodDefinition(_target, _address, token, legacyMethod);
+                method.Interface = new ClrDataMethodDefinition(_target, _address, token);
             }
             else
             {
@@ -366,12 +320,6 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyModule is not null)
-        {
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
 
         return hr;
     }
@@ -393,62 +341,43 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             return ex.HResult;
         }
 
-        if (_legacyModule != null && emd.LegacyHandle != 0)
-        {
-            int hrLocal = _legacyModule.EndEnumMethodDefinitionsByName(emd.LegacyHandle);
-            if (hrLocal < 0)
-                return hrLocal;
-        }
+
 
         return hr;
     }
     int IXCLRDataModule.StartEnumMethodInstancesByName(char* name, uint flags, IXCLRDataAppDomain? appDomain, ulong* handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumMethodInstancesByName(name, flags, appDomain, handle) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumMethodInstanceByName(ulong* handle, DacComNullableByRef<IXCLRDataMethodInstance> method)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumMethodInstanceByName(handle, method) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumMethodInstancesByName(ulong handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumMethodInstancesByName(handle) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataModule.GetMethodDefinitionByToken(/*mdMethodDef*/ uint token, DacComNullableByRef<IXCLRDataMethodDefinition> methodDefinition)
     {
         int hr = HResults.S_OK;
-        int hrLocal = HResults.S_OK;
-        IXCLRDataMethodDefinition? legacyMethod = null;
         try
         {
-            if (_legacyModule is not null)
-            {
-                DacComNullableByRef<IXCLRDataMethodDefinition> legacyMethodOut = new(isNullRef: false);
-                hrLocal = _legacyModule.GetMethodDefinitionByToken(token, legacyMethodOut);
-                legacyMethod = legacyMethodOut.Interface;
-            }
 
             if ((EcmaMetadataUtils.TokenType)(token & EcmaMetadataUtils.TokenTypeMask) != EcmaMetadataUtils.TokenType.mdtMethodDef)
                 throw new ArgumentException();
 
-            methodDefinition.Interface = new ClrDataMethodDefinition(_target, _address, token, legacyMethod);
+            methodDefinition.Interface = new ClrDataMethodDefinition(_target, _address, token);
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyModule is not null)
-        {
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
 
         return hr;
     }
 
     int IXCLRDataModule.StartEnumDataByName(char* name, uint flags, IXCLRDataAppDomain? appDomain, IXCLRDataTask? tlsTask, ulong* handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumDataByName(name, flags, appDomain, tlsTask, handle) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumDataByName(ulong* handle, DacComNullableByRef<IXCLRDataValue> value)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumDataByName(handle, value) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumDataByName(ulong handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumDataByName(handle) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataModule.GetName(uint bufLen, uint* nameLen, char* name)
     {
@@ -475,24 +404,6 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyModule is not null)
-        {
-            char[] nameLocal = new char[bufLen];
-            uint nameLenLocal;
-            int hrLocal;
-            fixed (char* ptr = nameLocal)
-            {
-                hrLocal = _legacyModule.GetName(bufLen, &nameLenLocal, ptr);
-            }
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(nameLen == null || *nameLen == nameLenLocal);
-                Debug.Assert(name == null || new ReadOnlySpan<char>(nameLocal, 0, (int)nameLenLocal - 1).SequenceEqual(new string(name)));
-            }
-        }
-#endif
         return hr;
     }
     int IXCLRDataModule.GetFileName(uint bufLen, uint* nameLen, char* name)
@@ -526,21 +437,6 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             return ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyModule is not null)
-        {
-            char[] nameLocal = new char[bufLen];
-            uint nameLenLocal;
-            int hrLocal;
-            fixed (char* ptr = nameLocal)
-            {
-                hrLocal = _legacyModule.GetFileName(bufLen, &nameLenLocal, ptr);
-            }
-            Debug.Assert(hrLocal == HResults.S_OK);
-            Debug.Assert(nameLen == null || *nameLen == nameLenLocal);
-            Debug.Assert(name == null || new ReadOnlySpan<char>(nameLocal, 0, (int)nameLenLocal - 1).SequenceEqual(new string(name)));
-        }
-#endif
         return HResults.S_OK;
     }
 
@@ -568,21 +464,12 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             return ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyModule is not null)
-        {
-            uint flagsLocal;
-            int hrLocal = _legacyModule.GetFlags(&flagsLocal);
-            Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK}, DAC: {hrLocal}");
-            Debug.Assert(flagsLocal == *flags, $"cDAC: {*flags}, DAC: {flagsLocal}");
-        }
-#endif
 
         return HResults.S_OK;
     }
 
     int IXCLRDataModule.IsSameObject(IXCLRDataModule* mod)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.IsSameObject(mod) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataModule.StartEnumExtents(ulong* handle)
     {
@@ -620,15 +507,6 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             return ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyModule is not null)
-        {
-            ulong handleLocal = 0;
-            int hrLocal = _legacyModule.StartEnumExtents(&handleLocal);
-            legacyExtentHandle = handleLocal;
-            Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK}, DAC: {hrLocal}");
-        }
-#endif
 
         return hr;
     }
@@ -662,35 +540,11 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             return ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyModule is not null)
-        {
-            ulong handleLocal = legacyExtentHandle;
-            CLRDataModuleExtent dataModuleExtentLocal = default;
-            int hrLocal = _legacyModule.EnumExtent(&handleLocal, &dataModuleExtentLocal);
-            legacyExtentHandle = handleLocal;
-            Debug.Assert(hr == hrLocal, $"cDAC: {hr}, DAC: {hrLocal}");
-            if (hr == HResults.S_OK)
-            {
-                CLRDataModuleExtent* dataModuleExtent = (CLRDataModuleExtent*)extent;
-                Debug.Assert(dataModuleExtent->baseAddress == dataModuleExtentLocal.baseAddress, $"cDAC: {dataModuleExtent->baseAddress}, DAC: {dataModuleExtentLocal.baseAddress}");
-                Debug.Assert(dataModuleExtent->length == dataModuleExtentLocal.length, $"cDAC: {dataModuleExtent->length}, DAC: {dataModuleExtentLocal.length}");
-                Debug.Assert(dataModuleExtent->type == dataModuleExtentLocal.type, $"cDAC: {dataModuleExtent->type}, DAC: {dataModuleExtentLocal.type}");
-            }
-        }
-#endif
 
         return hr;
     }
     int IXCLRDataModule.EndEnumExtents(ulong handle)
     {
-#if DEBUG
-        if (_legacyModule is not null)
-        {
-            int hrLocal = _legacyModule.EndEnumExtents(handle);
-            Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK}, DAC: {hrLocal}");
-        }
-#endif
 
         return HResults.S_OK;
     }
@@ -732,19 +586,6 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyModule is not null)
-        {
-            byte[] localBuffer = new byte[(int)outBufferSize];
-            fixed (byte* localOutBuffer = localBuffer)
-            {
-                int hrLocal = _legacyModule.Request(reqCode, inBufferSize, inBuffer, outBufferSize, localOutBuffer);
-                Debug.ValidateHResult(hr, hrLocal);
-                if (hr == HResults.S_OK)
-                    Debug.Assert(new ReadOnlySpan<byte>(outBuffer, (int)outBufferSize).SequenceEqual(localBuffer));
-            }
-        }
-#endif
 
         return hr;
     }
@@ -793,14 +634,14 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
     }
 
     int IXCLRDataModule.StartEnumAppDomains(ulong* handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.StartEnumAppDomains(handle) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataModule.EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EnumAppDomain(handle, appDomain) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataModule.EndEnumAppDomains(ulong handle)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.EndEnumAppDomains(handle) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataModule.GetVersionId(Guid* vid)
-        => LegacyFallbackHelper.CanFallback() && _legacyModule is not null ? _legacyModule.GetVersionId(vid) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataModule2.SetJITCompilerFlags(uint flags)
     {
@@ -830,13 +671,6 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyModule2 is not null)
-        {
-            int hrLocal = _legacyModule2.SetJITCompilerFlags(flags);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
 
         return hr;
     }

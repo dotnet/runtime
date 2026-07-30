@@ -17,7 +17,6 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
     private readonly TargetPointer _exceptionInfoAddress;
     private readonly TargetPointer _thrownObjectHandle;
     private readonly TargetPointer _previousExInfoAddress;
-    private readonly IXCLRDataExceptionState? _legacyImpl;
 
     public ClrDataExceptionState(
         Target target,
@@ -25,8 +24,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
         uint flags,
         TargetPointer exceptionInfoAddress,
         TargetPointer thrownObjectHandle,
-        TargetPointer previousExInfoAddress,
-        IXCLRDataExceptionState? legacyImpl)
+        TargetPointer previousExInfoAddress)
     {
         _target = target;
         _threadAddress = threadAddress;
@@ -34,7 +32,6 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
         _exceptionInfoAddress = exceptionInfoAddress;
         _thrownObjectHandle = thrownObjectHandle;
         _previousExInfoAddress = previousExInfoAddress;
-        _legacyImpl = legacyImpl;
     }
 
     int IXCLRDataExceptionState.GetFlags(uint* flags)
@@ -53,31 +50,14 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            uint legacyFlags;
-            int hrLocal = _legacyImpl.GetFlags(&legacyFlags);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*flags == legacyFlags, $"cDAC flags: {*flags:x}, DAC flags: {legacyFlags:x}");
-        }
-#endif
 
         return hr;
     }
 
     int IXCLRDataExceptionState.GetPrevious(DacComNullableByRef<IXCLRDataExceptionState> exState)
     {
-        int hr = HResults.S_OK, hrLocal = HResults.S_OK;
-        IXCLRDataExceptionState? legacyPrevious = null;
+        int hr = HResults.S_OK;
 
-        if (_legacyImpl is not null)
-        {
-            DacComNullableByRef<IXCLRDataExceptionState> legacyPreviousOut = new(isNullRef: false);
-            hrLocal = _legacyImpl.GetPrevious(legacyPreviousOut);
-            legacyPrevious = legacyPreviousOut.Interface;
-        }
         try
         {
             if (_previousExInfoAddress == TargetPointer.Null)
@@ -96,8 +76,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
                     (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
                     _previousExInfoAddress,
                     prevExThrownObjectHandle,
-                    nextNestedException,
-                    legacyPrevious
+                    nextNestedException
                 );
             }
         }
@@ -105,18 +84,12 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
 
         return hr;
     }
 
     int IXCLRDataExceptionState.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetManagedObject(value) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataExceptionState.GetBaseType(/*CLRDataBaseExceptionType*/ uint* type) => HResults.E_NOTIMPL;
 
@@ -160,25 +133,6 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            char[] strLocal = new char[Math.Max((int)bufLen, 1)];
-            uint legacyStrLen;
-            int hrLocal;
-            fixed (char* strLocalPtr = strLocal)
-            {
-                hrLocal = _legacyImpl.GetString(bufLen, &legacyStrLen, str is null ? null : strLocalPtr);
-            }
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0)
-            {
-                Debug.Assert(strLen == null || *strLen == legacyStrLen);
-                int cmpLen = Math.Min((int)legacyStrLen, (int)bufLen) - 1;
-                Debug.Assert(str == null || cmpLen <= 0 || new ReadOnlySpan<char>(strLocal, 0, cmpLen).SequenceEqual(new ReadOnlySpan<char>(str, cmpLen)));
-            }
-        }
-#endif
 
         return hr;
     }
@@ -195,50 +149,18 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
                 hr = HResults.S_OK;
             }
         }
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            byte[] localBuffer = new byte[(int)outBufferSize];
-            fixed (byte* localOutBuffer = localBuffer)
-            {
-                int hrLocal = _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, localOutBuffer);
-                Debug.ValidateHResult(hr, hrLocal);
-                if (hr == HResults.S_OK && reqCode == (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION)
-                {
-                    Debug.Assert(outBufferSize == sizeof(uint) && outBuffer is not null);
-                    uint legacyRevision = *(uint*)localOutBuffer;
-                    uint revision = *(uint*)outBuffer;
-                    Debug.Assert(revision == legacyRevision);
-                }
-            }
-        }
-#endif
         return hr;
     }
 
     int IXCLRDataExceptionState.IsSameState(EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord)
     {
         int hr = IsSameState2((uint)CLRDataExceptionSameFlag.CLRDATA_EXSAME_SECOND_CHANCE, exRecord);
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            int hrLocal = _legacyImpl.IsSameState(exRecord, contextSize, cxRecord);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
 
     int IXCLRDataExceptionState.IsSameState2(uint flags, EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord)
     {
         int hr = IsSameState2(flags, exRecord);
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            int hrLocal = _legacyImpl.IsSameState2(flags, exRecord, contextSize, cxRecord);
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
 
@@ -294,29 +216,16 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
 
     int IXCLRDataExceptionState.GetTask(DacComNullableByRef<IXCLRDataTask> task)
     {
-        int hr = HResults.S_OK, hrLocal = HResults.S_OK;
-        IXCLRDataTask? legacyTask = null;
+        int hr = HResults.S_OK;
 
-        if (_legacyImpl is not null)
-        {
-            DacComNullableByRef<IXCLRDataTask> legacyTaskOut = new(isNullRef: false);
-            hrLocal = _legacyImpl.GetTask(legacyTaskOut);
-            legacyTask = legacyTaskOut.Interface;
-        }
         try
         {
-            task.Interface = new ClrDataTask(_threadAddress, _target, legacyTask);
+            task.Interface = new ClrDataTask(_threadAddress, _target);
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
         return hr;
     }
 }

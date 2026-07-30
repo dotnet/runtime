@@ -20,15 +20,11 @@
 #include "dwreport.h"
 #include "primitives.h"
 #include "dbgutil.h"
-#include "cdac.h"
-#include <clrconfignocache.h>
 
 #ifdef USE_DAC_TABLE_RVA
 #include <dactablerva.h>
 #else
 extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
-// cDAC depends on symbol lookup to find the contract descriptor
-#define CAN_USE_CDAC
 #endif
 
 extern TADDR g_ClrModuleBase;
@@ -2754,7 +2750,6 @@ private:
 //----------------------------------------------------------------------------
 
 ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget/*=0*/)
-    : m_cdac{}
 {
     SUPPORTS_DAC_HOST_ONLY;     // ctor does no marshalling - don't check with DacCop
 
@@ -6539,59 +6534,10 @@ CLRDataCreateInstance(REFIID iid,
     InitializeLogging();
 #endif
 
-    // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
-    ReleaseHolder<IUnknown> cdacInterface = nullptr;
-#ifdef CAN_USE_CDAC
-    CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
-    if (enable.IsSet())
-    {
-        DWORD val;
-        if (enable.TryAsInteger(10, val) && val == 1)
-        {
-            // TODO: [cdac] TryGetSymbol is only implemented for Linux, OSX, and Windows.
-            uint64_t contractDescriptorAddr = 0;
-            if (TryGetSymbol(pClrDataAccess->m_pTarget, pClrDataAccess->m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
-            {
-                IUnknown* thisImpl;
-                HRESULT qiRes = pClrDataAccess->QueryInterface(IID_IUnknown, (void**)&thisImpl);
-                _ASSERTE(SUCCEEDED(qiRes));
-                CDAC& cdac = pClrDataAccess->m_cdac;
-                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pTarget, thisImpl);
-                if (cdac.IsValid())
-                {
-                    // Get SOS interfaces from the cDAC if available.
-                    cdac.CreateSosInterface(&cdacInterface);
-                    _ASSERTE(cdacInterface != nullptr);
+    hr = pClrDataAccess->QueryInterface(iid, iface);
 
-                    // Lifetime is now managed by cDAC implementation of SOS interfaces
-                    pClrDataAccess->Release();
-                }
-
-                // Release the AddRef from the QI.
-                pClrDataAccess->Release();
-            }
-
-            if (cdacInterface == nullptr)
-            {
-                // If we requested to use the cDAC, but failed to create the cDAC interface, return failure
-                // Release the ClrDataAccess instance we created
-                pClrDataAccess->Release();
-                return E_FAIL;
-            }
-        }
-    }
-#endif
-    if (cdacInterface != nullptr)
-    {
-        hr = cdacInterface->QueryInterface(iid, iface);
-    }
-    else
-    {
-        hr = pClrDataAccess->QueryInterface(iid, iface);
-
-        // Lifetime is now managed by caller
-        pClrDataAccess->Release();
-    }
+    // Lifetime is now managed by caller
+    pClrDataAccess->Release();
 
     return hr;
 }

@@ -24,7 +24,6 @@ public readonly struct NativeVarLocation
 public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 {
     private readonly Target _target;
-    private readonly IXCLRDataValue? _legacyImpl;
     private readonly uint _flags;
     private readonly ulong _totalSize;
     private readonly NativeVarLocation[] _locations;
@@ -32,11 +31,9 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
     public ClrDataValue(
         Target target,
         uint flags,
-        NativeVarLocation[] locations,
-        IXCLRDataValue? legacyImpl)
+        NativeVarLocation[] locations)
     {
         _target = target;
-        _legacyImpl = legacyImpl;
         _flags = flags;
         _locations = locations;
 
@@ -66,16 +63,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            uint flagsLocal;
-            int hrLocal = _legacyImpl.GetFlags(&flagsLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0)
-                Debug.Assert(*flags == flagsLocal, $"GetFlags cDAC: 0x{*flags:X}, DAC: 0x{flagsLocal:X}");
-        }
-#endif
 
         return hr;
     }
@@ -98,16 +85,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            ClrDataAddress addressLocal;
-            int hrLocal = _legacyImpl.GetAddress(&addressLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0)
-                Debug.Assert((ulong)*address == (ulong)addressLocal, $"GetAddress cDAC: 0x{(ulong)*address:X}, DAC: 0x{(ulong)addressLocal:X}");
-        }
-#endif
 
         return hr;
     }
@@ -130,16 +107,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            ulong sizeLocal;
-            int hrLocal = _legacyImpl.GetSize(&sizeLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0)
-                Debug.Assert(*size == sizeLocal, $"GetSize cDAC: {*size}, DAC: {sizeLocal}");
-        }
-#endif
 
         return hr;
     }
@@ -185,28 +152,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            byte[] legacyBuf = new byte[bufLen];
-            uint legacyDataSize;
-            int hrLocal;
-            fixed (byte* pLegacy = legacyBuf)
-            {
-                hrLocal = _legacyImpl.GetBytes(bufLen, &legacyDataSize, pLegacy);
-            }
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0 && hrLocal >= 0)
-            {
-                if (dataSize is not null)
-                    Debug.Assert(*dataSize == legacyDataSize, $"GetBytes dataSize cDAC: {*dataSize}, DAC: {legacyDataSize}");
-
-                int compareLen = (int)Math.Min(_totalSize, legacyDataSize);
-                for (int i = 0; i < compareLen; i++)
-                    Debug.Assert(buffer[i] == legacyBuf[i], $"GetBytes mismatch at byte {i}: cDAC: 0x{buffer[i]:X2}, DAC: 0x{legacyBuf[i]:X2}");
-            }
-        }
-#endif
 
         return hr;
     }
@@ -250,21 +195,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            uint revisionLocal = 0;
-            int hrLocal = _legacyImpl.Request(
-                reqCode,
-                inBufferSize,
-                inBuffer,
-                outBufferSize,
-                outBuffer is null ? null : (byte*)&revisionLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*(uint*)outBuffer == revisionLocal);
-        }
-#endif
 
         return hr;
     }
@@ -354,16 +284,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            uint numLocsLocal;
-            int hrLocal = _legacyImpl.GetNumLocations(&numLocsLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0)
-                Debug.Assert(*numLocs == numLocsLocal, $"GetNumLocations cDAC: {*numLocs}, DAC: {numLocsLocal}");
-        }
-#endif
 
         return hr;
     }
@@ -388,26 +308,6 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            uint flagsLocal;
-            ClrDataAddress argLocal;
-            int hrLocal = _legacyImpl.GetLocationByIndex(loc, &flagsLocal, &argLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0)
-            {
-                Debug.Assert(*flags == flagsLocal, $"GetLocationByIndex[{loc}] flags cDAC: {*flags}, DAC: {flagsLocal}");
-                // Address comparison is best-effort: the native DAC does not handle REGNUM_AMBIENT_SP
-                // on AMD64 (returns garbage from GetRegOffsInCONTEXT's default case), so addresses may
-                // legitimately differ for variables stored relative to the ambient stack pointer.
-                if ((ulong)*arg != (ulong)argLocal)
-                {
-                    Debug.WriteLine($"GetLocationByIndex[{loc}] addr divergence - cDAC: 0x{(ulong)*arg:X}, DAC: 0x{(ulong)argLocal:X}");
-                }
-            }
-        }
-#endif
 
         return hr;
     }

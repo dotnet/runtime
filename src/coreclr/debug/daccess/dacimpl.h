@@ -711,8 +711,6 @@ class DacStreamManager;
 
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-#include "cdac.h"
-
 //----------------------------------------------------------------------------
 //
 // DacPatchCache - Caches debugger breakpoint patches from the target process.
@@ -1383,10 +1381,6 @@ public:
     bool m_debugMode;
 
     DacPatchCache m_patchCache;
-
-    // This currently exists on the DAC as a way of managing lifetime of loading/freeing the cdac
-    // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
-    CDAC m_cdac;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 

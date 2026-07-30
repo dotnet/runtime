@@ -261,6 +261,7 @@
     <SubsetName Include="Tools.CdacTests" OnDemand="true" Description="Unit tests for the diagnostic data contract reader." />
     <SubsetName Include="Tools.CdacDumpTests" OnDemand="true" Description="Dump-based integration tests for the diagnostic data contract reader." />
     <SubsetName Include="Tools.CdacStressTests" OnDemand="true" Description="Stress integration tests for the diagnostic data contract reader." />
+    <SubsetName Include="Tools.CdacValidationShim" OnDemand="true" Description="Test-only cDAC validation shim that compares the production cDAC against the legacy DAC. Never packaged." />
     <SubsetName Include="Tools.ILAsm" OnDemand="true" Description="Build only the managed ilasm tool." />
 
     <!-- Host -->
@@ -525,9 +526,20 @@
     <_CDacToolsBuilt Condition="'$(_CDacToolsBuilt)' != 'true'">true</_CDacToolsBuilt>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(_subset.Contains('+tools.cdac+'))">
-    <ProjectToBuild Include="$(SharedNativeRoot)managed\compile-native.proj" Category="tools" />
+  <!-- The cDAC validation shim is a test-only NativeAOT binary (see
+       src/native/managed/cdac/mscordaccore_cdac_validation_shim). It is never packaged, so it is
+       opt-in rather than part of tools.cdac. -->
+  <PropertyGroup>
+    <_BuildCdacValidationShim Condition="$(_subset.Contains('+tools.cdacvalidationshim+'))">true</_BuildCdacValidationShim>
+    <_BuildCdacValidationShim Condition="'$(_BuildCdacValidationShim)' == ''">false</_BuildCdacValidationShim>
+  </PropertyGroup>
 
+  <ItemGroup Condition="$(_subset.Contains('+tools.cdac+')) or $(_subset.Contains('+tools.cdacvalidationshim+'))">
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\compile-native.proj" Category="tools"
+                    AdditionalProperties="BuildCdacValidationShim=$(_BuildCdacValidationShim)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+tools.cdac+'))">
     <!-- Direct references to cDAC projects for packing -->
     <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj;
                              $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj;

@@ -49,6 +49,7 @@ ISOSDacInterface* / IXCLRDataProcess (COM-style API surface)
 | `Microsoft.Diagnostics.DataContractReader.Legacy` | `SOSDacImpl` — bridges `ISOSDacInterface*` COM APIs to contracts |
 | `Microsoft.Diagnostics.DataContractReader` | Contract/data descriptor parsing and `Target` construction |
 | `mscordaccore_universal` | Entry point that wires everything together |
+| `mscordaccore_cdac_validation_shim` | Test-only shim that compares the production cDAC against the legacy DAC (never packaged) |
 | `tests` | Unit tests with mock memory infrastructure |
 
 ## Contract specifications
@@ -105,15 +106,18 @@ Add `<RollForward>LatestMajor</RollForward>` to the `.csproj` `<PropertyGroup>` 
 run on a .NET 10+ checkout. Add a `Console.ReadKey()` in `Program.cs` to keep the process
 alive while debugging.
 
-Create a PowerShell script `debug.ps1` to launch WinDbg with the cDAC enabled:
+Create a PowerShell script `debug.ps1` to launch WinDbg:
 
 ```powershell
-$env:DOTNET_ENABLE_CDAC=1
 windbgx C:\runtime\artifacts\bin\testhost\net10.0-windows-Debug-x64\dotnet.exe .\bin\Debug\net9.0\helloworld.dll
 ```
 
 Replace `C:\runtime` with your runtime repo checkout path. You can also use `corerun.exe`
 with a CORE_ROOT directory instead of the testhost `dotnet.exe`.
+
+SOS decides whether to load the cDAC on its own (`runtimes --usecdac true` forces it). To
+point SOS at a specific cDAC binary — the one you just built, or the validation shim — set
+`DOTNET_CDAC_PATH` to its full path before launching the debugger.
 
 ### Debugging the cDAC with Visual Studio
 
@@ -137,22 +141,25 @@ running `!dumpstack`.
 ## Integration testing with SOS
 
 The [dotnet/diagnostics](https://github.com/dotnet/diagnostics) repo has SOS tests that
-exercise the cDAC end-to-end against a live .NET process. These tests can run in two modes:
-with the legacy DAC or with the cDAC enabled.
+exercise the cDAC end-to-end against a live .NET process. The `-dacMode` build argument
+selects which data-access implementation SOS loads:
 
-### How cDAC is activated
+| `-dacMode` | What SOS loads |
+|------------|----------------|
+| `dac`      | The legacy in-box DAC (`mscordaccore`) only. |
+| `cdac`     | The standalone production cDAC (`mscordaccore_universal`) only. |
+| `cdacfallback` | The [validation shim](mscordaccore_cdac_validation_shim/README.md), comparing the production cDAC against the legacy DAC; unimplemented cDAC APIs delegate to the legacy DAC. |
+| `cdacverify`   | The validation shim in strict mode: only the allowlisted APIs may delegate. |
 
-`SOSDacImpl` has `#if DEBUG` cross-validation that compares cDAC results against the legacy
-DAC. To enable this, build the cDAC in Debug configuration while everything else can be
-Release. Note that some legacy calls must run outside `#if DEBUG` when their results are
-used functionally (not just for validation) — see the
-[Legacy project README](Microsoft.Diagnostics.DataContractReader.Legacy/README.md) for
-details.
+### How the cDAC is activated
 
-At runtime, the DAC checks the `ENABLE_CDAC` config knob
-([daccess.cpp](/src/coreclr/debug/daccess/daccess.cpp)). When set to `1`, it looks up the
-`DotNetRuntimeContractDescriptor` symbol in the target process, creates the managed cDAC
-interface via `mscordaccore_universal`, and routes SOS queries through it.
+The cDAC is a standalone module. Nothing in the runtime hosts it: SOS loads
+`mscordaccore_universal` itself, hands it an `ICLRDataTarget`, and calls
+`CLRDataCreateInstance`. `DOTNET_CDAC_PATH` overrides which binary SOS loads, which is how
+the validation shim is substituted for the production cDAC in the two comparison modes.
+
+The cDAC no longer contains any legacy-DAC comparison code. All comparison lives in the
+validation shim, which is built only for testing and is never packaged.
 
 ### Building the runtime for SOS testing
 
@@ -162,9 +169,15 @@ Build from the runtime repo root:
 ./build.sh clr+clr.hosts+libs+tools.cdac -c Debug -lc Release
 ```
 
-The debug build of the runtime (`-rc Debug`, which is the default when `-c Debug` is used)
-is required for the brittle DAC to delegate to the cDAC. Release build of the libraries
-(`-lc Release`) is highly recommended for a faster inner loop.
+Add `tools.cdacvalidationshim` when you want to run the `cdacfallback` or `cdacverify`
+modes:
+
+```bash
+./build.sh clr+clr.hosts+libs+tools.cdac+tools.cdacvalidationshim -c Debug -lc Release
+```
+
+Release build of the libraries (`-lc Release`) is highly recommended for a faster inner
+loop.
 
 Once the initial build is done, shorter incremental rebuilds can be done with:
 
@@ -175,6 +188,10 @@ Once the initial build is done, shorter incremental rebuilds can be done with:
 This produces a testhost at:
 `artifacts/bin/testhost/net<version>-<os>-Debug-<arch>/shared/Microsoft.NETCore.App/<version>/`
 
+The cDAC and the shim are published outside the testhost, at
+`artifacts/bin/mscordaccore_universal/<config>/<rid>/publish/` and
+`artifacts/bin/mscordaccore_cdac_validation_shim/<config>/<rid>/publish/`.
+
 ### Running SOS tests in the diagnostics repo
 
 See [privatebuildtesting.md](https://github.com/dotnet/diagnostics/blob/main/documentation/privatebuildtesting.md)
@@ -184,20 +201,33 @@ in the diagnostics repo for the full procedure. The key steps are:
 # Build managed code (skip native if already built)
 ./eng/build.sh -c Release --restore --build -skipnative
 
-# Install test runtimes, overlay your local build, and run tests with cDAC
-./eng/build.sh -c Release -test -useCdac -privatebuild -installruntimes \
+# Standalone cDAC
+./eng/build.sh -c Release -test -privatebuild -installruntimes \
+  -dacMode cdac \
+  -cdacPath <runtime>/artifacts/bin/mscordaccore_universal/<config>/<rid>/publish/libmscordaccore_universal.so \
+  -liveRuntimeDir <path-to-testhost-shared-framework>
+
+# Validation shim (fallback mode; use -dacMode cdacverify for strict mode)
+./eng/build.sh -c Release -test -privatebuild -installruntimes \
+  -dacMode cdacfallback \
+  -cdacPath <runtime>/artifacts/bin/mscordaccore_universal/<config>/<rid>/publish/libmscordaccore_universal.so \
+  -shimPath <runtime>/artifacts/bin/mscordaccore_cdac_validation_shim/<config>/<rid>/publish/libmscordaccore_cdac_validation_shim.so \
+  -legacyDacPath <path-to-testhost-shared-framework>/libmscordaccore.so \
   -liveRuntimeDir <path-to-testhost-shared-framework>
 ```
 
-The `-useCdac` flag sets `SOS_TEST_CDAC=true`, which causes the test runner (`SOSRunner.cs`)
-to set `DOTNET_ENABLE_CDAC=1` on each test process.
+The shim must be deployed next to the production cDAC, because it loads the cDAC from its
+own directory. `eng/build.*` in the diagnostics repo does that: `-cdacPath` and `-shimPath`
+both copy into the SOS native binaries directory, and the test harness then sets
+`DOTNET_CDAC_PATH` (to the shim), `DOTNET_CDAC_LEGACY_DAC_PATH` and
+`DOTNET_CDAC_VALIDATION_MODE` on each debugger process.
 
 ### CI pipeline
 
 The `runtime-diagnostics.yml` pipeline runs the SOS tests automatically on every PR that
-touches `src/native/managed/cdac/**` or `src/coreclr/debug/runtimeinfo/**`. It runs the
-tests twice — once with `-useCdac` (cDAC path) and once without (legacy DAC path) — on
-Windows x64.
+touches `src/native/managed/cdac/**` or `src/coreclr/debug/runtimeinfo/**`. The `SOSTests`
+stage runs four legs on Windows x64 over one shared build: `cDAC`, `cDAC_fallback`,
+`cDAC_verify` and `DAC`.
 
 > **Note:** The runtime and diagnostics repos must be on the same major version. CLRMD
 > validates the DAC binary version against the runtime, so a cross-major-version mismatch

@@ -18,14 +18,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame2
 {
     private readonly Target _target;
-    private readonly IXCLRDataFrame? _legacyImpl;
 
     private readonly IStackDataFrameHandle _dataFrame;
 
-    public ClrDataFrame(Target target, IStackDataFrameHandle dataFrame, IXCLRDataFrame? legacyImpl)
+    public ClrDataFrame(Target target, IStackDataFrameHandle dataFrame)
     {
         _target = target;
-        _legacyImpl = legacyImpl;
 
         _dataFrame = dataFrame;
     }
@@ -66,24 +64,6 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            byte[] localContextBuf = new byte[contextBufSize];
-            int hrLocal = _legacyImpl.GetContext(contextFlags, contextBufSize, null, localContextBuf);
-            Debug.ValidateHResult(hr, hrLocal);
-
-            if (hr == HResults.S_OK)
-            {
-                IPlatformAgnosticContext contextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
-                IPlatformAgnosticContext localContextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
-                contextStruct.FillFromBuffer(contextBuf);
-                localContextStruct.FillFromBuffer(localContextBuf);
-
-                Debug.Assert(contextStruct.Equals(localContextStruct));
-            }
-        }
-#endif
 
         return hr;
     }
@@ -92,25 +72,13 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     {
         int hr = HResults.S_OK;
 
-        int hrLegacy = HResults.S_OK;
-        IXCLRDataAppDomain? legacyAppDomain = null;
-        if (_legacyImpl is not null)
-        {
-            DacComNullableByRef<IXCLRDataAppDomain> legacyAppDomainOut = new(isNullRef: false);
-            hrLegacy = _legacyImpl.GetAppDomain(legacyAppDomainOut);
-            if (hrLegacy >= 0)
-            {
-                legacyAppDomain = legacyAppDomainOut.Interface;
-            }
-        }
-
         try
         {
             TargetPointer appDomainAddr = _target.Contracts.Loader.GetAppDomain();
 
             if (appDomainAddr != TargetPointer.Null)
             {
-                appDomain.Interface = new ClrDataAppDomain(_target, appDomainAddr, legacyAppDomain);
+                appDomain.Interface = new ClrDataAppDomain(_target, appDomainAddr);
             }
             else
             {
@@ -122,12 +90,6 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            Debug.ValidateHResult(hr, hrLegacy);
-        }
-#endif
 
         return hr;
     }
@@ -152,16 +114,6 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            uint numArgsLocal;
-            int hrLocal = _legacyImpl.GetNumArguments(&numArgsLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*numArgs == numArgsLocal, $"cDAC: {*numArgs}, DAC: {numArgsLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -173,18 +125,6 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         char* name)
     {
         int hr = HResults.S_OK;
-
-        int hrLegacy = HResults.S_OK;
-        IXCLRDataValue? legacyValue = null;
-        if (_legacyImpl is not null)
-        {
-            DacComNullableByRef<IXCLRDataValue> legacyArgOut = new(isNullRef: false);
-            hrLegacy = _legacyImpl.GetArgumentByIndex(index, legacyArgOut, bufLen, null, null);
-            if (hrLegacy >= 0)
-            {
-                legacyValue = legacyArgOut.Interface;
-            }
-        }
 
         try
         {
@@ -241,23 +181,13 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             if (!arg.IsNullRef)
             {
                 arg.Interface = CreateValueFromDebugInfo(
-                    header, isArg: true, sigIndex: index, varInfoSlot: index,
-                    legacyValue, mdh, moduleHandle);
+                    header, isArg: true, sigIndex: index, varInfoSlot: index, mdh, moduleHandle);
             }
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            // See AllowCdacSuccess in DebugExtensions.cs — the native DAC's MetaSig
-            // constructor can fail on certain frames (e.g., EH dispatch) where the cDAC
-            // succeeds via contract-based metadata access.
-            Debug.ValidateHResult(hr, hrLegacy, HResultValidationMode.AllowCdacSuccess);
-        }
-#endif
         return hr;
     }
 
@@ -274,16 +204,6 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            uint numLocalsLocal;
-            int hrLocal = _legacyImpl.GetNumLocalVariables(&numLocalsLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*numLocals == numLocalsLocal, $"cDAC: {*numLocals}, DAC: {numLocalsLocal}");
-        }
-#endif
         return hr;
     }
 
@@ -295,18 +215,6 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         char* name)
     {
         int hr = HResults.S_OK;
-
-        int hrLegacy = HResults.S_OK;
-        IXCLRDataValue? legacyValue = null;
-        if (_legacyImpl is not null)
-        {
-            DacComNullableByRef<IXCLRDataValue> legacyLocalOut = new(isNullRef: false);
-            hrLegacy = _legacyImpl.GetLocalVariableByIndex(index, legacyLocalOut, bufLen, null, null);
-            if (hrLegacy >= 0)
-            {
-                legacyValue = legacyLocalOut.Interface;
-            }
-        }
 
         try
         {
@@ -334,21 +242,13 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                 // The locals are indexed immediately following the arguments in the NativeVarInfos.
                 // varInfoSlot = index + numArgs
                 localVariable.Interface = CreateValueFromDebugInfo(
-                    argHeader, isArg: false, sigIndex: index, varInfoSlot: index + numArgs,
-                    legacyValue, mdh, moduleHandle);
+                    argHeader, isArg: false, sigIndex: index, varInfoSlot: index + numArgs, mdh, moduleHandle);
             }
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
         }
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            // See comment in GetArgumentByIndex.
-            Debug.ValidateHResult(hr, hrLegacy, HResultValidationMode.AllowCdacSuccess);
-        }
-#endif
         return hr;
     }
 
@@ -357,20 +257,11 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         uint bufLen,
         uint* nameLen,
         char* nameBuf)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetCodeName(flags, bufLen, nameLen, nameBuf) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataFrame.GetMethodInstance(DacComNullableByRef<IXCLRDataMethodInstance> method)
     {
         int hr = HResults.S_OK;
-
-        int hrLocal = HResults.S_OK;
-        IXCLRDataMethodInstance? legacyMethod = null;
-        if (_legacyImpl is not null)
-        {
-            DacComNullableByRef<IXCLRDataMethodInstance> legacyMethodOut = new(isNullRef: false);
-            hrLocal = _legacyImpl.GetMethodInstance(legacyMethodOut);
-            legacyMethod = legacyMethodOut.Interface;
-        }
 
         try
         {
@@ -378,19 +269,13 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             MethodDescHandle mdh = GetFrameMethodDesc(out _);
             TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
 
-            method.Interface = new ClrDataMethodInstance(_target, mdh, appDomain, legacyMethod);
+            method.Interface = new ClrDataMethodInstance(_target, mdh, appDomain);
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            Debug.ValidateHResult(hr, hrLocal);
-        }
-#endif
 
         return hr;
     }
@@ -401,7 +286,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         byte* inBuffer,
         uint outBufferSize,
         byte* outBuffer)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataFrame.GetNumTypeArguments(uint* numTypeArgs)
         => HResults.E_NOTIMPL;
@@ -445,7 +330,6 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         bool isArg,
         uint sigIndex,
         uint varInfoSlot,
-        IXCLRDataValue? legacyImpl,
         MethodDescHandle mdh,
         Contracts.ModuleHandle moduleHandle)
     {
@@ -497,7 +381,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             ];
         }
 
-        return new ClrDataValue(_target, valueFlags, locations, legacyImpl);
+        return new ClrDataValue(_target, valueFlags, locations);
     }
 
     // ========== Signature-based flag computation ==========

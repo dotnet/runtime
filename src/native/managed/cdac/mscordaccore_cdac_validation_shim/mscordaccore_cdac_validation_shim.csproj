@@ -1,0 +1,66 @@
+<Project>
+  <PropertyGroup>
+    <NeedsAotPublish>true</NeedsAotPublish>
+    <!-- Test-only binary. It must never be installed next to the runtime or packaged. -->
+    <IsRuntimeComponent>false</IsRuntimeComponent>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <AssemblyName>$(LibPrefix)$(MSBuildProjectName)</AssemblyName>
+    <!-- See mscordaccore_universal.csproj: LibPrefix is baked into AssemblyName, so the
+         NativeAOT lib prefix must be disabled to avoid a double prefix. -->
+    <UseNativeLibPrefix>false</UseNativeLibPrefix>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <RootNamespace>Microsoft.Diagnostics.DataContractReader.ValidationShim</RootNamespace>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+
+    <!-- Never shipped, never packaged: this binary only exists to compare a production cDAC
+         against a legacy DAC while the dotnet/diagnostics SOS test suite runs. -->
+    <IsShipping>false</IsShipping>
+    <IsShippingPackage>false</IsShippingPackage>
+    <IsPackable>false</IsPackable>
+
+    <!-- The shim is always a "Debug" binary regardless of the repo configuration: the recovered
+         comparison blocks are guarded by #if DEBUG and rely on Debug.Assert being live. -->
+    <DefineConstants>$(DefineConstants);DEBUG;CDAC_VALIDATION_SHIM</DefineConstants>
+    <Optimize>false</Optimize>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+
+    <!-- The proxies deliberately mirror unused parameters and duplicated interop declarations. -->
+    <NoWarn>$(NoWarn);IDE0059;IDE0060;CS0649</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CommonPath>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', 'src'))</CommonPath>
+    <CDacLegacyPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', 'Microsoft.Diagnostics.DataContractReader.Legacy'))</CDacLegacyPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\HResults.cs" Link="Common\System\HResults.cs" />
+  </ItemGroup>
+
+  <!--
+    The shim privately duplicates the COM definitions rather than referencing the production cDAC
+    assemblies: it must talk to the production cDAC purely through its native exports, exactly the
+    way real consumers do. Compiling the same declaration files into this assembly keeps the two
+    sides ABI-identical without creating a managed dependency on the cDAC implementation.
+  -->
+  <ItemGroup>
+    <Compile Include="$(CDacLegacyPath)ISOSDacInterface.cs" Link="Interop\ISOSDacInterface.cs" />
+    <Compile Include="$(CDacLegacyPath)IXCLRData.cs" Link="Interop\IXCLRData.cs" />
+    <Compile Include="$(CDacLegacyPath)ICLRData.cs" Link="Interop\ICLRData.cs" />
+    <Compile Include="$(CDacLegacyPath)IMetaDataImport.cs" Link="Interop\IMetaDataImport.cs" />
+    <Compile Include="$(CDacLegacyPath)Interop.BOOL.cs" Link="Interop\Interop.BOOL.cs" />
+    <Compile Include="$(CDacLegacyPath)Dbi\IDacDbiInterface.cs" Link="Interop\IDacDbiInterface.cs" />
+    <Compile Include="$(CDacLegacyPath)Marshalling\ClrDataAddress.cs" Link="Interop\ClrDataAddress.cs" />
+    <Compile Include="$(CDacLegacyPath)Marshalling\DacComNullableByRef.cs" Link="Interop\DacComNullableByRef.cs" />
+  </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

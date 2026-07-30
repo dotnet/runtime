@@ -11,6 +11,10 @@
         <!-- add new projects here -->
         <!-- NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)libhellomanaged/src/libhellomanaged.csproj" -->
         <NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)cdac/mscordaccore_universal/mscordaccore_universal.csproj" />
+        <!-- Test-only cDAC validation shim. Opt-in (tools.cdacvalidationshim) because it is not part of
+             any product layout: it is only consumed by the dotnet/diagnostics SOS test legs. -->
+        <NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)cdac/mscordaccore_cdac_validation_shim/mscordaccore_cdac_validation_shim.csproj"
+                                   Condition="'$(BuildCdacValidationShim)' == 'true'" />
     </ItemGroup>
 
     <!-- Decide if we're going to do the NativeAOT builds -->

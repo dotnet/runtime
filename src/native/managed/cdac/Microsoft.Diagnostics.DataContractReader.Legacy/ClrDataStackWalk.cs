@@ -17,17 +17,15 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     private readonly TargetPointer _threadAddr;
     private readonly uint _flags;
     private readonly Target _target;
-    private readonly IXCLRDataStackWalk? _legacyImpl;
 
     private bool _currentFrameIsValid;
     private readonly IEnumerator<IStackDataFrameHandle> _dataFrames;
 
-    public ClrDataStackWalk(TargetPointer threadAddr, uint flags, Target target, IXCLRDataStackWalk? legacyImpl)
+    public ClrDataStackWalk(TargetPointer threadAddr, uint flags, Target target)
     {
         _threadAddr = threadAddr;
         _flags = flags;
         _target = target;
-        _legacyImpl = legacyImpl;
 
         ThreadData threadData = _target.Contracts.Thread.GetThreadData(_threadAddr);
         _dataFrames = _target.Contracts.StackWalk.CreateStackWalk(threadData).GetEnumerator();
@@ -83,24 +81,6 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         }
 
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            byte[] localContextBuf = new byte[contextBufSize];
-            int hrLocal = _legacyImpl.GetContext(contextFlags, contextBufSize, null, localContextBuf);
-            Debug.ValidateHResult(hr, hrLocal);
-
-            if (hr == HResults.S_OK)
-            {
-                IPlatformAgnosticContext contextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
-                IPlatformAgnosticContext localContextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
-                contextStruct.FillFromBuffer(contextBuf);
-                localContextStruct.FillFromBuffer(localContextBuf);
-
-                Debug.Assert(contextStruct.Equals(localContextStruct));
-            }
-        }
-#endif
 
         return hr;
     }
@@ -109,22 +89,12 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     {
         int hr = HResults.S_OK;
 
-        IXCLRDataFrame? legacyFrame = null;
-        if (_legacyImpl is not null)
-        {
-            DacComNullableByRef<IXCLRDataFrame> legacyFrameOut = new(isNullRef: false);
-            int hrLocal = _legacyImpl.GetFrame(legacyFrameOut);
-            if (hrLocal < 0)
-                return hrLocal;
-            legacyFrame = legacyFrameOut.Interface;
-        }
-
         try
         {
             if (!_currentFrameIsValid)
                 throw new ArgumentException();
 
-            frame.Interface = new ClrDataFrame(_target, _dataFrames.Current, legacyFrame);
+            frame.Interface = new ClrDataFrame(_target, _dataFrames.Current);
         }
         catch (System.Exception ex)
         {
@@ -136,7 +106,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     int IXCLRDataStackWalk.GetFrameType(uint* simpleType, uint* detailedType)
         => HResults.E_NOTIMPL;
     int IXCLRDataStackWalk.GetStackSizeSkipped(ulong* stackSizeSkipped)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetStackSizeSkipped(stackSizeSkipped) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
     int IXCLRDataStackWalk.Next()
     {
         int hr;
@@ -149,18 +119,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         {
             hr = ex.HResult;
         }
-
-        // Advance the legacy stack walk to keep it in sync with the cDAC walk.
-        // GetFrame() passes the legacy frame to ClrDataFrame, which delegates
         // GetArgumentByIndex/GetLocalVariableByIndex to it. If we don't advance
-        // the legacy walk here, those calls operate on the wrong frame.
-        if (_legacyImpl is not null)
-        {
-            int hrLocal = _legacyImpl.Next();
-#if DEBUG
-            Debug.ValidateHResult(hr, hrLocal);
-#endif
-        }
 
         return hr;
     }
@@ -202,25 +161,6 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             hr = ex.HResult;
         }
 
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            int hrLocal;
-            byte[] localOutBuffer = new byte[outBufferSize];
-            fixed (byte* localOutBufferPtr = localOutBuffer)
-            {
-                hrLocal = _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, localOutBufferPtr);
-            }
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                for (int i = 0; i < outBufferSize; i++)
-                {
-                    Debug.Assert(localOutBuffer[i] == outBuffer[i], $"cDAC: {outBuffer[i]:x}, DAC: {localOutBuffer[i]:x}");
-                }
-            }
-        }
-#endif
         return hr;
     }
     int IXCLRDataStackWalk.SetContext(uint contextSize, [In, MarshalUsing(CountElementName = "contextSize")] byte[] context)

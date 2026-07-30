@@ -495,7 +495,7 @@ void CdacStressPolicy::Initialize()
         return;
     }
 
-    if (createSos(s_cdacHandle, nullptr, &s_cdacSosInterface) != 0)
+    if (createSos(s_cdacHandle, &s_cdacSosInterface) != 0)
     {
         CDAC_ERR("cdac_reader_create_sos_interface failed.\n");
         auto freeFn = reinterpret_cast<decltype(&cdac_reader_free)>(::GetProcAddress(s_cdacModule, "cdac_reader_free"));

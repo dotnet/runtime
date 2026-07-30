@@ -431,6 +431,6 @@ public unsafe class IXCLRDataProcessTests
                 builder.MemoryBuilder.AddHeapFragment(fragment);
         }
 
-        return new SOSDacImpl(builder.Build(), legacyObj: null);
+        return new SOSDacImpl(builder.Build());
     }
 }

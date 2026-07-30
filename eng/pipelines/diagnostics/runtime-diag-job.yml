@@ -107,10 +107,18 @@ jobs:
         - _TestArgs: ''
 
       # Selects which DAC/cDAC SOS loads (see DacMode in dotnet/diagnostics SOSRunner). The cdac mode
-      # additionally overlays the runtime-under-test's own cDAC next to sos.dll; the freshly built cDAC is
-      # downloaded by sos-test-leg.yml into artifacts/cdac and passed via -cdacPath.
+      # overlays the runtime-under-test's own cDAC next to sos.dll; the freshly built cDAC is downloaded
+      # by sos-test-leg.yml into artifacts/cdac and passed via -cdacPath. The cdacfallback / cdacverify
+      # modes additionally deploy the test-only validation shim (artifacts/cdacshim) and point it at the
+      # legacy DAC from the runtime artifacts, so the shim can compare the two implementations.
       - ${{ if eq(parameters.dacMode, 'cdac') }}:
         - _DacModeArgs: '-dacMode cdac -cdacPath $(Build.SourcesDirectory)/artifacts/cdac/mscordaccore_universal.dll'
+      - ${{ elseif in(parameters.dacMode, 'cdacfallback', 'cdacverify') }}:
+        - _DacModeArgs: >-
+            -dacMode ${{ parameters.dacMode }}
+            -cdacPath $(Build.SourcesDirectory)/artifacts/cdac/mscordaccore_universal.dll
+            -shimPath $(Build.SourcesDirectory)/artifacts/cdacshim/mscordaccore_cdac_validation_shim.dll
+            -legacyDacPath $(Build.SourcesDirectory)/artifacts/runtime/mscordaccore.dll
       - ${{ elseif ne(parameters.dacMode, '') }}:
         - _DacModeArgs: '-dacMode ${{ parameters.dacMode }}'
 
