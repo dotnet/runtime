@@ -234,7 +234,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             switch (reqCode)
             {
                 case (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION:
-                    if (inBufferSize != 0 || inBuffer != null || outBufferSize != sizeof(uint))
+                    if (inBufferSize != 0 || inBuffer != null || outBufferSize != sizeof(uint) || outBuffer == null)
                         throw new ArgumentException("Invalid buffer parameters for CLRDATA_REQUEST_REVISION");
                     *(uint*)outBuffer = 1;
                     hr = HResults.S_OK;
@@ -245,7 +245,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
                     hr = HResults.S_OK; // no-op for the case where we use this
                     break;
                 case DACSTACKPRIV_REQUEST_FRAME_DATA:
-                    if (inBufferSize != 0 || inBuffer != null || outBufferSize != sizeof(ulong))
+                    if (inBufferSize != 0 || inBuffer != null || outBufferSize != sizeof(ulong) || outBuffer == null)
                         throw new ArgumentException("Invalid buffer parameters for DACSTACKPRIV_REQUEST_FRAME_DATA");
                     if (!_currentFrameIsValid)
                         throw new ArgumentException("Invalid frame");
