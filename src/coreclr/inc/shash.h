@@ -163,8 +163,6 @@ template <typename TRAITS>
 class EMPTY_BASES SHash : public TRAITS
                              , private noncopyable
 {
-    friend class VerifyLayoutsMD;  // verifies class layout doesn't accidentally change
-
   public:
     // explicitly declare local typedefs for these traits types, otherwise
     // the compiler may get confused

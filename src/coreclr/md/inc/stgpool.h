@@ -82,7 +82,6 @@ public:
 //*****************************************************************************
 class StgPoolSeg
 {
-    friend class VerifyLayoutsMD;
     friend struct ::cdac_data<StgPoolSeg>;
 public:
     StgPoolSeg() :
@@ -145,8 +144,6 @@ friend class CBlobPoolHash;
 friend class MetaData::StringHeapRO;
 friend class MetaData::StringHeapRW;
 friend class MetaData::BlobHeapRO;
-friend class VerifyLayoutsMD;
-
 public:
     StgPoolReadOnly()
     { LIMITED_METHOD_CONTRACT; };
@@ -421,7 +418,6 @@ friend class StgStringPool;
 friend class StgBlobPool;
 friend class RecordPool;
 friend class CBlobPoolHash;
-friend class VerifyLayoutsMD;
 friend struct ::cdac_data<StgPool>;
 
 public:
@@ -762,7 +758,6 @@ protected:
 //*****************************************************************************
 class StgStringPool : public StgPool
 {
-    friend class VerifyLayoutsMD;
 public:
     StgStringPool() :
         StgPool(DFT_STRING_HEAP_SIZE),
@@ -923,7 +918,6 @@ private:
 //*****************************************************************************
 class StgGuidPool : public StgPool
 {
-    friend class VerifyLayoutsMD;
 public:
     StgGuidPool() :
         StgPool(DFT_GUID_HEAP_SIZE),
@@ -1075,8 +1069,6 @@ private:
 //*****************************************************************************
 class StgBlobPool : public StgPool
 {
-    friend class VerifyLayoutsMD;
-
     using StgPool::InitNew;
     using StgPool::InitOnMem;
 
