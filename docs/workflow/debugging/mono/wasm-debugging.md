@@ -270,7 +270,9 @@ There is another random number generator in `upstream/emscripten/src/determinist
 which needs the same treatment.
 
 Running `make patch-deterministic` in `src/mono/wasm` will patch the
-emscripten installation in `src/mono/browser/emsdk` with these changes.
+provisioned emscripten installation with these changes. Run
+`./build.sh -s provision.emsdk -os browser` first and use the reported path,
+or set `EMSDK_PATH` to point at your own installation.
 
 ### Debugging Signature Mismatch Errors
 

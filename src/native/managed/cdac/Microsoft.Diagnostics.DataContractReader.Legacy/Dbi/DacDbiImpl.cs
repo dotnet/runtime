@@ -322,6 +322,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             }
             if (string.IsNullOrEmpty(path))
             {
+                // pStrFilename needs to be set for ICorDebugModule::GetName to succeed.
+                hr = StringHolderAssignCopy(pStrFilename, string.Empty);
                 *pResult = Interop.BOOL.FALSE;
             }
             else
@@ -385,6 +387,86 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 Debug.Assert(pTargetBuffer->pAddress == pTargetBufferLocal.pAddress, $"pAddress: cDAC: {pTargetBuffer->pAddress:x}, DAC: {pTargetBufferLocal.pAddress:x}");
                 Debug.Assert(pTargetBuffer->cbSize == pTargetBufferLocal.cbSize, $"cbSize: cDAC: {pTargetBuffer->cbSize}, DAC: {pTargetBufferLocal.cbSize}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    public int GetReadWriteMetadataSize(ulong vmModule, uint* pSize)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pSize == null)
+                throw new ArgumentNullException(nameof(pSize));
+            if (vmModule == 0)
+                throw new ArgumentException("Module pointer must be non-zero.", nameof(vmModule));
+
+            *pSize = 0;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+
+            byte[] blob = _target.Contracts.EcmaMetadata.GetReadWriteMetadata(handle);
+            *pSize = (uint)blob.Length;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint sizeLocal;
+            int hrLocal = _legacy.GetReadWriteMetadataSize(vmModule, &sizeLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pSize == sizeLocal, $"cDAC size: {*pSize}, DAC size: {sizeLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    public int FillReadWriteMetadata(ulong vmModule, byte* pBuffer, uint cbBuffer)
+    {
+        int hr = HResults.S_OK;
+        int blobLength = 0;
+        try
+        {
+            if (pBuffer == null)
+                throw new ArgumentNullException(nameof(pBuffer));
+            if (vmModule == 0)
+                throw new ArgumentException("Module pointer must be non-zero.", nameof(vmModule));
+
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+
+            byte[] blob = _target.Contracts.EcmaMetadata.GetReadWriteMetadata(handle);
+            blobLength = blob.Length;
+            if (cbBuffer < (uint)blob.Length)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER)!;
+
+            blob.AsSpan().CopyTo(new Span<byte>(pBuffer, blobLength));
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            byte[] bufferLocal = new byte[cbBuffer];
+            int hrLocal;
+            fixed (byte* pLocal = bufferLocal)
+            {
+                hrLocal = _legacy.FillReadWriteMetadata(vmModule, pLocal, cbBuffer);
+            }
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(new Span<byte>(pBuffer, blobLength).SequenceEqual(bufferLocal.AsSpan(0, blobLength)), "cDAC and DAC read-write metadata buffers differ.");
             }
         }
 #endif
@@ -2656,6 +2738,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_FUNCTION_NOT_IL)!;
 
             TargetPointer headerPtr = loader.GetILHeader(moduleHandle, functionToken);
+
             if (headerPtr != TargetPointer.Null)
             {
                 int headerSize = HeaderReaderHelpers.GetHeaderSize(_target, headerPtr);
@@ -5413,64 +5496,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetDefinesBitField(uint* pDefines)
-    {
-        *pDefines = 0;
-        int hr = HResults.S_OK;
-        try
-        {
-            if (!_target.Contracts.Debugger.TryGetDebuggerData(out Contracts.DebuggerData data))
-                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_NOTREADY)!;
-            *pDefines = data.DefinesBitField;
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint resultLocal;
-            int hrLocal = _legacy.GetDefinesBitField(&resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pDefines == resultLocal);
-        }
-#endif
-
-        return hr;
-    }
-
-    public int GetMDStructuresVersion(uint* pMDStructuresVersion)
-    {
-        *pMDStructuresVersion = 0;
-        int hr = HResults.S_OK;
-        try
-        {
-            if (!_target.Contracts.Debugger.TryGetDebuggerData(out Contracts.DebuggerData data))
-                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_NOTREADY)!;
-            *pMDStructuresVersion = data.MDStructuresVersion;
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-
-#if DEBUG
-        if (_legacy is not null)
-        {
-            uint resultLocal;
-            int hrLocal = _legacy.GetMDStructuresVersion(&resultLocal);
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-                Debug.Assert(*pMDStructuresVersion == resultLocal);
-        }
-#endif
-
-        return hr;
-    }
-
     public int GetActiveRejitILCodeVersionNode(ulong vmModule, uint methodTk, ulong* pVmILCodeVersionNode)
     {
         int hr = HResults.S_OK;
@@ -5499,7 +5524,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 ILCodeVersionHandle ilCodeVersion = codeVersions.GetActiveILCodeVersion(methodDesc);
                 if (ilCodeVersion.IsValid
                     && ilCodeVersion.IsExplicit
-                    && rejit.GetRejitState(ilCodeVersion) == RejitState.Active)
+                    && rejit.GetRejitState(ilCodeVersion) == RejitState.Active
+                    && codeVersions.GetSource(ilCodeVersion) == CodeVersionSource.ReJIT)
                 {
                     *pVmILCodeVersionNode = ilCodeVersion.ILCodeVersionNode.Value;
                 }
@@ -5518,6 +5544,78 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*pVmILCodeVersionNode == resultLocal, $"cDAC: {*pVmILCodeVersionNode:x}, DAC: {resultLocal:x}");
+        }
+#endif
+
+        return hr;
+    }
+
+    public int GetEnCILCodeAndSig(ulong vmModule, uint methodTk, nuint enCVersion, DacDbiTargetBuffer* pCodeInfo, uint* pLocalSigToken)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pCodeInfo is null || pLocalSigToken is null)
+                throw new ArgumentException("Output pointer cannot be null.");
+
+            *pCodeInfo = default;
+            *pLocalSigToken = (uint)EcmaMetadataUtils.TokenType.mdtSignature;
+
+            ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+            ModuleLookupTables lookupTables = loader.GetLookupTables(module);
+
+            if ((EcmaMetadataUtils.TokenType)(methodTk & EcmaMetadataUtils.TokenTypeMask) != EcmaMetadataUtils.TokenType.mdtMethodDef)
+                throw new ArgumentException("methodTk must be a MethodDef token.", nameof(methodTk));
+            TargetPointer methodDesc = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, methodTk, out _);
+
+            if (methodDesc != TargetPointer.Null)
+            {
+                ICodeVersions codeVersions = _target.Contracts.CodeVersions;
+
+                foreach (ILCodeVersionHandle ilCodeVersion in codeVersions.GetILCodeVersions(methodDesc))
+                {
+                    if (ilCodeVersion.IsExplicit
+                        && codeVersions.GetSource(ilCodeVersion) == CodeVersionSource.EnC
+                        && codeVersions.GetEnCVersion(ilCodeVersion).Value == enCVersion)
+                    {
+                        TargetPointer headerPtr = codeVersions.GetIL(ilCodeVersion);
+                        if (headerPtr != TargetPointer.Null)
+                        {
+                            int headerSize = HeaderReaderHelpers.GetHeaderSize(_target, headerPtr);
+                            int codeSize = HeaderReaderHelpers.GetCodeSize(_target, headerPtr);
+
+                            if (HeaderReaderHelpers.TryGetLocalVarSigToken(_target, headerPtr, out int localToken) && localToken != 0)
+                            {
+                                *pLocalSigToken = (uint)localToken;
+                            }
+
+                            pCodeInfo->pAddress = headerPtr.Value + (ulong)headerSize;
+                            pCodeInfo->cbSize = (uint)codeSize;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DacDbiTargetBuffer bufferLocal = default;
+            uint sigLocal;
+            int hrLocal = _legacy.GetEnCILCodeAndSig(vmModule, methodTk, enCVersion, &bufferLocal, &sigLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pCodeInfo->pAddress == bufferLocal.pAddress, $"cDAC ILAddr: 0x{pCodeInfo->pAddress:X}, DAC ILAddr: 0x{bufferLocal.pAddress:X}");
+                Debug.Assert(pCodeInfo->cbSize == bufferLocal.cbSize, $"cDAC ILSize: {pCodeInfo->cbSize}, DAC ILSize: {bufferLocal.cbSize}");
+                Debug.Assert(*pLocalSigToken == sigLocal, $"cDAC LocalSig: 0x{*pLocalSigToken:X}, DAC LocalSig: 0x{sigLocal:X}");
+            }
         }
 #endif
 
@@ -5575,7 +5673,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             ICodeVersions codeVersions = _target.Contracts.CodeVersions;
             NativeCodeVersionHandle nativeCodeVersion = NativeCodeVersionHandle.CreateExplicit(new TargetPointer(vmNativeCodeVersionNode));
             ILCodeVersionHandle ilCodeVersion = codeVersions.GetILCodeVersion(nativeCodeVersion);
-            if (ilCodeVersion.IsValid && ilCodeVersion.IsExplicit)
+            if (ilCodeVersion.IsValid && ilCodeVersion.IsExplicit && codeVersions.GetSource(ilCodeVersion) == CodeVersionSource.ReJIT)
             {
                 *pVmILCodeVersionNode = ilCodeVersion.ILCodeVersionNode.Value;
             }

@@ -5435,7 +5435,6 @@ ExecutionManager::FindCodeRangeWithLock(PCODE currentPC)
     return result;
 }
 
-
 //**************************************************************************
 PCODE ExecutionManager::GetCodeStartAddress(PCODE currentPC)
 {
@@ -5879,7 +5878,7 @@ TADDR ExecutionManager::AddVirtualIPRange(UINT32 numVirtualIPs,
     {
         endVIP = (TADDR)InterlockedAdd64((LONGLONG*)&s_nextVirtualIP, numVirtualIPs);
     }
-    
+
     TADDR startVIP = endVIP - numVirtualIPs;
 
     // Check for overflow
@@ -5894,7 +5893,7 @@ TADDR ExecutionManager::AddVirtualIPRange(UINT32 numVirtualIPs,
         pJit,
         RangeSection::RANGE_SECTION_VIRTUALIP,
         pModule);
-    
+
     VirtualIPRangeSection* pOldRangeSection = nullptr;
     do
     {

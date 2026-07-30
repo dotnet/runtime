@@ -37,7 +37,7 @@
     <Platform>AnyCPU</Platform>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'browser', 'emsdk'))</EMSDK_PATH>
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and Exists('$(EmscriptenSdkStampFile)')">$(EmscriptenSdkCacheDir)</EMSDK_PATH>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
     <PublishTrimmed>true</PublishTrimmed>
     <RunAnalyzers>false</RunAnalyzers>

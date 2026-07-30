@@ -369,7 +369,13 @@
            Text="Could not find %(__HelixDependenciesToStageThatDontExist.Name) at %(__HelixDependenciesToStageThatDontExist.SourcePath), needed to provision for running tests on helix" />
 
     <ItemGroup>
-      <__HelixDependenciesToStageThatDontExist Name="%(FileName)" />
+      <!-- The staging destination below is $(HelixDependenciesStagingPath)\%(Name), so Name must be
+           the full directory name from Include, not just %(Filename): a version-keyed name such as
+           'chrome-150.0.7871.129-1639810' would otherwise be truncated at the last '.' and the
+           files would be copied somewhere other than the directory created (and later uploaded) as
+           %(Identity), leaving an empty correlation payload. %(Extension) is empty for names
+           without a '.', so this is a no-op for existing callers. -->
+      <__HelixDependenciesToStageThatDontExist Name="%(Filename)%(Extension)" />
     </ItemGroup>
 
     <Message Importance="High" Text="Using %(__HelixDependenciesToStageThatDontExist.Name): %(__HelixDependenciesToStageThatDontExist.SourcePath)" />

@@ -116,7 +116,59 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
     }
 
     int IXCLRDataExceptionState.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetManagedObject(value) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK, hrLocal = HResults.S_OK;
+        IXCLRDataValue? legacyValue = null;
+
+        if (_legacyImpl is not null && LegacyFallbackHelper.CanFallback())
+        {
+            DacComNullableByRef<IXCLRDataValue> legacyValueOut = new(value.IsNullRef);
+            hrLocal = _legacyImpl.GetManagedObject(legacyValueOut);
+            legacyValue = legacyValueOut.Interface;
+        }
+
+        try
+        {
+            if (_thrownObjectHandle == TargetPointer.Null)
+                throw new ArgumentException();
+
+            TargetPointer exceptionObject;
+            try
+            {
+                exceptionObject = _target.ReadPointer(_thrownObjectHandle);
+            }
+            catch (VirtualReadException)
+            {
+                throw new ArgumentException();
+            }
+
+            ulong objectSize = _target.Contracts.Object.GetSize(exceptionObject);
+            value.Interface = new ClrDataValue(
+                _target,
+                (uint)ClrDataValueFlag.DEFAULT,
+                [
+                    new NativeVarLocation
+                    {
+                        AddressOrValue = exceptionObject.ToClrDataAddress(_target),
+                        Size = objectSize,
+                        IsRegisterValue = false,
+                    },
+                ],
+                legacyValue);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataExceptionState.GetBaseType(/*CLRDataBaseExceptionType*/ uint* type) => HResults.E_NOTIMPL;
 

@@ -695,7 +695,9 @@ namespace System.Runtime.CompilerServices
 #endif // FEATURE_TYPEEQUIVALENCE
                 )
             {
-                CastHelpers.ThrowInvalidCastException(pMT1, pMT2);
+                // The JIT passes (target, source) to match Unbox, but ThrowInvalidCastException
+                // takes (source, target) and names them in that order in the message.
+                CastHelpers.ThrowInvalidCastException(pMT2, pMT1);
             }
         }
 

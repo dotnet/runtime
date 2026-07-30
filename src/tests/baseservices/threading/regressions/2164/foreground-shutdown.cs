@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
-using System.Reflection;
 using System.Threading;
-using Xunit;
-using TestLibrary;
 
 /*
  * Issue description:
@@ -16,12 +12,11 @@ using TestLibrary;
 
 public class Test_foreground_shutdown
 {
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         new Thread(() =>
         {
-            Thread.Sleep(TimeSpan.FromSeconds(1));
+            Thread.Sleep(TimeSpan.FromSeconds(2));
             Environment.Exit(100);
         }).Start();
 

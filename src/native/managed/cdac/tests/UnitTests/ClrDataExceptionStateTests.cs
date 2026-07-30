@@ -13,23 +13,25 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class ExceptionStateTests
 {
+    private const ulong ExceptionObjectSize = 0x40;
+    private static readonly TargetPointer s_exceptionObjectAddress = new(0xAA00_0000);
+
     private static (TestPlaceholderTarget Target, TargetPointer ThrownObjectHandle) CreateTargetWithException(
         MockTarget.Architecture arch,
         TargetPointer messageAddr,
         string? messageString)
     {
-        TargetPointer exceptionObjectAddr = new TargetPointer(0x5000);
         TargetTestHelpers helpers = new(arch);
         var targetBuilder = new TestPlaceholderTarget.Builder(arch);
         var allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x1_0000, 0x2_0000);
 
         MockMemorySpace.HeapFragment handleFragment = allocator.Allocate((ulong)helpers.PointerSize, "ThrownObjectHandle");
-        helpers.WritePointer(handleFragment.Data, exceptionObjectAddr);
+        helpers.WritePointer(handleFragment.Data, s_exceptionObjectAddress);
 
         TargetPointer thrownObjectHandle = new TargetPointer(handleFragment.Address);
 
         var mockException = new Mock<IException>();
-        mockException.Setup(e => e.GetExceptionData(exceptionObjectAddr)).Returns(new ExceptionData(
+        mockException.Setup(e => e.GetExceptionData(s_exceptionObjectAddress)).Returns(new ExceptionData(
             Message: messageAddr,
             InnerException: TargetPointer.Null,
             StackTrace: TargetPointer.Null,
@@ -40,6 +42,7 @@ public unsafe class ExceptionStateTests
             XCode: 0));
 
         var mockObject = new Mock<IObject>();
+        mockObject.Setup(o => o.GetSize(s_exceptionObjectAddress)).Returns(ExceptionObjectSize);
         if (messageAddr != TargetPointer.Null && messageString is not null)
             mockObject.Setup(o => o.GetStringValue(messageAddr)).Returns(messageString);
 
@@ -226,6 +229,110 @@ public unsafe class ExceptionStateTests
             null);
 
         AssertFlags(exceptionState, expectedFlags);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetManagedObject(MockTarget.Architecture arch)
+    {
+        (TestPlaceholderTarget target, TargetPointer thrownObjectHandle) =
+            CreateTargetWithException(arch, TargetPointer.Null, null);
+        IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
+            target,
+            new TargetPointer(0x1000),
+            (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            TargetPointer.Null,
+            thrownObjectHandle,
+            TargetPointer.Null,
+            null);
+        DacComNullableByRef<IXCLRDataValue> value = new(isNullRef: false);
+
+        int hr = exceptionState.GetManagedObject(value);
+
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.NotNull(value.Interface);
+
+        uint flags;
+        Assert.Equal(HResults.S_OK, value.Interface.GetFlags(&flags));
+        Assert.Equal((uint)ClrDataValueFlag.DEFAULT, flags);
+
+        ClrDataAddress address;
+        Assert.Equal(HResults.S_OK, value.Interface.GetAddress(&address));
+        Assert.Equal(s_exceptionObjectAddress.ToClrDataAddress(target), address);
+
+        ulong size;
+        Assert.Equal(HResults.S_OK, value.Interface.GetSize(&size));
+        Assert.Equal(ExceptionObjectSize, size);
+
+        uint locationFlags;
+        ClrDataAddress location;
+        Assert.Equal(HResults.S_OK, value.Interface.GetLocationByIndex(0, &locationFlags, &location));
+        Assert.Equal(ClrDataVLocFlag.CLRDATA_VLOC_MEMORY, locationFlags);
+        Assert.Equal(s_exceptionObjectAddress.ToClrDataAddress(target), location);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetManagedObject_InvalidHandle(MockTarget.Architecture arch)
+    {
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((ulong _, Span<byte> _) => -1)
+            .Build();
+        IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
+            target,
+            new TargetPointer(0x1000),
+            (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            TargetPointer.Null,
+            new TargetPointer(0x2000),
+            TargetPointer.Null,
+            null);
+        DacComNullableByRef<IXCLRDataValue> value = new(isNullRef: false);
+
+        int hr = exceptionState.GetManagedObject(value);
+
+        Assert.Equal(HResults.E_INVALIDARG, hr);
+        Assert.Null(value.Interface);
+    }
+
+    [Fact]
+    public void GetManagedObject_NullHandle()
+    {
+        IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
+            null!,
+            new TargetPointer(0x1000),
+            (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            TargetPointer.Null,
+            TargetPointer.Null,
+            TargetPointer.Null,
+            null);
+        DacComNullableByRef<IXCLRDataValue> value = new(isNullRef: false);
+
+        int hr = exceptionState.GetManagedObject(value);
+
+        Assert.Equal(HResults.E_INVALIDARG, hr);
+        Assert.Null(value.Interface);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetManagedObject_NullOutput(MockTarget.Architecture arch)
+    {
+        (TestPlaceholderTarget target, TargetPointer thrownObjectHandle) =
+            CreateTargetWithException(arch, TargetPointer.Null, null);
+        IXCLRDataExceptionState exceptionState = new ClrDataExceptionState(
+            target,
+            new TargetPointer(0x1000),
+            (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT,
+            TargetPointer.Null,
+            thrownObjectHandle,
+            TargetPointer.Null,
+            null);
+        DacComNullableByRef<IXCLRDataValue> value = new(isNullRef: true);
+
+        int hr = exceptionState.GetManagedObject(value);
+
+        Assert.Equal(HResults.E_POINTER, hr);
+        Assert.Null(value.Interface);
     }
 
     [Theory]

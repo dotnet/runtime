@@ -542,6 +542,101 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("IReadOnlyList")]
+        [InlineData("IReadOnlyCollection")]
+        [InlineData("IReadOnlySet")]
+        [InlineData("IEnumerable")]
+        public async Task SoleReadOnlyCollectionConstructorParameterIsBindable(string collectionType)
+        {
+            // Regression test: a type whose only member is a non-bindable, read-only collection
+            // constructor parameter (no other bindable property) used to make the generator emit a
+            // call to an Initialize method that was never generated, producing CS0103 at compile time.
+            //
+            // This only covers the top-level GetCore path. Binding this same shape as a *nested*
+            // member (reached via BindCore/EmitObjectInit) silently produces null instead of the
+            // real value, a separate pre-existing bug tracked in dotnet/runtime#131399.
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static object? Result;
+
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                        {
+                            ["Values:0"] = "a",
+                            ["Values:1"] = "b",
+                        });
+                        IConfiguration config = configurationBuilder.Build();
+                        Options options = config.Get<Options>();
+                        Result = options.Values;
+                    }
+                }
+
+                public record Options({{collectionType}}<string> Values);
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            // Compiling only proves the Initialize method the fix registers is emitted; loading and
+            // running the assembly proves it also binds the right values, not just compilable code.
+            var boundValues = (IEnumerable<string>)LoadAndInvokeMain(result.OutputCompilation, "Result")!;
+            Assert.Equal(new[] { "a", "b" }, boundValues);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task SoleReadOnlyCollectionConstructorParameterOfComplexElementIsBindable()
+        {
+            // Same regression as SoleReadOnlyCollectionConstructorParameterIsBindable, but the element
+            // type is itself a bindable object rather than a string. ComplexReadOnlyListConstructorParameterIsBindable
+            // below covers the complex-element case, but always pairs it with a second, ordinarily-bindable
+            // property, so it never exercises the fixed code path (the type has bindable members either way).
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+                using System.Linq;
+
+                public class Program
+                {
+                    public static object? Result;
+
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                        {
+                            ["Values:0:Value"] = "a",
+                            ["Values:1:Value"] = "b",
+                        });
+                        IConfiguration config = configurationBuilder.Build();
+                        Options options = config.Get<Options>();
+                        Result = options.Values.Select(v => v.Value).ToArray();
+                    }
+                }
+
+                public class Child
+                {
+                    public string Value { get; set; }
+                }
+
+                public record Options(IReadOnlyList<Child> Values);
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            var boundValues = (string[])LoadAndInvokeMain(result.OutputCompilation, "Result")!;
+            Assert.Equal(new[] { "a", "b" }, boundValues);
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public async Task ComplexReadOnlyListConstructorParameterIsBindable()
         {

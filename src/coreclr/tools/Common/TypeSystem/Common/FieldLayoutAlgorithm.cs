@@ -105,6 +105,7 @@ namespace Internal.TypeSystem
         public bool IsAutoLayoutOrHasAutoLayoutFields;
         public bool IsInt128OrHasInt128Fields;
         public bool IsVectorTOrHasVectorTFields;
+        public bool IsDecimalFloatingPointOrHasDecimalFloatingPointFields;
 
         /// <summary>
         /// If Offsets is non-null, then all field based layout is complete.

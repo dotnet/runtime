@@ -16,9 +16,6 @@ namespace System.Security.Cryptography.Pkcs.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/126697", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
     public static partial class SignedCmsTests
     {
-        // TODO: Windows does not support draft 10 PKCS#8 format yet. Remove this and use MLDsa.IsSupported when it does.
-        public static bool SupportsDraft10Pkcs8 => MLDsa.IsSupported && !PlatformDetection.IsWindows;
-
         [Fact]
         public static void DefaultStateBehavior()
         {
@@ -668,25 +665,41 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
             select new object[] { sit, detached, data.hashAlgorithm, data.algorithm };
 
-        [ConditionalTheory(typeof(SignedCmsTests), nameof(SupportsDraft10Pkcs8))]
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         [MemberData(nameof(AddFirstSignerMLDsaTestData))]
         public static void AddFirstSigner_MLDsa(SubjectIdentifierType identifierType, bool detached, string digestOid, MLDsaAlgorithm algorithm)
         {
+            void SignWithMLDsa(SignedCms cms)
+            {
+                using (X509Certificate2 signerCert = Certificates.MLDsaIetf[algorithm].TryGetCertificateWithPrivateKey())
+                {
+                    CmsSigner signer = new CmsSigner(identifierType, signerCert);
+                    signer.IncludeOption = X509IncludeOption.EndCertOnly;
+                    signer.DigestAlgorithm = new Oid(digestOid, digestOid);
+                    cms.ComputeSignature(signer);
+                }
+            }
+
+            if (PlatformDetection.IsNetFramework && (digestOid == Oids.Shake128 || digestOid == Oids.Shake256))
+            {
+                const int CryptEUnknownAlgorithm = unchecked((int)0x80091002);
+
+                // .NET Framework's CMS is backed by Windows CAPI, which does not recognize SHAKE
+                // digest algorithms and fails signing with CRYPT_E_UNKNOWN_ALGO. .NET builds the
+                // CMS in managed code and succeeds.
+                ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+                SignedCms cms = new SignedCms(contentInfo, detached);
+                CryptographicException exception = Assert.Throws<CryptographicException>(() => SignWithMLDsa(cms));
+                Assert.Equal(CryptEUnknownAlgorithm, exception.HResult);
+                return;
+            }
+
             byte[]? signature = null;
 
             AssertAddFirstSigner(
                 identifierType,
                 detached,
-                cms =>
-                {
-                    using (X509Certificate2 signerCert = Certificates.MLDsaIetf[algorithm].TryGetCertificateWithPrivateKey())
-                    {
-                        CmsSigner signer = new CmsSigner(identifierType, signerCert);
-                        signer.IncludeOption = X509IncludeOption.EndCertOnly;
-                        signer.DigestAlgorithm = new Oid(digestOid, digestOid);
-                        cms.ComputeSignature(signer);
-                    }
-                },
+                SignWithMLDsa,
                 firstSigner =>
                 {
                     // Store signature for comparison after roundtrip.
@@ -1802,7 +1815,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignedCmsTests), nameof(SupportsDraft10Pkcs8))]
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
         public static void ComputeSignature_MLDsa_DefaultDigest()
         {
 #if !NETFRAMEWORK
