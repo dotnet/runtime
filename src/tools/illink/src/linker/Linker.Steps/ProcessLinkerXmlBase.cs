@@ -650,6 +650,8 @@ namespace Mono.Linker.Steps
                             result = Convert.ToInt32(enumField.Constant);
                             return true;
                         }
+
+                        return TryConvertValue(value, typeDefinition.GetEnumUnderlyingType(), out result);
                     }
 
                     break;
