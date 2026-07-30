@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <OutputType>exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Needed for CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CrossGenTest>false</CrossGenTest>
+    <!-- IJW / C++/CLI is Windows-only -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <!-- C++/CLI, IJW not supported on Mono or NativeAOT -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- IJW assemblies contain native code that cannot be round-tripped through ilasm -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <!-- The test launches a secondary process; loading IJW assemblies into an
+    unloadable context is not allowed and process launch prevents unloading. -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- Temporarily disabled due to https://github.com/dotnet/runtime/issues/106243 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <PropertyGroup>
+    <CopyDebugCRTDllsToOutputDirectory>true</CopyDebugCRTDllsToOutputDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <ProjectReference Include="../common/profiler_common.csproj" />
+    <CMakeProjectReference Include="$(MSBuildThisFileDirectory)/../native/CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="../../Interop/IJW/ijwhostmock/CMakeLists.txt" />
+  </ItemGroup>
+</Project>

@@ -19,6 +19,7 @@ set(SOURCES
     gcskipobjectsallocatedbyclasscallbackprofiler/gcskipobjectsallocatedbyclasscallbackprofiler.cpp
     getappdomainstaticaddress/getappdomainstaticaddress.cpp
     handlesprofiler/handlesprofiler.cpp
+    ijw/ijwprofiler.cpp
     inlining/inlining.cpp
     metadatagetdispenser/metadatagetdispenser.cpp
     moduleload/moduleload.cpp
