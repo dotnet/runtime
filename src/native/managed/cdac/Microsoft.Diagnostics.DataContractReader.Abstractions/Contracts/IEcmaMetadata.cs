@@ -16,7 +16,7 @@ public interface IEcmaMetadata : IContract
 {
     static string IContract.Name { get; } = nameof(EcmaMetadata);
     TargetSpan GetMetadataAddress(ModuleHandle handle, MetadataAddressKind kind) => throw new NotImplementedException();
-    MetadataReader? GetMetadata(ModuleHandle module, bool requireReadWriteMetadata = false) => throw new NotImplementedException();
+    MetadataReader? GetMetadata(ModuleHandle handle, bool requireReadWriteMetadata = false) => throw new NotImplementedException();
 }
 
 public readonly struct EcmaMetadata : IEcmaMetadata
