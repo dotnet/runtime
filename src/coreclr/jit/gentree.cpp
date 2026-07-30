@@ -24379,16 +24379,10 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(
             intrinsic = NI_PackedSimd_ConvertToUInt32Saturate;
             break;
         }
-
-        case TYP_LONG:
-        case TYP_ULONG:
-        {
-            NYI_WASM_SIMD("gtNewSimdCvtNativeNode");
-            return nullptr;
-        }
-
         default:
         {
+            // Note: float/double -> TYP_LONG and TYP_ULONG
+            // conversions are not natively supported on Wasm, so the unreached() here is appropriate.
             unreached();
         }
     }
@@ -25544,10 +25538,11 @@ GenTree* Compiler::gtNewSimdFmaNode(
 
     std::swap(op1, op3);
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdFmaNode");
+    // Wasm has no single rounding FMA, and this should be guarded against already in import.
+    unreached();
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
 
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseType, simdSize);
@@ -29103,8 +29098,12 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
         }
 
         // shift all indices to the left by tzcnt(size)
+        // a 64-bit element in a Vector64 is a 1D arrangement, which the vector form of the shift
+        // has no encoding for; that case has to use the scalar form instead.
+        NamedIntrinsic shiftIntrinsic =
+            ((simdSize == 8) && (elementSize == 8)) ? NI_AdvSimd_ShiftLeftLogicalScalar : NI_AdvSimd_ShiftLeftLogical;
         cnsNode = gtNewIconNode(BitOperations::TrailingZeroCount(static_cast<uint64_t>(elementSize)), TYP_INT);
-        op2     = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_AdvSimd_ShiftLeftLogical, simdBaseType, simdSize);
+        op2     = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, shiftIntrinsic, simdBaseType, simdSize);
 
         // VectorTableLookup is only valid on byte/sbyte
         simdBaseType = varTypeIsUnsigned(simdBaseType) ? TYP_UBYTE : TYP_BYTE;

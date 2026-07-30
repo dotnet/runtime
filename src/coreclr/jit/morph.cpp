@@ -11747,6 +11747,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                     GenTree*  newNode = nullptr;
                     var_types op1Type = op1->TypeGet();
 
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                     if (op1->OperIsConvertVectorToMask())
                     {
                         GenTreeHWIntrinsic* op1Intrinsic = op1->AsHWIntrinsic();
@@ -11756,17 +11757,15 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 #elif defined(TARGET_ARM64)
                         op1 = op1Intrinsic->Op(2);
                         DEBUG_DESTROY_NODE(op1Intrinsic->Op(1));
-#elif defined(TARGET_WASM)
-                        NYI_WASM_SIMD("fgMorphHWIntrinsicRequired");
 #else
+// Wasm not handled here as it doesn't support masked intrinsics.
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
                         op1Type = op1->TypeGet();
                         DEBUG_DESTROY_NODE(op1Intrinsic);
                     }
 
-#ifdef FEATURE_MASKED_HW_INTRINSICS
                     if (op1Type == TYP_MASK)
                     {
 #if defined(TARGET_XARCH)
@@ -11774,7 +11773,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 #endif // TARGET_XARCH
                     }
                     else
-#endif
+#endif // FEATURE_MASKED_HW_INTRINSICS
                     {
                         newNode = gtNewSimdUnOpNode(GT_NOT, op1Type, op1, simdBaseType, simdSize);
 
@@ -11797,7 +11796,6 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                                 newNode = fgMorphHWIntrinsicOptional(newNode->AsHWIntrinsic());
                             }
                             newNode->SetMorphed(this);
-
                             if (retType == TYP_MASK)
                             {
                                 newNode = gtNewSimdCvtVectorToMaskNode(retType, newNode, simdBaseType, simdSize);
@@ -11807,10 +11805,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                                 newNode = gtNewSimdCvtMaskToVectorNode(retType, newNode, simdBaseType, simdSize);
                             }
                         }
-#else
-                        assert(op1Type == retType);
-#endif
-
+#endif // !FEATURE_MASKED_HW_INTRINSICS
                         return fgMorphHWIntrinsicRequired(newNode->AsHWIntrinsic());
                     }
                 }

@@ -200,6 +200,26 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public void CanBindConfigurationKeyNamesRequiringEscaping()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"quoted\"key", "Quoted"},
+                {@"path\key", "Backslash"},
+                {"line\nbreak", "Newline"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<OptionsWithEscapedConfigurationKeyNames>();
+
+            Assert.Equal("Quoted", options.QuotedKey);
+            Assert.Equal("Backslash", options.BackslashKey);
+            Assert.Equal("Newline", options.NewlineKey);
+        }
+
+        [Fact]
         public void CanIgnoreConfigurationAttributes()
         {
             var dic = new Dictionary<string, string>
