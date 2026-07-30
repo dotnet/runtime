@@ -183,6 +183,11 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TestedRoslynVersion)' >= '4.0' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="..\Common\Ieee754NumericConverterTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\Ieee754NumericConverterTests.cs" />
+    <Compile Include="Serialization\Ieee754NumericConverterTests.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Text.Json.SourceGeneration" />
   </ItemGroup>

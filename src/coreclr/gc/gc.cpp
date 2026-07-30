@@ -1163,6 +1163,10 @@ uint8_t*    gc_heap::min_overflow_address = MAX_PTR;
 
 uint8_t*    gc_heap::max_overflow_address = 0;
 
+#ifndef USE_REGIONS
+heap_segment* gc_heap::new_heap_segment = nullptr;
+#endif //!USE_REGIONS
+
 uint8_t*    gc_heap::shigh = 0;
 
 uint8_t*    gc_heap::slow = MAX_PTR;

@@ -19,6 +19,7 @@
           BeforeTargets="_SetupWasiSdk">
     <PropertyGroup>
       <WASI_SDK_PATH>$(RuntimeBuildWasiSdkPath)</WASI_SDK_PATH>
+      <_ExpectedWasiSdkVersion>$(WasiSdkVersion)</_ExpectedWasiSdkVersion>
     </PropertyGroup>
   </Target>
 

@@ -1587,12 +1587,6 @@ public:
         ULONG       cbData,                 // How big is the data.
         ULONG       dwFlags);               // Flags to control open.
 
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    HRESULT OpenExistingMD(
-        IMDCustomDataSource* pDataSource,   // Name of database.
-        ULONG       dwFlags);               // Flags to control open.
-#endif
-
     FORCEINLINE CLiteWeightStgdbRW* GetMiniStgdb() { return m_pStgdb; }
     FORCEINLINE CMiniMdRW* GetMiniMd() { return &m_pStgdb->m_MiniMd; }
 
