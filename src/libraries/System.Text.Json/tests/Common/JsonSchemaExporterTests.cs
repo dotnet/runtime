@@ -86,14 +86,21 @@ namespace System.Text.Json.Schema.Tests
         public void GetOnlyProperties_DoNotUseSetterNullabilityInSchema()
         {
             JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(typeof(PocoWithGetOnlyProperties));
-            JsonNode properties = schema["properties"]!;
-            JsonNode valuesType = properties["Values"]!["type"]!;
+            const string ExpectedJsonSchema = """
+                {
+                    "type": ["object", "null"],
+                    "properties": {
+                        "Values": {
+                            "type": "array",
+                            "items": { "type": ["string", "null"] }
+                        },
+                        "SingleValueGetOnly": { "type": "string" },
+                        "SingleValueGetSet": { "type": "string" }
+                    }
+                }
+                """;
 
-            Assert.IsNotType<JsonArray>(valuesType);
-            Assert.Equal("array", (string)valuesType);
-            Assert.NotNull(properties["Values"]!["items"]);
-            Assert.Equal("string", (string)properties["SingleValueGetOnly"]!["type"]!);
-            Assert.Equal("string", (string)properties["SingleValueGetSet"]!["type"]!);
+            AssertValidJsonSchema(typeof(PocoWithGetOnlyProperties), ExpectedJsonSchema, schema);
         }
 
         [Theory]
