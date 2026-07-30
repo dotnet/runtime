@@ -24379,16 +24379,10 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(
             intrinsic = NI_PackedSimd_ConvertToUInt32Saturate;
             break;
         }
-
-        case TYP_LONG:
-        case TYP_ULONG:
-        {
-            NYI_WASM_SIMD("gtNewSimdCvtNativeNode");
-            return nullptr;
-        }
-
         default:
         {
+            // Note: float/double -> TYP_LONG and TYP_ULONG
+            // conversions are not natively supported on Wasm, so the unreached() here is appropriate.
             unreached();
         }
     }
@@ -25544,10 +25538,11 @@ GenTree* Compiler::gtNewSimdFmaNode(
 
     std::swap(op1, op3);
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdFmaNode");
+    // Wasm has no single rounding FMA, and this should be guarded against already in import.
+    unreached();
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
 
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseType, simdSize);
