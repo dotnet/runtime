@@ -7409,8 +7409,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::HasReadWriteMetadata(VMPTR_PEAsse
     if (pHasReadWriteMetadata == NULL)
         return E_INVALIDARG;
     PEAssembly * pPEAssembly = vmPEAssembly.GetDacPtr();
-    TADDR remoteMDInternalRWAddr = pPEAssembly->GetMDInternalRWAddress();
-    *pHasReadWriteMetadata = remoteMDInternalRWAddr != (TADDR)NULL;
+    *pHasReadWriteMetadata = pPEAssembly->HasReadWriteMetadata();
     return S_OK;
 }
 
