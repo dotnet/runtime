@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection.PortableExecutable;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
@@ -127,6 +128,87 @@ public class R2RTestSuites
     }
 
     [Fact]
+    public void WasmSimdModule()
+    {
+        var wasmSimdModule = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmSimdModule),
+            SourceResourceNames = ["Webcil/WasmSimdModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmSimdModule),
+            [
+                new(nameof(WasmSimdModule), [new CrossgenAssembly(wasmSimdModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs =
+                    {
+                        "--targetarch",
+                        "wasm",
+                        "--targetos",
+                        "browser",
+                    },
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(webcilReader.IsWasmWrapped);
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+
+            // Each method's compiled body must actually use the wasm v128 (0x7B) valtype for its
+            // Vector128<int> parameter, and for its return when it returns one. A regression that
+            // reverts to the by-ref i32 ABI would produce no v128 in the signature at all.
+            const byte WasmV128 = 0x7B;
+
+            // (method name, expects v128 return). All take a v128-classified value by value (a
+            // Vector128<int>, a 128-bit Vector<int>, or a single-field struct wrapping one); Store
+            // returns void (its 'ref Vector128<int>' destination is an i32 pointer).
+            foreach ((string name, bool expectsV128Return) in
+                     new[]
+                     {
+                         ("Echo", true), ("ThroughLocal", true), ("Store", false), ("CallEcho", true),
+                         ("EchoVectorT", true), ("CallEchoVectorT", true),
+                         ("EchoWrapped", true), ("CallEchoWrapped", true),
+                         ("EchoWrappedVectorT", true), ("CallEchoWrappedVectorT", true),
+                     })
+            {
+                ReadyToRunMethod method = Assert.Single(
+                    methods, m => m.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
+
+                WebcilImageReader.WasmFunctionInfo body = ResolveWasmBody(reader, webcilReader, method);
+
+                Assert.True(
+                    body.ParamTypes.Count(b => b == WasmV128) == 1,
+                    $"'{name}' should have exactly one wasm v128 parameter; params were {Format(body.ParamTypes)}.");
+                Assert.True(
+                    body.ResultTypes.Contains(WasmV128) == expectsV128Return,
+                    $"'{name}' v128 return expectation was {expectsV128Return}; results were {Format(body.ResultTypes)}.");
+            }
+
+            static string Format(IReadOnlyList<byte> valTypes) =>
+                $"[{string.Join(",", valTypes.Select(b => $"0x{b:X2}"))}]";
+        }
+
+        static WebcilImageReader.WasmFunctionInfo ResolveWasmBody(
+            ReadyToRunReader reader, WebcilImageReader webcilReader, ReadyToRunMethod method)
+        {
+            uint tableIndex = checked(reader.WasmMinFunctionTableIndex + (uint)method.EntryPointRuntimeFunctionId);
+            int functionIndex = webcilReader.GetFunctionIndexFromTableIndex(tableIndex);
+            Assert.True(functionIndex >= 0, $"Could not resolve wasm table index {tableIndex} to a function body.");
+
+            WebcilImageReader.WasmFunctionInfo? body = webcilReader.GetWasmFunctionBody(functionIndex);
+            Assert.True(body is not null, $"Wasm function body {functionIndex} was not found.");
+            return body.Value;
+        }
+    }
+
+    [Fact]
     public void RuntimeFunctionsSectionSizeExcludesSentinel()
     {
         var lib = new CompiledAssembly
@@ -195,7 +277,8 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
+    // JitStressProcedureSplitting is only available in Debug/Checked JIT builds.
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotReleaseCoreCLR))]
     public void ArmThumbBitHotColdRuntimeFunctions()
     {
         var hotColdSplitting = new CompiledAssembly
@@ -575,6 +658,7 @@ public class R2RTestSuites
                 new(nameof(RuntimeAsyncStripILBodiesPreservesTaskReturningIL), [new CrossgenAssembly(stripILBodies)])
                 {
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize, Crossgen2Option.StripILBodies],
+                    AdditionalArgs = ["--targetarch:x64"],
                     Validate = Validate,
                 },
             ]));
@@ -598,6 +682,7 @@ public class R2RTestSuites
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "PlainStrippableMethod", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "ComputeTag", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "Root", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "UsesRuntimeCheckedInstructionSet", out diag), diag);
 
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "AsyncTaskMethod", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "AsyncValueTaskMethod", out diag), diag);
@@ -606,6 +691,50 @@ public class R2RTestSuites
 
             Assert.True(R2RAssert.HasAsyncVariant(reader, "SyncTaskWithCompiledAsyncVariant", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "SyncTaskWithCompiledAsyncVariant", out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void AppleMobileStripILBodiesUsesFixedInstructionSet()
+    {
+        var stripILBodies = new CompiledAssembly
+        {
+            AssemblyName = nameof(AppleMobileStripILBodiesUsesFixedInstructionSet),
+            SourceResourceNames =
+            [
+                "RuntimeAsync/StripILBodies.cs",
+                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(AppleMobileStripILBodiesUsesFixedInstructionSet),
+            [
+                new(nameof(AppleMobileStripILBodiesUsesFixedInstructionSet), [new CrossgenAssembly(stripILBodies)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize, Crossgen2Option.StripILBodies],
+                    AdditionalArgs = ["--targetos:ios", "--targetarch:arm64"],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string componentFile = Path.Combine(
+                Path.GetDirectoryName(reader.Filename)!,
+                nameof(AppleMobileStripILBodiesUsesFixedInstructionSet) + ".dll");
+
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "PlainStrippableMethod", out string diag), diag);
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "UsesRuntimeCheckedInstructionSet", out diag), diag);
+            Assert.False(
+                R2RAssert.HasFixupKindOnMethod(
+                    reader,
+                    ReadyToRunFixupKind.Check_InstructionSetSupport,
+                    ".UsesRuntimeCheckedInstructionSet(",
+                    out diag),
+                diag);
+            Assert.True(R2RAssert.EagerInstructionSetSupportHasNoUnsupportedEntries(reader, out diag), diag);
         }
     }
 

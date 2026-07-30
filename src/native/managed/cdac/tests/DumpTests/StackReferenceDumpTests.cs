@@ -108,7 +108,6 @@ public class StackReferenceDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
-    [SkipOnArch("x86", "GCInfo decoder does not support x86")]
     public void NestedException_InFlightExceptionsReportedAsRoots(TestConfiguration config)
     {
         InitializeDumpTest(config, "NestedException", "full");
@@ -160,7 +159,6 @@ public class StackReferenceDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
-    [SkipOnArch("x86", "GCInfo decoder does not support x86")]
     public void GCProtect_GCFrameRootsAreReported(TestConfiguration config)
     {
         InitializeDumpTest(config, "GCProtect", "full");

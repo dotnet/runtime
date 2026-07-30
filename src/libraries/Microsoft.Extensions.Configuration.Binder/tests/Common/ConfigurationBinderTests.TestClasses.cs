@@ -260,10 +260,50 @@ namespace Microsoft.Extensions
             public IList<string> Instances { get; }
         }
 
+        public sealed class ContainerWithCtorCollectionChild
+        {
+            public GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter Child { get; set; }
+        }
+
         public class ParamsCollectionCtor
         {
             public ParamsCollectionCtor(params List<string> instances) => Instances = instances;
             public List<string> Instances { get; }
+        }
+
+        public sealed class SourceWithCollectionCtorParameters
+        {
+            public SourceWithCollectionCtorParameters(string Name, IEnumerable<string> Addresses, IList<int> Ints, string[] Strings)
+            {
+                this.Name = Name;
+                this.Addresses = Addresses;
+                this.Ints = Ints;
+                this.Strings = Strings;
+            }
+
+            public string Name { get; }
+            public IEnumerable<string> Addresses { get; }
+            public IList<int> Ints { get; }
+            public string[] Strings { get; }
+        }
+
+        public sealed class ClassWithInitOnlyCollectionNoCtorParam
+        {
+            public ClassWithInitOnlyCollectionNoCtorParam(int Number) => this.Number = Number;
+            public int Number { get; }
+            public List<string> Items { get; init; }
+        }
+
+        public sealed class ClassWithInitOnlyComplexNoCtorParam
+        {
+            public ClassWithInitOnlyComplexNoCtorParam(int Number) => this.Number = Number;
+            public int Number { get; }
+            public NestedForInitOnly Child { get; init; }
+        }
+
+        public sealed class NestedForInitOnly
+        {
+            public string Value { get; set; }
         }
 
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);

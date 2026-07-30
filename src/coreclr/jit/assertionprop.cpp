@@ -413,6 +413,26 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
                 }
 
+                case NI_PRIMITIVE_SaturateToInt8:
+                {
+                    return {SymbolicIntegerValue::ByteMin, SymbolicIntegerValue::ByteMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToInt16:
+                {
+                    return {SymbolicIntegerValue::ShortMin, SymbolicIntegerValue::ShortMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToUInt8:
+                {
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UByteMax};
+                }
+
+                case NI_PRIMITIVE_SaturateToUInt16:
+                {
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UShortMax};
+                }
+
                 case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
                 {
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
@@ -3379,12 +3399,17 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
             {
                 return nullptr;
             }
-            assert(genTypeSize(tree->TypeGet()) == curAssertion.GetOp2().GetSimdSize());
+            unsigned simdSize = genTypeSize(tree->TypeGet());
+#if defined(TARGET_ARM64)
+            if (tree->TypeIs(TYP_SIMD))
+            {
+                simdSize = sizeof(simdscalable_t);
+            }
+#endif // TARGET_ARM64
+            assert(simdSize == curAssertion.GetOp2().GetSimdSize());
 
             // We can't bash a LCL_VAR into a GenTreeVecCon (different node size), so allocate a fresh node.
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            memcpy(&vecCon->gtSimdVal, curAssertion.GetOp2().GetSimdConstant(), genTypeSize(tree->TypeGet()));
-            newTree = vecCon;
+            newTree = gtNewVconNode(tree->TypeGet(), curAssertion.GetOp2().GetSimdConstant());
             break;
         }
 #endif // FEATURE_HW_INTRINSICS

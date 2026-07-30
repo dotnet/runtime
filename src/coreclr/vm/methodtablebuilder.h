@@ -2394,8 +2394,8 @@ private:
         CONTRACTL
         {
             THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
+            GC_NOTRIGGER;
+            MODE_PREEMPTIVE;
         }
         CONTRACTL_END;
         bmtError->resIDWhy = idResWhy;
@@ -2416,8 +2416,8 @@ private:
         CONTRACTL
         {
             THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
+            GC_NOTRIGGER;
+            MODE_PREEMPTIVE;
         }
         CONTRACTL_END;
         bmtError->resIDWhy = idResWhy;

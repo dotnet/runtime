@@ -1812,11 +1812,15 @@ namespace System.Text.Json.SourceGeneration
                     return JsonValueType.Boolean;
                 }
 
-                // Numeric primitives + Half / Int128 / UInt128
+                // Numeric primitives + Half / Int128 / UInt128 / BFloat16 / Decimal32 / Decimal64 / Decimal128
                 if (IsBuiltInNumericType(type) ||
                     SymbolEqualityComparer.Default.Equals(type, _knownSymbols.HalfType) ||
                     SymbolEqualityComparer.Default.Equals(type, _knownSymbols.Int128Type) ||
-                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.UInt128Type))
+                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.UInt128Type) ||
+                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.BFloat16Type) ||
+                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.Decimal32Type) ||
+                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.Decimal64Type) ||
+                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.Decimal128Type))
                 {
                     return HasAllowReadingFromString(type)
                         ? JsonValueType.Number | JsonValueType.String
@@ -3315,6 +3319,10 @@ namespace System.Text.Json.SourceGeneration
                 AddTypeIfNotNull(knownSymbols.Int128Type);
                 AddTypeIfNotNull(knownSymbols.UInt128Type);
                 AddTypeIfNotNull(knownSymbols.HalfType);
+                AddTypeIfNotNull(knownSymbols.BFloat16Type);
+                AddTypeIfNotNull(knownSymbols.Decimal32Type);
+                AddTypeIfNotNull(knownSymbols.Decimal64Type);
+                AddTypeIfNotNull(knownSymbols.Decimal128Type);
                 AddTypeIfNotNull(knownSymbols.GuidType);
                 AddTypeIfNotNull(knownSymbols.UriType);
                 AddTypeIfNotNull(knownSymbols.VersionType);

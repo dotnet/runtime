@@ -25,6 +25,7 @@ namespace System.Net.Security
             public LocalCertificateSelectionCallback? CertSelectionDelegate;
             public X509RevocationMode CertificateRevocationCheckMode;
             public SslStream? SslStream;
+            public SslAuthenticationOptions.VerifyRemoteCertificateCallback? RemoteCertificateValidator;
 
             public void UpdateOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
             {

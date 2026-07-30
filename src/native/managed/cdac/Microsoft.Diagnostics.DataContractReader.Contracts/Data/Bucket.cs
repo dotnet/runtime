@@ -8,7 +8,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.Bucket))]
 internal sealed partial class Bucket : IData<Bucket>
 {
+    [DataDescriptorDependency(nameof(Keys), "pointer")]
     public TargetPointer[] Keys { get; private set; }
+
+    [DataDescriptorDependency(nameof(Values), "pointer")]
     public TargetPointer[] Values { get; private set; }
 
     [MemberNotNull(nameof(Keys), nameof(Values))]

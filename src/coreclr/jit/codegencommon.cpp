@@ -1831,6 +1831,18 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         regNumber reg1 = retDesc->GetABIReturnReg(0, call->GetUnmanagedCallConv());
         regNumber reg2 = retDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv());
 
+#ifdef TARGET_ARM64
+        if ((!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2)) &&
+            (retDesc->GetReturnFieldOffset(1) != TARGET_POINTER_SIZE))
+        {
+            // The two-register debug-info representation places the second
+            // register at the next pointer-sized offset. ARM64 HFAs/HVAs with
+            // smaller or larger elements use a different offset and cannot be
+            // represented without recording per-register piece sizes.
+            return;
+        }
+#endif
+
 #if !defined(TARGET_64BIT)
         // Multi-register debug-info encodings that involve floating-point
         // registers assume each register holds an 8-byte half of the value, so
@@ -1850,11 +1862,13 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         {
             return;
         }
-#elif !defined(TARGET_AMD64)
-        // This unified RegNum encoding is implemented only for AMD64. Other 64-bit
-        // targets still need dedicated encodings to represent FP-containing
-        // two-register returns without ambiguity, so suppress those cases here
-        // instead of emitting an encoding the debugger cannot decode.
+#elif !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
+        // AMD64 and ARM64 include FP registers in their debug RegNum enumerations,
+        // so VLT_REG_REG can encode FP-containing two-register returns. Other
+        // 64-bit targets do not yet implement the debugger-side floating-point
+        // read path, so suppress those cases instead of emitting an encoding the
+        // debugger cannot decode. A pair of integer registers is still encoded
+        // below as VLT_REG_REG.
         if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
         {
             return;
@@ -2376,8 +2390,10 @@ void CodeGen::genGenerateMachineCode()
     // check to see if any jumps can be removed
     GetEmitter()->emitRemoveJumpToNextInst();
 
+#if !defined(TARGET_WASM)
     /* Bind jump distances */
     GetEmitter()->emitJumpDistBind();
+#endif
 
 #if FEATURE_LOOP_ALIGN
     /* Perform alignment adjustments */
@@ -6055,6 +6071,7 @@ unsigned CodeGen::genEmitJumpTable(GenTree* treeNode, bool relativeAddr)
     emit->emitDataGenEnd();
     return jmpTabBase;
 }
+#endif // !defined(TARGET_WASM)
 
 //----------------------------------------------------------------------------------
 // genEmitAsyncResumeInfoTable:
@@ -6102,8 +6119,6 @@ CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
     UNATIVE_OFFSET        baseOffs = genEmitAsyncResumeInfoTable(&dataSection);
     return m_compiler->eeFindJitDataOffs(baseOffs + stateNum * sizeof(CORINFO_AsyncResumeInfo));
 }
-
-#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // getCallTarget - Get the node that evaluates to the call target
@@ -7443,8 +7458,13 @@ void CodeGen::genReturn(GenTree* treeNode)
 
     if (treeNode->OperIs(GT_RETURN) && m_compiler->compIsAsync())
     {
+#ifdef TARGET_WASM
+        // Wasm returns the continuation in a global.
+        genClearAsyncContinuationGlobal();
+#else
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
         gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
+#endif
     }
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
@@ -8493,6 +8513,14 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
         }
 
         assert(varDsc->lvOnFrame);
+
+#ifdef TARGET_ARM64
+        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        {
+            genPoisonUnknownSizeVariable(varNum, (char)poisonVal);
+            continue;
+        }
+#endif
 
         unsigned int size = m_compiler->lvaLclStackHomeSize(varNum);
         if ((size / TARGET_POINTER_SIZE) > 16)
