@@ -3104,57 +3104,81 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
                                                                   GenTreeCall*              call,
                                                                   const ContinuationLayout& layout)
 {
-    // Remove the context args of the enclosing frames. They exist only to keep the values
-    // live and reported up to here; which locals they are is recorded in the call info,
-    // since optimizations may have rewritten the arg nodes themselves.
-    while (true)
+    unsigned const numFrames = call->GetAsyncInfo().InlineFrameDepth + 1;
+    if (numFrames < 2)
     {
-        CallArg* resumedArg     = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse);
-        CallArg* execContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
-        CallArg* syncContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
-        if (resumedArg == nullptr)
-        {
-            assert((execContextArg == nullptr) && (syncContextArg == nullptr));
-            break;
-        }
-
-        assert((execContextArg != nullptr) && (syncContextArg != nullptr));
-
-        for (CallArg* arg : {resumedArg, execContextArg, syncContextArg})
-        {
-            GenTree* node = arg->GetNode();
-            LIR::AsRange(callBlock).Remove(node);
-
-            call->gtArgs.RemoveUnsafe(arg);
-        }
-    }
-
-    const AsyncFrameLocals* const frameLocals = call->GetAsyncInfo().InlineFrameLocals;
-    if (frameLocals == nullptr)
-    {
-        JITDUMP("    Call [%06u] is not inside an inlined async frame\n", Compiler::dspTreeID(call));
+        // Not inside an inlined async frame, so there are no logical frame transitions to
+        // run and no context args beyond the ones the suspension itself consumed.
+        assert(call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse) == nullptr);
         return nullptr;
     }
-
-    unsigned const innermostDepth = call->GetAsyncInfo().InlineFrameDepth;
-    unsigned const numFrames      = innermostDepth + 1;
-    assert(numFrames >= 2);
 
     JITDUMP("    Call [%06u] is inside an inlined async frame; %u frames in chain\n", Compiler::dspTreeID(call),
             numFrames);
 
-    unsigned const key = frameLocals[0].Resumed;
+    // Take the values of the enclosing frames off the call. These args are the source of
+    // truth for what to store: the optimizer may have rewritten them since they were
+    // added, for example folding a "resumed" indicator to a constant, and the stores must
+    // reflect that rather than re-reading the locals the args originally named.
+    unsigned const  numValues = numFrames * 3;
+    GenTree** const values    = new (m_compiler, CMK_Async) GenTree*[numValues];
+
+    for (unsigned i = 0; i < numFrames; i++)
+    {
+        CallArg* frameArgs[3] = {call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse),
+                                 call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext),
+                                 call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext)};
+
+        for (unsigned j = 0; j < 3; j++)
+        {
+            CallArg* arg = frameArgs[j];
+            assert(arg != nullptr);
+
+            GenTree* node = arg->GetNode();
+            if (!node->IsInvariant() && !node->OperIs(GT_LCL_VAR))
+            {
+                // We are going to reference this from a different block, so spill it.
+                LIR::Use use(LIR::AsRange(callBlock), &arg->NodeRef(), call);
+                use.ReplaceWithLclVar(m_compiler);
+                node = use.Def();
+            }
+
+            LIR::AsRange(callBlock).Remove(node);
+            call->gtArgs.RemoveUnsafe(arg);
+            values[i * 3 + j] = node;
+        }
+    }
+
+    // The tail depends only on these values, so suspensions that agree on all of them can
+    // share one. That is the common case: every suspension in the same inlined frame sees
+    // the same locals unless the optimizer rewrote one of them differently.
     if (m_inlinedFrameTails == nullptr)
     {
-        m_inlinedFrameTails = new (m_compiler, CMK_Async) InlinedFrameTailMap(m_compiler->getAllocator(CMK_Async));
+        m_inlinedFrameTails =
+            new (m_compiler, CMK_Async) jitstd::vector<InlinedFrameTail>(m_compiler->getAllocator(CMK_Async));
     }
-    else
+
+    for (const InlinedFrameTail& tail : *m_inlinedFrameTails)
     {
-        BasicBlock* existing;
-        if (m_inlinedFrameTails->Lookup(key, &existing))
+        if (tail.NumValues != numValues)
         {
-            JITDUMP("    Reusing inlined frame suspension tail " FMT_BB "\n", existing->bbNum);
-            return existing;
+            continue;
+        }
+
+        bool match = true;
+        for (unsigned i = 0; i < numValues; i++)
+        {
+            if (!GenTree::Compare(tail.Values[i], values[i]))
+            {
+                match = false;
+                break;
+            }
+        }
+
+        if (match)
+        {
+            JITDUMP("    Reusing inlined frame suspension tail " FMT_BB "\n", tail.Block->bbNum);
+            return tail.Block;
         }
     }
 
@@ -3178,9 +3202,11 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
 
     for (unsigned i = 0; i + 1 < numFrames; i++)
     {
-        const AsyncFrameLocals& frame = frameLocals[i];
-        const AsyncFrameLocals& outer = frameLocals[i + 1];
-        unsigned const          depth = innermostDepth - i;
+        GenTree* const frameResumed = values[i * 3];
+        GenTree* const outerResumed = values[(i + 1) * 3];
+        GenTree* const outerExec    = values[(i + 1) * 3 + 1];
+        GenTree* const outerSync    = values[(i + 1) * 3 + 2];
+        unsigned const depth        = numFrames - 1 - i;
 
         // Capture what this frame hands to its caller.
         GenTreeCall* captureCall =
@@ -3198,8 +3224,7 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
                                           ContinuationMemberAddress(layout,
                                                                     ContinuationMember::InlineFrameContinuationContext(
                                                                         depth))));
-        captureCall->gtArgs.PushFront(m_compiler,
-                                      NewCallArg::Primitive(m_compiler->gtNewLclvNode(frame.Resumed, TYP_INT)));
+        captureCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(frameResumed)));
 
         m_compiler->compCurBB = tailBB;
         m_compiler->fgMorphTree(captureCall);
@@ -3208,13 +3233,9 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
         // Then restore the caller's contexts, as its physical frame's return would have.
         GenTreeCall* restoreCall =
             m_compiler->gtNewUserCallNode(m_asyncInfo->restoreContextsOnSuspensionMethHnd, TYP_VOID);
-        restoreCall->gtArgs.PushFront(m_compiler,
-                                      NewCallArg::Primitive(
-                                          m_compiler->gtNewLclvNode(outer.SynchronizationContext, TYP_REF)));
-        restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(
-                                                      m_compiler->gtNewLclvNode(outer.ExecutionContext, TYP_REF)));
-        restoreCall->gtArgs.PushFront(m_compiler,
-                                      NewCallArg::Primitive(m_compiler->gtNewLclvNode(outer.Resumed, TYP_INT)));
+        restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(outerSync)));
+        restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(outerExec)));
+        restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(outerResumed)));
 
         m_compiler->compCurBB = tailBB;
         m_compiler->fgMorphTree(restoreCall);
@@ -3223,7 +3244,7 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
 
     DISPRANGE(LIR::AsRange(tailBB));
 
-    m_inlinedFrameTails->Set(key, tailBB);
+    m_inlinedFrameTails->push_back({numValues, values, tailBB});
     return tailBB;
 }
 

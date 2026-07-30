@@ -2462,8 +2462,14 @@ void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
         return;
     }
 
-    // AsyncFrameLocals is declared alongside AsyncCallInfo, which is where the chain is
-    // recorded for the async transformation.
+    // Async context locals of one inlined frame.
+    struct AsyncFrameLocals
+    {
+        unsigned Resumed;
+        unsigned ExecutionContext;
+        unsigned SynchronizationContext;
+    };
+
     ArrayStack<AsyncFrameLocals> frames(getAllocator(CMK_Async));
 
     // The inlinee's own frame comes first: the suspension needs its resumed indicator to
@@ -2484,12 +2490,6 @@ void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
     // The root method's frame is always the outermost one.
     frames.Push({lvaResumedIndicator, lvaAsyncExecutionContextVar, lvaAsyncSynchronizationContextVar});
 
-    AsyncFrameLocals* const frameLocals = new (this, CMK_Async) AsyncFrameLocals[frames.Height()];
-    for (int i = 0; i < frames.Height(); i++)
-    {
-        frameLocals[i] = frames.Bottom(i);
-    }
-
     unsigned const inlineeResumed = InlineeCompiler->lvaResumedIndicator;
 
     struct Visitor : GenTreeVisitor<Visitor>
@@ -2500,16 +2500,11 @@ void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
         };
 
         ArrayStack<AsyncFrameLocals>& m_frames;
-        AsyncFrameLocals*             m_frameLocals;
         unsigned                      m_inlineeResumed;
 
-        Visitor(Compiler*                     comp,
-                ArrayStack<AsyncFrameLocals>& frames,
-                AsyncFrameLocals*             frameLocals,
-                unsigned                      inlineeResumed)
+        Visitor(Compiler* comp, ArrayStack<AsyncFrameLocals>& frames, unsigned inlineeResumed)
             : GenTreeVisitor(comp)
             , m_frames(frames)
-            , m_frameLocals(frameLocals)
             , m_inlineeResumed(inlineeResumed)
         {
         }
@@ -2561,13 +2556,12 @@ void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
             // The chain holds this call's own frame followed by its enclosing frames,
             // ending with the root, so its depth in that numbering is one less than the
             // number of entries.
-            call->GetAsyncInfo().InlineFrameDepth  = (unsigned)m_frames.Height() - 1;
-            call->GetAsyncInfo().InlineFrameLocals = m_frameLocals;
+            call->GetAsyncInfo().InlineFrameDepth = (unsigned)m_frames.Height() - 1;
             return WALK_CONTINUE;
         }
     };
 
-    Visitor visitor(this, frames, frameLocals, inlineeResumed);
+    Visitor visitor(this, frames, inlineeResumed);
     for (BasicBlock* block = InlineeCompiler->fgFirstBB; block != nullptr; block = block->Next())
     {
         for (Statement* const stmt : block->Statements())

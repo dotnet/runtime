@@ -7611,8 +7611,7 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
 
     if (call->IsAsync())
     {
-        call->GetAsyncInfo().InlineFrameDepth  = inlCall->GetAsyncInfo().InlineFrameDepth;
-        call->GetAsyncInfo().InlineFrameLocals = inlCall->GetAsyncInfo().InlineFrameLocals;
+        call->GetAsyncInfo().InlineFrameDepth = inlCall->GetAsyncInfo().InlineFrameDepth;
     }
 }
 
