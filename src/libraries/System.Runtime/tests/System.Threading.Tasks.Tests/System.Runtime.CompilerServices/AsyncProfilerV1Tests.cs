@@ -1353,6 +1353,17 @@ namespace System.Threading.Tasks.Tests
             AssertExactlyOneCreateAndComplete(stream, branchCCallstacks[0].DispatcherId, nameof(StateMachineAsync_WhenAll_TracksAllBranches_BranchC_Marker));
             AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].DispatcherId, nameof(StateMachineAsync_WhenAll_TracksAllBranches_Marker));
 
+            // Each branch is an independent dispatcher; its walk must stop at its own boundary and
+            // never leak a concurrent sibling's (or the outer marker's) frame into its callstack.
+            string branchAMarker = nameof(StateMachineAsync_WhenAll_TracksAllBranches_BranchA_Marker);
+            string branchBMarker = nameof(StateMachineAsync_WhenAll_TracksAllBranches_BranchB_Marker);
+            string branchCMarker = nameof(StateMachineAsync_WhenAll_TracksAllBranches_BranchC_Marker);
+            string outerMarker = nameof(StateMachineAsync_WhenAll_TracksAllBranches_Marker);
+            AssertCallstacksExcludeForeignMarkers(stream, branchACallstacks, branchAMarker, branchBMarker, branchCMarker, outerMarker);
+            AssertCallstacksExcludeForeignMarkers(stream, branchBCallstacks, branchBMarker, branchAMarker, branchCMarker, outerMarker);
+            AssertCallstacksExcludeForeignMarkers(stream, branchCCallstacks, branchCMarker, branchAMarker, branchBMarker, outerMarker);
+            AssertCallstacksExcludeForeignMarkers(stream, markerCallstacks, outerMarker, branchAMarker, branchBMarker, branchCMarker);
+
             // The outer marker's chain should fire the standard Create -> Resume -> Complete sequence in its own dispatcher tree, in that order.
             ulong markerDispatcherId = markerCallstacks[0].DispatcherId;
             var markerIds = stream.ChainEventsFromDispatcher(markerDispatcherId).Select(e => e.EventId).ToList();
@@ -1434,6 +1445,17 @@ namespace System.Threading.Tasks.Tests
             AssertExactlyOneCreateAndComplete(stream, slow1Callstacks[0].DispatcherId, nameof(StateMachineAsync_WhenAny_TracksAllBranches_Slow1_Marker));
             AssertExactlyOneCreateAndComplete(stream, slow2Callstacks[0].DispatcherId, nameof(StateMachineAsync_WhenAny_TracksAllBranches_Slow2_Marker));
             AssertCreateBalancesSuspendAndCompleteInChain(stream, markerCallstacks[0].DispatcherId, nameof(StateMachineAsync_WhenAny_TracksAllBranches_Marker));
+
+            // Each branch is an independent dispatcher; its walk must stop at its own boundary and
+            // never leak a concurrent sibling's (or the outer marker's) frame into its callstack.
+            string fastMarker = nameof(StateMachineAsync_WhenAny_TracksAllBranches_Fast_Marker);
+            string slow1Marker = nameof(StateMachineAsync_WhenAny_TracksAllBranches_Slow1_Marker);
+            string slow2Marker = nameof(StateMachineAsync_WhenAny_TracksAllBranches_Slow2_Marker);
+            string whenAnyOuterMarker = nameof(StateMachineAsync_WhenAny_TracksAllBranches_Marker);
+            AssertCallstacksExcludeForeignMarkers(stream, fastCallstacks, fastMarker, slow1Marker, slow2Marker, whenAnyOuterMarker);
+            AssertCallstacksExcludeForeignMarkers(stream, slow1Callstacks, slow1Marker, fastMarker, slow2Marker, whenAnyOuterMarker);
+            AssertCallstacksExcludeForeignMarkers(stream, slow2Callstacks, slow2Marker, fastMarker, slow1Marker, whenAnyOuterMarker);
+            AssertCallstacksExcludeForeignMarkers(stream, markerCallstacks, whenAnyOuterMarker, fastMarker, slow1Marker, slow2Marker);
 
             // The outer marker's chain: exactly one Create, at least two Resumes (one after
             // WhenAny, one after WhenAll on the slow branches), then Complete.
@@ -1905,6 +1927,136 @@ namespace System.Threading.Tasks.Tests
             // Inner cancelled task + outer marker must each see exactly one Create and one Complete in their own dispatcher tree.
             AssertExactlyOneCreateAndComplete(stream, innerCallstacks[0].DispatcherId, nameof(StateMachineAsync_TaskCancellation_Inner_Marker));
             AssertExactlyOneCreateAndComplete(stream, markerCallstacks[0].DispatcherId, nameof(StateMachineAsync_TaskCancellation_Marker));
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_NestedChildResume_FlattensPerSegment_Child_Marker(Task childGate)
+        {
+            await childGate;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_NestedChildResume_FlattensPerSegment_Middle_Marker(Task middleGate1, Task childGate, Task middleGate2)
+        {
+            // Suspend once so this box becomes a leaf dispatcher, then resume and await a nested child
+            // async method (its own dispatcher). When that child completes it inline-resumes this box;
+            // the trailing gate then re-suspends this same box, which under the flattened per-segment
+            // model starts a fresh dispatcher segment parented to the just-completed child. The gates are
+            // completed inline on a single thread so the child deterministically inline-resumes this box;
+            // thread-pool scheduling (e.g. Task.Yield) would otherwise collapse this into one reused segment.
+            await middleGate1;
+            await StateMachineAsync_NestedChildResume_FlattensPerSegment_Child_Marker(childGate);
+            await middleGate2;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_NestedChildResume_FlattensPerSegment_Marker(Task outerGate, Task middleGate1, Task childGate, Task middleGate2)
+        {
+            // Suspend/resume first so this outer marker is a live dispatcher (non-zero parent id) by
+            // the time the middle frame below first suspends.
+            await outerGate;
+            await StateMachineAsync_NestedChildResume_FlattensPerSegment_Middle_Marker(middleGate1, childGate, middleGate2);
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_NestedChildResume_FlattensPerSegment()
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(async () =>
+                {
+                    var outerGate = new TaskCompletionSource();
+                    var middleGate1 = new TaskCompletionSource();
+                    var childGate = new TaskCompletionSource();
+                    var middleGate2 = new TaskCompletionSource();
+
+                    Task marker = StateMachineAsync_NestedChildResume_FlattensPerSegment_Marker(
+                        outerGate.Task, middleGate1.Task, childGate.Task, middleGate2.Task);
+
+                    // Drive each stage inline on this thread. Completing a default TaskCompletionSource runs
+                    // its continuation synchronously, so each SetResult advances the chain to its next suspend:
+                    // the child completes inline and inline-resumes the middle box, which is the deterministic
+                    // condition that produces the flattened per-segment split (a fresh middle segment parented
+                    // to the child). Thread-pool scheduling would otherwise collapse the middle into one segment.
+                    outerGate.SetResult();
+                    middleGate1.SetResult();
+                    childGate.SetResult();
+                    middleGate2.SetResult();
+
+                    await marker;
+                });
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            // Resume callstacks whose leaf (top) frame is the given marker: the callstacks captured while
+            // that method's own box was the running continuation. A box that merely appears deeper in
+            // someone else's callstack (e.g. Middle inside the child's [Child, Middle, Marker]) is
+            // excluded, so this isolates the segments a box was resumed under in its own right.
+            List<ParsedEvent> LeafResumes(string markerName) =>
+                stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, markerName)
+                    .Where(c => c.Frames.Count > 0
+                        && (GetMethodNameFromMethodId(c.CallstackType, c.Frames[0].MethodId)?.Contains(markerName, StringComparison.Ordinal) ?? false))
+                    .ToList();
+
+            var outerResumes = LeafResumes(nameof(StateMachineAsync_NestedChildResume_FlattensPerSegment_Marker));
+            var middleResumes = LeafResumes(nameof(StateMachineAsync_NestedChildResume_FlattensPerSegment_Middle_Marker));
+            var childResumes = LeafResumes(nameof(StateMachineAsync_NestedChildResume_FlattensPerSegment_Child_Marker));
+
+            AssertNotEmpty(stream, outerResumes);
+            AssertNotEmpty(stream, middleResumes);
+            AssertNotEmpty(stream, childResumes);
+
+            ulong childDispatcherId = childResumes[0].DispatcherId;
+
+            // The middle box suspends, resumes, awaits a nested child dispatcher, then (after the child
+            // inline-resumes it) re-suspends. Under the flattened per-segment model each resumed segment
+            // gets its own unique dispatcher id, so the middle box surfaces as exactly two distinct
+            // segments rather than one reused context.
+            var middleSegmentIds = middleResumes.Select(c => c.DispatcherId).Distinct().ToList();
+            AssertEqual(stream, 2, middleSegmentIds.Count);
+
+            // Flattening: the post-child bubble-up resumes the middle box as a flat [Middle, Marker]
+            // continuation. No middle resume callstack is nested under (contains) the child dispatcher's
+            // frame, so the child's callstack suffix is never duplicated into the parent's resume.
+            foreach (var resume in middleResumes)
+            {
+                AssertFalse(stream, resume.HasMarkerFrame(nameof(StateMachineAsync_NestedChildResume_FlattensPerSegment_Child_Marker)),
+                    $"Middle resume callstack (DispatcherId {resume.DispatcherId}) is nested under its child dispatcher; flattening failed");
+            }
+
+            // Each middle segment is created exactly once, and exactly one of the two segments is parented
+            // to the just-completed child dispatcher. That "child as parent" edge is the intended
+            // per-segment relationship: the same box resumed in a new chain is a child of the context that
+            // inline-resumed it, not an inverted parent/child edge.
+            var middleCreates = stream.All
+                .Where(e => e.EventId == AsyncEventID.CreateStateMachineAsyncContext && middleSegmentIds.Contains(e.DispatcherId))
+                .ToList();
+            AssertEqual(stream, 2, middleCreates.Count);
+            AssertEqual(stream, 1, middleCreates.Count(c => c.ParentDispatcherId == childDispatcherId));
+
+            // Whole-scenario balance: walking the full dispatcher tree from the outer marker, every
+            // segment that is created is also completed exactly once, with no leaked Suspend and no
+            // double Complete (each created id is unique and pairs with a single Complete).
+            var chain = stream.ChainEventsFromDispatcher(outerResumes[0].DispatcherId);
+            var createdIds = chain.Where(e => e.EventId == AsyncEventID.CreateStateMachineAsyncContext)
+                .Select(e => e.DispatcherId)
+                .ToList();
+            AssertNotEmpty(stream, createdIds);
+            AssertEqual(stream, createdIds.Count, createdIds.Distinct().Count());
+
+            foreach (ulong id in createdIds)
+            {
+                int completes = chain.Count(e => e.EventId == AsyncEventID.CompleteStateMachineAsyncContext && e.DispatcherId == id);
+                int suspends = chain.Count(e => e.EventId == AsyncEventID.SuspendStateMachineAsyncContext && e.DispatcherId == id);
+                AssertEqual(stream, 1, completes);
+                AssertEqual(stream, 0, suspends);
+            }
         }
 
         [RuntimeAsyncMethodGeneration(false)]

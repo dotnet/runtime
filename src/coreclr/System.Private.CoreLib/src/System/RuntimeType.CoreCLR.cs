@@ -1808,7 +1808,7 @@ namespace System
 
         internal static MethodBase? GetMethodBase(RuntimeType? reflectedType, IRuntimeMethodInfo methodHandle)
         {
-            MethodBase? retval = GetMethodBase(reflectedType, methodHandle.Value);
+            MethodBase? retval = GetMethodBase(reflectedType, IRuntimeMethodInfo.GetValue(methodHandle));
             GC.KeepAlive(methodHandle);
             return retval;
         }
@@ -1856,7 +1856,7 @@ namespace System
                     for (int i = 0; i < methodBases.Length; i++)
                     {
                         IRuntimeMethodInfo rmi = (IRuntimeMethodInfo)methodBases[i];
-                        if (rmi.Value.Value == methodHandle.Value)
+                        if (IRuntimeMethodInfo.GetValue(rmi).Value == methodHandle.Value)
                             loaderAssuredCompatible = true;
                     }
 

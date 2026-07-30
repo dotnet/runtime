@@ -11,6 +11,7 @@
 #include <minipal/entrypoints.h>
 
 extern "C" {
+    uint32_t CompressionNative_CompressBound (uint32_t);
     uint32_t CompressionNative_Crc32 (uint32_t, void *, int32_t);
     int32_t CompressionNative_Deflate (void *, int32_t);
     int32_t CompressionNative_DeflateEnd (void *);
@@ -119,7 +120,7 @@ extern "C" {
     int64_t SystemNative_GetSystemTimeAsTicks ();
     void * SystemNative_GetTimeZoneData (void *, void *);
     int64_t SystemNative_GetTimestamp ();
-    int32_t SystemNative_GetWasiSocketDescriptor (void *, void *);
+    int32_t SystemNative_GetWasiSocketDescriptor (void *, void *, void *);
     int32_t SystemNative_IsMemfdSupported ();
     int32_t SystemNative_LChflags (void *, uint32_t);
     int32_t SystemNative_LChflagsCanSetHiddenFlag ();
@@ -196,14 +197,57 @@ extern "C" {
     int32_t SystemNative_TryGetIPPacketInformation (void *, int32_t, void *);
     int32_t SystemNative_UTimensat (void *, void *);
     int32_t SystemNative_Unlink (void *);
+    int32_t SystemNative_WasiSubscribeSocketPollable (int32_t, int32_t);
     int32_t SystemNative_Write (void *, void *, int32_t);
     int32_t SystemNative_WriteToNonblocking (void *, void *, int32_t);
     int64_t SystemNative_WriteV (void *, void *, int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[constructor]outgoing-request"))) extern int32_t WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_constructor_5D_outgoing_request (int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]fields.entries"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_fields_entries (int32_t, void *);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]future-incoming-response.get"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_future_incoming_response_get (int32_t, void *);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]future-incoming-response.subscribe"))) extern int32_t WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_future_incoming_response_subscribe (int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]incoming-body.stream"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_incoming_body_stream (int32_t, void *);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]incoming-response.consume"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_incoming_response_consume (int32_t, void *);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]incoming-response.headers"))) extern int32_t WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_incoming_response_headers (int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]incoming-response.status"))) extern int32_t WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_incoming_response_status (int32_t);
+    __attribute__((import_module("wasi:io/streams@0.2.8"),import_name("[method]input-stream.read"))) extern void WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_method_5D_input_stream_read (int32_t, int64_t, void *);
+    __attribute__((import_module("wasi:io/streams@0.2.8"),import_name("[method]input-stream.subscribe"))) extern int32_t WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_method_5D_input_stream_subscribe (int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]outgoing-body.write"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_outgoing_body_write (int32_t, void *);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]outgoing-request.body"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_outgoing_request_body (int32_t, void *);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]outgoing-request.set-authority"))) extern int32_t WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_outgoing_request_set_authority (int32_t, int32_t, void *, int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]outgoing-request.set-method"))) extern int32_t WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_outgoing_request_set_method (int32_t, int32_t, void *, int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]outgoing-request.set-path-with-query"))) extern int32_t WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_outgoing_request_set_path_with_query (int32_t, int32_t, void *, int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]outgoing-request.set-scheme"))) extern int32_t WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_outgoing_request_set_scheme (int32_t, int32_t, int32_t, void *, int32_t);
+    __attribute__((import_module("wasi:io/streams@0.2.8"),import_name("[method]output-stream.check-write"))) extern void WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_method_5D_output_stream_check_write (int32_t, void *);
+    __attribute__((import_module("wasi:io/streams@0.2.8"),import_name("[method]output-stream.flush"))) extern void WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_method_5D_output_stream_flush (int32_t, void *);
+    __attribute__((import_module("wasi:io/streams@0.2.8"),import_name("[method]output-stream.subscribe"))) extern int32_t WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_method_5D_output_stream_subscribe (int32_t);
+    __attribute__((import_module("wasi:io/streams@0.2.8"),import_name("[method]output-stream.write"))) extern void WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_method_5D_output_stream_write (int32_t, void *, int32_t, void *);
+    __attribute__((import_module("wasi:io/error@0.2.8"),import_name("[resource-drop]error"))) extern void WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_error_40_0_2_8_23__5B_resource_drop_5D_error (int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[resource-drop]fields"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_fields (int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[resource-drop]future-incoming-response"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_future_incoming_response (int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[resource-drop]future-trailers"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_future_trailers (int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[resource-drop]incoming-body"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_incoming_body (int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[resource-drop]incoming-response"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_incoming_response (int32_t);
+    __attribute__((import_module("wasi:io/streams@0.2.8"),import_name("[resource-drop]input-stream"))) extern void WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_resource_drop_5D_input_stream (int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[resource-drop]outgoing-body"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_outgoing_body (int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[resource-drop]outgoing-request"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_outgoing_request (int32_t);
+    __attribute__((import_module("wasi:io/streams@0.2.8"),import_name("[resource-drop]output-stream"))) extern void WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_resource_drop_5D_output_stream (int32_t);
+    __attribute__((import_module("wasi:io/poll@0.2.8"),import_name("[resource-drop]pollable"))) extern void WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23__5B_resource_drop_5D_pollable (int32_t);
     __attribute__((import_module("wasi:io/poll@0.2.8"),import_name("[resource-drop]pollable"))) extern void WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23__5B_resource_drop_5D_pollable (int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[resource-drop]request-options"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_request_options (int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[static]fields.from-list"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_static_5D_fields_from_list (void *, int32_t, void *);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[static]incoming-body.finish"))) extern int32_t WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_static_5D_incoming_body_finish (int32_t);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[static]outgoing-body.finish"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_static_5D_outgoing_body_finish (int32_t, int32_t, int32_t, void *);
+    __attribute__((import_module("wasi:http/outgoing-handler@0.2.8"),import_name("handle"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_outgoing_handler_40_0_2_8_23_handle (int32_t, int32_t, int32_t, void *);
+    __attribute__((import_module("wasi:http/types@0.2.8"),import_name("http-error-code"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23_http_error_code (int32_t, void *);
+    __attribute__((import_module("wasi:clocks/monotonic-clock@0.2.8"),import_name("now"))) extern int64_t WasiHttpWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_now ();
     __attribute__((import_module("wasi:clocks/monotonic-clock@0.2.8"),import_name("now"))) extern int64_t WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_now ();
+    __attribute__((import_module("wasi:io/poll@0.2.8"),import_name("poll"))) extern void WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23_poll (void *, int32_t, void *);
     __attribute__((import_module("wasi:io/poll@0.2.8"),import_name("poll"))) extern void WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23_poll (void *, int32_t, void *);
+    __attribute__((import_module("wasi:clocks/monotonic-clock@0.2.8"),import_name("resolution"))) extern int64_t WasiHttpWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_resolution ();
     __attribute__((import_module("wasi:clocks/monotonic-clock@0.2.8"),import_name("resolution"))) extern int64_t WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_resolution ();
+    __attribute__((import_module("wasi:clocks/monotonic-clock@0.2.8"),import_name("subscribe-duration"))) extern int32_t WasiHttpWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_duration (int64_t);
     __attribute__((import_module("wasi:clocks/monotonic-clock@0.2.8"),import_name("subscribe-duration"))) extern int32_t WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_duration (int64_t);
+    __attribute__((import_module("wasi:clocks/monotonic-clock@0.2.8"),import_name("subscribe-instant"))) extern int32_t WasiHttpWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_instant (int64_t);
     __attribute__((import_module("wasi:clocks/monotonic-clock@0.2.8"),import_name("subscribe-instant"))) extern int32_t WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_instant (int64_t);
 } // extern "C"
 
@@ -245,6 +289,7 @@ static const Entry s_libSystem_Globalization_Native [] = {
 };
 
 static const Entry s_libSystem_IO_Compression_Native [] = {
+    DllImportEntry(CompressionNative_CompressBound) // System.IO.Compression
     DllImportEntry(CompressionNative_Crc32) // System.IO.Compression
     DllImportEntry(CompressionNative_Deflate) // System.IO.Compression
     DllImportEntry(CompressionNative_DeflateEnd) // System.IO.Compression
@@ -297,7 +342,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
+    DllImportEntry(SystemNative_GetErrNo) // System.Net.NameResolution, System.Private.CoreLib
     DllImportEntry(SystemNative_GetHostEntryForName) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetHostName) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetIPv4Address) // System.Net.Primitives, System.Net.Sockets
@@ -399,21 +444,76 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_TryGetIPPacketInformation) // System.Net.Sockets
     DllImportEntry(SystemNative_UTimensat) // System.Private.CoreLib
     DllImportEntry(SystemNative_Unlink) // System.IO.MemoryMappedFiles, System.Private.CoreLib
+    DllImportEntry(SystemNative_WasiSubscribeSocketPollable) // System.Net.Sockets
     DllImportEntry(SystemNative_Write) // System.Console, System.Net.Sockets, System.Private.CoreLib
     DllImportEntry(SystemNative_WriteToNonblocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_WriteV) // System.Private.CoreLib
 };
 
+static const Entry s_libSystem_Native_Browser [] = {
+};
+
+static const Entry s_libSystem_Runtime_InteropServices_JavaScript_Native [] = {
+};
+
 static const Entry s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8 [] = {
-    { "now", (void*)&WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_now }, // System.Private.CoreLib
-    { "resolution", (void*)&WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_resolution }, // System.Private.CoreLib
-    { "subscribe-duration", (void*)&WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_duration }, // System.Private.CoreLib
-    { "subscribe-instant", (void*)&WasiPollWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_instant }, // System.Private.CoreLib
+    { "now", (void*)&WasiHttpWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_now }, // System.Net.Http, System.Private.CoreLib
+    { "resolution", (void*)&WasiHttpWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_resolution }, // System.Net.Http, System.Private.CoreLib
+    { "subscribe-duration", (void*)&WasiHttpWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_duration }, // System.Net.Http, System.Private.CoreLib
+    { "subscribe-instant", (void*)&WasiHttpWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_subscribe_instant }, // System.Net.Http, System.Private.CoreLib
+};
+
+static const Entry s_wasi_3A_http_2F_outgoing_handler_40_0_2_8 [] = {
+    { "handle", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_outgoing_handler_40_0_2_8_23_handle }, // System.Net.Http
+};
+
+static const Entry s_wasi_3A_http_2F_types_40_0_2_8 [] = {
+    { "[constructor]outgoing-request", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_constructor_5D_outgoing_request }, // System.Net.Http
+    { "[method]fields.entries", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_fields_entries }, // System.Net.Http
+    { "[method]future-incoming-response.get", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_future_incoming_response_get }, // System.Net.Http
+    { "[method]future-incoming-response.subscribe", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_future_incoming_response_subscribe }, // System.Net.Http
+    { "[method]incoming-body.stream", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_incoming_body_stream }, // System.Net.Http
+    { "[method]incoming-response.consume", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_incoming_response_consume }, // System.Net.Http
+    { "[method]incoming-response.headers", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_incoming_response_headers }, // System.Net.Http
+    { "[method]incoming-response.status", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_incoming_response_status }, // System.Net.Http
+    { "[method]outgoing-body.write", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_outgoing_body_write }, // System.Net.Http
+    { "[method]outgoing-request.body", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_outgoing_request_body }, // System.Net.Http
+    { "[method]outgoing-request.set-authority", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_outgoing_request_set_authority }, // System.Net.Http
+    { "[method]outgoing-request.set-method", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_outgoing_request_set_method }, // System.Net.Http
+    { "[method]outgoing-request.set-path-with-query", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_outgoing_request_set_path_with_query }, // System.Net.Http
+    { "[method]outgoing-request.set-scheme", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_outgoing_request_set_scheme }, // System.Net.Http
+    { "[resource-drop]fields", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_fields }, // System.Net.Http
+    { "[resource-drop]future-incoming-response", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_future_incoming_response }, // System.Net.Http
+    { "[resource-drop]future-trailers", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_future_trailers }, // System.Net.Http
+    { "[resource-drop]incoming-body", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_incoming_body }, // System.Net.Http
+    { "[resource-drop]incoming-response", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_incoming_response }, // System.Net.Http
+    { "[resource-drop]outgoing-body", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_outgoing_body }, // System.Net.Http
+    { "[resource-drop]outgoing-request", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_outgoing_request }, // System.Net.Http
+    { "[resource-drop]request-options", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_resource_drop_5D_request_options }, // System.Net.Http
+    { "[static]fields.from-list", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_static_5D_fields_from_list }, // System.Net.Http
+    { "[static]incoming-body.finish", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_static_5D_incoming_body_finish }, // System.Net.Http
+    { "[static]outgoing-body.finish", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_static_5D_outgoing_body_finish }, // System.Net.Http
+    { "http-error-code", (void*)&WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23_http_error_code }, // System.Net.Http
+};
+
+static const Entry s_wasi_3A_io_2F_error_40_0_2_8 [] = {
+    { "[resource-drop]error", (void*)&WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_error_40_0_2_8_23__5B_resource_drop_5D_error }, // System.Net.Http
 };
 
 static const Entry s_wasi_3A_io_2F_poll_40_0_2_8 [] = {
-    { "[resource-drop]pollable", (void*)&WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23__5B_resource_drop_5D_pollable }, // System.Private.CoreLib
-    { "poll", (void*)&WasiPollWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23_poll }, // System.Private.CoreLib
+    { "[resource-drop]pollable", (void*)&WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23__5B_resource_drop_5D_pollable }, // System.Net.Http, System.Private.CoreLib
+    { "poll", (void*)&WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_poll_40_0_2_8_23_poll }, // System.Net.Http, System.Private.CoreLib
+};
+
+static const Entry s_wasi_3A_io_2F_streams_40_0_2_8 [] = {
+    { "[method]input-stream.read", (void*)&WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_method_5D_input_stream_read }, // System.Net.Http
+    { "[method]input-stream.subscribe", (void*)&WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_method_5D_input_stream_subscribe }, // System.Net.Http
+    { "[method]output-stream.check-write", (void*)&WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_method_5D_output_stream_check_write }, // System.Net.Http
+    { "[method]output-stream.flush", (void*)&WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_method_5D_output_stream_flush }, // System.Net.Http
+    { "[method]output-stream.subscribe", (void*)&WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_method_5D_output_stream_subscribe }, // System.Net.Http
+    { "[method]output-stream.write", (void*)&WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_method_5D_output_stream_write }, // System.Net.Http
+    { "[resource-drop]input-stream", (void*)&WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_resource_drop_5D_input_stream }, // System.Net.Http
+    { "[resource-drop]output-stream", (void*)&WasiHttpWorld_wit_Imports_wasi_io_v0_2_8_23_wasi_3A_io_2F_streams_40_0_2_8_23__5B_resource_drop_5D_output_stream }, // System.Net.Http
 };
 
 typedef struct PInvokeTable {
@@ -424,10 +524,16 @@ typedef struct PInvokeTable {
 
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
-    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 8},
-    {"libSystem.Native", s_libSystem_Native, 146},
+    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
+    {"libSystem.Native", s_libSystem_Native, 147},
+    {"libSystem.Native.Browser", s_libSystem_Native_Browser, 0},
+    {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 0},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
-    {"wasi:io/poll@0.2.8", s_wasi_3A_io_2F_poll_40_0_2_8, 2}
+    {"wasi:http/outgoing-handler@0.2.8", s_wasi_3A_http_2F_outgoing_handler_40_0_2_8, 1},
+    {"wasi:http/types@0.2.8", s_wasi_3A_http_2F_types_40_0_2_8, 26},
+    {"wasi:io/error@0.2.8", s_wasi_3A_io_2F_error_40_0_2_8, 1},
+    {"wasi:io/poll@0.2.8", s_wasi_3A_io_2F_poll_40_0_2_8, 2},
+    {"wasi:io/streams@0.2.8", s_wasi_3A_io_2F_streams_40_0_2_8, 8}
 };
 const size_t s_PInvokeTablesCount = sizeof(s_PInvokeTables) / sizeof(s_PInvokeTables[0]);
 

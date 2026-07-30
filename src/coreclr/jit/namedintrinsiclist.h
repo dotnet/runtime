@@ -124,6 +124,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier,
@@ -134,6 +135,10 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_AsyncHelpers_Await,
     NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation,
     NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_Suspend,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_TransparentSuspend,
 
     NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref,
 

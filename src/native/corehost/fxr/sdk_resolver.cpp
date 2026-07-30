@@ -374,7 +374,7 @@ sdk_resolver::global_file_info sdk_resolver::parse_global_file(const pal::string
             return ret;
         }
 
-        if (!fx_ver_t::parse(version_value->value.GetString(), &requested_version, false))
+        if (!fx_ver_t::parse(version_value->value.GetString(), &requested_version))
         {
             ret.error_message = utils::format_string(_X("Version '%s' is not valid for the 'sdk/version' value"), version_value->value.GetString());
             return ret;
