@@ -85,4 +85,4 @@ ThreadStore * GetThreadStore();
 
 #define END_FOREACH_THREAD  \
     }                       \
-}                           \
+}
