@@ -62,6 +62,8 @@ class MSDiaSymbolReader
                 Console.WriteLine("Image file:     {0}", imageFile);
                 Console.WriteLine("Image GUID:     {0}", imageGuid);
                 Console.WriteLine("Image age:      {0}", imageAge);
+                // sig is 0: R2R images use the RSDS (PDB 7.0) CodeView record, whose identity is the
+                // GUID + age only; the legacy NB10 32-bit signature does not apply.
                 _diaDataSource.loadAndValidateDataFromPdb(pdbFile, ref imageGuid, 0, imageAge);
             }
             else
