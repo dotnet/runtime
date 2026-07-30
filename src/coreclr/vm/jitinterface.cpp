@@ -10203,17 +10203,6 @@ bool CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
     return result;
 }
 
-/*********************************************************************/
-// Unused; unmanaged calli is expanded inline or converted to a call to a marshalling
-// stub by convertPInvokeCalliToCall.
-LPVOID CEEInfo::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig,
-                                            void **ppIndirection)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    UNREACHABLE_RET();
-}
-
 // Check any constraints on method type arguments
 bool CEEInfo::satisfiesMethodConstraints(
     CORINFO_CLASS_HANDLE        parent,

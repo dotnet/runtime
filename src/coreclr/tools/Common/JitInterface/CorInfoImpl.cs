@@ -4177,14 +4177,6 @@ namespace Internal.JitInterface
         private void* GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
         { throw new NotImplementedException("GetCookieForInterpreterCalliSig"); }
 
-        private void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, ref void* ppIndirection)
-        {
-#if READYTORUN
-            throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(GetCookieForPInvokeCalliSig)}");
-#else
-            throw new NotImplementedException(nameof(GetCookieForPInvokeCalliSig));
-#endif
-        }
 #pragma warning disable CA1822 // Mark members as static
         private CORINFO_JUST_MY_CODE_HANDLE_* getJustMyCodeHandle(CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_* ppIndirection)
 #pragma warning restore CA1822 // Mark members as static
