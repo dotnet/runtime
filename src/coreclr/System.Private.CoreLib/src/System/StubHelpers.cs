@@ -721,7 +721,7 @@ namespace System.StubHelpers
         {
             ClearNative(pMarshalState, pNativeHome);
         }
-#pragma warning restore IDE0060
+#pragma warning restore IDE0060 // Remove unused parameter
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ClearNative")]
         private static partial void ClearNative(IntPtr pMarshalState, IntPtr pNativeHome);
@@ -1408,7 +1408,6 @@ namespace System.StubHelpers
         private static void ConvertToUnmanagedCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             Validate();
-            _ = ref cleanupWorkList;
             SpanHelpers.Memmove(ref *unmanaged, ref Unsafe.As<T, byte>(ref managed), (nuint)sizeof(T));
         }
 
@@ -1432,20 +1431,21 @@ namespace System.StubHelpers
         public static void ConvertToManaged(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             Validate();
-            _ = ref cleanupWorkList;
             SpanHelpers.Memmove(ref Unsafe.As<T, byte>(ref managed), ref *unmanaged, (nuint)sizeof(T));
         }
 
+        // This is the managed fallback body for a JIT intrinsic, so it must keep the shape of the other
+        // marshaler methods even though it uses none of its parameters. The parameters must not be
+        // dereferenced here: callers can pass null refs (Unsafe.NullRef), which would throw.
+#pragma warning disable IDE0060 // Remove unused parameter
         [Intrinsic]
         private static void FreeCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
             Validate();
-#nullable disable warnings // https://github.com/dotnet/roslyn/issues/82919
-            _ = ref managed;
-#nullable restore warnings
-            _ = unmanaged;
-            _ = ref cleanupWorkList;
+
+            // Blittable structs own no native resources, so there is nothing to free.
         }
+#pragma warning restore IDE0060 // Remove unused parameter
 
         public static void Free(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
