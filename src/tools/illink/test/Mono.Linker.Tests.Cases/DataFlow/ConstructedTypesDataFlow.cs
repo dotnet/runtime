@@ -217,6 +217,93 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 (GetIndexerHolder()[GetIndex()], other) = (first, second);
             }
 
+            static Type GetUnannotatedType() => null;
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            static Type annotatedFieldTarget;
+
+            // A field target (IFieldReferenceOperation) is handled directly by ProcessAssignment/
+            // ProcessSingleTargetAssignment (it has no side-effecting sub-expression pre-visit of its
+            // own; a static field has no instance to evaluate). This just verifies the assigned value
+            // is correctly checked against the field's DynamicallyAccessedMembers requirement.
+            [ExpectedWarning("IL2074", nameof(GetUnannotatedType))]
+            static void DeconstructFieldTarget()
+            {
+                object other;
+                (annotatedFieldTarget, other) = (GetUnannotatedType(), new object());
+            }
+
+            // A parameter target (IParameterReferenceOperation) reassigns an existing parameter
+            // directly (no declaration expression), unlike DeconstructVariableFlowCapture's locals.
+            [ExpectedWarning("IL2067")]
+            static void DeconstructParameterTarget(Type type, object instance)
+            {
+                (type, instance) = (GetUnannotatedType(), new object());
+                type.RequiresPublicMethods();
+            }
+
+            // A discard target (IDiscardOperation) drops the corresponding source value entirely -
+            // there's nothing to check dataflow-wise, and it must not affect tracking of the other
+            // target in the same deconstruction.
+            [ExpectedWarning("IL2072")]
+            static void DeconstructDiscardTarget()
+            {
+                (_, Type type) = (new object(), GetUnannotatedType());
+                type.RequiresPublicMethods();
+            }
+
+            [RequiresUnreferencedCode(nameof(GetArrayForElementTarget))]
+            static Type[] GetArrayForElementTarget() => new Type[2];
+
+            [RequiresUnreferencedCode(nameof(GetArrayIndex))]
+            static int GetArrayIndex() => 0;
+
+            // Like DeconstructIndexerTargetSideEffect, but for an array element target
+            // (IArrayElementReferenceOperation). Unlike the explicit indexer case, both the array
+            // reference and the index are pre-visited by VisitDeconstructionTargetSideEffects (there's
+            // no equivalent to the indexer-Arguments ordering quirk here), so both are visited twice
+            // (once ahead of the source, once again performing the write) - verifying each still
+            // produces exactly one warning despite the double-visit.
+            [ExpectedWarning("IL2026", nameof(GetArrayForElementTarget))]
+            [ExpectedWarning("IL2026", nameof(GetArrayIndex))]
+            static void DeconstructArrayElementTargetSideEffect(Type first, Type second)
+            {
+                object other;
+                (GetArrayForElementTarget()[GetArrayIndex()], other) = (first, second);
+            }
+
+            [RequiresUnreferencedCode(nameof(GetArrayForImplicitIndexerTarget))]
+            static Type[] GetArrayForImplicitIndexerTarget() => new Type[2];
+
+            // An implicit System.Index-based indexer target (IImplicitIndexerReferenceOperation),
+            // e.g. 'arr[^1]'. The receiver is a side-effecting expression visited ahead of the source,
+            // same as the explicit indexer and array element cases above.
+            [ExpectedWarning("IL2026", nameof(GetArrayForImplicitIndexerTarget))]
+            static void DeconstructImplicitIndexerTargetSideEffect(Type first, Type second)
+            {
+                object other;
+                (GetArrayForImplicitIndexerTarget()[^1], other) = (first, second);
+            }
+
+            struct ConversionTarget
+            {
+                public static implicit operator ConversionTarget(Type type) => default;
+            }
+
+            // Deconstructing an element through a user-defined conversion operator (Type ->
+            // ConversionTarget here) can't be modeled by the analyzer - the operator body is opaque -
+            // so EvaluateDeconstruction treats the converted value as unknown (top) rather than
+            // reusing the source's own tracked value, which would no longer make sense once its type
+            // has changed. ConversionTarget isn't itself a dataflow-tracked type, so this mainly
+            // verifies the conversion-operator code path in EvaluateDeconstruction runs without
+            // hitting UnexpectedOperationHandler or otherwise producing an unexpected warning (see
+            // [ExpectedNoWarnings] on the containing class).
+            static void DeconstructWithUserDefinedConversion(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type typeWithMethods)
+            {
+                (ConversionTarget converted, object instance) = (typeWithMethods, new object());
+            }
+
             [ExpectedWarning("IL2077")]
             static void DeconstructForeach((Type type, object instance)[] inputs)
             {
@@ -241,6 +328,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 DeconstructTupleSwap(typeof(string), typeof(string));
                 DeconstructPropertyTargetSideEffect(typeof(string), typeof(string));
                 DeconstructIndexerTargetSideEffect(typeof(string), typeof(string));
+                DeconstructFieldTarget();
+                DeconstructParameterTarget(typeof(string), null);
+                DeconstructDiscardTarget();
+                DeconstructArrayElementTargetSideEffect(typeof(string), typeof(string));
+                DeconstructImplicitIndexerTargetSideEffect(typeof(string), typeof(string));
+                DeconstructWithUserDefinedConversion(typeof(string));
                 DeconstructForeach(new[] { (typeof(string), (object)null) });
             }
         }
