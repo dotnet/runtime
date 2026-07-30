@@ -129,7 +129,6 @@
     <CoreClrProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'coreclr'))</CoreClrProjectRoot>
     <MonoProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'mono'))</MonoProjectRoot>
     <InstallerProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'installer'))</InstallerProjectRoot>
-    <WorkloadsProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'workloads'))</WorkloadsProjectRoot>
     <ToolsProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'tools'))</ToolsProjectRoot>
     <SharedNativeRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'native'))</SharedNativeRoot>
     <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'tasks'))</RepoTasksDir>
@@ -220,10 +219,6 @@
     <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
     <!-- Turn off producing Windows PDBs from our portable PDBs. No one uses them and they slow down publishing. -->
     <PublishWindowsPdb>false</PublishWindowsPdb>
-    <!-- Disable source link when building locally. -->
-    <DisableSourceLink Condition="'$(DisableSourceLink)' == '' and
-                                  '$(ContinuousIntegrationBuild)' != 'true' and
-                                  '$(OfficialBuildId)' == ''">true</DisableSourceLink>
     <!-- Runtime doesn't support Arcade-driven target framework filtering. -->
     <NoTargetFrameworkFiltering>true</NoTargetFrameworkFiltering>
 
@@ -250,10 +245,10 @@
         $(TargetFramework.EndsWith('-android')) or $(TargetFramework.EndsWith('-ios')) or
         $(TargetFramework.EndsWith('-tvos')) or $(TargetFramework.EndsWith('-maccatalyst')))">false</UseMonoRuntime>
 
-    <!-- Multi-targeted libraries' mobile target frameworks (e.g. netXX.0-android/ios/tvos/maccatalyst) are restored with UseMonoRuntime=true in the browser/wasi legs.
+    <!-- Multi-targeted libraries' mobile target frameworks (e.g. netXX.0-android/ios/tvos/maccatalyst) are restored with UseMonoRuntime=true in the browser/wasi legs or when CoreCLR is not supported.
          As of .NET 11, the SDK raises NETSDK1242 when a mobile project targets the Mono runtime. These mobile target frameworks are only restored (never actually built)
          in these legs, so disable the check to avoid the false-positive failure -->
-    <_DisableCheckForUnsupportedMonoMobileRuntime Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">true</_DisableCheckForUnsupportedMonoMobileRuntime>
+    <_DisableCheckForUnsupportedMonoMobileRuntime Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(CoreCLRSupported)' != 'true'">true</_DisableCheckForUnsupportedMonoMobileRuntime>
 
     <!-- For enabling the use of XUnitLogChecker in coreclr and libraries test runs. -->
     <!-- TODO: Enable XUnitLogChecker for NativeAOT tests https://github.com/dotnet/runtime/issues/94722 -->
@@ -300,8 +295,6 @@
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict;nullablePublicOnly</Features>
     <TreatWarningsAsErrors Condition="'$(TreatWarningsAsErrors)' == ''">true</TreatWarningsAsErrors>
-    <!-- Only upgrade NuGetAudit warnings to errors for official builds. -->
-    <WarningsNotAsErrors Condition="'$(OfficialBuild)' != 'true' OR '$(NuGetAuditWarnNotError)' == 'true'">$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
     <!-- Warnings to always disable -->
     <NoWarn>$(NoWarn);CS8500;CS8969</NoWarn>
     <!-- Suppress "CS1591 - Missing XML comment for publicly visible type or member" compiler errors for private assemblies. -->

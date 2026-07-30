@@ -343,6 +343,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.FileCatalog" Version="$(MicrosoftDotNetBuildTasksFileCatalogVersion)" />
   </ItemGroup>
 
 </Project>
