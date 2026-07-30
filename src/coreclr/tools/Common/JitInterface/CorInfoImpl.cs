@@ -3783,7 +3783,7 @@ namespace Internal.JitInterface
                     if (((ReadyToRunCompilerContext)context).TargetAllowsRuntimeCodeGeneration)
                     {
                         // Leave this method to runtime JIT that will be able to avoid the box
-                        throw new RequiresRuntimeJitException($"getAwaitReturnCall: runtime-determined exact instantiation requires runtime JIT ({runtimeDeterminedResult})");
+                        throw new RequiresRuntimeJitException($"getAwaitAwaiterInContinuationCall: runtime-determined exact instantiation requires runtime JIT ({runtimeDeterminedResult})");
                     }
                     else
                     {
