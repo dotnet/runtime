@@ -70,6 +70,8 @@ public:
     // Flush the DAC cache. This should be called when target memory changes.
     HRESULT STDMETHODCALLTYPE FlushCache();
 
+    HRESULT STDMETHODCALLTYPE Destroy(IUnknown ** ppLegacyCleanup);
+
     // enable or disable DAC target consistency checks
     HRESULT STDMETHODCALLTYPE DacSetTargetConsistencyChecks(BOOL fEnableAsserts);
 

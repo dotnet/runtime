@@ -195,6 +195,7 @@ interface IDacDbiInterface : IUnknown
 {
     // Initialization
     HRESULT FlushCache();
+    HRESULT Destroy([out] IUnknown ** ppLegacyCleanup);
     HRESULT DacSetTargetConsistencyChecks([in] BOOL fEnableAsserts);
 
     // Process State

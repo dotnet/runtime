@@ -210,6 +210,7 @@ internal static class Entrypoints
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_dacdbi_interface")]
     private static unsafe int CreateDacDbiInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
     {
+        object? legacyObj = null;
         try
         {
             if (obj == null)
@@ -227,19 +228,14 @@ internal static class Entrypoints
                 return HResults.E_INVALIDARG;
             }
 
-            object? legacyObj = null;
             if (legacyImplPtr != IntPtr.Zero)
             {
-                legacyObj = ComInterfaceMarshaller<IDacDbiInterface>.ConvertToManaged((void*)legacyImplPtr);
-                if (legacyObj is not Legacy.IDacDbiInterface)
-                {
-                    *obj = IntPtr.Zero;
-                    return HResults.COR_E_INVALIDCAST; // E_NOINTERFACE
-                }
+                legacyObj = UniqueComInterfaceMarshaller<IDacDbiInterface>.ConvertToManaged((void*)legacyImplPtr);
             }
 
             Legacy.DacDbiImpl impl = new(target, legacyObj);
             *obj = (nint)ComInterfaceMarshaller<IDacDbiInterface>.ConvertToUnmanaged(impl);
+            legacyObj = null;
             return HResults.S_OK;
         }
         catch (Exception ex)
@@ -248,6 +244,10 @@ internal static class Entrypoints
                 *obj = IntPtr.Zero;
             int hr = ex.HResult;
             return hr < 0 ? hr : HResults.E_FAIL;
+        }
+        finally
+        {
+            (legacyObj as ComObject)?.FinalRelease();
         }
     }
 
@@ -278,12 +278,16 @@ internal static class Entrypoints
 
         *iface = null;
 
+        ComObject? dataTargetComObject = null;
         try
         {
-            object dataTarget = ComInterfaceMarshaller<ICorDebugDataTarget>.ConvertToManaged((void*)pTarget)!;
+            ICorDebugDataTarget dataTarget =
+                UniqueComInterfaceMarshaller<ICorDebugDataTarget>.ConvertToManaged((void*)pTarget)!;
+            dataTargetComObject = (ComObject)(object)dataTarget;
             ContractDescriptorTarget target = CreateTargetFromCorDebugDataTarget(dataTarget, contractDescriptorAddress);
-            Legacy.DacDbiImpl impl = new(target, legacyObj: null);
+            Legacy.DacDbiImpl impl = new(target, legacyObj: null, dataTargetComObject: dataTargetComObject);
             *iface = ComInterfaceMarshaller<IDacDbiInterface>.ConvertToUnmanaged(impl);
+            dataTargetComObject = null;
             return HResults.S_OK;
         }
         catch (Exception ex)
@@ -292,6 +296,10 @@ internal static class Entrypoints
                 *iface = null;
             int hr = ex.HResult;
             return hr < 0 ? hr : HResults.E_FAIL;
+        }
+        finally
+        {
+            dataTargetComObject?.FinalRelease();
         }
     }
 

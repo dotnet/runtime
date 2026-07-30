@@ -1465,6 +1465,14 @@ void CordbProcess::FreeDac()
 
     if (m_pDacPrimitives != NULL)
     {
+        ReleaseHolder<IUnknown> legacyCleanup;
+        HRESULT hr = m_pDacPrimitives->Destroy(&legacyCleanup);
+        _ASSERTE(SUCCEEDED(hr));
+        if (FAILED(hr))
+        {
+            LOG((LF_CORDB, LL_ERROR, "Failed to prepare DAC for unload, hr=0x%08x\n", hr));
+            return;
+        }
         m_pDacPrimitives->Release();
         m_pDacPrimitives = NULL;
     }

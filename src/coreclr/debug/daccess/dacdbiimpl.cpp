@@ -544,6 +544,15 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::FlushCache()
     return hr;
 }
 
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::Destroy(IUnknown ** ppLegacyCleanup)
+{
+    if (ppLegacyCleanup == NULL)
+        return E_POINTER;
+
+    *ppLegacyCleanup = NULL;
+    return S_OK;
+}
+
 // enable or disable DAC target consistency checks
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::DacSetTargetConsistencyChecks(BOOL fEnableAsserts)
 {
