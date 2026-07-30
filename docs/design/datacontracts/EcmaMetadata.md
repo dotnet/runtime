@@ -5,10 +5,8 @@ This contract provides methods to get a view of the ECMA-335 metadata for a give
 ## APIs of contract
 
 ```csharp
-TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle);
-TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle);
-System.Reflection.Metadata.MetadataReader? GetMetadata(ModuleHandle handle);
-byte[] GetReadWriteMetadata(ModuleHandle handle);
+TargetSpan GetMetadataAddress(ModuleHandle handle, bool readWriteSavedCopy);
+System.Reflection.Metadata.MetadataReader? GetMetadata(ModuleHandle handle, bool requireReadWriteMetadata = false);
 ```
 
 Types from other contracts:
@@ -71,8 +69,16 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 
-TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)
+TargetSpan GetMetadataAddress(ModuleHandle handle, bool readWriteSavedCopy)
 {
+    if (readWriteSavedCopy)
+    {
+        TargetPointer dynamicMetadata = Target.ReadPointer(handle.Address + /* Module::DynamicMetadata offset */);
+        ulong size = Target.Read<uint>(dynamicMetadata + /* DynamicMetadata::Size offset */);
+        TargetPointer result = dynamicMetadata + /* DynamicMetadata::Data offset */;
+        return new(result, size);
+    }
+
     TargetPointer baseAddress = Target.ReadPointer(handle.Address + /* Module::Base offset */);
     if (baseAddress == TargetPointer.Null)
     {
@@ -95,33 +101,29 @@ TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)
     return new(baseAddress + rva, size);
 }
 
-MetadataReader? GetMetadata(ModuleHandle handle)
+MetadataReader? GetMetadata(ModuleHandle handle, bool requireReadWriteMetadata = false)
 {
     AvailableMetadataType type = GetAvailableMetadataType(handle);
+    if (requireReadWriteMetadata && type != AvailableMetadataType.ReadWrite)
+    {
+        throw new ArgumentException();
+    }
 
     switch (type)
     {
         case AvailableMetadataType.None:
             return null;
         case AvailableMetadataType.ReadOnly:
-        {
-            TargetSpan address = GetReadOnlyMetadataAddress(handle);
-            byte[] data = new byte[address.Size];
-            _target.ReadBuffer(address.Address, data);
-            return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data)).GetMetadataReader();
-        }
         case AvailableMetadataType.ReadWriteSavedCopy:
         {
-            TargetSpan address = GetReadWriteSavedMetadataAddress(handle);
+            TargetSpan address = GetMetadataAddress(handle, type == AvailableMetadataType.ReadWriteSavedCopy);
             byte[] data = new byte[address.Size];
             _target.ReadBuffer(address.Address, data);
             return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data)).GetMetadataReader();
         }
         case AvailableMetadataType.ReadWrite:
         {
-            // Reconstruct a contiguous ECMA-335 image from the module's writable
-            // (MDInternalRW) metadata and return a reader over it.
-            byte[] data = GetReadWriteMetadata(handle);
+            byte[] data = GetReadWriteMetadataBlob(handle);
             return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data)).GetMetadataReader();
         }
     }
@@ -130,7 +132,7 @@ MetadataReader? GetMetadata(ModuleHandle handle)
 // Reconstructs the module's writable (MDInternalRW) metadata as a single contiguous
 // ECMA-335 metadata image. The result is cached per module and reused until the
 // module's metadata generation counter (Module::MetadataGeneration) changes.
-byte[] GetReadWriteMetadata(ModuleHandle handle)
+byte[] GetReadWriteMetadataBlob(ModuleHandle handle)
 {
     // If a blob was previously built for this handle and the module's metadata
     // generation counter is unchanged, return the cached blob.
@@ -223,11 +225,4 @@ AvailableMetadataType GetAvailableMetadataType(ModuleHandle handle)
     return flags;
 }
 
-TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle)
-{
-    TargetPointer dynamicMetadata = Target.ReadPointer(handle.Address + /* Module::DynamicMetadata offset */);
-    ulong size = Target.Read<uint>(handle.Address + /* DynamicMetadata::Size offset */);
-    TargetPointer result = handle.Address + /* DynamicMetadata::Data offset */;
-    return new(result, size);
-}
 ```

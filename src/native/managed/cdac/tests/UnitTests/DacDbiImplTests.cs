@@ -631,7 +631,7 @@ public unsafe class DacDbiImplTests
         SetupTypeRefCacheMiss(loader);
 
         Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
-        ecma.Setup(e => e.GetMetadata(refHandle)).Returns((MetadataReader?)null);
+        ecma.Setup(e => e.GetMetadata(refHandle, false)).Returns((MetadataReader?)null);
 
         DacDbiImpl dacDbi = CreateDacDbiWithMockContracts(arch, loader, ecma);
 
@@ -735,8 +735,8 @@ public unsafe class DacDbiImplTests
         loader.Setup(l => l.GetAssembly(targetHandle)).Returns(Ptr(targetAsmPtr));
 
         Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
-        ecma.Setup(e => e.GetMetadata(refHandle)).Returns(refReader);
-        ecma.Setup(e => e.GetMetadata(targetHandle)).Returns(targetReader);
+        ecma.Setup(e => e.GetMetadata(refHandle, false)).Returns(refReader);
+        ecma.Setup(e => e.GetMetadata(targetHandle, false)).Returns(targetReader);
 
         DacDbiImpl dacDbi = CreateDacDbiWithMockContracts(arch, loader, ecma);
 
@@ -789,9 +789,9 @@ public unsafe class DacDbiImplTests
         loader.Setup(l => l.GetAssembly(handleB)).Returns(Ptr(asmBPtr));
 
         Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
-        ecma.Setup(e => e.GetMetadata(refHandle)).Returns(refReader);
-        ecma.Setup(e => e.GetMetadata(handleA)).Returns(readerA);
-        ecma.Setup(e => e.GetMetadata(handleB)).Returns(readerB);
+        ecma.Setup(e => e.GetMetadata(refHandle, false)).Returns(refReader);
+        ecma.Setup(e => e.GetMetadata(handleA, false)).Returns(readerA);
+        ecma.Setup(e => e.GetMetadata(handleB, false)).Returns(readerB);
 
         DacDbiImpl dacDbi = CreateDacDbiWithMockContracts(arch, loader, ecma);
 
@@ -845,8 +845,8 @@ public unsafe class DacDbiImplTests
         loader.Setup(l => l.GetAssembly(targetHandle)).Returns(Ptr(targetAsmPtr));
 
         Mock<IEcmaMetadata> ecma = new(MockBehavior.Strict);
-        ecma.Setup(e => e.GetMetadata(refHandle)).Returns(refReader);
-        ecma.Setup(e => e.GetMetadata(targetHandle)).Returns(targetReader);
+        ecma.Setup(e => e.GetMetadata(refHandle, false)).Returns(refReader);
+        ecma.Setup(e => e.GetMetadata(targetHandle, false)).Returns(targetReader);
 
         DacDbiImpl dacDbi = CreateDacDbiWithMockContracts(arch, loader, ecma);
 
@@ -1574,7 +1574,7 @@ public unsafe class DacDbiImplTests
 
         Contracts.ModuleHandle handle = new(moduleAddr);
         var mockEcmaMetadata = new Mock<IEcmaMetadata>();
-        mockEcmaMetadata.Setup(e => e.GetReadOnlyMetadataAddress(handle)).Returns(new TargetSpan(metadataAddr, metadataSize));
+        mockEcmaMetadata.Setup(e => e.GetMetadataAddress(handle, false)).Returns(new TargetSpan(metadataAddr, metadataSize));
 
         DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, (ModuleFlags)0, mockEcmaMetadata);
 
@@ -1584,7 +1584,7 @@ public unsafe class DacDbiImplTests
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.Equal(metadataAddr.Value, buffer.pAddress);
         Assert.Equal(metadataSize, buffer.cbSize);
-        mockEcmaMetadata.Verify(e => e.GetReadWriteSavedMetadataAddress(It.IsAny<Contracts.ModuleHandle>()), Times.Never);
+        mockEcmaMetadata.Verify(e => e.GetMetadataAddress(handle, false), Times.Once);
     }
 
     [Theory]
@@ -1598,7 +1598,7 @@ public unsafe class DacDbiImplTests
 
         Contracts.ModuleHandle handle = new(moduleAddr);
         var mockEcmaMetadata = new Mock<IEcmaMetadata>();
-        mockEcmaMetadata.Setup(e => e.GetReadWriteSavedMetadataAddress(handle)).Returns(new TargetSpan(metadataAddr, metadataSize));
+        mockEcmaMetadata.Setup(e => e.GetMetadataAddress(handle, true)).Returns(new TargetSpan(metadataAddr, metadataSize));
 
         DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, ModuleFlags.ReflectionEmit, mockEcmaMetadata);
 
@@ -1608,7 +1608,7 @@ public unsafe class DacDbiImplTests
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.Equal(metadataAddr.Value, buffer.pAddress);
         Assert.Equal(metadataSize, buffer.cbSize);
-        mockEcmaMetadata.Verify(e => e.GetReadOnlyMetadataAddress(It.IsAny<Contracts.ModuleHandle>()), Times.Never);
+        mockEcmaMetadata.Verify(e => e.GetMetadataAddress(handle, true), Times.Once);
     }
 
     [Theory]
@@ -1620,7 +1620,7 @@ public unsafe class DacDbiImplTests
 
         Contracts.ModuleHandle handle = new(moduleAddr);
         var mockEcmaMetadata = new Mock<IEcmaMetadata>();
-        mockEcmaMetadata.Setup(e => e.GetReadOnlyMetadataAddress(handle)).Returns(new TargetSpan(TargetPointer.Null, 0));
+        mockEcmaMetadata.Setup(e => e.GetMetadataAddress(handle, false)).Returns(new TargetSpan(TargetPointer.Null, 0));
 
         DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, (ModuleFlags)0, mockEcmaMetadata);
 
@@ -1641,5 +1641,37 @@ public unsafe class DacDbiImplTests
 
         int hr = dacDbi.GetMetadata(vmModule, null);
         Assert.Equal(System.HResults.E_POINTER, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadWriteMetadata_UsesMetadataReaderImage(MockTarget.Architecture arch)
+    {
+        ulong vmModule = 0x1000;
+        Contracts.ModuleHandle handle = new(new TargetPointer(vmModule));
+        var (reader, provider) = BuildMetadata(_ => { });
+        using (provider)
+        {
+            byte[] expected = new ReadOnlySpan<byte>(reader.MetadataPointer, reader.MetadataLength).ToArray();
+            var mockEcmaMetadata = new Mock<IEcmaMetadata>();
+            mockEcmaMetadata.Setup(e => e.GetMetadata(handle, true)).Returns(reader);
+            DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, (ModuleFlags)0, mockEcmaMetadata);
+
+            uint size;
+            int hr = dacDbi.GetReadWriteMetadataSize(vmModule, &size);
+
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal((uint)expected.Length, size);
+
+            byte[] actual = new byte[size];
+            fixed (byte* buffer = actual)
+            {
+                hr = dacDbi.FillReadWriteMetadata(vmModule, buffer, size);
+            }
+
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal(expected, actual);
+            mockEcmaMetadata.Verify(e => e.GetMetadata(handle, true), Times.Exactly(2));
+        }
     }
 }

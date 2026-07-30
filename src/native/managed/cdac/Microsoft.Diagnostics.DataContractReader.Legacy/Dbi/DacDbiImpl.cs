@@ -360,10 +360,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.ModuleFlags flags = loader.GetFlags(handle);
             Contracts.IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
 
-            // Dynamic modules keep an eagerly-serialized metadata buffer, while non-dynamic modules read metadata from the loaded PE image.
-            TargetSpan targetSpan = flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit)
-                ? ecmaMetadata.GetReadWriteSavedMetadataAddress(handle)
-                : ecmaMetadata.GetReadOnlyMetadataAddress(handle);
+            TargetSpan targetSpan = ecmaMetadata.GetMetadataAddress(handle, flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit));
 
             pTargetBuffer->pAddress = targetSpan.Address.Value;
             pTargetBuffer->cbSize = checked((uint)targetSpan.Size);
@@ -407,8 +404,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
 
-            byte[] blob = _target.Contracts.EcmaMetadata.GetReadWriteMetadata(handle);
-            *pSize = (uint)blob.Length;
+            MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(handle, requireReadWriteMetadata: true)!;
+            *pSize = checked((uint)reader.MetadataLength);
         }
         catch (System.Exception ex)
         {
@@ -443,12 +440,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
 
-            byte[] blob = _target.Contracts.EcmaMetadata.GetReadWriteMetadata(handle);
-            blobLength = blob.Length;
-            if (cbBuffer < (uint)blob.Length)
+            MetadataReader reader = _target.Contracts.EcmaMetadata.GetMetadata(handle, requireReadWriteMetadata: true)!;
+            blobLength = reader.MetadataLength;
+            if (cbBuffer < (uint)blobLength)
                 throw Marshal.GetExceptionForHR(CorDbgHResults.ERROR_INSUFFICIENT_BUFFER)!;
 
-            blob.AsSpan().CopyTo(new Span<byte>(pBuffer, blobLength));
+            new ReadOnlySpan<byte>(reader.MetadataPointer, blobLength).CopyTo(new Span<byte>(pBuffer, blobLength));
         }
         catch (System.Exception ex)
         {

@@ -335,7 +335,7 @@ public unsafe class TypeHandleTests
             Mock<ILoader> loader = new();
             loader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(ModuleAddress))).Returns(module);
             Mock<IEcmaMetadata> ecmaMetadata = new();
-            ecmaMetadata.Setup(e => e.GetMetadata(module)).Returns(reader);
+            ecmaMetadata.Setup(e => e.GetMetadata(module, false)).Returns(reader);
             builder.AddMockContract(loader);
             builder.AddMockContract(ecmaMetadata);
         }

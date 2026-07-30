@@ -9,11 +9,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public interface IEcmaMetadata : IContract
 {
     static string IContract.Name { get; } = nameof(EcmaMetadata);
-    TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle) => throw new NotImplementedException();
-    TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle) => throw new NotImplementedException();
-
-    MetadataReader? GetMetadata(ModuleHandle module) => throw new NotImplementedException();
-    byte[] GetReadWriteMetadata(ModuleHandle handle) => throw new NotImplementedException();
+    TargetSpan GetMetadataAddress(ModuleHandle handle, bool readWriteSavedCopy) => throw new NotImplementedException();
+    MetadataReader? GetMetadata(ModuleHandle module, bool requireReadWriteMetadata = false) => throw new NotImplementedException();
 }
 
 public readonly struct EcmaMetadata : IEcmaMetadata

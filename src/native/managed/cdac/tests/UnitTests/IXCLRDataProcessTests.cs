@@ -243,7 +243,7 @@ public unsafe class IXCLRDataProcessTests
             loader.Setup(l => l.GetILHeader(module, SecondToken)).Returns(new TargetPointer(SecondHeaderAddress));
 
             Mock<IEcmaMetadata> ecmaMetadata = new(MockBehavior.Strict);
-            ecmaMetadata.Setup(e => e.GetMetadata(module)).Returns(reader);
+            ecmaMetadata.Setup(e => e.GetMetadata(module, false)).Returns(reader);
 
             byte[] secondHeader = new byte[14];
             secondHeader[0] = FatFormat;

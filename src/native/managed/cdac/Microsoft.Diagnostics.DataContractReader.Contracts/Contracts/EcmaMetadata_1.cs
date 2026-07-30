@@ -31,8 +31,15 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         }
     }
 
-    public TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)
+    public TargetSpan GetMetadataAddress(ModuleHandle handle, bool readWriteSavedCopy)
     {
+        if (readWriteSavedCopy)
+        {
+            Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+            Data.DynamicMetadata dynamicMetadata = target.ProcessedData.GetOrAdd<Data.DynamicMetadata>(module.DynamicMetadata);
+            return new TargetSpan(dynamicMetadata.Data, dynamicMetadata.Size);
+        }
+
         if (_readOnlyMetadataAddress.TryGetValue(handle, out TargetSpan cached))
             return cached;
 
@@ -94,8 +101,13 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         return new TargetSpan(metadataAddress, metadataDirectory.Size);
     }
 
-    public MetadataReader? GetMetadata(ModuleHandle handle)
+    public MetadataReader? GetMetadata(ModuleHandle handle, bool requireReadWriteMetadata = false)
     {
+        if (requireReadWriteMetadata && GetAvailableMetadataType(handle) != AvailableMetadataType.ReadWrite)
+        {
+            throw new ArgumentException("Module does not have read/write metadata.", nameof(handle));
+        }
+
         uint generation = GetMetadataGeneration(handle);
 
         if (_metadata.TryGetValue(handle, out (uint Generation, MetadataReaderProvider? Provider) cached))
@@ -121,22 +133,16 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
             case AvailableMetadataType.None:
                 return null;
             case AvailableMetadataType.ReadOnly:
-            {
-                TargetSpan address = GetReadOnlyMetadataAddress(handle);
-                byte[] data = new byte[address.Size];
-                target.ReadBuffer(address.Address, data);
-                return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
-            }
             case AvailableMetadataType.ReadWriteSavedCopy:
             {
-                TargetSpan address = GetReadWriteSavedMetadataAddress(handle);
+                TargetSpan address = GetMetadataAddress(handle, type == AvailableMetadataType.ReadWriteSavedCopy);
                 byte[] data = new byte[address.Size];
                 target.ReadBuffer(address.Address, data);
                 return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
             }
             case AvailableMetadataType.ReadWrite:
             {
-                byte[] data = GetReadWriteMetadata(handle);
+                byte[] data = GetReadWriteMetadataBlob(handle);
                 return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
             }
             default:
@@ -144,7 +150,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         }
     }
 
-    public byte[] GetReadWriteMetadata(ModuleHandle handle)
+    private byte[] GetReadWriteMetadataBlob(ModuleHandle handle)
     {
         if (GetAvailableMetadataType(handle) != AvailableMetadataType.ReadWrite)
         {
@@ -411,14 +417,6 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
     {
         Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         return module.MetadataGeneration;
-    }
-
-    public TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle)
-    {
-        Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        Data.DynamicMetadata dynamicMetadata = target.ProcessedData.GetOrAdd<Data.DynamicMetadata>(module.DynamicMetadata);
-
-        return new TargetSpan(dynamicMetadata.Data, dynamicMetadata.Size);
     }
 
     private TargetEcmaMetadata GetTargetEcmaMetadata(ModuleHandle handle)
