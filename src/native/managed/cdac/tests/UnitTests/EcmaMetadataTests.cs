@@ -20,7 +20,7 @@ public class EcmaMetadataTests
     {
         IEcmaMetadata contract = CreateContractWithSavedMetadata(arch, out ModuleHandle handle, out TargetSpan expected);
 
-        TargetSpan result = contract.GetMetadataAddress(handle, readWriteSavedCopy: true);
+        TargetSpan result = contract.GetMetadataAddress(handle, MetadataAddressKind.ReadWriteSavedCopy);
 
         Assert.Equal(expected, result);
     }

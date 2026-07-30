@@ -360,7 +360,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             Contracts.ModuleFlags flags = loader.GetFlags(handle);
             Contracts.IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
 
-            TargetSpan targetSpan = ecmaMetadata.GetMetadataAddress(handle, flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit));
+            MetadataAddressKind kind = flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit)
+                ? MetadataAddressKind.ReadWriteSavedCopy
+                : MetadataAddressKind.ReadOnly;
+            TargetSpan targetSpan = ecmaMetadata.GetMetadataAddress(handle, kind);
 
             pTargetBuffer->pAddress = targetSpan.Address.Value;
             pTargetBuffer->cbSize = checked((uint)targetSpan.Size);

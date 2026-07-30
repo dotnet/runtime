@@ -1574,7 +1574,7 @@ public unsafe class DacDbiImplTests
 
         Contracts.ModuleHandle handle = new(moduleAddr);
         var mockEcmaMetadata = new Mock<IEcmaMetadata>();
-        mockEcmaMetadata.Setup(e => e.GetMetadataAddress(handle, false)).Returns(new TargetSpan(metadataAddr, metadataSize));
+        mockEcmaMetadata.Setup(e => e.GetMetadataAddress(handle, MetadataAddressKind.ReadOnly)).Returns(new TargetSpan(metadataAddr, metadataSize));
 
         DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, (ModuleFlags)0, mockEcmaMetadata);
 
@@ -1584,7 +1584,7 @@ public unsafe class DacDbiImplTests
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.Equal(metadataAddr.Value, buffer.pAddress);
         Assert.Equal(metadataSize, buffer.cbSize);
-        mockEcmaMetadata.Verify(e => e.GetMetadataAddress(handle, false), Times.Once);
+        mockEcmaMetadata.Verify(e => e.GetMetadataAddress(handle, MetadataAddressKind.ReadOnly), Times.Once);
     }
 
     [Theory]
@@ -1598,7 +1598,7 @@ public unsafe class DacDbiImplTests
 
         Contracts.ModuleHandle handle = new(moduleAddr);
         var mockEcmaMetadata = new Mock<IEcmaMetadata>();
-        mockEcmaMetadata.Setup(e => e.GetMetadataAddress(handle, true)).Returns(new TargetSpan(metadataAddr, metadataSize));
+        mockEcmaMetadata.Setup(e => e.GetMetadataAddress(handle, MetadataAddressKind.ReadWriteSavedCopy)).Returns(new TargetSpan(metadataAddr, metadataSize));
 
         DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, ModuleFlags.ReflectionEmit, mockEcmaMetadata);
 
@@ -1608,7 +1608,7 @@ public unsafe class DacDbiImplTests
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.Equal(metadataAddr.Value, buffer.pAddress);
         Assert.Equal(metadataSize, buffer.cbSize);
-        mockEcmaMetadata.Verify(e => e.GetMetadataAddress(handle, true), Times.Once);
+        mockEcmaMetadata.Verify(e => e.GetMetadataAddress(handle, MetadataAddressKind.ReadWriteSavedCopy), Times.Once);
     }
 
     [Theory]
@@ -1620,7 +1620,7 @@ public unsafe class DacDbiImplTests
 
         Contracts.ModuleHandle handle = new(moduleAddr);
         var mockEcmaMetadata = new Mock<IEcmaMetadata>();
-        mockEcmaMetadata.Setup(e => e.GetMetadataAddress(handle, false)).Returns(new TargetSpan(TargetPointer.Null, 0));
+        mockEcmaMetadata.Setup(e => e.GetMetadataAddress(handle, MetadataAddressKind.ReadOnly)).Returns(new TargetSpan(TargetPointer.Null, 0));
 
         DacDbiImpl dacDbi = CreateDacDbiForModule(arch, vmModule, handle, (ModuleFlags)0, mockEcmaMetadata);
 

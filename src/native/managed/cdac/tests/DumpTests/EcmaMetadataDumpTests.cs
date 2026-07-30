@@ -28,7 +28,7 @@ public class EcmaMetadataDumpTests : DumpTestBase
         TargetPointer rootAssembly = loader.GetRootAssembly();
         ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);
 
-        TargetSpan metadataSpan = ecmaMetadata.GetMetadataAddress(moduleHandle, readWriteSavedCopy: false);
+        TargetSpan metadataSpan = ecmaMetadata.GetMetadataAddress(moduleHandle, MetadataAddressKind.ReadOnly);
         Assert.NotEqual(TargetPointer.Null, metadataSpan.Address);
         Assert.True(metadataSpan.Size > 0, "Expected metadata size > 0");
     }

@@ -3136,7 +3136,7 @@ public sealed unsafe partial class SOSDacImpl
 
             try
             {
-                TargetSpan readOnlyMetadata = _target.Contracts.EcmaMetadata.GetMetadataAddress(handle, readWriteSavedCopy: false);
+                TargetSpan readOnlyMetadata = _target.Contracts.EcmaMetadata.GetMetadataAddress(handle, MetadataAddressKind.ReadOnly);
                 data->metadataStart = readOnlyMetadata.Address.Value;
                 data->metadataSize = readOnlyMetadata.Size;
             }

@@ -5,7 +5,13 @@ This contract provides methods to get a view of the ECMA-335 metadata for a give
 ## APIs of contract
 
 ```csharp
-TargetSpan GetMetadataAddress(ModuleHandle handle, bool readWriteSavedCopy);
+enum MetadataAddressKind
+{
+    ReadOnly,
+    ReadWriteSavedCopy,
+}
+
+TargetSpan GetMetadataAddress(ModuleHandle handle, MetadataAddressKind kind);
 System.Reflection.Metadata.MetadataReader? GetMetadata(ModuleHandle handle, bool requireReadWriteMetadata = false);
 ```
 
@@ -69,9 +75,9 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 
-TargetSpan GetMetadataAddress(ModuleHandle handle, bool readWriteSavedCopy)
+TargetSpan GetMetadataAddress(ModuleHandle handle, MetadataAddressKind kind)
 {
-    if (readWriteSavedCopy)
+    if (kind == MetadataAddressKind.ReadWriteSavedCopy)
     {
         TargetPointer dynamicMetadata = Target.ReadPointer(handle.Address + /* Module::DynamicMetadata offset */);
         ulong size = Target.Read<uint>(dynamicMetadata + /* DynamicMetadata::Size offset */);
@@ -114,9 +120,15 @@ MetadataReader? GetMetadata(ModuleHandle handle, bool requireReadWriteMetadata =
         case AvailableMetadataType.None:
             return null;
         case AvailableMetadataType.ReadOnly:
+        {
+            TargetSpan address = GetMetadataAddress(handle, MetadataAddressKind.ReadOnly);
+            byte[] data = new byte[address.Size];
+            _target.ReadBuffer(address.Address, data);
+            return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data)).GetMetadataReader();
+        }
         case AvailableMetadataType.ReadWriteSavedCopy:
         {
-            TargetSpan address = GetMetadataAddress(handle, type == AvailableMetadataType.ReadWriteSavedCopy);
+            TargetSpan address = GetMetadataAddress(handle, MetadataAddressKind.ReadWriteSavedCopy);
             byte[] data = new byte[address.Size];
             _target.ReadBuffer(address.Address, data);
             return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data)).GetMetadataReader();

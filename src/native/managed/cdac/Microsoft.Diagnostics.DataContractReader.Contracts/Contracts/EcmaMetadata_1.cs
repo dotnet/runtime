@@ -31,14 +31,16 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         }
     }
 
-    public TargetSpan GetMetadataAddress(ModuleHandle handle, bool readWriteSavedCopy)
+    public TargetSpan GetMetadataAddress(ModuleHandle handle, MetadataAddressKind kind)
     {
-        if (readWriteSavedCopy)
+        if (kind == MetadataAddressKind.ReadWriteSavedCopy)
         {
             Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
             Data.DynamicMetadata dynamicMetadata = target.ProcessedData.GetOrAdd<Data.DynamicMetadata>(module.DynamicMetadata);
             return new TargetSpan(dynamicMetadata.Data, dynamicMetadata.Size);
         }
+        if (kind != MetadataAddressKind.ReadOnly)
+            throw new ArgumentOutOfRangeException(nameof(kind));
 
         if (_readOnlyMetadataAddress.TryGetValue(handle, out TargetSpan cached))
             return cached;
@@ -133,13 +135,9 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
             case AvailableMetadataType.None:
                 return null;
             case AvailableMetadataType.ReadOnly:
+                return GetMetadataProviderFromAddress(handle, MetadataAddressKind.ReadOnly);
             case AvailableMetadataType.ReadWriteSavedCopy:
-            {
-                TargetSpan address = GetMetadataAddress(handle, type == AvailableMetadataType.ReadWriteSavedCopy);
-                byte[] data = new byte[address.Size];
-                target.ReadBuffer(address.Address, data);
-                return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
-            }
+                return GetMetadataProviderFromAddress(handle, MetadataAddressKind.ReadWriteSavedCopy);
             case AvailableMetadataType.ReadWrite:
             {
                 byte[] data = GetReadWriteMetadataBlob(handle);
@@ -148,6 +146,14 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
             default:
                 throw new NotImplementedException();
         }
+    }
+
+    private MetadataReaderProvider GetMetadataProviderFromAddress(ModuleHandle handle, MetadataAddressKind kind)
+    {
+        TargetSpan address = GetMetadataAddress(handle, kind);
+        byte[] data = new byte[address.Size];
+        target.ReadBuffer(address.Address, data);
+        return MetadataReaderProvider.FromMetadataImage(ImmutableCollectionsMarshal.AsImmutableArray(data));
     }
 
     private byte[] GetReadWriteMetadataBlob(ModuleHandle handle)
