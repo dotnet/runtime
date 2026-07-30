@@ -2049,6 +2049,26 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
+    TargetPointer IRuntimeTypeSystem.GetAsyncVariant(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        ITypeHandle methodTable = GetTypeHandle(methodDesc.MethodTable);
+        ITypeHandle canonicalMethodTable = GetTypeHandle(GetCanonicalMethodTable(methodTable));
+
+        foreach (MethodDescHandle candidateHandle in GetIntroducedMethods(canonicalMethodTable))
+        {
+            MethodDesc candidate = _methodDescs[candidateHandle.Address];
+            if (candidate.Slot != methodDesc.Slot)
+                continue;
+
+            AsyncMethodFlags flags = ((IRuntimeTypeSystem)this).GetAsyncMethodFlags(candidateHandle);
+            if (flags.HasFlag(AsyncMethodFlags.IsAsyncVariant) && !flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk))
+                return candidateHandle.Address;
+        }
+
+        return TargetPointer.Null;
+    }
+
     IEnumerable<TargetPointer> IRuntimeTypeSystem.GetIntroducedMethodDescs(ITypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
