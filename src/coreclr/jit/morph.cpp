@@ -1016,15 +1016,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
             {
                 if (hasStackArgsWeCareAbout)
                 {
-#if defined(TARGET_WASM)
-                    // On Wasm only GT_LCLHEAP matters; see the comment above.
-                    //
-                    if (comp->gtTreeContainsOper(argx, GT_LCLHEAP))
-                    {
-                        SetNeedsTemp(&arg);
-                        continue;
-                    }
-#elif !FEATURE_FIXED_OUT_ARGS
+#if !FEATURE_FIXED_OUT_ARGS
                     // On x86 we previously recorded a stack depth of zero when
                     // morphing the register arguments of any GT_IND with a GTF_IND_RNGCHK flag
                     // Thus we can not reorder the argument after any stack based argument.
