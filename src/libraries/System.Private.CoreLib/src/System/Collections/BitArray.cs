@@ -131,6 +131,14 @@ namespace System.Collections
         /// <param name="bytes">An array of bytes containing the values to copy, where each byte represents eight consecutive bits.</param>
         /// <exception cref="ArgumentNullException"><paramref name="bytes"/> is null.</exception>
         /// <exception cref="ArgumentException">The length of <paramref name="bytes"/> in bits is greater than <see cref="int.MaxValue"/>.</exception>
+        /// <remarks>
+        /// The first byte in the array represents bits 0 through 7, the second byte represents bits 8 through 15, and so on.
+        /// The least significant bit of each byte represents the lowest index value:
+        /// "<paramref name="bytes"/>[0] &amp; 1" represents bit 0, "<paramref name="bytes"/>[0] &amp; 2" represents bit 1,
+        /// "<paramref name="bytes"/>[0] &amp; 4" represents bit 2, and so on.
+        ///
+        /// This constructor is an <c>O(n)</c> operation, where <c>n</c> is the number of elements in <paramref name="bytes"/>.
+        /// </remarks>
         public BitArray(byte[] bytes)
             : this(new ReadOnlySpan<byte>(bytes ?? throw new ArgumentNullException(nameof(bytes))))
         {
@@ -142,6 +150,14 @@ namespace System.Collections
         /// </summary>
         /// <param name="bytes">A read-only span of bytes containing the values to copy, where each byte represents eight consecutive bits.</param>
         /// <exception cref="ArgumentException">The length of <paramref name="bytes"/> in bits is greater than <see cref="int.MaxValue"/>.</exception>
+        /// <remarks>
+        /// The first byte in the span represents bits 0 through 7, the second byte represents bits 8 through 15, and so on.
+        /// The least significant bit of each byte represents the lowest index value:
+        /// "<paramref name="bytes"/>[0] &amp; 1" represents bit 0, "<paramref name="bytes"/>[0] &amp; 2" represents bit 1,
+        /// "<paramref name="bytes"/>[0] &amp; 4" represents bit 2, and so on.
+        ///
+        /// This constructor is an <c>O(n)</c> operation, where <c>n</c> is the number of elements in <paramref name="bytes"/>.
+        /// </remarks>
         public BitArray(ReadOnlySpan<byte> bytes)
         {
             if (bytes.Length > int.MaxValue / BitsPerByte)
@@ -161,6 +177,9 @@ namespace System.Collections
         /// </summary>
         /// <param name="values">An array of Booleans to copy.</param>
         /// <exception cref="ArgumentNullException"><paramref name="values"/> is null.</exception>
+        /// <remarks>
+        /// This constructor is an <c>O(n)</c> operation, where <c>n</c> is the number of elements in <paramref name="values"/>.
+        /// </remarks>
         public BitArray(bool[] values)
             : this(new ReadOnlySpan<bool>(values ?? throw new ArgumentNullException(nameof(values))))
         {
@@ -171,6 +190,9 @@ namespace System.Collections
         /// copied from the specified read-only span of Booleans.
         /// </summary>
         /// <param name="values">A read-only span of Booleans to copy.</param>
+        /// <remarks>
+        /// This constructor is an <c>O(n)</c> operation, where <c>n</c> is the number of elements in <paramref name="values"/>.
+        /// </remarks>
         public BitArray(ReadOnlySpan<bool> values)
         {
             _array = AllocateByteArray(values.Length);
@@ -258,6 +280,8 @@ namespace System.Collections
         /// bits 32 through 63, and so on. The Least Significant Bit of each integer represents the lowest index value:
         /// "<paramref name="values"/>[0] &amp; 1" represents bit 0, "<paramref name="values"/>[0] &amp; 2" represents bit 1,
         /// "<paramref name="values"/>[0] &amp; 4" represents bit 2, and so on.
+        ///
+        /// This constructor is an <c>O(n)</c> operation, where <c>n</c> is the number of elements in <paramref name="values"/>.
         /// </remarks>
         public BitArray(int[] values)
             : this(new ReadOnlySpan<int>(values ?? throw new ArgumentNullException(nameof(values))))
@@ -275,6 +299,8 @@ namespace System.Collections
         /// bits 32 through 63, and so on. The least significant bit of each integer represents the lowest index value:
         /// "<paramref name="values"/>[0] &amp; 1" represents bit 0, "<paramref name="values"/>[0] &amp; 2" represents bit 1,
         /// "<paramref name="values"/>[0] &amp; 4" represents bit 2, and so on.
+        ///
+        /// This constructor is an <c>O(n)</c> operation, where <c>n</c> is the number of elements in <paramref name="values"/>.
         /// </remarks>
         public BitArray(ReadOnlySpan<int> values)
         {
