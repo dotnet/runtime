@@ -201,15 +201,10 @@ namespace System.Net.NetworkInformation
             _physicalAddress = ipAdapterAddresses.Address;
 
             _type = ipAdapterAddresses.type;
-            // Interfaces absent from the ipconfig-equivalent set (see GetLegacyAdapterGuids) that
-            // report Up are NDIS filter modules with no IP stack — mark them Unknown so callers can
-            // easily restore ipconfig-equivalent behavior: ni.OperationalStatus != Unknown.
-            // Interfaces absent from that set but not reporting Up are genuinely disabled adapters
-            // (Down, Dormant, etc.) that GAA_FLAG_INCLUDE_ALL_INTERFACES was added to expose;
-            // preserve their real status.
-            _operStatus = (!legacyGuids.Contains(_id) && ipAdapterAddresses.operStatus == OperationalStatus.Up)
-                ? OperationalStatus.Unknown
-                : ipAdapterAddresses.operStatus;
+            // Interfaces absent from the ipconfig-equivalent set (see GetLegacyAdapterGuids) are
+            // NDIS filter modules or adapters with no IP stack — mark them Unknown so callers can
+            // restore ipconfig-equivalent behavior: ni.OperationalStatus != OperationalStatus.Unknown.
+            _operStatus = legacyGuids.Contains(_id) ? ipAdapterAddresses.operStatus : OperationalStatus.Unknown;
             _speed = unchecked((long)ipAdapterAddresses.receiveLinkSpeed);
 
             // API specific info.
