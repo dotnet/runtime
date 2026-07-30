@@ -389,7 +389,7 @@ namespace
         _ASSERTE(!Path::IsRelative(path));
 
         SString::Iterator lastPathSeparatorIter = path.End();
-        if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
+        if (path.FindBack(lastPathSeparatorIter, DIRECTORY_SEPARATOR_CHAR_A))
         {
             lastPathSeparatorIter++;
             path.Truncate(lastPathSeparatorIter);

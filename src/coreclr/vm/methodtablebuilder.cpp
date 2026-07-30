@@ -8321,6 +8321,9 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
     bool hasInt128Field = (pParentMT && pParentMT->IsInt128OrHasInt128Fields())
         || ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Int128) == EEClassLayoutInfo::NestedFieldFlags::Int128);
 
+    bool hasDecimalField = (pParentMT && pParentMT->IsDecimalFloatingPointOrHasDecimalFloatingPointFields())
+        || ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::DecimalFloatingPoint) == EEClassLayoutInfo::NestedFieldFlags::DecimalFloatingPoint);
+
     bool isAlign8 = ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Align8) == EEClassLayoutInfo::NestedFieldFlags::Align8)
 #if defined(FEATURE_64BIT_ALIGNMENT)
         || (pParentMT && pParentMT->RequiresAlign8())
@@ -8333,6 +8336,7 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
     pLayoutInfo->SetIsBlittable(isBlittable ? TRUE : FALSE);
     pLayoutInfo->SetHasAutoLayoutField(isAutoLayoutOrHasAutoLayoutField ? TRUE : FALSE);
     pLayoutInfo->SetIsInt128OrHasInt128Fields(hasInt128Field ? TRUE : FALSE);
+    pLayoutInfo->SetIsDecimalFloatingPointOrHasDecimalFloatingPointFields(hasDecimalField ? TRUE : FALSE);
     pLayoutInfo->SetHasExplicitSize(bmtLayout->classSize);
 
     if (bmtLayout->layoutType == EEClassLayoutInfo::LayoutType::Sequential)
@@ -10754,6 +10758,42 @@ void MethodTableBuilder::CheckForSystemTypes()
         //
         // Value types
         //
+
+        // The IEEE 754 decimal floating-point types live in System.Numerics and require special ABI
+        // handling similar to Int128/UInt128 (Decimal128 shares __int128's 16-byte alignment).
+        if (strcmp(nameSpace, g_NumericsNS) == 0)
+        {
+            if ((strcmp(name, g_Decimal32Name) == 0)
+                || (strcmp(name, g_Decimal64Name) == 0)
+                || (strcmp(name, g_Decimal128Name) == 0))
+            {
+                EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
+                pLayout->SetIsDecimalFloatingPointOrHasDecimalFloatingPointFields(TRUE);
+
+                if (strcmp(name, g_Decimal128Name) == 0)
+                {
+                    // Decimal32/Decimal64 map onto uint/ulong and keep their natural alignment.
+                    // Decimal128 corresponds to the _Decimal128 ABI primitive, which mirrors the
+                    // 16-byte alignment applied to Int128/UInt128.
+#ifdef TARGET_ARM
+                    // No _Decimal128 type exists for the Procedure Call Standard for ARM. We default
+                    // to the same alignment as __m128, matching the Int128/UInt128 treatment.
+                    pLayout->SetAlignmentRequirement(8);
+#elif defined(TARGET_64BIT) || defined(TARGET_X86)
+                    pLayout->SetAlignmentRequirement(16); // sizeof(_Decimal128)
+#elif defined(TARGET_WASM)
+                    // The Wasm Basic C ABI does not define a decimal type; it tracks what the
+                    // clang/LLVM Wasm backend implements, and clang has no _Decimal128. Match
+                    // __int128_t, the only other 16 byte scalar it does define, which is 16 byte
+                    // aligned (including under Emscripten, which only reduces long double to 8).
+                    pLayout->SetAlignmentRequirement(16);
+#else
+#error Unknown architecture
+#endif // TARGET_ARM
+                }
+            }
+            return;
+        }
 
         // All special value types are in the system namespace
         if (strcmp(nameSpace, g_SystemNS) != 0)

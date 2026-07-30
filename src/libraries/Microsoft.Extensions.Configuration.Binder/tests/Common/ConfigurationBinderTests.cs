@@ -1686,12 +1686,12 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         /// <summary>
-        /// When a constructor parameter name differs only by case from a matching collection property,
-        /// the binder must bind the collection once (through the constructor) and must not bind it again
-        /// through the property, which would otherwise duplicate the collection items.
+        /// When a constructor parameter populates a matching collection property, the binder must bind the collection
+        /// once (through the constructor) and must not bind it again through the property, which would otherwise
+        /// duplicate the collection items. This must hold whether the parameter name matches the property name exactly
+        /// or differs only by case. This test checks the different case scenario, the next one the same name scenario.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/83803", typeof(TestHelpers), nameof(TestHelpers.SourceGenMode))]
         public void CanBindOnParametersAndProperties_GetterOnlyCollectionWithCaseMismatchedConstructorParameter()
         {
             string json = """
@@ -1707,6 +1707,172 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(expected, config.Get<SettableCollectionWithCaseMismatchedCtorParameter>().Instances);
             Assert.Equal(expected, config.Get<GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter>().Instances);
             Assert.Equal(expected, config.Get<ParamsCollectionCtor>().Instances);
+        }
+
+        /// <summary>
+        /// A type whose constructor parameters have the same name as the matching collection properties (as in the
+        /// canonical record/primary-constructor pattern) must also bind each collection only once.
+        /// </summary>
+        [Fact]
+        public void CanBindOnParametersAndProperties_CollectionsWithSameCasedConstructorParameters()
+        {
+            string json = """
+            {
+                "source": {
+                    "name": "DemoService",
+                    "addresses": [ "127.0.0.1" ],
+                    "ints": [ 1, 2, 3, 4, 5 ],
+                    "strings": [ "one", "two", "three" ]
+                }
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            SourceWithCollectionCtorParameters source = config.GetSection("source").Get<SourceWithCollectionCtorParameters>();
+
+            Assert.Equal("DemoService", source.Name);
+            Assert.Equal(new[] { "127.0.0.1" }, source.Addresses);
+            Assert.Equal(new[] { 1, 2, 3, 4, 5 }, source.Ints);
+            Assert.Equal(new[] { "one", "two", "three" }, source.Strings);
+        }
+
+        /// <summary>
+        /// A dictionary whose value type is created through a parameterized constructor that populates a collection
+        /// property must bind each element's collection only once, even though dictionary elements are bound through a
+        /// separate code path from top-level and property binding.
+        /// </summary>
+        [Fact]
+        public void CanBindOnParametersAndProperties_DictionaryValueWithCollectionConstructorParameter()
+        {
+            string json = """
+            {
+                "map": {
+                    "first": { "Instances": [ "a", "b" ] },
+                    "second": { "Instances": [ "c" ] }
+                }
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            Dictionary<string, GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter> map =
+                config.GetSection("map").Get<Dictionary<string, GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter>>();
+
+            Assert.Equal(new[] { "a", "b" }, map["first"].Instances);
+            Assert.Equal(new[] { "c" }, map["second"].Instances);
+        }
+
+        /// <summary>
+        /// A list whose element type has a collection populated through a constructor parameter must bind each
+        /// element's collection only once. List and array elements are constructed through a separate code path
+        /// (enumerable-with-add) from top-level, property, and dictionary binding.
+        /// </summary>
+        [Fact]
+        public void CanBind_ListOfTypeWithCollectionConstructorParameter()
+        {
+            string json = """
+            {
+                "Items": [ { "Instances": [ "a", "b" ] }, { "Instances": [ "c" ] } ]
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            List<GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter> result =
+                config.GetSection("Items").Get<List<GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter>>();
+
+            Assert.Equal(new[] { "a", "b" }, result[0].Instances);
+            Assert.Equal(new[] { "c" }, result[1].Instances);
+        }
+
+        /// <summary>
+        /// A nested property whose type has a collection populated through a constructor parameter is bound through the
+        /// null-check assignment (<c>??=</c>) path, where whether the instance was created through its constructor is
+        /// decided at run time. The collection must still be bound only once.
+        /// </summary>
+        [Fact]
+        public void CanBind_NestedTypeWithCollectionConstructorParameter()
+        {
+            string json = """
+            {
+                "Child": { "Instances": [ "a", "b" ] }
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            ContainerWithCtorCollectionChild result = config.Get<ContainerWithCtorCollectionChild>();
+
+            Assert.Equal(new[] { "a", "b" }, result.Child.Instances);
+        }
+
+        /// <summary>
+        /// When binding into an existing instance (which is not created through its constructor), a settable collection
+        /// property backed by a constructor parameter must still be bound. This guards against the deferral logic
+        /// over-skipping and silently not binding such properties.
+        /// </summary>
+        [Fact]
+        public void CanBindExistingInstance_BindsCtorMatchedCollection()
+        {
+            string json = """
+            {
+                "Instances": [ "first", "second" ]
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+            var instance = new SettableCollectionWithCaseMismatchedCtorParameter(new List<string>());
+
+            config.Bind(instance);
+
+            Assert.Equal(new[] { "first", "second" }, instance.Instances);
+        }
+
+        /// <summary>
+        /// An init-only (or required) collection property that is not backed by a constructor parameter is bound in the
+        /// generated Initialize method (through the object initializer). It must not be bound again in BindCore when the
+        /// instance was created there, or the collection items would be duplicated.
+        /// </summary>
+        [Fact]
+        public void CanBindOnParametersAndProperties_InitOnlyCollectionWithoutConstructorParameter()
+        {
+            string json = """
+            {
+                "Number": 7,
+                "Items": [ "a", "b" ]
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            ClassWithInitOnlyCollectionNoCtorParam result = config.Get<ClassWithInitOnlyCollectionNoCtorParam>();
+
+            Assert.Equal(7, result.Number);
+            Assert.Equal(new[] { "a", "b" }, result.Items);
+        }
+
+        /// <summary>
+        /// An init-only complex (non-collection) property that is not backed by a constructor parameter is bound in the
+        /// generated Initialize method. The generator must not emit a self-assignment for it (which would produce a
+        /// CS1717 compile error), and the property must still be bound correctly.
+        /// </summary>
+        [Fact]
+        public void CanBindOnParametersAndProperties_InitOnlyComplexPropertyWithoutConstructorParameter()
+        {
+            string json = """
+            {
+                "Number": 7,
+                "Child": { "Value": "hello" }
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            ClassWithInitOnlyComplexNoCtorParam result = config.Get<ClassWithInitOnlyComplexNoCtorParam>();
+
+            Assert.Equal(7, result.Number);
+            Assert.Equal("hello", result.Child.Value);
         }
 
         public static IEnumerable<object[]> Configuration_TestData()
@@ -2191,12 +2357,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.True(options.WasOtherCodeStringSet);
             Assert.Equal("default", options.PocoWithDefault.Example);
             Assert.Equal(1, options.PocoListWithDefault.Count);
-
-#if !BUILDING_SOURCE_GENERATOR_TESTS
-            // Source generator omits calls to setters for nested objects and collections
             Assert.True(options.WasPocoWithDefaultSet);
             Assert.True(options.WasPocoListWithDefaultSet);
-#endif
 
             // These don't exist in configuration and setters are not called since they are nullable.
             Assert.Equal(0, options.OtherCodeNullable);

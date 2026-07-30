@@ -1,10 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, SuperPMICollectIncompatible -->
+    <!-- Needed for SuperPMICollectIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <Optimize>false</Optimize>
-    <!-- Fails in many GCStress jobs. https://github.com/dotnet/runtime/issues/46279 -->
-    <GCStressIncompatible>true</GCStressIncompatible>
     <!-- Exception handling in this test is incompatible with SuperPMI collection. See https://github.com/dotnet/runtime/issues/108215. -->
     <SuperPMICollectIncompatible>true</SuperPMICollectIncompatible>
     <!-- needs triage -->
