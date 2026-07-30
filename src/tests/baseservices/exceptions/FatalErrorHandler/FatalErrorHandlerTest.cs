@@ -37,6 +37,9 @@ unsafe class FatalErrorHandlerTest
     [DllImport("FatalErrorHandlerNative")]
     private static extern void TriggerNativeAccessViolation();
 
+    [DllImport("FatalErrorHandlerNative")]
+    private static extern void TriggerNativeAbort();
+
     //
     // Child process entry points — register handler, trigger FailFast.
     //
@@ -91,6 +94,13 @@ unsafe class FatalErrorHandlerTest
         // Trigger an access violation from *native* code (inside the P/Invoked
         // TriggerNativeAccessViolation).
         TriggerNativeAccessViolation();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunChildNativeAbort()
+    {
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerCheckNativeInfo());
+        TriggerNativeAbort();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -373,6 +383,39 @@ unsafe class FatalErrorHandlerTest
         return handlerInvoked && addressReported && addressPopulated && exited;
     }
 
+    static bool TestNativeAbort()
+    {
+        Console.WriteLine("=== TestNativeAbort ===");
+
+        if (OperatingSystem.IsWindows() || TestLibrary.Utilities.IsNativeAot)
+        {
+            Console.WriteLine("  SKIP: only implemented on CoreCLR Unix");
+            return true;
+        }
+
+        var (exitCode, stderr) = LaunchChild("native-abort");
+
+        bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
+        bool addressPopulated = stderr.Contains("addr=true");
+        bool sigInfoPopulated = stderr.Contains("siginfo=true");
+        bool contextPopulated = stderr.Contains("ucontext=true");
+        bool exitedWithSigAbort = exitCode == 128 + 6;
+
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, address ok: {addressPopulated}, siginfo_t ok: {sigInfoPopulated}, ucontext_t ok: {contextPopulated}, SIGABRT exit: {exitedWithSigAbort}");
+        if (!handlerInvoked)
+            Console.WriteLine("  FAIL: Handler was not invoked");
+        if (!addressPopulated)
+            Console.WriteLine("  FAIL: abort location was not populated");
+        if (!sigInfoPopulated)
+            Console.WriteLine("  FAIL: siginfo_t was not surfaced for SIGABRT");
+        if (!contextPopulated)
+            Console.WriteLine("  FAIL: ucontext_t was not surfaced for SIGABRT");
+        if (!exitedWithSigAbort)
+            Console.WriteLine("  FAIL: Expected SIGABRT exit code");
+
+        return handlerInvoked && addressPopulated && sigInfoPopulated && contextPopulated && exitedWithSigAbort;
+    }
+
     static bool TestSetNull()
     {
         Console.WriteLine("=== TestSetNull ===");
@@ -412,6 +455,7 @@ unsafe class FatalErrorHandlerTest
                 case "log-handler":  RunChildLogHandler();  return 1;
                 case "native-exception":        RunChildNativeException();         return 1;
                 case "native-code-exception":   RunChildNativeCodeException();      return 1;
+                case "native-abort":            RunChildNativeAbort();              return 1;
                 case "nested-native-exception": RunChildNestedNativeException();   return 1;
                 case "set-null":     return RunChildSetNull();
                 case "set-twice":    return RunChildSetTwice();
@@ -427,6 +471,7 @@ unsafe class FatalErrorHandlerTest
         allPassed &= TestLogHandler();
         allPassed &= TestNativeException("native-exception");
         allPassed &= TestNativeCodeException();
+        allPassed &= TestNativeAbort();
         allPassed &= TestNestedHardwareFault();
         allPassed &= TestSetNull();
         allPassed &= TestSetTwice();

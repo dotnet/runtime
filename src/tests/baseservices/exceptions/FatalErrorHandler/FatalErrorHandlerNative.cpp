@@ -6,6 +6,7 @@
 // from a third-party C++ library.
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <platformdefines.h>
 
@@ -157,4 +158,9 @@ extern "C" DLL_EXPORT void TriggerNativeAccessViolation()
 {
     volatile int* p = NULL;
     *p = 0;
+}
+
+extern "C" DLL_EXPORT void TriggerNativeAbort()
+{
+    abort();
 }
