@@ -38,6 +38,8 @@ WELL_KNOWN_ARG(StackArrayLocal,             "&lcl arr",       false,   false)
 WELL_KNOWN_ARG(RuntimeMethodHandle,         "meth hnd",       false,   false)
 WELL_KNOWN_ARG(AsyncExecutionContext,       "exec ctx",       false,   false)
 WELL_KNOWN_ARG(AsyncSynchronizationContext, "sync ctx",       false,   false)
+WELL_KNOWN_ARG(AsyncResumedUse,             "resumed",        false,   false)
+WELL_KNOWN_ARG(AsyncResumedDef,             "resumed def",    false,   false)
 WELL_KNOWN_ARG(WasmShadowStackPointer,      "wasm sp",        false,   false)
 WELL_KNOWN_ARG(WasmPortableEntryPoint,      "wasm pep",       false,   false)
 

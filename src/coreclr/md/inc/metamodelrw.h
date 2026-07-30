@@ -28,9 +28,6 @@
 #include<minipal/utils.h>
 
 struct HENUMInternal;
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-struct IMDCustomDataSource;
-#endif
 
 // ENUM for marking bit
 enum
@@ -205,12 +202,14 @@ class MDInternalRW;
 class UTSemReadWrite;
 
 template <class MiniMd> class CLiteWeightStgdb;
+class DacDbiInterfaceImpl;
 //*****************************************************************************
 // Read/Write MiniMd.
 //*****************************************************************************
 class CMiniMdRW : public CMiniMdTemplate<CMiniMdRW>
 {
 public:
+    friend class ::DacDbiInterfaceImpl;
     friend class CLiteWeightStgdb<CMiniMdRW>;
     friend class CLiteWeightStgdbRW;
     friend class CMiniMdTemplate<CMiniMdRW>;
@@ -220,7 +219,6 @@ public:
     friend class RegMeta;
     friend class FilterTable;
     friend class ImportHelper;
-    friend class VerifyLayoutsMD;
     friend struct ::cdac_data<CMiniMdRW>;
 
     CMiniMdRW();
@@ -236,10 +234,6 @@ public:
     HRESULT InitPoolOnMem(int iPool, void *pbData, ULONG cbData, int bReadOnly);
     __checkReturn
     HRESULT InitOnRO(CMiniMd *pMd, int bReadOnly);
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    __checkReturn
-    HRESULT InitOnCustomDataSource(IMDCustomDataSource* pDataSource);
-#endif
     __checkReturn
     HRESULT ConvertToRW();
 
@@ -1234,9 +1228,6 @@ protected:
 
     CMiniMdSchema m_StartupSchema;      // Schema at start time.  Keep count of records.
     BYTE        m_bSortable[TBL_COUNT]; // Is a given table sortable?  (Can it be reorganized?)
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    ReleaseHolder<IMDCustomDataSource> m_pCustomDataSource;
-#endif
 
 #ifdef _DEBUG
 

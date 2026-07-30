@@ -81,7 +81,7 @@ static IErrorInfo *CheckForFuncEvalAbortNoThrow(HRESULT hr)
             if (SafeQueryInterface(pErrorInfo, IID_IFuncEvalAbort, &pUnk) == S_OK)
             {
                 // QI succeeded, this is a func eval abort
-                return pErrorInfo.Extract();
+                return pErrorInfo.Detach();
             }
             else
             {
@@ -492,7 +492,7 @@ void IUnkEntry::Init(
 
 //================================================================
 // Release the interface pointer held by the IUnkEntry.
-VOID IUnkEntry::ReleaseInterface(RCW *pRCW)
+VOID IUnkEntry::ReleaseInterface()
 {
     CONTRACTL
     {
@@ -513,7 +513,7 @@ VOID IUnkEntry::ReleaseInterface(RCW *pRCW)
         // now release the IUnknown that we hold
         if ((m_pUnknown != 0) && (m_pUnknown != (IUnknown *)0xBADF00D))
         {
-            ULONG cbRef = SafeReleasePreemp(m_pUnknown, pRCW);
+            ULONG cbRef = SafeReleasePreemp(m_pUnknown);
             LogInteropRelease(m_pUnknown, cbRef, "IUnkEntry::Free: Releasing the held ref");
         }
 
@@ -894,7 +894,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
 
     HRESULT hrCDH = S_OK;
     IUnknown * pUnk = NULL;
-    ComHolderAnyMode<IStream> spStream;
+    ReleaseHolderAnyMode<IStream> spStream;
 
     CheckValidIUnkEntry();
 
@@ -1015,7 +1015,7 @@ bool IUnkEntry::IsComponentFreeThreaded(IUnknown *pUnk)
     CONTRACTL_END;
 
     // First see if the object implements the IAgileObject marker interface
-    ComHolderPreemp<IAgileObject> pAgileObject;
+    ReleaseHolder<IAgileObject> pAgileObject;
     HRESULT hr = SafeQueryInterfacePreemp(pUnk, IID_IAgileObject, (IUnknown**)&pAgileObject);
     LogInteropQI(pUnk, IID_IAgileObject, hr, "IUnkEntry::IsComponentFreeThreaded: QI for IAgileObject");
 
@@ -1025,7 +1025,7 @@ bool IUnkEntry::IsComponentFreeThreaded(IUnknown *pUnk)
     }
     else
     {
-        ComHolderPreemp<IMarshal> pMarshal;
+        ReleaseHolder<IMarshal> pMarshal;
 
         // If not, then we can try to determine if the component aggregates the FTM via IMarshal.
         hr = SafeQueryInterfacePreemp(pUnk, IID_IMarshal, (IUnknown **)&pMarshal);
@@ -1316,7 +1316,7 @@ HRESULT CtxEntry::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
     CallbackInfo.m_UserCallbackHR = E_FAIL;
 
     // Retrieve the IContextCallback interface from the IObjectContext.
-    ComHolderPreemp<IContextCallback> pCallback;
+    ReleaseHolder<IContextCallback> pCallback;
     hr = SafeQueryInterfacePreemp(m_pObjCtx, IID_IContextCallback, (IUnknown**)&pCallback);
     LogInteropQI(m_pObjCtx, IID_IContextCallback, hr, "QI for IID_IContextCallback");
     _ASSERTE(SUCCEEDED(hr) && pCallback);
@@ -1341,7 +1341,7 @@ HRESULT CtxEntry::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
     {
         // If the transition failed because of an aborted func eval, simply propagate
         // the HRESULT/IErrorInfo back to the caller as we cannot throw here.
-        ComHolderPreemp<IErrorInfo> pErrorInfo{ CheckForFuncEvalAbortNoThrow(hr) };
+        ReleaseHolder<IErrorInfo> pErrorInfo{ CheckForFuncEvalAbortNoThrow(hr) };
         if (pErrorInfo != NULL)
         {
             LOG((LF_INTEROP, LL_INFO100, "Entering into context 0x08X has failed since the debugger is blocking it\n", m_pCtxCookie));

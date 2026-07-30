@@ -74,7 +74,6 @@ set(COREDBI_LIBRARIES
     mdcompiler-dbi
     mdruntime-dbi
     mdruntimerw-dbi
-    mddatasource_dbi
     corguids
     minipal
 )

@@ -369,60 +369,6 @@ ErrExit:
     return hr;
 } //RegMeta::OpenExistingMD
 
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-HRESULT RegMeta::OpenExistingMD(
-    IMDCustomDataSource* pDataSource,   // Name of database.
-    ULONG       dwOpenFlags)                // Flags to control open.
-{
-    HRESULT     hr = NOERROR;
-
-    m_OpenFlags = dwOpenFlags;
-
-    if (!IsOfReOpen(dwOpenFlags))
-    {
-        // Allocate our m_pStgdb, if we should.
-        _ASSERTE(m_pStgdb == NULL);
-        IfNullGo(m_pStgdb = new (nothrow)CLiteWeightStgdbRW);
-    }
-
-    IfFailGo(m_pStgdb->OpenForRead(
-        pDataSource,
-        m_OpenFlags));
-
-    if (m_pStgdb->m_MiniMd.m_Schema.m_major == METAMODEL_MAJOR_VER_V1_0 &&
-        m_pStgdb->m_MiniMd.m_Schema.m_minor == METAMODEL_MINOR_VER_V1_0)
-        m_OptionValue.m_MetadataVersion = MDVersion1;
-
-    else
-        m_OptionValue.m_MetadataVersion = MDVersion2;
-
-
-
-    IfFailGo(m_pStgdb->m_MiniMd.SetOption(&m_OptionValue));
-
-    if (IsThreadSafetyOn())
-    {
-        m_pSemReadWrite = new (nothrow)UTSemReadWrite();
-        IfNullGo(m_pSemReadWrite);
-        IfFailGo(m_pSemReadWrite->Init());
-        m_fOwnSem = true;
-
-        INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
-    }
-
-    if (!IsOfReOpen(dwOpenFlags))
-    {
-        // There must always be a Global Module class and its the first entry in
-        // the TypeDef table.
-        m_tdModule = TokenFromRid(1, mdtTypeDef);
-    }
-
-ErrExit:
-
-    return hr;
-} //RegMeta::OpenExistingMD
-#endif // FEATURE_METADATA_CUSTOM_DATA_SOURCE
-
 #ifdef FEATURE_METADATA_INTERNAL_APIS
 
 //*****************************************************************************
@@ -1442,19 +1388,7 @@ HRESULT RegMeta::GetVersionString(      // S_OK or error.
     _ASSERTE(pVer != NULL);
     HRESULT hr;
     LOCKREAD();
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    if (m_pStgdb->m_pvMd != NULL)
-    {
-#endif
-        *pVer = reinterpret_cast<const char*>(reinterpret_cast<const STORAGESIGNATURE*>(m_pStgdb->m_pvMd)->pVersion);
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    }
-    else
-    {
-        //This emptry string matches the fallback behavior we have in other places that query the version string.
-        *pVer = "";
-    }
-#endif
+    *pVer = reinterpret_cast<const char*>(reinterpret_cast<const STORAGESIGNATURE*>(m_pStgdb->m_pvMd)->pVersion);
     hr = S_OK;
  ErrExit:
     return hr;
@@ -1528,4 +1462,3 @@ ErrExit:
     return hr;
 }
 #endif //FEATURE_METADATA_INTERNAL_APIS
-

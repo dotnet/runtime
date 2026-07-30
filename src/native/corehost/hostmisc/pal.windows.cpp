@@ -71,19 +71,6 @@ namespace
     }
 }
 
-pal::string_t pal::get_timestamp()
-{
-    std::time_t t = std::time(nullptr);
-    const std::size_t elems = 100;
-    char_t buf[elems];
-
-    tm tm_l{};
-    ::gmtime_s(&tm_l, &t);
-    std::wcsftime(buf, elems, _X("%c GMT"), &tm_l);
-
-    return pal::string_t(buf);
-}
-
 bool pal::touch_file(const pal::string_t& path)
 {
     HANDLE hnd = ::CreateFileW(path.c_str(), 0, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -855,11 +842,6 @@ bool pal::fullpath(string_t* path, bool skip_error_logging)
 bool pal::file_exists(const string_t& path)
 {
     return ::pal_file_exists(path.c_str());
-}
-
-bool pal::is_directory(const pal::string_t& path)
-{
-    return ::pal_directory_exists(path.c_str());
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)

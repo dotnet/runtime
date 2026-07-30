@@ -983,7 +983,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
     if (fNeedsParameters)
     {
         HRESULT hr = S_OK;
-        ReleaseHolder<ProfilerFunctionControl> pFuncControl = NULL;
+        ReleaseHolder<ProfilerFunctionControl> pFuncControl;
 
         if (ilCodeVersion.GetEnableReJITCallback())
         {
