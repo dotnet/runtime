@@ -7681,7 +7681,7 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
             localSig = SigPointer{ cxt.Header->LocalVarSig, cxt.Header->cbLocalVarSig };
         }
     }
-    else if (ilFtn->IsDynamicMethod() && !ilFtn->AsDynamicMethodDesc()->UsesTransientIL())
+    else if (ilFtn->IsDynamicMethod())
     {
         DynamicResolver* pResolver = ilFtn->AsDynamicMethodDesc()->GetResolver();
         scopeHnd = MakeDynamicScope(pResolver);
@@ -13387,7 +13387,7 @@ void CEECodeGenInfo::getEHinfo(
     pMD = pMD->GetOrdinaryVariantIfAsyncVersion();
 
     COR_ILMETHOD* pILHeader;
-    if (pMD->IsDynamicMethod() && !pMD->AsDynamicMethodDesc()->UsesTransientIL())
+    if (pMD->IsDynamicMethod())
     {
         pMD->AsDynamicMethodDesc()->GetResolver()->GetEHInfo(EHnumber, clause);
     }
@@ -13400,7 +13400,7 @@ void CEECodeGenInfo::getEHinfo(
         COR_ILMETHOD_DECODER header(pILHeader, pMD->GetMDImport(), NULL);
         getEHinfoHelper(EHnumber, clause, &header);
     }
-    else if (pMD->IsIL() || (pMD->IsILStub() && pMD->AsDynamicMethodDesc()->UsesTransientIL()))
+    else if (pMD->IsIL())
     {
         TransientMethodDetails* details;
         if (!FindTransientMethodDetails(pMD, &details))
