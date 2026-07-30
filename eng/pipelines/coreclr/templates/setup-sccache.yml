@@ -50,26 +50,14 @@ steps:
         sccacheVersion="${{ parameters.sccacheVersion }}"
         osGroup="${{ parameters.osGroup }}"
         sccachePackage="sccache"
+        sccacheSource=()
 
         if [[ "$osGroup" == "osx" ]]; then
             sccachePackage="sccache.osx-x64"
-            restoreDir="$(mktemp -d "$(Agent.TempDirectory)/sccache-restore.XXXXXX")"
-            trap 'rm -rf "$restoreDir"' EXIT
-            cat > "$restoreDir/sccache.csproj" <<EOF
-        <Project Sdk="Microsoft.NET.Sdk">
-          <PropertyGroup>
-            <TargetFramework>net8.0</TargetFramework>
-          </PropertyGroup>
-          <ItemGroup>
-            <PackageReference Include="${sccachePackage}" Version="${sccacheVersion}" />
-          </ItemGroup>
-        </Project>
-        EOF
-            "$(Build.SourcesDirectory)/eng/common/dotnet.sh" restore "$restoreDir/sccache.csproj" --packages "$(Build.SourcesDirectory)/.packages" --verbosity quiet
-        else
-            "$(Build.SourcesDirectory)/eng/common/dotnet.sh" package download "${sccachePackage}@${sccacheVersion}" -o "$(Build.SourcesDirectory)/.packages" -v quiet
+            sccacheSource=(--source https://api.nuget.org/v3/index.json)
         fi
 
+        "$(Build.SourcesDirectory)/eng/common/dotnet.sh" package download "${sccachePackage}@${sccacheVersion}" -o "$(Build.SourcesDirectory)/.packages" -v quiet ${sccacheSource[@]+"${sccacheSource[@]}"}
         sccacheDir="$(Build.SourcesDirectory)/.packages/${sccachePackage}/${sccacheVersion}/tools"
 
         chmod +x "$sccacheDir/sccache"
