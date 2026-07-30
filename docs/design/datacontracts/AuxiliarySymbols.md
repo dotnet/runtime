@@ -1,6 +1,6 @@
 # Contract AuxiliarySymbols
 
-This contract provides name resolution for helper functions
+This contract provides name resolution for helper functions. It may include other functions in the future but at minimum it has functions:
 * whose executing code resides at dynamically-determined addresses or
 * that are native helpers used to implement new.
 
