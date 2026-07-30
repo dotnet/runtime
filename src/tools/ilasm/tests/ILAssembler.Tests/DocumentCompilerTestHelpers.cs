@@ -6,7 +6,6 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
@@ -17,7 +16,7 @@ namespace ILAssembler.Tests
 {
     internal static class DocumentCompilerTestHelpers
     {
-        internal static PEReader CompileAndGetReader(string source, Options options)
+        internal static ImmutableArray<byte> Compile(string source, Options options)
         {
             var sourceText = new SourceText(source, "test.il");
             var documentCompiler = new DocumentCompiler();
@@ -30,7 +29,12 @@ namespace ILAssembler.Tests
             Assert.NotNull(result);
             var blobBuilder = new BlobBuilder();
             result!.Serialize(blobBuilder);
-            return new PEReader(blobBuilder.ToImmutableArray());
+            return blobBuilder.ToImmutableArray();
+        }
+
+        internal static PEReader CompileAndGetReader(string source, Options options)
+        {
+            return new PEReader(Compile(source, options));
         }
 
         internal static int GetFirstTokenOperand(PEReader pe, MetadataReader reader, string methodName, ILOpcode targetOpcode)

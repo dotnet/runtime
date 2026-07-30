@@ -134,7 +134,7 @@ namespace ILAssembler
         private void ReportWarning(string id, string message, Antlr4.Runtime.ParserRuleContext context)
             => ReportDiagnostic(DiagnosticSeverity.Warning, id, message, context);
 
-        public (ImmutableArray<Diagnostic> Diagnostics, PEBuilder? Image) BuildImage()
+        public (ImmutableArray<Diagnostic> Diagnostics, CompilationResult? Image) BuildImage()
         {
             // Default module name to output filename if no .module directive was provided
             if (_entityRegistry.Module.Name is null && _options.OutputFileName is not null)
@@ -176,7 +176,7 @@ namespace ILAssembler
             }
 
             BlobBuilder ilStream = new();
-            _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames);
+            Blob mvidFixup = _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames, _options.Deterministic);
             MetadataRootBuilder rootBuilder = new(_metadataBuilder, _options.MetadataVersion);
 
             // Compute metadata size from the MetadataSizes
@@ -257,7 +257,7 @@ namespace ILAssembler
                     metadataSize: metadataSize,
                     debugDataSize: debugDataSize);
 
-                return (_diagnostics.ToImmutable(), peBuilder);
+                return (_diagnostics.ToImmutable(), new CompilationResult(peBuilder, mvidFixup));
             }
 
             // Apply CorFlags from options or directive
@@ -291,7 +291,7 @@ namespace ILAssembler
                 debugDirectoryBuilder: debugDirectoryBuilder,
                 deterministicIdProvider: deterministicIdProvider);
 
-            return (_diagnostics.ToImmutable(), standardBuilder);
+            return (_diagnostics.ToImmutable(), new CompilationResult(standardBuilder, mvidFixup));
         }
 
         private ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> BuildVTableFixupInfos()
