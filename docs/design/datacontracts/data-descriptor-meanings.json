@@ -435,6 +435,7 @@
     "PatchpointInfo.Size": "Size in bytes of the fixed patchpoint header before its variable local-offset data",
     "PEAssembly.AssemblyBinder": "Pointer to the assembly binder",
     "PEAssembly.MDImport": "An `MDInternalRW` when module has writable metadata",
+    "PEAssembly.MDImportIsRW": "Whether the metadata import supports updates",
     "PEAssembly.PEImage": "Pointer to the PE image",
     "PEImage.FlatImageLayout": "Pointer to the PEImage's flat PEImageLayout (used when there is no loaded layout, e.g. webcil images)",
     "PEImage.LoadedImageLayout": "Pointer to the loaded image layout",

@@ -1664,6 +1664,7 @@ public unsafe class DacDbiImplTests
         TargetTestHelpers.LayoutResult peAssemblyLayout = helpers.LayoutFields([
             new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
             new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+            new(nameof(Data.PEAssembly.MDImportIsRW), DataType.int32),
             new(nameof(Data.PEAssembly.MDImport), DataType.pointer),
         ]);
         var types = new Dictionary<DataType, Target.TypeInfo>
@@ -1672,6 +1673,12 @@ public unsafe class DacDbiImplTests
         };
         MockMemorySpace.HeapFragment readOnlyPEAssembly = allocator.Allocate(peAssemblyLayout.Stride, "ReadOnlyPEAssembly");
         MockMemorySpace.HeapFragment readWritePEAssembly = allocator.Allocate(peAssemblyLayout.Stride, "ReadWritePEAssembly");
+        helpers.WritePointer(
+            readOnlyPEAssembly.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.MDImport)].Offset, helpers.PointerSize),
+            0x1800);
+        helpers.Write(
+            readWritePEAssembly.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.MDImportIsRW)].Offset, sizeof(int)),
+            1);
         helpers.WritePointer(
             readWritePEAssembly.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.MDImport)].Offset, helpers.PointerSize),
             0x1800);
