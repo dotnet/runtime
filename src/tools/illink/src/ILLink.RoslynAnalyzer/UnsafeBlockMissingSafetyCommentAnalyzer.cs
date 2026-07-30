@@ -95,7 +95,7 @@ namespace ILLink.RoslynAnalyzer
         private static bool IsNestedInUnsafeRegion(SyntaxNode region) =>
             region.Ancestors().Any(static ancestor =>
                 ancestor.IsKind(SyntaxKind.UnsafeStatement)
-                || UnsafeMigrationSyntaxHelpers.IsUnsafeExpressionKeyword(ancestor.GetFirstToken()));
+                || UnsafeMigrationSyntaxHelpers.IsUnsafeExpression(ancestor));
 
         /// <summary>
         /// Looks for a <c>// SAFETY:</c> comment attached to the region or to the statement that contains it.

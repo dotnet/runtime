@@ -61,6 +61,20 @@ namespace ILLink.RoslynAnalyzer
         /// </remarks>
         internal static bool IsUnsafeExpressionKeyword(SyntaxToken token) =>
             token.IsKind(SyntaxKind.UnsafeKeyword) && token.Parent is ExpressionSyntax;
+
+        /// <summary>
+        /// Determines whether a node is itself an <c>unsafe(...)</c> expression.
+        /// </summary>
+        /// <remarks>
+        /// Testing only the first token is not enough: a node's first token can belong to a descendant, so the
+        /// enclosing binary expression in <c>unsafe(a) + b</c> also starts with an <c>unsafe</c> keyword. The
+        /// token must therefore be owned by the node being tested.
+        /// </remarks>
+        internal static bool IsUnsafeExpression(SyntaxNode node)
+        {
+            SyntaxToken first = node.GetFirstToken();
+            return IsUnsafeExpressionKeyword(first) && ReferenceEquals(first.Parent, node);
+        }
     }
 }
 #endif

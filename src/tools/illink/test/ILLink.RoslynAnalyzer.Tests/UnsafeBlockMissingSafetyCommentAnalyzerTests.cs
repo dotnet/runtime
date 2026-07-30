@@ -249,6 +249,74 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public async Task ReportsUnsafeExpressionInsideComplexExpression()
+        {
+            string source = """
+                class C
+                {
+                    static int Foo() => 0;
+                    static unsafe int Baz() => 0;
+                    static int z = 0;
+
+                    void M()
+                    {
+                        var x = Foo() + Foo() * {|IL5009:unsafe|}(Baz()) + z;
+                    }
+                }
+                """;
+
+            await UnsafeMigrationTestHelpers
+                .CreateAnalyzerTest<UnsafeBlockMissingSafetyCommentAnalyzer>(source)
+                .RunAsync();
+        }
+
+        [Fact]
+        public async Task ReportsEveryUnsafeExpressionInOneStatement()
+        {
+            // A leading unsafe expression must not suppress its siblings: the enclosing binary expression starts
+            // with the same keyword token, which is not the same thing as containing an unsafe region.
+            string source = """
+                class C
+                {
+                    static unsafe int Foo() => 0;
+                    static int Bar() => 0;
+                    static unsafe int Baz() => 0;
+                    static int z = 0;
+
+                    void M()
+                    {
+                        var x = {|IL5009:unsafe|}(Foo()) + Bar() * {|IL5009:unsafe|}(Baz()) + z;
+                    }
+                }
+                """;
+
+            await UnsafeMigrationTestHelpers
+                .CreateAnalyzerTest<UnsafeBlockMissingSafetyCommentAnalyzer>(source)
+                .RunAsync();
+        }
+
+        [Fact]
+        public async Task DoesNotReportUnsafeExpressionNestedInUnsafeExpression()
+        {
+            string source = """
+                class C
+                {
+                    static unsafe int Foo() => 0;
+                    static unsafe int Baz() => 0;
+
+                    void M()
+                    {
+                        var x = {|IL5009:unsafe|}(Foo() + unsafe(Baz()));
+                    }
+                }
+                """;
+
+            await UnsafeMigrationTestHelpers
+                .CreateAnalyzerTest<UnsafeBlockMissingSafetyCommentAnalyzer>(source)
+                .RunAsync();
+        }
+
+        [Fact]
         public async Task DoesNotReportUnsafeModifier()
         {
             // The modifier is a contract, not a region. IL5005 covers its documentation.

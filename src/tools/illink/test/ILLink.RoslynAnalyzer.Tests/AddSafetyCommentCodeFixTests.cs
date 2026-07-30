@@ -87,6 +87,44 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public async Task AddsOneCommentForMultipleUnsafeExpressionsInOneStatement()
+        {
+            // Both diagnostics resolve to the same statement, so the fix converges on a single comment covering it.
+            string source = """
+                class C
+                {
+                    static unsafe int Foo() => 0;
+                    static unsafe int Baz() => 0;
+
+                    void M()
+                    {
+                        var x = {|IL5009:unsafe|}(Foo()) + {|IL5009:unsafe|}(Baz());
+                    }
+                }
+                """;
+
+            string fixedSource = """
+                class C
+                {
+                    static unsafe int Foo() => 0;
+                    static unsafe int Baz() => 0;
+
+                    void M()
+                    {
+                        // SAFETY: TODO
+                        var x = unsafe(Foo()) + unsafe(Baz());
+                    }
+                }
+                """;
+
+            var test = UnsafeMigrationTestHelpers
+                .CreateCodeFixTest<UnsafeBlockMissingSafetyCommentAnalyzer, AddSafetyCommentCodeFixProvider>(
+                    source,
+                    fixedSource);
+            await test.RunAsync();
+        }
+
+        [Fact]
         public async Task PlacesCommentBelowExistingLeadingComment()
         {
             // The safety comment belongs next to the region it describes, so it goes below an existing comment.
