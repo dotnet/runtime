@@ -21,6 +21,7 @@ namespace System.Net.Security
         private readonly bool _isServer;
         private readonly TokenImpersonationLevel _requiredImpersonationLevel;
         private readonly ProtectionLevel _requiredProtectionLevel;
+        private readonly bool _requiredMutualAuthentication;
         private readonly ExtendedProtectionPolicy? _extendedProtectionPolicy;
         private readonly bool _isSecureConnection;
         private bool _isDisposed;
@@ -31,7 +32,12 @@ namespace System.Net.Security
         /// for client-side authentication session.
         /// </summary>
         /// <param name="clientOptions">The property bag for the authentication options.</param>
-        public NegotiateAuthentication(NegotiateAuthenticationClientOptions clientOptions)
+        public NegotiateAuthentication(NegotiateAuthenticationClientOptions clientOptions) :
+            this(clientOptions, enforceMutualAuthentication: true)
+        {
+        }
+
+        internal NegotiateAuthentication(NegotiateAuthenticationClientOptions clientOptions, bool enforceMutualAuthentication)
         {
             ArgumentNullException.ThrowIfNull(clientOptions);
 
@@ -39,6 +45,7 @@ namespace System.Net.Security
             _requestedPackage = clientOptions.Package;
             _requiredImpersonationLevel = TokenImpersonationLevel.None;
             _requiredProtectionLevel = clientOptions.RequiredProtectionLevel;
+            _requiredMutualAuthentication = enforceMutualAuthentication && clientOptions.RequireMutualAuthentication;
             _pal = NegotiateAuthenticationPal.Create(clientOptions);
         }
 
@@ -117,7 +124,10 @@ namespace System.Net.Security
         /// <summary>
         /// Indicates whether both server and client have been authenticated.
         /// </summary>
-        public bool IsMutuallyAuthenticated => _isDisposed ? false : _pal.IsMutuallyAuthenticated;
+        public bool IsMutuallyAuthenticated =>
+            !_isDisposed &&
+            !string.Equals(Package, NegotiationInfoClass.NTLM) &&
+            _pal.IsMutuallyAuthenticated;
 
         /// <summary>
         /// Indicates whether the local side of the authentication is representing
@@ -232,6 +242,10 @@ namespace System.Net.Security
                     statusCode = NegotiateAuthenticationStatusCode.ImpersonationValidationFailed;
                 }
                 else if (_requiredProtectionLevel != ProtectionLevel.None && ProtectionLevel < _requiredProtectionLevel)
+                {
+                    statusCode = NegotiateAuthenticationStatusCode.SecurityQosFailed;
+                }
+                else if (_requiredMutualAuthentication && !IsMutuallyAuthenticated)
                 {
                     statusCode = NegotiateAuthenticationStatusCode.SecurityQosFailed;
                 }

@@ -702,7 +702,8 @@ namespace System.Net.Security
                         RequiredProtectionLevel = protectionLevel,
                         AllowedImpersonationLevel = impersonationLevel,
                         RequireMutualAuthentication = protectionLevel != ProtectionLevel.None
-                    });
+                    },
+                    enforceMutualAuthentication: false);
             }
         }
 
