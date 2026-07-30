@@ -134,6 +134,8 @@ namespace System.Net.Http
         private long _nextPingRequestTimestamp;
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
+        /// <summary>Set once <see cref="SetupAsync"/> completes. Until then, no keep alive PINGs are sent.</summary>
+        private bool _setupComplete;
 
         public Http2Connection(HttpConnectionPool pool, Stream stream, Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint, long connectionId)
             : base(pool, connectionId, connectionSetupActivity, remoteEndPoint)
@@ -175,6 +177,10 @@ namespace System.Net.Http
             }
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
+
+            // Register with the pool before doing anything that may tear the connection down,
+            // so that the pool can run keep alive ping logic for the whole lifetime of the connection.
+            pool.AddHttp2ConnectionForHeartBeat(this);
 
             static long TimeSpanToMs(TimeSpan value)
             {
@@ -270,6 +276,9 @@ namespace System.Net.Http
             {
                 _ = ProcessOutgoingFramesAsync();
             }
+
+            // The connection is now able to write frames, so it may start sending keep alive PINGs.
+            _setupComplete = true;
         }
 
         private void Shutdown()
@@ -1353,8 +1362,27 @@ namespace System.Net.Http
         {
             Debug.Assert(!_pool.HasSyncObjLock);
 
-            if (_shutdown)
+            if (!_setupComplete)
+            {
+                // The connection is still being established. It can't send PINGs yet, and a server that
+                // never completes the handshake is the connect timeout's responsibility, not ours.
                 return;
+            }
+
+            if (_shutdown)
+            {
+                // The connection is shutting down (e.g. we received a GOAWAY frame), but it may still be
+                // processing existing requests. Keep sending PINGs while it does, as that's the only way
+                // to detect that the server became unresponsive. Once the last stream completes, the
+                // connection is torn down and unregistered from the pool, so we'll stop being called.
+                lock (SyncObject)
+                {
+                    if (_streamsInUse == 0)
+                    {
+                        return;
+                    }
+                }
+            }
 
             try
             {
@@ -1912,6 +1940,8 @@ namespace System.Net.Http
             // We're not disposing the _incomingBuffer and _outgoingBuffer here as they may still be in use by
             // ProcessIncomingFramesAsync and ProcessOutgoingFramesAsync respectively, and those methods are
             // responsible for returning the buffers.
+
+            _pool.RemoveHttp2ConnectionFromHeartBeat(this);
 
             MarkConnectionAsClosed();
         }
