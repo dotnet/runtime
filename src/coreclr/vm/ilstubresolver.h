@@ -49,8 +49,8 @@ public:
     // -----------------------------------
     ILStubResolver();
 
-    bool IsCompiled() const;
-    bool IsILGenerated() const;
+    bool IsCompiled();
+    bool IsILGenerated();
 
     MethodDesc* GetStubMethodDesc();
     MethodDesc* GetStubTargetMethodDesc();
