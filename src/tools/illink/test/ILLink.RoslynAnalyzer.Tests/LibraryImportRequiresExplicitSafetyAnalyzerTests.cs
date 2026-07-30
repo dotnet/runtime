@@ -37,7 +37,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """;
 
             await UnsafeMigrationTestHelpers
-                .CreateAnalyzerTest<LibraryImportRequiresExplicitSafetyAnalyzer>(source)
+                .CreateAnalyzerTest<LibraryImportRequiresExplicitSafetyAnalyzer>(source, updatedMemorySafetyRules: false)
                 .RunAsync();
         }
 
@@ -55,7 +55,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """;
 
             await UnsafeMigrationTestHelpers
-                .CreateAnalyzerTest<LibraryImportRequiresExplicitSafetyAnalyzer>(source)
+                .CreateAnalyzerTest<LibraryImportRequiresExplicitSafetyAnalyzer>(source, updatedMemorySafetyRules: false)
                 .RunAsync();
         }
 
@@ -81,7 +81,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """;
 
             await UnsafeMigrationTestHelpers
-                .CreateAnalyzerTest<LibraryImportRequiresExplicitSafetyAnalyzer>(source)
+                .CreateAnalyzerTest<LibraryImportRequiresExplicitSafetyAnalyzer>(source, updatedMemorySafetyRules: false)
                 .RunAsync();
         }
 
@@ -101,7 +101,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """;
 
             await UnsafeMigrationTestHelpers
-                .CreateAnalyzerTest<LibraryImportRequiresExplicitSafetyAnalyzer>(source)
+                .CreateAnalyzerTest<LibraryImportRequiresExplicitSafetyAnalyzer>(source, updatedMemorySafetyRules: false)
                 .RunAsync();
         }
 
@@ -126,7 +126,27 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """;
 
             await UnsafeMigrationTestHelpers
-                .CreateAnalyzerTest<LibraryImportRequiresExplicitSafetyAnalyzer>(source)
+                .CreateAnalyzerTest<LibraryImportRequiresExplicitSafetyAnalyzer>(source, updatedMemorySafetyRules: false)
+                .RunAsync();
+        }
+
+        [Fact]
+        public async Task DoesNotReportWhenUpdatedRulesAreEnabled()
+        {
+            // Once the assembly is on the updated rules the generator reports SYSLIB1064 for the same methods,
+            // so this analyzer would only be a second copy of the same message.
+            string source = """
+                using System.Runtime.InteropServices;
+
+                partial class C
+                {
+                    [LibraryImport("nativelib")]
+                    static partial void Method(int i);
+                }
+                """;
+
+            await UnsafeMigrationTestHelpers
+                .CreateAnalyzerTest<LibraryImportRequiresExplicitSafetyAnalyzer>(source, updatedMemorySafetyRules: true)
                 .RunAsync();
         }
     }

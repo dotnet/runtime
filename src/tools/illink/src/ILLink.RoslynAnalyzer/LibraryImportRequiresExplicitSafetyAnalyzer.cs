@@ -16,12 +16,15 @@ namespace ILLink.RoslynAnalyzer
     /// <c>unsafe</c> or <c>safe</c> contract.
     /// </summary>
     /// <remarks>
-    /// Under the updated memory safety rules the compiler only requires the modifier when the generated
-    /// implementing part is <c>extern</c>, which depends on whether the signature needs marshalling. Because that
-    /// is an implementation detail of the source generator, the requirement is reported for every shape. The
-    /// diagnostic is reported regardless of whether the assembly has opted into the updated rules so that it can
-    /// be used to annotate a code base before the opt-in is flipped. It is disabled by default while this
-    /// migration tooling remains experimental.
+    /// The compiler only requires the modifier when the generated implementing part is <c>extern</c>, which
+    /// depends on whether the signature needs marshalling. Requiring it for every shape keeps the contract
+    /// stable and matches what the language asks of <c>extern</c> members.
+    /// <para>
+    /// This is a migration aid for a code base that has not opted into the updated rules yet, so that
+    /// <c>[LibraryImport]</c> methods can be annotated ahead of the switch. Once the rules are on the generator
+    /// reports <c>SYSLIB1064</c> for the same methods, so this analyzer stands down to avoid reporting twice.
+    /// It is disabled by default while this migration tooling remains experimental.
+    /// </para>
     /// </remarks>
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class LibraryImportRequiresExplicitSafetyAnalyzer : DiagnosticAnalyzer
@@ -67,6 +70,9 @@ namespace ILLink.RoslynAnalyzer
                 // attribute application always points at the declaration the user authored.
                 if (attribute.ApplicationSyntaxReference is not { } attributeReference
                     || attributeReference.GetSyntax(context.CancellationToken).FirstAncestorOrSelf<MethodDeclarationSyntax>() is not { } declaration
+                    // Once the assembly is on the updated rules the generator reports SYSLIB1064 for the same
+                    // methods, and this analyzer has nothing left to add.
+                    || UnsafeMigrationSyntaxHelpers.UsesUpdatedMemorySafetyRules(declaration.SyntaxTree)
                     || UnsafeMigrationSyntaxHelpers.HasModifier(declaration, SyntaxKind.UnsafeKeyword)
                     || UnsafeMigrationSyntaxHelpers.HasSafeModifier(declaration))
                 {

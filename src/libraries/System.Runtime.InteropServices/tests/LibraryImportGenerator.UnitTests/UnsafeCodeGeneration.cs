@@ -9,6 +9,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.Interop;
+using Microsoft.Interop.UnitTests;
 using Xunit;
 
 using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator, Microsoft.Interop.Analyzers.LibraryImportDiagnosticsAnalyzer>;
@@ -229,7 +231,9 @@ namespace LibraryImportGenerator.UnitTests
         [Fact]
         public async Task UpdatedRulesForwarderStubWithoutSafetyModifierReportsDiagnostic()
         {
-            // The generated forwarder is `extern`, so the compiler reports CS9389 for the same declaration.
+            // The generated forwarder is `extern`, so the compiler reports CS9389 for the same declaration. The
+            // generator still emits it rather than something that compiles, so that suppressing SYSLIB1064 does
+            // not silently turn the missing contract into a runtime failure.
             string source = """
                 using System.Runtime.InteropServices;
                 partial class C
@@ -239,6 +243,64 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
             await new UpdatedMemorySafetyRulesTest
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task DownlevelUpdatedRulesWithoutSafetyModifierReportsDiagnostic()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class C
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int {|CS9389:{|SYSLIB1064:Method|}|}(int i);
+                }
+                """;
+            await new DownlevelUpdatedMemorySafetyRulesTest
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            }.RunAsync();
+        }
+
+        [Theory]
+        [InlineData("unsafe")]
+        [InlineData("safe")]
+        public async Task DownlevelUpdatedRulesExplicitSafetyModifierSatisfiesRequirement(string safetyModifier)
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                partial class C
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static {{safetyModifier}} partial int Method(int i);
+                }
+                """;
+            await new DownlevelUpdatedMemorySafetyRulesTest
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task DownlevelLegacyRulesDoNotRequireSafetyModifier()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class C
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial int Method(int i);
+                }
+                """;
+            await new Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<
+                DownlevelLibraryImportGenerator,
+                Microsoft.Interop.Analyzers.DownlevelLibraryImportDiagnosticsAnalyzer>.Test(TestTargetFramework.Standard2_0)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
@@ -363,10 +425,32 @@ namespace LibraryImportGenerator.UnitTests
                 // through the same feature flag the compiler uses.
                 var parseOptions = (CSharpParseOptions)base.CreateParseOptions();
                 return parseOptions.WithFeatures(
-                    [.. parseOptions.Features, new KeyValuePair<string, string>("updated-memory-safety-rules", "")]);
+                    [.. parseOptions.Features, new KeyValuePair<string, string>(MemorySafetyRules.UpdatedMemorySafetyRulesFeature, "")]);
             }
 
             protected override void VerifyFinalCompilation(Compilation compilation) => _verifyCompilation?.Invoke(compilation);
+        }
+
+        /// <summary>
+        /// Runs the downlevel generator, which targets frameworks without the runtime marshalling support, with
+        /// the updated memory safety rules enabled.
+        /// </summary>
+        private sealed class DownlevelUpdatedMemorySafetyRulesTest
+            : Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<
+                DownlevelLibraryImportGenerator,
+                Microsoft.Interop.Analyzers.DownlevelLibraryImportDiagnosticsAnalyzer>.Test
+        {
+            public DownlevelUpdatedMemorySafetyRulesTest()
+                : base(TestTargetFramework.Standard2_0)
+            {
+            }
+
+            protected override ParseOptions CreateParseOptions()
+            {
+                var parseOptions = (CSharpParseOptions)base.CreateParseOptions();
+                return parseOptions.WithFeatures(
+                    [.. parseOptions.Features, new KeyValuePair<string, string>(MemorySafetyRules.UpdatedMemorySafetyRulesFeature, "")]);
+            }
         }
     }
 }

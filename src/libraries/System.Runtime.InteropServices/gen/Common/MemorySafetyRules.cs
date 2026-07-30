@@ -19,7 +19,7 @@ namespace Microsoft.Interop
         /// (https://github.com/dotnet/roslyn/issues/82546), so we look at the same feature flag the compiler
         /// itself uses to determine whether the updated rules are in effect.
         /// </remarks>
-        private const string UpdatedMemorySafetyRulesFeature = "updated-memory-safety-rules";
+        internal const string UpdatedMemorySafetyRulesFeature = "updated-memory-safety-rules";
 
         /// <summary>
         /// The <c>safe</c> contextual keyword introduced by the unsafe evolution feature.
@@ -48,5 +48,26 @@ namespace Microsoft.Interop
         /// </summary>
         public static bool HasSafeModifier(SyntaxTokenList modifiers)
             => s_safeKeyword != SyntaxKind.None && modifiers.Any(s_safeKeyword);
+
+        /// <summary>
+        /// Carries an explicit <c>safe</c> modifier from <paramref name="original"/> over to
+        /// <paramref name="rewritten"/>, at the position it originally held.
+        /// </summary>
+        /// <remarks>
+        /// <c>DeclarationModifiers</c> has no notion of <c>safe</c>, so a declaration rebuilt through it loses
+        /// the modifier, which under the updated rules silently widens the contract to the caller.
+        /// </remarks>
+        public static SyntaxTokenList WithSafeModifierFrom(SyntaxTokenList rewritten, SyntaxTokenList original)
+        {
+            if (!HasSafeModifier(original) || HasSafeModifier(rewritten))
+                return rewritten;
+
+            SyntaxToken safeToken = SyntaxFactory.Token(s_safeKeyword).WithTrailingTrivia(SyntaxFactory.Space);
+            int index = 0;
+            while (index < original.Count && !original[index].IsKind(s_safeKeyword))
+                index++;
+
+            return rewritten.Insert(index < rewritten.Count ? index : rewritten.Count, safeToken);
+        }
     }
 }

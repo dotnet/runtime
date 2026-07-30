@@ -90,7 +90,8 @@ namespace ILLink.RoslynAnalyzer.Tests
             var test = UnsafeMigrationTestHelpers
                 .CreateCodeFixTest<LibraryImportRequiresExplicitSafetyAnalyzer, AddUnsafeToLibraryImportCodeFixProvider>(
                     source,
-                    fixedSource);
+                    fixedSource,
+                    updatedMemorySafetyRules: false);
             // LibraryImportAttribute only exists in the live reference pack.
             test.ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
             test.TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
@@ -112,7 +113,8 @@ namespace ILLink.RoslynAnalyzer.Tests
 
             var test = UnsafeMigrationTestHelpers
                 .CreateCodeFixTest<LibraryImportRequiresExplicitSafetyAnalyzer, AddUnsafeToLibraryImportCodeFixProvider>(
-                    source);
+                    source,
+                    updatedMemorySafetyRules: false);
             test.ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
             test.TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
             await test.RunAsync();

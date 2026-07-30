@@ -201,8 +201,8 @@ namespace Microsoft.Interop.Analyzers
         /// </summary>
         /// <remarks>
         /// The compiler only requires the modifier when the generated implementing part is <c>extern</c>, which
-        /// depends on whether the signature needs marshalling. That is an implementation detail of the generator,
-        /// so the requirement is enforced for every shape to keep the contract stable.
+        /// depends on whether the signature needs marshalling. Requiring it for every shape keeps the contract
+        /// stable and matches what the language asks of <c>extern</c> members.
         /// </remarks>
         private static void ReportMissingExplicitSafetyModifier(SymbolAnalysisContext context, IMethodSymbol method, AttributeData libraryImportAttr)
         {
