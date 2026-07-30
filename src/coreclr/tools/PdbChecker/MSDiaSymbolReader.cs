@@ -33,16 +33,6 @@ class MSDiaSymbolReader
 
     private readonly List<string> _pdbSymbols;
 
-    /// <summary>
-    /// PDB-info identity GUID as reported by DIA for the PDB file.
-    /// </summary>
-    public Guid PdbGuid { get; }
-
-    /// <summary>
-    /// PDB-info age as reported by DIA for the PDB file.
-    /// </summary>
-    public uint PdbAge { get; }
-
     public MSDiaSymbolReader(string pdbFile, string? imageFile = null)
     {
         try
@@ -74,8 +64,8 @@ class MSDiaSymbolReader
             _diaDataSource.openSession(out _diaSession);
 
             IDiaSymbol globalScope = _diaSession.globalScope;
-            PdbGuid = globalScope.guid;
-            PdbAge = globalScope.age;
+            Guid pdbGuid = globalScope.guid;
+            uint pdbAge = globalScope.age;
 
             _pdbSymbols = new List<string>();
 
@@ -91,8 +81,8 @@ class MSDiaSymbolReader
             }
 
             Console.WriteLine("PDB file:       {0}", pdbFile);
-            Console.WriteLine("PDB GUID:       {0}", PdbGuid);
-            Console.WriteLine("PDB age:        {0}", PdbAge);
+            Console.WriteLine("PDB GUID:       {0}", pdbGuid);
+            Console.WriteLine("PDB age:        {0}", pdbAge);
             Console.WriteLine("Total symbols:  {0}", symbolsTotal);
             Console.WriteLine("Public symbols: {0}", _pdbSymbols.Count);
         }
