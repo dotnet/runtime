@@ -195,6 +195,8 @@ namespace Internal.ReadyToRunConstants
 
         InjectStringThunks = 0x39, /* Inject pregenerated string-to-code thunk mappings into the global lookup table */
 
+        StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
+
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
         // table of the MSIL metadata of the master context module for the signature or
@@ -247,7 +249,7 @@ namespace Internal.ReadyToRunConstants
         // Write barriers
         WriteBarrier                = 0x30,
         CheckedWriteBarrier         = 0x31,
-        ByRefWriteBarrier           = 0x32,
+        ByRefWriteBarrier           = 0x32, // No longer supported as of READYTORUN_MAJOR_VERSION 19.0
         BulkWriteBarrier            = 0x33,
 
         // Array helpers

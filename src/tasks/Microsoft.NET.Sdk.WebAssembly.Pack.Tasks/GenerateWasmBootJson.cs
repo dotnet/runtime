@@ -61,6 +61,8 @@ public class GenerateWasmBootJson : Task
 
     public string? RuntimeConfigJsonPath { get; set; }
 
+    public string? RuntimeConfigDevJsonPath { get; set; }
+
     public string Jiterpreter { get; set; }
 
     public string RuntimeOptions { get; set; }
@@ -83,6 +85,8 @@ public class GenerateWasmBootJson : Task
 
     public bool IsMultiThreaded { get; set; }
 
+    public string? UseMonoRuntime { get; set; }
+
     public bool FingerprintAssets { get; set; }
 
     public string ApplicationEnvironment { get; set; }
@@ -98,8 +102,6 @@ public class GenerateWasmBootJson : Task
     public bool LogExitCode { get; set; }
 
     public bool AsyncFlushOnExit { get; set; }
-
-    public bool ForwardConsole { get; set; }
 
     public override bool Execute()
     {
@@ -119,7 +121,8 @@ public class GenerateWasmBootJson : Task
 
     private void WriteBootConfig(string entryAssemblyName)
     {
-        var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish);
+        bool isMonoRuntime = string.IsNullOrEmpty(UseMonoRuntime) || string.Equals(UseMonoRuntime, "true", StringComparison.OrdinalIgnoreCase);
+        var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion, isMonoRuntime);
 
         var result = new BootJsonData
         {
@@ -137,7 +140,6 @@ public class GenerateWasmBootJson : Task
             if (AppendElementOnExit) result.appendElementOnExit = true;
             if (LogExitCode) result.logExitCode = true;
             if (AsyncFlushOnExit) result.asyncFlushOnExit = true;
-            if (ForwardConsole) result.forwardConsole = true;
         }
 
         if (IsTargeting80OrLater())
@@ -463,12 +465,7 @@ public class GenerateWasmBootJson : Task
             }
         }
 
-        if (RuntimeConfigJsonPath != null && File.Exists(RuntimeConfigJsonPath))
-        {
-            using var fs = File.OpenRead(RuntimeConfigJsonPath);
-            var runtimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(fs, BootJsonBuilderHelper.JsonOptions);
-            result.runtimeConfig = runtimeConfig;
-        }
+        result.runtimeConfig = ReadRuntimeConfigFiles(RuntimeConfigJsonPath, IsPublish ? null : RuntimeConfigDevJsonPath);
 
         Profilers ??= Array.Empty<string>();
         var browserProfiler = Profilers.FirstOrDefault(p => p.StartsWith("browser:"));
@@ -538,39 +535,67 @@ public class GenerateWasmBootJson : Task
         return lazyLoadAssembliesNoExtension.TryGetValue(fileName, out lazyLoadedAssembly);
     }
 
-    private Version? parsedTargetFrameworkVersion;
     private static readonly Version version80 = new Version(8, 0);
     private static readonly Version version90 = new Version(9, 0);
     private static readonly Version version100 = new Version(10, 0);
     private static readonly Version version110 = new Version(11, 0);
 
-    private bool IsTargeting80OrLater()
-        => IsTargetingVersionOrLater(version80);
-
-    private bool IsTargeting90OrLater()
-        => IsTargetingVersionOrLater(version90);
-
-    private bool IsTargeting100OrLater()
-        => IsTargetingVersionOrLater(version100);
-
-    private bool IsTargeting110OrLater()
-        => IsTargetingVersionOrLater(version110);
-
-    private bool IsTargetingVersionOrLater(Version version)
+    private Version? parsedTargetFrameworkVersion;
+    private Version ParsedTargetFrameworkVersion
     {
-        if (parsedTargetFrameworkVersion == null)
+        get
         {
-            string tfv = TargetFrameworkVersion;
+            if (parsedTargetFrameworkVersion == null)
+            {
+                string tfv = TargetFrameworkVersion;
 #if NET
-            if (tfv.StartsWith('v'))
+                if (tfv.StartsWith('v'))
 #else
-            if (tfv.StartsWith("v", StringComparison.Ordinal))
+                if (tfv.StartsWith("v", StringComparison.Ordinal))
 #endif
-                tfv = tfv.Substring(1);
+                    tfv = tfv.Substring(1);
 
-            parsedTargetFrameworkVersion = Version.Parse(tfv);
+                parsedTargetFrameworkVersion = Version.Parse(tfv);
+            }
+
+            return parsedTargetFrameworkVersion;
+        }
+    }
+
+    private bool IsTargeting80OrLater() => ParsedTargetFrameworkVersion >= version80;
+    private bool IsTargeting90OrLater() => ParsedTargetFrameworkVersion >= version90;
+    private bool IsTargeting100OrLater() => ParsedTargetFrameworkVersion >= version100;
+    private bool IsTargeting110OrLater() => ParsedTargetFrameworkVersion >= version110;
+
+    /// <summary>
+    /// Reads the main runtimeconfig.json and merges <c>configProperties</c> from the companion
+    /// runtimeconfig.dev.json (when it exists) into the result. Dev config values take precedence.
+    /// </summary>
+    internal static RuntimeConfigData? ReadRuntimeConfigFiles(string? mainConfigPath, string? devConfigPath)
+    {
+        if (!File.Exists(mainConfigPath))
+            return null;
+
+        using var fs = File.OpenRead(mainConfigPath);
+        var runtimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(fs, BootJsonBuilderHelper.JsonOptions);
+
+        if (File.Exists(devConfigPath))
+        {
+            // Merge overrides from runtimeconfig.dev.json (e.g. Hot Reload switches set by the SDK in debug builds).
+            using var devFs = File.OpenRead(devConfigPath);
+            var devRuntimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(devFs, BootJsonBuilderHelper.JsonOptions);
+            if (devRuntimeConfig?.runtimeOptions?.configProperties is { } devProps && devProps.Count > 0)
+            {
+                runtimeConfig ??= new RuntimeConfigData();
+                runtimeConfig.runtimeOptions ??= new RuntimeOptionsData();
+                runtimeConfig.runtimeOptions.configProperties ??= new Dictionary<string, object>();
+                foreach (var kvp in devProps)
+                {
+                    runtimeConfig.runtimeOptions.configProperties[kvp.Key] = kvp.Value;
+                }
+            }
         }
 
-        return parsedTargetFrameworkVersion >= version;
+        return runtimeConfig;
     }
 }

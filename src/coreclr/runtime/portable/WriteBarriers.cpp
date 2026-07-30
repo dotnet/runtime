@@ -17,10 +17,3 @@ FCIMPL2_RAW(VOID, RhpCheckedAssignRef, Object **dst, Object *ref)
     PORTABILITY_ASSERT("RhpCheckedAssignRef is not yet implemented");
 }
 FCIMPLEND
-
-EXTERN_C FCDECL2_RAW(VOID, RhpByRefAssignRef, Object **dst, Object **ref);
-FCIMPL2_RAW(VOID, RhpByRefAssignRef, Object **dst, Object **ref)
-{
-    PORTABILITY_ASSERT("RhpByRefAssignRef is not yet implemented");
-}
-FCIMPLEND

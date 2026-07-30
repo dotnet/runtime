@@ -200,6 +200,36 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ProcessStart_SkipsNonExecutableFilesInCurrentDirectory()
+        {
+            const string ScriptName = "script";
+
+            // Create an executable script on PATH
+            string pathDir = Path.Combine(TestDirectory, "Path1");
+            Directory.CreateDirectory(pathDir);
+            WriteScriptFile(pathDir, ScriptName, returnValue: 42);
+
+            // Create a non-executable file named ScriptName in the working directory
+            string workDir = Path.Combine(TestDirectory, "WorkDir");
+            Directory.CreateDirectory(workDir);
+            File.WriteAllText(Path.Combine(workDir, ScriptName), "Not executable");
+
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["PATH"] = pathDir;
+            options.StartInfo.WorkingDirectory = workDir;
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var px = Process.Start(new ProcessStartInfo { FileName = ScriptName }))
+                {
+                    Assert.NotNull(px);
+                    px.WaitForExit();
+                    Assert.True(px.HasExited);
+                    Assert.Equal(42, px.ExitCode);
+                }
+            }, options).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ProcessStart_SkipsNonExecutableFilesOnPATH()
         {
             const string ScriptName = "script";

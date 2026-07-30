@@ -45,6 +45,12 @@ class ComCallMethodDesc;
 
 extern PCODE GetPreStubEntryPoint();
 
+#ifndef DACCESS_COMPILE
+extern "C" void* PacAuthPtr(void* ptr, void* sp);
+extern "C" void* PacSignPtr(void* ptr, void* sp);
+extern "C" void* PacStripPtr(void* ptr);
+#endif
+
 #define STACK_ALIGN_SIZE                        16
 
 #define JUMP_ALLOCATE_SIZE                      16  // # bytes to allocate for a jump instruction
@@ -524,6 +530,7 @@ struct HijackArgs
          };
         NEON128 FPReturnValue[4];
     };
+    DWORD64 SpForPacSign;
 };
 
 #endif // __cgencpu_h__

@@ -168,12 +168,19 @@
     <TestExclusionListTasksAssemblyPath>$([MSBuild]::NormalizePath('$(TestExclusionListTasksDir)', 'TestExclusionListTasks.dll'))</TestExclusionListTasksAssemblyPath>
     <CoreCLRToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)'))</CoreCLRToolPath>
     <ILAsmToolPath Condition="'$(DotNetBuildSourceOnly)' == 'true' or '$(BuildArchitecture)' == 's390x' or '$(BuildArchitecture)' == 'ppc64le'">$(CoreCLRToolPath)</ILAsmToolPath>
-    <!-- force download temmporarily https://github.com/dotnet/runtime/issues/101528
-    <WasmtimeDir Condition="'$(WasmtimeDir)' == '' and '$(WASMTIME_PATH)' != '' and Exists($(WASMTIME_PATH))">$(WASMTIME_PATH)</WasmtimeDir>
-    -->
-    <WasmtimeDir Condition="'$(WasmtimeDir)' == ''">$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'wasmtime'))</WasmtimeDir>
-    <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists($(WasmtimeDir))">true</InstallWasmtimeForTests>
     <WasmCommonTargetsPath>$([MSBuild]::NormalizeDirectory($(WasmProjectRoot), 'build'))</WasmCommonTargetsPath>
+  </PropertyGroup>
+
+  <!-- Shared cache locations for externally acquired wasm tools. Needs $(BrowserProjectRoot),
+       $(WasiProjectRoot) and $(ArtifactsDir) from above. -->
+  <Import Project="$(RepositoryEngineeringDir)wasm\WasmToolCache.props" />
+
+  <PropertyGroup>
+    <!-- Overriding with a local wasmtime is disabled for now: https://github.com/dotnet/runtime/issues/101528
+    <WasmtimeDir Condition="'$(WasmtimeDir)' == '' and '$(WASMTIME_PATH)' != '' and Exists('$(WASMTIME_PATH)')">$([MSBuild]::EnsureTrailingSlash('$(WASMTIME_PATH)'))</WasmtimeDir>
+    -->
+    <WasmtimeDir Condition="'$(WasmtimeDir)' == ''">$(WasmtimeCacheDir)</WasmtimeDir>
+    <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists('$(WasmtimeStampFile)')">true</InstallWasmtimeForTests>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">
@@ -237,7 +244,16 @@
     <UriProject>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'System.Private.Uri', 'src', 'System.Private.Uri.csproj'))</UriProject>
 
     <!-- this property is used by the SDK to pull in mono-based runtime packs -->
+    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' and '$(UseNativeAOTRuntime)' == 'true'">false</UseMonoRuntime>
     <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' and '$(RuntimeFlavor)' == 'Mono'">true</UseMonoRuntime>
+    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == 'true' and '$(TargetsMobile)' != 'true' and (
+        $(TargetFramework.EndsWith('-android')) or $(TargetFramework.EndsWith('-ios')) or
+        $(TargetFramework.EndsWith('-tvos')) or $(TargetFramework.EndsWith('-maccatalyst')))">false</UseMonoRuntime>
+
+    <!-- Multi-targeted libraries' mobile target frameworks (e.g. netXX.0-android/ios/tvos/maccatalyst) are restored with UseMonoRuntime=true in the browser/wasi legs.
+         As of .NET 11, the SDK raises NETSDK1242 when a mobile project targets the Mono runtime. These mobile target frameworks are only restored (never actually built)
+         in these legs, so disable the check to avoid the false-positive failure -->
+    <_DisableCheckForUnsupportedMonoMobileRuntime Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">true</_DisableCheckForUnsupportedMonoMobileRuntime>
 
     <!-- For enabling the use of XUnitLogChecker in coreclr and libraries test runs. -->
     <!-- TODO: Enable XUnitLogChecker for NativeAOT tests https://github.com/dotnet/runtime/issues/94722 -->

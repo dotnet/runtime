@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -39,7 +40,7 @@ public class ObjectiveCMarshalDumpTests : DumpTestBase
             if (mt == TargetPointer.Null)
                 continue;
 
-            TypeHandle typeHandle = rtsContract.GetTypeHandle(mt);
+            ITypeHandle typeHandle = rtsContract.GetTypeHandle(mt);
             if (rtsContract.IsTrackedReferenceWithFinalizer(typeHandle))
                 results.Add(objectAddress);
         }

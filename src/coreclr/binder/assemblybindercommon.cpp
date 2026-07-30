@@ -22,6 +22,7 @@
 #include "failurecache.hpp"
 #include "utils.hpp"
 #include "stringarraylist.h"
+#include "hostinformation.h"
 
 #if !defined(DACCESS_COMPILE)
 #include "defaultassemblybinder.h"
@@ -271,6 +272,9 @@ namespace BINDER_SPACE
         //   * Non-single-file app: In systemDirectory, beside coreclr.dll
         //   * Framework-dependent single-file app: In systemDirectory, beside coreclr.dll
         //   * Self-contained single-file app: Within the single-file bundle.
+        //   * Host explicitly provided directory: In the directory set via the
+        //     SYSTEM_CORELIB_DIRECTORY runtime property. Used by hosts where SPCL is not located
+        //     in the same directory as coreclr.
         //
         //   CoreLib path (sCoreLib):
         //   * Absolute path when looking for a file on disk
@@ -284,7 +288,16 @@ namespace BINDER_SPACE
         {
             pathSource = BinderTracing::PathSource::ApplicationAssemblies;
         }
-        sCoreLib.Set(systemDirectory);
+
+        // Check for a host-provided explicit directory for CoreLib. When set, this replaces
+        // the default lookup beside coreclr and the bundle extraction path fallback.
+        bool hasHostProvidedDirectory = HostInformation::GetProperty(HOST_PROPERTY_SYSTEM_CORELIB_DIRECTORY, sCoreLib)
+            && !sCoreLib.IsEmpty();
+        if (!hasHostProvidedDirectory)
+        {
+            sCoreLib.Set(systemDirectory);
+        }
+
         CombinePath(sCoreLib, sCoreLibName, sCoreLib);
 
         hr = AssemblyBinderCommon::GetAssembly(sCoreLib,
@@ -295,6 +308,7 @@ namespace BINDER_SPACE
         BinderTracing::PathProbed(sCoreLib, pathSource, hr);
 
         if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
+            && !hasHostProvidedDirectory
             && Bundle::AppIsBundle()
             && Bundle::AppBundle->HasExtractedFiles())
         {
@@ -315,7 +329,7 @@ namespace BINDER_SPACE
 
         IF_FAIL_GO(hr);
 
-        *ppSystemAssembly = pSystemAssembly.Extract();
+        *ppSystemAssembly = pSystemAssembly.Detach();
 
     Exit:
         return hr;
@@ -368,7 +382,7 @@ namespace BINDER_SPACE
                                                probeExtensionResult));
         BinderTracing::PathProbed(sCoreLibSatellite, pathSource, hr);
 
-        *ppSystemAssembly = pSystemAssembly.Extract();
+        *ppSystemAssembly = pSystemAssembly.Detach();
 
     Exit:
         return hr;
@@ -776,7 +790,8 @@ namespace BINDER_SPACE
                 }
 
                 // Set any found assembly. It is up to the caller to check the returned HRESULT for errors due to validation
-                *ppAssembly = pAssembly.Extract();
+                Assembly* pFoundAssembly = pAssembly.Detach();
+                *ppAssembly = pFoundAssembly;
                 if (FAILED(hr))
                     return hr;
 
@@ -786,7 +801,7 @@ namespace BINDER_SPACE
                 // we fail the bind.
 
                 // Compare requested AssemblyName with that from the candidate assembly
-                if (!TestCandidateRefMatchesDef(pRequestedAssemblyName, pAssembly->GetAssemblyName(), false /*tpaListAssembly*/))
+                if (!TestCandidateRefMatchesDef(pRequestedAssemblyName, pFoundAssembly->GetAssemblyName(), false /*tpaListAssembly*/))
                     return FUSION_E_REF_DEF_MISMATCH;
 
                 return S_OK;
@@ -887,16 +902,17 @@ namespace BINDER_SPACE
                 _ASSERTE(pTpaEntry->m_wszILFileName != nullptr);
                 SString fileName(pTpaEntry->m_wszILFileName);
 
+                ReleaseHolder<Assembly> pAssembly;
                 SString getAssemblyDiag;
                 hr = GetAssembly(fileName,
                                     TRUE,  // fIsInTPA
-                                    &pTPAAssembly,
+                                    &pAssembly,
                                     ProbeExtensionResult::Invalid(),
                                     &getAssemblyDiag);
                 pBindResult->AppendDiagnosticInfo(getAssemblyDiag);
                 BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
 
-                pBindResult->SetAttemptResult(hr, pTPAAssembly);
+                pBindResult->SetAttemptResult(hr, pAssembly);
 
                 // On file not found, simply fall back to app path probing
                 if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
@@ -904,18 +920,18 @@ namespace BINDER_SPACE
                     // Any other error is fatal
                     IF_FAIL_GO(hr);
 
-                    if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pTPAAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
+                    if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
                     {
                         // We have found the requested assembly match on TPA with validation of the full-qualified name. Bind to it.
-                        pBindResult->SetResult(pTPAAssembly);
-                        pBindResult->SetAttemptResult(S_OK, pTPAAssembly);
+                        pBindResult->SetResult(pAssembly);
+                        pBindResult->SetAttemptResult(S_OK, pAssembly);
                         GO_WITH_HRESULT(S_OK);
                     }
                     else
                     {
                         // We found the assembly on TPA but it didn't match the RequestedAssembly assembly-name. In this case, lets proceed to see if we find the requested
                         // assembly in the App paths.
-                        pBindResult->SetAttemptResult(FUSION_E_REF_DEF_MISMATCH, pTPAAssembly);
+                        pBindResult->SetAttemptResult(FUSION_E_REF_DEF_MISMATCH, pAssembly);
                         fPartialMatchOnTpa = true;
                     }
                 }
@@ -1016,7 +1032,7 @@ namespace BINDER_SPACE
         }
 
         // We're done
-        *ppAssembly = pAssembly.Extract();
+        *ppAssembly = pAssembly.Detach();
 
     Exit:
 

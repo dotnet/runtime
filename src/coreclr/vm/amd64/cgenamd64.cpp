@@ -24,9 +24,7 @@
 #include "clrtocomcall.h"
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pRegs)
 {
@@ -92,7 +90,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rip = GetReturnAddress();
     pRD->pCurrentContext->Rsp = GetSP();
@@ -120,7 +117,6 @@ void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updat
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rip = GetReturnAddress();
     pRD->pCurrentContext->Rsp = GetSP();
@@ -194,7 +190,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     }
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rsp = *(DWORD64 *)&m_pCallSiteSP;
     pRD->pCurrentContext->Rbp = *(DWORD64 *)&m_pCalleeSavedFP;
@@ -210,7 +205,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     SyncRegDisplayToCurrentContext(pRD);
 
 #ifdef FEATURE_INTERPRETER
-    if ((m_Next != FRAME_TOP) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    if ((m_Next != FRAME_TOP) && (m_Next != NULL) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
     {
         // If the next frame is an interpreter frame, we also need to set the first argument register to point to the interpreter frame.
         SetFirstArgReg(pRD->pCurrentContext, dac_cast<TADDR>(m_Next));
@@ -264,7 +259,6 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->pCurrentContextPointers->R15 = &pContext->R15;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 }
 
 #ifdef FEATURE_HIJACK
@@ -276,14 +270,14 @@ TADDR ResumableFrame::GetReturnAddressPtr_Impl()
 
 void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CopyMemory(pRD->pCurrentContext, m_Regs, sizeof(CONTEXT));
     // Clear the CONTEXT_XSTATE, since the REGDISPLAY contains just plain CONTEXT structure
@@ -310,9 +304,7 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     pRD->pCurrentContextPointers->R15 = &m_Regs->R15;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-    RETURN;
 }
 
 // The HijackFrame has to know the registers that are pushed by OnHijackTripThread
@@ -326,7 +318,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     CONTRACTL_END;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rip = m_ReturnAddress;
 #ifdef TARGET_WINDOWS
@@ -468,6 +459,7 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
 {
     CONTRACTL
     {
+        MODE_PREEMPTIVE;
         THROWS;         // Creating a JumpStub could throw OutOfMemory
         GC_NOTRIGGER;
 
@@ -613,13 +605,9 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
 
-#ifdef FEATURE_PERFMAP
 #define BEGIN_DYNAMIC_HELPER_EMIT(size) \
     BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
-#else
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size)
-#endif
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \
@@ -653,7 +641,7 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
 {
     CONTRACTL
     {
-        GC_NOTRIGGER;
+        STANDARD_VM_CHECK;
         PRECONDITION(p != NULL && target != NULL);
     }
     CONTRACTL_END;
@@ -676,6 +664,8 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
 
 PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(15);
 
     EmitHelperWithArg(p, rxOffset, pAllocator, arg, target);
@@ -685,6 +675,8 @@ PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR ar
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADDR arg2, PCODE target)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(25);
 
 #ifdef UNIX_AMD64_ABI
@@ -714,6 +706,8 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADD
 
 PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(18);
 
 #ifdef UNIX_AMD64_ABI
@@ -743,6 +737,8 @@ PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR ar
 
 PCODE DynamicHelpers::CreateReturn(LoaderAllocator * pAllocator)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(1);
 
     *p++ = 0xC3; // ret
@@ -752,6 +748,8 @@ PCODE DynamicHelpers::CreateReturn(LoaderAllocator * pAllocator)
 
 PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(11);
 
     SET_UNALIGNED_16(p, 0xB848); // mov rax, XXXXXX
@@ -766,6 +764,8 @@ PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
 
 PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR arg, INT8 offset)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT((offset != 0) ? 15 : 11);
 
     SET_UNALIGNED_16(p, 0xA148); // mov rax, [XXXXXX]
@@ -789,6 +789,8 @@ PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR
 
 PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(15);
 
 #ifdef UNIX_AMD64_ABI
@@ -809,6 +811,8 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
 PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, TADDR arg2, PCODE target)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(25);
 
 #ifdef UNIX_AMD64_ABI

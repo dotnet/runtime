@@ -13,9 +13,7 @@
 //
 // 1. Any number of threads can be reading the hash table while another thread is writing, without error.
 // 2. Only one thread can write at a time.
-// 3. When calling ReplaceValue(), a reader will get the old value, or the new value, but not something
-//    in between.
-// 4. DeleteValue() is an unsafe operation - no other threads can be in the hash table when this happens.
+// 3. DeleteValue() is an unsafe operation - no other threads can be in the hash table when this happens.
 //
 
 #ifndef _EE_HASH_H
@@ -82,8 +80,6 @@ public:
     void            InsertValue(KeyType pKey, HashDatum Data, BOOL bDeepCopyKey = bDefaultCopyIsDeep);
     void            InsertKeyAsValue(KeyType pKey, BOOL bDeepCopyKey = bDefaultCopyIsDeep);
     BOOL            DeleteValue(KeyType pKey);
-    BOOL            ReplaceValue(KeyType pKey, HashDatum Data);
-    BOOL            ReplaceKey(KeyType pOldKey, KeyType pNewKey);
     void            ClearHashTable();
     void            EmptyHashTable();
     BOOL            IsEmpty();
@@ -366,7 +362,6 @@ private:
     LPCWSTR         szString;           // The string data.
     DWORD           cch;                // Characters in the string.
 #ifdef _DEBUG
-    BOOL            bDebugOnlyLowChars;      // Does the string contain only characters less than 0x80?
     DWORD           dwDebugCch;
 #endif // _DEBUG
 
@@ -378,7 +373,6 @@ public:
 
         SetStringBuffer(NULL);
         SetCharCount(0);
-        SetIsOnlyLowChars(FALSE);
     };
     EEStringData(DWORD cchString, LPCWSTR str) : cch(0)
     {
@@ -386,15 +380,6 @@ public:
 
         SetStringBuffer(str);
         SetCharCount(cchString);
-        SetIsOnlyLowChars(FALSE);
-    };
-    EEStringData(DWORD cchString, LPCWSTR str, BOOL onlyLow) : cch(0)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        SetStringBuffer(str);
-        SetCharCount(cchString);
-        SetIsOnlyLowChars(onlyLow);
     };
     inline ULONG GetCharCount() const
     {
@@ -424,37 +409,7 @@ public:
 
         szString = _szString;
     }
-    inline BOOL GetIsOnlyLowChars() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(bDebugOnlyLowChars == ((cch & ONLY_LOW_CHARS_MASK) ? TRUE : FALSE));
-        return ((cch & ONLY_LOW_CHARS_MASK) ? TRUE : FALSE);
-    }
-    inline void SetIsOnlyLowChars(BOOL bIsOnlyLowChars)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-#ifdef _DEBUG
-        bDebugOnlyLowChars = bIsOnlyLowChars;
-#endif // _DEBUG
-        bIsOnlyLowChars ? (cch |= ONLY_LOW_CHARS_MASK) : (cch &= ~ONLY_LOW_CHARS_MASK);
-    }
 };
-
-class EEUnicodeHashTableHelper
-{
-public:
-    static EEHashEntry_t * AllocateEntry(EEStringData *pKey, BOOL bDeepCopy, AllocationHeap Heap);
-    static void            DeleteEntry(EEHashEntry_t *pEntry, AllocationHeap Heap);
-    static BOOL            CompareKeys(EEHashEntry_t *pEntry, EEStringData *pKey);
-    static DWORD           Hash(EEStringData *pKey);
-    static EEStringData *  GetKey(EEHashEntry_t *pEntry);
-    static void            ReplaceKey(EEHashEntry_t *pEntry, EEStringData *pNewKey);
-};
-
-typedef EEHashTable<EEStringData *, EEUnicodeHashTableHelper, TRUE> EEUnicodeStringHashTable;
-
 
 class EEUnicodeStringLiteralHashTableHelper
 {
@@ -463,7 +418,6 @@ public:
     static void            DeleteEntry(EEHashEntry_t *pEntry, AllocationHeap Heap);
     static BOOL            CompareKeys(EEHashEntry_t *pEntry, EEStringData *pKey);
     static DWORD           Hash(EEStringData *pKey);
-    static void            ReplaceKey(EEHashEntry_t *pEntry, EEStringData *pNewKey);
 };
 
 typedef EEHashTable<EEStringData *, EEUnicodeStringLiteralHashTableHelper, TRUE> EEUnicodeStringLiteralHashTable;

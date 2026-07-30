@@ -13,6 +13,12 @@ namespace System
     {
         public static void Dragon4<TNumber>(TNumber value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
             where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+            => Dragon4(value, cutoffNumber, isSignificantDigits, ref number, out _);
+
+        // isExact reports whether the emitted digits represent the value exactly (no rounding error), which lets
+        // callers distinguish an exact short result from one whose rounding dropped trailing digits.
+        public static void Dragon4<TNumber>(TNumber value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number, out bool isExact)
+            where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
         {
             TNumber v = TNumber.IsNegative(value) ? -value : value;
 
@@ -27,7 +33,7 @@ namespace System
             if ((mantissa >> TNumber.DenormalMantissaBits) != 0)
             {
                 mantissaHighBitIdx = TNumber.DenormalMantissaBits;
-                hasUnequalMargins = (mantissa == (1U << TNumber.DenormalMantissaBits));
+                hasUnequalMargins = (mantissa == (1UL << TNumber.DenormalMantissaBits));
             }
             else
             {
@@ -35,7 +41,7 @@ namespace System
                 mantissaHighBitIdx = (uint)BitOperations.Log2(mantissa);
             }
 
-            int length = (int)(Dragon4(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits, number.Digits, out int decimalExponent));
+            int length = (int)(Dragon4(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits, number.Digits, out int decimalExponent, out isExact));
 
             number.Scale = decimalExponent + 1;
             number.Digits[length] = (byte)('\0');
@@ -54,7 +60,7 @@ namespace System
         //  "Printing Floating-Point Numbers Quickly and Accurately"
         //    Burger and Dybvig
         //    http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.72.4656&rep=rep1&type=pdf
-        private static uint Dragon4(ulong mantissa, int exponent, uint mantissaHighBitIdx, bool hasUnequalMargins, int cutoffNumber, bool isSignificantDigits, Span<byte> buffer, out int decimalExponent)
+        private static uint Dragon4(ulong mantissa, int exponent, uint mantissaHighBitIdx, bool hasUnequalMargins, int cutoffNumber, bool isSignificantDigits, Span<byte> buffer, out int decimalExponent, out bool isExact)
         {
             int curDigit = 0;
 
@@ -408,8 +414,12 @@ namespace System
                 curDigit++;
 
                 // return the number of digits output
+                isExact = scaledValue.IsZero();
                 return (uint)curDigit;
             }
+
+            // The value is captured exactly when no remainder is left; otherwise the final digit is rounded below.
+            isExact = scaledValue.IsZero();
 
             // round off the final digit
             // default to rounding down if value got too close to 0

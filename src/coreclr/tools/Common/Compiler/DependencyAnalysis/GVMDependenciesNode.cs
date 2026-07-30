@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
             Debug.Assert(method.HasInstantiation);
             Debug.Assert(method.IsVirtual);
-            Debug.Assert(MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method) == method);
+            Debug.Assert(MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method.GetMethodDefinition()) == method.GetMethodDefinition());
 
             _method = method;
         }
@@ -55,6 +55,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 yield return new DependencyListEntry(factory.TypeGVMEntries(_method.OwningType.GetTypeDefinition()), "Resolution metadata");
             }
+            yield return new DependencyListEntry(factory.AnalysisCharacteristic("GenericVirtualMethodsPresent"), "Runtime GVM resolution needed");
 #endif
         }
 
@@ -170,12 +171,18 @@ namespace ILCompiler.DependencyAnalysis
                                 }
                                 else
                                 {
-                                    dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(canonImpl), null, "ImplementingMethodInstantiation"));
+#if READYTORUN
+                                    if (!factory.CanBeInGenericCycle(canonImpl))
+#endif
+                                    {
+                                        dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(canonImpl), null, "ImplementingMethodInstantiation"));
+                                    }
                                 }
 
 #if !READYTORUN
                                 TypeSystemEntity origin = (implementingMethodInstantiation.OwningType != potentialOverrideType) ? potentialOverrideType : null;
                                 factory.MetadataManager.NoteOverridingMethod(_method, implementingMethodInstantiation, origin);
+                                factory.MetadataManager.GetDependenciesForOverridingMethod(ref dynamicDependencies, factory, _method, implementingMethodInstantiation);
 #endif
                             }
 
@@ -234,6 +241,7 @@ namespace ILCompiler.DependencyAnalysis
                             dynamicDependencies.Add(new CombinedDependencyListEntry(node, null, "DerivedMethodInstantiation"));
 #if !READYTORUN
                         factory.MetadataManager.NoteOverridingMethod(_method, instantiatedTargetMethod);
+                        factory.MetadataManager.GetDependenciesForOverridingMethod(ref dynamicDependencies, factory, _method, instantiatedTargetMethod);
 
                         foundImpl = true;
 #endif
@@ -265,15 +273,7 @@ namespace ILCompiler.DependencyAnalysis
             if (!factory.CompilationModuleGroup.ContainsMethodBody(method, false))
                 return null;
 
-            try
-            {
-                factory.DetectGenericCycles(method, method);
-                return factory.CompiledMethodNode(method);
-            }
-            catch (TypeSystemException)
-            {
-                return null;
-            }
+            return factory.CompiledMethodNode(method);
 #endif
         }
     }

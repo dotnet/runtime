@@ -134,7 +134,7 @@ namespace Microsoft.Extensions.Options.Generators
                         parents.Reverse();
 
                         results.Add(new ValidatorType(
-                            validatorType.ContainingNamespace.IsGlobalNamespace ? string.Empty : validatorType.ContainingNamespace.ToString()!,
+                            GetNamespace(validatorType),
                             GetMinimalFQN(validatorType),
                             GetMinimalFQNWithoutGenerics(validatorType),
                             keyword,
@@ -183,8 +183,20 @@ namespace Microsoft.Extensions.Options.Generators
                 _ => type.Keyword.ValueText,
             };
 
+        // The namespace flows into namespace declarations and "global::"-qualified references in the generated
+        // code, so keyword segments (e.g. a namespace named @class) must be escaped to keep the output compiling.
+        private static readonly SymbolDisplayFormat _namespaceDisplayFormat = new(
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
+            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers);
+
+        private static string GetNamespace(ITypeSymbol type)
+            => type.ContainingNamespace.IsGlobalNamespace ? string.Empty : type.ContainingNamespace.ToDisplayString(_namespaceDisplayFormat);
+
+        // AddMiscellaneousOptions must be used here rather than WithMiscellaneousOptions, which would replace
+        // the format's default options and drop EscapeKeywordIdentifiers, emitting keyword-named identifiers
+        // (e.g. a type declared as @class) unescaped into code that does not compile.
         private static string GetFQN(ISymbol type)
-            => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
+            => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
 
         private static string GetMinimalFQN(ISymbol type)
             => type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat.AddGenericsOptions(SymbolDisplayGenericsOptions.IncludeTypeParameters));
@@ -713,7 +725,7 @@ namespace Microsoft.Extensions.Options.Generators
             var validatorTypeName = "__" + mt.Name + "Validator__";
 
             var result = new ValidatorType(
-                mt.ContainingNamespace.IsGlobalNamespace ? string.Empty : mt.ContainingNamespace.ToString()!,
+                GetNamespace(mt),
                 validatorTypeName,
                 validatorTypeName,
                 "class",

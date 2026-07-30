@@ -8,9 +8,13 @@
 #include "dbginterface.h"
 #include "method.hpp"
 #include "peassembly.h"
+#include <errno.h>
 #include <clrconfignocache.h>
+#include <limits>
 #include <minipal/guid.h>
+#include <limits.h>
 #include <new>
+#include <stdlib.h>
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
@@ -88,6 +92,10 @@ GetCrashReportFrameLimitPerThread()
 }
 
 static void BuildTypeName(LPUTF8 buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
+static bool TryParseCrashReportConfigurationInteger(CLRConfigNoCache config, int minValue, int maxValue, int* value);
+// Parses configuration during CrashReportConfigure initialization. This is not
+// async-signal-safe and must not be called from the crash-reporting path.
+static int GetCrashReportTimeoutSeconds();
 
 static
 void
@@ -252,7 +260,8 @@ FrameCallbackAdapter(
 
     Module* pModule = pMD->GetModule();
 
-    uint32_t nativeOffset = pCF->HasFaulted() ? 0 : pCF->GetRelOffset();
+    bool canResolveOffsets = pCF->IsFrameless();
+    uint32_t nativeOffset = canResolveOffsets ? pCF->GetRelOffset() : 0;
     uint32_t ilOffset = 0;
     PCODE ip = (PCODE)0;
     TADDR stackPointer = (TADDR)0;
@@ -268,7 +277,7 @@ FrameCallbackAdapter(
         return SWA_CONTINUE;
     }
 
-    if (g_pDebugInterface != nullptr && pMD != nullptr)
+    if (g_pDebugInterface != nullptr && canResolveOffsets)
     {
         DWORD resolvedILOffset = 0;
         BOOL haveILOffset = FALSE;
@@ -587,9 +596,132 @@ CrashReportEnumerateThreads(
     }
 }
 
+static
+bool
+TryParseCrashReportConfigurationInteger(CLRConfigNoCache config, int minValue, int maxValue, int* value)
+{
+    _ASSERTE(minValue <= maxValue);
+    _ASSERTE(value != nullptr);
+
+    if (!config.IsSet())
+    {
+        return false;
+    }
+
+    const char* configString = config.AsString();
+    if (configString == nullptr)
+    {
+        return false;
+    }
+
+    errno = 0;
+    char* end = nullptr;
+    long parsedValue = strtol(configString, &end, 10);
+    if (end == configString ||
+        *end != '\0' ||
+        errno == ERANGE ||
+        parsedValue < minValue ||
+        parsedValue > maxValue)
+    {
+        return false;
+    }
+
+    *value = static_cast<int>(parsedValue);
+    return true;
+}
+
+// This runs during configuration, not from the crash signal path. maxFileCount
+// is a positive retention bound; values outside [1, INT32_MAX] fall back to the
+// default.
+static
+int32_t
+GetCrashReportMaxFileCount()
+{
+    int32_t maxFileCount = CRASHREPORT_DEFAULT_MAX_FILE_COUNT;
+
+    CLRConfigNoCache maxFileCountCfg = CLRConfigNoCache::Get("CrashReportMaxFileCount", /*noprefix*/ false, &getenv);
+    if (!maxFileCountCfg.IsSet())
+    {
+        return maxFileCount;
+    }
+
+    int configuredMaxFileCount;
+    if (TryParseCrashReportConfigurationInteger(maxFileCountCfg, 1, INT32_MAX, &configuredMaxFileCount))
+    {
+        maxFileCount = configuredMaxFileCount;
+    }
+    else
+    {
+        InProcCrashReportLogInitializationFailure(".NET crash report using default CrashReportMaxFileCount: invalid configured value");
+    }
+
+    return maxFileCount;
+}
+
+// Parses configuration during CrashReportConfigure initialization. This is not
+// async-signal-safe and must not be called from the crash-reporting path.
+// DOTNET_CrashReportTimeoutSeconds is a seconds-based watchdog knob: unset,
+// unparseable, negative, or out-of-range values use the default; 0 disables the
+// watchdog; and positive in-range values configure a fixed timeout. Use
+// CLRConfigNoCache so Android-hosted apps can set DOTNET_* values after PAL
+// initialization but before crash-report configuration.
+static int
+GetCrashReportTimeoutSeconds()
+{
+    // Keep the default conservative: successful reports can be large, while 0
+    // remains available to disable the watchdog for diagnostics.
+    static constexpr int DefaultTimeoutSeconds = 30;
+    static constexpr int TimeoutSecondsToMilliseconds = 1000;
+    static constexpr int MaxTimeoutSeconds = std::numeric_limits<int>::max() / TimeoutSecondsToMilliseconds;
+
+    int timeoutSeconds;
+    CLRConfigNoCache timeoutCfg = CLRConfigNoCache::Get("CrashReportTimeoutSeconds", /*noprefix*/ false, &getenv);
+    if (!TryParseCrashReportConfigurationInteger(timeoutCfg, 0, MaxTimeoutSeconds, &timeoutSeconds))
+    {
+        return DefaultTimeoutSeconds;
+    }
+
+    return timeoutSeconds;
+}
+
+static InProcCrashReporterSettings
+GetDefaultInProcCrashReporterSettings()
+{
+    InProcCrashReporterSettings settings = {};
+    settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
+    settings.walkStackCallback = CrashReportWalkStack;
+    settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
+    settings.moduleInfoCallback = CrashReportGetModuleInfo;
+    settings.frameLimitPerThread = GetCrashReportFrameLimitPerThread();
+    return settings;
+}
+
+void
+CrashReportInitialize()
+{
+    if (!EnsureCrashReportStackWalkerState())
+    {
+        InProcCrashReportLogInitializationFailure(".NET crash report disabled: failed to allocate stack walker storage");
+        return;
+    }
+
+    InProcCrashReporterSettings settings = GetDefaultInProcCrashReporterSettings();
+    InProcCrashReportInitialize(settings);
+}
+
 void
 CrashReportConfigure()
 {
+#if !defined(TARGET_ANDROID) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
+    // Preserve createdump's existing ownership of EnableCrashReport* when it is enabled.
+    CLRConfigNoCache enabledMiniDumpCfg = CLRConfigNoCache::Get("DbgEnableMiniDump", /*noprefix*/ false, &getenv);
+    DWORD miniDumpEnabled = 0;
+    if (enabledMiniDumpCfg.IsSet() && enabledMiniDumpCfg.TryAsInteger(10, miniDumpEnabled) && miniDumpEnabled != 0)
+    {
+        return;
+    }
+#endif // !defined(TARGET_ANDROID) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
+
     // Read crash report configuration here rather than in PROCAbortInitialize
     // because on Android the DOTNET_* environment variables are set via JNI
     // after PAL_Initialize has already run.
@@ -606,26 +738,26 @@ CrashReportConfigure()
         return;
     }
 
-    if (!EnsureCrashReportStackWalkerState())
+    CrashReportInitialize();
+
+    CLRConfigNoCache crashReportRootPathCfg = CLRConfigNoCache::Get("CrashReportRootPath", /*noprefix*/ false, &getenv);
+    const char* crashReportRootPath = crashReportRootPathCfg.IsSet() ? crashReportRootPathCfg.AsString() : nullptr;
+
+    InProcCrashReporterServicesSettings settings = {};
+    settings.enableCreateCrashDump = true;
+    if (crashReportRootPath != nullptr && crashReportRootPath[0] != '\0')
     {
-        InProcCrashReportLogInitializationFailure(".NET crash report disabled: failed to allocate stack walker storage");
-        return;
+        settings.enableLifecycle = true;
+        settings.reportRootPath = crashReportRootPath;
+        settings.maxFileCount = GetCrashReportMaxFileCount();
     }
 
-    CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
-    const char* dumpName = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
+    settings.enableWatchdog = true;
+    settings.timeoutSeconds = GetCrashReportTimeoutSeconds();
 
-    InProcCrashReporterSettings settings = {};
-    settings.reportPath = dumpName;
-    settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
-    settings.walkStackCallback = CrashReportWalkStack;
-    settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
-    settings.moduleInfoCallback = CrashReportGetModuleInfo;
-    settings.frameLimitPerThread = GetCrashReportFrameLimitPerThread();
-
-    // Initialize the reporter and register the PAL signal-path callback last
+    // Start the crash-dump services and register the PAL signal-path callback last
     // so PAL only observes the reporter after all VM callbacks are wired in.
-    InProcCrashReportInitialize(settings);
+    InProcCrashReportInitializeServices(settings);
 }
 
 #endif // FEATURE_INPROC_CRASHREPORT

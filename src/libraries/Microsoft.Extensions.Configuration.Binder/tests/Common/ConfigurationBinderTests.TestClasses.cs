@@ -196,6 +196,27 @@ namespace Microsoft.Extensions
             }
         }
 
+        public class ClassWithMatchingParametersAndProperties_DifferentlyCasedCtorParam
+        {
+            private readonly string _color;
+
+            public ClassWithMatchingParametersAndProperties_DifferentlyCasedCtorParam(string color, int length)
+            {
+                _color = color;
+                this.ColorFromCtor = color;
+                this.Length = length;
+            }
+
+            public int Length { get; set; }
+
+            public string ColorFromCtor { get; }
+            public string Color
+            {
+                get => _color;
+                init => _color = "the color is " + value;
+            }
+        }
+
         public sealed class TreeElement : Dictionary<string, TreeElement>;
 
         public record TypeWithRecursionThroughCollections
@@ -220,6 +241,70 @@ namespace Microsoft.Extensions
         }
 
         public record RecordWithArrayParameter(string[] Array);
+
+        public class GetterOnlyCollectionWithCaseMismatchedCtorParameter
+        {
+            public GetterOnlyCollectionWithCaseMismatchedCtorParameter(List<string> instances) => Instances = instances;
+            public List<string> Instances { get; }
+        }
+
+        public class SettableCollectionWithCaseMismatchedCtorParameter
+        {
+            public SettableCollectionWithCaseMismatchedCtorParameter(List<string> instances) => Instances = instances;
+            public List<string> Instances { get; set; }
+        }
+
+        public class GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter
+        {
+            public GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter(IList<string> instances) => Instances = instances;
+            public IList<string> Instances { get; }
+        }
+
+        public sealed class ContainerWithCtorCollectionChild
+        {
+            public GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter Child { get; set; }
+        }
+
+        public class ParamsCollectionCtor
+        {
+            public ParamsCollectionCtor(params List<string> instances) => Instances = instances;
+            public List<string> Instances { get; }
+        }
+
+        public sealed class SourceWithCollectionCtorParameters
+        {
+            public SourceWithCollectionCtorParameters(string Name, IEnumerable<string> Addresses, IList<int> Ints, string[] Strings)
+            {
+                this.Name = Name;
+                this.Addresses = Addresses;
+                this.Ints = Ints;
+                this.Strings = Strings;
+            }
+
+            public string Name { get; }
+            public IEnumerable<string> Addresses { get; }
+            public IList<int> Ints { get; }
+            public string[] Strings { get; }
+        }
+
+        public sealed class ClassWithInitOnlyCollectionNoCtorParam
+        {
+            public ClassWithInitOnlyCollectionNoCtorParam(int Number) => this.Number = Number;
+            public int Number { get; }
+            public List<string> Items { get; init; }
+        }
+
+        public sealed class ClassWithInitOnlyComplexNoCtorParam
+        {
+            public ClassWithInitOnlyComplexNoCtorParam(int Number) => this.Number = Number;
+            public int Number { get; }
+            public NestedForInitOnly Child { get; init; }
+        }
+
+        public sealed class NestedForInitOnly
+        {
+            public string Value { get; set; }
+        }
 
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 

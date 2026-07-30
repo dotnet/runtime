@@ -250,7 +250,7 @@ namespace Microsoft.Extensions.Configuration
                     continue;
                 }
 
-                if (constructorParameters is null || !constructorParameters.Any(p => p.Name == property.Name))
+                if (constructorParameters is null || !constructorParameters.Any(p => string.Equals(p.Name, property.Name, StringComparison.OrdinalIgnoreCase)))
                 {
                     BindProperty(property, instance, configuration, options);
                 }

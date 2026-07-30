@@ -490,6 +490,62 @@ namespace System.Formats.Tar.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        public async Task ExtractToFile_SparseEntry_ExpandsCorrectly(bool useAsync)
+        {
+            // Verifies extraction of a GNU sparse entry to a file produces the expanded
+            // content (data segments + zero-filled holes). Also exercises the code path
+            // in TarEntry.CreateFileStreamOptions where preallocation is intentionally
+            // skipped for sparse entries to avoid reserving disk space equal to the
+            // expanded (real) size — see https://github.com/dotnet/runtime/issues/128283.
+            const string RealName = "sparse-extract.bin";
+            const long RealSize = 4096;
+            var segments = new[] { (256L, 256L), (1024L, 256L), (3072L, 256L) };
+
+            var (archive, _) = BuildSparseArchive(RealName, RealSize, segments);
+            archive.Position = 0;
+
+            string destinationFile = GetTestFilePath();
+
+            using (var reader = new TarReader(archive))
+            {
+                TarEntry? entry = useAsync
+                    ? await reader.GetNextEntryAsync()
+                    : reader.GetNextEntry();
+                Assert.NotNull(entry);
+                Assert.Equal(RealSize, entry.Length);
+
+                if (useAsync)
+                {
+                    await entry.ExtractToFileAsync(destinationFile, overwrite: false);
+                }
+                else
+                {
+                    entry.ExtractToFile(destinationFile, overwrite: false);
+                }
+            }
+
+            byte[] extracted = File.ReadAllBytes(destinationFile);
+            Assert.Equal(RealSize, extracted.Length);
+            VerifyExpandedContent(extracted, RealSize, segments);
+
+            if (OperatingSystem.IsWindows())
+            {
+                string? root = Path.GetPathRoot(destinationFile);
+                Assert.NotNull(root);
+
+                if (new DriveInfo(root!).DriveFormat.Equals("NTFS", StringComparison.OrdinalIgnoreCase))
+                {
+                    // On Windows the sparse-aware extraction path marks the destination file with
+                    // FSCTL_SET_SPARSE. NTFS reflects this through the FileAttributes.SparseFile bit.
+                    Assert.True((File.GetAttributes(destinationFile) & FileAttributes.SparseFile) != 0,
+                        "Expected sparse extraction to mark the destination file as sparse on Windows/NTFS.");
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         public void GnuSparse10Pax_SparseBig_NameAndLength(bool copyData)
         {
             // pax-sparse-big: 6 segments scattered across a 60 GB virtual file, realsize=60000000000.

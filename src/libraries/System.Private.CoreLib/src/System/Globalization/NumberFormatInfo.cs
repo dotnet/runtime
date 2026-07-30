@@ -798,7 +798,7 @@ namespace System.Globalization
             return info;
         }
 
-        // private const NumberStyles InvalidNumberStyles = unchecked((NumberStyles) 0xFFFFFC00);
+        // private const NumberStyles InvalidNumberStyles = unchecked((NumberStyles) 0xFFFFF800);
         private const NumberStyles InvalidNumberStyles = ~(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite
                                                            | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign
                                                            | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint

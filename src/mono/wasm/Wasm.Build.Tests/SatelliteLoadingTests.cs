@@ -25,7 +25,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
     {
     }
 
-    [ConditionalTheory(typeof(BuildTestBase), nameof(IsMonoRuntime)), TestCategory("no-fingerprinting")]
+    [Theory, TestCategory("no-fingerprinting")]
     [InlineData(false)]
     [InlineData(true)]
     public async Task LoadSatelliteAssembly(bool loadAllSatelliteResources)
@@ -60,7 +60,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         );
     }
 
-    [ConditionalFact(typeof(BuildTestBase), nameof(IsMonoRuntime)), TestCategory("bundler-friendly")]
+    [Fact, TestCategory("bundler-friendly")]
     public async Task LoadSatelliteAssemblyFromReference()
     {
         Configuration config = Configuration.Release;

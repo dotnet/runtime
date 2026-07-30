@@ -81,6 +81,8 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/127786", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
+        // Assemblies are loaded from the wasm bundle with no backing file, so Module.FullyQualifiedName is "<Unknown>".
         [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void FullyQualifiedName()
         {
@@ -104,6 +106,8 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/127786", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
+        // Assemblies are loaded from the wasm bundle with no backing file, so Module.Name is "<Unknown>".
         [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Name()
         {
@@ -213,7 +217,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
         public void GetMethod_AmbiguousMatch()
         {
             var ex = Assert.Throws<AmbiguousMatchException>(() => TestModule.GetMethod("TestMethodFoo"));
@@ -222,7 +226,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
         public void GetMethod()
         {
             var method = TestModule.GetMethod("TestMethodFoo", Type.EmptyTypes);
@@ -239,7 +243,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
         public void GetMethods()
         {
             var methodNames = TestModule.GetMethods().Select(m => m.Name).ToArray();

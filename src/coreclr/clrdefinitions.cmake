@@ -1,6 +1,7 @@
 include(${CMAKE_CURRENT_LIST_DIR}/clrfeatures.cmake)
 
 add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>:DACCESS_COMPILE>)
+add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>:DBI_COMPILE>)
 
 if (CLR_CMAKE_TARGET_UNIX)
 
@@ -50,7 +51,12 @@ if(CLR_CMAKE_HOST_WIN32)
 endif(CLR_CMAKE_HOST_WIN32)
 
 if (NOT ((CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX) OR CLR_CMAKE_TARGET_ARCH_WASM))
+  set(FEATURE_METADATA_UPDATER 1)
   add_compile_definitions(FEATURE_METADATA_UPDATER)
+endif()
+
+if (FEATURE_TIERED_COMPILATION OR FEATURE_REJIT OR FEATURE_METADATA_UPDATER)
+  add_compile_definitions(FEATURE_CODE_VERSIONING)
 endif()
 if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_WIN32))
   add_compile_definitions(FEATURE_REMAP_FUNCTION)
@@ -69,7 +75,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DFEATURE_IJW) # C++/CLI managed/native interop support
 endif(CLR_CMAKE_TARGET_WIN32)
 
-add_definitions(-DFEATURE_BASICFREEZE)
 add_definitions(-DFEATURE_CORECLR)
 if(FEATURE_DBGIPC)
   add_definitions(-DFEATURE_DBGIPC_TRANSPORT_DI)
@@ -79,9 +84,14 @@ add_definitions(-DFEATURE_DEFAULT_INTERFACES)
 if(FEATURE_EVENT_TRACE)
     add_compile_definitions(FEATURE_EVENT_TRACE)
     add_definitions(-DFEATURE_PERFTRACING)
-else(FEATURE_EVENT_TRACE)
+elseif(FEATURE_PERFTRACING)
+    add_definitions(-DFEATURE_PERFTRACING)
+    if(CLR_CROSS_COMPONENTS_BUILD)
+        add_custom_target(eventing_headers)
+    endif()
+else()
     add_custom_target(eventing_headers) # add a dummy target to avoid checking for FEATURE_EVENT_TRACE in multiple places
-endif(FEATURE_EVENT_TRACE)
+endif()
 if(FEATURE_GDBJIT)
     add_definitions(-DFEATURE_GDBJIT)
 endif()
@@ -163,6 +173,10 @@ add_definitions(-DFEATURE_READYTORUN)
 
 set(FEATURE_READYTORUN 1)
 
+if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  add_compile_definitions(FEATURE_COLD_R2R_CODE)
+endif()
+
 if(FEATURE_REJIT)
   add_compile_definitions(FEATURE_REJIT)
 endif()
@@ -181,7 +195,6 @@ endif(NOT CLR_CMAKE_HOST_ANDROID AND NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_
 add_definitions(-DFEATURE_SYMDIFF)
 
 if (FEATURE_TIERED_COMPILATION)
-  add_compile_definitions(FEATURE_CODE_VERSIONING)
   add_compile_definitions(FEATURE_TIERED_COMPILATION)
 endif(FEATURE_TIERED_COMPILATION)
 

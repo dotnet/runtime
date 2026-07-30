@@ -61,12 +61,15 @@ internal sealed class PInvokeComparer : IEqualityComparer<PInvoke>
 
 internal sealed class PInvokeCollector {
     private readonly Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new();
-    private readonly Dictionary<Type, bool> _typeUnsupportedOnBrowserCache = new();
+    private readonly Dictionary<Type, bool> _typeUnsupportedOnPlatformCache = new();
+    private readonly Dictionary<Assembly, bool> _assemblyUnsupportedOnPlatformCache = new();
+    private readonly string _targetOS;
     private LogAdapter Log { get; init; }
 
-    public PInvokeCollector(LogAdapter log)
+    public PInvokeCollector(LogAdapter log, string targetOS)
     {
         Log = log;
+        _targetOS = targetOS;
     }
 
     public void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, HashSet<string> signatures, Type type)
@@ -104,6 +107,9 @@ internal sealed class PInvokeCollector {
         {
             if ((method.Attributes & MethodAttributes.PinvokeImpl) != 0)
             {
+                if (IsUnsupportedOnPlatform(method))
+                    return;
+
                 var dllimport = method.CustomAttributes.First(attr => attr.AttributeType.Name == "DllImportAttribute");
                 var wasmLinkage = method.CustomAttributes.Any(attr => attr.AttributeType.Name == "WasmImportLinkageAttribute");
                 var module = (string)dllimport.ConstructorArguments[0].Value!;
@@ -126,7 +132,7 @@ internal sealed class PInvokeCollector {
             if (!MethodHasCallbackAttributes(method))
                 return false;
 
-            if (IsUnsupportedOnBrowser(method.DeclaringType))
+            if (IsUnsupportedOnPlatform(method))
                 return false;
 
             if (TryIsMethodGetParametersUnsupported(method, out string? reason))
@@ -213,48 +219,100 @@ internal sealed class PInvokeCollector {
         return value;
     }
 
-    private bool IsUnsupportedOnBrowser(Type? type)
+    private bool IsUnsupportedOnPlatform(MethodInfo method)
+    {
+        PlatformSupport methodResult = EvaluatePlatformAttributes(CustomAttributeData.GetCustomAttributes(method));
+        if (methodResult == PlatformSupport.Unsupported)
+            return true;
+        if (methodResult == PlatformSupport.Supported)
+            return false;
+
+        return IsUnsupportedOnPlatform(method.DeclaringType);
+    }
+
+    private bool IsUnsupportedOnPlatform(Type? type)
     {
         if (type is null)
             return false;
 
-        if (!_typeUnsupportedOnBrowserCache.TryGetValue(type, out bool value))
+        if (_typeUnsupportedOnPlatformCache.TryGetValue(type, out bool cached))
+            return cached;
+
+        bool value;
+        PlatformSupport typeResult = EvaluatePlatformAttributes(CustomAttributeData.GetCustomAttributes(type));
+        if (typeResult == PlatformSupport.Unsupported)
+        {
+            value = true;
+        }
+        else if (typeResult == PlatformSupport.Supported)
         {
             value = false;
-            bool hasSupportedOSPlatform = false;
-            bool hasSupportedBrowser = false;
-            foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(type))
-            {
-                try
-                {
-                    if (cattr.AttributeType.FullName == "System.Runtime.Versioning.UnsupportedOSPlatformAttribute" &&
-                        cattr.ConstructorArguments.Count > 0 &&
-                        cattr.ConstructorArguments[0].Value?.ToString() == "browser")
-                    {
-                        value = true;
-                        break;
-                    }
-                    if (cattr.AttributeType.FullName == "System.Runtime.Versioning.SupportedOSPlatformAttribute" &&
-                        cattr.ConstructorArguments.Count > 0)
-                    {
-                        hasSupportedOSPlatform = true;
-                        if (cattr.ConstructorArguments[0].Value?.ToString() == "browser")
-                            hasSupportedBrowser = true;
-                    }
-                }
-                catch
-                {
-                    // Assembly not found, ignore
-                }
-            }
+        }
+        else if (type.DeclaringType is not null)
+        {
+            value = IsUnsupportedOnPlatform(type.DeclaringType);
+        }
+        else
+        {
+            value = IsAssemblyUnsupportedOnPlatform(type.Assembly);
+        }
 
-            if (!value && hasSupportedOSPlatform && !hasSupportedBrowser)
-                value = true;
+        _typeUnsupportedOnPlatformCache[type] = value;
+        return value;
+    }
 
-            _typeUnsupportedOnBrowserCache[type] = value;
+    private bool IsAssemblyUnsupportedOnPlatform(Assembly assembly)
+    {
+        if (!_assemblyUnsupportedOnPlatformCache.TryGetValue(assembly, out bool value))
+        {
+            PlatformSupport asmResult = EvaluatePlatformAttributes(assembly.GetCustomAttributesData());
+            value = asmResult == PlatformSupport.Unsupported;
+            _assemblyUnsupportedOnPlatformCache[assembly] = value;
         }
 
         return value;
+    }
+
+    private enum PlatformSupport
+    {
+        Unknown,     // No platform attributes were observed at this scope
+        Supported,   // Explicitly supported here (target appears in a SupportedOSPlatform list)
+        Unsupported, // Explicitly unsupported here (target matches UnsupportedOSPlatform, or
+                     // SupportedOSPlatform is present and does not list the target)
+    }
+
+    private PlatformSupport EvaluatePlatformAttributes(IList<CustomAttributeData> attrs)
+    {
+        bool hasSupportedOSPlatform = false;
+        bool hasSupportedTarget = false;
+        foreach (CustomAttributeData cattr in attrs)
+        {
+            try
+            {
+                if (cattr.AttributeType.FullName == "System.Runtime.Versioning.UnsupportedOSPlatformAttribute" &&
+                    cattr.ConstructorArguments.Count > 0 &&
+                    cattr.ConstructorArguments[0].Value?.ToString() == _targetOS)
+                {
+                    return PlatformSupport.Unsupported;
+                }
+                if (cattr.AttributeType.FullName == "System.Runtime.Versioning.SupportedOSPlatformAttribute" &&
+                    cattr.ConstructorArguments.Count > 0)
+                {
+                    hasSupportedOSPlatform = true;
+                    if (cattr.ConstructorArguments[0].Value?.ToString() == _targetOS)
+                        hasSupportedTarget = true;
+                }
+            }
+            catch
+            {
+                // Assembly not found, ignore
+            }
+        }
+
+        if (hasSupportedOSPlatform)
+            return hasSupportedTarget ? PlatformSupport.Supported : PlatformSupport.Unsupported;
+
+        return PlatformSupport.Unknown;
     }
 }
 
@@ -278,7 +336,14 @@ internal sealed class PInvokeCallback
         TypeFullName = t.FullName!;
         AssemblyName = t.Module!.Assembly!.GetName()!.Name!;
         AssemblyFQName = t.Module!.Assembly!.GetName()!.FullName!;
-        Namespace = t.Namespace;
+        // Nested types: the runtime reverse-thunk key (vm/wasm/helpers.cpp GetHashCode ->
+        // GetFullyQualifiedNameInfo) reports an empty namespace for nested types, so match that
+        // here or the emitted g_ReverseThunks key won't be found at lookup time (#130129).
+        // This key drops the enclosing-type chain, so nested types with the same simple name in
+        // different namespaces collide; the duplicate-key check in PInvokeTableGenerator
+        // (EmitNativeToInterp) turns that into a build error.
+        // Tracked by https://github.com/dotnet/runtime/issues/130739.
+        Namespace = t.IsNested ? string.Empty : t.Namespace;
         MethodName = method.Name!;
         ReturnType = method.ReturnType!;
         IsVoid = ReturnType.Name == "Void";

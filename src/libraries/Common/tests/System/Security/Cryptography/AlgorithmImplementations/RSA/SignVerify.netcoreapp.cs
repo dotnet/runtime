@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
-    public sealed class SignVerify_AllocatingSpan : SignVerify
+    public abstract class SignVerify_AllocatingSpan : SignVerify
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             rsa.SignData(new ReadOnlySpan<byte>(data), hashAlgorithm, padding);
@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             rsa.VerifyHash(new ReadOnlySpan<byte>(hash), (ReadOnlySpan<byte>)signature, hashAlgorithm, padding);
     }
 
-    public sealed class SignVerify_Span : SignVerify
+    public abstract class SignVerify_Span : SignVerify
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             WithOutputArray(dest => rsa.SignData(data, dest, hashAlgorithm, padding));
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
     }
 
-    public sealed class SignVerify_TrySpan : SignVerify
+    public abstract class SignVerify_TrySpan : SignVerify
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             TryWithOutputArray(dest => rsa.TrySignData(data, dest, hashAlgorithm, padding, out int bytesWritten) ? (true, bytesWritten) : (false, 0));
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void SignDefaultSpanHash()
+        public void SignDefaultSpanHash()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void VerifyDefaultSpanHash()
+        public void VerifyDefaultSpanHash()
         {
             using (RSA rsa = RSAFactory.Create())
             {

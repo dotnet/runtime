@@ -751,7 +751,6 @@ EXTERN_C void* QCALLTYPE RhRegisterFrozenSegment(void* pSection, size_t allocSiz
     ASSERT(allocSize <= commitSize);
     ASSERT(commitSize <= reservedSize);
 
-#ifdef FEATURE_BASICFREEZE
     segment_info seginfo;
 
     seginfo.pvMem = pSection;
@@ -761,9 +760,6 @@ EXTERN_C void* QCALLTYPE RhRegisterFrozenSegment(void* pSection, size_t allocSiz
     seginfo.ibReserved = reservedSize;
 
     return GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&seginfo);
-#else // FEATURE_BASICFREEZE
-    return NULL;
-#endif // FEATURE_BASICFREEZE
 }
 
 EXTERN_C void QCALLTYPE RhUpdateFrozenSegment(void* pSegmentHandle, uint8_t* allocated, uint8_t* committed)

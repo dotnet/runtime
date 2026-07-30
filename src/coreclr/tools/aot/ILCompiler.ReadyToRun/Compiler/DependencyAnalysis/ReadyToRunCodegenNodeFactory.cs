@@ -22,6 +22,8 @@ using Internal.ReadyToRunConstants;
 using ILCompiler.ReadyToRun.TypeSystem;
 using ILCompiler.ReadyToRun;
 
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+
 namespace ILCompiler.DependencyAnalysis
 {
     public struct NodeCache<TKey, TValue>
@@ -73,7 +75,7 @@ namespace ILCompiler.DependencyAnalysis
 
     // To make the code future compatible to the composite R2R story
     // do NOT attempt to pass and store _inputModule here
-    public sealed class NodeFactory
+    public sealed partial class NodeFactory
     {
         private bool _markingComplete;
 
@@ -143,9 +145,43 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<TypeDesc, InheritedVirtualMethodsNode> _inheritedVirtualMethods;
 
-        public InheritedVirtualMethodsNode InheritedVirtualMethods(TypeDesc type)
+        private InheritedVirtualMethodsNode InheritedVirtualMethods(TypeDesc type)
         {
-            return _inheritedVirtualMethods.GetOrAdd(type.ConvertToCanonForm(CanonicalFormKind.Specific));
+            return _inheritedVirtualMethods.GetOrAdd(type);
+        }
+
+        private NodeCache<ArrayType, ArrayInterfaceMethodsNode> _arrayInterfaceMethods;
+
+        public ArrayInterfaceMethodsNode ArrayInterfaceMethods(ArrayType arrayType)
+        {
+            return _arrayInterfaceMethods.GetOrAdd((ArrayType)arrayType.ConvertToCanonForm(CanonicalFormKind.Specific));
+        }
+
+        public void AddVirtualMethodDiscoveryDependencies(ref DependencyList dependencies, TypeDesc type)
+        {
+            if (CompilationCurrentPhase != 0)
+                return;
+
+            type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+            // We record the usage of this type, so that virtual method dependency analysis can resolve implementations.
+            // GVMDependenciesNode uses this for generic virtual methods (dynamic dependencies).
+            // InheritedVirtualMethodsNode uses conditional static dependencies for non-GVM virtual methods.
+            if (!type.IsGenericDefinition &&
+                !type.IsInterface &&
+                type.IsDefType &&
+                CompilationModuleGroup.VersionsWithType(type))
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(InheritedVirtualMethods(type), "Inherited virtual/interface methods on type");
+            }
+            // Arrays implement the generic collection interfaces through SZArrayHelper. Discover those
+            // implementations so that e.g. ((ICollection<int>)intArray).Count gets discovered.
+            else if (type.IsSzArray)
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(ArrayInterfaceMethods((ArrayType)type), "Array generic interface methods");
+            }
         }
 
         private NodeCache<MethodDesc, GVMDependenciesNode> _gvmDependenciesNode;
@@ -154,8 +190,19 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(method.IsVirtual);
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            MethodDesc canonSlotMethodDefinition = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(canonMethod.GetMethodDefinition());
+            return _gvmDependenciesNode.GetOrAdd(canonSlotMethodDefinition.MakeInstantiatedMethod(canonMethod.Instantiation));
+        }
+
+        private NodeCache<MethodDesc, VirtualMethodUseNode> _virtualMethodUseNodes;
+
+        public VirtualMethodUseNode VirtualMethodUse(MethodDesc method)
+        {
+            Debug.Assert(method.IsVirtual);
+            Debug.Assert(!method.HasInstantiation);
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             canonMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(canonMethod);
-            return _gvmDependenciesNode.GetOrAdd(canonMethod);
+            return _virtualMethodUseNodes.GetOrAdd(canonMethod);
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
@@ -208,7 +255,7 @@ namespace ILCompiler.DependencyAnalysis
                 Module = module;
             }
 
-            public bool Equals(ModuleAndIntValueKey other) => IntValue == other.IntValue && ((Module == null && other.Module == null) || Module.Equals(other.Module));
+            public bool Equals(ModuleAndIntValueKey other) => IntValue == other.IntValue && Module == other.Module;
             public override bool Equals(object obj) => obj is ModuleAndIntValueKey && Equals((ModuleAndIntValueKey)obj);
             public override int GetHashCode()
             {
@@ -288,6 +335,16 @@ namespace ILCompiler.DependencyAnalysis
             _gvmDependenciesNode = new NodeCache<MethodDesc, GVMDependenciesNode>(method =>
             {
                 return new GVMDependenciesNode(method);
+            });
+
+            _arrayInterfaceMethods = new NodeCache<ArrayType, ArrayInterfaceMethodsNode>(arrayType =>
+            {
+                return new ArrayInterfaceMethodsNode(arrayType);
+            });
+
+            _virtualMethodUseNodes = new NodeCache<MethodDesc, VirtualMethodUseNode>(method =>
+            {
+                return new VirtualMethodUseNode(method);
             });
 
             _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(helperKey =>
@@ -897,9 +954,12 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
-            DelayLoadMethodCallThunks = new SymbolNodeRange("DelayLoadMethodCallThunkNodeRange");
-            graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
+            if (!Target.IsWasm)
+            {
+                DelayLoadMethodCallThunks = new SymbolNodeRange("DelayLoadMethodCallThunkNodeRange");
+                graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
+            }
 
             ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ExceptionInfo, exceptionInfoLookupTableNode);
@@ -1272,6 +1332,15 @@ namespace ILCompiler.DependencyAnalysis
         public void DetectGenericCycles(TypeSystemEntity caller, TypeSystemEntity callee)
         {
             _genericCycleDetector?.DetectCycle(caller, callee);
+        }
+
+        public bool CanBeInGenericCycle(MethodDesc method)
+        {
+            if (_genericCycleDetector is null)
+                return false;
+
+            MethodDesc methodDefinition = method.GetTypicalMethodDefinition();
+            return _genericCycleDetector.CanBeInCycle(methodDefinition);
         }
 
         public Utf8String GetSymbolAlternateName(ISymbolNode node, out bool isHidden)

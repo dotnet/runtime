@@ -326,7 +326,7 @@ typedef DPTR(class MemberRef) PTR_MemberRef;
 
 
 // flag used to mark member ref pointers to field descriptors in the member ref cache
-#define IS_FIELD_MEMBER_REF ((TADDR)0x00000002)
+#define IS_FIELD_MEMBER_REF ((TADDR)0x00000002) // [cDAC] [Loader]: Contract depends on this value.
 
 
 //
@@ -354,8 +354,7 @@ struct VASigCookie
 template<>
 struct cdac_data<VASigCookie>
 {
-    static constexpr size_t SignaturePointer = offsetof(VASigCookie, signature) + offsetof(Signature, m_pSig);
-    static constexpr size_t SignatureLength = offsetof(VASigCookie, signature) + offsetof(Signature, m_cbSig);
+    static constexpr size_t Signature = offsetof(VASigCookie, signature);
 };
 
 //
@@ -694,6 +693,11 @@ private:
         RUNTIME_MARSHALLING_ENABLED = 0x00010000,
 
         SKIP_TYPE_VALIDATION = 0x00020000,
+
+        //If the RefSafetyRules >= v11 setting has been cached
+        REF_SAFETY_RULES_V11_IS_CACHED = 0x00040000,
+        //If this module opted into RefSafetyRules version 11 or above
+        REF_SAFETY_RULES_V11 = 0x00080000,
     };
 
     Volatile<DWORD>          m_dwTransientFlags;
@@ -881,6 +885,7 @@ protected:
 #endif
 
     PTR_PEAssembly GetPEAssembly() const { LIMITED_METHOD_DAC_CONTRACT; return m_pPEAssembly; }
+    PTR_VOID GetModuleBaseAddress() const { LIMITED_METHOD_DAC_CONTRACT; return m_baseAddress; }
 
     void ApplyMetaData();
 
@@ -1568,12 +1573,6 @@ protected:
 
 public:
     //-----------------------------------------------------------------------------------------
-    // Returns a BOOL to indicate if we have computed whether compiler has instructed us to
-    // wrap the non-CLS compliant exceptions or not.
-    //-----------------------------------------------------------------------------------------
-    BOOL                    IsRuntimeWrapExceptionsStatusComputed();
-
-    //-----------------------------------------------------------------------------------------
     // If true,  any non-CLSCompliant exceptions (i.e. ones which derive from something other
     // than System.Exception) are wrapped in a RuntimeWrappedException instance.  In other
     // words, they become compliant
@@ -1588,11 +1587,11 @@ public:
     //-----------------------------------------------------------------------------------------
     BOOL                    IsRuntimeMarshallingEnabled();
 
-    BOOL                    IsRuntimeMarshallingEnabledCached()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED_IS_CACHED);
-    }
+    //-----------------------------------------------------------------------------------------
+    // If true, this module opted into the ECMA-335 augment tied to RefSafetyRulesAttribute with a
+    // version of at least 11 (i.e. RefSafetyRulesAttribute(version) with version >= 11).
+    //-----------------------------------------------------------------------------------------
+    BOOL                    OptsIntoRefSafetyRulesV11();
 
 protected:
     // For reflection emit modules we set this flag when we emit the attribute, and always consider
@@ -1605,12 +1604,6 @@ protected:
 public:
 
     BOOL                    HasDefaultDllImportSearchPathsAttribute();
-
-    BOOL IsDefaultDllImportSearchPathsAttributeCached()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_dwPersistedFlags & DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED) != 0;
-    }
 
     ULONG DefaultDllImportSearchPathsAttributeCachedValue()
     {
@@ -1681,6 +1674,10 @@ private:
 protected:
     TADDR m_pDynamicMetadata;
 
+    // Incremented each time a module's metadata is updated.
+    // Indicates update to out-of-process readers.
+    uint32_t m_dwMetadataGeneration;
+
 public:
 #if !defined(DACCESS_COMPILE)
     PTR_Assembly GetNativeMetadataAssemblyRefFromCache(DWORD rid)
@@ -1711,6 +1708,7 @@ struct cdac_data<Module>
     static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
     static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
     static constexpr size_t DynamicMetadata = offsetof(Module, m_pDynamicMetadata);
+    static constexpr size_t MetadataGeneration = offsetof(Module, m_dwMetadataGeneration);
     static constexpr size_t SimpleName = offsetof(Module, m_pSimpleName);
     static constexpr size_t Path = offsetof(Module, m_path);
     static constexpr size_t FileName = offsetof(Module, m_fileName);
@@ -1728,6 +1726,9 @@ struct cdac_data<Module>
     static constexpr size_t MethodDefToILCodeVersioningStateMap = offsetof(Module, m_ILCodeVersioningStateMap);
 #endif // FEATURE_CODE_VERSIONING
     static constexpr size_t DynamicILBlobTable = offsetof(Module, m_debuggerSpecificData.m_pDynamicILBlobTable);
+#ifdef FEATURE_METADATA_UPDATER
+    static constexpr size_t EnCClassList = offsetof(Module, m_ClassList);
+#endif // FEATURE_METADATA_UPDATER
 };
 
 //

@@ -14,6 +14,21 @@ namespace Internal.JitInterface
 {
     public static partial class WasmLowering
     {
+        public static MethodSignature GetStringCtorActualSignature(MethodSignature signature)
+        {
+            Debug.Assert(signature.Context.GetWellKnownType(WellKnownType.String).GetMethod(".ctor"u8, signature) != null);
+            Debug.Assert(signature.GenericParameterCount == 0);
+            Debug.Assert(signature.Flags == 0);
+
+            TypeDesc[] arguments = new TypeDesc[signature.Length];
+            for (int i = 0; i < signature.Length; i++)
+            {
+                arguments[i] = signature[i];
+            }
+
+            return new MethodSignature(MethodSignatureFlags.Static, 0, signature.Context.GetWellKnownType(WellKnownType.String), arguments);
+        }
+
         // The Wasm "basic C ABI" passes structs that contain one
         // primitive field as that primitive field.
         //
@@ -23,6 +38,12 @@ namespace Internal.JitInterface
 
         public static TypeDesc LowerToAbiType(TypeDesc type)
         {
+            // Vector128<T> and a 128-bit Vector<T> are wasm v128 ABI primitives passed by value.
+            if (IsWasmV128Type(type))
+            {
+                return type;
+            }
+
             if (!(type.IsValueType && !type.IsPrimitive))
             {
                 return type;
@@ -50,6 +71,10 @@ namespace Internal.JitInterface
 
                 if (numIntroducedFields != 1)
                 {
+                    // Multi-field aggregates (including a homogeneous 2x v128) use the generic by-ref
+                    // struct ABI; the wasm C ABI has no HFA/HVA concept. Only emscripten's opt-in
+                    // experimental multivalue ABI expands these into per-field registers, which we
+                    // don't target.
                     return null;
                 }
 
@@ -63,6 +88,13 @@ namespace Internal.JitInterface
 
                 type = firstFieldElementType;
 
+                // A single-field wrapper struct around a v128 lowers to the v128 primitive, matching
+                // emscripten, which passes a struct wrapping a v128 as a v128.
+                if (IsWasmV128Type(type))
+                {
+                    return type;
+                }
+
                 if (type.IsValueType && !type.IsPrimitive)
                 {
                     continue;
@@ -72,9 +104,50 @@ namespace Internal.JitInterface
             }
         }
 
+        /// <summary>
+        /// Determines whether a type is passed and returned by value as a wasm <c>v128</c>, matching
+        /// the SIMD types the JIT recognizes as <c>TYP_SIMD16</c> on wasm. This is
+        /// <see cref="System.Runtime.Intrinsics.Vector128{T}"/> and a 128-bit
+        /// <see cref="System.Numerics.Vector{T}"/>, in both cases only when <c>T</c> is a supported
+        /// primitive numeric base type. Other SIMD types (Vector2/3/4, Vector64/256/512&lt;T&gt;, ...)
+        /// and non-primitive instantiations (e.g. the shared <c>__Canon</c> form) are not ABI
+        /// primitives and continue to use the generic struct ABI.
+        /// </summary>
+        private static bool IsWasmV128Type(TypeDesc type)
+        {
+            if (!type.IsIntrinsic ||
+                type.Instantiation.Length != 1 ||
+                !VectorFieldLayoutAlgorithm.IsSupportedVectorBaseType(type.Instantiation[0]))
+            {
+                return false;
+            }
+
+            // Vector128<T> is always a 16-byte v128.
+            //
+            // Vector<T> is target-sized, so it is only a v128 when the target's maximum SIMD width is
+            // 128-bit (i.e. it is exactly 16 bytes). This matches the JIT recognizing it as TYP_SIMD16
+            // via getVectorTByteLength() and keeps the ABI correct should wasm later gain wider vectors.
+            bool isV128 = Internal.TypeSystem.Interop.InteropTypes.IsSystemRuntimeIntrinsicsVector128T(type.Context, type) ||
+                          (type is DefType vectorOfT &&
+                           VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(vectorOfT) &&
+                           type.GetElementSize().AsInt == 16);
+
+            // The wasm ABI gives every v128 a 16-byte aligned argument slot, so a smaller metadata
+            // alignment would silently misplace it relative to the runtime's own ArgIterator layout.
+            Debug.Assert(!isV128 || ((DefType)type).InstanceFieldAlignment.AsInt == 16,
+                $"v128 type {type} must be 16-byte aligned");
+
+            return isV128;
+        }
+
         public static WasmValueType LowerType(TypeDesc type)
         {
             WasmValueType pointerType = (type.Context.Target.PointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
+
+            if (IsWasmV128Type(type))
+            {
+                return WasmValueType.V128;
+            }
 
             TypeDesc abiType = LowerToAbiType(type);
 
@@ -150,7 +223,7 @@ namespace Internal.JitInterface
             'l' => context.GetWellKnownType(WellKnownType.Int64),
             'f' => context.GetWellKnownType(WellKnownType.Single),
             'd' => context.GetWellKnownType(WellKnownType.Double),
-            'V' => throw new NotSupportedException("SIMD types are not supported in this version of the compiler"),
+            'V' => ((CompilerTypeSystemContext)context).WasmV128Type,
             _ => throw new InvalidOperationException($"Unknown signature char: {c}")
         };
 
@@ -190,10 +263,34 @@ namespace Internal.JitInterface
                 pos++;
             }
 
-            // Parse parameters (everything until 'p' suffix or end of string)
             List<TypeDesc> parameters = new List<TypeDesc>();
             bool hasThis = false;
+            bool isAsyncCall = false;
+            bool hasGenericContextBeforeAsync = false;
 
+            if (pos < sig.Length && sig[pos] == 'T')
+            {
+                hasThis = true;
+                pos++;
+            }
+
+            // A generic context precedes the async marker in the Wasm ABI; it is encoded with the
+            // hidden-pointer char (matching the encode side), i32 on wasm32 and i64 on wasm64.
+            char hiddenParamChar = (context.Target.PointerSize == 4) ? 'i' : 'l';
+            if ((pos + 1 < sig.Length) && (sig[pos] == hiddenParamChar) && (sig[pos + 1] == 'a'))
+            {
+                hasGenericContextBeforeAsync = true;
+                parameters.Add(RaiseSigChar(sig[pos], context));
+                pos++;
+            }
+
+            if (pos < sig.Length && sig[pos] == 'a')
+            {
+                isAsyncCall = true;
+                pos++;
+            }
+
+            // Parse explicit parameters (everything until the portable-entrypoint suffix or end of string).
             while (pos < sig.Length && sig[pos] != 'p')
             {
                 char c = sig[pos];
@@ -234,9 +331,16 @@ namespace Internal.JitInterface
 
             MethodSignature result = new MethodSignature(flags, 0, returnType, parameters.ToArray());
 
-            WasmSignature roundtripped = GetSignature(result, LoweringFlags.None);
-            Debug.Assert(roundtripped.Equals(wasmSignature),
-                $"RaiseSignature roundtrip failed: input='{wasmSignature.SignatureString}', roundtripped='{roundtripped.SignatureString}'");
+            WasmSignature roundtripped = GetSignature(result, isAsyncCall ? LoweringFlags.IsAsyncCall : LoweringFlags.None);
+            string roundtrippedStr = roundtripped.SignatureString;
+            if (hasGenericContextBeforeAsync && isAsyncCall)
+            {
+                // The roundtrip re-encodes the generic context as a leading parameter, so it emits the
+                // async marker before the hidden-pointer char; swap them back to match the input ordering.
+                roundtrippedStr = roundtrippedStr.Replace($"a{hiddenParamChar}", $"{hiddenParamChar}a");
+            }
+            Debug.Assert(roundtrippedStr.Equals(wasmSignature.SignatureString, StringComparison.Ordinal),
+                $"RaiseSignature roundtrip failed: input='{wasmSignature.SignatureString}', roundtripped='{roundtrippedStr}'");
 
             return result;
         }
@@ -381,7 +485,7 @@ namespace Internal.JitInterface
             if (flags.HasFlag(LoweringFlags.IsAsyncCall))
             {
                 result.Add(pointerType); // async continuation
-                sigBuilder.Append(hiddenParamChar);
+                sigBuilder.Append('a');
             }
 
             for (int i = explicitThis ? 1 : 0; i < signature.Length; i++)
@@ -408,7 +512,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    WasmValueType paramWasmType = LowerType(paramType);
+                    WasmValueType paramWasmType = LowerType(loweredParamType);
                     sigBuilder.Append(WasmValueTypeToSigChar(paramWasmType));
                     result.Add(paramWasmType);
                 }

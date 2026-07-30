@@ -34,6 +34,10 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual IThread Thread => GetContract<IThread>();
     /// <summary>
+    /// Gets an instance of the WindowsErrorReporting contract for the target.
+    /// </summary>
+    public virtual IWindowsErrorReporting WindowsErrorReporting => GetContract<IWindowsErrorReporting>();
+    /// <summary>
     /// Gets an instance of the RuntimeTypeSystem contract for the target.
     /// </summary>
     public virtual IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IRuntimeTypeSystem>();
@@ -53,6 +57,10 @@ public abstract class ContractRegistry
     /// Gets an instance of the PlatformMetadata contract for the target.
     /// </summary>
     public virtual IPlatformMetadata PlatformMetadata => GetContract<IPlatformMetadata>();
+    /// <summary>
+    /// Gets an instance of the FeatureFlags contract for the target.
+    /// </summary>
+    public virtual IFeatureFlags FeatureFlags => GetContract<IFeatureFlags>();
     /// <summary>
     /// Gets an instance of the PrecodeStubs contract for the target.
     /// </summary>
@@ -93,6 +101,10 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual INotifications Notifications => GetContract<INotifications>();
     /// <summary>
+    /// Gets an instance of the CallingConvention contract for the target.
+    /// </summary>
+    public virtual ICallingConvention CallingConvention => GetContract<ICallingConvention>();
+    /// <summary>
     /// Gets an instance of the CodeNotifications contract for the target.
     /// </summary>
     public virtual ICodeNotifications CodeNotifications => GetContract<ICodeNotifications>();
@@ -128,6 +140,15 @@ public abstract class ContractRegistry
     /// Gets an instance of the Debugger contract for the target.
     /// </summary>
     public virtual IDebugger Debugger => GetContract<IDebugger>();
+    /// <summary>
+    /// Gets an instance of the StressLog contract for the target.
+    /// </summary>
+    public virtual IStressLog StressLog => GetContract<IStressLog>();
+
+    /// <summary>
+    /// Gets an instance of the RuntimeMutableTypeSystem contract for the target.
+    /// </summary>
+    public virtual IRuntimeMutableTypeSystem RuntimeMutableTypeSystem => GetContract<IRuntimeMutableTypeSystem>();
 
     /// <summary>
     /// Attempts to get an instance of the requested contract for the target.
@@ -136,19 +157,19 @@ public abstract class ContractRegistry
     /// <param name="contract">
     /// When this method returns <see langword="true"/>, contains the requested contract instance; otherwise, <see langword="null"/>.
     /// </param>
-    /// <param name="failureReason">
-    /// When this method returns <see langword="false"/>, contains a human-readable explanation of why the contract could not be retrieved; otherwise, <see langword="null"/>.
+    /// <param name="failureException">
+    /// When this method returns <see langword="false"/>, contains the exception that describes why the contract could not be retrieved; otherwise, <see langword="null"/>.
     /// </param>
     /// <returns>
     /// <see langword="true"/> if the requested contract is present and was retrieved successfully; <see langword="false"/> if the contract is not present or registered"/>.
     /// </returns>
-    public abstract bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, out string? failureReason) where TContract : IContract;
+    public abstract bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, [NotNullWhen(false)] out System.Exception? failureException) where TContract : IContract;
 
     public TContract GetContract<TContract>() where TContract : IContract
     {
-        if (!TryGetContract(out TContract contract, out string? failureReason))
+        if (!TryGetContract(out TContract contract, out System.Exception? failureException))
         {
-            throw new NotImplementedException($"Contract '{typeof(TContract).Name}' is not supported by the target. Reason: {failureReason ?? "no reason provided"}");
+            throw failureException ?? new ContractMissingException(TContract.Name);
         }
         return contract;
     }
@@ -159,6 +180,31 @@ public abstract class ContractRegistry
     }
 
     /// <summary>
+    /// Determines whether this cDAC can provide the requested contract for the target. Implementations
+    /// should resolve the target-advertised version against the registered implementations only, without
+    /// instantiating the contract, so that validation performs no target memory reads (safe on partial or
+    /// triage dumps) and never triggers contract-to-contract chaining.
+    /// </summary>
+    /// <typeparam name="TContract">The contract type to validate.</typeparam>
+    /// <param name="failureException">
+    /// When this method returns <see langword="false"/>, contains the exception describing why the
+    /// contract cannot be provided; otherwise, <see langword="null"/>.
+    /// </param>
+    /// <returns>
+    /// <see langword="true"/> if the contract is advertised by the target and a matching implementation
+    /// is registered; otherwise, <see langword="false"/>.
+    /// </returns>
+    /// <remarks>
+    /// The default implementation delegates to <see cref="TryGetContract{TContract}(out TContract, out System.Exception?)"/>,
+    /// which instantiates the contract and therefore does read target memory. Registries that need the
+    /// no-instantiation guarantee above must override this method (<c>CachingContractRegistry</c> does).
+    /// </remarks>
+    public virtual bool TryValidate<TContract>([NotNullWhen(false)] out System.Exception? failureException) where TContract : IContract
+    {
+        return TryGetContract<TContract>(out _, out failureException);
+    }
+
+    /// <summary>
     /// Register a contract implementation for a specific version.
     /// External packages use this to add contract versions or entirely new contract interfaces.
     /// </summary>
@@ -166,8 +212,15 @@ public abstract class ContractRegistry
         where TContract : IContract;
 
     /// <summary>
-    /// Flush all cached data held by contracts in this registry.
-    /// Called when the target process state may have changed (e.g. on resume).
+    /// Register a contract version that is recognized but intentionally not implemented.
     /// </summary>
-    public abstract void Flush();
+    public abstract void RegisterUnsupported<TContract>(string version)
+        where TContract : IContract;
+
+    /// <summary>
+    /// Flush all cached data held by contracts in this registry for the given
+    /// <paramref name="scope"/>. Called when the target process state may have changed
+    /// (e.g. on resume) or as part of a stress-harness re-read of live target state.
+    /// </summary>
+    public abstract void Flush(FlushScope scope);
 }

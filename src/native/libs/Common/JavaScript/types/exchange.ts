@@ -12,7 +12,7 @@ import type { instantiateWasm, installVfsFile, registerDllBytes, loadIcuData, re
 import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../loader/promise-completion-source";
 import type { fetchSatelliteAssemblies, fetchLazyAssembly } from "../loader/assets";
 
-import type { isSharedArrayBuffer, viewOrCopy, zeroRegion } from "../../../System.Native.Browser/utils/memory";
+import type { arrayBufferNeedsCopy, viewOrCopy, zeroRegion } from "../../../System.Native.Browser/utils/memory";
 import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8, stringToUTF8Ptr, utf16ToString, utf8ToStringRelaxed } from "../../../System.Native.Browser/utils/strings";
 import type { abortPosix, getExitStatus } from "../../../System.Native.Browser/utils/host";
 import type { abortBackgroundTimers, runBackgroundTimers } from "../../../System.Native.Browser/utils/scheduling";
@@ -26,6 +26,7 @@ import type { abortInteropTimers } from "../../../System.Runtime.InteropServices
 import type { installNativeSymbols, symbolicateStackTrace } from "../../../System.Native.Browser/diagnostics/symbolicate";
 import type { SystemJS_ScheduleDiagnosticServer } from "../../../System.Native.Browser/native";
 import type { ds_rt_websocket_close, ds_rt_websocket_create, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_send } from "../../../System.Native.Browser/diagnostics/diagnostic-server";
+import type { ds_rt_browser_performance_measure } from "../../../System.Native.Browser/diagnostics/browser-profiler";
 
 
 type getWasmMemoryType = () => WebAssembly.Memory;
@@ -149,12 +150,14 @@ export type NativeBrowserExports = {
     getWasmMemory: getWasmMemoryType,
     getWasmTable: getWasmTableType,
     SystemJS_ScheduleDiagnosticServer: typeof SystemJS_ScheduleDiagnosticServer,
+    SystemJS_GetMethodName: EmsAmbientSymbolsType["_SystemJS_GetMethodName"],
 }
 
 export type NativeBrowserExportsTable = [
     getWasmMemoryType,
     getWasmTableType,
     typeof SystemJS_ScheduleDiagnosticServer,
+    EmsAmbientSymbolsType["_SystemJS_GetMethodName"],
 ]
 
 export type BrowserUtilsExports = {
@@ -165,7 +168,7 @@ export type BrowserUtilsExports = {
     stringToUTF8: typeof stringToUTF8,
     utf8ToStringRelaxed: typeof utf8ToStringRelaxed,
     zeroRegion: typeof zeroRegion,
-    isSharedArrayBuffer: typeof isSharedArrayBuffer,
+    arrayBufferNeedsCopy: typeof arrayBufferNeedsCopy,
     viewOrCopy: typeof viewOrCopy,
     abortBackgroundTimers: typeof abortBackgroundTimers,
     abortPosix: typeof abortPosix,
@@ -181,7 +184,7 @@ export type BrowserUtilsExportsTable = [
     typeof stringToUTF8,
     typeof utf8ToStringRelaxed,
     typeof zeroRegion,
-    typeof isSharedArrayBuffer,
+    typeof arrayBufferNeedsCopy,
     typeof viewOrCopy,
     typeof abortBackgroundTimers,
     typeof abortPosix,
@@ -197,6 +200,7 @@ export type DiagnosticsExportsTable = [
     typeof ds_rt_websocket_poll,
     typeof ds_rt_websocket_recv,
     typeof ds_rt_websocket_close,
+    typeof ds_rt_browser_performance_measure,
 ]
 
 export type DiagnosticsExports = {
@@ -207,4 +211,5 @@ export type DiagnosticsExports = {
     ds_rt_websocket_poll: typeof ds_rt_websocket_poll,
     ds_rt_websocket_recv: typeof ds_rt_websocket_recv,
     ds_rt_websocket_close: typeof ds_rt_websocket_close,
+    ds_rt_browser_performance_measure: typeof ds_rt_browser_performance_measure,
 }

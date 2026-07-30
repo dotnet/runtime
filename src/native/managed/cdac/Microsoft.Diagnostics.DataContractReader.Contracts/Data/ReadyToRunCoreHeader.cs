@@ -9,19 +9,18 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ReadyToRunCoreHeader))]
 internal sealed partial class ReadyToRunCoreHeader : IData<ReadyToRunCoreHeader>
 {
-    [Field] public uint NumberOfSections { get; }
-
+    [Field] public partial uint NumberOfSections { get; }
     public IReadOnlyList<ReadyToRunSection> Sections { get; private set; } = [];
 
     [MemberNotNull(nameof(Sections))]
     partial void OnInit(Target target, TargetPointer address)
     {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunCoreHeader);
-        Target.TypeInfo sectionType = target.GetTypeInfo(DataType.ReadyToRunSection);
+        uint headerSize = GetSize(target);
+        uint sectionSize = ReadyToRunSection.GetSize(target);
         List<ReadyToRunSection> sections = new((int)NumberOfSections);
         for (int i = 0; i < NumberOfSections; i++)
         {
-            TargetPointer sectionAddress = address + (ulong)(type.Size!.Value + i * sectionType.Size!.Value);
+            TargetPointer sectionAddress = address + headerSize + (ulong)i * sectionSize;
             sections.Add(target.ProcessedData.GetOrAdd<ReadyToRunSection>(sectionAddress));
         }
 

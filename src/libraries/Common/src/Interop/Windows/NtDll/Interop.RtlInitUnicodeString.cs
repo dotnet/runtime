@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class NtDll
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.NtDll)]
         internal static partial void RtlInitUnicodeString(out UNICODE_STRING result, IntPtr s);
     }

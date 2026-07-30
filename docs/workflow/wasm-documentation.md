@@ -97,7 +97,7 @@ See the [Building for WebAssembly](#building-for-webassembly) section above for 
 
 ### How do I test Wasm changes end to end?
 
-Use Wasm.Build.Tests or Wasi.Build.Tests. See the [Wasm.Build.Tests README](../../src/mono/wasm/Wasm.Build.Tests/README.md) for detailed instructions.
+Use Wasm.Build.Tests for browser scenarios. For WASI scenarios, validate against a sample app under `src/mono/sample/wasi`.
 
 ### How do I enable multi-threading?
 

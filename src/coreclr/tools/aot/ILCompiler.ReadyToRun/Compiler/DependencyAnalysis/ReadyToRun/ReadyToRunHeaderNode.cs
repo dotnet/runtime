@@ -192,8 +192,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB, rvaDelta);
 
                 // The header entry for the runtime functions table should not include the 4 byte 0xffffffff sentinel
-                // value in the covered range.
-                int delta = item.Id == ReadyToRunSectionType.RuntimeFunctions ? RuntimeFunctionsTableNode.SentinelSizeAdjustment : 0;
+                // value in the covered range. For WASM, also excludes the trailing min table index.
+                int delta = item.Id == ReadyToRunSectionType.RuntimeFunctions ? factory.RuntimeFunctionsTable.SentinelSizeAdjustment : 0;
                 builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_SYMBOL_SIZE, delta);
 
                 count++;

@@ -1054,7 +1054,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     assert((ig->igFlags & IGF_PLACEHOLDER) == 0);
     ig->igData = id;
-    INDEBUG(ig->igDataSize = gs;)
+    INDEBUG(ig->igDataSize = sz;)
 
     memcpy(id, emitCurIGfreeBase, sz);
 
@@ -1076,6 +1076,10 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     ig->igInsCnt = (BYTE)emitCurIGinsCnt;
     ig->igSize   = (unsigned short)emitCurIGsize;
+    if (ig->igSize != 0)
+    {
+        emitLastSavedIGWasNoGC = (ig->igFlags & IGF_NOGCINTERRUPT) != 0;
+    }
     emitCurCodeOffset += emitCurIGsize;
     assert(IsCodeAligned(emitCurCodeOffset));
 
@@ -1372,6 +1376,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitFwdJumps                       = false;
     emitNoGCRequestCount               = 0;
     emitNoGCIG                         = false;
+    emitLastSavedIGWasNoGC             = false;
     emitForceNewIG                     = false;
     emitContainsRemovableJmpCandidates = false;
 
@@ -2012,16 +2017,10 @@ void emitter::emitCheckIGList()
 
 void emitter::emitBegProlog()
 {
-    assert(m_compiler->compGeneratingProlog);
-
 #if EMIT_TRACK_STACK_DEPTH
-
     /* Don't measure stack depth inside the prolog, it's misleading */
-
     emitCntStackDepth = 0;
-
     assert(emitCurStackLvl == 0);
-
 #endif
 
     emitNoGCRequestCount = 1;
@@ -2045,12 +2044,13 @@ void emitter::emitBegProlog()
 /*****************************************************************************
  *
  *  Mark the code offset of the current location as the end of the prolog,
- *  so it can be used later to compute the actual size of the prolog.
+ *  so it can be used later to compute the actual size of the prolog for
+ *  GCInfo purposes. We may still generate more code into "prolog" IGs.
  */
 
 void emitter::emitMarkPrologEnd()
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(emitGeneratingPrologOrFuncletProlog());
     emitPrologEndPos.CaptureLocation(this);
 }
 
@@ -2061,7 +2061,7 @@ void emitter::emitMarkPrologEnd()
 
 void emitter::emitEndProlog()
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(emitGeneratingPrologOrFuncletProlog());
 
     emitNoGCRequestCount = 0;
     emitNoGCIG           = false;
@@ -2195,6 +2195,7 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
     // increment emitCurCodeOffset since we are not calling emitNewIG()
     //
     emitCurIGsize += MAX_PLACEHOLDER_IG_SIZE;
+    emitLastSavedIGWasNoGC = true;
     emitCurCodeOffset += emitCurIGsize;
 
     // Add the appropriate IP mapping debugging record for this placeholder
@@ -2364,6 +2365,16 @@ void emitter::emitFinishPrologEpilogGeneration()
     /* We should not generate any more code after this */
 
     emitCurIG = nullptr;
+}
+
+bool emitter::emitGeneratingPrologOrFuncletProlog() const
+{
+    return emitIGisInProlog(emitCurIG) || emitIGisInFuncletProlog(emitCurIG);
+}
+
+bool emitter::emitGeneratingEpilogOrFuncletEpilog() const
+{
+    return emitIGisInEpilog(emitCurIG) || emitIGisInFuncletEpilog(emitCurIG);
 }
 
 /*****************************************************************************
@@ -2612,7 +2623,7 @@ bool emitter::emitHasEpilogEnd()
 
 void emitter::emitStartExitSeq()
 {
-    assert(m_compiler->compGeneratingEpilog);
+    assert(emitGeneratingEpilogOrFuncletEpilog());
 
     emitExitSeqBegLoc.CaptureLocation(this);
 }
@@ -2631,7 +2642,7 @@ void emitter::emitStartExitSeq()
 
 void emitter::emitSetFrameRangeGCRs(int offsLo, int offsHi)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(emitGeneratingPrologOrFuncletProlog());
     assert(offsHi > offsLo);
 
 #ifdef DEBUG
@@ -3106,8 +3117,10 @@ void emitter::emitSplit(emitLocation*         startLoc,
         // IGs are marked as prolog or epilog. We don't actually know if two adjacent
         // IGs are part of the *same* prolog or epilog, so we have to assume they are.
 
-        if (igPrev && (((igPrev->igFlags & IGF_FUNCLET_PROLOG) && (ig->igFlags & IGF_FUNCLET_PROLOG)) ||
-                       ((igPrev->igFlags & IGF_EPILOG) && (ig->igFlags & IGF_EPILOG))))
+        if (igPrev && (((igPrev->igFlags & IGF_PROLOG) && (ig->igFlags & IGF_PROLOG)) ||
+                       ((igPrev->igFlags & IGF_EPILOG) && (ig->igFlags & IGF_EPILOG)) ||
+                       ((igPrev->igFlags & IGF_FUNCLET_PROLOG) && (ig->igFlags & IGF_FUNCLET_PROLOG)) ||
+                       ((igPrev->igFlags & IGF_FUNCLET_EPILOG) && (ig->igFlags & IGF_FUNCLET_EPILOG))))
         {
             // We can't update the candidate
         }
@@ -5530,8 +5543,8 @@ AGAIN:
 #elif defined(TARGET_RISCV64)
         assert((sizeDif == 0) || (sizeDif == 4) || (sizeDif == 8));
 #elif defined(TARGET_WASM)
-        // TODO-WASM: likely the whole thing needs to be made unreachable.
-        NYI_WASM("emitJumpDistBind");
+        // We should never call emitJumpDistBind() for wasm, as wasm has no variable-length jumps.
+        unreached();
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -7677,7 +7690,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
 #elif defined(TARGET_WASM)
-                    NYI_WASM("Short jump distance adjustment");
+                    unreached();
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -7693,7 +7706,7 @@ unsigned emitter::emitEndCodeGen(Compiler*             comp,
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
 #elif defined(TARGET_WASM)
-                    NYI_WASM("Jump distance adjustment");
+                    unreached();
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -8513,7 +8526,15 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, AllocMemChunk* chunks)
 
                 // Async call may have been removed very late, after we have introduced suspension/resumption.
                 // In those cases just encode null.
-                BYTE* target           = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
+#ifdef TARGET_WASM
+                BYTE* target = nullptr; // On WASM if we wanted this to have meaning, we would need a reloc to the
+                                        // virtual ip of the location in the method but we both don't have a reloc to
+                                        // represent that, as well as we don't have modeling for virtual ips which is
+                                        // useful for diagnostic purposes at this time. So simply leave it null for now.
+                                        // This is a diagnostic value, so it is not critical to have it be correct.
+#else
+                BYTE* target = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
+#endif
                 aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
                 aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
 
@@ -9924,6 +9945,7 @@ void emitter::emitInitIG(insGroup* ig)
        sure we act the same in non-DEBUG builds.
     */
 
+    ig->igData   = nullptr;
     ig->igSize   = 0;
     ig->igGCregs = RBM_NONE;
     ig->igInsCnt = 0;
@@ -9941,8 +9963,6 @@ void emitter::emitInitIG(insGroup* ig)
     // Explicitly call init, since IGs don't actually have a constructor.
     ig->igBlocks.jitstd::list<BasicBlock*>::init(m_compiler->getAllocator(CMK_DebugOnly));
 #endif
-
-    ig->igData = nullptr;
 }
 
 /*****************************************************************************
@@ -10814,6 +10834,21 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 
 void emitter::emitDisableGC()
 {
+    // For debuggable codegen, ensure there is an interruptible instruction between
+    // adjacent no-gc regions, if we're at a stack-empty point.
+    //
+    if (m_compiler->opts.compDbgCode && (emitNoGCRequestCount == 0) && emitLastCodeIsNoGC() &&
+        !m_compiler->genIPmappings.empty())
+    {
+        const IPmappingDsc& mapping = m_compiler->genIPmappings.back();
+        if ((mapping.ipmdKind == IPmappingDscKind::Normal) &&
+            ((mapping.ipmdLoc.GetSourceTypes() & ICorDebugInfo::STACK_EMPTY) != 0) &&
+            mapping.ipmdNativeLoc.IsCurrentLocation(this))
+        {
+            emitIns(INS_nop);
+        }
+    }
+
     assert(emitNoGCRequestCount < 10); // We really shouldn't have many nested "no gc" requests.
     ++emitNoGCRequestCount;
 
@@ -10840,9 +10875,20 @@ void emitter::emitDisableGC()
     }
 }
 
-bool emitter::emitGCDisabled()
+//------------------------------------------------------------------------
+// emitLastCodeIsNoGC: Check whether the last emitted native code is in a non-interruptible region.
+//
+// Return Value:
+//    true if the last non-empty instruction group is non-interruptible.
+//
+bool emitter::emitLastCodeIsNoGC() const
 {
-    return emitNoGCIG == true;
+    if ((emitCurIG != nullptr) && (emitCurIGsize != 0))
+    {
+        return (emitCurIG->igFlags & IGF_NOGCINTERRUPT) != 0;
+    }
+
+    return emitLastSavedIGWasNoGC;
 }
 
 //------------------------------------------------------------------------

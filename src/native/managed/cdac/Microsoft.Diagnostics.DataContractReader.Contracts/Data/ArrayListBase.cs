@@ -12,10 +12,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ArrayListBase))]
 internal sealed partial class ArrayListBase : IData<ArrayListBase>
 {
-    [Field] public uint Count { get; }
+    [Field] public partial uint Count { get; }
 
     [FieldAddress]
-    public TargetPointer FirstBlock { get; }
+    public partial TargetPointer FirstBlock { get; }
 
     public IReadOnlyList<ArrayListBlock> Blocks { get; private set; } = [];
     public IReadOnlyList<TargetPointer> Elements { get; private set; } = [];
@@ -56,11 +56,11 @@ internal sealed partial class ArrayListBase : IData<ArrayListBase>
 [CdacType(nameof(DataType.ArrayListBlock))]
 internal sealed partial class ArrayListBlock : IData<ArrayListBlock>
 {
-    [Field] public TargetPointer Next { get; }
-    [Field] public uint Size { get; }
+    [Field] public partial TargetPointer Next { get; }
+    [Field] public partial uint Size { get; }
 
     [FieldAddress]
-    public TargetPointer ArrayStart { get; }
+    public partial TargetPointer ArrayStart { get; }
 
     public IReadOnlyList<TargetPointer> Elements { get; private set; } = [];
 

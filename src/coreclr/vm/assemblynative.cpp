@@ -121,14 +121,13 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
 /* static */
 Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage, bool excludeAppPaths)
 {
-    CONTRACT(Assembly*)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pBinder));
         PRECONDITION(pImage != NULL);
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     Assembly *pLoadedAssembly = NULL;
     ReleaseHolder<BINDER_SPACE::Assembly> pAssembly;
@@ -191,12 +190,12 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
     }
 
     PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->GetPEImage(), pAssembly));
-    bindOperation.SetResult(pPEAssembly.GetValue());
+    bindOperation.SetResult(pPEAssembly);
 
-    RETURN pCurDomain->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
+    return pCurDomain->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
 }
 
-extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyBinder, LPCWSTR pwzILPath, LPCWSTR pwzNIPath, QCall::ObjectHandleOnStack retLoadedAssembly)
+extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyBinder, LPCWSTR pwzILPath, QCall::ObjectHandleOnStack retLoadedAssembly)
 {
     QCALL_CONTRACT;
 
@@ -214,7 +213,9 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyB
 
     if (pwzILPath != NULL)
     {
-        pILImage = PEImage::OpenImage(pwzILPath);
+        pILImage = PEImage::OpenImage(pwzILPath,
+            MDInternalImport_Default,
+            AssemblyProbeExtension::Probe(SString{ SString::Literal, pwzILPath }));
 
         // Need to verify that this is a valid CLR assembly.
         if (!pILImage->CheckILFormat())
@@ -1406,7 +1407,6 @@ extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(
     _ASSERTE(ilDeltaLength > 0);
 
 #ifdef FEATURE_METADATA_UPDATER
-    GCX_COOP();
     {
         if (CORDebuggerAttached())
         {

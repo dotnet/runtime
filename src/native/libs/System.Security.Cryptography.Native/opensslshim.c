@@ -8,6 +8,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(__OpenBSD__)
+#include <dirent.h>
+#include <limits.h>
+#include <stdlib.h>
+#endif
+
 #include "opensslshim.h"
 #include "pal_atomic.h"
 
@@ -21,7 +27,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef FALLBACK_FUNCTION
 #undef LIGHTUP_FUNCTION
 #undef REQUIRED_FUNCTION
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
 TYPEOF(OPENSSL_gmtime) OPENSSL_gmtime_ptr;
 #endif
 
@@ -34,7 +40,7 @@ static void* volatile libssl = NULL;
 #define SONAME_BASE LIBNAME "."
 #define MAKELIB(v)  SONAME_BASE v
 
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
 // We support ARM32 linux distros that have Y2038-compatible glibc (those which support _TIME_BITS).
 // Some such distros have not yet switched to _TIME_BITS=64 by default, so we may be running against an openssl
 // that expects 32-bit time_t even though our time_t is 64-bit.
@@ -54,6 +60,87 @@ static void DlOpen(const char* libraryName)
     }
 }
 
+#if defined(__OpenBSD__)
+// OpenBSD's base system ships LibreSSL, which does not implement the full
+// OpenSSL 3.x surface the shim requires. The OpenSSL ports install in parallel
+// under /usr/local/lib/eopenssl<NN>/, where <NN> is the OpenSSL version (e.g.
+// eopenssl35 for OpenSSL 3.5). Each directory ships libssl with its own SONAME
+// (for example libssl.so.37.0), bumped independently of the version number, so
+// the SONAME is discovered within the requested directory rather than hardcoded.
+// The library is opened by absolute path so the matching libcrypto resolves via
+// the library's RUNPATH.
+static void DlOpenEOpenSsl(const char* eopensslVersion)
+{
+    static const char libDirPrefix[] = "/usr/local/lib/eopenssl";
+    static const char sslPrefix[] = "libssl.so.";
+
+    char dirPath[PATH_MAX];
+    int written = snprintf(dirPath, sizeof(dirPath), "%s%s", libDirPrefix, eopensslVersion);
+    if (written < 0 || (size_t)written >= sizeof(dirPath))
+    {
+        return;
+    }
+
+    DIR* dir = opendir(dirPath);
+    if (dir == NULL)
+    {
+        return;
+    }
+
+    // Pick the highest libssl.so.<major>.<minor> in case more than one is present.
+    char libName[NAME_MAX + 1] = { 0 };
+    long bestMajor = -1;
+    long bestMinor = -1;
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (strncmp(entry->d_name, sslPrefix, sizeof(sslPrefix) - 1) != 0)
+        {
+            continue;
+        }
+
+        const char* version = entry->d_name + sizeof(sslPrefix) - 1;
+        char* end;
+        long major = strtol(version, &end, 10);
+        if (end == version)
+        {
+            continue;
+        }
+
+        long minor = (*end == '.') ? strtol(end + 1, &end, 10) : 0;
+        if (major > bestMajor || (major == bestMajor && minor > bestMinor))
+        {
+            bestMajor = major;
+            bestMinor = minor;
+            // Should a directory entry ever have a name longer than NAME_MAX,
+            // (such as NAME_MAX got raised after this module was compiled),
+            // we'll get a truncated version of the file name here, but the -1
+            // guarantees we're NUL-terminated.
+            //
+            // The expected result in such a case is that the DlOpen call fails,
+            // but if the truncation happens to land on another file in the same
+            // directory, well, things will happen.
+            strncpy(libName, entry->d_name, sizeof(libName) - 1);
+        }
+    }
+    closedir(dir);
+
+    if (libName[0] == '\0')
+    {
+        return;
+    }
+
+    char libPath[PATH_MAX];
+    written = snprintf(libPath, sizeof(libPath), "%s/%s", dirPath, libName);
+    if (written < 0 || (size_t)written >= sizeof(libPath))
+    {
+        return;
+    }
+
+    DlOpen(libPath);
+}
+#endif
+
 static void OpenLibraryOnce(void)
 {
     // If there is an override of the version specified using the DOTNET_OPENSSL_VERSION_OVERRIDE
@@ -64,9 +151,14 @@ static void OpenLibraryOnce(void)
 
     if ((versionOverride != NULL) && strnlen(versionOverride, MaxVersionStringLength + 1) <= MaxVersionStringLength)
     {
+#if defined(__OpenBSD__)
+        // On OpenBSD the override selects the eopenssl<NN> ports directory.
+        DlOpenEOpenSsl(versionOverride);
+#else
         char soName[sizeof(SONAME_BASE) + MaxVersionStringLength] = SONAME_BASE;
         strcat(soName, versionOverride);
         DlOpen(soName);
+#endif
     }
 
 #ifdef TARGET_ANDROID
@@ -110,6 +202,26 @@ static void OpenLibraryOnce(void)
     if (libssl == NULL)
     {
         DlOpen(MAKELIB("111"));
+    }
+#elif defined(__OpenBSD__)
+    // OpenBSD base is LibreSSL; load the OpenSSL ports build from /usr/local/lib/eopenssl<NN>.
+    // Probe the known package directories explicitly, preferring 3.x and trying 4.0 last.
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.6 from ports
+        DlOpenEOpenSsl("36");
+    }
+
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.5 from ports
+        DlOpenEOpenSsl("35");
+    }
+
+    if (libssl == NULL)
+    {
+        // OpenSSL 4.0 from ports (probed but not preferred)
+        DlOpenEOpenSsl("40");
     }
 #endif
 
@@ -180,7 +292,7 @@ void InitializeOpenSSLShim(void)
 #undef FALLBACK_FUNCTION
 #undef LIGHTUP_FUNCTION
 #undef REQUIRED_FUNCTION
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
     if (!(OPENSSL_gmtime_ptr = (TYPEOF(OPENSSL_gmtime))(dlsym(libssl, "OPENSSL_gmtime")))) { fprintf(stderr, "Cannot get required symbol OPENSSL_gmtime from libssl\n"); abort(); }
 #endif
 
@@ -195,7 +307,7 @@ void InitializeOpenSSLShim(void)
         }
     }
 
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
     c_static_assert_msg(sizeof(time_t) == 8, "Build requires 64-bit time_t.");
 
     // This value will represent a time in year 2038 if 64-bit time is used,

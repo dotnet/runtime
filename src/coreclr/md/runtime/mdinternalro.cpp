@@ -2656,16 +2656,11 @@ HRESULT
 MDInternalRO::GetUserString(    // Offset into the string blob heap.
     mdString stk,               // [IN] the string token.
     ULONG   *pcchStringSize,    // [OUT] count of characters in the string.
-    BOOL    *pfIs80Plus,        // [OUT] specifies where there are extended characters >= 0x80.
     LPCWSTR *pwszUserString)
 {
     HRESULT hr;
     LPWSTR  wszTmp;
 
-    if (pfIs80Plus != NULL)
-    {
-        *pfIs80Plus = FALSE;
-    }
     *pwszUserString = NULL;
     *pcchStringSize = 0;
 
@@ -2681,16 +2676,6 @@ MDInternalRO::GetUserString(    // Offset into the string blob heap.
     {
         *pwszUserString = NULL;
         return S_OK;
-    }
-
-    if (pfIs80Plus != NULL)
-    {
-        if (userString.GetSize() % sizeof(WCHAR) == 0)
-        {
-            *pfIs80Plus = TRUE; // no indicator, presume the worst
-        }
-        // Return the user string terminator (contains value fIs80Plus)
-        *pfIs80Plus = *(reinterpret_cast<PBYTE>(wszTmp + *pcchStringSize));
     }
 
     *pwszUserString = wszTmp;

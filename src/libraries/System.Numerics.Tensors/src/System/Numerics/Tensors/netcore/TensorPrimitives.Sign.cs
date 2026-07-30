@@ -48,7 +48,7 @@ namespace System.Numerics.Tensors
                     return (value >> 31) | ((-value).AsUInt32() >> 31).AsInt32();
                 }
 
-                if (Vector128.EqualsAny(IsNaN(x).AsInt32(), Vector128<int>.AllBitsSet))
+                if (Vector128.EqualsAny(Vector128.IsNaN(x).AsInt32(), Vector128<int>.AllBitsSet))
                 {
                     ThrowHelper.ThrowArithmetic_NaN();
                 }
@@ -75,7 +75,7 @@ namespace System.Numerics.Tensors
                     return (value >> 31) | ((-value).AsUInt32() >> 31).AsInt32();
                 }
 
-                if (Vector256.EqualsAny(IsNaN(x).AsInt32(), Vector256<int>.AllBitsSet))
+                if (Vector256.EqualsAny(Vector256.IsNaN(x).AsInt32(), Vector256<int>.AllBitsSet))
                 {
                     ThrowHelper.ThrowArithmetic_NaN();
                 }
@@ -102,7 +102,7 @@ namespace System.Numerics.Tensors
                     return (value >> 31) | ((-value).AsUInt32() >> 31).AsInt32();
                 }
 
-                if (Vector512.EqualsAny(IsNaN(x).AsInt32(), Vector512<int>.AllBitsSet))
+                if (Vector512.EqualsAny(Vector512.IsNaN(x).AsInt32(), Vector512<int>.AllBitsSet))
                 {
                     ThrowHelper.ThrowArithmetic_NaN();
                 }

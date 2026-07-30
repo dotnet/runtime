@@ -387,9 +387,4 @@ DWORD ContinuationLayoutKeyHashTableHelper::Hash(ContinuationLayoutKey key)
     return dwHash;
 }
 
-void ContinuationLayoutKeyHashTableHelper::ReplaceKey(EEHashEntry_t *pEntry, ContinuationLayoutKey newKey)
-{
-    memcpy(pEntry->Key, &newKey, sizeof(ContinuationLayoutKey));
-}
-
 #endif
