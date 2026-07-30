@@ -426,7 +426,7 @@ namespace System
 
                         // multiply larger by the output base to line up the next block
                         remainder.Multiply10();
-                        scaledValue = remainder;
+                        BigInteger.SetValue(out scaledValue, in remainder);
                         digitExponent -= batchDigits;
                     }
 
