@@ -165,6 +165,11 @@ public:
     IMetaDataImport2 *GetRWImporter();
 #else
     TADDR GetMDInternalRWAddress();
+    BOOL HasReadWriteMetadata()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_MDImportIsRW_Debugger_Use_Only;
+    }
 #endif // DACCESS_COMPILE
 
     void ConvertMDInternalToReadWrite();
