@@ -13,7 +13,6 @@
 #include "strsafe.h"
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
-// This is a test comment
 WCHAR* EqualOrColon(_In_ __nullterminated WCHAR* szArg)
 {
     WCHAR* pchE = (WCHAR*)u16_strchr(szArg,W('='));
