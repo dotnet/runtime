@@ -54,7 +54,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="@(Crossgen2InbuildOutputItems)"
+      <Content Include="@(Crossgen2InbuildOutputItems->'%(OutputPath)')"
                CopyToOutputDirectory="PreserveNewest"
                TargetPath="crossgen2/%(Filename)%(Extension)" />
 
