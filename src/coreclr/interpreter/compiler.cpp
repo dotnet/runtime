@@ -5598,14 +5598,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             else if (isCalli)
             {
                 EmitCalli(tailcall, calliCookie, callIFunctionPointerVar, &callInfo.sig);
-                if (((m_pLastNewIns->data[1] & (int32_t)CalliFlags::PInvoke) != 0)
-                    && m_pVars[dVar].interpType == InterpTypeVT)
-                {
-                    // Ensure that the dvar does not overlap with the svars; it is incorrect for it to overlap because
-                    // some native ABI's such as the SysV ABI on Linux/x64 and the ARM64 abi assume the return buffer returns are non-aliasing
-                    // with the call arguments. The managed calling convention does not have this restriction.
-                    m_pVars[dVar].noCallArgs = true;
-                }
             }
             else
             {
@@ -5634,14 +5626,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 else
                 {
                     opcode = (isPInvoke && !isMarshaledPInvoke) ? INTOP_CALL_PINVOKE : INTOP_CALL;
-
-                    if (opcode == INTOP_CALL_PINVOKE && m_pVars[dVar].interpType == InterpTypeVT)
-                    {
-                        // Ensure that the dvar does not overlap with the svars; it is incorrect for it to overlap because
-                        // some native ABI's such as the SysV ABI on Linux/x64 and the ARM64 abi assume the return buffer returns are non-aliasing
-                        // with the call arguments. The managed calling convention does not have this restriction.
-                        m_pVars[dVar].noCallArgs = true;
-                    }
                 }
 
                 if (callInfo.nullInstanceCheck)
@@ -5800,6 +5784,21 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_pLastNewIns->flags |= INTERP_INST_FLAG_DBG_CALL_INSTRUCTION;
     m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
+
+    // Keep value type return buffers separate from call arguments. Compiled code can write to the
+    // return buffer at any time, trampling the method arguments if the return overlaps with the args.
+    //
+    // FIXME
+    // Setting noCallArgs for the return can result in one unnecessary mov.vt for nested calls. We should
+    // be able avoid this by tweaking the offset allocator to reserve separate space for the return value,
+    // not just for the call args. There is also the problem of the return value being used as the first
+    // loaded argument in the following call which exposes the bug where the previous call args were already
+    // processed but the return var offset will be allocated later, as part of the following call, no longer
+    // satisfying the constraints of the ended call.
+    if (m_pVars[dVar].interpType == InterpTypeVT)
+    {
+        m_pVars[dVar].noCallArgs = true;
+    }
 
     if (injectRet)
     {
