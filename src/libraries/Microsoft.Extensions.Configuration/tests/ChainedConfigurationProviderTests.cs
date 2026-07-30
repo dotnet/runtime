@@ -153,6 +153,38 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Equal(0, innerNotifications);
         }
 
+        [Fact]
+        public void ChainedConfiguration_TryGetReturnsTrueForEmptyStringValue()
+        {
+            IConfigurationProvider provider = new ChainedConfigurationSource
+            {
+                Configuration = new ConfigurationBuilder()
+                    .AddInMemoryCollection(new Dictionary<string, string> { { "Key", string.Empty } })
+                    .Build(),
+                ShouldDisposeConfiguration = false,
+            }
+            .Build(new ConfigurationBuilder());
+
+            Assert.True(provider.TryGet("Key", out string? value));
+            Assert.Equal(string.Empty, value);
+        }
+
+        [Fact]
+        public void ChainedConfiguration_TryGetReturnsFalseForMissingKey()
+        {
+            IConfigurationProvider provider = new ChainedConfigurationSource
+            {
+                Configuration = new ConfigurationBuilder()
+                    .AddInMemoryCollection(new Dictionary<string, string> { { "OtherKey", "inner-value" } })
+                    .Build(),
+                ShouldDisposeConfiguration = false,
+            }
+            .Build(new ConfigurationBuilder());
+
+            Assert.False(provider.TryGet("MissingKey", out string? value));
+            Assert.Null(value);
+        }
+
         private class TestConfigurationProvider : ConfigurationProvider
         {
             public TestConfigurationProvider(string key, string value)
