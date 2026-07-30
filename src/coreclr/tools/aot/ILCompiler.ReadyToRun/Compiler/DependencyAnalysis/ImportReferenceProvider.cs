@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
             return writer.GetTuple(writer.GetUnsignedConstant((uint)typeImport.Table.IndexFromBeginningOfArray), writer.GetUnsignedConstant((uint)typeImport.IndexFromBeginningOfArray));
         }
 
-        internal Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type, ModuleDesc module = null)
+        internal Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type, ModuleDesc module)
         {
             Debug.Assert(module is not null);
             Import typeImport = GetImportToType(type, module);

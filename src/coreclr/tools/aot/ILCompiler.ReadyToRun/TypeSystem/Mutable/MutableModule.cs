@@ -142,10 +142,20 @@ namespace Internal.TypeSystem.Ecma
                 if (module is EcmaModule ecmaModule && type.Module is EcmaModule targetTypeModule)
                 {
                     string targetAssemblyName = targetTypeModule.Assembly.GetName().Name;
+                    MetadataReader reader = ecmaModule.MetadataReader;
+                    foreach (AssemblyReferenceHandle assemblyRefHandle in reader.AssemblyReferences)
+                    {
+                        string referencedAssemblyName = reader.GetString(reader.GetAssemblyReference(assemblyRefHandle).Name);
+                        if (string.Equals(referencedAssemblyName, targetAssemblyName, StringComparison.Ordinal))
+                        {
+                            return targetAssemblyName;
+                        }
+                    }
 
                     // The assembly name in a custom attribute type argument is valid even when there is no
                     // corresponding AssemblyRef row in the source module metadata.
                     return targetAssemblyName;
+                }
 
                 throw new KeyNotFoundException($"Unable to resolve an assembly reference from module '{module}' to type '{type}'.");
             }
