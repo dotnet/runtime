@@ -19,14 +19,12 @@ namespace ILLink.CodeFix
     /// <summary>
     /// Applies the edits planned by <see cref="UnsafeContextPlanner"/>.
     /// </summary>
+    /// <remarks>
+    /// Introducing the region is all this does. Justifying it is a separate obligation, reported by
+    /// <c>IL5009</c> and stubbed out by its own code fix.
+    /// </remarks>
     internal static class UnsafeContextRewriter
     {
-        /// <summary>
-        /// The marker left behind for the developer who has to justify the region. It matches the convention the
-        /// rest of the unsafe-v2 migration tooling uses.
-        /// </summary>
-        private const string SafetyComment = "SAFETY: Audit";
-
         private static readonly SymbolDisplayFormat s_typeFormat =
             SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
                 SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions
@@ -136,11 +134,6 @@ namespace ILLink.CodeFix
                     .WithAdditionalAnnotations(Simplifier.Annotation)
                 : Detach(type);
 
-            // Without an initializer a ref struct local is assumed to escape to the caller, which would reject the
-            // 'stackalloc' the assignment is about to make. 'scoped' is what the initializer used to imply.
-            if (local.Type.IsRefLikeType)
-                type = SyntaxFactory.ScopedType(type);
-
             return type.WithTrailingTrivia(SyntaxFactory.ElasticSpace);
         }
 
@@ -151,7 +144,7 @@ namespace ILLink.CodeFix
         }
 
         /// <summary>
-        /// Builds <c>/* SAFETY: Audit */ unsafe(expression)</c>.
+        /// Builds <c>unsafe(expression)</c>.
         /// </summary>
         /// <remarks>
         /// The <c>unsafe(...)</c> expression is newer than the Roslyn this fixer compiles against, so the node
@@ -171,26 +164,14 @@ namespace ILLink.CodeFix
 
             return template
                 .ReplaceNode(placeholder, Detach(expression))
-                .WithLeadingTrivia(expression.GetLeadingTrivia()
-                    .Add(SyntaxFactory.Comment($"/* {SafetyComment} */"))
-                    .Add(SyntaxFactory.Space))
-                .WithTrailingTrivia(expression.GetTrailingTrivia());
+                .WithTriviaFrom(expression);
         }
 
         private static UnsafeStatementSyntax CreateUnsafeBlock(SyntaxList<StatementSyntax> statements) =>
-            SyntaxFactory.UnsafeStatement(
-                SyntaxFactory.Block(statements.Replace(statements[0], WithSafetyComment(statements[0]))));
+            SyntaxFactory.UnsafeStatement(SyntaxFactory.Block(statements));
 
         private static UnsafeStatementSyntax CreateUnsafeBlock(StatementSyntax statement) =>
-            SyntaxFactory.UnsafeStatement(SyntaxFactory.Block(WithSafetyComment(statement)));
-
-        /// <summary>
-        /// Puts the marker on the first line inside the block, next to the code it is about.
-        /// </summary>
-        private static StatementSyntax WithSafetyComment(StatementSyntax statement) =>
-            statement.WithLeadingTrivia(statement.GetLeadingTrivia()
-                .Insert(0, SyntaxFactory.ElasticCarriageReturnLineFeed)
-                .Insert(0, SyntaxFactory.Comment($"// {SafetyComment}")));
+            SyntaxFactory.UnsafeStatement(SyntaxFactory.Block(statement));
 
         private static TNode Detach<TNode>(TNode node) where TNode : SyntaxNode =>
             node.WithLeadingTrivia().WithTrailingTrivia();

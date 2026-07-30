@@ -236,7 +236,7 @@ namespace ILLink.CodeFix
                     IsConst: false,
                 } declaration
                 || declaration.Declaration.Variables.Count != 1
-                || declaration.Declaration.Variables[0] is not { Initializer: { } initializer } variable
+                || declaration.Declaration.Variables[0] is not { Initializer: not null } variable
                 // 'using' and 'await using' declarations own the lifetime of the local; moving the acquisition
                 // into a nested block would move the disposal with it.
                 || !declaration.UsingKeyword.IsKind(SyntaxKind.None)
@@ -255,18 +255,16 @@ namespace ILLink.CodeFix
             if (local.Type is not { } type || type.TypeKind is TypeKind.Error || type.IsAnonymousType)
                 return false;
 
-            // A ref struct local declared without an initializer may escape to the caller by default, which is a
-            // weaker constraint than the one the initializer inferred. 'scoped' restores the original inference,
-            // but it is only known to be the right answer for 'stackalloc'; for any other initializer the local
-            // may legitimately outlive the method, so the declaration is left alone.
-            return !type.IsRefLikeType || IsStackAlloc(initializer.Value);
+            // A ref struct local carries a ref-safety scope that its initializer decides, and re-declaring it
+            // without one cannot reproduce that. Leaving the initializer out makes the local escape to the caller,
+            // which the initializer may not allow, while 'scoped' narrows it to the enclosing block, which is
+            // narrower than the current method that 'stackalloc' implies. The expression form leaves the
+            // declaration alone and keeps the inference exactly as it was.
+            return !type.IsRefLikeType;
         }
 
         internal static TypeSyntax UnwrapScoped(TypeSyntax type) =>
             type is ScopedTypeSyntax scoped ? scoped.Type : type;
-
-        internal static bool IsStackAlloc(ExpressionSyntax expression) =>
-            expression is StackAllocArrayCreationExpressionSyntax or ImplicitStackAllocArrayCreationExpressionSyntax;
 
         /// <summary>
         /// Walks out from the node the diagnostic points at to the smallest expression that

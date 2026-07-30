@@ -86,7 +86,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                     {
                         unsafe
                         {
-                            // SAFETY: Audit
                             Unsafe();
                         }
                     }
@@ -120,7 +119,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                         int x;
                         unsafe
                         {
-                            // SAFETY: Audit
                             x = Unsafe();
                         }
                         return x;
@@ -130,8 +128,11 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public async Task StackAllocDeclarationBecomesScoped()
+        public async Task StackAllocDeclarationKeepsItsInitializer()
         {
+            // A ref struct local's ref-safety scope comes from its initializer. Re-declaring it without one
+            // cannot reproduce that scope: leaving 'scoped' off lets it escape to the caller, and adding 'scoped'
+            // narrows it to the enclosing block, which is narrower than the current method 'stackalloc' implies.
             await VerifyCodeFix(
                 """
                 using System;
@@ -156,12 +157,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                     [SkipLocalsInit]
                     public int M()
                     {
-                        scoped Span<byte> s;
-                        unsafe
-                        {
-                            // SAFETY: Audit
-                            s = stackalloc byte[10];
-                        }
+                        Span<byte> s = unsafe(stackalloc byte[10]);
                         return s.Length;
                     }
                 }
@@ -185,7 +181,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     public static unsafe int Unsafe() => 0;
 
-                    public int M() => /* SAFETY: Audit */ unsafe(Unsafe());
+                    public int M() => unsafe(Unsafe());
                 }
                 """);
         }
@@ -217,7 +213,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     public async Task<int> M()
                     {
-                        int x = /* SAFETY: Audit */ unsafe(Unsafe()) + await Task.FromResult(1);
+                        int x = unsafe(Unsafe()) + await Task.FromResult(1);
                         return x;
                     }
                 }
@@ -250,17 +246,14 @@ namespace ILLink.RoslynAnalyzer.Tests
                     {
                         unsafe
                         {
-                            // SAFETY: Audit
                             Unsafe();
                         }
                         unsafe
                         {
-                            // SAFETY: Audit
                             Unsafe();
                         }
                         unsafe
                         {
-                            // SAFETY: Audit
                             Unsafe();
                         }
                     }
@@ -278,7 +271,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                     {
                         unsafe
                         {
-                            // SAFETY: Audit
                             Unsafe();
                             Unsafe();
                             Unsafe();
@@ -314,7 +306,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                         int a = 1;
                         unsafe
                         {
-                            // SAFETY: Audit
                             return a + Unsafe();
                         }
                     }
@@ -347,7 +338,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                     {
                         unsafe
                         {
-                            // SAFETY: Audit
                             int a = 1;
                             return a + Unsafe();
                         }
@@ -385,9 +375,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     public IEnumerable<int> M()
                     {
-                        yield return /* SAFETY: Audit */ unsafe(Unsafe());
-                        yield return /* SAFETY: Audit */ unsafe(Unsafe());
-                        yield return /* SAFETY: Audit */ unsafe(Unsafe());
+                        yield return unsafe(Unsafe());
+                        yield return unsafe(Unsafe());
+                        yield return unsafe(Unsafe());
                     }
                 }
                 """);
@@ -417,7 +407,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                     {
                         unsafe
                         {
-                            // SAFETY: Audit
                             return Unsafe() + Unsafe();
                         }
                     }
@@ -445,7 +434,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                     {
                         unsafe
                         {
-                            // SAFETY: Audit
                             return *p;
                         }
                     }
@@ -487,7 +475,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                     {
                         unsafe
                         {
-                            // SAFETY: Audit
                             Make<HasUnsafeConstructor>();
                         }
                     }
@@ -521,7 +508,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                         if (condition)
                             unsafe
                             {
-                                // SAFETY: Audit
                                 Unsafe();
                             }
                     }
@@ -562,7 +548,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                             case 1:
                                 unsafe
                                 {
-                                    // SAFETY: Audit
                                     return Unsafe();
                                 }
                             default:
@@ -604,7 +589,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                     top:
                         unsafe
                         {
-                            // SAFETY: Audit
                             a = Unsafe();
                         }
                         if (a < 0)
@@ -649,7 +633,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                         try
                         {
                         }
-                        catch (Exception) when (/* SAFETY: Audit */ unsafe(Unsafe()) == 0)
+                        catch (Exception) when (unsafe(Unsafe()) == 0)
                         {
                         }
                     }
@@ -676,7 +660,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     public static unsafe int Unsafe() => 0;
 
-                    private static readonly int s_value = /* SAFETY: Audit */ unsafe(Unsafe());
+                    private static readonly int s_value = unsafe(Unsafe());
 
                     public int M() => s_value;
                 }
@@ -706,7 +690,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     public int M()
                     {
-                        int Local() => /* SAFETY: Audit */ unsafe(Unsafe());
+                        int Local() => unsafe(Unsafe());
                         return Local();
                     }
                 }
@@ -743,7 +727,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                         Func<int> f;
                         unsafe
                         {
-                            // SAFETY: Audit
                             f = () => Unsafe();
                         }
                         return f();
@@ -789,7 +772,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     public int M()
                     {
-                        if (TryGet(/* SAFETY: Audit */ unsafe(Unsafe()), out int value))
+                        if (TryGet(unsafe(Unsafe()), out int value))
                             return value;
 
                         return value;
@@ -822,7 +805,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     public int M(int[] values)
                     {
-                        ref int slot = ref values[/* SAFETY: Audit */ unsafe(Unsafe())];
+                        ref int slot = ref values[unsafe(Unsafe())];
                         slot = 1;
                         return slot;
                     }
@@ -857,7 +840,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     public long M()
                     {
-                        using var stream = new MemoryStream(/* SAFETY: Audit */ unsafe(Unsafe()));
+                        using var stream = new MemoryStream(unsafe(Unsafe()));
                         return stream.Length;
                     }
                 }
@@ -891,7 +874,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     public Span<byte> M()
                     {
-                        Span<byte> span = /* SAFETY: Audit */ unsafe(Unsafe());
+                        Span<byte> span = unsafe(Unsafe());
                         return span;
                     }
                 }
@@ -927,7 +910,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 #if NEVER
                         return 0;
                 #else
-                        return /* SAFETY: Audit */ unsafe(Unsafe());
+                        return unsafe(Unsafe());
                 #endif
                     }
                 }
@@ -964,7 +947,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                         List<string> items;
                         unsafe
                         {
-                            // SAFETY: Audit
                             items = Unsafe();
                         }
                         return items.Count;
@@ -999,7 +981,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                         // Explains the call below.
                         unsafe
                         {
-                            // SAFETY: Audit
                             Unsafe();
                         }
                     }
@@ -1036,7 +1017,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     public static unsafe int Unsafe() => 0;
 
-                    public C() : base(/* SAFETY: Audit */ unsafe(Unsafe()))
+                    public C() : base(unsafe(Unsafe()))
                     {
                     }
                 }
@@ -1060,7 +1041,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     public static unsafe int Unsafe() => 0;
 
-                    public int P => /* SAFETY: Audit */ unsafe(Unsafe());
+                    public int P => unsafe(Unsafe());
                 }
                 """);
         }
@@ -1093,7 +1074,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                     {
                         unsafe
                         {
-                            // SAFETY: Audit
                             return Unsafe();
                         }
                     };
@@ -1125,7 +1105,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                     {
                         unsafe
                         {
-                            // SAFETY: Audit
                             int unused = Unsafe();
                         }
                     }
@@ -1154,7 +1133,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     public unsafe int UnsafeProperty => 0;
 
-                    public int M(C other) => /* SAFETY: Audit */ unsafe(Add(other.UnsafeProperty, 1));
+                    public int M(C other) => unsafe(Add(other.UnsafeProperty, 1));
 
                     private static int Add(int left, int right) => left + right;
                 }
@@ -1178,7 +1157,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     public unsafe string UnsafeProperty => "x";
 
-                    public int? M(C other) => /* SAFETY: Audit */ unsafe(other?.UnsafeProperty.Length);
+                    public int? M(C other) => unsafe(other?.UnsafeProperty.Length);
                 }
                 """);
         }
@@ -1257,7 +1236,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                     public int M()
                     {
-                        bool ok = TryGet(/* SAFETY: Audit */ unsafe(Unsafe()), out int value);
+                        bool ok = TryGet(unsafe(Unsafe()), out int value);
                         return ok ? value : 0;
                     }
                 }
@@ -1291,7 +1270,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                         int value;
                         unsafe
                         {
-                            // SAFETY: Audit
                             value = Unsafe();
                         }
                         return nameof(value);
@@ -1352,7 +1330,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     public unsafe int UnsafeProperty => 0;
 
-                    public int M(C other) => /* SAFETY: Audit */ unsafe(Add((other.UnsafeProperty), 1));
+                    public int M(C other) => unsafe(Add((other.UnsafeProperty), 1));
 
                     private static int Add(int left, int right) => left + right;
                 }
@@ -1394,7 +1372,6 @@ namespace ILLink.RoslynAnalyzer.Tests
                                 int value;
                                 unsafe
                                 {
-                                    // SAFETY: Audit
                                     value = Unsafe();
                                 }
                                 return value.ToString();
@@ -1434,10 +1411,9 @@ namespace ILLink.RoslynAnalyzer.Tests
                         int value;
                         unsafe
                         {
-                            // SAFETY: Audit
                             value =
-                                        // Why this call is fine.
-                                        Unsafe();
+                                    // Why this call is fine.
+                                    Unsafe();
                         }
                         return value;
                     }
@@ -1468,7 +1444,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     public static unsafe int UnsafeProperty => 0;
 
-                    private static readonly List<int> s_values = /* SAFETY: Audit */ unsafe(new List<int> { UnsafeProperty });
+                    private static readonly List<int> s_values = unsafe(new List<int> { UnsafeProperty });
 
                     public int M() => s_values.Count;
                 }
@@ -1504,7 +1480,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                         public int Value { get; set; }
                     }
 
-                    private static readonly Holder s_holder = /* SAFETY: Audit */ unsafe(new Holder { Value = UnsafeProperty });
+                    private static readonly Holder s_holder = unsafe(new Holder { Value = UnsafeProperty });
 
                     public int M() => s_holder.Value;
                 }
@@ -1536,7 +1512,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                     public static unsafe int UnsafeProperty => 0;
 
                     private static readonly Dictionary<int, int> s_map =
-                        /* SAFETY: Audit */ unsafe(new Dictionary<int, int> { [UnsafeProperty] = 1 });
+                        unsafe(new Dictionary<int, int> { [UnsafeProperty] = 1 });
 
                     public int M() => s_map.Count;
                 }
@@ -1593,21 +1569,18 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     public static unsafe int Unsafe() => 0;
 
-                    public C() : base(/* SAFETY: Audit */ unsafe(Unsafe()))
+                    public C() : base(unsafe(Unsafe()))
                     {
                         unsafe
                         {
-                            // SAFETY: Audit
                             Unsafe();
                         }
                         unsafe
                         {
-                            // SAFETY: Audit
                             Unsafe();
                         }
                         unsafe
                         {
-                            // SAFETY: Audit
                             Unsafe();
                         }
                     }
@@ -1624,11 +1597,10 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     public static unsafe int Unsafe() => 0;
 
-                    public C() : base(/* SAFETY: Audit */ unsafe(Unsafe()))
+                    public C() : base(unsafe(Unsafe()))
                     {
                         unsafe
                         {
-                            // SAFETY: Audit
                             Unsafe();
                             Unsafe();
                             Unsafe();
