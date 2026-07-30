@@ -46,8 +46,7 @@ class MSDiaSymbolReader
             if (imageFile is not null)
             {
                 // Validate the PDB against the image's CodeView / RSDS identity. DIA throws if the
-                // PDB-info GUID / age don't match the image (e.g. an all-zero GUID native PDB),
-                // which is exactly the regression this check guards against.
+                // PDB-info GUID / age don't match the image
                 (Guid imageGuid, uint imageAge) = ReadImageCodeViewIdentity(imageFile);
                 Console.WriteLine("Image file:     {0}", imageFile);
                 Console.WriteLine("Image GUID:     {0}", imageGuid);
@@ -62,10 +61,6 @@ class MSDiaSymbolReader
             }
 
             _diaDataSource.openSession(out _diaSession);
-
-            IDiaSymbol globalScope = _diaSession.globalScope;
-            Guid pdbGuid = globalScope.guid;
-            uint pdbAge = globalScope.age;
 
             _pdbSymbols = new List<string>();
 
@@ -82,7 +77,10 @@ class MSDiaSymbolReader
 
             Console.WriteLine("PDB file:       {0}", pdbFile);
             Console.WriteLine("PDB GUID:       {0}", pdbGuid);
-            Console.WriteLine("PDB age:        {0}", pdbAge);
+            IDiaSymbol globalScope = _diaSession.globalScope;
+            Console.WriteLine("PDB file:       {0}", pdbFile);
+            Console.WriteLine("PDB GUID:       {0}", globalScope.guid);
+            Console.WriteLine("PDB age:        {0}", globalScope.age);
             Console.WriteLine("Total symbols:  {0}", symbolsTotal);
             Console.WriteLine("Public symbols: {0}", _pdbSymbols.Count);
         }
