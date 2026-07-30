@@ -148,11 +148,7 @@ namespace ILCompiler.DependencyAnalysis
                     break;
             }
 
-            DependencyList dataFlowDependencies = null;
-            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dataFlowDependencies, factory, origin, attributeType, typeContext, methodContext);
-
-            if (dataFlowDependencies is not null)
-                dependencies.AddRange(dataFlowDependencies);
+            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, origin, attributeType, typeContext, methodContext);
         }
 
         /// <summary>
