@@ -18,6 +18,9 @@
 
 #include <fcntl.h>
 #include <errno.h>
+#if HAVE_POLL
+#include <poll.h>
+#endif
 #include <stdlib.h>
 #include <new>
 #include <unistd.h>
@@ -30,7 +33,7 @@
 #include <minipal/thread.h>
 #if defined(__ANDROID__)
 #include <android/log.h>
-#elif defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#elif defined(TARGET_APPLE)
 #include <mach/mach.h>
 #include <sys/sysctl.h>
 #endif
@@ -100,7 +103,7 @@ struct StackOverflowTraceSnapshot
 static char sccsid[] = "@(#)Version N/A";
 #endif
 
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if defined(TARGET_APPLE)
 // Query a sysctl by name into a caller-supplied buffer. Called from Initialize, NOT from the
 // signal handler -- sysctl/sysctlbyname is not on POSIX's async-signal-safe list, so the
 // queried values are cached for use during crash reporting.
@@ -118,7 +121,7 @@ static void CacheSysctlString(const char* sysctlName, char* buffer, size_t buffe
         buffer[0] = '\0';
     }
 }
-#endif // defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#endif // TARGET_APPLE
 
 // Bounded module table that deduplicates each unique module observed during a
 // single crash report. Frames in the compact log refer to modules by short
@@ -131,8 +134,8 @@ static void CacheSysctlString(const char* sysctlName, char* buffer, size_t buffe
 // ``(in <name>) `` so the frame stays self-describing — overflow is lossless,
 // just less compact for that frame.
 //
-// Single-instance because CreateReport is one-shot per process (guarded by
-// the ``s_generating`` InterlockedCompareExchange in CreateReport).
+// Single-instance shared by signal-path and on-demand reports. Per-report state
+// is Reset() at the start of each report.
 
 static constexpr int MAX_MODULES_IN_TABLE = 256;
 
@@ -166,6 +169,7 @@ public:
 
     int Count() const { return m_count; }
     const void* ModuleHandle(int i) const { return m_moduleHandles[i]; }
+    void Reset() { m_count = 0; }
 private:
     const void* m_moduleHandles[MAX_MODULES_IN_TABLE];
     int m_count = 0;
@@ -311,8 +315,7 @@ class CrashReportOutputContext
 {
 public:
     CrashReportOutputContext()
-        : m_fd(-1),
-          m_writeFailed(false)
+        : m_fd(-1)
     {
     }
 
@@ -325,12 +328,10 @@ public:
     CrashReportOutputContext& operator=(const CrashReportOutputContext&) = delete;
 
     int Fd() const { return m_fd; }
-    bool WriteFailed() const { return m_writeFailed; }
 
     void Init(int fd)
     {
         m_fd = fd;
-        m_writeFailed = false;
     }
 
     static bool ChunkCallback(const char* buffer, size_t len, void* ctx);
@@ -339,7 +340,6 @@ private:
     bool HandleChunk(const char* buffer, size_t len);
 
     int m_fd;
-    bool m_writeFailed;
 };
 
 class InProcCrashReporter
@@ -348,13 +348,29 @@ public:
     static InProcCrashReporter* GetInstance();
     static bool InitializeInstance(const InProcCrashReporterSettings& settings);
 
-    // Capture configuration and the crash-report template path. Must run before
-    // the instance is published to the PAL signal-handler path.
+    // Capture the VM callbacks and process identity. Must run before the instance
+    // is published to the PAL signal-handler path.
     void Initialize(const InProcCrashReporterSettings& settings);
 
-    void CreateReport(
+    // Initialize the env-gated crash-dump services (watchdog + lifecycle/file
+    // management) after the reporter has been initialized.
+    void InitializeServices(const InProcCrashReporterServicesSettings& settings);
+
+    // Signal-path report generation, invoked by the PAL fatal-signal dispatcher.
+    bool CreateReport(
         int signal,
-        void* context);
+        void* context,
+        bool serialize);
+
+    // On-demand report generation. Runs the same emit core as the signal path
+    // but without the watchdog or lifecycle/file management, routing the selected
+    // output format to `outputCallback`.
+    bool CreateReport(
+        InProcCrashReportOutputFormat outputFormat,
+        int signal,
+        void* context,
+        InProcCrashReportOutputCallback outputCallback,
+        void* callbackContext);
 
     void SetCrashKind(InProcCrashReportCrashKind crashKind);
     void BeginStackOverflowTrace(uint64_t crashingTid, uint32_t totalFrameCount);
@@ -380,13 +396,12 @@ private:
         void* context);
 
     void BeginConsoleReport(int signal);
-    void EndConsoleReport();
+    bool EndConsoleReport();
 
     void BeginJsonReport();
-    void EndJsonReport(
+    bool EndJsonReport(
         int signal,
-        bool jsonEnabled,
-        int fd);
+        bool finalizeReportFile);
 
     static const char* GetSignalNameAscii(int signal);
 
@@ -402,12 +417,13 @@ private:
     InProcCrashReportEnumerateThreadsCallback m_enumerateThreadsCallback = nullptr;
     InProcCrashReportModuleInfoCallback m_moduleInfoCallback = nullptr;
     volatile LONG m_crashKind = static_cast<LONG>(InProcCrashReportCrashKind::Unknown);
+    volatile LONGLONG m_reportInFlightThreadId = 0;
     uint32_t m_frameLimitPerThread = 0;
     InProcCrashReportLifecycle m_lifecycle;
     char m_reportFilePath[CRASHREPORT_PATH_BUFFER_SIZE];
     char m_processName[CRASHREPORT_STRING_BUFFER_SIZE];
     char m_stringScratch[CRASHREPORT_STRING_BUFFER_SIZE];
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if defined(TARGET_APPLE)
     char m_osVersion[CRASHREPORT_STRING_BUFFER_SIZE];
     char m_systemModel[CRASHREPORT_STRING_BUFFER_SIZE];
 #endif
@@ -559,31 +575,54 @@ public:
         const char* buffer,
         size_t len);
 
-    // SignalSafeJsonWriter callback that drops everything: used when the
-    // crash report is running in compact-log-only mode (no managed report
-    // directory configured) so the JSON formatter still keeps its bookkeeping
-    // consistent without emitting bytes anywhere.
-    static bool DiscardOutputCallback(const char* buffer, size_t len, void* ctx);
-
 };
 
-void
+bool
 InProcCrashReporter::CreateReport(
     int signal,
-    void* context)
+    void* context,
+    bool serialize)
 {
-    static LONG s_generating = 0;
-    if (InterlockedCompareExchange(&s_generating, 1, 0) != 0)
+    if (!serialize)
     {
-        return;
+        minipal_log_write_fatal("The in-proc crash reporter does not support recurrent invocations, so it is disabled for paths that may continue execution after signal handling, such as SIGTERM.\n");
+        return false;
     }
+
+    LONGLONG currentThreadId = static_cast<LONGLONG>(minipal_get_current_thread_id());
+    LONGLONG previousThreadId = InterlockedCompareExchange64(&m_reportInFlightThreadId, currentThreadId, 0);
+    if (previousThreadId != 0)
+    {
+        if (previousThreadId == currentThreadId)
+        {
+            return false;
+        }
+
+#if HAVE_POLL
+        // INFTIM is not defined when including pal.h; -1 is the equivalent poll() "wait forever" timeout.
+        const int PollWaitForever = -1;
+#endif
+        while (true)
+        {
+#if HAVE_POLL
+            poll(nullptr, 0, PollWaitForever);
+#else
+            // fakepoll uses select() and is not suitable for this signal-handler path.
+            pause();
+#endif
+        }
+    }
+
     CrashReportWatchdogScope watchdogScope;
+
+    m_moduleTable.Reset();
+    m_consoleWriter.SetOutputSink(SignalSafeConsoleWriter::PlatformConsoleOutputSink());
 
     m_reportFilePath[0] = '\0';
     // The JSON file sink is enabled only by lifecycle-managed output. Otherwise
     // the crash report runs in compact-log-only mode: the JSON emitter still
-    // executes (so it can keep its bookkeeping consistent) but writes go to a
-    // no-op DiscardOutputCallback instead of an open fd.
+    // executes (so it can keep its bookkeeping consistent) but writes go to the
+    // writer's drop-all default sink instead of an open fd.
     int fd = -1;
     bool jsonEnabled = m_lifecycle.IsReportFileOutputEnabled() &&
         m_lifecycle.PrepareReportFile(&m_formatter, m_reportFilePath, sizeof(m_reportFilePath), &fd);
@@ -593,24 +632,84 @@ InProcCrashReporter::CreateReport(
         jsonEnabled = false;
     }
 
-    InProcCrashReportCrashKind crashKind = static_cast<InProcCrashReportCrashKind>(
-        InterlockedExchange(&m_crashKind, static_cast<LONG>(InProcCrashReportCrashKind::Unknown)));
+    InProcCrashReportCrashKind crashKind = static_cast<InProcCrashReportCrashKind>(VolatileLoad(&m_crashKind));
 
     m_outputContext.Init(fd);
     if (jsonEnabled)
     {
-        m_jsonWriter.Init(&CrashReportOutputContext::ChunkCallback, &m_outputContext);
+        m_jsonWriter.SetOutputSink(SignalSafeJsonOutputSink(&CrashReportOutputContext::ChunkCallback, &m_outputContext));
     }
     else
     {
-        m_jsonWriter.Init(&CrashReportHelpers::DiscardOutputCallback, nullptr);
+        m_jsonWriter.SetOutputSink(SignalSafeJsonWriter::DropAllOutputSink());
     }
 
     BeginConsoleReport(signal);
     BeginJsonReport();
     EmitThreads(crashKind, context);
-    EndJsonReport(signal, jsonEnabled, fd);
-    EndConsoleReport();
+    bool jsonSucceeded = EndJsonReport(signal, /*finalizeReportFile*/ jsonEnabled);
+    bool consoleSucceeded = EndConsoleReport();
+
+    return jsonSucceeded && consoleSucceeded;
+}
+
+bool
+InProcCrashReporter::CreateReport(
+    InProcCrashReportOutputFormat outputFormat,
+    int signal,
+    void* context,
+    InProcCrashReportOutputCallback outputCallback,
+    void* callbackContext)
+{
+    if (outputCallback == nullptr)
+    {
+        return false;
+    }
+
+    if (outputFormat != InProcCrashReportOutputFormat::Json &&
+        outputFormat != InProcCrashReportOutputFormat::Log)
+    {
+        return false;
+    }
+
+    LONGLONG currentThreadId = static_cast<LONGLONG>(minipal_get_current_thread_id());
+    if (InterlockedCompareExchange64(&m_reportInFlightThreadId, currentThreadId, 0) != 0)
+    {
+        return false;
+    }
+
+    m_moduleTable.Reset();
+
+    if (outputFormat == InProcCrashReportOutputFormat::Json)
+    {
+        m_jsonWriter.SetOutputSink(SignalSafeJsonOutputSink(outputCallback, callbackContext));
+        m_consoleWriter.SetOutputSink(SignalSafeConsoleWriter::DropAllOutputSink());
+    }
+    else
+    {
+        m_jsonWriter.SetOutputSink(SignalSafeJsonWriter::DropAllOutputSink());
+        m_consoleWriter.SetOutputSink(SignalSafeConsoleOutputSink(outputCallback, callbackContext, /*appendNewline*/ true));
+    }
+
+    uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
+    InProcCrashReportCrashKind crashKind = (VolatileLoad(&m_stackOverflowTrace.available) != 0 && m_stackOverflowTrace.crashingTid == crashingTid)
+        ? InProcCrashReportCrashKind::StackOverflow
+        : InProcCrashReportCrashKind::Unknown;
+
+    BeginConsoleReport(signal);
+    BeginJsonReport();
+    EmitThreads(crashKind, context);
+    bool jsonSucceeded = EndJsonReport(signal, /*finalizeReportFile*/ false);
+    bool consoleSucceeded = EndConsoleReport();
+
+    bool reportSucceeded = jsonSucceeded && consoleSucceeded;
+
+    m_consoleWriter.SetOutputSink(SignalSafeConsoleWriter::PlatformConsoleOutputSink());
+    m_jsonWriter.SetOutputSink(SignalSafeJsonWriter::DropAllOutputSink());
+    m_moduleTable.Reset();
+
+    InterlockedExchange64(&m_reportInFlightThreadId, 0);
+    return reportSucceeded;
 }
 
 void
@@ -675,6 +774,7 @@ InProcCrashReporter::InitializeInstance(
     }
 
     reporter->Initialize(settings);
+
     if (InterlockedCompareExchangePointer(&s_reporter, reporter, nullptr) != nullptr)
     {
         delete reporter;
@@ -712,8 +812,6 @@ InProcCrashReporter::Initialize(
     m_stackOverflowTrace.available = 0;
     m_reportFilePath[0] = '\0';
 
-    (void)CrashReportWatchdog::TryInitialize(settings.timeoutSeconds);
-
     m_processName[0] = '\0';
 #if defined(__ANDROID__)
     // On Android every app forks from the Zygote, so /proc/self/exe always
@@ -741,20 +839,30 @@ InProcCrashReporter::Initialize(
         }
     }
 
-    // File output is produced only through the lifecycle-managed report
-    // directory. When no root is configured the reporter still runs, emitting
-    // compact console logs without writing a JSON report file.
-    if (settings.reportRootPath != nullptr && settings.reportRootPath[0] != '\0')
-    {
-        m_lifecycle.Initialize(settings.reportRootPath, settings.maxFileCount);
-    }
-
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if defined(TARGET_APPLE)
     // Cache sysctl values at Initialize because sysctl/sysctlbyname is not on POSIX's
     // async-signal-safe list; CreateReport reads these from the signal-handler path.
     CacheSysctlString("kern.osproductversion", m_osVersion, sizeof(m_osVersion));
     CacheSysctlString("hw.model", m_systemModel, sizeof(m_systemModel));
 #endif
+}
+
+void
+InProcCrashReporter::InitializeServices(const InProcCrashReporterServicesSettings& settings)
+{
+    if (settings.enableWatchdog)
+    {
+        (void)CrashReportWatchdog::TryInitialize(settings.timeoutSeconds);
+    }
+
+    // File output is produced only through the lifecycle-managed report
+    // directory, and only when both enabled and given a root path. When the
+    // lifecycle is disabled the reporter still runs, emitting compact console
+    // logs without writing a JSON report file.
+    if (settings.enableLifecycle && settings.reportRootPath != nullptr && settings.reportRootPath[0] != '\0')
+    {
+        m_lifecycle.Initialize(settings.reportRootPath, settings.maxFileCount);
+    }
 }
 
 void
@@ -802,7 +910,7 @@ InProcCrashReporter::EndStackOverflowTrace()
 }
 
 void
-InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context)
+InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context, bool serialize)
 {
     (void)siginfo;
 
@@ -814,22 +922,63 @@ InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context)
 
     // Preserve the interrupted context's errno before the crash reporter uses syscalls.
     int savedErrno = errno;
-    reporter->CreateReport(signal, context);
+    reporter->CreateReport(signal, context, serialize);
     errno = savedErrno;
 }
 
 void
 InProcCrashReportInitialize(const InProcCrashReporterSettings& settings)
 {
-    if (!InProcCrashReporter::InitializeInstance(settings))
+    (void)InProcCrashReporter::InitializeInstance(settings);
+}
+
+void
+InProcCrashReportInitializeServices(const InProcCrashReporterServicesSettings& settings)
+{
+    if (!settings.enableCreateCrashDump)
     {
         return;
     }
+
+    InProcCrashReporter* reporter = InProcCrashReporter::GetInstance();
+    if (reporter == nullptr)
+    {
+        return;
+    }
+
+    static LONG s_servicesInitialized = 0;
+    if (InterlockedCompareExchange(&s_servicesInitialized, 1, 0) != 0)
+    {
+        return;
+    }
+
+    reporter->InitializeServices(settings);
 
     // Register last so PAL only observes the dispatcher after the reporter
     // singleton is fully populated (mirrors the publication ordering used by
     // PAL_SetLogManagedCallstackForSignalCallback).
     PAL_SetInProcCrashReportCallback(&InProcCrashReportSignalDispatcher);
+}
+
+bool
+InProcCrashReportCreateReport(
+    InProcCrashReportOutputFormat outputFormat,
+    int signal,
+    void* context,
+    InProcCrashReportOutputCallback outputCallback,
+    void* callbackContext)
+{
+    InProcCrashReporter* reporter = InProcCrashReporter::GetInstance();
+    if (reporter == nullptr)
+    {
+        return false;
+    }
+
+    // Preserve the interrupted context's errno before the crash reporter uses syscalls.
+    int savedErrno = errno;
+    bool generated = reporter->CreateReport(outputFormat, signal, context, outputCallback, callbackContext);
+    errno = savedErrno;
+    return generated;
 }
 
 void
@@ -934,15 +1083,6 @@ CrashReportHelpers::WriteToFile(
 }
 
 bool
-CrashReportHelpers::DiscardOutputCallback(
-    const char* /*buffer*/,
-    size_t /*len*/,
-    void* /*ctx*/)
-{
-    return true;
-}
-
-bool
 CrashReportOutputContext::HandleChunk(
     const char* buffer,
     size_t len)
@@ -952,13 +1092,7 @@ CrashReportOutputContext::HandleChunk(
         return false;
     }
 
-    if (!CrashReportHelpers::WriteToFile(m_fd, buffer, len))
-    {
-        m_writeFailed = true;
-        return false;
-    }
-
-    return true;
+    return CrashReportHelpers::WriteToFile(m_fd, buffer, len);
 }
 
 bool
@@ -1052,9 +1186,9 @@ CrashReportHelpers::GetInstructionPointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__x86_64__)
+#if defined(TARGET_APPLE) && defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rip);
-#elif (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__aarch64__)
+#elif defined(TARGET_APPLE) && defined(__aarch64__)
     return reinterpret_cast<uint64_t>(arm_thread_state64_get_pc_fptr(ucontext->uc_mcontext->__ss));
 #elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RIP]);
@@ -1077,9 +1211,9 @@ CrashReportHelpers::GetStackPointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__x86_64__)
+#if defined(TARGET_APPLE) && defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rsp);
-#elif (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__aarch64__)
+#elif defined(TARGET_APPLE) && defined(__aarch64__)
     return static_cast<uint64_t>(arm_thread_state64_get_sp(ucontext->uc_mcontext->__ss));
 #elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RSP]);
@@ -1102,9 +1236,9 @@ CrashReportHelpers::GetFramePointer(
     }
 
     ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__x86_64__)
+#if defined(TARGET_APPLE) && defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext->__ss.__rbp);
-#elif (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)) && defined(__aarch64__)
+#elif defined(TARGET_APPLE) && defined(__aarch64__)
     return static_cast<uint64_t>(arm_thread_state64_get_fp(ucontext->uc_mcontext->__ss));
 #elif defined(__x86_64__)
     return static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RBP]);
@@ -2037,7 +2171,7 @@ InProcCrashReporter::BeginConsoleReport(int signal)
     m_consoleWriter.EndLine();
 }
 
-void
+bool
 InProcCrashReporter::EndConsoleReport()
 {
     if (m_moduleTable.Count() != 0)
@@ -2068,6 +2202,7 @@ InProcCrashReporter::EndConsoleReport()
     }
 
     m_consoleWriter.WriteSeparator();
+    return !m_consoleWriter.HasWriteFailed();
 }
 
 // --- InProcCrashReporter: JSON report lifecycle ----------------------------
@@ -2093,17 +2228,16 @@ InProcCrashReporter::BeginJsonReport()
     m_jsonWriter.WriteDecimalAsString("pid", static_cast<uint64_t>(GetCurrentProcessId()));
 }
 
-void
+bool
 InProcCrashReporter::EndJsonReport(
     int signal,
-    bool jsonEnabled,
-    int fd)
+    bool finalizeReportFile)
 {
     m_jsonWriter.CloseObject(); // payload
 
     m_jsonWriter.OpenObject("parameters");
     m_jsonWriter.WriteSignedDecimalAsString("signal", static_cast<int64_t>(signal));
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if defined(TARGET_APPLE)
     if (m_osVersion[0] != '\0')
     {
         m_jsonWriter.WriteString("OSVersion", m_osVersion);
@@ -2118,21 +2252,16 @@ InProcCrashReporter::EndJsonReport(
 
     m_jsonWriter.CloseObject(); // root
 
-    if (jsonEnabled)
+    if (finalizeReportFile)
     {
+        int fd = m_outputContext.Fd();
         bool finishSucceeded = m_jsonWriter.Finish();
-        bool writeFailed = m_outputContext.WriteFailed();
-        if (!CrashReportHelpers::WriteToFile(fd, "\n", 1))
-        {
-            writeFailed = true;
-        }
-
+        bool newlineSucceeded = CrashReportHelpers::WriteToFile(fd, "\n", 1);
         bool closeSucceeded = close(fd) == 0;
-        bool reportSucceeded = finishSucceeded && !writeFailed && closeSucceeded;
+        bool reportSucceeded = finishSucceeded && newlineSucceeded && closeSucceeded;
         m_lifecycle.FinishReportFile(reportSucceeded, m_reportFilePath);
+        return reportSucceeded;
     }
-    else
-    {
-        (void)m_jsonWriter.Finish();
-    }
+
+    return m_jsonWriter.Finish();
 }

@@ -33,7 +33,7 @@ IEnumerable<TargetNUInt> GetRejitIds(TargetPointer methodDesc)
 | --- | --- | --- | --- |
 | `ILCodeVersionNode` | `Deoptimized` | `uint32` | whether this IL code version has been deoptimized |
 | `ILCodeVersionNode` | `RejitState` | `uint32` | a RejitFlags value |
-| `ILCodeVersionNode` | `VersionId` | `nuint` | ReJIT ID of the IL code version node |
+| `ILCodeVersionNode` | `VersionId` | `nuint` | Unique IL code version ID of the IL code version node (used as a ReJIT ID when Source is ReJIT) |
 | `ProfControlBlock` | `GlobalEventMask` | `uint64` | an ICorProfiler COR_PRF_MONITOR value |
 | `ProfControlBlock` | `RejitOnAttachEnabled` | `uint8` | cached value of the ProfAPI_RejitOnAttach configuration knob |
 
