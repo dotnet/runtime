@@ -2943,6 +2943,46 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public static void Bind_GetterOnlyProperties_WithNonNullValues_BindsExistingInstances()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(
+                """
+                {
+                    "Nested": { "Integer": 1 },
+                    "Collection": [ "item" ],
+                    "Abstract": { "Value": 2 }
+                }
+                """);
+            ClassWithGetterOnlyProperties instance = new(initializeProperties: true);
+
+            configuration.Bind(instance);
+
+            Assert.Equal(1, instance.Nested.Integer);
+            Assert.Equal(["item"], instance.Collection);
+            Assert.Equal(2, instance.Abstract.Value);
+        }
+
+        [Fact]
+        public static void Bind_GetterOnlyProperties_WithNullValues_IgnoresConfiguration()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(
+                """
+                {
+                    "Nested": { "Integer": 1 },
+                    "Collection": [ "item" ],
+                    "Abstract": { "Value": 2 }
+                }
+                """);
+            ClassWithGetterOnlyProperties instance = new(initializeProperties: false);
+
+            configuration.Bind(instance);
+
+            Assert.Null(instance.Nested);
+            Assert.Null(instance.Collection);
+            Assert.Null(instance.Abstract);
+        }
+
+        [Fact]
         public void GetIConfigurationSection()
         {
             var configuration = TestHelpers.GetConfigurationFromJsonString("""
