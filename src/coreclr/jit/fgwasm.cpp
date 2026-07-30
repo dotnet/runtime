@@ -1426,17 +1426,20 @@ PhaseStatus Compiler::fgWasmRepairTryEntries()
             else
             {
                 caseEdge = fgAddRefPred(caseTarget, dispatcher);
-
-                // The normal entry uses the default. Assume it carries all the profile
-                // weight and that all side entries are cold.
-                //
-                caseEdge->setLikelihood((v == numTargets) ? 1.0 : 0.0);
+                caseEdge->setLikelihood(0.0);
                 caseEdges.Set(caseTarget, caseEdge);
                 succs[numUniqueSuccs++] = caseEdge;
             }
 
             cases[v] = caseEdge;
         }
+
+        // The normal entry uses the default. Assume it carries all the profile weight
+        // and that all side entries are cold. This must happen after the loop above,
+        // since a case value this dispatcher does not route also falls to the normal
+        // entry and so shares the default's edge.
+        //
+        cases[numTargets]->setLikelihood(1.0);
 
         BBswtDesc* const swtDesc = new (this, CMK_BasicBlock) BBswtDesc(succs, numUniqueSuccs, cases, caseCount, true);
         dispatcher->SetSwitch(swtDesc);
