@@ -289,8 +289,8 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1240`__ | Derived type is not a supported polymorphic derived type. |
 |  __`SYSLIB1241`__ | Inferred derived type is less accessible than the polymorphic base type. |
 |  __`SYSLIB1242`__ | Derived types produce a duplicate type discriminator. |
-|  __`SYSLIB1243`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
-|  __`SYSLIB1244`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1243`__ | Inferred closed type polymorphism is enabled on a type that is not a closed type. |
+|  __`SYSLIB1244`__ | Inferred closed type polymorphism has no effect on a type that registers derived types explicitly. |
 |  __`SYSLIB1245`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
 |  __`SYSLIB1246`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
 |  __`SYSLIB1247`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
