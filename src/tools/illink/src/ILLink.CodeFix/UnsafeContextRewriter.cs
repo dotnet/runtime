@@ -53,6 +53,10 @@ namespace ILLink.CodeFix
                         SplitDeclaration(editor, (LocalDeclarationStatementSyntax)fix.Target, cancellationToken);
                         break;
 
+                    case UnsafeContextKind.HoistOutDeclarations:
+                        HoistOutDeclarations(editor, (StatementSyntax)fix.Target, fix.Hoisted, cancellationToken);
+                        break;
+
                     case UnsafeContextKind.Body:
                         WrapBody(editor, (BlockSyntax)fix.Target);
                         break;
@@ -121,6 +125,54 @@ namespace ILLink.CodeFix
                     .WithAdditionalAnnotations(Formatter.Annotation));
             editor.ReplaceNode(declaration, forwardDeclaration);
         }
+
+        /// <summary>
+        /// Rewrites <c>M(out var x);</c> as <c>T x;</c> followed by an unsafe block calling <c>M(out x)</c>, so
+        /// that the variable stays visible to the statements that follow it.
+        /// </summary>
+        private static void HoistOutDeclarations(
+            DocumentEditor editor,
+            StatementSyntax statement,
+            ImmutableArray<DeclarationExpressionSyntax> declarations,
+            CancellationToken cancellationToken)
+        {
+            List<StatementSyntax> hoisted = [];
+
+            foreach (DeclarationExpressionSyntax declaration in declarations.OrderBy(static d => d.SpanStart))
+            {
+                if (editor.SemanticModel.GetDeclaredSymbol(Designation(declaration), cancellationToken) is not ILocalSymbol local)
+                    return;
+
+                hoisted.Add(SyntaxFactory
+                    .LocalDeclarationStatement(SyntaxFactory.VariableDeclaration(
+                        ForwardDeclaredType(declaration.Type, local),
+                        SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(Identifier(declaration)))))
+                    .WithTrailingTrivia(SyntaxFactory.ElasticCarriageReturnLineFeed)
+                    .WithAdditionalAnnotations(Formatter.Annotation));
+            }
+
+            if (hoisted.Count == 0)
+                return;
+
+            hoisted[0] = hoisted[0].WithLeadingTrivia(statement.GetLeadingTrivia());
+
+            StatementSyntax call = statement.ReplaceNodes(
+                declarations,
+                (original, _) => SyntaxFactory.IdentifierName(Identifier(original)).WithTriviaFrom(original));
+
+            editor.InsertBefore(statement, hoisted);
+            editor.ReplaceNode(
+                statement,
+                CreateUnsafeBlock(Detach(call))
+                    .WithTrailingTrivia(statement.GetTrailingTrivia())
+                    .WithAdditionalAnnotations(Formatter.Annotation));
+        }
+
+        private static SingleVariableDesignationSyntax Designation(DeclarationExpressionSyntax declaration) =>
+            (SingleVariableDesignationSyntax)declaration.Designation;
+
+        private static SyntaxToken Identifier(DeclarationExpressionSyntax declaration) =>
+            Designation(declaration).Identifier.WithoutTrivia();
 
         /// <summary>
         /// Builds the type for a local that no longer has an initializer to infer from.

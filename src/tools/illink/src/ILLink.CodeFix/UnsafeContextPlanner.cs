@@ -46,10 +46,15 @@ namespace ILLink.CodeFix
         {
             SyntaxNode node = root.FindNode(diagnosticSpan, getInnermostNodeForTie: true);
 
+            StatementSyntax? blockTarget = null;
+            ImmutableArray<ISymbol> escaping = [];
+
             if (FindEnclosingStatement(node) is { } statement
                 && CanIntroduceBlock(statement)
-                && TryGetEscapingDeclarations(statement, semanticModel, out ImmutableArray<ISymbol> escaping))
+                && TryGetEscapingDeclarations(statement, semanticModel, out escaping))
             {
+                blockTarget = statement;
+
                 if (escaping.Length == 0)
                     return new UnsafeContextFix(UnsafeContextKind.Statement, statement);
 
@@ -67,6 +72,15 @@ namespace ILLink.CodeFix
                 && CanIntroduceExpression(expression, semanticModel))
             {
                 return new UnsafeContextFix(UnsafeContextKind.Expression, expression);
+            }
+
+            // Giving the 'out' variables declarations of their own frees the block to move, and is the last
+            // resort because it is the only shape that adds a declaration to the source: where the expression
+            // form fits it is both narrower and closer to what was written.
+            if (blockTarget is not null
+                && TryGetHoistableOutDeclarations(blockTarget, escaping, semanticModel, out ImmutableArray<DeclarationExpressionSyntax> hoisted))
+            {
+                return new UnsafeContextFix(UnsafeContextKind.HoistOutDeclarations, blockTarget, hoisted);
             }
 
             return null;
@@ -252,16 +266,78 @@ namespace ILLink.CodeFix
             if (!SymbolEqualityComparer.Default.Equals(local, semanticModel.GetDeclaredSymbol(variable)))
                 return false;
 
-            if (local.Type is not { } type || type.TypeKind is TypeKind.Error || type.IsAnonymousType)
-                return false;
-
             // A ref struct local carries a ref-safety scope that its initializer decides, and re-declaring it
             // without one cannot reproduce that. Leaving the initializer out makes the local escape to the caller,
             // which the initializer may not allow, while 'scoped' narrows it to the enclosing block, which is
             // narrower than the current method that 'stackalloc' implies. The expression form leaves the
             // declaration alone and keeps the inference exactly as it was.
-            return !type.IsRefLikeType;
+            return CanForwardDeclare(local.Type) && !local.Type.IsRefLikeType;
         }
+
+        /// <summary>
+        /// Matches the escaping names against the <c>out</c> variables that <paramref name="statement"/> declares,
+        /// and returns the declarations to hoist ahead of it when they account for every one of them.
+        /// </summary>
+        /// <remarks>
+        /// An <c>out</c> variable is scoped as though it were declared just before the enclosing statement, so
+        /// writing that declaration out leaves the scope exactly as it was, and the call still assigns it. Unlike
+        /// a local declaration there is no initializer whose ref-safety scope could be lost, which is why a ref
+        /// struct needs no exception here.
+        /// </remarks>
+        private static bool TryGetHoistableOutDeclarations(
+            StatementSyntax statement,
+            ImmutableArray<ISymbol> escaping,
+            SemanticModel semanticModel,
+            out ImmutableArray<DeclarationExpressionSyntax> hoisted)
+        {
+            hoisted = [];
+
+            // The declarations are added to a statement list, which rules out embedded positions.
+            if (statement.Parent is not (BlockSyntax or SwitchSectionSyntax))
+                return false;
+
+            Dictionary<ISymbol, DeclarationExpressionSyntax> declarations = new(SymbolEqualityComparer.Default);
+
+            foreach (DeclarationExpressionSyntax declaration in GetOutDeclarations(statement))
+            {
+                if (declaration.Designation is SingleVariableDesignationSyntax designation
+                    && semanticModel.GetDeclaredSymbol(designation) is ILocalSymbol outVariable
+                    && CanForwardDeclare(outVariable.Type))
+                {
+                    declarations[outVariable] = declaration;
+                }
+            }
+
+            // Anything else that escapes, a pattern designation for instance, has no declaration that could be
+            // moved, and a block would still hide it.
+            if (!escaping.All(declarations.ContainsKey))
+                return false;
+
+            hoisted = [.. escaping.Select(symbol => declarations[symbol])];
+            return true;
+        }
+
+        /// <summary>
+        /// Returns the <c>out</c> variables that <paramref name="statement"/> declares in its own right.
+        /// </summary>
+        /// <remarks>
+        /// A declaration inside a nested function belongs to that function, so it can neither escape the statement
+        /// nor be moved out of it: hoisting one would turn the variable into a captured local.
+        /// </remarks>
+        private static IEnumerable<DeclarationExpressionSyntax> GetOutDeclarations(StatementSyntax statement) =>
+            statement
+                .DescendantNodes(static node => node is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+                .OfType<DeclarationExpressionSyntax>()
+                .Where(static declaration =>
+                    declaration is { Designation: SingleVariableDesignationSyntax, Parent: ArgumentSyntax argument }
+                    && argument.RefKindKeyword.IsKind(SyntaxKind.OutKeyword));
+
+        /// <summary>
+        /// Determines whether a type can be spelled in a declaration that stands on its own, which an inferred
+        /// one has to be once its initializer is no longer next to it.
+        /// </summary>
+        private static bool CanForwardDeclare(ITypeSymbol? type) =>
+            type is { TypeKind: not TypeKind.Error, IsAnonymousType: false };
 
         internal static TypeSyntax UnwrapScoped(TypeSyntax type) =>
             type is ScopedTypeSyntax scoped ? scoped.Type : type;

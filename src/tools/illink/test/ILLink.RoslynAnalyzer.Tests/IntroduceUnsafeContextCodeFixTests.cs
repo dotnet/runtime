@@ -1653,6 +1653,393 @@ namespace ILLink.RoslynAnalyzer.Tests
                 }
                 """);
         }
+
+        [Fact]
+        public async Task OutVariableIsHoistedWhenNothingElseFits()
+        {
+            // The statement declares 'value' and the block would hide it, but 'unsafe(...)' is not one of the
+            // expression forms a statement may consist of. Giving the variable a declaration of its own is what
+            // is left, and is the shape most of the residue in System.Text.Json took.
+            await VerifyCodeFix(
+                """
+                public class C
+                {
+                    public static unsafe void Unsafe(out int result) => result = 0;
+
+                    public int M()
+                    {
+                        {|CS9362:Unsafe(out int value)|};
+                        return value;
+                    }
+                }
+                """,
+                """
+                public class C
+                {
+                    public static unsafe void Unsafe(out int result) => result = 0;
+
+                    public int M()
+                    {
+                        int value;
+                        unsafe
+                        {
+                            Unsafe(out value);
+                        }
+                        return value;
+                    }
+                }
+                """);
+        }
+
+        [Fact]
+        public async Task ImplicitlyTypedOutVariableGetsAnExplicitType()
+        {
+            await VerifyCodeFix(
+                """
+                public class C
+                {
+                    public static unsafe void Unsafe(out string result) => result = "";
+
+                    public string M()
+                    {
+                        {|CS9362:Unsafe(out var value)|};
+                        return value;
+                    }
+                }
+                """,
+                """
+                public class C
+                {
+                    public static unsafe void Unsafe(out string result) => result = "";
+
+                    public string M()
+                    {
+                        string value;
+                        unsafe
+                        {
+                            Unsafe(out value);
+                        }
+                        return value;
+                    }
+                }
+                """);
+        }
+
+        [Fact]
+        public async Task EveryEscapingOutVariableIsHoisted()
+        {
+            await VerifyCodeFix(
+                """
+                public class C
+                {
+                    public static unsafe void Unsafe(out int first, out int second, out int third)
+                    {
+                        first = second = third = 0;
+                    }
+
+                    public int M()
+                    {
+                        {|CS9362:Unsafe(out int first, out var second, out int third)|};
+                        return first + third;
+                    }
+                }
+                """,
+                """
+                public class C
+                {
+                    public static unsafe void Unsafe(out int first, out int second, out int third)
+                    {
+                        first = second = third = 0;
+                    }
+
+                    public int M()
+                    {
+                        int first;
+                        int third;
+                        unsafe
+                        {
+                            Unsafe(out first, out var second, out third);
+                        }
+                        return first + third;
+                    }
+                }
+                """);
+        }
+
+        [Fact]
+        public async Task OutVariableThatIsNeverReadAgainStaysInsideTheBlock()
+        {
+            await VerifyCodeFix(
+                """
+                public class C
+                {
+                    public static unsafe void Unsafe(out int result) => result = 0;
+
+                    public void M()
+                    {
+                        {|CS9362:Unsafe(out int value)|};
+                    }
+                }
+                """,
+                """
+                public class C
+                {
+                    public static unsafe void Unsafe(out int result) => result = 0;
+
+                    public void M()
+                    {
+                        unsafe
+                        {
+                            Unsafe(out int value);
+                        }
+                    }
+                }
+                """);
+        }
+
+        [Fact]
+        public async Task RefStructOutVariableIsHoisted()
+        {
+            // Unlike a local declaration there is no initializer whose ref-safety scope could be lost: an 'out'
+            // variable is scoped as though it were declared just before the statement either way.
+            await VerifyCodeFix(
+                """
+                using System;
+
+                public class C
+                {
+                    public static unsafe void Unsafe(out Span<byte> result) => result = default;
+
+                    public Span<byte> M()
+                    {
+                        {|CS9362:Unsafe(out Span<byte> value)|};
+                        return value;
+                    }
+                }
+                """,
+                """
+                using System;
+
+                public class C
+                {
+                    public static unsafe void Unsafe(out Span<byte> result) => result = default;
+
+                    public Span<byte> M()
+                    {
+                        Span<byte> value;
+                        unsafe
+                        {
+                            Unsafe(out value);
+                        }
+                        return value;
+                    }
+                }
+                """);
+        }
+
+        [Fact]
+        public async Task ALambdaInTheStatementDoesNotDerailTheHoist()
+        {
+            // Only the escaping variables are hoisted, and a lambda's own 'out' variable can never be one of
+            // them, so it is left exactly where it was rather than becoming a captured local.
+            await VerifyCodeFix(
+                """
+                public class C
+                {
+                    public static unsafe void Unsafe(out int result, System.Func<bool> callback) => result = 0;
+
+                    public static bool TryGet(int input, out int result)
+                    {
+                        result = input;
+                        return true;
+                    }
+
+                    public int M()
+                    {
+                        {|CS9362:Unsafe(out int outer, () => TryGet(0, out int inner))|};
+                        return outer;
+                    }
+                }
+                """,
+                """
+                public class C
+                {
+                    public static unsafe void Unsafe(out int result, System.Func<bool> callback) => result = 0;
+
+                    public static bool TryGet(int input, out int result)
+                    {
+                        result = input;
+                        return true;
+                    }
+
+                    public int M()
+                    {
+                        int outer;
+                        unsafe
+                        {
+                            Unsafe(out outer, () => TryGet(0, out int inner));
+                        }
+                        return outer;
+                    }
+                }
+                """);
+        }
+
+        [Fact]
+        public async Task CommentsAboveTheStatementStayAboveTheHoistedDeclaration()
+        {
+            await VerifyCodeFix(
+                """
+                public class C
+                {
+                    public static unsafe void Unsafe(out int result) => result = 0;
+
+                    public int M()
+                    {
+                        // Read the value.
+                        {|CS9362:Unsafe(out int value)|};
+                        return value;
+                    }
+                }
+                """,
+                """
+                public class C
+                {
+                    public static unsafe void Unsafe(out int result) => result = 0;
+
+                    public int M()
+                    {
+                        // Read the value.
+                        int value;
+                        unsafe
+                        {
+                            Unsafe(out value);
+                        }
+                        return value;
+                    }
+                }
+                """);
+        }
+
+        [Fact]
+        public async Task OutVariableInASwitchSectionIsHoisted()
+        {
+            await VerifyCodeFix(
+                """
+                public class C
+                {
+                    public static unsafe void Unsafe(out int result) => result = 0;
+
+                    public int M(int input)
+                    {
+                        switch (input)
+                        {
+                            case 0:
+                                {|CS9362:Unsafe(out int value)|};
+                                return value;
+                            default:
+                                return 0;
+                        }
+                    }
+                }
+                """,
+                """
+                public class C
+                {
+                    public static unsafe void Unsafe(out int result) => result = 0;
+
+                    public int M(int input)
+                    {
+                        switch (input)
+                        {
+                            case 0:
+                                int value;
+                                unsafe
+                                {
+                                    Unsafe(out value);
+                                }
+                                return value;
+                            default:
+                                return 0;
+                        }
+                    }
+                }
+                """);
+        }
+
+        [Fact]
+        public async Task UsingDeclarationThatIsNeverReadAgainKeepsItsScope()
+        {
+            // A block around the statement would move the disposal to the end of that block. Data flow analysis
+            // reports the local as used outside the statement because of the implicit disposal, so it counts as
+            // escaping and every block shape is declined, which is what leaves the expression form.
+            await VerifyCodeFix(
+                """
+                using System;
+
+                public class C
+                {
+                    public static unsafe int Unsafe() => 0;
+
+                    public sealed class Scope : IDisposable
+                    {
+                        public Scope(int value) { }
+
+                        public void Dispose() { }
+                    }
+
+                    public static void Work() { }
+
+                    public void M()
+                    {
+                        using var scope = new Scope({|CS9362:Unsafe()|});
+                        Work();
+                    }
+                }
+                """,
+                """
+                using System;
+
+                public class C
+                {
+                    public static unsafe int Unsafe() => 0;
+
+                    public sealed class Scope : IDisposable
+                    {
+                        public Scope(int value) { }
+
+                        public void Dispose() { }
+                    }
+
+                    public static void Work() { }
+
+                    public void M()
+                    {
+                        using var scope = new Scope(unsafe(Unsafe()));
+                        Work();
+                    }
+                }
+                """);
+        }
+
+        [Fact]
+        public async Task PatternDesignationUsedLaterLeavesTheDiagnostic()
+        {
+            // A pattern designation has no declaration that could be moved ahead of the statement.
+            await VerifyNoCodeFixOffered(
+                """
+                public class C
+                {
+                    public static unsafe void Unsafe(bool condition) { }
+
+                    public void M(object o)
+                    {
+                        Unsafe(o is int value);
+                        value = 0;
+                    }
+                }
+                """);
+        }
     }
 }
 #endif
