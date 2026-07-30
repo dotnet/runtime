@@ -7333,10 +7333,8 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<byte> Encrypt(System.Numerics.Vector<byte> value, System.Numerics.Vector<byte> roundKey) { throw null; }
         public static System.Numerics.Vector<byte> InverseMixColumns(System.Numerics.Vector<byte> value) { throw null; }
         public static System.Numerics.Vector<byte> MixColumns(System.Numerics.Vector<byte> value) { throw null; }
-        public static System.Numerics.Vector<ushort> PolynomialMultiplyWideningLower(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
-        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningLower(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
-        public static System.Numerics.Vector<ushort> PolynomialMultiplyWideningUpper(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
-        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningUpper(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningLower(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningUpper(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
         public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
         {
             internal Arm64() { }
