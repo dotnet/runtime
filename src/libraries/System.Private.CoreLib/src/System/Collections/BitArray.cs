@@ -140,8 +140,10 @@ namespace System.Collections
         /// This constructor is an <c>O(n)</c> operation, where <c>n</c> is the number of elements in <paramref name="bytes"/>.
         /// </remarks>
         public BitArray(byte[] bytes)
-            : this(new ReadOnlySpan<byte>(bytes ?? throw new ArgumentNullException(nameof(bytes))))
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+
+            _array = CreateArray(bytes, out _bitLength);
         }
 
         /// <summary>
@@ -160,15 +162,21 @@ namespace System.Collections
         /// </remarks>
         public BitArray(ReadOnlySpan<byte> bytes)
         {
+            _array = CreateArray(bytes, out _bitLength);
+        }
+
+        private static byte[] CreateArray(ReadOnlySpan<byte> bytes, out int bitLength)
+        {
             if (bytes.Length > int.MaxValue / BitsPerByte)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerByte), nameof(bytes));
             }
 
-            _bitLength = bytes.Length * BitsPerByte;
-            _array = AllocateByteArray(_bitLength);
+            bitLength = bytes.Length * BitsPerByte;
+            byte[] array = AllocateByteArray(bitLength);
 
-            bytes.CopyTo(_array);
+            bytes.CopyTo(array);
+            return array;
         }
 
         /// <summary>
@@ -181,8 +189,10 @@ namespace System.Collections
         /// This constructor is an <c>O(n)</c> operation, where <c>n</c> is the number of elements in <paramref name="values"/>.
         /// </remarks>
         public BitArray(bool[] values)
-            : this(new ReadOnlySpan<bool>(values ?? throw new ArgumentNullException(nameof(values))))
         {
+            ArgumentNullException.ThrowIfNull(values);
+
+            _array = CreateArray(values, out _bitLength);
         }
 
         /// <summary>
@@ -195,8 +205,13 @@ namespace System.Collections
         /// </remarks>
         public BitArray(ReadOnlySpan<bool> values)
         {
-            _array = AllocateByteArray(values.Length);
-            _bitLength = values.Length;
+            _array = CreateArray(values, out _bitLength);
+        }
+
+        private static byte[] CreateArray(ReadOnlySpan<bool> values, out int bitLength)
+        {
+            bitLength = values.Length;
+            byte[] array = AllocateByteArray(bitLength);
 
             uint i = 0;
 
@@ -209,7 +224,7 @@ namespace System.Collections
             // (true for any non-zero values, false for 0) - any values between 2-255 will be interpreted as false.
             // Instead, we compare with zeroes (== false) then negate the result to ensure compatibility.
 
-            ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(_array);
+            ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(array);
             ReadOnlySpan<byte> valuesAsBytes = MemoryMarshal.AsBytes(values);
             if (Vector512.IsHardwareAccelerated)
             {
@@ -263,9 +278,11 @@ namespace System.Collections
                 if (values[(int)i])
                 {
                     (uint byteIndex, uint bitOffset) = Math.DivRem(i, BitsPerByte);
-                    _array[byteIndex] |= (byte)(1 << (int)bitOffset);
+                    array[byteIndex] |= (byte)(1 << (int)bitOffset);
                 }
             }
+
+            return array;
         }
 
         /// <summary>
@@ -284,8 +301,10 @@ namespace System.Collections
         /// This constructor is an <c>O(n)</c> operation, where <c>n</c> is the number of elements in <paramref name="values"/>.
         /// </remarks>
         public BitArray(int[] values)
-            : this(new ReadOnlySpan<int>(values ?? throw new ArgumentNullException(nameof(values))))
         {
+            ArgumentNullException.ThrowIfNull(values);
+
+            _array = CreateArray(values, out _bitLength);
         }
 
         /// <summary>
@@ -304,22 +323,29 @@ namespace System.Collections
         /// </remarks>
         public BitArray(ReadOnlySpan<int> values)
         {
+            _array = CreateArray(values, out _bitLength);
+        }
+
+        private static byte[] CreateArray(ReadOnlySpan<int> values, out int bitLength)
+        {
             if (values.Length > int.MaxValue / BitsPerInt32)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerInt32), nameof(values));
             }
 
-            _bitLength = values.Length * BitsPerInt32;
-            _array = AllocateByteArray(_bitLength);
+            bitLength = values.Length * BitsPerInt32;
+            byte[] array = AllocateByteArray(bitLength);
 
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.AsBytes(values).CopyTo(_array);
+                MemoryMarshal.AsBytes(values).CopyTo(array);
             }
             else
             {
-                BinaryPrimitives.ReverseEndianness(values, MemoryMarshal.Cast<byte, int>((Span<byte>)_array));
+                BinaryPrimitives.ReverseEndianness(values, MemoryMarshal.Cast<byte, int>((Span<byte>)array));
             }
+
+            return array;
         }
 
         /// <summary>
