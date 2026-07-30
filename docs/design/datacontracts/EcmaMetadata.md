@@ -18,8 +18,6 @@ Types from other contracts:
 |------|----------|
 | ModuleHandle | [Loader](./Loader.md#apis-of-contract) |
 
-`HasReadWriteMetadata` returns whether `PEAssembly::MDImport` points to writable metadata.
-
 ## Version 1
 
 
