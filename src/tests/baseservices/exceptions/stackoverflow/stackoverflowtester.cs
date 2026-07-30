@@ -23,6 +23,7 @@ namespace TestStackOverflow
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
             startInfo.Environment.Add("DOTNET_DbgEnableMiniDump", "0");
+            startInfo.Environment.Add("DOTNET_EnableCrashReport", "0");
             startInfo.Environment.Add("DOTNET_LogStackOverflowExit", "1");
 
             using Process testProcess = Process.Start(startInfo);

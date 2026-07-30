@@ -400,11 +400,12 @@ public:
 //     To make that happen would be a substantial refactoring job as RegMeta
 //     always embeds CMiniMdRW even when it was opened for ReadOnly.
 //*****************************************************************************
+class DacDbiInterfaceImpl;
 class CMiniMdBase : public IMetaModelCommonRO
 {
 
-    friend class VerifyLayoutsMD; // verifies class layout doesn't accidentally change
     friend struct ::cdac_data<CMiniMdBase>;
+    friend class ::DacDbiInterfaceImpl;
 
 public:
     CMiniMdBase();

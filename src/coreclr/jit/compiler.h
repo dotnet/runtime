@@ -4124,6 +4124,7 @@ public:
     bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
 
     GenTreeLclVarCommon* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
+    GenTreeLclVarCommon* gtCallGetDefinedAsyncResumedLclAddr(GenTreeCall* call);
 
 //-------------------------------------------------------------------------
 // Functions to display the trees
@@ -4401,6 +4402,9 @@ public:
 
     // Variable representing async continuation argument passed.
     unsigned lvaAsyncContinuationArg = BAD_VAR_NUM;
+
+    // Variable representing "have we resumed?" for async methods
+    unsigned lvaResumedIndicator = BAD_VAR_NUM;
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
 
