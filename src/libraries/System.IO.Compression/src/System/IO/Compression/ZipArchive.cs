@@ -663,7 +663,7 @@ namespace System.IO.Compression
             byte[] arrayPoolArray = ArrayPool<byte>.Shared.Rent(ReadCentralDirectoryReadBufferSize);
             try
             {
-                Span<byte> fileBuffer = arrayPoolArray.AsSpan();
+                Memory<byte> fileBuffer = arrayPoolArray;
 
                 ReadCentralDirectoryInitialize(out long numberOfEntries, out bool saveExtraFieldsAndComments, out bool continueReadingCentralDirectory, out int bytesRead, out int currPosition, out int bytesConsumed);
 
@@ -671,9 +671,9 @@ namespace System.IO.Compression
                 while (continueReadingCentralDirectory)
                 {
                     // the buffer read must always be large enough to fit the constant section size of at least one header
-                    int currBytesRead = _archiveStream.ReadAtLeast(fileBuffer, ZipCentralDirectoryFileHeader.BlockConstantSectionSize, throwOnEndOfStream: false);
+                    int currBytesRead = _archiveStream.ReadAtLeast(fileBuffer.Span, ZipCentralDirectoryFileHeader.BlockConstantSectionSize, throwOnEndOfStream: false);
 
-                    ReadOnlySpan<byte> sizedFileBuffer = fileBuffer.Slice(0, currBytesRead);
+                    ReadOnlyMemory<byte> sizedFileBuffer = fileBuffer[0..currBytesRead];
                     continueReadingCentralDirectory = currBytesRead >= ZipCentralDirectoryFileHeader.BlockConstantSectionSize;
 
                     while (currPosition + ZipCentralDirectoryFileHeader.BlockConstantSectionSize <= currBytesRead)
@@ -693,7 +693,7 @@ namespace System.IO.Compression
                         }
                     }
 
-                    ReadCentralDirectoryEndOfOuterLoopWork(ref currPosition, sizedFileBuffer);
+                    ReadCentralDirectoryEndOfOuterLoopWork(ref currPosition, sizedFileBuffer.Span);
                 }
 
                 ReadCentralDirectoryPostOuterLoopWork(numberOfEntries);
