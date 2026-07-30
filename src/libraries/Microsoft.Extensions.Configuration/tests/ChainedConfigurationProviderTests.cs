@@ -164,7 +164,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddInMemoryCollection(new Dictionary<string, string> { { "Key", value } })
                 .Build());
 
-            Assert.True(provider.TryGet("Key", out string actual));
+            Assert.True(provider.TryGet("Key", out string? actual));
             Assert.Equal(value, actual);
         }
 
@@ -178,7 +178,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .Build()
                 .GetSection("Section"));
 
-            Assert.True(provider.TryGet("Key", out string actual));
+            Assert.True(provider.TryGet("Key", out string? actual));
             Assert.Equal(value, actual);
         }
 
@@ -192,7 +192,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
             IConfigurationProvider provider = BuildChainedProvider(inner);
 
-            Assert.True(provider.TryGet("Key", out string actual));
+            Assert.True(provider.TryGet("Key", out string? actual));
             Assert.Equal(value, actual);
         }
 
@@ -309,7 +309,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
             IConfigurationProvider provider = BuildChainedProvider(selectConfiguration(inner));
 
-            Assert.False(provider.TryGet("MissingKey", out string value));
+            Assert.False(provider.TryGet("MissingKey", out string? value));
             Assert.Null(value);
         }
 
@@ -389,7 +389,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
             public PlainConfiguration(IConfiguration inner) => _inner = inner;
 
-            public string this[string key]
+            public string? this[string key]
             {
                 get => _inner[key];
                 set => _inner[key] = value;

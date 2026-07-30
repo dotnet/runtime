@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="value">When this method returns, contains the value.</param>
-        /// <returns><see langword="true"/> if the chained configuration has a value for the specified key, otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the chained configuration has a non-<see langword="null"/> value for the specified key, otherwise <see langword="false"/>.</returns>
         public bool TryGet(string key, out string? value)
         {
             value = _config[key];
