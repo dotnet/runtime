@@ -294,8 +294,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             public ReentrantSingleton(ReentrantDependency dependency)
             {
                 dependency.SingletonInstanceCount++;
-                // Because of the semaphore, executes synchronously when called for the first time,
-                // but asynchronously when re-entered.
+                // Start an initialization routine that attempts a re-entrant resolution of this singleton
+                // via the root IServiceProvider while the first instance is still being constructed.
                 Initialization = dependency.InitializeAsync();
             }
 
