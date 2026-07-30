@@ -5,6 +5,7 @@ This contract provides methods to get a view of the ECMA-335 metadata for a give
 ## APIs of contract
 
 ```csharp
+bool HasReadWriteMetadata(TargetPointer peAssembly);
 TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle);
 TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle);
 System.Reflection.Metadata.MetadataReader? GetMetadata(ModuleHandle handle);
@@ -16,6 +17,8 @@ Types from other contracts:
 | Type | Contract |
 |------|----------|
 | ModuleHandle | [Loader](./Loader.md#apis-of-contract) |
+
+`HasReadWriteMetadata` returns whether `PEAssembly::MDImport` points to writable metadata.
 
 ## Version 1
 

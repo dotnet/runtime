@@ -398,7 +398,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetGCHeapInformation([out] COR_HEAPINFO * pHeapInfo);
 
     // PE File
-    HRESULT GetPEFileMDInternalRW([in] VMPTR_PEAssembly vmPEAssembly, [out] TADDR * pAddrMDInternalRW);
+    HRESULT HasReadWriteMetadata([in] VMPTR_PEAssembly vmPEAssembly, [out] BOOL * pHasReadWriteMetadata);
 
     HRESULT AreOptimizationsDisabled([in] VMPTR_Module vmModule, [in] mdMethodDef methodTk, [out] BOOL * pOptimizationsDisabled);
 

@@ -9,6 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public interface IEcmaMetadata : IContract
 {
     static string IContract.Name { get; } = nameof(EcmaMetadata);
+    bool HasReadWriteMetadata(TargetPointer peAssembly) => throw new NotImplementedException();
     TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle) => throw new NotImplementedException();
     TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle) => throw new NotImplementedException();
 

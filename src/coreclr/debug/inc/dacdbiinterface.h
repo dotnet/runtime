@@ -1959,16 +1959,14 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetGCHeapInformation(OUT COR_HEAPINFO * pHeapInfo) = 0;
 
-    // If a PEAssembly has an RW capable IMDInternalImport, this gets the address of the MDInternalRW
-    // object which implements it.
+    // Determines whether a PEAssembly has an RW capable IMDInternalImport.
     //
     //
     // Arguments:
-    //    vmPEAssembly - target PEAssembly to get metadata MDInternalRW for.
-    //    pAddrMDInternalRW - If a PEAssembly has an RW capable IMDInternalImport, this will be set to the address
-    //                        of the MDInternalRW object which implements it. Otherwise it will be NULL.
+    //    vmPEAssembly - target PEAssembly to inspect.
+    //    pHasReadWriteMetadata - whether the PEAssembly has an RW capable IMDInternalImport.
     //
-    virtual HRESULT STDMETHODCALLTYPE GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW) = 0;
+    virtual HRESULT STDMETHODCALLTYPE HasReadWriteMetadata(VMPTR_PEAssembly vmPEAssembly, OUT BOOL* pHasReadWriteMetadata) = 0;
 
     // DEPRECATED - use GetActiveRejitILCodeVersionNode
     // Retrieves the active ReJitInfo for a given module/methodDef, if it exists.

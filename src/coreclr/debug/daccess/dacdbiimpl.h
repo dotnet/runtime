@@ -133,7 +133,7 @@ public:
     HRESULT STDMETHODCALLTYPE GetTypeLayout(CORDB_ADDRESS id, COR_TYPE_LAYOUT *pLayout);
     HRESULT STDMETHODCALLTYPE GetArrayLayout(CORDB_ADDRESS id, COR_ARRAY_LAYOUT *pLayout);
     HRESULT STDMETHODCALLTYPE GetGCHeapInformation(OUT COR_HEAPINFO * pHeapInfo);
-    HRESULT STDMETHODCALLTYPE GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW);
+    HRESULT STDMETHODCALLTYPE HasReadWriteMetadata(VMPTR_PEAssembly vmPEAssembly, OUT BOOL* pHasReadWriteMetadata);
 #ifdef FEATURE_CODE_VERSIONING
     HRESULT STDMETHODCALLTYPE GetActiveRejitILCodeVersionNode(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ILCodeVersionNode* pVmILCodeVersionNode);
     HRESULT STDMETHODCALLTYPE GetEnCILCodeAndSig(VMPTR_Module vmModule, mdMethodDef methodTk, SIZE_T enCVersion, OUT TargetBuffer * pCodeInfo, OUT mdSignature * pLocalSigToken);
