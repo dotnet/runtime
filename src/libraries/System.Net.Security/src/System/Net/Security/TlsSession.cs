@@ -197,6 +197,10 @@ namespace System.Net.Security
         // supply a body (Windows, Linux/FreeBSD, macOS/iOS/tvOS, Haiku, OpenBSD).
         partial void InitializePlatformSpecificSessionState();
 
+        // Android folds the JSSE trust-manager verdict captured during handshake into the
+        // policy errors seen by AcceptWithDefaultValidation. No-op on all other platforms.
+        partial void SeedPlatformValidationErrors(ref SslPolicyErrors sslPolicyErrors);
+
         internal virtual void OnContextInitialized()
         {
         }
@@ -354,6 +358,7 @@ namespace System.Net.Security
 
             ProtocolToken alertToken = default;
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
+            SeedPlatformValidationErrors(ref sslPolicyErrors);
             bool ok;
             try
             {
