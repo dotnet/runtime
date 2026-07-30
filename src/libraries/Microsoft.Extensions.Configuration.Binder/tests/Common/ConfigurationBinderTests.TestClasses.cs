@@ -306,6 +306,18 @@ namespace Microsoft.Extensions
             public string Value { get; set; }
         }
 
+        public sealed class ClassWithInitOnlyCollectionParameterlessCtor
+        {
+            public List<string> Items { get; init; } = new();
+            public string Name { get; init; }
+        }
+
+        public sealed class InitOnlyPropertiesWithNonNullDefaults
+        {
+            public string Name { get; init; } = "defaultName";
+            public List<string> Items { get; init; } = new() { "preset" };
+        }
+
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 
         public class ContainerWithNestedImmutableObject

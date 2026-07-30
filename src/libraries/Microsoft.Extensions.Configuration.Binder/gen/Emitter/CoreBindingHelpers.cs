@@ -319,11 +319,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitInitializeMethod(ObjectSpec type)
             {
-                Debug.Assert(type.InstantiationStrategy is ObjectInstantiationStrategy.ParameterizedConstructor);
+                Debug.Assert(_typeIndex.HasInitializeMethod(type));
                 Debug.Assert(_typeIndex.CanInstantiate(type));
+                Debug.Assert(type.Properties is not null, $"Expecting type for init method, {type.DisplayString}, to have properties.");
                 Debug.Assert(
-                    type is { Properties: not null, ConstructorParameters: not null },
-                    $"Expecting type for init method, {type.DisplayString}, to have both properties and ctor params.");
+                    type.InstantiationStrategy is ObjectInstantiationStrategy.ParameterlessConstructor || type.ConstructorParameters is not null,
+                    $"Expecting parameterized type for init method, {type.DisplayString}, to have ctor params.");
 
                 IEnumerable<PropertySpec> initOnlyProps = type.Properties
                     .Where(prop => prop.SetOnInit && _typeIndex.ShouldBindTo(prop));
@@ -332,20 +333,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitStartBlock($"public static {type.TypeRef.FullyQualifiedName} {GetInitializeMethodDisplayString(type)}({Identifier.IConfiguration} {Identifier.configuration}, {Identifier.BinderOptions}? {Identifier.binderOptions})");
                 _emitBlankLineBeforeNextStatement = false;
 
-                foreach (ParameterSpec parameter in type.ConstructorParameters)
+                if (type.ConstructorParameters is not null)
                 {
-                    string name = parameter.Name;
-                    string argExpr = parameter.RefKind switch
+                    foreach (ParameterSpec parameter in type.ConstructorParameters)
                     {
-                        RefKind.None => name,
-                        RefKind.Ref => $"ref {name}",
-                        RefKind.Out => "out _",
-                        RefKind.In => $"in {name}",
-                        _ => throw new InvalidOperationException()
-                    };
+                        string name = parameter.Name;
+                        string argExpr = parameter.RefKind switch
+                        {
+                            RefKind.None => name,
+                            RefKind.Ref => $"ref {name}",
+                            RefKind.Out => "out _",
+                            RefKind.In => $"in {name}",
+                            _ => throw new InvalidOperationException()
+                        };
 
-                    ctorArgList.Add(argExpr);
-                    EmitBindImplForMember(parameter);
+                        ctorArgList.Add(argExpr);
+                        EmitBindImplForMember(parameter);
+                    }
                 }
 
                 foreach (PropertySpec property in initOnlyProps)
@@ -948,11 +952,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             /// <summary>
             /// Whether <paramref name="property"/> is populated while an instance of <paramref name="type"/> is created
             /// through its Initialize method: either it flows through a matching constructor parameter, or it is a
-            /// required/init-only property assigned in the object initializer. Only parameterized-constructor types have
-            /// an Initialize method; parameterless-constructor types bind all their properties in <c>BindCore</c>.
+            /// required/init-only property assigned in the object initializer. Types without an Initialize method bind
+            /// all their properties in <c>BindCore</c>.
             /// </summary>
-            private static bool IsBoundInInitialize(ObjectSpec type, PropertySpec property) =>
-                type.InstantiationStrategy is ObjectInstantiationStrategy.ParameterizedConstructor &&
+            private bool IsBoundInInitialize(ObjectSpec type, PropertySpec property) =>
+                _typeIndex.HasInitializeMethod(type) &&
                 (property.MatchingCtorParam is not null || property.SetOnInit);
 
             /// <summary>
@@ -1390,15 +1394,25 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (strategy is ObjectInstantiationStrategy.ParameterlessConstructor)
                     {
-                        // value tuple types will be declared with syntax like:
-                        //     (int, int) value = default;
-                        // This is to avoid using invalid syntax calling the parameterless constructor
-                        initExpr = type.IsValueTuple ? "default" : $"new {typeFQN}()";
+                        if (_typeIndex.HasInitializeMethod(objectType))
+                        {
+                            // A required or init-only property can only be assigned in an object initializer at
+                            // construction time; that is done in the Initialize method.
+                            string initMethodIdentifier = GetInitializeMethodDisplayString(objectType);
+                            initExpr = $"{initMethodIdentifier}({configArgExpr}, {Identifier.binderOptions})";
+                        }
+                        else
+                        {
+                            // value tuple types will be declared with syntax like:
+                            //     (int, int) value = default;
+                            // This is to avoid using invalid syntax calling the parameterless constructor
+                            initExpr = type.IsValueTuple ? "default" : $"new {typeFQN}()";
+                        }
                     }
                     else
                     {
                         Debug.Assert(strategy is ObjectInstantiationStrategy.ParameterizedConstructor);
-                        string initMethodIdentifier = GetInitializeMethodDisplayString(((ObjectSpec)type));
+                        string initMethodIdentifier = GetInitializeMethodDisplayString(objectType);
                         initExpr = $"{initMethodIdentifier}({configArgExpr}, {Identifier.binderOptions})";
                     }
                 }

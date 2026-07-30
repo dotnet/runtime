@@ -1875,6 +1875,68 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("hello", result.Child.Value);
         }
 
+        /// <summary>
+        /// A parameterless-constructor type with an init-only (or required) property is created through a generated
+        /// Initialize method that assigns those members in an object initializer. An init-only collection there must be
+        /// bound exactly once - in Initialize, not again in BindCore - so its items are not duplicated.
+        /// </summary>
+        [Fact]
+        public void CanBind_InitOnlyCollectionOnParameterlessConstructorType()
+        {
+            string json = """
+            {
+                "Name": "n",
+                "Items": [ "a", "b" ]
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            ClassWithInitOnlyCollectionParameterlessCtor result = config.Get<ClassWithInitOnlyCollectionParameterlessCtor>();
+
+            Assert.Equal("n", result.Name);
+            Assert.Equal(new[] { "a", "b" }, result.Items);
+        }
+
+        /// <summary>
+        /// Documents a known difference between the reflection binder and the source generator for an init-only
+        /// property that has a non-null field-initializer default.
+        ///
+        /// The reflection binder constructs the instance (running the field initializer) and then binds through the
+        /// property getter, so a configured value is layered over the existing default (appended, for a collection)
+        /// and an absent key preserves the default.
+        ///
+        /// The source generator cannot observe a property's field initializer, so it binds the property in the object
+        /// initializer at construction time: a configured value replaces the default, and an absent key leaves the
+        /// property at its (unobserved) default of null. Init-only properties without such a default bind identically
+        /// in both binders; this only affects init-only properties that carry a non-null default.
+        /// </summary>
+        [Fact]
+        public void InitOnlyPropertyWithNonNullDefault_BinderBehaviorDiffers()
+        {
+            string present = """{ "Name": "n", "Items": [ "a", "b" ] }""";
+            string missing = """{ "Unrelated": "x" }""";
+
+            InitOnlyPropertiesWithNonNullDefaults whenPresent =
+                TestHelpers.GetConfigurationFromJsonString(present).Get<InitOnlyPropertiesWithNonNullDefaults>();
+            InitOnlyPropertiesWithNonNullDefaults whenMissing =
+                TestHelpers.GetConfigurationFromJsonString(missing).Get<InitOnlyPropertiesWithNonNullDefaults>();
+
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // Configured value replaces the default; an absent key leaves the property null.
+            Assert.Equal("n", whenPresent.Name);
+            Assert.Equal(new[] { "a", "b" }, whenPresent.Items);
+            Assert.Null(whenMissing.Name);
+            Assert.Null(whenMissing.Items);
+#else
+            // The field-initializer default is preserved: layered over when present, kept when absent.
+            Assert.Equal("n", whenPresent.Name);
+            Assert.Equal(new[] { "preset", "a", "b" }, whenPresent.Items);
+            Assert.Equal("defaultName", whenMissing.Name);
+            Assert.Equal(new[] { "preset" }, whenMissing.Items);
+#endif
+        }
+
         public static IEnumerable<object[]> Configuration_TestData()
         {
             yield return new object[]

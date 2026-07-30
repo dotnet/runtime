@@ -173,11 +173,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                                 // A type with a parameterized constructor gets its constructor parameters bound
                                 // in the Initialize method regardless of whether it also has other bindable
-                                // members; that binding capability must be registered even when
-                                // HasBindableMembers is false (e.g. the only member is a ctor parameter backed
-                                // by a non-bindable read-only collection type), otherwise the emitter can end up
-                                // calling an Initialize method that was never generated.
-                                bool needsInitializeMethod = objectSpec is { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor, InitExceptionMessage: null };
+                                // members; a parameterless-constructor type with a required or init-only property
+                                // also needs an Initialize method to assign those members in an object initializer.
+                                // That binding capability must be registered even when HasBindableMembers is false
+                                // (e.g. the only member is a ctor parameter backed by a non-bindable read-only
+                                // collection type), otherwise the emitter can end up calling an Initialize method
+                                // that was never generated.
+                                bool needsInitializeMethod = _typeIndex.HasInitializeMethod(objectSpec);
 
                                 if (hasBindableMembers || needsInitializeMethod)
                                 {

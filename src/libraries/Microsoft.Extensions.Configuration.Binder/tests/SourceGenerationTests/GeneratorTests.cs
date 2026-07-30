@@ -472,6 +472,57 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("""
+            public record Settings
+            {
+                public required string Name { get; init; }
+                public required Nested Child { get; init; }
+            }
+
+            public record Nested
+            {
+                public required string Value { get; init; }
+            }
+            """)]
+        [InlineData("""
+            public class Settings
+            {
+                public required string Name { get; set; }
+                public required Nested Child { get; set; }
+            }
+
+            public class Nested
+            {
+                public required string Value { get; set; }
+            }
+            """)]
+        public async Task RequiredPropertyOnParameterlessConstructorType(string settingsType)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        Settings settings = config.GetSection("Settings").Get<Settings>()!;
+                    }
+                }
+
+                {{settingsType}}
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public async Task ListOfTupleWithComplexElementInInternalPropertyTest()
         {
