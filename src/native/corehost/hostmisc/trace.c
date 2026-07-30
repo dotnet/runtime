@@ -118,79 +118,6 @@ static void trace_format_timestamp(pal_char_t* buffer, size_t buffer_len)
 #endif
 }
 
-static void trace_err_print_line(const pal_char_t* message)
-{
-#if defined(_WIN32)
-    // On Windows, use WriteConsoleW for proper Unicode output, fall back to
-    // file output if stderr is redirected.
-    HANDLE hStdErr = GetStdHandle(STD_ERROR_HANDLE);
-    DWORD mode;
-    if (GetConsoleMode(hStdErr, &mode))
-    {
-        WriteConsoleW(hStdErr, message, (DWORD)pal_strlen(message), NULL, NULL);
-        WriteConsoleW(hStdErr, L"\n", 1, NULL, NULL);
-    }
-    else
-    {
-        _locale_t loc = _create_locale(LC_ALL, ".utf8");
-        _fwprintf_l(stderr, L"%s\n", loc, message);
-        _free_locale(loc);
-    }
-#else
-    fputs(message, stderr);
-    fputc('\n', stderr);
-#endif
-}
-
-static void trace_file_vprintf(FILE* f, const pal_char_t* format, va_list vl)
-{
-#if defined(_WIN32)
-    _locale_t loc = _create_locale(LC_ALL, ".utf8");
-    _vfwprintf_l(f, format, loc, vl);
-    fputwc(L'\n', f);
-    _free_locale(loc);
-#else
-    vfprintf(f, format, vl);
-    fputc('\n', f);
-#endif
-}
-
-static void trace_out_vprint_line(const pal_char_t* format, va_list vl)
-{
-#if defined(_WIN32)
-    va_list vl_copy;
-    va_copy(vl_copy, vl);
-    int len = 1 + _vscwprintf(format, vl_copy);
-    va_end(vl_copy);
-    if (len <= 0)
-        return;
-
-    pal_char_t* buffer = (pal_char_t*)malloc((size_t)len * sizeof(pal_char_t));
-    if (buffer == NULL)
-        return;
-
-    _vsnwprintf_s(buffer, len, _TRUNCATE, format, vl);
-
-    HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    DWORD mode;
-    if (GetConsoleMode(hStdOut, &mode))
-    {
-        WriteConsoleW(hStdOut, buffer, (DWORD)wcslen(buffer), NULL, NULL);
-        WriteConsoleW(hStdOut, L"\n", 1, NULL, NULL);
-    }
-    else
-    {
-        _locale_t loc = _create_locale(LC_ALL, ".utf8");
-        _fwprintf_l(stdout, L"%s\n", loc, buffer);
-        _free_locale(loc);
-    }
-    free(buffer);
-#else
-    vfprintf(stdout, format, vl);
-    fputc('\n', stdout);
-#endif
-}
-
 //
 // Turn on tracing for the corehost based on DOTNET_HOST_TRACE and DOTNET_HOST_TRACEFILE env.
 //
@@ -317,7 +244,7 @@ void trace_verbose_v(const pal_char_t* format, va_list args)
         return;
 
     trace_lock_acquire();
-    trace_file_vprintf(g_trace_file, format, args);
+    pal_file_vprintf(g_trace_file, format, args);
     trace_lock_release();
 }
 
@@ -335,7 +262,7 @@ void trace_info_v(const pal_char_t* format, va_list args)
         return;
 
     trace_lock_acquire();
-    trace_file_vprintf(g_trace_file, format, args);
+    pal_file_vprintf(g_trace_file, format, args);
     trace_lock_release();
 }
 
@@ -381,7 +308,7 @@ void trace_error_v(const pal_char_t* format, va_list args)
     trace_lock_acquire();
     if (g_error_writer == NULL)
     {
-        trace_err_print_line(buffer);
+        pal_err_print_line(buffer);
     }
     else
     {
@@ -389,7 +316,7 @@ void trace_error_v(const pal_char_t* format, va_list args)
     }
 
     if (g_trace_verbosity && ((g_trace_file != stderr) || g_error_writer != NULL))
-        trace_file_vprintf(g_trace_file, format, trace_args);
+        pal_file_vprintf(g_trace_file, format, trace_args);
     trace_lock_release();
 
     free(buffer);
@@ -408,7 +335,7 @@ void trace_error(const pal_char_t* format, ...)
 void trace_println_v(const pal_char_t* format, va_list args)
 {
     trace_lock_acquire();
-    trace_out_vprint_line(format, args);
+    pal_out_vprint_line(format, args);
     trace_lock_release();
 }
 
@@ -431,7 +358,7 @@ void trace_warning_v(const pal_char_t* format, va_list args)
         return;
 
     trace_lock_acquire();
-    trace_file_vprintf(g_trace_file, format, args);
+    pal_file_vprintf(g_trace_file, format, args);
     trace_lock_release();
 }
 

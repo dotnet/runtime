@@ -64,11 +64,13 @@ This applies to all GitHub interactions: PR descriptions, issue bodies, comments
 
 A successful baseline build of the affected component is required for incremental builds and tests. Without it you'll hit "missing testhost" and "shared framework" errors that cost 20+ minutes per occurrence.
 
-### When running under CCA — MANDATORY
+### When running under CCA — MANDATORY WITH ONE EXCEPTION
 
-⚠️ **You MUST complete the baseline build BEFORE making any code changes.** No exceptions. The CCA environment is fresh; there are no pre-existing artifacts, and incremental builds will fail in ways that waste significant compute. Skipping this step IS a task failure — do not proceed with code changes until the baseline build succeeds.
+⚠️ **RULE: You MUST complete the baseline build BEFORE making any code changes.** The CCA environment is fresh; there are no pre-existing artifacts, and incremental builds will fail in ways that waste significant compute. Skipping this step IS a task failure — do not proceed with code changes until the baseline build succeeds.
 
 If the baseline build fails, STOP, report the failure, and do not attempt to work around it.
+
+⚠️ **EXCEPTION:** If you are on a feature branch with commits upstream of main, and you encounter a build failure in your attempt to run a baseline build, this rule does **NOT** apply. Make any code changes necessary to fix the build. Once said changes are committed , return to requiring a baseline build.
 
 ### When running under CLI (interactive) — flexible
 

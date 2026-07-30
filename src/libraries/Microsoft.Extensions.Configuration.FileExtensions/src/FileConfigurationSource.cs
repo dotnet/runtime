@@ -48,6 +48,11 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Gets or sets the action that's called if an uncaught exception occurs in FileConfigurationProvider.Load.
         /// </summary>
+        /// <remarks>
+        /// When <see cref="ReloadOnChange"/> is enabled, this callback is also invoked on background reload failures.
+        /// If the callback is not set or does not set <see cref="FileLoadExceptionContext.Ignore"/> to <see langword="true"/>,
+        /// exceptions from background reloads will propagate unhandled on the thread pool.
+        /// </remarks>
         public Action<FileLoadExceptionContext>? OnLoadException { get; set; }
 
         /// <summary>

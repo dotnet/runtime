@@ -495,23 +495,20 @@ void CordbModule::RefreshMetaData()
         IfFailThrow(GetProcess()->GetDAC()->GetPEFileMDInternalRW(m_vmPEFile, &remoteMDInternalRWAddr));
         if (remoteMDInternalRWAddr != (TADDR)NULL)
         {
-            // we should only be doing this once to initialize, we don't support reopen with this technique
             _ASSERTE(m_pIMImport == NULL);
-            ULONG32 mdStructuresVersion;
-            HRESULT hr = GetProcess()->GetDAC()->GetMDStructuresVersion(&mdStructuresVersion);
-            IfFailThrow(hr);
-            ULONG32 mdStructuresDefines;
-            hr = GetProcess()->GetDAC()->GetDefinesBitField(&mdStructuresDefines);
-            IfFailThrow(hr);
-            IMetaDataDispenserCustom* pDispCustom = NULL;
-            hr = GetProcess()->GetDispenser()->QueryInterface(IID_IMetaDataDispenserCustom, (void**)&pDispCustom);
-            IfFailThrow(hr);
-            IMDCustomDataSource* pDataSource = NULL;
-            hr = CreateRemoteMDInternalRWSource(remoteMDInternalRWAddr, GetProcess()->GetDataTarget(), mdStructuresDefines, mdStructuresVersion, &pDataSource);
-            IfFailThrow(hr);
-            IMetaDataImport* pImport = NULL;
-            hr = pDispCustom->OpenScopeOnCustomDataSource(pDataSource, 0, IID_IMetaDataImport, (IUnknown**)&m_pIMImport);
-            IfFailThrow(hr);
+            ULONG32 cbSize = 0;
+            IfFailThrow(GetProcess()->GetDAC()->GetReadWriteMetadataSize(m_vmModule, &cbSize));
+            CoTaskMemHolder<BYTE> pBuffer{ (BYTE*)CoTaskMemAlloc(cbSize) };
+            if (pBuffer == NULL)
+            {
+                ThrowOutOfMemory();
+            }
+
+            IfFailThrow(GetProcess()->GetDAC()->FillReadWriteMetadata(m_vmModule, pBuffer, cbSize));
+            IMetaDataDispenserEx *  pDisp = GetProcess()->GetDispenser();
+            _ASSERTE(pDisp != NULL);
+            IfFailThrow(pDisp->OpenScopeOnMemory(pBuffer, cbSize, ofTakeOwnership, IID_IMetaDataImport, (IUnknown**)&m_pIMImport));
+            pBuffer.Detach(); // ownership transferred to the IMetaDataImport
             UpdateInternalMetaData();
             return;
         }
@@ -2124,7 +2121,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
     if (m_vmAssembly.IsNull())
         return E_UNEXPECTED;
 
-#ifdef FEATURE_REMAP_FUNCTION
+#ifdef FEATURE_METADATA_UPDATER
     HRESULT hr;
 
     void * pRemoteBuf = NULL;

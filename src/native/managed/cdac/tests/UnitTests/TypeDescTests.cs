@@ -193,6 +193,8 @@ public class TypeDescTests
     {
         TargetPointer module = 0x1000;
         uint token = 0xa;
+        uint varIndex = 2;
+        uint mvarIndex = 3;
         TargetPointer varType = TargetPointer.Null;
         TargetPointer mvarType = TargetPointer.Null;
         TargetPointer paramType = TargetPointer.Null;
@@ -206,12 +208,14 @@ public class TypeDescTests
                 varTypeDesc.TypeAndFlags = (uint)CorElementType.Var;
                 varTypeDesc.Module = module;
                 varTypeDesc.Token = token;
+                varTypeDesc.Index = varIndex;
                 varType = varTypeDesc.Address;
 
                 MockTypeVarTypeDesc mvarTypeDesc = rtsBuilder.AddTypeVarTypeDesc();
                 mvarTypeDesc.TypeAndFlags = (uint)CorElementType.MVar;
                 mvarTypeDesc.Module = module;
                 mvarTypeDesc.Token = token;
+                mvarTypeDesc.Index = mvarIndex;
                 mvarType = mvarTypeDesc.Address;
 
                 MockParamTypeDesc paramTypeDesc = rtsBuilder.AddParamTypeDesc();
@@ -228,32 +232,34 @@ public class TypeDescTests
             // Var
             IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
             ITypeHandle handle = rts.GetTypeHandle(GetTypeDescHandlePointer(varType));
-            bool res = rts.IsGenericVariable(handle, out TargetPointer actualModule, out uint actualToken);
+            bool res = rts.IsGenericVariable(handle, out TargetPointer actualModule, out uint actualToken, out uint actualIndex);
             Assert.True(res);
             Assert.Equal(module, actualModule);
             Assert.Equal(token, actualToken);
+            Assert.Equal(varIndex, actualIndex);
         }
         {
             // MVar
             IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
             ITypeHandle handle = rts.GetTypeHandle(GetTypeDescHandlePointer(mvarType));
-            bool res = rts.IsGenericVariable(handle, out TargetPointer actualModule, out uint actualToken);
+            bool res = rts.IsGenericVariable(handle, out TargetPointer actualModule, out uint actualToken, out uint actualIndex);
             Assert.True(res);
             Assert.Equal(module, actualModule);
             Assert.Equal(token, actualToken);
+            Assert.Equal(mvarIndex, actualIndex);
         }
         {
             // Function pointer
             IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
             ITypeHandle handle = rts.GetTypeHandle(GetTypeDescHandlePointer(funcPtr));
-            bool res = rts.IsGenericVariable(handle, out _, out _);
+            bool res = rts.IsGenericVariable(handle, out _, out _, out _);
             Assert.False(res);
         }
         {
             // Param type
             IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
             ITypeHandle handle = rts.GetTypeHandle(GetTypeDescHandlePointer(paramType));
-            bool res = rts.IsGenericVariable(handle, out _, out _);
+            bool res = rts.IsGenericVariable(handle, out _, out _, out _);
             Assert.False(res);
         }
     }

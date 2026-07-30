@@ -347,7 +347,7 @@ replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 replay_common_parser.add_argument("-private_store", action="append", help=private_store_help)
 replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 replay_common_parser.add_argument("--produce_repro", action="store_true", help=produce_repro_help)
-replay_common_parser.add_argument("-details", help="Specify full path to details file")
+replay_common_parser.add_argument("-details", help="Specify full path to details file or folder")
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -1663,6 +1663,14 @@ def report_replay_asserts(asserts, output_mch_file):
                     logging.info("  ... omitting %s instances", assertion_instance_count - instance_num)
                     break
 
+def get_details_file_path(coreclr_args, mch_file, temp_location):
+    if coreclr_args.details:
+        if os.path.isdir(coreclr_args.details):
+            return os.path.join(coreclr_args.details, os.path.basename(mch_file) + ".csv")
+        else:
+            return coreclr_args.details
+    else:
+        return os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
 
 ################################################################################
 # SuperPMI Replay
@@ -1787,10 +1795,7 @@ class SuperPMIReplay:
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
 
-                if self.coreclr_args.details:
-                  details_info_file = self.coreclr_args.details
-                else:
-                  details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+                details_info_file = get_details_file_path(self.coreclr_args, mch_file, temp_location)
 
                 flags += [
                     "-f", fail_mcl_file,  # Failing mc List
@@ -2256,10 +2261,7 @@ class SuperPMIReplayAsmDiffs:
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
 
-                if self.coreclr_args.details:
-                    details_info_file = self.coreclr_args.details
-                else:
-                    details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+                details_info_file = get_details_file_path(self.coreclr_args, mch_file, temp_location)
 
                 flags = [
                     "-a",  # Asm diffs
@@ -3169,10 +3171,7 @@ class SuperPMIReplayThroughputDiff:
 
                 logging.info("Running throughput diff of %s", mch_file)
 
-                if self.coreclr_args.details:
-                    details_info_file = self.coreclr_args.details
-                else:
-                    details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+                details_info_file = get_details_file_path(self.coreclr_args, mch_file, temp_location)
 
                 pin_options = [
                     "-follow_execv", # attach to child processes
@@ -3507,10 +3506,7 @@ class SuperPMIReplayMetricDiff:
 
                 logging.info("Running metric diff of %s", mch_file)
 
-                if self.coreclr_args.details:
-                    details_info_file = self.coreclr_args.details
-                else:
-                    details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+                details_info_file = get_details_file_path(self.coreclr_args, mch_file, temp_location)
 
                 flags = [
                     "-applyDiff",

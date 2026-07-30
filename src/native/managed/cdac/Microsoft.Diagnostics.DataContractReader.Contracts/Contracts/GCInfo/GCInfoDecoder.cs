@@ -555,6 +555,49 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         return _codeLength;
     }
 
+    public bool TryGetGenericContextStorage(GenericContextLoc contextKind, uint instructionOffset, out GenericContextStorage storage)
+    {
+        if (TTraits.IsInterpreter && contextKind == GenericContextLoc.ThisPtr)
+        {
+            storage = new GenericContextStorage(GenericContextStorageKind.InterpreterArgumentRelative, registerNumber: 0, offset: 0);
+            return true;
+        }
+
+        EnsureDecodedTo(DecodePoints.ReversePInvoke);
+        if (_genericsInstContextStackSlot == TTraits.NO_GENERICS_INST_CONTEXT)
+        {
+            storage = default;
+            return false;
+        }
+
+        if (TTraits.IsInterpreter)
+        {
+            storage = new GenericContextStorage(
+                GenericContextStorageKind.InterpreterArgumentRelative,
+                registerNumber: 0,
+                _genericsInstContextStackSlot);
+        }
+        else if (_stackBaseRegister != TTraits.NO_STACK_BASE_REGISTER)
+        {
+            storage = new GenericContextStorage(
+                GenericContextStorageKind.RegisterRelative,
+                _stackBaseRegister,
+                _genericsInstContextStackSlot);
+        }
+        else
+        {
+            storage = new GenericContextStorage(
+                GenericContextStorageKind.StackPointerRelative,
+                registerNumber: 0,
+                _genericsInstContextStackSlot);
+        }
+
+        return true;
+    }
+
+    // The GcInfoDecoder format (all non-x86 architectures) has no ambient SP
+    public TargetPointer GetAmbientSP(uint codeOffset, TargetPointer fp, TargetPointer sp) => TargetPointer.Null;
+
     public IReadOnlyList<InterruptibleRange> GetInterruptibleRanges()
     {
         EnsureDecodedTo(DecodePoints.InterruptibleRanges);

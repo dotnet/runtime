@@ -356,6 +356,47 @@ namespace System.Buffers.Text
 
                 ref sbyte decodingMap = ref MemoryMarshal.GetReference(decoder.DecodingMap);
 
+#if NET
+                // Decode in place using the same vectorized helpers as DecodeFrom. This is safe because the
+                // write cursor (dest) always trails the read cursor (src) by 25%, so each vector store -- including
+                // its zero-padded overshoot -- ends at or before the next vector load and never clobbers source
+                // that hasn't been read yet.
+                if (bufferLength >= 24)
+                {
+                    byte* src = bufferBytes;
+                    byte* dest = bufferBytes;
+                    int length = (int)bufferLength;
+                    byte* srcMax = bufferBytes + length;
+
+                    byte* end = srcMax - 88;
+                    if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && (end >= src))
+                    {
+                        Avx512Decode(decoder, ref src, ref dest, end, length, length, bufferBytes, bufferBytes);
+                    }
+
+                    end = srcMax - 45;
+                    if (Avx2.IsSupported && (end >= src))
+                    {
+                        Avx2Decode(decoder, ref src, ref dest, end, length, length, bufferBytes, bufferBytes);
+                    }
+
+                    end = srcMax - 66;
+                    if (AdvSimd.Arm64.IsSupported && (end >= src))
+                    {
+                        AdvSimdDecode(decoder, ref src, ref dest, end, length, length, bufferBytes, bufferBytes);
+                    }
+
+                    end = srcMax - 24;
+                    if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
+                    {
+                        Vector128Decode(decoder, ref src, ref dest, end, length, length, bufferBytes, bufferBytes);
+                    }
+
+                    sourceIndex = (uint)(src - bufferBytes);
+                    destIndex = (uint)(dest - bufferBytes);
+                }
+#endif
+
                 if (bufferLength > 4)
                 {
                     while (sourceIndex < bufferLength - 4)

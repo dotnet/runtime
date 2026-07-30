@@ -164,6 +164,7 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `Bucket` | `Keys` | `pointer` | Array of keys of `HashMapSlotsPerBucket` length |
 | `Bucket` | `Values` | `pointer` | Array of values of `HashMapSlotsPerBucket` length |
 | `CodeHeap` | `HeapType` | `uint8` | `uint8` discriminant identifying the concrete heap type |
+| `CodeHeapListNode` | `CLRPersonalityRoutine` | `pointer` | Address of the CLR personality routine; when non-null, this is the module base for a Windows dynamic function table |
 | `CodeHeapListNode` | `EndAddress` | `pointer` | End address of the used portion of the code heap |
 | `CodeHeapListNode` | `HeaderMap` | `pointer` | Bit array used to find the start of methods - relative to `MapBase` |
 | `CodeHeapListNode` | `Heap` | `pointer` | Pointer to the `CodeHeap` object managed by this node |
@@ -171,6 +172,8 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `CodeHeapListNode` | `Next` | `pointer` | Next node |
 | `CodeHeapListNode` | `StartAddress` | `pointer` | Start address of the used portion of the code heap |
 | `CodeRangeMapRangeList` | `RangeListType` | `int32` | Integer identifying the stub code block kind for this range list |
+| `DynamicFunctionTable` | `Context` | `pointer` | Tagged pointer to the owning `EEJitManager`; low bits are flags |
+| `DynamicFunctionTable` | `MinimumAddress` | `pointer` | Module base address covered by the dynamic function table |
 | `EEExceptionClause` | *(type size)* | `uint32` | Size of an exception clause in bytes |
 | `EEExceptionClause` | `Flags` | `uint32` | Exception clause flags (`COR_ILEXCEPTION_CLAUSE_*` bit flags) |
 | `EEExceptionClause` | `HandlerEndPC` | `uint32` | Native offset of the end of the handler |
@@ -609,6 +612,19 @@ IEnumerable<ICodeHeapInfo> IExecutionManager.GetCodeHeapInfos()
     }
 }
 ```
+
+### Dynamic Function Table Entries
+
+`GetDynamicFunctionTableEntries` returns the target addresses of the
+`RUNTIME_FUNCTION` records for a Windows dynamic function table. These records describe
+the unwind information for dynamically generated JIT code and are consumed by
+out-of-process unwinders.
+
+`tableAddress` identifies a target `DYNAMIC_FUNCTION_TABLE`. Its `Context` identifies
+the owning `EEJitManager`, and its `MinimumAddress` identifies the associated code heap.
+The result contains the entries for that heap, ordered by descending method start address
+and then by ascending entry address within a method. If the table does not identify a
+known code heap, or if the target is not Windows non-x86, the result is empty.
 
 ### RangeSectionMap
 
