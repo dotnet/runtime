@@ -87,8 +87,11 @@ namespace System.Text.Json.Schema.Tests
         {
             JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(typeof(PocoWithGetOnlyProperties));
             JsonNode properties = schema["properties"]!;
+            JsonNode valuesType = properties["Values"]!["type"]!;
 
-            Assert.Equal("array", (string)properties["Values"]!["type"]!);
+            Assert.IsNotType<JsonArray>(valuesType);
+            Assert.Equal("array", (string)valuesType);
+            Assert.NotNull(properties["Values"]!["items"]);
             Assert.Equal("string", (string)properties["SingleValueGetOnly"]!["type"]!);
             Assert.Equal("string", (string)properties["SingleValueGetSet"]!["type"]!);
         }
