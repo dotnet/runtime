@@ -20,7 +20,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         class DeconstructedVariable
         {
-            [ExpectedWarning("IL2077", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/3158")]
+            [ExpectedWarning("IL2077")]
             static void DeconstructVariableNoAnnotation((Type type, object instance) input)
             {
                 var (type, instance) = input;
@@ -29,7 +29,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static (Type type, object instance) GetInput(int unused) => (typeof(string), null);
 
-            [ExpectedWarning("IL2077", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/3158")]
+            [ExpectedWarning("IL2077")]
             static void DeconstructVariableFlowCapture(bool b = true)
             {
                 // This creates a control-flow graph where the tuple elements assigned to
@@ -48,8 +48,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             static ref Type AnnotatedProperty => ref annotatedfield;
 
-            [ExpectedWarning("IL2062", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/3158")]
-            [ExpectedWarning("IL2078", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/3158")]
+            [ExpectedWarning("IL2062", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2158")]
+            [ExpectedWarning("IL2078", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2158")]
             static void DeconstructVariablePropertyReference((Type type, object instance) input)
             {
                 object instance;
@@ -66,10 +66,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // In IL based tools this is a behavior of the compiler. The attribute on the record declaration parameter
             // is only propagated to the .ctor constructor parameter. The property and field attributes are applied to the
             // generated property and field respectively. But none of the attributes is propagated to the Deconstruct method parameters.
-            // For analyzer, this is currently
-            // https://github.com/dotnet/linker/issues/3158
-            //   But it's possible that with that fixed there won't be a warning from the analyzer anyway (depends on the implementation)
-            [ExpectedWarning("IL2067", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/3158")]
+            [ExpectedWarning("IL2067")]
             static void DeconstructRecordWithAnnotation(TypeAndInstance value)
             {
                 var (type, instance) = value;
@@ -115,11 +112,69 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.RequiresPublicMethods();
             }
 
-            [ExpectedWarning("IL2067", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/3158")]
+            [ExpectedWarning("IL2067")]
             static void DeconstructRecordManualWithMismatchAnnotation(TypeAndInstanceRecordManual value)
             {
                 var (type, instance) = value;
                 type.RequiresPublicFields();
+            }
+
+            static void DeconstructExtensionWithAnnotation(TypeAndInstanceExtension value)
+            {
+                var (type, instance) = value;
+                type.RequiresPublicMethods();
+            }
+
+            [ExpectedWarning("IL2067")]
+            static void DeconstructExtensionWithMismatchAnnotation(TypeAndInstanceExtension value)
+            {
+                var (type, instance) = value;
+                type.RequiresPublicFields();
+            }
+
+            [ExpectedWarning("IL2077")]
+            static void DeconstructNestedTuple(((Type type, object instance) nested, object instance) input)
+            {
+                var ((type, instance), outerInstance) = input;
+                type.RequiresPublicMethods();
+            }
+
+            static void DeconstructTupleLiteral(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type input)
+            {
+                var (type, instance) = (input, new object());
+                type.RequiresPublicMethods();
+            }
+
+            // The swap correctly propagates the annotation from typeWithMethods to first (via second),
+            // so no warning is produced here.
+            static void DeconstructTupleSwapSuccess(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type typeWithMethods,
+                Type typeWithoutMethods)
+            {
+                Type first = typeWithoutMethods;
+                Type second = typeWithMethods;
+                (first, second) = (second, first);
+                first.RequiresPublicMethods();
+            }
+
+            [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
+            static void DeconstructTupleSwap(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type typeWithMethods,
+                Type typeWithoutMethods)
+            {
+                Type first = typeWithMethods;
+                Type second = typeWithoutMethods;
+                (first, second) = (second, first);
+                first.RequiresPublicMethods();
+                second.RequiresPublicMethods();
+            }
+
+            [ExpectedWarning("IL2077")]
+            static void DeconstructForeach((Type type, object instance)[] inputs)
+            {
+                foreach (var (type, instance) in inputs)
+                    type.RequiresPublicMethods();
             }
 
             public static void Test()
@@ -131,6 +186,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 DeconstructClassWithAnnotation(new(typeof(string), null));
                 DeconstructRecordManualWithAnnotation(new(typeof(string), null));
                 DeconstructRecordManualWithMismatchAnnotation(new(typeof(string), null));
+                DeconstructExtensionWithAnnotation(new());
+                DeconstructExtensionWithMismatchAnnotation(new());
+                DeconstructNestedTuple(((typeof(string), null), null));
+                DeconstructTupleLiteral(typeof(string));
+                DeconstructTupleSwapSuccess(typeof(string), typeof(string));
+                DeconstructTupleSwap(typeof(string), typeof(string));
+                DeconstructForeach(new[] { (typeof(string), (object)null) });
             }
         }
 
@@ -218,6 +280,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
                 RecordConstruction(typeof(string), typeof(string));
             }
+        }
+    }
+
+    class TypeAndInstanceExtension
+    {
+    }
+
+    static class TypeAndInstanceExtensions
+    {
+        public static void Deconstruct(
+            this TypeAndInstanceExtension value,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] out Type type,
+            out object instance)
+        {
+            type = typeof(string);
+            instance = null;
         }
     }
 }

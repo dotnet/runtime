@@ -260,6 +260,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             return new FieldValue(property);
         }
 
+        public override MultiValue GetTupleElementValue(IFieldSymbol tupleElement)
+        {
+            return new FieldValue(tupleElement);
+        }
 
         public override MultiValue GetParameterTargetValue(IParameterSymbol parameter)
         {
