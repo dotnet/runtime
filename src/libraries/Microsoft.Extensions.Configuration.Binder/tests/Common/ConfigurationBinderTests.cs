@@ -2957,8 +2957,11 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             configuration.Bind(instance);
 
+            Assert.NotNull(instance.Nested);
             Assert.Equal(1, instance.Nested.Integer);
+            Assert.NotNull(instance.Collection);
             Assert.Equal(["item"], instance.Collection);
+            Assert.NotNull(instance.Abstract);
             Assert.Equal(2, instance.Abstract.Value);
         }
 
