@@ -3082,12 +3082,6 @@ public:
     bool IsILStub() const { LIMITED_METHOD_DAC_CONTRACT; return HasFlags(FlagIsILStub); }
     bool IsLCGMethod() const { LIMITED_METHOD_DAC_CONTRACT; return HasFlags(FlagIsLCGMethod); }
 
-    // IL stubs whose IL is generated on demand while the stub is being compiled and discarded
-    // afterwards, instead of being emitted into the stub's resolver when the stub is created. The
-    // resolver of such a stub therefore never holds any IL, which is what everything that wants to
-    // read the IL out of it keys off. See code:MethodDesc::TryGenerateTransientILImplementation.
-    bool UsesTransientIL() const;
-
     inline PTR_DynamicResolver    GetResolver();
     inline PTR_LCGMethodResolver  GetLCGMethodResolver();
     inline PTR_ILStubResolver     GetILStubResolver();

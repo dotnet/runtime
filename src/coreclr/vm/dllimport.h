@@ -131,17 +131,11 @@ public:
     // calliSignature. Returns NULL if the call site does not describe an unmanaged call, or if
     // no marshaling is required and fMustCreate is false (in which case the caller - the JIT -
     // can emit the unmanaged call inline instead).
-    // Only the MethodDesc is created; the stub IL is generated on demand by CreateCalliStubIL.
     static MethodDesc* CreateCalliILStub(
                     Module*                  pModule,
                     const Signature&         calliSignature,
                     const SigTypeContext*    pTypeContext,
                     bool                     fMustCreate);
-
-    // Generates the transient IL of a stub created by CreateCalliILStub.
-    static COR_ILMETHOD_DECODER* CreateCalliStubIL(
-                    MethodDesc*       pStubMD,
-                    DynamicResolver** ppResolver);
 
     static COR_ILMETHOD_DECODER* CreatePInvokeMethodIL(
                     PInvokeMethodDesc* pMD,
@@ -510,6 +504,19 @@ public:
 
     void    SetInteropParamExceptionInfo(UINT resID, UINT paramIdx);
     bool    HasInteropParamExceptionInfo();
+
+    // Records an interop failure that is not tied to a single parameter and that must be reported
+    // when the stub is called rather than while it is being generated. The stub body becomes a
+    // single throw - see code:PInvokeStubLinker::GenerateInteropException.
+    void    SetInteropExceptionInfo(RuntimeExceptionKind kind, UINT resID);
+    bool    HasInteropExceptionInfo();
+    void    GenerateInteropException(ILCodeStream* pcsEmit);
+
+    DWORD   GetStubFlags() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_dwStubFlags;
+    }
     bool    TargetHasThis()
     {
         return m_targetHasThis == TRUE;
@@ -576,6 +583,8 @@ protected:
 
     UINT                m_ErrorResID;
     UINT                m_ErrorParamIdx;
+    RuntimeExceptionKind m_ExceptionKind;
+    UINT                m_ExceptionResID;
     int                 m_iLCIDParamIdx;
     UINT                m_uCalliTargetArgIdx;
 

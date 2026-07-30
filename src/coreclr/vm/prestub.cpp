@@ -749,7 +749,7 @@ namespace
         {
             return GetAndVerifyMetadataILHeader(pMD, pConfig, pIlDecoderMemory);
         }
-        else if (pMD->IsILStub() && !pMD->AsDynamicMethodDesc()->UsesTransientIL())
+        else if (pMD->IsILStub())
         {
             ILStubResolver* pResolver = pMD->AsDynamicMethodDesc()->GetILStubResolver();
             return pResolver->GetILHeader();
@@ -795,17 +795,9 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
             }
             else
             {
-                unsigned int ilSize = 0;
-                unsigned int unused;
+                unsigned int ilSize, unused;
                 CorInfoOptions corOptions;
-                LPCBYTE ilHeaderPointer = NULL;
-
-                // Stubs backed by transient IL have no IL yet - it is generated as part of the
-                // compilation that is just starting.
-                if (!AsDynamicMethodDesc()->UsesTransientIL())
-                {
-                    ilHeaderPointer = AsDynamicMethodDesc()->GetResolver()->GetCodeInfo(&ilSize, &unused, &corOptions, &unused);
-                }
+                LPCBYTE ilHeaderPointer = this->AsDynamicMethodDesc()->GetResolver()->GetCodeInfo(&ilSize, &unused, &corOptions, &unused);
 
                 (&g_profControlBlock)->DynamicMethodJITCompilationStarted((FunctionID)this, TRUE, ilHeaderPointer, ilSize);
             }
@@ -1122,18 +1114,6 @@ bool MethodDesc::TryGenerateTransientILImplementation(DynamicResolver** resolver
     {
         *methodILDecoder = PInvoke::CreatePInvokeMethodIL(static_cast<PInvokeMethodDesc*>(this), resolver);
         return true;
-    }
-
-    if (IsILStub() && AsDynamicMethodDesc()->UsesTransientIL())
-    {
-        if (AsDynamicMethodDesc()->IsPInvokeCalliStub())
-        {
-            *methodILDecoder = PInvoke::CreateCalliStubIL(this, resolver);
-            return true;
-        }
-
-        _ASSERTE(!"IL stub with no generated IL has no transient IL generator");
-        return false;
     }
 
     if (TryGenerateAsyncThunk(resolver, methodILDecoder))
