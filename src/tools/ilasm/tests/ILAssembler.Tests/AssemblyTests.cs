@@ -257,6 +257,41 @@ namespace ILAssembler.Tests
             Assert.Equal(new Version(8, 0, 0, 0), asmRef.Version);
         }
 
+        [Theory]
+        [InlineData("Deterministic.dll", false)]
+        [InlineData("Deterministic.exe", true)]
+        public void ManagedIlasm_DeterministicOutput_IsByteIdentical(string outputFileName, bool executable)
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Deterministic
+                {
+                    .ver 1:2:3:4
+                }
+                .class public auto ansi beforefieldinit Program extends [mscorlib]System.Object
+                {
+                    .method public static void Main() cil managed
+                    {
+                        ENTRYPOINT
+                        ldstr "deterministic"
+                        pop
+                        ret
+                    }
+                }
+                """.Replace("ENTRYPOINT", executable ? ".entrypoint" : string.Empty);
+
+            var options = new Options
+            {
+                Deterministic = true,
+                OutputFileName = outputFileName,
+            };
+
+            ImmutableArray<byte> firstImage = DocumentCompilerTestHelpers.Compile(source, options);
+            ImmutableArray<byte> secondImage = DocumentCompilerTestHelpers.Compile(source, options);
+
+            Assert.Equal<byte>(firstImage, secondImage);
+        }
+
 
         [Fact]
         public void SqstringAssemblyName_ParsedCorrectly()
