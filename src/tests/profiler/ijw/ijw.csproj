@@ -26,7 +26,10 @@
     <ProjectReference Include="$(TestLibraryProjectPath)" />
     <ProjectReference Include="../common/profiler_common.csproj" />
     <CMakeProjectReference Include="$(MSBuildThisFileDirectory)/../native/CMakeLists.txt" />
-    <CMakeProjectReference Include="CMakeLists.txt" />
-    <CMakeProjectReference Include="../../Interop/IJW/ijwhostmock/CMakeLists.txt" />
+    <!-- The IJW (C++/CLI) profilee and the ijwhost mock are Windows-only; only
+         reference their native CMake projects on Windows so non-Windows configure
+         doesn't process the /clr build. -->
+    <CMakeProjectReference Include="CMakeLists.txt" Condition="'$(TargetsWindows)' == 'true'" />
+    <CMakeProjectReference Include="../../Interop/IJW/ijwhostmock/CMakeLists.txt" Condition="'$(TargetsWindows)' == 'true'" />
   </ItemGroup>
 </Project>
