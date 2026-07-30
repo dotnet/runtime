@@ -2003,7 +2003,7 @@ Reading a method's Runtime Async flags:
     }
 ```
 
-Resolving the loaded async variant of an async thunk method (no-create):
+Resolving the loaded async variant of an async thunk method:
 
 ```csharp
     public TargetPointer GetAsyncVariant(MethodDescHandle methodDescHandle)
