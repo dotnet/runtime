@@ -835,9 +835,7 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     yield return i;
 
-                    // The timeout ensures that an implementation that fails to flush
-                    // fails the assertions instead of hanging the test run.
-                    await Task.WhenAny(_gates[i].Task, Task.Delay(TimeSpan.FromSeconds(30)));
+                    await _gates[i].Task.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken);
                 }
             }
         }
