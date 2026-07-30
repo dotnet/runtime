@@ -83,14 +83,21 @@ namespace System.Net.NetworkInformation
 
             List<SystemNetworkInterface> interfaceList = new List<SystemNetworkInterface>();
 
-            // Pass 1 (cheap): collect adapter GUIDs returned without GAA_FLAG_INCLUDE_ALL_INTERFACES
-            // — the same set that .NET 8 returned. Any adapter absent from this set is a newly-visible
-            // NDIS filter module or interface with no IP stack. Those get OperationalStatus.Unknown
-            // so callers can trivially filter to restore the pre-.NET 9 behavior:
+            // GetAdaptersAddresses without GAA_FLAG_INCLUDE_ALL_INTERFACES returns only real
+            // network adapters — roughly the same set shown by ipconfig and ncpa.cpl, and the
+            // same set .NET 8 returned. Starting with .NET 9, GAA_FLAG_INCLUDE_ALL_INTERFACES
+            // was added, which also surfaces NDIS filter modules (WFP, QoS, Hyper-V extension
+            // filters) that have no IP stack and are not shown by any standard Windows tool.
+            // Those extra entries all report OperationalStatus.Up, which causes
+            // GetIsNetworkAvailable() to return true even when no real network is present.
+            //
+            // Collect the adapter GUIDs from the non-IncludeAllInterfaces call (the
+            // "ipconfig-equivalent" set). Any adapter absent from that set but reporting Up
+            // is a filter module; mark it Unknown so callers can restore the original behavior:
             //   ni.OperationalStatus != OperationalStatus.Unknown
             HashSet<string> legacyGuids = GetLegacyAdapterGuids();
 
-            // Pass 2: full list including all NDIS interfaces.
+            // Full list including all NDIS interfaces.
             Interop.IpHlpApi.GetAdaptersAddressesFlags flags =
                 Interop.IpHlpApi.GetAdaptersAddressesFlags.IncludeGateways |
                 Interop.IpHlpApi.GetAdaptersAddressesFlags.IncludeWins |
@@ -143,8 +150,9 @@ namespace System.Net.NetworkInformation
             return interfaceList.ToArray();
         }
 
-        // Calls GetAdaptersAddresses with the legacy flags (no GAA_FLAG_INCLUDE_ALL_INTERFACES)
-        // and returns the set of adapter GUIDs (AdapterName) it reports.
+        // Calls GetAdaptersAddresses without GAA_FLAG_INCLUDE_ALL_INTERFACES and returns
+        // the set of adapter GUIDs (AdapterName) it reports — the same adapters visible
+        // in ipconfig and ncpa.cpl.  NDIS filter modules are absent from this set.
         private static unsafe HashSet<string> GetLegacyAdapterGuids()
         {
             Interop.IpHlpApi.GetAdaptersAddressesFlags legacyFlags =
@@ -193,10 +201,15 @@ namespace System.Net.NetworkInformation
             _physicalAddress = ipAdapterAddresses.Address;
 
             _type = ipAdapterAddresses.type;
-            // Interfaces not present in the legacy (pre-GAA_FLAG_INCLUDE_ALL_INTERFACES) call are
-            // NDIS filter modules or adapters with no IP stack. Mark them Unknown so callers can
-            // restore the original behavior by filtering on ni.OperationalStatus != Unknown.
-            _operStatus = legacyGuids.Contains(_id) ? ipAdapterAddresses.operStatus : OperationalStatus.Unknown;
+            // Interfaces absent from the ipconfig-equivalent set (see GetLegacyAdapterGuids) that
+            // report Up are NDIS filter modules with no IP stack — mark them Unknown so callers can
+            // easily restore ipconfig-equivalent behavior: ni.OperationalStatus != Unknown.
+            // Interfaces absent from that set but not reporting Up are genuinely disabled adapters
+            // (Down, Dormant, etc.) that GAA_FLAG_INCLUDE_ALL_INTERFACES was added to expose;
+            // preserve their real status.
+            _operStatus = (!legacyGuids.Contains(_id) && ipAdapterAddresses.operStatus == OperationalStatus.Up)
+                ? OperationalStatus.Unknown
+                : ipAdapterAddresses.operStatus;
             _speed = unchecked((long)ipAdapterAddresses.receiveLinkSpeed);
 
             // API specific info.
