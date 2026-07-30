@@ -949,6 +949,35 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
 
         [Fact]
+        public async Task GetterOnlyCollectionProperties()
+        {
+            string source = """
+                using System.Collections.Generic;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        MyOptions options = new();
+                        config.Bind(options);
+                    }
+
+                    public class MyOptions
+                    {
+                        public List<string>? NullList { get; }
+                        public List<string> ExistingList { get; } = new();
+                    }
+                }
+                """;
+
+            await VerifyAgainstBaselineUsingFile("GetterOnlyCollectionProperties.generated.txt", source);
+        }
+
+        [Fact]
         public async Task MinimalGenerationIfNoBindableMembers()
         {
             string source = """

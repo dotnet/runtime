@@ -85,8 +85,7 @@ internal static class Entrypoints
                 };
             }
 
-            // TODO: [cdac] Better error code/details
-            if (!ContractDescriptorTarget.TryCreate(
+            ContractDescriptorTarget target = ContractDescriptorTarget.Create(
                 descriptor,
                 (address, buffer) =>
                 {
@@ -130,9 +129,7 @@ internal static class Entrypoints
                 },
                 setThreadContextDelegate,
                 allocDelegate,
-                [Contracts.CoreCLRContracts.Register],
-                out ContractDescriptorTarget? target))
-                return -1;
+                [Contracts.CoreCLRContracts.Register]);
 
             GCHandle gcHandle = GCHandle.Alloc(target);
             *handle = GCHandle.ToIntPtr(gcHandle);
@@ -184,6 +181,12 @@ internal static class Entrypoints
             object? legacyImpl = legacyImplPtr != IntPtr.Zero
                 ? ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)legacyImplPtr)
                 : null;
+
+            // Without a legacy implementation to absorb individually-unimplemented APIs, validate
+            // the complete data-access contract set before publishing the interface.
+            if (legacyImpl is null)
+                Contracts.CoreCLRContracts.ValidateForDataAccess(target);
+
             Legacy.SOSDacImpl impl = new(target, legacyImpl);
             nint ptr = (nint)ComInterfaceMarshaller<ISOSDacInterface>.ConvertToUnmanaged(impl);
             *obj = ptr;
@@ -351,7 +354,10 @@ internal static class Entrypoints
         if (hr != 0)
         {
             throw new InvalidOperationException(
-                $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.");
+                $"{nameof(ICLRContractLocator)} failed to fetch the contract descriptor with HRESULT: 0x{hr:x}.")
+            {
+                HResult = CdacHResults.CDAC_E_DESCRIPTOR_NOT_FOUND
+            };
         }
 
         return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractAddress, legacyImpl, iface);
@@ -387,7 +393,7 @@ internal static class Entrypoints
             };
         }
 
-        if (!ContractDescriptorTarget.TryCreate(
+        ContractDescriptorTarget target = ContractDescriptorTarget.Create(
             contractAddress,
             (address, buffer) =>
             {
@@ -434,11 +440,12 @@ internal static class Entrypoints
                 }
             },
             allocVirtual,
-            [Contracts.CoreCLRContracts.Register],
-            out ContractDescriptorTarget? target))
-        {
-            return -1;
-        }
+            [Contracts.CoreCLRContracts.Register]);
+
+        // Without a legacy implementation to absorb individually-unimplemented APIs, validate
+        // the complete data-access contract set before publishing the interface.
+        if (legacyImpl is null)
+            Contracts.CoreCLRContracts.ValidateForDataAccess(target);
 
         Legacy.SOSDacImpl impl = new(target, legacyImpl);
         void* ccw = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
@@ -460,7 +467,7 @@ internal static class Entrypoints
             $"Data target does not implement {nameof(ICorDebugDataTarget)}", nameof(targetObject));
         ICorDebugMutableDataTarget? mutableDataTarget = targetObject as ICorDebugMutableDataTarget;
 
-        if (!ContractDescriptorTarget.TryCreate(
+        return ContractDescriptorTarget.Create(
             contractAddress,
             (address, buffer) =>
             {
@@ -542,13 +549,6 @@ internal static class Entrypoints
                 allocatedAddress = 0;
                 return HResults.E_NOTIMPL;
             },
-            [Contracts.CoreCLRContracts.Register],
-            out ContractDescriptorTarget? target))
-        {
-            throw new InvalidOperationException(
-                $"Failed to create a {nameof(ContractDescriptorTarget)} from the contract descriptor at 0x{contractAddress:x}.");
-        }
-
-        return target!;
+            [Contracts.CoreCLRContracts.Register]);
     }
 }

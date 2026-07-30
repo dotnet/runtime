@@ -29,7 +29,6 @@ struct STRINGHASH : HASHLINK
 
 class CStringPoolHash : public CChainedHash<STRINGHASH>
 {
-    friend class VerifyLayoutsMD;
 public:
     CStringPoolHash(StgPoolReadOnly *pool) : m_Pool(pool)
     {
@@ -69,7 +68,6 @@ typedef STRINGHASH BLOBHASH;
 
 class CBlobPoolHash : public CChainedHash<STRINGHASH>
 {
-    friend class VerifyLayoutsMD;
 public:
     CBlobPoolHash(StgPoolReadOnly *pool) : m_Pool(pool)
     {
@@ -116,7 +114,6 @@ struct GUIDHASH : HASHLINK
 
 class CGuidPoolHash : public CChainedHash<GUIDHASH>
 {
-    friend class VerifyLayoutsMD;
 public:
     CGuidPoolHash(StgPoolReadOnly *pool) : m_Pool(pool)
     {

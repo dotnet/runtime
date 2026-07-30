@@ -1534,7 +1534,12 @@ BOOL gc_heap::commit_new_mark_array (uint32_t* new_mark_array_addr)
         }
     }
 
-#if defined(MULTIPLE_HEAPS) && !defined(USE_REGIONS)
+#ifndef USE_REGIONS
+    // Re-commit the mark array for the expansion segment created during a compacting GC
+    // that has not yet been threaded onto its generation list (see new_heap_segment and
+    // issue #123490). The generation-list walk above cannot reach it, so without this it
+    // would keep a stale heap_segment_flags_ma_committed while its pages on the new array
+    // stay uncommitted, and a later BGC's pinning scan would read an uncommitted page.
     if (new_heap_segment)
     {
         if (!commit_mark_array_with_check (new_heap_segment, new_mark_array_addr))
@@ -1542,7 +1547,7 @@ BOOL gc_heap::commit_new_mark_array (uint32_t* new_mark_array_addr)
             return FALSE;
         }
     }
-#endif //MULTIPLE_HEAPS && !USE_REGIONS
+#endif //!USE_REGIONS
 
     return TRUE;
 }
