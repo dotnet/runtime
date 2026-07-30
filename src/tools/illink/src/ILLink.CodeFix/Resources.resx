@@ -126,8 +126,17 @@
   <data name="RequiresDynamicCodeCodeFixTitle" xml:space="preserve">
     <value>Add RequiresDynamicCode attribute to parent method</value>
   </data>
-  <data name="RequiresUnsafeCodeFixTitle" xml:space="preserve">
-    <value>Add 'unsafe' to parent method</value>
+  <data name="IntroduceUnsafeBlockCodeFixTitle" xml:space="preserve">
+    <value>Wrap in an 'unsafe' block</value>
+  </data>
+  <data name="IntroduceUnsafeExpressionCodeFixTitle" xml:space="preserve">
+    <value>Wrap in an 'unsafe' expression</value>
+  </data>
+  <data name="IntroduceUnsafeBodyCodeFixTitle" xml:space="preserve">
+    <value>Wrap the containing body in a single 'unsafe' block</value>
+  </data>
+  <data name="IntroduceUnsafeContextFixAllTitle" xml:space="preserve">
+    <value>Introduce the required 'unsafe' contexts</value>
   </data>
   <data name="AddUnsafeToExternCodeFixTitle" xml:space="preserve">
     <value>Mark extern member 'unsafe'</value>
