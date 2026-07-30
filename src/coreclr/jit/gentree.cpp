@@ -29098,8 +29098,12 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
         }
 
         // shift all indices to the left by tzcnt(size)
+        // a 64-bit element in a Vector64 is a 1D arrangement, which the vector form of the shift
+        // has no encoding for; that case has to use the scalar form instead.
+        NamedIntrinsic shiftIntrinsic =
+            ((simdSize == 8) && (elementSize == 8)) ? NI_AdvSimd_ShiftLeftLogicalScalar : NI_AdvSimd_ShiftLeftLogical;
         cnsNode = gtNewIconNode(BitOperations::TrailingZeroCount(static_cast<uint64_t>(elementSize)), TYP_INT);
-        op2     = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_AdvSimd_ShiftLeftLogical, simdBaseType, simdSize);
+        op2     = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, shiftIntrinsic, simdBaseType, simdSize);
 
         // VectorTableLookup is only valid on byte/sbyte
         simdBaseType = varTypeIsUnsigned(simdBaseType) ? TYP_UBYTE : TYP_BYTE;
