@@ -623,7 +623,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             // for its side effect is safe: the pattern store used for intrinsic method calls merges
             // patterns keyed by the same IOperation instance (see the analogous existing tolerance
             // in ProcessAssignment for flow-capture targets with multiple captured references).
-            VisitDeconstructionTargetSideEffects(UnwrapDeconstructionTarget(operation.Target), state);
+            VisitDeconstructionTargetSideEffects(operation.Target, state);
 
             ITypeSymbol? sourceType = operation.Value.Type;
             IOperation source = UnwrapDeconstructionSource(operation.Value);
@@ -633,7 +633,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             // Deconstruction evaluates all source values before assigning any target. Keeping these
             // phases separate is required for assignments such as (first, second) = (second, first).
             DeconstructionValue deconstructionValue = EvaluateDeconstruction(
-                UnwrapDeconstructionTarget(operation.Target),
+                operation.Target,
                 source,
                 sourceType,
                 sourceValue,
@@ -642,7 +642,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 operation,
                 state);
             AssignDeconstruction(
-                UnwrapDeconstructionTarget(operation.Target),
+                operation.Target,
                 deconstructionValue,
                 operation,
                 state);
