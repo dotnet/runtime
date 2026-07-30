@@ -32,13 +32,10 @@ public readonly record struct StubTraceStep(
     TargetCodePointer Address,
     StubContinuation Continuation);
 
-public interface IStubTracing : IContract
-{
-    StubTraceStep TraceStubStep(
+StubTraceStep TraceStubStep(
         TargetCodePointer address,
         StubContinuation continuation,
         TargetPointer thread);
-}
 ```
 
 <!-- BEGIN GENERATED: usage contract=StubTracing version=c1 -->
