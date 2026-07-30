@@ -1096,8 +1096,10 @@ namespace ILCompiler.ObjectWriter
             WriteGlobalExport("webcilVersion", _definedGlobals["webcilVersion"].Index);
 
             // TODO-WASM: Handle exports better (e.g., only export public methods, etc.)
-            IEnumerable<WasmSymbol> functionSymbols = _wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function);
-            foreach (WasmSymbol symbol in functionSymbols.OrderBy(symbol => symbol.Name))
+            IEnumerable<WasmSymbol> functionSymbols = _wasmSymbolManager.GetDefinitions(
+                WasmIndexSpace.Function,
+                Comparer<WasmSymbol>.Create(static (x, y) => x.Name.CompareTo(y.Name)));
+            foreach (WasmSymbol symbol in functionSymbols)
             {
                 WriteFunctionExport(symbol.Name.ToString(), symbol.Index);
             }

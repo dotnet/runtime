@@ -3,8 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Collections;
+using System.Collections.Frozen;
 using Internal.Text;
+using System.Collections.Immutable;
 
 namespace ILCompiler.ObjectWriter;
 
@@ -33,62 +37,48 @@ internal sealed class WasmSymbolManager
         int Ordinal,
         bool IsImport);
 
+    private struct IndexSpaceArray<T>
+    {
+        private T[] _array;
+
+        public IndexSpaceArray()
+        {
+            _array = new T[(int)WasmIndexSpace.Count];
+        }
+
+        public T this[WasmIndexSpace indexSpace]
+        {
+            get => _array[(int)indexSpace];
+            set => _array[(int)indexSpace] = value;
+        }
+
+        public IReadOnlyList<T> Values => _array;
+    }
+
     private readonly Dictionary<Utf8String, Entry> _entries = new();
-    private readonly int[] _importCounts = new int[(int)WasmIndexSpace.Count];
-    private readonly int[] _definitionCounts = new int[(int)WasmIndexSpace.Count];
-    private readonly bool[] _importsFrozen = new bool[(int)WasmIndexSpace.Count];
+    private IndexSpaceArray<int> _importCounts = new IndexSpaceArray<int>();
+    private IndexSpaceArray<int> _definitionCounts = new IndexSpaceArray<int>();
+    private IndexSpaceArray<bool> _importsFrozen = new IndexSpaceArray<bool>();
 
     public void AddImport(Utf8String name, WasmIndexSpace indexSpace, int? expectedIndex = null)
     {
-        int spaceIndex = GetSpaceIndex(indexSpace);
-        if (_importsFrozen[spaceIndex])
-        {
-            throw new InvalidOperationException(
-                $"Cannot add import '{name}' after an index in the {indexSpace} index space was observed.");
-        }
-
-        if (_entries.ContainsKey(name))
-        {
-            throw new InvalidOperationException($"WASM symbol '{name}' is already registered.");
-        }
-
-        int ordinal = _importCounts[spaceIndex];
-        if (expectedIndex.HasValue && expectedIndex.Value != ordinal)
-        {
-            throw new InvalidOperationException(
-                $"Import '{name}' was assigned {indexSpace} index {ordinal}, but index {expectedIndex.Value} was expected.");
-        }
-
+        Debug.Assert(_importsFrozen[indexSpace]);
+        int ordinal = _importCounts[indexSpace];
+        Debug.Assert(!expectedIndex.HasValue || expectedIndex.Value == ordinal);
         _entries.Add(name, new Entry(name, indexSpace, ordinal, IsImport: true));
-        _importCounts[spaceIndex]++;
+        _importCounts[indexSpace]++;
     }
 
     public void AddDefinition(Utf8String name, WasmIndexSpace indexSpace)
     {
-        int spaceIndex = GetSpaceIndex(indexSpace);
-        if (_entries.TryGetValue(name, out Entry existing))
-        {
-            if (existing.IndexSpace != indexSpace || existing.IsImport)
-            {
-                throw new InvalidOperationException(
-                    $"WASM symbol '{name}' was already registered in the {existing.IndexSpace} index space.");
-            }
-
-            return;
-        }
-
-        int ordinal = _definitionCounts[spaceIndex]++;
+        int ordinal = _definitionCounts[indexSpace];
         _entries.Add(name, new Entry(name, indexSpace, ordinal, IsImport: false));
+        _definitionCounts[indexSpace]++;
     }
 
     public WasmSymbol GetSymbol(Utf8String name)
     {
-        if (!_entries.TryGetValue(name, out Entry entry))
-        {
-            throw new KeyNotFoundException($"No WASM index was registered for symbol '{name}'.");
-        }
-
-        return ResolveAndFreeze(entry);
+        return ResolveAndFreeze(_entries[name]);
     }
 
     public bool TryGetSymbol(Utf8String name, out WasmSymbol symbol)
@@ -103,32 +93,33 @@ internal sealed class WasmSymbolManager
         return true;
     }
 
-    public int GetImportCount() => _importCounts.Sum();
+    public int GetImportCount() => _importCounts.Values.Sum();
 
     public int GetDefinitionCount(WasmIndexSpace indexSpace) =>
-        _definitionCounts[GetSpaceIndex(indexSpace)];
+        _definitionCounts[indexSpace];
 
-    public IReadOnlyList<WasmSymbol> GetDefinitions(WasmIndexSpace indexSpace)
+    private static readonly Comparer<WasmSymbol> DefaultSymbolComparer = Comparer<WasmSymbol>.Create(static (x, y) => x.Index.CompareTo(y.Index));
+    public IEnumerable<WasmSymbol> GetDefinitions(WasmIndexSpace indexSpace, IComparer<WasmSymbol> comparer = null)
     {
-        int spaceIndex = GetSpaceIndex(indexSpace);
-        _importsFrozen[spaceIndex] = true;
+        comparer ??= DefaultSymbolComparer;
+        _importsFrozen[indexSpace] = true;
+        return GetUnsortedDefinitions(indexSpace).Order(comparer);
 
-        var symbols = new List<WasmSymbol>(_definitionCounts[spaceIndex]);
-        foreach (Entry entry in _entries.Values)
+        IEnumerable<WasmSymbol> GetUnsortedDefinitions(WasmIndexSpace indexSpace)
         {
-            if (!entry.IsImport && entry.IndexSpace == indexSpace)
+            foreach (var entry in _entries.Values)
             {
-                symbols.Add(Resolve(entry));
+                if (entry.IndexSpace == indexSpace)
+                {
+                    yield return Resolve(entry);
+                }
             }
         }
-
-        symbols.Sort(static (left, right) => left.Index.CompareTo(right.Index));
-        return symbols;
     }
 
     private WasmSymbol ResolveAndFreeze(Entry entry)
     {
-        _importsFrozen[(int)entry.IndexSpace] = true;
+        _importsFrozen[entry.IndexSpace] = true;
         return Resolve(entry);
     }
 
@@ -136,18 +127,14 @@ internal sealed class WasmSymbolManager
     {
         int index = entry.IsImport
             ? entry.Ordinal
-            : _importCounts[(int)entry.IndexSpace] + entry.Ordinal;
+            : _importCounts[entry.IndexSpace] + entry.Ordinal;
 
         return new WasmSymbol(entry.Name, entry.IndexSpace, index, entry.IsImport);
     }
 
     private static int GetSpaceIndex(WasmIndexSpace indexSpace)
     {
-        if ((uint)indexSpace >= (uint)WasmIndexSpace.Count)
-        {
-            throw new ArgumentOutOfRangeException(nameof(indexSpace));
-        }
-
+        Debug.Assert((uint)indexSpace < (uint)WasmIndexSpace.Count);
         return (int)indexSpace;
     }
 }
