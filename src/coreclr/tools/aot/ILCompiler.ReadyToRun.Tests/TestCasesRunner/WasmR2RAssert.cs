@@ -78,6 +78,7 @@ internal static class WasmR2RAssert
             ("stackPointer", WasmImportKind.Global, 0),
             ("imageBase", WasmImportKind.Global, 1),
             ("tableBase", WasmImportKind.Global, 2),
+            ("asyncContinuation", WasmImportKind.Global, 3),
             ("table", WasmImportKind.Table, 0),
             ("memory", WasmImportKind.Memory, 0),
             ("rtlRestoreContextTag", WasmImportKind.Tag, 0),
@@ -107,7 +108,7 @@ internal static class WasmR2RAssert
         CheckImportCount(WasmImportKind.Function, importedFunctionCount, 0, failures);
         CheckImportCount(WasmImportKind.Table, importedTableCount, 1, failures);
         CheckImportCount(WasmImportKind.Memory, importedMemoryCount, 1, failures);
-        CheckImportCount(WasmImportKind.Global, importedGlobalCount, 3, failures);
+        CheckImportCount(WasmImportKind.Global, importedGlobalCount, 4, failures);
         CheckImportCount(WasmImportKind.Tag, importedTagCount, 1, failures);
 
         uint definedFunctionCount = ReadWasmSectionEntryCount(reader, WasmSectionKind.Function);

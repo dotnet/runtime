@@ -62,7 +62,7 @@ internal sealed class WasmSymbolManager
 
     public void AddImport(Utf8String name, WasmIndexSpace indexSpace, int? expectedIndex = null)
     {
-        Debug.Assert(_importsFrozen[indexSpace]);
+        Debug.Assert(!_importsFrozen[indexSpace]);
         int ordinal = _importCounts[indexSpace];
         Debug.Assert(!expectedIndex.HasValue || expectedIndex.Value == ordinal);
         _entries.Add(name, new Entry(name, indexSpace, ordinal, IsImport: true));
