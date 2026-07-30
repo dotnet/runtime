@@ -11,10 +11,8 @@ parameters:
   shouldContinueOnError: false
   osSubgroup: ''
 
-  # sccache version.  On linux/freebsd we use the linux-musl-x64 NuGet
-  # package; on macOS we download the matching tag from the mozilla/sccache
-  # GitHub release.  Keep the version in sync across platforms so all
-  # jobs cache against the same compiler-launcher behavior.
+  # sccache version. Keep the version in sync across platforms so all jobs
+  # cache against the same compiler-launcher behavior.
   sccacheVersion: '0.15.0'
 
 steps:
@@ -44,50 +42,35 @@ steps:
 
     # Download sccache and configure the environment.
     #
-    # On linux/freebsd we use the linux-musl-x64 NuGet package (the same
-    # x64 binary works for arm64 cross-compile on x64 hosts).
-    #
-    # On macOS we download the official tarball from the mozilla/sccache
-    # GitHub release matching the host CPU (sccache itself must match the
-    # agent's CPU; archType describes the target output and is captured in
-    # the cache key above).  A pinned sha256 guards against tarball
-    # tampering and surfaces transient GitHub-side issues.
+    # All supported platforms build on x64 hosts, including macOS arm64
+    # cross-builds. The unsuffixed package contains the linux-musl-x64 binary;
+    # macOS uses the osx-x64 package.
     - script: |
         set -euo pipefail
         sccacheVersion="${{ parameters.sccacheVersion }}"
         osGroup="${{ parameters.osGroup }}"
-        sccacheDir="$(Build.SourcesDirectory)/.packages/sccache/${sccacheVersion}/tools"
+        sccachePackage="sccache"
 
         if [[ "$osGroup" == "osx" ]]; then
-            case "$(uname -m)" in
-                arm64)
-                    hostTriple="aarch64-apple-darwin"
-                    sccacheSha256="430ef7b5f54256d3ed5bfe77e8b0afc51aa209aeebe4f95b69c3a52ce3acc6e9"
-                    ;;
-                x86_64)
-                    hostTriple="x86_64-apple-darwin"
-                    sccacheSha256="f8da93e0689122268f720ddb48c8357f3da18be8c88aff23a8e75a7a219367db"
-                    ;;
-                *)
-                    echo "Unsupported macOS host arch: $(uname -m)" >&2
-                    exit 1
-                    ;;
-            esac
-            mkdir -p "$sccacheDir"
-            tarballName="sccache-v${sccacheVersion}-${hostTriple}.tar.gz"
-            tarballPath="$(Agent.TempDirectory)/${tarballName}"
-            url="https://github.com/mozilla/sccache/releases/download/v${sccacheVersion}/${tarballName}"
-            curl -fsSL -o "$tarballPath" "$url"
-            echo "${sccacheSha256}  ${tarballPath}" | shasum -a 256 -c -
-            # Tarball layout: sccache-v${ver}-${triple}/{sccache,README,LICENSE}.
-            # Strip the top directory and extract just the binary so it
-            # lands directly in $sccacheDir, matching the NuGet layout.
-            tar -xzf "$tarballPath" -C "$sccacheDir" --strip-components=1 \
-                "sccache-v${sccacheVersion}-${hostTriple}/sccache"
-            rm -f "$tarballPath"
+            sccachePackage="sccache.osx-x64"
+            restoreDir="$(mktemp -d "$(Agent.TempDirectory)/sccache-restore.XXXXXX")"
+            trap 'rm -rf "$restoreDir"' EXIT
+            cat > "$restoreDir/sccache.csproj" <<EOF
+        <Project Sdk="Microsoft.NET.Sdk">
+          <PropertyGroup>
+            <TargetFramework>net8.0</TargetFramework>
+          </PropertyGroup>
+          <ItemGroup>
+            <PackageReference Include="${sccachePackage}" Version="${sccacheVersion}" />
+          </ItemGroup>
+        </Project>
+        EOF
+            "$(Build.SourcesDirectory)/eng/common/dotnet.sh" restore "$restoreDir/sccache.csproj" --packages "$(Build.SourcesDirectory)/.packages" --verbosity quiet
         else
-            "$(Build.SourcesDirectory)/eng/common/dotnet.sh" package download "sccache@${sccacheVersion}" -o "$(Build.SourcesDirectory)/.packages" -v quiet
+            "$(Build.SourcesDirectory)/eng/common/dotnet.sh" package download "${sccachePackage}@${sccacheVersion}" -o "$(Build.SourcesDirectory)/.packages" -v quiet
         fi
+
+        sccacheDir="$(Build.SourcesDirectory)/.packages/${sccachePackage}/${sccacheVersion}/tools"
 
         chmod +x "$sccacheDir/sccache"
         echo "##vso[task.prependpath]$sccacheDir"
