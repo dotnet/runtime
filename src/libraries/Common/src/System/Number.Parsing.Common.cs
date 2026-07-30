@@ -355,12 +355,15 @@ namespace System
             where TChar : unmanaged, IUtfChar<TChar>
         {
             // p/pEnd may be null when the input being parsed is an empty span (e.g. from a null string),
-            // in which case they are both null and the range is empty; the loop below never dereferences p then.
+            // in which case they are both null and the range is empty; the length check below then rejects
+            // any non-empty pattern before the loop can dereference p.
             Debug.Assert((p != null) || (p == pEnd));
             Debug.Assert((pEnd != null) || (p == pEnd));
             Debug.Assert(p <= pEnd);
 
-            if (value.IsEmpty)
+            // An empty pattern never matches, and one longer than the remaining input cannot match, so
+            // the loop only has to bound itself by the pattern.
+            if (value.IsEmpty || (value.Length > (pEnd - p)))
             {
                 return null;
             }
@@ -370,9 +373,9 @@ namespace System
                 TChar* str = stringPointer;
                 TChar* strEnd = stringPointer + value.Length;
 
-                while (true)
+                do
                 {
-                    uint cp = (p < pEnd) ? TChar.CastToUInt32(*p) : '\0';
+                    uint cp = TChar.CastToUInt32(*p);
                     uint val = TChar.CastToUInt32(*str);
 
                     // We only hurt the failure case
@@ -382,20 +385,16 @@ namespace System
                     // We also need to handle the reverse case where the input has NBSP and the format string has space.
                     if (cp != val && NormalizeSpaceReplacingChar(cp) != NormalizeSpaceReplacingChar(val))
                     {
-                        break;
+                        return null;
                     }
 
                     p++;
                     str++;
-
-                    if (str == strEnd)
-                    {
-                        return p;
-                    }
                 }
+                while (str != strEnd);
             }
 
-            return null;
+            return p;
         }
     }
 }
