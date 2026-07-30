@@ -849,10 +849,17 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         }
 
         // Visits the side-effecting sub-expressions that identify a deconstruction target location
-        // (a property/indexer receiver and its index arguments, or an array reference and its index),
-        // without performing any write. This runs before the source is visited, so that expressions
-        // like arr[F()] in '(arr[F()], b) = (x, y)' evaluate 'arr' and 'F()' before 'x'/'y' are read,
-        // matching left-to-right evaluation order and Roslyn's own lowering (GetAssignmentTargetsAndSideEffects).
+        // (a property/indexer receiver, or an array reference and its index), without performing
+        // any write. This runs before the source is visited, so that e.g. 'arr' in
+        // '(arr[i], b) = (x, y)' is evaluated before 'x'/'y' are read, matching left-to-right
+        // evaluation order and Roslyn's own lowering (GetAssignmentTargetsAndSideEffects).
+        //
+        // Note: IPropertyReferenceOperation's explicit indexer Arguments are intentionally NOT
+        // visited here, to match ProcessSingleTargetAssignment's IPropertyReferenceOperation case,
+        // which today only visits those Arguments after the value (a known, pre-existing ordering
+        // quirk - unlike the implicit System.Index-based indexer and array-element cases below,
+        // which already visit their index arguments before the value). If that quirk is ever fixed
+        // in ProcessSingleTargetAssignment, this case should be updated to match.
         private void VisitDeconstructionTargetSideEffects(
             IOperation target,
             LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
@@ -874,8 +881,6 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     // Avoid visiting the property reference itself; see the similar comment in
                     // ProcessSingleTargetAssignment about https://github.com/dotnet/roslyn/issues/25057.
                     Visit(propertyRef.Instance, state);
-                    foreach (var argument in propertyRef.Arguments)
-                        Visit(argument, state);
                     break;
                 case IArrayElementReferenceOperation arrayElementRef:
                     Visit(arrayElementRef.ArrayReference, state);
