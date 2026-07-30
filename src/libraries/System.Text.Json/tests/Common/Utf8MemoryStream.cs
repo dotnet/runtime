@@ -9,11 +9,11 @@ namespace System.Text.Json.Serialization.Tests
 {
     public sealed class Utf8MemoryStream : MemoryStream
     {
-        private readonly bool _ignoreCancellationTokenOnWriteAsync;
+        private readonly bool _ignoreCancellationTokenOnIO;
 
-        public Utf8MemoryStream(bool ignoreCancellationTokenOnWriteAsync = false) : base()
+        public Utf8MemoryStream(bool ignoreCancellationTokenOnIO = false) : base()
         {
-            _ignoreCancellationTokenOnWriteAsync = ignoreCancellationTokenOnWriteAsync;
+            _ignoreCancellationTokenOnIO = ignoreCancellationTokenOnIO;
         }
 
         public Utf8MemoryStream(string text) : base(Encoding.UTF8.GetBytes(text))
@@ -22,10 +22,13 @@ namespace System.Text.Json.Serialization.Tests
 
 #if NET
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-            => base.WriteAsync(buffer, _ignoreCancellationTokenOnWriteAsync ? default : cancellationToken);
+            => base.WriteAsync(buffer, _ignoreCancellationTokenOnIO ? default : cancellationToken);
 #endif
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            => base.WriteAsync(buffer, offset, count, _ignoreCancellationTokenOnWriteAsync ? default : cancellationToken);
+            => base.WriteAsync(buffer, offset, count, _ignoreCancellationTokenOnIO ? default : cancellationToken);
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+            => base.FlushAsync(_ignoreCancellationTokenOnIO ? default : cancellationToken);
 
         public string AsString() => Encoding.UTF8.GetString(ToArray());
     }
