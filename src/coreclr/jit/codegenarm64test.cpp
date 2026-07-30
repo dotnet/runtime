@@ -9224,8 +9224,10 @@ void CodeGen::genArm64EmitterUnitTestsFp16()
     theEmitter->emitIns_R_R(INS_fcmpe, EA_2BYTE, REG_V2, REG_V3); // FCMPE  Hn, Hm
 
     // IF_DV_4A: scalar half-precision fused multiply-add
-    theEmitter->emitIns_R_R_R_R(INS_fmadd, EA_2BYTE, REG_V0, REG_V1, REG_V2, REG_V3);  // FMADD  Hd, Hn, Hm, Ha
-    theEmitter->emitIns_R_R_R_R(INS_fnmadd, EA_2BYTE, REG_V4, REG_V5, REG_V6, REG_V7); // FNMADD Hd, Hn, Hm, Ha
+    theEmitter->emitIns_R_R_R_R(INS_fmadd, EA_2BYTE, REG_V0, REG_V1, REG_V2, REG_V3);      // FMADD  Hd, Hn, Hm, Ha
+    theEmitter->emitIns_R_R_R_R(INS_fmsub, EA_2BYTE, REG_V4, REG_V5, REG_V6, REG_V7);      // FMSUB  Hd, Hn, Hm, Ha
+    theEmitter->emitIns_R_R_R_R(INS_fnmadd, EA_2BYTE, REG_V8, REG_V9, REG_V10, REG_V11);   // FNMADD Hd, Hn, Hm, Ha
+    theEmitter->emitIns_R_R_R_R(INS_fnmsub, EA_2BYTE, REG_V12, REG_V13, REG_V14, REG_V15); // FNMSUB Hd, Hn, Hm, Ha
 
     // IF_DV_2J: convert between half and single/double
     theEmitter->emitIns_R_R(INS_fcvt, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_H_TO_S); // FCVT   Sd, Hn
