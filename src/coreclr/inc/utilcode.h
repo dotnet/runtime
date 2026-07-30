@@ -2359,7 +2359,6 @@ struct HASHLINK
 
 template <class T> class CChainedHash
 {
-    friend class VerifyLayoutsMD;
 public:
     CChainedHash(int iBuckets=32) :
         m_rgData(0),
