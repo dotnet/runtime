@@ -4937,8 +4937,7 @@ void CordbProcess::RawDispatchEvent(
             ULONG cchCategory = pEvent->FirstLogMessage.cchCategory;
             ULONG cchContent = pEvent->FirstLogMessage.cchContent;
 
-            const ULONG cchMax = 0x10000;
-            if (cchCategory > cchMax || cchContent > cchMax)
+            if (cchCategory > MAX_LOG_SWITCH_NAME_LEN)
             {
                 IfFailThrow(E_UNEXPECTED);
             }
