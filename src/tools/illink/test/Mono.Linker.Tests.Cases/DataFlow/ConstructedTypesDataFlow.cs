@@ -93,6 +93,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.RequiresPublicMethods();
             }
 
+            [RequiresUnreferencedCode(nameof(GetTypeAndInstance))]
+            static TypeAndInstance GetTypeAndInstance() => null;
+
+            // The deconstruction source here is itself a method call, unlike the other Deconstruct()
+            // test cases above. The source call and the synthesized Deconstruct() call must be
+            // tracked as two independent calls, not merged together.
+            [ExpectedWarning("IL2026", nameof(GetTypeAndInstance))]
+            [ExpectedWarning("IL2067")]
+            static void DeconstructMethodCallSource()
+            {
+                var (type, instance) = GetTypeAndInstance();
+                type.RequiresPublicMethods();
+            }
+
             record TypeAndInstanceRecordManual(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -318,6 +332,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 DeconstructVariablePropertyReference((typeof(string), null));
                 DeconstructRecordWithAnnotation(new(typeof(string), null));
                 DeconstructClassWithAnnotation(new(typeof(string), null));
+                DeconstructMethodCallSource();
                 DeconstructRecordManualWithAnnotation(new(typeof(string), null));
                 DeconstructRecordManualWithMismatchAnnotation(new(typeof(string), null));
                 DeconstructExtensionWithAnnotation(new());

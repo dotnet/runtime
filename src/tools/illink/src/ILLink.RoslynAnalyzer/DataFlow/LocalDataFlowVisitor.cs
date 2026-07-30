@@ -737,12 +737,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 while (arguments.Count < deconstructMethod.Parameters.Length)
                     arguments.Add(TopValue);
 
-                HandleMethodCallHelper(
+                // Key this synthesized Deconstruct() call on 'target', not 'source': 'source' may
+                // already be registered elsewhere under its own unrelated call pattern (e.g. if it's
+                // a method call), and reusing it here would incorrectly merge the two.
+                HandleMethodCall(
                     deconstructMethod,
                     instanceValue,
                     arguments.MoveToImmutable(),
-                    source ?? target,
-                    state);
+                    target,
+                    state.Current.Context);
 
                 var nestedValues = ImmutableArray.CreateBuilder<DeconstructionValue>(targetTuple.Elements.Length);
                 for (int i = 0; i < targetTuple.Elements.Length; i++)
