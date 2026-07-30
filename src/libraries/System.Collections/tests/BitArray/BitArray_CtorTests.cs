@@ -263,26 +263,26 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Ctor_SpanSlices()
+        public static void Ctor_SpanSlices_IgnoreElementsOutsideSlice()
         {
-            bool[] boolValues = [false, true, false, true, true, false];
-            AssertBitArray(new BitArray(boolValues.AsSpan(1, 4)), [true, false, true, true]);
+            bool[] boolValuesWithSentinels = [false, true, false, true, true, false];
+            AssertBitArray(new BitArray(boolValuesWithSentinels.AsSpan(1, 4)), [true, false, true, true]);
 
-            byte[] byteValues = [0xFF, 0x01, 0x80, 0xFF];
+            byte[] byteValuesWithSentinels = [0xFF, 0x01, 0x80, 0xFF];
             AssertBitArray(
-                new BitArray(byteValues.AsSpan(1, 2)),
+                new BitArray(byteValuesWithSentinels.AsSpan(1, 2)),
                 [true, false, false, false, false, false, false, false,
                  false, false, false, false, false, false, false, true]);
 
-            int[] intValues = [-1, 1, int.MinValue, -1];
+            int[] intValuesWithSentinels = [-1, 1, int.MinValue, -1];
             bool[] expected = new bool[BitsPerInt32 * 2];
             expected[0] = true;
             expected[^1] = true;
-            AssertBitArray(new BitArray(intValues.AsSpan(1, 2)), expected);
+            AssertBitArray(new BitArray(intValuesWithSentinels.AsSpan(1, 2)), expected);
         }
 
         [Fact]
-        public static void Ctor_StackAllocatedSpans()
+        public static void Ctor_StackAllocatedSpans_CopyValuesFromStackMemory()
         {
             ReadOnlySpan<bool> boolValues = stackalloc bool[] { true, false, true };
             AssertBitArray(new BitArray(boolValues), boolValues);
