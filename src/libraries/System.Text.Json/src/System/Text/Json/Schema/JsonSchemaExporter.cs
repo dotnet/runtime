@@ -447,7 +447,9 @@ namespace System.Text.Json.Schema
 
                         if (propertyInfo is not null)
                         {
-                            return propertyInfo.IsGetNullable || propertyInfo.IsSetNullable;
+                            return propertyInfo.IsGetNullable ||
+                                propertyInfo is { HasSetter: true, IsSetNullable: true } ||
+                                propertyInfo is { AssociatedParameter: not null, IsSetNullable: true };
                         }
 
                         if (typeInfo.IsNullable)

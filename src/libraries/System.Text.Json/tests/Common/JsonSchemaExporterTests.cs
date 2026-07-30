@@ -82,6 +82,17 @@ namespace System.Text.Json.Schema.Tests
             Assert.Equal(expectedType, (string)schema["type"]!);
         }
 
+        [Fact]
+        public void GetOnlyProperties_DoNotUseSetterNullabilityInSchema()
+        {
+            JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(typeof(PocoWithGetOnlyProperties));
+            JsonNode properties = schema["properties"]!;
+
+            Assert.Equal("array", (string)properties["Values"]!["type"]!);
+            Assert.Equal("string", (string)properties["SingleValueGetOnly"]!["type"]!);
+            Assert.Equal("string", (string)properties["SingleValueGetSet"]!["type"]!);
+        }
+
         [Theory]
         [InlineData(typeof(Type))]
         [InlineData(typeof(MethodInfo))]
@@ -261,6 +272,13 @@ namespace System.Text.Json.Schema.Tests
         }
 
         record PocoWithProperty(int Value);
+
+        public sealed class PocoWithGetOnlyProperties
+        {
+            public IEnumerable<string> Values => [];
+            public string SingleValueGetOnly { get; } = "value";
+            public string SingleValueGetSet { get; set; } = "value";
+        }
 
         [JsonSerializable(typeof(PocoWithProperty))]
         partial class PocoWithPropertyContext : JsonSerializerContext;

@@ -128,6 +128,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithPropertyNameRequiringFragmentEncoding))]
         [JsonSerializable(typeof(ClassWithOptionalObjectParameter))]
         [JsonSerializable(typeof(ClassWithPropertiesUsingCustomConverters))]
+        [JsonSerializable(typeof(JsonSchemaExporterTests.PocoWithGetOnlyProperties))]
 #pragma warning disable CS0612 // Type or member is obsolete
         [JsonSerializable(typeof(MyObsoleteType))]
 #pragma warning restore CS0612 // Type or member is obsolete
