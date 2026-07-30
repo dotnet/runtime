@@ -17,9 +17,11 @@ namespace Profiler.Tests
         private static int CallManagedFunctionByPointer()
         {
             Assembly ijwDll = Assembly.Load("IjwProfileeDll");
-            Type testType = ijwDll.GetType("TestClass");
+            Type testType = ijwDll.GetType("TestClass")
+                ?? throw new InvalidOperationException("Could not find type 'TestClass' in IjwProfileeDll.");
             object testInstance = Activator.CreateInstance(testType);
-            MethodInfo method = testType.GetMethod("CallManagedFunctionByPointer");
+            MethodInfo method = testType.GetMethod("CallManagedFunctionByPointer")
+                ?? throw new InvalidOperationException("Could not find method 'CallManagedFunctionByPointer' on TestClass.");
             return (int)method.Invoke(testInstance, null);
         }
 

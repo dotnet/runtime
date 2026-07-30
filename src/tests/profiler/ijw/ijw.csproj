@@ -3,13 +3,9 @@
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Needed for CMakeProjectReference -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CrossGenTest>false</CrossGenTest>
     <!-- IJW / C++/CLI is Windows-only -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
-    <!-- C++/CLI, IJW not supported on Mono or NativeAOT -->
-    <NativeAotIncompatible>true</NativeAotIncompatible>
     <!-- IJW assemblies contain native code that cannot be round-tripped through ilasm -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     <!-- The test launches a secondary process; loading IJW assemblies into an
