@@ -424,7 +424,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
     public bool HasReadWriteMetadata(TargetPointer peAssembly)
     {
         Data.PEAssembly data = target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssembly);
-        return data.MDImportIsRW != 0 && data.MDImport != TargetPointer.Null;
+        return data.MDImportIsRW != 0;
     }
 
     private TargetEcmaMetadata GetTargetEcmaMetadata(ModuleHandle handle)

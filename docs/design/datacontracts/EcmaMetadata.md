@@ -73,6 +73,11 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 
+bool HasReadWriteMetadata(TargetPointer peAssembly)
+{
+    return Target.Read<int>(peAssembly + /* PEAssembly::MDImportIsRW offset */) != 0;
+}
+
 TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)
 {
     TargetPointer baseAddress = Target.ReadPointer(handle.Address + /* Module::Base offset */);
