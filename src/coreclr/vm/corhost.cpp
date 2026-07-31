@@ -218,12 +218,11 @@ HRESULT CorHost2::ExecuteApplication(LPCWSTR   pwzAppFullName,
 }
 
 /*
- * This method processes the arguments sent to the host which are then used
- * to invoke the main method.
- * Note -
- * [0] - points to the native invocation name provided by the host. If the host
- * does not provide one, it points to the assembly name that was sent by the host.
- * The rest are the arguments sent to the assembly.
+ * This method constructs the array returned by Environment.GetCommandLineArgs().
+ * The first element is passed separately from argv as exePath and uses the native
+ * invocation name when provided by the host. Otherwise, the assembly or bundle path
+ * is used. The remaining elements come from argv, which contains the arguments to the
+ * main method.
 */
 static PTRARRAYREF SetCommandLineArgs(PCWSTR pwzAssemblyPath, int argc, PCWSTR* argv)
 {
