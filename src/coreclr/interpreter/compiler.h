@@ -704,6 +704,7 @@ private:
     // then these contain the value that should be passed as those arguments.
     int32_t m_nextCallGenericContextVar;
     int32_t m_nextCallAsyncContinuationVar;
+    int32_t m_nextCallFrameMethodDescVar;
 
     // If true, the next await should be done as a tail await that just
     // directly returns the continuation of the call instead of creating a new
