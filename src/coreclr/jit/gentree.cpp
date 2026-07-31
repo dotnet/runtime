@@ -15573,20 +15573,6 @@ GenTree* Compiler::gtFoldExprUnary(GenTreeUnOp* tree)
 // Returns:
 //    The shift's op2 after any rewrite (the caller reloads its cached copy).
 //
-// Notes:
-//    Only called on targets whose shift instructions mask the count to the operand
-//    bit width (5 bits for 32-bit, 6 bits for 64-bit shifts). IL masks the count to
-//    the same width, so `x >> n` is imported as `x >> (n & 31)` (or `& 63`).
-//
-//    Two rewrites are performed, both relying on the hardware masking:
-//      * `x >> (n & C)` where `C` covers the width mask => `x >> n` (strip the AND).
-//        This lets the redundant mask disappear before CSE, where it would otherwise
-//        be shared into a temp that lowering can no longer recognize.
-//      * `x >> cns` where `cns` is out of range => `x >> (cns & width)`. Once the mask
-//        is gone the count is no longer implicitly bounded, so an out-of-range constant
-//        count must be normalized to the value the hardware would actually use, which
-//        also lets identities such as `x >> 0 => x` fold.
-//
 GenTree* Compiler::gtFoldExprShiftCountMask(GenTreeOp* shift)
 {
     assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
@@ -15597,12 +15583,31 @@ GenTree* Compiler::gtFoldExprShiftCountMask(GenTreeOp* shift)
 
     if (count->OperIs(GT_AND))
     {
-        GenTree* maskOp = count->gtGetOp2();
+        GenTree* andOp1 = count->gtGetOp1();
+        GenTree* andOp2 = count->gtGetOp2();
 
-        if (maskOp->IsCnsIntOrI() && ((static_cast<size_t>(maskOp->AsIntCon()->IconValue()) & width) == width))
+        GenTree* maskCns;
+        GenTree* shiftCnt;
+
+        if (andOp2->IsCnsIntOrI())
+        {
+            maskCns  = andOp2;
+            shiftCnt = andOp1;
+        }
+        else if (andOp1->IsCnsIntOrI())
+        {
+            maskCns  = andOp1;
+            shiftCnt = andOp2;
+        }
+        else
+        {
+            maskCns = nullptr;
+        }
+
+        if ((maskCns != nullptr) && ((static_cast<size_t>(maskCns->AsIntCon()->IconValue()) & width) == width))
         {
             JITDUMP("Removing redundant shift-count mask [%06u]\n", count->gtTreeID);
-            count        = count->gtGetOp1();
+            count        = shiftCnt;
             shift->gtOp2 = count;
             shift->SetAllEffectsFlags(shift->gtGetOp1(), count);
         }
@@ -15614,6 +15619,7 @@ GenTree* Compiler::gtFoldExprShiftCountMask(GenTreeOp* shift)
         if ((value & width) != value)
         {
             count->AsIntCon()->SetIconValue(static_cast<ssize_t>(value & width));
+            fgUpdateConstTreeValueNumber(count);
         }
     }
 

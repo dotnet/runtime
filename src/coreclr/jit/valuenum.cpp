@@ -2871,7 +2871,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         }
     }
 
-
     // We canonicalize commutative operations.
     // (Perhaps should eventually handle associative/commutative [AC] ops -- but that gets complicated...)
     if (VNFuncIsCommutative(func))
