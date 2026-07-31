@@ -1087,7 +1087,7 @@ namespace Microsoft.Extensions
                 if (initializeProperties)
                 {
                     Nested = new();
-                    Collection = new();
+                    Collection = ["existing"];
                     Abstract = new Derived();
                 }
             }

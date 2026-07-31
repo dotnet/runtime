@@ -2960,7 +2960,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.NotNull(instance.Nested);
             Assert.Equal(1, instance.Nested.Integer);
             Assert.NotNull(instance.Collection);
-            Assert.Equal(["item"], instance.Collection);
+            Assert.Equal(["existing", "item"], instance.Collection);
             Assert.NotNull(instance.Abstract);
             Assert.Equal(2, instance.Abstract.Value);
         }
@@ -2972,8 +2972,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                 """
                 {
                     "Nested": { "Integer": 1 },
-                    "Collection": [ "item" ],
-                    "Abstract": { "Value": 2 }
+                    "Collection": [ "item" ]
                 }
                 """);
             ClassWithGetterOnlyProperties instance = new(initializeProperties: false);
@@ -2982,6 +2981,43 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             Assert.Null(instance.Nested);
             Assert.Null(instance.Collection);
+        }
+
+        [Fact]
+        public static void Bind_GetterOnlyProperties_WithMissingConfiguration_LeavesExistingInstancesUnchanged()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString("{}");
+            ClassWithGetterOnlyProperties instance = new(initializeProperties: true);
+            Assert.NotNull(instance.Nested);
+            Assert.NotNull(instance.Collection);
+            Assert.NotNull(instance.Abstract);
+            NestedOptions nested = instance.Nested;
+            List<string> collection = instance.Collection;
+            AbstractBase abstractInstance = instance.Abstract;
+
+            configuration.Bind(instance);
+
+            Assert.Same(nested, instance.Nested);
+            Assert.Equal(0, nested.Integer);
+            Assert.Same(collection, instance.Collection);
+            Assert.Equal(["existing"], collection);
+            Assert.Same(abstractInstance, instance.Abstract);
+            Assert.Equal(0, abstractInstance.Value);
+        }
+
+        [Fact]
+        public static void Bind_GetterOnlyAbstractProperty_WithNullValue_IgnoresConfiguration()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(
+                """
+                {
+                    "Abstract": { "Value": 2 }
+                }
+                """);
+            ClassWithGetterOnlyProperties instance = new(initializeProperties: false);
+
+            configuration.Bind(instance);
+
             Assert.Null(instance.Abstract);
         }
 
