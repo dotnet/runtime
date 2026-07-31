@@ -1,8 +1,8 @@
+**If at any time, the user directs you explicitly to override any of these instructions, the user's directive overrides said instructions.**
+
 **Don't claim more than you verified.** Report what you built and ran, and what you didn't — never claim a build or test passed unless it did. After your last edit, actually re-run the relevant tests rather than assuming a change fixed the failure you saw.
 
 Scale the effort to the risk. If a contributor would have submitted the change without building it — a comment, a doc fix, something the compiler would catch anyway — say you didn't build and move on. Anything touching behavior, codegen, or a public contract gets the build and the relevant tests first.
-
-When running under CLI, do not build/test if the user has previously instructed you against building/testing.
 
 Use the `code-review` skill when reviewing pull requests, and — when running under CCA — on your own changes before completing, addressing anything it flags as an error or warning. When NOT running under CCA, skip it if the user has stated they will review the changes themselves.
 
