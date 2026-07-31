@@ -3685,6 +3685,12 @@ namespace ILAssembler
         private static ILOpCode ParseOpCodeFromToken(IToken token)
         {
             string text = token.Text.TrimEnd('.');
+            if (text == "unused")
+            {
+                // Native ilasm's keyword index uses the last matching opcode.def entry, CEE_UNUSED70.
+                return ILOpCode.Unused;
+            }
+
             string normalized = text.Replace('.', '_');
 
             // Handle instruction aliases that don't directly map to ILOpCode enum names

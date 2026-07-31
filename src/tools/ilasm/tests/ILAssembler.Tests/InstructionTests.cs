@@ -232,6 +232,28 @@ namespace ILAssembler.Tests
             Assert.Empty(diagnostics);
         }
 
+        [Fact]
+        public void UnusedInstruction_ParsedCorrectly()
+        {
+            string source = """
+                .assembly test { }
+                .method public static void F() cil managed
+                {
+                    IL_0000: unused
+                    IL_0001: ret
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == "F");
+            byte[] il = pe.GetMethodBody(method.RelativeVirtualAddress).GetILBytes()!;
+
+            Assert.Equal([0xFE, 0x22, 0x2A], il);
+        }
+
 
         [Fact]
         public void MethodNameF1_NotConfusedWithHexByte()

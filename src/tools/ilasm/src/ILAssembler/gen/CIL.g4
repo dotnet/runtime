@@ -122,6 +122,7 @@ MRESOURCE: '.mresource';
 // For example, "ldc.r8" must be recognized as INSTR_R token, not as DOTTEDNAME
 INSTR_NONE:
 	'nop'
+	| 'unused'
 	| 'break'
 	| 'ldarg.0'
 	| 'ldarg.1'
