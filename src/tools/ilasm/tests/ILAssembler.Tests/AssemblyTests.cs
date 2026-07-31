@@ -23,6 +23,50 @@ namespace ILAssembler.Tests
 {
     public class AssemblyTests
     {
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ImageCharacteristics_AreValid(bool dll)
+        {
+            string source = """
+                .assembly test { }
+                .method public static void Main() cil managed
+                {
+                    .entrypoint
+                    ret
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { Dll = dll });
+            Characteristics characteristics = pe.PEHeaders.CoffHeader.Characteristics;
+
+            Assert.True(characteristics.HasFlag(Characteristics.ExecutableImage));
+            Assert.True(characteristics.HasFlag(Characteristics.Bit32Machine));
+            Assert.Equal(dll, characteristics.HasFlag(Characteristics.Dll));
+        }
+
+        [Theory]
+        [InlineData(Machine.Amd64)]
+        [InlineData(Machine.Arm64)]
+        public void ImageCharacteristics_64BitImageIsLargeAddressAware(Machine machine)
+        {
+            string source = """
+                .assembly test { }
+                .method public static void Main() cil managed
+                {
+                    .entrypoint
+                    ret
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { Machine = machine });
+            Characteristics characteristics = pe.PEHeaders.CoffHeader.Characteristics;
+
+            Assert.True(characteristics.HasFlag(Characteristics.ExecutableImage));
+            Assert.True(characteristics.HasFlag(Characteristics.LargeAddressAware));
+            Assert.False(characteristics.HasFlag(Characteristics.Bit32Machine));
+        }
+
         [Fact]
         public void Diagnostic_AssemblyNotFound()
         {

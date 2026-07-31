@@ -419,6 +419,57 @@ namespace ILAssembler.Tests
             Assert.Equal("MyNamespace", reader.GetString(typeDef.Namespace));
         }
 
+        [Fact]
+        public void TypeName_QuotedNamespaceSegment()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public auto ansi beforefieldinit 'tls'.tls1 extends [mscorlib]System.Object { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal("tls1", reader.GetString(typeDef.Name));
+            Assert.Equal("tls", reader.GetString(typeDef.Namespace));
+        }
+
+        [Fact]
+        public void TypeName_QuotedSegmentAfterDottedName()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public auto ansi beforefieldinit System.Collections.'Type' extends [mscorlib]System.Object { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal("Type", reader.GetString(typeDef.Name));
+            Assert.Equal("System.Collections", reader.GetString(typeDef.Namespace));
+        }
+
+        [Fact]
+        public void TypeName_EmptyQuotedNamespaceSegmentPreservesSeparator()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public auto ansi beforefieldinit ''.Foo.'Bar' extends [mscorlib]System.Object { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal("Bar", reader.GetString(typeDef.Name));
+            Assert.Equal(".Foo", reader.GetString(typeDef.Namespace));
+        }
+
 
         [Fact]
         public void Namespace_NoLeadingDot()

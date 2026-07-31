@@ -254,6 +254,28 @@ namespace ILAssembler.Tests
             Assert.Equal([0xFE, 0x22, 0x2A], il);
         }
 
+        [Fact]
+        public void Ldtoken_NumericTokenEmittedCorrectly()
+        {
+            string source = """
+                .assembly test { }
+                .method public static void F() cil managed
+                {
+                    ldtoken 0
+                    ret
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == "F");
+            byte[] il = pe.GetMethodBody(method.RelativeVirtualAddress).GetILBytes()!;
+
+            Assert.Equal([0xD0, 0x00, 0x00, 0x00, 0x00, 0x2A], il);
+        }
+
 
         [Fact]
         public void MethodNameF1_NotConfusedWithHexByte()
