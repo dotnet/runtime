@@ -3771,6 +3771,11 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo2(ClassID classId,
         return CORPROF_E_CLASSID_IS_COMPOSITE;
     }
 
+    if (typeHandle.IsContinuationWithoutMetadata())
+    {
+        return CORPROF_E_DATAINCOMPLETE;
+    }
+
     //
     // Fill in the basic information
     //
@@ -4738,6 +4743,11 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo(ClassID classId,
 
         if (!th.IsTypeDesc() && !th.IsArray())
         {
+            if (typeHandle.IsContinuationWithoutMetadata())
+            {
+                return CORPROF_E_DATAINCOMPLETE;
+            }
+
             if (pModuleId != NULL)
             {
                 *pModuleId = (ModuleID) th.GetModule();
