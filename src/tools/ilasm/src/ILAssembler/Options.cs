@@ -66,6 +66,11 @@ namespace ILAssembler
         public Machine? Machine { get; set; }
 
         /// <summary>
+        /// Produce a DLL image instead of an executable.
+        /// </summary>
+        public bool Dll { get; set; }
+
+        /// <summary>
         /// Create an AppContainer exe or dll.
         /// </summary>
         public bool AppContainer { get; set; }

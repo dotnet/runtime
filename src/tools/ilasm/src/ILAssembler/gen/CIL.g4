@@ -408,8 +408,8 @@ id:
 	| VALUE
 	| INSTANCE
 	| SQSTRING;
-dottedName: DOTTEDNAME | ((dottedNamePart '.')* dottedNamePart);
-dottedNamePart: ID | VALUE | INSTANCE | SQSTRING;
+dottedName: DOTTEDNAME | ((dottedNamePart '.')* dottedNamePart) | SQSTRING;
+dottedNamePart: ID | VALUE | INSTANCE | SQSTRING | DOTTEDNAME;
 compQstring: (QSTRING PLUS)* QSTRING;
 
 
@@ -696,6 +696,7 @@ instr:
 	| instr_string 'bytearray' '(' bytes ')'
 	| instr_sig callConv type sigArgs
 	| instr_tok ownerType /* ownerType ::= memberRef | typeSpec */
+	| instr_tok int32
 	| instr_switch '(' labels ')'
 	| instr_switch '()';
 
