@@ -2581,16 +2581,20 @@ void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
 //   into a proper async call.
 //
 // Arguments:
-//    call           - the call, with its user arguments already added
-//    inlineeContext - inline context of the frame that is logically returning
-//    di             - debug info to use
+//    call - the call, with its user arguments already added
+//    di   - debug info to use
 //
 // Notes:
-//    The call is an await: it suspends when it has to switch continuation context. It runs
-//    after the inlinee's frame has logically returned, so the frame it belongs to is the
-//    inlinee's caller.
+//    The call is an await: it suspends when it has to switch continuation context.
 //
-void Compiler::fgSetupAsyncFrameTransitionCall(GenTreeCall* call, InlineContext* inlineeContext, const DebugInfo& di)
+//    Unlike normal awaits it gets no context pseudo-args. Those model what a frame
+//    captures and restores when a suspension unwinds through it, and none of that applies
+//    here: we only run at all because the frame we are returning out of was resumed, so
+//    every frame in the chain already has a continuation holding the values it captured
+//    when it first suspended, and a suspension here returns straight back to the
+//    dispatcher, which restores the thread's contexts itself.
+//
+void Compiler::fgSetupAsyncFrameTransitionCall(GenTreeCall* call, const DebugInfo& di)
 {
     AsyncCallInfo asyncInfo;
     // The helper resumes on the requested context, so no further handling is attached to
@@ -2609,40 +2613,6 @@ void Compiler::fgSetupAsyncFrameTransitionCall(GenTreeCall* call, InlineContext*
         call->gtArgs.PushBack(this,
                               NewCallArg::Primitive(gtNewNull(), TYP_REF).WellKnown(WellKnownArg::AsyncContinuation));
     }
-
-    // Contexts of the frame this call belongs to, i.e. the inlinee's caller.
-    InlineContext* const parentContext = inlineeContext->GetParent();
-    unsigned             resumed;
-    unsigned             execCtx;
-    unsigned             syncCtx;
-    if ((parentContext == nullptr) || !parentContext->HasAsyncFrameLocals())
-    {
-        resumed = lvaResumedIndicator;
-        execCtx = lvaAsyncExecutionContextVar;
-        syncCtx = lvaAsyncSynchronizationContextVar;
-    }
-    else
-    {
-        resumed = parentContext->GetAsyncResumedIndicator();
-        execCtx = parentContext->GetAsyncExecutionContextVar();
-        syncCtx = parentContext->GetAsyncSynchronizationContextVar();
-    }
-
-    assert((resumed != BAD_VAR_NUM) && (execCtx != BAD_VAR_NUM) && (syncCtx != BAD_VAR_NUM));
-
-    // TODO-Async: when this call suspends, the frames enclosing the caller need their
-    // context handling run too. Those come from the enclosing frame chain, which is added
-    // to async calls as additional pseudo-args.
-    call->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(syncCtx, TYP_REF))
-                                     .WellKnown(WellKnownArg::AsyncSynchronizationContext));
-    call->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(execCtx, TYP_REF))
-                                     .WellKnown(WellKnownArg::AsyncExecutionContext));
-    call->gtArgs
-        .PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(resumed, 0)).WellKnown(WellKnownArg::AsyncResumedDef));
-    call->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(resumed, TYP_INT))
-                                     .WellKnown(WellKnownArg::AsyncResumedUse));
-
-    lvaGetDesc(resumed)->lvHasLdAddrOp = true;
 }
 
 //------------------------------------------------------------------------
@@ -2796,7 +2766,7 @@ void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicB
                                           gtNewContinuationMemberIndir(ContinuationMember::InlineFrameExecutionContext(
                                                                            inlineDepth),
                                                                        TYP_REF)));
-        fgSetupAsyncFrameTransitionCall(restoreCall, inlineContext, di);
+        fgSetupAsyncFrameTransitionCall(restoreCall, di);
 
         // The helper is small on the path that does not suspend, which is the one we care
         // about, so let the inliner have a look at it.
