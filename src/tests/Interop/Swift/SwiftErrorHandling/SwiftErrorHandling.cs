@@ -46,6 +46,10 @@ public class ErrorHandlingTests
     public static extern nint conditionallyThrowErrorInFirstStackSlot(int willThrow, int dummy1, int dummy2, int dummy3, int dummy4, int dummy5, int dummy6, int dummy7, ref SwiftError error);
 
     [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
+    [DllImport(SwiftLib, EntryPoint = "conditionallyThrowErrorAfterSixArguments")]
+    public static extern nint conditionallyThrowErrorAfterSixArguments(int willThrow, int dummy1, int dummy2, int dummy3, int dummy4, int dummy5, ref SwiftError error);
+
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "validateSwiftAbiOneWord")]
     private static extern nuint ValidateSwiftAbiOneWord(
         nint key,
@@ -167,6 +171,34 @@ public class ErrorHandlingTests
 
         int i = 0;
         int result = (int)conditionallyThrowErrorInFirstStackSlot(0, i + 1, i + 2, i + 3, i + 4, i + 5, i + 6, i + 7, ref error);
+
+        Assert.True(error.Value == null, "No Swift error was expected to be thrown.");
+        Assert.True(result == 42, "The result from Swift does not match the expected value.");
+    }
+
+    [Fact]
+    public static unsafe void TestSwiftErrorAfterSixArgumentsThrown()
+    {
+        const string expectedErrorMessage = "Catch me if you can!";
+        SetErrorMessageForSwift(expectedErrorMessage);
+
+        SwiftError error = new SwiftError();
+
+        int i = 0;
+        conditionallyThrowErrorAfterSixArguments(1, i + 1, i + 2, i + 3, i + 4, i + 5, ref error);
+        Assert.True(error.Value != null, "A Swift error was expected to be thrown.");
+
+        string errorMessage = GetErrorMessageFromSwift(error);
+        Assert.True(errorMessage == expectedErrorMessage, string.Format("The error message retrieved from Swift does not match the expected message. Expected: {0}, Actual: {1}", expectedErrorMessage, errorMessage));
+    }
+
+    [Fact]
+    public static unsafe void TestSwiftErrorAfterSixArgumentsNotThrown()
+    {
+        SwiftError error = new SwiftError();
+
+        int i = 0;
+        int result = (int)conditionallyThrowErrorAfterSixArguments(0, i + 1, i + 2, i + 3, i + 4, i + 5, ref error);
 
         Assert.True(error.Value == null, "No Swift error was expected to be thrown.");
         Assert.True(result == 42, "The result from Swift does not match the expected value.");

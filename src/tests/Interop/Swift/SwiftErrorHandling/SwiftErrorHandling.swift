@@ -35,6 +35,18 @@ public func conditionallyThrowErrorInFirstStackSlot(
     return try conditionallyThrowError(willThrow: willThrow)
 }
 
+@_silgen_name("conditionallyThrowErrorAfterSixArguments")
+public func conditionallyThrowErrorAfterSixArguments(
+    willThrow: Int32,
+    dummy1: Int32,
+    dummy2: Int32,
+    dummy3: Int32,
+    dummy4: Int32,
+    dummy5: Int32
+) throws -> Int32 {
+    return try conditionallyThrowError(willThrow: willThrow)
+}
+
 private let fnvOffsetBasis: UInt = 14695981039346656037
 private let fnvPrime: UInt = 1099511628211
 
