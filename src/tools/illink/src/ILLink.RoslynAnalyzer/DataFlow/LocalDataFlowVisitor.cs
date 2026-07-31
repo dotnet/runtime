@@ -142,6 +142,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         public abstract TValue GetTupleElementValue(IFieldSymbol tupleElement);
 
+        // Returns the value produced by applying a user-defined conversion operator to a value.
+        // This mirrors the handling of IConversionOperation with an OperatorMethod, which the
+        // deconstruction path doesn't go through because the conversion is described by the
+        // DeconstructionInfo rather than by an operation in the tree.
+        public abstract TValue GetConversionValue(IMethodSymbol conversionOperator, TValue operandValue);
+
         public abstract TValue GetParameterTargetValue(IParameterSymbol parameter);
 
         public abstract void HandleAssignment(
@@ -704,7 +710,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
                 sourceValue = GetDeconstructionSourceValue(source, sourceValue, sourceValueIsKnown, state);
                 return new DeconstructionValue(
-                    deconstructionInfo.Conversion is { MethodSymbol: not null } ? TopValue : sourceValue);
+                    deconstructionInfo.Conversion is { MethodSymbol: IMethodSymbol conversionOperator }
+                        ? GetConversionValue(conversionOperator, sourceValue)
+                        : sourceValue);
             }
 
             if (target is not ITupleOperation targetTuple ||
@@ -1001,8 +1009,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 // turns both arguments into flow capture references, instead of just passing a local
                 // reference for s.
 
-                Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Reference),
-                    $"{operation.Syntax.GetLocation().GetLineSpan()}");
+                // This is also reachable for writes which are not byrefs, because increment/decrement
+                // (IIncrementOrDecrementOperation) and coalescing assignment (ICoalesceAssignmentOperation)
+                // are not handled here and fall back to the base visitor, which visits the write target
+                // directly. Enabling the following assert requires handling those first.
+                // Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Reference),
+                //     $"{operation.Syntax.GetLocation().GetLineSpan()}");
                 return TopValue;
             }
 
@@ -1121,8 +1133,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             if (operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Write))
             {
                 // Property references may be passed as ref/out parameters.
-                Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Reference),
-                    $"{operation.Syntax.GetLocation().GetLineSpan()}");
+                // This is also reachable for writes which are not byrefs, because increment/decrement
+                // (IIncrementOrDecrementOperation) and coalescing assignment (ICoalesceAssignmentOperation)
+                // are not handled here and fall back to the base visitor, which visits the write target
+                // directly. Enabling the following assert requires handling those first.
+                // Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Reference),
+                //     $"{operation.Syntax.GetLocation().GetLineSpan()}");
                 return TopValue;
             }
 

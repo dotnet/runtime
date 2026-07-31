@@ -107,6 +107,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.RequiresPublicMethods();
             }
 
+
             record TypeAndInstanceRecordManual(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -304,18 +305,31 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 public static implicit operator ConversionTarget(Type type) => default;
             }
 
-            // Deconstructing an element through a user-defined conversion operator (Type ->
-            // ConversionTarget here) can't be modeled by the analyzer - the operator body is opaque -
-            // so EvaluateDeconstruction treats the converted value as unknown (top) rather than
-            // reusing the source's own tracked value, which would no longer make sense once its type
-            // has changed. ConversionTarget isn't itself a dataflow-tracked type, so this mainly
-            // verifies the conversion-operator code path in EvaluateDeconstruction runs without
-            // hitting UnexpectedOperationHandler or otherwise producing an unexpected warning (see
-            // [ExpectedNoWarnings] on the containing class).
+            // Deconstructing an element through a user-defined conversion operator. ConversionTarget
+            // isn't a dataflow-tracked type, so this only verifies the conversion path runs without
+            // producing an unexpected warning (see [ExpectedNoWarnings] on the containing class).
             static void DeconstructWithUserDefinedConversion(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type typeWithMethods)
             {
                 (ConversionTarget converted, object instance) = (typeWithMethods, new object());
+            }
+
+            struct ConversionSource
+            {
+                public static implicit operator Type(ConversionSource value) => null;
+            }
+
+            // The converted value must be modeled as the conversion operator's return value, not as
+            // the source value and not as an unknown/empty value. The operator's return type has no
+            // annotations, so assigning it to an annotated target has to warn - the same way the
+            // equivalent non-deconstruction assignment does. Note the conversion here is described
+            // by the DeconstructionInfo (not by a conversion operation in the tree) because the
+            // source is a tuple-typed value rather than a tuple literal.
+            [ExpectedWarning("IL2074", nameof(ConversionSource))]
+            static void DeconstructUserDefinedConversionToAnnotatedTarget((ConversionSource value, object instance) input)
+            {
+                object instance;
+                (annotatedFieldTarget, instance) = input;
             }
 
             [ExpectedWarning("IL2077")]
@@ -349,6 +363,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 DeconstructArrayElementTargetSideEffect(typeof(string), typeof(string));
                 DeconstructImplicitIndexerTargetSideEffect(typeof(string), typeof(string));
                 DeconstructWithUserDefinedConversion(typeof(string));
+                DeconstructUserDefinedConversionToAnnotatedTarget(default);
                 DeconstructForeach(new[] { (typeof(string), (object)null) });
             }
         }

@@ -265,6 +265,15 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             return new FieldValue(tupleElement);
         }
 
+        public override MultiValue GetConversionValue(IMethodSymbol conversionOperator, MultiValue operandValue)
+        {
+            // Keep this in sync with VisitConversion, which handles the same conversion when it
+            // appears as an IConversionOperation in the operation tree.
+            return conversionOperator.ReturnType.IsTypeInterestingForDataflow(isByRef: conversionOperator.ReturnsByRef)
+                ? new MethodReturnValue(conversionOperator, isNewObj: false)
+                : operandValue;
+        }
+
         public override MultiValue GetParameterTargetValue(IParameterSymbol parameter)
         {
             var parameterMethod = parameter.ContainingSymbol as IMethodSymbol ?? OwningSymbol as IMethodSymbol;
