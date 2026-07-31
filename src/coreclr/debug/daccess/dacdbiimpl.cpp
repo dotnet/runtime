@@ -7403,13 +7403,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGCHeapInformation(OUT COR_HEAP
 }
 
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::HasReadWriteMetadata(VMPTR_PEAssembly vmPEAssembly, OUT BOOL* pHasReadWriteMetadata)
 {
     DD_ENTER_MAY_THROW;
-    if (pAddrMDInternalRW == NULL)
+    if (pHasReadWriteMetadata == NULL)
         return E_INVALIDARG;
     PEAssembly * pPEAssembly = vmPEAssembly.GetDacPtr();
-    *pAddrMDInternalRW = pPEAssembly->GetMDInternalRWAddress();
+    *pHasReadWriteMetadata = pPEAssembly->HasReadWriteMetadata();
     return S_OK;
 }
 
