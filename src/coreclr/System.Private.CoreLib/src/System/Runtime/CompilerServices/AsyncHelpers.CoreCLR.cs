@@ -1506,7 +1506,7 @@ namespace System.Runtime.CompilerServices
         //
         // 'flags' must contain only ContinuationFlags.AllContinuationFlags bits.
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.Async)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.Async)]
         private static void RestoreInlinedFrameContexts(ExecutionContext? previousExecCtx, object? continuationContext, ContinuationFlags flags)
         {
             Debug.Assert((flags & ~ContinuationFlags.AllContinuationFlags) == 0);

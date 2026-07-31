@@ -2637,8 +2637,12 @@ void Compiler::fgSetupAsyncFrameTransitionCall(GenTreeCall* call, InlineContext*
                                      .WellKnown(WellKnownArg::AsyncSynchronizationContext));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(execCtx, TYP_REF))
                                      .WellKnown(WellKnownArg::AsyncExecutionContext));
+    call->gtArgs
+        .PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(resumed, 0)).WellKnown(WellKnownArg::AsyncResumedDef));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(resumed, TYP_INT))
                                      .WellKnown(WellKnownArg::AsyncResumedUse));
+
+    lvaGetDesc(resumed)->lvHasLdAddrOp = true;
 }
 
 //------------------------------------------------------------------------
@@ -2793,6 +2797,14 @@ void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicB
                                                                            inlineDepth),
                                                                        TYP_REF)));
         fgSetupAsyncFrameTransitionCall(restoreCall, inlineContext, di);
+
+        // The helper is small on the path that does not suspend, which is the one we care
+        // about, so let the inliner have a look at it.
+        CORINFO_CALL_INFO callInfo = {};
+        callInfo.hMethod           = restoreCall->gtCallMethHnd;
+        callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
+        impMarkInlineCandidate(restoreCall, MAKE_METHODCONTEXT(callInfo.hMethod), &callInfo, compInlineContext);
+
         fgInsertStmtAtEnd(restoreBlock, gtNewStmt(restoreCall));
 
         GenTree* const store = gtNewStoreLclVarNode(resumedCaller, gtNewIconNode(1));
