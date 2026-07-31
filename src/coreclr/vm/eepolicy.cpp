@@ -843,15 +843,14 @@ static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(int32_t prop, const 
 }
 
 // Invokes the user-registered fatal error handler if one has been set.
-// Returns true if the handler indicated that default handling should be skipped.
-static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
+static void InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
 {
     WRAPPER_NO_CONTRACT;
 
     void* pHandler = VolatileLoad(&s_fatalErrorHandler);
     FatalErrorHandlerFunc pfnHandler = reinterpret_cast<FatalErrorHandlerFunc>(pHandler);
     if (pfnHandler == NULL)
-        return false;
+        return;
 
     // Serialize concurrent fatal errors so the user handler is invoked on only the first
     // crashing thread. If several threads take a fatal error at the same time, the first one
@@ -874,7 +873,7 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
         {
             // Reentrancy: this thread already owns fatal handling.
             // Do not invoke the handler again and let default handling proceed.
-            return false;
+            return;
         }
 
         // A different thread is already running the handler and terminating the process. Switch
@@ -889,10 +888,10 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
 
     // Call user-defined fatal error handler.
     int result = pfnHandler(static_cast<int>(exitCode), FatalErrorPropertyGetterImpl);
-    return result == SkipDefaultHandler;
+    _ASSERTE(result == RunDefaultHandler);
 }
 
-BOOL EEPolicy::HandleFatalErrorForNativeException(
+void EEPolicy::HandleFatalErrorForNativeException(
     DWORD exceptionCode,
     void* faultAddress,
     PEXCEPTION_POINTERS pExceptionInfo,
@@ -901,7 +900,7 @@ BOOL EEPolicy::HandleFatalErrorForNativeException(
 {
     WRAPPER_NO_CONTRACT;
 
-    return InvokeFatalErrorHandlerForNativeException(
+    InvokeFatalErrorHandlerForNativeException(
         exceptionCode,
         faultAddress,
         pExceptionInfo,
@@ -912,7 +911,7 @@ BOOL EEPolicy::HandleFatalErrorForNativeException(
         nullptr);
 }
 
-BOOL EEPolicy::InvokeFatalErrorHandlerForNativeException(
+void EEPolicy::InvokeFatalErrorHandlerForNativeException(
     DWORD exceptionCode,
     void* faultAddress,
     PEXCEPTION_POINTERS pExceptionInfo,
@@ -930,11 +929,10 @@ BOOL EEPolicy::InvokeFatalErrorHandlerForNativeException(
     t_platformPropertyContext = context;
     StoreCrashContext(exceptionCode, message, pExceptionInfo, errorSource, exceptionString);
 
-    BOOL skipDefaultHandler = InvokeFatalErrorHandler(exceptionCode, reinterpret_cast<UINT_PTR>(faultAddress));
+    InvokeFatalErrorHandler(exceptionCode, reinterpret_cast<UINT_PTR>(faultAddress));
 
     t_getPlatformProperty = previousGetter;
     t_platformPropertyContext = previousContext;
-    return skipDefaultHandler;
 }
 
 #ifdef TARGET_WINDOWS
@@ -1098,16 +1096,10 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     }
 
     // Invoke the user's fatal error handler after stack trace but before Watson.
-    // For SO, stderr output cannot be suppressed (the stack is too limited to
-    // invoke the handler earlier), but SkipDefaultHandler still skips Watson/crash dump.
+    // The stack is too limited to invoke the handler before stderr output is emitted.
     {
         UINT_PTR soAddress = pExceptionInfo->ContextRecord ? GetIP(pExceptionInfo->ContextRecord) : 0;
-        if (InvokeFatalErrorHandler(COR_E_STACKOVERFLOW, soAddress))
-        {
-            // SkipDefaultHandler — skip Watson and crash dump, proceed to exit.
-            SafeExitProcess(COR_E_STACKOVERFLOW, SCA_ExitProcessWhenShutdownComplete);
-            UNREACHABLE();
-        }
+        InvokeFatalErrorHandler(COR_E_STACKOVERFLOW, soAddress);
     }
 
     if (!fSkipDebugger)
@@ -1265,8 +1257,6 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
             faultAddress = reinterpret_cast<UINT_PTR>(pExceptionInfo->ExceptionRecord->ExceptionAddress);
         }
 
-        bool skipDefaultHandler;
-
 #ifdef TARGET_WINDOWS
         // A genuinely-unmanaged fatal fault is never translated into a managed exception.
         // Route it through the common native-exception entry point with a provider for the
@@ -1282,7 +1272,7 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
                 pExceptionInfo->ContextRecord
             };
 
-            skipDefaultHandler = InvokeFatalErrorHandlerForNativeException(
+            InvokeFatalErrorHandlerForNativeException(
                 exitCode,
                 reinterpret_cast<void*>(faultAddress),
                 pExceptionInfo,
@@ -1298,17 +1288,11 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
             // Store crash context for on-demand replay by the fatal error handler's
             // pfnGetFatalErrorLog callback.
             StoreCrashContext(exitCode, pszMessage, pExceptionInfo, errorSource, argExceptionString);
-            skipDefaultHandler = InvokeFatalErrorHandler(exitCode, faultAddress);
+            InvokeFatalErrorHandler(exitCode, faultAddress);
         }
 
-        if (skipDefaultHandler)
-        {
-            // SkipDefaultHandler — suppress crash output and crash dump, proceed to exit.
-            SafeExitProcess(exitCode, SCA_ExitProcessWhenShutdownComplete);
-        }
-
-        // RunDefaultHandler — write crash info to stderr and proceed with
-        // default fatal handling (Watson, crash dump, etc.).
+        // Write crash info to stderr and proceed with default fatal handling
+        // (Watson, crash dump, etc.).
         STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogFatalError\n");
         LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
 

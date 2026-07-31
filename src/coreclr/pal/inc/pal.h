@@ -277,7 +277,7 @@ typedef int32_t (*PFATALERRORPLATFORMPROPERTYGETTER)(
 /// runtime's normal exception dispatch. exceptionInfo is optional and contains the
 /// runtime exception records when they are available.
 /// </summary>
-typedef BOOL (*PFATALERRORHANDLERFORNATIVEEXCEPTION_CALLBACK)(
+typedef VOID (*PFATALERRORHANDLERFORNATIVEEXCEPTION_CALLBACK)(
     DWORD exceptionCode,
     LPVOID faultAddress,
     struct _EXCEPTION_POINTERS* exceptionInfo,

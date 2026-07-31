@@ -28,12 +28,11 @@ typedef enum _FatalErrorHandlerResult
     // Allow the runtime to continue with its default fatal error handling
     // (printing crash information, generating a crash dump, etc.).
     RunDefaultHandler = 0,
-
-    // Suppress the runtime's default fatal error handling. The process will
-    // still be terminated, but the runtime will not print crash information
-    // or generate a crash dump.
-    SkipDefaultHandler = 1,
 } FatalErrorHandlerResult;
+
+// Fatal error handlers must return RunDefaultHandler. All other return values
+// are reserved for future use. A handler that needs to prevent further runtime
+// processing should terminate the process directly.
 
 // Callback signature for receiving crash log text. The runtime may invoke
 // pfnLogAction multiple times, each time passing a UTF-8 encoded fragment

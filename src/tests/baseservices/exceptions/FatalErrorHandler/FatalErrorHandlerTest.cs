@@ -20,9 +20,6 @@ unsafe class FatalErrorHandlerTest
     //
 
     [DllImport("FatalErrorHandlerNative")]
-    private static extern delegate* unmanaged<int, void*, int> GetHandlerSkipDefault();
-
-    [DllImport("FatalErrorHandlerNative")]
     private static extern delegate* unmanaged<int, void*, int> GetHandlerRunDefault();
 
     [DllImport("FatalErrorHandlerNative")]
@@ -43,13 +40,6 @@ unsafe class FatalErrorHandlerTest
     //
     // Child process entry points — register handler, trigger FailFast.
     //
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    static void RunChildSkipHandler()
-    {
-        ExceptionHandling.SetFatalErrorHandler(GetHandlerSkipDefault());
-        Environment.FailFast("test fatal error");
-    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void RunChildRunHandler()
@@ -166,7 +156,7 @@ unsafe class FatalErrorHandlerTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int RunChildSetTwice()
     {
-        ExceptionHandling.SetFatalErrorHandler(GetHandlerSkipDefault());
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerRunDefault());
         try
         {
             ExceptionHandling.SetFatalErrorHandler(GetHandlerRunDefault());
@@ -202,36 +192,14 @@ unsafe class FatalErrorHandlerTest
         return (result.ExitStatus.ExitCode, result.StandardError);
     }
 
-    static bool TestSkipHandler()
-    {
-        Console.WriteLine("=== TestSkipHandler ===");
-        var (exitCode, stderr) = LaunchChild("skip-handler");
-
-        bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
-        // SkipDefaultHandler suppresses the runtime's crash log output, but the
-        // process still terminates.
-        bool noRuntimeOutput = !stderr.Contains("Process terminated.");
-        bool exited = exitCode != 0;
-
-        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, no runtime output: {noRuntimeOutput}");
-        if (!handlerInvoked)
-            Console.WriteLine("  FAIL: Handler was not invoked");
-        if (!noRuntimeOutput)
-            Console.WriteLine("  FAIL: Runtime crash log should be suppressed by SkipDefaultHandler");
-        if (!exited)
-            Console.WriteLine("  FAIL: Expected non-zero exit code");
-
-        return handlerInvoked && noRuntimeOutput && exited;
-    }
-
     static bool TestRunHandler()
     {
         Console.WriteLine("=== TestRunHandler ===");
         var (exitCode, stderr) = LaunchChild("run-handler");
 
         bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
-        // RunDefaultHandler lets the runtime proceed with its default fatal handling,
-        // which must print the standard crash log to stderr: the FailFast header
+        // The runtime proceeds with its default fatal handling, which must print
+        // the standard crash log to stderr: the FailFast header
         // ("Process terminated.") followed by the FailFast message.
         bool defaultOutput = stderr.Contains("Process terminated.") && stderr.Contains("test fatal error");
         // Regression guard: the runtime must emit the default crash log exactly once.
@@ -261,7 +229,7 @@ unsafe class FatalErrorHandlerTest
 
         bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
         bool logReceived = stderr.Contains(LogReceivedMarker);
-        bool logContainsMessage = stderr.Contains("test fatal error");
+        bool logContainsMessage = CallbackLogContains(stderr, "test fatal error");
         bool exited = exitCode != 0;
 
         Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, log received: {logReceived}, log has message: {logContainsMessage}");
@@ -273,6 +241,24 @@ unsafe class FatalErrorHandlerTest
             Console.WriteLine("  FAIL: Log did not contain the FailFast message");
 
         return handlerInvoked && logReceived && logContainsMessage && exited;
+    }
+
+    static bool CallbackLogContains(string stderr, string expected)
+    {
+        int searchIndex = 0;
+        while ((searchIndex = stderr.IndexOf(LogReceivedMarker, searchIndex, StringComparison.Ordinal)) >= 0)
+        {
+            int lineEnd = stderr.IndexOf('\n', searchIndex);
+            if (lineEnd < 0)
+                lineEnd = stderr.Length;
+
+            if (stderr.AsSpan(searchIndex, lineEnd - searchIndex).Contains(expected, StringComparison.Ordinal))
+                return true;
+
+            searchIndex = lineEnd;
+        }
+
+        return false;
     }
 
     static bool TestNativeException(string scenario)
@@ -450,7 +436,6 @@ unsafe class FatalErrorHandlerTest
         {
             switch (args[0])
             {
-                case "skip-handler": RunChildSkipHandler(); return 1;
                 case "run-handler":  RunChildRunHandler();  return 1;
                 case "log-handler":  RunChildLogHandler();  return 1;
                 case "native-exception":        RunChildNativeException();         return 1;
@@ -466,7 +451,6 @@ unsafe class FatalErrorHandlerTest
         }
 
         bool allPassed = true;
-        allPassed &= TestSkipHandler();
         allPassed &= TestRunHandler();
         allPassed &= TestLogHandler();
         allPassed &= TestNativeException("native-exception");

@@ -1274,7 +1274,7 @@ PROCNotifyProcessShutdown(bool isExecutingOnAltStack)
     }
 }
 
-BOOL
+VOID
 PROCInvokeFatalErrorHandlerForNativeException(
     DWORD exceptionCode,
     LPVOID faultAddress,
@@ -1283,7 +1283,10 @@ PROCInvokeFatalErrorHandlerForNativeException(
     LPVOID context)
 {
     PFATALERRORHANDLERFORNATIVEEXCEPTION_CALLBACK callback = g_fatalErrorHandlerForNativeExceptionCallback;
-    return callback != nullptr && callback(exceptionCode, faultAddress, exceptionInfo, getPlatformProperty, context);
+    if (callback != nullptr)
+    {
+        callback(exceptionCode, faultAddress, exceptionInfo, getPlatformProperty, context);
+    }
 }
 
 /*++

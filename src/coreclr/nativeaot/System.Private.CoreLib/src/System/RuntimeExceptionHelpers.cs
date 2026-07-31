@@ -28,6 +28,8 @@ namespace System
 
     internal static class RuntimeExceptionHelpers
     {
+        private const int RunDefaultHandler = 0;
+
         // Matches the FatalErrorProperty enum defined in src/native/public/fatal_error_handling.h.
         // The values must be kept in sync with the native header.
         private enum FatalErrorProperty
@@ -181,12 +183,12 @@ namespace System
         /// platform-native fault structures to the user's fatal error handler.
         /// </summary>
         [UnmanagedCallersOnly]
-        internal static unsafe int InvokeFatalErrorHandlerForNativeException(
+        internal static unsafe void InvokeFatalErrorHandlerForNativeException(
             int errorCode, void* faultAddress, void* pPlatformData0, void* pPlatformData1)
         {
             IntPtr fatalHandler = Volatile.Read(ref ExceptionHandling.s_fatalErrorHandler);
             if (fatalHandler == IntPtr.Zero)
-                return 0; // RunDefaultHandler: no handler registered, leave the native path unchanged.
+                return;
 
             // Serialize concurrent fatal errors so the handler is invoked on only the first
             // crashing thread. This shares the crashing-thread gate with FailFast, so the handler
@@ -200,7 +202,7 @@ namespace System
                 {
                     // Reentrancy: this thread already owns fatal handling.
                     // Do not invoke the handler again and let default handling proceed.
-                    return 0;
+                    return;
                 }
 
                 // The first thread owns fatal handling and is terminating the process. Block any
@@ -215,12 +217,11 @@ namespace System
             // Invoke the user-installed fatal error handler.
             // See src/native/public/fatal_error_handling.h for the handler contract.
             int handlerResult = ((delegate* unmanaged<int, delegate* unmanaged<int, void**, int>, int>)fatalHandler)(errorCode, &GetFatalErrorProperty);
+            Debug.Assert(handlerResult == RunDefaultHandler);
 
             s_fatalErrorAddress = null;
             s_fatalErrorPlatformData0 = null;
             s_fatalErrorPlatformData1 = null;
-
-            return handlerResult;
         }
 
         //------------------------------------------------------------------------------------------------------------
@@ -553,25 +554,15 @@ namespace System
             }
 
             // Invoke the user's fatal error handler, if one was registered.
-            bool skipDefault = false;
-            IntPtr fatalHandler = Volatile.Read(ref ExceptionHandling.s_fatalErrorHandler);
-            if (fatalHandler != IntPtr.Zero)
+            if (previousThreadId == 0)
             {
-                s_fatalErrorAddress = (void*)pExAddress;
-
-                int handlerResult = ((delegate* unmanaged<int, delegate* unmanaged<int, void**, int>, int>)fatalHandler)(errorCode, &GetFatalErrorProperty);
-                skipDefault = (handlerResult == 1);
-            }
-
-            if (skipDefault)
-            {
-                // The handler took ownership of the failure and asked the runtime to skip its
-                // default handling.
-#if TARGET_WINDOWS
-                Interop.Kernel32.TerminateProcess(Interop.Kernel32.GetCurrentProcess(), errorCode);
-#else
-                Interop.Sys.Abort();
-#endif
+                IntPtr fatalHandler = Volatile.Read(ref ExceptionHandling.s_fatalErrorHandler);
+                if (fatalHandler != IntPtr.Zero)
+                {
+                    s_fatalErrorAddress = (void*)pExAddress;
+                    int handlerResult = ((delegate* unmanaged<int, delegate* unmanaged<int, void**, int>, int>)fatalHandler)(errorCode, &GetFatalErrorProperty);
+                    Debug.Assert(handlerResult == RunDefaultHandler);
+                }
             }
 
             // Write the crash log to stderr as part of the runtime's default handling.

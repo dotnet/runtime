@@ -31,13 +31,6 @@ static void WriteStdErr(const char* msg)
 #endif // _WIN32
 }
 
-// Handler that skips the default fatal error handling.
-static int DOTNET_CALLCONV HandlerSkipDefault(int /*hresult*/, FatalErrorPropertyGetter /*getProperty*/)
-{
-    WriteStdErr("FATAL_HANDLER_INVOKED\n");
-    return SkipDefaultHandler;
-}
-
 // Handler that allows the default fatal error handling to proceed.
 static int DOTNET_CALLCONV HandlerRunDefault(int /*hresult*/, FatalErrorPropertyGetter /*getProperty*/)
 {
@@ -45,7 +38,7 @@ static int DOTNET_CALLCONV HandlerRunDefault(int /*hresult*/, FatalErrorProperty
     return RunDefaultHandler;
 }
 
-// Handler that retrieves the crash log before skipping the default handling.
+// Handler that retrieves the crash log before default handling.
 static void DOTNET_CALLCONV LogCallback(const char* logString, void* /*userContext*/)
 {
     WriteStdErr("FATAL_LOG_RECEIVED:");
@@ -65,7 +58,7 @@ static int DOTNET_CALLCONV HandlerWithLog(int /*hresult*/, FatalErrorPropertyGet
         pfnGetFatalErrorLog(LogCallback, NULL);
     }
 
-    return SkipDefaultHandler;
+    return RunDefaultHandler;
 }
 
 // Handler that reports whether the crash address (faulting instruction pointer)
@@ -82,7 +75,7 @@ static int DOTNET_CALLCONV HandlerCheckInfo(int /*hresult*/, FatalErrorPropertyG
     WriteStdErr("FATAL_ADDRESS:");
     WriteStdErr(addressPopulated ? "addr=true\n" : "addr=false\n");
 
-    return SkipDefaultHandler;
+    return RunDefaultHandler;
 }
 
 // Handler that reports whether the live platform-native fault structures were surfaced
@@ -120,16 +113,11 @@ static int DOTNET_CALLCONV HandlerCheckNativeInfo(int /*hresult*/, FatalErrorPro
 #endif // __APPLE__
 #endif
 
-    return SkipDefaultHandler;
+    return RunDefaultHandler;
 }
 
 // Exported accessors — managed code P/Invokes these to get native function pointers.
 using FatalErrorHandler = int (DOTNET_CALLCONV *)(int hresult, FatalErrorPropertyGetter getProperty);
-
-extern "C" DLL_EXPORT FatalErrorHandler GetHandlerSkipDefault()
-{
-    return HandlerSkipDefault;
-}
 
 extern "C" DLL_EXPORT FatalErrorHandler GetHandlerRunDefault()
 {

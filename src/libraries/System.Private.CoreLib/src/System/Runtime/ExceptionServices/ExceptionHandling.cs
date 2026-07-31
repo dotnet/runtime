@@ -53,9 +53,9 @@ namespace System.Runtime.ExceptionServices
         /// error. The callback receives the HRESULT associated with the failure and a
         /// property-getter callback (<c>FatalErrorPropertyGetter</c>, declared in
         /// <c>fatal_error_handling.h</c>; see Microsoft.NETCore.App.Host package) through
-        /// which it can request additional crash information on demand. The callback returns
-        /// <c>0</c> (<c>RunDefaultHandler</c>) to allow the runtime to continue with its
-        /// default fatal-error handling, or <c>1</c> (<c>SkipDefaultHandler</c>) to suppress it.
+        /// which it can request additional crash information on demand. The callback must
+        /// return <c>0</c> (<c>RunDefaultHandler</c>). All other return values are reserved
+        /// for future use.
         /// </param>
         /// <exception cref="ArgumentNullException"><paramref name="handler" /> is null.</exception>
         /// <exception cref="InvalidOperationException">A handler is already set.</exception>
@@ -69,6 +69,8 @@ namespace System.Runtime.ExceptionServices
         /// terminates, so the handler is never entered by more than one thread at a time.
         /// On some fatal errors (for example, stack overflow), the runtime may have already emitted
         /// some output before invoking the handler.
+        /// A handler that needs to prevent further runtime processing can terminate the process
+        /// directly.
         /// </remarks>
         [CLSCompliant(false)]
         public static unsafe void SetFatalErrorHandler(delegate* unmanaged<int, void*, int> handler)

@@ -44,7 +44,7 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpRegisterFatalErrorHandlerForNativeException")]
         internal static extern unsafe void RhpRegisterFatalErrorHandlerForNativeException(
-            delegate* unmanaged<int, void*, void*, void*, int> pCallback);
+            delegate* unmanaged<int, void*, void*, void*, void> pCallback);
 
 #if TARGET_UNIX
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

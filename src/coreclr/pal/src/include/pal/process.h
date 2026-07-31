@@ -120,7 +120,7 @@ Function:
 --*/
 VOID PROCNotifyProcessShutdown(bool isExecutingOnAltStack = false);
 
-BOOL PROCInvokeFatalErrorHandlerForNativeException(
+VOID PROCInvokeFatalErrorHandlerForNativeException(
     DWORD exceptionCode,
     LPVOID faultAddress,
     PEXCEPTION_POINTERS exceptionInfo,

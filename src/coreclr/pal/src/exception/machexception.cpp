@@ -495,7 +495,7 @@ void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachE
 
     // Forwarding the original exception is required for the process to terminate.
     // CoreCLR performs no additional crash reporting on this Mach path after the callback,
-    // so both handler dispositions continue through the pre-runtime exception chain.
+    // so processing continues through the pre-runtime exception chain.
 
     // Send the forward request to the exception thread to process
     MachMessage sSendMessage;

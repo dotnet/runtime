@@ -462,7 +462,7 @@ EXTERN_C void RhpContinueOnFatalErrors()
 
 // Signature of the class-library bridge registered through
 // RhpRegisterFatalErrorHandlerForNativeException.
-typedef int32_t (*FatalErrorHandlerForNativeExceptionFn)(int32_t errorCode, void* faultAddress, void* pExceptionRecord, void* pContextRecord);
+typedef void (*FatalErrorHandlerForNativeExceptionFn)(int32_t errorCode, void* faultAddress, void* pExceptionRecord, void* pContextRecord);
 
 // Returns true for the genuinely-fatal hardware fault codes that mirror the Unix signal
 // choke point (SIGSEGV/SIGFPE/SIGILL). Stack overflow is deliberately excluded: the guard
@@ -494,28 +494,27 @@ static bool IsFatalHardwareExceptionForFatalErrorHandler(uintptr_t faultCode)
 
 // For a genuinely-unmanaged fatal fault (one that the vectored exception handler did not
 // translate to a managed exception), forward the live exception records to a user-installed
-// fatal error handler, if one is registered. Returns true when the handler asked the runtime
-// to skip its default fatal handling.
-static bool ShouldSkipDefaultHandlingForNativeException(PEXCEPTION_POINTERS pExPtrs)
+// fatal error handler, if one is registered.
+static void InvokeFatalErrorHandlerForNativeException(PEXCEPTION_POINTERS pExPtrs)
 {
     void* pCallback = VolatileLoad(&g_pfnFatalErrorHandlerForNativeException);
     if (pCallback == NULL)
     {
-        return false;
+        return;
     }
 
     uintptr_t faultCode = pExPtrs->ExceptionRecord->ExceptionCode;
     if (!IsFatalHardwareExceptionForFatalErrorHandler(faultCode))
     {
-        return false;
+        return;
     }
 
     // The fault address surfaced to the handler is the faulting instruction pointer,
     // matching the managed fatal path. The accessed memory address (for a memory fault)
     // remains available to the handler through the forwarded PEXCEPTION_RECORD.
     void* faultAddress = (void*)((NATIVE_CONTEXT*)pExPtrs->ContextRecord)->GetIp();
-    return ((FatalErrorHandlerForNativeExceptionFn)pCallback)(
-        (int32_t)faultCode, faultAddress, pExPtrs->ExceptionRecord, pExPtrs->ContextRecord) == 1;
+    ((FatalErrorHandlerForNativeExceptionFn)pCallback)(
+        (int32_t)faultCode, faultAddress, pExPtrs->ExceptionRecord, pExPtrs->ContextRecord);
 }
 
 LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
@@ -643,11 +642,9 @@ LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 
     // RhpContinueOnFatalErrors leaves hardware faults for client handlers, so they are
     // not known to be fatal at this point.
-    if (!g_ContinueOnFatalErrors && ShouldSkipDefaultHandlingForNativeException(pExPtrs))
+    if (!g_ContinueOnFatalErrors)
     {
-        // SkipDefaultHandler: terminate immediately without the OS's default crash
-        // reporting (WER / crash dump), matching the Unix skip behavior.
-        TerminateProcess(GetCurrentProcess(), (UINT)faultCode);
+        InvokeFatalErrorHandlerForNativeException(pExPtrs);
     }
 
     // The client may have told us to continue to search for custom handlers,

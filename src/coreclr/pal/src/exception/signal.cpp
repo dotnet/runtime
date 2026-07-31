@@ -115,23 +115,26 @@ static int32_t GetPosixFatalErrorProperty(void* context, int32_t property, const
     }
 }
 
-#if !HAVE_MACH_EXCEPTIONS
-static bool ShouldSkipDefaultHandlingForNativeException(siginfo_t* siginfo, void* context)
+static void InvokeFatalErrorHandlerForNativeException(siginfo_t* siginfo, void* context)
 {
+#if !HAVE_MACH_EXCEPTIONS
     native_context_t* nativeContext = static_cast<native_context_t*>(context);
     DWORD exceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, nativeContext);
     LPVOID faultAddress = GetNativeContextPC(nativeContext);
     PosixFatalErrorContext fatalErrorContext = { siginfo, context };
-    return PROCInvokeFatalErrorHandlerForNativeException(
+    PROCInvokeFatalErrorHandlerForNativeException(
         exceptionCode,
         faultAddress,
         nullptr,
         GetPosixFatalErrorProperty,
         &fatalErrorContext);
-}
+#else
+    (void)siginfo;
+    (void)context;
 #endif // !HAVE_MACH_EXCEPTIONS
+}
 
-static bool ShouldSkipDefaultHandlingForAbort(siginfo_t* siginfo, void* context)
+static void InvokeFatalErrorHandlerForAbort(siginfo_t* siginfo, void* context)
 {
     native_context_t* nativeContext = static_cast<native_context_t*>(context);
     CONTEXT signalContext = {};
@@ -139,7 +142,7 @@ static bool ShouldSkipDefaultHandlingForAbort(siginfo_t* siginfo, void* context)
     LPVOID faultAddress = reinterpret_cast<LPVOID>(CONTEXTGetPC(&signalContext));
     PosixFatalErrorContext fatalErrorContext = { siginfo, context };
     const DWORD errorCode = 0x80004005; // E_FAIL
-    return PROCInvokeFatalErrorHandlerForNativeException(
+    PROCInvokeFatalErrorHandlerForNativeException(
         errorCode,
         faultAddress,
         nullptr,
@@ -579,13 +582,7 @@ static void sigill_handler(int code, siginfo_t *siginfo, void *context)
         }
     }
 
-#if !HAVE_MACH_EXCEPTIONS
-    if (ShouldSkipDefaultHandlingForNativeException(siginfo, context))
-    {
-        restore_signal(code, &g_previous_sigill);
-        return;
-    }
-#endif // !HAVE_MACH_EXCEPTIONS
+    InvokeFatalErrorHandlerForNativeException(siginfo, context);
 
     invoke_previous_action(&g_previous_sigill, code, siginfo, context);
 }
@@ -611,13 +608,7 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
         }
     }
 
-#if !HAVE_MACH_EXCEPTIONS
-    if (ShouldSkipDefaultHandlingForNativeException(siginfo, context))
-    {
-        restore_signal(code, &g_previous_sigfpe);
-        return;
-    }
-#endif // !HAVE_MACH_EXCEPTIONS
+    InvokeFatalErrorHandlerForNativeException(siginfo, context);
 
     invoke_previous_action(&g_previous_sigfpe, code, siginfo, context);
 }
@@ -837,10 +828,9 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         }
     }
 
-    if (!isStackOverflow && ShouldSkipDefaultHandlingForNativeException(siginfo, context))
+    if (!isStackOverflow)
     {
-        restore_signal(code, &g_previous_sigsegv);
-        return;
+        InvokeFatalErrorHandlerForNativeException(siginfo, context);
     }
 #endif // !HAVE_MACH_EXCEPTIONS
 
@@ -896,13 +886,7 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
         }
     }
 
-#if !HAVE_MACH_EXCEPTIONS
-    if (ShouldSkipDefaultHandlingForNativeException(siginfo, context))
-    {
-        restore_signal(code, &g_previous_sigbus);
-        return;
-    }
-#endif // !HAVE_MACH_EXCEPTIONS
+    InvokeFatalErrorHandlerForNativeException(siginfo, context);
 
     invoke_previous_action(&g_previous_sigbus, code, siginfo, context);
 }
@@ -920,14 +904,7 @@ Parameters :
 --*/
 static void sigabrt_handler(int code, siginfo_t *siginfo, void *context)
 {
-    if (ShouldSkipDefaultHandlingForAbort(siginfo, context))
-    {
-        // Re-abort with the pre-runtime disposition restored. This preserves abnormal
-        // termination without running the runtime's crash reporting and dump path.
-        restore_signal(code, &g_previous_sigabrt);
-        abort();
-    }
-
+    InvokeFatalErrorHandlerForAbort(siginfo, context);
     invoke_previous_action(&g_previous_sigabrt, code, siginfo, context);
 }
 

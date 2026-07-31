@@ -50,7 +50,7 @@ public:
     static void LogManagedCallstackForSignal(LPCWSTR signalName);
 #endif
 
-    static BOOL HandleFatalErrorForNativeException(
+    static void HandleFatalErrorForNativeException(
         DWORD exceptionCode,
         void* faultAddress,
         PEXCEPTION_POINTERS pExceptionInfo,
@@ -58,7 +58,7 @@ public:
         void* context);
 
 private:
-    static BOOL InvokeFatalErrorHandlerForNativeException(
+    static void InvokeFatalErrorHandlerForNativeException(
         DWORD exceptionCode,
         void* faultAddress,
         PEXCEPTION_POINTERS pExceptionInfo,

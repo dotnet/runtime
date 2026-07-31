@@ -548,20 +548,18 @@ extern void* g_pfnFatalErrorHandlerForNativeException;
 
 // Signature of the class-library callback registered through
 // RhpRegisterFatalErrorHandlerForNativeException. It forwards the live signal structures to
-// the user's fatal error handler and returns 1 (SkipDefaultHandler) if the runtime should
-// terminate immediately without its default crash handling, or 0 (RunDefaultHandler).
-typedef int32_t (*FatalErrorHandlerForNativeExceptionFn)(int32_t errorCode, void* faultAddress, void* pSigInfo, void* pUContext);
+// the user's fatal error handler.
+typedef void (*FatalErrorHandlerForNativeExceptionFn)(int32_t errorCode, void* faultAddress, void* pSigInfo, void* pUContext);
 
 // For a genuinely-unmanaged fatal fault (one that HardwareExceptionHandler did not translate
 // to a managed exception), forward the live siginfo_t/ucontext_t to a user-installed fatal
-// error handler, if one is registered. Returns true when the handler asked the runtime to
-// skip its default fatal handling (previous signal action chaining and crash dump).
-static bool ShouldSkipDefaultHandlingForNativeException(siginfo_t *siginfo, void *context)
+// error handler, if one is registered.
+static void InvokeFatalErrorHandlerForNativeException(siginfo_t *siginfo, void *context)
 {
     void* pCallback = VolatileLoad(&g_pfnFatalErrorHandlerForNativeException);
     if (pCallback == NULL)
     {
-        return false;
+        return;
     }
 
     // The fault address surfaced to the handler is the faulting instruction pointer,
@@ -571,7 +569,7 @@ static bool ShouldSkipDefaultHandlingForNativeException(siginfo_t *siginfo, void
     NativeContextToPalContext(context, &palContext);
     void* faultAddress = (void*)palContext.IP;
     uint32_t faultCode = GetExceptionCodeForSignal(siginfo, context);
-    return ((FatalErrorHandlerForNativeExceptionFn)pCallback)((int32_t)faultCode, faultAddress, siginfo, context) == 1;
+    ((FatalErrorHandlerForNativeExceptionFn)pCallback)((int32_t)faultCode, faultAddress, siginfo, context);
 }
 
 // Handler for the SIGSEGV signal
@@ -583,15 +581,7 @@ void SIGSEGVHandler(int code, siginfo_t *siginfo, void *context)
         return;
     }
 
-    if (ShouldSkipDefaultHandlingForNativeException(siginfo, context))
-    {
-        // The handler asked the runtime to skip its default handling (crash log and
-        // createdump). Restore the pre-runtime signal disposition and return; the faulting
-        // instruction re-executes and the process terminates through the OS's natural fatal
-        // mechanism, exactly as an unhandled native fault would have without the runtime.
-        RestoreSignalHandler(code, &g_previousSIGSEGV);
-        return;
-    }
+    InvokeFatalErrorHandlerForNativeException(siginfo, context);
 
     if (g_previousSIGSEGV.sa_sigaction != NULL)
     {
@@ -615,15 +605,7 @@ void SIGFPEHandler(int code, siginfo_t *siginfo, void *context)
         return;
     }
 
-    if (ShouldSkipDefaultHandlingForNativeException(siginfo, context))
-    {
-        // The handler asked the runtime to skip its default handling (crash log and
-        // createdump). Restore the pre-runtime signal disposition and return; the faulting
-        // instruction re-executes and the process terminates through the OS's natural fatal
-        // mechanism, exactly as an unhandled native fault would have without the runtime.
-        RestoreSignalHandler(code, &g_previousSIGFPE);
-        return;
-    }
+    InvokeFatalErrorHandlerForNativeException(siginfo, context);
 
     if (g_previousSIGFPE.sa_sigaction != NULL)
     {
