@@ -2577,8 +2577,8 @@ void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
 }
 
 //------------------------------------------------------------------------
-// fgSetupAsyncFrameSwitchCall: Turn a call to AsyncHelpers.SwitchContext into a proper
-//   async call.
+// fgSetupAsyncFrameTransitionCall: Turn a call to
+//   AsyncHelpers.RestoreInlinedFrameContinuationContext into a proper async call.
 //
 // Arguments:
 //    call           - the call, with its user arguments already added
@@ -2586,17 +2586,16 @@ void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
 //    di             - debug info to use
 //
 // Notes:
-//    The switch is an await: it always suspends, and gets resumed on the requested
-//    context. It runs after the inlinee's frame has logically returned, so the frame it
-//    belongs to is the inlinee's caller.
+//    The call is an await: it suspends when it has to switch continuation context. It runs
+//    after the inlinee's frame has logically returned, so the frame it belongs to is the
+//    inlinee's caller.
 //
-void Compiler::fgSetupAsyncFrameSwitchCall(GenTreeCall* call, InlineContext* inlineeContext, const DebugInfo& di)
+void Compiler::fgSetupAsyncFrameTransitionCall(GenTreeCall* call, InlineContext* inlineeContext, const DebugInfo& di)
 {
     AsyncCallInfo asyncInfo;
-    // SwitchContext establishes the continuation context itself, so no further handling
-    // is attached to this await.
+    // The helper resumes on the requested context, so no further handling is attached to
+    // this await.
     asyncInfo.ContinuationContextHandling = ContinuationContextHandling::None;
-    asyncInfo.AlwaysSuspends              = true;
     asyncInfo.CallAsyncDebugInfo          = di;
     call->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
 
@@ -2675,21 +2674,6 @@ GenTree* Compiler::gtNewContinuationMemberIndir(const ContinuationMember& member
 }
 
 //------------------------------------------------------------------------
-// fgMarkAsyncHelperInlineCandidate: Mark a call to an async helper as an inline
-//   candidate.
-//
-// Arguments:
-//    call - the call
-//
-void Compiler::fgMarkAsyncHelperInlineCandidate(GenTreeCall* call)
-{
-    CORINFO_CALL_INFO callInfo = {};
-    callInfo.hMethod           = call->gtCallMethHnd;
-    callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-    impMarkInlineCandidate(call, MAKE_METHODCONTEXT(callInfo.hMethod), &callInfo, compInlineContext);
-}
-
-//------------------------------------------------------------------------
 // fgInlineAppendAsyncFrameStatements: Emit the IR that handles an inlined async
 //   frame logically returning to its caller.
 //
@@ -2705,15 +2689,21 @@ void Compiler::fgMarkAsyncHelperInlineCandidate(GenTreeCall* call)
 //
 //      if (resumed_F)
 //      {
-//          RestoreInlinedFrameExecutionContext(continuation.ExecutionContextFor<caller>);
-//          if (!IsOnRightContext(continuation.ContinuationContextFor<caller>,
-//                                continuation.FlagsFor<caller>))
-//          {
-//              await SwitchContext(continuation.ContinuationContextFor<caller>,
-//                                  continuation.FlagsFor<caller>);
-//          }
+//          AsyncHelpers.RestoreInlinedFrameExecutionContext(continuation.ExecutionContextFor<caller>);
+//          await AsyncHelpers.RestoreInlinedFrameContinuationContext(continuation.ContinuationContextFor<caller>,
+//                                                                    continuation.FlagsFor<caller>);
 //          resumed_caller = true;
 //      }
+//
+//    Only the check is expanded as IR; the restores are left as plain calls. The
+//    synchronous case is the one worth optimizing, and by the time we get past the check
+//    we have already suspended and resumed at least once, so the calls are cheap. In
+//    particular the "are we already on the right context?" test, which is what actually
+//    decides whether we suspend, stays inside the helper.
+//
+//    The ExecutionContext restore cannot be folded into the same helper: a runtime async
+//    method restores the contexts it captured on entry when it returns, which would undo
+//    it. It is a separate, non-async call for that reason.
 //
 //    The members are read off the continuation this method was resumed with. That is
 //    only valid when resumed_F is true, which is exactly the guard: resumed_F can only
@@ -2768,12 +2758,7 @@ void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicB
     // joinBlock is now empty and jumps to restBlock. Turn it into the "did we resume
     // inside the inlinee?" test.
     BasicBlock* const restoreBlock = fgNewBBafter(BBJ_ALWAYS, joinBlock, /* extendRegion */ true);
-    BasicBlock* const switchBlock  = fgNewBBafter(BBJ_ALWAYS, restoreBlock, /* extendRegion */ true);
-    BasicBlock* const doneBlock    = fgNewBBafter(BBJ_ALWAYS, switchBlock, /* extendRegion */ true);
-
     restoreBlock->inheritWeightPercentage(joinBlock, 0);
-    switchBlock->inheritWeightPercentage(joinBlock, 0);
-    doneBlock->inheritWeightPercentage(joinBlock, 0);
 
     // joinBlock: if (resumed_F == 0) goto restBlock; else goto restoreBlock
     {
@@ -2791,86 +2776,38 @@ void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicB
         toRestore->setLikelihood(0.0);
     }
 
-    CORINFO_ASYNC_INFO* const asyncInfo = eeGetAsyncInfo();
-
-    // restoreBlock: restore the ExecutionContext, then check the continuation context.
+    // restoreBlock: restore the contexts the caller's continuation captured, then record
+    // that the caller's frame has observed a resumption too.
     {
-        GenTreeCall* const restoreCall =
-            gtNewUserCallNode(asyncInfo->restoreInlinedFrameExecutionContextMethHnd, TYP_VOID);
-        restoreCall->gtArgs.PushFront(this,
-                                      NewCallArg::Primitive(
-                                          gtNewContinuationMemberIndir(ContinuationMember::InlineFrameExecutionContext(
-                                                                           inlineDepth),
-                                                                       TYP_REF)));
-        fgMarkAsyncHelperInlineCandidate(restoreCall);
-        fgInsertStmtAtEnd(restoreBlock, gtNewStmt(restoreCall));
+        CORINFO_ASYNC_INFO* const asyncInfo = eeGetAsyncInfo();
 
-        GenTreeCall* const isOnRightContextCall = gtNewUserCallNode(asyncInfo->isOnRightContextMethHnd, TYP_UBYTE);
-        isOnRightContextCall->gtArgs
+        GenTreeCall* const restoreExecCtxCall =
+            gtNewUserCallNode(asyncInfo->restoreInlinedFrameExecutionContextMethHnd, TYP_VOID);
+        restoreExecCtxCall->gtArgs
+            .PushFront(this,
+                       NewCallArg::Primitive(
+                           gtNewContinuationMemberIndir(ContinuationMember::InlineFrameExecutionContext(inlineDepth),
+                                                        TYP_REF)));
+        fgInsertStmtAtEnd(restoreBlock, gtNewStmt(restoreExecCtxCall));
+
+        GenTreeCall* const restoreContinuationCtxCall =
+            gtNewUserCallNode(asyncInfo->restoreInlinedFrameContinuationContextMethHnd, TYP_VOID);
+        restoreContinuationCtxCall->gtArgs
             .PushFront(this,
                        NewCallArg::Primitive(
                            gtNewContinuationMemberIndir(ContinuationMember::InlineFrameFlags(inlineDepth), TYP_INT)));
-        isOnRightContextCall->gtArgs
+        restoreContinuationCtxCall->gtArgs
             .PushFront(this,
                        NewCallArg::Primitive(
                            gtNewContinuationMemberIndir(ContinuationMember::InlineFrameContinuationContext(inlineDepth),
                                                         TYP_REF)));
-        fgMarkAsyncHelperInlineCandidate(isOnRightContextCall);
+        fgSetupAsyncFrameTransitionCall(restoreContinuationCtxCall, inlineContext, di);
+        fgInsertStmtAtEnd(restoreBlock, gtNewStmt(restoreContinuationCtxCall));
 
-        // Inline candidates must be statement roots; the value is consumed through a
-        // GT_RET_EXPR placeholder that the inliner substitutes. The candidate info has to
-        // point back at it so that a failed inline can put the call back.
-        GenTree* isOnRightContext;
-        if (isOnRightContextCall->IsInlineCandidate())
-        {
-            fgInsertStmtAtEnd(restoreBlock, gtNewStmt(isOnRightContextCall));
-            GenTreeRetExpr* const retExpr = gtNewInlineCandidateReturnExpr(isOnRightContextCall, TYP_UBYTE);
-            isOnRightContextCall->GetSingleInlineCandidateInfo()->retExpr = retExpr;
-            isOnRightContext                                              = retExpr;
-        }
-        else
-        {
-            isOnRightContext = isOnRightContextCall;
-        }
-
-        GenTree* const isWrongContext = gtNewOperNode(GT_EQ, TYP_INT, isOnRightContext, gtNewIconNode(0));
-        GenTree* const jtrue          = gtNewOperNode(GT_JTRUE, TYP_VOID, isWrongContext);
-        fgInsertStmtAtEnd(restoreBlock, gtNewStmt(jtrue));
-
-        FlowEdge* const toSwitch = fgAddRefPred(switchBlock, restoreBlock);
-        FlowEdge* const toDone   = fgAddRefPred(doneBlock, restoreBlock);
-        restoreBlock->SetCond(toSwitch, toDone);
-        // We expect to already be on the right context in almost all cases; if we were
-        // not, inlining would be unlikely to be profitable in the first place.
-        toSwitch->setLikelihood(0.0);
-        toDone->setLikelihood(1.0);
-    }
-
-    // switchBlock: get back onto the continuation context the caller's continuation
-    // captured. This is an await, so it may suspend.
-    {
-        GenTreeCall* const switchCall = gtNewUserCallNode(asyncInfo->switchContextMethHnd, TYP_VOID);
-        switchCall->gtArgs.PushFront(this,
-                                     NewCallArg::Primitive(
-                                         gtNewContinuationMemberIndir(ContinuationMember::InlineFrameFlags(inlineDepth),
-                                                                      TYP_INT)));
-        switchCall->gtArgs
-            .PushFront(this,
-                       NewCallArg::Primitive(
-                           gtNewContinuationMemberIndir(ContinuationMember::InlineFrameContinuationContext(inlineDepth),
-                                                        TYP_REF)));
-        fgSetupAsyncFrameSwitchCall(switchCall, inlineContext, di);
-        fgInsertStmtAtEnd(switchBlock, gtNewStmt(switchCall));
-
-        switchBlock->SetKindAndTargetEdge(BBJ_ALWAYS, fgAddRefPred(doneBlock, switchBlock));
-    }
-
-    // doneBlock: the caller's frame has now observed a resumption too.
-    {
         GenTree* const store = gtNewStoreLclVarNode(resumedCaller, gtNewIconNode(1));
-        fgInsertStmtAtEnd(doneBlock, gtNewStmt(store));
+        fgInsertStmtAtEnd(restoreBlock, gtNewStmt(store));
 
-        doneBlock->SetKindAndTargetEdge(BBJ_ALWAYS, fgAddRefPred(restBlock, doneBlock));
+        restoreBlock->SetKindAndTargetEdge(BBJ_ALWAYS, fgAddRefPred(restBlock, restoreBlock));
     }
 
     JITDUMPEXEC(fgDispBasicBlocks(joinBlock, restBlock, true));

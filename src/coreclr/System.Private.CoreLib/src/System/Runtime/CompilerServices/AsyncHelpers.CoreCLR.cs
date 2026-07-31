@@ -1492,8 +1492,8 @@ namespace System.Runtime.CompilerServices
         // Check whether the current thread already satisfies the continuation context captured in a
         // continuation, i.e. whether resuming that continuation here would be dispatched inline.
         //
-        // Used by the JIT when inlining runtime async calls: when an inlined callee logically returns
-        // to its caller after having been resumed, the JIT must ensure it is running in the continuation
+        // Used when inlining runtime async calls: when an inlined callee logically returns
+        // to its caller after having been resumed, we must ensure we are running in the continuation
         // context the caller's continuation captured. This mirrors the "can inline" conditions in
         // RuntimeAsyncTaskContinuation.QueueIfNecessary; the two must be kept in sync.
         private static bool IsOnRightContext(object? continuationContext, ContinuationFlags flags)
@@ -1532,29 +1532,39 @@ namespace System.Runtime.CompilerServices
         // Unlike the synchronous restore at the end of a method, this runs only after a
         // resumption, so it must target the thread we were resumed on rather than the one
         // whose contexts were captured on entry.
+        //
+        // This deliberately is not a runtime async method: such a method restores the contexts
+        // it captured on entry when it returns, which would undo the restore done here.
         private static void RestoreInlinedFrameExecutionContext(ExecutionContext? previousExecCtx)
         {
             RestoreExecutionContext(Thread.CurrentThreadAssumedInitialized, previousExecCtx);
         }
 
-        // Suspend and resume in the specified continuation context.
+        // Get back onto the continuation context that an inlined async frame's caller captured,
+        // if we are not already on it.
         //
         // Used by the JIT when inlining runtime async calls: when an inlined callee logically
-        // returns to its caller after having been resumed, and IsOnRightContext reports that the
-        // current context does not match the one the caller's continuation captured, we must get
-        // back onto that context before continuing.
+        // returns to its caller after having been resumed, we must continue on the context the
+        // caller's continuation captured. The JIT emits the check of whether the frame was
+        // resumed at all and calls this when it was; the far less likely check of whether the
+        // context actually differs is left to this method.
         //
         // 'flags' must contain only ContinuationFlags.AllContinuationFlags bits.
         //
         // Suspending on an already completed task makes the dispatcher re-dispatch the continuation
         // immediately. Because that dispatch happens with canInline: false, it always posts or
         // schedules onto the requested context rather than running inline here, which is what we
-        // want -- the JIT only calls this when we are known to be on the wrong context.
+        // want -- we only suspend when we are known to be on the wrong context.
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe void SwitchContext(object? continuationContext, ContinuationFlags flags)
+        private static unsafe void RestoreInlinedFrameContinuationContext(object? continuationContext, ContinuationFlags flags)
         {
             Debug.Assert((flags & ~ContinuationFlags.AllContinuationFlags) == 0);
+
+            if (IsOnRightContext(continuationContext, flags))
+            {
+                return;
+            }
 
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();

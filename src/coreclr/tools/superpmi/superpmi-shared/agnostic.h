@@ -238,8 +238,7 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG restoreContextsMethHnd;
     DWORDLONG restoreContextsOnSuspensionMethHnd;
     DWORDLONG restoreInlinedFrameExecutionContextMethHnd;
-    DWORDLONG isOnRightContextMethHnd;
-    DWORDLONG switchContextMethHnd;
+    DWORDLONG restoreInlinedFrameContinuationContextMethHnd;
     DWORDLONG captureInlinedFrameTransitionMethHnd;
     DWORDLONG finishSuspensionNoContinuationContextMethHnd;
     DWORDLONG finishSuspensionWithContinuationContextMethHnd;

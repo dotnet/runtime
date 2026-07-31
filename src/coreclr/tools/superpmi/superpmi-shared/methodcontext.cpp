@@ -4395,8 +4395,7 @@ void MethodContext::recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo)
     value.restoreContextsMethHnd = CastHandle(pAsyncInfo->restoreContextsMethHnd);
     value.restoreContextsOnSuspensionMethHnd = CastHandle(pAsyncInfo->restoreContextsOnSuspensionMethHnd);
     value.restoreInlinedFrameExecutionContextMethHnd = CastHandle(pAsyncInfo->restoreInlinedFrameExecutionContextMethHnd);
-    value.isOnRightContextMethHnd = CastHandle(pAsyncInfo->isOnRightContextMethHnd);
-    value.switchContextMethHnd = CastHandle(pAsyncInfo->switchContextMethHnd);
+    value.restoreInlinedFrameContinuationContextMethHnd = CastHandle(pAsyncInfo->restoreInlinedFrameContinuationContextMethHnd);
     value.captureInlinedFrameTransitionMethHnd = CastHandle(pAsyncInfo->captureInlinedFrameTransitionMethHnd);
     value.finishSuspensionNoContinuationContextMethHnd = CastHandle(pAsyncInfo->finishSuspensionNoContinuationContextMethHnd);
     value.finishSuspensionWithContinuationContextMethHnd = CastHandle(pAsyncInfo->finishSuspensionWithContinuationContextMethHnd);
@@ -4425,8 +4424,7 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->restoreContextsMethHnd = (CORINFO_METHOD_HANDLE)value.restoreContextsMethHnd;
     pAsyncInfoOut->restoreContextsOnSuspensionMethHnd = (CORINFO_METHOD_HANDLE)value.restoreContextsOnSuspensionMethHnd;
     pAsyncInfoOut->restoreInlinedFrameExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.restoreInlinedFrameExecutionContextMethHnd;
-    pAsyncInfoOut->isOnRightContextMethHnd = (CORINFO_METHOD_HANDLE)value.isOnRightContextMethHnd;
-    pAsyncInfoOut->switchContextMethHnd = (CORINFO_METHOD_HANDLE)value.switchContextMethHnd;
+    pAsyncInfoOut->restoreInlinedFrameContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.restoreInlinedFrameContinuationContextMethHnd;
     pAsyncInfoOut->captureInlinedFrameTransitionMethHnd = (CORINFO_METHOD_HANDLE)value.captureInlinedFrameTransitionMethHnd;
     pAsyncInfoOut->finishSuspensionNoContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.finishSuspensionNoContinuationContextMethHnd;
     pAsyncInfoOut->finishSuspensionWithContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.finishSuspensionWithContinuationContextMethHnd;
