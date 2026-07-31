@@ -8815,8 +8815,8 @@ bool Lowering::TryFoldBinop(GenTreeOp* node)
 //
 // Notes:
 //    On targets where hardware masks the shift count to the operand width (XARCH, ARM64,
-//    LOONGARCH64, RISCV64), remove any redundant AND that survived to lowering (MinOpts
-//    backstop -- optimized paths have the AND stripped in gtFoldExprShiftCountMask).
+//    LOONGARCH64, RISCV64), nothing to do -- gtFoldExprShiftCountMask strips the redundant
+//    AND earlier.
 //
 //    On ARM32 the hardware uses Rs[7:0] without masking mod 32, so counts >= 32 give 0
 //    rather than wrapping. Insert AND(count, 31) for variable-count shifts to restore the
@@ -8837,26 +8837,8 @@ void Lowering::LowerShift(GenTreeOp* shift)
 #endif
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    for (GenTree* andOp = shift->gtGetOp2(); andOp->OperIs(GT_AND); andOp = andOp->gtGetOp1())
-    {
-        GenTree* maskOp = andOp->gtGetOp2();
-
-        if (!maskOp->IsCnsIntOrI())
-        {
-            break;
-        }
-
-        if ((static_cast<size_t>(maskOp->AsIntCon()->IconValue()) & mask) != mask)
-        {
-            break;
-        }
-
-        shift->gtOp2 = andOp->gtGetOp1();
-        BlockRange().Remove(andOp);
-        BlockRange().Remove(maskOp);
-        // The parent was replaced, clear contain and regOpt flag.
-        shift->gtOp2->ClearContained();
-    }
+    // Nothing to do: gtFoldExprShiftCountMask already stripped any redundant width mask
+    // from the count operand.
 #elif defined(TARGET_ARM)
     // ARM32 uses Rs[7:0] as the shift count; counts in [32, 255] give 0 (LSL/LSR) or
     // replicated sign (ASR) rather than masking mod 32. Insert AND(count, 31) so the
