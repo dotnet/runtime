@@ -651,7 +651,9 @@ namespace Mono.Linker.Steps
                             return true;
                         }
 
-                        return TryConvertValue(value, typeDefinition.GetEnumUnderlyingType(), out result);
+                        var underlyingType = typeDefinition.GetEnumUnderlyingType();
+                        if (underlyingType.MetadataType == MetadataType.Int32)
+                            return TryConvertValue(value, underlyingType, out result);
                     }
 
                     break;
