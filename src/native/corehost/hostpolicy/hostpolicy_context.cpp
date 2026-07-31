@@ -124,7 +124,7 @@ namespace
 
         if (::strcmp(key, HOST_PROPERTY_INVOCATION_NAME) == 0)
         {
-            if (context->host_mode == host_mode_t::libhost)
+            if (context->invocation_name.empty())
                 return -1;
 
             return pal::pal_utf8string(context->invocation_name, value_buffer, value_buffer_size);

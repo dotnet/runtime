@@ -284,6 +284,9 @@ size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
 
     if (::strcmp(key, HOST_PROPERTY_INVOCATION_NAME) == 0)
     {
+        if (config->invocation_name.empty())
+            return -1;
+
         pal::string_utf8_t value_utf8 = pal::convert_to_utf8(config->invocation_name.c_str());
         size_t len = value_utf8.size() + 1;
         if (value_buffer_size < len)
