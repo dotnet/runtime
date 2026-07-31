@@ -82,6 +82,7 @@ internal sealed class Program
             bool errorTolerant = Get(_command.ErrorTolerant);
             var options = new Options
             {
+                Dll = isDll,
                 NoAutoInherit = Get(_command.NoAutoInherit),
                 ErrorTolerant = errorTolerant,
             };
