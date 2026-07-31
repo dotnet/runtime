@@ -57,6 +57,9 @@ struct configuration
     // The full path to the Supplied managed entry assembly.
     string_t entry_assembly_fullpath;
 
+    // The name used to invoke corerun.
+    string_t invocation_name;
+
     // Arguments to pass to managed entry assembly.
     int entry_assembly_argc;
     const char_t** entry_assembly_argv;
@@ -275,6 +278,18 @@ size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
             return len;
 
         ::strncpy(value_buffer, file_utf8.c_str(), len - 1);
+        value_buffer[len - 1] = '\0';
+        return len;
+    }
+
+    if (::strcmp(key, HOST_PROPERTY_INVOCATION_NAME) == 0)
+    {
+        pal::string_utf8_t value_utf8 = pal::convert_to_utf8(config->invocation_name.c_str());
+        size_t len = value_utf8.size() + 1;
+        if (value_buffer_size < len)
+            return len;
+
+        ::strncpy(value_buffer, value_utf8.c_str(), len - 1);
         value_buffer[len - 1] = '\0';
         return len;
     }
@@ -735,6 +750,8 @@ static bool parse_args(
         display_usage();
         return false;
     }
+
+    config.invocation_name = argv[0];
 
     for (int i = 1; i < argc; i++)
     {

@@ -20,6 +20,9 @@ bool parse_arguments(
     const int argc, const pal::char_t* argv[],
     arguments_t& args)
 {
+    if (argc > 0)
+        args.invocation_name = argv[0];
+
     pal::string_t managed_application_path;
     if (init.host_mode == host_mode_t::apphost)
     {

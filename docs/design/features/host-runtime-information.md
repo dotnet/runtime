@@ -40,6 +40,10 @@ Directory containing the application. This is used for [`AppContext.BaseDirector
 
 [Runtime identifier](https://learn.microsoft.com/dotnet/core/rid-catalog) for the application. This is used for [`RuntimeInformation.RuntimeIdentifier`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.runtimeinformation.runtimeidentifier).
 
+`HOST_INVOCATION_NAME`
+
+The name used to invoke the host, corresponding to the native process's `argv[0]`. This is used for the first element returned by [`Environment.GetCommandLineArgs()`](https://learn.microsoft.com/dotnet/api/system.environment.getcommandlineargs).
+
 ### Deps files
 
 `APP_CONTEXT_DEPS_FILES`
