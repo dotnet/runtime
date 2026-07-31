@@ -1345,6 +1345,9 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitHasFramePtr = hasFramePtr;
 
+#if defined(TARGET_AMD64)
+    emitSecondFramePtrActive = (codeGen->genSecondFramePtrReg != REG_NA);
+#endif
 #ifdef DEBUG
     emitChkAlign = chkAlign;
 #endif
