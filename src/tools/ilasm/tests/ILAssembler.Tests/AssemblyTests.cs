@@ -292,6 +292,64 @@ namespace ILAssembler.Tests
             Assert.Equal<byte>(firstImage, secondImage);
         }
 
+        [Fact]
+        public void ManagedIlasm_DeterministicPdbOutput_IsByteIdentical()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Deterministic { }
+                .class public auto ansi beforefieldinit Program extends [mscorlib]System.Object
+                {
+                    .method public static void Main() cil managed
+                    {
+                        .line 1 "deterministic.il"
+                        ret
+                    }
+                }
+                """;
+
+            var options = new Options
+            {
+                Deterministic = true,
+                Pdb = true,
+            };
+
+            ImmutableArray<byte> firstPdb = DocumentCompilerTestHelpers.CompileAndGetEmbeddedPortablePdb(source, options);
+            ImmutableArray<byte> secondPdb = DocumentCompilerTestHelpers.CompileAndGetEmbeddedPortablePdb(source, options);
+
+            Assert.Equal<byte>(firstPdb, secondPdb);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ManagedIlasm_PdbIdGuid_IsNotEmpty(bool deterministic)
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly PdbId { }
+                .class public auto ansi beforefieldinit Program extends [mscorlib]System.Object
+                {
+                    .method public static void Main() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            var options = new Options
+            {
+                Deterministic = deterministic,
+                Pdb = true,
+            };
+
+            ImmutableArray<byte> pdb = DocumentCompilerTestHelpers.CompileAndGetEmbeddedPortablePdb(source, options);
+            using MetadataReaderProvider pdbProvider = MetadataReaderProvider.FromPortablePdbImage(pdb);
+            BlobContentId pdbId = new(pdbProvider.GetMetadataReader().DebugMetadataHeader!.Id);
+
+            Assert.NotEqual(Guid.Empty, pdbId.Guid);
+        }
+
 
         [Fact]
         public void SqstringAssemblyName_ParsedCorrectly()
