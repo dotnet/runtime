@@ -37,24 +37,34 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
         public static void Main()
         {
-            IsFieldByNameExpected();
-            IsFieldByNumberExpected();
+            TestFieldByName();
+            TestFieldByNumber();
             MethodByName();
             MethodByNumber();
         }
 
         [Kept]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool IsFieldByNameExpected()
+        [ExpectBodyModified]
+        private static void TestFieldByName()
         {
-            return FieldByName == SubstitutionValue.ByName;
+            if (FieldByName != SubstitutionValue.ByName)
+                FieldByNameIncorrect();
+        }
+
+        private static void FieldByNameIncorrect()
+        {
         }
 
         [Kept]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool IsFieldByNumberExpected()
+        [ExpectBodyModified]
+        private static void TestFieldByNumber()
         {
-            return FieldByNumber == SubstitutionValue.ByNumber;
+            if (FieldByNumber != SubstitutionValue.ByNumber)
+                FieldByNumberIncorrect();
+        }
+
+        private static void FieldByNumberIncorrect()
+        {
         }
 
         [Kept]
