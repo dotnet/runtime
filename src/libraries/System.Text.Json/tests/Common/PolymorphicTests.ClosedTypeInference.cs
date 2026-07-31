@@ -287,6 +287,10 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData(typeof(ClosedEmptyAttributeOptInBase))]
+        [InlineData(typeof(ClosedEmptyOptOutWithCustomDiscriminatorBase))]
+        [InlineData(typeof(ClosedEmptyOptOutWithIgnoreUnrecognizedDiscriminatorsBase))]
+        [InlineData(typeof(ClosedEmptyOptOutWithTypeClassifierBase))]
+        [InlineData(typeof(ClosedEmptyOptOutWithUnknownDerivedTypeHandlingBase))]
         [InlineData(typeof(ClosedEmptyPolymorphicBase))]
         public void ClosedTypeInference_JsonPolymorphicAttribute_OnClosedTypeWithoutDerivedTypes_ThrowsMissingDerivedTypes(Type type)
         {
@@ -785,6 +789,39 @@ namespace System.Text.Json.Serialization.Tests
 
     [JsonPolymorphic(InferClosedTypePolymorphism = true)]
     public closed class ClosedEmptyAttributeOptInBase
+    {
+        public string? BaseValue { get; set; }
+    }
+
+    [JsonPolymorphic(InferClosedTypePolymorphism = false, TypeDiscriminatorPropertyName = "$kind")]
+    public closed class ClosedEmptyOptOutWithCustomDiscriminatorBase
+    {
+        public string? BaseValue { get; set; }
+    }
+
+    [JsonPolymorphic(InferClosedTypePolymorphism = false, IgnoreUnrecognizedTypeDiscriminators = true)]
+    public closed class ClosedEmptyOptOutWithIgnoreUnrecognizedDiscriminatorsBase
+    {
+        public string? BaseValue { get; set; }
+    }
+
+    [JsonPolymorphic(InferClosedTypePolymorphism = false, TypeClassifier = typeof(ClosedEmptyOptOutTypeClassifierFactory))]
+    public closed class ClosedEmptyOptOutWithTypeClassifierBase
+    {
+        public string? BaseValue { get; set; }
+    }
+
+    public sealed class ClosedEmptyOptOutTypeClassifierFactory : JsonTypeClassifierFactory
+    {
+        public override bool CanClassify(JsonTypeClassifierContext context) => true;
+
+        public override JsonTypeClassifier CreateJsonClassifier(
+            JsonTypeClassifierContext context,
+            JsonSerializerOptions options) => (ref Utf8JsonReader reader) => null;
+    }
+
+    [JsonPolymorphic(InferClosedTypePolymorphism = false, UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToBaseType)]
+    public closed class ClosedEmptyOptOutWithUnknownDerivedTypeHandlingBase
     {
         public string? BaseValue { get; set; }
     }

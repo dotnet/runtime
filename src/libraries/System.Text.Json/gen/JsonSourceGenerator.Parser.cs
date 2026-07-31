@@ -1181,14 +1181,21 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
-                // A declaration that explicitly opts out of inference and registers no derived types of its own
-                // is left non-polymorphic: JsonPolymorphicAttribute is being used to exclude the type from a
-                // context-wide opt-in rather than to declare a hierarchy. The generator emits an empty
-                // JsonPolymorphismOptions instance for a null spec, which the runtime recognizes as 'no
-                // polymorphism metadata'; emitting a configured instance with an empty registration list would
-                // instead fail configuration at run time.
+                // A declaration that explicitly opts out of inference, registers no derived types of its own,
+                // and specifies no other polymorphism metadata is left non-polymorphic: JsonPolymorphicAttribute
+                // is being used to exclude the type from a context-wide opt-in rather than to declare a hierarchy.
+                // The generator emits an empty JsonPolymorphismOptions instance for a null spec, which the runtime
+                // recognizes as 'no polymorphism metadata'; emitting a configured instance with an empty
+                // registration list would instead fail configuration at run time.
+                bool hasNonDefaultPolymorphismSettings =
+                    ignoreUnrecognizedTypeDiscriminators ||
+                    polymorphicClassifierFactoryType is not null ||
+                    typeDiscriminatorPropertyName is not null ||
+                    unknownDerivedTypeHandling != default;
                 bool optedOutOfPolymorphism =
-                    inferClosedTypePolymorphismOverride is false && derivedTypes is not { Count: > 0 };
+                    inferClosedTypePolymorphismOverride is false &&
+                    derivedTypes is not { Count: > 0 } &&
+                    !hasNonDefaultPolymorphismSettings;
 
                 if (!optedOutOfPolymorphism && (hasPolymorphicAttribute || derivedTypes is { Count: > 0 }))
                 {

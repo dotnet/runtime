@@ -140,11 +140,15 @@ namespace System.Text.Json.Serialization.Metadata
                     options.DerivedTypes.Add(new JsonDerivedType(derivedType, GetInferredTypeDiscriminator(derivedType)));
                 }
             }
-            else if (inferClosedTypePolymorphismOverride is false && options is { DerivedTypes.Count: 0 })
+            else if (inferClosedTypePolymorphismOverride is false &&
+                options is { DerivedTypes.Count: 0 } &&
+                polymorphicAttribute is not null &&
+                !HasNonDefaultPolymorphismSettings(polymorphicAttribute))
             {
-                // The declaration explicitly opted out of inference, so JsonPolymorphicAttribute is being
-                // used to exclude the type from a global opt-in rather than to declare a hierarchy. Leave the
-                // type non-polymorphic instead of failing configuration on an empty registration list.
+                // The declaration explicitly opted out of inference without specifying any other polymorphism
+                // metadata, so JsonPolymorphicAttribute is being used to exclude the type from a global opt-in
+                // rather than to declare a hierarchy. Leave the type non-polymorphic instead of failing
+                // configuration on an empty registration list.
                 //
                 // Any other empty registration list -- including a closed type that declares no derived types
                 // -- falls through to the pre-existing 'should specify at least one derived type' failure that
@@ -183,6 +187,12 @@ namespace System.Text.Json.Serialization.Metadata
                 int genericAritySeparatorIndex = name.IndexOf('`');
                 return genericAritySeparatorIndex < 0 ? name : name.Substring(0, genericAritySeparatorIndex);
             }
+
+            static bool HasNonDefaultPolymorphismSettings(JsonPolymorphicAttribute attribute) =>
+                attribute.IgnoreUnrecognizedTypeDiscriminators ||
+                attribute.TypeClassifier is not null ||
+                attribute.TypeDiscriminatorPropertyName is not null ||
+                attribute.UnknownDerivedTypeHandling != default;
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
