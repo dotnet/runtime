@@ -738,13 +738,10 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
 
     pVal->fixedSizedData.TypeID = (ULONGLONG) th.AsTAddr();
 
-    // Runtime Async introduces dynamically-created Continuation MethodTables that have no
-    // backing metadata (nil TypeDef token, no resolvable name). Describe them using the base
-    // Continuation type for the module, name token, and name, so heap dumps show a meaningful
-    // type name instead of "Type(0x02000000)". The per-object TypeID above intentionally remains
-    // the derived MethodTable so the GCBulkNode entries still resolve to this record. Using the
-    // base type also avoids MethodTable::GetModule()'s IsContinuationWithoutMetadata() assert on
-    // checked builds. See https://github.com/dotnet/runtime/issues/120800.
+    // Runtime Async continuation MethodTables have no metadata (nil TypeDef token, no name).
+    // Describe them via the base Continuation type so heap dumps show a real name instead of
+    // "Type(0x02000000)"; the per-object TypeID above stays the derived MT so GCBulkNode entries
+    // still resolve. See https://github.com/dotnet/runtime/issues/120800.
     TypeHandle thNamed = th.UpCastTypeIfNeeded();
 
     pVal->fixedSizedData.ModuleID = (ULONGLONG) (TADDR) thNamed.GetModule();
