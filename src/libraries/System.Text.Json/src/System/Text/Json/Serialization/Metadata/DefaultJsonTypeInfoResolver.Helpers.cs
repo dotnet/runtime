@@ -893,9 +893,10 @@ namespace System.Text.Json.Serialization.Metadata
             else
             {
                 Debug.Assert(propertyInfo.MemberType is MemberTypes.Field);
-                NullabilityInfo nullabilityInfo = nullabilityCtx.Create((FieldInfo)memberInfo);
+                var fieldInfo = (FieldInfo)memberInfo;
+                NullabilityInfo nullabilityInfo = nullabilityCtx.Create(fieldInfo);
                 propertyInfo.IsGetNullable = nullabilityInfo.ReadState is not NullabilityState.NotNull;
-                propertyInfo.IsSetNullable = nullabilityInfo.WriteState is not NullabilityState.NotNull;
+                propertyInfo.IsSetNullable = !fieldInfo.IsInitOnly && nullabilityInfo.WriteState is not NullabilityState.NotNull;
             }
         }
 

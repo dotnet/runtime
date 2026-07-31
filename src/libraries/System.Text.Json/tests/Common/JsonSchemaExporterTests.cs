@@ -95,7 +95,10 @@ namespace System.Text.Json.Schema.Tests
                             "items": { "type": ["string", "null"] }
                         },
                         "SingleValueGetOnly": { "type": "string" },
-                        "SingleValueGetSet": { "type": "string" }
+                        "NullableGetOnly": { "type": ["string", "null"] },
+                        "SingleValueGetSet": { "type": "string" },
+                        "NonNullableReadonlyField": { "type": "string" },
+                        "NullableReadonlyField": { "type": ["string", "null"] }
                     }
                 }
                 """;
@@ -287,7 +290,12 @@ namespace System.Text.Json.Schema.Tests
         {
             public IEnumerable<string> Values => [];
             public string SingleValueGetOnly { get; } = "value";
+            public string? NullableGetOnly { get; }
             public string SingleValueGetSet { get; set; } = "value";
+            [JsonInclude]
+            public readonly string NonNullableReadonlyField = "value";
+            [JsonInclude]
+            public readonly string? NullableReadonlyField;
         }
 
         [JsonSerializable(typeof(PocoWithProperty))]

@@ -356,6 +356,44 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("{}", json);
         }
 
+        [Theory]
+        [MemberData(nameof(GetReadonlyMembers))]
+        public void IsSetNullable_ReadonlyMember_IsFalse(Type type, string propertyName)
+        {
+            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type, s_optionsWithIgnoredNullability);
+            JsonPropertyInfo propertyInfo = typeInfo.Properties.Single(p => p.Name == propertyName);
+            Assert.False(propertyInfo.IsSetNullable);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetReadonlyMembersWithExpectedGetNullability))]
+        public void IsGetNullable_ReadonlyMember_MatchesAnnotation(Type type, string propertyName, bool expectedIsGetNullable)
+        {
+            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type, s_optionsWithIgnoredNullability);
+            JsonPropertyInfo propertyInfo = typeInfo.Properties.Single(p => p.Name == propertyName);
+            Assert.Equal(expectedIsGetNullable, propertyInfo.IsGetNullable);
+        }
+
+        public static IEnumerable<object[]> GetReadonlyMembers()
+        {
+            yield return Wrap(typeof(ClassWithReadonlyMembers), nameof(ClassWithReadonlyMembers.NonNullableGetOnly));
+            yield return Wrap(typeof(ClassWithReadonlyMembers), nameof(ClassWithReadonlyMembers.NullableGetOnly));
+            yield return Wrap(typeof(ClassWithReadonlyMembers), nameof(ClassWithReadonlyMembers.NonNullableReadonlyField));
+            yield return Wrap(typeof(ClassWithReadonlyMembers), nameof(ClassWithReadonlyMembers.NullableReadonlyField));
+
+            static object[] Wrap(Type type, string propertyName) => [type, propertyName];
+        }
+
+        public static IEnumerable<object[]> GetReadonlyMembersWithExpectedGetNullability()
+        {
+            yield return Wrap(typeof(ClassWithReadonlyMembers), nameof(ClassWithReadonlyMembers.NonNullableGetOnly), false);
+            yield return Wrap(typeof(ClassWithReadonlyMembers), nameof(ClassWithReadonlyMembers.NullableGetOnly), true);
+            yield return Wrap(typeof(ClassWithReadonlyMembers), nameof(ClassWithReadonlyMembers.NonNullableReadonlyField), false);
+            yield return Wrap(typeof(ClassWithReadonlyMembers), nameof(ClassWithReadonlyMembers.NullableReadonlyField), true);
+
+            static object[] Wrap(Type type, string propertyName, bool isGetNullable) => [type, propertyName, isGetNullable];
+        }
+
         public class NotNullablePropertyClass
         {
             public string Property { get; set; }
@@ -792,6 +830,16 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithNonNullableRequiredProperty
         {
             public required string Property { get; set; }
+        }
+
+        public class ClassWithReadonlyMembers
+        {
+            public string NonNullableGetOnly { get; }
+            public string? NullableGetOnly { get; }
+            [JsonInclude]
+            public readonly string NonNullableReadonlyField = "value";
+            [JsonInclude]
+            public readonly string? NullableReadonlyField;
         }
     }
 }
