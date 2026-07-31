@@ -1501,6 +1501,9 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Disposes of an EventSource.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The method was called while an <see cref="EventSource"/> callback was executing.
+        /// </exception>
         public void Dispose()
         {
             this.Dispose(true);
@@ -1527,7 +1530,10 @@ namespace System.Diagnostics.Tracing
 
             // Do not invoke Dispose under the lock as this can lead to a deadlock.
             // See https://github.com/dotnet/runtime/issues/48342 for details.
-            Debug.Assert(!Monitor.IsEntered(EventListener.EventListenersLock));
+            if (Monitor.IsEntered(EventListener.EventListenersLock))
+            {
+                throw new InvalidOperationException(SR.EventSource_DisposeInsideCallback);
+            }
 
             if (disposing)
             {

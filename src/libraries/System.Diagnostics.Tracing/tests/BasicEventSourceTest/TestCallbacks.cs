@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.NETCore.Client;
@@ -86,16 +84,14 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// Validates that calling Dispose() on an EventSource from within OnEventCommand
-        /// (triggered by an EventPipe session enabling the provider) does not deadlock.
-        /// See https://github.com/dotnet/runtime/issues/106087
+        /// Validates that calling Dispose() on an EventSource from within OnEventCommand is rejected.
         /// </summary>
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "DiagnosticsClient IPC is not available on browser")]
-        public void Test_EventSource_DisposeInOnEventCommand_DoesNotDeadlock()
+        public void Test_EventSource_DisposeInOnEventCommand_Throws()
         {
-            using var disposeCompleted = new ManualResetEventSlim(false);
-            using var source = new DisposeInCallbackEventSource(disposeCompleted);
+            using var callbackCompleted = new ManualResetEventSlim(false);
+            using var source = new DisposeInCallbackEventSource(callbackCompleted);
 
             var providers = new[] { new EventPipeProvider(source.Name, System.Diagnostics.Tracing.EventLevel.Verbose, long.MaxValue) };
             var client = new DiagnosticsClient(Environment.ProcessId);
@@ -114,31 +110,42 @@ namespace BasicEventSourceTests
                                        // varies by TraceEvent version/platform, so catch broadly here.
             });
 
-            // Wait for Dispose() to complete; if it deadlocks, this will timeout.
-            bool disposed = disposeCompleted.Wait(TimeSpan.FromSeconds(30));
+            bool completed = callbackCompleted.Wait(TimeSpan.FromSeconds(30));
 
             session.Stop();
             readerTask.Wait(TimeSpan.FromSeconds(5));
 
-            Assert.True(disposed, "EventSource.Dispose() called from within OnEventCommand did not complete. Possible deadlock.");
+            Assert.True(completed, "The EventSource callback did not complete.");
+            Assert.IsType<InvalidOperationException>(source._disposeException);
         }
 
         [EventSource(Name = "TestsEventSourceCallbacks.DisposeInCallbackEventSource")]
         private class DisposeInCallbackEventSource : EventSource
         {
-            private readonly ManualResetEventSlim _disposeCompleted;
+            private readonly ManualResetEventSlim _callbackCompleted;
+            internal InvalidOperationException? _disposeException;
 
-            internal DisposeInCallbackEventSource(ManualResetEventSlim disposeCompleted)
+            internal DisposeInCallbackEventSource(ManualResetEventSlim callbackCompleted)
             {
-                _disposeCompleted = disposeCompleted;
+                _callbackCompleted = callbackCompleted;
             }
 
             protected override void OnEventCommand(EventCommandEventArgs command)
             {
                 if (command.Command == EventCommand.Enable)
                 {
-                    Dispose();
-                    _disposeCompleted.Set();
+                    try
+                    {
+                        Dispose();
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        _disposeException = ex;
+                    }
+                    finally
+                    {
+                        _callbackCompleted.Set();
+                    }
                 }
             }
         }
