@@ -883,8 +883,6 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
-            bool isGetNullable;
-            bool isSetNullable;
             if (propertyInfo.MemberType is MemberTypes.Property)
             {
                 var reflectionPropertyInfo = (PropertyInfo)memberInfo;
