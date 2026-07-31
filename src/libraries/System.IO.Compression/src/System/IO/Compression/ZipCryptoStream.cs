@@ -4,14 +4,13 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
-    internal sealed class ZipCryptoStream : Stream
+    internal sealed partial class ZipCryptoStream : Stream
     {
         private const int EncryptionBufferSize = 4096;
 
@@ -150,9 +149,7 @@ namespace System.IO.Compression
             Debug.Assert(header.Length == 12);
 
             // bytes 0..9 random
-            Span<byte> randomBytes = stackalloc byte[10];
-            RandomNumberGenerator.Fill(randomBytes);
-            randomBytes.CopyTo(header);
+            FillHeaderRandomBytes(header);
 
             // bytes 10..11 verifier
             if (_crc32ForHeader.HasValue)

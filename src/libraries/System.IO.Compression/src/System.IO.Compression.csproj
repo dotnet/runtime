@@ -66,6 +66,8 @@
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <Compile Include="System\IO\Compression\ZipEncryptionMethod.cs" />
     <Compile Include="System\IO\Compression\ZipCryptoStream.cs" />
+    <Compile Include="System\IO\Compression\ZipCryptoStream.Random.Browser.cs" Condition="'$(TargetPlatformIdentifier)' == 'browser'" />
+    <Compile Include="System\IO\Compression\ZipCryptoStream.Random.NonBrowser.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="System\IO\Compression\WinZipAesStream.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="System\IO\Compression\WinZipAesKeyMaterial.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="System\IO\Compression\WinZipAes.PlatformNotSupported.cs" Condition="'$(TargetPlatformIdentifier)' == 'browser'" />
