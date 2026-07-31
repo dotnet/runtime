@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -48,6 +49,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         private readonly ControlFlowGraph ControlFlowGraph;
 
         private readonly SemanticModel _semanticModel;
+
+        // Values of target sub-expressions evaluated before the deconstruction source.
+        private Dictionary<IOperation, TValue>? _deconstructionTargetValues;
 
         protected TValue TopValue => LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Top;
 
@@ -299,7 +303,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 {
                     // Visit the instance to ensure that method calls or other operations
                     // used as the instance are properly analyzed for diagnostics.
-                    Visit(fieldRef.Instance, state);
+                    VisitTargetSubExpression(fieldRef.Instance, state);
                     var current = state.Current;
                     TValue targetValue = GetFieldTargetValue(fieldRef, in current.Context);
                     value = GetAssignmentValue(valueOperation, value, valueIsKnown, state);
@@ -322,7 +326,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     // Avoid visiting the property reference because for captured properties, we can't
                     // correctly detect whether it is used for reading or writing inside of VisitPropertyReference.
                     // https://github.com/dotnet/roslyn/issues/25057
-                    TValue instanceValue = Visit(propertyRef.Instance, state);
+                    TValue instanceValue = VisitTargetSubExpression(propertyRef.Instance, state);
                     value = GetAssignmentValue(valueOperation, value, valueIsKnown, state);
                     IMethodSymbol? setMethod = propertyRef.Property.GetSetMethod();
 
@@ -372,14 +376,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     // Handles assignment to an event like 'Event = Handler;', which is a write to the underlying field,
                     // not a call to an event accessor method. There is no Roslyn API to access the field,
                     // so just visit the instance and the value. https://github.com/dotnet/roslyn/issues/40103
-                    Visit(eventRef.Instance, state);
+                    VisitTargetSubExpression(eventRef.Instance, state);
                     return GetAssignmentValue(valueOperation, value, valueIsKnown, state);
                 }
                 case IImplicitIndexerReferenceOperation indexerRef:
                 {
                     // An implicit reference to an indexer where the argument is a System.Index
-                    TValue instanceValue = Visit(indexerRef.Instance, state);
-                    TValue indexArgumentValue = Visit(indexerRef.Argument, state);
+                    TValue instanceValue = VisitTargetSubExpression(indexerRef.Instance, state);
+                    TValue indexArgumentValue = VisitTargetSubExpression(indexerRef.Argument, state);
                     value = GetAssignmentValue(valueOperation, value, valueIsKnown, state);
 
                     var property = (IPropertySymbol)indexerRef.IndexerSymbol;
@@ -420,16 +424,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     if (arrayElementRef.Indices.Length != 1)
                         break;
 
-                    TValue arrayRef = Visit(arrayElementRef.ArrayReference, state);
-                    TValue index = Visit(arrayElementRef.Indices[0], state);
+                    TValue arrayRef = VisitTargetSubExpression(arrayElementRef.ArrayReference, state);
+                    TValue index = VisitTargetSubExpression(arrayElementRef.Indices[0], state);
                     value = GetAssignmentValue(valueOperation, value, valueIsKnown, state);
                     HandleArrayElementWrite(arrayRef, index, value, assignmentOperation, merge: merge);
                     return value;
                 }
                 case IInlineArrayAccessOperation inlineArrayAccess:
                 {
-                    TValue arrayRef = Visit(inlineArrayAccess.Instance, state);
-                    TValue index = Visit(inlineArrayAccess.Argument, state);
+                    TValue arrayRef = VisitTargetSubExpression(inlineArrayAccess.Instance, state);
+                    TValue index = VisitTargetSubExpression(inlineArrayAccess.Argument, state);
                     value = GetAssignmentValue(valueOperation, value, valueIsKnown, state);
                     HandleArrayElementWrite(arrayRef, index, value, assignmentOperation, merge: merge);
                     return value;
@@ -618,41 +622,42 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 return Visit(operation.Value, state);
             }
 
-            // Like ordinary assignments (see ProcessSingleTargetAssignment), any side-effecting
-            // sub-expressions that identify a target location (a property/indexer receiver and its
-            // index arguments, or an array reference and its index) must be evaluated before the
-            // source, matching left-to-right evaluation order. Unlike ordinary assignments, the
-            // actual write can't happen until every target location has been identified and every
-            // source value has been read, so these sub-expressions get visited again for effect
-            // when performing the write in AssignDeconstruction. Revisiting the same IOperation node
-            // for its side effect is safe: the pattern store used for intrinsic method calls merges
-            // patterns keyed by the same IOperation instance (see the analogous existing tolerance
-            // in ProcessAssignment for flow-capture targets with multiple captured references).
-            VisitDeconstructionTargetSideEffects(operation.Target, state);
+            Dictionary<IOperation, TValue>? previousDeconstructionTargetValues = _deconstructionTargetValues;
+            _deconstructionTargetValues = null;
+            try
+            {
+                // Identify target locations before evaluating the source, then reuse those values
+                // when writing instead of evaluating their sub-expressions again.
+                VisitDeconstructionTargetSideEffects(operation.Target, state);
 
-            ITypeSymbol? sourceType = operation.Value.Type;
-            IOperation source = UnwrapDeconstructionSource(operation.Value);
-            bool sourceValueIsKnown = source is not ITupleOperation;
-            TValue sourceValue = sourceValueIsKnown ? Visit(source, state) : TopValue;
+                ITypeSymbol? sourceType = operation.Value.Type;
+                IOperation source = UnwrapDeconstructionSource(operation.Value);
+                bool sourceValueIsKnown = source is not ITupleOperation;
+                TValue sourceValue = sourceValueIsKnown ? Visit(source, state) : TopValue;
 
-            // Deconstruction evaluates all source values before assigning any target. Keeping these
-            // phases separate is required for assignments such as (first, second) = (second, first).
-            DeconstructionValue deconstructionValue = EvaluateDeconstruction(
-                operation.Target,
-                source,
-                sourceType,
-                sourceValue,
-                sourceValueIsKnown,
-                deconstructionInfo,
-                operation,
-                state);
-            AssignDeconstruction(
-                operation.Target,
-                deconstructionValue,
-                operation,
-                state);
+                // Deconstruction evaluates all source values before assigning any target. Keeping these
+                // phases separate is required for assignments such as (first, second) = (second, first).
+                DeconstructionValue deconstructionValue = EvaluateDeconstruction(
+                    operation.Target,
+                    source,
+                    sourceType,
+                    sourceValue,
+                    sourceValueIsKnown,
+                    deconstructionInfo,
+                    operation,
+                    state);
+                AssignDeconstruction(
+                    operation.Target,
+                    deconstructionValue,
+                    operation,
+                    state);
 
-            return sourceValue;
+                return sourceValue;
+            }
+            finally
+            {
+                _deconstructionTargetValues = previousDeconstructionTargetValues;
+            }
         }
 
         private readonly struct DeconstructionValue
@@ -858,6 +863,36 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             return source is null ? TopValue : Visit(source, state);
         }
 
+        // Evaluates a deconstruction target sub-expression and remembers its value, so that the
+        // write can reuse it later instead of evaluating the expression a second time.
+        private void EvaluateTargetSubExpression(
+            IOperation? operation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            if (operation is null)
+                return;
+
+            TValue value = Visit(operation, state);
+            (_deconstructionTargetValues ??= new Dictionary<IOperation, TValue>())[operation] = value;
+        }
+
+        // Returns the value of an assignment target's sub-expression, reusing the value from
+        // EvaluateTargetSubExpression if it was already evaluated for a deconstruction. For an
+        // ordinary assignment nothing was evaluated ahead of time, so this just visits it.
+        private TValue VisitTargetSubExpression(
+            IOperation? operation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            if (operation is not null &&
+                _deconstructionTargetValues is Dictionary<IOperation, TValue> targetValues &&
+                targetValues.TryGetValue(operation, out TValue value))
+            {
+                return value;
+            }
+
+            return Visit(operation, state);
+        }
+
         // Visits the side-effecting sub-expressions that identify a deconstruction target location
         // (a property/indexer receiver, or an array reference and its index), without performing
         // any write. This runs before the source is visited, so that e.g. 'arr' in
@@ -885,25 +920,25 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             switch (target)
             {
                 case IFieldReferenceOperation fieldRef:
-                    Visit(fieldRef.Instance, state);
+                    EvaluateTargetSubExpression(fieldRef.Instance, state);
                     break;
                 case IPropertyReferenceOperation propertyRef:
                     // Avoid visiting the property reference itself; see the similar comment in
                     // ProcessSingleTargetAssignment about https://github.com/dotnet/roslyn/issues/25057.
-                    Visit(propertyRef.Instance, state);
+                    EvaluateTargetSubExpression(propertyRef.Instance, state);
                     break;
                 case IArrayElementReferenceOperation arrayElementRef:
-                    Visit(arrayElementRef.ArrayReference, state);
+                    EvaluateTargetSubExpression(arrayElementRef.ArrayReference, state);
                     foreach (var index in arrayElementRef.Indices)
-                        Visit(index, state);
+                        EvaluateTargetSubExpression(index, state);
                     break;
                 case IInlineArrayAccessOperation inlineArrayAccess:
-                    Visit(inlineArrayAccess.Instance, state);
-                    Visit(inlineArrayAccess.Argument, state);
+                    EvaluateTargetSubExpression(inlineArrayAccess.Instance, state);
+                    EvaluateTargetSubExpression(inlineArrayAccess.Argument, state);
                     break;
                 case IImplicitIndexerReferenceOperation indexerRef:
-                    Visit(indexerRef.Instance, state);
-                    Visit(indexerRef.Argument, state);
+                    EvaluateTargetSubExpression(indexerRef.Instance, state);
+                    EvaluateTargetSubExpression(indexerRef.Argument, state);
                     break;
                 default:
                     // Locals, parameters, discards, and declaration expressions have no

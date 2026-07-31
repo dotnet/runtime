@@ -193,6 +193,35 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [RequiresUnreferencedCode(nameof(GetPropertyHolder))]
             static PropertyHolder GetPropertyHolder() => new();
 
+            static PropertyHolder GetPropertyHolderForType(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => new();
+
+            static T Box<T>(T value) => value;
+
+            // The target's receiver is evaluated before the source, so only the annotated value can
+            // reach GetPropertyHolderForType, even though the source assigns an unannotated value to
+            // the same local. The receiver must not be evaluated a second time when performing the
+            // write, because by then the local holds the unannotated value.
+            static void DeconstructTargetReceiverEvaluatedBeforeSource(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotated,
+                Type unannotated)
+            {
+                Type type = annotated;
+                object other;
+                (GetPropertyHolderForType(type).AnnotatedProperty, other) = ((type = unannotated), new object());
+            }
+
+            static void DeconstructTargetReceiverWithNestedDeconstructionSource(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotated,
+                Type unannotated)
+            {
+                Type type = annotated;
+                object other;
+
+                (GetPropertyHolderForType(type).AnnotatedProperty, other) =
+                    Box(((type, other) = (unannotated, new object())));
+            }
+
             // The property target's receiver (GetPropertyHolder()) is a side-effecting expression that
             // must be evaluated exactly once, and (to match left-to-right evaluation order) before the
             // source values are read - not only after, as part of performing the write.
@@ -356,6 +385,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 DeconstructTupleSwapSuccess(typeof(string), typeof(string));
                 DeconstructTupleSwap(typeof(string), typeof(string));
                 DeconstructPropertyTargetSideEffect(typeof(string), typeof(string));
+                DeconstructTargetReceiverEvaluatedBeforeSource(typeof(string), typeof(string));
+                DeconstructTargetReceiverWithNestedDeconstructionSource(typeof(string), typeof(string));
                 DeconstructIndexerTargetSideEffect(typeof(string), typeof(string));
                 DeconstructFieldTarget();
                 DeconstructParameterTarget(typeof(string), null);
