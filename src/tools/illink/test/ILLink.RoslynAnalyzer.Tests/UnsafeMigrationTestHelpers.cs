@@ -70,7 +70,9 @@ namespace ILLink.RoslynAnalyzer.Tests
             var diagnosticOptions = compilationOptions.SpecificDiagnosticOptions
                 .SetItems(CSharpVerifierHelper.NullableWarnings)
                 .SetItem(DiagnosticId.UnsafeMemberMissingSafetyDocumentation.AsString(), ReportDiagnostic.Warn)
-                .SetItem(DiagnosticId.PointerSignatureRequiresUnsafe.AsString(), ReportDiagnostic.Warn);
+                .SetItem(DiagnosticId.PointerSignatureRequiresUnsafe.AsString(), ReportDiagnostic.Warn)
+                .SetItem(DiagnosticId.UnsafeBlockMissingSafetyComment.AsString(), ReportDiagnostic.Warn)
+                .SetItem(DiagnosticId.SafeModifierMissingJustification.AsString(), ReportDiagnostic.Warn);
             compilationOptions = compilationOptions
                 .WithAllowUnsafe(true)
                 .WithWarningLevel(999)
