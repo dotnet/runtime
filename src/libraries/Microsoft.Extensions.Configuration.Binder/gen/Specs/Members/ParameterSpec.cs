@@ -17,7 +17,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (parameter.HasExplicitDefaultValue)
             {
-                HasExplicitDefaultValue = true;
                 DefaultValueExpr = CSharpSyntaxUtilities.FormatLiteral(parameter.ExplicitDefaultValue, TypeRef);
             }
             else
@@ -27,8 +26,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         }
 
         public bool ErrorOnFailedBinding { get; private set; }
-
-        public bool HasExplicitDefaultValue { get; }
 
         public RefKind RefKind { get; }
 

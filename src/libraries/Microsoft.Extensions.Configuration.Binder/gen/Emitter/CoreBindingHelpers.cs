@@ -1014,16 +1014,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 // value all fall through to the caller's else-branch, which throws.
                                 bool requireValue = bindingToLocal && !member.TypeRef.CanBeNull && member is ParameterSpec { ErrorOnFailedBinding: true };
 
+                                // A parameter only avoids that throw by declaring a default, which then has to survive a null value.
+                                bool hasDeclaredDefault = bindingToLocal && member is ParameterSpec { ErrorOnFailedBinding: false };
+
                                 string valueCondition = requireValue ? $" && !string.IsNullOrEmpty({valueIdentifier})" : string.Empty;
                                 EmitStartBlock($"if ({Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: {SymbolDisplay.FormatLiteral(member.ConfigurationKeyName, quote: true)}, out string? {valueIdentifier}){valueCondition})");
 
                                 // Decide to emit the null check block for nullable types (e.g. int?).
                                 // We don't emit this block for types that can be assigned directly from IConfigurationSection.Value as the valueIdentifier value can assigned
                                 // anyway to the memberAccessExpr regardless of the nullability. This can reduce the emitted code size when assigning objects or strings which
-                                // are common cases. A parameter with a declared default is the exception: its default has to survive a null value.
+                                // are common cases. A parameter with a declared default is the exception.
                                 bool emitNullCheck = member.TypeRef.CanBeNull &&
-                                    (stringParsableType.StringParsableTypeKind != StringParsableTypeKind.AssignFromSectionValue ||
-                                        (bindingToLocal && member is ParameterSpec { HasExplicitDefaultValue: true }));
+                                    (stringParsableType.StringParsableTypeKind != StringParsableTypeKind.AssignFromSectionValue || hasDeclaredDefault);
 
                                 // TryConvertValue turns an empty value into null for Nullable<T>, but leaves other nullable
                                 // types to their type converter.
@@ -1033,9 +1035,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 if (emitNullCheck)
                                 {
                                     // A parameter's declared default outranks a null or empty value, as in BindParameter.
-                                    string nullValueExpr = bindingToLocal && member is ParameterSpec { HasExplicitDefaultValue: true }
-                                        ? member.DefaultValueExpr
-                                        : "null";
+                                    string nullValueExpr = hasDeclaredDefault ? member.DefaultValueExpr : "null";
 
                                     EmitStartBlock(treatEmptyValueAsNull
                                         ? $"if (string.IsNullOrEmpty({valueIdentifier}))"
