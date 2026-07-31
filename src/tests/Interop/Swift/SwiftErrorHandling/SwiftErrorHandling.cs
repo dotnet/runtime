@@ -30,22 +30,6 @@ public class ErrorHandlingTests
         internal nint Count => _count;
     }
 
-    private sealed class SwiftAbiSafeHandle : SafeHandle
-    {
-        public SwiftAbiSafeHandle() : base(IntPtr.Zero, ownsHandle: true)
-        {
-        }
-
-        internal SwiftAbiSafeHandle(IntPtr handle) : this()
-        {
-            SetHandle(handle);
-        }
-
-        public override bool IsInvalid => handle == IntPtr.Zero;
-
-        protected override bool ReleaseHandle() => true;
-    }
-
     [DllImport(SwiftLib, EntryPoint = "$s18SwiftErrorHandling05setMyB7Message7message6lengthySPys6UInt16VG_s5Int32VtF", CharSet = CharSet.Unicode)]
     public static extern void SetErrorMessage(string message, int length);
 
@@ -64,7 +48,7 @@ public class ErrorHandlingTests
     [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "validateSwiftAbiOneWord")]
     private static extern nuint ValidateSwiftAbiOneWord(
-        SwiftAbiSafeHandle key,
+        nint key,
         BufferPointer buffer1,
         BufferPointer buffer2,
         BufferPointer buffer3,
@@ -198,20 +182,17 @@ public class ErrorHandlingTests
         BufferPointer buffer4 = new BufferPointer(values + 4, 55);
         BufferPointer buffer5 = new BufferPointer(values + 5, 66);
 
-        using (var key = new SwiftAbiSafeHandle((IntPtr)values))
-        {
-            nuint actual = ValidateSwiftAbiOneWord(
-                key,
-                buffer1,
-                buffer2,
-                buffer3,
-                buffer4,
-                buffer5,
-                out SwiftError error);
+        nuint actual = ValidateSwiftAbiOneWord(
+            (nint)values,
+            buffer1,
+            buffer2,
+            buffer3,
+            buffer4,
+            buffer5,
+            out SwiftError error);
 
-            Assert.Equal(Hash((nuint)values, buffer1, buffer2, buffer3, buffer4, buffer5), actual);
-            Assert.True(error.Value == null, "No Swift error was expected to be thrown.");
-        }
+        Assert.Equal(Hash((nuint)values, buffer1, buffer2, buffer3, buffer4, buffer5), actual);
+        Assert.True(error.Value == null, "No Swift error was expected to be thrown.");
     }
 
     [Fact]
