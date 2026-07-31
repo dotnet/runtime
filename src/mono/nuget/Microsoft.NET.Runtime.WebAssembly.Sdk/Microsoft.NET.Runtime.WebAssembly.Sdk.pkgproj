@@ -20,13 +20,6 @@
     <PackageFile Include="$(BrowserProjectRoot)build\BrowserWasmApp.CoreCLR.targets" TargetPath="Sdk" />
     <PackageFile Include="$(BrowserProjectRoot)build\coreclr_compat.h" TargetPath="Sdk" />
 
-    <!-- Headers force-included / included by the CoreCLR native relink generated sources.
-         Shipped next to BrowserWasmApp.CoreCLR.targets so native relink works from a
-         restored SDK (see _VmWasmIncludeDir / _MinipalIncludeDir fallbacks in the targets). -->
-    <PackageFile Include="$(CoreClrProjectRoot)vm\wasm\callhelpers.hpp" TargetPath="Sdk" />
-    <PackageFile Include="$(SharedNativeRoot)minipal\entrypoints.h" TargetPath="Sdk/minipal" />
-    <PackageFile Include="$(SharedNativeRoot)minipal\utils.h" TargetPath="Sdk/minipal" />
-
     <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.props" TargetPath="Sdk" />
     <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.targets" TargetPath="Sdk" />
 
