@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetCryptographicallySecureRandomBytes")]
+        [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetCryptographicallySecureRandomBytes")]
         internal static unsafe partial int GetCryptographicallySecureRandomBytes(byte* buffer, int length);
     }
 }
