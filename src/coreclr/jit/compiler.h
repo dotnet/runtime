@@ -6556,6 +6556,13 @@ public:
     // memory yields an unknown value.
     ValueNum fgCurMemoryVN[MemoryKindCount];
 
+    // A VN that advances at every GC safepoint (any call for which IsNoGC() is false).
+    // This is distinct from fgCurMemoryVN[GcHeap], which only advances on heap mutations;
+    // allocations and pure arithmetic helpers are GC safepoints but do not mutate the heap.
+    // Used as the epoch argument to VNF_GCRefToPtrWithEpoch to prevent CSE of cast-away-GC
+    // address snapshots across GC safepoints where the GC could compact the heap.
+    ValueNum fgCurGcEpochVN;
+
     // Return a "pseudo"-class handle for an array element type. If `elemType` is TYP_STRUCT,
     // `elemStructType` is the struct handle (it must be non-null and have a low-order zero bit).
     // Otherwise, `elemTyp` is encoded by left-shifting by 1 and setting the low-order bit to 1.

@@ -12206,6 +12206,11 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 #endif // DEBUG
     }
 
+    // Initialize the GC safepoint epoch for this block. A fresh VN per block is conservative
+    // (prevents cross-block CSE of cast-away-GC temps) but correct; within the block the
+    // epoch is advanced at every non-NoGC call via fgValueNumberCall.
+    fgCurGcEpochVN = vnStore->VNForExpr(blk, TYP_I_IMPL);
+
     // Now iterate over the remaining statements, and their trees.
     for (; stmt != nullptr; stmt = stmt->GetNextStmt())
     {
@@ -12913,11 +12918,11 @@ void Compiler::fgValueNumberStore(GenTree* store)
         {
             // A GC reference reinterpreted as a raw address (an unsafe IL store of TYP_REF/BYREF, or
             // morph's "Cast away GC" temps) is only valid until the referent can next move.  Use a VN
-            // that is deterministic given (source byref VN, current GcHeap epoch): two stores from the
-            // same ref with no intervening GC safepoint share the same epoch VN and can be CSE'd;
-            // stores separated by a safepoint get distinct epoch VNs and are kept separate.
+            // that is deterministic given (source byref VN, current GC safepoint epoch): two stores from
+            // the same ref with no intervening GC safepoint share the same epoch VN and can be CSE'd;
+            // stores separated by any non-NoGC call (including allocations) get distinct epoch VNs.
             valueVNPair.SetBoth(vnStore->VNForFunc(store->TypeGet(), VNF_GCRefToPtrWithEpoch, valueVNPair.GetLiberal(),
-                                                   fgCurMemoryVN[GcHeap]));
+                                                   fgCurGcEpochVN));
         }
         else
         {
@@ -14925,6 +14930,16 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
 
 void Compiler::fgValueNumberCall(GenTreeCall* call)
 {
+    // Advance the GC safepoint epoch at every call that is not in a NoGC region.
+    // Allocations and pure arithmetic helpers are GC safepoints but do not mutate
+    // the heap, so fgMutateGcHeap is not called for them; the separate epoch VN
+    // ensures cast-away-GC address snapshots are not CSE'd across such calls.
+    bool isNoGCCall = call->IsHelperCall() && s_helperCallProperties.IsNoGC(call->GetHelperNum());
+    if (!isNoGCCall)
+    {
+        fgCurGcEpochVN = vnStore->VNForExpr(compCurBB, TYP_I_IMPL);
+    }
+
     if (call->IsHelperCall())
     {
         bool modHeap = fgValueNumberHelperCall(call);

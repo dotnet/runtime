@@ -32,7 +32,8 @@ ValueNumFuncDef(Cast, 2, false, false)           // VNF_Cast: Cast Operation cha
 ValueNumFuncDef(CastOvf, 2, false, false)        // Same as a VNF_Cast but also can throw an overflow exception.
 ValueNumFuncDef(GCRefToPtrWithEpoch, 2, false, false)   // A GC ref/byref reinterpreted as a raw address (BYREF/REF -> I_IMPL).
                                                                 //   Args: 0: Source GC ref/byref VN.
-                                                                //         1: GcHeap memory epoch VN (advances at each GC safepoint).
+                                                                //         1: GC safepoint epoch VN (advances at every call for which IsNoGC() is false,
+                                                                //            including allocations and pure arithmetic helpers).
                                                                 //   Two stores from the same ref in the same epoch get identical VNs
                                                                 //   (CSE is safe; no compacting GC can occur between them).
 
