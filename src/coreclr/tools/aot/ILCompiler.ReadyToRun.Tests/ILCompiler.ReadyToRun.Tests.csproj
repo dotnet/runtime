@@ -54,9 +54,10 @@
     </ItemGroup>
 
     <ItemGroup>
+      <!-- Filename Metadata may differ from the filename of OutputPath. We want to copy the file using the actual filename of the output path. -->
       <Content Include="@(Crossgen2InbuildOutputItems->'%(OutputPath)')"
                CopyToOutputDirectory="PreserveNewest"
-               TargetPath="crossgen2/%(Filename)%(Extension)" />
+               TargetPath="crossgen2/$([System.IO.Path]::GetFileName('%(Crossgen2InbuildOutputItems.OutputPath)'))" />
 
       <Content Include="@(_SharedFrameworkAssembly)"
                CopyToOutputDirectory="PreserveNewest"
