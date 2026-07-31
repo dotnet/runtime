@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
@@ -54,7 +55,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     Debug.Assert(_typeIndex.HasBindableMembers(objectType));
 
                     HashSet<string>? keys = null;
-                    static string GetCacheElement(MemberSpec member) => $@"""{member.ConfigurationKeyName}""";
+                    static string GetCacheElement(MemberSpec member) => SymbolDisplay.FormatLiteral(member.ConfigurationKeyName, quote: true);
 
                     if (objectType.ConstructorParameters?.Select(m => GetCacheElement(m)) is IEnumerable<string> paramNames)
                     {
@@ -334,7 +335,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 foreach (ParameterSpec parameter in type.ConstructorParameters)
                 {
-                    string name = parameter.Name;
+                    string name = EscapeIdentifier(parameter.Name);
                     string argExpr = parameter.RefKind switch
                     {
                         RefKind.None => name,
@@ -368,8 +369,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         // Properties bound through a matching constructor parameter don't have a local of their
                         // own; their bound value lives in the local named after the parameter.
-                        string valueExpr = property.MatchingCtorParam?.Name ?? property.Name;
-                        _writer.WriteLine($@"{property.Name} = {valueExpr},");
+                        string valueExpr = EscapeIdentifier(property.MatchingCtorParam?.Name ?? property.Name);
+                        _writer.WriteLine($@"{EscapeIdentifier(property.Name)} = {valueExpr},");
                     }
                     EmitEndBlock(endBraceTrailingSource: ";");
                 }
@@ -381,7 +382,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 void EmitBindImplForMember(MemberSpec member)
                 {
                     TypeSpec memberType = _typeIndex.GetTypeSpec(member.TypeRef);
-                    string parsedMemberDeclarationLhs = $"{memberType.TypeRef.FullyQualifiedName} {member.Name}";
+                    string escapedName = EscapeIdentifier(member.Name);
+                    string parsedMemberDeclarationLhs = $"{memberType.TypeRef.FullyQualifiedName} {escapedName}";
                     string configKeyName = member.ConfigurationKeyName;
 
                     switch (memberType)
@@ -390,7 +392,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             {
                                 if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding)
                                 {
-                                    string condition = $@"if ({Identifier.configuration}[""{configKeyName}""] is not {parsedMemberDeclarationLhs})";
+                                    string condition = $"if ({Identifier.configuration}[{SymbolDisplay.FormatLiteral(configKeyName, quote: true)}] is not {parsedMemberDeclarationLhs})";
                                     EmitThrowBlock(condition);
                                     _writer.WriteLine();
                                     return;
@@ -410,7 +412,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     bool canBindToMember = this.EmitBindImplForMember(
                         member,
-                        member.Name,
+                        escapedName,
                         sectionPathExpr: GetSectionPathFromConfigurationExpression(configKeyName),
                         // Since we're binding to local variables, we can always get and set
                         canSet: true,
@@ -425,7 +427,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             // Add exception logic for parameter ctors; must be present in configuration object.
                             // In case of Arrays and IEnumerable<T>, we emit extra block to handle collection. The throw block will not be `else` case at that time.
                             TypeSpec typeSpec = _typeIndex.GetEffectiveTypeSpec(member.TypeRef);
-                            EmitThrowBlock(condition: typeSpec is ArraySpec || typeSpec.IsExactIEnumerableOfT ? $"if ({member.Name} is null)" : "else");
+                            EmitThrowBlock(condition: typeSpec is ArraySpec || typeSpec.IsExactIEnumerableOfT ? $"if ({escapedName} is null)" : "else");
                         }
 
                         _writer.WriteLine();
@@ -924,7 +926,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     string containingTypeRef = property.IsStatic ? type.TypeRef.FullyQualifiedName : Identifier.instance;
                     EmitBindImplForMember(
                         property,
-                        memberAccessExpr: $"{containingTypeRef}.{property.Name}",
+                        memberAccessExpr: $"{containingTypeRef}.{EscapeIdentifier(property.Name)}",
                         GetSectionPathFromConfigurationExpression(property.ConfigurationKeyName),
                         canSet: property.CanSet,
                         canGet: property.CanGet,
@@ -1000,7 +1002,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             {
                                 EmitBlankLineIfRequired();
                                 string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
-                                EmitStartBlock($@"if ({Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: ""{member.ConfigurationKeyName}"", out string? {valueIdentifier}))");
+                                EmitStartBlock($"if ({Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: {SymbolDisplay.FormatLiteral(member.ConfigurationKeyName, quote: true)}, out string? {valueIdentifier}))");
 
                                 // Decide to emit the null check block for nullable types (e.g. int?).
                                 // We don't emit this block for types that can be assigned directly from IConfigurationSection.Value as the valueIdentifier value can assigned
@@ -1146,6 +1148,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (member.CanGet)
                 {
+                    if (!canSet)
+                    {
+                        _writer.WriteLine($"{effectiveMemberType.TypeRef.FullyQualifiedName}? {tempIdentifier} = {memberAccessExpr};");
+                        EmitStartBlock($"if ({tempIdentifier} is not null)");
+                        EmitBindingLogic(
+                            effectiveMemberType,
+                            tempIdentifier,
+                            configArgExpr,
+                            InitializationKind.None,
+                            ValueDefaulting.None);
+                        EmitEndBlock();
+                        return;
+                    }
+
                     targetObjAccessExpr = memberAccessExpr;
                     initKind = InitializationKind.AssignmentWithNullCheck;
                 }
@@ -1507,7 +1523,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static string GetSectionFromConfigurationExpression(string configurationKeyName, bool addQuotes = true)
             {
-                string argExpr = addQuotes ? $@"""{configurationKeyName}""" : configurationKeyName;
+                string argExpr = addQuotes ? SymbolDisplay.FormatLiteral(configurationKeyName, quote: true) : configurationKeyName;
                 return $@"{Identifier.configuration}.{Identifier.GetSection}({argExpr})";
             }
 

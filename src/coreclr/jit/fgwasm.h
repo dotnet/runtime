@@ -566,59 +566,9 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
             unreached();
     }
 
-    // If the compiler has a multi-entry try region object, add edges from any
-    // catch resumption or async resumption target to the header of each enclosing
-    // try/catch.
+    // Try regions are single-entry by the time the wasm DFS runs (see
+    // Compiler::fgWasmRepairTryEntries), so no pseudo-successors are needed here.
     //
-    // This makes multi-entry try/catch regions look like multi-entry loops and the SCC
-    // algorithm will transform them into single-entry try/catch regions.
-    //
-    // Note we disregard try/finally/fault here as those do not need to be expressed
-    // as single-entry regions for Wasm codegen. And we consider all mutual-protect
-    // try/catch as a single region.
-    //
-    FlowGraphTryRegions* const tryRegions = comp->fgTryRegions;
-
-    if ((tryRegions == nullptr) || !tryRegions->HasMultipleEntryTryRegions())
-    {
-        return BasicBlockVisit::Continue;
-    }
-
-    EHblkDsc* const dsc = comp->ehGetBlockTryDsc(block);
-
-    if (dsc == nullptr)
-    {
-        return BasicBlockVisit::Continue;
-    }
-
-    FlowGraphTryRegion* region = tryRegions->GetTryRegionByHeader(dsc->ebdTryBeg);
-
-    // TODO: possibly flag blocks that are targets of resumption switches so
-    // we can quickly screen out blocks that are not try region side entries.
-    //
-    while (region != nullptr)
-    {
-        if (region->HasCatchHandler())
-        {
-            if (!region->HasSideEntry())
-            {
-                break;
-            }
-
-            BasicBlock* const header = region->GetHeaderBlock();
-            for (FlowEdge* const edge : region->EntryEdges())
-            {
-                if ((block != header) && (block == edge->getDestinationBlock()))
-                {
-                    assert(edge->getSourceBlock()->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION));
-                    RETURN_ON_ABORT(func(header));
-                    break;
-                }
-            }
-        }
-        region = region->EnclosingRegion();
-    }
-
     return BasicBlockVisit::Continue;
 }
 
