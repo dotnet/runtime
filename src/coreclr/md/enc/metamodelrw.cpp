@@ -711,6 +711,7 @@ CMiniMdRW::CMiniMdRW()
     m_pHostFilter(0),
     m_pTokenRemapManager(0),
     m_fMinimalDelta(FALSE),
+    m_fAll4ByteColumns(FALSE),
     m_rENCRecs(0)
 {
 #ifdef _DEBUG
@@ -1276,6 +1277,7 @@ CMiniMdRW::ComputeGrowLimits(
         m_limIx = USHRT_MAX << 1;
         m_limRid = USHRT_MAX << 1;
         m_eGrow = eg_grown;
+        m_fAll4ByteColumns = TRUE;
     }
 } // CMiniMdRW::ComputeGrowLimits
 
@@ -3556,6 +3558,7 @@ CMiniMdRW::ExpandTables()
 
     // Remember that we've grown.
     m_eGrow = eg_grown;
+    m_fAll4ByteColumns = TRUE;
     m_maxRid = m_maxIx = UINT32_MAX;
 
 ErrExit:

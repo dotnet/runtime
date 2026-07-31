@@ -4197,6 +4197,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                 global::System.String[] a = (global::System.String[])o.@Text;
                 if (a != null) {
                     for (int ia = 0; ia < a.Length; ia++) {
+                        if (ia != 0) WriteValue(" ");
                         if ((object)(a[ia]) != null){
                             WriteValue(((global::System.String)a[ia]));
                         }
@@ -11822,7 +11823,7 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                 }
                 else if (((object) Reader.LocalName == (object)id236_refs && (object) Reader.NamespaceURI == (object)id2_Item)) {
                     string listValues = Reader.Value;
-                    string[] vals = listValues.Split(null);
+                    string[] vals = listValues.Split(xmlListSeparators);
                     for (int i = 0; i < vals.Length; i++) {
                         a_1 = (global::System.String[])EnsureArrayIndex(a_1, ca_1, typeof(global::System.String));a_1[ca_1++] = CollapseWhitespace(vals[i]);
                     }
@@ -13792,7 +13793,11 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
                 Reader.NodeType == System.Xml.XmlNodeType.CDATA || 
                 Reader.NodeType == System.Xml.XmlNodeType.Whitespace || 
                 Reader.NodeType == System.Xml.XmlNodeType.SignificantWhitespace) {
-                    a_0 = (global::System.String[])EnsureArrayIndex(a_0, ca_0, typeof(global::System.String));a_0[ca_0++] = Reader.ReadString();
+                    string listValues = Reader.ReadString();
+                    string[] vals = listValues.Split(xmlListSeparators, System.StringSplitOptions.RemoveEmptyEntries);
+                    for (int i = 0; i < vals.Length; i++) {
+                        a_0 = (global::System.String[])EnsureArrayIndex(a_0, ca_0, typeof(global::System.String));a_0[ca_0++] = vals[i];
+                    }
                 }
                 else {
                     UnknownNode((object)o, @"");
@@ -16352,6 +16357,8 @@ namespace Microsoft.Xml.Serialization.GeneratedAssembly {
         string id215_City;
         string id130_Item;
         string id166_ArrayOfBoolean;
+
+        static readonly char[] xmlListSeparators = System.AppContext.TryGetSwitch("Switch.System.Xml.Serialization.UseLegacyXmlListSeparation", out bool useLegacyXmlListSeparation) && useLegacyXmlListSeparation ? null : new char[] { ' ', '\t', '\n', '\r' };
 
         protected override void InitIDs() {
             id309_NameContent = Reader.NameTable.Add(@"NameContent");

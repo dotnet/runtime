@@ -710,7 +710,23 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 
 	for (i = 0; i < nfields; ++i) {
 		if ((fields [i].offset < 8) && (fields [i].offset + fields [i].size) > 8) {
-			pass_on_stack = TRUE;
+			/*
+			 * A field crosses the 8-byte eightbyte boundary. For P/Invoke calls (and for returns
+			 * or structs larger than 16 bytes) such a value must be passed on the stack to follow
+			 * the native ABI. For a managed call of a <=16 byte vtype we keep it in registers
+			 * instead: the value is split into (at most) two integer eightbytes purely by total
+			 * size (see the !sig->pinvoke classification below), which is layout independent. That
+			 * makes a partially-shared caller -- which sees the vtype as an opaque type parameter
+			 * with a single straddling field -- agree with a concrete callee that sees the
+			 * flattened layout. If the value were forced onto the stack here the two would disagree
+			 * on the calling convention (recent LLVM lowers the byval form onto the stack while the
+			 * concrete callee reads the value from registers), corrupting it. This is safe for the
+			 * GC: object references in a <=16 byte managed vtype are always 8-byte aligned (the type
+			 * loader rejects misaligned or overlapped references), so an eightbyte never splits a
+			 * managed pointer and conservative scanning still finds every reference.
+			 */
+			if (sig->pinvoke || is_return || size > 16)
+				pass_on_stack = TRUE;
 			break;
 		}
 	}

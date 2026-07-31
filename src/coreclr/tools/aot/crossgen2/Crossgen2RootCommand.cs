@@ -88,8 +88,6 @@ namespace ILCompiler
             new("--imagebase") { Description = SR.ImageBase };
         public Option<string> TargetArchitecture { get; } =
             new("--targetarch") { Description = SR.TargetArchOption };
-        public Option<bool> EnableGenericCycleDetection { get; } =
-            new("--enable-generic-cycle-detection") { Description = SR.EnableGenericCycleDetection };
         public Option<int> GenericCycleDepthCutoff { get; } =
             new("--maxgenericcycle") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleDepthCutoff, Description = SR.GenericCycleDepthCutoff };
         public Option<int> GenericCycleBreadthCutoff { get; } =
@@ -197,7 +195,6 @@ namespace ILCompiler
             Options.Add(SupportIbc);
             Options.Add(Resilient);
             Options.Add(ImageBase);
-            Options.Add(EnableGenericCycleDetection);
             Options.Add(GenericCycleDepthCutoff);
             Options.Add(GenericCycleBreadthCutoff);
             Options.Add(TargetArchitecture);

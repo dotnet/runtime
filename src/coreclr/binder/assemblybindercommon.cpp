@@ -22,6 +22,7 @@
 #include "failurecache.hpp"
 #include "utils.hpp"
 #include "stringarraylist.h"
+#include "hostinformation.h"
 
 #if !defined(DACCESS_COMPILE)
 #include "defaultassemblybinder.h"
@@ -271,6 +272,9 @@ namespace BINDER_SPACE
         //   * Non-single-file app: In systemDirectory, beside coreclr.dll
         //   * Framework-dependent single-file app: In systemDirectory, beside coreclr.dll
         //   * Self-contained single-file app: Within the single-file bundle.
+        //   * Host explicitly provided directory: In the directory set via the
+        //     SYSTEM_CORELIB_DIRECTORY runtime property. Used by hosts where SPCL is not located
+        //     in the same directory as coreclr.
         //
         //   CoreLib path (sCoreLib):
         //   * Absolute path when looking for a file on disk
@@ -284,7 +288,16 @@ namespace BINDER_SPACE
         {
             pathSource = BinderTracing::PathSource::ApplicationAssemblies;
         }
-        sCoreLib.Set(systemDirectory);
+
+        // Check for a host-provided explicit directory for CoreLib. When set, this replaces
+        // the default lookup beside coreclr and the bundle extraction path fallback.
+        bool hasHostProvidedDirectory = HostInformation::GetProperty(HOST_PROPERTY_SYSTEM_CORELIB_DIRECTORY, sCoreLib)
+            && !sCoreLib.IsEmpty();
+        if (!hasHostProvidedDirectory)
+        {
+            sCoreLib.Set(systemDirectory);
+        }
+
         CombinePath(sCoreLib, sCoreLibName, sCoreLib);
 
         hr = AssemblyBinderCommon::GetAssembly(sCoreLib,
@@ -295,6 +308,7 @@ namespace BINDER_SPACE
         BinderTracing::PathProbed(sCoreLib, pathSource, hr);
 
         if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
+            && !hasHostProvidedDirectory
             && Bundle::AppIsBundle()
             && Bundle::AppBundle->HasExtractedFiles())
         {

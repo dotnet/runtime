@@ -289,6 +289,7 @@ fixup kind, the rest of the signature varies based on the fixup kind.
 | READYTORUN_FIXUP_ContinuationLayout             |  0x37 | Layout of an async method continuation type, followed by typespec signature
 | READYTORUN_FIXUP_ResumptionStubEntryPoint       |  0x38 | Entry point of an async method resumption stub
 | READYTORUN_FIXUP_InjectStringThunks             |  0x39 | Inject pregenerated string-to-code thunk mappings. See [InjectStringThunks signatures](#injectstringthunks-signatures) for details.
+| READYTORUN_FIXUP_StoreMultiCallableAddrOfCode   |  0x3A | Store the runtime multi-callable code address of a method into a location embedded in the R2R image. See [StoreMultiCallableAddrOfCode signatures](#storemulticallableaddrofcode-signatures) for details.
 | READYTORUN_FIXUP_ModuleOverride                 |  0x80 | When or-ed to the fixup ID, the fixup byte in the signature is followed by an encoded uint with assemblyref index, either within the MSIL metadata of the master context module for the signature or within the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the input MSIL).
 
 #### Method Signatures
@@ -348,6 +349,21 @@ The signature following the fixup kind byte is a series of elements:
 The series terminates when the null-terminated string is the empty string (a single `0x00` byte). There is no trailing RVA after the terminal empty string.
 
 At runtime, the entries are merged into a global hash table. Strings already present in the table from previously loaded modules take precedence over new entries. The table can be queried via `LookupPregeneratedThunkByString`.
+
+#### StoreMultiCallableAddrOfCode signatures
+
+The `READYTORUN_FIXUP_StoreMultiCallableAddrOfCode` fixup is placed in a precode import section and is processed at method load time (when the fixups for the associated method are resolved). It records the runtime multi-callable code address of a target method into a location embedded in the R2R image (for example, a slot in a compiled method's read-only data blob). This is required on platforms where a callable code pointer is not simply `imageBase + RVA` and is therefore only known at runtime (such as WebAssembly, where a callable pointer is a runtime-allocated portable entry point rather than a compile-time function table index).
+
+The signature following the fixup kind byte is:
+
+| Field | Size | Description
+|:------|-----:|:-----------
+| TargetCodeRVA | 4 bytes | An RVA identifying the target method's code. On WebAssembly platforms, this is an I32 function table index instead. This is encoded identically to the target of a `READYTORUN_FIXUP_ResumptionStubEntryPoint` fixup so the resulting entry point value matches the one that fixup registers.
+| LocationRVA | 4 bytes | An `IMAGE_REL_BASED_ADDR32NB` RVA identifying the location within the R2R image where the resolved code address is to be stored.
+
+At runtime, the fixup resolves the target entry point to its `MethodDesc` (using the entry-point-to-`MethodDesc` mapping populated by the `READYTORUN_FIXUP_ResumptionStubEntryPoint` fixup), computes `GetMultiCallableAddrOfCode`, and stores the resulting pointer at the location identified by `LocationRVA`.
+
+Because this fixup depends on the target entry point already being registered, it must be ordered after the corresponding `READYTORUN_FIXUP_ResumptionStubEntryPoint` fixup within the method's precode fixup list.
 
 ### READYTORUN_IMPORT_SECTIONS::AuxiliaryData
 
@@ -412,6 +428,36 @@ which encodes an extra 4-byte representing the end RVA of the unwind info blob.
 |      0 |    4 | Unwind info start RVA
 |      4 |    4 | Unwind info end RVA (1 plus RVA of last byte)
 |      8 |    4 | GC info start RVA
+
+### RUNTIME_FUNCTION (wasm, size = 8 bytes)
+
+On WebAssembly, the `RUNTIME_FUNCTION` uses a virtual IP as the `BeginAddress` rather than an RVA
+into the image. The high bit of the `BeginAddress` field indicates whether the entry represents a
+funclet (1) or a main method body (0). The remaining 31 bits encode the virtual IP of the start of
+the function or funclet.
+
+| Offset | Size | Value
+|-------:|-----:|:-----
+|      0 |    4 | Virtual IP (bits 30:0) &#124; IsFunclet flag (bit 31)
+|      4 |    4 | UnwindData RVA (GC info follows immediately after the unwind blob)
+
+The table is terminated by a sentinel entry with all bits set (`0xFFFFFFFF`), followed by a 4-byte
+value containing the minimum WebAssembly function table index for the image.
+
+### UnwindInfo (wasm)
+
+On WebAssembly, the unwind info blob associated with each `RUNTIME_FUNCTION` entry is encoded as
+two consecutive ULEB128 values:
+
+| Order | Encoding | Value
+|------:|:---------|:-----
+|     1 | ULEB128  | Frame size in bytes (the number of bytes to unwind from the stack)
+|     2 | ULEB128  | Virtual IP count divided by 2 (the number of virtual IPs logically present in the function, halved)
+
+The virtual IP count (after multiplying by 2) gives the span of virtual IPs covered by this
+function or funclet. All virtual IPs are forced to even numbers so that the runtime can force all virtual
+ips to have odd numbers and fit into the address space in a manner which cannot conflict with either interpreter
+IPs or PortableEntryPoint structures.
 
 ## ReadyToRunSectionType.MethodDefEntryPoints
 
@@ -1029,6 +1075,7 @@ The string format is:
 | `l` | returns `i64` |
 | `f` | returns `f32` |
 | `d` | returns `f64` |
+| `V` | returns `v128` (a `Vector128<T>`, or a 16-byte `Vector<T>`) |
 | `S<N>` | struct return via hidden buffer, `N` is the struct size in bytes |
 
 **This pointer** (if the method has a `this` parameter):
@@ -1041,7 +1088,7 @@ The string format is:
 
 1. **Generic context** (`i`): present when the method requires an inst method desc or
    method table argument.
-2. **Async continuation** (`i`): present for async calls.
+2. **Async continuation** (`a`): present for async calls.
 
 Note: the hidden return buffer pointer is **not** encoded in the signature string. Its
 presence is implied by the return type being `S<N>` — when the caller sees a struct return,
@@ -1055,6 +1102,7 @@ it knows a hidden retbuf pointer argument is present in the Wasm parameter list.
 | `l` | `i64` parameter |
 | `f` | `f32` parameter |
 | `d` | `f64` parameter |
+| `V` | `v128` parameter (a `Vector128<T>`, or a 16-byte `Vector<T>`, passed by value) |
 | `S<N>` | struct parameter passed by reference, `<N>` is the struct size in bytes |
 | `e` | empty struct parameter — elided from Wasm args but present in the string |
 

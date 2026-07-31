@@ -26,6 +26,7 @@
 #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
 #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register
 #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
+#define FEATURE_HAS_ZERO_REG          1  // Target has a hardware "zero register" (e.g. REG_ZR on ARM64) usable as a containable source for zero stores
 #define MAX_PASS_SINGLEREG_BYTES     16  // Maximum size of a struct passed in a single register (16-byte vector).
 #define MAX_PASS_MULTIREG_BYTES      64  // Maximum size of a struct that could be passed in more than one register (max is 4 16-byte vectors using an HVA)
 #define MAX_RET_MULTIREG_BYTES       64  // Maximum size of a struct that could be returned in more than one register (Max is an HVA of 4 16-byte vectors)
@@ -138,8 +139,10 @@
 #define REG_SHIFT                REG_NA
 #define RBM_SHIFT                RBM_ALLINT
 
-// This is a general scratch register that does not conflict with the argument registers
+// Scratch registers that do not conflict with the argument registers, usually for use in function prolog
 #define REG_SCRATCH              REG_R9
+#define REG_SCRATCH_V            REG_V9
+#define REG_SCRATCH_P            REG_P4
 
 // This is a general register that can be optionally reserved for other purposes during codegen
 #define REG_OPT_RSVD             REG_IP1
@@ -369,4 +372,7 @@
 
 #define REG_UNKBASE REG_R19
 #define RBM_UNKBASE RBM_R19
+
+#define MAX_SVE_REGSIZE_BYTES 256
+
 // clang-format on

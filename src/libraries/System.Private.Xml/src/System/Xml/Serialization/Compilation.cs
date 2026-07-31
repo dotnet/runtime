@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
@@ -433,6 +434,32 @@ namespace System.Xml.Serialization
             return true;
         }
 
+        internal static Assembly? FindCollectibleAssembly(Type t)
+        {
+            // Shortcut the common case
+            if (!t.IsCollectible)
+                return null;
+
+            if (t.Assembly.IsCollectible)
+                return t.Assembly;
+
+            if (t.IsGenericType && !t.IsGenericTypeDefinition)
+            {
+                foreach (Type arg in t.GenericTypeArguments)
+                {
+                    Assembly? found = FindCollectibleAssembly(arg);
+                    if (found is not null)
+                        return found;
+                }
+            }
+            else if (t.HasElementType)
+            {
+                return FindCollectibleAssembly(t.GetElementType()!);
+            }
+
+            return null;
+        }
+
         [RequiresUnreferencedCode("calls GenerateElement")]
         [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal static Assembly GenerateRefEmitAssembly(XmlMapping[] xmlMappings, Type?[] types)
@@ -445,17 +472,37 @@ namespace System.Xml.Serialization
             TypeScope[] scopes = new TypeScope[scopeTable.Keys.Count];
             scopeTable.Keys.CopyTo(scopes, 0);
 
-            using (AssemblyLoadContext.EnterContextualReflection(mainAssembly))
+            // Make sure we enter the correct ALC. If we have any collectible types, we should enter
+            // the ALC of those types. The mainType's assembly might not satisfy that requirement.
+            Assembly? collectibleAssembly = null;
+            foreach (var t in types)
+            {
+                if (t?.IsCollectible == true)
+                {
+                    collectibleAssembly = FindCollectibleAssembly(t);
+                    Debug.Assert(collectibleAssembly != null);
+                    break;
+                }
+            }
+
+            // Validate collectible types against the same assembly whose ALC we enter below, so
+            // that a collectible type combined with a non-collectible mainAssembly is checked
+            // against the collectible context rather than the default one.
+            Assembly? contextAssembly = collectibleAssembly ?? mainAssembly;
+
+            using (AssemblyLoadContext.EnterContextualReflection(contextAssembly))
             {
                 // Before generating any IL, check each mapping and supported type to make sure
                 // they are compatible with the current ALC
                 for (int i = 0; i < types.Length; i++)
-                    VerifyLoadContext(types[i], mainAssembly);
+                    VerifyLoadContext(types[i], contextAssembly);
                 foreach (var mapping in xmlMappings)
-                    VerifyLoadContext(mapping.Accessor.Mapping?.TypeDesc?.Type, mainAssembly);
+                    VerifyLoadContext(mapping.Accessor.Mapping?.TypeDesc?.Type, contextAssembly);
 
                 string assemblyName = "Microsoft.GeneratedCode";
-                AssemblyBuilder assemblyBuilder = CodeGenerator.CreateAssemblyBuilder(assemblyName);
+                AssemblyBuilder assemblyBuilder = CodeGenerator.CreateAssemblyBuilder(
+                    assemblyName,
+                    collectible: collectibleAssembly is not null);
                 // Add AssemblyVersion attribute to match parent assembly version
                 if (mainType != null)
                 {
@@ -702,7 +749,8 @@ namespace System.Xml.Serialization
                 if (_fastCache.TryGetValue(key, out tempAssembly))
                     return tempAssembly;
 
-                if (_collectibleCaches.TryGetValue(t.Assembly, out var cCache))
+                Assembly lookupAssembly = TempAssembly.FindCollectibleAssembly(t) ?? t.Assembly;
+                if (_collectibleCaches.TryGetValue(lookupAssembly, out var cCache))
                     cCache.TryGetValue(key, out tempAssembly);
 
                 return tempAssembly;
@@ -717,17 +765,22 @@ namespace System.Xml.Serialization
                 if (tempAssembly == assembly)
                     return;
 
-                AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(t.Assembly);
                 TempAssemblyCacheKey key = new TempAssemblyCacheKey(ns, t);
                 Dictionary<TempAssemblyCacheKey, TempAssembly>? cache;
 
-                if (alc != null && alc.IsCollectible)
+                // Use the collectible cache for any collectible type so that the cache entry
+                // can be released when the collectible ALC is unloaded. For generic types like
+                // List<Bar> where Bar is collectible, t.Assembly is the default ALC assembly
+                // (System.Collections), so we need to find the actual collectible assembly from
+                // the type's generic arguments or element type.
+                Assembly? collectibleAssembly = TempAssembly.FindCollectibleAssembly(t);
+                if (collectibleAssembly != null)
                 {
-                    cache = _collectibleCaches.TryGetValue(t.Assembly, out var c)   // Clone or create
+                    cache = _collectibleCaches.TryGetValue(collectibleAssembly, out var c)
                         ? new Dictionary<TempAssemblyCacheKey, TempAssembly>(c)
                         : new Dictionary<TempAssemblyCacheKey, TempAssembly>();
                     cache[key] = assembly;
-                    _collectibleCaches.AddOrUpdate(t.Assembly, cache);
+                    _collectibleCaches.AddOrUpdate(collectibleAssembly, cache);
                 }
                 else
                 {

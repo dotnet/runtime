@@ -6,8 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.InteropSyncBlockInfo))]
 internal sealed partial class InteropSyncBlockInfo : IData<InteropSyncBlockInfo>
 {
-    [Field] public TargetPointer? RCW { get; }
-    [Field] public TargetPointer? CCW { get; }
-    [Field] public TargetPointer? CCF { get; }
-    [Field] public TargetPointer? TaggedMemory { get; }
+    [Field] public partial TargetPointer? RCW { get; }
+    [Field] public partial TargetPointer? CCW { get; }
+    [Field] public partial TargetPointer? CCF { get; }
 }

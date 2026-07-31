@@ -29,6 +29,18 @@ extern "C" INTERP_API void jitStartup(ICorJitHost* jitHost)
     InterpCompiler::initMemStats();
 #endif
 
+    // Enable profiling instrumentation if DOTNET_WasmPerformanceInstrumentation is set.
+    // This must happen before any managed code is compiled so all methods get samplepoints.
+    if (!InterpConfig.WasmPerformanceInstrumentation().isEmpty())
+    {
+#ifdef PERFTRACING_DISABLE_THREADS
+        InterpCompiler::s_samplingProfilerEnabled = true;
+#ifdef TARGET_BROWSER
+        InterpCompiler::s_browserProfilerEnabled = true;
+#endif
+#endif // PERFTRACING_DISABLE_THREADS
+    }
+
     g_interpInitialized = true;
 }
 /*****************************************************************************/

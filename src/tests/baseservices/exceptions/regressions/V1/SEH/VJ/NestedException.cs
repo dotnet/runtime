@@ -41,6 +41,8 @@ class UserException4 : Exception {
 public class NestedException {
 	private int ThreadId;
 
+	public NestedException() { }
+
 	private NestedException(int id){
 		ThreadId = id;
 	}

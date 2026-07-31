@@ -359,8 +359,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitStartBlock(returnExpression);
                     foreach (PropertySpec property in initOnlyProps)
                     {
-                        string propertyName = property.Name;
-                        _writer.WriteLine($@"{propertyName} = {propertyName},");
+                        // Properties bound through a matching constructor parameter don't have a local of their
+                        // own; their bound value lives in the local named after the parameter.
+                        string valueExpr = property.MatchingCtorParam?.Name ?? property.Name;
+                        _writer.WriteLine($@"{property.Name} = {valueExpr},");
                     }
                     EmitEndBlock(endBraceTrailingSource: ";");
                 }

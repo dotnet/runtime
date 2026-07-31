@@ -34,7 +34,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 {
-    assert(m_compiler->compGeneratingEpilog);
+    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
 
     regMaskTP rsRestoreRegs = regSet.rsGetModifiedCalleeSavedRegsMask();
 
@@ -1387,8 +1387,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     assert(block != NULL);
     assert(m_compiler->bbIsFuncletBeg(block));
 
-    ScopedSetVariable<bool> _setGeneratingProlog(&m_compiler->compGeneratingProlog, true);
-
     gcInfo.gcResetForBB();
 
     m_compiler->unwindBegProlog();
@@ -1552,8 +1550,6 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
     if (verbose)
         printf("*************** In genFuncletEpilog()\n");
 #endif
-
-    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
     bool unwindStarted = false;
 
@@ -1883,7 +1879,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 //
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     assert(genUseBlockInit);
     assert(untrLclHi > untrLclLo);
 
@@ -2155,17 +2151,18 @@ void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm(emitAttr       size,
                                                insFlags flags DEBUGARG(size_t targetHandle)
                                                    DEBUGARG(GenTreeFlags gtFlags))
 {
-    // If the imm values < 12 bits, we can use a single "add rsvd, reg2, #imm".
-    // Otherwise, use "mov rsvd, #imm", followed up "add rsvd, reg2, rsvd".
+    // If the immediate can be encoded by add/sub, use a single instruction.
+    // Otherwise, use "mov dstReg, #imm", followed by "add dstReg, baseReg, dstReg".
+    // Keep baseReg as the second operand in the fallback since it can be SP.
 
-    if (imm < 4096)
+    if (emitter::emitIns_valid_imm_for_add(imm, size))
     {
-        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, dstReg, baseReg, imm);
+        GetEmitter()->emitIns_R_R_I(INS_add, size, dstReg, baseReg, imm);
     }
     else
     {
         instGen_Set_Reg_To_Imm(size, dstReg, imm);
-        GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, dstReg, baseReg);
+        GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, baseReg, dstReg);
     }
 }
 
@@ -2309,7 +2306,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
-                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->GetTargetHandle()) DEBUGARG(con->gtFlags));
             regSet.verifyRegUsed(targetReg);
         }
         break;
@@ -2353,7 +2350,6 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             GenTreeVecCon* vecCon = tree->AsVecCon();
 
             emitter* emit = GetEmitter();
-            emitAttr attr = emitTypeSize(targetType);
 
             switch (tree->TypeGet())
             {
@@ -2361,6 +2357,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 case TYP_SIMD12:
                 case TYP_SIMD16:
                 {
+                    emitAttr attr = emitTypeSize(targetType);
+
                     // We ignore any differences between SIMD12 and SIMD16 here if we can broadcast the value
                     // via mvni/movi.
                     const bool is8 = tree->TypeIs(TYP_SIMD8);
@@ -2413,6 +2411,135 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     break;
                 }
 
+                case TYP_SIMD:
+                {
+                    simdscalable_t             simdVal  = vecCon->gtSimdScalableVal;
+                    Arm64SimdScalableConstInfo info     = Arm64SimdScalableConstInfo::Decode(simdVal);
+                    var_types                  baseType = info.baseType;
+                    insOpts                    opt      = emitter::optGetSveInsOpt(emitTypeSize(baseType));
+                    emitAttr                   emitSize = info.Has64BitElements() ? EA_8BYTE : EA_4BYTE;
+
+                    auto loadConstantHelper = [&](regNumber addrReg, uint64_t constValue) {
+                        UNATIVE_OFFSET cnum =
+                            emit->emitDataConst(&constValue, sizeof(constValue), sizeof(constValue), TYP_LONG);
+                        CORINFO_FIELD_HANDLE hnd = m_compiler->eeFindJitDataOffs(cnum);
+                        emit->emitIns_R_C(INS_ldr, emitSize, addrReg, addrReg, hnd, 0);
+                    };
+
+                    if (vecCon->IsZero())
+                    {
+                        emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, 0, opt);
+                    }
+                    else if (vecCon->IsAllBitsSet())
+                    {
+                        emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, -1, opt);
+                    }
+                    else
+                    {
+                        switch (simdVal.gtSimdScalableKind)
+                        {
+                            case SimdScalableRepeated:
+                            {
+                                if (info.CanEncodeRepeated<emitter>(simdVal))
+                                {
+                                    if (varTypeIsIntegral(baseType))
+                                    {
+                                        emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, info.indexImm, opt);
+                                    }
+                                    else if (baseType == TYP_FLOAT)
+                                    {
+                                        emit->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
+                                                          simdVal.gtSimdScalableIndexF32[0], INS_OPTS_SCALABLE_S);
+                                    }
+                                    else
+                                    {
+                                        assert(baseType == TYP_DOUBLE);
+                                        emit->emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
+                                                          simdVal.gtSimdScalableIndexF64[0], INS_OPTS_SCALABLE_D);
+                                    }
+                                }
+                                else
+                                {
+                                    regNumber indexReg = internalRegisters.Extract(tree, RBM_ALLINT);
+                                    loadConstantHelper(indexReg, info.indexVal);
+                                    emit->emitInsSve_R_R(INS_sve_dup, emitSize, targetReg, indexReg, opt);
+                                }
+
+                                break;
+                            }
+
+                            case SimdScalableSequence:
+                            {
+                                // FP sequences should have been imported into a set of nodes
+                                assert(varTypeIsIntegral(baseType));
+
+                                if (info.CanEncodeSequence<emitter>())
+                                {
+                                    emit->emitInsSve_R_I_I(INS_sve_index, EA_SCALABLE, targetReg, info.indexImm,
+                                                           info.stepImm, opt);
+                                }
+                                else if (info.CanEncodeSequenceIndex<emitter>())
+                                {
+                                    regNumber stepReg = internalRegisters.Extract(tree, RBM_ALLINT);
+                                    loadConstantHelper(stepReg, info.stepVal);
+                                    emit->emitInsSve_R_R_I(INS_sve_index, emitSize, targetReg, stepReg, info.indexImm,
+                                                           opt, INS_SCALABLE_OPTS_IMM_FIRST);
+                                }
+                                else if (info.CanEncodeSequenceStep<emitter>())
+                                {
+                                    regNumber indexReg = internalRegisters.Extract(tree, RBM_ALLINT);
+                                    loadConstantHelper(indexReg, info.indexVal);
+                                    emit->emitInsSve_R_R_I(INS_sve_index, emitSize, targetReg, indexReg, info.stepImm,
+                                                           opt);
+                                }
+                                else
+                                {
+                                    regNumber indexReg = internalRegisters.Extract(tree, RBM_ALLINT);
+                                    regNumber stepReg  = internalRegisters.Extract(tree, RBM_ALLINT);
+                                    loadConstantHelper(indexReg, info.indexVal);
+                                    loadConstantHelper(stepReg, info.stepVal);
+                                    emit->emitInsSve_R_R_R(INS_sve_index, emitSize, targetReg, indexReg, stepReg, opt);
+                                }
+                                break;
+                            }
+
+                            case SimdScalableScalar:
+                            {
+                                // Clear the entire target register
+                                emit->emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, 0, opt);
+
+                                // Use NEON instructions to load the constant (to avoid using predicates)
+                                if (info.CanEncodeScalar<emitter>(simdVal, emitSize))
+                                {
+                                    if (baseType == TYP_FLOAT)
+                                    {
+                                        emit->emitIns_R_F(INS_fmov, emitSize, targetReg,
+                                                          static_cast<double>(simdVal.gtSimdScalableIndexF32[0]));
+                                    }
+                                    else
+                                    {
+                                        assert(baseType == TYP_DOUBLE);
+                                        emit->emitIns_R_F(INS_fmov, emitSize, targetReg,
+                                                          simdVal.gtSimdScalableIndexF64[0]);
+                                    }
+                                }
+                                else
+                                {
+                                    regNumber indexReg = internalRegisters.Extract(tree, RBM_ALLINT);
+                                    loadConstantHelper(indexReg, info.indexVal);
+                                    emit->emitIns_R_R_I(INS_ins, emitSize, targetReg, indexReg, 0);
+                                }
+                                break;
+                            }
+
+                            default:
+                                unreached();
+                                break;
+                        }
+                    }
+                }
+                break;
+
                 default:
                 {
                     unreached();
@@ -2427,13 +2554,25 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             GenTreeMskCon* mask = tree->AsMskCon();
             emitter*       emit = GetEmitter();
 
-            // Try every type until a match is found
-
             if (mask->IsZero())
             {
                 emit->emitInsSve_R(INS_sve_pfalse, EA_SCALABLE, targetReg, INS_OPTS_SCALABLE_B);
                 break;
             }
+
+#if defined(DEBUG)
+            if (JitConfig.JitUseScalableVectorT() == 1)
+            {
+                assert(mask->gtSimdScalableMaskVal.gtSimdMaskScalableIndex == 1);
+
+                insOpts opt =
+                    emitter::optGetSveInsOpt(emitTypeSize(mask->gtSimdScalableMaskVal.gtSimdMaskScalableBaseType));
+                emit->emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE, targetReg, opt, SVE_PATTERN_ALL);
+                break;
+            }
+#endif // DEBUG
+
+            // Fixed length vectors. Try every type until a match is found
 
             insOpts        opt = INS_OPTS_SCALABLE_B;
             SveMaskPattern pat = EvaluateSimdMaskToPattern<simd16_t>(TYP_BYTE, mask->gtSimdMaskVal);
@@ -3120,7 +3259,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         needsZeroing = false;
 
         // If amount is zero then return null in targetReg
-        amount = size->AsIntCon()->gtIconVal;
+        amount = size->AsIntCon()->IconValue();
         if (amount == 0)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, targetReg);
@@ -3512,7 +3651,6 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
     assert(tree->OperIs(GT_DIV, GT_UDIV));
 
     var_types targetType = tree->TypeGet();
-    emitter*  emit       = GetEmitter();
 
     genConsumeOperands(tree);
 
@@ -3557,32 +3695,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         // (MinInt / -1) => ArithmeticException
         if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
         {
-            // Signed-division might overflow.
-
-            assert(tree->OperIs(GT_DIV));
-            assert(!divisorOp->IsIntegralConst(0));
-
-            BasicBlock* sdivLabel  = genCreateTempLabel();
-            GenTree*    dividendOp = tree->gtGetOp1();
-
-            // Check if the divisor is not -1 branch to 'sdivLabel'
-            emit->emitIns_R_I(INS_cmp, size, divisorReg, -1);
-
-            inst_JMP(EJ_ne, sdivLabel);
-            // If control flow continues past here the 'divisorReg' is known to be -1
-
-            regNumber dividendReg = dividendOp->GetRegNum();
-            // At this point the divisor is known to be -1
-            //
-            // Issue the 'cmp dividendReg, 1' instruction.
-            // This is an alias to 'subs zr, dividendReg, 1' on ARM64 itself.
-            // This will set the V (overflow) flags only when dividendReg is MinInt
-            //
-            emit->emitIns_R_I(INS_cmp, size, dividendReg, 1);
-            genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flags is set throw
-                                                          // ArithmeticException
-
-            genDefineTempLabel(sdivLabel);
+            genCodeForDivModOverflowCheck(tree);
         }
 
         genCodeForBinary(tree); // Generate the sdiv instruction
@@ -5437,7 +5550,7 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 //
 void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     assert(m_compiler->opts.IsOSR());
     assert(m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
 
@@ -5543,7 +5656,7 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 //
 void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (!m_compiler->compIsProfilerHookNeeded())
     {
@@ -5631,7 +5744,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 //
 void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (delta == 0)
     {
@@ -5673,7 +5786,7 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 //
 void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (frameSize == 0)
     {
@@ -5868,6 +5981,37 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForBfx: Generates the code sequence for a GenTree node that
+// represents a bitfield extract.
+//
+// Arguments:
+//    tree - the bitfield extract.
+//
+void CodeGen::genCodeForBfx(GenTreeBfm* tree)
+{
+    assert(tree->OperIs(GT_BFX));
+
+    emitAttr size = emitActualTypeSize(tree);
+
+    GenTree* src = tree->gtGetOp1();
+
+    const unsigned bitWidth = emitter::getBitWidth(size);
+    const unsigned lsb      = tree->GetOffset();
+    const unsigned width    = tree->GetWidth();
+
+    assert((bitWidth == 32) || (bitWidth == 64));
+    assert(lsb < bitWidth);
+    assert(width > 0);
+    assert((lsb + width) <= bitWidth);
+
+    genConsumeRegs(src);
+
+    GetEmitter()->emitIns_R_R_I_I(INS_ubfx, size, tree->GetRegNum(), src->GetRegNum(), (int)lsb, (int)width);
+
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // JumpKindToInsCond: Convert a Jump Kind to a condition.
 //
 // Arguments:
@@ -5958,6 +6102,43 @@ BasicBlock* CodeGen::genGetThrowHelper(SpecialCodeKind codeKind)
     }
 
     return excpRaisingBlock;
+}
+
+//
+void CodeGen::genPoisonUnknownSizeVariable(int varNum, char poisonVal)
+{
+    assert(varNum >= 0);
+    LclVarDsc* varDsc = m_compiler->lvaGetDesc(varNum);
+
+    assert(varDsc->IsAddressExposed());
+
+    if (varDsc->TypeIs(TYP_SIMD))
+    {
+        // mov z9.b, #poisonVal
+        GetEmitter()->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_SCRATCH_V, (ssize_t)poisonVal, INS_OPTS_SCALABLE_B);
+        // str z9, [x19, $index MUL VL]
+        GetEmitter()->emitIns_S_R(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, varNum, 0);
+    }
+    else
+    {
+        assert(varDsc->TypeIs(TYP_MASK));
+        // At the moment we don't have a single instruction to produce an arbitrary value in a predicate register,
+        // since it would have to fit some common element masking pattern. We can, however, produce a repeating
+        // 64-bit value in a vector, then convert this to a predicate using cmpne.
+        const ssize_t vectorPoisonVal = static_cast<ssize_t>(0xffff0000ffff00ffULL);
+        // mov x9, #vectorPoisonVal
+        instGen_Set_Reg_To_Imm(EA_8BYTE, REG_SCRATCH, vectorPoisonVal);
+        // dup z9.d, x9
+        GetEmitter()->emitIns_R_R(INS_sve_dup, EA_8BYTE, REG_SCRATCH_V, REG_SCRATCH, INS_OPTS_SCALABLE_D);
+        // ptrue p4.b
+        GetEmitter()->emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE, REG_SCRATCH_P, INS_OPTS_SCALABLE_B,
+                                        SVE_PATTERN_ALL);
+        // cmpne p4.b, p4/z, z9.b, #0
+        GetEmitter()->emitIns_R_R_R_I(INS_sve_cmpne, EA_SCALABLE, REG_SCRATCH_P, REG_SCRATCH_P, REG_SCRATCH_V, 0,
+                                      INS_OPTS_SCALABLE_B);
+        // str p4, [x19, $index MUL VL]
+        GetEmitter()->emitIns_S_R(INS_sve_str, EA_SCALABLE, REG_SCRATCH_P, varNum, 0);
+    }
 }
 
 #endif // TARGET_ARM64

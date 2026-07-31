@@ -3,6 +3,11 @@
     <CrossGenTest>false</CrossGenTest> <!-- https://github.com/dotnet/runtime/issues/83942 -->
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- IjwNativeCallingManagedDll carries a DebuggableAttribute that routes its managed methods
+         through the JIT getBoundaries -> ISymUnmanagedReader path (the second consumer of the no-op
+         metadata importer). That path only reads sequence points when the mixed assembly's PDB is
+         deployed next to it, but managed pdbs are stripped from the Helix payload by default; keep it. -->
+    <PreservePdbInHelixPayload>true</PreservePdbInHelixPayload>
   </PropertyGroup>
   <PropertyGroup>
     <CopyDebugCRTDllsToOutputDirectory>true</CopyDebugCRTDllsToOutputDirectory>

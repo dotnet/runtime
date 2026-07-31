@@ -494,7 +494,7 @@ BOOL Signature::IsEmpty() const
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
-    return (m_pSig == NULL);
+    return m_pSig == NULL;
 }
 
 //---------------------------------------------------------------------------------------
@@ -623,7 +623,6 @@ void MetaSig::Init(
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
         MODE_ANY;
         GC_NOTRIGGER;
@@ -798,7 +797,6 @@ MetaSig::MetaSig(BinderMethodID id)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         THROWS;
         MODE_ANY;
         GC_TRIGGERS;
@@ -818,7 +816,6 @@ MetaSig::MetaSig(LPHARDCODEDMETASIG pwzMetaSig)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         THROWS;
         MODE_ANY;
         GC_TRIGGERS;
@@ -839,7 +836,6 @@ MetaSig::MetaSig(FieldDesc *pFD, TypeHandle declaringType)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
         MODE_ANY;
         GC_NOTRIGGER;
@@ -960,7 +956,6 @@ MetaSig::Reset()
 
     m_pWalk = m_pStart;
     m_iCurArg  = 0;
-    return;
 }
 
 #ifndef DACCESS_COMPILE
@@ -1011,16 +1006,16 @@ IsTypeRefOrDef(
     if (iLen)
     {
         if (strncmp(szClassName, pszNamespace, iLen) != 0)
-            return(false);
+            return false;
 
         if (szClassName[iLen] != NAMESPACE_SEPARATOR_CHAR)
-            return(false);
+            return false;
         ++iLen;
     }
 
     if (strcmp(&szClassName[iLen], pclsname) != 0)
-        return(false);
-    return(true);
+        return false;
+    return true;
 } // IsTypeRefOrDef
 
 BOOL IsTypeRefOrDef(
@@ -1039,7 +1034,7 @@ BOOL IsTypeRefOrDef(
     DefineFullyQualifiedNameForClassOnStack();
     LPCUTF8 fullyQualifiedName = GetFullyQualifiedNameForClass(resolved.TypeHandle.GetMethodTable());
 
-    return (strcmp(szClassName, fullyQualifiedName) == 0);
+    return strcmp(szClassName, fullyQualifiedName) == 0;
 }
 
 TypeHandle SigPointer::GetTypeHandleNT(Module* pModule,
@@ -1063,7 +1058,7 @@ TypeHandle SigPointer::GetTypeHandleNT(Module* pModule,
     {
     }
     EX_END_CATCH
-    return(th);
+    return th;
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -1108,7 +1103,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                  MethodTable*                 pMTInterfaceMapOwner,
                  HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling) const
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
@@ -1118,10 +1113,9 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != ClassLoader::LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
-        POSTCONDITION(CheckPointer(RETVAL, ((fLoadTypes == ClassLoader::LoadTypes) ? NULL_NOT_OK : NULL_OK)));
         SUPPORTS_DAC;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     _ASSERTE(!pRecursiveFieldGenericHandling || dropGenericArgumentLevel); // pRecursiveFieldGenericHandling can only be set if dropGenericArgumentLevel is set
     if (pRecursiveFieldGenericHandling != NULL)
@@ -1957,7 +1951,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
     }
 
-    RETURN thRet;
+    return thRet;
 }
 
 TypeHandle SigPointer::GetGenericInstType(ModuleBase *        pModule,
@@ -2066,7 +2060,7 @@ TypeHandle SigPointer::GetTypeVariableThrowing(ModuleBase *pModule, // unused - 
                                                ClassLoader::LoadTypesFlag fLoadTypes/*=LoadTypes*/,
                                                const SigTypeContext *pTypeContext)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CorTypeInfo::IsGenericVariable_NoThrow(et));
@@ -2074,10 +2068,9 @@ TypeHandle SigPointer::GetTypeVariableThrowing(ModuleBase *pModule, // unused - 
         MODE_ANY;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
-        POSTCONDITION(CheckPointer(RETVAL, ((fLoadTypes == ClassLoader::LoadTypes) ? NULL_NOT_OK : NULL_OK)));
         SUPPORTS_DAC;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     TypeHandle res = GetTypeVariable(et, pTypeContext);
 #ifndef DACCESS_COMPILE
@@ -2086,7 +2079,8 @@ TypeHandle SigPointer::GetTypeVariableThrowing(ModuleBase *pModule, // unused - 
        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
 #endif
-    RETURN(res);
+
+    return res;
 }
 
 // SigPointer should be just after E_T_VAR or E_T_MVAR
@@ -2094,23 +2088,22 @@ TypeHandle SigPointer::GetTypeVariable(CorElementType et,
                                        const SigTypeContext *pTypeContext)
 {
 
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CorTypeInfo::IsGenericVariable_NoThrow(et));
         NOTHROW;
         GC_NOTRIGGER;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK)); // will return TypeHandle() if index is out of range
         SUPPORTS_DAC;
         MODE_ANY;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     uint32_t index;
     if (FAILED(GetData(&index)))
     {
         TypeHandle thNull;
-        RETURN(thNull);
+        return thNull;
     }
 
     if (!pTypeContext
@@ -2124,15 +2117,15 @@ TypeHandle SigPointer::GetTypeVariable(CorElementType et,
         LOG((LF_ALWAYS, LL_INFO1000, "GENERICS: Error: GetTypeVariable on out-of-range type variable\n"));
         BAD_FORMAT_NOTHROW_ASSERT(!"Invalid type context: either this is an ill-formed signature (e.g. an invalid type variable number) or you have not provided a non-empty SigTypeContext where one is required.  Check back on the callstack for where the value of pTypeContext is first provided, and see if it is acquired from the correct place.  For calls originating from a JIT it should be acquired from the context parameter, which indicates the method being compiled.  For calls from other locations it should be acquired from the MethodTable, EEClass, TypeHandle, FieldDesc or MethodDesc being analyzed.");
         TypeHandle thNull;
-        RETURN(thNull);
+        return thNull;
     }
     if (et == ELEMENT_TYPE_VAR)
     {
-        RETURN(pTypeContext->m_classInst[index]);
+        return pTypeContext->m_classInst[index];
     }
     else
     {
-        RETURN(pTypeContext->m_methodInst[index]);
+        return pTypeContext->m_methodInst[index];
     }
 }
 
@@ -2249,7 +2242,7 @@ BOOL SigPointer::IsStringTypeHelper(Module* pModule, const SigTypeContext* pType
             if (pszNamespace == NULL)
                 return FALSE;
 
-            return (strcmp(pszNamespace, g_SystemNS) == 0);
+            return strcmp(pszNamespace, g_SystemNS) == 0;
         }
 
         case ELEMENT_TYPE_VAR :
@@ -2267,7 +2260,7 @@ BOOL SigPointer::IsStringTypeHelper(Module* pModule, const SigTypeContext* pType
             }
 
             TypeHandle th(g_pStringClass);
-            return (ty == th);
+            return ty == th;
         }
 
         default:
@@ -2346,7 +2339,7 @@ BOOL SigPointer::IsClassHelper(Module* pModule, LPCUTF8 szClassName, const SigTy
         else
             ty = psig.GetTypeVariable(typ, pTypeContext);
 
-        return(!ty.IsNull() && IsTypeRefOrDef(szClassName, ty.GetModule(), ty.GetCl()));
+        return !ty.IsNull() && IsTypeRefOrDef(szClassName, ty.GetModule(), ty.GetCl());
     }
     else if ((typ == ELEMENT_TYPE_CLASS) || (typ == ELEMENT_TYPE_VALUETYPE))
     {
@@ -2359,15 +2352,15 @@ BOOL SigPointer::IsClassHelper(Module* pModule, LPCUTF8 szClassName, const SigTy
                 return FALSE;
         }
 
-        return( IsTypeRefOrDef(szClassName, pModule, typeref) );
+        return IsTypeRefOrDef(szClassName, pModule, typeref);
     }
     else if (typ == ELEMENT_TYPE_OBJECT)
     {
-        return( !strcmp(szClassName, g_ObjectClassName) );
+        return !strcmp(szClassName, g_ObjectClassName);
     }
     else if (typ == ELEMENT_TYPE_STRING)
     {
-        return( !strcmp(szClassName, g_StringClassName) );
+        return !strcmp(szClassName, g_StringClassName);
     }
     else if (typ == ELEMENT_TYPE_INTERNAL)
     {
@@ -2387,10 +2380,10 @@ BOOL SigPointer::IsClassHelper(Module* pModule, LPCUTF8 szClassName, const SigTy
 
         CorSigUncompressPointer(psig.GetPtr(), (void**)&th);
         _ASSERTE(!th.IsNull());
-        return(IsTypeRefOrDef(szClassName, th.GetModule(), th.GetCl()));
+        return IsTypeRefOrDef(szClassName, th.GetModule(), th.GetCl());
     }
 
-    return( false );
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -2459,7 +2452,7 @@ BOOL SigPointer::HasCustomModifier(Module *pModule, LPCSTR szModName, CorElement
             {
                 *pModifierType = tk;
             }
-            return(TRUE);
+            return TRUE;
         }
 
         if (FAILED(sp.GetByte(&data)))
@@ -2469,7 +2462,7 @@ BOOL SigPointer::HasCustomModifier(Module *pModule, LPCSTR szModName, CorElement
 
 
     }
-    return(FALSE);
+    return FALSE;
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -2555,7 +2548,7 @@ CorElementType SigPointer::PeekElemTypeNormalized(Module* pModule, const SigType
             *pthValueType = TypeHandle(g_TypedReferenceMT);
     }
 
-    return(type);
+    return type;
 }
 
 //---------------------------------------------------------------------------------------
@@ -2701,7 +2694,7 @@ mdTypeRef SigPointer::PeekValueTypeTokenClosed(Module *pModule, const SigTypeCon
             TypeHandle th = sp.GetTypeVariable(type, pTypeContext);
             *ppModuleOfToken = th.GetModule();
             _ASSERTE(!th.IsNull());
-            return(th.GetCl());
+            return th.GetCl();
         }
     case ELEMENT_TYPE_INTERNAL:
         // we have no way to give back a token for the E_T_INTERNAL so we return  a null one
@@ -2743,7 +2736,7 @@ UINT MetaSig::GetElemSize(CorElementType etype, TypeHandle thValueType)
 
     int cbsize = GetSizeForCorElementType(etype);
     if (cbsize != -1)
-        return(cbsize);
+        return cbsize;
 
     if (!thValueType.IsNull())
         return thValueType.GetSize();
@@ -2751,7 +2744,7 @@ UINT MetaSig::GetElemSize(CorElementType etype, TypeHandle thValueType)
     if (etype == ELEMENT_TYPE_VAR || etype == ELEMENT_TYPE_MVAR)
     {
         LOG((LF_ALWAYS, LL_INFO1000, "GENERICS: Warning: SizeOf on VAR without instantiation\n"));
-        return(sizeof(LPVOID));
+        return sizeof(LPVOID);
     }
 
     ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_ELEM_IN_SIZEOF);
@@ -2840,9 +2833,9 @@ CorElementType MetaSig::GetByRefType(TypeHandle *pTy) const
             THROW_BAD_FORMAT(BFA_TYPEDBYREFCANNOTHAVEBYREF, GetModule());
         TypeHandle th = sigptr.GetTypeHandleThrowing(m_pModule, &m_typeContext);
         *pTy = th;
-        return(th.GetSignatureCorElementType());
+        return th.GetSignatureCorElementType();
     }
-    return(typ);
+    return typ;
 }
 
 //---------------------------------------------------------------------------------------
@@ -3934,11 +3927,11 @@ MetaSig::CompareElementType(
             {
                 case ELEMENT_TYPE_OBJECT:
                 {
-                    return (hInternal.AsMethodTable() == g_pObjectClass);
+                    return hInternal.AsMethodTable() == g_pObjectClass;
                 }
                 case ELEMENT_TYPE_STRING:
                 {
-                    return (hInternal.AsMethodTable() == g_pStringClass);
+                    return hInternal.AsMethodTable() == g_pStringClass;
                 }
                 case ELEMENT_TYPE_VALUETYPE:
                 case ELEMENT_TYPE_CLASS:
@@ -3959,7 +3952,7 @@ MetaSig::CompareElementType(
                         ClassLoader::ReturnNullIfNotFound,
                         ClassLoader::PermitUninstDefOrRef);
 
-                    return (hInternal == hOtherType);
+                    return hInternal == hOtherType;
                 }
                 default:
                 {
@@ -4074,7 +4067,7 @@ MetaSig::CompareElementType(
             DWORD varNum2;
             IfFailThrow(CorSigUncompressData_EndPtr(pSig2, pEndSig2, &varNum2));
 
-            return (varNum1 == varNum2);
+            return varNum1 == varNum2;
         }
 
         case ELEMENT_TYPE_CMOD_REQD:
@@ -4347,7 +4340,7 @@ MetaSig::CompareElementType(
             IfFailThrow(CorSigUncompressPointer_EndPtr(pSig1, pEndSig1, (void **)&hType1));
             IfFailThrow(CorSigUncompressPointer_EndPtr(pSig2, pEndSig2, (void **)&hType2));
 
-            return (hType1 == hType2);
+            return hType1 == hType2;
         }
         case ELEMENT_TYPE_CMOD_INTERNAL:
         {
@@ -4642,7 +4635,7 @@ MetaSig::CompareMethodSigs(
 
             // If we matched all the way on the caller, is the callee now complete?
             if (*pSig1 == ELEMENT_TYPE_SENTINEL)
-                return (i > ArgCount2);
+                return i > ArgCount2;
 
             // if we have more to compare on the caller side, but the callee side is
             // exhausted, this isn't our match
@@ -4759,7 +4752,7 @@ BOOL MetaSig::CompareFieldSigs(
 
     TokenPairList visited { pVisited };
     CompareState state{ &visited };
-    return(CompareElementType(++pSig1, ++pSig2, pEndSig1, pEndSig2, pModule1, pModule2, NULL, NULL, &state));
+    return CompareElementType(++pSig1, ++pSig2, pEndSig1, pEndSig2, pModule1, pModule2, NULL, NULL, &state);
 }
 
 #ifndef DACCESS_COMPILE
@@ -5469,14 +5462,14 @@ CorElementType MetaSig::GetReturnTypeNormalized(TypeHandle * pthValueType) const
     if ((m_flags & SIG_RET_TYPE_INITTED) &&
         ((pthValueType == NULL) || (m_corNormalizedRetType !=  ELEMENT_TYPE_VALUETYPE)))
     {
-        return( m_corNormalizedRetType );
+        return m_corNormalizedRetType;
     }
 
     MetaSig * pSig = const_cast<MetaSig *>(this);
     pSig->m_corNormalizedRetType = m_pRetType.PeekElemTypeNormalized(m_pModule, &m_typeContext, pthValueType);
     pSig->m_flags |= SIG_RET_TYPE_INITTED;
 
-    return( m_corNormalizedRetType );
+    return m_corNormalizedRetType;
 }
 
 BOOL MetaSig::IsObjectRefReturnType()
@@ -5491,11 +5484,11 @@ BOOL MetaSig::IsObjectRefReturnType()
         case ELEMENT_TYPE_STRING:
         case ELEMENT_TYPE_OBJECT:
         case ELEMENT_TYPE_VAR:
-            return( TRUE );
+            return TRUE;
         default:
             break;
         }
-    return( FALSE );
+    return FALSE;
 }
 
 CorElementType MetaSig::GetReturnType() const
@@ -5507,7 +5500,7 @@ CorElementType MetaSig::GetReturnType() const
 BOOL MetaSig::IsReturnTypeVoid() const
 {
     WRAPPER_NO_CONTRACT;
-    return (GetReturnType() == ELEMENT_TYPE_VOID);
+    return GetReturnType() == ELEMENT_TYPE_VOID;
 }
 
 #ifndef DACCESS_COMPILE

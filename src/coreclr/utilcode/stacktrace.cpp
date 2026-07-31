@@ -425,7 +425,7 @@ void MagicInit()
     //
     // Try to get the API entrypoints in imagehlp.dll
     //
-    for (int i = 0; i < ARRAY_SIZE(ailFuncList); i++)
+    for (size_t i = 0; i < ARRAY_SIZE(ailFuncList); i++)
     {
         *(ailFuncList[i].ppvfn) = GetProcAddress(
                 g_hinstImageHlp,

@@ -156,7 +156,7 @@ inline CHECK CheckAligned(UINT64 value, UINT alignment)
     CHECK_OK;
 }
 
-#if defined(__APPLE__) || defined(__wasm__)
+#if defined(__APPLE__) || defined(__wasm__) || defined(__OpenBSD__)
 inline CHECK CheckAligned(SIZE_T value, UINT alignment)
 {
     STATIC_CONTRACT_WRAPPER;
@@ -192,7 +192,7 @@ inline CHECK CheckOverflow(UINT64 value1, UINT64 value2)
     CHECK_OK;
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 inline CHECK CheckOverflow(SIZE_T value1, SIZE_T value2)
 {
     CHECK(value1 + value2 >= value1);
@@ -237,7 +237,7 @@ inline CHECK CheckOverflow(const void *address, UINT64 offset)
     CHECK_OK;
 }
 
-#if defined(__APPLE__) || defined(__wasm__)
+#if defined(__APPLE__) || defined(__wasm__) || defined(__OpenBSD__)
 inline CHECK CheckOverflow(const void *address, SIZE_T offset)
 {
     CHECK((UINT64) address + offset >= (UINT64) address);
@@ -271,7 +271,7 @@ inline CHECK CheckUnderflow(UINT64 value1, UINT64 value2)
     CHECK_OK;
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 inline CHECK CheckUnderflow(SIZE_T value1, SIZE_T value2)
 {
     CHECK(value1 - value2 <= value1);
@@ -316,7 +316,7 @@ inline CHECK CheckUnderflow(const void *address, UINT64 offset)
     CHECK_OK;
 }
 
-#if defined(__APPLE__) || defined(__wasm__)
+#if defined(__APPLE__) || defined(__wasm__) || defined(__OpenBSD__)
 inline CHECK CheckUnderflow(const void *address, SIZE_T offset)
 {
     // SIZE_T is 32bit on wasm32
@@ -371,4 +371,3 @@ inline CHECK CheckBounds(const void *rangeBase, UINT32 rangeSize, UINT32 offset,
 }
 
 #endif  // CHECK_INL_
-

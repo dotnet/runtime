@@ -62,30 +62,28 @@ public:
 
     CCacheLineAllocator* GetCacheLineAllocator()
     {
-        CONTRACT (CCacheLineAllocator*)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pCacheLineAllocator;
+        return m_pCacheLineAllocator;
     }
 
     LoaderAllocator* GetLoaderAllocator()
     {
-        CONTRACT (LoaderAllocator*)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pLoaderAllocator;
+        return m_pLoaderAllocator;
     }
 
 private:
@@ -182,7 +180,7 @@ public:
         BOOL Next()
         {
             LIMITED_METHOD_CONTRACT;
-            return (++m_Index < GetCount());
+            return ++m_Index < GetCount();
         }
 
         MethodTable *GetInterface() const
@@ -237,31 +235,31 @@ public:
     BOOL HasInvisibleParent()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_InvisibleParent);
+        return m_flags & enum_InvisibleParent;
     }
 
     BOOL SupportsICustomQueryInterface()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_ImplementsICustomQueryInterface);
+        return m_flags & enum_ImplementsICustomQueryInterface;
     }
 
     BOOL RepresentsVariantInterface()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_RepresentsVariantInterface);
+        return m_flags & enum_RepresentsVariantInterface;
     }
 
     BOOL ImplementsIMarshal()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_ImplementsIMarshal);
+        return m_flags & enum_ImplementsIMarshal;
     }
 
     BOOL SupportsIClassX()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_SupportsIClassX);
+        return m_flags & enum_SupportsIClassX;
     }
 
     TypeHandle GetClassType()
@@ -439,7 +437,7 @@ struct ComMethodTable
     BOOL IsIClassX()
     {
         LIMITED_METHOD_CONTRACT;
-        return (IsIClassXOrBasicItf() && !IsBasic());
+        return IsIClassXOrBasicItf() && !IsBasic();
     }
 
     BOOL IsIClassXOrBasicItf()
@@ -525,7 +523,7 @@ struct ComMethodTable
 
     MethodDesc* GetMethodDescForSlot(unsigned i)
     {
-        CONTRACT (MethodDesc*)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
@@ -533,9 +531,8 @@ struct ComMethodTable
             PRECONDITION(IsLayoutComplete());
             PRECONDITION(i < m_cbSlots);
             PRECONDITION(!IsSlotAField(i));
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         i += GetNumExtraSlots(GetInterfaceType());
 
@@ -544,12 +541,12 @@ struct ComMethodTable
         pCMD = ComCallMethodDescFromSlot(i);
         _ASSERTE(pCMD->IsMethodCall());
 
-        RETURN pCMD->GetMethodDesc();
+        return pCMD->GetMethodDesc();
     }
 
     ComCallMethodDesc* GetFieldCallMethodDescForSlot(unsigned i)
     {
-        CONTRACT (ComCallMethodDesc*)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
@@ -557,15 +554,14 @@ struct ComMethodTable
             PRECONDITION(IsLayoutComplete());
             PRECONDITION(i < m_cbSlots);
             PRECONDITION(IsSlotAField(i));
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         i += GetNumExtraSlots(GetInterfaceType());
         ComCallMethodDesc* pCMD = ComCallMethodDescFromSlot(i);
 
         _ASSERTE(pCMD->IsFieldCall());
-        RETURN (ComCallMethodDesc *)pCMD;
+        return (ComCallMethodDesc *)pCMD;
     }
 
     BOOL OwnedbyThisMT(unsigned slotIndex)
@@ -594,7 +590,7 @@ struct ComMethodTable
             // m_cbSlots is the total number of methods in addition to the ones from the
             // default interfaces.  cbNewSlots is the total number of methods introduced
             // by this class (== m_cbSlots - <slots from parent MT>).
-            return (slotIndex >= (cbExtraSlots + m_cbSlots - cbNewSlots));
+            return slotIndex >= (cbExtraSlots + m_cbSlots - cbNewSlots);
         }
 
         return FALSE;
@@ -604,23 +600,22 @@ struct ComMethodTable
 
     static inline PTR_ComMethodTable ComMethodTableFromIP(PTR_IUnknown pUnk)
     {
-        CONTRACT (PTR_ComMethodTable)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_ANY;
             SUPPORTS_DAC;
             PRECONDITION(CheckPointer(pUnk));
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         PTR_ComMethodTable pMT = dac_cast<PTR_ComMethodTable>(*PTR_TADDR(pUnk) - sizeof(ComMethodTable));
 
         // validate the object
         _ASSERTE((SLOT)(size_t)0xDEADC0FF == pMT->m_ptReserved );
 
-        RETURN pMT;
+        return pMT;
     }
 
     ULONG GetNumSlots()
@@ -772,18 +767,17 @@ protected:
 
     static PTR_ComCallWrapper GetNext(PTR_ComCallWrapper pWrap)
     {
-        CONTRACT (PTR_ComCallWrapper)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_ANY;
             SUPPORTS_DAC;
             PRECONDITION(CheckPointer(pWrap));
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN (LinkedWrapperTerminator == pWrap->m_pNext ? NULL : pWrap->m_pNext);
+        return LinkedWrapperTerminator == pWrap->m_pNext ? NULL : pWrap->m_pNext;
     }
 
     // Helper to create a wrapper
@@ -826,23 +820,22 @@ public:
     // accessor to wrapper object in the sync block
     inline static PTR_ComCallWrapper GetWrapperForObject(OBJECTREF pObj, ComCallWrapperTemplate *pTemplate = NULL)
     {
-        CONTRACT (PTR_ComCallWrapper)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_COOPERATIVE;
             SUPPORTS_DAC;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         PTR_SyncBlock pSync = pObj->PassiveGetSyncBlock();
         if (!pSync)
-            RETURN NULL;
+            return NULL;
 
         PTR_InteropSyncBlockInfo pInteropInfo = pSync->GetInteropInfoNoCreate();
         if (!pInteropInfo)
-            RETURN NULL;
+            return NULL;
 
         PTR_ComCallWrapper pCCW = pInteropInfo->GetCCW();
 
@@ -856,7 +849,7 @@ public:
             }
         }
 
-        RETURN pCCW;
+        return pCCW;
     }
 
     // get inner unknown
@@ -900,14 +893,14 @@ public:
     // GetObjectRef which will cause a little bit of nasty infinite recursion.
     inline OBJECTREF GetObjectRef()
     {
-        CONTRACT (OBJECTREF)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_COOPERATIVE;
             PRECONDITION(CheckPointer(m_ppThis));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         if (m_ppThis == NULL)
         {
@@ -915,7 +908,7 @@ public:
             AccessNeuteredCCW_FailFast();
         }
 
-        RETURN ObjectFromHandle(m_ppThis);
+        return ObjectFromHandle(m_ppThis);
     }
 
     //
@@ -967,18 +960,17 @@ public:
     //Get Simple wrapper, for std interfaces such as IProvideClassInfo
     PTR_SimpleComCallWrapper GetSimpleWrapper()
     {
-        CONTRACT (PTR_SimpleComCallWrapper)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             INSTANCE_CHECK;
-            POSTCONDITION(CheckPointer(RETVAL));
             SUPPORTS_DAC;
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pSimpleWrapper;
+        return m_pSimpleWrapper;
     }
 
 
@@ -988,21 +980,20 @@ public:
 #if !defined(DACCESS_COMPILE)
     inline static ComCallWrapper* GetStartWrapperFromIP(IUnknown* pUnk)
     {
-        CONTRACT (ComCallWrapper*)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_ANY;
             PRECONDITION(CheckPointer(pUnk));
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         ComCallWrapper* pWrap = GetWrapperFromIP(pUnk);
         if (pWrap->IsLinked())
             pWrap = GetStartWrapper(pWrap);
 
-        RETURN pWrap;
+        return pWrap;
     }
 #endif // DACCESS_COMPILE
 
@@ -1135,15 +1126,15 @@ public:
 
     SyncBlock* GetSyncBlock()
     {
-        CONTRACT (SyncBlock*)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_ANY;
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pSyncBlock;
+        return m_pSyncBlock;
     }
 
     // Init pointer to the vtable of the interface
@@ -1182,29 +1173,28 @@ public:
 
     OBJECTREF GetObjectRef()
     {
-        CONTRACT (OBJECTREF)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_COOPERATIVE;
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN (GetMainWrapper()->GetObjectRef());
+        return GetMainWrapper()->GetObjectRef();
     }
 
     ComCallWrapperCache* GetWrapperCache()
     {
-        CONTRACT (ComCallWrapperCache*)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pWrapperCache;
+        return m_pWrapperCache;
     }
 
     // Connection point helper methods.
@@ -1288,37 +1278,35 @@ public:
     //--------------------------------------------------------------------------
     static PTR_SimpleComCallWrapper GetWrapperFromIP(PTR_IUnknown pUnk)
     {
-        CONTRACT (SimpleComCallWrapper*)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(CheckPointer(pUnk));
-            POSTCONDITION(CheckPointer(RETVAL));
             SUPPORTS_DAC;
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         int i = GetStdInterfaceKind(pUnk);
         PTR_SimpleComCallWrapper pSimpleWrapper = dac_cast<PTR_SimpleComCallWrapper>(dac_cast<TADDR>(pUnk) - sizeof(LPBYTE) * i - offsetof(SimpleComCallWrapper,m_rgpVtable));
-        RETURN pSimpleWrapper;
+        return pSimpleWrapper;
     }
 
     // get the main wrapper
     PTR_ComCallWrapper GetMainWrapper()
     {
-        CONTRACT (PTR_ComCallWrapper)
+        CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             SUPPORTS_DAC;
             INSTANCE_CHECK;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pWrap;
+        return m_pWrap;
     }
 
     inline ULONG GetRefCount()
@@ -1473,32 +1461,31 @@ public:
 
     MethodTable* GetMethodTable()
     {
-        CONTRACT (MethodTable*)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
-        RETURN m_pMT;
+        return m_pMT;
     }
 
     DispatchExInfo* GetDispatchExInfo()
     {
-        CONTRACT (DispatchExInfo*)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_ANY;
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         if (m_pAuxData.Load() == NULL)
-            RETURN NULL;
+            return NULL;
         else
-            RETURN m_pAuxData->m_pDispatchExInfo;
+            return m_pAuxData->m_pDispatchExInfo;
     }
 
     BOOL SupportsICustomQueryInterface()
@@ -1600,15 +1587,14 @@ struct cdac_data<SimpleComCallWrapper>
 //--------------------------------------------------------------------------------
 inline ComCallWrapper* __stdcall ComCallWrapper::InlineGetWrapper(OBJECTREF* ppObj)
 {
-    CONTRACT (ComCallWrapper*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(ppObj));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // get the wrapper for this CLR object
     ComCallWrapper* pWrap = GetWrapperForObject(*ppObj);
@@ -1620,7 +1606,7 @@ inline ComCallWrapper* __stdcall ComCallWrapper::InlineGetWrapper(OBJECTREF* ppO
 
     pWrap->AddRef();
 
-    RETURN pWrap;
+    return pWrap;
 }
 
 inline ULONG ComCallWrapper::GetRefCount()
@@ -1717,16 +1703,15 @@ inline void ComCallWrapper::ClearSimpleWrapper(ComCallWrapper* pWrap)
 
 inline PTR_ComCallWrapper ComCallWrapper::GetWrapperFromIP(PTR_IUnknown pUnk)
 {
-    CONTRACT (PTR_ComCallWrapper)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(pUnk));
-        POSTCONDITION(CheckPointer(RETVAL));
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // This code path may be exercised from out-of-process.  Unfortunately, we need to manipulate the
     // target address here, and so we need to do some non-trivial casting.  First, cast the PTR type
@@ -1734,7 +1719,7 @@ inline PTR_ComCallWrapper ComCallWrapper::GetWrapperFromIP(PTR_IUnknown pUnk)
     // result as a target address to instantiate a ComCallWrapper.  The line below is equivalent to:
     // ComCallWrapper* pWrap = (ComCallWrapper*)((size_t)pUnk & enum_ThisMask);
     PTR_ComCallWrapper pWrap = dac_cast<PTR_ComCallWrapper>(dac_cast<TADDR>(pUnk) & enum_ThisMask);
-    RETURN pWrap;
+    return pWrap;
 }
 
 //--------------------------------------------------------------------------
@@ -1744,7 +1729,7 @@ inline PTR_ComCallWrapper ComCallWrapper::GetWrapperFromIP(PTR_IUnknown pUnk)
 //--------------------------------------------------------------------------
 inline PTR_ComCallWrapper ComCallWrapper::GetStartWrapper(PTR_ComCallWrapper pWrap)
 {
-    CONTRACT (PTR_ComCallWrapper)
+    CONTRACTL
     {
         NOTHROW;
         GC_TRIGGERS;
@@ -1752,12 +1737,11 @@ inline PTR_ComCallWrapper ComCallWrapper::GetStartWrapper(PTR_ComCallWrapper pWr
         SUPPORTS_DAC;
         PRECONDITION(CheckPointer(pWrap));
         PRECONDITION(pWrap->IsLinked());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     PTR_SimpleComCallWrapper pSimpleWrap = pWrap->GetSimpleWrapper();
-    RETURN (pSimpleWrap->GetMainWrapper());
+    return pSimpleWrap->GetMainWrapper();
 }
 
 //--------------------------------------------------------------------------

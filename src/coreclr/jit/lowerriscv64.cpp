@@ -59,7 +59,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             return false;
 
         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
-        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->gtIconVal;
+        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->IconValue();
 
         switch (parentNode->OperGet())
         {
@@ -477,70 +477,6 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
     ContainCheckStoreIndir(node);
     return node->gtNext;
-}
-
-//------------------------------------------------------------------------
-// LowerBlockStore: Set block store type
-//
-// Arguments:
-//    blkNode       - The block store node of interest
-//
-// Return Value:
-//    None.
-//
-void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
-{
-    assert(blkNode->OperIsInitBlkOp());
-    GenTree* dstAddr = blkNode->Addr();
-    GenTree* src     = blkNode->Data();
-    unsigned size    = blkNode->Size();
-
-    if (src->OperIs(GT_INIT_VAL))
-    {
-        src->SetContained();
-        src = src->AsUnOp()->gtGetOp1();
-    }
-
-    if ((size <= m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memset)) && src->OperIs(GT_CNS_INT))
-    {
-        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
-
-        // The fill value of an initblk is interpreted to hold a
-        // value of (unsigned int8) however a constant of any size
-        // may practically reside on the evaluation stack. So extract
-        // the lower byte out of the initVal constant and replicate
-        // it to a larger constant whose size is sufficient to support
-        // the largest width store of the desired inline expansion.
-
-        ssize_t fill = src->AsIntCon()->IconValue() & 0xFF;
-        if (fill == 0)
-        {
-            src->SetContained();
-        }
-        else if (size >= REGSIZE_BYTES)
-        {
-            fill *= 0x0101010101010101LL;
-            src->gtType = TYP_LONG;
-        }
-        else
-        {
-            fill *= 0x01010101;
-        }
-        src->AsIntCon()->SetIconValue(fill);
-
-        ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
-    }
-    else if (blkNode->IsZeroingGcPointersOnHeap())
-    {
-        blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
-        // We're going to use REG_R0 for zero
-        src->SetContained();
-    }
-    else
-    {
-        LowerBlockStoreAsHelperCall(blkNode);
-        return;
-    }
 }
 
 //------------------------------------------------------------------------
@@ -1283,7 +1219,59 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 //
 void Lowering::ContainCheckSelect(GenTreeOp* node)
 {
-    noway_assert(!"GT_SELECT nodes are not supported on riscv64");
+    assert(node->OperIs(GT_SELECT));
+    // GT_SELECT is only produced/codegen'd on riscv64 when Zicond is available; integer-only.
+    assert(m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zicond));
+    assert(varTypeIsIntegralOrI(node));
+
+    GenTreeConditional* sel = node->AsConditional();
+
+    // czero already compares its register operand with zero, so the various relop+xori
+    // sequences that genCodeForCompare would emit are redundant when the SELECT's cond
+    // is itself a comparison.
+    GenTree* cond = sel->gtCond;
+    if (cond->OperIsCompare())
+    {
+        GenTreeOp* relop = cond->AsOp();
+
+        // SELECT(EQ(x,0), T, F) -> SELECT(x, F, T) and SELECT(NE(x,0), T, F) -> SELECT(x, T, F):
+        // czero with x as the predicate is equivalent to comparing x against zero.
+        if (relop->OperIs(GT_EQ, GT_NE))
+        {
+            GenTree* relopOp2 = relop->gtGetOp2();
+            if (relopOp2->IsIntegralConst(0))
+            {
+                sel->gtCond = relop->gtGetOp1();
+                if (relop->OperIs(GT_EQ))
+                {
+                    std::swap(sel->gtOp1, sel->gtOp2);
+                }
+                BlockRange().Remove(relopOp2);
+                BlockRange().Remove(relop);
+            }
+        }
+
+        // For polarities where genCodeForCompare would emit a trailing xori 1 (like GE/LE or
+        // floating-point unordered), reverse the condition in-place and swap the SELECT arms.
+        // czero.{eqz,nez} encode both polarities directly, dropping the need for xori.
+        else if (relop->OperIs(GT_GE, GT_LE) ||
+                 (varTypeIsFloating(relop->gtGetOp1()) && (relop->gtFlags & GTF_RELOP_NAN_UN) != 0))
+        {
+            bool reversed = m_compiler->gtTryReverseCond(cond);
+            assert(reversed); // gtTryReverseCond always succeeds for OperIsCompare()
+
+            std::swap(sel->gtOp1, sel->gtOp2);
+        }
+    }
+
+    // czero.{eqz,nez} take a register source and a register condition, so the only
+    // contained form is an integral-zero operand that can be expressed via REG_ZERO.
+    GenTree* op1 = sel->gtOp1;
+    GenTree* op2 = sel->gtOp2;
+    if (op1->IsIntegralConst(0) && !op1->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+        MakeSrcContained(node, op1);
+    if (op2->IsIntegralConst(0) && !op2->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+        MakeSrcContained(node, op2);
 }
 
 //------------------------------------------------------------------------

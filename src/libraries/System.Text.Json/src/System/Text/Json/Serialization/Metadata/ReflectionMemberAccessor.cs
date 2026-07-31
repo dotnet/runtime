@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -33,7 +34,7 @@ namespace System.Text.Json.Serialization.Metadata
                     : null;
             }
 
-            return () => ctorInfo.Invoke(null);
+            return () => ctorInfo.InvokeNoWrapExceptions(null);
         }
 
         public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor)
@@ -41,7 +42,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type type = typeof(T);
 
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(constructor.DeclaringType == type && constructor.IsPublic && !constructor.IsStatic);
+            Debug.Assert(constructor.DeclaringType == type && !constructor.IsStatic);
 
             int parameterCount = constructor.GetParameters().Length;
 
@@ -56,17 +57,10 @@ namespace System.Text.Json.Serialization.Metadata
                     argsToPass[i] = arguments[i];
                 }
 
-                try
-                {
-                    return (T)constructor.Invoke(argsToPass);
-                }
-                catch (TargetInvocationException e)
-                {
-                    // Plumb ArgumentException through for tuples with more than 7 generic parameters, e.g.
-                    // System.ArgumentException : The last element of an eight element tuple must be a Tuple.
-                    // This doesn't apply to the method below as it supports a max of 4 constructor params.
-                    throw e.InnerException ?? e;
-                }
+                // Not wrapping in TargetInvocationException also plumbs ArgumentException through for
+                // tuples with more than 7 generic parameters, e.g.
+                // System.ArgumentException : The last element of an eight element tuple must be a Tuple.
+                return (T)constructor.InvokeNoWrapExceptions(argsToPass);
             };
         }
 
@@ -76,7 +70,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type type = typeof(T);
 
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(constructor.DeclaringType == type && constructor.IsPublic && !constructor.IsStatic);
+            Debug.Assert(constructor.DeclaringType == type && !constructor.IsStatic);
 
             int parameterCount = constructor.GetParameters().Length;
 
@@ -108,7 +102,7 @@ namespace System.Text.Json.Serialization.Metadata
                     }
                 }
 
-                return (T)constructor.Invoke(arguments);
+                return (T)constructor.InvokeNoWrapExceptions(arguments);
             };
         }
 
@@ -117,19 +111,12 @@ namespace System.Text.Json.Serialization.Metadata
             Type type = typeof(T);
 
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(constructor.DeclaringType == type && constructor.IsPublic && !constructor.IsStatic);
+            Debug.Assert(constructor.DeclaringType == type && !constructor.IsStatic);
             Debug.Assert(constructor.GetParameters().Length == 1);
 
             return value =>
             {
-                try
-                {
-                    return (T)constructor.Invoke(new object?[] { value });
-                }
-                catch (TargetInvocationException e)
-                {
-                    throw e.InnerException ?? e;
-                }
+                return (T)constructor.InvokeNoWrapExceptions(new object?[] { value });
             };
         }
 
@@ -143,7 +130,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (TCollection collection, object? element)
             {
-                addMethod.Invoke(collection, new object[] { element! });
+                addMethod.InvokeNoWrapExceptions(collection, new object[] { element! });
             };
         }
 
@@ -167,7 +154,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (object obj)
             {
-                return (TProperty)getMethodInfo.Invoke(obj, null)!;
+                return (TProperty)getMethodInfo.InvokeNoWrapExceptions(obj, null)!;
             };
         }
 
@@ -177,7 +164,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (TDeclaringType obj)
             {
-                return (TProperty)getMethodInfo.Invoke(obj, null)!;
+                return (TProperty)getMethodInfo.InvokeNoWrapExceptions(obj, null)!;
             };
         }
 
@@ -187,7 +174,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (object obj, TProperty value)
             {
-                setMethodInfo.Invoke(obj, new object[] { value! });
+                setMethodInfo.InvokeNoWrapExceptions(obj, new object[] { value! });
             };
         }
 

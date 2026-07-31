@@ -61,21 +61,21 @@ inline ULONG PEAssembly::AddRef()
 
 inline ULONG PEAssembly::Release()
 {
-    CONTRACT(COUNT_T)
+    CONTRACTL
     {
         DESTRUCTOR_CHECK;
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     LONG result = InterlockedDecrement(&m_refCount);
     _ASSERTE(result >= 0);
     if (result == 0)
         delete this;
 
-    RETURN result;
+    return result;
 }
 
 inline void PEAssembly::ValidateForExecution()
@@ -115,7 +115,7 @@ inline void PEAssembly::ValidateForExecution()
 inline BOOL PEAssembly::IsMarkedAsNoPlatform()
 {
     WRAPPER_NO_CONTRACT;
-    return (IsAfPA_NoPlatform(GetFlags()));
+    return IsAfPA_NoPlatform(GetFlags());
 }
 
 
@@ -258,38 +258,36 @@ inline IMDInternalImport* PEAssembly::GetMDImport()
 
 inline IMetaDataImport2 *PEAssembly::GetRWImporter()
 {
-    CONTRACT(IMetaDataImport2 *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
         GC_NOTRIGGER;
         THROWS;
         MODE_ANY;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (m_pImporter == NULL)
         OpenImporter();
 
-    RETURN m_pImporter;
+    return m_pImporter;
 }
 
 inline IMetaDataEmit *PEAssembly::GetEmitter()
 {
-    CONTRACT(IMetaDataEmit *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         MODE_ANY;
         GC_NOTRIGGER;
-        POSTCONDITION(CheckPointer(RETVAL));
         THROWS;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (m_pEmitter == NULL)
         OpenEmitter();
 
-    RETURN m_pEmitter;
+    return m_pEmitter;
 }
 
 
@@ -364,7 +362,7 @@ inline BOOL PEAssembly::IsILOnly()
 
 inline PTR_VOID PEAssembly::GetRvaField(RVA field)
 {
-    CONTRACT(void *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsReflectionEmit());
@@ -374,14 +372,13 @@ inline PTR_VOID PEAssembly::GetRvaField(RVA field)
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Note that the native image Rva fields are currently cut off before
     // this point.  We should not get here for an IL only native image.
 
-    RETURN dac_cast<PTR_VOID>(GetLoadedLayout()->GetRvaData(field,NULL_OK));
+    return dac_cast<PTR_VOID>(GetLoadedLayout()->GetRvaData(field,NULL_OK));
 }
 
 inline CHECK PEAssembly::CheckRvaField(RVA field)
@@ -506,7 +503,7 @@ inline UINT32 PEAssembly::GetTlsIndex()
 
 inline const void *PEAssembly::GetInternalPInvokeTarget(RVA target)
 {
-    CONTRACT(void *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsReflectionEmit());
@@ -515,11 +512,10 @@ inline const void *PEAssembly::GetInternalPInvokeTarget(RVA target)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN (void*)GetLoadedLayout()->GetRvaData(target);
+    return (void*)GetLoadedLayout()->GetRvaData(target);
 }
 
 inline CHECK PEAssembly::CheckInternalPInvokeTarget(RVA target)
@@ -543,30 +539,29 @@ inline CHECK PEAssembly::CheckInternalPInvokeTarget(RVA target)
 
 inline IMAGE_COR_VTABLEFIXUP *PEAssembly::GetVTableFixups(COUNT_T *pCount/*=NULL*/)
 {
-    CONTRACT(IMAGE_COR_VTABLEFIXUP *)
+    CONTRACTL
     {
         PRECONDITION(HasLoadedPEImage());
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (IsReflectionEmit() || IsILOnly())
     {
         if (pCount != NULL)
             *pCount = 0;
-        RETURN NULL;
+        return NULL;
     }
     else
-        RETURN GetLoadedLayout()->GetVTableFixups(pCount);
+        return GetLoadedLayout()->GetVTableFixups(pCount);
 }
 
 inline void *PEAssembly::GetVTable(RVA rva)
 {
-    CONTRACT(void *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsReflectionEmit());
@@ -576,11 +571,10 @@ inline void *PEAssembly::GetVTable(RVA rva)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN (void *)GetLoadedLayout()->GetRvaData(rva);
+    return (void *)GetLoadedLayout()->GetRvaData(rva);
 }
 
 // @todo: this is bad to expose. But it is needed to support current IJW thunks
@@ -603,16 +597,15 @@ inline HMODULE PEAssembly::GetIJWBase()
 
 inline PTR_VOID PEAssembly::GetDebuggerContents(COUNT_T *pSize/*=NULL*/)
 {
-    CONTRACT(PTR_VOID)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pSize, NULL_OK));
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // We cannot in general force a LoadLibrary; we might be in the
     // helper thread.  The debugger will have to expect a zero base
@@ -623,14 +616,14 @@ inline PTR_VOID PEAssembly::GetDebuggerContents(COUNT_T *pSize/*=NULL*/)
         if (pSize != NULL)
             *pSize = GetLoadedLayout()->GetSize();
 
-        RETURN GetLoadedLayout()->GetBase();
+        return GetLoadedLayout()->GetBase();
     }
     else
     {
         if (pSize != NULL)
             *pSize = 0;
 
-        RETURN NULL;
+        return NULL;
     }
 }
 
@@ -667,16 +660,15 @@ inline PTR_CVOID PEAssembly::GetLoadedImageContents(COUNT_T *pSize/*=NULL*/)
 #ifndef DACCESS_COMPILE
 inline const void *PEAssembly::GetManagedFileContents(COUNT_T *pSize/*=NULL*/)
 {
-    CONTRACT(const void *)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(HasLoadedPEImage());
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
-        POSTCONDITION((!GetLoadedLayout()->GetSize()) || CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // Right now, we will trigger a LoadLibrary for the caller's sake,
     // even if we are in a scenario where we could normally avoid it.
@@ -686,7 +678,7 @@ inline const void *PEAssembly::GetManagedFileContents(COUNT_T *pSize/*=NULL*/)
         *pSize = GetLoadedLayout()->GetSize();
 
 
-    RETURN GetLoadedLayout()->GetBase();
+    return GetLoadedLayout()->GetBase();
 }
 #endif // DACCESS_COMPILE
 

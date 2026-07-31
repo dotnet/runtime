@@ -631,7 +631,8 @@ namespace ILCompiler
 
         public override void GetDependenciesForOverridingMethod(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc decl, MethodDesc impl)
         {
-            Debug.Assert(decl.IsVirtual && MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(decl) == decl);
+            Debug.Assert(decl.IsVirtual
+                && MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(decl.GetMethodDefinition()) == decl.GetMethodDefinition());
 
             // If a virtual method slot is a target of a delegate, all implementations become reflection visible
             // to support Delegate.GetMethodInfo().
@@ -639,9 +640,11 @@ namespace ILCompiler
             {
                 dependencies ??= new CombinedDependencyList();
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                    factory.ReflectedMethod(impl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                    factory.ReflectedDelegateTargetVirtualMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                    "Virtual method declaration is reflectable"));
+                    factory.ReflectableVirtualMethodImpl(
+                        decl.GetCanonMethodTarget(CanonicalFormKind.Specific),
+                        impl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                    null,
+                    "Virtual method implementation discovered"));
             }
         }
 

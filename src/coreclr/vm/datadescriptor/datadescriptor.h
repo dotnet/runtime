@@ -35,3 +35,7 @@
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
+
+#include "stgpool.h"
+#include "liteweightstgdb.h"
+#include "mdinternalrw.h"

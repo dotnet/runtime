@@ -11,7 +11,7 @@ namespace System.IO.Compression
         protected override bool SupportsDictionaries => false;
         protected override bool SupportsReset => false;
 
-        protected override string WindowLogParamName => "windowLog";
+        protected override string WindowLogParamName => "windowLog2";
         protected override string InputLengthParamName => "inputLength";
 
         // Quality maps to zlib compression level (0-9)
@@ -38,7 +38,7 @@ namespace System.IO.Compression
         protected override DictionaryAdapter CreateDictionary(ReadOnlySpan<byte> dictionaryData, int quality) =>
             throw new NotSupportedException();
 
-        protected override bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary, int windowLog) =>
+        protected override bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary, int windowLog2) =>
             throw new NotSupportedException();
 
         protected override bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary) =>

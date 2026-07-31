@@ -687,6 +687,18 @@
   <data name="CorrectnessOfCOMCannotBeGuaranteedMessage" xml:space="preserve">
     <value>P/invoke method '{0}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.</value>
   </data>
+  <data name="UnsafeMemberMissingSafetyDocumentationTitle" xml:space="preserve">
+    <value>Unsafe members should document their safety requirements</value>
+  </data>
+  <data name="UnsafeMemberMissingSafetyDocumentationMessage" xml:space="preserve">
+    <value>An unsafe member must include a '&lt;safety&gt;' XML documentation comment.</value>
+  </data>
+  <data name="PointerSignatureRequiresUnsafeTitle" xml:space="preserve">
+    <value>Pointer signatures should preserve their unsafe contract</value>
+  </data>
+  <data name="PointerSignatureRequiresUnsafeMessage" xml:space="preserve">
+    <value>A member with a pointer or function-pointer signature must be marked 'unsafe' or include a '&lt;safety&gt;' XML documentation comment explaining why it is safe.</value>
+  </data>
   <data name="XmlPropertyDoesNotContainAttributeNameTitle" xml:space="preserve">
     <value>An attribute element has property but this could not be found.</value>
   </data>

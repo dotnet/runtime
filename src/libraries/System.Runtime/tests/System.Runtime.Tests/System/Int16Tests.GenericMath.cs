@@ -1323,6 +1323,24 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CopySignTest()
+        {
+            Assert.Equal((short)0x0000, NumberHelper<short>.CopySign((short)0x0000, 1));
+            Assert.Equal((short)0x0001, NumberHelper<short>.CopySign((short)0x0001, 1));
+            Assert.Equal((short)0x7FFF, NumberHelper<short>.CopySign((short)0x7FFF, 1));
+            Assert.Equal((short)0x0001, NumberHelper<short>.CopySign(unchecked((short)0xFFFF), 1));
+
+            Assert.Equal((short)0x0000, NumberHelper<short>.CopySign((short)0x0000, -1));
+            Assert.Equal(unchecked((short)0xFFFF), NumberHelper<short>.CopySign((short)0x0001, -1));
+            Assert.Equal(unchecked((short)0x8001), NumberHelper<short>.CopySign((short)0x7FFF, -1));
+            Assert.Equal(unchecked((short)0x8000), NumberHelper<short>.CopySign(unchecked((short)0x8000), -1));
+            Assert.Equal(unchecked((short)0xFFFF), NumberHelper<short>.CopySign(unchecked((short)0xFFFF), -1));
+
+            Assert.Throws<OverflowException>(() => NumberHelper<short>.CopySign(unchecked((short)0x8000), 0));
+            Assert.Throws<OverflowException>(() => NumberHelper<short>.CopySign(unchecked((short)0x8000), 1));
+        }
+
+        [Fact]
         public static void MaxTest()
         {
             Assert.Equal((short)0x0001, NumberHelper<short>.Max((short)0x0000, (short)1));

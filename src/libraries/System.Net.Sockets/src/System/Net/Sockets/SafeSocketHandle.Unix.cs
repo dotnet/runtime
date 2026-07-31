@@ -26,7 +26,7 @@ namespace System.Net.Sockets
             PreferInlineCompletions = 16,
             IsSocket = 32,
             IsDisconnected = 64,
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             TfoEnabled = 128
 #endif
         }
@@ -70,7 +70,7 @@ namespace System.Net.Sockets
             set => SetFlag(Flags.IsSocket, value);
         }
 
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
         internal bool TfoEnabled
         {
             get => (_flags & Flags.TfoEnabled) != 0;
@@ -98,7 +98,7 @@ namespace System.Net.Sockets
             target.DualMode = DualMode;
             target.ExposedHandleOrUntrackedConfiguration = ExposedHandleOrUntrackedConfiguration;
             target.IsSocket = IsSocket;
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             target.TfoEnabled = TfoEnabled;
 #endif
         }

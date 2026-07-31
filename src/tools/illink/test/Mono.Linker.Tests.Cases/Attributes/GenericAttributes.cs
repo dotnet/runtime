@@ -1,12 +1,17 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes
 {
+    // A generic attribute whose type parameter is annotated with DynamicallyAccessedMembers can only be
+    // applied with a generic-parameter argument in IL (C# forbids type parameters as generic attribute
+    // arguments - CS8968), so the data-flow scenario is provided by a compiled-before IL assembly.
+    // The warning originates in that dependency assembly, so it is asserted with LogContains
+    // (ExpectedWarning only matches origins in the test assembly itself).
     [SetupCompileBefore("GenericAttributesDataFlow.dll", new[] { "Dependencies/GenericAttributesDataFlow.il" })]
+    [LogContains("IL2091.*ClassWithUnannotatedTypeParameter", regexMatch: true)]
     class GenericAttributes
     {
         static void Main()
@@ -15,8 +20,7 @@ namespace Mono.Linker.Tests.Cases.Attributes
             new WithGenericAttribute_OfInt();
             new WithConstrainedGenericAttribute();
             typeof(WithNewConstrainedGenericAttribute).GetCustomAttributes(false);
-            ReflectOnGenericAttributeWithUnannotatedTypeParameter<TypeWithPublicMethods>.Test();
-            ReflectOnGenericAttributeWithAnnotatedTypeParameter<TypeWithPublicMethods>.Test();
+            ReflectOnGenericAttributeWithUnannotatedTypeParameter();
         }
 
         [Kept]
@@ -70,7 +74,6 @@ namespace Mono.Linker.Tests.Cases.Attributes
         [Kept]
         class TypeWithPublicMethods
         {
-            [Kept]
             public void Method() { }
         }
 
@@ -96,7 +99,6 @@ namespace Mono.Linker.Tests.Cases.Attributes
 
         [Kept]
         [KeptAttributeAttribute(typeof(NewConstrainedGenericAttribute<Handler>))]
-        [KeptMember(".ctor()")]
         [NewConstrainedGenericAttribute<Handler>]
         class WithNewConstrainedGenericAttribute
         {
@@ -111,35 +113,16 @@ namespace Mono.Linker.Tests.Cases.Attributes
             public NewConstrainedGenericAttribute() { }
         }
 
+        // Reflecting over the generic instantiation keeps the dependency type and forces the trimmer
+        // to analyze the generic attribute applied to it.
         [Kept]
-        class ReflectOnGenericAttributeWithUnannotatedTypeParameter<T>
+        static void ReflectOnGenericAttributeWithUnannotatedTypeParameter()
         {
-            [Kept]
-            [ExpectedWarning("IL2091", Tool.Trimmer | Tool.NativeAot, "")]
-            public static void Test()
-            {
-                GetDynamicallyAccessedMembersGenericClass(typeof(T)).GetCustomAttributes(false);
-            }
-        }
-
-        [Kept]
-        class ReflectOnGenericAttributeWithAnnotatedTypeParameter<
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-            [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
-            T>()
-        {
-            [Kept]
-            public static void Test()
-            {
-                GetDynamicallyAccessedMembersGenericClass(typeof(T)).GetCustomAttributes(false);
-            }
-        }
-
-        [Kept]
-        static Type GetDynamicallyAccessedMembersGenericClass(Type typeArgument)
-        {
-            return Type.GetType("Mono.Linker.Tests.Cases.Attributes.Dependencies.DynamicallyAccessedMembersGenericClass`1, GenericAttributesDataFlow")!
-                .MakeGenericType(typeArgument);
+            // ClassWithUnannotatedTypeParameter<T> applies a DynamicallyAccessedMembers-annotated generic
+            // attribute using its own (unverifiable) generic parameter as the argument, so the trimmer
+            // must analyze the generic-argument data flow without crashing and warn (IL2091).
+            Type.GetType("Mono.Linker.Tests.Cases.Attributes.Dependencies.ClassWithUnannotatedTypeParameter`1, GenericAttributesDataFlow")!
+                .MakeGenericType(typeof(TypeWithPublicMethods)).GetCustomAttributes(false);
         }
     }
 }

@@ -4,11 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Options
 {
-    internal sealed class StartupValidator : IStartupValidator
+    internal sealed class StartupValidator : IStartupValidator, IAsyncStartupValidator
     {
         private readonly StartupValidatorOptions _validatorOptions;
 
@@ -46,6 +48,39 @@ namespace Microsoft.Extensions.Options
                 if (exceptions.Count > 1)
                 {
                     // Aggregate if we have many errors
+                    throw new AggregateException(exceptions);
+                }
+            }
+        }
+
+        public async Task ValidateAsync(CancellationToken cancellationToken = default)
+        {
+            // Async validators only — sync validation is handled separately by
+            // IStartupValidator.Validate() in Host.StartAsync() (two-stage orchestration).
+            List<Exception>? exceptions = null;
+
+            foreach (Func<CancellationToken, Task> asyncValidator in _validatorOptions._asyncValidators.Values)
+            {
+                try
+                {
+                    await asyncValidator(cancellationToken).ConfigureAwait(false);
+                }
+                catch (OptionsValidationException ex)
+                {
+                    exceptions ??= new();
+                    exceptions.Add(ex);
+                }
+            }
+
+            if (exceptions is not null)
+            {
+                if (exceptions.Count == 1)
+                {
+                    ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
+                }
+
+                if (exceptions.Count > 1)
+                {
                     throw new AggregateException(exceptions);
                 }
             }

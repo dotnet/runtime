@@ -784,7 +784,18 @@ void CordbClass::Init(ClassLoadLevel desiredLoadLevel)
         // full info load level
         if(desiredLoadLevel == FullInfo)
         {
-            IfFailThrow(pDac->GetClassInfo(vmTypeHandle, &m_classInfo));
+            CallbackAccumulator<FieldData> acc;
+
+            HRESULT hrEnum = pDac->EnumerateClassFields(vmTypeHandle,
+                                                        &m_classInfo.m_objectSize,
+                                                        &CallbackAccumulator<FieldData>::PushCallback,
+                                                        &acc);
+            if (SUCCEEDED(hrEnum) && FAILED(acc.hrError))
+                hrEnum = acc.hrError;
+            IfFailThrow(hrEnum);
+
+            int fieldCount = (int)acc.items.Size();
+            m_classInfo.m_fieldList.Init(fieldCount > 0 ? &acc.items[0] : NULL, fieldCount);
 
             BOOL fGotUnallocatedStatic = GotUnallocatedStatic(&m_classInfo.m_fieldList);
 
@@ -985,7 +996,6 @@ FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
     mdTypeDef           metadataToken;
     FieldData           fieldData,
                       * pInfo = NULL;
-    BOOL                fDacStatic;
     CordbProcess *      pProcess = GetModule()->GetProcess();
 
     _ASSERTE(pProcess != NULL);
@@ -993,8 +1003,8 @@ FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
     InitEnCFieldInfo(&encField, fStatic, pObject, fieldToken, metadataToken);
 
     // Go get this particular field.
-    IfFailThrow(pProcess->GetDAC()->GetEnCHangingFieldInfo(&encField, &fieldData, &fDacStatic));
-    _ASSERTE(fStatic == fDacStatic);
+    IfFailThrow(pProcess->GetDAC()->GetEnCHangingFieldInfo(&encField, &fieldData));
+    _ASSERTE((fStatic != 0) == fieldData.m_fFldIsStatic);
 
     // Save the field results in our cache and get a stable pointer to the data
     if (fStatic)

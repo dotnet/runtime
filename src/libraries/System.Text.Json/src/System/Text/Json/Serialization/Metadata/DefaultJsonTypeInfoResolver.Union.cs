@@ -85,10 +85,13 @@ namespace System.Text.Json.Serialization.Metadata
 
             /// <summary>
             /// Walks the union type's public single-parameter constructors and populates
-            /// <see cref="JsonTypeInfo.UnionCases"/> in declaration order. When the same case
-            /// type appears across multiple constructors, the entry is added once, but the
-            /// <see cref="JsonUnionCaseInfo.IsNullable"/> flag is the OR across all matching
-            /// constructors so that any nullable-accepting overload is selected for the case.
+            /// <see cref="JsonTypeInfo.UnionCases"/> in declaration order. Each ctor overload
+            /// yields a distinct <see cref="JsonUnionCaseInfo"/>; <c>Foo(T)</c> and
+            /// <c>Foo(Nullable&lt;T&gt;)</c> coexist as separate cases (typeof(T) vs
+            /// typeof(T?)) so the metadata reflects the declared union shape and does not
+            /// silently normalize to a supertype. Token-level ambiguity that follows from
+            /// multiple cases sharing a JSON value shape is surfaced later at deserialize
+            /// time via <see cref="JsonTypeInfo.UnionAmbiguousValueTypes"/>.
             /// </summary>
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
             [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
@@ -100,7 +103,6 @@ namespace System.Text.Json.Serialization.Metadata
 
                 NullabilityInfoContext nullabilityCtx = new();
                 IList<JsonUnionCaseInfo> unionCases = typeInfo.UnionCases;
-                Dictionary<Type, int> indexByCaseType = new();
 
                 foreach (ConstructorInfo ctor in typeof(TUnion).GetConstructors(BindingFlags.Public | BindingFlags.Instance))
                 {
@@ -112,28 +114,18 @@ namespace System.Text.Json.Serialization.Metadata
                         continue;
                     }
 
-                    if (_entryByCaseType.TryGetValue(paramType, out UnionCaseEntry? entry))
+                    if (_entryByCaseType.ContainsKey(paramType))
                     {
-                        // Reachable when a value-type case has both `Foo(T)` and `Foo(T?)` ctor overloads.
-                        Debug.Assert(paramType.IsValueType);
+                        // The C# compiler rejects two single-parameter ctors with the same
+                        // parameter type, so this is unreachable from normal source. Defensive
+                        // skip protects against hand-emitted IL with duplicate signatures.
+                        continue;
+                    }
 
-                        if (acceptsNull && !entry.CaseInfo.IsNullable)
-                        {
-                            int index = indexByCaseType[paramType];
-                            entry = CreateUnionCaseEntry(paramType, ctor, isNullable: true);
-                            _entryByCaseType[paramType] = entry;
-                            _caseEntries[index] = entry;
-                            unionCases[index] = entry.CaseInfo;
-                        }
-                    }
-                    else
-                    {
-                        entry = CreateUnionCaseEntry(paramType, ctor, acceptsNull);
-                        _entryByCaseType.Add(paramType, entry);
-                        indexByCaseType.Add(paramType, _caseEntries.Count);
-                        _caseEntries.Add(entry);
-                        unionCases.Add(entry.CaseInfo);
-                    }
+                    UnionCaseEntry entry = CreateUnionCaseEntry(paramType, ctor, acceptsNull);
+                    _entryByCaseType.Add(paramType, entry);
+                    _caseEntries.Add(entry);
+                    unionCases.Add(entry.CaseInfo);
                 }
             }
 
@@ -163,8 +155,17 @@ namespace System.Text.Json.Serialization.Metadata
                 // hits the most-specific declared case before any of its bases.
                 UnionCaseEntry[] orderedCases = BuildTopologicallySortedCaseEntries();
                 ConcurrentDictionary<Type, UnionCaseEntry?> caseIndex = CreateCaseIndex(orderedCases);
+
+                // Pick the canonical nullable case from _caseEntries (the same order as the
+                // public UnionCases list) rather than from orderedCases. UnionNullableCaseType
+                // is later cached by scanning UnionCases in order, and JsonUnionConverter
+                // looks it up to decide which case represents JSON null. If we scanned
+                // orderedCases instead, a union with multiple nullable cases in an inheritance
+                // chain (declaration order [Base, Derived]; topological [Derived, Base])
+                // would advertise Base via UnionNullableCaseType while the constructor/
+                // deconstructor delegates silently dispatched through Derived.
                 UnionCaseEntry? nullableCase = null;
-                foreach (UnionCaseEntry entry in orderedCases)
+                foreach (UnionCaseEntry entry in _caseEntries)
                 {
                     if (entry.CaseInfo.IsNullable)
                     {
@@ -174,7 +175,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 PopulateUnionDeconstructor(typeInfo, orderedCases, caseIndex, valueProperty, nullableCase);
-                PopulateUnionConstructor(typeInfo, orderedCases, caseIndex);
+                PopulateUnionConstructor(typeInfo, orderedCases, caseIndex, nullableCase);
             }
 
             private UnionCaseEntry[] BuildTopologicallySortedCaseEntries()
@@ -242,12 +243,15 @@ namespace System.Text.Json.Serialization.Metadata
                     object? value = valueAccessor(union);
                     if (value is null)
                     {
-                        if (nullableCase is null)
-                        {
-                            ThrowHelper.ThrowJsonException_UnionDoesNotAcceptNull(typeof(TUnion));
-                        }
-
-                        return (nullableCase.CaseType, null);
+                        // Always succeed on null. Two scenarios converge here:
+                        //   (1) default(struct union) has no case set and Value returns null.
+                        //   (2) A nullable case was constructed with null (Foo((string?)null)).
+                        // When a nullable case exists, dispatch through it so the converter
+                        // calls the case's own converter for null. Otherwise return
+                        // (null, null) — JsonUnionConverter writes JSON null in that case.
+                        return nullableCase is not null
+                            ? (nullableCase.CaseType, null)
+                            : (null, null);
                     }
 
                     Type runtimeType = value.GetType();
@@ -338,34 +342,25 @@ namespace System.Text.Json.Serialization.Metadata
                 }
             }
 
-            private void PopulateUnionConstructor(
+            private static void PopulateUnionConstructor(
                 JsonTypeInfo<TUnion> typeInfo,
                 UnionCaseEntry[] orderedCases,
-                ConcurrentDictionary<Type, UnionCaseEntry?> caseIndex)
+                ConcurrentDictionary<Type, UnionCaseEntry?> caseIndex,
+                UnionCaseEntry? nullableCase)
             {
                 Debug.Assert(typeInfo.UnionConstructor is null,
                     "PopulateUnionConstructor is only invoked from the built-in resolver, before any contract customization.");
-
-                Func<object?, TUnion>? nullConstructor = null;
-                foreach (UnionCaseEntry entry in _caseEntries)
-                {
-                    if (entry.CaseInfo.IsNullable)
-                    {
-                        nullConstructor = entry.Constructor;
-                        break;
-                    }
-                }
 
                 typeInfo.UnionConstructor = (Type caseType, object? value) =>
                 {
                     if (value is null)
                     {
-                        if (nullConstructor is null)
+                        if (nullableCase is null)
                         {
                             ThrowHelper.ThrowJsonException_UnionDoesNotAcceptNull(typeof(TUnion));
                         }
 
-                        return nullConstructor(null);
+                        return nullableCase.Constructor(null);
                     }
 
                     UnionCaseEntry? entry = ResolveUnionCase(caseIndex, orderedCases, caseType);
@@ -393,7 +388,7 @@ namespace System.Text.Json.Serialization.Metadata
                 UnionCaseEntry? found = null;
                 foreach (UnionCaseEntry entry in orderedCases)
                 {
-                    if (entry.CaseType.IsAssignableFrom(runtimeType))
+                    if (IsAssignableCase(entry.CaseType, runtimeType))
                     {
                         found = entry;
                         break;
@@ -402,6 +397,19 @@ namespace System.Text.Json.Serialization.Metadata
 
                 caseIndex[runtimeType] = found;
                 return found;
+            }
+
+            // Mirrors CLR assignment compatibility, plus the boxing rule that a boxed T can
+            // satisfy a Nullable<T> case parameter (Reflection.IsAssignableFrom alone does
+            // not model the box-unbox conversion).
+            private static bool IsAssignableCase(Type caseType, Type runtimeType)
+            {
+                if (caseType.IsAssignableFrom(runtimeType))
+                {
+                    return true;
+                }
+
+                return Nullable.GetUnderlyingType(caseType) is Type underlying && underlying == runtimeType;
             }
 
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
@@ -509,13 +517,16 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             caseType = parameterType;
-            if (Nullable.GetUnderlyingType(caseType) is Type underlying)
+            if (Nullable.GetUnderlyingType(parameterType) is not null)
             {
-                caseType = underlying;
+                // Value-type Nullable<T> parameter: the case type is the Nullable<T> itself
+                // (no normalization to the underlying T). The case accepts the null payload.
+                // A peer Foo(T) ctor declares a distinct, non-null-accepting case.
+                acceptsNull = true;
             }
-
-            if (parameterType.IsNullableType())
+            else if (parameterType.IsNullableType())
             {
+                // Reference type — read the parameter's nullable annotation.
                 NullabilityInfo nullability = nullabilityCtx.Create(parameter);
                 acceptsNull = nullability.WriteState is not NullabilityState.NotNull;
             }

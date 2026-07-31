@@ -57,6 +57,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
     public delegate int WriteToTargetDelegate(ulong address, Span<byte> bufferToWrite);
     public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, Span<byte> bufferToFill);
+    public delegate int SetTargetThreadContextDelegate(uint threadId, ReadOnlySpan<byte> context);
     public delegate int AllocVirtualDelegate(ulong size, out ulong allocatedAddress);
 
     private static readonly UTF8Encoding strictUTF8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
@@ -69,6 +70,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
     /// <param name="writeToTarget">A callback to write memory blocks at a given address to the target</param>
     /// <param name="getThreadContext">A callback to fetch a thread's context</param>
+    /// <param name="setThreadContext">A callback to set a thread's context</param>
     /// <param name="allocVirtual">A callback to allocate virtual memory in the target</param>
     /// <param name="contractRegistrations">Registration actions that populate the contract registry (e.g., <see cref="Contracts.CoreCLRContracts.Register"/>)</param>
     /// <param name="target">The target object.</param>
@@ -78,11 +80,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
         ReadFromTargetDelegate readFromTarget,
         WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
+        SetTargetThreadContextDelegate setThreadContext,
         AllocVirtualDelegate allocVirtual,
         Action<ContractRegistry>[] contractRegistrations,
         [NotNullWhen(true)] out ContractDescriptorTarget? target)
     {
-        DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, allocVirtual);
+        DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, setThreadContext, allocVirtual);
         if (TryReadContractDescriptor(
             contractDescriptor,
             dataTargetDelegates,
@@ -104,6 +107,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
     /// <param name="writeToTarget">A callback to write memory blocks at a given address to the target</param>
     /// <param name="getThreadContext">A callback to fetch a thread's context</param>
+    /// <param name="setThreadContext">A callback to set a thread's context</param>
     /// <param name="allocVirtual">A callback to allocate virtual memory in the target</param>
     /// <param name="isLittleEndian">Whether the target is little-endian</param>
     /// <param name="pointerSize">The size of a pointer in bytes in the target process.</param>
@@ -115,6 +119,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         ReadFromTargetDelegate readFromTarget,
         WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
+        SetTargetThreadContextDelegate setThreadContext,
         AllocVirtualDelegate allocVirtual,
         bool isLittleEndian,
         int pointerSize,
@@ -127,7 +132,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
                 ContractDescriptor = contractDescriptor,
                 PointerData = globalPointerValues
             },
-            new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, allocVirtual),
+            new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, setThreadContext, allocVirtual),
             contractRegistrations ?? []);
     }
 
@@ -143,9 +148,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
         BuildDescriptors(forceBuild: true);
     }
 
-    public override void Flush()
+    public override void Flush(FlushScope scope)
     {
-        base.Flush();
+        base.Flush(scope);
 
         BuildDescriptors();
     }
@@ -412,6 +417,13 @@ public sealed unsafe class ContractDescriptorTarget : Target
     {
         // Underlying API only supports 32-bit thread IDs, mask off top 32 bits
         int hr = _dataTargetDelegates.GetThreadContext((uint)(threadId & uint.MaxValue), contextFlags, buffer);
+        return hr == 0;
+    }
+
+    public override bool TrySetThreadContext(ulong threadId, ReadOnlySpan<byte> context)
+    {
+        // Underlying API only supports 32-bit thread IDs, mask off top 32 bits
+        int hr = _dataTargetDelegates.SetThreadContext((uint)(threadId & uint.MaxValue), context);
         return hr == 0;
     }
 
@@ -713,6 +725,14 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return new TargetNUInt(value);
     }
 
+    public override TargetNInt ReadNInt(ulong address)
+    {
+        if (!TryReadNInt(address, _config, _dataTargetDelegates, out long value))
+            throw new VirtualReadException($"Failed to read nint at 0x{address:x8}.");
+
+        return new TargetNInt(value);
+    }
+
     private static bool TryReadPointer(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out TargetPointer pointer)
     {
         pointer = TargetPointer.Null;
@@ -742,6 +762,25 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return false;
     }
 
+    private static bool TryReadNInt(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out long value)
+    {
+        value = 0;
+        if (config.PointerSize == sizeof(uint)
+            && TryRead(address, config.IsLittleEndian, dataTargetDelegates, out int value32))
+        {
+            value = value32;
+            return true;
+        }
+        else if (config.PointerSize == sizeof(ulong)
+            && TryRead(address, config.IsLittleEndian, dataTargetDelegates, out long value64))
+        {
+            value = value64;
+            return true;
+        }
+
+        return false;
+    }
+
     public static bool IsAligned(ulong value, int alignment)
         => (value & (ulong)(alignment - 1)) == 0;
 
@@ -760,14 +799,14 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public bool TryReadGlobal<T>(string name, [NotNullWhen(true)] out T? value, out string? type) where T : struct, INumber<T>
     {
         value = null;
-        type = null;
-        if (!_globals.TryGetValue(name, out GlobalValue global) || global.NumericValue is null)
-        {
-            // Not found or does not contain a numeric value
+        if (!TryGetNumericGlobal(name, out ulong globalValue, out type))
             return false;
-        }
-        type = global.Type;
-        value = T.CreateChecked(global.NumericValue.Value);
+
+        Debug.Assert(
+            TargetTypeHelpers.IsCompatiblePrimitiveType<T>(type),
+            $"Type mismatch reading global '{name}': declared as '{type}', reading as {typeof(T).Name}");
+
+        value = T.CreateChecked(globalValue);
         return true;
     }
 
@@ -788,10 +827,14 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public bool TryReadGlobalPointer(string name, [NotNullWhen(true)] out TargetPointer? value, out string? type)
     {
         value = null;
-        if (!TryReadGlobal(name, out ulong? innerValue, out type))
+        if (!TryGetNumericGlobal(name, out ulong globalValue, out type))
             return false;
 
-        value = new TargetPointer(innerValue.Value);
+        Debug.Assert(
+            TargetTypeHelpers.IsCompatiblePointerType(type),
+            $"Type mismatch reading global '{name}': declared as '{type}', expected pointer");
+
+        value = new TargetPointer(globalValue);
         return true;
     }
 
@@ -831,6 +874,18 @@ public sealed unsafe class ContractDescriptorTarget : Target
         }
         type = global.Type;
         value = global.StringValue;
+        return true;
+    }
+
+    private bool TryGetNumericGlobal(string name, out ulong value, out string? type)
+    {
+        value = default;
+        type = null;
+        if (!_globals.TryGetValue(name, out GlobalValue global) || global.NumericValue is null)
+            return false;
+
+        value = global.NumericValue.Value;
+        type = global.Type;
         return true;
     }
 
@@ -905,6 +960,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         ReadFromTargetDelegate readFromTarget,
         WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
+        SetTargetThreadContextDelegate setThreadContext,
         AllocVirtualDelegate allocVirtual)
     {
         public int ReadFromTarget(ulong address, Span<byte> buffer)
@@ -918,6 +974,10 @@ public sealed unsafe class ContractDescriptorTarget : Target
         public int GetThreadContext(uint threadId, uint contextFlags, Span<byte> buffer)
         {
             return getThreadContext(threadId, contextFlags, buffer);
+        }
+        public int SetThreadContext(uint threadId, ReadOnlySpan<byte> context)
+        {
+            return setThreadContext(threadId, context);
         }
         public int WriteToTarget(ulong address, Span<byte> buffer)
         {

@@ -459,6 +459,14 @@
         Lines="OutOfProcessTest"
         Overwrite="true"
         WriteOnlyWhenDifferent="true" />
+
+    <!-- Tests can opt in to preserving their pdbs in the Helix payload, which are otherwise stripped to reduce payload size.  -->
+    <WriteLinesToFile
+        Condition="'$(PreservePdbInHelixPayload)' == 'true'"
+        File="$(OutputPath)\$(AssemblyName).PreservePdb"
+        Lines="PreservePdb"
+        Overwrite="true"
+        WriteOnlyWhenDifferent="true" />
   </Target>
 
   <PropertyGroup>
@@ -493,13 +501,17 @@
   </Target>
 
   <Target Name="DiscoverProcessIsolatedTestProjectReferences" BeforeTargets="AssignProjectConfiguration" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
-    <MSBuild Projects="@(ProjectReference)" Targets="GetRequiresProcessIsolation" SkipNonexistentTargets="true">
+    <ItemGroup>
+      <_ProjectReferenceFullPath Include="@(ProjectReference->'%(FullPath)')" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(_ProjectReferenceFullPath)" Targets="GetRequiresProcessIsolation" SkipNonexistentTargets="true">
       <Output TaskParameter="TargetOutputs" ItemName="ReferencedProjectRequiringProcessIsolation" />
     </MSBuild>
 
     <ItemGroup>
-      <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" />
-      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" Private="False" />
+      <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation)" MatchOnMetadata="FullPath" />
+      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation->'%(FullPath)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" Private="False" />
     </ItemGroup>
   </Target>
 
@@ -594,6 +606,6 @@
 
   <Target Name="LinkNativeIfBuildAndRun"
           Condition="'$(_WillCLRTestProjectBuild)' == 'true' and '$(CLRTestKind)' == 'BuildAndRun'"
-          DependsOnTargets="ComputeResolvedFilesToPublishList;LinkNative" />
+          DependsOnTargets="ComputeResolvedFilesToPublishList;NativeCompile" />
 
 </Project>
