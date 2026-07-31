@@ -403,7 +403,6 @@ namespace ILAssembler.Tests
             Assert.Equal(!isDll, pe.PEHeaders.IsExe);
         }
 
-
         [Fact]
         public void SqstringAssemblyName_ParsedCorrectly()
         {
