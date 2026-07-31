@@ -368,6 +368,10 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\ElfNative.cs" Link="Compiler\ObjectWriter\ElfNative.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\ElfObjectWriter.cs" Link="Compiler\ObjectWriter\ElfObjectWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\UnixObjectWriter.cs" Link="Compiler\ObjectWriter\UnixObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmObjectWriter.cs" Link="Compiler\ObjectWriter\WasmObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmGlobalImports.cs" Link="Compiler\ObjectWriter\WasmGlobalImports.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmInstructions.cs" Link="Compiler\ObjectWriter\WasmInstructions.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmNative.cs" Link="Compiler\ObjectWriter\WasmNative.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\CoffObjectWriter.cs" Link="Compiler\ObjectWriter\CoffObjectWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\OutputInfoBuilder.cs" Link="Compiler\ObjectWriter\OutputInfoBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\PEObjectWriter.cs" Link="Compiler\ObjectWriter\PEObjectWriter.cs" />
@@ -686,6 +690,7 @@
     <Compile Include="Compiler\ObjectWriter\Eabi\EabiUnwindConverter.cs" />
     <Compile Include="Compiler\ObjectWriter\ElfObjectWriter.Aot.cs" />
     <Compile Include="Compiler\ObjectWriter\CoffObjectWriter.Aot.cs" />
+    <Compile Include="Compiler\ObjectWriter\WasmObjectWriter.Aot.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWriter.Aot.cs" />
     <Compile Include="Compiler\ObjectWriter\UnixObjectWriter.Aot.cs" />
     <Compile Include="Compiler\ObjectWriter\MachObjectWriter.Aot.cs" />
@@ -787,6 +792,9 @@
     </Compile>
     <Compile Include="..\..\Common\JitInterface\CorInfoTypes.VarInfo.cs">
       <Link>JitInterface\CorInfoTypes.VarInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\WasmLowering.cs">
+      <Link>JitInterface\WasmLowering.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\TypesDebugInfoWriter\TypesDebugInfoWriter.cs">
       <Link>TypeSystem\TypesDebugInfoWriter\TypesDebugInfoWriter.cs</Link>

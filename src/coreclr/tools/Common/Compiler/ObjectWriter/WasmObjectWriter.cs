@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Frozen;
 using System.Collections.Generic;
@@ -17,13 +18,15 @@ using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
+#if READYTORUN
 using Microsoft.NET.WebAssembly.Webcil;
+#endif
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal class PaddingHelper
+    internal sealed class PaddingHelper
     {
         private byte[] _padding;
         public PaddingHelper(int n, byte padByte = 0)
@@ -58,20 +61,21 @@ namespace ILCompiler.ObjectWriter
     /// <summary>
     /// Wasm object file format writer.
     /// </summary>
-    internal sealed class WasmObjectWriter : ObjectWriter
+    internal sealed partial class WasmObjectWriter : ObjectWriter
     {
         protected override CodeDataLayout LayoutMode => CodeDataLayout.Separate;
+        private protected override bool UsesSubsectionsViaSymbols => true;
 
         // We use 2 Wasm data segments for webcil,
         // 1 for the payload size, and the second for the payload itself.
-        const int NumDataSegments = 2;
+        private const int NumDataSegments = 2;
 
-        public WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
+        public WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null)
             : base(factory, options, outputInfoBuilder)
         {
         }
 
-        private void EmitWasmHeader(Stream outputFileStream)
+        private static void EmitWasmHeader(Stream outputFileStream)
         {
             outputFileStream.Write("\0asm"u8);
             outputFileStream.Write([0x1, 0x0, 0x0, 0x0]);
@@ -79,7 +83,7 @@ namespace ILCompiler.ObjectWriter
 
         private Dictionary<Utf8String, int> _uniqueSignatures = new();
         private Dictionary<string, int> _uniqueSymbols = new();
-        private int _methodCount = 0;
+        private int _methodCount;
 
         private Dictionary<SortableDependencyNode.ObjectNodeOrder, Utf8String> _wellKnownSymbols = new();
         private protected override void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)
@@ -106,28 +110,19 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
-            WasmLowering.LoweringFlags flags = WasmLowering.LoweringFlags.None;
-            if (node.HasGenericContextArg)
-            {
-                flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
-            }
-            if (node.IsAsyncCall)
-            {
-                flags |= WasmLowering.LoweringFlags.IsAsyncCall;
-            }
-            if (node.IsUnmanagedCallersOnly)
-            {
-                flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
-            }
+            WasmLowering.LoweringFlags flags = GetLoweringFlags(node);
             WriteSignatureIndexForFunction(node.Signature, flags, node);
             _uniqueSymbols.Add(node.GetMangledName(_nodeFactory.NameMangler), _methodCount);
             _methodCount++;
+#if READYTORUN
             if (node is INodeWithFunclets nodeWithFunclets)
             {
                 RecordFunclets(nodeWithFunclets);
             }
+#endif
         }
 
+#if READYTORUN
         private void RecordFunclets(INodeWithFunclets nodeWithFunclets)
         {
             FuncletKind[] funcletKinds = nodeWithFunclets.GetFuncletKinds();
@@ -141,14 +136,14 @@ namespace ILCompiler.ObjectWriter
 
             for (int i = 0; i < funcletKinds.Length; i++)
             {
-                 WasmFuncType funcletSignature = GetFuncletType(funcletKinds[i], pointerType);
+                WasmFuncType funcletSignature = GetFuncletType(funcletKinds[i], pointerType);
                 _uniqueSymbols.Add($"{mangledNodeName}_funclet_{i}", _methodCount);
                 _methodCount++;
                 RegisterStubIndexAndSignature(funcletSignature);
             }
         }
 
-        private WasmFuncType GetFuncletType(FuncletKind funcletKind, WasmValueType pointerType)
+        private static WasmFuncType GetFuncletType(FuncletKind funcletKind, WasmValueType pointerType)
         {
             return funcletKind switch
             {
@@ -156,6 +151,26 @@ namespace ILCompiler.ObjectWriter
                     new([pointerType, pointerType, pointerType]), new([pointerType])), // (FP, SP, EXN) -> RESULT
                 _ => new WasmFuncType(new([pointerType, pointerType]), new([])), // (FP, SP) -> void
             };
+        }
+#endif
+
+        private static WasmLowering.LoweringFlags GetLoweringFlags(INodeWithTypeSignature node)
+        {
+            WasmLowering.LoweringFlags flags = WasmLowering.LoweringFlags.None;
+            if (node.HasGenericContextArg)
+            {
+                flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
+            }
+            if (node.IsAsyncCall)
+            {
+                flags |= WasmLowering.LoweringFlags.IsAsyncCall;
+            }
+            if (node.IsUnmanagedCallersOnly)
+            {
+                flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
+            }
+
+            return flags;
         }
 
         private void WriteSignatureIndexForFunction(MethodSignature managedSignature, WasmLowering.LoweringFlags flags, ISymbolNode node)
@@ -166,7 +181,21 @@ namespace ILCompiler.ObjectWriter
             Utf8String key = signature.GetMangledName(_nodeFactory.NameMangler);
             if (!_uniqueSignatures.TryGetValue(key, out int signatureIndex))
             {
-                throw new InvalidOperationException($"Signature index of {key} not found for function: {node.ToString()}");
+#if READYTORUN
+                throw new InvalidOperationException($"Signature index of {key} not found for function: {node}");
+#else
+                // Auto-register the signature if not already known (e.g., for P/Invoke stubs).
+                signatureIndex = _uniqueSignatures.Count;
+                _uniqueSignatures.Add(key, signatureIndex);
+
+                // Write the type to the type section.
+                SectionWriter typeWriter = GetOrCreateSection(ObjectNodeSection.WasmTypeSection);
+                int encodeSize = signature.EncodeSize();
+                Span<byte> buffer = typeWriter.Buffer.GetSpan(encodeSize);
+                int bytesWritten = signature.Encode(buffer);
+                Debug.Assert(bytesWritten == encodeSize);
+                typeWriter.Buffer.Advance(bytesWritten);
+#endif
             }
 
             writer.WriteULEB128((ulong)signatureIndex);
@@ -265,27 +294,31 @@ namespace ILCompiler.ObjectWriter
 
         private WasmSectionType GetWasmSectionType(ObjectNodeSection section)
         {
-            if (!_sectionToType.ContainsKey(section))
+            if (!_sectionToType.TryGetValue(section, out WasmSectionType type))
             {
                 // All other sections map to generic data segments in Wasm
                 // TODO-WASM: Consider making the mapping explicit for every possible node type.
                 return WasmSectionType.Data;
             }
-            return _sectionToType[section];
+            return type;
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
         {
+#if READYTORUN
             WebcilSection section = _sections[sectionIndex] as WebcilSection;
             // We should only be updating the alignment of Webcil sections; Wasm-native sections should
             // not have alignment constraints.
-            Debug.Assert(section != null || alignment == 1, $"Section: {sectionIndex} is not a WebcilSection but alignment {alignment} requested");
-            if (section == null)
+            Debug.Assert(section is not null || alignment == 1, $"Section: {sectionIndex} is not a WebcilSection but alignment {alignment} requested");
+            if (section is null)
             {
                 return;
             }
 
             section.MinAlignment = Math.Max(section.MinAlignment, alignment);
+#else
+            // SectionWriter pads the data stream to the requested alignment.
+#endif
         }
 
 #if READYTORUN
@@ -493,7 +526,8 @@ namespace ILCompiler.ObjectWriter
 
         private protected override ObjectNodeSection GetEmitSection(ObjectNodeSection section)
         {
-            if (section == ObjectNodeSection.TextSection || section == ObjectNodeSection.ManagedCodeUnixContentSection)
+            if (section == ObjectNodeSection.TextSection ||
+                section == ObjectNodeSection.ManagedCodeUnixContentSection)
             {
                 return ObjectNodeSection.WasmCodeSection;
             }
@@ -531,9 +565,12 @@ namespace ILCompiler.ObjectWriter
             writer.WriteULEB128(NumDataSegments); // number of data segments
         }
 
-        private WebcilSegment _webcilSegment = null;
+#if READYTORUN
+        private WebcilSegment _webcilSegment;
+#endif
         private protected override void EmitSectionsAndLayout()
         {
+#if READYTORUN
             int totalMethodCount = _methodCount + 3;
             InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize);
             InsertWasmStub(new Utf8String("getWebcilPayload"), GetWebcilPayload);
@@ -541,11 +578,12 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(_methodCount == totalMethodCount);
 
             WriteDataCountSection();
+#endif
 
             PrependCount(SectionByName(ObjectNodeSection.WasmCodeSection.Name), _methodCount);
         }
 
-        private int _numDefinedGlobals = 0;
+        private int _numDefinedGlobals;
         private int NextGlobalIndex()
         {
 
@@ -576,6 +614,7 @@ namespace ILCompiler.ObjectWriter
         }
 
 
+#if READYTORUN
         private void WriteGlobalSection()
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.GlobalSection);
@@ -584,8 +623,9 @@ namespace ILCompiler.ObjectWriter
             WriteGlobal(writer, "webcilVersion", WasmValueType.I32, WasmMutabilityType.Const,
                 new WasmInstructionGroup([new WasmConstExpr(WasmExprKind.I32Const, WebcilConstants.WC_VERSION_MAJOR)]));
         }
+#endif
 
-        private void PrependCount(WasmSection section, int count)
+        private static void PrependCount(WasmSection section, int count)
         {
             section.PrependCount = count;
         }
@@ -597,7 +637,7 @@ namespace ILCompiler.ObjectWriter
         }
 
         // Sections excluding Webcil Data segment
-        readonly string[] SectionOrder =
+        private readonly string[] SectionOrder =
         [
             ObjectNodeSection.WasmTypeSection.Name,
             WasmObjectNodeSection.ImportSection.Name,
@@ -609,23 +649,21 @@ namespace ILCompiler.ObjectWriter
             ObjectNodeSection.WasmCodeSection.Name,
         ];
 
-        private int[] _sectionEmitOrder = null;
+        private int[] _sectionEmitOrder;
         private int[] SectionEmitOrder
         {
             get
             {
-                if (_sectionEmitOrder == null)
-                {
-                    _sectionEmitOrder = SectionOrder
-                        .Where(name => _sectionNameToIndex.ContainsKey(name))
-                        .Select(name => _sectionNameToIndex[name])
-                        .ToArray();
-                }
+                _sectionEmitOrder ??= SectionOrder
+                    .Where(_sectionNameToIndex.ContainsKey)
+                    .Select(name => _sectionNameToIndex[name])
+                    .ToArray();
 
                 return _sectionEmitOrder;
             }
         }
 
+#if READYTORUN
         private static readonly ObjectNodeSection WebcilRelocSection = new ObjectNodeSection("reloc", SectionType.ReadOnly);
         private void EmitRelocSectionData()
         {
@@ -656,12 +694,14 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private PaddingHelper _paddingHelper = new PaddingHelper(WebcilSectionAlignment);
+        private readonly PaddingHelper _paddingHelper = new PaddingHelper(WebcilSectionAlignment);
+#endif
 
         private protected override void EmitObjectFile(Stream outputFileStream)
         {
             Debug.Assert(outputFileStream.CanSeek, $"EmitObjectFile requires seekable output stream");
 
+#if READYTORUN
             if (_pendingBaseRelocs.Count > 0)
             {
                 GetOrCreateSection(WebcilRelocSection);
@@ -689,6 +729,13 @@ namespace ILCompiler.ObjectWriter
             WriteMemoryImport((ulong)_webcilSegment.GetFlatMappedSize());
             // Writing element counts <- imports being finalized.
             EmitSectionElementCounts();
+#else
+            // NativeAOT does not yet emit its data sections, but generated code still
+            // references linear memory. Import a minimum-sized memory and finalize the
+            // section counts so the compiler produces a structurally valid module.
+            WriteMemoryImport(0);
+            EmitSectionElementCounts();
+#endif
 
            /*********************************************************************
            * Write Wasm Sections, Excluding Data
@@ -761,28 +808,29 @@ namespace ILCompiler.ObjectWriter
             BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer, (uint)_webcilSegment.GetFlatMappedSize());
             BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer.AsSpan().Slice(4), (uint)_uniqueSymbols.Count);
             MemoryStream webcilSizeSegmentStream = new MemoryStream(lengthBuffer);
-            WasmDataSegment webcilSizeSegment = new WasmDataSegment(webcilSizeSegmentStream, new Utf8String("webcilCount"),
-                WasmDataSectionType.Passive, null);
+            WasmDataSegment webcilSizeSegment = new WasmDataSegment(webcilSizeSegmentStream, WasmDataSectionType.Passive, null);
 
             // Passive data segment for webcil payload contents
-            WasmDataSegment webcilContentsSegment = new WasmDataSegment(webcilStream, new Utf8String("webcilPayload"),
-                WasmDataSectionType.Passive, null);
+            WasmDataSegment webcilContentsSegment = new WasmDataSegment(webcilStream, WasmDataSectionType.Passive, null);
 
             // Create combined data section and emit
             WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilContentsSegment], new Utf8String("data"), contentAlign: 4);
             dataSection.Emit(outputFileStream);
 #endif
+
         }
 
-        Dictionary<int, List<SymbolicRelocation>> _resolvableRelocations = new();
-        SortedDictionary<uint, List<ushort>> _baseRelocMap = new();
+        private Dictionary<int, List<SymbolicRelocation>> _resolvableRelocations = new();
+#if READYTORUN
+        private readonly SortedDictionary<uint, List<ushort>> _baseRelocMap = new();
         // We group webcil relocs into 4kb blocks, similar to PE
-        const uint WebcilRelocPageSize = 0x1000;
+        private const uint WebcilRelocPageSize = 0x1000;
 
         // File-level relocations whose RVA computation is deferred until webcil section
         // VirtualAddresses have been assigned.
         private readonly record struct PendingBaseReloc(int SectionIndex, long Offset, RelocType FileRelocType);
         private readonly List<PendingBaseReloc> _pendingBaseRelocs = new();
+#endif
 
         private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
@@ -796,6 +844,7 @@ namespace ILCompiler.ObjectWriter
                 // for all relocation types.
                 resolvable.Add(reloc);
 
+#if READYTORUN
                 // A few relocation types (table indices and IMAGE_REL type relocs in Webcil) need
                 // an additional runtime reloc as well to add a base address.
                 // We defer the actual RVA computation to EmitObjectFile, where webcil section
@@ -806,9 +855,11 @@ namespace ILCompiler.ObjectWriter
                     Debug.Assert(_sections[sectionIndex] is WebcilSection);
                     _pendingBaseRelocs.Add(new PendingBaseReloc(sectionIndex, reloc.Offset, fileRelocType));
                 }
+#endif
             }
         }
 
+#if READYTORUN
         /// <summary>
         /// Processes the deferred file-level relocations after webcil section VirtualAddresses
         /// have been assigned. Populates <see cref="_baseRelocMap"/> with page-grouped base reloc
@@ -840,10 +891,11 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private bool IsWithinSection(long rva, WebcilSection section)
+        private static bool IsWithinSection(long rva, WebcilSection section)
         {
             return rva >= section.Header.VirtualAddress && rva < section.Header.VirtualAddress + section.Header.VirtualSize;
         }
+#endif
 
         // TODO-WASM: Currently, all Wasm relocs are resolved to 5 byte values unconditionally (the same size as the original placeholder padding), which is wasteful.
         // We should remove the padding and shrink the resolved values to their minimal size so we don't bloat the binary size.
@@ -852,6 +904,7 @@ namespace ILCompiler.ObjectWriter
         {
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
 
+#if READYTORUN
             WebcilSection? curSectionAsWebcil = null;
             uint webcilVirtualStart = 0;
             if (_sections[sectionIndex] is WebcilSection curSection)
@@ -864,6 +917,7 @@ namespace ILCompiler.ObjectWriter
             // we should have written the webcil header and each of the section headers (always non-zero size) before any
             // section contents
             Debug.Assert(curSectionAsWebcil is null || sectionStart != 0);
+#endif
 
             foreach (SymbolicRelocation reloc in relocs)
             {
@@ -893,9 +947,15 @@ namespace ILCompiler.ObjectWriter
                     continue;
                 }
 
-                SymbolDefinition definedSymbol = _definedSymbols[reloc.SymbolName];
+                _definedSymbols.TryGetValue(reloc.SymbolName, out SymbolDefinition? definedSymbol);
 
                 // The virtual address of the relocation we are resolving
+#if READYTORUN
+                if (definedSymbol is null)
+                {
+                    throw new InvalidDataException($"Symbol definition '{reloc.SymbolName}' not found");
+                }
+
                 uint virtualRelocOffset = 0;
                 if (curSectionAsWebcil is not null)
                 {
@@ -916,6 +976,7 @@ namespace ILCompiler.ObjectWriter
                     virtualSymbolImageOffset = symbolWebcilSection.Header.VirtualAddress + (uint)definedSymbol.Value;
                     Debug.Assert(IsWithinSection(virtualSymbolImageOffset, symbolWebcilSection));
                 }
+#endif
 
                 // We need a pinned raw pointer here for manipulation with Relocation.WriteValue
                 fixed (byte* pData = ReadRelocToDataSpan(reloc, relocScratchBuffer, sectionStart))
@@ -938,11 +999,11 @@ namespace ILCompiler.ObjectWriter
 
                             break;
                         }
-
                         case RelocType.IMAGE_REL_BASED_ABSOLUTE:
                             // No action required
                             break;
 
+#if READYTORUN
                         case RelocType.IMAGE_REL_BASED_DIR64:
                         case RelocType.IMAGE_REL_BASED_HIGHLOW:
                             // This is an ImageBase-relative value in PE, but our image base
@@ -960,10 +1021,15 @@ namespace ILCompiler.ObjectWriter
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset - (virtualRelocOffset + relocLength) + addend);
                             break;
                         case RelocType.IMAGE_REL_FILE_ABSOLUTE:
-                            Debug.Assert(symbolWebcilSection != null);
+                            if (symbolWebcilSection is null || definedSymbol is null)
+                            {
+                                throw new InvalidDataException($"Symbol definition '{reloc.SymbolName}' not found");
+                            }
+
                             long fileOffset = symbolWebcilSection.Header.PointerToRawData + definedSymbol.Value;
                             Relocation.WriteValue(reloc.Type, pData, fileOffset + addend);
                             break;
+#endif
                         case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                         {
                             // These relocs should be for cases of the form:
@@ -974,6 +1040,7 @@ namespace ILCompiler.ObjectWriter
                             // So, the relocated address value should always represent an offset relative to image base.
                             // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
                             // flag mapping
+#if READYTORUN
                             if (symbolWebcilSection is null)
                             {
                                 throw new InvalidDataException($"WASM_MEMORY_ADDR_REL_SLEB: symbol '{reloc.SymbolName}' (sectionIndex {definedSymbol.SectionIndex}, section type {_sections[definedSymbol.SectionIndex]?.GetType().Name}) is not in a WebcilSection. Reloc in section {sectionIndex} ({_sections[sectionIndex]?.GetType().Name}), offset {reloc.Offset:X}.");
@@ -981,6 +1048,10 @@ namespace ILCompiler.ObjectWriter
 
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
                             break;
+#else
+                            throw new PlatformNotSupportedException(
+                                $"NativeAOT WebAssembly memory address relocation for '{reloc.SymbolName}' is not supported.");
+#endif
                         }
                         case RelocType.WASM_MEMORY_ADDR_REL_LEB:
                         {
@@ -990,6 +1061,7 @@ namespace ILCompiler.ObjectWriter
                             // So, the relocated address value should always represent an offset relative to image base.
                             // This offset should ALWAYS be equal to the actual offset from image base at runtime, due to Webcil's
                             // flag mapping
+#if READYTORUN
                             if (symbolWebcilSection is null)
                             {
                                 throw new InvalidDataException($"WASM_MEMORY_ADDR_REL_LEB: symbol '{reloc.SymbolName}' (sectionIndex {definedSymbol.SectionIndex}, section type {_sections[definedSymbol.SectionIndex]?.GetType().Name}) is not in a WebcilSection. Reloc in section {sectionIndex} ({_sections[sectionIndex]?.GetType().Name}), offset {reloc.Offset:X}.");
@@ -997,6 +1069,10 @@ namespace ILCompiler.ObjectWriter
 
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
                             break;
+#else
+                            throw new PlatformNotSupportedException(
+                                $"NativeAOT WebAssembly memory address relocation for '{reloc.SymbolName}' is not supported.");
+#endif
                         }
                         case RelocType.WASM_TABLE_INDEX_I32:
                         case RelocType.WASM_TABLE_INDEX_I64:
@@ -1004,7 +1080,11 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.WASM_TABLE_INDEX_REL_I32:
                         {
                             string symbolName = reloc.SymbolName.ToString();
-                            int index = _uniqueSymbols[symbolName];
+                            if (!_uniqueSymbols.TryGetValue(symbolName, out int index))
+                            {
+                                throw new InvalidDataException($"Function table symbol definition '{reloc.SymbolName}' not found");
+                            }
+
                             // Here, we are effectively writing a table offset relative to the table_base.
                             // These will need to be fixed up by the runtime after load by adding tableBase
                             // except for WASM_TABLE_INDEX_REL_I32 and WASM_TABLE_INDEX_SLEB which are relative
@@ -1015,10 +1095,11 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.WASM_FUNCTION_INDEX_LEB:
                         {
                             string symbolName = reloc.SymbolName.ToString();
-                            int index = _uniqueSymbols[symbolName];
+                            if (!_uniqueSymbols.TryGetValue(symbolName, out int index))
+                            {
+                                throw new InvalidDataException($"Function symbol definition '{reloc.SymbolName}' not found");
+                            }
 
-                            // These are module-local function pointer indices, so we can simply write out the assigned function index
-                            // for this particular symbol
                             Relocation.WriteValue(reloc.Type, pData, index + addend);
                             break;
                         }
@@ -1134,8 +1215,10 @@ namespace ILCompiler.ObjectWriter
         {
             WriteTableExport("table", 0);
 
+#if READYTORUN
             Debug.Assert(_definedGlobals.ContainsKey("webcilVersion"));
             WriteGlobalExport("webcilVersion", _definedGlobals["webcilVersion"].Index);
+#endif
 
             string[] functionExports = _uniqueSymbols.Keys.ToArray();
             // TODO-WASM: Handle exports better (e.g., only export public methods, etc.)
@@ -1167,7 +1250,9 @@ namespace ILCompiler.ObjectWriter
         private protected override void EmitSymbolTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols, SortedSet<Utf8String> undefinedSymbols)
         {
             WriteImports();
+#if READYTORUN
             WriteGlobalSection();
+#endif
             WriteExports();
             WriteElements();
 
@@ -1179,6 +1264,9 @@ namespace ILCompiler.ObjectWriter
         {
             int funcIdx = _sectionNameToIndex[WasmObjectNodeSection.FunctionSection.Name];
             PrependCount(_sections[funcIdx], _methodCount);
+
+            int codeIdx = _sectionNameToIndex[ObjectNodeSection.WasmCodeSection.Name];
+            PrependCount(_sections[codeIdx], _methodCount);
 
             int typeIdx = _sectionNameToIndex[ObjectNodeSection.WasmTypeSection.Name];
             PrependCount(_sections[typeIdx], _uniqueSignatures.Count);
@@ -1193,7 +1281,9 @@ namespace ILCompiler.ObjectWriter
 
             PrependCount(SectionByName(WasmObjectNodeSection.ImportSection.Name), _numImports);
 
+#if READYTORUN
             PrependCount(SectionByName(WasmObjectNodeSection.GlobalSection.Name), _numDefinedGlobals);
+#endif
         }
     }
 
@@ -1203,7 +1293,7 @@ namespace ILCompiler.ObjectWriter
         public WasmSectionType Type { get; }
         public Utf8String Name { get; }
 
-        public int? PrependCount = null;
+        public int? PrependCount;
         public int PrependCountSize => PrependCount.HasValue ? (int)DwarfHelper.SizeOfULEB128((ulong)PrependCount.Value) : 0;
 
         private int EncodePrependCount(Span<byte> dest)
@@ -1231,7 +1321,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        Stream _dataStream;
+        private Stream _dataStream;
 
         public virtual int HeaderSize
         {
@@ -1292,7 +1382,7 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
-    internal class WasmDataSection : WasmSection
+    internal sealed class WasmDataSection : WasmSection
     {
         private List<WasmDataSegment> _segments;
         public List<WasmDataSegment> Segments => _segments;
@@ -1387,15 +1477,15 @@ namespace ILCompiler.ObjectWriter
         ActiveMemorySpecified = 2 // (data list(byte) (active memidx offset-expr))
     }
 
-    internal class WasmDataSegment
+    internal sealed class WasmDataSegment
     {
         // The segments are not sections per se, but they represent data segments within the data section.
-        Stream _stream;
-        WasmDataSectionType _type;
-        WasmInstructionGroup _initExpr;
+        private Stream _stream;
+        private WasmDataSectionType _type;
+        private WasmInstructionGroup _initExpr;
         private PaddingHelper _paddingHelper;
 
-        public WasmDataSegment(Stream contents, Utf8String name, WasmDataSectionType type, WasmInstructionGroup initExpr)
+        public WasmDataSegment(Stream contents, WasmDataSectionType type, WasmInstructionGroup initExpr)
         {
             _stream = contents;
             _type = type;
@@ -1427,19 +1517,20 @@ namespace ILCompiler.ObjectWriter
             return HeaderSize + ContentSize;
         }
 
-        private bool _paddingSet = false;
-        int _padding = 0;
+        private bool _paddingSet;
+        private int _padding;
+
         public int Padding
         {
-            set
-            {
-                _paddingSet = true;
-                _padding = value;
-            }
             get
             {
                 Debug.Assert(_paddingSet);
                 return _padding;
+            }
+            set
+            {
+                _paddingSet = true;
+                _padding = value;
             }
         }
 
@@ -1452,8 +1543,7 @@ namespace ILCompiler.ObjectWriter
             {
                 case WasmDataSectionType.Active:
                 {
-                    int len = 0;
-                    len = DwarfHelper.WriteULEB128(headerBuffer, (ulong)_type);
+                    int len = DwarfHelper.WriteULEB128(headerBuffer, (ulong)_type);
                     len += _initExpr.Encode(headerBuffer.Slice(len));
                     Debug.Assert(headerBuffer.Slice(len).Length == Relocation.WASM_PADDED_RELOC_SIZE_32);
                     DwarfHelper.WritePaddedULEB128(headerBuffer.Slice(len), (ulong)ContentSize);
@@ -1462,8 +1552,7 @@ namespace ILCompiler.ObjectWriter
                 }
                 case WasmDataSectionType.Passive:
                 {
-                    int len = 0;
-                    len = DwarfHelper.WriteULEB128(headerBuffer, (ulong)_type);
+                    int len = DwarfHelper.WriteULEB128(headerBuffer, (ulong)_type);
                     Debug.Assert(headerBuffer.Slice(len).Length == Relocation.WASM_PADDED_RELOC_SIZE_32, $"{headerBuffer.Slice(len).Length} != {Relocation.WASM_PADDED_RELOC_SIZE_32}");
                     DwarfHelper.WritePaddedULEB128(headerBuffer.Slice(len), (ulong)ContentSize);
                     len += headerBuffer.Slice(len).Length;

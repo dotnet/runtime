@@ -4,7 +4,7 @@
 namespace ILCompiler.ObjectWriter
 {
     /// <summary>
-    /// Indices of the Wasm globals imported from the <c>webcil</c> host module into every R2R Wasm module.
+    /// Indices of the Wasm globals imported from the <c>webcil</c> host module into compiler-generated Wasm modules.
     /// </summary>
     /// <remarks>
     /// Must stay in sync with <c>WasmObjectWriter.CreateDefaultGlobalImports()</c>, <c>_globalSymbolNameToGlobalIndex</c>,

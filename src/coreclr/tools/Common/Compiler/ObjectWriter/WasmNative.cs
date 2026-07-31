@@ -74,8 +74,8 @@ namespace ILCompiler.ObjectWriter
 
     public class WasmGlobalImportType : WasmImportType
     {
-        WasmValueType _valueType;
-        WasmMutabilityType _mutability;
+        private WasmValueType _valueType;
+        private WasmMutabilityType _mutability;
 
         public WasmGlobalImportType(WasmValueType valueType, WasmMutabilityType mutability) : base (WasmExternalKind.Global)
         {
@@ -104,7 +104,7 @@ namespace ILCompiler.ObjectWriter
         public override int Encode(Span<byte> buffer)
         {
             int pos = 0;
-            buffer[pos++] = (byte)0x70; // element type: funcref 
+            buffer[pos++] = (byte)0x70; // element type: funcref
             buffer[pos++] = (byte)0; // table limits: flags (0 = min-only, 1 = min+max)
             pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), 1); // Requires 1 table entry
             return pos;
@@ -120,12 +120,12 @@ namespace ILCompiler.ObjectWriter
         HasMin = 0x00,
         HasMinAndMax = 0x01
     }
-  
+
     public class WasmMemoryImportType : WasmImportType
     {
-        WasmLimitType _limitType;
-        uint _min;
-        uint? _max;
+        private WasmLimitType _limitType;
+        private uint _min;
+        private uint? _max;
 
         public WasmMemoryImportType(WasmLimitType limitType, uint min, uint? max = null) : base(WasmExternalKind.Memory)
         {
@@ -211,7 +211,7 @@ namespace ILCompiler.ObjectWriter
         public int EncodeRelocations(Span<Relocation> buffer) => Import.EncodeRelocations(buffer);
     }
 
-    public class WasmGlobal : IWasmEncodable
+    internal sealed class WasmGlobal : IWasmEncodable
     {
         public readonly int Index;
         public readonly string Name;
@@ -219,7 +219,7 @@ namespace ILCompiler.ObjectWriter
         private readonly WasmMutabilityType _mutability;
         private readonly WasmInstructionGroup _initExpr;
 
-        public WasmGlobal(int index, string name, WasmValueType valueType, WasmMutabilityType mutability, WasmInstructionGroup initExpr)
+        internal WasmGlobal(int index, string name, WasmValueType valueType, WasmMutabilityType mutability, WasmInstructionGroup initExpr)
         {
             Index = index;
             Name = name;
