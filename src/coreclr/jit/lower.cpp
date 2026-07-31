@@ -7030,7 +7030,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         // publishing the shared stub MethodDesc in the frame.
         src = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
 
-        if (m_compiler->info.compPublishStubParamAsICFMethodDesc)
+        if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_STUB_PARAM_ICF_MD))
         {
             src = m_compiler->gtNewLclvNode(m_compiler->lvaStubArgumentVar, TYP_I_IMPL);
         }
