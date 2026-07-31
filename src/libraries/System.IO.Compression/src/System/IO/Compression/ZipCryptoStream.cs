@@ -137,7 +137,7 @@ namespace System.IO.Compression
             }
             finally
             {
-                Array.Clear(passwordBytes);
+                ClearSensitiveData(passwordBytes);
                 ArrayPool<byte>.Shared.Return(passwordBytes);
             }
 

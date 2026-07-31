@@ -69,6 +69,8 @@
     <Compile Include="System\IO\Compression\ZipCryptoStream.Random.BrowserOrWasi.cs" Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'" />
     <Compile Include="System\IO\Compression\ZipCryptoStream.Random.Default.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'" />
     <Compile Include="System\IO\Compression\Interop.GetCryptographicallySecureRandomBytes.cs" Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'" />
+    <Compile Include="System\IO\Compression\ZipCryptoStream.ClearSensitiveData.Browser.cs" Condition="'$(TargetPlatformIdentifier)' == 'browser'" />
+    <Compile Include="System\IO\Compression\ZipCryptoStream.ClearSensitiveData.Default.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="System\IO\Compression\WinZipAesStream.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="System\IO\Compression\WinZipAesKeyMaterial.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="System\IO\Compression\WinZipAes.PlatformNotSupported.cs" Condition="'$(TargetPlatformIdentifier)' == 'browser'" />
