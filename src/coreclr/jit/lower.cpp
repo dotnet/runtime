@@ -7027,10 +7027,17 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         src                            = m_compiler->gtNewIconNode(stackByteOffset, TYP_INT);
 #else
         // On 64-bit targets, indirect calls may need the stub parameter value in InlinedCallFrame.m_Datum.
-        // If the stub parameter value is not needed, m_Datum will be initialized by the VM.
+        // CALLI stubs use the secret stub argument directly as the unmanaged target, so they leave m_Datum
+        // unused and keep the target only in the secret stub argument slot.
         if (m_compiler->info.compPublishStubParam)
         {
-            src = m_compiler->gtNewLclvNode(m_compiler->lvaStubArgumentVar, TYP_I_IMPL);
+            GenTree* const callTarget = call->gtControlExpr->gtEffectiveVal()->gtSkipReloadOrCopy();
+
+            if (!callTarget->OperIs(GT_LCL_VAR) ||
+                (callTarget->AsLclVarCommon()->GetLclNum() != m_compiler->lvaStubArgumentVar))
+            {
+                src = m_compiler->gtNewLclvNode(m_compiler->lvaStubArgumentVar, TYP_I_IMPL);
+            }
         }
 #endif // !defined(TARGET_64BIT)
     }

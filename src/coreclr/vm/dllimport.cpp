@@ -2362,13 +2362,8 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         else if (SF_IsCALLIStub(dwStubFlags)) // unmanaged CALLI
         {
             // for managed-to-unmanaged CALLI that requires marshaling, the target is passed
-            // as the secret argument to the stub by GenericPInvokeCalliHelper (asmhelpers.asm)
+            // as the secret argument to the stub by GenericPInvokeCalliHelper
             EmitLoadStubContext(pcsEmit, dwStubFlags);
-#ifdef TARGET_64BIT
-            // the secret arg has been shifted to left and ORed with 1 (see code:GenericPInvokeCalliHelper)
-            pcsEmit->EmitLDC(1);
-            pcsEmit->EmitSHR_UN();
-#endif // TARGET_64BIT
         }
         else if (SF_IsVarArgStub(dwStubFlags)) // vararg P/Invoke
         {

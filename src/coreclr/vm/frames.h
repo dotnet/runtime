@@ -2100,12 +2100,11 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-#ifdef HOST_64BIT
-        // See code:GenericPInvokeCalliHelper
-        return ((m_Datum != NULL) && !(dac_cast<TADDR>(m_Datum) & 0x1));
-#else // HOST_64BIT
+#ifdef TARGET_X86
         return ((dac_cast<TADDR>(m_Datum) & ~0xffff) != 0);
-#endif // HOST_64BIT
+#else
+        return (m_Datum != NULL);
+#endif
     }
 
     // Retrieves the return address into the code that called out
@@ -2151,12 +2150,10 @@ public:
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
 
-    // m_Datum contains PInvokeMethodDesc ptr or
-    // - on 64 bit host: CALLI target address (if lowest bit is set)
-    // - on windows x86 host: argument stack size (if value is <64k)
-    // When m_Datum contains PInvokeMethodDesc ptr, then on other than windows x86 host
-    // - bit 1 set indicates invoking new exception handling helpers
-    // - bit 2 indicates CallCatchFunclet or CallFinallyFunclet
+    // m_Datum contains a PInvokeMethodDesc pointer, except on x86 where it may instead
+    // contain the outgoing argument stack size for vararg and CALLI stubs.
+    // When m_Datum contains a PInvokeMethodDesc pointer, its low bits may carry
+    // InlinedCallFrameMarker values.
     // See code:HasFunction.
     PTR_PInvokeMethodDesc   m_Datum;
 
