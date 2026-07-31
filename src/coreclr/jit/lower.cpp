@@ -7021,8 +7021,8 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 
     if (callType == CT_INDIRECT)
     {
-#if !defined(TARGET_64BIT)
-        // On 32-bit targets, indirect calls need the size of the stack args in InlinedCallFrame.m_Datum.
+#ifdef TARGET_X86
+        // On x86 targets, indirect calls need the size of the stack args in InlinedCallFrame.m_Datum.
         const unsigned stackByteOffset = call->gtArgs.OutgoingArgsStackSize();
         src                            = m_compiler->gtNewIconNode(stackByteOffset, TYP_INT);
 #else
@@ -7039,7 +7039,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
                 src = m_compiler->gtNewLclvNode(m_compiler->lvaStubArgumentVar, TYP_I_IMPL);
             }
         }
-#endif // !defined(TARGET_64BIT)
+#endif // TARGET_X86
     }
     else
     {
