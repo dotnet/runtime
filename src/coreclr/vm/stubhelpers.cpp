@@ -493,24 +493,6 @@ FCIMPL0(void, StubHelpers::ClearLastError)
 }
 FCIMPLEND
 
-FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
-{
-#ifdef _DEBUG
-    PreserveLastErrorHolder preserveLastError;
-#endif
-
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    DELEGATEREF orefThis = (DELEGATEREF)ObjectToOBJECTREF(pThisUNSAFE);
-    return (PVOID)orefThis->GetMethodPtrAux();
-}
-FCIMPLEND
-
 extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx)
 {
     QCALL_CONTRACT;

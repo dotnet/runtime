@@ -2351,10 +2351,10 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
     {
         if (SF_IsDelegateStub(dwStubFlags)) // delegate invocation
         {
-            // get the delegate unmanaged target - we call a helper instead of just grabbing
-            // the _methodPtrAux field because we may need to intercept the call for host, etc.
+            int tokDelegate_methodPtrAux = pcsEmit->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR_AUX));
+
             pcsEmit->EmitLoadThis();
-            pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_DELEGATE_TARGET, 1, 1);
+            pcsEmit->EmitLDFLD(tokDelegate_methodPtrAux);
         }
 #ifdef FEATURE_COMINTEROP
         else if (SF_IsCOMStub(dwStubFlags))
