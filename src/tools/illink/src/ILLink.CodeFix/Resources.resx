@@ -144,6 +144,18 @@
   <data name="AddUnsafeToFieldCodeFixTitle" xml:space="preserve">
     <value>Mark field-like member 'unsafe'</value>
   </data>
+  <data name="RemoveUnsafeFromDerivedMemberCodeFixTitle" xml:space="preserve">
+    <value>Remove 'unsafe' from this member</value>
+  </data>
+  <data name="AddUnsafeToBaseMemberCodeFixTitle" xml:space="preserve">
+    <value>Mark the overridden or implemented member 'unsafe'</value>
+  </data>
+  <data name="MatchPartialSafetyModifierCodeFixTitle" xml:space="preserve">
+    <value>Match the safety modifier on both partial declarations</value>
+  </data>
+  <data name="ReplaceUnsafeWithSafeCodeFixTitle" xml:space="preserve">
+    <value>Replace 'unsafe' with 'safe' on this member</value>
+  </data>
   <data name="UconditionalSuppressMessageCodeFixTitle" xml:space="preserve">
     <value>Add UnconditionalSuppressMessage attribute to parent method</value>
   </data>

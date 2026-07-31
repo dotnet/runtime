@@ -141,8 +141,33 @@ namespace System.Security.Cryptography.Tests
                 throw new SkipTestException(nameof(IsNotSupported));
         }
 
-        public static KeySizes? PlatformKeySizeRequirements { get; } =
-            PlatformDetection.IsOpenSslSupported && !PlatformDetection.IsSymCryptOpenSsl ? new KeySizes(4, 512, 1) : null;
+        private static KeySizes? DetectKeySizeLimits()
+        {
+            if (!IsSupported || !PlatformDetection.IsOpenSslSupported)
+            {
+                // Non-OpenSSL has no known key size limitations.
+                return null;
+            }
+
+            TKmac? kmac = null;
+
+            try
+            {
+                kmac = TKmacTrait.Create([], []);
+                return null; // If an empty key worked, then the OpenSSL provider has no known limits.
+            }
+            catch (CryptographicException)
+            {
+                // If an empty key did not work, the only other known key size limits are [4, 512].
+                return new KeySizes(4, 512, 1);
+            }
+            finally
+            {
+                kmac?.Dispose();
+            }
+        }
+
+        public static KeySizes? PlatformKeySizeRequirements { get; } = DetectKeySizeLimits();
 
         public static int? PlatformMaxOutputSize { get; } = PlatformDetection.IsOpenSslSupported ? 0xFFFFFF / 8 : null;
         public static int? PlatformMaxCustomizationStringSize { get; } = PlatformDetection.IsOpenSslSupported ? 512 : null;
