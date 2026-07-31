@@ -6305,7 +6305,9 @@ static bool TryGetCalliStubCallConv(
             CorInfoCallConvExtension unmgdCallConv;
             if (FAILED(hr))
             {
-                pError->Set(kTypeLoadException, errorResID);
+                // Report the failure the same way COMPlusThrowHR(hr, errorResID) would have:
+                // the exception kind comes from the HRESULT, not from the parser's failure mode.
+                pError->Set(EEException::GetKindFromHR(hr), errorResID);
                 unmgdCallConv = CallConv::GetDefaultUnmanagedCallingConvention();
             }
             else
