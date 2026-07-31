@@ -6208,13 +6208,14 @@ static void BuildCalliILStubSignature(
     // Only signatures that describe a standalone method signature get here.
     _ASSERTE((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) == 0);
 
-    bool hasThis = (callConv & (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS)) != 0;
+    bool hasImplicitThis = (callConv & IMAGE_CEE_CS_CALLCONV_HASTHIS) != 0 &&
+                           (callConv & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS) == 0;
 
     uint32_t numArgs;
     IfFailThrow(sigParser.GetData(&numArgs));
 
     pSigBuilder->AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
-    pSigBuilder->AppendData(numArgs + (hasThis ? 2 : 1));
+    pSigBuilder->AppendData(numArgs + (hasImplicitThis ? 2 : 1));
 
     // The return type, copied verbatim.
     PCCOR_SIGNATURE pRetTypeStart = sigParser.GetPtr();
@@ -6222,8 +6223,10 @@ static void BuildCalliILStubSignature(
     PCCOR_SIGNATURE pRetTypeEnd = sigParser.GetPtr();
     pSigBuilder->AppendBlob((PVOID)pRetTypeStart, (DWORD)(pRetTypeEnd - pRetTypeStart));
 
-    // The instance pointer, if the call site has one, ahead of the declared parameters.
-    if (hasThis)
+    // The instance pointer, if the call site has an implicit 'this', ahead of the declared parameters.
+    // For EXPLICITTHIS signatures the this parameter is already part of numArgs, so no extra parameter
+    // is added.
+    if (hasImplicitThis)
     {
         pSigBuilder->AppendElementType(ELEMENT_TYPE_I);
     }
