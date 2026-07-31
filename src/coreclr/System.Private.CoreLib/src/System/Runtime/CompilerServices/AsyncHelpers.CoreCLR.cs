@@ -1534,7 +1534,7 @@ namespace System.Runtime.CompilerServices
             else if ((flags & ContinuationFlags.ContinueOnCapturedSynchronizationContext) != 0)
             {
                 Debug.Assert(continuationContext is SynchronizationContext);
-                if ((SynchronizationContext)continuationContext! == currentThread._synchronizationContext)
+                if (continuationContext == currentThread._synchronizationContext)
                 {
                     return;
                 }
@@ -1542,7 +1542,7 @@ namespace System.Runtime.CompilerServices
             else if ((flags & ContinuationFlags.ContinueOnCapturedTaskScheduler) != 0)
             {
                 Debug.Assert(continuationContext is TaskScheduler);
-                if ((TaskScheduler)continuationContext! == TaskScheduler.InternalCurrent)
+                if (continuationContext == TaskScheduler.InternalCurrent)
                 {
                     return;
                 }
