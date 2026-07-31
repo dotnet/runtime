@@ -4385,11 +4385,8 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         pTemplate->m_pBasicComMT = pTemplate->CreateComMethodTableForBasic(pMT);
         pTemplate->m_pBasicComMT->AddRef();
 
-        if (ClassSupportsIClassX(pMT))
-        {
-            // we will allow building IClassX for the class
-            pTemplate->m_flags |= enum_SupportsIClassX;
-        }
+        // we will allow building IClassX for the class
+        pTemplate->m_flags |= enum_SupportsIClassX;
 
         // Eagerly create the interface CMTs.
         // when iterate the interfaces implemented by the methodtable, we can check whether

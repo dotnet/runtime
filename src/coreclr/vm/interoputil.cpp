@@ -1701,23 +1701,6 @@ BOOL IsIClassX(MethodTable *pMT, REFIID riid, ComMethodTable **ppComMT)
 
 
 
-//---------------------------------------------------------------------------
-// Returns TRUE if we support IClassX (the auto-generated class interface)
-// for the given class.
-BOOL ClassSupportsIClassX(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return TRUE;
-}
-
-
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 //---------------------------------------------------------------------------
