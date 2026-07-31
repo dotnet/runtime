@@ -392,11 +392,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             {
                                 if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding)
                                 {
-                                    // Only a missing key is an error here, not an explicit null.
-                                    string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
-                                    string condition = $"if (!{Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: {SymbolDisplay.FormatLiteral(configKeyName, quote: true)}, out string? {valueIdentifier}))";
+                                    if (member.TypeRef.CanBeNull)
+                                    {
+                                        // A type that can hold null takes the section value as-is, whether it is
+                                        // absent or explicitly null.
+                                        _writer.WriteLine($@"{parsedMemberDeclarationLhs} = {Identifier.configuration}[""{configKeyName}""];");
+                                        _writer.WriteLine();
+                                        return;
+                                    }
+
+                                    string condition = $"if ({Identifier.configuration}[{SymbolDisplay.FormatLiteral(configKeyName, quote: true)}] is not {parsedMemberDeclarationLhs})";
                                     EmitThrowBlock(condition);
-                                    _writer.WriteLine($"{parsedMemberDeclarationLhs} = {valueIdentifier};");
                                     _writer.WriteLine();
                                     return;
                                 }
@@ -425,32 +431,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (canBindToMember)
                     {
-                        if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding)
+                        // A type that can hold null is left at its null default rather than treated as an error.
+                        if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding && !member.TypeRef.CanBeNull)
                         {
-                            // Add exception logic for parameter ctors; must be present in configuration object.
-                            TypeSpec typeSpec = _typeIndex.GetEffectiveTypeSpec(member.TypeRef);
-                            EmitThrowBlock(condition: GetThrowConditionForUnboundParameter(typeSpec));
+                            EmitThrowBlock(condition: "else");
                         }
 
                         _writer.WriteLine();
-                    }
-
-                    // Only an absent key, or a value that could not be bound, is an error; a null or empty value binds null.
-                    string GetThrowConditionForUnboundParameter(TypeSpec typeSpec)
-                    {
-                        if (typeSpec is not ComplexTypeSpec)
-                        {
-                            return "else";
-                        }
-
-                        string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
-                        string keyIsMissingOrUnbindable = $"(!{Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: {SymbolDisplay.FormatLiteral(configKeyName, quote: true)}, out string? {valueIdentifier}) || !string.IsNullOrEmpty({valueIdentifier}))";
-
-                        // Arrays and IEnumerable<T> may already have been assigned an empty collection above, so their
-                        // throw block cannot be the `else` case.
-                        return typeSpec is ArraySpec || typeSpec.IsExactIEnumerableOfT
-                            ? $"if ({escapedName} is null && {keyIsMissingOrUnbindable})"
-                            : $"else if {keyIsMissingOrUnbindable}";
                     }
 
                     void EmitThrowBlock(string condition) =>
@@ -1033,13 +1020,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             {
                                 EmitBlankLineIfRequired();
                                 string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
-                                EmitStartBlock($"if ({Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: {SymbolDisplay.FormatLiteral(member.ConfigurationKeyName, quote: true)}, out string? {valueIdentifier}))");
+
+                                // A parameter that cannot hold null needs a usable value, so an absent, null or empty
+                                // value all fall through to the caller's else-branch, which throws.
+                                bool requireValue = bindingToLocal && !member.TypeRef.CanBeNull && member is ParameterSpec { ErrorOnFailedBinding: true };
+
+                                string valueCondition = requireValue ? $" && !string.IsNullOrEmpty({valueIdentifier})" : string.Empty;
+                                EmitStartBlock($"if ({Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: {SymbolDisplay.FormatLiteral(member.ConfigurationKeyName, quote: true)}, out string? {valueIdentifier}){valueCondition})");
 
                                 // Decide to emit the null check block for nullable types (e.g. int?).
                                 // We don't emit this block for types that can be assigned directly from IConfigurationSection.Value as the valueIdentifier value can assigned
                                 // anyway to the memberAccessExpr regardless of the nullability. This can reduce the emitted code size when assigning objects or strings which
-                                // are common cases.
-                                bool emitNullCheck = member.TypeRef.CanBeNull && stringParsableType.StringParsableTypeKind != StringParsableTypeKind.AssignFromSectionValue;
+                                // are common cases. A parameter with a declared default is the exception: its default has to survive a null value.
+                                bool emitNullCheck = member.TypeRef.CanBeNull &&
+                                    (stringParsableType.StringParsableTypeKind != StringParsableTypeKind.AssignFromSectionValue ||
+                                        (bindingToLocal && member is ParameterSpec { HasExplicitDefaultValue: true }));
 
                                 // TryConvertValue turns an empty value into null for Nullable<T>, but leaves other nullable
                                 // types to their type converter.
@@ -1048,10 +1043,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 // Nullable type can be set to null
                                 if (emitNullCheck)
                                 {
+                                    // A parameter's declared default outranks a null or empty value, as in BindParameter.
+                                    string nullValueExpr = bindingToLocal && member is ParameterSpec { HasExplicitDefaultValue: true }
+                                        ? member.DefaultValueExpr
+                                        : "null";
+
                                     EmitStartBlock(treatEmptyValueAsNull
                                         ? $"if (string.IsNullOrEmpty({valueIdentifier}))"
                                         : $"if ({valueIdentifier} is null)");
-                                    _writer.WriteLine($"{memberAccessExpr} = null;");
+                                    _writer.WriteLine($"{memberAccessExpr} = {nullValueExpr};");
                                     EmitEndBlock(); // End if-check for input type.
                                     EmitStartBlock($"else");
                                 }
@@ -1061,7 +1061,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     valueIdentifier,
                                     sectionPathExpr,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{memberAccessExpr} = {parsedValueExpr};"),
-                                    checkForNullSectionValue: !(emitNullCheck && treatEmptyValueAsNull));
+                                    checkForNullSectionValue: !(emitNullCheck && treatEmptyValueAsNull) && !requireValue);
 
                                 if (emitNullCheck)
                                 {

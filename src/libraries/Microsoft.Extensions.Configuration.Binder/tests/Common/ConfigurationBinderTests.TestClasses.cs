@@ -190,6 +190,8 @@ namespace Microsoft.Extensions
 
         public record RecordWithNullableIntValue(int? Value);
 
+        public record RecordWithIntValue(int Value);
+
         public record RecordWithComplexValue(NestedOptions Value);
 
         public record RecordWithArrayValue(string[] Value);

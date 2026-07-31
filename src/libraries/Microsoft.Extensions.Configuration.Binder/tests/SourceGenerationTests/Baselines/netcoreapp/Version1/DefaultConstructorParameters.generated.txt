@@ -63,13 +63,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             string name = "John Doe"!;
             if (TryGetConfigurationValue(configuration, key: "Name", out string? value0))
             {
-                name = value0;
+                if (value0 is null)
+                {
+                    name = "John Doe";
+                }
+                else
+                {
+                    name = value0;
+                }
             }
 
             string address = "1 Microsoft Way"!;
             if (TryGetConfigurationValue(configuration, key: "Address", out string? value1))
             {
-                address = value1;
+                if (value1 is null)
+                {
+                    address = "1 Microsoft Way";
+                }
+                else
+                {
+                    address = value1;
+                }
             }
 
             int age = (int)(42);
@@ -131,7 +145,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (string.IsNullOrEmpty(value8))
                 {
-                    nage = null;
+                    nage = (int?)(42);
                 }
                 else
                 {
@@ -144,7 +158,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (string.IsNullOrEmpty(value9))
                 {
-                    nf = null;
+                    nf = 42F;
                 }
                 else
                 {
@@ -157,7 +171,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (string.IsNullOrEmpty(value10))
                 {
-                    nd = null;
+                    nd = 3.1415899999999999D;
                 }
                 else
                 {
@@ -170,7 +184,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (string.IsNullOrEmpty(value11))
                 {
-                    nm = null;
+                    nm = 3.1415926535897932384626433M;
                 }
                 else
                 {
@@ -183,7 +197,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (string.IsNullOrEmpty(value12))
                 {
-                    nsc = null;
+                    nsc = (global::System.StringComparison?)(4);
                 }
                 else
                 {
@@ -196,7 +210,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (string.IsNullOrEmpty(value13))
                 {
-                    nc = null;
+                    nc = 'q';
                 }
                 else
                 {
