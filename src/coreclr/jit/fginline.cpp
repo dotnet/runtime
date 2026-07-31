@@ -2577,8 +2577,8 @@ void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
 }
 
 //------------------------------------------------------------------------
-// fgSetupAsyncFrameTransitionCall: Turn a call to
-//   AsyncHelpers.RestoreInlinedFrameContinuationContext into a proper async call.
+// fgSetupAsyncFrameTransitionCall: Turn a call to AsyncHelpers.RestoreInlinedFrameContexts
+//   into a proper async call.
 //
 // Arguments:
 //    call           - the call, with its user arguments already added
@@ -2689,21 +2689,17 @@ GenTree* Compiler::gtNewContinuationMemberIndir(const ContinuationMember& member
 //
 //      if (resumed_F)
 //      {
-//          AsyncHelpers.RestoreInlinedFrameExecutionContext(continuation.ExecutionContextFor<caller>);
-//          await AsyncHelpers.RestoreInlinedFrameContinuationContext(continuation.ContinuationContextFor<caller>,
-//                                                                    continuation.FlagsFor<caller>);
+//          await AsyncHelpers.RestoreInlinedFrameContexts(continuation.ExecutionContextFor<caller>,
+//                                                         continuation.ContinuationContextFor<caller>,
+//                                                         continuation.FlagsFor<caller>);
 //          resumed_caller = true;
 //      }
 //
-//    Only the check is expanded as IR; the restores are left as plain calls. The
+//    Only the check is expanded as IR; the restore itself is left as a single call. The
 //    synchronous case is the one worth optimizing, and by the time we get past the check
-//    we have already suspended and resumed at least once, so the calls are cheap. In
+//    we have already suspended and resumed at least once, so one more call is cheap. In
 //    particular the "are we already on the right context?" test, which is what actually
 //    decides whether we suspend, stays inside the helper.
-//
-//    The ExecutionContext restore cannot be folded into the same helper: a runtime async
-//    method restores the contexts it captured on entry when it returns, which would undo
-//    it. It is a separate, non-async call for that reason.
 //
 //    The members are read off the continuation this method was resumed with. That is
 //    only valid when resumed_F is true, which is exactly the guard: resumed_F can only
@@ -2781,28 +2777,23 @@ void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicB
     {
         CORINFO_ASYNC_INFO* const asyncInfo = eeGetAsyncInfo();
 
-        GenTreeCall* const restoreExecCtxCall =
-            gtNewUserCallNode(asyncInfo->restoreInlinedFrameExecutionContextMethHnd, TYP_VOID);
-        restoreExecCtxCall->gtArgs
-            .PushFront(this,
-                       NewCallArg::Primitive(
-                           gtNewContinuationMemberIndir(ContinuationMember::InlineFrameExecutionContext(inlineDepth),
-                                                        TYP_REF)));
-        fgInsertStmtAtEnd(restoreBlock, gtNewStmt(restoreExecCtxCall));
-
-        GenTreeCall* const restoreContinuationCtxCall =
-            gtNewUserCallNode(asyncInfo->restoreInlinedFrameContinuationContextMethHnd, TYP_VOID);
-        restoreContinuationCtxCall->gtArgs
-            .PushFront(this,
-                       NewCallArg::Primitive(
-                           gtNewContinuationMemberIndir(ContinuationMember::InlineFrameFlags(inlineDepth), TYP_INT)));
-        restoreContinuationCtxCall->gtArgs
+        GenTreeCall* const restoreCall = gtNewUserCallNode(asyncInfo->restoreInlinedFrameContextsMethHnd, TYP_VOID);
+        restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(
+                                                gtNewContinuationMemberIndir(ContinuationMember::InlineFrameFlags(
+                                                                                 inlineDepth),
+                                                                             TYP_INT)));
+        restoreCall->gtArgs
             .PushFront(this,
                        NewCallArg::Primitive(
                            gtNewContinuationMemberIndir(ContinuationMember::InlineFrameContinuationContext(inlineDepth),
                                                         TYP_REF)));
-        fgSetupAsyncFrameTransitionCall(restoreContinuationCtxCall, inlineContext, di);
-        fgInsertStmtAtEnd(restoreBlock, gtNewStmt(restoreContinuationCtxCall));
+        restoreCall->gtArgs.PushFront(this,
+                                      NewCallArg::Primitive(
+                                          gtNewContinuationMemberIndir(ContinuationMember::InlineFrameExecutionContext(
+                                                                           inlineDepth),
+                                                                       TYP_REF)));
+        fgSetupAsyncFrameTransitionCall(restoreCall, inlineContext, di);
+        fgInsertStmtAtEnd(restoreBlock, gtNewStmt(restoreCall));
 
         GenTree* const store = gtNewStoreLclVarNode(resumedCaller, gtNewIconNode(1));
         fgInsertStmtAtEnd(restoreBlock, gtNewStmt(store));

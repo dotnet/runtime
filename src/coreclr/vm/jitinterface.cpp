@@ -10445,8 +10445,7 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->captureContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_CONTEXTS));
     pAsyncInfoOut->restoreContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_CONTEXTS));
     pAsyncInfoOut->restoreContextsOnSuspensionMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_CONTEXTS_ON_SUSPENSION));
-    pAsyncInfoOut->restoreInlinedFrameExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_INLINED_FRAME_EXECUTION_CONTEXT));
-    pAsyncInfoOut->restoreInlinedFrameContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_INLINED_FRAME_CONTINUATION_CONTEXT));
+    pAsyncInfoOut->restoreInlinedFrameContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_INLINED_FRAME_CONTEXTS));
     pAsyncInfoOut->captureInlinedFrameTransitionMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_INLINED_FRAME_TRANSITION));
     pAsyncInfoOut->finishSuspensionNoContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINISH_SUSPENSION_NO_CONTINUATION_CONTEXT));
     pAsyncInfoOut->finishSuspensionWithContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINISH_SUSPENSION_WITH_CONTINUATION_CONTEXT));

@@ -170,13 +170,11 @@ if (resumed_C && !AsyncHelpers.IsOnRightContext(continuation.ContinuationContext
 We expect `IsOnRightContext` to be true almost always, since it is very rare that the current synchronization context is modified, especially during the execution of async methods.
 If this was a common case then it is unlikely that inlining would ever be profitable.
 
-The implementation expands only the `resumed_C` check as JIT IR and leaves the rest as two calls
-(`AsyncHelpers.RestoreInlinedFrameExecutionContext` and `AsyncHelpers.RestoreInlinedFrameContinuationContext`,
-the latter doing the `IsOnRightContext` check and the suspension itself internally).
+The implementation expands only the `resumed_C` check as JIT IR and leaves the rest as a single
+`AsyncHelpers.RestoreInlinedFrameContexts` call, which does the `ExecutionContext` restore, the
+`IsOnRightContext` check and the suspension itself internally.
 The synchronous case is the one worth optimizing for, and anything past the `resumed_C` check has
 already paid for at least one suspension and resumption.
-The `ExecutionContext` restore has to be a separate, non-async call: a runtime async method restores
-the contexts it captured on entry when it returns, which would undo it.
 
 ### Handling synchronous saves and restores of contexts
 

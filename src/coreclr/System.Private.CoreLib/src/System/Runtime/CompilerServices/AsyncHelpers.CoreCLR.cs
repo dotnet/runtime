@@ -1526,40 +1526,35 @@ namespace System.Runtime.CompilerServices
             return true;
         }
 
-        // Restore the ExecutionContext that an inlined async frame captured when it logically
-        // returned to its caller.
+        // Restore the contexts that an inlined async frame captured when it logically returned to
+        // its caller, after that frame was resumed inside its own body.
         //
-        // Unlike the synchronous restore at the end of a method, this runs only after a
-        // resumption, so it must target the thread we were resumed on rather than the one
-        // whose contexts were captured on entry.
+        // Used by the JIT when inlining runtime async calls. The JIT emits the check of whether
+        // the frame was resumed at all and calls this when it was; everything the async
+        // infrastructure would otherwise have done at that frame boundary happens here.
         //
-        // This deliberately is not a runtime async method: such a method restores the contexts
-        // it captured on entry when it returns, which would undo the restore done here.
-        private static void RestoreInlinedFrameExecutionContext(ExecutionContext? previousExecCtx)
-        {
-            RestoreExecutionContext(Thread.CurrentThreadAssumedInitialized, previousExecCtx);
-        }
-
-        // Get back onto the continuation context that an inlined async frame's caller captured,
-        // if we are not already on it.
+        // Unlike the synchronous restore at the end of a method, the ExecutionContext restore runs
+        // only after a resumption, so it must target the thread we were resumed on rather than the
+        // one whose contexts were captured on entry. Note that this relies on no context save and
+        // restore being emitted around this method itself; that would undo the restore on the way
+        // out. It is not, since this is a manually marked async method and not an async variant of
+        // a task returning one.
         //
-        // Used by the JIT when inlining runtime async calls: when an inlined callee logically
-        // returns to its caller after having been resumed, we must continue on the context the
-        // caller's continuation captured. The JIT emits the check of whether the frame was
-        // resumed at all and calls this when it was; the far less likely check of whether the
-        // context actually differs is left to this method.
+        // If we are not already on the continuation context the caller's continuation captured we
+        // suspend to get back onto it. Suspending on an already completed task makes the dispatcher
+        // re-dispatch the continuation immediately. Because that dispatch happens with
+        // canInline: false, it always posts or schedules onto the requested context rather than
+        // running inline here, which is what we want -- we only suspend when we are known to be on
+        // the wrong context.
         //
         // 'flags' must contain only ContinuationFlags.AllContinuationFlags bits.
-        //
-        // Suspending on an already completed task makes the dispatcher re-dispatch the continuation
-        // immediately. Because that dispatch happens with canInline: false, it always posts or
-        // schedules onto the requested context rather than running inline here, which is what we
-        // want -- we only suspend when we are known to be on the wrong context.
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe void RestoreInlinedFrameContinuationContext(object? continuationContext, ContinuationFlags flags)
+        private static unsafe void RestoreInlinedFrameContexts(ExecutionContext? previousExecCtx, object? continuationContext, ContinuationFlags flags)
         {
             Debug.Assert((flags & ~ContinuationFlags.AllContinuationFlags) == 0);
+
+            RestoreExecutionContext(Thread.CurrentThreadAssumedInitialized, previousExecCtx);
 
             if (IsOnRightContext(continuationContext, flags))
             {
