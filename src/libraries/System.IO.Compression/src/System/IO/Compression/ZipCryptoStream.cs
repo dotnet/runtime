@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -149,9 +150,9 @@ namespace System.IO.Compression
             Debug.Assert(header.Length == 12);
 
             // bytes 0..9 random
-            Span<byte> randomBytes = stackalloc byte[16];
-            Guid.NewGuid().TryWriteBytes(randomBytes);
-            randomBytes.Slice(0, 10).CopyTo(header);
+            Span<byte> randomBytes = stackalloc byte[10];
+            RandomNumberGenerator.Fill(randomBytes);
+            randomBytes.CopyTo(header);
 
             // bytes 10..11 verifier
             if (_crc32ForHeader.HasValue)
