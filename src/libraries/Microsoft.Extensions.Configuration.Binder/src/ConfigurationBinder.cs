@@ -1068,9 +1068,6 @@ namespace Microsoft.Extensions.Configuration
         private static bool IsIEnumerableInterface(Type type)
             => type.IsInterface && type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>);
 
-        private static bool CanBeNull(Type type)
-            => !type.IsValueType || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
-
         private static bool TypeIsASetInterface(Type type)
         {
             if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
@@ -1166,7 +1163,7 @@ namespace Microsoft.Extensions.Configuration
                 {
                     propertyBindingPoint.SetValue(defaultValue);
                 }
-                else if (!CanBeNull(parameter.ParameterType))
+                else
                 {
                     throw new InvalidOperationException(SR.Format(SR.Error_ParameterHasNoMatchingConfig, type, parameterName));
                 }

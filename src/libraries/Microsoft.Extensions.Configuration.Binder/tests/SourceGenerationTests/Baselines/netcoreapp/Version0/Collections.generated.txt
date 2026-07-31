@@ -218,7 +218,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 return section.TryGetValue(key, out value);
             }
-        
+
+            if (key != null && configuration.GetSection(key) is ConfigurationSection childSection)
+            {
+                return childSection.TryGetValue(key: null, out value);
+            }
+
             value = key != null ? configuration[key] : configuration is IConfigurationSection sec ? sec.Value : null;
             return value != null;
         }

@@ -250,6 +250,19 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Null(config.GetValue<int?>("empty"));
         }
 
+        [Theory]
+        [InlineData("""{ "NullableInt": null, "Text": null }""")]
+        [InlineData("""{ "NullableInt": "", "Text": null }""")]
+        public void PropertiesBindNullWhenConfigurationValueIsNullOrEmpty(string json)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            OptionsWithPresetValues options = config.Get<OptionsWithPresetValues>();
+
+            Assert.Null(options.NullableInt);
+            Assert.Null(options.Text);
+        }
+
         [Fact]
         public void Get_Scalar()
         {
@@ -1123,6 +1136,118 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                 SR.Format(SR.Error_ParameterHasNoMatchingConfig, typeof(Line), nameof(Line.Thickness)),
                 exception.Message);
         }
+
+        [Theory]
+        [InlineData(ConstructorParameterKind.StringType, false)]
+        [InlineData(ConstructorParameterKind.ObjectType, false)]
+        [InlineData(ConstructorParameterKind.NullableValueType, false)]
+        [InlineData(ConstructorParameterKind.ComplexType, false)]
+        [InlineData(ConstructorParameterKind.ArrayType, false)]
+        [InlineData(ConstructorParameterKind.StringType, true)]
+        [InlineData(ConstructorParameterKind.ObjectType, true)]
+        [InlineData(ConstructorParameterKind.NullableValueType, true)]
+        [InlineData(ConstructorParameterKind.ComplexType, true)]
+        [InlineData(ConstructorParameterKind.ArrayType, true)]
+        public void ConstructorParameterBindsNullWhenConfigurationValueIsNull(ConstructorParameterKind kind, bool hasDefaultValue)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Value": null }""");
+
+            Assert.Null(GetConstructorParameterValue(config, kind, hasDefaultValue));
+        }
+
+        [Theory]
+        [InlineData(ConstructorParameterKind.StringType, false)]
+        [InlineData(ConstructorParameterKind.ObjectType, false)]
+        [InlineData(ConstructorParameterKind.NullableValueType, false)]
+        [InlineData(ConstructorParameterKind.ComplexType, false)]
+        [InlineData(ConstructorParameterKind.ArrayType, false)]
+        [InlineData(ConstructorParameterKind.StringType, true)]
+        [InlineData(ConstructorParameterKind.ObjectType, true)]
+        [InlineData(ConstructorParameterKind.NullableValueType, true)]
+        [InlineData(ConstructorParameterKind.ComplexType, true)]
+        [InlineData(ConstructorParameterKind.ArrayType, true)]
+        public void ConstructorParameterBindsToEmptyValueWhenConfigurationValueIsEmpty(ConstructorParameterKind kind, bool hasDefaultValue)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Value": "" }""");
+
+            object? value = GetConstructorParameterValue(config, kind, hasDefaultValue);
+
+            switch (kind)
+            {
+                // An empty string is a value in its own right for these types.
+                case ConstructorParameterKind.StringType:
+                case ConstructorParameterKind.ObjectType:
+                    Assert.Equal(string.Empty, value);
+                    break;
+                case ConstructorParameterKind.ArrayType:
+                    Assert.Empty((string[])value);
+                    break;
+                default:
+                    Assert.Null(value);
+                    break;
+            }
+        }
+
+        [Theory]
+        [InlineData(ConstructorParameterKind.StringType)]
+        [InlineData(ConstructorParameterKind.ObjectType)]
+        [InlineData(ConstructorParameterKind.NullableValueType)]
+        [InlineData(ConstructorParameterKind.ComplexType)]
+        [InlineData(ConstructorParameterKind.ArrayType)]
+        public void ExceptionWhenConstructorParameterHasNoConfigurationKey(ConstructorParameterKind kind)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Unrelated": "value" }""");
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => GetConstructorParameterValue(config, kind));
+            Assert.Equal(
+                SR.Format(SR.Error_ParameterHasNoMatchingConfig, GetRecordType(kind), "Value"),
+                exception.Message);
+        }
+
+        [Theory]
+        [InlineData(ConstructorParameterKind.StringType, "fallback")]
+        [InlineData(ConstructorParameterKind.ObjectType, null)]
+        [InlineData(ConstructorParameterKind.NullableValueType, 42)]
+        [InlineData(ConstructorParameterKind.ComplexType, null)]
+        [InlineData(ConstructorParameterKind.ArrayType, null)]
+        public void ConstructorParameterUsesItsDefaultValueWhenConfigurationKeyIsMissing(ConstructorParameterKind kind, object? expected)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Unrelated": "value" }""");
+
+            Assert.Equal(expected, GetConstructorParameterValue(config, kind, hasDefaultValue: true));
+        }
+
+        private static object? GetConstructorParameterValue(IConfiguration config, ConstructorParameterKind kind, bool hasDefaultValue = false) =>
+            hasDefaultValue
+                ? kind switch
+                {
+                    ConstructorParameterKind.StringType => config.Get<RecordWithDefaultedStringValue>().Value,
+                    ConstructorParameterKind.ObjectType => config.Get<RecordWithDefaultedObjectValue>().Value,
+                    ConstructorParameterKind.NullableValueType => config.Get<RecordWithDefaultedNullableIntValue>().Value,
+                    ConstructorParameterKind.ComplexType => config.Get<RecordWithDefaultedComplexValue>().Value,
+                    ConstructorParameterKind.ArrayType => config.Get<RecordWithDefaultedArrayValue>().Value,
+                    _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+                }
+                : kind switch
+                {
+                    ConstructorParameterKind.StringType => config.Get<RecordWithStringValue>().Value,
+                    ConstructorParameterKind.ObjectType => config.Get<RecordWithObjectValue>().Value,
+                    ConstructorParameterKind.NullableValueType => config.Get<RecordWithNullableIntValue>().Value,
+                    ConstructorParameterKind.ComplexType => config.Get<RecordWithComplexValue>().Value,
+                    ConstructorParameterKind.ArrayType => config.Get<RecordWithArrayValue>().Value,
+                    _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+                };
+
+        private static Type GetRecordType(ConstructorParameterKind kind) => kind switch
+        {
+            ConstructorParameterKind.StringType => typeof(RecordWithStringValue),
+            ConstructorParameterKind.ObjectType => typeof(RecordWithObjectValue),
+            ConstructorParameterKind.NullableValueType => typeof(RecordWithNullableIntValue),
+            ConstructorParameterKind.ComplexType => typeof(RecordWithComplexValue),
+            ConstructorParameterKind.ArrayType => typeof(RecordWithArrayValue),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+        };
 
         [Fact]
         public void ExceptionWhenTryingToBindConfigToClassWhereNoMatchingParameterIsFoundInConstructor()

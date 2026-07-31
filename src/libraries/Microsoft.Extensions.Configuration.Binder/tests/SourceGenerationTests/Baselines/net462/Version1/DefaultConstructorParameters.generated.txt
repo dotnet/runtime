@@ -132,96 +132,78 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             int? nage = (int?)(42);
             if (TryGetConfigurationValue(configuration, key: "NAge", out string? value8))
             {
-                if (value8 is null)
+                if (string.IsNullOrEmpty(value8))
                 {
                     nage = null;
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value8))
-                    {
-                        nage = ParseInt(value8, configuration.GetSection("NAge").Path);
-                    }
+                    nage = ParseInt(value8, configuration.GetSection("NAge").Path);
                 }
             }
 
             float? nf = 42F;
             if (TryGetConfigurationValue(configuration, key: "NF", out string? value9))
             {
-                if (value9 is null)
+                if (string.IsNullOrEmpty(value9))
                 {
                     nf = null;
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value9))
-                    {
-                        nf = ParseFloat(value9, configuration.GetSection("NF").Path);
-                    }
+                    nf = ParseFloat(value9, configuration.GetSection("NF").Path);
                 }
             }
 
             double? nd = 3.1415899999999999D;
             if (TryGetConfigurationValue(configuration, key: "ND", out string? value10))
             {
-                if (value10 is null)
+                if (string.IsNullOrEmpty(value10))
                 {
                     nd = null;
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value10))
-                    {
-                        nd = ParseDouble(value10, configuration.GetSection("ND").Path);
-                    }
+                    nd = ParseDouble(value10, configuration.GetSection("ND").Path);
                 }
             }
 
             decimal? nm = 3.1415926535897932384626433M;
             if (TryGetConfigurationValue(configuration, key: "NM", out string? value11))
             {
-                if (value11 is null)
+                if (string.IsNullOrEmpty(value11))
                 {
                     nm = null;
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value11))
-                    {
-                        nm = ParseDecimal(value11, configuration.GetSection("NM").Path);
-                    }
+                    nm = ParseDecimal(value11, configuration.GetSection("NM").Path);
                 }
             }
 
             global::System.StringComparison? nsc = (global::System.StringComparison?)(4);
             if (TryGetConfigurationValue(configuration, key: "NSC", out string? value12))
             {
-                if (value12 is null)
+                if (string.IsNullOrEmpty(value12))
                 {
                     nsc = null;
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value12))
-                    {
-                        nsc = ParseEnum<global::System.StringComparison>(value12, configuration.GetSection("NSC").Path);
-                    }
+                    nsc = ParseEnum<global::System.StringComparison>(value12, configuration.GetSection("NSC").Path);
                 }
             }
 
             char? nc = 'q';
             if (TryGetConfigurationValue(configuration, key: "NC", out string? value13))
             {
-                if (value13 is null)
+                if (string.IsNullOrEmpty(value13))
                 {
                     nc = null;
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value13))
-                    {
-                        nc = ParseChar(value13, configuration.GetSection("NC").Path);
-                    }
+                    nc = ParseChar(value13, configuration.GetSection("NC").Path);
                 }
             }
 
@@ -235,7 +217,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 return section.TryGetValue(key, out value);
             }
-        
+
+            if (key != null && configuration.GetSection(key) is ConfigurationSection childSection)
+            {
+                return childSection.TryGetValue(key: null, out value);
+            }
+
             value = key != null ? configuration[key] : configuration is IConfigurationSection sec ? sec.Value : null;
             return value != null;
         }

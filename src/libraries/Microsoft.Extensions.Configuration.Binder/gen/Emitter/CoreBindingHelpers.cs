@@ -392,17 +392,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             {
                                 if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding)
                                 {
-                                    if (member.TypeRef.CanBeNull)
-                                    {
-                                        // For nullable types, a null configuration value is valid;
-                                        // just assign from the section value without throwing.
-                                        _writer.WriteLine($@"{parsedMemberDeclarationLhs} = {Identifier.configuration}[""{configKeyName}""];");
-                                        _writer.WriteLine();
-                                        return;
-                                    }
-
-                                    string condition = $"if ({Identifier.configuration}[{SymbolDisplay.FormatLiteral(configKeyName, quote: true)}] is not {parsedMemberDeclarationLhs})";
+                                    // Only a missing key is an error here, not an explicit null.
+                                    string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
+                                    string condition = $"if (!{Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: {SymbolDisplay.FormatLiteral(configKeyName, quote: true)}, out string? {valueIdentifier}))";
                                     EmitThrowBlock(condition);
+                                    _writer.WriteLine($"{parsedMemberDeclarationLhs} = {valueIdentifier};");
                                     _writer.WriteLine();
                                     return;
                                 }
@@ -434,12 +428,29 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding)
                         {
                             // Add exception logic for parameter ctors; must be present in configuration object.
-                            // In case of Arrays and IEnumerable<T>, we emit extra block to handle collection. The throw block will not be `else` case at that time.
                             TypeSpec typeSpec = _typeIndex.GetEffectiveTypeSpec(member.TypeRef);
-                            EmitThrowBlock(condition: typeSpec is ArraySpec || typeSpec.IsExactIEnumerableOfT ? $"if ({escapedName} is null)" : "else");
+                            EmitThrowBlock(condition: GetThrowConditionForUnboundParameter(typeSpec));
                         }
 
                         _writer.WriteLine();
+                    }
+
+                    // Only an absent key, or a value that could not be bound, is an error; a null or empty value binds null.
+                    string GetThrowConditionForUnboundParameter(TypeSpec typeSpec)
+                    {
+                        if (typeSpec is not ComplexTypeSpec)
+                        {
+                            return "else";
+                        }
+
+                        string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
+                        string keyIsMissingOrUnbindable = $"(!{Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: {SymbolDisplay.FormatLiteral(configKeyName, quote: true)}, out string? {valueIdentifier}) || !string.IsNullOrEmpty({valueIdentifier}))";
+
+                        // Arrays and IEnumerable<T> may already have been assigned an empty collection above, so their
+                        // throw block cannot be the `else` case.
+                        return typeSpec is ArraySpec || typeSpec.IsExactIEnumerableOfT
+                            ? $"if ({escapedName} is null && {keyIsMissingOrUnbindable})"
+                            : $"else if {keyIsMissingOrUnbindable}";
                     }
 
                     void EmitThrowBlock(string condition) =>
@@ -509,6 +520,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitTryGetConfigurationValueMethod()
             {
+                // Only ConfigurationSection can tell a missing key from one holding an explicit null, so the concrete
+                // type has to be tested for, as ConfigurationBinder.BindInstance does. A root is not a section.
                 EmitBlankLineIfRequired();
                 _writer.WriteLine($$"""
                     /// <summary>Tries to get the configuration value for the specified key.</summary>
@@ -516,9 +529,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         if ({{Identifier.configuration}} is {{Identifier.ConfigurationSection}} {{Identifier.section}})
                         {
-                            return {{Identifier.section}}.TryGetValue({{Identifier.key}}, out {{Identifier.value}});
+                            return {{Identifier.section}}.{{Identifier.TryGetValue}}({{Identifier.key}}, out {{Identifier.value}});
                         }
-
+                    """);
+                _writer.WriteLine();
+                _writer.WriteLine($$"""
+                        if ({{Identifier.key}} != null && {{Identifier.configuration}}.{{Identifier.GetSection}}({{Identifier.key}}) is {{Identifier.ConfigurationSection}} childSection)
+                        {
+                            return childSection.{{Identifier.TryGetValue}}({{Identifier.key}}: null, out {{Identifier.value}});
+                        }
+                    """);
+                _writer.WriteLine();
+                _writer.WriteLine($$"""
                         {{Identifier.value}} = {{Identifier.key}} != null ? {{Identifier.configuration}}[{{Identifier.key}}] : {{Identifier.configuration}} is {{Identifier.IConfigurationSection}} sec ? sec.Value : null;
                         return {{Identifier.value}} != null;
                     }
@@ -1019,10 +1041,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 // are common cases.
                                 bool emitNullCheck = member.TypeRef.CanBeNull && stringParsableType.StringParsableTypeKind != StringParsableTypeKind.AssignFromSectionValue;
 
+                                // TryConvertValue turns an empty value into null for Nullable<T>, but leaves other nullable
+                                // types to their type converter.
+                                bool treatEmptyValueAsNull = member.TypeRef.SpecialType is SpecialType.System_Nullable_T;
+
                                 // Nullable type can be set to null
                                 if (emitNullCheck)
                                 {
-                                    EmitStartBlock($"if ({valueIdentifier} is null)");
+                                    EmitStartBlock(treatEmptyValueAsNull
+                                        ? $"if (string.IsNullOrEmpty({valueIdentifier}))"
+                                        : $"if ({valueIdentifier} is null)");
                                     _writer.WriteLine($"{memberAccessExpr} = null;");
                                     EmitEndBlock(); // End if-check for input type.
                                     EmitStartBlock($"else");
@@ -1033,7 +1061,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     valueIdentifier,
                                     sectionPathExpr,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{memberAccessExpr} = {parsedValueExpr};"),
-                                    checkForNullSectionValue: true);
+                                    checkForNullSectionValue: !(emitNullCheck && treatEmptyValueAsNull));
 
                                 if (emitNullCheck)
                                 {
