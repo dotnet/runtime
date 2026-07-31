@@ -77,39 +77,21 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return _legacy is not null ? _legacy.FlushCache() : HResults.S_OK;
     }
 
-    public int Destroy(nint* ppLegacyCleanup)
+    public int Destroy()
     {
-        if (ppLegacyCleanup == null)
-            return HResults.E_POINTER;
-
-        *ppLegacyCleanup = 0;
-        nint legacyCleanup = 0;
         try
         {
             ComObject? legacyComObject = (object?)_legacy as ComObject;
-            if (legacyComObject is not null &&
-                !System.Runtime.InteropServices.ComWrappers.TryGetComInstance(legacyComObject, out legacyCleanup))
-            {
-                return HResults.E_FAIL;
-            }
-
             _dataTargetComObject?.FinalRelease();
             _dataTargetComObject = null;
             legacyComObject?.FinalRelease();
             _legacy = null;
 
-            *ppLegacyCleanup = legacyCleanup;
-            legacyCleanup = 0;
             return HResults.S_OK;
         }
         catch (System.Exception ex)
         {
             return ex.HResult < 0 ? ex.HResult : HResults.E_FAIL;
-        }
-        finally
-        {
-            if (legacyCleanup != 0)
-                Marshal.Release(legacyCleanup);
         }
     }
 

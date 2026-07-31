@@ -264,19 +264,22 @@ internal static class Entrypoints
         ulong contractDescriptorAddress,
         IntPtr /*IDacDbiInterface::IAllocator*/ pAllocator,
         IntPtr /*IDacDbiInterface::IMetaDataLookup*/ pMetaDataLookup,
-        void** iface)
+        void** iface,
+        void** legacyDac)
     {
         // The allocator and metadata lookup pointers are not used by the managed implementation,
         // so, unlike the native DAC export, they are not required.
         if (pTarget == IntPtr.Zero
             || runtimeBase == 0
             || contractDescriptorAddress == 0
-            || iface == null)
+            || iface == null
+            || legacyDac == null)
         {
             return HResults.E_INVALIDARG;
         }
 
         *iface = null;
+        *legacyDac = null;
 
         ComObject? dataTargetComObject = null;
         try
@@ -294,6 +297,8 @@ internal static class Entrypoints
         {
             if (iface != null)
                 *iface = null;
+            if (legacyDac != null)
+                *legacyDac = null;
             int hr = ex.HResult;
             return hr < 0 ? hr : HResults.E_FAIL;
         }

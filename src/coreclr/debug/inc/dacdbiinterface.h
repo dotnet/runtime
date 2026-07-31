@@ -190,7 +190,7 @@ public:
 
     // Release cDAC-owned wrappers for caller-owned COM objects before DBI
     // destroys those objects and unloads the DAC module.
-    virtual HRESULT STDMETHODCALLTYPE Destroy(IUnknown ** ppLegacyCleanup) = 0;
+    virtual HRESULT STDMETHODCALLTYPE Destroy() = 0;
 
     //
     // Control DAC's checking of the target's consistency. Specifically, if this is disabled then
