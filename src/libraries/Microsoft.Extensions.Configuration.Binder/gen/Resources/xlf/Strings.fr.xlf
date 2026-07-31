@@ -67,6 +67,11 @@
         <target state="translated">La logique de liaison n’a pas été généré pour une propriété sur un type</target>
         <note />
       </trans-unit>
+      <trans-unit id="RequiredMemberWithNonPublicSetter">
+        <source>The type '{0}' has one or more required members with non-public setters, which the source generator cannot set.</source>
+        <target state="new">The type '{0}' has one or more required members with non-public setters, which the source generator cannot set.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupported">
         <source>The type is not supported: '{0}'.</source>
         <target state="translated">Le type n‘est pas pris en charge : ‘{0}‘.</target>

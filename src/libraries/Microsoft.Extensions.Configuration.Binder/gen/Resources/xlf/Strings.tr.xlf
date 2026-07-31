@@ -67,6 +67,11 @@
         <target state="translated">Türdeki bir özellik için bağlama mantığı oluşturulmadı</target>
         <note />
       </trans-unit>
+      <trans-unit id="RequiredMemberWithNonPublicSetter">
+        <source>The type '{0}' has one or more required members with non-public setters, which the source generator cannot set.</source>
+        <target state="new">The type '{0}' has one or more required members with non-public setters, which the source generator cannot set.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupported">
         <source>The type is not supported: '{0}'.</source>
         <target state="translated">Tür desteklenmiyor: '{0}'.</target>

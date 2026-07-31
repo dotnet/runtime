@@ -67,6 +67,11 @@
         <target state="translated">Não gerou lógica de ligação para uma propriedade em um tipo</target>
         <note />
       </trans-unit>
+      <trans-unit id="RequiredMemberWithNonPublicSetter">
+        <source>The type '{0}' has one or more required members with non-public setters, which the source generator cannot set.</source>
+        <target state="new">The type '{0}' has one or more required members with non-public setters, which the source generator cannot set.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupported">
         <source>The type is not supported: '{0}'.</source>
         <target state="translated">O tipo não é suportado: '{0}'.</target>
