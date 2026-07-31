@@ -207,6 +207,20 @@ namespace ILAssembler
                 dllCharacteristics &= ~DllCharacteristics.DynamicBase;
             }
 
+            Characteristics imageCharacteristics = Characteristics.ExecutableImage;
+            if (_options.Dll)
+            {
+                imageCharacteristics |= Characteristics.Dll;
+            }
+            if (machine is Machine.I386 or Machine.Arm)
+            {
+                imageCharacteristics |= Characteristics.Bit32Machine;
+            }
+            else if (machine is Machine.Amd64 or Machine.Arm64)
+            {
+                imageCharacteristics |= Characteristics.LargeAddressAware;
+            }
+
             // Compute stack reserve: command-line option overrides directive, which overrides default
             ulong sizeOfStackReserve = (ulong)(_options.StackReserve ?? (_stackReserve != 0 ? _stackReserve : 0x00100000));
 
@@ -218,6 +232,7 @@ namespace ILAssembler
                 majorSubsystemVersion: majorSubsystemVersion,
                 minorSubsystemVersion: minorSubsystemVersion,
                 dllCharacteristics: dllCharacteristics,
+                imageCharacteristics: imageCharacteristics,
                 sizeOfStackReserve: sizeOfStackReserve);
 
             MethodDefinitionHandle entryPoint = default;
@@ -2200,6 +2215,26 @@ namespace ILAssembler
 
         public static GrammarResult.String VisitDottedName(CILParser.DottedNameContext context)
         {
+            CILParser.DottedNamePartContext[] parts = context.dottedNamePart();
+            if (parts.Length > 0)
+            {
+                StringBuilder builder = new();
+                for (int i = 0; i < parts.Length; i++)
+                {
+                    if (i > 0)
+                    {
+                        builder.Append('.');
+                    }
+
+                    CILParser.DottedNamePartContext part = parts[i];
+                    builder.Append(part.SQSTRING() is { } quotedPart
+                        ? StringHelpers.ParseQuotedString(quotedPart.GetText())
+                        : part.GetText());
+                }
+
+                return new(builder.ToString());
+            }
+
             string text = context.GetText();
             if (context.SQSTRING() is not null && text.Length >= 2 && text[0] == '\'')
             {
@@ -3553,8 +3588,14 @@ namespace ILAssembler
                     }
                     break;
                 case CILParser.RULE_instr_tok:
-                    var tok = VisitOwnerType(context.ownerType()).Value;
                     _currentMethod!.Definition.MethodBody.OpCode(opcode);
+                    if (context.int32() is { } tokenValue)
+                    {
+                        _currentMethod.Definition.MethodBody.CodeBuilder.WriteInt32(VisitInt32(tokenValue).Value);
+                        break;
+                    }
+
+                    var tok = VisitOwnerType(context.ownerType()).Value;
                     if (tok is EntityRegistry.TypeReferenceEntity tokTypeRef)
                     {
                         tokTypeRef.RecordBlobToWriteResolvedToken(_currentMethod.Definition.MethodBody.CodeBuilder.ReserveBytes(4));
