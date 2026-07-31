@@ -231,6 +231,8 @@ namespace ILAssembler.Tests
                     .method public specialname rtspecialname instance void .ctor(
                         float32[] singles,
                         float64[] doubles,
+                        float32[] emptySingles,
+                        float64[] emptyDoubles,
                         int64[] int64s,
                         int32[] int32s,
                         int16[] int16s,
@@ -241,7 +243,8 @@ namespace ILAssembler.Tests
                         uint8[] uint8s,
                         char[] chars,
                         bool[] bools,
-                        string[] strings) cil managed
+                        string[] strings,
+                        string[] emptyStrings) cil managed
                     {
                         ldarg.0
                         call instance void [mscorlib]System.Attribute::.ctor()
@@ -251,6 +254,8 @@ namespace ILAssembler.Tests
                 .class public auto ansi Test extends [mscorlib]System.Object
                 {
                     .custom instance void ArrayAttribute::.ctor(
+                        float32[],
+                        float64[],
                         float32[],
                         float64[],
                         int64[],
@@ -263,9 +268,12 @@ namespace ILAssembler.Tests
                         uint8[],
                         char[],
                         bool[],
+                        string[],
                         string[]) = {
                         float32[2](1.5 2)
                         float64[2](3.5 4)
+                        float32[0]( )
+                        float64[0]( )
                         int64[2](5 6)
                         int32[2](7 8)
                         int16[2](9 10)
@@ -277,6 +285,7 @@ namespace ILAssembler.Tests
                         char[2](65 66)
                         bool[2](true false)
                         string[2]('alpha' nullref)
+                        string[0]( )
                     }
                 }
                 """;
@@ -289,20 +298,23 @@ namespace ILAssembler.Tests
             CustomAttributeValue<string> value = attribute.DecodeValue(DocumentCompilerTestHelpers.Decoder);
 
             Assert.Empty(value.NamedArguments);
-            Assert.Equal(13, value.FixedArguments.Length);
+            Assert.Equal(16, value.FixedArguments.Length);
             AssertArrayArgument(value.FixedArguments[0], "float32[]", 1.5f, 2f);
             AssertArrayArgument(value.FixedArguments[1], "float64[]", 3.5, 4d);
-            AssertArrayArgument(value.FixedArguments[2], "int64[]", 5L, 6L);
-            AssertArrayArgument(value.FixedArguments[3], "int32[]", 7, 8);
-            AssertArrayArgument(value.FixedArguments[4], "int16[]", (short)9, (short)10);
-            AssertArrayArgument(value.FixedArguments[5], "int8[]", (sbyte)11, (sbyte)12);
-            AssertArrayArgument(value.FixedArguments[6], "uint64[]", 13UL, 14UL);
-            AssertArrayArgument(value.FixedArguments[7], "uint32[]", 15U, 16U);
-            AssertArrayArgument(value.FixedArguments[8], "uint16[]", (ushort)17, (ushort)18);
-            AssertArrayArgument(value.FixedArguments[9], "uint8[]", (byte)19, (byte)20);
-            AssertArrayArgument(value.FixedArguments[10], "char[]", 'A', 'B');
-            AssertArrayArgument(value.FixedArguments[11], "bool[]", true, false);
-            AssertArrayArgument(value.FixedArguments[12], "string[]", "alpha", null);
+            AssertArrayArgument(value.FixedArguments[2], "float32[]");
+            AssertArrayArgument(value.FixedArguments[3], "float64[]");
+            AssertArrayArgument(value.FixedArguments[4], "int64[]", 5L, 6L);
+            AssertArrayArgument(value.FixedArguments[5], "int32[]", 7, 8);
+            AssertArrayArgument(value.FixedArguments[6], "int16[]", (short)9, (short)10);
+            AssertArrayArgument(value.FixedArguments[7], "int8[]", (sbyte)11, (sbyte)12);
+            AssertArrayArgument(value.FixedArguments[8], "uint64[]", 13UL, 14UL);
+            AssertArrayArgument(value.FixedArguments[9], "uint32[]", 15U, 16U);
+            AssertArrayArgument(value.FixedArguments[10], "uint16[]", (ushort)17, (ushort)18);
+            AssertArrayArgument(value.FixedArguments[11], "uint8[]", (byte)19, (byte)20);
+            AssertArrayArgument(value.FixedArguments[12], "char[]", 'A', 'B');
+            AssertArrayArgument(value.FixedArguments[13], "bool[]", true, false);
+            AssertArrayArgument(value.FixedArguments[14], "string[]", "alpha", null);
+            AssertArrayArgument(value.FixedArguments[15], "string[]");
         }
 
         [Fact]
