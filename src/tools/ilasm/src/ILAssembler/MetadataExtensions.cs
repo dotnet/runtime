@@ -3,6 +3,7 @@
 
 using System;
 using System.Reflection;
+using System.Reflection.Metadata;
 
 namespace ILAssembler;
 
@@ -28,5 +29,10 @@ internal static class MetadataExtensions
     {
         public static AssemblyFlags NoPlatform => (AssemblyFlags)0x70;
         public static AssemblyFlags ArchitectureMask => (AssemblyFlags)0xF0;
+    }
+
+    extension(ILOpCode)
+    {
+        public static ILOpCode Unused => (ILOpCode)0xFE22;
     }
 }
