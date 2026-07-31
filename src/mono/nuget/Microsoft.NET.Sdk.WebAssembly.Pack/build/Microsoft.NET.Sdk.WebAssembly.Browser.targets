@@ -423,6 +423,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       <Output TaskParameter="FileWrites" ItemName="_WasmConvertedWebcilOutputs" />
+      <Output TaskParameter="WebcilSizes" ItemName="_WasmWebcilSizes" />
     </ConvertDllsToWebcil>
 
     <!-- Touch is needed for property-triggered full rebuilds: the task's content comparison
@@ -742,6 +743,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsMultiThreaded="$(WasmEnableThreads)"
       UseMonoRuntime="$(UseMonoRuntime)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
+      WebcilSizes="@(_WasmWebcilSizes)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"
@@ -999,6 +1001,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+      <Output TaskParameter="WebcilSizes" ItemName="_WasmWebcilSizes" />
     </ConvertDllsToWebcil>
 
     <!-- _NewWebcilPublishStaticWebAssetsCandidates contain the `Fingerprint` and the `Integrity` from the old assets.
@@ -1229,6 +1232,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsMultiThreaded="$(WasmEnableThreads)"
       UseMonoRuntime="$(UseMonoRuntime)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
+      WebcilSizes="@(_WasmWebcilSizes)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"

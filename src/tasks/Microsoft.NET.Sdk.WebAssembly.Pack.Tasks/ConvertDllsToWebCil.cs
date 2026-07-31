@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -28,6 +29,9 @@ public class ConvertDllsToWebcil : Task
     [Output]
     public ITaskItem[] WebcilCandidates { get; set; }
 
+    [Output]
+    public ITaskItem[] WebcilSizes { get; set; }
+
     /// <summary>
     /// Files from shared locations (runtime pack, NuGet cache) that need Framework
     /// SourceType materialization to get unique per-project Identity.
@@ -42,6 +46,8 @@ public class ConvertDllsToWebcil : Task
     public ITaskItem[] PassThroughCandidates { get; set; }
 
     protected readonly List<string> _fileWrites = new();
+
+    private readonly List<ITaskItem> _webcilSizes = new();
 
     [Output]
     public string[]? FileWrites => _fileWrites.ToArray();
@@ -118,6 +124,7 @@ public class ConvertDllsToWebcil : Task
 
         WebcilCandidates = webcilCandidates.ToArray();
         PassThroughCandidates = passThroughCandidates.ToArray();
+        WebcilSizes = _webcilSizes.ToArray();
         return true;
     }
 
@@ -125,13 +132,37 @@ public class ConvertDllsToWebcil : Task
     {
         var dllFilePath = candidate.ItemSpec;
         var webcilFileName = Path.GetFileNameWithoutExtension(dllFilePath) + Utils.WebcilInWasmExtension;
-        string candidatePath = candidate.GetMetadata("AssetTraitName") == "Culture"
-            ? Path.Combine(OutputPath, candidate.GetMetadata("AssetTraitValue"))
+        bool isCulture = candidate.GetMetadata("AssetTraitName") == "Culture";
+        string culture = isCulture ? candidate.GetMetadata("AssetTraitValue") : null;
+        string candidatePath = isCulture
+            ? Path.Combine(OutputPath, culture)
             : OutputPath;
 
         string finalWebcil = Path.Combine(candidatePath, webcilFileName);
 
-        if (Utils.IsNewerThan(dllFilePath, finalWebcil))
+        // A prebuilt R2R webcil-in-wasm image from the runtime pack replaces conversion of the .dll:
+        // stage (copy) it into the webcil output so it flows through the same downstream metadata as a
+        // converted assembly, but carries native code. The .dll is kept only as the metadata source.
+        string r2rWebcilPath = candidate.GetMetadata("R2RWebcilPath");
+        if (!string.IsNullOrEmpty(r2rWebcilPath))
+        {
+            if (Utils.IsNewerThan(r2rWebcilPath, finalWebcil))
+            {
+                if (!Directory.Exists(candidatePath))
+                    Directory.CreateDirectory(candidatePath);
+
+                // Copy (not move): the runtime pack's native/*.wasm is a shared source that must survive staging.
+                if (Utils.CopyIfDifferent(r2rWebcilPath, finalWebcil, useHash: false))
+                    Log.LogMessage(MessageImportance.Low, $"Staged prebuilt R2R webcil {finalWebcil} from {r2rWebcilPath} .");
+                else
+                    Log.LogMessage(MessageImportance.Low, $"Skipped staging {finalWebcil} as the contents are unchanged.");
+            }
+            else
+            {
+                Log.LogMessage(MessageImportance.Low, $"Skipping {r2rWebcilPath} as it is older than the output file {finalWebcil}");
+            }
+        }
+        else if (Utils.IsNewerThan(dllFilePath, finalWebcil))
         {
             var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
             var logAdapter = new Microsoft.WebAssembly.Build.Tasks.LogAdapter(Log);
@@ -165,6 +196,145 @@ public class ConvertDllsToWebcil : Task
             Log.LogMessage(MessageImportance.Low, $"Changing related asset of {webcilItem} to {relatedAsset}.");
         }
 
+        RecordWebcilSize(finalWebcil, culture);
         return webcilItem;
+    }
+
+    // Parses the produced webcil's data segment 0 and records payloadSize/tableSize keyed by the
+    // produced webcil-in-wasm file name (".wasm", or "{culture}/{name}.wasm" for satellites) so that
+    // GenerateWasmBootJson can emit them into the boot config without re-parsing. The runtime loader
+    // requires payloadSize for every webcil-in-wasm assembly, so failing to read it is a build error
+    // rather than a silent skip.
+    private void RecordWebcilSize(string webcilPath, string culture)
+    {
+        if (!TryReadWebcilSizes(webcilPath, out int payloadSize, out int tableSize, out string failureReason))
+        {
+            Log.LogError($"Could not read the Webcil payload/table sizes from '{webcilPath}' ({failureReason}). The runtime loader requires payloadSize for every webcil-in-wasm assembly.");
+            return;
+        }
+
+        // Key by the produced webcil-in-wasm file name (".wasm"): GenerateWasmBootJson derives its
+        // lookup key from each asset's OriginalItemSpec, which is the produced ".wasm" path, so
+        // keying by ".dll" here would never match and payloadSize/tableSize would never be emitted.
+        // Satellites share a file name across cultures, so qualify by culture to avoid collisions.
+        string fileName = Path.GetFileName(webcilPath);
+        string key = string.IsNullOrEmpty(culture) ? fileName : culture + "/" + fileName;
+        var item = new TaskItem(key);
+        item.SetMetadata("PayloadSize", payloadSize.ToString(CultureInfo.InvariantCulture));
+        item.SetMetadata("TableSize", tableSize.ToString(CultureInfo.InvariantCulture));
+        _webcilSizes.Add(item);
+    }
+
+    // Reads payloadSize and tableSize from data segment 0 of a Webcil-in-wasm image without
+    // instantiating it. tableSize > 0 indicates a ReadyToRun image. The data section is the last
+    // wasm section, so for R2R images (large code sections) it can start well beyond the first few
+    // KB; this streams through the section headers, seeking past each body, instead of reading a
+    // fixed prefix. All multi-byte integers in the wasm binary format are little-endian and are read
+    // as such regardless of host endianness. See docs/design/mono/webcil.md.
+    internal static bool TryReadWebcilSizes(string path, out int payloadSize, out int tableSize, out string failureReason)
+    {
+        payloadSize = 0;
+        tableSize = 0;
+        failureReason = null;
+        try
+        {
+            using var fs = File.OpenRead(path);
+
+            byte[] header = new byte[8];
+            if (!TryFill(fs, header, 8)
+                || ReadUInt32LE(header, 0) != 0x6d736100 /* \0asm */
+                || ReadUInt32LE(header, 4) != 1 /* wasm version */)
+            {
+                failureReason = "not a WebAssembly module (missing '\\0asm' magic or unexpected version)";
+                return false;
+            }
+
+            while (true)
+            {
+                int sectionCode = fs.ReadByte();
+                if (sectionCode < 0)
+                {
+                    failureReason = "reached end of file without finding a data section";
+                    return false;
+                }
+                if (!TryReadULEB128(fs, out uint sectionSize))
+                {
+                    failureReason = "malformed section size (truncated ULEB128)";
+                    return false;
+                }
+
+                if (sectionCode == 11 /* data section */)
+                {
+                    if (!TryReadULEB128(fs, out uint segmentCount) || segmentCount < 1)
+                    {
+                        failureReason = "data section has no segments";
+                        return false;
+                    }
+                    if (fs.ReadByte() != 1 /* passive segment */)
+                    {
+                        failureReason = "data segment 0 is not a passive segment";
+                        return false;
+                    }
+                    if (!TryReadULEB128(fs, out uint dataLength) || dataLength < 4)
+                    {
+                        failureReason = "data segment 0 is too small to hold a payload size";
+                        return false;
+                    }
+
+                    int want = dataLength >= 8 ? 8 : 4;
+                    byte[] sizes = new byte[8];
+                    if (!TryFill(fs, sizes, want))
+                    {
+                        failureReason = "data segment 0 was truncated before the sizes could be read";
+                        return false;
+                    }
+
+                    payloadSize = (int)ReadUInt32LE(sizes, 0);
+                    tableSize = want == 8 ? (int)ReadUInt32LE(sizes, 4) : 0;
+                    return true;
+                }
+
+                fs.Seek(sectionSize, SeekOrigin.Current);
+            }
+        }
+        catch (Exception ex)
+        {
+            failureReason = ex.Message;
+            return false;
+        }
+    }
+
+    private static bool TryFill(Stream stream, byte[] buffer, int count)
+    {
+        int read = 0;
+        while (read < count)
+        {
+            int r = stream.Read(buffer, read, count - read);
+            if (r == 0)
+                return false;
+            read += r;
+        }
+        return true;
+    }
+
+    private static uint ReadUInt32LE(byte[] bytes, int offset)
+        => (uint)(bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24));
+
+    private static bool TryReadULEB128(Stream stream, out uint value)
+    {
+        value = 0;
+        int shift = 0;
+        while (true)
+        {
+            if (shift >= 35)
+                return false;
+            int b = stream.ReadByte();
+            if (b < 0)
+                return false;
+            value |= (uint)(b & 0x7f) << shift;
+            if ((b & 0x80) == 0)
+                return true;
+            shift += 7;
+        }
     }
 }
