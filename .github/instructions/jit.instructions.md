@@ -10,7 +10,7 @@ applyTo: "src/coreclr/jit/**"
 
 ## Common false-positive review mistakes
 
-- **`TYP_I_IMPL`/`TYP_U_IMPL` are aliases, not distinct types.** Do not claim `varTypeIsLong`/`varTypeIsInt` "miss" them.
+- **`TYP_I_IMPL`/`TYP_U_IMPL` are target-dependent aliases, not distinct types.** They map to `TYP_LONG`/`TYP_ULONG` on 64-bit and `TYP_INT`/`TYP_UINT` on 32-bit. Do not claim `varTypeIsLong`/`varTypeIsInt` "miss" them; use `varTypeIsI`/`varTypeIsIntOrI` for native-int reasoning.
 - **`varTypeIsLong` is width-based.** It is not "C# `long` only."
 - **Read `varType*` helpers by contract, not name.** Check `vartype.h` and target guards first.
 - **Do not mix width and signedness.** `TYP_BYTE`/`TYP_UBYTE` and `TYP_SHORT`/`TYP_USHORT` differ by signedness; width helpers include both.
@@ -22,7 +22,7 @@ applyTo: "src/coreclr/jit/**"
 - **Lowering helpers can rely on caller-proved preconditions.**
 - **`GTF_SPILL` and `GTF_SPILLED` are different.** Review with LSRA def/use and `GT_RELOAD` context; transient set/clear can be intentional.
 - **Raw-copy node bashing can be intentional.** Verify replacement invariants before filing generic `memcpy` issues.
-- **JIT allocation is often arena-based.** Placement `new (compiler/allocator)` without `delete` is usually expected.
+- **JIT allocation is often arena-based.** Placement `new (compiler, CMK_*)` or `new (compiler->getAllocator(...))` without `delete` is usually expected.
 - **Do not assume `|=` is always correct.** Some morph paths intentionally recompute flags with assignment to drop stale bits.
 - **`GTF_DONT_CSE` is often intentional conservatism.** Do not remove/flag without proof.
 - **`varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc)` is established.**
