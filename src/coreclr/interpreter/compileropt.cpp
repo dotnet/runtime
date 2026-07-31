@@ -348,6 +348,25 @@ void InterpCompiler::AllocOffsets()
                 }
             }
 
+            // If this instruction defines a var that lives on another call's arg stack, that call
+            // becomes active now. This is done before ending the current call so that a call whose
+            // result feeds another call's args depends on it, and the two arg areas do not overlap.
+            //
+            // Otherwise a call's return buffer could be allocated on top of its own arguments, and
+            // compiled callees are allowed to use the return buffer as scratch space.
+            //
+            if (g_interpOpDVars[opcode] && m_pVars[pIns->dVar].callArgs)
+            {
+                InterpInst *destCall = m_pVars[pIns->dVar].call;
+                // Check if already added
+                if (!(destCall->flags & INTERP_INST_FLAG_ACTIVE_CALL))
+                {
+                    m_pActiveCalls->Add(destCall);
+                    // Mark a flag on it so we don't have to lookup the array with every argument store.
+                    destCall->flags |= INTERP_INST_FLAG_ACTIVE_CALL;
+                }
+            }
+
             if (isCall)
                 EndActiveCall(pIns);
 
@@ -358,18 +377,7 @@ void InterpCompiler::AllocOffsets()
             {
                 int32_t var = pIns->dVar;
 
-                if (m_pVars[var].callArgs)
-                {
-                    InterpInst *call = m_pVars[var].call;
-                    // Check if already added
-                    if (!(call->flags & INTERP_INST_FLAG_ACTIVE_CALL))
-                    {
-                        m_pActiveCalls->Add(call);
-                        // Mark a flag on it so we don't have to lookup the array with every argument store.
-                        call->flags |= INTERP_INST_FLAG_ACTIVE_CALL;
-                    }
-                }
-                else if (!m_pVars[var].global && m_pVars[var].offset == -1)
+                if (!m_pVars[var].callArgs && !m_pVars[var].global && m_pVars[var].offset == -1)
                 {
                     AllocVarOffset(var, &currentOffset);
                     INTERP_DUMP("alloc var %d to offset %d\n", var, m_pVars[var].offset);
