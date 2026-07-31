@@ -214,6 +214,9 @@ namespace System.IO.Compression
         /// </summary>
         public ZipArchive Archive => _archive;
 
+        /// <summary>
+        /// Gets the CRC-32 checksum of the uncompressed entry data.
+        /// </summary>
         [CLSCompliant(false)]
         public uint Crc32 => _crc32;
 
@@ -270,6 +273,12 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>
+        /// Gets or sets the external file attributes of the entry, whose meaning depends on the platform
+        /// that created the archive (for example, Unix file mode bits or Windows file attributes).
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The entry has been deleted from the archive.</exception>
+        /// <exception cref="ObjectDisposedException">The archive that the entry belongs to has been disposed.</exception>
         public int ExternalAttributes
         {
             get
@@ -510,6 +519,28 @@ namespace System.IO.Compression
             return OpenCore(access);
         }
 
+        /// <summary>
+        /// Opens the entry for reading or updating with the specified access mode and password.
+        /// This allows for more granular control over the returned stream's capabilities.
+        /// If the entry is not encrypted, the password is ignored and the entry is opened normally.
+        /// </summary>
+        /// <param name="access">The file access mode for the returned stream.</param>
+        /// <param name="password">The password used to decrypt the entry. If the entry is not encrypted, this parameter is ignored.</param>
+        /// <returns>A <see cref="Stream"/> that represents the contents of the entry with the specified access capabilities.</returns>
+        /// <remarks>
+        /// <para>The allowed <paramref name="access"/> values depend on the <see cref="ZipArchiveMode"/>:</para>
+        /// <list type="bullet">
+        /// <item><description><see cref="ZipArchiveMode.Read"/>: Only <see cref="FileAccess.Read"/> is allowed.</description></item>
+        /// <item><description><see cref="ZipArchiveMode.Create"/>: <see cref="FileAccess.Write"/> and <see cref="FileAccess.ReadWrite"/> are allowed (both write-only).</description></item>
+        /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed. <see cref="FileAccess.Read"/> provides a read-only stream over the entry's current content, including any modifications made in the current session. <see cref="FileAccess.Write"/> discards existing content and provides an empty writable stream. <see cref="FileAccess.ReadWrite"/> loads existing content into memory (equivalent to <see cref="Open(ReadOnlySpan{char})"/>).</description></item>
+        /// </list>
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="access"/> is not a valid <see cref="FileAccess"/> value.</exception>
+        /// <exception cref="ArgumentException">The entry is encrypted and <paramref name="password"/> is empty.</exception>
+        /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
+        /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
+        /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
+        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
         public Stream Open(FileAccess access, ReadOnlySpan<char> password)
         {
             ThrowIfInvalidArchive();

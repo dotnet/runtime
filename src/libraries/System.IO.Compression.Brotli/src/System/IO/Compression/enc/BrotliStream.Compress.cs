@@ -125,6 +125,10 @@ namespace System.IO.Compression
         /// <param name="count">The maximum number of bytes to write.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="buffer" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="offset" /> or <paramref name="count" /> is negative.</exception>
+        /// <exception cref="System.ArgumentException">The sum of <paramref name="offset" /> and <paramref name="count" /> is greater than the buffer length.</exception>
+        /// <exception cref="System.ObjectDisposedException">The write operation cannot be performed because the stream is closed.</exception>
         /// <remarks><para>This method enables you to perform resource-intensive I/O operations without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
         /// <para>Use the <see cref="System.IO.Compression.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing.</para>
         /// <para>If the operation is canceled before it completes, the returned task contains the <see cref="System.Threading.Tasks.TaskStatus.Canceled" /> value for the <see cref="System.Threading.Tasks.Task.Status" /> property.</para></remarks>

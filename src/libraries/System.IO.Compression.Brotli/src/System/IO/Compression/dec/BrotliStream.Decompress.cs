@@ -96,7 +96,7 @@ namespace System.IO.Compression
         /// <summary>Begins an asynchronous read operation. (Consider using the <see cref="System.IO.Stream.ReadAsync(byte[],int,int)" /> method instead.)</summary>
         /// <param name="buffer">The buffer from which data will be read.</param>
         /// <param name="offset">The byte offset in <paramref name="buffer" /> at which to begin reading data from the stream.</param>
-        /// <param name="count">To maximum number of bytes to read.</param>
+        /// <param name="count">The maximum number of bytes to read.</param>
         /// <param name="asyncCallback">An optional asynchronous callback, to be called when the read operation is complete.</param>
         /// <param name="asyncState">A user-provided object that distinguishes this particular asynchronous read request from other requests.</param>
         /// <returns>An object that represents the asynchronous read operation, which could still be pending.</returns>
