@@ -1679,18 +1679,14 @@ BOOL IsIClassX(MethodTable *pMT, REFIID riid, ComMethodTable **ppComMT)
     // the IID's of the IClassX's against the specified IID.
     while (pMT != NULL)
     {
-        ComCallWrapperTemplate *pTemplate = ComCallWrapperTemplate::GetTemplate(pMT);
-        if (pTemplate->SupportsIClassX())
-        {
-            ComMethodTable *pComMT =
-                ComCallWrapperTemplate::SetupComMethodTableForClass(pMT, FALSE);
-            _ASSERTE(pComMT);
+        ComMethodTable *pComMT =
+            ComCallWrapperTemplate::SetupComMethodTableForClass(pMT, FALSE);
+        _ASSERTE(pComMT);
 
-            if (IsEqualIID(riid, pComMT->GetIID()))
-            {
-                *ppComMT = pComMT;
-                return TRUE;
-            }
+        if (IsEqualIID(riid, pComMT->GetIID()))
+        {
+            *ppComMT = pComMT;
+            return TRUE;
         }
 
         pMT = pMT->GetComPlusParentMethodTable();

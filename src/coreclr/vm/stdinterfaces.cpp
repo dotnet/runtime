@@ -457,10 +457,7 @@ ClassInfo_GetClassInfo(IUnknown* pUnk, ITypeInfo** ppTI)
             // Find the first COM visible IClassX starting at ComMethodTable passed in and
             // walking up the hierarchy.
             ComMethodTable *pComMT = NULL;
-            if (pTemplate->SupportsIClassX())
-            {
-                for (pComMT = pTemplate->GetClassComMT(); pComMT && !pComMT->IsComVisible(); pComMT = pComMT->GetParentClassComMT());
-            }
+            for (pComMT = pTemplate->GetClassComMT(); pComMT && !pComMT->IsComVisible(); pComMT = pComMT->GetParentClassComMT());
 
             // If the CLR part of the object is not visible then delegate the call to the
             // base COM object if it implements IProvideClassInfo.
@@ -686,14 +683,11 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
                     EX_TRY
                     {
                         pTemplate = ComCallWrapperTemplate::GetTemplate(pClass);
-                        if (pTemplate->SupportsIClassX())
-                        {
-                            // Find the first COM visible IClassX starting at ComMethodTable passed in and
-                            // walking up the hierarchy.
-                            pComMT = pTemplate->GetClassComMT();
-                            while (pComMT && !pComMT->IsComVisible())
-                                pComMT = pComMT->GetParentClassComMT();
-                        }
+                        // Find the first COM visible IClassX starting at ComMethodTable passed in and
+                        // walking up the hierarchy.
+                        pComMT = pTemplate->GetClassComMT();
+                        while (pComMT && !pComMT->IsComVisible())
+                            pComMT = pComMT->GetParentClassComMT();
                     }
                     EX_CATCH
                     {
