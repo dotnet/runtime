@@ -6760,7 +6760,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     info.compIsStatic = (info.compFlags & CORINFO_FLG_STATIC) != 0;
 
-    info.compPublishStubParam = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM);
+    info.compPublishStubParam              = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM);
+    info.compPublishStubParamAsICFMethodDesc =
+        opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_STUB_PARAM_ICF_MD);
 
     if (opts.IsReversePInvoke())
     {

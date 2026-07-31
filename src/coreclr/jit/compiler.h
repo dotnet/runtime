@@ -4362,8 +4362,6 @@ public:
 
     unsigned lvaNextCallGenericContext = BAD_VAR_NUM; // Local number of argument passed as WellKnownArg::InstParam to next call
 
-    unsigned lvaNextCallFrameMethodDesc = BAD_VAR_NUM; // Local number of MethodDesc published in the next unmanaged call frame
-
     unsigned lvaNextCallAsyncContinuation = BAD_VAR_NUM; // Local number of argument passed as WellKnownArg::AsyncContinuation to next call
 
 #if FEATURE_FIXED_OUT_ARGS
@@ -11768,9 +11766,10 @@ public:
         bool compIsVarArgs             : 1; // Does the method have varargs parameters?
         bool compInitMem               : 1; // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
         bool compProfilerCallback      : 1; // JIT inserted a profiler Enter callback
-        bool compPublishStubParam      : 1; // EAX captured in prolog will be available through an intrinsic
-        bool compHasNextCallRetAddr    : 1; // The NextCallReturnAddress intrinsic is used.
-        bool compUsesAsyncContinuation : 1; // The AsyncCallContinuation intrinsic is used.
+        bool compPublishStubParam              : 1; // EAX captured in prolog will be available through an intrinsic
+        bool compPublishStubParamAsICFMethodDesc : 1; // The stub secret param should be published in InlinedCallFrame.m_Datum
+        bool compHasNextCallRetAddr            : 1; // The NextCallReturnAddress intrinsic is used.
+        bool compUsesAsyncContinuation         : 1; // The AsyncCallContinuation intrinsic is used.
 
         var_types compRetType;       // Return type of the method as declared in IL (including SIMD normalization)
         var_types compRetNativeType; // Normalized return type as per target arch ABI

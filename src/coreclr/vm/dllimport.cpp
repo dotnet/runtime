@@ -781,6 +781,11 @@ public:
         {
             // All other IL stubs will need to use the secret parameter.
             jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
+
+            if (SF_IsVarArgStub(m_dwStubFlags) || SF_IsForwardCOMStub(m_dwStubFlags))
+            {
+                jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_STUB_PARAM_ICF_MD);
+            }
         }
 
         if (SF_IsReverseStub(m_dwStubFlags))
@@ -2354,9 +2359,6 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
 #ifdef FEATURE_COMINTEROP
         else if (SF_IsCOMStub(dwStubFlags))
         {
-            EmitLoadStubContext(pcsEmit, dwStubFlags);
-            pcsEmit->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_FRAME_METHODDESC, 1, 0);
-
             // this is a CLR -> COM call
             // the target has been computed by StubHelpers::GetCOMIPFromRCW
             pcsEmit->EmitLDLOC(m_dwTargetEntryPointLocalNum);
@@ -2371,8 +2373,6 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         else if (SF_IsVarArgStub(dwStubFlags)) // vararg P/Invoke
         {
             EmitLoadStubContext(pcsEmit, dwStubFlags);
-            pcsEmit->EmitDUP();
-            pcsEmit->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_FRAME_METHODDESC, 1, 0);
             pcsEmit->EmitLDC(offsetof(PInvokeMethodDesc, m_pPInvokeTarget));
             pcsEmit->EmitADD();
             pcsEmit->EmitLDIND_I();

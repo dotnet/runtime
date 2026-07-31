@@ -2210,7 +2210,6 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     , m_hiddenArgumentVar(-1)
     , m_nextCallGenericContextVar(-1)
     , m_nextCallAsyncContinuationVar(-1)
-    , m_nextCallFrameMethodDescVar(-1)
     , m_leavesTable(GetMemPoolAllocator(IMK_EHClause))
     , m_dataItems(GetMemPoolAllocator(IMK_DataItem))
     , m_asyncSuspendDataItems(GetMemPoolAllocator(IMK_DataItem))
@@ -3837,14 +3836,6 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             return true;
         }
 
-        case NI_System_StubHelpers_SetNextCallFrameMethodDesc:
-        {
-            CHECK_STACK(1);
-            m_pStackPointer--;
-            m_nextCallFrameMethodDescVar = m_pStackPointer[0].var;
-            return true;
-        }
-
         case NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref:
         {
             CHECK_STACK(1);
@@ -5159,7 +5150,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             //  cause user code to misbehave. This is by design. One-off method Interpretation is for internal use only.
             bool isMustExpand = (callInfo.hMethod == m_methodHnd) || (
                     ni == NI_System_StubHelpers_GetStubContext ||
-                    ni == NI_System_StubHelpers_SetNextCallFrameMethodDesc ||
                     ni == NI_System_StubHelpers_NextCallReturnAddress ||
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext ||
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation ||
@@ -5366,7 +5356,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     }
     m_pStackPointer -= numArgsFromStack;
     callArgs[numArgs] = CALL_ARGS_TERMINATOR;
-    m_nextCallFrameMethodDescVar = -1;
 
     GenericHandleData newObjData;
     int32_t newObjThisVar = -1;
