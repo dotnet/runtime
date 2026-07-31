@@ -12911,10 +12911,13 @@ void Compiler::fgValueNumberStore(GenTree* store)
         }
         else if (varTypeIsGC(value))
         {
-            // A GC reference reinterpreted as another type (an unsafe IL store of a TYP_REF, or one of
-            // morph's "Cast away GC" temps) is a raw address snapshot that is only valid until the
-            // referent can next move, so give each store its own VN rather than letting CSE share one.
-            valueVNPair.SetBoth(vnStore->VNForExpr(compCurBB, store->TypeGet()));
+            // A GC reference reinterpreted as a raw address (an unsafe IL store of TYP_REF/BYREF, or
+            // morph's "Cast away GC" temps) is only valid until the referent can next move.  Use a VN
+            // that is deterministic given (source byref VN, current GcHeap epoch): two stores from the
+            // same ref with no intervening GC safepoint share the same epoch VN and can be CSE'd;
+            // stores separated by a safepoint get distinct epoch VNs and are kept separate.
+            valueVNPair.SetBoth(vnStore->VNForFunc(store->TypeGet(), VNF_GCRefToPtrWithEpoch, valueVNPair.GetLiberal(),
+                                                   fgCurMemoryVN[GcHeap]));
         }
         else
         {
