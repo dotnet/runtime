@@ -253,7 +253,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var serviceProvider = services.BuildServiceProvider();
 
             var consumer = serviceProvider.GetRequiredService<ReentrantSingletonConsumer>();
-            await consumer.Singleton.Initialization;
+            await consumer.Singleton.Initialization.WaitAsync(TimeSpan.FromSeconds(20));
             var singleton = serviceProvider.GetRequiredService<ReentrantSingleton>();
             var dependency = serviceProvider.GetRequiredService<ReentrantDependency>();
 
