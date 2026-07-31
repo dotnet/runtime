@@ -227,9 +227,8 @@ public unsafe class StackWalkTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void IsExceptionHandlingHelperInlinedCallFrame_DetectsMarkedActiveIcf(MockTarget.Architecture arch)
     {
-        // Match enum class InlinedCallFrameMarker in src/coreclr/vm/exceptionhandling.h:
-        // ExceptionHandlingHelper == 2 on 64-bit, 1 on 32-bit. The Mask is the same value.
-        ulong ehMarker = arch.Is64Bit ? 2u : 1u;
+        // Match enum class InlinedCallFrameMarker in src/coreclr/vm/exceptionhandling.h.
+        const ulong ehMarker = 1;
         ulong activeReturnAddr = 0xCAFE_BABE;
 
         ulong ehHelperAddr = 0;
@@ -268,7 +267,7 @@ public unsafe class StackWalkTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void IsExceptionHandlingHelperInlinedCallFrame_ReturnsFalseForInactiveIcf(MockTarget.Architecture arch)
     {
-        ulong ehMarker = arch.Is64Bit ? 2u : 1u;
+        const ulong ehMarker = 1;
 
         ulong inactiveAddr = 0;
         TestPlaceholderTarget target = CreateTarget(

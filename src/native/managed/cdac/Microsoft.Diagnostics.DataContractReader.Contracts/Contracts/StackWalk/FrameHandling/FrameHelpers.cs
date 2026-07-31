@@ -348,12 +348,11 @@ internal sealed class FrameHelpers
         if (frameType != FrameType.InlinedCallFrame)
             return false;
 
-        //   ExceptionHandlingHelper = 2 on 64-bit, 1 on 32-bit. Mask == ExceptionHandlingHelper.
         Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
         if (!InlinedCallFrameHasActiveCall(icf))
             return false;
 
-        ulong mask = (ulong)(_target.PointerSize == 8 ? 2 : 1);
+        const ulong mask = 1;
         return (icf.Datum.Value & mask) == mask;
     }
 
@@ -381,7 +380,7 @@ internal sealed class FrameHelpers
     {
         if (_target.PointerSize == sizeof(ulong))
         {
-            return frame.Datum != TargetPointer.Null && (frame.Datum.Value & 0x1) == 0;
+            return frame.Datum != TargetPointer.Null;
         }
         else
         {

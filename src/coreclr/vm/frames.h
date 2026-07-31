@@ -2100,7 +2100,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-#ifdef TARGET_X86
+#ifndef TARGET_64BIT
         return ((dac_cast<TADDR>(m_Datum) & ~0xffff) != 0);
 #else
         return (m_Datum != NULL);
@@ -2150,7 +2150,7 @@ public:
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
 
-    // m_Datum contains a PInvokeMethodDesc pointer, except on x86 where it may instead
+    // m_Datum contains a PInvokeMethodDesc pointer, except on 32-bit targets where it may instead
     // contain the outgoing argument stack size for vararg and CALLI stubs.
     // When m_Datum contains a PInvokeMethodDesc pointer, its low bits may carry
     // InlinedCallFrameMarker values.
