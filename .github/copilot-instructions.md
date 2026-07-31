@@ -6,6 +6,8 @@ You MUST make your best effort to ensure any code changes satisfy those criteria
 
 If you make code changes, do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm.
 
+Exception: When running under CLI, do not build/test if the user has previously instructed you against building/testing.
+
 When running under CCA and before completing, use the `code-review` skill to review your code changes. Any issues flagged as errors or warnings should be addressed before the task is considered complete.
 
 When NOT running under CCA, skip the `code-review` skill if the user has stated they will review the changes themselves.
