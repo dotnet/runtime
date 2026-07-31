@@ -93,14 +93,15 @@ func encrypt<Algorithm>(
         result = try Algorithm.seal(plaintext, using: key, nonce: nonce, authenticating: aad)
     }
 
-    // Copy results out of the SealedBox as the Data objects returned here are sometimes slices,
-    // which don't have a correct implementation of copyBytes.
-    // See https://github.com/apple/swift-foundation/issues/638 for more information.
-    let resultCiphertext = Data(result.ciphertext)
-    let resultTag = Data(result.tag)
-
-    _ = resultCiphertext.copyBytes(to: cipherText)
-    _ = resultTag.copyBytes(to: tag)
+    // Data.copyBytes did not correctly handle slices before the 26 releases.
+    // See https://github.com/swiftlang/swift-foundation/issues/638.
+    if #available(macOS 26.0, iOS 26.0, tvOS 26.0, macCatalyst 26.0, *) {
+        _ = result.ciphertext.copyBytes(to: cipherText)
+        _ = result.tag.copyBytes(to: tag)
+    } else {
+        _ = Data(result.ciphertext).copyBytes(to: cipherText)
+        _ = Data(result.tag).copyBytes(to: tag)
+    }
 }
 
 func decrypt<Algorithm>(
