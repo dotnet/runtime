@@ -662,6 +662,16 @@ namespace System.Formats.Tar
             File.Delete(filePath);
         }
 
+        // Extracts the current entry as a hard link. Shared between Unix and Windows since
+        // File.CreateHardLink is itself cross-platform.
+        private void ExtractAsHardLink(string targetFilePath, string hardLinkFilePath)
+        {
+            Debug.Assert(EntryType is TarEntryType.HardLink);
+            Debug.Assert(!string.IsNullOrEmpty(targetFilePath));
+            Debug.Assert(!string.IsNullOrEmpty(hardLinkFilePath));
+            File.CreateHardLink(hardLinkFilePath, targetFilePath);
+        }
+
         // Extracts the current entry as a regular file into the specified destination.
         // The assumption is that at this point there is no preexisting file or directory in that destination.
         private void ExtractAsRegularFile(string destinationFileName)
