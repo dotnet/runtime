@@ -11,8 +11,8 @@ namespace Profiler.Tests
         static readonly Guid IjwProfilerGuid = new Guid("D6973314-9E66-4EAD-8129-9B1D3AD7CB85");
 
         // Managed -> native -> managed-by-pointer scenario. Exercises a reverse
-        // (unmanaged->managed) marshaling stub whose profiler code transition
-        // callback must not report a bogus FunctionID.
+        // (unmanaged->managed) marshaling stub, which must not emit a spurious
+        // profiler code transition callback (it used to report a bogus FunctionID).
         // Regression test for https://github.com/dotnet/runtime/issues/120151.
         private static int CallManagedFunctionByPointer()
         {

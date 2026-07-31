@@ -16,9 +16,10 @@
 //
 // In addition to the "must resolve" check it validates the transition shape of
 // the managed method invoked through a native function pointer: the target must
-// be reported CALL on the way in and RETURN on the way out, and the nested
-// reverse-stub transitions that surround it must report a NULL FunctionID (the
-// exact behavior the fix introduced) rather than a bogus pointer.
+// be reported CALL on the way in and RETURN on the way out, and no nested code
+// transitions may surround it. Reverse P/Invoke stubs no longer emit a
+// stub-level transition, so the spurious nested callback that used to report a
+// bogus FunctionID must not appear at all.
 class IjwProfiler : public Profiler
 {
 public:
@@ -29,7 +30,7 @@ public:
         , _targetUnmanagedToManaged(NO_TRANSITION)
         , _targetManagedToUnmanaged(NO_TRANSITION)
         , _insideTarget(false)
-        , _nestedNullTransitions(0)
+        , _nestedTransitions(0)
     {}
     virtual ~IjwProfiler() = default;
 
@@ -52,10 +53,9 @@ private:
     // checked. The profilee is single-threaded around this call.
     std::atomic<bool> _insideTarget;
 
-    // Number of nested reverse-stub transitions observed with a NULL FunctionID
-    // while inside the target. Must be > 0 so the "reverse stub reports NULL"
-    // contract is positively exercised, not merely never violated.
-    std::atomic<int> _nestedNullTransitions;
+    // Number of nested code transitions observed while inside the target. Reverse
+    // P/Invoke stubs no longer emit a stub-level transition, so this must be 0.
+    std::atomic<int> _nestedTransitions;
 
     void HandleTransition(bool unmanagedToManaged, FunctionID functionID, COR_PRF_TRANSITION_REASON reason);
 };

@@ -35,20 +35,19 @@ HRESULT IjwProfiler::Shutdown()
     bool targetOk = _targetUnmanagedToManaged == COR_PRF_TRANSITION_CALL
                  && _targetManagedToUnmanaged == COR_PRF_TRANSITION_RETURN;
 
-    // The nested reverse-stub transitions surrounding the target must have been
-    // seen and reported a NULL FunctionID (the exact behavior the fix introduced).
-    // Requiring at least one makes this a positive assertion rather than merely
-    // "no bad value was seen".
-    if (_failures == 0 && _transitions > 0 && targetOk && _nestedNullTransitions > 0)
+    // No nested code transitions may surround the target: reverse P/Invoke stubs
+    // no longer emit a stub-level transition, so the spurious callback that used
+    // to report a bogus FunctionID must not appear at all.
+    if (_failures == 0 && _transitions > 0 && targetOk && _nestedTransitions == 0)
     {
         printf("PROFILER TEST PASSES\n");
     }
     else
     {
-        printf("Test failed _failures=%d _transitions=%d targetU2M=%d targetM2U=%d nestedNull=%d\n",
+        printf("Test failed _failures=%d _transitions=%d targetU2M=%d targetM2U=%d nested=%d\n",
                _failures.load(), _transitions.load(),
                (int)_targetUnmanagedToManaged, (int)_targetManagedToUnmanaged,
-               _nestedNullTransitions.load());
+               _nestedTransitions.load());
     }
     fflush(stdout);
     return S_OK;
@@ -65,6 +64,7 @@ void IjwProfiler::HandleTransition(bool unmanagedToManaged, FunctionID functionI
     // a reverse marshaling stub reported a bogus pointer here, and this call
     // would fail or crash.
     bool isTarget = false;
+    String name(WCHAR("<null>"));
     if (functionID != 0)
     {
         ClassID classId = 0;
@@ -74,15 +74,23 @@ void IjwProfiler::HandleTransition(bool unmanagedToManaged, FunctionID functionI
         if (FAILED(hr))
         {
             _failures++;
+            name = WCHAR("<unresolved>");
             printf("FAIL: %s reported FunctionID=0x%p (reason=%d) that GetFunctionInfo could not resolve hr=0x%x\n",
                    which, (void*)functionID, (int)reason, hr);
             fflush(stdout);
         }
         else
         {
-            isTarget = GetFunctionIDName(functionID) == WCHAR("ManagedByPointerTarget");
+            name = GetFunctionIDName(functionID);
+            isTarget = name == WCHAR("ManagedByPointerTarget");
         }
     }
+
+    // Trace every transition so the expected shape can be inspected in the log:
+    // the target reported CALL in / RETURN out, and no nested transitions.
+    printf("  %s FunctionID=0x%p reason=%d insideTarget=%d name=%ls\n",
+           which, (void*)functionID, (int)reason, (int)_insideTarget.load(), name.ToCStr());
+    fflush(stdout);
 
     if (isTarget)
     {
@@ -116,23 +124,16 @@ void IjwProfiler::HandleTransition(bool unmanagedToManaged, FunctionID functionI
         return;
     }
 
-    // Any non-target transition seen while executing the managed target is a
-    // nested reverse (unmanaged->managed) marshaling stub. Post-fix these report
-    // a NULL FunctionID; a non-null value here is exactly the 120151 bug (a
-    // resolvable-but-wrong pointer would slip past the check above).
+    // Any non-target transition seen while executing the managed target is
+    // unexpected: reverse P/Invoke stubs no longer emit a stub-level transition,
+    // so none of these nested callbacks (the vehicle for the 120151 bug) should
+    // occur while inside the target.
     if (_insideTarget.load())
     {
-        if (functionID != 0)
-        {
-            _failures++;
-            printf("FAIL: nested %s inside target reported non-null FunctionID=0x%p (reason=%d)\n",
-                   which, (void*)functionID, (int)reason);
-            fflush(stdout);
-        }
-        else
-        {
-            _nestedNullTransitions++;
-        }
+        _nestedTransitions++;
+        printf("FAIL: unexpected nested %s inside target reported FunctionID=0x%p (reason=%d)\n",
+               which, (void*)functionID, (int)reason);
+        fflush(stdout);
     }
 }
 
