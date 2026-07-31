@@ -2354,6 +2354,9 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
 #ifdef FEATURE_COMINTEROP
         else if (SF_IsCOMStub(dwStubFlags))
         {
+            EmitLoadStubContext(pcsEmit, dwStubFlags);
+            pcsEmit->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_FRAME_METHODDESC, 1, 0);
+
             // this is a CLR -> COM call
             // the target has been computed by StubHelpers::GetCOMIPFromRCW
             pcsEmit->EmitLDLOC(m_dwTargetEntryPointLocalNum);
@@ -2368,6 +2371,8 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         else if (SF_IsVarArgStub(dwStubFlags)) // vararg P/Invoke
         {
             EmitLoadStubContext(pcsEmit, dwStubFlags);
+            pcsEmit->EmitDUP();
+            pcsEmit->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_FRAME_METHODDESC, 1, 0);
             pcsEmit->EmitLDC(offsetof(PInvokeMethodDesc, m_pPInvokeTarget));
             pcsEmit->EmitADD();
             pcsEmit->EmitLDIND_I();

@@ -2089,22 +2089,25 @@ public:
     MethodDesc *GetFunction_Impl()
     {
         WRAPPER_NO_CONTRACT;
-        if (FrameHasActiveCall(this) && HasFunction())
-            // Mask off marker bits
-            return PTR_MethodDesc((dac_cast<TADDR>(m_Datum) & ~(sizeof(TADDR) - 1)));
-        else
+        if (!FrameHasActiveCall(this))
+        {
             return NULL;
-    }
-
-    BOOL HasFunction()
-    {
-        WRAPPER_NO_CONTRACT;
+        }
 
 #ifdef TARGET_X86
-        return ((dac_cast<TADDR>(m_Datum) & ~0xffff) != 0);
+        if ((dac_cast<TADDR>(m_Datum) & ~0xffff) == 0)
+        {
+            return NULL;
+        }
 #else
-        return (m_Datum != NULL);
+        if (m_Datum == NULL)
+        {
+            return NULL;
+        }
 #endif
+
+        // Mask off marker bits
+        return PTR_MethodDesc((dac_cast<TADDR>(m_Datum) & ~(sizeof(TADDR) - 1)));
     }
 
     // Retrieves the return address into the code that called out
@@ -2154,7 +2157,7 @@ public:
     // contain the outgoing argument stack size for vararg and CALLI stubs.
     // When m_Datum contains a PInvokeMethodDesc pointer, its low bits may carry
     // InlinedCallFrameMarker values.
-    // See code:HasFunction.
+    // See GetFunction_Impl.
     PTR_PInvokeMethodDesc   m_Datum;
 
     // X86: ESP after pushing the outgoing arguments, and just before calling

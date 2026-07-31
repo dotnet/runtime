@@ -2531,6 +2531,9 @@ namespace System.StubHelpers
         [Intrinsic]
         internal static IntPtr GetStubContext() => throw new UnreachableException(); // Unconditionally expanded intrinsic
 
+        [Intrinsic]
+        internal static void SetNextCallFrameMethodDesc(IntPtr methodDesc) => throw new UnreachableException(); // Unconditionally expanded intrinsic
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void MulticastDebuggerTraceHelper(object o, int count)
         {

@@ -810,6 +810,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     {
         assert(call->IsCall());
 
+        if (lvaNextCallFrameMethodDesc != BAD_VAR_NUM)
+        {
+            assert(call->AsCall()->gtCallType == CT_INDIRECT);
+            call->AsCall()->SetInlinedCallFrameMethodDescLclNum(lvaNextCallFrameMethodDesc);
+            lvaNextCallFrameMethodDesc = BAD_VAR_NUM;
+        }
+
         // We set up the unmanaged call by linking the frame, disabling GC, etc
         // This needs to be cleaned up on return.
         // In addition, native calls have different normalization rules than managed code
@@ -2117,7 +2124,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     assert(call->gtFlags & GTF_CALL_UNMANAGED);
 
 #ifdef SWIFT_SUPPORT
-    if (call->unmgdCallConv == CorInfoCallConvExtension::Swift)
+    if (call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift)
     {
         impPopArgsForSwiftCall(call, sig, swiftErrorNode);
         return;
@@ -2138,7 +2145,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     // For "thiscall", the first argument goes in a register. Since its
     // order does not need to be changed, we do not need to spill it
 
-    if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
+    if (call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall)
     {
         assert(argsToReverse != 0);
         argsToReverse--;
@@ -2183,7 +2190,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
 
     impPopReverseCallArgs(sig, call, sig->numArgs - argsToReverse);
 
-    if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
+    if (call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall)
     {
         GenTree* thisPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
         impBashVarAddrsToI(thisPtr);
@@ -3435,6 +3442,15 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
     {
         // must be done regardless of DbgCode and MinOpts
         return gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
+    }
+
+    if (ni == NI_System_StubHelpers_SetNextCallFrameMethodDesc)
+    {
+        lvaNextCallFrameMethodDesc                     = lvaGrabTemp(false DEBUGARG("Upcoming call frame MethodDesc"));
+        lvaGetDesc(lvaNextCallFrameMethodDesc)->lvType = TYP_I_IMPL;
+
+        GenTree* node = gtNewStoreLclVarNode(lvaNextCallFrameMethodDesc, impPopStack().val);
+        return node;
     }
 
     if (ni == NI_System_StubHelpers_NextCallReturnAddress)
@@ -11888,6 +11904,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "GetStubContext") == 0)
                         {
                             result = NI_System_StubHelpers_GetStubContext;
+                        }
+                        else if (strcmp(methodName, "SetNextCallFrameMethodDesc") == 0)
+                        {
+                            result = NI_System_StubHelpers_SetNextCallFrameMethodDesc;
                         }
                         else if (strcmp(methodName, "NextCallReturnAddress") == 0)
                         {
