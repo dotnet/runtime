@@ -71,7 +71,7 @@ jobs:
           cache_key: ${{ env.CACHE_KEY }}
           repository: ${{ env.REPOSITORY }}
           label_prefix: ${{ env.LABEL_PREFIX }}
-          excluded_labels: ${{ format('{0}{1}{2}', env.DEFAULT_EXCLUDED_LABELS, inputs.excluded_labels && ',', inputs.excluded_labels || '') }}
+          excluded_labels: ${{ format('{0}{1}', env.DEFAULT_EXCLUDED_LABELS, inputs.excluded_labels && format(',{0}', inputs.excluded_labels) || '') }}
           limit: ${{ env.LIMIT }}
           page_size: ${{ env.PAGE_SIZE }}
           page_limit: ${{ env.PAGE_LIMIT }}
@@ -91,7 +91,7 @@ jobs:
           cache_key: ${{ env.CACHE_KEY }}
           repository: ${{ env.REPOSITORY }}
           label_prefix: ${{ env.LABEL_PREFIX }}
-          excluded_labels: ${{ format('{0}{1}{2}', env.DEFAULT_EXCLUDED_LABELS, inputs.excluded_labels && ',', inputs.excluded_labels || '') }}
+          excluded_labels: ${{ format('{0}{1}', env.DEFAULT_EXCLUDED_LABELS, inputs.excluded_labels && format(',{0}', inputs.excluded_labels) || '') }}
           limit: ${{ env.LIMIT }}
           page_size: ${{ env.PAGE_SIZE }}
           page_limit: ${{ env.PAGE_LIMIT }}
@@ -138,7 +138,7 @@ jobs:
           cache_key: ${{ env.CACHE_KEY }}
           repository: ${{ env.REPOSITORY }}
           label_prefix: ${{ env.LABEL_PREFIX }}
-          excluded_labels: ${{ format('{0}{1}{2}', env.DEFAULT_EXCLUDED_LABELS, inputs.excluded_labels && ',', inputs.excluded_labels || '') }}
+          excluded_labels: ${{ format('{0}{1}', env.DEFAULT_EXCLUDED_LABELS, inputs.excluded_labels && format(',{0}', inputs.excluded_labels) || '') }}
           threshold: ${{ env.THRESHOLD }}
           limit: ${{ env.LIMIT }}
           page_size: ${{ env.PAGE_SIZE }}
@@ -160,7 +160,7 @@ jobs:
           cache_key: ${{ env.CACHE_KEY }}
           repository: ${{ env.REPOSITORY }}
           label_prefix: ${{ env.LABEL_PREFIX }}
-          excluded_labels: ${{ format('{0}{1}{2}', env.DEFAULT_EXCLUDED_LABELS, inputs.excluded_labels && ',', inputs.excluded_labels || '') }}
+          excluded_labels: ${{ format('{0}{1}', env.DEFAULT_EXCLUDED_LABELS, inputs.excluded_labels && format(',{0}', inputs.excluded_labels) || '') }}
           threshold: ${{ env.THRESHOLD }}
           limit: ${{ env.LIMIT }}
           page_size: ${{ env.PAGE_SIZE }}
