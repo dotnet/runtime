@@ -1919,6 +1919,72 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         /// <summary>
+        /// When binding onto an already-existing instance of a parameterless-constructor type with an init-only
+        /// collection, the instance is not created through the generated Initialize method, so the collection is bound
+        /// in BindCore (through the !boundThroughConstructor branch). Its items must be appended into the existing
+        /// collection exactly once, not duplicated, matching the reflection binder.
+        /// </summary>
+        [Fact]
+        public void CanBindExistingInstance_InitOnlyCollectionOnParameterlessConstructorType()
+        {
+            string json = """
+            {
+                "Items": [ "a", "b" ]
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+            var instance = new ClassWithInitOnlyCollectionParameterlessCtor { Items = new List<string> { "existing" } };
+
+            config.Bind(instance);
+
+            Assert.Equal(new[] { "existing", "a", "b" }, instance.Items);
+        }
+
+#if NET
+        /// <summary>
+        /// A required nested complex property on a parameterless-constructor type is assigned in the generated
+        /// Initialize method's object initializer and must be bound to the configured values, whether the required
+        /// property has a settable or an init-only setter.
+        /// </summary>
+        [Fact]
+        public void CanBind_RequiredNestedComplexOnParameterlessConstructorType_SettableSetter()
+        {
+            string json = """
+            {
+                "Name": "n",
+                "Child": { "Value": "hello" }
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            RequiredPropertiesParameterlessCtor result = config.Get<RequiredPropertiesParameterlessCtor>();
+
+            Assert.Equal("n", result.Name);
+            Assert.Equal("hello", result.Child.Value);
+        }
+
+        [Fact]
+        public void CanBind_RequiredNestedComplexOnParameterlessConstructorType_InitOnlySetter()
+        {
+            string json = """
+            {
+                "Name": "n",
+                "Child": { "Value": "hello" }
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            RequiredInitPropertiesParameterlessCtor result = config.Get<RequiredInitPropertiesParameterlessCtor>();
+
+            Assert.Equal("n", result.Name);
+            Assert.Equal("hello", result.Child.Value);
+        }
+#endif
+
+        /// <summary>
         /// Documents a known difference between the reflection binder and the source generator for an init-only
         /// property that has a non-null field-initializer default.
         ///
