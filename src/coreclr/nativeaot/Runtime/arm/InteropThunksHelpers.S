@@ -17,9 +17,7 @@ NESTED_ENTRY RhCommonStub, _TEXT, NoHandler
           //      r12 already has the current thunk's data block pointer
           //      (thunk branched here via ldr pc, preserving r12)
           PROLOG_PUSH  "{r0-r4, lr}"
-#ifndef ARM_SOFTFP
           PROLOG_VPUSH {d0-d7}        // Capture the floating point argument registers
-#endif
 
           mov          r4, r12
 
@@ -37,9 +35,7 @@ NESTED_ENTRY RhCommonStub, _TEXT, NoHandler
 
           // Now load the target address and jump to it.
           ldr          r12, [r4, #POINTER_SIZE]
-#ifndef ARM_SOFTFP
           EPILOG_VPOP  {d0-d7}
-#endif
           EPILOG_POP   "{r0-r4, lr}"
           bx           r12
 

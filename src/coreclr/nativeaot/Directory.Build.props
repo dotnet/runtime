@@ -85,7 +85,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm' or '$(Platform)' == 'armel'">
     <DefineConstants>TARGET_32BIT;TARGET_ARM;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(Platform)' == 'armel'">ARM_SOFTFP;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
     <DefineConstants>TARGET_64BIT;TARGET_ARM64;$(DefineConstants)</DefineConstants>

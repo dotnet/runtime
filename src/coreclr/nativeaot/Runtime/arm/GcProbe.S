@@ -20,10 +20,8 @@
 .macro PUSH_PROBE_FRAME threadReg, trashReg, BITMASK
     // Define the method prolog, allocating enough stack space for the PInvokeTransitionFrame and saving
     // incoming register values into it.
-#ifndef ARM_SOFTFP
     PROLOG_VPUSH        "{d0-d3}"           // Save d0-d3 which can have the floating point return value
     PROLOG_STACK_ALLOC  4                   // Alignment
-#endif
     PROLOG_PUSH         "{r0-r2}"           // Save return registers (r0-r2)
     PROLOG_STACK_ALLOC  4                   // Space for caller's SP
     PROLOG_PUSH         "{r4-r10}"          // Save non-volatile registers
@@ -35,11 +33,7 @@
     str         \trashReg, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
 
     // Compute SP value at entry to this method and save it in slot of the frame.
-#ifdef ARM_SOFTFP
-    add         \trashReg, sp, #(15 * 4)
-#else
     add         \trashReg, sp, #(16 * 4 + 4 * 8)
-#endif
     str         \trashReg, [sp, #(11 * 4)]
 
     // Link the frame into the Thread
@@ -57,10 +51,8 @@
     EPILOG_POP          "{r4-r10}"          // Restore non-volatile registers
     EPILOG_STACK_FREE   4                   // Discard caller's SP
     EPILOG_POP          "{r0-r2}"           // Restore return registers (r0-r2)
-#ifndef ARM_SOFTFP
     EPILOG_STACK_FREE   4                   // Discard alignment
     EPILOG_VPOP         "{d0-d3}"           // Restore d0-d3 which can have the floating point return value
-#endif
 .endm
 
 //

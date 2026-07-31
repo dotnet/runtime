@@ -561,8 +561,8 @@ namespace Internal.CallingConvention
             public override bool IsArmhfABI => false;
             public override bool IsArmelABI => true;
 
-            // ARM soft-float ABI: no VFP/NEON registers are used for argument passing.
-            // Float arguments are passed via integer registers (r0-r3) and the stack.
+            // ARM soft-float ABI: float arguments go through integer registers (r0-r3),
+            // so there are no dedicated float argument register slots in the transition block.
             public sealed override int OffsetOfFloatArgumentRegisters => 0;
         }
 

@@ -1426,17 +1426,10 @@ public:
 private:
     uintptr_t m_pushedR11;                 // ChildSP+000 CallerSP-078 (0x4 bytes)     (r11)
     uintptr_t m_pushedLR;                  // ChildSP+004 CallerSP-074 (0x4 bytes)     (lr)
-#ifdef ARM_SOFTFP
-    // ARM soft-float ABI: no VFP argument registers (d0-d7) on stack
-    uint64_t m_returnBlock[4];             // ChildSP+008 CallerSP-030 (0x20 bytes)
-    uintptr_t m_intArgRegs[4];             // ChildSP+028 CallerSP-010 (0x10 bytes)    (r0-r3)
-    uintptr_t m_stackPassedArgs[1];        // ChildSP+038 CallerSP+000 (unknown size)
-#else
     uint64_t m_fpArgRegs[8];                  // ChildSP+008 CallerSP-070 (0x40 bytes)    (d0-d7)
     uint64_t m_returnBlock[4];                // ChildSP+048 CallerSP-030 (0x20 bytes)
     uintptr_t m_intArgRegs[4];             // ChildSP+068 CallerSP-010 (0x10 bytes)    (r0-r3)
     uintptr_t m_stackPassedArgs[1];        // ChildSP+078 CallerSP+000 (unknown size)
-#endif
 
 public:
     PTR_uintptr_t get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }

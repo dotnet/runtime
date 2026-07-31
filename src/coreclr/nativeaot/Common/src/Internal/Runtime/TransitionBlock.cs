@@ -9,9 +9,7 @@
 //
 #if TARGET_ARM
 #define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
-#if !ARM_SOFTFP
 #define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
-#endif
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define FEATURE_HFA
@@ -252,7 +250,6 @@ namespace Internal.Runtime
     [StructLayout(LayoutKind.Sequential)]
     internal struct FloatArgumentRegisters
     {
-#if !ARM_SOFTFP
         private double d0;
         private double d1;
         private double d2;
@@ -261,7 +258,6 @@ namespace Internal.Runtime
         private double d5;
         private double d6;
         private double d7;
-#endif
     }
 
     internal struct ArchitectureConstants
