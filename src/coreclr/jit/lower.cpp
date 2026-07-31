@@ -8826,16 +8826,6 @@ void Lowering::LowerShift(GenTreeOp* shift)
 {
     assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
 
-    size_t mask = 0x1f;
-#ifdef TARGET_64BIT
-    if (varTypeIsLong(shift->TypeGet()))
-    {
-        mask = 0x3f;
-    }
-#else
-    assert(!varTypeIsLong(shift->TypeGet()));
-#endif
-
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // Nothing to do: gtFoldExprShiftCountMask already stripped any redundant width mask
     // from the count operand.
@@ -8845,10 +8835,13 @@ void Lowering::LowerShift(GenTreeOp* shift)
     // hardware sees a value in [0, 31]. Skip when the AND is already present (e.g.
     // MinOpts where gtFoldExprShiftCountMask did not run).
     {
+        assert(!varTypeIsLong(shift->TypeGet()));
+        constexpr ssize_t mask = 0x1f;
+
         GenTree* shiftBy = shift->gtGetOp2();
         if (!shiftBy->IsCnsIntOrI() && !shiftBy->OperIs(GT_AND))
         {
-            GenTree* maskCns = m_compiler->gtNewIconNode(static_cast<ssize_t>(mask));
+            GenTree* maskCns = m_compiler->gtNewIconNode(mask);
             GenTree* andNode = m_compiler->gtNewOperNode(GT_AND, TYP_INT, shiftBy, maskCns);
             BlockRange().InsertBefore(shift, maskCns);
             BlockRange().InsertBefore(shift, andNode);

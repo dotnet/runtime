@@ -2852,7 +2852,8 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         }
     }
 
-    // Normalize `x >> (count & C)` to `x >> count` when C covers the operand width mask
+    // For shift ops, normalize `x op (count & C)` to `x op count` when C covers the
+    // operand width mask.
     // (5 bits for 32-bit, 6 bits for 64-bit shifts). This gives `x << lcl` (where `lcl` was
     // assigned `y & 31` before the shift) the same VN as `x << y`, so CSE and copy-prop can
     // collapse them even for the already-spilled case.

@@ -15586,8 +15586,8 @@ GenTree* Compiler::gtFoldExprShiftCountMask(GenTreeOp* shift)
         GenTree* andOp1 = count->gtGetOp1();
         GenTree* andOp2 = count->gtGetOp2();
 
-        GenTree* maskCns;
-        GenTree* shiftCnt;
+        GenTree* maskCns  = nullptr;
+        GenTree* shiftCnt = nullptr;
 
         if (andOp2->IsCnsIntOrI())
         {
@@ -15599,11 +15599,6 @@ GenTree* Compiler::gtFoldExprShiftCountMask(GenTreeOp* shift)
             maskCns  = andOp1;
             shiftCnt = andOp2;
         }
-        else
-        {
-            maskCns = nullptr;
-        }
-
         if ((maskCns != nullptr) && ((static_cast<size_t>(maskCns->AsIntCon()->IconValue()) & width) == width))
         {
             JITDUMP("Removing redundant shift-count mask [%06u]\n", count->gtTreeID);
