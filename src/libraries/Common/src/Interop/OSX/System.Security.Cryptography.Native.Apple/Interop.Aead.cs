@@ -33,14 +33,13 @@ internal static partial class Interop
         [SupportedOSPlatform("ios13.0")]
         [SupportedOSPlatform("tvos13.0")]
         internal static unsafe void ChaCha20Poly1305Encrypt(
-            ReadOnlySpan<byte> key,
+            SafeAppleCryptoSymmetricKeyHandle key,
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> plaintext,
             Span<byte> ciphertext,
             Span<byte> tag,
             ReadOnlySpan<byte> aad)
         {
-            fixed (byte* keyPtr = key)
             fixed (byte* noncePtr = nonce)
             fixed (byte* plaintextPtr = &GetSwiftRef(plaintext))
             fixed (byte* ciphertextPtr = &GetSwiftRef(ciphertext))
@@ -48,7 +47,7 @@ internal static partial class Interop
             fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
                 AppleCryptoNative_ChaCha20Poly1305Encrypt(
-                    new UnsafeBufferPointer<byte>(keyPtr, key.Length),
+                    key,
                     new UnsafeBufferPointer<byte>(noncePtr, nonce.Length),
                     new UnsafeBufferPointer<byte>(plaintextPtr, plaintext.Length),
                     new UnsafeMutableBufferPointer<byte>(ciphertextPtr, ciphertext.Length),
@@ -70,14 +69,13 @@ internal static partial class Interop
         [SupportedOSPlatform("ios13.0")]
         [SupportedOSPlatform("tvos13.0")]
         internal static unsafe void ChaCha20Poly1305Decrypt(
-            ReadOnlySpan<byte> key,
+            SafeAppleCryptoSymmetricKeyHandle key,
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> tag,
             Span<byte> plaintext,
             ReadOnlySpan<byte> aad)
         {
-            fixed (byte* keyPtr = key)
             fixed (byte* noncePtr = nonce)
             fixed (byte* ciphertextPtr = &GetSwiftRef(ciphertext))
             fixed (byte* tagPtr = tag)
@@ -85,7 +83,7 @@ internal static partial class Interop
             fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
                 AppleCryptoNative_ChaCha20Poly1305Decrypt(
-                    new UnsafeBufferPointer<byte>(keyPtr, key.Length),
+                    key,
                     new UnsafeBufferPointer<byte>(noncePtr, nonce.Length),
                     new UnsafeBufferPointer<byte>(ciphertextPtr, ciphertext.Length),
                     new UnsafeBufferPointer<byte>(tagPtr, tag.Length),
@@ -114,14 +112,13 @@ internal static partial class Interop
         [SupportedOSPlatform("ios13.0")]
         [SupportedOSPlatform("tvos13.0")]
         internal static unsafe void AesGcmEncrypt(
-            ReadOnlySpan<byte> key,
+            SafeAppleCryptoSymmetricKeyHandle key,
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> plaintext,
             Span<byte> ciphertext,
             Span<byte> tag,
             ReadOnlySpan<byte> aad)
         {
-            fixed (byte* keyPtr = key)
             fixed (byte* noncePtr = nonce)
             fixed (byte* plaintextPtr = &GetSwiftRef(plaintext))
             fixed (byte* ciphertextPtr = &GetSwiftRef(ciphertext))
@@ -129,7 +126,7 @@ internal static partial class Interop
             fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
                 AppleCryptoNative_AesGcmEncrypt(
-                    new UnsafeBufferPointer<byte>(keyPtr, key.Length),
+                    key,
                     new UnsafeBufferPointer<byte>(noncePtr, nonce.Length),
                     new UnsafeBufferPointer<byte>(plaintextPtr, plaintext.Length),
                     new UnsafeMutableBufferPointer<byte>(ciphertextPtr, ciphertext.Length),
@@ -151,14 +148,13 @@ internal static partial class Interop
         [SupportedOSPlatform("ios13.0")]
         [SupportedOSPlatform("tvos13.0")]
         internal static unsafe void AesGcmDecrypt(
-            ReadOnlySpan<byte> key,
+            SafeAppleCryptoSymmetricKeyHandle key,
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> tag,
             Span<byte> plaintext,
             ReadOnlySpan<byte> aad)
         {
-            fixed (byte* keyPtr = key)
             fixed (byte* noncePtr = nonce)
             fixed (byte* ciphertextPtr = &GetSwiftRef(ciphertext))
             fixed (byte* tagPtr = tag)
@@ -166,7 +162,7 @@ internal static partial class Interop
             fixed (byte* aadPtr = &GetSwiftRef(aad))
             {
                 AppleCryptoNative_AesGcmDecrypt(
-                    new UnsafeBufferPointer<byte>(keyPtr, key.Length),
+                    key,
                     new UnsafeBufferPointer<byte>(noncePtr, nonce.Length),
                     new UnsafeBufferPointer<byte>(ciphertextPtr, ciphertext.Length),
                     new UnsafeBufferPointer<byte>(tagPtr, tag.Length),
@@ -193,7 +189,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial void AppleCryptoNative_ChaCha20Poly1305Encrypt(
-            UnsafeBufferPointer<byte> key,
+            SafeAppleCryptoSymmetricKeyHandle key,
             UnsafeBufferPointer<byte> nonce,
             UnsafeBufferPointer<byte> plaintext,
             UnsafeMutableBufferPointer<byte> ciphertext,
@@ -204,7 +200,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial void AppleCryptoNative_ChaCha20Poly1305Decrypt(
-            UnsafeBufferPointer<byte> key,
+            SafeAppleCryptoSymmetricKeyHandle key,
             UnsafeBufferPointer<byte> nonce,
             UnsafeBufferPointer<byte> ciphertext,
             UnsafeBufferPointer<byte> tag,
@@ -215,7 +211,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial void AppleCryptoNative_AesGcmEncrypt(
-            UnsafeBufferPointer<byte> key,
+            SafeAppleCryptoSymmetricKeyHandle key,
             UnsafeBufferPointer<byte> nonce,
             UnsafeBufferPointer<byte> plaintext,
             UnsafeMutableBufferPointer<byte> ciphertext,
@@ -226,7 +222,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
         private static unsafe partial void AppleCryptoNative_AesGcmDecrypt(
-            UnsafeBufferPointer<byte> key,
+            SafeAppleCryptoSymmetricKeyHandle key,
             UnsafeBufferPointer<byte> nonce,
             UnsafeBufferPointer<byte> ciphertext,
             UnsafeBufferPointer<byte> tag,
@@ -238,5 +234,47 @@ internal static partial class Interop
         [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvSwift) })]
         [return: MarshalAs(UnmanagedType.U1)]
         private static unsafe partial bool AppleCryptoNative_IsAuthenticationFailure(void* error);
+
+        [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SymmetricKeyFree")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        internal static partial void SymmetricKeyFree(IntPtr ptr);
+
+        [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SymmetricKeyImport")]
+        [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
+        private static partial SafeAppleCryptoSymmetricKeyHandle AppleCryptoNative_SymmetricKeyImport(
+            ReadOnlySpan<byte> source,
+            int sourceLength);
+
+        internal static SafeAppleCryptoSymmetricKeyHandle SymmetricKeyImport(ReadOnlySpan<byte> source)
+        {
+            SafeAppleCryptoSymmetricKeyHandle key = AppleCryptoNative_SymmetricKeyImport(source, source.Length);
+
+            if (key.IsInvalid)
+            {
+                key.Dispose();
+                throw new CryptographicException();
+            }
+
+            return key;
+        }
+    }
+}
+
+namespace System.Security.Cryptography.Apple
+{
+    internal sealed class SafeAppleCryptoSymmetricKeyHandle : SafeHandle
+    {
+        public SafeAppleCryptoSymmetricKeyHandle() : base(IntPtr.Zero, ownsHandle: true)
+        {
+        }
+
+        public override bool IsInvalid => handle == IntPtr.Zero;
+
+        protected override bool ReleaseHandle()
+        {
+            Interop.AppleCrypto.SymmetricKeyFree(handle);
+            SetHandle(IntPtr.Zero);
+            return true;
+        }
     }
 }
