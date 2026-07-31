@@ -509,7 +509,7 @@ namespace System.Formats.Tar
 
         // Calculates how many data bytes should be written, depending on the position pointer of the stream.
         // Only works if the stream is seekable.
-        public long GetTotalDataBytesToWrite()
+        internal long GetTotalDataBytesToWrite()
         {
             if (_dataStream == null)
             {
