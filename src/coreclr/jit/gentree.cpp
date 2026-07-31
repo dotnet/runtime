@@ -15607,7 +15607,10 @@ GenTree* Compiler::gtFoldExprShiftCountMask(GenTreeOp* shift)
             shift->SetAllEffectsFlags(shift->gtGetOp1(), count);
         }
     }
-    else if (count->IsCnsIntOrI())
+
+    // Normalize out-of-range constant counts. This also handles the case where the AND
+    // above was stripped and the inner count was itself a constant (e.g. AND(cns, cns)).
+    if (count->IsCnsIntOrI())
     {
         size_t value = static_cast<size_t>(count->AsIntCon()->IconValue());
 

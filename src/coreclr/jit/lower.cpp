@@ -8832,20 +8832,36 @@ void Lowering::LowerShift(GenTreeOp* shift)
 #elif defined(TARGET_ARM)
     // ARM32 uses Rs[7:0] as the shift count; counts in [32, 255] give 0 (LSL/LSR) or
     // replicated sign (ASR) rather than masking mod 32. Insert AND(count, 31) so the
-    // hardware sees a value in [0, 31]. Skip when the AND is already present (e.g.
-    // MinOpts where gtFoldExprShiftCountMask did not run).
+    // hardware sees a value in [0, 31]. Skip when the count is already provably in
+    // [0, 31]: a constant (handled above) or AND(x, C) where C fits in 5 bits.
     {
         assert(!varTypeIsLong(shift->TypeGet()));
         constexpr ssize_t mask = 0x1f;
 
         GenTree* shiftBy = shift->gtGetOp2();
-        if (!shiftBy->IsCnsIntOrI() && !shiftBy->OperIs(GT_AND))
+        if (!shiftBy->IsCnsIntOrI())
         {
-            GenTree* maskCns = m_compiler->gtNewIconNode(mask);
-            GenTree* andNode = m_compiler->gtNewOperNode(GT_AND, TYP_INT, shiftBy, maskCns);
-            BlockRange().InsertBefore(shift, maskCns);
-            BlockRange().InsertBefore(shift, andNode);
-            shift->AsOp()->gtOp2 = andNode;
+            // Skip insertion when the count is already AND(x, C) where C <= 31,
+            // which guarantees the result is in [0, 31]. A bare GT_AND is not
+            // sufficient: user-written masks like (y & 0xFF) don't bound to [0, 31].
+            bool alreadyMasked = false;
+            if (shiftBy->OperIs(GT_AND))
+            {
+                GenTree* andOp2 = shiftBy->gtGetOp2();
+                if (andOp2->IsCnsIntOrI() && ((static_cast<size_t>(andOp2->AsIntCon()->IconValue()) & ~mask) == 0))
+                {
+                    alreadyMasked = true;
+                }
+            }
+
+            if (!alreadyMasked)
+            {
+                GenTree* maskCns = m_compiler->gtNewIconNode(mask);
+                GenTree* andNode = m_compiler->gtNewOperNode(GT_AND, TYP_INT, shiftBy, maskCns);
+                BlockRange().InsertBefore(shift, maskCns);
+                BlockRange().InsertBefore(shift, andNode);
+                shift->AsOp()->gtOp2 = andNode;
+            }
         }
     }
 #endif
