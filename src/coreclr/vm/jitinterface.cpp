@@ -10565,9 +10565,6 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitAwaiterInContinuationCall(
     MethodDesc* pInliningContext = pMD;
     if (pMD->RequiresInstArg())
     {
-        // The instantiation argument must be the exact method desc. Note that this is the
-        // instantiating stub, and not pMD, which is the shared method desc that takes the
-        // instantiation argument itself.
         MethodDesc* pContext = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&awaiterType, 1), FALSE);
 
