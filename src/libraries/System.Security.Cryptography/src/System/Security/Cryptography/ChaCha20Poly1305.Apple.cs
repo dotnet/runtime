@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography.Apple;
 
 namespace System.Security.Cryptography
 {
@@ -11,14 +10,14 @@ namespace System.Security.Cryptography
     {
         // CryptoKit added ChaCha20Poly1305 in macOS 10.15, and iOS/tvOS in 13.0.
         public static bool IsSupported => true;
-        private SafeAppleCryptoSymmetricKeyHandle _key;
+        private FixedMemoryKeyBox _keyBox;
 
-        [MemberNotNull(nameof(_key))]
+        [MemberNotNull(nameof(_keyBox))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
             // We should only be calling this in the constructor, so there shouldn't be a previous key.
-            Debug.Assert(_key is null);
-            _key = Interop.AppleCrypto.SymmetricKeyImport(key);
+            Debug.Assert(_keyBox is null);
+            _keyBox = new FixedMemoryKeyBox(key);
         }
 
         private void EncryptCore(
@@ -28,13 +27,26 @@ namespace System.Security.Cryptography
             Span<byte> tag,
             ReadOnlySpan<byte> associatedData = default)
         {
-            Interop.AppleCrypto.ChaCha20Poly1305Encrypt(
-                _key,
-                nonce,
-                plaintext,
-                ciphertext,
-                tag,
-                associatedData);
+            bool acquired = false;
+
+            try
+            {
+                _keyBox.DangerousAddRef(ref acquired);
+                Interop.AppleCrypto.ChaCha20Poly1305Encrypt(
+                    _keyBox.DangerousKeySpan,
+                    nonce,
+                    plaintext,
+                    ciphertext,
+                    tag,
+                    associatedData);
+            }
+            finally
+            {
+                if (acquired)
+                {
+                    _keyBox.DangerousRelease();
+                }
+            }
         }
 
         private void DecryptCore(
@@ -44,15 +56,28 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData = default)
         {
-            Interop.AppleCrypto.ChaCha20Poly1305Decrypt(
-                _key,
-                nonce,
-                ciphertext,
-                tag,
-                plaintext,
-                associatedData);
+            bool acquired = false;
+
+            try
+            {
+                _keyBox.DangerousAddRef(ref acquired);
+                Interop.AppleCrypto.ChaCha20Poly1305Decrypt(
+                    _keyBox.DangerousKeySpan,
+                    nonce,
+                    ciphertext,
+                    tag,
+                    plaintext,
+                    associatedData);
+            }
+            finally
+            {
+                if (acquired)
+                {
+                    _keyBox.DangerousRelease();
+                }
+            }
         }
 
-        public void Dispose() => _key.Dispose();
+        public void Dispose() => _keyBox.Dispose();
     }
 }

@@ -3,13 +3,13 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography.Apple;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
     public sealed partial class AesGcm
     {
-        private SafeAppleCryptoSymmetricKeyHandle _key;
+        private FixedMemoryKeyBox _keyBox;
 
         // CryptoKit only supports 16 byte tags.
         private static readonly KeySizes s_tagByteSizes = new KeySizes(16, 16, 1);
@@ -19,12 +19,12 @@ namespace System.Security.Cryptography
 
         public static partial KeySizes TagByteSizes => s_tagByteSizes;
 
-        [MemberNotNull(nameof(_key))]
+        [MemberNotNull(nameof(_keyBox))]
         private partial void ImportKey(ReadOnlySpan<byte> key)
         {
             // We should only be calling this in the constructor, so there shouldn't be a previous key.
-            Debug.Assert(_key is null);
-            _key = Interop.AppleCrypto.SymmetricKeyImport(key);
+            Debug.Assert(_keyBox is null);
+            _keyBox = new FixedMemoryKeyBox(key);
         }
 
         private partial void EncryptCore(
@@ -34,13 +34,26 @@ namespace System.Security.Cryptography
             Span<byte> tag,
             ReadOnlySpan<byte> associatedData)
         {
-            Interop.AppleCrypto.AesGcmEncrypt(
-                _key,
-                nonce,
-                plaintext,
-                ciphertext,
-                tag,
-                associatedData);
+            bool acquired = false;
+
+            try
+            {
+                _keyBox.DangerousAddRef(ref acquired);
+                Interop.AppleCrypto.AesGcmEncrypt(
+                    _keyBox.DangerousKeySpan,
+                    nonce,
+                    plaintext,
+                    ciphertext,
+                    tag,
+                    associatedData);
+            }
+            finally
+            {
+                if (acquired)
+                {
+                    _keyBox.DangerousRelease();
+                }
+            }
         }
 
         private partial void DecryptCore(
@@ -50,15 +63,28 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData)
         {
-            Interop.AppleCrypto.AesGcmDecrypt(
-                _key,
-                nonce,
-                ciphertext,
-                tag,
-                plaintext,
-                associatedData);
+            bool acquired = false;
+
+            try
+            {
+                _keyBox.DangerousAddRef(ref acquired);
+                Interop.AppleCrypto.AesGcmDecrypt(
+                    _keyBox.DangerousKeySpan,
+                    nonce,
+                    ciphertext,
+                    tag,
+                    plaintext,
+                    associatedData);
+            }
+            finally
+            {
+                if (acquired)
+                {
+                    _keyBox.DangerousRelease();
+                }
+            }
         }
 
-        public partial void Dispose() => _key.Dispose();
+        public partial void Dispose() => _keyBox.Dispose();
     }
 }
