@@ -143,9 +143,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         public abstract TValue GetTupleElementValue(IFieldSymbol tupleElement);
 
         // Returns the value produced by applying a user-defined conversion operator to a value.
-        // This mirrors the handling of IConversionOperation with an OperatorMethod, which the
-        // deconstruction path doesn't go through because the conversion is described by the
-        // DeconstructionInfo rather than by an operation in the tree.
+        // The deconstruction path needs this because there the conversion is described by the
+        // DeconstructionInfo rather than by a conversion operation in the tree.
         public abstract TValue GetConversionValue(IMethodSymbol conversionOperator, TValue operandValue);
 
         public abstract TValue GetParameterTargetValue(IParameterSymbol parameter);
