@@ -378,14 +378,28 @@ internal sealed class FrameHelpers
 
     private bool InlinedCallFrameHasFunction(Data.InlinedCallFrame frame)
     {
-        if (_target.PointerSize == sizeof(ulong))
+        if (!UsesInlinedCallFrameStackSizeSentinel())
         {
             return frame.Datum != TargetPointer.Null;
         }
-        else
+
+        return ((long)frame.Datum.Value & ~0xffff) != 0;
+    }
+
+    private bool UsesInlinedCallFrameStackSizeSentinel()
+    {
+        if (_target.PointerSize != sizeof(uint))
         {
-            return ((long)frame.Datum.Value & ~0xffff) != 0;
+            return false;
         }
+
+        if (_target.TryReadGlobalString(Constants.Globals.Architecture, out string? arch)
+            && Enum.TryParse(arch, ignoreCase: true, out RuntimeInfoArchitecture runtimeArchitecture))
+        {
+            return runtimeArchitecture == RuntimeInfoArchitecture.X86;
+        }
+
+        return false;
     }
 
     /// <summary>
