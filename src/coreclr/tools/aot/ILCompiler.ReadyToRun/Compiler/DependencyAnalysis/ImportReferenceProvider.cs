@@ -18,11 +18,11 @@ namespace ILCompiler.DependencyAnalysis
         private ReadyToRunSymbolNodeFactory _symbolNodeFactory;
         private ExternalReferenceTokenManager _externalReferenceTokenManager;
 
-        public Import GetImportToType(TypeDesc type, ModuleDesc module = null)
+        public Import GetImportToType(TypeDesc type, ModuleDesc moduleRequiringImport = null)
         {
-            if (module is not null)
+            if (moduleRequiringImport is not null)
             {
-                _externalReferenceTokenManager.EnsureDefTokensAreAvailable(type, module, referencesAreForAsyncMethod: false);
+                _externalReferenceTokenManager.EnsureDefTokensAreAvailable(type, moduleRequiringImport, referencesAreForAsyncMethod: false);
             }
 
             return _symbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
