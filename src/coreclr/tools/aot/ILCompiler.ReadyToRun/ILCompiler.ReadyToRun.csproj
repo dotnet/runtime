@@ -7,7 +7,7 @@
     <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(FeatureDynamicCodeCompiled)' == 'true'">$(DefineConstants);FEATURE_DYNAMIC_CODE_COMPILED</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <Platforms>x64;x86;arm;arm64</Platforms>
+    <Platforms>x64;x86;arm;arm64;armel</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 
