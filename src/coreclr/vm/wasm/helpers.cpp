@@ -1049,14 +1049,15 @@ namespace
         ToV128,
         ToSlotsI64,  // Passed by value as several i64 slots (Int128/UInt128)
         ToSlotsV128, // Passed by value as several v128 slots (Vector256<T>, Vector512<T>)
-        ToStruct,   // S<N> — multi-field struct passed by pointer, structSize holds the size
+        ToStruct,   // S<N>/A<N> — multi-field struct passed by pointer, structSize holds the size
         ToEmpty,    // e — empty struct, takes no wasm argument
     };
 
     struct ConvertResult
     {
         ConvertType type;
-        uint32_t structSize; // only meaningful when type == ToStruct
+        uint32_t structSize;  // only meaningful when type == ToStruct
+        uint32_t structAlign; // only meaningful when type == ToStruct
     };
 
     // Lowers a TypeHandle to a ConvertResult, unwrapping single-field structs
@@ -1237,7 +1238,13 @@ namespace
             // One field with padding — treat as multi-field struct
         }
 
-        return { ConvertType::ToStruct, size };
+        // The transition block slot for a struct argument is aligned to the struct's own alignment,
+        // clamped to [INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT]. This must be part of the
+        // signature key, since it is part of the argument layout the thunk bakes in.
+        uint32_t align = std::clamp(CEEInfo::getClassAlignmentRequirementStatic(pMT),
+                                    INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
+
+        return { ConvertType::ToStruct, size, align };
     }
 
     ConvertResult ConvertibleTo(CorElementType argType, MetaSig& sig, bool isReturn)
@@ -1316,9 +1323,10 @@ namespace
             case ConvertType::ToEmpty:     c = 'e'; break;
             case ConvertType::ToStruct:
             {
-                // Encode as S<N> where N is the struct size in decimal
+                // Encode as S<N>, or A<N> when the argument slot needs 16-byte alignment
                 char sizeBuf[16];
-                int len = sprintf_s(sizeBuf, sizeof(sizeBuf), "S%u", cr.structSize);
+                int len = sprintf_s(sizeBuf, sizeof(sizeBuf), "%c%u",
+                                    (cr.structAlign == INTERP_STACK_ALIGNMENT) ? 'A' : 'S', cr.structSize);
                 for (int j = 0; j < len; j++)
                 {
                     if (pos + (uint32_t)j < maxSize)

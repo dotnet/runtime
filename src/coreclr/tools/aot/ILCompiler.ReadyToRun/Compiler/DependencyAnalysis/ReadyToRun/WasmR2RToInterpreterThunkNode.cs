@@ -62,7 +62,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 int pos = 1;
-                if (_wasmSignature.SignatureString[0] == 'S')
+                if (WasmLowering.IsStructToken(_wasmSignature.SignatureString[0]))
                 {
                     while ((pos < _wasmSignature.SignatureString.Length) && char.IsDigit(_wasmSignature.SignatureString[pos]))
                     {
@@ -128,7 +128,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             bool hasGenericContextBeforeAsync = HasGenericContextBeforeAsync;
             (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context, methodIsAsyncCall: hasAsyncContinuation);
 
-            bool hasRetBuffArg = _wasmSignature.SignatureString[0] == 'S';
+            bool hasRetBuffArg = WasmLowering.IsStructToken(_wasmSignature.SignatureString[0]);
             bool hasThis = !methodSignature.IsStatic;
 
             int[] offsets = new int[methodSignature.Length];

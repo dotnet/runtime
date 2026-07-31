@@ -13,8 +13,7 @@ namespace ILCompiler
     public partial class CompilerTypeSystemContext
     {
         private readonly object _structCacheLock = new object();
-        private readonly Dictionary<int, TypeDesc> _structsBySize = new Dictionary<int, TypeDesc>();
-        private readonly Dictionary<int, TypeDesc> _returnStructsBySize = new Dictionary<int, TypeDesc>();
+        private readonly Dictionary<(int Size, int Alignment), TypeDesc> _structsBySizeAndAlignment = new Dictionary<(int, int), TypeDesc>();
         private volatile TypeDesc _cachedEmptyStruct;
         private volatile TypeDesc _wasmV128Type;
         private volatile TypeDesc _wasmInt128Type;
@@ -90,10 +89,11 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Caches a struct type by its element size, so RaiseSignature can retrieve a real
-        /// type of that size. Only the first struct encountered for a given size is retained.
+        /// Caches a struct type by its element size and argument alignment, so RaiseSignature can
+        /// retrieve a real type with the same Wasm argument layout. Only the first struct
+        /// encountered for a given (size, alignment) pair is retained.
         /// </summary>
-        public void CacheStructBySize(TypeDesc type)
+        public void CacheStructBySize(TypeDesc type, int alignment)
         {
             int size = type.GetElementSize().AsInt;
             if (size <= 0)
@@ -101,50 +101,20 @@ namespace ILCompiler
 
             lock (_structCacheLock)
             {
-                _structsBySize.TryAdd(size, type);
+                _structsBySizeAndAlignment.TryAdd((size, alignment), type);
             }
         }
 
         /// <summary>
-        /// Caches a struct return type by size. Kept apart from the parameter cache because the two
-        /// classes are not interchangeable: a multi-slot type spells <c>S&lt;N&gt;</c> as a return but
-        /// re-lowers to its slot form as a parameter, so letting one answer for the other would give
-        /// an ordinary same-sized struct that type's larger alignment.
+        /// Gets a previously cached struct type of the specified byte size and argument alignment.
+        /// Returns null if no such struct has been cached.
+        /// Used by RaiseSignature to produce a roundtrippable type for the 'S&lt;N&gt;'/'A&lt;N&gt;' encodings.
         /// </summary>
-        public void CacheReturnStructBySize(TypeDesc type)
-        {
-            int size = type.GetElementSize().AsInt;
-            if (size <= 0)
-                return;
-
-            lock (_structCacheLock)
-            {
-                _returnStructsBySize.TryAdd(size, type);
-            }
-        }
-
-        /// <summary>
-        /// Gets a previously cached struct return type of the specified byte size, falling back to a
-        /// parameter of that size. Returns null if neither has been cached.
-        /// </summary>
-        public TypeDesc GetCachedReturnStructOfSize(int size)
+        public TypeDesc GetCachedStructOfSize(int size, int alignment)
         {
             lock (_structCacheLock)
             {
-                if (_returnStructsBySize.TryGetValue(size, out TypeDesc result))
-                {
-                    return result;
-                }
-            }
-
-            return GetCachedStructOfSize(size);
-        }
-
-        public TypeDesc GetCachedStructOfSize(int size)
-        {
-            lock (_structCacheLock)
-            {
-                if (_structsBySize.TryGetValue(size, out TypeDesc result))
+                if (_structsBySizeAndAlignment.TryGetValue((size, alignment), out TypeDesc result))
                     return result;
             }
 

@@ -283,9 +283,10 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
-    /// A multi-slot type is returned through a hidden buffer and so spells <c>S&lt;N&gt;</c>, but it
-    /// must not be remembered as the type that encoding raises to: it re-lowers to its multi-slot
-    /// form, so an ordinary same-sized struct parameter would raise with the wrong alignment.
+    /// A multi-slot type is returned through a hidden buffer, so it takes a struct token rather
+    /// than its slot form. Its argument alignment is part of that token, so an ordinary struct of
+    /// the same size — which is only 8-byte aligned — spells a different one and raises with its
+    /// own layout rather than the multi-slot type's.
     /// </summary>
     [Theory]
     [InlineData(Int128Type, 2)]
@@ -297,9 +298,12 @@ public class WasmArgumentLayoutTests
 
         // Lower a method whose return is the multi-slot type; this is what caches by size.
         DefType multiSlot = InstantiateMultiSlotType(context, typeName);
-        WasmLowering.GetSignature(
+        WasmSignature returnSignature = WasmLowering.GetSignature(
             new MethodSignature(MethodSignatureFlags.Static, 0, multiSlot, Array.Empty<TypeDesc>()),
             WasmLowering.LoweringFlags.None);
+
+        // Every multi-slot type clamps to 16-byte alignment, so the return takes the wide token.
+        Assert.Equal($"A{multiSlot.InstanceFieldSize.AsInt}p", returnSignature.SignatureString);
 
         // Now an ordinary struct of the same size, which is only 8-byte aligned.
         MetadataType tupleType = fieldCount == 2
@@ -462,9 +466,10 @@ public class WasmArgumentLayoutTests
         Assert.Equal(expectedSignature, SignatureOf(context, wrapper));
         Assert.Equal(OffsetsOf(context, wrapped), OffsetsOf(context, wrapper));
 
-        // A second field makes it an ordinary aggregate, so it goes back to the struct ABI.
+        // A second field makes it an ordinary aggregate, so it goes back to the struct ABI. Two
+        // vector fields still leave it over-aligned, so it takes the wide-alignment token.
         DefType twoFields = MakeValueTuple(context, wrapped, wrapped);
-        Assert.Equal($"vlS{twoFields.InstanceFieldSize.AsInt}ip", SignatureOf(context, twoFields));
+        Assert.Equal($"vlA{twoFields.InstanceFieldSize.AsInt}ip", SignatureOf(context, twoFields));
     }
 
     /// <summary>
@@ -480,6 +485,29 @@ public class WasmArgumentLayoutTests
 
         Assert.Equal("vll2ip", SignatureOf(context, wrapper));
         Assert.Equal(OffsetsOf(context, int128), OffsetsOf(context, wrapper));
+    }
+
+    /// <summary>
+    /// A thunk is keyed by its signature string, so two structs of the same size must not spell the
+    /// same token unless they also agree on argument alignment. The over-aligned one is padded to 16
+    /// in the transition block and the other is not, so one thunk cannot describe both.
+    /// </summary>
+    [Fact]
+    public void SameSizedStructsOfDifferentAlignmentGetDifferentTokens()
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc int64 = context.GetWellKnownType(WellKnownType.Int64);
+        DefType vector = InstantiateVector(context, Vector128OfT, WellKnownType.Int32);
+
+        DefType wideAligned = MakeValueTuple(context, vector, vector);
+        DefType slotAligned = MakeValueTuple(context, int64, int64, int64, int64);
+
+        Assert.Equal(wideAligned.InstanceFieldSize.AsInt, slotAligned.InstanceFieldSize.AsInt);
+        Assert.NotEqual(wideAligned.InstanceFieldAlignment.AsInt, slotAligned.InstanceFieldAlignment.AsInt);
+
+        Assert.Equal("vlA32ip", SignatureOf(context, wideAligned));
+        Assert.Equal("vlS32ip", SignatureOf(context, slotAligned));
+        Assert.NotEqual(OffsetsOf(context, wideAligned), OffsetsOf(context, slotAligned));
     }
 
     private static DefType MakeValueTuple(ReadyToRunCompilerContext context, params TypeDesc[] fields) =>

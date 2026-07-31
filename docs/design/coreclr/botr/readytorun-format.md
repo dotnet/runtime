@@ -1077,6 +1077,7 @@ The string format is:
 | `d` | returns `f64` |
 | `V` | returns `v128` (a `Vector128<T>`, or a 16-byte `Vector<T>`) |
 | `S<N>` | struct return via hidden buffer, `N` is the struct size in bytes |
+| `A<N>` | as `S<N>`, but the struct's argument slot requires 16-byte alignment |
 
 **This pointer** (if the method has a `this` parameter):
 
@@ -1091,8 +1092,8 @@ The string format is:
 2. **Async continuation** (`a`): present for async calls.
 
 Note: the hidden return buffer pointer is **not** encoded in the signature string. Its
-presence is implied by the return type being `S<N>` — when the caller sees a struct return,
-it knows a hidden retbuf pointer argument is present in the Wasm parameter list.
+presence is implied by the return type being `S<N>` or `A<N>` — when the caller sees a struct
+return, it knows a hidden retbuf pointer argument is present in the Wasm parameter list.
 
 **Explicit parameters** (one token per parameter, in declaration order):
 
@@ -1104,6 +1105,7 @@ it knows a hidden retbuf pointer argument is present in the Wasm parameter list.
 | `d` | `f64` parameter |
 | `V` | `v128` parameter (a `Vector128<T>`, or a 16-byte `Vector<T>`, passed by value) |
 | `S<N>` | struct parameter passed by reference, `<N>` is the struct size in bytes |
+| `A<N>` | as `S<N>`, but the struct's argument slot requires 16-byte alignment |
 | `e` | empty struct parameter — elided from Wasm args but present in the string |
 | `<slot><E>` | multi-slot parameter passed by value, see below |
 
@@ -1127,14 +1129,22 @@ reads it. So `ll2VV4` is `i64`, `Int128`, `Vector128<T>`, `Vector512<T>`. The gr
 unambiguous because no other token places a digit after a slot character; `S<N>` consumes
 its own digits.
 
-These types are still *returned* through a hidden buffer, encoded as `S<N>` like any other
-aggregate. Limitation: a single digit carries both the slot count and the elevation factor,
-so an aggregate whose elevation differs from its slot count has no spelling. That includes
-one whose alignment is merely natural for its slot type, which would need count `N` with
-elevation 1. No such type exists in the Wasm ABI today.
+These types are still *returned* through a hidden buffer, encoded like any other aggregate:
+`A<N>`, since each of them clamps to 16-byte alignment. Limitation: a single digit carries
+both the slot count and the elevation factor, so an aggregate whose elevation differs from
+its slot count has no spelling. That includes one whose alignment is merely natural for its
+slot type, which would need count `N` with elevation 1. No such type exists in the Wasm ABI
+today.
 
 WasmAppBuilder does not emit or consume multi-slot tokens: they do not appear in
 `InternalCall` or `PInvoke` signatures.
+
+A struct's argument slot in the transition block is aligned to the struct's own alignment,
+clamped to `[8, 16]`. Because thunks are keyed by (and shared across modules by) the signature
+string alone, that alignment must be part of the encoding: a 32-byte struct of `long`s and a
+32-byte struct of `Int128`s have different argument layouts and cannot share a thunk. Structs
+whose alignment clamps to 16 (those containing `Int128`/`UInt128` or a 128-bit vector) use the
+`A<N>` token; all others use `S<N>`.
 
 **Suffix**:
 

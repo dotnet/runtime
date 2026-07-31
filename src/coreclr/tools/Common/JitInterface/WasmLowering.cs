@@ -409,16 +409,49 @@ namespace Internal.JitInterface
             _ => throw new InvalidOperationException($"Unknown signature char: {c}")
         };
 
-        private static int ParseStructSize(string sig, ref int pos)
+        private static int ParseStructSize(string sig, ref int pos, out int align)
         {
-            Debug.Assert(sig[pos] == 'S');
-            pos++; // skip 'S'
+            Debug.Assert(sig[pos] is 'S' or 'A');
+            align = (sig[pos] == 'A') ? WideStructArgAlignment : DefaultStructArgAlignment;
+            pos++; // skip 'S'/'A'
             int start = pos;
             while (pos < sig.Length && char.IsDigit(sig[pos]))
             {
                 pos++;
             }
             return int.Parse(sig.AsSpan(start, pos - start));
+        }
+
+        // Wasm passes struct arguments in transition block slots aligned to the struct's own
+        // alignment, clamped to [8, 16]. This must match ArgIterator's Wasm32 case.
+        //
+        private const int DefaultStructArgAlignment = 8;
+        private const int WideStructArgAlignment = 16;
+
+        /// <summary>
+        /// Gets the alignment a struct argument or return type requires in the transition block.
+        /// Mirrors the Wasm32 case of <c>ArgIterator</c> and of the native <c>ArgIteratorTemplate</c>.
+        /// </summary>
+        public static int GetStructArgAlignment(TypeDesc type)
+        {
+            int alignment = ((DefType)type).InstanceFieldAlignment.AsInt;
+            return Math.Clamp(alignment, DefaultStructArgAlignment, WideStructArgAlignment);
+        }
+
+        /// <summary>
+        /// Returns true if <paramref name="c"/> starts a struct token ('S&lt;N&gt;' or 'A&lt;N&gt;').
+        /// </summary>
+        public static bool IsStructToken(char c) => c is 'S' or 'A';
+
+        // Appends the 'S<N>'/'A<N>' token for a struct passed by reference, and caches the type so
+        // RaiseSignature can recover a type with the same argument layout.
+        //
+        private static void AppendStructToken(StringBuilder sigBuilder, TypeDesc type)
+        {
+            int alignment = GetStructArgAlignment(type);
+            sigBuilder.Append(alignment == WideStructArgAlignment ? 'A' : 'S');
+            sigBuilder.Append(type.GetElementSize().AsInt);
+            ((CompilerTypeSystemContext)type.Context).CacheStructBySize(type, alignment);
         }
 
         public static MethodSignature RaiseSignature(WasmSignature wasmSignature, TypeSystemContext context)
@@ -433,11 +466,11 @@ namespace Internal.JitInterface
                 returnType = context.GetWellKnownType(WellKnownType.Void);
                 pos++;
             }
-            else if (sig[pos] == 'S')
+            else if (sig[pos] is 'S' or 'A')
             {
-                int structSize = ParseStructSize(sig, ref pos);
-                returnType = ((CompilerTypeSystemContext)context).GetCachedReturnStructOfSize(structSize);
-                Debug.Assert(returnType is not null, $"No cached struct of size {structSize} for return type in signature '{sig}'");
+                int structSize = ParseStructSize(sig, ref pos, out int structAlign);
+                returnType = ((CompilerTypeSystemContext)context).GetCachedStructOfSize(structSize, structAlign);
+                Debug.Assert(returnType is not null, $"No cached struct of size {structSize} and alignment {structAlign} for return type in signature '{sig}'");
             }
             else
             {
@@ -496,11 +529,11 @@ namespace Internal.JitInterface
                     parameters.Add(((CompilerTypeSystemContext)context).GetWasmElevatedType(c, elevation));
                     pos += 2;
                 }
-                else if (c == 'S')
+                else if (IsStructToken(c))
                 {
-                    int structSize = ParseStructSize(sig, ref pos);
-                    TypeDesc cachedStruct = ((CompilerTypeSystemContext)context).GetCachedStructOfSize(structSize);
-                    Debug.Assert(cachedStruct is not null, $"No cached struct of size {structSize} for parameter in signature '{sig}'");
+                    int structSize = ParseStructSize(sig, ref pos, out int structAlign);
+                    TypeDesc cachedStruct = ((CompilerTypeSystemContext)context).GetCachedStructOfSize(structSize, structAlign);
+                    Debug.Assert(cachedStruct is not null, $"No cached struct of size {structSize} and alignment {structAlign} for parameter in signature '{sig}'");
                     parameters.Add(cachedStruct);
                 }
                 else
@@ -611,19 +644,7 @@ namespace Internal.JitInterface
                 {
                     hasReturnBuffer = true;
                     returnIsVoid = true;
-                    int returnSize = returnType.GetElementSize().AsInt;
-                    sigBuilder.Append('S');
-                    sigBuilder.Append(returnSize);
-
-                    // A multi-slot type spells 'S<N>' only as a return; as a parameter it re-lowers
-                    // to its slot form. Keep it in the return cache alone, so an ordinary same-sized
-                    // struct parameter does not raise with this type's larger alignment.
-                    CompilerTypeSystemContext returnContext = (CompilerTypeSystemContext)returnType.Context;
-                    returnContext.CacheReturnStructBySize(returnType);
-                    if (!TryGetMultiSegmentLayout(returnType, out _, out _))
-                    {
-                        returnContext.CacheStructBySize(returnType);
-                    }
+                    AppendStructToken(sigBuilder, returnType);
                 }
             }
             else if (loweredReturnType.IsVoid)
@@ -701,7 +722,6 @@ namespace Internal.JitInterface
                     }
 
                     // Struct that cannot be lowered to a single primitive — passed by reference
-                    int paramSize = paramType.GetElementSize().AsInt;
                     if (TryGetMultiSegmentLayout(paramType, out WasmValueType slotType, out int slotCount))
                     {
                         // Passed by value across several wasm parameters, matching the wasm C ABI.
@@ -719,9 +739,7 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        sigBuilder.Append('S');
-                        sigBuilder.Append(paramSize);
-                        ((CompilerTypeSystemContext)paramType.Context).CacheStructBySize(paramType);
+                        AppendStructToken(sigBuilder, paramType);
                         result.Add(pointerType);
                     }
                 }
