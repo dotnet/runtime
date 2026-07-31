@@ -10,6 +10,12 @@ namespace System
         internal const int DefaultMaxDecryptionDepth = 64;
         internal const string DangerousMaxRecursionDepthAppContextSwitch = "System.Security.Cryptography.Xml.DangerousMaxRecursionDepth";
         internal const string AllowDangerousEncryptedXmlTransformsAppContextSwitch = "System.Security.Cryptography.Xml.AllowDangerousEncryptedXmlTransforms";
+        internal const string MaxTransformsPerChainAppContextSwitch = "System.Security.Cryptography.Xml.MaxTransformsPerChain";
+        internal const string MaxDecryptedDataElementsAppContextSwitch = "System.Security.Cryptography.Xml.MaxDecryptedDataElements";
+        internal const string AllowUnsafeTruncatedHmacSignatureVerificationAppContextSwitch = "Switch.System.Security.Cryptography.Xml.SignedXml.AllowUnsafeTruncatedHmacSignatureVerification";
+
+        internal const int DefaultMaxTransformsPerChain = 20;
+        internal const int DefaultMaxDecryptedDataElements = 100;
 
         /// <summary>
         /// Gets the maximum recursion depth for recursive XML operations.
@@ -26,6 +32,31 @@ namespace System
         /// </summary>
         internal static bool AllowDangerousEncryptedXmlTransforms { get; } =
             GetBooleanConfig(AllowDangerousEncryptedXmlTransformsAppContextSwitch, defaultValue: false);
+
+        /// <summary>
+        /// Gets the maximum number of transforms allowed in a deserialized transform chain.
+        /// Configurable via AppContext data "System.Security.Cryptography.Xml.MaxTransformsPerChain".
+        /// Default value is 20. A value of 0 means infinite (no limit).
+        /// </summary>
+        internal static int MaxTransformsPerChain { get; } =
+            GetInt32Config(MaxTransformsPerChainAppContextSwitch, DefaultMaxTransformsPerChain, allowNegative: false);
+
+        /// <summary>
+        /// Gets the maximum number of <c>EncryptedData</c> references that may be processed during a single
+        /// <see cref="System.Security.Cryptography.Xml.XmlDecryptionTransform"/> operation.
+        /// Configurable via AppContext data "System.Security.Cryptography.Xml.MaxEncryptedDataReferences".
+        /// Default value is 100. A value of 0 means infinite (no limit).
+        /// </summary>
+        internal static int MaxDecryptedDataElements { get; } =
+            GetInt32Config(MaxDecryptedDataElementsAppContextSwitch, DefaultMaxDecryptedDataElements, allowNegative: false);
+
+        /// <summary>
+        /// Gets whether HMAC signature verification accepts truncated signature values.
+        /// Configurable via AppContext switch "Switch.System.Security.Cryptography.Xml.SignedXml.AllowUnsafeTruncatedHmacSignatureVerification".
+        /// Default value is false.
+        /// </summary>
+        internal static bool AllowUnsafeTruncatedHmacSignatureVerification { get; } =
+            GetBooleanConfig(AllowUnsafeTruncatedHmacSignatureVerificationAppContextSwitch, defaultValue: false);
 
         /// <summary>
         /// Gets an integer configuration value from AppContext data.
