@@ -39,14 +39,14 @@ internal sealed class ZipEncryptionStreamFuzzer : IFuzzer
     {
         // The first byte is consumed below as the encryption-method selector, so an empty
         // input has no byte to interpret and there is nothing to fuzz.
-        if (bytes.IsEmpty)
+        if (bytes.Length < 2)
         {
             return;
         }
 
         // Use the first byte to select the encryption method so all variants get exercised.
         ZipEncryptionMethod method = s_methods[bytes[0] % s_methods.Length];
-        ReadOnlySpan<byte> payload = bytes.Slice(1);
+        ReadOnlySpan<byte> payload = bytes.Slice(2); // Slice 2 to keep MemoryMarshal.Cast<byte, char> below aligned
 
         // Split the rest of the input into a password and the entry content: everything up to the
         // first newline is the password, the remainder is the content. Deriving the password from the
@@ -136,8 +136,8 @@ internal sealed class ZipEncryptionStreamFuzzer : IFuzzer
             Assert.SequenceEqual(content.Span, decrypted.GetBuffer().AsSpan(0, (int)decrypted.Length));
         }
 
-        // AES is authenticated: the password verifier and HMAC make accepting a wrong key
-        // cryptographically infeasible, so a wrong password must fail with InvalidDataException.
+        // The AES variant of ZIP encryption uses a form of HMAC that makes accidentally accepting the wrong key
+        // statistically unlikely, so a wrong password must fail with InvalidDataException.
         // ZipCrypto only has a weak 1-byte verifier over a stream cipher, so a wrong key is rejected
         // with roughly 255/256 probability and may occasionally decrypt to garbage without throwing;
         // both outcomes are acceptable and cannot be distinguished reliably on fuzzed input. Any
@@ -148,30 +148,15 @@ internal sealed class ZipEncryptionStreamFuzzer : IFuzzer
         bool wrongPasswordRejected = false;
         try
         {
-            Stream wrongStream = async
-                ? await readEntry.OpenAsync(wrongPassword.AsSpan())
-                : readEntry.Open(wrongPassword.AsSpan());
-            try
+            if (async)
             {
-                if (async)
-                {
-                    await wrongStream.CopyToAsync(Stream.Null);
-                }
-                else
-                {
-                    wrongStream.CopyTo(Stream.Null);
-                }
+                await using Stream wrongStream = await readEntry.OpenAsync(wrongPassword.AsSpan());
+                await wrongStream.CopyToAsync(Stream.Null);
             }
-            finally
+            else
             {
-                if (async)
-                {
-                    await wrongStream.DisposeAsync();
-                }
-                else
-                {
-                    wrongStream.Dispose();
-                }
+                using Stream wrongStream = readEntry.Open(wrongPassword.AsSpan());
+                wrongStream.CopyTo(Stream.Null);
             }
         }
         catch (InvalidDataException)
