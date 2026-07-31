@@ -9,14 +9,11 @@ namespace System.IO.Compression
         {
             // System.Security.Cryptography's RandomNumberGenerator is not referenced on browser and is
             // not supported on wasi, so call the shared native CSPRNG directly. It is backed by
-            // crypto.getRandomValues() on browser and by wasi:random (getentropy/__wasi_random_get) on wasi.
+            // crypto.getRandomValues() on browser and by getrandom()/getentropy()/'/dev/urandom' on unix.
             Span<byte> randomBytes = header.Slice(0, 10);
             fixed (byte* pRandomBytes = randomBytes)
             {
-                if (Interop.Sys.GetCryptographicallySecureRandomBytes(pRandomBytes, randomBytes.Length) != 0)
-                {
-                    throw new IOException(SR.UnableToGenerateRandomBytes);
-                }
+                Interop.GetCryptographicallySecureRandomBytes(pRandomBytes, randomBytes.Length);
             }
         }
     }

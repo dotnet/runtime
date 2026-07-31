@@ -66,9 +66,8 @@
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <Compile Include="System\IO\Compression\ZipEncryptionMethod.cs" />
     <Compile Include="System\IO\Compression\ZipCryptoStream.cs" />
-    <Compile Include="System\IO\Compression\ZipCryptoStream.Random.BrowserOrWasi.cs" Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'" />
-    <Compile Include="System\IO\Compression\ZipCryptoStream.Random.Default.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'" />
-    <Compile Include="System\IO\Compression\Interop.GetCryptographicallySecureRandomBytes.cs" Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'" />
+    <Compile Include="System\IO\Compression\ZipCryptoStream.Random.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Compile Include="System\IO\Compression\ZipCryptoStream.Random.Unix.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'" />
     <Compile Include="System\IO\Compression\ZipCryptoStream.ClearSensitiveData.Browser.cs" Condition="'$(TargetPlatformIdentifier)' == 'browser'" />
     <Compile Include="System\IO\Compression\ZipCryptoStream.ClearSensitiveData.Default.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="System\IO\Compression\WinZipAesStream.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
@@ -91,6 +90,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs" Link="Common\Interop\Unix\System.Native\Interop.PathConf.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs" Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
   </ItemGroup>
 
   <!-- Zstandard files (not supported on browser/wasi) -->
