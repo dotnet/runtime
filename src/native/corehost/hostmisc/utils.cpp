@@ -4,6 +4,8 @@
 #include "utils.h"
 #include "trace.h"
 #include "bundle/info.h"
+#include <minipal/strings.h>
+
 #if defined(TARGET_WINDOWS)
 #include <_version.h>
 #else
@@ -331,27 +333,6 @@ bool try_stou(const pal::string_t& str, unsigned* num)
     return true;
 }
 
-pal::string_t get_dotnet_root_env_var_for_arch(pal::architecture arch)
-{
-    return DOTNET_ROOT_ENV_VAR _X("_") + to_upper(get_arch_name(arch));
-}
-
-bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::string_t* recv)
-{
-    const pal_char_t* env_var_name = nullptr;
-    pal_char_t* dotnet_root = nullptr;
-    if (!utils_get_dotnet_root_from_env(&env_var_name, &dotnet_root))
-    {
-        recv->clear();
-        return false;
-    }
-
-    dotnet_root_env_var_name->assign(env_var_name);
-    recv->assign(dotnet_root);
-    free(dotnet_root);
-    return true;
-}
-
 /**
 * Given path to app binary, say app.dll or app.exe, retrieve the app.deps.json.
 */
@@ -438,14 +419,7 @@ pal::string_t get_host_version_description()
 pal::string_t to_lower(const pal::char_t* in) {
     pal::string_t ret = in;
     std::transform(ret.begin(), ret.end(), ret.begin(),
-        [](pal::char_t c) { return static_cast<pal::char_t>(::tolower(c)); });
-    return ret;
-}
-
-pal::string_t to_upper(const pal::char_t* in) {
-    pal::string_t ret = in;
-    std::transform(ret.begin(), ret.end(), ret.begin(),
-        [](pal::char_t c) { return static_cast<pal::char_t>(::toupper(c)); });
+        [](pal::char_t c) { return static_cast<pal::char_t>(minipal_tolower_invariant(static_cast<CHAR16_T>(c))); });
     return ret;
 }
 

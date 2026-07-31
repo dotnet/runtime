@@ -159,6 +159,16 @@ public struct DacDbiTargetBuffer
 }
 
 [StructLayout(LayoutKind.Sequential)]
+public struct NativeCodeFunctionData
+{
+    public DacDbiTargetBuffer hotRegion;
+    public DacDbiTargetBuffer coldRegion;
+    public Interop.BOOL isInstantiatedGeneric;
+    public ulong vmNativeCodeMethodDescToken;
+    public ulong encVersion;
+}
+
+[StructLayout(LayoutKind.Sequential)]
 public struct DacDbiAssemblyInfo
 {
     public ulong vmAppDomain;
@@ -721,10 +731,10 @@ public unsafe partial interface IDacDbiInterface
     int GetILCodeAndSig(ulong vmAssembly, uint functionToken, DacDbiTargetBuffer* pTargetBuffer, uint* pLocalSigToken);
 
     [PreserveSig]
-    int GetNativeCodeInfo(ulong vmAssembly, uint functionToken, nint pJitManagerList);
+    int GetNativeCodeInfo(ulong vmAssembly, uint functionToken, NativeCodeFunctionData* pCodeInfo);
 
     [PreserveSig]
-    int GetNativeCodeInfoForAddr(ulong codeAddress, nint pCodeInfo, ulong* pVmModule, uint* pFunctionToken);
+    int GetNativeCodeInfoForAddr(ulong codeAddress, NativeCodeFunctionData* pCodeInfo, ulong* pVmModule, uint* pFunctionToken);
 
     [PreserveSig]
     int IsValueType(ulong vmTypeHandle, Interop.BOOL* pResult);
@@ -879,12 +889,6 @@ public unsafe partial interface IDacDbiInterface
     int AreOptimizationsDisabled(ulong vmModule, uint methodTk, Interop.BOOL* pOptimizationsDisabled);
 
     [PreserveSig]
-    int GetDefinesBitField(uint* pDefines);
-
-    [PreserveSig]
-    int GetMDStructuresVersion(uint* pMDStructuresVersion);
-
-    [PreserveSig]
     int GetActiveRejitILCodeVersionNode(ulong vmModule, uint methodTk, ulong* pVmILCodeVersionNode);
 
     [PreserveSig]
@@ -929,4 +933,10 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);
+
+    [PreserveSig]
+    int GetReadWriteMetadataSize(ulong vmModule, uint* pSize);
+
+    [PreserveSig]
+    int FillReadWriteMetadata(ulong vmModule, byte* pBuffer, uint cbBuffer);
 }
