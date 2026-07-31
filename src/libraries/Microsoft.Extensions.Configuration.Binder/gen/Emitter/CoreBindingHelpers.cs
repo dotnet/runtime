@@ -507,8 +507,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitTryGetConfigurationValueMethod()
             {
-                // Only ConfigurationSection can tell a missing key from one holding an explicit null, so the concrete
-                // type has to be tested for, as ConfigurationBinder.BindInstance does. A root is not a section.
                 EmitBlankLineIfRequired();
                 _writer.WriteLine($$"""
                     /// <summary>Tries to get the configuration value for the specified key.</summary>
@@ -516,18 +514,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         if ({{Identifier.configuration}} is {{Identifier.ConfigurationSection}} {{Identifier.section}})
                         {
-                            return {{Identifier.section}}.{{Identifier.TryGetValue}}({{Identifier.key}}, out {{Identifier.value}});
+                            return {{Identifier.section}}.TryGetValue({{Identifier.key}}, out {{Identifier.value}});
                         }
-                    """);
-                _writer.WriteLine();
-                _writer.WriteLine($$"""
-                        if ({{Identifier.key}} != null && {{Identifier.configuration}}.{{Identifier.GetSection}}({{Identifier.key}}) is {{Identifier.ConfigurationSection}} childSection)
-                        {
-                            return childSection.{{Identifier.TryGetValue}}({{Identifier.key}}: null, out {{Identifier.value}});
-                        }
-                    """);
-                _writer.WriteLine();
-                _writer.WriteLine($$"""
+
                         {{Identifier.value}} = {{Identifier.key}} != null ? {{Identifier.configuration}}[{{Identifier.key}}] : {{Identifier.configuration}} is {{Identifier.IConfigurationSection}} sec ? sec.Value : null;
                         return {{Identifier.value}} != null;
                     }

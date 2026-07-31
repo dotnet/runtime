@@ -206,13 +206,6 @@ namespace Microsoft.Extensions
 
         public record RecordWithDefaultedArrayValue(string[] Value = null);
 
-        public class OptionsWithPresetValues
-        {
-            public int? NullableInt { get; set; } = 42;
-
-            public string Text { get; set; } = "preset";
-        }
-
         public class ClassWithMatchingParametersAndProperties
         {
             private readonly string _color;

@@ -250,19 +250,6 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Null(config.GetValue<int?>("empty"));
         }
 
-        [Theory]
-        [InlineData("""{ "NullableInt": null, "Text": null }""")]
-        [InlineData("""{ "NullableInt": "", "Text": null }""")]
-        public void PropertiesBindNullWhenConfigurationValueIsNullOrEmpty(string json)
-        {
-            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
-
-            OptionsWithPresetValues options = config.Get<OptionsWithPresetValues>();
-
-            Assert.Null(options.NullableInt);
-            Assert.Null(options.Text);
-        }
-
         [Fact]
         public void Get_Scalar()
         {
