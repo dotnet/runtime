@@ -15581,7 +15581,8 @@ GenTree* Compiler::gtFoldExprShiftCountMask(GenTreeOp* shift)
 
     GenTree* count = shift->gtGetOp2();
 
-    if (count->OperIs(GT_AND))
+    // AND-stripping only benefits CSE and later optimization phases, so skip it in MinOpts.
+    if (opts.OptimizationEnabled() && count->OperIs(GT_AND))
     {
         GenTree* andOp1 = count->gtGetOp1();
         GenTree* andOp2 = count->gtGetOp2();
@@ -15654,10 +15655,10 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
     if (tree->OperIs(GT_LSH, GT_RSH, GT_RSZ))
     {
         // IL masks the shift count to the operand bit width, so `x >> n` is imported as
-        // `x >> (n & 31)` (or `& 63` for 64-bit). Strip the redundant mask here so that
-        // it disappears before CSE and later phases never have to account for it. For
-        // targets where the hardware does not mask (currently ARM32), LowerShift re-inserts
-        // the AND so that lowered code remains correct.
+        // `x >> (n & 31)` (or `& 63` for 64-bit). Strip the redundant mask in optimized
+        // compilations so it disappears before CSE and later phases never have to account
+        // for it. For targets where the hardware does not mask (currently ARM32),
+        // LowerShift re-inserts the AND so that lowered code remains correct.
         op2 = gtFoldExprShiftCountMask(tree);
     }
 
