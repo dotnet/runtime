@@ -10565,18 +10565,28 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitAwaiterInContinuationCall(
     MethodDesc* pInliningContext = pMD;
     if (pMD->RequiresInstArg())
     {
+        // The instantiation argument must be the exact method desc. Note that this is the
+        // instantiating stub, and not pMD, which is the shared method desc that takes the
+        // instantiation argument itself.
+        MethodDesc* pContext = MethodDesc::FindOrCreateAssociatedMethodDesc(
+            pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&awaiterType, 1), FALSE);
+
         if (awaiterType.IsCanonicalSubtype())
         {
-            // We need the exact instantiation from the call site to be able to
-            // create the runtime lookup.
+            // The exact instantiation is only known at runtime, so it requires a generic
+            // dictionary lookup. pResolvedToken is for the AsyncHelpers.AwaitAwaiter or
+            // UnsafeAwaitAwaiter call that we are replacing; it has the same owning type and
+            // the same instantiation as the replacement, so it encodes the right lookup as
+            // long as we pass the replacement as the template method.
             _ASSERTE(pResolvedToken->pMethodSpec != NULL);
-            ComputeRuntimeLookupForAwaitAwaiterInContinuationCall(pCallerMD, pTypicalAwaitMD, pResolvedToken, instArg);
+            ComputeRuntimeLookupForSharedGenericToken(MethodDescSlot, pResolvedToken,
+                                                      NULL /* pConstrainedResolvedToken */, pContext, pCallerMD,
+                                                      instArg);
         }
         else
         {
-            MethodDesc* pContext = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&awaiterType, 1), FALSE);
             instArg->constLookup.addr = pContext;
+            // The exact instantiation is known, so use it as the inlining context.
             pInliningContext = pContext;
         }
     }
@@ -10648,65 +10658,6 @@ void CEEInfo::ComputeRuntimeLookupForAwaitCall(MethodDesc* pCallerMD, MethodDesc
      // 1 argument
     sigBuilder.AppendData(1);
     resultSig.ConvertToInternalExactlyOne(pCallerMD->GetModule(), NULL, &sigBuilder);
-
-    FinishComputeRuntimeLookup(sigBuilder, pCallerMD, lookup);
-}
-
-void CEEInfo::ComputeRuntimeLookupForAwaitAwaiterInContinuationCall(
-    MethodDesc* pCallerMD,
-    MethodDesc* pTypicalAwaitMD,
-    CORINFO_RESOLVED_TOKEN* pResolvedToken,
-    CORINFO_LOOKUP* lookup)
-{
-    lookup->lookupKind.needsRuntimeLookup = true;
-
-    CORINFO_RUNTIME_LOOKUP* rlookup = &lookup->runtimeLookup;
-    rlookup->signature = NULL;
-    rlookup->indirectFirstOffset = 0;
-    rlookup->indirectSecondOffset = 0;
-    rlookup->sizeOffset = CORINFO_NO_SIZE_CHECK;
-    rlookup->indirections = CORINFO_USEHELPER;
-
-    if (pCallerMD->RequiresInstMethodDescArg())
-    {
-        lookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
-        rlookup->helper = CORINFO_HELP_RUNTIMEHANDLE_METHOD;
-    }
-    else if (pCallerMD->RequiresInstMethodTableArg())
-    {
-        lookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_CLASSPARAM;
-        rlookup->helper = CORINFO_HELP_RUNTIMEHANDLE_CLASS;
-    }
-    else
-    {
-        lookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_THISOBJ;
-        rlookup->helper = CORINFO_HELP_RUNTIMEHANDLE_CLASS;
-    }
-
-    SigBuilder sigBuilder;
-    sigBuilder.AppendData(MethodDescSlot);
-    if (lookup->lookupKind.runtimeLookupKind != CORINFO_LOOKUP_METHODPARAM)
-    {
-        sigBuilder.AppendData(pCallerMD->GetMethodTable()->GetNumDicts() - 1);
-    }
-
-    sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
-    sigBuilder.AppendPointer(pTypicalAwaitMD->GetMethodTable());
-    sigBuilder.AppendData(ENCODE_METHOD_SIG_MethodInstantiation | ENCODE_METHOD_SIG_InstantiatingStub);
-    sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
-    sigBuilder.AppendPointer(pTypicalAwaitMD->GetMethodTable());
-    sigBuilder.AppendData(RidFromToken(pTypicalAwaitMD->GetMemberDef()));
-    sigBuilder.AppendData(1);
-
-    _ASSERTE(pResolvedToken->pMethodSpec != NULL);
-    SigPointer instantiation(pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
-    BYTE callingConvention;
-    IfFailThrow(instantiation.GetByte(&callingConvention));
-    _ASSERTE(callingConvention == IMAGE_CEE_CS_CALLCONV_GENERICINST);
-    uint32_t numArgs;
-    IfFailThrow(instantiation.GetData(&numArgs));
-    _ASSERTE(numArgs == 1);
-    instantiation.ConvertToInternalExactlyOne(GetModule(pResolvedToken->tokenScope), NULL, &sigBuilder);
 
     FinishComputeRuntimeLookup(sigBuilder, pCallerMD, lookup);
 }
