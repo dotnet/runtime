@@ -15,6 +15,12 @@ public interface IStackDataFrameHandle
 
     // True when the interrupting frame represents an active hardware fault.
     bool HasFaulted { get; }
+
+    // True when the current Frame is either a SoftwareExceptionFrame or FaultingExceptionFrame
+    bool IsExceptionFrame { get; }
+
+    // True when this is the active stack frame.
+    bool IsActiveFrame { get; }
 }
 
 public enum StackWalkState
