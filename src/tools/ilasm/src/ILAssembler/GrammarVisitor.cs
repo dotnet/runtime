@@ -2976,9 +2976,9 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitF32seq(CILParser.F32seqContext context) => VisitF32seq(context);
         public GrammarResult.FormattedBlob VisitF32seq(CILParser.F32seqContext context)
         {
-            var builder = ImmutableArray.CreateBuilder<float>();
+            var builder = ImmutableArray.CreateBuilder<float>(context.ChildCount);
 
-            foreach (var item in context.children)
+            foreach (var item in context.children ?? [])
             {
                 builder.Add((float)(item switch
                 {
@@ -2987,14 +2987,14 @@ namespace ILAssembler
                     _ => throw new UnreachableException()
                 }));
             }
-            return new(builder.ToImmutable().SerializeSequence());
+            return new(builder.MoveToImmutable().SerializeSequence());
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitF64seq(CILParser.F64seqContext context) => VisitF64seq(context);
         public GrammarResult.FormattedBlob VisitF64seq(CILParser.F64seqContext context)
         {
-            var builder = ImmutableArray.CreateBuilder<double>();
+            var builder = ImmutableArray.CreateBuilder<double>(context.ChildCount);
 
-            foreach (var item in context.children)
+            foreach (var item in context.children ?? [])
             {
                 builder.Add((double)(item switch
                 {
@@ -3003,7 +3003,7 @@ namespace ILAssembler
                     _ => throw new UnreachableException()
                 }));
             }
-            return new(builder.ToImmutable().SerializeSequence());
+            return new(builder.MoveToImmutable().SerializeSequence());
         }
 
         public GrammarResult VisitFaultClause(CILParser.FaultClauseContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
@@ -5925,7 +5925,7 @@ namespace ILAssembler
         public static GrammarResult.FormattedBlob VisitSqstringSeq(CILParser.SqstringSeqContext context)
         {
             var strings = ImmutableArray.CreateBuilder<string?>(context.ChildCount);
-            foreach (var child in context.children)
+            foreach (var child in context.children ?? [])
             {
                 string? str = null;
 
@@ -5936,7 +5936,7 @@ namespace ILAssembler
 
                 strings.Add(str);
             }
-            return new(strings.ToImmutable().SerializeSequence());
+            return new(strings.MoveToImmutable().SerializeSequence());
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitStackreserve(CILParser.StackreserveContext context) => VisitStackreserve(context);
