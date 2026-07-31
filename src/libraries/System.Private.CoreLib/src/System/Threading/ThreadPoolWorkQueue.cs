@@ -497,7 +497,10 @@ namespace System.Threading
         {
             Debug.Assert(s_assignableWorkItemQueueCount > 0);
 
+            // Dispatch assigns a queue before dispatching any work, and only unassigns it on its way out,
+            // so a queue is always assigned when this is called.
             int queueIndex = tl.queueIndex;
+            Debug.Assert(queueIndex >= 0);
             if (queueIndex == 0)
             {
                 return;
@@ -506,13 +509,6 @@ namespace System.Threading
             if (!_queueAssignmentLock.TryAcquire())
             {
                 return;
-            }
-
-            // if not assigned yet, assume temporarily that the last queue is assigned
-            if (queueIndex == -1)
-            {
-                queueIndex = _assignedWorkItemQueueThreadCounts.Length - 1;
-                _assignedWorkItemQueueThreadCounts[queueIndex]++;
             }
 
             // If the currently assigned queue is assigned to other worker threads, try to reassign an earlier queue to this
@@ -1065,10 +1061,7 @@ namespace System.Threading
                 {
                     // Due to hill climbing, over time arbitrary worker threads may stop working and eventually unbalance the
                     // queue assignments. Periodically try to reassign a queue to keep the assigned queues busy.
-                    //
-                    // This can also be the first time the queue is assigned.
-                    // We do not assign eagerly at the beginning of Dispatch as we would need to take _queueAssignmentLock
-                    // and that lock may cause massive contentions if many threads start dispatching.
+                    // The queue itself was already assigned when this Dispatch call started.
                     workQueue.TryReassignWorkItemQueue(tl);
                 }
 
