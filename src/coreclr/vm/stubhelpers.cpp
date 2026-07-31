@@ -510,10 +510,6 @@ FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 
     DELEGATEREF orefThis = (DELEGATEREF)ObjectToOBJECTREF(pThisUNSAFE);
 
-#if defined(HOST_64BIT)
-    UINT_PTR target = (UINT_PTR)orefThis->GetMethodPtrAux();
-#endif // HOST_64BIT
-
     pEntryPoint = orefThis->GetMethodPtrAux();
 
     return (PVOID)pEntryPoint;
