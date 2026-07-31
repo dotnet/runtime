@@ -556,11 +556,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 return next;
             }
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             LowerShift(node->AsOp());
-#else
-            ContainCheckShiftRotate(node->AsOp());
-#endif
             break;
         }
 
@@ -8818,8 +8814,13 @@ bool Lowering::TryFoldBinop(GenTreeOp* node)
 //    shift - the shift node (GT_LSH, GT_RSH or GT_RSZ)
 //
 // Notes:
-//    Remove unnecessary shift count masking, xarch shift instructions
-//    mask the shift count to 5 bits (or 6 bits for 64 bit operations).
+//    On targets where hardware masks the shift count to the operand width (XARCH, ARM64,
+//    LOONGARCH64, RISCV64), remove any redundant AND that survived to lowering (MinOpts
+//    backstop -- optimized paths have the AND stripped in gtFoldExprShiftCountMask).
+//
+//    On ARM32 the hardware uses Rs[7:0] without masking mod 32, so counts >= 32 give 0
+//    rather than wrapping. Insert AND(count, 31) for variable-count shifts to restore the
+//    masking semantics that were stripped in gtFoldExprShiftCountMask.
 //
 void Lowering::LowerShift(GenTreeOp* shift)
 {
@@ -8835,6 +8836,7 @@ void Lowering::LowerShift(GenTreeOp* shift)
     assert(!varTypeIsLong(shift->TypeGet()));
 #endif
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     for (GenTree* andOp = shift->gtGetOp2(); andOp->OperIs(GT_AND); andOp = andOp->gtGetOp1())
     {
         GenTree* maskOp = andOp->gtGetOp2();
@@ -8855,6 +8857,23 @@ void Lowering::LowerShift(GenTreeOp* shift)
         // The parent was replaced, clear contain and regOpt flag.
         shift->gtOp2->ClearContained();
     }
+#elif defined(TARGET_ARM)
+    // ARM32 uses Rs[7:0] as the shift count; counts in [32, 255] give 0 (LSL/LSR) or
+    // replicated sign (ASR) rather than masking mod 32. Insert AND(count, 31) so the
+    // hardware sees a value in [0, 31]. Skip when the AND is already present (e.g.
+    // MinOpts where gtFoldExprShiftCountMask did not run).
+    {
+        GenTree* shiftBy = shift->gtGetOp2();
+        if (!shiftBy->IsCnsIntOrI() && !shiftBy->OperIs(GT_AND))
+        {
+            GenTree* maskCns = m_compiler->gtNewIconNode(static_cast<ssize_t>(mask));
+            GenTree* andNode = m_compiler->gtNewOperNode(GT_AND, TYP_INT, shiftBy, maskCns);
+            BlockRange().InsertBefore(shift, maskCns);
+            BlockRange().InsertBefore(shift, andNode);
+            shift->AsOp()->gtOp2 = andNode;
+        }
+    }
+#endif
 
     ContainCheckShiftRotate(shift);
 
