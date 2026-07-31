@@ -491,9 +491,9 @@ void CordbModule::RefreshMetaData()
         // So far we've only got a reader for in-memory-writable metadata (MDInternalRW implementation)
         // We could make a reader for MDInternalRO, but no need yet. This also ensures we don't encroach into common
         // scenario where we can map a file on disk.
-        TADDR remoteMDInternalRWAddr = (TADDR)NULL;
-        IfFailThrow(GetProcess()->GetDAC()->GetPEFileMDInternalRW(m_vmPEFile, &remoteMDInternalRWAddr));
-        if (remoteMDInternalRWAddr != (TADDR)NULL)
+        BOOL hasReadWriteMetadata = FALSE;
+        IfFailThrow(GetProcess()->GetDAC()->HasReadWriteMetadata(m_vmPEFile, &hasReadWriteMetadata));
+        if (hasReadWriteMetadata)
         {
             _ASSERTE(m_pIMImport == NULL);
             ULONG32 cbSize = 0;
@@ -3899,7 +3899,7 @@ HRESULT CordbVariableHome::GetOffset(LONG *pOffset)
 CordbNativeCode::CordbNativeCode(CordbFunction *                pFunction,
                                  const NativeCodeFunctionData * pJitData,
                                  BOOL                           fIsInstantiatedGeneric)
-  : CordbCode(pFunction, (UINT_PTR)pJitData->m_rgCodeRegions[kHot].pAddress, pJitData->encVersion, FALSE),
+  : CordbCode(pFunction, (UINT_PTR)pJitData->m_rgCodeRegions[kHot].pAddress, (SIZE_T)pJitData->encVersion, FALSE),
     m_vmNativeCodeMethodDescToken(pJitData->vmNativeCodeMethodDescToken),
     m_fCodeAvailable(TRUE),
     m_fIsInstantiatedGeneric(fIsInstantiatedGeneric != FALSE)
@@ -4725,7 +4725,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
              codeInfo.m_rgCodeRegions[kHot].cbSize));
 
         // Lookup the function object that this code should be bound to
-        CordbFunction* pFunction = CordbModule::LookupOrCreateFunction(methodToken, codeInfo.encVersion);
+        CordbFunction* pFunction = CordbModule::LookupOrCreateFunction(methodToken, (SIZE_T)codeInfo.encVersion);
         _ASSERTE(pFunction != NULL);
 
         // There are bugs with the on-demand class load performed by CordbFunction in some cases. The old stack

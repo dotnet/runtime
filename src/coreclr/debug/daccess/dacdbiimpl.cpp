@@ -1243,7 +1243,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(CORDB_AD
         pCodeInfo->isInstantiatedGeneric = pMethodDesc->HasClassOrMethodInstantiation();
         pCodeInfo->vmNativeCodeMethodDescToken = vmMethodDesc;
 
-        SIZE_T unusedLatestEncVersion;
+        ULONG64 unusedLatestEncVersion;
         Module * pModule = pMethodDesc->GetModule();
         _ASSERTE(pModule != NULL);
         LookupEnCVersions(pModule,
@@ -5780,8 +5780,8 @@ void DacDbiInterfaceImpl::LookupEnCVersions(Module*          pModule,
                                             VMPTR_MethodDesc vmMethodDesc,
                                             mdMethodDef      mdMethod,
                                             CORDB_ADDRESS    pNativeStartAddress,
-                                            SIZE_T *         pLatestEnCVersion,
-                                            SIZE_T *         pJittedInstanceEnCVersion /* = NULL */)
+                                            ULONG64 *        pLatestEnCVersion,
+                                            ULONG64 *        pJittedInstanceEnCVersion /* = NULL */)
 {
     MethodDesc * pMD     = vmMethodDesc.GetDacPtr();
 
@@ -7403,13 +7403,13 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGCHeapInformation(OUT COR_HEAP
 }
 
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::HasReadWriteMetadata(VMPTR_PEAssembly vmPEAssembly, OUT BOOL* pHasReadWriteMetadata)
 {
     DD_ENTER_MAY_THROW;
-    if (pAddrMDInternalRW == NULL)
+    if (pHasReadWriteMetadata == NULL)
         return E_INVALIDARG;
     PEAssembly * pPEAssembly = vmPEAssembly.GetDacPtr();
-    *pAddrMDInternalRW = pPEAssembly->GetMDInternalRWAddress();
+    *pHasReadWriteMetadata = pPEAssembly->HasReadWriteMetadata();
     return S_OK;
 }
 
