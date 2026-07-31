@@ -733,7 +733,7 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0, T v1)
                 }
                 else
                 {
-                    return v0 << v1;
+                    return v0 << (v1 & 0x1F);
                 }
             case GT_RSH:
                 if (sizeof(T) == 8)
@@ -742,7 +742,7 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0, T v1)
                 }
                 else
                 {
-                    return v0 >> v1;
+                    return v0 >> (v1 & 0x1F);
                 }
             case GT_RSZ:
                 if (sizeof(T) == 8)
@@ -751,7 +751,7 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0, T v1)
                 }
                 else
                 {
-                    return UINT32(v0) >> v1;
+                    return UINT32(v0) >> (v1 & 0x1F);
                 }
             case GT_ROL:
                 if (sizeof(T) == 8)
@@ -2851,6 +2851,26 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
             return resultVN;
         }
     }
+
+    // Normalize `x >> (count & C)` to `x >> count` when C covers the operand width mask
+    // (5 bits for 32-bit, 6 bits for 64-bit shifts). This gives `x << lcl` (where `lcl` was
+    // assigned `y & 31` before the shift) the same VN as `x << y`, so CSE and copy-prop can
+    // collapse them even for the already-spilled case.
+    if (GenTree::StaticOperIs(oper, GT_LSH, GT_RSH, GT_RSZ))
+    {
+        const size_t width = varTypeIsLong(typ) ? 0x3f : 0x1f;
+        VNFuncApp    countFuncApp;
+        if (GetVNFunc(arg1VN, &countFuncApp) && countFuncApp.FuncIs(VNFunc(GT_AND)))
+        {
+            // Commutative canonicalization in VNForFunc places the constant at arg1.
+            ValueNum maskVN = countFuncApp.GetArg(1);
+            if (IsVNInt32Constant(maskVN) && ((static_cast<size_t>(ConstantValue<INT32>(maskVN)) & width) == width))
+            {
+                arg1VN = countFuncApp.GetArg(0);
+            }
+        }
+    }
+
 
     // We canonicalize commutative operations.
     // (Perhaps should eventually handle associative/commutative [AC] ops -- but that gets complicated...)

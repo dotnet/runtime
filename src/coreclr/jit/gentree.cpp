@@ -15565,6 +15565,62 @@ GenTree* Compiler::gtFoldExprUnary(GenTreeUnOp* tree)
 }
 
 //------------------------------------------------------------------------
+// gtFoldExprShiftCountMask: strip or normalize a redundant shift-count mask
+//
+// Arguments:
+//    shift - a GT_LSH, GT_RSH or GT_RSZ node
+//
+// Returns:
+//    The shift's op2 after any rewrite (the caller reloads its cached copy).
+//
+// Notes:
+//    Only called on targets whose shift instructions mask the count to the operand
+//    bit width (5 bits for 32-bit, 6 bits for 64-bit shifts). IL masks the count to
+//    the same width, so `x >> n` is imported as `x >> (n & 31)` (or `& 63`).
+//
+//    Two rewrites are performed, both relying on the hardware masking:
+//      * `x >> (n & C)` where `C` covers the width mask => `x >> n` (strip the AND).
+//        This lets the redundant mask disappear before CSE, where it would otherwise
+//        be shared into a temp that lowering can no longer recognize.
+//      * `x >> cns` where `cns` is out of range => `x >> (cns & width)`. Once the mask
+//        is gone the count is no longer implicitly bounded, so an out-of-range constant
+//        count must be normalized to the value the hardware would actually use, which
+//        also lets identities such as `x >> 0 => x` fold.
+//
+GenTree* Compiler::gtFoldExprShiftCountMask(GenTreeOp* shift)
+{
+    assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
+
+    size_t width = varTypeIsLong(shift->TypeGet()) ? 0x3f : 0x1f;
+
+    GenTree* count = shift->gtGetOp2();
+
+    if (count->OperIs(GT_AND))
+    {
+        GenTree* maskOp = count->gtGetOp2();
+
+        if (maskOp->IsCnsIntOrI() && ((static_cast<size_t>(maskOp->AsIntCon()->IconValue()) & width) == width))
+        {
+            JITDUMP("Removing redundant shift-count mask [%06u]\n", count->gtTreeID);
+            count        = count->gtGetOp1();
+            shift->gtOp2 = count;
+            shift->SetAllEffectsFlags(shift->gtGetOp1(), count);
+        }
+    }
+    else if (count->IsCnsIntOrI())
+    {
+        size_t value = static_cast<size_t>(count->AsIntCon()->IconValue());
+
+        if ((value & width) != value)
+        {
+            count->AsIntCon()->SetIconValue(static_cast<ssize_t>(value & width));
+        }
+    }
+
+    return count;
+}
+
+//------------------------------------------------------------------------
 // gtFoldExprBinary: see if a binary operation is foldable
 //
 // Arguments:
@@ -15589,6 +15645,16 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
         // The atomic operations are exempted here because they are never computable statically; one of their arguments
         // is an address.
         return tree;
+    }
+
+    if (tree->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+    {
+        // IL masks the shift count to the operand bit width, so `x >> n` is imported as
+        // `x >> (n & 31)` (or `& 63` for 64-bit). Strip the redundant mask here so that
+        // it disappears before CSE and later phases never have to account for it. For
+        // targets where the hardware does not mask (currently ARM32), LowerShift re-inserts
+        // the AND so that lowered code remains correct.
+        op2 = gtFoldExprShiftCountMask(tree);
     }
 
     if (op1->OperIsConst())
