@@ -736,12 +736,14 @@ namespace System.Text.Json.Serialization.Tests
             using FlushTrackingStream stream = new();
             GatedAsyncEnumerable source = new(count: 3);
             stream.OnFlush = source.ReleaseNext;
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
 
             await JsonSerializer.SerializeAsyncEnumerable(
                 stream,
                 source,
                 ResolveJsonTypeInfo<int>(),
-                topLevelValues);
+                topLevelValues,
+                cts.Token);
 
             Assert.Equal(expectedFlushSnapshots, stream.FlushSnapshots);
             Assert.Equal(expectedOutput, Encoding.UTF8.GetString(stream.ToArray()));
@@ -754,11 +756,13 @@ namespace System.Text.Json.Serialization.Tests
             using FlushTrackingStream stream = new();
             GatedAsyncEnumerable source = new(count: 2);
             stream.OnFlush = source.ReleaseNext;
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
 
             await JsonSerializer.SerializeAsync(
                 stream,
                 new AsyncEnumerableDto { Values = source },
-                ResolveJsonTypeInfo<AsyncEnumerableDto>());
+                ResolveJsonTypeInfo<AsyncEnumerableDto>(),
+                cts.Token);
 
             Assert.Equal(new[] { "{\"Values\":[0", "{\"Values\":[0,1", "{\"Values\":[0,1]}" }, stream.FlushSnapshots);
             Assert.Equal("{\"Values\":[0,1]}", Encoding.UTF8.GetString(stream.ToArray()));
@@ -835,7 +839,10 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     yield return i;
 
-                    await _gates[i].Task.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken);
+                    // Cancellation ensures the test fails instead of hanging if the value is never flushed.
+                    TaskCompletionSource<bool> gate = _gates[i];
+                    using CancellationTokenRegistration registration = cancellationToken.Register(() => gate.TrySetCanceled(cancellationToken));
+                    await gate.Task;
                 }
             }
         }
