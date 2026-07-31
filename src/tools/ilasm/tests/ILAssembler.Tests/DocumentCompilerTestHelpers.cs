@@ -5,6 +5,8 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -35,6 +37,26 @@ namespace ILAssembler.Tests
         internal static PEReader CompileAndGetReader(string source, Options options)
         {
             return new PEReader(Compile(source, options));
+        }
+
+        internal static ImmutableArray<byte> CompileAndGetEmbeddedPortablePdb(string source, Options options)
+        {
+            using PEReader pe = CompileAndGetReader(source, options);
+            DebugDirectoryEntry embeddedPdbEntry = pe.ReadDebugDirectory()
+                .Single(entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
+            ImmutableArray<byte> embeddedPdb = pe.GetSectionData(embeddedPdbEntry.DataRelativeVirtualAddress)
+                .GetContent(0, embeddedPdbEntry.DataSize);
+
+            const int EmbeddedPdbHeaderSize = 8;
+            ReadOnlySpan<byte> embeddedPdbBytes = embeddedPdb.AsSpan();
+            int uncompressedSize = BinaryPrimitives.ReadInt32LittleEndian(embeddedPdbBytes.Slice(sizeof(int)));
+            using MemoryStream compressedStream = new(embeddedPdbBytes.Slice(EmbeddedPdbHeaderSize).ToArray());
+            using DeflateStream deflateStream = new(compressedStream, CompressionMode.Decompress);
+            using MemoryStream pdbStream = new(uncompressedSize);
+            deflateStream.CopyTo(pdbStream);
+            Assert.Equal(uncompressedSize, pdbStream.Length);
+
+            return ImmutableArray.CreateRange(pdbStream.ToArray());
         }
 
         internal static int GetFirstTokenOperand(PEReader pe, MetadataReader reader, string methodName, ILOpcode targetOpcode)

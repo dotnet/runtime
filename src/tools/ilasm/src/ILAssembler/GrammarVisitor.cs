@@ -269,15 +269,7 @@ namespace ILAssembler
 
             // Deterministic ID provider for reproducible builds
             Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider = _options.Deterministic
-                ? content =>
-                {
-                    using var hash = IncrementalHash.CreateHash(System.Security.Cryptography.HashAlgorithmName.SHA256);
-                    foreach (var blob in content)
-                    {
-                        hash.AppendData(blob.GetBytes());
-                    }
-                    return BlobContentId.FromHash(hash.GetHashAndReset());
-                }
+                ? GetDeterministicContentId
                 : null;
 
             ManagedPEBuilder standardBuilder = new(
@@ -292,6 +284,17 @@ namespace ILAssembler
                 deterministicIdProvider: deterministicIdProvider);
 
             return (_diagnostics.ToImmutable(), new CompilationResult(standardBuilder, mvidFixup));
+        }
+
+        private static BlobContentId GetDeterministicContentId(IEnumerable<Blob> content)
+        {
+            using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            foreach (Blob blob in content)
+            {
+                hash.AppendData(blob.GetBytes());
+            }
+
+            return BlobContentId.FromHash(hash.GetHashAndReset());
         }
 
         private ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> BuildVTableFixupInfos()
@@ -368,7 +371,7 @@ namespace ILAssembler
                 _pdbBuilder,
                 typeSystemRowCounts,
                 entryPoint,
-                idProvider: content => new BlobContentId(Guid.NewGuid(), 0x04030201));
+                idProvider: _options.Deterministic ? GetDeterministicContentId : null);
 
             var pdbBlob = new BlobBuilder();
             var pdbContentId = pdbBuilder.Serialize(pdbBlob);
