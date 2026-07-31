@@ -599,6 +599,7 @@ namespace System.IO.Compression
             }
             finally
             {
+                _disposed = true;
                 _aes.Dispose();
                 _hmac?.Dispose();
 
@@ -607,8 +608,6 @@ namespace System.IO.Compression
                     await _baseStream.DisposeAsync().ConfigureAwait(false);
                 }
             }
-
-            _disposed = true;
         }
 
         /// <summary>
