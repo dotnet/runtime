@@ -883,19 +883,22 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
-            NullabilityInfo nullabilityInfo;
+            bool isGetNullable;
+            bool isSetNullable;
             if (propertyInfo.MemberType is MemberTypes.Property)
             {
-                nullabilityInfo = nullabilityCtx.Create((PropertyInfo)memberInfo);
+                var reflectionPropertyInfo = (PropertyInfo)memberInfo;
+                NullabilityInfo nullabilityInfo = nullabilityCtx.Create(reflectionPropertyInfo);
+                propertyInfo.IsGetNullable = reflectionPropertyInfo.GetMethod is not null && nullabilityInfo.ReadState is not NullabilityState.NotNull;
+                propertyInfo.IsSetNullable = reflectionPropertyInfo.SetMethod is not null && nullabilityInfo.WriteState is not NullabilityState.NotNull;
             }
             else
             {
                 Debug.Assert(propertyInfo.MemberType is MemberTypes.Field);
-                nullabilityInfo = nullabilityCtx.Create((FieldInfo)memberInfo);
+                NullabilityInfo nullabilityInfo = nullabilityCtx.Create((FieldInfo)memberInfo);
+                propertyInfo.IsGetNullable = nullabilityInfo.ReadState is not NullabilityState.NotNull;
+                propertyInfo.IsSetNullable = nullabilityInfo.WriteState is not NullabilityState.NotNull;
             }
-
-            propertyInfo.IsGetNullable = nullabilityInfo.ReadState is NullabilityState.Nullable;
-            propertyInfo.IsSetNullable = nullabilityInfo.WriteState is NullabilityState.Nullable;
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
