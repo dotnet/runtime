@@ -269,6 +269,11 @@ PhaseStatus Compiler::SaveAsyncContexts()
     lvaResumedIndicator                     = lvaGrabTemp(false DEBUGARG("Async Resumed"));
     lvaGetDesc(lvaResumedIndicator)->lvType = TYP_UBYTE;
 
+    // Mark this frame as a logical async frame. This has to happen here rather than when
+    // an inlinee is spliced into its caller: the frame's own inlinees are processed while
+    // it is still being compiled, and they need to see it in the enclosing frame chain.
+    compInlineContext->SetIsAsyncFrame();
+
     if (opts.IsOSR())
     {
         lvaGetDesc(lvaAsyncThreadObjectVar)->lvIsOSRLocal           = true;

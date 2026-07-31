@@ -2446,6 +2446,12 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 //    live and GC reported at the call until then. That is what the existing per-frame
 //    context args do, so the enclosing frames simply add more of them.
 //
+//    The enclosing frames are exactly the ones the call being inlined already describes,
+//    so its context args are simply copied over. That composes for nested inlines: a
+//    frame picks up its immediate caller's chain when it is spliced in, and every call in
+//    it, including ones that came from its own inlinees, is extended again when that
+//    caller is itself inlined.
+//
 //    These are pseudo-args, so duplicates are fine: they take no registers and are
 //    expanded out by the async transformation. The innermost frame stays first, since
 //    the inlinee pushed its own args to the front.
@@ -2462,35 +2468,44 @@ void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
         return;
     }
 
-    // Async context locals of one inlined frame.
-    struct AsyncFrameLocals
+    // Context args of the inlining call. It carries one set for the frame it suspends in,
+    // which that frame's own handling consumes, followed by that frame's chain of frames
+    // out to the root.
+    ArrayStack<CallArg*> callerArgs(getAllocator(CMK_Async));
+    for (CallArg& arg : inlineInfo->iciCall->gtArgs.Args())
     {
-        unsigned Resumed;
-        unsigned ExecutionContext;
-        unsigned SynchronizationContext;
-    };
-
-    ArrayStack<AsyncFrameLocals> frames(getAllocator(CMK_Async));
-
-    // The inlinee's own frame comes first: the suspension needs its resumed indicator to
-    // decide whether to capture the contexts it hands to its caller. Its other context
-    // args were consumed by the innermost handling by then.
-    frames.Push({InlineeCompiler->lvaResumedIndicator, InlineeCompiler->lvaAsyncExecutionContextVar,
-                 InlineeCompiler->lvaAsyncSynchronizationContextVar});
-
-    for (InlineContext* ctx = inlineInfo->inlineContext->GetParent(); ctx != nullptr; ctx = ctx->GetParent())
-    {
-        if (ctx->HasAsyncFrameLocals())
+        switch (arg.GetWellKnownArg())
         {
-            frames.Push({ctx->GetAsyncResumedIndicator(), ctx->GetAsyncExecutionContextVar(),
-                         ctx->GetAsyncSynchronizationContextVar()});
+            case WellKnownArg::AsyncResumedUse:
+            case WellKnownArg::AsyncExecutionContext:
+            case WellKnownArg::AsyncSynchronizationContext:
+                callerArgs.Push(&arg);
+                break;
+            default:
+                break;
         }
     }
 
-    // The root method's frame is always the outermost one.
-    frames.Push({lvaResumedIndicator, lvaAsyncExecutionContextVar, lvaAsyncSynchronizationContextVar});
+    if (callerArgs.Height() == 0)
+    {
+        // The inlining call does no context handling, so no enclosing frame is a logical
+        // async frame. The inlinee's frame has nothing to hand back and there are no frame
+        // transitions to run on suspension.
+        JITDUMP("Inlining call [%06u] has no context args; inlinee has no enclosing async frame\n",
+                dspTreeID(inlineInfo->iciCall));
+        return;
+    }
+
+    assert((callerArgs.Height() % 3) == 0);
+
+    // The frames enclosing the inlinee are the inlining call's chain. When the call has
+    // only the one set it sits in the root frame, whose chain is never materialized
+    // because it has no transitions of its own; that frame is then the only enclosing one.
+    int const firstEnclosing = (callerArgs.Height() == 3) ? 0 : 3;
 
     unsigned const inlineeResumed = InlineeCompiler->lvaResumedIndicator;
+    unsigned const inlineeExecCtx = InlineeCompiler->lvaAsyncExecutionContextVar;
+    unsigned const inlineeSyncCtx = InlineeCompiler->lvaAsyncSynchronizationContextVar;
 
     struct Visitor : GenTreeVisitor<Visitor>
     {
@@ -2499,13 +2514,24 @@ void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
             DoPreOrder = true,
         };
 
-        ArrayStack<AsyncFrameLocals>& m_frames;
-        unsigned                      m_inlineeResumed;
+        ArrayStack<CallArg*>& m_callerArgs;
+        int                   m_firstEnclosing;
+        unsigned              m_inlineeResumed;
+        unsigned              m_inlineeExecCtx;
+        unsigned              m_inlineeSyncCtx;
 
-        Visitor(Compiler* comp, ArrayStack<AsyncFrameLocals>& frames, unsigned inlineeResumed)
+        Visitor(Compiler*             comp,
+                ArrayStack<CallArg*>& callerArgs,
+                int                   firstEnclosing,
+                unsigned              inlineeResumed,
+                unsigned              inlineeExecCtx,
+                unsigned              inlineeSyncCtx)
             : GenTreeVisitor(comp)
-            , m_frames(frames)
+            , m_callerArgs(callerArgs)
+            , m_firstEnclosing(firstEnclosing)
             , m_inlineeResumed(inlineeResumed)
+            , m_inlineeExecCtx(inlineeExecCtx)
+            , m_inlineeSyncCtx(inlineeSyncCtx)
         {
         }
 
@@ -2522,46 +2548,70 @@ void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
                 return WALK_CONTINUE;
             }
 
-            GenTreeCall* const call   = tree->AsCall();
-            CallArg* const     ownArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse);
-            if ((ownArg == nullptr) || !ownArg->GetNode()->OperIs(GT_LCL_VAR) ||
-                (ownArg->GetNode()->AsLclVar()->GetLclNum() != m_inlineeResumed))
+            GenTreeCall* const call = tree->AsCall();
+
+            unsigned numOwn = 0;
+            for (CallArg& arg : call->gtArgs.Args())
             {
-                // Either no context handling, or the call inherited its contexts from the
-                // inlining call, in which case there is no frame transition.
+                if (arg.GetWellKnownArg() == WellKnownArg::AsyncResumedUse)
+                {
+                    numOwn++;
+                }
+            }
+
+            if (numOwn == 0)
+            {
+                // Call does no context handling, so it has no frame chain to extend.
                 return WALK_CONTINUE;
             }
 
-            for (int i = 0; i < m_frames.Height(); i++)
+            if (numOwn == 1)
             {
-                const AsyncFrameLocals& frame = m_frames.Bottom(i);
-                assert((frame.Resumed != BAD_VAR_NUM) && (frame.ExecutionContext != BAD_VAR_NUM) &&
-                       (frame.SynchronizationContext != BAD_VAR_NUM));
-
+                // The call only has the set describing the frame it suspends in, so that
+                // frame is the inlinee's. The suspension needs the inlinee's resumed
+                // indicator again to decide whether to capture the contexts it hands to
+                // its caller, since the first set is consumed by the innermost handling.
                 call->gtArgs.PushBack(m_compiler,
-                                      NewCallArg::Primitive(m_compiler->gtNewLclVarNode(frame.Resumed, TYP_INT))
+                                      NewCallArg::Primitive(m_compiler->gtNewLclVarNode(m_inlineeResumed, TYP_INT))
                                           .WellKnown(WellKnownArg::AsyncResumedUse));
-                call->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(
-                                                      m_compiler->gtNewLclVarNode(frame.ExecutionContext, TYP_REF))
-                                                      .WellKnown(WellKnownArg::AsyncExecutionContext));
                 call->gtArgs.PushBack(m_compiler,
-                                      NewCallArg::Primitive(
-                                          m_compiler->gtNewLclVarNode(frame.SynchronizationContext, TYP_REF))
+                                      NewCallArg::Primitive(m_compiler->gtNewLclVarNode(m_inlineeExecCtx, TYP_REF))
+                                          .WellKnown(WellKnownArg::AsyncExecutionContext));
+                call->gtArgs.PushBack(m_compiler,
+                                      NewCallArg::Primitive(m_compiler->gtNewLclVarNode(m_inlineeSyncCtx, TYP_REF))
                                           .WellKnown(WellKnownArg::AsyncSynchronizationContext));
             }
 
-            JITDUMP("Added %d enclosing frame context arg sets to async call [%06u]\n", m_frames.Height(),
-                    Compiler::dspTreeID(call));
+            // Then the frames enclosing the inlinee, taken from the inlining call. These
+            // are the values as they appear in the caller's IR, which is what the
+            // suspension has to store.
+            for (int i = m_firstEnclosing; i < m_callerArgs.Height(); i++)
+            {
+                CallArg* const arg = m_callerArgs.Bottom(i);
+                call->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(arg->GetNode()))
+                                                      .WellKnown(arg->GetWellKnownArg()));
+            }
 
-            // The chain holds this call's own frame followed by its enclosing frames,
-            // ending with the root, so its depth in that numbering is one less than the
-            // number of entries.
-            call->GetAsyncInfo().InlineFrameDepth = (unsigned)m_frames.Height() - 1;
+            unsigned numFrames = 0;
+            for (CallArg& arg : call->gtArgs.Args())
+            {
+                if (arg.GetWellKnownArg() == WellKnownArg::AsyncResumedUse)
+                {
+                    numFrames++;
+                }
+            }
+
+            // One set is consumed by the handling of the frame the call suspends in, and
+            // the rest describe that frame and the ones enclosing it.
+            assert(numFrames >= 2);
+            call->GetAsyncInfo().InlineFrameDepth = numFrames - 2;
+
+            JITDUMP("Extended async call [%06u] to %u frames in chain\n", Compiler::dspTreeID(call), numFrames - 1);
             return WALK_CONTINUE;
         }
     };
 
-    Visitor visitor(this, frames, inlineeResumed);
+    Visitor visitor(this, callerArgs, firstEnclosing, inlineeResumed, inlineeExecCtx, inlineeSyncCtx);
     for (BasicBlock* block = InlineeCompiler->fgFirstBB; block != nullptr; block = block->Next())
     {
         for (Statement* const stmt : block->Statements())
@@ -2695,9 +2745,6 @@ void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicB
     }
 
     InlineContext* const inlineContext = inlineInfo->inlineContext;
-    inlineContext->SetAsyncFrameLocals(InlineeCompiler->lvaResumedIndicator,
-                                       InlineeCompiler->lvaAsyncExecutionContextVar,
-                                       InlineeCompiler->lvaAsyncSynchronizationContextVar);
 
     if (!InlineeCompiler->compAsyncBodyMaySuspend)
     {
@@ -2707,12 +2754,20 @@ void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicB
         return;
     }
 
-    // Locals of the frame we are logically returning into.
-    InlineContext* const parentContext = inlineContext->GetParent();
-    unsigned const       resumedCaller = ((parentContext == nullptr) || !parentContext->HasAsyncFrameLocals())
-                                             ? lvaResumedIndicator
-                                             : parentContext->GetAsyncResumedIndicator();
-    assert(resumedCaller != BAD_VAR_NUM);
+    // The resumed indicator of the frame we are logically returning into. The inlining
+    // call carries it as the definition of its own frame's indicator, which is a local
+    // address and so something we can store to.
+    CallArg* const resumedDefArg = inlineInfo->iciCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
+    if (resumedDefArg == nullptr)
+    {
+        // The inlining call does no context handling, so there is no enclosing logical
+        // async frame to hand anything back to.
+        JITDUMP("Inlining call does no context handling; no async frame transition IR needed\n");
+        return;
+    }
+
+    assert(resumedDefArg->GetNode()->OperIs(GT_LCL_ADDR));
+    unsigned const resumedCaller = resumedDefArg->GetNode()->AsLclVarCommon()->GetLclNum();
 
     unsigned const resumedInlinee = InlineeCompiler->lvaResumedIndicator;
     unsigned const inlineDepth    = inlineContext->GetAsyncFrameDepth();

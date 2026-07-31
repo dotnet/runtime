@@ -793,19 +793,20 @@ public:
         return m_Parent;
     }
 
-    // Depth of the inlined frame this context represents, counting only frames that have
-    // async context handling. The root method's frame is depth 0, so the shallowest
-    // inlined frame with context handling is depth 1.
+    // Depth of the inlined frame this context represents, counting only frames that do
+    // async context handling. The shallowest such frame is depth 1 when the root method
+    // does context handling itself, and depth 0 otherwise (for example when the root is
+    // the async version of a synchronous method).
     //
     // Continuation members holding the contexts captured at frame transitions are keyed
     // by this, so frames at the same depth share storage. That is safe because their live
     // ranges cannot overlap.
     unsigned GetAsyncFrameDepth() const
     {
-        unsigned depth = 1;
+        unsigned depth = 0;
         for (InlineContext* parent = m_Parent; parent != nullptr; parent = parent->m_Parent)
         {
-            if (parent->HasAsyncFrameLocals())
+            if (parent->IsAsyncFrame())
             {
                 depth++;
             }
@@ -920,34 +921,17 @@ public:
         return (m_PgoInfo.PgoSchema != nullptr) && (m_PgoInfo.PgoSchemaCount > 0) && (m_PgoInfo.PgoData != nullptr);
     }
 
-    // The async context locals of the inlined frame this context represents. Recorded when
-    // the inlinee is spliced in, since the inlinee's Compiler is discarded afterwards.
-    // Used to build the logical frame transitions for general runtime async inlining.
-    void SetAsyncFrameLocals(unsigned resumedIndicator, unsigned executionContextVar, unsigned syncContextVar)
+    // Whether the frame this context represents does async context handling, i.e. whether
+    // it is a logical async frame. Set when the corresponding Compiler creates its context
+    // locals, so that it is already known while the frame's own inlinees are processed.
+    void SetIsAsyncFrame()
     {
-        m_asyncResumedIndicator          = resumedIndicator;
-        m_asyncExecutionContextVar       = executionContextVar;
-        m_asyncSynchronizationContextVar = syncContextVar;
+        m_isAsyncFrame = true;
     }
 
-    bool HasAsyncFrameLocals() const
+    bool IsAsyncFrame() const
     {
-        return m_asyncResumedIndicator != BAD_VAR_NUM;
-    }
-
-    unsigned GetAsyncResumedIndicator() const
-    {
-        return m_asyncResumedIndicator;
-    }
-
-    unsigned GetAsyncExecutionContextVar() const
-    {
-        return m_asyncExecutionContextVar;
-    }
-
-    unsigned GetAsyncSynchronizationContextVar() const
-    {
-        return m_asyncSynchronizationContextVar;
+        return m_isAsyncFrame;
     }
 
 private:
@@ -970,9 +954,7 @@ private:
     unsigned               m_Ordinal;          // Ordinal number of this inline
     bool                   m_Success : 1;      // true if this was a successful inline
 
-    unsigned m_asyncResumedIndicator          = BAD_VAR_NUM;
-    unsigned m_asyncExecutionContextVar       = BAD_VAR_NUM;
-    unsigned m_asyncSynchronizationContextVar = BAD_VAR_NUM;
+    bool m_isAsyncFrame = false;
 
 #if defined(DEBUG)
 
