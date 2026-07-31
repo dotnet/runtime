@@ -229,4 +229,153 @@ public unsafe partial class TargetTests
             Assert.Equal(expectedValue, globalStringValue);
         }
     }
+
+    // Builds a target whose primary descriptor advertises the given contracts and references a GC
+    // sub-descriptor whose pointer slot still reads null. This models early attach: the GC has not
+    // yet published its sub-descriptor address (dotnet/runtime#128215), so the slot stays pending and
+    // IsSubDescriptorResolved("GC") is false.
+    private static ContractDescriptorTarget CreatePendingGCSubDescriptorTarget(
+        MockTarget.Architecture arch, IReadOnlyDictionary<string, string> contracts)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+
+        // A pointer slot that reads null models a sub-descriptor the target has not published yet.
+        uint pendingPointerAddr = 0x12465312;
+        byte[] nullPointerBytes = new byte[targetTestHelpers.PointerSize];
+        targetTestHelpers.WritePointer(nullPointerBytes, 0);
+        builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = pendingPointerAddr,
+            Data = nullPointerBytes,
+            Name = "PendingGCSubDescriptorPointer"
+        });
+
+        ContractDescriptorBuilder.DescriptorBuilder primaryDescriptor = new(builder);
+        primaryDescriptor
+            .SetSubDescriptors([("GC", 1u)])
+            .SetIndirectValues([0, pendingPointerAddr])
+            .SetContracts(new Dictionary<string, string>(contracts));
+
+        Assert.True(builder.TryCreateTarget(primaryDescriptor, out ContractDescriptorTarget? target));
+        Assert.False(target.IsSubDescriptorResolved("GC"));
+        return target;
+    }
+
+    // The in-box (main-descriptor) contracts required for data access, minus the sub-descriptor-only
+    // IGC, each advertised at the version CoreCLRContracts registers.
+    private static Dictionary<string, string> RequiredContractsWithoutGC()
+        => s_requiredDataAccessContracts
+            .Where(static c => c != "GC")
+            .ToDictionary(static c => c, static c => "c1");
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_PendingGCSubDescriptor_MissingGC_DoesNotThrow(MockTarget.Architecture arch)
+    {
+        // Every in-box contract is present, IGC is not advertised, and its GC sub-descriptor is still
+        // pending. IGC's absence is deferred (the GC may publish it after a later Flush), so a target
+        // attached this early must not be rejected.
+        ContractDescriptorTarget target = CreatePendingGCSubDescriptorTarget(arch, RequiredContractsWithoutGC());
+
+        Contracts.CoreCLRContracts.ValidateForDataAccess(target);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_PendingGCSubDescriptor_MissingInBoxContract_Throws(MockTarget.Architecture arch)
+    {
+        // A pending GC sub-descriptor only defers IGC. An in-box contract (Loader) is still required
+        // unconditionally, so its absence rejects the target even during early attach.
+        Dictionary<string, string> contracts = RequiredContractsWithoutGC();
+        contracts.Remove("Loader");
+        ContractDescriptorTarget target = CreatePendingGCSubDescriptorTarget(arch, contracts);
+
+        ContractMissingException ex = Assert.Throws<ContractMissingException>(
+            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target));
+        Assert.Equal("Loader", ex.ContractName);
+    }
+
+    // Builds a target whose GC sub-descriptor is fully published (resolved): the primary descriptor's
+    // sub-descriptor pointer slot reads a real address, so BuildDescriptors parses the sub-descriptor
+    // and IsSubDescriptorResolved("GC") is true. The main descriptor advertises mainContracts; the GC
+    // sub-descriptor advertises gcSubContracts (where IGC lives in a real runtime).
+    private static ContractDescriptorTarget CreateResolvedGCSubDescriptorTarget(
+        MockTarget.Architecture arch,
+        IReadOnlyDictionary<string, string> mainContracts,
+        IReadOnlyDictionary<string, string> gcSubContracts)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+
+        uint gcSubDescriptorAddr = 0x12345678;
+        uint gcSubDescriptorJsonAddr = 0x12445678;
+        uint gcSubDescriptorPointerDataAddr = 0x12545678;
+        uint gcSubDescriptorPointerAddr = 0x12465312;
+
+        ContractDescriptorBuilder.DescriptorBuilder gcSubDescriptor = new(builder);
+        gcSubDescriptor
+            .SetGlobals(SubDescriptorGlobals)
+            .SetContracts(new Dictionary<string, string>(gcSubContracts));
+        gcSubDescriptor.CreateSubDescriptor(gcSubDescriptorAddr, gcSubDescriptorJsonAddr, gcSubDescriptorPointerDataAddr);
+
+        byte[] pointerDataBytes = new byte[targetTestHelpers.PointerSize];
+        targetTestHelpers.WritePointer(pointerDataBytes, gcSubDescriptorAddr);
+        builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = gcSubDescriptorPointerAddr,
+            Data = pointerDataBytes,
+            Name = "ResolvedGCSubDescriptorPointer"
+        });
+
+        ContractDescriptorBuilder.DescriptorBuilder primaryDescriptor = new(builder);
+        primaryDescriptor
+            .SetSubDescriptors([("GC", 1u)])
+            .SetIndirectValues([0, gcSubDescriptorPointerAddr])
+            .SetContracts(new Dictionary<string, string>(mainContracts));
+
+        Assert.True(builder.TryCreateTarget(primaryDescriptor, out ContractDescriptorTarget? target));
+        Assert.True(target.IsSubDescriptorResolved("GC"));
+        return target;
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_ResolvedGCSubDescriptor_ValidGC_DoesNotThrow(MockTarget.Architecture arch)
+    {
+        // The GC sub-descriptor is published and advertises IGC at a supported version, so the target
+        // is fully serviceable.
+        ContractDescriptorTarget target = CreateResolvedGCSubDescriptorTarget(
+            arch, RequiredContractsWithoutGC(), new Dictionary<string, string> { ["GC"] = "c1" });
+
+        Contracts.CoreCLRContracts.ValidateForDataAccess(target);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_ResolvedGCSubDescriptor_MissingGC_Throws(MockTarget.Architecture arch)
+    {
+        // The GC sub-descriptor is published but does not advertise IGC. Deferral no longer applies
+        // once the provider has resolved, so the absent IGC now rejects the target.
+        ContractDescriptorTarget target = CreateResolvedGCSubDescriptorTarget(
+            arch, RequiredContractsWithoutGC(), new Dictionary<string, string>());
+
+        ContractMissingException ex = Assert.Throws<ContractMissingException>(
+            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target));
+        Assert.Equal("GC", ex.ContractName);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_ResolvedGCSubDescriptor_UnrecognizedGCVersion_Throws(MockTarget.Architecture arch)
+    {
+        // The GC sub-descriptor is published and advertises IGC at a version this cDAC cannot service.
+        // A version that has actually been read is always a failure.
+        ContractDescriptorTarget target = CreateResolvedGCSubDescriptorTarget(
+            arch, RequiredContractsWithoutGC(), new Dictionary<string, string> { ["GC"] = "c99" });
+
+        ContractUnrecognizedException ex = Assert.Throws<ContractUnrecognizedException>(
+            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target));
+        Assert.Equal("GC", ex.ContractName);
+    }
 }

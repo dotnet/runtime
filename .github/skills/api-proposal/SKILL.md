@@ -102,7 +102,8 @@ The skill contains baked-in examples and guidelines for writing good proposals (
 
 1. Create a new branch: `api-proposal/<short-name>`. The prototype must be kept as a **single commit** on this branch.
    - Commit the initial prototype as a single commit.
-   - When addressing review feedback, amend the existing commit or squash locally and force-push so that the branch history remains a single commit.
+   - When addressing feedback **before publication**, amend the existing commit or squash locally and force-push so the branch history remains a single commit. This is the one place the repo's no-force-push rule doesn't apply — nothing links to the commit yet.
+   - After publication, use Phase 6 instead: a force-push invalidates the commit URL the proposal links to.
 
 2. Implement the API surface with:
    - Complete triple-slash XML documentation on all public members
@@ -133,11 +134,11 @@ The skill contains baked-in examples and guidelines for writing good proposals (
 
 #### Prototype Validation (all steps required)
 
-> **Prerequisite:** Follow the build and test workflow in [`copilot-instructions.md`](../../copilot-instructions.md) — complete the baseline build, configure the environment, and use the component-specific workflow for the target library. All build and test steps below assume the baseline build has already succeeded.
+> **Prerequisite:** Follow the build and test workflow in the `build-and-test` skill — complete the baseline build, configure the environment, and use the component-specific workflow for the target library. All build and test steps below assume the baseline build has already succeeded.
 
 **Step 1: Build and test**
 
-Build the src and test projects, then run all tests for the target library using the workflow described in `copilot-instructions.md`. All tests must pass with zero failures.
+Build the src and test projects, then run all tests for the target library using the workflow described in the `build-and-test` skill. All tests must pass with zero failures.
 
 Building the test project separately is critical for detecting **source breaking changes** that ApiCompat won't catch:
 - New overloads/extension methods causing wrong method binding in existing code
@@ -316,7 +317,7 @@ Present the complete draft to the user for review. Iterate based on feedback bef
 
 #### Step 1: Push and capture commit URL
 
-Commit prototype changes and push the branch to the user's fork (default) or ask for an alternative remote. Capture the commit URL for inclusion in the proposal (e.g., `https://github.com/<owner>/<repo>/commit/<sha>`).
+Commit the prototype changes, then push the branch to the user's fork — confirm first unless running non-interactively (see Step 2), or ask for an alternative remote. Capture the commit URL for inclusion in the proposal (e.g., `https://github.com/<owner>/<repo>/commit/<sha>`).
 
 #### Step 2: Non-interactive mode (Copilot Coding Agent)
 

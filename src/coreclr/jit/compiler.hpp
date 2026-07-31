@@ -102,11 +102,14 @@ inline bool genExactlyOneBit(T value)
 inline regMaskTP genFindLowestBit(regMaskTP value)
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    // If we ever need to use this method for predicate
-    // registers, then handle it.
-    assert(value.getHigh() == RBM_NONE);
-#endif
+    if (value.getLow() != RBM_NONE)
+    {
+        return regMaskTP(genFindLowestBit(value.getLow()));
+    }
+    return regMaskTP(RBM_NONE, genFindLowestBit(value.getHigh()));
+#else
     return regMaskTP(genFindLowestBit(value.getLow()));
+#endif
 }
 
 /*****************************************************************************
@@ -117,11 +120,18 @@ inline regMaskTP genFindLowestBit(regMaskTP value)
 inline bool genMaxOneBit(regMaskTP value)
 {
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    // If we ever need to use this method for predicate
-    // registers, then handle it.
-    assert(value.getHigh() == RBM_NONE);
-#endif
+    if (value.getLow() == RBM_NONE)
+    {
+        return genMaxOneBit(value.getHigh());
+    }
+    if (value.getHigh() == RBM_NONE)
+    {
+        return genMaxOneBit(value.getLow());
+    }
+    return false;
+#else
     return genMaxOneBit(value.getLow());
+#endif
 }
 
 /*****************************************************************************
@@ -860,6 +870,35 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 }
 
 /*****************************************************************************
+ *  Return the index of the function region (funclet) that physically contains
+ *  `block`. The main method is region 0. Unlike funGetFuncIdx, this works for
+ *  an arbitrary block (not just a funclet entry), distinguishing a filter
+ *  funclet (FUNC_FILTER) from its filter-handler. Only valid after funclets
+ *  are created.
+ *
+ */
+inline unsigned Compiler::bbFuncletRegionOf(BasicBlock* block)
+{
+    assert(fgFuncletsCreated);
+
+    if (!block->hasHndIndex())
+    {
+        return 0;
+    }
+
+    EHblkDsc* const eh      = ehGetDsc(block->getHndIndex());
+    unsigned        funcIdx = eh->ebdFuncIndex;
+
+    if (eh->HasFilter() && eh->InFilterRegionBBRange(block))
+    {
+        // The filter is the funclet immediately preceding its filter-handler.
+        funcIdx--;
+    }
+
+    return funcIdx;
+}
+
+/*****************************************************************************
  *  Are two blocks physically contained in the same function region (funclet)?
  *  The main method is region 0. Unlike funGetFuncIdx, this works for an
  *  arbitrary block (not just a funclet entry), distinguishing a filter
@@ -869,27 +908,7 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
  */
 inline bool Compiler::bbIsInSameFunclet(BasicBlock* block1, BasicBlock* block2)
 {
-    assert(fgFuncletsCreated);
-
-    auto funcRegionOf = [this](BasicBlock* blk) -> unsigned {
-        if (!blk->hasHndIndex())
-        {
-            return 0;
-        }
-
-        EHblkDsc* const eh      = ehGetDsc(blk->getHndIndex());
-        unsigned        funcIdx = eh->ebdFuncIndex;
-
-        if (eh->HasFilter() && eh->InFilterRegionBBRange(blk))
-        {
-            // The filter is the funclet immediately preceding its filter-handler.
-            funcIdx--;
-        }
-
-        return funcIdx;
-    };
-
-    return funcRegionOf(block1) == funcRegionOf(block2);
+    return bbFuncletRegionOf(block1) == bbFuncletRegionOf(block2);
 }
 #if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------------------------
@@ -4618,15 +4637,26 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
     }
     if (OperIs(GT_CALL))
     {
-        GenTreeCall*         call    = AsCall();
-        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
-        if (lclAddr != nullptr)
+        GenTreeCall* call = AsCall();
+
+        GenTreeLclVarCommon* asyncResumedLclAddr = comp->gtCallGetDefinedAsyncResumedLclAddr(call);
+        if (asyncResumedLclAddr != nullptr)
+        {
+            bool isEntire = comp->lvaLclExactSize(asyncResumedLclAddr->GetLclNum()) == 1;
+
+            RETURN_IF_ABORT(
+                visitor(LocalDef(asyncResumedLclAddr, isEntire, asyncResumedLclAddr->GetLclOffs(), ValueSize(1))));
+        }
+
+        GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
+        if (retBufLclAddr != nullptr)
         {
             unsigned storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
 
-            bool isEntire = comp->IsEntireAccess(lclAddr->GetLclNum(), lclAddr->GetLclOffs(), ValueSize(storeSize));
+            bool isEntire =
+                comp->IsEntireAccess(retBufLclAddr->GetLclNum(), retBufLclAddr->GetLclOffs(), ValueSize(storeSize));
 
-            return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), ValueSize(storeSize)));
+            return visitor(LocalDef(retBufLclAddr, isEntire, retBufLclAddr->GetLclOffs(), ValueSize(storeSize)));
         }
     }
 
@@ -4661,11 +4691,18 @@ GenTree::VisitResult GenTree::VisitLocalDefNodes(Compiler* comp, TVisitor visito
     }
     if (OperIs(GT_CALL))
     {
-        GenTreeCall*         call    = AsCall();
-        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
-        if (lclAddr != nullptr)
+        GenTreeCall* call = AsCall();
+
+        GenTreeLclVarCommon* asyncResumedLclAddr = comp->gtCallGetDefinedAsyncResumedLclAddr(call);
+        if (asyncResumedLclAddr != nullptr)
         {
-            return visitor(lclAddr);
+            RETURN_IF_ABORT(visitor(asyncResumedLclAddr));
+        }
+
+        GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
+        if (retBufLclAddr != nullptr)
+        {
+            return visitor(retBufLclAddr);
         }
     }
 

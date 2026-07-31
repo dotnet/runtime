@@ -392,7 +392,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
 
                 case CorElementType.MVar:
                 case CorElementType.Var:
-                    runtimeTypeSystem.IsGenericVariable(typeHandle, out TargetPointer genericVariableModulePointer, out uint typeVarToken);
+                    runtimeTypeSystem.IsGenericVariable(typeHandle, out TargetPointer genericVariableModulePointer, out uint typeVarToken, out _);
                     Contracts.ModuleHandle genericVariableModule = target.Contracts.Loader.GetModuleHandleFromModulePtr(genericVariableModulePointer);
                     MetadataReader generatedVariableMetadata = target.Contracts.EcmaMetadata.GetMetadata(genericVariableModule)!;
                     GenericParameter genericVariable = generatedVariableMetadata.GetGenericParameter((GenericParameterHandle)MetadataTokens.Handle((int)typeVarToken));

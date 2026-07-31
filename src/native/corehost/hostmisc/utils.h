@@ -115,9 +115,6 @@ bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv);
 size_t index_of_non_numeric(const pal::string_t& str, size_t i);
 bool try_stou(const pal::string_t& str, unsigned* num);
 
-pal::string_t get_dotnet_root_env_var_for_arch(pal::architecture arch);
-bool get_dotnet_root_from_env(pal::string_t* used_dotnet_root_env_var_name, pal::string_t* recv);
-
 pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal::string_t& app);
 pal::string_t get_runtime_config_path(const pal::string_t& path, const pal::string_t& name);
 pal::string_t get_runtime_config_dev_path(const pal::string_t& path, const pal::string_t& name);
@@ -131,7 +128,6 @@ pal::string_t get_download_url(const pal::char_t* framework_name = nullptr, cons
 pal::string_t get_host_version_description();
 
 pal::string_t to_lower(const pal::char_t* in);
-pal::string_t to_upper(const pal::char_t* in);
 
 // Retrieves environment variable which is only used for testing.
 // This will return the value of the variable only if the product binary is stamped

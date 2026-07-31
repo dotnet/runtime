@@ -45,7 +45,7 @@ internal readonly struct Debugger_1 : IDebugger
             return false;
 
         Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerAddress);
-        data = new DebuggerData(debugger.LeftSideInitialized != 0, debugger.Defines, debugger.MDStructuresVersion);
+        data = new DebuggerData(debugger.LeftSideInitialized != 0);
         return true;
     }
 

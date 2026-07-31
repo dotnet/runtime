@@ -331,7 +331,6 @@ static void show_error_dialog(const pal_char_t* executable_name, int error_code)
         const pal_char_t prefix[] = _X("Framework: '");
         const pal_char_t prefix_before_7_0[] = _X("The framework '");
         const pal_char_t suffix_before_7_0[] = _X(" was not found.");
-        const pal_char_t custom_prefix[] = _X("  _ ");
 
         const pal_char_t* cursor = g_buffered_errors;
         const pal_char_t* line;
@@ -356,12 +355,6 @@ static void show_error_dialog(const pal_char_t* executable_name, int error_code)
                     size_t len = (line_len > prefix_len + suffix_len) ? line_len - prefix_len - suffix_len : 0;
                     details = format_alloc(_X("Required: %.*s\n\n"), (int)len, line + prefix_len);
                 }
-            }
-            else if (utils_starts_with(line, line_len, custom_prefix, STRING_LENGTH(custom_prefix), true))
-            {
-                size_t offset = STRING_LENGTH(custom_prefix);
-                free(details);
-                details = format_alloc(_X("%.*s\n\n"), (int)(line_len - offset), line + offset);
             }
             else if (try_get_url_from_line(line, line_len, url, ARRAY_SIZE(url)))
             {

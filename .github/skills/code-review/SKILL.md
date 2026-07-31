@@ -21,14 +21,14 @@ Use this skill when:
 
 ### Step 0: Load Relevant Instructions
 
-Before analyzing anything, load any and all instructions under `.github/instructions` that are relevant to the code changes, as indicated by the frontmatter. If conflict arises between said custom instructions and the instructions in this skill, the custom instructions supersede instructions in this skill.
+Before analyzing anything, load `.github/skills/code-review/pr-assessment.md` -- the holistic criteria you will assess against -- plus any and all instructions under `.github/instructions` that are relevant to the code changes, as indicated by the frontmatter. If conflict arises between said custom instructions and the instructions in this skill, the custom instructions supersede instructions in this skill.
 
 ### Step 1: Gather Code Context (No PR Narrative Yet)
 
 Before analyzing anything, collect as much relevant **code** context as you can. **Critically, do NOT read the PR description, linked issues, or existing review comments yet.** You must form your own independent assessment of what the code does, why it might be needed, what problems it has, and whether the approach is sound — before being exposed to the author's framing. Reading the author's narrative first anchors your judgment and makes you less likely to find real problems.
 
 1. **Diff and file list**: Fetch the full diff and the list of changed files.
-2. **Full source files**: For every changed file, read the **entire source file** (not just the diff hunks). You need the surrounding code to understand invariants, locking protocols, call patterns, and data flow. Diff-only review is the #1 cause of false positives and missed issues.
+2. **Full source files**: For every changed file, read well beyond the diff hunks — diff-only review is the #1 cause of false positives and missed issues. You need the surrounding code to understand invariants, locking protocols, call patterns, and data flow. Read the whole file when it is a reasonable size; for the very large ones this repo has (`morph.cpp` alone is ~137k tokens) read the enclosing functions, their callers, and the types involved instead of paging through the entire file.
 3. **Consumers and callers**: If the change modifies a public/internal API, a type that others depend on, or a virtual/interface method, search for how consumers use the functionality. Grep for callers, usages, and test sites. Understanding how the code is consumed reveals whether the change could break existing behavior or violate caller assumptions.
 4. **Sibling types and related code**: If the change fixes a bug or adds a pattern in one type, check whether sibling types (e.g., other abstraction implementations, other collection types, platform-specific variants) have the same issue or need the same fix. Fetch and read those files too.
 5. **Key utility/helper files**: If the diff calls into shared utilities, read those to understand the contracts (thread-safety, idempotency, etc.).
@@ -37,7 +37,7 @@ Before analyzing anything, collect as much relevant **code** context as you can.
    - Changes to `ref/` assembly source files (the strongest signal — these define the public API contract)
    - New `public` members (methods, properties, types, enum values) in `src/` files
    - Note whether new public API was detected. If it was, you **MUST** load and execute the API approval verification procedure during Step 4. Read the file `.github/skills/code-review/api-approval-check.md` (relative to the repository root) and follow its instructions. Do not skip this step — it is blocking.
-  
+
 ### Step 2: Discover Area-Specific Agents
 - If the environment supports sub-agent or task invocation, study the **review** agents that
   actually exist in `.github/agents`. Their yaml frontmatter descriptions tell when they apply.
@@ -60,7 +60,7 @@ Based **only** on the code context gathered above (without the PR description or
 3. **Is this the right approach?** Would a simpler alternative be more consistent with the codebase? Could the goal be achieved with existing functionality? Are there correctness, performance, or safety concerns?
 4. **What problems do you see?** Identify bugs, edge cases, missing validation, thread-safety issues, performance regressions, API design problems, test gaps, and anything else that concerns you.
 
-Write down your independent assessment before proceeding. You must produce a holistic assessment (using the criteria from the applicable `.github/instructions/*.instructions.md` files for the diff) at this stage.
+Write down your independent assessment before proceeding. You must produce a holistic assessment (using the criteria in `.github/skills/code-review/pr-assessment.md`) at this stage.
 
 ### Step 4: Incorporate PR Narrative and Reconcile
 
@@ -97,7 +97,7 @@ Now read the PR description, labels, linked issues (in full), author information
 
 ## Multi-Model Review
 
-When the environment supports launching sub-agents with different models (e.g., the `task` tool with a `model` parameter), run the review in parallel across multiple model families to get diverse perspectives. Different models catch different classes of issues. If the environment does not support this, proceed with a single-model review.
+When the environment supports launching sub-agents with different models (e.g., the `task` tool with a `model` parameter), run the review in parallel across multiple model families to get diverse perspectives. Different models catch different classes of issues. If the environment does not support this, proceed with a single-model review. Each sub-agent re-reads the diff and the surrounding files, so this multiplies the cost of the review by the number of models — worth it for a substantial or risky change, not for a one-line fix.
 
 **How to execute (when supported):**
 1. Inspect the available model list and select models from 2-3 distinct model families, up to 3 sub-agent models total. If fewer than 2 eligible families are available, use what is available. **Model selection rules:**
@@ -179,20 +179,23 @@ The summary verdict **must** be consistent with the findings in the body. Follow
 
 ## Where the Review Rules Live
 
-The detailed review rules -- correctness, performance, API design, style, testing,
-documentation, native/interop, and the Holistic PR Assessment criteria -- are maintained
-as path-specific instruction files under `.github/instructions/` so that the built-in
-Copilot code reviewer and this skill share a single source of truth. **You MUST load the
-files whose `applyTo` paths match the diff and treat them as the rule set for this
-review**, in addition to the process above.
+Review rules are split by activity:
+
+- **`.github/skills/code-review/pr-assessment.md`** -- the Holistic PR Assessment criteria:
+  reviewer mindset, Motivation, Evidence, Approach, Cost-Benefit, Scope, Risk, and Codebase Fit.
+  **Always load this.** Use it to write the Motivation, Approach, and Summary fields of your output.
+- **`.github/instructions/*.instructions.md`** -- the code conventions themselves, shared with code
+  authoring and with the built-in Copilot code reviewer so there is a single source of truth.
+  **You MUST load the files whose `applyTo` paths match the diff and treat them as the rule set
+  for this review**, in addition to the process above.
 
 Load, based on the paths in the diff:
 
-- **`src/**` changed:** `.github/instructions/review-all-src.instructions.md` -- reviewer mindset, the Holistic PR Assessment criteria (Motivation, Evidence, Approach, Cost-Benefit, Scope, Risk, Codebase Fit), correctness philosophy, PR hygiene, consistency, and documentation. Use these criteria to write the Motivation, Approach, and Summary fields in your output.
-- **`**/*.cs` changed:** `.github/instructions/review-csharp.instructions.md` -- C# error handling, thread safety, security, correctness, performance/allocation, API design, and style rules.
-- **Native files (`*.c` / `*.cpp` / `*.h` / `*.inc` / `*.S` / `*.asm`) changed:** `.github/instructions/review-native.instructions.md` -- C++ style, VM/JIT contracts, GC protection, platform defines, and interop/marshalling rules.
-- **Test files (`**/tests/**`, `src/tests/**`) changed:** `.github/instructions/review-all-tests.instructions.md` -- testing conventions and regression-test requirements.
-- **Area matches:** also load any matching area file under `.github/instructions/` (for example `.github/instructions/review-core-runtime.instructions.md`, `.github/instructions/jit.instructions.md`, `.github/instructions/system-net-*.instructions.md`, `.github/instructions/extensions-*.instructions.md`, `.github/instructions/compression.instructions.md`, `.github/instructions/cdac.instructions.md`). These stack on top of the language rules. An area instruction file does not imply that a corresponding agent exists; invoke an area **agent** under `.github/agents/` only when it actually exists and applies, as described in Step 2.
+- **`src/**` changed:** `.github/instructions/conventions.instructions.md` -- change scope, code reuse and deduplication, established conventions, runtime-specific patterns, documentation and comments.
+- **`**/*.cs` changed:** `.github/instructions/csharp.instructions.md` -- C# error handling, thread safety, security, correctness, performance/allocation, API design, and style rules.
+- **Native files (`*.c` / `*.cpp` / `*.h` / `*.inc` / `*.S` / `*.asm`) changed:** `.github/instructions/native.instructions.md` -- C++ style, VM/JIT contracts, GC protection, platform defines, and interop/marshalling rules.
+- **Test files (`**/tests/**`, `src/tests/**`) changed:** `.github/instructions/tests.instructions.md` -- testing conventions and regression-test requirements.
+- **Area matches:** also load any matching area file under `.github/instructions/` (for example `.github/instructions/core-runtime.instructions.md`, `.github/instructions/jit.instructions.md`, `.github/instructions/system-net-*.instructions.md`, `.github/instructions/extensions-*.instructions.md`, `.github/instructions/compression.instructions.md`, `.github/instructions/cdac.instructions.md`). These stack on top of the language rules. An area instruction file does not imply that a corresponding agent exists; invoke an area **agent** under `.github/agents/` only when it actually exists and applies, as described in Step 2.
 - **Content matches (not path-based):** if the diff uses `Vector128`/`Vector256`/`Vector512`, `Vector<T>`, or `System.Runtime.Intrinsics.*` anywhere, apply the `vectorization` skill in addition to the above. SIMD code appears in arbitrary library files, so this trigger is keyed on content, not folder.
 
 If a rule in a more specific file conflicts with a general one, the more specific file
