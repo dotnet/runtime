@@ -820,18 +820,34 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [MemberData(nameof(AddCounterSignerMLDsaTestData))]
         public static void AddCounterSigner_MLDsa(SubjectIdentifierType identifierType, string digestOid, MLDsaAlgorithm algorithm)
         {
+            void CounterSignWithMLDsa(SignerInfo signer)
+            {
+                using (X509Certificate2 signerCert = Certificates.MLDsaIetf[algorithm].TryGetCertificateWithPrivateKey())
+                {
+                    CmsSigner counterSigner = new CmsSigner(identifierType, signerCert);
+                    counterSigner.IncludeOption = X509IncludeOption.EndCertOnly;
+                    counterSigner.DigestAlgorithm = new Oid(digestOid, digestOid);
+                    signer.ComputeCounterSignature(counterSigner);
+                }
+            }
+
+            if (PlatformDetection.IsNetFramework && (digestOid == Oids.Shake128 || digestOid == Oids.Shake256))
+            {
+                const int CryptEUnknownAlgorithm = unchecked((int)0x80091002);
+
+                // .NET Framework's CMS is backed by Windows CAPI, which does not recognize SHAKE
+                // digest algorithms and fails signing with CRYPT_E_UNKNOWN_ALGO. .NET builds the
+                // CMS in managed code and succeeds.
+                SignedCms cms = new SignedCms();
+                cms.Decode(SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber);
+                CryptographicException exception = Assert.Throws<CryptographicException>(() => CounterSignWithMLDsa(cms.SignerInfos[0]));
+                Assert.Equal(CryptEUnknownAlgorithm, exception.HResult);
+                return;
+            }
+
             AssertAddCounterSigner(
                 identifierType,
-                signer =>
-                {
-                    using (X509Certificate2 signerCert = Certificates.MLDsaIetf[algorithm].TryGetCertificateWithPrivateKey())
-                    {
-                        CmsSigner counterSigner = new CmsSigner(identifierType, signerCert);
-                        counterSigner.IncludeOption = X509IncludeOption.EndCertOnly;
-                        counterSigner.DigestAlgorithm = new Oid(digestOid, digestOid);
-                        signer.ComputeCounterSignature(counterSigner);
-                    }
-                },
+                CounterSignWithMLDsa,
                 (cms, counterSigner) =>
                 {
                     byte[] signature = counterSigner.GetSignature();
