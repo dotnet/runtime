@@ -1489,43 +1489,6 @@ namespace System.Runtime.CompilerServices
             flags |= ContinuationFlags.ContinueOnThreadPool;
         }
 
-        // Check whether the current thread already satisfies the continuation context captured in a
-        // continuation, i.e. whether resuming that continuation here would be dispatched inline.
-        //
-        // Used when inlining runtime async calls: when an inlined callee logically returns
-        // to its caller after having been resumed, we must ensure we are running in the continuation
-        // context the caller's continuation captured. This mirrors the "can inline" conditions in
-        // RuntimeAsyncTaskContinuation.QueueIfNecessary; the two must be kept in sync.
-        private static bool IsOnRightContext(object? continuationContext, ContinuationFlags flags)
-        {
-            if ((flags & ContinuationFlags.ContinueOnThreadPool) != 0)
-            {
-                SynchronizationContext? syncCtx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
-                if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
-                {
-                    return false;
-                }
-
-                TaskScheduler? sched = TaskScheduler.InternalCurrent;
-                return sched is null || sched == TaskScheduler.Default;
-            }
-
-            if ((flags & ContinuationFlags.ContinueOnCapturedSynchronizationContext) != 0)
-            {
-                Debug.Assert(continuationContext is SynchronizationContext);
-                return (SynchronizationContext)continuationContext! == Thread.CurrentThreadAssumedInitialized._synchronizationContext;
-            }
-
-            if ((flags & ContinuationFlags.ContinueOnCapturedTaskScheduler) != 0)
-            {
-                Debug.Assert(continuationContext is TaskScheduler);
-                return (TaskScheduler)continuationContext! == TaskScheduler.InternalCurrent;
-            }
-
-            // No continuation context was captured, so there is nothing to switch to.
-            return true;
-        }
-
         // Restore the contexts that an inlined async frame captured when it logically returned to
         // its caller, after that frame was resumed inside its own body.
         //
@@ -1535,33 +1498,75 @@ namespace System.Runtime.CompilerServices
         //
         // Unlike the synchronous restore at the end of a method, the ExecutionContext restore runs
         // only after a resumption, so it must target the thread we were resumed on rather than the
-        // one whose contexts were captured on entry. Note that this relies on no context save and
-        // restore being emitted around this method itself; that would undo the restore on the way
-        // out. It is not, since this is a manually marked async method and not an async variant of
-        // a task returning one.
+        // one whose contexts were captured on entry.
         //
-        // If we are not already on the continuation context the caller's continuation captured we
-        // suspend to get back onto it. Suspending on an already completed task makes the dispatcher
-        // re-dispatch the continuation immediately. Because that dispatch happens with
-        // canInline: false, it always posts or schedules onto the requested context rather than
-        // running inline here, which is what we want -- we only suspend when we are known to be on
-        // the wrong context.
+        // The continuation context check determines whether resuming the caller's continuation here
+        // would be dispatched inline. It mirrors the "can inline" conditions in
+        // RuntimeAsyncTaskContinuation.QueueIfNecessary; the two must be kept in sync.
         //
         // 'flags' must contain only ContinuationFlags.AllContinuationFlags bits.
         [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe void RestoreInlinedFrameContexts(ExecutionContext? previousExecCtx, object? continuationContext, ContinuationFlags flags)
+        [MethodImpl(MethodImplOptions.Async)]
+        private static void RestoreInlinedFrameContexts(ExecutionContext? previousExecCtx, object? continuationContext, ContinuationFlags flags)
         {
             Debug.Assert((flags & ~ContinuationFlags.AllContinuationFlags) == 0);
 
-            RestoreExecutionContext(Thread.CurrentThreadAssumedInitialized, previousExecCtx);
+            // We are inside a runtime async chain, so the thread has already been cached. Use it
+            // instead of Thread.CurrentThreadAssumedInitialized to keep this to one TLS lookup.
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Thread? currentThread = state.CurrentThread;
+            Debug.Assert(currentThread != null);
 
-            if (IsOnRightContext(continuationContext, flags))
+            RestoreExecutionContext(currentThread, previousExecCtx);
+
+            if ((flags & ContinuationFlags.ContinueOnThreadPool) != 0)
             {
+                SynchronizationContext? syncCtx = currentThread._synchronizationContext;
+                if (syncCtx is null || syncCtx.GetType() == typeof(SynchronizationContext))
+                {
+                    TaskScheduler? sched = TaskScheduler.InternalCurrent;
+                    if (sched is null || sched == TaskScheduler.Default)
+                    {
+                        return;
+                    }
+                }
+            }
+            else if ((flags & ContinuationFlags.ContinueOnCapturedSynchronizationContext) != 0)
+            {
+                Debug.Assert(continuationContext is SynchronizationContext);
+                if ((SynchronizationContext)continuationContext! == currentThread._synchronizationContext)
+                {
+                    return;
+                }
+            }
+            else if ((flags & ContinuationFlags.ContinueOnCapturedTaskScheduler) != 0)
+            {
+                Debug.Assert(continuationContext is TaskScheduler);
+                if ((TaskScheduler)continuationContext! == TaskScheduler.InternalCurrent)
+                {
+                    return;
+                }
+            }
+            else
+            {
+                // No continuation context was captured, so there is nothing to switch to.
                 return;
             }
 
-            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            TailAwait();
+            SwitchToContinuationContext(ref state, continuationContext, flags);
+        }
+
+        // Suspend and resume in the specified continuation context.
+        //
+        // Suspending on an already completed task makes the dispatcher re-dispatch the continuation
+        // immediately. Because that dispatch happens with canInline: false, it always posts or
+        // schedules onto the requested context rather than running inline here, which is what we
+        // want -- we only get here when we are known to be on the wrong context.
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        private static unsafe void SwitchToContinuationContext(ref RuntimeAsyncAwaitState state, object? continuationContext, ContinuationFlags flags)
+        {
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
 
             RuntimeAsyncTaskContinuation? taskCont = state.CachedTaskContinuation;
