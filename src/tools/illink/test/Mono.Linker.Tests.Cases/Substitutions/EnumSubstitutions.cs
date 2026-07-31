@@ -37,33 +37,55 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
         public static void Main()
         {
-            TestFieldByName();
-            TestFieldByNumber();
+            VerifyFieldByNameSubstitution();
+            VerifyFieldByNumberSubstitution();
             MethodByName();
             MethodByNumber();
         }
 
         [Kept]
-        [ExpectBodyModified]
-        private static void TestFieldByName()
+        [ExpectedInstructionSequence(new[] {
+            "nop",
+            "ldsfld Mono.Linker.Tests.Cases.Substitutions.EnumSubstitutions/SubstitutionValue Mono.Linker.Tests.Cases.Substitutions.EnumSubstitutions::FieldByName",
+            "ldc.i4.1",
+            "ceq",
+            "ldc.i4.0",
+            "ceq",
+            "stloc.0",
+            "ldloc.0",
+            "brfalse.s il_10",
+            "ret",
+        })]
+        private static void VerifyFieldByNameSubstitution()
         {
             if (FieldByName != SubstitutionValue.ByName)
-                FieldByNameIncorrect();
+                ReachableOnUnexpectedFieldByNameValue();
         }
 
-        private static void FieldByNameIncorrect()
+        private static void ReachableOnUnexpectedFieldByNameValue()
         {
         }
 
         [Kept]
-        [ExpectBodyModified]
-        private static void TestFieldByNumber()
+        [ExpectedInstructionSequence(new[] {
+            "nop",
+            "ldsfld Mono.Linker.Tests.Cases.Substitutions.EnumSubstitutions/SubstitutionValue Mono.Linker.Tests.Cases.Substitutions.EnumSubstitutions::FieldByNumber",
+            "ldc.i4.2",
+            "ceq",
+            "ldc.i4.0",
+            "ceq",
+            "stloc.0",
+            "ldloc.0",
+            "brfalse.s il_10",
+            "ret",
+        })]
+        private static void VerifyFieldByNumberSubstitution()
         {
             if (FieldByNumber != SubstitutionValue.ByNumber)
-                FieldByNumberIncorrect();
+                ReachableOnUnexpectedFieldByNumberValue();
         }
 
-        private static void FieldByNumberIncorrect()
+        private static void ReachableOnUnexpectedFieldByNumberValue()
         {
         }
 
