@@ -86,6 +86,6 @@ class EEContract : public BaseContract
     THROWS;                     \
     GC_TRIGGERS;                \
     MODE_PREEMPTIVE;            \
-    INJECT_FAULT(COMPlusThrowOM();); \
+    INJECT_FAULT(COMPlusThrowOM(););
 
 #endif  // EECONTRACT_H_

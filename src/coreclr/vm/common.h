@@ -56,8 +56,6 @@ using std::min;
 
 //-----------------------------------------------------------------------------------------------------------
 
-#include "stdmacros.h"
-
 #define POISONC ((UINT_PTR)((sizeof(int *) == 4)?0xCCCCCCCCL:0xCCCCCCCCCCCCCCCCLL))
 
 #include "switches.h"
@@ -66,6 +64,8 @@ using std::min;
 #include "classnames.h"
 #include "util.hpp"
 #include "corpriv.h"
+
+#include <stdmacros.h>
 
 #include <daccess.h>
 
