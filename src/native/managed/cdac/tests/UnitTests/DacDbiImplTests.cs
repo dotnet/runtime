@@ -1914,4 +1914,61 @@ public unsafe class DacDbiImplTests
         int hr = dacDbi.GetMetadata(vmModule, null);
         Assert.Equal(System.HResults.E_POINTER, hr);
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void HasReadWriteMetadata_NullOutput_ReturnsError(MockTarget.Architecture arch)
+    {
+        DacDbiImpl dacDbi = new(new TestPlaceholderTarget.Builder(arch).Build(), legacyObj: null);
+
+        int hr = dacDbi.HasReadWriteMetadata(0x1000, null);
+
+        Assert.Equal(System.HResults.E_INVALIDARG, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void HasReadWriteMetadata_ReturnsMetadataAvailability(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x1000, 0x2000);
+        TargetTestHelpers.LayoutResult peAssemblyLayout = helpers.LayoutFields([
+            new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
+            new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
+            new(nameof(Data.PEAssembly.MDImportIsRW), DataType.int32),
+            new(nameof(Data.PEAssembly.MDImport), DataType.pointer),
+        ]);
+        var types = new Dictionary<DataType, Target.TypeInfo>
+        {
+            [DataType.PEAssembly] = new() { Fields = peAssemblyLayout.Fields, Size = peAssemblyLayout.Stride },
+        };
+        MockMemorySpace.HeapFragment readOnlyPEAssembly = allocator.Allocate(peAssemblyLayout.Stride, "ReadOnlyPEAssembly");
+        MockMemorySpace.HeapFragment readWritePEAssembly = allocator.Allocate(peAssemblyLayout.Stride, "ReadWritePEAssembly");
+        helpers.WritePointer(
+            readOnlyPEAssembly.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.MDImport)].Offset, helpers.PointerSize),
+            0x1800);
+        helpers.Write(
+            readWritePEAssembly.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.MDImportIsRW)].Offset, sizeof(int)),
+            1);
+        helpers.WritePointer(
+            readWritePEAssembly.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.MDImport)].Offset, helpers.PointerSize),
+            0x1800);
+        TestPlaceholderTarget target = targetBuilder
+            .AddTypes(types)
+            .AddContract<IEcmaMetadata>(version: "c1")
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        Interop.BOOL result = Interop.BOOL.TRUE;
+
+        int hr = dacDbi.HasReadWriteMetadata(readOnlyPEAssembly.Address, &result);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(Interop.BOOL.FALSE, result);
+
+        hr = dacDbi.HasReadWriteMetadata(readWritePEAssembly.Address, &result);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(Interop.BOOL.TRUE, result);
+    }
 }

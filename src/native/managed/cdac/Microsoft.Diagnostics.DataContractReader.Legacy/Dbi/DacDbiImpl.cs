@@ -5622,8 +5622,34 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetPEFileMDInternalRW(ulong vmPEAssembly, ulong* pAddrMDInternalRW)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetPEFileMDInternalRW(vmPEAssembly, pAddrMDInternalRW) : HResults.E_NOTIMPL;
+    public int HasReadWriteMetadata(ulong vmPEAssembly, Interop.BOOL* pHasReadWriteMetadata)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pHasReadWriteMetadata is null)
+                throw new ArgumentException("Output pointer cannot be null.", nameof(pHasReadWriteMetadata));
+
+            *pHasReadWriteMetadata = Interop.BOOL.FALSE;
+            bool hasReadWriteMetadata = _target.Contracts.EcmaMetadata.HasReadWriteMetadata(new TargetPointer(vmPEAssembly));
+            *pHasReadWriteMetadata = hasReadWriteMetadata ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            Interop.BOOL resultLocal = default;
+            int hrLocal = _legacy.HasReadWriteMetadata(vmPEAssembly, pHasReadWriteMetadata is null ? null : &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*pHasReadWriteMetadata == resultLocal, $"cDAC: {*pHasReadWriteMetadata}, DAC: {resultLocal}");
+        }
+#endif
+        return hr;
+    }
 
     public int AreOptimizationsDisabled(ulong vmModule, uint methodTk, Interop.BOOL* pOptimizationsDisabled)
     {
