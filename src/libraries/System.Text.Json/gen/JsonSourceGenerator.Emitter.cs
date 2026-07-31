@@ -920,7 +920,6 @@ namespace System.Text.Json.SourceGeneration
                     {
                         writer.WriteLine($"properties[{i}].IsGetNullable = false;");
                     }
-q
                     if (property.IsSetterNonNullableAnnotation || property.IsReadOnly)
                     {
                         writer.WriteLine($"properties[{i}].IsSetNullable = false;");
