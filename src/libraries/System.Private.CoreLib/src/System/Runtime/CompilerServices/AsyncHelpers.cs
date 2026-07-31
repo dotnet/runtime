@@ -111,12 +111,6 @@ namespace System.Runtime.CompilerServices
             Continuation headContinuation, int offset, Action continuation)
             where TAwaiter : ICriticalNotifyCompletion
         {
-            if (typeof(TAwaiter) == typeof(YieldAwaitable.YieldAwaiter))
-            {
-                RuntimeAsyncYielder.Instance.UnsafeOnCompleted(continuation);
-                return;
-            }
-
             ref byte data = ref RuntimeHelpers.GetRawData(headContinuation);
             TAwaiter awaiter = Unsafe.As<byte, TAwaiter>(ref Unsafe.Add(ref data, offset));
             awaiter.UnsafeOnCompleted(continuation);
