@@ -54,6 +54,10 @@ namespace Tracing.Tests.GCDumpRuntimeAsync
             return sum;
         }
 
+        [ActiveIssue("System.Diagnostics.Process is not supported on wasm", TestPlatforms.Browser)]
+        [ActiveIssue("Can't find file dotnet-diagnostic-{pid}-*-socket", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoRuntime), nameof(TestLibrary.PlatformDetection.IsRiscv64Process))]
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
+        [SkipOnCoreClr("Tracing tests routinely time out with JIT stress and GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {
