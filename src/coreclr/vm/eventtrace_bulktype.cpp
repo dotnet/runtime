@@ -747,7 +747,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
     pVal->fixedSizedData.ModuleID = (ULONGLONG) (TADDR) thNamed.GetModule();
     pVal->fixedSizedData.TypeNameID = (thNamed.GetMethodTable() == NULL) ? 0 : thNamed.GetCl();
     pVal->fixedSizedData.Flags = 0;
-    pVal->fixedSizedData.CorElementType = (BYTE) th.GetInternalCorElementType();
+    pVal->fixedSizedData.CorElementType = (BYTE) thNamed.GetInternalCorElementType();
 
     if (th.IsArray())
     {
