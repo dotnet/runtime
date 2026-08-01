@@ -396,7 +396,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     {
                                         // A type that can hold null takes the section value as-is, whether it is
                                         // absent or explicitly null.
-                                        _writer.WriteLine($@"{parsedMemberDeclarationLhs} = {Identifier.configuration}[""{configKeyName}""];");
+                                        _writer.WriteLine($"{parsedMemberDeclarationLhs} = {Identifier.configuration}[{SymbolDisplay.FormatLiteral(configKeyName, quote: true)}];");
                                         _writer.WriteLine();
                                         return;
                                     }
