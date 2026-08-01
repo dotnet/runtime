@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.CodeDom.Compiler;
@@ -59,6 +59,12 @@ namespace Microsoft.Interop
                 writer.WriteLine("public static global::System.Runtime.InteropServices.ComWrappers.ComInterfaceEntry* GetComInterfaceEntries(out int count)");
                 writer.WriteLine('{');
                 writer.Indent++;
+                // The body allocates and walks native memory, so it opens an unsafe context of its own: the
+                // modifier on the containing type makes the pointer types legal to name, but under the updated
+                // memory safety rules it opens no context for the code inside.
+                writer.WriteLine("unsafe");
+                writer.WriteLine('{');
+                writer.Indent++;
                 writer.WriteLine($"count = {implementedInterfaces.Length};");
                 writer.WriteLine("if (s_vtables == null)");
                 writer.WriteLine('{');
@@ -80,6 +86,8 @@ namespace Microsoft.Interop
                 writer.WriteLine('}');
                 sw.WriteLine();
                 writer.WriteLine("return s_vtables;");
+                writer.Indent--;
+                writer.WriteLine('}');
                 writer.Indent--;
                 writer.WriteLine('}');
                 writer.Indent--;

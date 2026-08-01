@@ -169,6 +169,11 @@ namespace Microsoft.Interop
                         writer.WriteLine("internal static unsafe void PopulateUnmanagedVirtualMethodTable(void** vtable)");
                         writer.WriteLine('{');
                         writer.Indent++;
+                        // The body takes the address of each stub and writes through the vtable pointer, so it
+                        // opens its own unsafe context rather than relying on one from the containing type.
+                        writer.WriteLine("unsafe");
+                        writer.WriteLine('{');
+                        writer.Indent++;
 
                         foreach (SourceAvailableIncrementalMethodStubGenerationContext method in data)
                         {
@@ -176,6 +181,8 @@ namespace Microsoft.Interop
                             writer.WriteLine($"vtable[{method.VtableIndexData.Index}] = (void*)({functionPointerType.NormalizeWhitespace()})&ABI_{method.StubMethodSyntaxTemplate.Identifier};");
                         }
 
+                        writer.Indent--;
+                        writer.WriteLine('}');
                         writer.Indent--;
                         writer.WriteLine('}');
                         writer.Indent--;

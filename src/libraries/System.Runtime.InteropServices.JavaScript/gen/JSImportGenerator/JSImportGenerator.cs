@@ -101,7 +101,11 @@ namespace Microsoft.Interop.JavaScript
                 }))
                 .WithModifiers(StripTriviaFromModifiers(userDeclaredMethod.Modifiers))
                 .WithParameterList(ParameterList(SeparatedList(stub.SignatureContext.StubParameters)))
-                .WithBody(stubCode);
+                // The body is wrapped in an unsafe block rather than relying on an unsafe modifier on the
+                // containing type, which establishes no context for it under the updated memory safety rules.
+                // The marshallers call helpers such as Unsafe.SkipInit that are becoming caller-unsafe, so the
+                // block is emitted even for the shapes whose bodies name no pointer type today.
+                .WithBody(stubCode.WrapInUnsafeBlock());
 
             FieldDeclarationSyntax sigField = FieldDeclaration(VariableDeclaration(IdentifierName(Constants.JSFunctionSignatureGlobal))
                 .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(stub.BindingName)))))
