@@ -15581,8 +15581,7 @@ GenTree* Compiler::gtFoldExprShiftCountMask(GenTreeOp* shift)
 
     GenTree* count = shift->gtGetOp2();
 
-    // AND-stripping only benefits CSE and later optimization phases, so skip it in MinOpts.
-    if (opts.OptimizationEnabled() && count->OperIs(GT_AND))
+    if (count->OperIs(GT_AND))
     {
         GenTree* andOp1 = count->gtGetOp1();
         GenTree* andOp2 = count->gtGetOp2();
@@ -15652,7 +15651,7 @@ GenTree* Compiler::gtFoldExprBinary(GenTreeOp* tree)
         return tree;
     }
 
-    if (tree->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+    if (tree->OperIs(GT_LSH, GT_RSH, GT_RSZ) && opts.OptimizationEnabled())
     {
         // IL masks the shift count to the operand bit width, so `x >> n` is imported as
         // `x >> (n & 31)` (or `& 63` for 64-bit). Strip the redundant mask in optimized

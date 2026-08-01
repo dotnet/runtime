@@ -2852,26 +2852,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         }
     }
 
-    // For shift ops, normalize `x op (count & C)` to `x op count` when C covers the
-    // operand width mask.
-    // (5 bits for 32-bit, 6 bits for 64-bit shifts). This gives `x << lcl` (where `lcl` was
-    // assigned `y & 31` before the shift) the same VN as `x << y`, so CSE and copy-prop can
-    // collapse them even for the already-spilled case.
-    if (GenTree::StaticOperIs(oper, GT_LSH, GT_RSH, GT_RSZ))
-    {
-        const size_t width = varTypeIsLong(typ) ? 0x3f : 0x1f;
-        VNFuncApp    countFuncApp;
-        if (GetVNFunc(arg1VN, &countFuncApp) && countFuncApp.FuncIs(VNFunc(GT_AND)))
-        {
-            // Commutative canonicalization in VNForFunc places the constant at arg1.
-            ValueNum maskVN = countFuncApp.GetArg(1);
-            if (IsVNInt32Constant(maskVN) && ((static_cast<size_t>(ConstantValue<INT32>(maskVN)) & width) == width))
-            {
-                arg1VN = countFuncApp.GetArg(0);
-            }
-        }
-    }
-
     // We canonicalize commutative operations.
     // (Perhaps should eventually handle associative/commutative [AC] ops -- but that gets complicated...)
     if (VNFuncIsCommutative(func))
@@ -2979,6 +2959,57 @@ ValueNum ValueNumStore::VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum 
     }
 
     return *resultVN;
+}
+
+//----------------------------------------------------------------------------------------
+// VNForShiftCount: Normalize the value number for a shift count.
+//
+// Arguments:
+//    type    - The type of the shifted value
+//    countVN - The shift count's value number
+//
+// Return Value:
+//    The normalized shift count value number
+//
+ValueNum ValueNumStore::VNForShiftCount(var_types type, ValueNum countVN)
+{
+    const size_t width = varTypeIsLong(type) ? 0x3f : 0x1f;
+    VNFuncApp    countFuncApp;
+
+    if (GetVNFunc(countVN, &countFuncApp) && countFuncApp.FuncIs(VNFunc(GT_AND)))
+    {
+        // Commutative canonicalization places the constant at arg1.
+        ValueNum maskVN = countFuncApp.GetArg(1);
+
+        if (IsVNInt32Constant(maskVN) && ((static_cast<size_t>(ConstantValue<INT32>(maskVN)) & width) == width))
+        {
+            return countFuncApp.GetArg(0);
+        }
+    }
+
+    return countVN;
+}
+
+//----------------------------------------------------------------------------------------
+// VNPairForShiftCount: Normalize the value number pair for a shift count.
+//
+// Arguments:
+//    type     - The type of the shifted value
+//    countVNP - The shift count's value number pair
+//
+// Return Value:
+//    The normalized shift count value number pair
+//
+ValueNumPair ValueNumStore::VNPairForShiftCount(var_types type, ValueNumPair countVNP)
+{
+    ValueNum liberalVN = VNForShiftCount(type, countVNP.GetLiberal());
+
+    if (countVNP.BothEqual())
+    {
+        return ValueNumPair(liberalVN, liberalVN);
+    }
+
+    return ValueNumPair(liberalVN, VNForShiftCount(type, countVNP.GetConservative()));
 }
 
 //----------------------------------------------------------------------------------------
@@ -13715,6 +13746,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     ValueNumPair op2vnp;
                     ValueNumPair op2Xvnp;
                     vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+
+                    if (tree->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+                    {
+                        op2vnp = vnStore->VNPairForShiftCount(tree->TypeGet(), op2vnp);
+                    }
+
                     ValueNumPair excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
 
                     ValueNum newVN = ValueNumStore::NoVN;
