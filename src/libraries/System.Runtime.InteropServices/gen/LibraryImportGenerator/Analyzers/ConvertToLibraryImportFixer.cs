@@ -281,7 +281,7 @@ namespace Microsoft.Interop.Analyzers
                 && generatedDeclaration is MethodDeclarationSyntax rewrittenMethod)
             {
                 generatedDeclaration = rewrittenMethod.WithModifiers(
-                    MemorySafetyRules.WithSafeModifierFrom(rewrittenMethod.Modifiers, originalMethod.Modifiers));
+                    rewrittenMethod.Modifiers.WithSafeModifierFrom(originalMethod.Modifiers));
             }
 
             generatedDeclaration = AddExplicitDefaultBoolMarshalling(generator, methodSymbol, generatedDeclaration, "Bool");
