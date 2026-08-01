@@ -56,7 +56,7 @@
       <ReproResponseLines Include="--feature:System.StartupHookProvider.IsSupported=false" />
     </ItemGroup>
 
-    <WriteLinesToFile File="$(OutputPath)\compile-with-$(LibrariesConfiguration)-libs.rsp"
+    <WriteLinesToFile File="$(OutputPath)compile-with-$(LibrariesConfiguration)-libs.rsp"
                       Lines="@(ReproResponseLines)"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
