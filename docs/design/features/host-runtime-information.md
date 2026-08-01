@@ -42,7 +42,7 @@ Directory containing the application. This is used for [`AppContext.BaseDirector
 
 `HOST_INVOCATION_NAME`
 
-The name used to invoke an application host, corresponding to the native process's `argv[0]`. The apphost and `corerun` hosts provide this property for the first element returned by [`Environment.GetCommandLineArgs()`](https://learn.microsoft.com/dotnet/api/system.environment.getcommandlineargs). The `dotnet` muxer does not provide this property, preserving the managed application path as the first element.
+The name used to invoke an application host, corresponding to the native process's `argv[0]`. The apphost provides this property for the first element returned by [`Environment.GetCommandLineArgs()`](https://learn.microsoft.com/dotnet/api/system.environment.getcommandlineargs). Muxer-style hosts, including `dotnet` and `corerun`, do not provide this property, preserving the managed application path as the first element.
 
 ### Deps files
 
