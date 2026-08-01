@@ -37,8 +37,6 @@ namespace Microsoft.Extensions.Caching.Memory
         private bool _disposed;
         private DateTime _lastExpirationScan;
 
-        private const int CacheLineSize = global::Internal.PaddingHelpers.CACHE_LINE_SIZE;
-
         /// <summary>
         /// Creates a new <see cref="MemoryCache"/> instance.
         /// </summary>
@@ -804,14 +802,14 @@ namespace Microsoft.Extensions.Caching.Memory
             // _stringEntries/_nonStringEntries are read on every TryGetValue; the padding keeps the
             // write-hot atomic off the line holding those read-mostly references. It has to live in
             // a struct -- layout attributes on a class only affect marshaling, and the runtime
-            // reorders class fields freely -- with Value one line in and another line after it, so
-            // no neighbouring field can share its line whatever offset the struct lands on.
+            // reorders class fields freely. 64 is the size of a cache line on many systems; larger
+            // ones may see a little more false sharing.
             private CacheSizePadded _cacheSizePadded;
 
-            [StructLayout(LayoutKind.Explicit, Size = CacheLineSize * 2)]
+            [StructLayout(LayoutKind.Explicit, Size = 128)]
             private struct CacheSizePadded
             {
-                [FieldOffset(CacheLineSize)] public long Value;
+                [FieldOffset(64)] public long Value;
             }
 
             internal ref long CacheSize => ref _cacheSizePadded.Value;

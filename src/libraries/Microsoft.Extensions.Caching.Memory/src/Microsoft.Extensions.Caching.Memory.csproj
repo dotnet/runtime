@@ -24,10 +24,6 @@
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="$(CommonPath)Internal\Padding.cs" Link="Common\Internal\Padding.cs" />
-  </ItemGroup>
-
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <Compile Include="$(CoreLibSharedDir)System\Marvin.cs" Link="Common\System\Marvin.cs" />
   </ItemGroup>
