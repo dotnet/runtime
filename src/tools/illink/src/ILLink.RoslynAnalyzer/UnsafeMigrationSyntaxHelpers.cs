@@ -23,6 +23,22 @@ namespace ILLink.RoslynAnalyzer
         /// </summary>
         internal static SyntaxKind SafeKeywordKind => s_safeKeyword;
 
+        /// <summary>
+        /// The compiler feature flag that opts an assembly into the updated memory safety rules.
+        /// </summary>
+        /// <remarks>
+        /// Roslyn does not expose the memory safety rules version through a public API yet
+        /// (https://github.com/dotnet/roslyn/issues/82546), so the same feature flag the compiler itself reads
+        /// is used to determine whether the updated rules are in effect.
+        /// </remarks>
+        private const string UpdatedMemorySafetyRulesFeature = "updated-memory-safety-rules";
+
+        /// <summary>
+        /// Determines whether the compilation a tree belongs to uses the updated memory safety rules.
+        /// </summary>
+        internal static bool UsesUpdatedMemorySafetyRules(SyntaxTree tree) =>
+            tree.Options.Features.ContainsKey(UpdatedMemorySafetyRulesFeature);
+
         internal static SyntaxTokenList GetModifiers(SyntaxNode declaration) =>
             declaration switch
             {
