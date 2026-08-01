@@ -604,7 +604,6 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                 int paramIndex = methodHeader.IsInstance ? (int)sigIndex - 1 : (int)sigIndex;
                 return methodSig.ParameterTypes[paramIndex];
             }
-
             else
             {
                 BlobReader? localReader = GetLocalSignatureReader(mdh, moduleHandle, out _);
@@ -616,7 +615,6 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                 return localFlags[(int)sigIndex];
             }
         }
-
         catch (System.Exception)
         {
             return ((uint)ClrDataValueFlag.DEFAULT, -1);
