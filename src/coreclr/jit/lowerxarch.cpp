@@ -6345,8 +6345,9 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
         return nullptr;
     }
 
+    // An overflow-checking ADD cannot be removed: it must still throw when X is the minimum value
     GenTree* op2 = andNode->gtGetOp2();
-    if (!op2->OperIs(GT_ADD))
+    if (!op2->OperIs(GT_ADD) || op2->gtOverflow())
     {
         return nullptr;
     }
@@ -6741,8 +6742,9 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
         return nullptr;
     }
 
+    // An overflow-checking ADD cannot be removed: it must still throw when X is the minimum value
     GenTree* op2 = xorNode->gtGetOp2();
-    if (!op2->OperIs(GT_ADD))
+    if (!op2->OperIs(GT_ADD) || op2->gtOverflow())
     {
         return nullptr;
     }
