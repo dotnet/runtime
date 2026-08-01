@@ -15,6 +15,7 @@
 
 #include "pal.h"
 #include "volatile.h"
+#include "config.h"
 
 #include <fcntl.h>
 #include <errno.h>

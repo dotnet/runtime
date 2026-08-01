@@ -22,18 +22,18 @@ typedef wchar_t pal_char_t;
 // C++ mode: MSVC's default (non-conforming) preprocessor leaves L##__FUNCTION__
 // unexpanded so that it evaluates to MSVC's wide function-name literal. Using a
 // two-step helper here would force argument expansion and break that.
-#define _X(s) L ## s
+#define PAL_X(s) L ## s
 #else
 // C mode: MSVC's /std:c11 conforming preprocessor (and other conforming
 // compilers) suppress argument expansion before ##. A two-step helper forces
 // the argument to be expanded first so e.g. _X(HOST_VERSION) yields a wide
 // string literal rather than the identifier LHOST_VERSION.
 #define _X_HELPER(s) L ## s
-#define _X(s) _X_HELPER(s)
+#define PAL_X(s) _X_HELPER(s)
 #endif
 #else // !_WIN32
 typedef char pal_char_t;
-#define _X(s) s
+#define PAL_X(s) s
 #endif // _WIN32
 
 // Max path buffer for apphost string operations
@@ -121,6 +121,21 @@ typedef void* pal_proc_t;
 #endif // _WIN32
 
 #include "configure.h"
+
+#if defined(TARGET_SUNOS)
+  // Ensure character traits have been processed safely before we intercept the identifier
+  #if defined(__cplusplus)
+    #include <locale>
+    #include <cctype>
+  #else
+    #include <ctype.h>
+  #endif
+
+  // Wipe the system bitmask and instantly route it to your project's PAL_X layout
+  #undef _X
+#endif
+
+#define _X(s) PAL_X(s)
 
 // Wide-stringify the value of a macro: _STRINGIFY(FOO) -> _X("<expanded value of FOO>").
 #define _STRINGIFY(s) _X(s)
