@@ -220,9 +220,19 @@ PhaseStatus Compiler::SaveAsyncContexts()
         }
     }
 
-    // Insert RestoreContexts call in fault (exceptional case)
-    // First argument: resumed = (continuation != null)
-    GenTree* resumed = gtNewLclvNode(lvaResumedIndicator, TYP_INT);
+    // Inlinees need an explicit indicator because they do not have a continuation
+    // argument. Root methods can use the continuation argument directly, which also
+    // remains correct when EnC remaps directly into a resumed method body.
+    GenTree* resumed;
+    if (compIsForInlining())
+    {
+        resumed = gtNewLclvNode(lvaResumedIndicator, TYP_INT);
+    }
+    else
+    {
+        GenTree* continuation = gtNewLclVarNode(lvaAsyncContinuationArg, TYP_REF);
+        resumed = gtNewOperNode(GT_NE, TYP_INT, continuation, gtNewNull());
+    }
 
     GenTreeCall* restoreCall = gtNewUserCallNode(asyncInfo->restoreContextsMethHnd, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
@@ -387,7 +397,16 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
     // Insert "restore" call
     CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
 
-    GenTree* resumed = gtNewLclvNode(lvaResumedIndicator, TYP_INT);
+    GenTree* resumed;
+    if (compIsForInlining())
+    {
+        resumed = gtNewLclvNode(lvaResumedIndicator, TYP_INT);
+    }
+    else
+    {
+        GenTree* continuation = gtNewLclVarNode(lvaAsyncContinuationArg, TYP_REF);
+        resumed = gtNewOperNode(GT_NE, TYP_INT, continuation, gtNewNull());
+    }
 
     GenTreeCall* restoreCall = gtNewUserCallNode(asyncInfo->restoreContextsMethHnd, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
