@@ -1,11 +1,11 @@
 # Contract Debugger
 
-This contract is for reading debugger state from the target process, including initialization status, configuration flags, metadata update state, and JIT attach state.
+This contract is for reading debugger state from the target process, including initialization status, metadata update state, and JIT attach state.
 
 ## APIs of contract
 
 ```csharp
-record struct DebuggerData(bool IsLeftSideInitialized, uint DefinesBitField, uint MDStructuresVersion);
+record struct DebuggerData(bool IsLeftSideInitialized);
 ```
 
 ```csharp
@@ -38,10 +38,8 @@ TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byt
 
 | Data Descriptor | Field | Type | Meaning |
 | --- | --- | --- | --- |
-| `Debugger` | `Defines` | `uint32` | Bitfield of compile-time debugger feature defines |
 | `Debugger` | `GCNotificationEventsEnabled` | `int32` | Whether GC notification events are enabled |
 | `Debugger` | `LeftSideInitialized` | `int32` | Whether the left-side debugger infrastructure is initialized |
-| `Debugger` | `MDStructuresVersion` | `uint32` | Version of metadata data structures |
 | `Debugger` | `RCThread` | `pointer` | Pointer to DebuggerRCThread |
 | `Debugger` | `RgHijackFunction` | `pointer` | Pointer to the runtime's array of hijack-stub address ranges. |
 | `Debugger` | `RSRequestedSync` | `int32` | Sync-at-event request flag |
@@ -94,10 +92,7 @@ bool TryGetDebuggerData(out DebuggerData data)
     if (debuggerPtr == TargetPointer.Null)
         return false;
     bool leftSideInitialized = target.Read<int>(debuggerPtr + /* Debugger::LeftSideInitialized offset */) != 0;
-    data = new DebuggerData(
-        IsLeftSideInitialized: leftSideInitialized,
-        DefinesBitField: target.Read<uint>(debuggerPtr + /* Debugger::Defines offset */),
-        MDStructuresVersion: target.Read<uint>(debuggerPtr + /* Debugger::MDStructuresVersion offset */));
+    data = new DebuggerData(IsLeftSideInitialized: leftSideInitialized);
     return true;
 }
 

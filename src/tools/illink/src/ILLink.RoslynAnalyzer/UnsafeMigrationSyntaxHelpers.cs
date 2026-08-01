@@ -18,6 +18,12 @@ namespace ILLink.RoslynAnalyzer
         private static readonly SyntaxKind s_safeKeyword = SyntaxFacts.GetContextualKeywordKind("safe");
 
         /// <summary>
+        /// The kind of the <c>safe</c> contextual keyword, or <see cref="SyntaxKind.None"/> when the hosting
+        /// compiler does not know it.
+        /// </summary>
+        internal static SyntaxKind SafeKeywordKind => s_safeKeyword;
+
+        /// <summary>
         /// The compiler feature flag that opts an assembly into the updated memory safety rules.
         /// </summary>
         /// <remarks>
