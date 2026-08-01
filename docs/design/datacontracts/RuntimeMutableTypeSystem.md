@@ -24,7 +24,7 @@ TargetPointer GetEnCInstanceFieldAddress(TargetPointer objectAddress, TargetPoin
 | `EnCAddedField` | `Next` | `pointer` | Pointer to the next EnCAddedField entry in the per-object linked list hanging off the SyncBlock. |
 | `EnCAddedFieldElement` | `FieldDesc` | `pointer` | Address of the embedded EnCFieldDesc (layout-compatible with FieldDesc). |
 | `EnCAddedFieldElement` | `Next` | `pointer` | Pointer to the next EnCAddedFieldElement in the linked list. |
-| `EnCAddedStaticField` | `FieldData` | `pointer` | Address of the first byte of static field storage on this entry. |
+| `EnCAddedStaticField` | `FieldData` | `pointer` | Address of the inline storage for a primitive field, or of a pointer to GC-tracked storage for a class or value-type field. |
 | `EnCEEClassData` | `AddedInstanceFields` | `pointer` | Head of the linked list of EnCAddedFieldElement for added instance fields. |
 | `EnCEEClassData` | `AddedStaticFields` | `pointer` | Head of the linked list of EnCAddedFieldElement for added static fields. |
 | `EnCEEClassData` | `MethodTable` | `pointer` | Pointer to the MethodTable whose EnC data is held by this entry. |
@@ -117,8 +117,11 @@ TargetPointer GetEnCStaticFieldDataAddress(TargetPointer encFieldDescPointer)
     if (staticFieldData == TargetPointer.Null)
         return TargetPointer.Null;
 
-    // [FieldAddress] on EnCAddedStaticField::FieldData returns the address of the field slot
-    return staticFieldData + /* EnCAddedStaticField::FieldData offset */;
+    TargetPointer fieldDataAddress = staticFieldData + /* EnCAddedStaticField::FieldData offset */;
+    CorElementType fieldType = target.Contracts.RuntimeTypeSystem.GetFieldDescType(encFieldDescPointer);
+    return fieldType is CorElementType.ValueType or CorElementType.Class
+        ? target.ReadPointer(fieldDataAddress)
+        : fieldDataAddress;
 }
 
 TargetPointer GetEnCInstanceFieldAddress(TargetPointer objectAddress, TargetPointer encFieldDescPointer)

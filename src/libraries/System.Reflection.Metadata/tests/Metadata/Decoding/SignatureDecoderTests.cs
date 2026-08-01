@@ -260,8 +260,11 @@ namespace System.Reflection.Metadata.Decoding.Tests
 
                 MethodBodyBlock body = peReader.GetMethodBody(methodDef.RelativeVirtualAddress);
                 var il = body.GetILBytes();
-                // ILStrip replaces method body with the 'ret' IL opcode i.e. 0x2a
-                if (!(il?.Length == 1 && il[0] == 0x2a)) {
+                bool isStripped =
+                    (il?.Length == 1 && il[0] == 0x2A) ||
+                    (il?.Length == 2 && il[0] == 0xFE && il[1] == 0x24);
+                if (!isStripped)
+                {
                     StandaloneSignature localSignature = reader.GetStandaloneSignature(body.LocalSignature);
                     ImmutableArray<string> localTypes = localSignature.DecodeLocalSignature(provider, genericContext: null);
 

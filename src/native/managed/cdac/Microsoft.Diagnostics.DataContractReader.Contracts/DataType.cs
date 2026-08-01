@@ -135,6 +135,7 @@ public enum DataType
     CodeHeap,
     LoaderCodeHeap,
     HostCodeHeap,
+    DynamicFunctionTable,
     MethodDescVersioningState,
     ILCodeVersioningState,
     NativeCodeVersionNode,
