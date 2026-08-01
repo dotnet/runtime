@@ -19,13 +19,15 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame2
 {
     private readonly Target _target;
+    private readonly TargetPointer _threadAddress;
     private readonly IXCLRDataFrame? _legacyImpl;
 
     private readonly IStackDataFrameHandle _dataFrame;
 
-    public ClrDataFrame(Target target, IStackDataFrameHandle dataFrame, IXCLRDataFrame? legacyImpl)
+    public ClrDataFrame(Target target, TargetPointer threadAddress, IStackDataFrameHandle dataFrame, IXCLRDataFrame? legacyImpl)
     {
         _target = target;
+        _threadAddress = threadAddress;
         _legacyImpl = legacyImpl;
 
         _dataFrame = dataFrame;
@@ -511,7 +513,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         ulong baseAddress = locations.Length == 1 && !locations[0].IsRegisterValue
             ? locations[0].AddressOrValue
             : 0;
-        return new ClrDataValue(_target, valueFlags, typeHandle, baseAddress, locations, legacyImpl);
+        return new ClrDataValue(_target, _threadAddress, valueFlags, typeHandle, baseAddress, locations, legacyImpl);
     }
 
     // ========== Signature-based flag computation ==========

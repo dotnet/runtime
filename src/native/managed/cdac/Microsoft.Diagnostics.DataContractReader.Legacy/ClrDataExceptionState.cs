@@ -148,6 +148,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
                 objectContract.GetMethodTableAddress(exceptionObject));
             value.Interface = new ClrDataValue(
                 _target,
+                _threadAddress,
                 (uint)ClrDataValueFlag.DEFAULT,
                 typeHandle,
                 exceptionObject,

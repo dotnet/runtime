@@ -607,6 +607,37 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void ThreadStaticFields_UseValueThread(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IXCLRDataValue classValue = GetAssociatedValue(GetArgumentValues("ReferenceTypeVars")["classArg"]);
+        uint fieldFlags = (uint)(ClrDataValueFlag.ALL_KINDS | ClrDataValueFlag.FROM_STATIC);
+
+        ulong handle;
+        AssertHResult(HResults.S_OK, classValue.StartEnumFields(fieldFlags, null, &handle));
+        try
+        {
+            char* name = stackalloc char[32];
+            uint nameLength;
+            uint token;
+            DacComNullableByRef<IXCLRDataValue> field = new(isNullRef: false);
+            AssertHResult(HResults.S_OK, classValue.EnumField(&handle, field, 32, &nameLength, name, &token));
+            Assert.Equal("ThreadValue", new string(name));
+            AssertBytes(field.Interface!, BitConverter.GetBytes(1234), "SimpleClass.ThreadValue");
+
+            uint flags = AssertGetFlags(field.Interface!, "SimpleClass.ThreadValue");
+            Assert.Equal((uint)ClrDataValueFlag.FROM_TASK_LOCAL, flags & (uint)ClrDataValueFlag.ALL_LOCATIONS);
+            AssertHResult(HResults.S_FALSE, classValue.EnumField(&handle, field, 32, &nameLength, name, &token));
+        }
+        finally
+        {
+            AssertHResult(HResults.S_OK, classValue.EndEnumFields(handle));
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     public void Arrays_ExposePropertiesElementsAndElementTypes(TestConfiguration config)
     {
         InitializeDumpTest(config);
@@ -667,7 +698,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
             if (md == TargetPointer.Null)
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = new ClrDataFrame(Target, crashingThread.ThreadAddress, dataFrame, legacyImpl: null);
             IXCLRDataFrame xclrFrame = frame;
 
             uint numArgs;
@@ -870,7 +901,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
             string? name = DumpTestHelpers.GetMethodName(Target, md);
             if (name == methodName)
             {
-                ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+                ClrDataFrame frame = new ClrDataFrame(Target, crashingThread.ThreadAddress, dataFrame, legacyImpl: null);
 
                 return (frame, dataFrame);
             }

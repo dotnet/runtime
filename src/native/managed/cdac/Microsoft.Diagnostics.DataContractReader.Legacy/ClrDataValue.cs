@@ -30,6 +30,7 @@ public readonly struct NativeVarLocation
 public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 {
     private readonly Target _target;
+    private readonly TargetPointer _threadAddress;
     private readonly IXCLRDataValue? _legacyImpl;
     private readonly uint _flags;
     private readonly ITypeHandle? _typeHandle;
@@ -39,6 +40,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
     public ClrDataValue(
         Target target,
+        TargetPointer threadAddress,
         uint flags,
         ITypeHandle? typeHandle,
         TargetPointer baseAddress,
@@ -46,6 +48,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         IXCLRDataValue? legacyImpl)
     {
         _target = target;
+        _threadAddress = threadAddress;
         _legacyImpl = legacyImpl;
         _flags = flags;
         _typeHandle = typeHandle;
@@ -409,7 +412,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
                 IsRegisterValue = false,
             };
 
-            assocValue.Interface = new ClrDataValue(_target, flags, _typeHandle, address, [location], legacyValue);
+            assocValue.Interface = new ClrDataValue(_target, _threadAddress, flags, _typeHandle, address, [location], legacyValue);
         }
         catch (System.Exception ex)
         {
@@ -613,7 +616,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
                 IsRegisterValue = false,
             };
             uint flags = GetTypeFieldValueFlags(elementType, null, 0, isDeref: false);
-            value.Interface = new ClrDataValue(_target, flags, elementType, offset, [location], legacyValue);
+            value.Interface = new ClrDataValue(_target, _threadAddress, flags, elementType, offset, [location], legacyValue);
         }
         catch (System.Exception ex)
         {
@@ -642,12 +645,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
     private readonly record struct FieldEntry(TargetPointer FieldDesc, bool IsInherited);
 
-    private int StartEnumFields(
-        string? name,
-        uint nameFlags,
-        uint fieldFlags,
-        IXCLRDataTypeInstance? fromType,
-        ulong* handle)
+    private int StartEnumFields(string? name, uint nameFlags, uint fieldFlags, IXCLRDataTypeInstance? fromType, ulong* handle)
     {
         int hr = HResults.S_OK;
         int hrLocal = HResults.S_OK;
@@ -781,8 +779,8 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 #if DEBUG
         if (_legacyImpl is not null && enumeration is not null)
         {
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
+            Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowCdacSuccess);
+            if (hr == HResults.S_OK && hrLocal >= 0)
             {
                 Debug.Assert(token is null || *token == tokenLocal);
                 Debug.Assert(nameLen is null || *nameLen == nameLenLocal);
@@ -920,8 +918,13 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         {
             TargetPointer address;
             if (rts.IsFieldDescThreadStatic(fieldDesc))
-                throw new ArgumentException();
-            if (rts.IsFieldDescStatic(fieldDesc))
+            {
+                if (_threadAddress == TargetPointer.Null)
+                    throw new ArgumentException();
+
+                address = rts.GetFieldDescThreadStaticAddress(fieldDesc, _threadAddress, unboxValueTypes: false);
+            }
+            else if (rts.IsFieldDescStatic(fieldDesc))
             {
                 address = rts.GetFieldDescStaticAddress(fieldDesc, unboxValueTypes: false);
             }
@@ -948,7 +951,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
         uint flags = entry.IsInherited ? (uint)ClrDataValueFlag.IS_INHERITED : 0;
         flags = GetTypeFieldValueFlags(fieldType, fieldDesc, flags, isDeref: false, fieldDefinition);
-        return new ClrDataValue(_target, flags, fieldType, baseAddress, locations, legacyValue);
+        return new ClrDataValue(_target, _threadAddress, flags, fieldType, baseAddress, locations, legacyValue);
     }
 
     private uint GetTypeFieldValueFlags(
