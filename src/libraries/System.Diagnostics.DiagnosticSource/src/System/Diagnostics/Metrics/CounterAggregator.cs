@@ -72,15 +72,13 @@ namespace System.Diagnostics.Metrics
             return new CounterStatistics(delta, _isMonotonic, aggregatedValue);
         }
 
-        // 64 bytes is the size of a cache line on many systems; larger ones may see a little more
-        // false sharing. Value sits at the end rather than at offset 0 so element 0 doesn't share a
-        // line with the array's Length field, which the bounds check in Update loads on every call
-        // from every thread -- a plain load of a line that is also a contended atomic's target
-        // defeats far-atomic handling on Arm64.
+        // 64 bytes is the size of a cache line on many systems. We pad the double to false sharing.
+        // For the rare systems with a larger cache line, we may simply incur a little more false
+        // sharing. This is a trade-off between throughput and memory footprint.
         [StructLayout(LayoutKind.Explicit, Size = 64)]
         private struct PaddedDouble
         {
-            [FieldOffset(64 - sizeof(double))]
+            [FieldOffset(0)]
             public double Value;
         }
     }
