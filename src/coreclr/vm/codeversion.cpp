@@ -1622,20 +1622,17 @@ HRESULT CodeVersionManager::SetActiveILCodeVersions(ILCodeVersion* pActiveVersio
 
         MethodDesc* pLoadedMethodDesc = pActiveVersions[i].GetModule()->LookupMethodDef(pActiveVersions[i].GetMethodDef());
 
-        // The methodDef of a Runtime Async method resolves to the Task-returning thunk, but the
-        // async variant is the MethodDesc that owns the user IL and actually executes. Redirect to
-        // the variant so its native code (not the thunk's) is republished for the new IL version.
-        // Without this, ReJIT of an already-jitted async method silently has no effect
-        // (https://github.com/dotnet/runtime/issues/128944). This mirrors the handling in
-        // MethodDesc::ResetCodeEntryPointForEnC. The variant is already created at this point (the
-        // method has native code being versioned), so the no-create/no-GC lookup is safe in this
-        // GC_NOTRIGGER path.
-        if (pLoadedMethodDesc != NULL && pLoadedMethodDesc->IsAsyncThunkMethod())
+        // A Task- or ValueTask-returning method may also have an async variant with native code
+        // compiled from the same IL. Include the async variant in addition to the primary method.
+        if (pLoadedMethodDesc != NULL && pLoadedMethodDesc->ReturnsTaskOrValueTask())
         {
-            MethodDesc* pAsyncVariant = pLoadedMethodDesc->GetAsyncVariantNoCreate();
-            if (pAsyncVariant != NULL)
+            MethodDesc* pAsyncVariant =
+                pLoadedMethodDesc->GetMethodTable()->GetParallelMethodDesc(pLoadedMethodDesc, AsyncVariantLookup::Async);
+            if (pAsyncVariant != NULL &&
+                FAILED(hr = CodeVersionManager::EnumerateClosedMethodDescs(pAsyncVariant, pMethodDescs, &errorRecords)))
             {
-                pLoadedMethodDesc = pAsyncVariant;
+                _ASSERTE(hr == E_OUTOFMEMORY);
+                return hr;
             }
         }
 
@@ -2064,14 +2061,10 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
     // Ok, now the case of a generic function (or function on generic class), which
     // is loaded, and may thus have compiled instantiations.
     // It's impossible to get to any other kind of domain from the profiling API
-    Module* pModule = pMD->GetModule();
-    mdMethodDef methodDef = pMD->GetMemberDef();
-
     // Module is unshared, so just use the module's domain to find instantiations.
     hr = EnumerateDomainClosedMethodDescs(
         AppDomain::GetCurrentDomain(),
-        pModule,
-        methodDef,
+        pMD,
         pClosedMethodDescs,
         pUnsupportedMethodErrors);
 
@@ -2087,8 +2080,7 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
 // static
 HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
     AppDomain * pAppDomainToSearch,
-    Module* pModuleContainingMethodDef,
-    mdMethodDef methodDef,
+    MethodDesc* pMethodDesc,
     CDynArray<MethodDesc*> * pClosedMethodDescs,
     CDynArray<CodePublishError> * pUnsupportedMethodErrors)
 {
@@ -2099,12 +2091,14 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
         MODE_PREEMPTIVE;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(pAppDomainToSearch, NULL_OK));
-        PRECONDITION(CheckPointer(pModuleContainingMethodDef));
+        PRECONDITION(CheckPointer(pMethodDesc));
         PRECONDITION(CheckPointer(pClosedMethodDescs));
         PRECONDITION(CheckPointer(pUnsupportedMethodErrors));
     }
     CONTRACTL_END;
 
+    Module* pModuleContainingMethodDef = pMethodDesc->GetModule();
+    mdMethodDef methodDef = pMethodDesc->GetMemberDef();
     _ASSERTE(methodDef != mdTokenNil);
 
     HRESULT hr;
@@ -2118,11 +2112,20 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
     {
         assemFlags = (AssemblyIterationFlags)(kIncludeAvailableToProfilers | kIncludeExecution);
     }
-    LoadedMethodDescIterator it(
-        pAppDomainToSearch,
-        pModuleContainingMethodDef,
-        methodDef,
-        assemFlags);
+    LoadedMethodDescIterator it;
+    if (pMethodDesc->ReturnsTaskOrValueTask() || pMethodDesc->IsAsyncVariantMethod())
+    {
+        it.StartForAsyncVariant(
+            pAppDomainToSearch,
+            pModuleContainingMethodDef,
+            methodDef,
+            pMethodDesc,
+            assemFlags);
+    }
+    else
+    {
+        it.Start(pAppDomainToSearch, pModuleContainingMethodDef, methodDef, assemFlags);
+    }
     CollectibleAssemblyHolder<Assembly *> pAssembly;
     while (it.Next(pAssembly.This()))
     {

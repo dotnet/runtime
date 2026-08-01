@@ -642,8 +642,7 @@ private:
     static HRESULT EnumerateClosedMethodDescs(MethodDesc* pMD, CDynArray<MethodDesc*> * pClosedMethodDescs, CDynArray<CodePublishError> * pUnsupportedMethodErrors);
     static HRESULT EnumerateDomainClosedMethodDescs(
         AppDomain * pAppDomainToSearch,
-        Module* pModuleContainingMethodDef,
-        mdMethodDef methodDef,
+        MethodDesc* pMethodDesc,
         CDynArray<MethodDesc*> * pClosedMethodDescs,
         CDynArray<CodePublishError> * pUnsupportedMethodErrors);
     static HRESULT GetNonVersionableError(MethodDesc* pMD);
