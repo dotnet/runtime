@@ -7029,8 +7029,6 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         // On non-x86 targets, indirect calls clear InlinedCallFrame.m_Datum unless an IL stub
         // explicitly published a MethodDesc for the frame or the EE requested the shared stub
         // secret parameter to be published in the frame.
-        src = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
-
         if (m_compiler->info.compPublishStubParam && call->HasInlinedCallFrameMethodDesc())
         {
             src = m_compiler->gtNewLclvNode(call->GetInlinedCallFrameMethodDescLclNum(), TYP_I_IMPL);
@@ -7038,6 +7036,10 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         else if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_STUB_PARAM_ICF_MD))
         {
             src = m_compiler->gtNewLclvNode(m_compiler->lvaStubArgumentVar, TYP_I_IMPL);
+        }
+        else
+        {
+            src = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
         }
 #endif // TARGET_X86
     }
