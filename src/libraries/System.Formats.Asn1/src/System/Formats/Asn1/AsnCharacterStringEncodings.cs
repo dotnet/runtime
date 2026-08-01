@@ -144,7 +144,7 @@ namespace System.Formats.Asn1
         }
     }
 
-    internal sealed class NumericStringEncoding : RestrictedAsciiStringEncoding
+    internal sealed partial class NumericStringEncoding : RestrictedAsciiSetEncoding
     {
         // T-REC-X.680-201508 sec 41.2 (Table 9)
         // 0, 1, ... 9 + space
@@ -154,7 +154,7 @@ namespace System.Formats.Asn1
         }
     }
 
-    internal sealed class PrintableStringEncoding : RestrictedAsciiStringEncoding
+    internal sealed partial class PrintableStringEncoding : RestrictedAsciiSetEncoding
     {
         // T-REC-X.680-201508 sec 41.4
         internal PrintableStringEncoding()
@@ -214,11 +214,13 @@ namespace System.Formats.Asn1
                 return 0;
             }
 
+            bool[] isAllowed = _isAllowed;
+
             for (int i = 0; i < chars.Length; i++)
             {
                 char c = chars[i];
 
-                if ((uint)c >= (uint)_isAllowed.Length || !_isAllowed[c])
+                if ((uint)c >= (uint)isAllowed.Length || !isAllowed[c])
                 {
                     EncoderFallback.CreateFallbackBuffer().Fallback(c, i);
 
@@ -235,6 +237,38 @@ namespace System.Formats.Asn1
             return chars.Length;
         }
 
+        // Keep the position-aware scalar remainder separate from the zero-based path above.
+        // Routing common sub-vector inputs through this generalized loop measurably regresses them.
+        protected int GetBytesScalar(ReadOnlySpan<char> chars, Span<byte> bytes, bool write, int position)
+        {
+            if (chars.IsEmpty)
+            {
+                return 0;
+            }
+
+            bool[] isAllowed = _isAllowed;
+
+            for (; position < chars.Length; position++)
+            {
+                char c = chars[position];
+
+                if ((uint)c >= (uint)isAllowed.Length || !isAllowed[c])
+                {
+                    EncoderFallback.CreateFallbackBuffer().Fallback(c, position);
+
+                    Debug.Fail("Fallback should have thrown");
+                    throw new InvalidOperationException();
+                }
+
+                if (write)
+                {
+                    bytes[position] = (byte)c;
+                }
+            }
+
+            return chars.Length;
+        }
+
         protected override int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars, bool write)
         {
             if (bytes.IsEmpty)
@@ -242,11 +276,13 @@ namespace System.Formats.Asn1
                 return 0;
             }
 
+            bool[] isAllowed = _isAllowed;
+
             for (int i = 0; i < bytes.Length; i++)
             {
                 byte b = bytes[i];
 
-                if ((uint)b >= (uint)_isAllowed.Length || !_isAllowed[b])
+                if ((uint)b >= (uint)isAllowed.Length || !isAllowed[b])
                 {
                     DecoderFallback.CreateFallbackBuffer().Fallback(
                         new[] { b },
@@ -259,6 +295,40 @@ namespace System.Formats.Asn1
                 if (write)
                 {
                     chars[i] = (char)b;
+                }
+            }
+
+            return bytes.Length;
+        }
+
+        // Keep the position-aware scalar remainder separate from the zero-based path above.
+        // Routing common sub-vector inputs through this generalized loop measurably regresses them.
+        protected int GetCharsScalar(ReadOnlySpan<byte> bytes, Span<char> chars, bool write, int position)
+        {
+            if (bytes.IsEmpty)
+            {
+                return 0;
+            }
+
+            bool[] isAllowed = _isAllowed;
+
+            for (; position < bytes.Length; position++)
+            {
+                byte b = bytes[position];
+
+                if ((uint)b >= (uint)isAllowed.Length || !isAllowed[b])
+                {
+                    DecoderFallback.CreateFallbackBuffer().Fallback(
+                        new[] { b },
+                        position);
+
+                    Debug.Fail("Fallback should have thrown");
+                    throw new InvalidOperationException();
+                }
+
+                if (write)
+                {
+                    chars[position] = (char)b;
                 }
             }
 

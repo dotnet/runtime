@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
@@ -152,13 +153,14 @@ namespace System.Buffers.ArrayPool.Tests
 
         private static bool IsPreciseGcSupportedAndRemoteExecutorSupported => PlatformDetection.IsPreciseGcSupported && RemoteExecutor.IsSupported;
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/44037")]
         [ConditionalFact(typeof(CollectionTests), nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
         public void PollingEventFires()
         {
             RemoteInvokeWithTrimming(() =>
             {
-                bool pollEventFired = false;
+                // The listener callback fires on the finalizer thread (Trim runs from a
+                // Gen2GcCallback), so access the flag with Volatile to observe it reliably.
+                StrongBox<bool> pollEventFired = new(false);
                 float[] buffer = ArrayPool<float>.Shared.Rent(10);
 
                 // Polling doesn't start until the thread locals are created for a pool.
@@ -173,26 +175,31 @@ namespace System.Buffers.ArrayPool.Tests
                 e =>
                 {
                     if (e.EventId == EventIds.BufferTrimPoll)
-                        pollEventFired = true;
+                        Volatile.Write(ref pollEventFired.Value, true);
                 });
 
-                Assert.False(pollEventFired, "collection isn't hooked up until the first item is returned");
+                Assert.False(Volatile.Read(ref pollEventFired.Value), "collection isn't hooked up until the first item is returned");
                 ArrayPool<float>.Shared.Return(buffer);
 
+                // The poll event is emitted from a Gen2GcCallback finalizer, so a single gen2
+                // collection isn't guaranteed to run it. Retry until it fires or we give up.
                 RunWithListener(() =>
                 {
-                    GC.Collect(2);
-                    GC.WaitForPendingFinalizers();
+                    for (int i = 0; i < 10 && !Volatile.Read(ref pollEventFired.Value); i++)
+                    {
+                        GC.Collect(2);
+                        GC.WaitForPendingFinalizers();
+                    }
                 },
                 EventLevel.Informational,
                 e =>
                 {
                     if (e.EventId == EventIds.BufferTrimPoll)
-                        pollEventFired = true;
+                        Volatile.Write(ref pollEventFired.Value, true);
                 });
 
                 // Polling events should only fire when trimming is enabled
-                Assert.True(pollEventFired);
+                Assert.True(Volatile.Read(ref pollEventFired.Value));
             });
         }
     }
