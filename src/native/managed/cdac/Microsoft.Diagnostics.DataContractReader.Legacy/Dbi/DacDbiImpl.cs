@@ -26,7 +26,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     private const uint DefaultAppDomainId = 1;
 
     private readonly Target _target;
-    private readonly IDacDbiInterface? _legacy;
+    private IDacDbiInterface? _legacy;
+    private ComObject? _dataTargetComObject;
     private ulong CorDBDefaultEnCFunctionVersion => _target.ReadGlobalPointer(Constants.Globals.CorDBDefaultEnCFunctionVersion).Value;
 
     // IStringHolder is a native C++ abstract class (not COM) with a single virtual method:
@@ -60,16 +61,38 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return mainProfInterface != TargetPointer.Null || notificationCount > 0;
     }
 
-    public DacDbiImpl(Target target, object? legacyObj)
+    public DacDbiImpl(
+        Target target,
+        object? legacyObj,
+        ComObject? dataTargetComObject = null)
     {
         _target = target;
         _legacy = legacyObj as IDacDbiInterface;
+        _dataTargetComObject = dataTargetComObject;
     }
 
     public int FlushCache()
     {
         _target.Flush(FlushScope.All);
         return _legacy is not null ? _legacy.FlushCache() : HResults.S_OK;
+    }
+
+    public int Destroy()
+    {
+        try
+        {
+            ComObject? legacyComObject = (object?)_legacy as ComObject;
+            _dataTargetComObject?.FinalRelease();
+            _dataTargetComObject = null;
+            legacyComObject?.FinalRelease();
+            _legacy = null;
+
+            return HResults.S_OK;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult < 0 ? ex.HResult : HResults.E_FAIL;
+        }
     }
 
     public int DacSetTargetConsistencyChecks(Interop.BOOL fEnableAsserts)
