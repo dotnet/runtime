@@ -534,12 +534,15 @@ namespace Microsoft.Interop
         private static void WriteImplementationVTableStruct(IndentedTextWriter writer, ComInterfaceAndMethodsContext interfaceMethods)
         {
             writer.WriteLine("[global::System.Runtime.InteropServices.StructLayoutAttribute(global::System.Runtime.InteropServices.LayoutKind.Sequential)]");
-            writer.WriteLine("file unsafe struct InterfaceImplementationVtable");
+            // The 'unsafe' modifier goes on each field rather than on the type: a field-level modifier makes the
+            // pointer legal to name under the legacy rules and has a meaning under the updated ones, whereas a
+            // type-level modifier is meaningless under the updated rules and warns (CS9377).
+            writer.WriteLine("file struct InterfaceImplementationVtable");
             writer.WriteLine('{');
             writer.Indent++;
-            writer.WriteLine("public delegate* unmanaged[MemberFunction]<void*, global::System.Guid*, void**, int> QueryInterface_0;");
-            writer.WriteLine("public delegate* unmanaged[MemberFunction]<void*, uint> AddRef_1;");
-            writer.WriteLine("public delegate* unmanaged[MemberFunction]<void*, uint> Release_2;");
+            writer.WriteLine("public unsafe delegate* unmanaged[MemberFunction]<void*, global::System.Guid*, void**, int> QueryInterface_0;");
+            writer.WriteLine("public unsafe delegate* unmanaged[MemberFunction]<void*, uint> AddRef_1;");
+            writer.WriteLine("public unsafe delegate* unmanaged[MemberFunction]<void*, uint> Release_2;");
             if (interfaceMethods.Interface.Base is not null)
             {
                 foreach (ComMethodContext inheritedMethod in interfaceMethods.InheritedMethods)
@@ -548,7 +551,7 @@ namespace Microsoft.Interop
                         inheritedMethod.GenerationContext,
                         ComInterfaceGeneratorHelpers.GetGeneratorResolver);
 
-                    writer.WriteLine($"public {functionPointerType.NormalizeWhitespace()} {inheritedMethod.MethodInfo.MethodName}_{inheritedMethod.GenerationContext.VtableIndexData.Index};");
+                    writer.WriteLine($"public unsafe {functionPointerType.NormalizeWhitespace()} {inheritedMethod.MethodInfo.MethodName}_{inheritedMethod.GenerationContext.VtableIndexData.Index};");
                 }
             }
 
@@ -560,7 +563,7 @@ namespace Microsoft.Interop
                     declaredMethod.GenerationContext,
                     ComInterfaceGeneratorHelpers.GetGeneratorResolver);
 
-                writer.WriteLine($"public {functionPointerType.NormalizeWhitespace()} {declaredMethod.MethodInfo.MethodName}_{declaredMethod.GenerationContext.VtableIndexData.Index};");
+                writer.WriteLine($"public unsafe {functionPointerType.NormalizeWhitespace()} {declaredMethod.MethodInfo.MethodName}_{declaredMethod.GenerationContext.VtableIndexData.Index};");
             }
 
             writer.Indent--;
@@ -569,14 +572,13 @@ namespace Microsoft.Interop
 
         private static void WriteInterfaceInformation(IndentedTextWriter writer, ComInterfaceInfo interfaceInfo)
         {
-            writer.WriteLine("file unsafe sealed class InterfaceInformation : global::System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceType");
+            writer.WriteLine("file sealed class InterfaceInformation : global::System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceType");
             writer.WriteLine('{');
             writer.Indent++;
             writer.WriteLine($"public static global::System.Guid Iid {{ get; }} = new([{string.Join(", ", interfaceInfo.InterfaceId.ToByteArray())}]);");
-            // The accessor body needs an unsafe context of its own: the modifier on the containing type makes the
-            // pointer types legal to name, but under the updated memory safety rules it opens no context for the
-            // code inside, and 'Unsafe.AsPointer' is caller-unsafe.
-            writer.WriteLine("public static void** ManagedVirtualMethodTable");
+            // The modifier makes the pointer type legal to name; the accessor still needs an unsafe context of
+            // its own, since under the updated rules a member modifier opens none for the body.
+            writer.WriteLine("public static unsafe void** ManagedVirtualMethodTable");
             writer.WriteLine('{');
             writer.Indent++;
             writer.WriteLine("get");
@@ -599,7 +601,12 @@ namespace Microsoft.Interop
         private static void WriteInterfaceImplementation(IndentedTextWriter writer, ComInterfaceAndMethodsContext data)
         {
             writer.WriteLine("[global::System.Runtime.InteropServices.DynamicInterfaceCastableImplementationAttribute]");
-            writer.WriteLine($"file unsafe interface InterfaceImplementation : {data.Interface.Info.Type.FullTypeName}");
+            // This type holds the stubs that explicitly implement the user's interface members. Those stubs copy
+            // their modifiers from the user's declaration and cannot be marked 'unsafe' on their own without
+            // failing to implement a safe member (CS9366), so under the legacy rules the type modifier is what
+            // makes their pointer parameters legal to name.
+            string unsafeModifier = data.Interface.Info.UseUpdatedMemorySafetyRules ? "" : "unsafe ";
+            writer.WriteLine($"file {unsafeModifier}interface InterfaceImplementation : {data.Interface.Info.Type.FullTypeName}");
             writer.WriteLine('{');
             writer.Indent++;
 
@@ -911,12 +918,15 @@ namespace Microsoft.Interop
 
         private static void WriteIUnknownDerivedOriginalInterfacePart(IndentedTextWriter writer, ComInterfaceAndMethodsContext data)
         {
-            data.Interface.Info.TypeDefinitionContext.WriteToWithUnsafeModifier(writer, (data.Interface.Info.ContainingSyntax, data.ShadowingMethods), static (writer, data) =>
+            data.Interface.Info.TypeDefinitionContext.WriteToWithUnsafeModifier(data.Interface.Info.UseUpdatedMemorySafetyRules, writer, (data.Interface.Info.ContainingSyntax, data.ShadowingMethods, data.Interface.Info.UseUpdatedMemorySafetyRules), static (writer, data) =>
             {
-                (ContainingSyntax syntax, IEnumerable<ComMethodContext>? shadowingMethods) = data;
+                (ContainingSyntax syntax, IEnumerable<ComMethodContext>? shadowingMethods, bool useUpdatedMemorySafetyRules) = data;
 
                 writer.WriteLine("[global::System.Runtime.InteropServices.Marshalling.IUnknownDerivedAttribute<InterfaceInformation, InterfaceImplementation>]");
-                writer.WriteLine($"{string.Join(" ", syntax.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword))} {syntax.TypeKind.GetDeclarationKeyword()} {syntax.Identifier}{syntax.TypeParameters}");
+                SyntaxTokenList typeModifiers = useUpdatedMemorySafetyRules
+                    ? syntax.Modifiers
+                    : syntax.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword);
+                writer.WriteLine($"{string.Join(" ", typeModifiers)} {syntax.TypeKind.GetDeclarationKeyword()} {syntax.Identifier}{syntax.TypeParameters}");
                 writer.WriteLine('{');
                 writer.Indent++;
 

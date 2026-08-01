@@ -111,7 +111,7 @@ namespace Microsoft.Interop.JavaScript
                 .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(stub.BindingName)))))
                 .AddModifiers(Token(SyntaxKind.StaticKeyword));
 
-            MemberDeclarationSyntax toPrint = containingSyntaxContext.WrapMembersInContainingSyntaxWithUnsafeModifier(stubMethod, sigField);
+            MemberDeclarationSyntax toPrint = containingSyntaxContext.WrapMembersInContainingSyntax(stubMethod, sigField);
             return toPrint;
         }
 

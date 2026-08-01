@@ -38,6 +38,10 @@ namespace JSImportGenerator.Unit.Tests
             comp = comp.RemoveAllSyntaxTrees().AddSyntaxTrees(
                 comp.SyntaxTrees.Select(t => CSharpSyntaxTree.ParseText(t.GetText(), parseOptions, t.FilePath)));
 
+            // CS9377 ("the 'unsafe' modifier does not have any effect here") sits above the default warning
+            // level, so it has to be raised or the assertion below could never observe it.
+            comp = comp.WithOptions(((CSharpCompilationOptions)comp.Options).WithWarningLevel(9999));
+
             Compilation newComp = TestUtils.RunGenerators(comp, out var generatorDiags,
                 new Microsoft.Interop.JavaScript.JSImportGenerator(),
                 new Microsoft.Interop.JavaScript.JSExportGenerator());

@@ -126,7 +126,7 @@ namespace Microsoft.Interop.JavaScript
                 // The modifier above states the contract for callers; the body needs a context of its own.
                 .WithBody(wrapperStatements.WrapInUnsafeBlock());
 
-            MemberDeclarationSyntax toPrint = containingSyntaxContext.WrapMembersInContainingSyntaxWithUnsafeModifier(wrappperMethod);
+            MemberDeclarationSyntax toPrint = containingSyntaxContext.WrapMembersInContainingSyntax(wrappperMethod);
 
             return toPrint;
         }

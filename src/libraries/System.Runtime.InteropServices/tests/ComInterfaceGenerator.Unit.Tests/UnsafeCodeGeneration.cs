@@ -218,15 +218,14 @@ namespace ComInterfaceGenerator.Unit.Tests
             public UpdatedRulesTest()
                 : base(referenceAncillaryInterop: true)
             {
-            }
-
-            protected override ParseOptions CreateParseOptions()
-            {
-                // Roslyn does not expose the memory safety rules version through a public API yet, so opt in
-                // through the same feature flag the compiler uses.
-                var parseOptions = (CSharpParseOptions)base.CreateParseOptions();
-                return parseOptions.WithFeatures(
-                    [.. parseOptions.Features, new KeyValuePair<string, string>(MemorySafetyRules.UpdatedMemorySafetyRulesFeature, "")]);
+                // CS9377 ("the 'unsafe' modifier does not have any effect here") reports an ineffective modifier
+                // on a generated type, which is the whole point of these tests. It sits above the test
+                // framework's default warning level, so without this it could never be observed.
+                SolutionTransforms.Add(static (solution, projectId) =>
+                {
+                    var options = (CSharpCompilationOptions)solution.GetProject(projectId)!.CompilationOptions!;
+                    return solution.WithProjectCompilationOptions(projectId, options.WithWarningLevel(9999));
+                });
             }
         }
     }
