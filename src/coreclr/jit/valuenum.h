@@ -967,9 +967,6 @@ public:
 
     ValueNum VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, ValueSize* pSize);
 
-    ValueNum     VNForShiftCount(var_types type, ValueNum countVN);
-    ValueNumPair VNPairForShiftCount(var_types type, ValueNumPair countVNP);
-
     // These functions parallel the ones above, except that they take liberal/conservative VN pairs
     // as arguments, and return such a pair (the pair of the function applied to the liberal args, and
     // the function applied to the conservative args).

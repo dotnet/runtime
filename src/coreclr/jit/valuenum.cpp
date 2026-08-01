@@ -2962,57 +2962,6 @@ ValueNum ValueNumStore::VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum 
 }
 
 //----------------------------------------------------------------------------------------
-// VNForShiftCount: Normalize the value number for a shift count.
-//
-// Arguments:
-//    type    - The type of the shifted value
-//    countVN - The shift count's value number
-//
-// Return Value:
-//    The normalized shift count value number
-//
-ValueNum ValueNumStore::VNForShiftCount(var_types type, ValueNum countVN)
-{
-    const size_t width = varTypeIsLong(type) ? 0x3f : 0x1f;
-    VNFuncApp    countFuncApp;
-
-    if (GetVNFunc(countVN, &countFuncApp) && countFuncApp.FuncIs(VNFunc(GT_AND)))
-    {
-        // Commutative canonicalization places the constant at arg1.
-        ValueNum maskVN = countFuncApp.GetArg(1);
-
-        if (IsVNInt32Constant(maskVN) && ((static_cast<size_t>(ConstantValue<INT32>(maskVN)) & width) == width))
-        {
-            return countFuncApp.GetArg(0);
-        }
-    }
-
-    return countVN;
-}
-
-//----------------------------------------------------------------------------------------
-// VNPairForShiftCount: Normalize the value number pair for a shift count.
-//
-// Arguments:
-//    type     - The type of the shifted value
-//    countVNP - The shift count's value number pair
-//
-// Return Value:
-//    The normalized shift count value number pair
-//
-ValueNumPair ValueNumStore::VNPairForShiftCount(var_types type, ValueNumPair countVNP)
-{
-    ValueNum liberalVN = VNForShiftCount(type, countVNP.GetLiberal());
-
-    if (countVNP.BothEqual())
-    {
-        return ValueNumPair(liberalVN, liberalVN);
-    }
-
-    return ValueNumPair(liberalVN, VNForShiftCount(type, countVNP.GetConservative()));
-}
-
-//----------------------------------------------------------------------------------------
 //  VNForFunc  - Returns the ValueNum associated with 'func'('arg0VN','arg1VN','arg2VN')
 //               There is a one-to-one relationship between the ValueNum
 //               and 'func'('arg0VN','arg1VN','arg2VN')
@@ -13746,11 +13695,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     ValueNumPair op2vnp;
                     ValueNumPair op2Xvnp;
                     vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
-
-                    if (tree->OperIs(GT_LSH, GT_RSH, GT_RSZ))
-                    {
-                        op2vnp = vnStore->VNPairForShiftCount(tree->TypeGet(), op2vnp);
-                    }
 
                     ValueNumPair excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
 
