@@ -5,8 +5,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- Emit Runtime Async method bodies so the runtime creates the dynamic metadata-less
-         continuation MethodTables this test exercises. The runtime side is enabled in-process
-         via the AppContext switch set in Main. -->
+         continuation MethodTables this test exercises. Runtime Async is enabled by the
+         runtime-async feature and DOTNET_RuntimeAsync CLR test environment variable. -->
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
   <ItemGroup>
