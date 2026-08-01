@@ -67,6 +67,8 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
                 return NI_System_StubHelpers_NextCallReturnAddress;
             else if (!strcmp(methodName, "GetStubContext"))
                 return NI_System_StubHelpers_GetStubContext;
+            else if (!strcmp(methodName, "SetNextCallFrameMethodDesc"))
+                return NI_System_StubHelpers_SetNextCallFrameMethodDesc;
         }
     }
     else if (!strcmp(namespaceName, "System.Numerics"))
