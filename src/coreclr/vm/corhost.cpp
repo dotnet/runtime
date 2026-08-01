@@ -238,7 +238,7 @@ static PTRARRAYREF SetCommandLineArgs(PCWSTR pwzAssemblyPath, int argc, PCWSTR* 
     SaveManagedCommandLine(pwzAssemblyPath, argc, argv);
 
     StackSString invocationName;
-    PCWSTR exePath = HostInformation::GetProperty(HOST_PROPERTY_INVOCATION_NAME, invocationName)
+    PCWSTR exePath = HostInformation::GetProperty(HOST_PROPERTY_ARGV0, invocationName)
         ? invocationName.GetUnicode()
         : (Bundle::AppIsBundle() ? static_cast<PCWSTR>(Bundle::AppBundle->Path()) : pwzAssemblyPath);
 

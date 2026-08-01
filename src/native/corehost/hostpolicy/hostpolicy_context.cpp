@@ -122,7 +122,7 @@ namespace
             return pal::pal_utf8string(get_filename_without_ext(context->application), value_buffer, value_buffer_size);
         }
 
-        if (::strcmp(key, HOST_PROPERTY_INVOCATION_NAME) == 0)
+        if (::strcmp(key, HOST_PROPERTY_ARGV0) == 0)
         {
             if (context->invocation_name.empty())
                 return -1;
