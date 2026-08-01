@@ -20,12 +20,12 @@ bool parse_arguments(
     const int argc, const pal::char_t* argv[],
     arguments_t& args)
 {
-    if (init.host_mode == host_mode_t::apphost && argc > 0)
-        args.invocation_name = argv[0];
-
     pal::string_t managed_application_path;
     if (init.host_mode == host_mode_t::apphost)
     {
+        assert(argc > 0 && argv != nullptr);
+        args.invocation_name = argv[0];
+
         // Find the managed app in the same directory
         managed_application_path = init.host_info.app_path;
 
