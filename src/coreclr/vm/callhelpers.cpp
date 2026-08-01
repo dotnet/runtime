@@ -568,11 +568,16 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     GCPROTECT_BEGIN (ref);
 
-    MethodDesc *pMD = pMT->GetDefaultConstructor();
+    
+    PCODE ctorCode;
+    {
+        GCX_PREEMP();
+        MethodDesc *pMD = pMT->GetDefaultConstructor();
+        ctorCode = pMD->GetSingleCallableAddrOfCode();
+    }
 
     UnmanagedCallersOnlyCaller defaultCtorInvoker{METHOD__RUNTIME_HELPERS__CALL_DEFAULT_CONSTRUCTOR};
 
-    PCODE ctorCode = pMD->GetSingleCallableAddrOfCode();
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     // CallDefaultConstructor invokes the ctor via the function pointer, so its portable entrypoint
     // must resolve to real code if possible.

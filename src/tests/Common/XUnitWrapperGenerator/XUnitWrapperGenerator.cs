@@ -1017,7 +1017,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             // Emit diagnostic
                             continue;
                         }
-                        var argsAsCode = ImmutableArray.CreateRange(args.Select(a => a.ToCSharpString() + (a.Type!.SpecialType == SpecialType.System_Single ? "F" : "")));
+                        var argsAsCode = ImmutableArray.CreateRange(args.Select(FormatInlineDataArgument));
                         testCasesBuilder.Add(new BasicTestMethod(method, alias, arguments: argsAsCode));
                         break;
                     }
@@ -1052,6 +1052,26 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             }
         }
         return testCasesBuilder.ToImmutable();
+    }
+
+    // TypedConstant.ToCSharpString() renders non-finite floating-point values as bare
+    // `NaN`/`Infinity`/`-Infinity`, which aren't valid C#. Emit the named constants instead.
+    private static string FormatInlineDataArgument(TypedConstant arg)
+    {
+        if (arg.Type is { SpecialType: SpecialType.System_Double } && arg.Value is double d)
+        {
+            if (double.IsNaN(d)) return "double.NaN";
+            if (double.IsPositiveInfinity(d)) return "double.PositiveInfinity";
+            if (double.IsNegativeInfinity(d)) return "double.NegativeInfinity";
+        }
+        else if (arg.Type is { SpecialType: SpecialType.System_Single } && arg.Value is float f)
+        {
+            if (float.IsNaN(f)) return "float.NaN";
+            if (float.IsPositiveInfinity(f)) return "float.PositiveInfinity";
+            if (float.IsNegativeInfinity(f)) return "float.NegativeInfinity";
+        }
+
+        return arg.ToCSharpString() + (arg.Type!.SpecialType == SpecialType.System_Single ? "F" : "");
     }
 
     private static ImmutableArray<ITestInfo> FilterForSkippedRuntime(ImmutableArray<ITestInfo> testInfos, int skippedRuntimeValue, AnalyzerConfigOptionsProvider options, string? skipReason = null)

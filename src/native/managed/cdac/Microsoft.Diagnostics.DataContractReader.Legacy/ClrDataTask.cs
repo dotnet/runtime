@@ -131,7 +131,47 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
     }
 
     int IXCLRDataTask.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (reqCode != (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION
+                || inBufferSize != 0
+                || inBuffer is not null
+                || outBufferSize != sizeof(uint))
+            {
+                throw new ArgumentException("Invalid request parameters.");
+            }
+
+            if (outBuffer is null)
+                throw new NullReferenceException("The output buffer is null.");
+
+            *(uint*)outBuffer = 3;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            uint revisionLocal = 0;
+            int hrLocal = _legacyImpl.Request(
+                reqCode,
+                inBufferSize,
+                inBuffer,
+                outBufferSize,
+                outBuffer is null ? null : (byte*)&revisionLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+                Debug.Assert(*(uint*)outBuffer == revisionLocal);
+        }
+#endif
+
+        return hr;
+    }
     int IXCLRDataTask.GetName(uint bufLen, uint* nameLen, char* nameBuffer)
         => HResults.E_NOTIMPL;
     int IXCLRDataTask.GetLastExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception)

@@ -97,7 +97,7 @@ jobs:
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
 
-          # Provision emsdk on this agent so src/mono/browser/emsdk/ is populated
+          # Provision emsdk on this agent so the shared wasm tool cache is populated
           # before sendtohelix runs. The upstream runtime-build job acquires emsdk on
           # its own agent (via src/coreclr/runtime.proj's BuildRuntimeDependsOnTargets),
           # but that state is not shipped in its build artifacts. Mono WBT provisions

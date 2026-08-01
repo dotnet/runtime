@@ -132,7 +132,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo --method-layout:random >> "$__ResponseFile"
         if [ "$(CrossGen2OutputFormat)" == "wasm" ]; then
             echo --codegenopt:JitWasmNyiToR2RUnsupported=1 >> "$__ResponseFile"
-            echo --codegenopt:JitWasmSimdNyiToR2RUnsupported=1 >> "$__ResponseFile"
         fi
         if [ ! -z ${CrossGen2SynthesizePgo+x} ]%3B then
             echo --synthesize-random-mibc >> "$__ResponseFile"
@@ -345,7 +344,6 @@ if defined RunCrossGen2 (
     echo --method-layout:random>>!__ResponseFile!
     if "$(CrossGen2OutputFormat)"=="wasm" (
         echo "--codegenopt:JitWasmNyiToR2RUnsupported=1">>!__ResponseFile!
-        echo "--codegenopt:JitWasmSimdNyiToR2RUnsupported=1">>!__ResponseFile!
     )
     if not "$(CrossGen2OutputFormat)"=="" (
         echo -f:$(CrossGen2OutputFormat)>>!__ResponseFile!
@@ -404,7 +402,7 @@ if defined RunCrossGen2 (
         if defined CrossGen2TestCheckPdb (
             set __CheckPdbCommand=!__DotNet!
             set __CheckPdbCommand=!__CheckPdbCommand! "!CORE_ROOT!\PdbChecker\PdbChecker.dll"
-            set __CheckPdbCommand=!__CheckPdbCommand! !__PdbFile! @(CheckPdbSymbol->'%22%(Identity)%22', ' ')
+            set __CheckPdbCommand=!__CheckPdbCommand! !__PdbFile! --image !__OutputFile! @(CheckPdbSymbol->'%22%(Identity)%22', ' ')
             echo "!__CheckPdbCommand!"
             call !__CheckPdbCommand!
             if not !ERRORLEVEL!==0 (

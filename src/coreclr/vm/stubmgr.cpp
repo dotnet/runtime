@@ -1641,7 +1641,7 @@ static PCODE GetCOMTarget(Object *pThis, CLRToCOMCallInfo *pCLRToCOMCallInfo)
     CONTRACTL_END;
 
     // calculate the target interface pointer
-    ComHolderAnyMode<IUnknown> pUnk;
+    ReleaseHolderAnyMode<IUnknown> pUnk;
 
     OBJECTREF oref = ObjectToOBJECTREF(pThis);
     GCPROTECT_BEGIN(oref);
@@ -1665,7 +1665,7 @@ static PCODE GetLateBoundCOMTarget(Object *pThis, CLRToCOMCallInfo *pCLRToCOMCal
     CONTRACTL_END;
 
     // calculate the target interface pointer
-    ComHolderAnyMode<IUnknown> pUnk;
+    ReleaseHolderAnyMode<IUnknown> pUnk;
 
     OBJECTREF oref = ObjectToOBJECTREF(pThis);
     GCPROTECT_BEGIN(oref);
@@ -1678,7 +1678,7 @@ static PCODE GetLateBoundCOMTarget(Object *pThis, CLRToCOMCallInfo *pCLRToCOMCal
     // Make sure that our underlying RCW really has some IDispatch support.
     // We don't use this pointer as we don't want the "default" IDispatch interface.
     // We want the IDispatch pointer that corresponds to the actual interface we're calling on, which may not be the default IDispatch.
-    ComHolderAnyMode<IDispatch> pDisp;
+    ReleaseHolderAnyMode<IDispatch> pDisp;
     _ASSERTE(SUCCEEDED(((IUnknown *)pUnk)->QueryInterface(IID_IDispatch, (void**)&pDisp)));
 #endif
 

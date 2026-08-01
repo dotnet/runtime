@@ -56,50 +56,56 @@ ulong GetSize(TargetPointer address);
 
 ## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `Array` | `m_NumComponents` | Number of items in the array |
-| `Object` | `m_pMethTab` | Method table for the object |
-| `String` | `m_FirstChar` | First character of the string - `m_StringLength` can be used to read the full string (encoded in UTF-16) |
-| `String` | `m_StringLength` | Length of the string in characters (encoded in UTF-16) |
-| `SyncTableEntry` | `SyncBlock` | `SyncBlock` corresponding to the entry |
-| `ObjectHeader` | `SyncBlockValue` | Sync block value from the object header |
-| `SyncBlock` | `HashCode` | Hash code stored in the sync block |
-| `Delegate` | `HelperObject` | Invocation list for multicast, MethodInfo otherwise |
-| `Delegate` | `Target` | Bound `this` reference for closed delegates |
-| `Delegate` | `MethodPtr` | Primary method pointer |
-| `Delegate` | `MethodPtrAux` | Auxiliary method pointer |
-| `Delegate` | `ExtraData` | Invocation count for multicast, UnmanagedMarker for unmanaged, MethodDesc otherwise |
-| `ContinuationObject` | `Next` | Pointer to the next continuation in the linked list |
-| `ContinuationObject` | `ResumeInfo` | Pointer to the `ResumeInfo` for this suspension point (may be null) |
-| `ContinuationObject` | `State` | State index identifying the suspension point within the resumed method |
-| `AsyncResumeInfo` | `DiagnosticIP` | Native IP into the resumed method used for diagnostics (may be null) |
+<!-- BEGIN GENERATED: usage contract=Object version=c1 -->
+### Data descriptors used
 
-Global variables used:
-| Global Name | Type | Purpose |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `Array` | *(type size)* | `uint32` | Size of the fixed portion of an array object |
+| `Array` | `m_NumComponents` | `uint32` | Number of items in the array |
+| `AsyncResumeInfo` | `DiagnosticIP` | `pointer` | Native IP into the resumed method used for diagnostics (may be null) |
+| `ContinuationObject` | `Next` | `pointer` | Pointer to the next continuation in the linked list |
+| `ContinuationObject` | `ResumeInfo` | `pointer` | Pointer to the `ResumeInfo` for this suspension point (may be null) |
+| `ContinuationObject` | `State` | `int32` | State index identifying the suspension point within the resumed method |
+| `Delegate` | `ExtraData` | `nint` | Invocation count for multicast, UnmanagedMarker for unmanaged, MethodDesc otherwise |
+| `Delegate` | `HelperObject` | `pointer` | Invocation list for multicast, MethodInfo otherwise |
+| `Delegate` | `MethodPtr` | `CodePointer` | Primary method pointer |
+| `Delegate` | `MethodPtrAux` | `CodePointer` | Auxiliary method pointer |
+| `Delegate` | `Target` | `pointer` | Bound `this` reference for closed delegates |
+| `Object` | `m_pMethTab` | `pointer` | Method table for the object |
+| `ObjectHeader` | *(type size)* | `uint32` | Size of the object header |
+| `ObjectHeader` | `SyncBlockValue` | `uint32` | Sync block value from the object header |
+| `String` | `m_FirstChar` | `pointer` | Address of the first UTF-16 character in the string |
+| `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
+| `SyncBlock` | `EnCInfo` | `pointer` | Pointer to Edit-and-Continue added-field information for the object; optional when Edit and Continue is not configured |
+| `SyncBlock` | `HashCode` | `uint32` | Hash code stored in the sync block |
+| `SyncBlock` | `InteropInfo` | `pointer` | Pointer to optional COM interop data associated with the sync block |
+| `SyncBlock` | `Lock` | `ObjectHandle` | Object handle referring to the System.Threading.Lock used for the object's monitor |
+
+### Global variables used
+
+| Global | Type | Meaning |
 | --- | --- | --- |
-| `ArrayBoundsZero` | TargetPointer | Known value for single dimensional, zero-lower-bound array |
-| `ObjectHeaderSize` | uint32 | Size of the object header (sync block and alignment) |
-| `ObjectToMethodTableUnmask` | uint8 | Bits to clear for converting to a method table address |
-| `StringMethodTable` | TargetPointer | The method table for System.String |
-| `SyncTableEntries` | TargetPointer | The `SyncTableEntry` list |
-| `SyncBlockValueToObjectOffset` | uint16 | Offset from the sync block value (in the object header) to the object itself |
-| `SyncBlockIsHashOrSyncBlockIndex` | uint32 | Check bit indicating that the sync block value represents either a hash code or a sync block index rather than a thin-lock state. |
-| `SyncBlockIsHashCode` | uint32 | Check bit that, when `SyncBlockIsHashOrSyncBlockIndex` is set, specifies that the remaining bits hold the hash code; when clear, the remaining bits hold the sync block index. |
-| `SyncBlockHashCodeMask` | uint32 | Mask for extracting the hash code from the sync block value. |
-| `SyncBlockIndexMask` | uint32 | The mask for sync block index field. |
+| `ArrayBoundsZero` | `pointer` | Known value for a single-dimensional, zero-lower-bound array |
+| `ObjectToMethodTableUnmask` | `uint8` | Bits to clear when converting an object header value to a method table address |
+| `StringMethodTable` | `pointer` | Pointer to the method table for `System.String` |
+| `SyncBlockHashCodeMask` | `uint32` | Mask for extracting the hash code from the sync block value |
+| `SyncBlockIndexMask` | `uint32` | Mask for extracting the sync block index |
+| `SyncBlockIsHashCode` | `uint32` | Bit indicating that the remaining sync block value contains a hash code |
+| `SyncBlockIsHashOrSyncBlockIndex` | `uint32` | Bit indicating that the sync block value contains a hash code or sync block index |
+
+### Contracts used
+
+| Contract Name |
+| --- |
+| `RuntimeTypeSystem` |
+| `SyncBlock` |
+<!-- END GENERATED: usage contract=Object version=c1 -->
 
 Contract Constants:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `UnmanagedMarker` | nint | Sentinel value for detecting unmanaged pointer delegates. | `-1` |
-
-Contracts used:
-| Contract Name |
-| --- |
-| `RuntimeTypeSystem` |
-| `SyncBlock` |
 
 ``` csharp
 TargetPointer GetMethodTableAddress(TargetPointer address)
