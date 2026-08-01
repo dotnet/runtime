@@ -72,13 +72,28 @@ namespace System.Diagnostics.Metrics
             return new CounterStatistics(delta, _isMonotonic, aggregatedValue);
         }
 
-        // 64 bytes is the size of a cache line on many systems. We pad the double to false sharing.
-        // For the rare systems with a larger cache line, we may simply incur a little more false
-        // sharing. This is a trade-off between throughput and memory footprint.
+        // Each delta gets its own 64-byte cache line so that cores assigned to adjacent slots do
+        // not contend. Value sits at the *end* of the padding rather than the start: the array's
+        // Length field lives at offset 8 of the array object and the first element starts at
+        // offset 16, so a Value at offset 0 would put element 0 in the same line as Length. The
+        // bounds check in Update performs a plain load of Length on every call from every thread,
+        // and having that load target the same line as a contended atomic RMW is what defeats
+        // far-atomic handling on Arm64. At offset 56 the gap from Length to Value[0] is exactly 64,
+        // so they always land in different lines.
+        //
+        // The trade is that the last element's Value ends flush with the array object, so it shares
+        // a line with whatever the GC places next. That is the better end to give up: it costs one
+        // slot only when the neighbouring object happens to be write-hot, whereas the Length
+        // collision it replaces was hit by every Update on every thread.
+        //
+        // 64 is hardcoded rather than taken from PaddingHelpers.CACHE_LINE_SIZE because that
+        // constant is 128 for out-of-CoreLib libraries, which would double this array for no
+        // benefit on the 64-byte-line hardware this runs on. As before, systems with larger lines
+        // may incur a little more false sharing between adjacent slots.
         [StructLayout(LayoutKind.Explicit, Size = 64)]
         private struct PaddedDouble
         {
-            [FieldOffset(0)]
+            [FieldOffset(64 - sizeof(double))]
             public double Value;
         }
     }
