@@ -74,9 +74,9 @@ namespace System.Diagnostics.Metrics
 
         // 64 bytes is the size of a cache line on many systems; larger ones may see a little more
         // false sharing. Value sits at the end rather than at offset 0 so element 0 doesn't share a
-        // line with the array's Length field at offset 8: the bounds check in Update loads Length on
-        // every call from every thread, and a plain load of a line that is also a contended atomic's
-        // target defeats far-atomic handling on Arm64.
+        // line with the array's Length field, which the bounds check in Update loads on every call
+        // from every thread -- a plain load of a line that is also a contended atomic's target
+        // defeats far-atomic handling on Arm64.
         [StructLayout(LayoutKind.Explicit, Size = 64)]
         private struct PaddedDouble
         {
