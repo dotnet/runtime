@@ -15605,7 +15605,7 @@ GenTree* Compiler::gtFoldExprShiftCountMask(GenTreeOp* shift)
             JITDUMP("Removing redundant shift-count mask [%06u]\n", count->gtTreeID);
             count        = shiftCnt;
             shift->gtOp2 = count;
-            shift->SetAllEffectsFlags(shift->gtGetOp1(), count);
+            gtUpdateNodeSideEffects(shift);
         }
     }
 
