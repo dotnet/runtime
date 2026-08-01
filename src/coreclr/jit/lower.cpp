@@ -8827,8 +8827,35 @@ void Lowering::LowerShift(GenTreeOp* shift)
     assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // Nothing to do: gtFoldExprShiftCountMask already stripped any redundant width mask
-    // from the count operand.
+    size_t mask = 0x1f;
+#ifdef TARGET_64BIT
+    if (varTypeIsLong(shift->TypeGet()))
+    {
+        mask = 0x3f;
+    }
+#else
+    assert(!varTypeIsLong(shift->TypeGet()));
+#endif
+
+    for (GenTree* andOp = shift->gtGetOp2(); andOp->OperIs(GT_AND); andOp = andOp->gtGetOp1())
+    {
+        GenTree* maskOp = andOp->gtGetOp2();
+
+        if (!maskOp->IsCnsIntOrI())
+        {
+            break;
+        }
+
+        if ((static_cast<size_t>(maskOp->AsIntCon()->IconValue()) & mask) != mask)
+        {
+            break;
+        }
+
+        shift->gtOp2 = andOp->gtGetOp1();
+        BlockRange().Remove(andOp);
+        BlockRange().Remove(maskOp);
+        shift->gtOp2->ClearContained();
+    }
 #elif defined(TARGET_ARM)
     // ARM32 uses Rs[7:0] as the shift count; counts in [32, 255] give 0 (LSL/LSR) or
     // replicated sign (ASR) rather than masking mod 32. Insert AND(count, 31) so the

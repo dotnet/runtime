@@ -12347,9 +12347,15 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     //                            NEG 32
     //                             |
     //                             y
-    // The patterns recognized (shift-count masks stripped by gtFoldExprShiftCountMask):
+    // The patterns recognized:
+    // (x << (y & M)) op (x >>> ((-y + N) & M))
+    // (x >>> ((-y + N) & M)) op (x << (y & M))
+    //
     // (x << y) op (x >>> (-y + N))
     // (x >>> (-y + N)) op (x << y)
+    //
+    // (x >>> (y & M)) op (x << ((-y + N) & M))
+    // (x << ((-y + N) & M)) op (x >>> (y & M))
     //
     // (x >>> y) op (x << (-y + N))
     // (x << (-y + N)) op (x >>> y)
@@ -12361,6 +12367,8 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     // c1 and c2 are const
     // c1 + c2 == bitsize(x)
     // N == bitsize(x)
+    // M is const
+    // M & (N - 1) == N - 1
     // op is either | or ^
 
     if (((tree->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0) || ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0))
@@ -12404,6 +12412,73 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         noway_assert((rotatedValueBitSize == 32) || (rotatedValueBitSize == 64));
         GenTree* leftShiftIndex  = leftShiftTree->gtGetOp2();
         GenTree* rightShiftIndex = rightShiftTree->gtGetOp2();
+
+        // The shift index may be masked. At least (rotatedValueBitSize - 1) lower bits
+        // must be unmasked for the transformation to be valid.
+        ssize_t minimalMask    = rotatedValueBitSize - 1;
+        ssize_t leftShiftMask  = -1;
+        ssize_t rightShiftMask = -1;
+
+        if (leftShiftIndex->OperIs(GT_AND))
+        {
+            GenTree* andOp1 = leftShiftIndex->gtGetOp1();
+            GenTree* andOp2 = leftShiftIndex->gtGetOp2();
+
+            GenTree* maskOp  = nullptr;
+            GenTree* indexOp = nullptr;
+
+            if (andOp2->IsCnsIntOrI())
+            {
+                maskOp  = andOp2;
+                indexOp = andOp1;
+            }
+            else if (andOp1->IsCnsIntOrI())
+            {
+                maskOp  = andOp1;
+                indexOp = andOp2;
+            }
+
+            if (maskOp == nullptr)
+            {
+                return nullptr;
+            }
+
+            leftShiftMask  = maskOp->AsIntCon()->IconValue();
+            leftShiftIndex = indexOp;
+        }
+
+        if (rightShiftIndex->OperIs(GT_AND))
+        {
+            GenTree* andOp1 = rightShiftIndex->gtGetOp1();
+            GenTree* andOp2 = rightShiftIndex->gtGetOp2();
+
+            GenTree* maskOp  = nullptr;
+            GenTree* indexOp = nullptr;
+
+            if (andOp2->IsCnsIntOrI())
+            {
+                maskOp  = andOp2;
+                indexOp = andOp1;
+            }
+            else if (andOp1->IsCnsIntOrI())
+            {
+                maskOp  = andOp1;
+                indexOp = andOp2;
+            }
+
+            if (maskOp == nullptr)
+            {
+                return nullptr;
+            }
+
+            rightShiftMask  = maskOp->AsIntCon()->IconValue();
+            rightShiftIndex = indexOp;
+        }
+
+        if (((minimalMask & leftShiftMask) != minimalMask) || ((minimalMask & rightShiftMask) != minimalMask))
+        {
+            return nullptr;
+        }
 
         GenTree*   shiftIndexWithAdd    = nullptr;
         GenTree*   shiftIndexWithoutAdd = nullptr;
