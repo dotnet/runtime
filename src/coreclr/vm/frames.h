@@ -2094,7 +2094,7 @@ public:
             return NULL;
         }
 
-        TADDR datum = dac_cast<TADDR>(m_Datum) & ~(sizeof(TADDR) - 1);
+        TADDR datum = dac_cast<TADDR>(m_Datum) & ~(TADDR)InlinedCallFrameMarker::Mask;
 
 #ifdef TARGET_X86
         if ((datum & ~0xffff) == 0)
