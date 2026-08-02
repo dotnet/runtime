@@ -276,6 +276,120 @@ namespace ILAssembler.Tests
             Assert.Equal([0xD0, 0x00, 0x00, 0x00, 0x00, 0x2A], il);
         }
 
+        [Fact]
+        public void Calli_WritesOpcodeAndSignatureToken()
+        {
+            string source = """
+                .assembly Test { }
+                .class public auto ansi Test
+                {
+                    .method public static void F() cil managed
+                    {
+                        calli void()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == "F");
+            byte[] il = pe.GetMethodBody(method.RelativeVirtualAddress).GetILBytes()!;
+
+            Assert.Equal(0x29, il[0]);
+            var signatureHandle = (StandaloneSignatureHandle)MetadataTokens.EntityHandle(BinaryPrimitives.ReadInt32LittleEndian(il.AsSpan(1)));
+            Assert.Equal(0x2A, il[5]);
+
+            MethodSignature<PrimitiveTypeCode> signature = DecodeCalliSignature(reader, signatureHandle);
+            Assert.Equal(SignatureCallingConvention.Default, signature.Header.CallingConvention);
+            Assert.False(signature.Header.IsInstance);
+            Assert.False(signature.Header.HasExplicitThis);
+            Assert.Equal(PrimitiveTypeCode.Void, signature.ReturnType);
+            Assert.Empty(signature.ParameterTypes);
+        }
+
+        [Theory]
+        [InlineData("explicit instance")]
+        [InlineData("instance explicit")]
+        public void Calli_ExplicitInstance_PreservesExplicitThis(string callingConvention)
+        {
+            string source = $$"""
+                .assembly Test { }
+                .class public auto ansi Test
+                {
+                    .method public static void F() cil managed
+                    {
+                        calli {{callingConvention}} void()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            MethodSignature<PrimitiveTypeCode> signature = DecodeCalliSignature(reader, MetadataTokens.StandaloneSignatureHandle(1));
+
+            Assert.Equal(SignatureCallingConvention.Default, signature.Header.CallingConvention);
+            Assert.True(signature.Header.IsInstance);
+            Assert.True(signature.Header.HasExplicitThis);
+            Assert.Equal(PrimitiveTypeCode.Void, signature.ReturnType);
+            Assert.Empty(signature.ParameterTypes);
+        }
+
+        private static MethodSignature<PrimitiveTypeCode> DecodeCalliSignature(MetadataReader reader, StandaloneSignatureHandle handle)
+        {
+            BlobReader blobReader = reader.GetBlobReader(reader.GetStandaloneSignature(handle).Signature);
+            var decoder = new SignatureDecoder<PrimitiveTypeCode, object?>(PrimitiveTypeProvider.Instance, reader, genericContext: null);
+
+            return decoder.DecodeMethodSignature(ref blobReader);
+        }
+
+        private sealed class PrimitiveTypeProvider : ISignatureTypeProvider<PrimitiveTypeCode, object?>
+        {
+            public static PrimitiveTypeProvider Instance { get; } = new();
+
+            public PrimitiveTypeCode GetArrayType(PrimitiveTypeCode elementType, ArrayShape shape) => elementType;
+            public PrimitiveTypeCode GetByReferenceType(PrimitiveTypeCode elementType) => elementType;
+            public PrimitiveTypeCode GetFunctionPointerType(MethodSignature<PrimitiveTypeCode> signature) => PrimitiveTypeCode.IntPtr;
+            public PrimitiveTypeCode GetGenericInstantiation(PrimitiveTypeCode genericType, ImmutableArray<PrimitiveTypeCode> typeArguments) => genericType;
+            public PrimitiveTypeCode GetGenericMethodParameter(object? genericContext, int index) => PrimitiveTypeCode.Object;
+            public PrimitiveTypeCode GetGenericTypeParameter(object? genericContext, int index) => PrimitiveTypeCode.Object;
+            public PrimitiveTypeCode GetModifiedType(PrimitiveTypeCode modifier, PrimitiveTypeCode unmodifiedType, bool isRequired) => unmodifiedType;
+            public PrimitiveTypeCode GetPinnedType(PrimitiveTypeCode elementType) => elementType;
+            public PrimitiveTypeCode GetPointerType(PrimitiveTypeCode elementType) => elementType;
+            public PrimitiveTypeCode GetPrimitiveType(PrimitiveTypeCode typeCode) => typeCode;
+            public PrimitiveTypeCode GetSZArrayType(PrimitiveTypeCode elementType) => elementType;
+            public PrimitiveTypeCode GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind) => PrimitiveTypeCode.Object;
+            public PrimitiveTypeCode GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind) => PrimitiveTypeCode.Object;
+            public PrimitiveTypeCode GetTypeFromSpecification(MetadataReader reader, object? genericContext, TypeSpecificationHandle handle, byte rawTypeKind) => PrimitiveTypeCode.Object;
+        }
+
+        [Fact]
+        public void Ldtoken_FieldReference_IsBackpatched()
+        {
+            string source = """
+                .assembly Test { }
+                .class public auto ansi Test
+                {
+                    .field public static int32 F
+                    .method public static void M() cil managed
+                    {
+                        ldtoken field int32 Test::F
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            int token = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "M", ILOpcode.ldtoken);
+
+            DocumentCompilerTestHelpers.AssertFieldDefToken(reader, token, "F");
+        }
+
 
         [Fact]
         public void MethodNameF1_NotConfusedWithHexByte()

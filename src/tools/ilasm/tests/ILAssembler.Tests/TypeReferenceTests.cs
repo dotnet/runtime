@@ -118,6 +118,32 @@ namespace ILAssembler.Tests
             Assert.True(reader.GetTableRowCount(TableIndex.TypeRef) >= 1);
         }
 
+        [Fact]
+        public void ExplicitNetstandardTypeRef_PreservesResolutionScope()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly extern netstandard { }
+                .assembly test { }
+                .class public auto ansi Test extends [System.Runtime]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        call void [netstandard]System.Console::WriteLine()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            TypeReferenceHandle consoleHandle = DocumentCompilerTestHelpers.FindTypeRef(reader, "Console");
+            var console = reader.GetTypeReference(consoleHandle);
+            var assemblyReference = reader.GetAssemblyReference((AssemblyReferenceHandle)console.ResolutionScope);
+
+            Assert.Equal("netstandard", reader.GetString(assemblyReference.Name));
+        }
+
 
         [Fact]
         public void ResolvedTypeRefs_StillEmittedAsRows_InPseudoHandleOrder()
