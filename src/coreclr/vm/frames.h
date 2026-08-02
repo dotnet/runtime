@@ -2094,20 +2094,21 @@ public:
             return NULL;
         }
 
+        TADDR datum = dac_cast<TADDR>(m_Datum) & ~(sizeof(TADDR) - 1);
+
 #ifdef TARGET_X86
-        if ((dac_cast<TADDR>(m_Datum) & ~0xffff) == 0)
+        if ((datum & ~0xffff) == 0)
         {
             return NULL;
         }
 #else
-        if (m_Datum == NULL)
+        if (datum == 0)
         {
             return NULL;
         }
 #endif
 
-        // Mask off marker bits
-        return PTR_MethodDesc((dac_cast<TADDR>(m_Datum) & ~(sizeof(TADDR) - 1)));
+        return PTR_MethodDesc(datum);
     }
 
     // Retrieves the return address into the code that called out
