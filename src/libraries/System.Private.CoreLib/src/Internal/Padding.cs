@@ -28,6 +28,6 @@ namespace Internal
     {
         /// <safety>The only field in this explicit-layout struct; it overlaps nothing (the remainder is cache-line padding), so it cannot be type-punned into or out of a non-reference value.</safety>
         [FieldOffset(0)]
-        public object? Object;
+        public safe object? Object;
     }
 }

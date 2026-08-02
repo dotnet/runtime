@@ -12,6 +12,6 @@ internal static partial class Interop
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32)]
         [SuppressGCTransition]
-        public static partial int GetCurrentThreadId();
+        public static safe partial int GetCurrentThreadId();
     }
 }

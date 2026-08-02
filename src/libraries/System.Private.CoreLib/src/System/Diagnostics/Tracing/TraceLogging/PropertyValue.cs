@@ -23,61 +23,61 @@ namespace System.Diagnostics.Tracing
         {
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public bool AsBoolean;
+            public safe bool AsBoolean;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public byte AsByte;
+            public safe byte AsByte;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public sbyte AsSByte;
+            public safe sbyte AsSByte;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public char AsChar;
+            public safe char AsChar;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public short AsInt16;
+            public safe short AsInt16;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public ushort AsUInt16;
+            public safe ushort AsUInt16;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public int AsInt32;
+            public safe int AsInt32;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public uint AsUInt32;
+            public safe uint AsUInt32;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public long AsInt64;
+            public safe long AsInt64;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public ulong AsUInt64;
+            public safe ulong AsUInt64;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public IntPtr AsIntPtr;
+            public safe IntPtr AsIntPtr;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public UIntPtr AsUIntPtr;
+            public safe UIntPtr AsUIntPtr;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public float AsSingle;
+            public safe float AsSingle;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public double AsDouble;
+            public safe double AsDouble;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public Guid AsGuid;
+            public safe Guid AsGuid;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public DateTime AsDateTime;
+            public safe DateTime AsDateTime;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public DateTimeOffset AsDateTimeOffset;
+            public safe DateTimeOffset AsDateTimeOffset;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public TimeSpan AsTimeSpan;
+            public safe TimeSpan AsTimeSpan;
             /// <safety>The Scalar union overlaps only unmanaged value types and no managed reference, so reading or writing this field cannot forge a managed reference or access memory out of bounds.</safety>
             [FieldOffset(0)]
-            public decimal AsDecimal;
+            public safe decimal AsDecimal;
         }
 
         // Anything not covered by the Scalar union gets stored in this reference.

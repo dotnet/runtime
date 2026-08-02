@@ -8,7 +8,7 @@ namespace System.Runtime
     public static partial class GCSettings
     {
         /// <safety>Runtime-implemented FCall getter returning whether server GC is enabled; it reads only runtime configuration and accesses no caller-supplied memory.</safety>
-        public static extern bool IsServerGC
+        public static safe extern bool IsServerGC
         {
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
@@ -16,18 +16,18 @@ namespace System.Runtime
 
         /// <safety>Runtime FCall that returns the current GC latency mode as an enum value; it reads only runtime state and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern GCLatencyMode GetGCLatencyMode();
+        private static safe extern GCLatencyMode GetGCLatencyMode();
 
         /// <safety>Runtime FCall that updates the GC latency mode from an enum argument and returns a status enum; it accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern SetLatencyModeStatus SetGCLatencyMode(GCLatencyMode newLatencyMode);
+        private static safe extern SetLatencyModeStatus SetGCLatencyMode(GCLatencyMode newLatencyMode);
 
         /// <safety>Runtime FCall that returns the large-object-heap compaction mode as an enum value; it accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern GCLargeObjectHeapCompactionMode GetLOHCompactionMode();
+        private static safe extern GCLargeObjectHeapCompactionMode GetLOHCompactionMode();
 
         /// <safety>Runtime FCall that updates the large-object-heap compaction mode from an enum argument; it accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void SetLOHCompactionMode(GCLargeObjectHeapCompactionMode newLOHCompactionMode);
+        private static safe extern void SetLOHCompactionMode(GCLargeObjectHeapCompactionMode newLOHCompactionMode);
     }
 }

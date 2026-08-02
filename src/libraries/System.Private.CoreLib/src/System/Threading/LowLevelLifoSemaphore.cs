@@ -564,7 +564,7 @@ namespace System.Threading
         {
             /// <safety>The struct's single field is cache-line padded and overlaps nothing; Counts wraps only a ulong, so accessing it cannot forge a managed reference or read out of bounds.</safety>
             [FieldOffset(PaddingHelpers.CACHE_LINE_SIZE)]
-            public Counts _counts;
+            public safe Counts _counts;
         }
     }
 }

@@ -12,6 +12,6 @@ internal static partial class Interop
         /// <safety>P/Invoke that maps an NTSTATUS to a DOS error code from the by-value integer argument alone; it accesses no caller-supplied memory.</safety>
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.NtDll)]
-        public static partial uint RtlNtStatusToDosError(int Status);
+        public static safe partial uint RtlNtStatusToDosError(int Status);
     }
 }

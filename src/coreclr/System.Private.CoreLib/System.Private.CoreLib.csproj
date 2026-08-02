@@ -43,6 +43,9 @@
     <NoWarn>$(NoWarn),0419,0649</NoWarn>
     <!-- https://github.com/dotnet/dotnet/issues/5640 -->
     <NoWarn>$(NoWarn);CS9368</NoWarn>
+    <!-- SA1206 does not know the 'safe' contextual keyword and asks for it ahead of the accessibility
+         modifier. Suppress it until StyleCop orders 'safe' the way it orders 'unsafe'. -->
+    <NoWarn>$(NoWarn);SA1206</NoWarn>
     <Nullable>enable</Nullable>
     <Features>$(Features);runtime-async=on</Features>
 
