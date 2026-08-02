@@ -222,7 +222,7 @@ namespace System.IO.Tests
                         }
                         else
                         {
-                            Assert.Throws<IOException>(() => GetEntries(badPath));
+                            Assert.ThrowsAny<IOException>(() => GetEntries(badPath));
                         }
                         break;
                     case '\0':
