@@ -117,6 +117,24 @@ namespace ILAssembler.Tests
             Assert.Equal(asmRefs[0].Name, reader.GetAssemblyReference((AssemblyReferenceHandle)objectRef.ResolutionScope).Name);
         }
 
+        [Fact]
+        public void AssemblyReference_KeywordName_IsAccepted()
+        {
+            string source = """
+                .assembly extern volatile
+                {
+                    .ver 0:0:0:0
+                }
+                .assembly test { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var assemblyReference = Assert.Single(reader.AssemblyReferences);
+
+            Assert.Equal("volatile", reader.GetString(reader.GetAssemblyReference(assemblyReference).Name));
+        }
+
 
         [Fact]
         public void CoreAssemblyResolution_PrefersSystemPrivateCoreLib()
