@@ -590,9 +590,6 @@ ResolveStub       resolveInit;
 
 #ifndef DACCESS_COMPILE
 
-// Global flag indicating JMPABS availability (defined in codeman.cpp)
-extern bool g_IsJmpAbsAvailable;
-
 #include "asmconstants.h"
 
 #ifdef STUB_LOGGING
@@ -635,7 +632,7 @@ void  LookupHolder::Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorke
     _stub._token = dispatchToken;
 
 #if defined(TARGET_AMD64)
-    if (g_IsJmpAbsAvailable)
+    if (IsJmpAbsAvailable())
     {
         // Use JMPABS at offset 12-22 (11 bytes) + NOP padding at 23
         BYTE* pStubRW = reinterpret_cast<BYTE*>(&_stub);
@@ -728,7 +725,7 @@ void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTa
         *shortStubRW = dispatchShortInit;
 
 #if defined(TARGET_AMD64)
-        if (g_IsJmpAbsAvailable)
+        if (IsJmpAbsAvailable())
         {
             // JMPABS encoding (18 bytes):
             // 0-5:   jne near failTarget (0F 85 + 4-byte displacement)
