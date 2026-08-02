@@ -28,6 +28,10 @@ namespace System.IO.Tests
 
         public static bool TempPathSupportsLargeFiles => !IsTempPathOnFat32;
 
+        public static bool TempPathSupportsPreciseLastAccessTime => !IsTempPathOnFat32;
+
+        public static bool TempPathSupportsSymbolicLinks => !IsTempPathOnFat32 && MountHelper.CanCreateSymbolicLinks;
+
         public static bool DeletesOpenFileNameImmediately =>
             PlatformDetection.IsWindows10Version1903OrGreater && !IsTempPathOnFat32;
 

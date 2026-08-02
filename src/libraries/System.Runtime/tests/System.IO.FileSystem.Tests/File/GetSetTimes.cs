@@ -113,18 +113,21 @@ namespace System.IO.Tests
                     GetCreationTimeUtc,
                     DateTimeKind.Utc);
             }
-            yield return TimeFunction.Create(
-                SetLastAccessTime,
-                GetLastAccessTime,
-                DateTimeKind.Local);
-            yield return TimeFunction.Create(
-                SetLastAccessTimeUtc,
-                GetLastAccessTimeUtc,
-                DateTimeKind.Unspecified);
-            yield return TimeFunction.Create(
-                SetLastAccessTimeUtc,
-                GetLastAccessTimeUtc,
-                DateTimeKind.Utc);
+            if (TempPathSupportsPreciseLastAccessTime)
+            {
+                yield return TimeFunction.Create(
+                    SetLastAccessTime,
+                    GetLastAccessTime,
+                    DateTimeKind.Local);
+                yield return TimeFunction.Create(
+                    SetLastAccessTimeUtc,
+                    GetLastAccessTimeUtc,
+                    DateTimeKind.Unspecified);
+                yield return TimeFunction.Create(
+                    SetLastAccessTimeUtc,
+                    GetLastAccessTimeUtc,
+                    DateTimeKind.Utc);
+            }
             yield return TimeFunction.Create(
                 SetLastWriteTime,
                 GetLastWriteTime,
