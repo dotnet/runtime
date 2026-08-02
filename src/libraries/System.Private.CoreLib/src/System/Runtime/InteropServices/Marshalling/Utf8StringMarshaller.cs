@@ -103,7 +103,6 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Converts the current managed string to an unmanaged string.
             /// </summary>
             /// <returns>An unmanaged string.</returns>
-            /// <safety>Returns the already-stored pointer value; it does not dereference the pointed-to memory (any read of the string happens later in an unsafe context).</safety>
             public byte* ToUnmanaged() => _unmanagedValue;
 
             /// <summary>

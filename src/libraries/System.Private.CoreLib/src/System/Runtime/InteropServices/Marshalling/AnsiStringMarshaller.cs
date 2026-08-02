@@ -44,7 +44,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Frees the memory for the unmanaged string.
         /// </summary>
         /// <param name="unmanaged">The memory allocated for the unmanaged string.</param>
-        /// <safety>Converts the pointer to an IntPtr and hands it to Marshal.FreeCoTaskMem, which releases the allocation without reading or writing the pointed-to memory.</safety>
         public static void Free(byte* unmanaged)
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
@@ -99,7 +98,6 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Converts the current managed string to an unmanaged string.
             /// </summary>
             /// <returns>The converted unmanaged string.</returns>
-            /// <safety>Returns the previously produced unmanaged string pointer stored in the marshaller; obtaining the value performs no dereference.</safety>
             public byte* ToUnmanaged() => _unmanagedValue;
 
             /// <summary>

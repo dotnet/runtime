@@ -72,7 +72,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="unmanaged">The unmanaged array.</param>
         /// <param name="numElements">The unmanaged element count.</param>
         /// <returns>The managed array.</returns>
-        /// <safety>The pointer parameter is only compared against null and never dereferenced; the method allocates and returns a fresh managed array sized by the count, so no caller-supplied memory is read or written.</safety>
         public static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
         {
             if (unmanaged is null)
