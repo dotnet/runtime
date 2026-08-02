@@ -3110,7 +3110,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 throw new ArgumentNullException(nameof(fpCallback));
 
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            ITypeHandle thExactHandle = rts.GetTypeHandle(vmThExact);
+            ITypeHandle? thExactHandle = vmThExact == 0 ? null : rts.GetTypeHandle(vmThExact);
+            if (vmThApprox == 0)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
+
             ITypeHandle thApproxHandle = rts.GetTypeHandle(vmThApprox);
             cdacObjectSize = rts.GetNumInstanceFieldBytes(thApproxHandle);
 
@@ -3142,7 +3145,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     // then EnC-added instance fields, then EnC-added static fields.
     private void CollectFieldsForDbi(
         IRuntimeTypeSystem rts,
-        ITypeHandle thExact,
+        ITypeHandle? thExact,
         ITypeHandle thApprox,
         delegate* unmanaged<FieldData*, void*, void> fpCallback,
         nint pUserData,
@@ -3150,7 +3153,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         TargetPointer gcStaticsBase = TargetPointer.Null;
         TargetPointer nonGCStaticsBase = TargetPointer.Null;
-        if (!rts.IsCollectible(thExact))
+        if (thExact is not null && !rts.IsCollectible(thExact))
         {
             gcStaticsBase = rts.GetGCStaticsBasePointer(thExact);
             nonGCStaticsBase = rts.GetNonGCStaticsBasePointer(thExact);
