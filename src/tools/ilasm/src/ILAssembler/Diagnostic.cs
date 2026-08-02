@@ -50,8 +50,7 @@ public static class DiagnosticIds
     public const string DuplicateMethod = "ILA0030";
     public const string MissingExportedTypeImplementation = "ILA0031";
     public const string KeyFileError = "ILA0032";
-    public const string TooManyGenericParameters = "ILA0033";
-    public const string UnsupportedTlsData = "ILA0034";
+    public const string UnsupportedTlsData = "ILA0033";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -87,6 +86,5 @@ internal static class DiagnosticMessageTemplates
     public const string ParameterIndexOutOfRange = "Parameter index {0} is out of range";
     public const string DuplicateMethod = "Duplicate method definition";
     public const string MissingExportedTypeImplementation = "Undefined implementation in ExportedType '{0}' -- ExportedType not emitted";
-    public const string TooManyGenericParameters = "Generic parameter count {0} exceeds the maximum of {1}";
     public const string UnsupportedTlsData = "TLS RVA data declarations are not supported";
 }
