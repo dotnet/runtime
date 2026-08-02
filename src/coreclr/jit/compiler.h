@@ -4362,8 +4362,6 @@ public:
 
     unsigned lvaNextCallGenericContext = BAD_VAR_NUM; // Local number of argument passed as WellKnownArg::InstParam to next call
 
-    unsigned lvaNextCallFrameMethodDesc = BAD_VAR_NUM; // Local number of MethodDesc published in the next unmanaged call frame
-
     unsigned lvaNextCallAsyncContinuation = BAD_VAR_NUM; // Local number of argument passed as WellKnownArg::AsyncContinuation to next call
 
 #if FEATURE_FIXED_OUT_ARGS

@@ -5442,24 +5442,6 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB;
     }
-    bool HasInlinedCallFrameMethodDesc() const
-    {
-        assert((gtCallType == CT_INDIRECT) && !IsVirtualStub());
-        return (static_cast<unsigned>(unmgdCallConv) >> 8) != 0;
-    }
-    unsigned GetInlinedCallFrameMethodDescLclNum() const
-    {
-        assert(HasInlinedCallFrameMethodDesc());
-        return (static_cast<unsigned>(unmgdCallConv) >> 8) - 1;
-    }
-    void SetInlinedCallFrameMethodDescLclNum(unsigned lclNum)
-    {
-        assert((gtCallType == CT_INDIRECT) && !IsVirtualStub());
-        assert(lclNum != BAD_VAR_NUM);
-        unsigned callConv = static_cast<unsigned>(GetUnmanagedCallConv());
-        assert((callConv & ~0xffu) == 0);
-        unmgdCallConv = static_cast<CorInfoCallConvExtension>(((lclNum + 1) << 8) | callConv);
-    }
     bool IsVirtualVtable() const
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE;
@@ -5955,8 +5937,7 @@ struct GenTreeCall final : public GenTree
 
     CorInfoCallConvExtension GetUnmanagedCallConv() const
     {
-        return IsUnmanaged() ? static_cast<CorInfoCallConvExtension>(static_cast<unsigned>(unmgdCallConv) & 0xff)
-                             : CorInfoCallConvExtension::Managed;
+        return IsUnmanaged() ? unmgdCallConv : CorInfoCallConvExtension::Managed;
     }
 
     static bool Equals(GenTreeCall* c1, GenTreeCall* c2);

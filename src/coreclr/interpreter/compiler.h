@@ -700,11 +700,9 @@ private:
     //  populates the var at method entry
     int32_t m_hiddenArgumentVar;
 
-    // If RuntimeHelpers.SetNextCallGenericContext, StubHelpers.SetNextCallFrameMethodDesc,
-    // or SetNextCallAsyncContinuation were used then these contain the value that should
-    // be passed as those arguments.
+    // If RuntimeHelpers.SetNextCallGenericContext or SetNextCallAsyncContinuation were used
+    // then these contain the value that should be passed as those arguments.
     int32_t m_nextCallGenericContextVar;
-    int32_t m_nextCallFrameMethodDescVar;
     int32_t m_nextCallAsyncContinuationVar;
 
     // If true, the next await should be done as a tail await that just
