@@ -2156,8 +2156,7 @@ public:
 
     // m_Datum contains a PInvokeMethodDesc pointer, except on x86 where it may instead
     // contain the outgoing argument stack size for vararg and CALLI stubs.
-    // When m_Datum contains a PInvokeMethodDesc pointer, its low bits may carry
-    // InlinedCallFrameMarker values.
+    // Low bits may carry InlinedCallFrameMarker values.
     // See GetFunction_Impl.
     PTR_PInvokeMethodDesc   m_Datum;
 

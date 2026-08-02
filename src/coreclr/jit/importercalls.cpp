@@ -2117,7 +2117,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     assert(call->gtFlags & GTF_CALL_UNMANAGED);
 
 #ifdef SWIFT_SUPPORT
-    if (call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift)
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Swift)
     {
         impPopArgsForSwiftCall(call, sig, swiftErrorNode);
         return;
@@ -2138,7 +2138,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     // For "thiscall", the first argument goes in a register. Since its
     // order does not need to be changed, we do not need to spill it
 
-    if (call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall)
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
     {
         assert(argsToReverse != 0);
         argsToReverse--;
@@ -2183,7 +2183,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
 
     impPopReverseCallArgs(sig, call, sig->numArgs - argsToReverse);
 
-    if (call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall)
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Thiscall)
     {
         GenTree* thisPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
         impBashVarAddrsToI(thisPtr);
