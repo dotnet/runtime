@@ -2171,12 +2171,15 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetDelegateTarget(Delegate pThis);
 
+        /// <safety>Runtime FCall that clears the thread's stored last-error slot; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ClearLastError();
 
+        /// <safety>Runtime FCall that captures the OS last-error into the thread's stored slot; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void SetLastError();
 
+        /// <safety>QCall that throws an interop parameter exception selected by integer resource and parameter indices; it accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ThrowInteropParamException")]
         internal static partial void ThrowInteropParamException(int resID, int paramIdx);
 

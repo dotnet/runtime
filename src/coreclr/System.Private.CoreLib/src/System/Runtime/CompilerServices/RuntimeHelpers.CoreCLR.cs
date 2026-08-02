@@ -236,6 +236,7 @@ namespace System.Runtime.CompilerServices
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
         /// returned.
         /// </summary>
+        /// <safety>Runtime FCall that reads the object's existing hash from its header and returns it as an int; it dereferences no raw pointer and touches no caller-chosen memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int TryGetHashCode(object? o);
 
@@ -286,6 +287,7 @@ namespace System.Runtime.CompilerServices
             return ContentEquals(o1, o2);
         }
 
+        /// <safety>Runtime FCall that compares the field contents of two same-typed managed value objects and returns a bool; it works through type-checked object references and dereferences no raw pointer.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool ContentEquals(object o1, object o2);
 
@@ -325,6 +327,7 @@ namespace System.Runtime.CompilerServices
         // This method ensures that there is sufficient stack to execute the average Framework function.
         // If there is not enough stack, then it return false.
         // Note: this method is not to be confused with ProbeForSufficientStack.
+        /// <safety>Runtime FCall that only checks the current thread's remaining stack space; it takes no arguments and dereferences no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern bool TryEnsureSufficientExecutionStack();
 

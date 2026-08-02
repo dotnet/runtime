@@ -149,6 +149,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <summary>
             /// Returns the unmanaged value representing the array.
             /// </summary>
+            /// <safety>Converts the pinned span's ref into a pointer value via Unsafe.AsPointer and returns it without dereferencing; the caller must dereference it only in an unsafe context while the buffer remains pinned.</safety>
             public TUnmanagedElement* ToUnmanaged()
             {
                 // Unsafe.AsPointer is safe since buffer must be pinned
@@ -186,6 +187,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Initializes the <see cref="ReadOnlySpanMarshaller{T, TUnmanagedElement}.ManagedToUnmanagedOut"/> marshaller.
             /// </summary>
             /// <param name="unmanaged">A pointer to the array to be unmarshalled from native to managed.</param>
+            /// <safety>Only stores the supplied pointer in a field; it never dereferences the pointed-to memory.</safety>
             public void FromUnmanaged(TUnmanagedElement* unmanaged)
             {
                 _unmanagedArray = unmanaged;

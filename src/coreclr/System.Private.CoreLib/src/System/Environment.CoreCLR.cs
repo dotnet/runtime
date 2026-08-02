@@ -19,6 +19,7 @@ namespace System
         }
 
         // Terminates this process with the given exit code.
+        /// <safety>QCall that passes the integer exit code to the runtime to terminate the process; it accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_Exit")]
         [DoesNotReturn]
         private static partial void _Exit(int exitCode);
@@ -26,6 +27,7 @@ namespace System
         [DoesNotReturn]
         public static void Exit(int exitCode) => _Exit(exitCode);
 
+        /// <safety>Runtime FCall get/set of the process-wide exit code (an int); it accesses no caller-supplied memory.</safety>
         public static extern int ExitCode
         {
             [MethodImpl(MethodImplOptions.InternalCall)]
@@ -116,6 +118,7 @@ namespace System
             }
         }
 
+        /// <safety>QCall that returns the available processor count as an int; it accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
         internal static partial int GetProcessorCount();
 

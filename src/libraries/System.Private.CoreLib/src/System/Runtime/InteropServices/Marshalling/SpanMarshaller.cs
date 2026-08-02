@@ -77,6 +77,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="unmanaged">The unmanaged value.</param>
         /// <param name="numElements">The number of elements in the unmanaged collection.</param>
         /// <returns>A span over enough memory to contain <paramref name="numElements"/> elements.</returns>
+        /// <safety>Uses the unmanaged pointer only for a null check and otherwise allocates a fresh managed array; it never dereferences the pointer.</safety>
         public static Span<T> AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
         {
             if (unmanaged is null)
@@ -111,6 +112,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Frees the allocated unmanaged memory.
         /// </summary>
         /// <param name="unmanaged">A pointer to the allocated unmanaged memory.</param>
+        /// <safety>Converts the pointer to an IntPtr and hands it to Marshal.FreeCoTaskMem, which releases the allocation without reading or writing the pointed-to memory.</safety>
         public static void Free(TUnmanagedElement* unmanaged)
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 

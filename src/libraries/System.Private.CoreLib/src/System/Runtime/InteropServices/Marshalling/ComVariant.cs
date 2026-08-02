@@ -37,11 +37,13 @@ namespace System.Runtime.InteropServices.Marshalling
 #endif
 
         // Most of the data types in the Variant are carried in _typeUnion
+        /// <safety>Overlaps only the blittable decimal, both unmanaged, so the VARIANT layout cannot forge a managed reference.</safety>
         [FieldOffset(0)] private TypeUnion _typeUnion;
 
         // Decimal is the largest data type and it needs to use the space that is normally unused in TypeUnion._wReserved1, etc.
         // Hence, it is declared to completely overlap with TypeUnion. A Decimal does not use the first two bytes, and so
         // TypeUnion._vt can still be used to encode the type.
+        /// <safety>Overlaps only the blittable TypeUnion, both unmanaged, so the VARIANT layout cannot forge a managed reference.</safety>
         [FieldOffset(0)] private decimal _decimal;
 
         [StructLayout(LayoutKind.Sequential)]
@@ -79,6 +81,7 @@ namespace System.Runtime.InteropServices.Marshalling
         private unsafe struct Vector<T> where T : unmanaged
         {
             public int _numElements;
+            /// <safety>The field only holds a pointer to the unmanaged element buffer; reading or writing it moves a pointer value and performs no dereference.</safety>
             public T* _data;
 
             public Span<T> AsSpan() => new(_data, _numElements);
@@ -102,30 +105,55 @@ namespace System.Runtime.InteropServices.Marshalling
         [StructLayout(LayoutKind.Explicit)]
         private unsafe struct UnionTypes
         {
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public sbyte _i1;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public short _i2;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public int _i4;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public long _i8;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public byte _ui1;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public ushort _ui2;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public uint _ui4;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public ulong _ui8;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public int _int;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public uint _uint;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public short _bool;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public int _error;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public float _r4;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public double _r8;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public long _cy;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public double _date;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public IntPtr _bstr;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public IntPtr _unknown;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public IntPtr _dispatch;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public IntPtr _pvarVal;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public IntPtr _byref;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public Record _record;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public Blob _blob;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public VersionedStream* _versionedStream;
+            /// <safety>Overlaps only unmanaged primitives, pointers, and structs of those, so the union cannot forge a managed reference.</safety>
             [FieldOffset(0)] public ClipboardData* clipboardData;
         }
 

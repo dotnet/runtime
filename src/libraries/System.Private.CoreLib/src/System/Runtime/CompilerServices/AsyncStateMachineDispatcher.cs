@@ -14,6 +14,7 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(0)]
         public AsyncStateMachineDispatcherInfo* Next;
 
+        /// <safety>Managed-reference field at an explicit offset that does not overlap any other field, so reading or writing it cannot alias a pointer or forge a reference.</safety>
 #if TARGET_64BIT
         [FieldOffset(8)]
 #else
@@ -21,6 +22,7 @@ namespace System.Runtime.CompilerServices
 #endif
         public Task? Dispatcher;
 
+        /// <safety>Value-type field at an explicit offset that does not overlap the Next pointer or Dispatcher reference, so accessing it cannot alias a pointer or forge a reference.</safety>
 #if TARGET_64BIT
         [FieldOffset(16)]
 #else

@@ -50,6 +50,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="managed">The managed array to get a source for.</param>
         /// <returns>The <see cref="ReadOnlySpan{IntPtr}"/> containing the managed elements to marshal.</returns>
+        /// <safety>Reinterprets the managed pointer array as an IntPtr array and returns a bounded read-only span over it; the pointer values are never dereferenced.</safety>
         public static ReadOnlySpan<IntPtr> GetManagedValuesSource(T*[]? managed)
             => Unsafe.As<IntPtr[]>(managed);
 
@@ -73,6 +74,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="unmanaged">The unmanaged array.</param>
         /// <param name="numElements">The unmanaged element count.</param>
         /// <returns>The managed array.</returns>
+        /// <safety>Only null-checks the unmanaged pointer and allocates a managed pointer array of the requested length; it never dereferences the pointer.</safety>
         public static T*[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
         {
             if (unmanaged is null)
@@ -86,6 +88,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="managed">The managed array to get a destination for.</param>
         /// <returns>The <see cref="Span{T}"/> of managed elements.</returns>
+        /// <safety>Reinterprets the managed pointer array as an IntPtr array and returns a bounded span over it; the pointer values are never dereferenced.</safety>
         public static Span<IntPtr> GetManagedValuesDestination(T*[]? managed)
             => Unsafe.As<IntPtr[]>(managed);
 
@@ -107,6 +110,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Frees memory for the unmanaged array.
         /// </summary>
         /// <param name="unmanaged">The unmanaged array.</param>
+        /// <safety>Converts the pointer to an IntPtr and hands it to Marshal.FreeCoTaskMem; it never dereferences the pointed-to memory.</safety>
         public static void Free(TUnmanagedElement* unmanaged)
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
@@ -204,6 +208,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// </summary>
             /// <param name="array">The managed array.</param>
             /// <returns>The reference that can be pinned and directly passed to unmanaged code.</returns>
+            /// <safety>Null-checks the array and returns a GC-tracked managed reference to its data for pinning; the pointer element type is never dereferenced.</safety>
             public static ref byte GetPinnableReference(T*[]? array)
             {
                 if (array is null)

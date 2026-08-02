@@ -20,10 +20,13 @@ namespace System.Runtime.InteropServices.ComTypes
     [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
     public struct BINDPTR
     {
+        /// <safety>Overlaps only same-width IntPtr fields, so the union cannot forge a managed reference.</safety>
         [FieldOffset(0)]
         public IntPtr lpfuncdesc;
+        /// <safety>Overlaps only same-width IntPtr fields, so the union cannot forge a managed reference.</safety>
         [FieldOffset(0)]
         public IntPtr lpvardesc;
+        /// <safety>Overlaps only same-width IntPtr fields, so the union cannot forge a managed reference.</safety>
         [FieldOffset(0)]
         public IntPtr lptcomp;
     }
