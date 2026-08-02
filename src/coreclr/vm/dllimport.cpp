@@ -781,11 +781,6 @@ public:
         {
             // All other IL stubs will need to use the secret parameter.
             jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
-
-            if (SF_IsVarArgStub(m_dwStubFlags) || SF_IsForwardCOMStub(m_dwStubFlags))
-            {
-                jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_STUB_PARAM_ICF_MD);
-            }
         }
 
         if (SF_IsReverseStub(m_dwStubFlags))

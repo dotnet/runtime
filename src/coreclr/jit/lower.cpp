@@ -7026,16 +7026,8 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         const unsigned stackByteOffset = call->gtArgs.OutgoingArgsStackSize();
         src                            = m_compiler->gtNewIconNode(stackByteOffset, TYP_INT);
 #else
-        // On non-x86 targets, indirect calls clear InlinedCallFrame.m_Datum unless the EE requested
-        // the shared stub secret parameter to be published in the frame.
-        if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_STUB_PARAM_ICF_MD))
-        {
-            src = m_compiler->gtNewLclvNode(m_compiler->lvaStubArgumentVar, TYP_I_IMPL);
-        }
-        else
-        {
-            src = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
-        }
+        // On non-x86 targets, indirect calls clear InlinedCallFrame.m_Datum.
+        src = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
 #endif // TARGET_X86
     }
     else
