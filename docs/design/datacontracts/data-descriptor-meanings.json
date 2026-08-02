@@ -281,7 +281,7 @@
     "InlinedCallFrame.CalleeSavedFP": "FP saved in Frame",
     "InlinedCallFrame.CallerReturnAddress": "Return address saved in Frame",
     "InlinedCallFrame.CallSiteSP": "SP saved in Frame",
-    "InlinedCallFrame.Datum": "MethodDesc ptr or on 64 bit host: CALLI target address (if lowest bit is set) or on windows x86 host: argument stack size (if value is <64k)",
+    "InlinedCallFrame.Datum": "Non-x86: MethodDesc ptr (after masking any InlinedCallFrameMarker bits); x86: argument stack size when the masked value is <64k, otherwise a MethodDesc ptr",
     "InlinedCallFrame.Size": "Size in bytes of the frame; a reportable MethodDesc pointer may immediately follow it",
     "InlinedCallFrame.SPAfterProlog": "Stack pointer after the managed method prolog, used to unwind frames with stack allocation",
     "InstantiatedMethodDesc.Flags2": "Flags for the InstantiatedMethodDesc",

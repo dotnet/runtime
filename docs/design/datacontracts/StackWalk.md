@@ -166,7 +166,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `InlinedCallFrame` | `CalleeSavedFP` | `pointer` | FP saved in Frame |
 | `InlinedCallFrame` | `CallerReturnAddress` | `CodePointer` | Return address saved in Frame |
 | `InlinedCallFrame` | `CallSiteSP` | `pointer` | SP saved in Frame |
-| `InlinedCallFrame` | `Datum` | `pointer` | MethodDesc ptr or on x86: argument stack size (if value is <64k) |
+| `InlinedCallFrame` | `Datum` | `pointer` | Non-x86: MethodDesc ptr (after masking any InlinedCallFrameMarker bits); x86: argument stack size when the masked value is <64k, otherwise a MethodDesc ptr |
 | `InlinedCallFrame` | `SPAfterProlog` | `pointer` | Stack pointer after the managed method prolog, used to unwind frames with stack allocation |
 | `InterpMethodContextFrame` | `Ip` | `pointer` | The actual instruction pointer within the method (null if frame is inactive/reusable) |
 | `InterpMethodContextFrame` | `NextPtr` | `pointer` | Pointer to the next InterpMethodContextFrame toward the top of the stack |
@@ -212,6 +212,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | Global | Type | Meaning |
 | --- | --- | --- |
 | `<FrameType>Identifier` *(name pattern)* | `pointer` | Per-frame-type sentinel address used to identify and classify runtime frames |
+| `Architecture` | `string` | Target architecture |
 | `ObjectToMethodTableUnmask` | `uint8` | Bits to clear when converting an object header value to a method table address |
 
 ### Contracts used
