@@ -545,8 +545,7 @@ namespace ILAssembler
                 or DiagnosticIds.ParameterIndexOutOfRange
                 or DiagnosticIds.GenericParameterNotFound
                 or DiagnosticIds.UnknownGenericParameter
-                or DiagnosticIds.MissingInstanceCallConv
-                or DiagnosticIds.TooManyGenericParameters;
+                or DiagnosticIds.MissingInstanceCallConv;
         }
 
         public GrammarResult Visit(IParseTree tree) => tree.Accept(this);
@@ -1364,12 +1363,6 @@ namespace ILAssembler
                     // Two-pass generic parameter processing:
                     // Pass 1: Register all parameter names (without resolving constraints)
                     var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
-                    if (typarContexts.Length > ushort.MaxValue)
-                    {
-                        ReportError(DiagnosticIds.TooManyGenericParameters,
-                            string.Format(DiagnosticMessageTemplates.TooManyGenericParameters, typarContexts.Length, ushort.MaxValue),
-                            context.typarsClause());
-                    }
                     for (int i = 0; i < typarContexts.Length; i++)
                     {
                         var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
@@ -1453,12 +1446,6 @@ namespace ILAssembler
                 {
                     // Two-pass generic parameter processing for forward-referenced types
                     var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
-                    if (typarContexts.Length > ushort.MaxValue)
-                    {
-                        ReportError(DiagnosticIds.TooManyGenericParameters,
-                            string.Format(DiagnosticMessageTemplates.TooManyGenericParameters, typarContexts.Length, ushort.MaxValue),
-                            context.typarsClause());
-                    }
                     for (int i = 0; i < typarContexts.Length; i++)
                     {
                         var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
@@ -2813,7 +2800,7 @@ namespace ILAssembler
             var fieldType = VisitType(context.type()).Value;
             var marshalBlobs = context.marshalBlob();
             var marshalBlob = marshalBlobs.Length > 0 ? VisitMarshalBlob(marshalBlobs[marshalBlobs.Length - 1]).Value : null;
-            var name = VisitDottedName(context.dottedName()).Value;
+            string name = VisitDottedName(context.dottedName()).Value;
             var rvaOffset = VisitAtOpt(context.atOpt()).Value;
             var fieldOffset = VisitRepeatOpt(context.repeatOpt()).Value;
             var constantValue = VisitInitOpt(context.initOpt()).Value;
@@ -2964,13 +2951,13 @@ namespace ILAssembler
             }
 
             var fieldTypeSig = VisitType(type).Value;
-            EntityRegistry.TypeEntity definingType = _currentTypeDefinition.PeekOrDefault() ?? _entityRegistry.ModuleType;
+            EntityRegistry.TypeEntity definingType = _entityRegistry.ModuleType;
             if (context.typeSpec() is CILParser.TypeSpecContext typeSpec)
             {
                 definingType = VisitTypeSpec(typeSpec).Value;
             }
 
-            var name = VisitDottedName(context.dottedName()).Value;
+            string name = VisitDottedName(context.dottedName()).Value;
 
             var fieldSig = new BlobBuilder(fieldTypeSig.Count + 1);
             fieldSig.WriteByte((byte)SignatureKind.Field);
@@ -3477,6 +3464,7 @@ namespace ILAssembler
                     break;
                 case CILParser.RULE_instr_sig:
                     {
+                        Debug.Assert(opcode == ILOpCode.Calli);
                         BlobBuilder signature = new();
                         byte callConv = VisitCallConv(context.callConv()).Value;
                         signature.WriteByte(callConv);
@@ -3489,6 +3477,7 @@ namespace ILAssembler
                         {
                             arg.SignatureBlob.WriteContentTo(signature);
                         }
+                        _currentMethod!.Definition.MethodBody.OpCode(opcode);
                         _currentMethod!.Definition.MethodBody.Token(_entityRegistry.GetOrCreateStandaloneSignature(signature).Handle);
                     }
                     break;
@@ -3599,6 +3588,10 @@ namespace ILAssembler
                     if (tok is EntityRegistry.TypeReferenceEntity tokTypeRef)
                     {
                         tokTypeRef.RecordBlobToWriteResolvedToken(_currentMethod.Definition.MethodBody.CodeBuilder.ReserveBytes(4));
+                    }
+                    else if (tok is EntityRegistry.MemberReferenceEntity tokMemberRef)
+                    {
+                        tokMemberRef.RecordBlobToWriteResolvedHandle(_currentMethod.Definition.MethodBody.CodeBuilder.ReserveBytes(4));
                     }
                     else
                     {
@@ -4389,12 +4382,6 @@ namespace ILAssembler
             // Pass 1: Register all parameter names (without resolving constraints)
             _currentMethod = new(methodDefinition);
             var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
-            if (typarContexts.Length > ushort.MaxValue)
-            {
-                ReportError(DiagnosticIds.TooManyGenericParameters,
-                    string.Format(DiagnosticMessageTemplates.TooManyGenericParameters, typarContexts.Length, ushort.MaxValue),
-                    context.typarsClause());
-            }
             for (int i = 0; i < typarContexts.Length; i++)
             {
                 var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
@@ -4438,7 +4425,7 @@ namespace ILAssembler
                         pInvokeInfo);
                     continue;
                 }
-                pInvokeInformation = (_entityRegistry.GetOrCreateModuleReference(moduleName, _ => { }), entryPoint, attributes);
+                pInvokeInformation = (_entityRegistry.GetOrCreateModuleReference(moduleName, _ => { }), entryPoint ?? name, attributes);
             }
             methodDefinition.MethodImportInformation = pInvokeInformation;
 
@@ -4553,7 +4540,7 @@ namespace ILAssembler
                 return new(_entityRegistry.CreateLazilyRecordedMemberReference(_entityRegistry.ModuleType, "<error>", methodRefSignature));
             }
             byte callConv = VisitCallConv(callConvCtx).Value;
-            EntityRegistry.TypeEntity owner = _currentTypeDefinition.PeekOrDefault() ?? _entityRegistry.ModuleType;
+            EntityRegistry.TypeEntity owner = _entityRegistry.ModuleType;
             if (context.typeSpec() is CILParser.TypeSpecContext typeSpec)
             {
                 owner = VisitTypeSpec(typeSpec).Value;
@@ -4644,12 +4631,18 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitNativeType(CILParser.NativeTypeContext context) => VisitNativeType(context);
         public GrammarResult.FormattedBlob VisitNativeType(CILParser.NativeTypeContext context)
         {
-            if (context.nativeTypeArrayPointerInfo() is not CILParser.NativeTypeArrayPointerInfoContext[] arrayPointerInfo)
+            if (context.nativeTypeElement() is not CILParser.NativeTypeElementContext element)
             {
-                return VisitNativeTypeElement(context.nativeTypeElement());
+                return new(new BlobBuilder());
+            }
+
+            CILParser.NativeTypeArrayPointerInfoContext[] arrayPointerInfo = context.nativeTypeArrayPointerInfo();
+            if (arrayPointerInfo.Length == 0)
+            {
+                return VisitNativeTypeElement(element);
             }
             var prefix = new BlobBuilder(arrayPointerInfo.Length);
-            var elementType = VisitNativeTypeElement(context.nativeTypeElement()).Value;
+            var elementType = VisitNativeTypeElement(element).Value;
             var suffix = new BlobBuilder();
 
             for (int i = arrayPointerInfo.Length - 1; i >= 0; i--)
@@ -4716,6 +4709,17 @@ namespace ILAssembler
 
             if (context.marshalType is null)
             {
+                if (context.unsignedMarshalType is not null)
+                {
+                    blob.WriteByte(context.unsignedMarshalType.Type switch
+                    {
+                        CILParser.INT8 => (byte)UnmanagedType.U1,
+                        CILParser.INT16 => (byte)UnmanagedType.U2,
+                        CILParser.INT32_ => (byte)UnmanagedType.U4,
+                        CILParser.INT64_ => (byte)UnmanagedType.U8,
+                        _ => throw new UnreachableException(),
+                    });
+                }
                 return new(blob);
             }
 

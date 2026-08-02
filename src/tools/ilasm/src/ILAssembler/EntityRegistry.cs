@@ -192,7 +192,7 @@ namespace ILAssembler
 
             foreach (GenericParameterEntity genericParam in allGenericParams)
             {
-                // GenericParam index is stored as a 2-byte value; skip params beyond the limit
+                // COMPAT: Native ilasm ignores generic parameters whose indices exceed the 2-byte metadata limit.
                 if (genericParam.Index > ushort.MaxValue)
                     continue;
 
@@ -210,6 +210,12 @@ namespace ILAssembler
 
             foreach (GenericParameterConstraintEntity constraint in allGenericConstraints)
             {
+                // COMPAT: Native ilasm ignores constraints on generic parameters whose indices exceed the 2-byte metadata limit.
+                if (constraint.Owner!.Index > ushort.MaxValue)
+                {
+                    continue;
+                }
+
                 RecordEntityInTable(TableIndex.GenericParamConstraint, constraint);
             }
 
@@ -321,7 +327,9 @@ namespace ILAssembler
                 }
                 builder.AddFieldDefinition(
                     fieldAttributes,
-                    builder.GetOrAddString(fieldDef.Name),
+                    builder.GetOrAddString((fieldAttributes & FieldAttributes.FieldAccessMask) == FieldAttributes.PrivateScope
+                        ? NameHelpers.GetPrivateScopeMetadataName(fieldDef.Name, isMethod: false)
+                        : fieldDef.Name),
                     fieldDef.Signature!.Count == 0 ? default : builder.GetOrAddBlob(RewriteSignatureBlob(fieldDef.Signature, signatureRewriter)));
 
                 if (fieldDef.Offset is not null)
@@ -428,7 +436,9 @@ namespace ILAssembler
                 builder.AddMethodDefinition(
                     methodAttributes,
                     methodDef.ImplementationAttributes,
-                    builder.GetOrAddString(methodDef.Name),
+                    builder.GetOrAddString((methodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.PrivateScope
+                        ? NameHelpers.GetPrivateScopeMetadataName(methodDef.Name, isMethod: true)
+                        : methodDef.Name),
                     builder.GetOrAddBlob(RewriteSignatureBlob(methodDef.MethodSignature!, signatureRewriter)),
                     bodyOffset,
                     GetParameterHandleForList(methodDef.Parameters, GetSeenEntities(TableIndex.MethodDef), method => ((MethodDefinitionEntity)method).Parameters, i));
@@ -492,9 +502,20 @@ namespace ILAssembler
                 {
                     continue;
                 }
+
+                string name = memberRef.Name;
+                if (memberRef.Parent.Handle.Kind == HandleKind.MethodDefinition)
+                {
+                    var method = (MethodDefinitionEntity)GetSeenEntities(TableIndex.MethodDef)[MetadataTokens.GetRowNumber(memberRef.Parent.Handle) - 1];
+                    if ((method.MethodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.PrivateScope)
+                    {
+                        name = NameHelpers.GetPrivateScopeMetadataName(name, isMethod: true);
+                    }
+                }
+
                 builder.AddMemberReference(
                     memberRef.Parent.Handle,
-                    builder.GetOrAddString(memberRef.Name),
+                    builder.GetOrAddString(name),
                     builder.GetOrAddBlob(RewriteSignatureBlob(memberRef.Signature, signatureRewriter)));
             }
 
@@ -508,6 +529,12 @@ namespace ILAssembler
 
             foreach (CustomAttributeEntity customAttr in GetSeenEntities(TableIndex.CustomAttribute))
             {
+                if (customAttr.Owner is GenericParameterEntity { Index: > ushort.MaxValue }
+                    or GenericParameterConstraintEntity { Owner.Index: > ushort.MaxValue })
+                {
+                    continue;
+                }
+
                 EntityHandle parent = customAttr.Owner switch
                 {
                     AssemblyEntity => EntityHandle.AssemblyDefinition,
@@ -638,7 +665,7 @@ namespace ILAssembler
 
             foreach (GenericParameterEntity genericParam in GetSeenEntities(TableIndex.GenericParam))
             {
-                // GenericParam index is stored as a 2-byte value; skip params beyond the limit
+                // COMPAT: Native ilasm ignores generic parameters whose indices exceed the 2-byte metadata limit.
                 if (genericParam.Index > ushort.MaxValue)
                     continue;
                 builder.AddGenericParameter(
@@ -777,7 +804,7 @@ namespace ILAssembler
 
         private static bool IsCoreLibAssemblyName(string name)
         {
-            return name is "mscorlib" or "System.Runtime" or "System.Private.CoreLib" or "netstandard";
+            return name is "mscorlib" or "System.Runtime" or "System.Private.CoreLib";
         }
 
         public interface IHasHandle
@@ -1371,17 +1398,20 @@ namespace ILAssembler
                     var sig = decoder.DecodeMethodSignature(ref reader);
 
                     var newBlob = new BlobBuilder();
-                    var encoder = new BlobEncoder(newBlob);
-                    encoder.MethodSignature(sig.Header.CallingConvention, sig.GenericParameterCount, sig.Header.Attributes.HasFlag(SignatureAttributes.Instance))
-                        .Parameters(sig.ParameterTypes.Length, out var retBuilder, out var paramsBuilder);
-                    sig.ReturnType.WriteBlobTo(retBuilder.Builder);
+                    newBlob.WriteByte(bytes[0]);
+                    if (sig.Header.IsGeneric)
+                    {
+                        newBlob.WriteCompressedInteger(sig.GenericParameterCount);
+                    }
+                    newBlob.WriteCompressedInteger(sig.ParameterTypes.Length);
+                    sig.ReturnType.WriteBlobTo(newBlob);
                     for (int i = 0; i < sig.ParameterTypes.Length; i++)
                     {
                         if (sig.RequiredParameterCount != sig.ParameterTypes.Length && i == sig.RequiredParameterCount)
                         {
-                            paramsBuilder.StartVarArgs();
+                            newBlob.WriteByte((byte)SignatureTypeCode.Sentinel);
                         }
-                        sig.ParameterTypes[i].WriteBlobTo(paramsBuilder.AddParameter().Builder);
+                        sig.ParameterTypes[i].WriteBlobTo(newBlob);
                     }
                     return newBlob;
                 }
@@ -1533,7 +1563,7 @@ namespace ILAssembler
         private void UpdateMemberRefForVarargSignatures(MemberReferenceEntity memberRef, byte[] signature)
         {
             var decoder = new SignatureDecoder<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>(new SignatureRewriter(), null!, default);
-            BlobEncoder methodDefSig = new(new BlobBuilder());
+            BlobBuilder methodDefSig = new();
             bool hasVarargParameters = false;
             // TODO-SRM: Propose a public API to construct a blob reader over a byte array or ReadOnlyMemory<byte>
             // to avoid the unsafe block.
@@ -1551,12 +1581,16 @@ namespace ILAssembler
                         {
                             hasVarargParameters = true;
 
-                            methodDefSig.MethodSignature(methodSignature.Header.CallingConvention, methodSignature.GenericParameterCount, methodSignature.Header.Attributes.HasFlag(SignatureAttributes.Instance))
-                                .Parameters(methodSignature.RequiredParameterCount, out var retTypeBuilder, out var parametersEncoder);
-                            methodSignature.ReturnType.WriteBlobTo(retTypeBuilder.Builder);
+                            methodDefSig.WriteByte(signature[0]);
+                            if (methodSignature.Header.IsGeneric)
+                            {
+                                methodDefSig.WriteCompressedInteger(methodSignature.GenericParameterCount);
+                            }
+                            methodDefSig.WriteCompressedInteger(methodSignature.RequiredParameterCount);
+                            methodSignature.ReturnType.WriteBlobTo(methodDefSig);
                             for (int i = 0; i < methodSignature.RequiredParameterCount; i++)
                             {
-                                methodSignature.ParameterTypes[i].WriteBlobTo(parametersEncoder.AddParameter().Builder);
+                                methodSignature.ParameterTypes[i].WriteBlobTo(methodDefSig);
                             }
                         }
                     }
@@ -1573,7 +1607,7 @@ namespace ILAssembler
             // If the method has vararg parameters, then this needs to be a MemberRef whose parent is a reference to the method with the signature without any vararg parameters.
             if (hasVarargParameters)
             {
-                var methodRef = new MemberReferenceEntity(memberRef.Parent, memberRef.Name, methodDefSig.Builder);
+                var methodRef = new MemberReferenceEntity(memberRef.Parent, memberRef.Name, methodDefSig);
                 ResolveAndRecordMemberReference(methodRef);
                 // Only reparent the call-site MemberRef if the base method resolved to a MethodDef.
                 // MemberRef is not a valid MemberRefParent in the coded index, so we can only
