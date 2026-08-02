@@ -2511,40 +2511,43 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         ILoader loader = _target.Contracts.Loader;
         ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
         CorElementType type = ((IRuntimeTypeSystem)this).GetFieldDescType(fieldDescPointer);
-        TargetPointer @base;
-        if (type == CorElementType.Class || type == CorElementType.ValueType)
-        {
-            if (thread.HasValue)
-            {
-                @base = GetGCThreadStaticsBasePointer(ctx, thread.Value);
-            }
-            else
-            {
-                @base = GetGCStaticsBasePointer(ctx);
-            }
-        }
-        else
-        {
-            if (thread.HasValue)
-            {
-                @base = GetNonGCThreadStaticsBasePointer(ctx, thread.Value);
-            }
-            else
-            {
-                @base = GetNonGCStaticsBasePointer(ctx);
-            }
-        }
+        bool isRVA = ((IRuntimeTypeSystem)this).IsFieldDescRVA(fieldDescPointer);
 
-        if (@base == TargetPointer.Null)
-            return TargetPointer.Null;
+        TargetPointer @base = TargetPointer.Null;
+        if (!isRVA)
+        {
+            if (type == CorElementType.Class || type == CorElementType.ValueType)
+            {
+                if (thread.HasValue)
+                {
+                    @base = GetGCThreadStaticsBasePointer(ctx, thread.Value);
+                }
+                else
+                {
+                    @base = GetGCStaticsBasePointer(ctx);
+                }
+            }
+            else
+            {
+                if (thread.HasValue)
+                {
+                    @base = GetNonGCThreadStaticsBasePointer(ctx, thread.Value);
+                }
+                else
+                {
+                    @base = GetNonGCStaticsBasePointer(ctx);
+                }
+            }
+
+            if (@base == TargetPointer.Null)
+                return TargetPointer.Null;
+        }
 
         MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
         uint token = ((IRuntimeTypeSystem)this).GetFieldDescMemberDef(fieldDescPointer);
         FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
         FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
-
         uint offset = ((IRuntimeTypeSystem)this).GetFieldDescOffset(fieldDescPointer, fieldDef);
-        bool isRVA = ((IRuntimeTypeSystem)this).IsFieldDescRVA(fieldDescPointer);
         TargetPointer handleAddr = GetStaticAddressHandle(@base, offset, isRVA, fieldDescPointer, moduleHandle);
         if (unboxValueTypes && type == CorElementType.ValueType && !isRVA)
         {
