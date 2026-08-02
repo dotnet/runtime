@@ -20,7 +20,7 @@ namespace System.Runtime.CompilerServices
         /// Returns a pointer to the given by-ref parameter.
         /// </summary>
         /// <typeparam name="T">The type referenced by the byref parameter.</typeparam>
-        /// <safety>Converts a byref into a pointer value without dereferencing it; the result is not GC-tracked, so any use must be in an unsafe context that establishes the referent is still valid.</safety>
+        /// <safety>Converts a managed pointer (byref) into an unmanaged one without dereferencing it; the danger is deferred to whoever dereferences the pointer, which the GC neither tracks nor updates.</safety>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__AS_POINTER
         // AOT:AsPointer
