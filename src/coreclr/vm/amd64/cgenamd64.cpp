@@ -394,6 +394,18 @@ BOOL GetAnyThunkTarget (CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
 
 #ifndef DACCESS_COMPILE
 
+bool IsJmpAbsAvailable()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Cache the result in a static local - initialized once on first call
+    static const bool s_isJmpAbsAvailable =
+        ExecutionManager::GetEEJitManager()->GetCPUCompileFlags()
+            .GetInstructionSetFlags().HasInstructionSet(InstructionSet_APX);
+
+    return s_isJmpAbsAvailable;
+}
+
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     CONTRACTL
@@ -406,7 +418,7 @@ void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     }
     CONTRACTL_END;
 
-    if (g_IsJmpAbsAvailable)
+    if (IsJmpAbsAvailable())
     {
         // JMPABS (11 bytes) + NOP padding = 12 bytes
         emitJmpAbsJump(pBufferRX, pBufferRW, target);
@@ -436,7 +448,7 @@ void emitJmpAbsJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
         MODE_ANY;
 
         PRECONDITION(CheckPointer(pBufferRX));
-        PRECONDITION(g_IsJmpAbsAvailable);  // Caller must check APX availability
+        PRECONDITION(IsJmpAbsAvailable());  // Caller must check APX availability
     }
     CONTRACTL_END;
 
