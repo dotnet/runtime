@@ -911,6 +911,7 @@ namespace System.Xml.Serialization
             }
             else if (!element.Mapping!.IsSoap && (element.Mapping is PrimitiveMapping))
             {
+                HandleUnknownAttributes();
                 if (element.IsNullable && ReadNull())
                 {
                     if (element.Mapping.TypeDesc!.IsValueType)
@@ -1220,6 +1221,7 @@ namespace System.Xml.Serialization
             }
             else
             {
+                HandleUnknownAttributes();
                 if (!ReadNull())
                 {
                     var memberMapping = new MemberMapping()
@@ -1977,6 +1979,29 @@ namespace System.Xml.Serialization
 
             o = null;
             return false;
+        }
+
+        // Walks the attributes on the current element and raises the UnknownNode/UnknownAttribute
+        // events for any non-namespace attribute. This mirrors the attribute handling that already
+        // happens for elements mapped to structs (via WriteAttributes), so that unknown attributes
+        // on elements mapped to primitives, arrays, and collections are surfaced consistently.
+        private void HandleUnknownAttributes()
+        {
+            // When the element is marked xsi:nil, the nil marker (and the element itself) is consumed
+            // by the following ReadNull() call, so its attributes must not be surfaced as unknown. This
+            // also matches the struct path, where a nil element returns before its attributes are read.
+            if (GetNullAttr())
+            {
+                return;
+            }
+            while (Reader.MoveToNextAttribute())
+            {
+                if (!IsXmlnsAttribute(Reader.Name))
+                {
+                    UnknownNode(null);
+                }
+            }
+            Reader.MoveToElement();
         }
 
         private void WriteAttributes(Member[] members, Member? anyAttribute, UnknownNodeAction elseCall, ref object? o)
