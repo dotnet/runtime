@@ -54,6 +54,7 @@ internal enum FrameType
 /// </summary>
 internal sealed class FrameHelpers
 {
+    private const ulong InlinedCallFrameMarkerMask = 1;
     private readonly Target _target;
 
     public FrameHelpers(Target target)
@@ -126,7 +127,7 @@ internal sealed class FrameHelpers
             case FrameType.InlinedCallFrame:
                 Data.InlinedCallFrame inlinedCallFrame = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
                 if (InlinedCallFrameHasActiveCall(inlinedCallFrame) && InlinedCallFrameHasFunction(inlinedCallFrame))
-                    return inlinedCallFrame.Datum & ~(ulong)(_target.PointerSize - 1);
+                    return inlinedCallFrame.Datum & ~InlinedCallFrameMarkerMask;
                 else
                     return TargetPointer.Null;
             default:
@@ -352,8 +353,7 @@ internal sealed class FrameHelpers
         if (!InlinedCallFrameHasActiveCall(icf))
             return false;
 
-        const ulong mask = 1;
-        return (icf.Datum.Value & mask) == mask;
+        return (icf.Datum.Value & InlinedCallFrameMarkerMask) == InlinedCallFrameMarkerMask;
     }
 
     private IPlatformFrameHandler GetFrameHandler(IPlatformAgnosticContext context)
@@ -378,12 +378,14 @@ internal sealed class FrameHelpers
 
     private bool InlinedCallFrameHasFunction(Data.InlinedCallFrame frame)
     {
+        ulong datum = frame.Datum.Value & ~InlinedCallFrameMarkerMask;
+
         if (!UsesInlinedCallFrameStackSizeSentinel())
         {
-            return frame.Datum != TargetPointer.Null;
+            return datum != 0;
         }
 
-        return ((long)frame.Datum.Value & ~0xffff) != 0;
+        return ((long)datum & ~0xffff) != 0;
     }
 
     private bool UsesInlinedCallFrameStackSizeSentinel()
