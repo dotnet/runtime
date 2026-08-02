@@ -91,7 +91,7 @@ namespace ILLink.CodeFix
         }
 
         /// <summary>
-        /// Returns the declarations of a partial type that carry the <c>unsafe</c> modifier in source.
+        /// Returns the document IDs containing partial type declarations that carry the <c>unsafe</c> modifier in source.
         /// </summary>
         private static async Task<ImmutableArray<DocumentId>> GetPartsWithUnsafeModifierAsync(
             Document document,
