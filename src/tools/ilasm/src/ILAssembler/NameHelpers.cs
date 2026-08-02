@@ -5,6 +5,40 @@ namespace ILAssembler
 {
     internal static class NameHelpers
     {
+        public static string GetPrivateScopeMetadataName(string name, bool isMethod)
+        {
+            const int TokenLength = 8;
+            const string PrivateScopeMarker = "$PST";
+            int markerIndex = name.Length - PrivateScopeMarker.Length - TokenLength;
+            if (markerIndex < 0)
+            {
+                return name;
+            }
+
+            ReadOnlySpan<char> token = name.AsSpan(markerIndex + PrivateScopeMarker.Length);
+            if (!name.AsSpan(markerIndex, PrivateScopeMarker.Length).SequenceEqual(PrivateScopeMarker)
+                || !token.StartsWith(isMethod ? "06" : "04")
+                || !IsHexToken(token))
+            {
+                return name;
+            }
+
+            return name.Substring(0, markerIndex);
+
+            static bool IsHexToken(ReadOnlySpan<char> token)
+            {
+                foreach (char c in token)
+                {
+                    if (!char.IsAsciiHexDigit(c))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
+
         public static (string Namespace, string Name) SplitDottedNameToNamespaceAndName(string dottedName)
         {
             int lastDotIndex = dottedName.LastIndexOf('.');

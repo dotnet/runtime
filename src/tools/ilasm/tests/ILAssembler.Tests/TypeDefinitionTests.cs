@@ -437,6 +437,23 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void TypeName_QuotedStartupCodeNamespaceSegment()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class private abstract auto ansi sealed '<StartupCode$Test>'.$Test extends [mscorlib]System.Object { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal("$Test", reader.GetString(typeDef.Name));
+            Assert.Equal("<StartupCode$Test>", reader.GetString(typeDef.Namespace));
+        }
+
+        [Fact]
         public void TypeName_QuotedSegmentAfterDottedName()
         {
             string source = """

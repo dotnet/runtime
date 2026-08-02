@@ -156,6 +156,37 @@ namespace ILAssembler.Tests
             Assert.Single(genericParams);
         }
 
+        [Fact]
+        public void GenericType_MoreThanMetadataIndexRange_IsAcceptedForCompatibility()
+        {
+            const int GenericParameterCount = 65_537;
+            StringBuilder source = new("""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test<
+                """);
+
+            for (int i = 0; i < GenericParameterCount; i++)
+            {
+                if (i != 0)
+                {
+                    source.Append(',');
+                }
+                if (i == GenericParameterCount - 1)
+                {
+                    source.Append("(class [mscorlib]System.Object) ");
+                }
+                source.Append('T').Append(i);
+            }
+
+            source.Append("> { }");
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source.ToString(), new Options());
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(ushort.MaxValue + 1, reader.GetTableRowCount(TableIndex.GenericParam));
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.GenericParamConstraint));
+        }
 
         [Fact]
         public void GenericOverride_EmitsMethodImpl()

@@ -41,7 +41,7 @@ VOID: 'void';
 ENUM: 'enum';
 CUSTOM: 'custom';
 FIXED: 'fixed';
-SYSSTRING: 'systring';
+SYSSTRING: 'sysstring';
 ARRAY: 'array';
 VARIANT: 'variant';
 CURRENCY: 'currency';
@@ -409,7 +409,7 @@ id:
 	| INSTANCE
 	| SQSTRING;
 dottedName: DOTTEDNAME | ((dottedNamePart '.')* dottedNamePart) | SQSTRING;
-dottedNamePart: ID | VALUE | INSTANCE | SQSTRING | DOTTEDNAME;
+dottedNamePart: ID | VALUE | INSTANCE | SQSTRING | DOTTEDNAME | 'volatile';
 compQstring: (QSTRING PLUS)* QSTRING;
 
 
@@ -789,6 +789,10 @@ nativeTypeElement:
 	| marshalType=SAFEARRAY variantType ',' compQstring
 	| marshalType=INT
 	| marshalType=UINT
+	| 'unsigned' unsignedMarshalType=INT8
+	| 'unsigned' unsignedMarshalType=INT16
+	| 'unsigned' unsignedMarshalType=INT32_
+	| 'unsigned' unsignedMarshalType=INT64_
 	| 'nested' marshalType=STRUCT
 	| marshalType=BYVALSTR
 	| ANSI marshalType=BSTR
