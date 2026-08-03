@@ -2054,8 +2054,14 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
             ProfilerUnmanagedToManagedTransitionMD(methodDescToReportAsTransition, COR_PRF_TRANSITION_CALL);
         }
 #endif
+    }
+
+    void* retVal;
+    {
+        GCX_MAYBE_COOP(pInterpreterCode->Method->unmanagedCallersOnly);
+
 #ifdef DEBUGGING_SUPPORTED
-        if (g_TrapReturningThreads && CORDebuggerTraceCall())
+        if (pInterpreterCode->Method->unmanagedCallersOnly && g_TrapReturningThreads && CORDebuggerTraceCall())
         {
             void* thunkDataMaybe = nullptr;
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
@@ -2065,11 +2071,6 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
             DebuggerTraceCall((void*)pInterpreterCode->GetByteCodes(), thunkDataMaybe);
         }
 #endif // DEBUGGING_SUPPORTED
-    }
-
-    void* retVal;
-    {
-        GCX_MAYBE_COOP(pInterpreterCode->Method->unmanagedCallersOnly);
 
         // This construct ensures that the InterpreterFrame is always stored at a higher address than the
         // InterpMethodContextFrame. This is important for the stack walking code.
