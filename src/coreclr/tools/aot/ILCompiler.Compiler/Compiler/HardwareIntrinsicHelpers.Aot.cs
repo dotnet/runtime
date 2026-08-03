@@ -41,6 +41,10 @@ namespace ILCompiler
                     flag = Arm64IntrinsicConstants.FromInstructionSet(instructionSet);
                     break;
 
+                case TargetArchitecture.LoongArch64:
+                    flag = LoongArch64IntrinsicConstants.FromInstructionSet(instructionSet);
+                    break;
+
                 default:
                     Debug.Fail("Unsupported Architecture");
                     break;
@@ -91,6 +95,11 @@ namespace ILCompiler
                 case TargetArchitecture.ARM64:
                     foreach (InstructionSet instructionSet in instructionSetSupport.SupportedFlags)
                         result |= Arm64IntrinsicConstants.FromInstructionSet(instructionSet);
+                    break;
+
+                case TargetArchitecture.LoongArch64:
+                    foreach (InstructionSet instructionSet in instructionSetSupport.SupportedFlags)
+                        result |= LoongArch64IntrinsicConstants.FromInstructionSet(instructionSet);
                     break;
 
                 default:

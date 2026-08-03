@@ -26,7 +26,7 @@
 ; DO NOT CHANGE R2R NUMERIC VALUES OF THE EXISTING SETS. Changing R2R numeric values definitions would be R2R format breaking change.
 
 ; The ISA definitions should also be mapped to `hwintrinsicIsaRangeArray` in hwintrinsic.cpp.
-; NEXT_AVAILABLE_R2R_BIT = 94
+; NEXT_AVAILABLE_R2R_BIT = 97
 
 ; Definition of X86 instruction sets
 definearch         ,X86   ,32Bit                ,X64, X64, X86
@@ -289,6 +289,12 @@ implication        ,RiscV64 ,Zbb                 ,RiscV64Base
 implication        ,RiscV64 ,Zba                 ,RiscV64Base
 implication        ,RiscV64 ,Zbs                 ,RiscV64Base
 implication        ,RiscV64 ,Zicond              ,RiscV64Base
+
+; Definition of LoongArch64 instruction sets
+definearch         ,LoongArch64 ,64Bit     ,LoongArch64 ,LoongArch64,
+
+instructionset     ,LoongArch64  ,LAM_BH  ,      ,95 ,LAM_BH  ,lam_bh
+instructionset     ,LoongArch64  ,LAM_CAS ,      ,96 ,LAM_CAS ,lam_cas
 
 ;                    ,name and aliases           ,archs    ,lower baselines included by implication
 instructionsetgroup  ,x86-64-v2                  ,X64 X86  ,base
