@@ -7994,14 +7994,11 @@ struct GenTreeArrElem : public GenTree
     GenTree*      gtArrInds[GT_ARR_MAX_RANK]; // Indices
     unsigned char gtArrRank;                  // Rank of the array
 
-    unsigned char gtArrElemSize; // !!! Caution, this is an "unsigned char", it is used only
-                                 // on the optimization path of array intrinsics.
-                                 // It stores the size of array elements WHEN it can fit
-                                 // into an "unsigned char".
-                                 // This has caused VSW 571394.
+    unsigned gtArrElemSize; // The size of the array elements. Used only on the
+                            // optimization path of array intrinsics.
 
     // Requires that "inds" is a pointer to an array of "rank" nodes for the indices.
-    GenTreeArrElem(var_types type, GenTree* arr, unsigned char rank, unsigned char elemSize, GenTree** inds)
+    GenTreeArrElem(var_types type, GenTree* arr, unsigned char rank, unsigned elemSize, GenTree** inds)
         : GenTree(GT_ARR_ELEM, type)
         , gtArrObj(arr)
         , gtArrRank(rank)
