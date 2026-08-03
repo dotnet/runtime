@@ -921,6 +921,7 @@ secDecl:
 	| PERMISSION secAction typeSpec '=' '{' customBlobDescr '}'
 	| PERMISSION secAction typeSpec
 	| PERMISSIONSET secAction '=' 'bytearray'? '(' bytes ')'
+	| PERMISSIONSET secAction 'bytearray' '(' bytes ')'
 	| PERMISSIONSET secAction compQstring
 	| PERMISSIONSET secAction '=' '{' secAttrSetBlob '}';
 
@@ -1385,7 +1386,7 @@ customAttrDecl:
 
 /* Assembly References */
 asmOrRefDecl:
-	'.publicKey' '=' '(' bytes ')'
+	('.publickey' | '.publicKey') '=' '(' bytes ')'
 	| '.ver' intOrWildcard ':' intOrWildcard ':' intOrWildcard ':' intOrWildcard
 	| '.locale' compQstring
 	| '.locale' '=' '(' bytes ')'
