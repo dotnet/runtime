@@ -174,5 +174,38 @@ namespace ILAssembler.Tests
             Assert.Equal("Helper", reader.GetString(memberReference.Name));
             Assert.Equal(0x65, reader.GetBlobBytes(memberReference.Signature)[0]);
         }
+
+        [Fact]
+        public void ExternalVarArgReference_DoesNotShiftLaterMemberReferenceTokens()
+        {
+            string source = """
+                .assembly extern External { }
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static void VarArgCaller() cil managed
+                    {
+                        ldc.i4.0
+                        ldstr ""
+                        call vararg void [External]ExternalType::VarArg(int32, ..., string)
+                        ret
+                    }
+                    .method public static void NormalCaller() cil managed
+                    {
+                        call void [External]ExternalType::Normal()
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            int varArgToken = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "VarArgCaller", ILOpcode.call);
+            int normalToken = DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "NormalCaller", ILOpcode.call);
+
+            Assert.Equal("VarArg", reader.GetString(reader.GetMemberReference((MemberReferenceHandle)MetadataTokens.EntityHandle(varArgToken)).Name));
+            Assert.Equal("Normal", reader.GetString(reader.GetMemberReference((MemberReferenceHandle)MetadataTokens.EntityHandle(normalToken)).Name));
+            Assert.Equal(2, reader.GetTableRowCount(TableIndex.MemberRef));
+        }
     }
 }
