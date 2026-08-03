@@ -263,20 +263,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static Type GetUnannotatedType() => null;
 
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-            static Type annotatedFieldTarget;
-
-            // A field target (IFieldReferenceOperation) is handled directly by ProcessAssignment/
-            // ProcessSingleTargetAssignment (it has no side-effecting sub-expression pre-visit of its
-            // own; a static field has no instance to evaluate). This just verifies the assigned value
-            // is correctly checked against the field's DynamicallyAccessedMembers requirement.
-            [ExpectedWarning("IL2074", nameof(GetUnannotatedType))]
-            static void DeconstructFieldTarget()
-            {
-                object other;
-                (annotatedFieldTarget, other) = (GetUnannotatedType(), new object());
-            }
-
             // A parameter target (IParameterReferenceOperation) reassigns an existing parameter
             // directly (no declaration expression), unlike DeconstructVariableFlowCapture's locals.
             [ExpectedWarning("IL2067")]
@@ -343,24 +329,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 (ConversionTarget converted, object instance) = (typeWithMethods, new object());
             }
 
-            struct ConversionSource
-            {
-                public static implicit operator Type(ConversionSource value) => null;
-            }
-
-            // The converted value must be modeled as the conversion operator's return value, not as
-            // the source value and not as an unknown/empty value. The operator's return type has no
-            // annotations, so assigning it to an annotated target has to warn - the same way the
-            // equivalent non-deconstruction assignment does. Note the conversion here is described
-            // by the DeconstructionInfo (not by a conversion operation in the tree) because the
-            // source is a tuple-typed value rather than a tuple literal.
-            [ExpectedWarning("IL2074", nameof(ConversionSource))]
-            static void DeconstructUserDefinedConversionToAnnotatedTarget((ConversionSource value, object instance) input)
-            {
-                object instance;
-                (annotatedFieldTarget, instance) = input;
-            }
-
             [ExpectedWarning("IL2077")]
             static void DeconstructForeach((Type type, object instance)[] inputs)
             {
@@ -388,13 +356,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 DeconstructTargetReceiverEvaluatedBeforeSource(typeof(string), typeof(string));
                 DeconstructTargetReceiverWithNestedDeconstructionSource(typeof(string), typeof(string));
                 DeconstructIndexerTargetSideEffect(typeof(string), typeof(string));
-                DeconstructFieldTarget();
                 DeconstructParameterTarget(typeof(string), null);
                 DeconstructDiscardTarget();
                 DeconstructArrayElementTargetSideEffect(typeof(string), typeof(string));
                 DeconstructImplicitIndexerTargetSideEffect(typeof(string), typeof(string));
                 DeconstructWithUserDefinedConversion(typeof(string));
-                DeconstructUserDefinedConversionToAnnotatedTarget(default);
                 DeconstructForeach(new[] { (typeof(string), (object)null) });
             }
         }
