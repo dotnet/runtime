@@ -219,7 +219,8 @@ namespace System.Net.Security.Tests
 
             // Verify that the caller's intermediate certificates were not disposed
             Assert.True(callerContext.IntermediateCertificates.Count > 0, "Expected at least one intermediate in the caller's context.");
-            _ = callerContext.IntermediateCertificates[0].Export(X509ContentType.Cert); // Must not throw CryptographicException
+            // Export() requires the native certificate handle; a CryptographicException would indicate the certificate was incorrectly disposed.
+            Assert.Null(Record.Exception(() => callerContext.IntermediateCertificates[0].Export(X509ContentType.Cert)));
         }
     }
 }
