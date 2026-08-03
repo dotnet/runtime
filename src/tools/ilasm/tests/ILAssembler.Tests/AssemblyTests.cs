@@ -135,6 +135,67 @@ namespace ILAssembler.Tests
             Assert.Equal("volatile", reader.GetString(reader.GetAssemblyReference(assemblyReference).Name));
         }
 
+        [Theory]
+        [InlineData(".publickey")]
+        [InlineData(".publicKey")]
+        public void AssemblyReference_PublicKeySpellings_AreAccepted(string directive)
+        {
+            string source = $$"""
+                .assembly extern mscorlib
+                {
+                    {{directive}} = (01 02 03 04)
+                    .ver 2:0:0:0
+                }
+                .assembly test { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var assemblyReference = reader.GetAssemblyReference(Assert.Single(reader.AssemblyReferences));
+
+            Assert.True(assemblyReference.Flags.HasFlag(AssemblyFlags.PublicKey));
+            Assert.Equal([1, 2, 3, 4], reader.GetBlobBytes(assemblyReference.PublicKeyOrToken));
+        }
+
+        [Fact]
+        public void AssemblyDefinition_PublicKeySetsFlag()
+        {
+            string source = """
+                .assembly test
+                {
+                    .publickey = (01 02 03 04)
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var assembly = reader.GetAssemblyDefinition();
+
+            Assert.True(assembly.Flags.HasFlag(AssemblyFlags.PublicKey));
+            Assert.Equal([1, 2, 3, 4], reader.GetBlobBytes(assembly.PublicKey));
+        }
+
+        [Theory]
+        [InlineData(".publickey = (01 02 03 04)\n.publickeytoken = (05 06 07 08)")]
+        [InlineData(".publickeytoken = (05 06 07 08)\n.publickey = (01 02 03 04)")]
+        public void AssemblyReference_PublicKeyTokenTakesPrecedence(string declarations)
+        {
+            string source = $$"""
+                .assembly extern External
+                {
+                    {{declarations}}
+                }
+                .assembly test { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var assemblyReference = reader.GetAssemblyReference(Assert.Single(reader.AssemblyReferences));
+
+            Assert.False(assemblyReference.Flags.HasFlag(AssemblyFlags.PublicKey));
+            Assert.Equal([5, 6, 7, 8], reader.GetBlobBytes(assemblyReference.PublicKeyOrToken));
+        }
+
 
         [Fact]
         public void CoreAssemblyResolution_PrefersSystemPrivateCoreLib()

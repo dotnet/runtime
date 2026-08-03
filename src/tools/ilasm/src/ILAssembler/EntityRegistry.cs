@@ -1606,11 +1606,10 @@ namespace ILAssembler
             if (hasVarargParameters)
             {
                 var methodRef = new MemberReferenceEntity(memberRef.Parent, memberRef.Name, methodDefSig);
-                ResolveAndRecordMemberReference(methodRef);
-                // Only reparent the call-site MemberRef if the base method resolved to a MethodDef.
-                // MemberRef is not a valid MemberRefParent in the coded index, so we can only
-                // reparent when the inner ref resolved to MethodDef.
-                if (methodRef.Handle.Kind == HandleKind.MethodDefinition)
+                // Native ilasm only creates a MethodDef-parented MemberRef when the fixed
+                // signature resolves to a local method. Recording an unresolved helper
+                // MemberRef would create an unused row and shift every subsequent token.
+                if (TryResolveMethodReference(methodRef))
                 {
                     memberRef.SetMemberRefParent(methodRef);
                 }
