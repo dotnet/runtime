@@ -231,7 +231,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
     else
     {
         GenTree* continuation = gtNewLclVarNode(lvaAsyncContinuationArg, TYP_REF);
-        resumed = gtNewOperNode(GT_NE, TYP_INT, continuation, gtNewNull());
+        resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, gtNewNull());
     }
 
     GenTreeCall* restoreCall = gtNewUserCallNode(asyncInfo->restoreContextsMethHnd, TYP_VOID);
@@ -405,7 +405,7 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
     else
     {
         GenTree* continuation = gtNewLclVarNode(lvaAsyncContinuationArg, TYP_REF);
-        resumed = gtNewOperNode(GT_NE, TYP_INT, continuation, gtNewNull());
+        resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, gtNewNull());
     }
 
     GenTreeCall* restoreCall = gtNewUserCallNode(asyncInfo->restoreContextsMethHnd, TYP_VOID);
