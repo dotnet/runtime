@@ -2008,7 +2008,9 @@ inline PCODE GetPreStubEntryPoint()
 
 PCODE TheUMThunkPreStub();
 
+#ifdef FEATURE_VARARGS
 PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg);
+#endif // FEATURE_VARARGS
 
 
 

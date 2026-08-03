@@ -532,11 +532,13 @@ CDAC_TYPE_FIELD(Signature, T_POINTER, SignaturePointer, cdac_data<Signature>::Si
 CDAC_TYPE_FIELD(Signature, T_UINT32, SignatureLength, cdac_data<Signature>::SignatureLength)
 CDAC_TYPE_END(Signature)
 
+#ifdef FEATURE_VARARGS
 CDAC_TYPE_BEGIN(VASigCookie)
 CDAC_TYPE_INDETERMINATE(VASigCookie)
 CDAC_TYPE_FIELD(VASigCookie, T_UINT32, SizeOfArgs, offsetof(VASigCookie, sizeOfArgs))
 CDAC_TYPE_FIELD(VASigCookie, TYPE(Signature), Signature, cdac_data<VASigCookie>::Signature)
 CDAC_TYPE_END(VASigCookie)
+#endif // FEATURE_VARARGS
 
 // RuntimeTypeSystem
 

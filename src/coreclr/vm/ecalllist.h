@@ -359,7 +359,9 @@ FCFuncStart(gStubHelperFuncs)
     FCFuncElement("GetComInterfaceFromMethodDesc", StubHelpers::GetComInterfaceFromMethodDesc)
     FCFuncElement("GetCOMIPFromRCW", StubHelpers::GetCOMIPFromRCW)
 #endif // FEATURE_COMINTEROP
+#ifdef FEATURE_VARARGS
     FCFuncElement("CalcVaListSize", StubHelpers::CalcVaListSize)
+#endif // FEATURE_VARARGS
     FCFuncElement("LogPinnedArgument", StubHelpers::LogPinnedArgument)
 FCFuncEnd()
 
