@@ -20,12 +20,10 @@
     <Compile Include="System\IO\Compression\ZipArchiveEntry.Async.cs" />
     <Compile Include="System\IO\Compression\ZipArchiveMode.cs" />
     <Compile Include="System\IO\Compression\ZipBlocks.cs" />
-    <Compile Include="System\IO\Compression\ZipBlocks.Async.cs" />
     <Compile Include="System\IO\Compression\ZipBlocks.FieldLengths.cs" />
     <Compile Include="System\IO\Compression\ZipBlocks.FieldLocations.cs" />
     <Compile Include="System\IO\Compression\ZipCustomStreams.cs" />
     <Compile Include="System\IO\Compression\ZipHelper.cs" />
-    <Compile Include="System\IO\Compression\ZipHelper.Async.cs" />
     <Compile Include="System\IO\Compression\ZipVersion.cs" />
     <Compile Include="System\IO\Compression\DeflateManaged\BlockType.cs" />
     <Compile Include="System\IO\Compression\DeflateManaged\DeflateManagedStream.cs" />
@@ -64,6 +62,7 @@
     <Compile Include="System\IO\Compression\ZLibStream.cs" />
     <Compile Include="System\IO\Compression\ZipCompressionMethod.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)System\ReadWriteAdapter.cs" Link="Common\System\ReadWriteAdapter.cs" />
     <Compile Include="System\IO\Compression\ZipEncryptionMethod.cs" />
     <Compile Include="System\IO\Compression\ZipCryptoStream.cs" />
     <Compile Include="System\IO\Compression\WinZipAesStream.cs" />
