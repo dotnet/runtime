@@ -1,5 +1,8 @@
 ﻿namespace System.Private.CoreLib.src.System.Extensions;
 
+/// <summary>
+/// Contains extension methods for <see cref="DateTime"/>
+/// </summary>
 public static class DateTimeExtensions
 {
     extension(DateTime dateTime)
@@ -66,7 +69,7 @@ public static class DateTimeExtensions
         /// Converts <see cref="DateTime"/> to <see cref="TimeOnly"/>
         /// </summary>
         /// <returns><see cref="TimeOnly"/> is <paramref name="dateTime"/> is null returns default value</returns>
-        public TimeOnly ToTimeOnlyOrDefaultrg() =>
+        public TimeOnly ToTimeOnlyOrDefault() =>
             dateTime is not null
                 ? dateTime.Value.ToTimeOnly()
                 : default;
