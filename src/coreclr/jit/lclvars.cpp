@@ -5861,8 +5861,7 @@ int Compiler::lvaAllocAsyncContexts(int stkOffs)
     {
         // The indicator is actually a bool, but we allocate 8 bytes for it to
         // simplify EnC remapping.
-        stkOffs =
-            lvaAllocLocalAndSetVirtualOffset(lvaResumedIndicator, TARGET_POINTER_SIZE, stkOffs);
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaResumedIndicator, TARGET_POINTER_SIZE, stkOffs);
     }
     else
     {
