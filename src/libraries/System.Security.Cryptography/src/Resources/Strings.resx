@@ -243,6 +243,9 @@
   <data name="Cryptography_AndroidX509ChainContextInitializationFailed" xml:space="preserve">
     <value>The Android X.509 certificate chain could not be initialized.</value>
   </data>
+  <data name="Cryptography_ArgCompositeMLDsaRequiresCompositeMLDsaKey" xml:space="preserve">
+    <value>Keys used with the CompositeMLDsaCng algorithm must have an algorithm group of CompositeMLDsa.</value>
+  </data>
   <data name="Cryptography_ArgDSARequiresDSAKey" xml:space="preserve">
     <value>Keys used with the DSACng algorithm must have an algorithm group of DSA.</value>
   </data>

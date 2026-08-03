@@ -382,8 +382,11 @@ namespace ILCompiler
             CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
 
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
-            // code if the runtime environment doesn't support the specified instruction set
-            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport);
+            // code if the runtime environment doesn't support the specified instruction set. Targets that cannot generate
+            // code at runtime must not encode "must be absent" assertions, since a failing eager fixup is a fatal startup
+            // error with no JIT fallback (see ToInstructionSetSupportString).
+            bool targetAllowsRuntimeCodeGeneration = ((ReadyToRunCompilerContext)nodeFactory.TypeSystemContext).TargetAllowsRuntimeCodeGeneration;
+            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport, emitExplicitlyUnsupported: targetAllowsRuntimeCodeGeneration);
             ReadyToRunInstructionSetSupportSignature instructionSetSupportSig = new ReadyToRunInstructionSetSupportSignature(instructionSetSupportString);
             _dependencyGraph.AddRoot(new Import(NodeFactory.EagerImports, instructionSetSupportSig), "Baseline instruction set support");
 
@@ -459,6 +462,12 @@ namespace ILCompiler
                             relativeMsilPath = Path.GetFileName(inputFile);
                         }
                         string standaloneMsilOutputFile = Path.Combine(outputDirectory, relativeMsilPath);
+                        if (_format == ReadyToRunContainerFormat.Wasm)
+                        {
+                            // For wasm, component stubs are webcil-in-wasm modules loaded by name
+                            // as "<assembly>.wasm" (matching the browser/wasi external-assembly probe).
+                            standaloneMsilOutputFile = Path.ChangeExtension(standaloneMsilOutputFile, ".wasm");
+                        }
                         RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableName, compiledMethodDefs: compiledMethodDefs);
                     }
                 }
@@ -519,6 +528,11 @@ namespace ILCompiler
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNativeImage;
             }
 
+            // Component (per-assembly forwarding) stubs are emitted as PE (even when the composite image is native),
+            // except on wasm where we emit webcil-in-wasm stubs to match the browser/wasi loading model.
+            // The PE/COFF writer does not support the Wasm32 architecture.
+            ReadyToRunContainerFormat componentFormat =
+                _format == ReadyToRunContainerFormat.Wasm ? ReadyToRunContainerFormat.Wasm : ReadyToRunContainerFormat.PE;
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
             // Re-written components shouldn't have any additional diagnostic information - only information about the forwards.
             // Even with all of this, we might be modifying the image in a silly manner - adding a directory when if didn't have one.
@@ -533,7 +547,7 @@ namespace ILCompiler
                 win32Resources: new Win32Resources.ResourceData(inputModule),
                 flags: flags,
                 nodeFactoryOptimizationFlags: optimizationFlags,
-                format: ReadyToRunContainerFormat.PE,
+                format: componentFormat,
                 imageBase: _nodeFactory.ImageBase,
                 associatedModule: automaticTypeValidation ? inputModule : null,
                 genericCycleDepthCutoff: -1, // We don't need generic cycle detection when rewriting component assemblies
@@ -569,7 +583,7 @@ namespace ILCompiler
                 perfMapFormatVersion: _perfMapFormatVersion,
                 generateProfileFile: false,
                 _profileData.CallChainProfile,
-                ReadyToRunContainerFormat.PE,
+                componentFormat,
                 customPESectionAlignment: 0,
                 _logger);
         }

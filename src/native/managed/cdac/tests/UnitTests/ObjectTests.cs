@@ -295,7 +295,7 @@ public unsafe class ObjectTests
             },
             builder => {
                 var mockRts = new Mock<IRuntimeTypeSystem>();
-                TypeHandle handle = new TypeHandle(TestMethodTableAddress);
+                ITypeHandle handle = new TargetTypeHandle(TestMethodTableAddress);
                 mockRts.Setup(r => r.GetTypeHandle(TestMethodTableAddress)).Returns(handle);
                 mockRts.Setup(r => r.GetModule(handle)).Returns(TargetPointer.Null);
 
@@ -343,7 +343,7 @@ public unsafe class ObjectTests
             },
             builder => {
                 var mockRts = new Mock<IRuntimeTypeSystem>();
-                TypeHandle handle = new TypeHandle(TestMethodTableAddress);
+                ITypeHandle handle = new TargetTypeHandle(TestMethodTableAddress);
                 mockRts.Setup(r => r.GetTypeHandle(TestMethodTableAddress)).Returns(handle);
                 mockRts.Setup(r => r.GetModule(handle)).Returns(TargetPointer.Null);
 
@@ -383,7 +383,7 @@ public unsafe class ObjectTests
                     target: TestTarget,
                     methodPtr: TestMethodPtr,
                     methodPtrAux: 0,
-                    invocationCount: 0);
+                    extraData: 0);
             });
 
         DelegateInfo info = contract.GetDelegateInfo(delegateAddress);
@@ -411,7 +411,7 @@ public unsafe class ObjectTests
                     target: 0,
                     methodPtr: TestMethodPtr,
                     methodPtrAux: TestMethodPtrAux,
-                    invocationCount: 0);
+                    extraData: 0);
             });
 
         DelegateInfo info = contract.GetDelegateInfo(delegateAddress);
@@ -423,11 +423,11 @@ public unsafe class ObjectTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetDelegateInfo_Multicast(MockTarget.Architecture arch)
+    public void GetDelegateInfo_Unmanaged(MockTarget.Architecture arch)
     {
         const ulong TestMethodTable = 0x00000000_10000200;
         const ulong TestMethodPtr = 0x00000000_aaaa0000;
-        const long TestInvocationCount = 3;
+        const long TestExtraData = -1;
         TargetPointer delegateAddress = default;
 
         IObject contract = CreateObjectContract(
@@ -439,7 +439,7 @@ public unsafe class ObjectTests
                     target: 0,
                     methodPtr: TestMethodPtr,
                     methodPtrAux: 0,
-                    invocationCount: TestInvocationCount);
+                    extraData: TestExtraData);
             });
 
         DelegateInfo info = contract.GetDelegateInfo(delegateAddress);

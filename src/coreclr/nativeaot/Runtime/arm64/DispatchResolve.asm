@@ -6,17 +6,20 @@
     TEXTAREA
 
     EXTERN RhpCidResolve
+    EXTERN RhpCidResolve_Worker
     EXTERN RhpUniversalTransitionTailCall
     EXTERN RhpUniversalTransitionGuardedTailCall
 
     EXTERN __guard_dispatch_icall_fptr
     EXTERN g_pDispatchCache
 
-;; Macro that generates an interface dispatch stub.
+;; Macro that generates an interface dispatch or dispatch resolve stub.
 ;; DispatchName: the name of the dispatch entry point
 ;; Guarded: if non-empty, validate indirect call targets using Control Flow Guard
+;; ReturnTarget: if non-empty, return the resolved target in x0 instead of dispatching to it
+;; DispatchCellReg: register containing the indirection cell address
     MACRO
-        INTERFACE_DISPATCH $DispatchName, $Guarded
+        INTERFACE_DISPATCH $DispatchName, $Guarded, $ReturnTarget, $DispatchCellReg
 
     LEAF_ENTRY $DispatchName, _TEXT
 
@@ -27,24 +30,29 @@
         ;; to a NullReferenceException at the callsite.
         ldr     x12, [x0]
 
-        ;; x11 currently contains the indirection cell address.
+        ;; DispatchCellReg currently contains the indirection cell address.
         ;; Load-acquire ensures that if we observe the cached MethodTable,
         ;; the subsequent load of Code will see the value written before it.
-        ldar    x13, [x11]              ;; load-acquire cached MethodTable
+        ldar    x13, [$DispatchCellReg] ;; load-acquire cached MethodTable
         cmp     x13, x12                ;; is this the monomorphic MethodTable?
         bne     %ft1
 
-        ldr     x9, [x11, #8]           ;; load the cached monomorphic resolved code address
-    IF "$Guarded" != ""
+        ldr     x9, [$DispatchCellReg, #8] ;; load the cached monomorphic resolved code address
+    IF "$ReturnTarget" != "0"
+        mov     x0, x9
+        ret
+    ELSE
+    IF "$Guarded" != "0"
         adrp    x16, __guard_dispatch_icall_fptr
         ldr     x16, [x16, __guard_dispatch_icall_fptr]
         br      x16
     ELSE
         br      x9
     ENDIF
+    ENDIF
 
 1
-        ;; x12 = MethodTable, x11 = indirection cell address
+        ;; x12 = MethodTable, DispatchCellReg = indirection cell address
         ;; Look up the target in the dispatch cache hashtable (GenericCache<Key, nint>).
         ;; Only volatile scratch registers (x9-x17) are used, so no argument
         ;; register spilling is needed.
@@ -56,7 +64,7 @@
 
         ;; Compute 32-bit hash from Key.GetHashCode():
         ;; hash = IntPtr.GetHashCode(RotateLeft(dispatchCell, 16) ^ objectType)
-        eor     x14, x12, x11, ror #48 ;; combined = MethodTable ^ RotateLeft(cell, 16)
+        eor     x14, x12, $DispatchCellReg, ror #48 ;; combined = MethodTable ^ RotateLeft(cell, 16)
         asr     x16, x14, #32          ;; upper32 = combined >> 32 (arithmetic)
         eor     w14, w14, w16          ;; hash = (int)lower32 ^ (int)upper32
         sxtw    x14, w14               ;; sign-extend hash to 64-bit
@@ -87,7 +95,7 @@
 
         ;; Compare key (dispatchCell, objectType) — load both fields with a single ldp.
         ldp     x16, x17, [x9, #8]
-        cmp     x16, x11
+        cmp     x16, $DispatchCellReg
         bne     %ft3
         cmp     x17, x12
         bne     %ft3
@@ -106,12 +114,17 @@
         ;; Dispatch to cached target.
         mov     x9, x16
 
-    IF "$Guarded" != ""
+    IF "$ReturnTarget" != "0"
+        mov     x0, x9
+        ret
+    ELSE
+    IF "$Guarded" != "0"
         adrp    x16, __guard_dispatch_icall_fptr
         ldr     x16, [x16, __guard_dispatch_icall_fptr]
         br      x16
     ELSE
         br      x9
+    ENDIF
     ENDIF
 
 3       ;; ProbeMiss
@@ -128,19 +141,24 @@
         blt     %bt2
 
 4       ;; CacheMiss / SlowPath
+    IF "$ReturnTarget" != "0"
+        b       RhpCidResolve_Worker
+    ELSE
         ldr     xip0, =RhpCidResolve
-        mov     xip1, x11
-    IF "$Guarded" != ""
+        mov     xip1, $DispatchCellReg
+    IF "$Guarded" != "0"
         b       RhpUniversalTransitionGuardedTailCall
     ELSE
         b       RhpUniversalTransitionTailCall
+    ENDIF
     ENDIF
 
     LEAF_END $DispatchName
 
     MEND
 
-    INTERFACE_DISPATCH RhpInterfaceDispatch
-    INTERFACE_DISPATCH RhpInterfaceDispatchGuarded, Guarded
+    INTERFACE_DISPATCH RhpInterfaceDispatch, 0, 0, x11
+    INTERFACE_DISPATCH RhpInterfaceDispatchGuarded, 1, 0, x11
+    INTERFACE_DISPATCH RhpDispatchResolve, 0, 1, x1
 
     END

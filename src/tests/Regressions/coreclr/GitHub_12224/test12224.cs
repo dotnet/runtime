@@ -30,7 +30,8 @@ public class Test12224
     }
 
     [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
-    [Fact]
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static int TestEntryPoint()
     {
         Thread thread = new Thread(new ParameterizedThreadStart(Test12224.ExecuteTest));

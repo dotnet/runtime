@@ -50,6 +50,7 @@
 #define ARM64IntrinsicConstants_SveAes (1 << 13)
 #define ARM64IntrinsicConstants_SveSha3 (1 << 14)
 #define ARM64IntrinsicConstants_SveSm4 (1 << 15)
+#define ARM64IntrinsicConstants_Cssc (1 << 16)
 
 #include <assert.h>
 
@@ -62,6 +63,7 @@ static_assert((1 << ARM64_ATOMICS_FEATURE_FLAG_BIT) == ARM64IntrinsicConstants_A
 #define RiscV64IntrinsicConstants_Zba (1 << 0)
 #define RiscV64IntrinsicConstants_Zbb (1 << 1)
 #define RiscV64IntrinsicConstants_Zbs (1 << 2)
+#define RiscV64IntrinsicConstants_Zicond (1 << 3)
 #endif // HOST_RISCV64
 
 #ifdef __cplusplus

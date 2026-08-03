@@ -126,6 +126,7 @@ private:
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
 #ifdef TARGET_XARCH
     void TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* cnsVec);
+    void ContainHWIntrinsicOperand(GenTreeHWIntrinsic* parentNode, GenTree* childNode);
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
 
@@ -251,21 +252,10 @@ private:
         return m_compiler->gtNewPhysRegNode(reg, type);
     }
 
-    GenTree* ThisReg(GenTreeCall* call)
-    {
-        return PhysReg(m_compiler->codeGen->genGetThisArgReg(call), TYP_REF);
-    }
-
     GenTree* Offset(GenTree* base, unsigned offset)
     {
         var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
         return new (m_compiler, GT_LEA) GenTreeAddrMode(resultType, base, nullptr, 0, offset);
-    }
-
-    GenTree* OffsetByIndex(GenTree* base, GenTree* index)
-    {
-        var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
-        return new (m_compiler, GT_LEA) GenTreeAddrMode(resultType, base, index, 0, 0);
     }
 
     GenTree* OffsetByIndexWithScale(GenTree* base, GenTree* index, unsigned scale)
@@ -519,6 +509,11 @@ private:
     GenTree* LowerCnsMask(GenTreeMskCon* mask);
     bool     TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
     void     StoreFFRValue(GenTreeHWIntrinsic* node);
+#elif defined(TARGET_WASM)
+    GenTree* LowerHWIntrinsicCompareUnsignedLong(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node);
+    void     LowerHWIntrinsicSwizzle(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types type,
                                                  GenTree*  op1,

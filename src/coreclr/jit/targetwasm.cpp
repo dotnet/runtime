@@ -46,8 +46,7 @@ var_types WasmClassifier::ToJitType(CorInfoWasmType wasmType)
         case CORINFO_WASM_TYPE_F64:
             return TYP_DOUBLE;
         case CORINFO_WASM_TYPE_V128:
-            // TODO-WASM: Simd support
-            unreached();
+            return TYP_SIMD16;
         default:
             unreached();
     }
@@ -72,7 +71,7 @@ ABIPassingInformation WasmClassifier::Classify(Compiler*    comp,
                                                ClassLayout* structLayout,
                                                WellKnownArg wellKnownParam)
 {
-    if (type == TYP_STRUCT)
+    if (varTypeIsStruct(type))
     {
         CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
         assert(clsHnd != NO_CLASS_HANDLE);

@@ -141,12 +141,6 @@ public class BootJsonData
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
     public bool? asyncFlushOnExit { get; set; }
-
-    /// <summary>
-    /// internal flags for test instrumentation
-    /// </summary>
-    [DataMember(EmitDefaultValue = false)]
-    public bool? forwardConsole { get; set; }
 }
 
 /// <summary>
@@ -270,6 +264,7 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, AdditionalAsset> runtimeAssets { get; set; }
 
+    // this field this only for Mono
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, ResourceHashesByNameDictionary> coreVfs { get; set; }
 

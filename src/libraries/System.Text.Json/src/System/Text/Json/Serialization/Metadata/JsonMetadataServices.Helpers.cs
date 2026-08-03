@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonConverter<T> converter = GetConverter(objectInfo);
             var typeInfo = new JsonTypeInfo<T>(converter, options);
-            if (objectInfo.ObjectWithParameterizedConstructorCreator != null)
+            if (objectInfo.ObjectWithParameterizedConstructorCreator is not null)
             {
                 // NB parameter metadata must be populated *before* property metadata
                 // so that properties can be linked to their associated parameters.
@@ -44,7 +44,7 @@ namespace System.Text.Json.Serialization.Metadata
                 typeInfo.CreateObjectForExtensionDataProperty = ((JsonTypeInfo)typeInfo).CreateObject;
             }
 
-            if (objectInfo.PropertyMetadataInitializer != null)
+            if (objectInfo.PropertyMetadataInitializer is not null)
             {
                 typeInfo.SourceGenDelayedPropertyInitializer = objectInfo.PropertyMetadataInitializer;
             }
@@ -79,7 +79,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             ArgumentNullException.ThrowIfNull(collectionInfo);
 
-            converter = collectionInfo.SerializeHandler != null
+            converter = collectionInfo.SerializeHandler is not null
                 ? new JsonMetadataServicesConverter<T>(converter)
                 : converter;
 
@@ -94,6 +94,7 @@ namespace System.Text.Json.Serialization.Metadata
             typeInfo.AddMethodDelegate = addFunc;
             typeInfo.SetCreateObjectIfCompatible(collectionInfo.ObjectCreator);
             PopulatePolymorphismMetadata(typeInfo, collectionInfo.PolymorphismOptions, collectionInfo.TypeClassifierFactory);
+
             typeInfo.MapInterfaceTypesToCallbacks();
 
             // Plug in any converter configuration -- should be run last.
@@ -105,12 +106,12 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<T> GetConverter<T>(JsonObjectInfoValues<T> objectInfo)
         {
 #pragma warning disable CS8714 // Nullability of type argument 'T' doesn't match 'notnull' constraint.
-            JsonConverter<T> converter = objectInfo.ObjectWithParameterizedConstructorCreator != null
+            JsonConverter<T> converter = objectInfo.ObjectWithParameterizedConstructorCreator is not null
                 ? new LargeObjectWithParameterizedConstructorConverter<T>()
                 : new ObjectDefaultConverter<T>();
 #pragma warning restore CS8714
 
-            return objectInfo.SerializeHandler != null
+            return objectInfo.SerializeHandler is not null
                 ? new JsonMetadataServicesConverter<T>(converter)
                 : converter;
         }
@@ -184,7 +185,7 @@ namespace System.Text.Json.Serialization.Metadata
                         {
                             // [JsonInclude] property is inaccessible and the source generator
                             // did not provide getter/setter delegates (e.g. older generator).
-                            Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName is not set by source gen");
+                            Debug.Assert(jsonPropertyInfo.MemberName is not null, "MemberName is not set by source gen");
                             ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnInaccessibleProperty(jsonPropertyInfo.MemberName, jsonPropertyInfo.DeclaringType);
                         }
 
@@ -248,11 +249,11 @@ namespace System.Text.Json.Serialization.Metadata
             string? name;
 
             // Property name settings.
-            if (declaredJsonPropertyName != null)
+            if (declaredJsonPropertyName is not null)
             {
                 name = declaredJsonPropertyName;
             }
-            else if (propertyInfo.Options.PropertyNamingPolicy == null)
+            else if (propertyInfo.Options.PropertyNamingPolicy is null)
             {
                 name = declaredPropertyName;
             }
@@ -262,7 +263,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             // Compat: We need to do validation before we assign Name so that we get InvalidOperationException rather than ArgumentNullException
-            if (name == null)
+            if (name is null)
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(propertyInfo);
             }

@@ -32,6 +32,7 @@
     <_CoreCLRSupportedOS Condition="'$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</_CoreCLRSupportedOS>
 
     <_CoreCLRSupportedOS Condition="'$(TargetsAndroid)' == 'true' and '$(TargetArchitecture)' != 'x86'">true</_CoreCLRSupportedOS>
+    <_CoreCLRSupportedOS Condition="'$(TargetsLinuxBionic)' == 'true' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'arm'">true</_CoreCLRSupportedOS>
     <_CoreCLRSupportedOS Condition="'$(TargetsBrowser)' == 'true'">true</_CoreCLRSupportedOS>
     <_CoreCLRSupportedOS Condition="'$(TargetsWasi)' == 'true'">true</_CoreCLRSupportedOS>
     <_CoreCLRSupportedOS Condition="'$(TargetsAppleMobile)' == 'true'">true</_CoreCLRSupportedOS>
@@ -72,8 +73,10 @@
     <DefaultSubsets Condition="'$(TargetsAndroid)' == 'true' and '$(CoreCLRSupported)' == 'true'">clr+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsAndroid)' == 'true' and '$(CoreCLRSupported)' != 'true' and '$(NativeAotSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr+mono+libs+host+packs</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
-    <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+libs+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' == 'true' and '$(MonoSupported)' == 'true'">clr+mono+libs+host+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' == 'true' and '$(MonoSupported)' != 'true'">clr+libs+host+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' != 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' != 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+libs+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">clr+libs+tools+host+packs</DefaultSubsets>
     <!-- In source build, mono is only supported as primary runtime flavor. -->
     <DefaultSubsets Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono'">clr+libs+tools+host+packs</DefaultSubsets>
@@ -98,6 +101,7 @@
   <PropertyGroup Condition="'$(RuntimeFlavor)' == ''">
     <RuntimeFlavor Condition="('$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and ($(_subset.Contains('+clr.nativeaotlibs+')) or $(_subset.Contains('+clr.runtime+')))">CoreCLR</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(TargetsAndroid)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(TargetsLinuxBionic)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(TargetsAppleMobile)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(TargetsBrowser)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(TargetsWasi)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
@@ -110,9 +114,10 @@
     <DefaultCoreClrSubsets>clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools+host.native</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetRid)' == 'linux-armel'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAndroid)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets Condition="'$(TargetsLinuxBionic)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsBrowser)' == 'true'">provision.emsdk+clr.native+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.crossarchtools+libs.native+host.native</DefaultCoreClrSubsets>
-    <DefaultCoreClrSubsets Condition="'$(TargetsWasi)' == 'true'">clr.native+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.crossarchtools+libs.native</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets Condition="'$(TargetsWasi)' == 'true'">clr.native+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.crossarchtools+libs.native+host.native</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(RuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
 
@@ -237,6 +242,7 @@
     <SubsetName Include="Mono" Description="The Mono runtime and CoreLib. Equivalent to: $(DefaultMonoSubsets)" />
     <SubsetName Include="Mono.Runtime" Description="The Mono .NET runtime." />
     <SubsetName Include="Provision.EmSDK" Description="The emsdk provisioning." />
+    <SubsetName Include="Clean.WasmTools" Description="Prunes unreferenced entries from the shared wasm tool cache." />
     <SubsetName Include="Mono.AotCross" Description="The cross-compiler runtime for Mono AOT." />
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
     <SubsetName Include="Mono.Manifests" Description="The NuGet packages with manifests defining the mobile and Blazor workloads." />
@@ -302,6 +308,10 @@
   <!-- emscripten provisioning, needs to be placed before runtime projects -->
   <ItemGroup Condition="$(_subset.Contains('+provision.emsdk+'))">
     <ProjectToBuild Include="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.proj" Category="provision" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+clean.wasmtools+'))">
+    <ProjectToBuild Include="$(RepositoryEngineeringDir)wasm\PruneWasmToolCache.proj" Category="provision" />
   </ItemGroup>
 
   <!-- CoreClr sets -->
@@ -534,6 +544,8 @@
   <ItemGroup Condition="$(_subset.Contains('+tools.cdactests+'))">
     <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\UnitTests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
     <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\DataGenerator\Microsoft.Diagnostics.DataContractReader.DataGenerator.Tests.csproj" Test="true" Category="tools"/>
+    <!-- Uses CdacUsageGraph, which depends on Roslyn and System.CommandLine packages unavailable in source-only builds. -->
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\UsageTests\Microsoft.Diagnostics.DataContractReader.Usage.Tests.csproj" Test="true" Category="tools" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdacdumptests+'))">
@@ -702,7 +714,7 @@
           </PropertyGroup>
 
           <PropertyGroup Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(DotNetBuildSourceOnly)' != 'true'">
-            <_BuildCoreCLRRuntimePack Condition="'$(CoreCLRSupported)' == 'true' and '$(TargetsBrowser)' != 'true'">true</_BuildCoreCLRRuntimePack>
+            <_BuildCoreCLRRuntimePack Condition="'$(CoreCLRSupported)' == 'true' and '$(TargetsWasm)' != 'true'">true</_BuildCoreCLRRuntimePack>
             <_BuildMonoRuntimePack Condition="'$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
           </PropertyGroup>
 

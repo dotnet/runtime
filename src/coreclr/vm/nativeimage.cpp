@@ -48,7 +48,6 @@ NativeImage::NativeImage(AssemblyBinder *pAssemblyBinder, ReadyToRunLoadedImage 
     CONTRACTL
     {
         THROWS;
-        CONSTRUCTOR_CHECK;
         STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM(););
     }
@@ -118,7 +117,7 @@ namespace
         SString path{ componentModulePath };
         SString::Iterator lastPathSeparatorIter = path.End();
         size_t pathDirLength = 0;
-        if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
+        if (path.FindBack(lastPathSeparatorIter, DIRECTORY_SEPARATOR_CHAR_A))
         {
             pathDirLength = (lastPathSeparatorIter - path.Begin()) + 1;
         }
@@ -146,7 +145,7 @@ namespace
             peLoadedImage = loaded;
         }
 
-        if (peLoadedImage.IsNull())
+        if (peLoadedImage == NULL)
         {
             EX_TRY
             {
@@ -193,7 +192,7 @@ namespace
             }
             EX_END_CATCH
 
-            if (peLoadedImage.IsNull())
+            if (peLoadedImage == NULL)
             {
                 // Failed to locate the native composite R2R image
 #ifdef LOGGING
@@ -207,17 +206,28 @@ namespace
             }
         }
 
+#ifdef TARGET_WASM
+        // On WebAssembly the runtime only loads flat webcil composites, which do not expose a named
+        // "RTR_HEADER" export the way PE R2R images do; obtain the R2R header from the decoder instead.
+        // PE R2R images (which rely on the export) cannot be loaded on WASM, so the export path is never
+        // taken here. A genuinely non-R2R image still fails validation below via the NULL header check.
+        if (peLoadedImage->HasReadyToRunHeader())
+            *header = peLoadedImage->GetReadyToRunHeader();
+#else // TARGET_WASM
         *header = (READYTORUN_HEADER *)peLoadedImage->GetExport("RTR_HEADER");
+#endif // TARGET_WASM
         if (*header == NULL)
         {
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         }
 
-        return new ReadyToRunLoadedImage(
+        ReadyToRunLoadedImage* r2rImg = new ReadyToRunLoadedImage(
             (TADDR)peLoadedImage->GetBase(),
             peLoadedImage->GetVirtualSize(),
-            peLoadedImage.Extract(),
+            peLoadedImage,
             [](void* img) { delete (PEImageLayout*)img; });
+        peLoadedImage.Detach();
+        return r2rImg;
     }
 }
 

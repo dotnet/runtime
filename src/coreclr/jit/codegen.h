@@ -226,7 +226,11 @@ protected:
     void                       ensureCurrentFuncIsUnwindable();
     void                       genEmitIf(WasmValueType blockType = WasmValueType::Invalid);
     void                       genEmitEndIf();
+    void                       genEmitBeginBlock(WasmValueType blockType = WasmValueType::Invalid);
+    void                       genEmitEndBlock();
     void                       genEmitFunctionEnd(bool emitTerminalUnreachable = true);
+    void                       genStoreAsyncContinuationGlobal();
+    void                       genClearAsyncContinuationGlobal();
 #endif
 
     void genEmitStartBlock(BasicBlock* block);
@@ -439,6 +443,7 @@ protected:
 
 #if defined(TARGET_ARM64)
     void genUnknownSizeFrame();
+    void genZeroInitializeUnknownSizeFrame();
 #endif
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -465,6 +470,9 @@ protected:
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
     void genPoisonFrame(regMaskTP bbRegLiveIn);
+#ifdef TARGET_ARM64
+    void genPoisonUnknownSizeVariable(int varNum, char poisonVal);
+#endif
 
 #if defined(TARGET_ARM)
 
@@ -611,6 +619,9 @@ protected:
     void genReserveEpilog(BasicBlock* block);
     void genFnProlog();
     void genBeginFnProlog();
+#ifdef TARGET_WASM
+    void genInitImageBaseLocal(FuncInfoDsc* func);
+#endif
     void genFnEpilog(BasicBlock* block);
 
     void genReserveFuncletProlog(BasicBlock* block);
@@ -1084,6 +1095,10 @@ protected:
     };
 
 #endif // TARGET_ARM64
+
+#if defined(TARGET_WASM)
+    void genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrinsic info);
+#endif
 
 #endif // FEATURE_HW_INTRINSICS
 

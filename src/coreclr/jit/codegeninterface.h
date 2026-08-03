@@ -622,6 +622,8 @@ public:
         bool vlIsOnStack(regNumber reg, signed offset) const;
         bool vlIsOnStack() const;
 
+        static ICorDebugInfo::RegNum mapRegNumToDebugRegNum(regNumber reg);
+
         void storeVariableInRegisters(regNumber reg, regNumber otherReg);
         void storeVariableOnStack(regNumber stackBaseReg, NATIVE_OFFSET variableStackOffset);
 

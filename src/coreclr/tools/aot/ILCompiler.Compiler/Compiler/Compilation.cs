@@ -123,7 +123,13 @@ namespace ILCompiler
                 followVirtualDispatch = false;
 
             if (followVirtualDispatch)
-                target = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(target);
+            {
+                MethodDesc originalTarget = target;
+                MethodDesc targetDefinition = target.GetMethodDefinition();
+                target = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(targetDefinition);
+                if (originalTarget != targetDefinition)
+                    target = target.MakeInstantiatedMethod(originalTarget.Instantiation);
+            }
 
             return DelegateCreationInfo.Create(delegateType, target, constrainedType, NodeFactory, followVirtualDispatch);
         }
@@ -255,7 +261,7 @@ namespace ILCompiler
 
                 case ReadyToRunHelperId.MethodDictionary:
                 case ReadyToRunHelperId.MethodEntry:
-                case ReadyToRunHelperId.VirtualDispatchCell:
+                case ReadyToRunHelperId.DispatchCell:
                 case ReadyToRunHelperId.MethodHandle:
                     return ((MethodDesc)targetOfLookup).IsRuntimeDeterminedExactMethod;
 

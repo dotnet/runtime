@@ -1,12 +1,14 @@
 trigger: none
 
-schedules:
-- cron: "0 11 * * *"
-  displayName: Mon through Sun at 3:00 AM (UTC-8:00)
-  branches:
-    include:
-    - main
-  always: true
+# Scheduled runs are paused while we root-cause an ongoing issue.
+# Do not remove this pipeline; re-enable by uncommenting the schedule below.
+# schedules:
+# - cron: "0 11 * * *"
+#   displayName: Mon through Sun at 3:00 AM (UTC-8:00)
+#   branches:
+#     include:
+#     - main
+#   always: true
 
 variables:
   - template: /eng/pipelines/common/variables.yml

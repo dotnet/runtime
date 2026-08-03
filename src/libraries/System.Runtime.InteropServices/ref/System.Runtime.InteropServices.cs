@@ -1573,9 +1573,9 @@ namespace System.Runtime.InteropServices
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Runtime.InteropServices.NFloat result) { throw null; }
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result, out int charsConsumed) { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result, out int bytesConsumed) { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result, out int charsConsumed) { throw null; }
+        public static bool TryParsePartial([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result, out int charsConsumed) { throw null; }
+        public static bool TryParsePartial(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result, out int bytesConsumed) { throw null; }
+        public static bool TryParsePartial(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result, out int charsConsumed) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class OptionalAttribute : System.Attribute
@@ -2430,6 +2430,9 @@ namespace System.Runtime.InteropServices.Java
 namespace System.Runtime.InteropServices.ObjectiveC
 {
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("tvos")]
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
     [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
     public sealed class ObjectiveCTrackedTypeAttribute : System.Attribute
     {
@@ -2437,6 +2440,9 @@ namespace System.Runtime.InteropServices.ObjectiveC
     }
 
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("macos")]
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("tvos")]
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
     [System.CLSCompliantAttribute(false)]
     public static class ObjectiveCMarshal
     {
