@@ -6,7 +6,7 @@ using ILCompiler.DependencyAnalysis;
 namespace ILCompiler.ObjectWriter
 {
     /// <summary>
-    /// Base class for WebAssembly object writers.
+    /// Base class for WebAssembly object file format writers.
     /// </summary>
     internal abstract partial class WasmObjectWriter : ObjectWriter
     {
@@ -14,6 +14,8 @@ namespace ILCompiler.ObjectWriter
         public const int ImageBaseGlobalIndex = WasmGlobalImports.ImageBaseGlobalIndex;
         public const int TableBaseGlobalIndex = WasmGlobalImports.TableBaseGlobalIndex;
         public const int AsyncContinuationGlobalIndex = WasmGlobalImports.AsyncContinuationGlobalIndex;
+
+        public const int WebcilSectionAlignment = 16;
 
         protected WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
