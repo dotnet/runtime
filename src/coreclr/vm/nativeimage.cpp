@@ -142,7 +142,7 @@ namespace
             PEImageLayout* loaded = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_FLAT);
 #else
             PEImageLayout* loaded = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_LOADED);
-#endif // TARGET_WASM
+#endif // PEIMAGE_FLAT_LAYOUT_ONLY
             // We will let pImage instance be freed after exiting this scope, but we will keep the layout,
             // thus the layout needs an AddRef, or it will be gone together with pImage.
             loaded->AddRef();
