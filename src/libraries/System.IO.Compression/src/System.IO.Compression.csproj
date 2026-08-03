@@ -66,10 +66,8 @@
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <Compile Include="System\IO\Compression\ZipEncryptionMethod.cs" />
     <Compile Include="System\IO\Compression\ZipCryptoStream.cs" />
-    <Compile Include="System\IO\Compression\ZipCryptoStream.Random.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
-    <Compile Include="System\IO\Compression\ZipCryptoStream.Random.Unix.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'" />
-    <Compile Include="System\IO\Compression\ZipCryptoStream.ClearSensitiveData.Browser.cs" Condition="'$(TargetPlatformIdentifier)' == 'browser'" />
-    <Compile Include="System\IO\Compression\ZipCryptoStream.ClearSensitiveData.Default.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
+    <Compile Include="System\IO\Compression\ZipCryptoStream.Random.cs" />
+    <Compile Include="System\IO\Compression\ZipCryptoStream.ClearSensitiveData.cs" />
     <Compile Include="System\IO\Compression\WinZipAesStream.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="System\IO\Compression\WinZipAesKeyMaterial.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="System\IO\Compression\WinZipAes.PlatformNotSupported.cs" Condition="'$(TargetPlatformIdentifier)' == 'browser'" />
@@ -81,6 +79,9 @@
     <Compile Include="System\IO\Compression\ZipArchiveEntry.Windows.cs" />
     <Compile Include="$(CommonPath)System\IO\Compression\ZipArchiveEntryConstants.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs" Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenRandom.GetRandomBytes.cs" Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenRandom.GetRandomBytes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.NTSTATUS.cs" Link="Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs" />
   </ItemGroup>
 
   <!-- Unix specific files -->

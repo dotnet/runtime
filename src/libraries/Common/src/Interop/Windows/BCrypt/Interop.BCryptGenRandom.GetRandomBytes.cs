@@ -24,4 +24,8 @@ internal static partial class Interop
             }
         }
     }
+
+    // BCryptGenRandom with BCRYPT_USE_SYSTEM_PREFERRED_RNG is always cryptographically secure.
+    internal static unsafe void GetCryptographicallySecureRandomBytes(byte* buffer, int length) =>
+        GetRandomBytes(buffer, length);
 }

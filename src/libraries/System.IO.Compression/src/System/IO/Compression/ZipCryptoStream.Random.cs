@@ -7,9 +7,6 @@ namespace System.IO.Compression
     {
         private static unsafe void FillHeaderRandomBytes(Span<byte> header)
         {
-            // System.Security.Cryptography's RandomNumberGenerator is not referenced on browser and is
-            // not supported on wasi, so call the shared native CSPRNG directly. It is backed by
-            // crypto.getRandomValues() on browser and by getrandom()/getentropy()/'/dev/urandom' on unix.
             Span<byte> randomBytes = header.Slice(0, 10);
             fixed (byte* pRandomBytes = randomBytes)
             {
