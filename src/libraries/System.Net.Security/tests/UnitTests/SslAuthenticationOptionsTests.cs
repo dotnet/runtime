@@ -220,10 +220,8 @@ namespace System.Net.Security.Tests
 
             // UpdateOptions should have released the previously-owned context's resources.
             // Export() requires the native handle; a CryptographicException means the cert was disposed.
-            if (ownedIntermediate is not null)
-            {
-                Assert.ThrowsAny<CryptographicException>(() => ownedIntermediate.Export(X509ContentType.Cert));
-            }
+            Assert.NotNull(ownedIntermediate);
+            Assert.ThrowsAny<CryptographicException>(() => ownedIntermediate.Export(X509ContentType.Cert));
 
             // Dispose should NOT release the caller's context
             options.Dispose();
