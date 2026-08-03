@@ -1650,6 +1650,8 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
         case WellKnownArg::StackArrayLocal:
         case WellKnownArg::AsyncExecutionContext:
         case WellKnownArg::AsyncSynchronizationContext:
+        case WellKnownArg::AsyncResumedUse:
+        case WellKnownArg::AsyncResumedDef:
             // These are pseudo-args; they are not actual arguments, but we
             // reuse the argument mechanism to represent them as arbitrary uses
             // that are later expanded out.
@@ -2976,10 +2978,18 @@ AGAIN:
                     }
                     break;
 
+                case GT_ARR_ADDR:
+                    if ((op1->AsArrAddr()->GetElemType() != op2->AsArrAddr()->GetElemType()) ||
+                        (op1->AsArrAddr()->GetElemClassHandle() != op2->AsArrAddr()->GetElemClassHandle()) ||
+                        (op1->AsArrAddr()->GetFirstElemOffset() != op2->AsArrAddr()->GetFirstElemOffset()))
+                    {
+                        return false;
+                    }
+                    break;
+
                 // For the ones below no extra argument matters for comparison.
                 case GT_BOX:
                 case GT_RUNTIMELOOKUP:
-                case GT_ARR_ADDR:
                     break;
 
                 default:
@@ -3034,7 +3044,13 @@ AGAIN:
                     }
                     break;
                 case GT_INDEX_ADDR:
-                    if (op1->AsIndexAddr()->gtElemSize != op2->AsIndexAddr()->gtElemSize)
+                    if ((op1->AsIndexAddr()->gtElemSize != op2->AsIndexAddr()->gtElemSize) ||
+                        (op1->AsIndexAddr()->gtElemType != op2->AsIndexAddr()->gtElemType) ||
+                        (op1->AsIndexAddr()->gtStructElemClass != op2->AsIndexAddr()->gtStructElemClass) ||
+                        (op1->AsIndexAddr()->gtLenOffset != op2->AsIndexAddr()->gtLenOffset) ||
+                        (op1->AsIndexAddr()->gtElemOffset != op2->AsIndexAddr()->gtElemOffset) ||
+                        ((op1->gtFlags & (GTF_INX_RNGCHK | GTF_INX_ADDR_NONNULL)) !=
+                         (op2->gtFlags & (GTF_INX_RNGCHK | GTF_INX_ADDR_NONNULL))))
                     {
                         return false;
                     }
@@ -3112,7 +3128,10 @@ AGAIN:
                 return false;
             }
 
-            // NOTE: gtArrElemSize may need to be handled
+            if (op1->AsArrElem()->gtArrElemSize != op2->AsArrElem()->gtArrElemSize)
+            {
+                return false;
+            }
 
             unsigned dim;
             for (dim = 0; dim < op1->AsArrElem()->gtArrRank; dim++)
@@ -3545,9 +3564,6 @@ AGAIN:
                 case GT_CAST:
                     hash ^= tree->AsCast()->gtCastType;
                     break;
-                case GT_INDEX_ADDR:
-                    hash += tree->AsIndexAddr()->gtElemSize;
-                    break;
                 case GT_ALLOCOBJ:
                     hash = genTreeHashAdd(hash, static_cast<unsigned>(
                                                     reinterpret_cast<uintptr_t>(tree->AsAllocObj()->gtAllocObjClsHnd)));
@@ -3569,7 +3585,13 @@ AGAIN:
 
                 // For the ones below no extra argument matters for comparison.
                 case GT_BOX:
+                    break;
+
                 case GT_ARR_ADDR:
+                    hash = genTreeHashAdd(hash, tree->AsArrAddr()->GetElemType());
+                    hash = genTreeHashAdd(hash, static_cast<unsigned>(reinterpret_cast<uintptr_t>(
+                                                    tree->AsArrAddr()->GetElemClassHandle())));
+                    hash = genTreeHashAdd(hash, tree->AsArrAddr()->GetFirstElemOffset());
                     break;
 
                 default:
@@ -3615,7 +3637,17 @@ AGAIN:
 
                 // For the ones below no extra argument matters for comparison.
                 case GT_QMARK:
+                    break;
+
                 case GT_INDEX_ADDR:
+                    hash = genTreeHashAdd(hash, tree->AsIndexAddr()->gtElemSize);
+                    hash = genTreeHashAdd(hash, tree->AsIndexAddr()->gtElemType);
+                    hash = genTreeHashAdd(hash, static_cast<unsigned>(reinterpret_cast<uintptr_t>(
+                                                    tree->AsIndexAddr()->gtStructElemClass)));
+                    hash = genTreeHashAdd(hash, tree->AsIndexAddr()->gtLenOffset);
+                    hash = genTreeHashAdd(hash, tree->AsIndexAddr()->gtElemOffset);
+                    hash = genTreeHashAdd(hash, static_cast<unsigned>(tree->gtFlags &
+                                                                      (GTF_INX_RNGCHK | GTF_INX_ADDR_NONNULL)));
                     break;
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -3671,6 +3703,8 @@ AGAIN:
         case GT_ARR_ELEM:
 
             hash = genTreeHashAdd(hash, gtHashValue(tree->AsArrElem()->gtArrObj));
+            hash = genTreeHashAdd(hash, tree->AsArrElem()->gtArrRank);
+            hash = genTreeHashAdd(hash, tree->AsArrElem()->gtArrElemSize);
 
             unsigned dim;
             for (dim = 0; dim < tree->AsArrElem()->gtArrRank; dim++)
@@ -15628,8 +15662,8 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
     {
         case NI_System_Enum_HasFlag:
         {
-            GenTree* thisOp = call->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree* flagOp = call->gtArgs.GetArgByIndex(1)->GetNode();
+            GenTree* thisOp = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* flagOp = call->gtArgs.GetUserArgByIndex(1)->GetNode();
             GenTree* result = gtOptimizeEnumHasFlag(thisOp, flagOp);
 
             if (result != nullptr)
@@ -15642,8 +15676,8 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
         case NI_System_Enum_Equals:
         {
             assert(call->AsCall()->gtArgs.CountUserArgs() == 2);
-            GenTree* arg0 = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree* arg1 = call->AsCall()->gtArgs.GetArgByIndex(1)->GetNode();
+            GenTree* arg0 = call->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* arg1 = call->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
 
             bool isArg0Exact;
             bool isArg1Exact;
@@ -15687,8 +15721,8 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
         case NI_System_Type_op_Inequality:
         {
             noway_assert(call->TypeIs(TYP_INT));
-            GenTree* op1 = call->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree* op2 = call->gtArgs.GetArgByIndex(1)->GetNode();
+            GenTree* op1 = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* op2 = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
             // If either operand is known to be a RuntimeType, this can be folded
             GenTree* result = gtFoldTypeEqualityCall(ni == NI_System_Type_op_Equality, op1, op2);
@@ -15988,7 +16022,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     if (((op2Kind == TPK_Null) && (op1Kind == TPK_Handle)) || ((op1Kind == TPK_Null) && (op2Kind == TPK_Handle)))
     {
         GenTree* call   = op1Kind == TPK_Handle ? op1 : op2;
-        GenTree* handle = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+        GenTree* handle = call->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
         if (gtGetHelperArgClassHandle(handle) != NO_CLASS_HANDLE)
         {
             return oper == GT_EQ ? gtNewFalse() : gtNewTrue();
@@ -16000,10 +16034,10 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     if ((op1Kind == TPK_Handle) && (op2Kind == TPK_Handle))
     {
         JITDUMP("Optimizing compare of types-from-handles to instead compare handles\n");
-        assert((tree->AsOp()->gtGetOp1()->AsCall()->gtArgs.CountArgs() == 1) &&
-               (tree->AsOp()->gtGetOp2()->AsCall()->gtArgs.CountArgs() == 1));
-        GenTree* op1ClassFromHandle  = tree->AsOp()->gtGetOp1()->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-        GenTree* op2ClassFromHandle  = tree->AsOp()->gtGetOp2()->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+        assert((tree->AsOp()->gtGetOp1()->AsCall()->gtArgs.CountUserArgs() == 1) &&
+               (tree->AsOp()->gtGetOp2()->AsCall()->gtArgs.CountUserArgs() == 1));
+        GenTree* op1ClassFromHandle  = tree->AsOp()->gtGetOp1()->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
+        GenTree* op2ClassFromHandle  = tree->AsOp()->gtGetOp2()->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
         CORINFO_CLASS_HANDLE cls1Hnd = NO_CLASS_HANDLE;
         CORINFO_CLASS_HANDLE cls2Hnd = NO_CLASS_HANDLE;
 
@@ -16105,7 +16139,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     GenTree* const opOther  = (op1Kind == TPK_Handle) ? op2 : op1;
 
     // Tunnel through the handle operand to get at the class handle involved.
-    GenTree* const       opHandleArgument = opHandle->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+    GenTree* const       opHandleArgument = opHandle->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
     CORINFO_CLASS_HANDLE clsHnd           = gtGetHelperArgClassHandle(opHandleArgument);
 
     // If we couldn't find the class handle, give up.
@@ -17032,14 +17066,14 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
 
             // In R2R expansions the handle may not be an explicit operand to the helper,
             // so we can't remove the box.
-            if (newobjCall->gtArgs.IsEmpty())
+            if (newobjCall->gtArgs.CountUserArgs() == 0)
             {
                 assert(newobjCall->IsHelperCall(CORINFO_HELP_READYTORUN_NEW));
                 JITDUMP(" bailing; newobj via R2R helper\n");
                 return nullptr;
             }
 
-            boxTypeHandle = newobjCall->gtArgs.GetArgByIndex(0)->GetNode();
+            boxTypeHandle = newobjCall->gtArgs.GetUserArgByIndex(0)->GetNode();
         }
         else
         {
@@ -21625,7 +21659,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
         case CORINFO_HELP_ISINSTANCEOFANY:
         {
             // Fetch the class handle from the helper call arglist
-            GenTree*             typeArg = call->gtArgs.GetArgByIndex(0)->GetNode();
+            GenTree*             typeArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             CORINFO_CLASS_HANDLE castHnd = gtGetHelperArgClassHandle(typeArg);
 
             // We generally assume the type being cast to is the best type
@@ -21649,7 +21683,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
             // type from the value being cast instead.
             if (castHnd == nullptr)
             {
-                GenTree* valueArg = call->gtArgs.GetArgByIndex(1)->GetNode();
+                GenTree* valueArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
                 castHnd           = gtGetClassHandle(valueArg, pIsExact, pIsNonNull);
             }
 
@@ -21820,8 +21854,8 @@ bool Compiler::gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle)
         GenTreeCall* call = tree->AsCall();
         if (gtIsTypeHandleToRuntimeTypeHelper(call))
         {
-            assert(call->gtArgs.CountArgs() == 1);
-            CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtArgs.GetArgByIndex(0)->GetEarlyNode());
+            assert(call->gtArgs.CountUserArgs() == 1);
+            CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtArgs.GetUserArgByIndex(0)->GetEarlyNode());
             if (hClass != NO_CLASS_HANDLE)
             {
                 if (handle != nullptr)
@@ -21877,6 +21911,34 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
 
     assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
 
+    return node->AsLclVarCommon();
+}
+
+//------------------------------------------------------------------------
+// gtCallGetDefinedAsyncResumedLclAddr:
+//   Get the tree corresponding to the address of the async resumed indicator that this call defines.
+//
+// Parameters:
+//   call - The call node
+//
+// Returns:
+//   A tree representing the address of a local.
+//
+GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncResumedLclAddr(GenTreeCall* call)
+{
+    if (!call->IsAsync())
+    {
+        return nullptr;
+    }
+
+    CallArg* arg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
+    if (arg == nullptr)
+    {
+        return nullptr;
+    }
+
+    GenTree* node = arg->GetNode();
+    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
     return node->AsLclVarCommon();
 }
 
@@ -24317,16 +24379,10 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(
             intrinsic = NI_PackedSimd_ConvertToUInt32Saturate;
             break;
         }
-
-        case TYP_LONG:
-        case TYP_ULONG:
-        {
-            NYI_WASM_SIMD("gtNewSimdCvtNativeNode");
-            return nullptr;
-        }
-
         default:
         {
+            // Note: float/double -> TYP_LONG and TYP_ULONG
+            // conversions are not natively supported on Wasm, so the unreached() here is appropriate.
             unreached();
         }
     }
@@ -25482,10 +25538,11 @@ GenTree* Compiler::gtNewSimdFmaNode(
 
     std::swap(op1, op3);
 #elif defined(TARGET_WASM)
-    NYI_WASM_SIMD("gtNewSimdFmaNode");
+    // Wasm has no single rounding FMA, and this should be guarded against already in import.
+    unreached();
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
 
     assert(intrinsic != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, intrinsic, simdBaseType, simdSize);
@@ -29041,8 +29098,12 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
         }
 
         // shift all indices to the left by tzcnt(size)
+        // a 64-bit element in a Vector64 is a 1D arrangement, which the vector form of the shift
+        // has no encoding for; that case has to use the scalar form instead.
+        NamedIntrinsic shiftIntrinsic =
+            ((simdSize == 8) && (elementSize == 8)) ? NI_AdvSimd_ShiftLeftLogicalScalar : NI_AdvSimd_ShiftLeftLogical;
         cnsNode = gtNewIconNode(BitOperations::TrailingZeroCount(static_cast<uint64_t>(elementSize)), TYP_INT);
-        op2     = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_AdvSimd_ShiftLeftLogical, simdBaseType, simdSize);
+        op2     = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, shiftIntrinsic, simdBaseType, simdSize);
 
         // VectorTableLookup is only valid on byte/sbyte
         simdBaseType = varTypeIsUnsigned(simdBaseType) ? TYP_UBYTE : TYP_BYTE;

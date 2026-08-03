@@ -78,13 +78,15 @@
   </PropertyGroup>
 
   <!-- Stage $(WasmtimeDir) -> $(WasmtimeDirForHelixPayload) before the
-       correlation payload is assembled for the Helix send. -->
+       correlation payload is assembled for the Helix send. The Outputs stamp is named after the
+       version-keyed source sentinel so switching to an already-provisioned older version (whose
+       .complete may predate the last staging) still re-stages instead of shipping a stale copy. -->
   <Target Name="StageWasmtimeForHelixPayload"
           Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'"
           BeforeTargets="CoreTest"
           DependsOnTargets="ProvisionWasmtime"
-          Inputs="$(WasmtimeDir)\.stamp-wasmtime-version.txt"
-          Outputs="$(WasmtimeDirForHelixPayload)\.stamp-wasmtime-version.txt">
+          Inputs="$(WasmtimeStampFile)"
+          Outputs="$(WasmtimeDirForHelixPayload).staged-$([System.IO.Path]::GetFileName('$(WasmtimeStampFile)'))">
     <ItemGroup>
       <_WasmtimeFilesToStage Include="$(WasmtimeDir)**\*" />
     </ItemGroup>
@@ -92,6 +94,7 @@
     <Copy SourceFiles="@(_WasmtimeFilesToStage)"
           DestinationFiles="@(_WasmtimeFilesToStage->'$(WasmtimeDirForHelixPayload)%(RecursiveDir)%(FileName)%(Extension)')"
           SkipUnchangedFiles="true" />
+    <Touch Files="$(WasmtimeDirForHelixPayload).staged-$([System.IO.Path]::GetFileName('$(WasmtimeStampFile)'))" AlwaysCreate="true" />
   </Target>
   <PropertyGroup>
     <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>

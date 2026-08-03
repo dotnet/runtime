@@ -207,4 +207,12 @@ extends:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/ZipArchiveFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send ZipArchiveFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/ZipEncryptionStreamFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send ZipEncryptionStreamFuzzer to OneFuzz
 # ONEFUZZ_TASK_WORKAROUND_END
