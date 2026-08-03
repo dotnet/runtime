@@ -659,6 +659,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 deconstructionInfo,
                 operation,
                 state);
+            if (deconstructionValue.DoesNotReturn)
+            {
+                state.Current = LocalStateAndContextLattice.Top;
+                return sourceValue;
+            }
+
             AssignDeconstruction(
                 operation.Target,
                 deconstructionValue,
@@ -677,11 +683,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
             public bool IsInvalid { get; }
 
+            public bool DoesNotReturn { get; }
+
             public DeconstructionValue(TValue value)
             {
                 Value = value;
                 Nested = default;
                 IsInvalid = false;
+                DoesNotReturn = false;
             }
 
             public DeconstructionValue(ImmutableArray<DeconstructionValue> nested)
@@ -689,16 +698,20 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 Value = default;
                 Nested = nested;
                 IsInvalid = false;
+                DoesNotReturn = false;
             }
 
-            private DeconstructionValue(bool isInvalid)
+            private DeconstructionValue(bool isInvalid, bool doesNotReturn)
             {
                 Value = default;
                 Nested = default;
                 IsInvalid = isInvalid;
+                DoesNotReturn = doesNotReturn;
             }
 
-            public static DeconstructionValue Invalid => new(isInvalid: true);
+            public static DeconstructionValue Invalid => new(isInvalid: true, doesNotReturn: false);
+
+            public static DeconstructionValue NonReturning => new(isInvalid: false, doesNotReturn: true);
         }
 
         private DeconstructionValue EvaluateDeconstruction(
@@ -770,11 +783,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     target,
                     state.Current.Context);
 
+                if (deconstructMethod.TryGetAttribute(nameof(DoesNotReturnAttribute), out _))
+                    return DeconstructionValue.NonReturning;
+
                 var nestedValues = ImmutableArray.CreateBuilder<DeconstructionValue>(targetTuple.Elements.Length);
                 for (int i = 0; i < targetTuple.Elements.Length; i++)
                 {
                     IParameterSymbol outputParameter = deconstructMethod.Parameters[i + outputParameterOffset];
-                    nestedValues.Add(EvaluateDeconstruction(
+                    DeconstructionValue nestedValue = EvaluateDeconstruction(
                         targetTuple.Elements[i],
                         source: null,
                         outputParameter.Type,
@@ -782,7 +798,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                         sourceValueIsKnown: true,
                         deconstructionInfo.Nested[i],
                         operation,
-                        state));
+                        state);
+                    if (nestedValue.DoesNotReturn)
+                        return DeconstructionValue.NonReturning;
+                    nestedValues.Add(nestedValue);
                 }
 
                 return new DeconstructionValue(nestedValues.MoveToImmutable());
@@ -795,7 +814,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 for (int i = 0; i < targetTuple.Elements.Length; i++)
                 {
                     IOperation sourceElement = UnwrapDeconstructionSource(sourceTuple.Elements[i]);
-                    nestedValues.Add(EvaluateDeconstruction(
+                    DeconstructionValue nestedValue = EvaluateDeconstruction(
                         targetTuple.Elements[i],
                         sourceElement,
                         sourceElement.Type,
@@ -803,7 +822,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                         sourceValueIsKnown: false,
                         deconstructionInfo.Nested[i],
                         operation,
-                        state));
+                        state);
+                    if (nestedValue.DoesNotReturn)
+                        return DeconstructionValue.NonReturning;
+                    nestedValues.Add(nestedValue);
                 }
 
                 return new DeconstructionValue(nestedValues.MoveToImmutable());
@@ -820,7 +842,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             for (int i = 0; i < targetTuple.Elements.Length; i++)
             {
                 IFieldSymbol tupleElement = tupleType.TupleElements[i];
-                tupleValues.Add(EvaluateDeconstruction(
+                DeconstructionValue tupleValue = EvaluateDeconstruction(
                     targetTuple.Elements[i],
                     source: null,
                     tupleElement.Type,
@@ -828,7 +850,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     sourceValueIsKnown: true,
                     deconstructionInfo.Nested[i],
                     operation,
-                    state));
+                    state);
+                if (tupleValue.DoesNotReturn)
+                    return DeconstructionValue.NonReturning;
+                tupleValues.Add(tupleValue);
             }
 
             return new DeconstructionValue(tupleValues.MoveToImmutable());

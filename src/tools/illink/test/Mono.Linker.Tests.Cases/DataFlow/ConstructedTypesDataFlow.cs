@@ -351,6 +351,33 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     type.RequiresPublicMethods();
             }
 
+            [ExpectedWarning("IL2067", Tool.Trimmer | Tool.NativeAot, "IL-based tools don't model DoesNotReturn on Deconstruct methods")]
+            static void DeconstructDoesNotReturn(
+                bool condition,
+                DoesNotReturnDeconstruct input,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotated)
+            {
+                Type type = annotated;
+                object instance;
+                if (condition)
+                    (type, instance) = input;
+                type.RequiresPublicMethods();
+            }
+
+            [ExpectedWarning("IL2067", Tool.Trimmer | Tool.NativeAot, "IL-based tools don't model DoesNotReturn on Deconstruct methods")]
+            static void DeconstructNestedDoesNotReturn(
+                bool condition,
+                NestedDoesNotReturnDeconstruct input,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotated)
+            {
+                Type type = annotated;
+                object instance;
+                object outerInstance;
+                if (condition)
+                    ((type, instance), outerInstance) = input;
+                type.RequiresPublicMethods();
+            }
+
             public static void Test()
             {
                 DeconstructVariableNoAnnotation((typeof(string), null));
@@ -378,6 +405,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 DeconstructImplicitIndexerTargetSideEffect(typeof(string), typeof(string));
                 DeconstructWithUserDefinedConversion(typeof(string));
                 DeconstructForeach(new[] { (typeof(string), (object)null) });
+                DeconstructDoesNotReturn(true, new(), typeof(string));
+                DeconstructNestedDoesNotReturn(true, new(), typeof(string));
             }
         }
 
@@ -480,6 +509,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             out object instance)
         {
             type = typeof(string);
+            instance = null;
+        }
+    }
+
+    class DoesNotReturnDeconstruct
+    {
+        [DoesNotReturn]
+        public void Deconstruct(out Type type, out object instance) => throw new Exception();
+    }
+
+    class NestedDoesNotReturnDeconstruct
+    {
+        public void Deconstruct(out DoesNotReturnDeconstruct nested, out object instance)
+        {
+            nested = new();
             instance = null;
         }
     }
