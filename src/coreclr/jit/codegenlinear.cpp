@@ -1760,6 +1760,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genConsumeRegs(tree->gtGetOp1());
             genConsumeRegs(tree->gtGetOp2());
         }
+#endif
         else if (tree->OperIsFieldList())
         {
             for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
@@ -1768,7 +1769,6 @@ void CodeGen::genConsumeRegs(GenTree* tree)
                 genConsumeRegs(fieldNode);
             }
         }
-#endif
         else if (tree->OperIsLocalRead())
         {
             // A contained lcl var must be living on stack and marked as reg optional, or not be a

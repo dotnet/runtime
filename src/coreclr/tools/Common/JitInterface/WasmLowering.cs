@@ -36,8 +36,20 @@ namespace Internal.JitInterface
         // as a primitive, and if so, which type. If not, return
         // null.
 
-        public static TypeDesc LowerToAbiType(TypeDesc type)
+        public static TypeDesc LowerToAbiType(TypeDesc type) => LowerToAbiType(type, out _);
+
+        private static TypeDesc LowerToAbiType(TypeDesc type, out TypeDesc multiSegmentType)
         {
+            multiSegmentType = null;
+
+            // Types split across several wasm parameters are not a single ABI primitive, but the
+            // caller still needs to know which one the type unwrapped to.
+            if (IsMultiSegmentType(type))
+            {
+                multiSegmentType = type;
+                return null;
+            }
+
             // Vector128<T> and a 128-bit Vector<T> are wasm v128 ABI primitives passed by value.
             if (IsWasmV128Type(type))
             {
@@ -88,6 +100,14 @@ namespace Internal.JitInterface
 
                 type = firstFieldElementType;
 
+                // A single-field wrapper struct is passed as the type it wraps, matching clang: a
+                // struct wrapping an __int128 lowers to the same two i64 parameters the bare type does.
+                if (IsMultiSegmentType(type))
+                {
+                    multiSegmentType = type;
+                    return null;
+                }
+
                 // A single-field wrapper struct around a v128 lowers to the v128 primitive, matching
                 // emscripten, which passes a struct wrapping a v128 as a v128.
                 if (IsWasmV128Type(type))
@@ -102,6 +122,140 @@ namespace Internal.JitInterface
 
                 return type;
             }
+        }
+
+        /// <summary>
+        /// Reports how a type is split when the wasm ABI passes it by value across several
+        /// parameters, because no single wasm value type is wide enough to hold it. Returns false
+        /// for every other type. These types are still returned via a hidden buffer.
+        /// </summary>
+        /// <remarks>
+        /// Classified by shape rather than by name, so a type the wasm ABI treats this way is
+        /// picked up without listing it. Three conditions, all load-bearing: the type must be
+        /// intrinsic, because the wasm C ABI passes an ordinary aggregate indirectly and only a
+        /// type the runtime models as a scalar or vector is split -- <c>struct { long a, b; }</c>
+        /// decomposes exactly like <see cref="System.Int128"/> and must stay indirect; its
+        /// alignment must equal its size, which excludes <c>Vector2/3/4</c> despite those also
+        /// being intrinsic, and alignment alone would not do since <c>StructLayout(Pack)</c> can
+        /// manufacture it; and it must be wider than one slot, which excludes a <c>v128</c> and
+        /// <c>Vector64&lt;T&gt;</c> without naming them. The last test uses the slot's own width
+        /// rather than a fixed threshold, since <see cref="System.Int128"/> needs two slots at the
+        /// same 16 bytes a <c>v128</c> fills with one.
+        /// </remarks>
+        public static bool TryGetMultiSegmentLayout(TypeDesc type, out WasmValueType slotType, out int slotCount)
+        {
+            slotType = default;
+            slotCount = 0;
+
+            // A single-field wrapper is passed as the type it wraps, so classify what it unwraps to.
+            LowerToAbiType(type, out TypeDesc multiSegmentType);
+            if (multiSegmentType is null)
+            {
+                return false;
+            }
+
+            slotType = GetSlotType(multiSegmentType).Value;
+
+            // A wrapper only unwraps when its field fills it exactly, so the declared type's size
+            // is also the wrapped type's size.
+            int size = type.GetElementSize().AsInt;
+            int slotSize = GetMultiSegmentSlotSize(slotType);
+            Debug.Assert((size % slotSize) == 0);
+
+            slotCount = size / slotSize;
+            return true;
+        }
+
+        /// <summary>
+        /// Determines whether a type is itself passed by value across several wasm parameters,
+        /// ignoring any single-field struct wrapping it. See <see cref="TryGetMultiSegmentLayout"/>
+        /// for why each condition is needed.
+        /// </summary>
+        private static bool IsMultiSegmentType(TypeDesc type)
+        {
+            if (type is not DefType defType || !type.IsIntrinsic)
+            {
+                return false;
+            }
+
+            int size = defType.InstanceFieldSize.AsInt;
+            if (defType.InstanceFieldAlignment.AsInt != size)
+            {
+                return false;
+            }
+
+            WasmValueType? slotType = GetSlotType(type);
+            return (slotType is not null) && (size > GetMultiSegmentSlotSize(slotType.Value));
+        }
+
+        /// <summary>
+        /// Walks a multi-slot type's fields down to the wasm value type its slots are. Vectors
+        /// nest, so a 512-bit vector reaches a <c>v128</c> through its 256-bit halves.
+        /// </summary>
+        private static WasmValueType? GetSlotType(TypeDesc type)
+        {
+            for (int depth = 0; depth < 8; depth++)
+            {
+                if (IsWasmV128Type(type))
+                {
+                    return WasmValueType.V128;
+                }
+
+                if (type.IsPrimitive)
+                {
+                    // Only a wasm scalar is a valid slot; a narrower one would mean the type is not
+                    // an even multiple of its slots.
+                    WasmValueType lowered = LowerType(type);
+                    return lowered == WasmValueType.I64 ? lowered : null;
+                }
+
+                if (type is not DefType || !type.IsValueType)
+                {
+                    return null;
+                }
+
+                // A generic intrinsic whose base type is not a supported vector element -- the
+                // shared __Canon form, say -- is not ABI-classifiable, and its fields are an
+                // implementation detail rather than its slots. Same guard IsWasmV128Type applies,
+                // and the same one GetWasmSlotSize applies in the runtime; without it a
+                // Vector512<__Canon> walks past the v128 check into Vector128's raw ulong fields
+                // and reports eight i64 slots.
+                if (type.IsIntrinsic && (type.Instantiation.Length == 1) &&
+                    !VectorFieldLayoutAlgorithm.IsSupportedVectorBaseType(type.Instantiation[0]))
+                {
+                    return null;
+                }
+
+                FieldDesc firstField = null;
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (!field.IsStatic)
+                    {
+                        firstField = field;
+                        break;
+                    }
+                }
+
+                if (firstField is null)
+                {
+                    return null;
+                }
+
+                type = firstField.FieldType;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Size in bytes of a wasm slot used by <see cref="TryGetMultiSegmentLayout"/>. Taken from
+        /// the wasm value type, never from a JIT or managed type: TYP_SIMD8 and TYP_SIMD12 also
+        /// occupy a v128 slot but report their own narrower sizes.
+        /// </summary>
+        public static int GetMultiSegmentSlotSize(WasmValueType slotType)
+        {
+            Debug.Assert(slotType is WasmValueType.I64 or WasmValueType.V128);
+            return slotType == WasmValueType.I64 ? 8 : 16;
         }
 
         /// <summary>
@@ -254,7 +408,7 @@ namespace Internal.JitInterface
             else if (sig[pos] == 'S')
             {
                 int structSize = ParseStructSize(sig, ref pos);
-                returnType = ((CompilerTypeSystemContext)context).GetCachedStructOfSize(structSize);
+                returnType = ((CompilerTypeSystemContext)context).GetCachedReturnStructOfSize(structSize);
                 Debug.Assert(returnType is not null, $"No cached struct of size {structSize} for return type in signature '{sig}'");
             }
             else
@@ -307,6 +461,12 @@ namespace Internal.JitInterface
                     Debug.Assert(emptyStruct is not null, "Encountered 'e' in signature but no empty struct was cached during lowering");
                     parameters.Add(emptyStruct);
                     pos++;
+                }
+                else if (((c == 'l') || (c == 'V')) && (pos + 1 < sig.Length) && char.IsDigit(sig[pos + 1]))
+                {
+                    int elevation = sig[pos + 1] - '0';
+                    parameters.Add(((CompilerTypeSystemContext)context).GetWasmElevatedType(c, elevation));
+                    pos += 2;
                 }
                 else if (c == 'S')
                 {
@@ -426,7 +586,16 @@ namespace Internal.JitInterface
                     int returnSize = returnType.GetElementSize().AsInt;
                     sigBuilder.Append('S');
                     sigBuilder.Append(returnSize);
-                    ((CompilerTypeSystemContext)returnType.Context).CacheStructBySize(returnType);
+
+                    // A multi-slot type spells 'S<N>' only as a return; as a parameter it re-lowers
+                    // to its slot form. Keep it in the return cache alone, so an ordinary same-sized
+                    // struct parameter does not raise with this type's larger alignment.
+                    CompilerTypeSystemContext returnContext = (CompilerTypeSystemContext)returnType.Context;
+                    returnContext.CacheReturnStructBySize(returnType);
+                    if (!TryGetMultiSegmentLayout(returnType, out _, out _))
+                    {
+                        returnContext.CacheStructBySize(returnType);
+                    }
                 }
             }
             else if (loweredReturnType.IsVoid)
@@ -505,10 +674,28 @@ namespace Internal.JitInterface
 
                     // Struct that cannot be lowered to a single primitive — passed by reference
                     int paramSize = paramType.GetElementSize().AsInt;
-                    sigBuilder.Append('S');
-                    sigBuilder.Append(paramSize);
-                    result.Add(pointerType);
-                    ((CompilerTypeSystemContext)paramType.Context).CacheStructBySize(paramType);
+                    if (TryGetMultiSegmentLayout(paramType, out WasmValueType slotType, out int slotCount))
+                    {
+                        // Passed by value across several wasm parameters, matching the wasm C ABI.
+                        // Spelled '<slot><elevation>'; the elevation factor equals the slot count
+                        // for every type in the wasm ABI today, and the encoding cannot express
+                        // them differing. See readytorun-format.md.
+                        Debug.Assert(slotCount is >= 2 and <= 9,
+                            $"Slot count {slotCount} is not a single digit, so raising cannot read it back");
+                        sigBuilder.Append(WasmValueTypeToSigChar(slotType));
+                        sigBuilder.Append(slotCount);
+                        for (int slot = 0; slot < slotCount; slot++)
+                        {
+                            result.Add(slotType);
+                        }
+                    }
+                    else
+                    {
+                        sigBuilder.Append('S');
+                        sigBuilder.Append(paramSize);
+                        ((CompilerTypeSystemContext)paramType.Context).CacheStructBySize(paramType);
+                        result.Add(pointerType);
+                    }
                 }
                 else
                 {
