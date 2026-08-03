@@ -183,15 +183,9 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `Module` | `ReadyToRunInfo` | `pointer` | Pointer to the module's ReadyToRun information |
 | `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `PInvokeCalliFrame` | `VASigCookiePtr` | `pointer` | Pointer to the varargs signature cookie for the unmanaged call |
-| `ReadyToRunInfo` | `CompositeInfo` | `pointer` | Pointer to composite R2R info - or itself for non-composite |
-| `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
-| `ReadyToRunInfo` | `HotColdMap` | `pointer` | Pointer to an array of 32-bit integers - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
 | `ReadyToRunInfo` | `ImportSections` | `pointer` | Pointer to the array of ReadyToRun import sections |
 | `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
-| `ReadyToRunInfo` | `NumHotColdMap` | `uint32` | Number of entries in the `HotColdMap` |
 | `ReadyToRunInfo` | `NumImportSections` | `uint32` | Number of ReadyToRun import sections |
-| `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
-| `ReadyToRunInfo` | `RuntimeFunctions` | `pointer` | Pointer to an array of `RuntimeFunctions` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontyperuntimefunctions) |
 | `ResumableFrame` | `TargetContextPtr` | `pointer` | Pointer to the Frame's Target Context |
 | `SoftwareExceptionFrame` | `ReturnAddress` | `CodePointer` | Return address saved in Frame |
 | `SoftwareExceptionFrame` | `TargetContext` | `pointer` | Context object saved in Frame |
@@ -204,8 +198,6 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `TailCallFrame` | `CalleeSavedRegisters` | `pointer` | Address of the embedded nonvolatile-register values saved in the tailcall frame |
 | `TailCallFrame` | `ReturnAddress` | `CodePointer` | Return address saved in the tailcall frame |
 | `Thread` | `ExceptionTracker` | `pointer` | Pointer to exception tracking information |
-| `Thread` | `RuntimeThreadLocals` | `pointer` | Pointer to some thread-local storage |
-| `Thread` | `ThreadHandle` | `pointer` | OS thread handle (optional, Windows only; readers should expect `TargetPointer.Null` on non-Windows targets) |
 | `TransitionBlock` | *(type size)* | `uint32` | Size in bytes of the transition block, used to restore the caller's stack pointer |
 | `TransitionBlock` | `ArgumentRegisters` | `pointer` | Byte offset of the argument registers area within the TransitionBlock |
 | `TransitionBlock` | `CalleeSavedRegisters` | `pointer` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
